@@ -331,7 +331,7 @@ const EVIDENCE = {
       "boundaries/framework/conformance/plans/tool-contracts-extended.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact:
-      "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
   },
   runtimeOrchestration: {
     adapterCapability: "framework.orchestration",

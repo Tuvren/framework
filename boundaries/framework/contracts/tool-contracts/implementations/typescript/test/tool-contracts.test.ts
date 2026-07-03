@@ -120,7 +120,10 @@ describe("tool-contracts", () => {
     // The generated artifact catalog stays contract-root owned even though the
     // TypeScript package itself now lives under implementations/typescript.
     const ajv = loadJsonSchemas(
-      new URL("../../../artifacts/json-schema/", import.meta.url)
+      new URL(
+        "../../../../../../../spec/tools/artifacts/json-schema/",
+        import.meta.url
+      )
     );
     const approvalRequest = {
       completedResults: [
@@ -208,7 +211,7 @@ describe("tool-contracts", () => {
   test("emits the reviewed OpenAPI component catalog for tool payloads", () => {
     const document = readJsonObject(
       new URL(
-        "../../../artifacts/openapi/tool-contracts.openapi.json",
+        "../../../../../../../spec/tools/artifacts/openapi/tool-contracts.openapi.json",
         import.meta.url
       )
     );

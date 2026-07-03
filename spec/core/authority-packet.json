@@ -28,7 +28,7 @@
       "bindingSection": "events"
     },
     {
-      "path": "boundaries/framework/contracts/tool-contracts/spec/typespec/main.tsp",
+      "path": "spec/tools/typespec/main.tsp",
       "format": "typespec",
       "bindingSection": "tools"
     },

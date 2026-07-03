@@ -127,7 +127,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -352,7 +352,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -427,7 +427,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "tool and approval contracts"
     },
@@ -452,7 +452,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -527,7 +527,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -577,7 +577,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -977,7 +977,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1002,7 +1002,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1127,7 +1127,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1152,7 +1152,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1177,7 +1177,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1202,7 +1202,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval resume semantics"
     },
@@ -1227,7 +1227,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1252,7 +1252,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1277,7 +1277,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1402,7 +1402,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1452,7 +1452,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1527,7 +1527,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -1927,7 +1927,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -2277,7 +2277,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -2302,7 +2302,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "tool parallelism and event ordering"
     },
@@ -2327,7 +2327,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "tool parallelism and event ordering"
     },
@@ -2352,7 +2352,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -2477,7 +2477,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -2502,7 +2502,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -2527,7 +2527,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -2602,7 +2602,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -2627,7 +2627,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -2652,7 +2652,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "tool and approval contracts"
     },
@@ -2677,7 +2677,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "tool and approval contracts"
     },
@@ -2702,7 +2702,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "tool and approval contracts"
     },
@@ -2727,7 +2727,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "tool and approval contracts"
     },
@@ -2752,7 +2752,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "tool and approval contracts"
     },
@@ -2777,7 +2777,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "tool and approval contracts"
     },
@@ -3077,7 +3077,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -3227,7 +3227,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },
@@ -3452,7 +3452,7 @@
       "docsCorrection": "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
       "fixture": "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
       "followUpTicket": "KRT-AF004",
-      "generatedArtifact": "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "generatedArtifact": "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
       "implementationEvidence": "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
       "surface": "approval and cancellation control"
     },

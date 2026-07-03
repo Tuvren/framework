@@ -1,0 +1,35 @@
+{
+  "name": "tools-spec",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "spec/tools",
+  "projectType": "library",
+  "tags": ["boundary:framework", "layer:contract"],
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/tools/typespec/**/*",
+        "{workspaceRoot}/spec/tools/artifacts/**/*",
+        "{workspaceRoot}/bun.lock"
+      ],
+      "outputs": [
+        "{workspaceRoot}/spec/tools/artifacts/json-schema",
+        "{workspaceRoot}/spec/tools/artifacts/openapi"
+      ],
+      "options": {
+        "cwd": "spec/tools",
+        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": ["default", "{workspaceRoot}/biome.jsonc"],
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check spec/tools"
+      }
+    }
+  }
+}

@@ -1,25 +1,35 @@
-# Tools port — engine-seam stub (87-M3)
+# Tools port — authority
 
-This directory is the future home of the full tool + capability port
-contract (execution classes, binding, policy). The full authority lifts
-at **M5** (issue #87 §13); this stub only declares the engine↔tools
-seam that the engine compiles against today, per the M3 gate ("only the
-engine↔port interface seams … as minimal stubs").
+The tool-contract authority is physically consolidated here as of
+87-M5.1 (lifted from `boundaries/framework/contracts/tool-contracts/`,
+merging that contract root's README and its spec README into this
+file):
 
-Engine-facing seam surface (measured at 87-M3.4):
+- `typespec/` — the reviewed TypeSpec source (`main.tsp`) for the tool
+  surface (tool definitions, approval flow, validation results, tool
+  result batches). Generated or emitted artifacts must not become
+  semantic authority by default.
+- `artifacts/` — the reviewed JSON Schema and OpenAPI outputs generated
+  from the TypeSpec source (regenerated via `tools-spec:codegen`).
 
-- `@tuvren/core/tools` and `@tuvren/core/capabilities` vocabulary —
-  neutral authority: `spec/core/authority-packet.json` +
-  `spec/core/typespec/main.tsp`.
-- `@tuvren/mcp-client` (`boundaries/providers/implementations/typescript/mcp-client`),
-  the MCP bus-driver the engine links today.
+Packet ownership is unchanged: these are authoritative sources of the
+consolidated `tuvren.shared.core` packet (`spec/core/authority-packet.json`,
+`tools` binding section). The engine-facing vocabulary remains
+`@tuvren/core/tools` and `@tuvren/core/capabilities`.
 
-Interim full authority until M5:
+The capability surface (execution classes, binding, policy — ADR-046)
+is also `tuvren.shared.core` authority: its hand-authored JSON Schemas
+live at `spec/core/artifacts/json-schema/` alongside the core artifacts
+until TypeSpec coverage is promoted; they deliberately do not move here.
 
-- `boundaries/framework/contracts/tool-contracts/spec/` (TypeSpec)
-- `boundaries/providers/contracts/mcp/spec/authority-packet.json`
-  (moves cross-port into `spec/tools/` at M5 per issue §13)
+MCP (`tuvren.providers.mcp`, the tool bus-driver) joins this port at
+87-M5.1c: its authority packet moves cross-port to
+`spec/tools/mcp/authority-packet.json`, and the tools-owned conformance
+plans consolidate at `spec/conformance/tools/`. Until then the packet
+remains at `boundaries/providers/contracts/mcp/spec/authority-packet.json`
+and `@tuvren/mcp-client` remains at
+`boundaries/providers/implementations/typescript/mcp-client` (moves at
+M5.2).
 
-This stub is a pointer, not an oracle: cross-language semantic truth
-lives in the referenced authority packets, generated artifacts, and
-conformance plans — never in this file.
+The deprecated `@tuvren/tool-contracts` shim package (import-dead;
+successor `@tuvren/core/tools`) retires at 87-M5.1b.

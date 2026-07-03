@@ -14,23 +14,6 @@
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
-    "codegen": {
-      "executor": "nx:run-commands",
-      "outputs": [
-        "{workspaceRoot}/boundaries/framework/contracts/tool-contracts/artifacts/json-schema",
-        "{workspaceRoot}/boundaries/framework/contracts/tool-contracts/artifacts/openapi"
-      ],
-      "options": {
-        "cwd": "boundaries/framework/contracts/tool-contracts",
-        "command": "bunx --bun tsp compile ./spec/typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts"
-      },
-      "inputs": [
-        "default",
-        "^production",
-        "{workspaceRoot}/boundaries/framework/contracts/tool-contracts/spec/**/*",
-        "{workspaceRoot}/boundaries/framework/contracts/tool-contracts/artifacts/**/*"
-      ]
-    },
     "test": {
       "executor": "nx:run-commands",
       "options": {
@@ -40,7 +23,7 @@
       "inputs": [
         "default",
         "^production",
-        "{workspaceRoot}/boundaries/framework/contracts/tool-contracts/artifacts/**/*"
+        "{workspaceRoot}/spec/tools/artifacts/**/*"
       ]
     },
     "exports-smoke": {
