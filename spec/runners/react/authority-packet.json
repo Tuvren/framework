@@ -30,10 +30,10 @@
     }
   ],
   "bindingProjections": {
-    "typescript-react-driver": "boundaries/framework/implementations/typescript/drivers/react"
+    "typescript-react-driver": "typescript/runners/react"
   },
   "forbiddenAuthoritySources": [
-    "boundaries/framework/implementations/typescript/drivers/react",
+    "typescript/runners/react",
     "typescript/conformance-runner",
     "typescript/conformance-adapter",
     "rust/conformance-runner",

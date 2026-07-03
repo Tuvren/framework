@@ -57,11 +57,11 @@ import type {
   TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import { createDriverRegistry } from "../../../../../../../typescript/runtime/src/lib/driver-registry.ts";
-import { createTuvrenRuntime as createTuvrenRuntimeCore } from "../../../../../../../typescript/runtime/src/lib/runtime-core.ts";
-import { createFakeKernelHarness } from "../../../../../../../typescript/runtime/test/fake-kernel.ts";
-import { createReActDriver, REACT_DRIVER_ID } from "../src/index.ts";
-import { collectEvents, textSignal } from "./react-driver-test-helpers.ts";
+import { createDriverRegistry } from "../../../runtime/src/lib/driver-registry.ts";
+import { createTuvrenRuntime as createTuvrenRuntimeCore } from "../../../runtime/src/lib/runtime-core.ts";
+import { createFakeKernelHarness } from "../../../runtime/test/fake-kernel.ts";
+import { createReActRunner, REACT_RUNNER_ID } from "../src/index.ts";
+import { collectEvents, textSignal } from "./react-runner-test-helpers.ts";
 
 // The produced content — the "outcome" that must be cache-neutral. Both runs
 // return structurally identical parts, so any durable difference can only come
@@ -130,9 +130,9 @@ function createCachingProvider(options: {
 function buildRuntime() {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
-    defaultDriverId: REACT_DRIVER_ID,
+    defaultDriverId: REACT_RUNNER_ID,
     driverRegistry: createDriverRegistry([
-      createReActDriver({ providerCallMode: "generate" }),
+      createReActRunner({ providerCallMode: "generate" }),
     ]),
     kernel: harness.kernel,
   });

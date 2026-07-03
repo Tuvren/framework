@@ -23,14 +23,14 @@ import type {
   TuvrenModelResponse,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import { createReActDriver } from "../src/index.ts";
+import { createReActRunner } from "../src/index.ts";
 import {
   createDriverExecutionContext,
   createSearchTool,
   wait,
-} from "./react-driver-test-helpers.ts";
+} from "./react-runner-test-helpers.ts";
 
-describe("driver-react", () => {
+describe("runner-react", () => {
   test("renders host and extension system prompts plus tools into the provider prompt", async () => {
     let capturedMessages: TuvrenMessage[] = [];
     let capturedToolsLength = 0;
@@ -48,7 +48,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -102,7 +102,7 @@ describe("driver-react", () => {
         return this.promptLabel;
       },
     } satisfies TuvrenExtension & { promptLabel: string };
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -137,7 +137,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -205,7 +205,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: () => "generate",
       toolExecutionMode: () => "sequential",
     }).create();
@@ -242,7 +242,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -293,7 +293,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -345,7 +345,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -394,7 +394,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode() {
         return JSON.parse('"bogus"');
       },
@@ -443,7 +443,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
       toolExecutionMode() {
         return JSON.parse('"bogus"');
@@ -483,7 +483,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -524,7 +524,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -562,7 +562,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -597,7 +597,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -636,7 +636,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
     controller.abort(new Error("cancelled before provider call"));
@@ -678,7 +678,7 @@ describe("driver-react", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -714,7 +714,7 @@ describe("driver-react", () => {
   // ---------------------------------------------------------------------------
 
   test("stream path: provider_tool_result chunk produces pre-staged tool message without local execution", async () => {
-    const driverFactory = createReActDriver();
+    const driverFactory = createReActRunner();
     const driver = driverFactory.create();
     const chunks: ProviderStreamChunk[] = [
       {
@@ -780,7 +780,7 @@ describe("driver-react", () => {
   });
 
   test("stream path: provider-mediated provider_tool_result chunk preserves executionClass in pre-staged result", async () => {
-    const driverFactory = createReActDriver();
+    const driverFactory = createReActRunner();
     const driver = driverFactory.create();
     const chunks: ProviderStreamChunk[] = [
       {

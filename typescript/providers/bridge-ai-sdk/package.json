@@ -19,7 +19,7 @@
     "ajv": "8.18.0"
   },
   "devDependencies": {
-    "@tuvren/driver-react": "workspace:*",
+    "@tuvren/runner-react": "workspace:*",
     "@tuvren/provider-testkit": "workspace:*",
     "@tuvren/runtime": "workspace:*",
     "@types/json-schema": "^7.0.15"

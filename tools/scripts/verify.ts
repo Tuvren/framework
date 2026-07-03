@@ -103,7 +103,7 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   // M3.2c, successor @tuvren/runtime). Its dead test-lane entry had already
   // been caught by the M3.1 coverage gate before the retirement.
   "framework-runtime",
-  "framework-driver-react",
+  "runner-react",
   "host-repl",
 ];
 
@@ -121,7 +121,7 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "framework-event-stream",
   "framework-testkit",
   "framework-runtime",
-  "framework-driver-react",
+  "runner-react",
   "framework-stream-core",
   "framework-stream-sse",
   "framework-stream-agui",

@@ -135,8 +135,6 @@ export {
   assertApprovalResponse,
   assertTuvrenToolDefinition,
 } from "@tuvren/core/tools";
-export type { ReActDriverOptions } from "@tuvren/driver-react";
-export { createReActDriver, REACT_DRIVER_ID } from "@tuvren/driver-react";
 export type {
   RuntimeBackend,
   RuntimeKernel,
@@ -152,6 +150,8 @@ export type { RuntimeKernelOptions } from "@tuvren/kernel-runtime";
 export { createRuntimeKernel } from "@tuvren/kernel-runtime";
 export type { McpToolSource } from "@tuvren/mcp-client";
 export { createMcpToolSource } from "@tuvren/mcp-client";
+export type { ReActRunnerOptions } from "@tuvren/runner-react";
+export { createReActRunner, REACT_RUNNER_ID } from "@tuvren/runner-react";
 // SDK-tier executables re-exported for surface compatibility: schema-authoring
 // helpers (defineTool et al.) and the batteries-included payload codecs.
 export type {

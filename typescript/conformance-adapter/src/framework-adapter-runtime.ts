@@ -39,8 +39,8 @@ import {
   createDriverRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import { createReActDriver } from "../../../boundaries/framework/implementations/typescript/drivers/react/src/index.ts";
 import { decodeStoredRun } from "../../kernel/runtime/src/lib/runtime-kernel-storage.ts";
+import { createReActRunner } from "../../runners/react/src/index.ts";
 
 export interface AdapterProjection {
   events?: readonly unknown[];
@@ -310,7 +310,7 @@ export function createScenarioProvider(
 export function createRuntimeWithReactDriver(): ReturnType<
   typeof createTuvrenRuntimeCore
 > {
-  const reactDriver = createReActDriver({
+  const reactDriver = createReActRunner({
     providerCallMode: "generate",
   }).create();
 

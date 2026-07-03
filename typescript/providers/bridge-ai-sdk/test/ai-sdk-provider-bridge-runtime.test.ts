@@ -16,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import type { ProviderV3 } from "@ai-sdk/provider";
-import { createReActDriver } from "@tuvren/driver-react";
+import { createReActRunner } from "@tuvren/runner-react";
 import {
   createDriverRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
@@ -120,7 +120,7 @@ describe("provider-bridge-ai-sdk runtime", () => {
     });
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActDriver()]),
+      driverRegistry: createDriverRegistry([createReActRunner()]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -200,7 +200,7 @@ describe("provider-bridge-ai-sdk runtime", () => {
     });
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActDriver()]),
+      driverRegistry: createDriverRegistry([createReActRunner()]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
@@ -276,7 +276,7 @@ describe("provider-bridge-ai-sdk runtime", () => {
     });
     const runtime = createTuvrenRuntimeCore({
       defaultDriverId: "react",
-      driverRegistry: createDriverRegistry([createReActDriver()]),
+      driverRegistry: createDriverRegistry([createReActRunner()]),
       kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});

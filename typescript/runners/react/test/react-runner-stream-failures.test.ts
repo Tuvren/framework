@@ -24,13 +24,13 @@ import type {
   ProviderStreamChunk,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import { createReActDriver } from "../src/index.ts";
+import { createReActRunner } from "../src/index.ts";
 import {
   createDriverExecutionContext,
   wait,
-} from "./react-driver-test-helpers.ts";
+} from "./react-runner-test-helpers.ts";
 
-describe("driver-react streamed failure handling", () => {
+describe("runner-react streamed failure handling", () => {
   test("fails hard when provider emits an error chunk", async () => {
     const provider = {
       async generate() {
@@ -44,7 +44,7 @@ describe("driver-react streamed failure handling", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -88,7 +88,7 @@ describe("driver-react streamed failure handling", () => {
         };
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -130,7 +130,7 @@ describe("driver-react streamed failure handling", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -173,7 +173,7 @@ describe("driver-react streamed failure handling", () => {
         yield chunk;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -216,7 +216,7 @@ describe("driver-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -312,7 +312,7 @@ describe("driver-react streamed failure handling", () => {
         return stream;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -368,7 +368,7 @@ describe("driver-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "sequential",
     }).create();
@@ -441,7 +441,7 @@ describe("driver-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "sequential",
     }).create();
@@ -499,7 +499,7 @@ describe("driver-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -556,7 +556,7 @@ describe("driver-react streamed failure handling", () => {
         await wait(1000);
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 

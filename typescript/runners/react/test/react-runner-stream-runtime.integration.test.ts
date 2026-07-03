@@ -22,17 +22,17 @@ import type { TuvrenProvider } from "@tuvren/core/provider";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
-import { createDriverRegistry } from "../../../../../../../typescript/runtime/src/lib/driver-registry.ts";
-import { createTuvrenRuntime as createTuvrenRuntimeCore } from "../../../../../../../typescript/runtime/src/lib/runtime-core.ts";
-import { createFakeKernelHarness } from "../../../../../../../typescript/runtime/test/fake-kernel.ts";
-import { createReActDriver, REACT_DRIVER_ID } from "../src/index.ts";
+import { createDriverRegistry } from "../../../runtime/src/lib/driver-registry.ts";
+import { createTuvrenRuntime as createTuvrenRuntimeCore } from "../../../runtime/src/lib/runtime-core.ts";
+import { createFakeKernelHarness } from "../../../runtime/test/fake-kernel.ts";
+import { createReActRunner, REACT_RUNNER_ID } from "../src/index.ts";
 import {
   collectEvents,
   createSearchTool,
   textSignal,
-} from "./react-driver-test-helpers.ts";
+} from "./react-runner-test-helpers.ts";
 
-describe("driver-react integration streamed runtime", () => {
+describe("runner-react integration streamed runtime", () => {
   test("executes end to end through runtime-core for streamed tool calls with host-selected sequential mode", async () => {
     const harness = createFakeKernelHarness();
     let iteration = 0;
@@ -83,9 +83,9 @@ describe("driver-react integration streamed runtime", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "stream",
           toolExecutionMode: "sequential",
         }),
@@ -199,9 +199,9 @@ describe("driver-react integration streamed runtime", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "stream",
           toolExecutionMode: "sequential",
         }),
@@ -252,9 +252,9 @@ describe("driver-react integration streamed runtime", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
@@ -316,9 +316,9 @@ describe("driver-react integration streamed runtime", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
@@ -382,9 +382,9 @@ describe("driver-react integration streamed runtime", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "stream",
         }),
       ]),

@@ -16,9 +16,9 @@
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export type {
-  ReActDriverOptions,
-  ReActDriverProviderCallMode,
-  ReActDriverProviderCallModeResolver,
-  ReActDriverToolExecutionModeResolver,
-} from "./lib/react-driver.js";
-export { createReActDriver, REACT_DRIVER_ID } from "./lib/react-driver.js";
+  ReActRunnerOptions,
+  ReActRunnerProviderCallMode,
+  ReActRunnerProviderCallModeResolver,
+  ReActRunnerToolExecutionModeResolver,
+} from "./lib/react-runner.js";
+export { createReActRunner, REACT_RUNNER_ID } from "./lib/react-runner.js";

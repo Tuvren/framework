@@ -26,7 +26,7 @@ import {
   createDriverRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import { createReActDriver } from "../../../boundaries/framework/implementations/typescript/drivers/react/src/index.ts";
+import { createReActRunner } from "../../runners/react/src/index.ts";
 import {
   type AdapterProjection,
   AGENT_NAME,
@@ -135,7 +135,7 @@ export function createFrameworkAdapterDriver(
     const provider = createScenarioProvider(providerResponses, () => {
       generateCalls += 1;
     });
-    const reactDriver = createReActDriver({
+    const reactDriver = createReActRunner({
       providerCallMode: "generate",
     }).create();
     const runtime = createTuvrenRuntimeCore({
@@ -252,7 +252,7 @@ export function createFrameworkAdapterDriver(
         }
       },
     };
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
     const result = await driver.execute(
@@ -300,7 +300,7 @@ export function createFrameworkAdapterDriver(
     providerResponses: readonly TuvrenModelResponse[]
   ): Promise<AdapterProjection> {
     let generateCalls = 0;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
     const result = await driver.execute(
@@ -361,7 +361,7 @@ export function createFrameworkAdapterDriver(
     providerResponses: readonly TuvrenModelResponse[],
     loopPolicy?: LoopPolicy
   ): Promise<AdapterProjection> {
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
     const result = await driver.execute(
@@ -413,7 +413,7 @@ export function createFrameworkAdapterDriver(
       "providerResponses",
       "driver.resume.providerResponses"
     );
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 

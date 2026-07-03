@@ -20,7 +20,7 @@ rules_ts adoption was researched and REVERTED by user decision. rules_js
 consumes only pnpm lockfiles (no bun.lock path; a mirrored pnpm lockfile
 shows measured resolution divergence), and the TS suites are bun:test-based
 (all 16 test files across the 5 packages Bazel-shimmed as of M3.0 import
-bun:test — the engine at typescript/runtime joined the shim set at M3.2a, and the providers bridge and provider-api binding (typescript/providers/{bridge-ai-sdk,provider-api}) joined at M4.2, and the MCP bus-driver (typescript/tools/mcp-client) joined at M5.2;
+bun:test — the engine at typescript/runtime joined the shim set at M3.2a, and the providers bridge and provider-api binding (typescript/providers/{bridge-ai-sdk,provider-api}) joined at M4.2, and the MCP bus-driver (typescript/tools/mcp-client) joined at M5.2, and the ReAct runner (typescript/runners/react) joined at M6.2;
 the lone node --test suite, backend-sqlite, is Nx-only per M1.6), a runtime
 with no upstream Bazel support (aspect-build/rules_js#1258 open). The
 M1.2 native_binary -> tools/bazel/nx-run.sh shim pattern is therefore the

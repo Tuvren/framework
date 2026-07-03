@@ -2,72 +2,52 @@
   "extends": "./tsconfig.lib.json",
   "compilerOptions": {
     "composite": false,
-    "rootDir": "../../../../../../",
+    "rootDir": "../../..",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@tuvren/core": ["../../../../../../typescript/core/src/index.ts"],
-      "@tuvren/core-types": [
-        "../../../../../../typescript/core-types/src/index.ts"
-      ],
-      "@tuvren/core/driver": [
-        "../../../../../../typescript/core/src/driver/index.ts"
-      ],
-      "@tuvren/core/errors": [
-        "../../../../../../typescript/core/src/errors/index.ts"
-      ],
-      "@tuvren/core/events": [
-        "../../../../../../typescript/core/src/events/index.ts"
-      ],
-      "@tuvren/core/execution": [
-        "../../../../../../typescript/core/src/execution/index.ts"
-      ],
-      "@tuvren/core/extensions": [
-        "../../../../../../typescript/core/src/extensions/index.ts"
-      ],
-      "@tuvren/core/messages": [
-        "../../../../../../typescript/core/src/messages/index.ts"
-      ],
-      "@tuvren/core/provider": [
-        "../../../../../../typescript/core/src/provider/index.ts"
-      ],
-      "@tuvren/core/tools": [
-        "../../../../../../typescript/core/src/tools/index.ts"
-      ],
-      "@tuvren/sdk": ["../../../../../../typescript/sdk/src/index.ts"],
-      "@tuvren/backend-memory": [
-        "../../../../../../typescript/kernel/backends/memory/src/index.ts"
-      ],
+      "@tuvren/core": ["../../core/src/index.ts"],
+      "@tuvren/core-types": ["../../core-types/src/index.ts"],
+      "@tuvren/core/driver": ["../../core/src/driver/index.ts"],
+      "@tuvren/core/errors": ["../../core/src/errors/index.ts"],
+      "@tuvren/core/events": ["../../core/src/events/index.ts"],
+      "@tuvren/core/execution": ["../../core/src/execution/index.ts"],
+      "@tuvren/core/extensions": ["../../core/src/extensions/index.ts"],
+      "@tuvren/core/messages": ["../../core/src/messages/index.ts"],
+      "@tuvren/core/provider": ["../../core/src/provider/index.ts"],
+      "@tuvren/core/tools": ["../../core/src/tools/index.ts"],
+      "@tuvren/sdk": ["../../sdk/src/index.ts"],
+      "@tuvren/backend-memory": ["../../kernel/backends/memory/src/index.ts"],
       "@ag-ui/core": [
-        "../../stream-agui/node_modules/@ag-ui/core/dist/index.d.ts"
+        "../../../boundaries/framework/implementations/typescript/stream-agui/node_modules/@ag-ui/core/dist/index.d.ts"
       ],
-      "@tuvren/driver-react": ["./src/index.ts"],
-      "@tuvren/framework-testkit": [
-        "../../../../../../typescript/testkit/src/index.ts"
-      ],
-      "@tuvren/kernel-runtime": [
-        "../../../../../../typescript/kernel/runtime/src/index.ts"
-      ],
-      "@tuvren/provider-api": [
-        "../../../../../../typescript/providers/provider-api/src/index.ts"
-      ],
+      "@tuvren/runner-react": ["./src/index.ts"],
+      "@tuvren/framework-testkit": ["../../testkit/src/index.ts"],
+      "@tuvren/kernel-runtime": ["../../kernel/runtime/src/index.ts"],
+      "@tuvren/provider-api": ["../../providers/provider-api/src/index.ts"],
       "@tuvren/runtime-api": [
-        "../../../../contracts/runtime-api/implementations/typescript/src/index.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/index.ts"
       ],
       "@tuvren/runtime-api/events": [
-        "../../../../contracts/runtime-api/implementations/typescript/src/events.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/events.ts"
       ],
       "@tuvren/runtime-api/execution": [
-        "../../../../contracts/runtime-api/implementations/typescript/src/execution.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/execution.ts"
       ],
       "@tuvren/runtime-api/provider": [
-        "../../../../contracts/runtime-api/implementations/typescript/src/provider.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/provider.ts"
       ],
       "@tuvren/runtime-api/tools": [
-        "../../../../contracts/runtime-api/implementations/typescript/src/tools.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/tools.ts"
       ],
-      "@tuvren/stream-agui": ["../../stream-agui/src/index.ts"],
-      "@tuvren/stream-core": ["../../stream-core/src/index.ts"],
-      "@tuvren/stream-sse": ["../../stream-sse/src/index.ts"]
+      "@tuvren/stream-agui": [
+        "../../../boundaries/framework/implementations/typescript/stream-agui/src/index.ts"
+      ],
+      "@tuvren/stream-core": [
+        "../../../boundaries/framework/implementations/typescript/stream-core/src/index.ts"
+      ],
+      "@tuvren/stream-sse": [
+        "../../../boundaries/framework/implementations/typescript/stream-sse/src/index.ts"
+      ]
     },
     "types": ["bun"]
   },
@@ -75,12 +55,12 @@
     "bench/**/*.ts",
     "src/**/*.ts",
     "test/**/*.ts",
-    "../../../../contracts/runtime-api/implementations/typescript/src/**/*.ts",
-    "../../../../../../typescript/providers/provider-api/src/**/*.ts",
-    "../../../../../../typescript/core-types/src/**/*.ts",
-    "../../../../../../typescript/testkit/src/**/*.ts",
-    "../../stream-agui/src/**/*.ts",
-    "../../stream-core/src/**/*.ts",
-    "../../stream-sse/src/**/*.ts"
+    "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/**/*.ts",
+    "../../providers/provider-api/src/**/*.ts",
+    "../../core-types/src/**/*.ts",
+    "../../testkit/src/**/*.ts",
+    "../../../boundaries/framework/implementations/typescript/stream-agui/src/**/*.ts",
+    "../../../boundaries/framework/implementations/typescript/stream-core/src/**/*.ts",
+    "../../../boundaries/framework/implementations/typescript/stream-sse/src/**/*.ts"
   ]
 }

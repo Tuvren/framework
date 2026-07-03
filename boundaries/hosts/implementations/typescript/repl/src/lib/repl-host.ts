@@ -17,7 +17,7 @@
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { createPostgresBackend } from "@tuvren/backend-postgres";
 import { createSqliteBackend } from "@tuvren/backend-sqlite";
-import { createReActDriver, REACT_DRIVER_ID } from "@tuvren/driver-react";
+import { createReActRunner, REACT_RUNNER_ID } from "@tuvren/runner-react";
 import {
   createDriverRegistry,
   createGrpcRuntimeKernel,
@@ -50,9 +50,9 @@ export function createReplHost(config: ReplConfig): ReplHost {
     scenario: config.scenario,
   });
   const runtime = createTuvrenRuntimeCore({
-    defaultDriverId: REACT_DRIVER_ID,
+    defaultDriverId: REACT_RUNNER_ID,
     driverRegistry: createDriverRegistry([
-      createReActDriver({
+      createReActRunner({
         providerCallMode: "stream",
       }),
     ]),

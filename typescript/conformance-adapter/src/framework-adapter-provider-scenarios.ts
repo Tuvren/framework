@@ -30,11 +30,11 @@ import {
   createDriverRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import { createReActDriver } from "../../../boundaries/framework/implementations/typescript/drivers/react/src/index.ts";
+import { createReActRunner } from "../../runners/react/src/index.ts";
 import {
   executeGenerateCall,
   executeStreamCall,
-} from "../../../boundaries/framework/implementations/typescript/drivers/react/src/lib/react-driver-stream.ts";
+} from "../../runners/react/src/lib/react-runner-stream.ts";
 import {
   type AdapterProjection,
   AGENT_NAME,
@@ -433,7 +433,7 @@ export function createFrameworkAdapterProviderScenarios(
         yield* [];
       },
     };
-    const driver = createReActDriver({ providerCallMode: "generate" }).create();
+    const driver = createReActRunner({ providerCallMode: "generate" }).create();
     const result = await driver.execute(
       createDriverExecutionContext({
         config: {

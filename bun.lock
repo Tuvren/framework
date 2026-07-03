@@ -49,22 +49,6 @@
         "@tuvren/core-types": "workspace:*",
       },
     },
-    "boundaries/framework/implementations/typescript/drivers/react": {
-      "name": "@tuvren/driver-react",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/provider-api": "workspace:*",
-        "ajv": "8.18.0",
-      },
-      "devDependencies": {
-        "@tuvren/stream-agui": "workspace:*",
-        "@tuvren/stream-core": "workspace:*",
-        "@tuvren/stream-sse": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
     "boundaries/framework/implementations/typescript/stream-agui": {
       "name": "@tuvren/stream-agui",
       "version": "0.0.0",
@@ -127,8 +111,8 @@
         "@tuvren/backend-memory": "workspace:*",
         "@tuvren/backend-postgres": "workspace:*",
         "@tuvren/backend-sqlite": "workspace:*",
-        "@tuvren/driver-react": "workspace:*",
         "@tuvren/provider-bridge-ai-sdk": "workspace:*",
+        "@tuvren/runner-react": "workspace:*",
         "@tuvren/runtime": "workspace:*",
         "@tuvren/stream-agui": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
@@ -259,8 +243,8 @@
         "ajv": "8.18.0",
       },
       "devDependencies": {
-        "@tuvren/driver-react": "workspace:*",
         "@tuvren/provider-testkit": "workspace:*",
+        "@tuvren/runner-react": "workspace:*",
         "@tuvren/runtime": "workspace:*",
         "@types/json-schema": "^7.0.15",
       },
@@ -301,6 +285,22 @@
         "zod": "4.4.3",
       },
     },
+    "typescript/runners/react": {
+      "name": "@tuvren/runner-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/provider-api": "workspace:*",
+        "ajv": "8.18.0",
+      },
+      "devDependencies": {
+        "@tuvren/stream-agui": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+        "@tuvren/stream-sse": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
     "typescript/runtime": {
       "name": "@tuvren/runtime",
       "version": "0.0.0",
@@ -311,10 +311,10 @@
         "@tuvren/backend-memory": "workspace:*",
         "@tuvren/backend-postgres": "workspace:*",
         "@tuvren/backend-sqlite": "workspace:*",
-        "@tuvren/driver-react": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/kernel-runtime": "workspace:*",
         "@tuvren/mcp-client": "workspace:*",
+        "@tuvren/runner-react": "workspace:*",
         "ajv": "8.18.0",
       },
       "devDependencies": {
@@ -930,8 +930,6 @@
 
     "@tuvren/core-types": ["@tuvren/core-types@workspace:typescript/core-types"],
 
-    "@tuvren/driver-react": ["@tuvren/driver-react@workspace:boundaries/framework/implementations/typescript/drivers/react"],
-
     "@tuvren/event-stream": ["@tuvren/event-stream@workspace:boundaries/framework/contracts/event-stream/implementations/typescript"],
 
     "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:typescript/testkit"],
@@ -957,6 +955,8 @@
     "@tuvren/providers-typescript-conformance-runner": ["@tuvren/providers-typescript-conformance-runner@workspace:typescript/providers/conformance-runner"],
 
     "@tuvren/repl-host": ["@tuvren/repl-host@workspace:boundaries/hosts/implementations/typescript/repl"],
+
+    "@tuvren/runner-react": ["@tuvren/runner-react@workspace:typescript/runners/react"],
 
     "@tuvren/runtime": ["@tuvren/runtime@workspace:typescript/runtime"],
 

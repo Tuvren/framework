@@ -22,12 +22,12 @@ import type {
   TuvrenModelResponse,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import { createReActDriver } from "../src/index.ts";
-import { createDriverExecutionContext } from "./react-driver-test-helpers.ts";
+import { createReActRunner } from "../src/index.ts";
+import { createDriverExecutionContext } from "./react-runner-test-helpers.ts";
 
-describe("driver-react structured output", () => {
+describe("runner-react structured output", () => {
   test("fails hard when config.model is not a concrete provider", async () => {
-    const driver = createReActDriver().create();
+    const driver = createReActRunner().create();
 
     const result = await driver.execute(
       createDriverExecutionContext({
@@ -53,7 +53,7 @@ describe("driver-react structured output", () => {
   });
 
   test("fails hard when config.model is an object that is not a provider", async () => {
-    const driver = createReActDriver().create();
+    const driver = createReActRunner().create();
     const config: DriverExecutionContext["config"] = JSON.parse(
       '{"model":{"id":"provider"},"name":"primary"}'
     );
@@ -97,7 +97,7 @@ describe("driver-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -152,7 +152,7 @@ describe("driver-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -213,7 +213,7 @@ describe("driver-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -287,7 +287,7 @@ describe("driver-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -345,7 +345,7 @@ describe("driver-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -396,7 +396,7 @@ describe("driver-react structured output", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 

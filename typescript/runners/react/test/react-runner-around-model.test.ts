@@ -25,15 +25,15 @@ import type {
   TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import { createContextManifest as createRuntimeContextManifest } from "../../../../../../../typescript/runtime/src/lib/context-manifest.ts";
-import { createReActDriver } from "../src/index.ts";
+import { createContextManifest as createRuntimeContextManifest } from "../../../runtime/src/lib/context-manifest.ts";
+import { createReActRunner } from "../src/index.ts";
 import {
   createDriverExecutionContext,
   createSearchTool,
   toRecord,
-} from "./react-driver-test-helpers.ts";
+} from "./react-runner-test-helpers.ts";
 
-describe("driver-react aroundModel", () => {
+describe("runner-react aroundModel", () => {
   test("lets aroundModel short-circuit without touching the provider", async () => {
     let providerCalls = 0;
     const provider = {
@@ -58,7 +58,7 @@ describe("driver-react aroundModel", () => {
       },
       name: "cache",
     };
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
     const emittedEvents: TuvrenStreamEvent[] = [];
@@ -106,7 +106,7 @@ describe("driver-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -176,7 +176,7 @@ describe("driver-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -241,7 +241,7 @@ describe("driver-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -299,7 +299,7 @@ describe("driver-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -370,7 +370,7 @@ describe("driver-react aroundModel", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -427,7 +427,7 @@ describe("driver-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -518,7 +518,7 @@ describe("driver-react aroundModel", () => {
       },
       name: "retry",
     };
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -563,7 +563,7 @@ describe("driver-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 
@@ -620,7 +620,7 @@ describe("driver-react aroundModel", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -681,7 +681,7 @@ describe("driver-react aroundModel", () => {
         yield* [];
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "generate",
     }).create();
 

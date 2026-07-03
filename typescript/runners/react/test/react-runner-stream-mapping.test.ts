@@ -22,13 +22,13 @@ import type {
   ProviderStreamChunk,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import { createReActDriver } from "../src/index.ts";
+import { createReActRunner } from "../src/index.ts";
 import {
   createDriverExecutionContext,
   waitFor,
-} from "./react-driver-test-helpers.ts";
+} from "./react-runner-test-helpers.ts";
 
-describe("driver-react streamed mapping", () => {
+describe("runner-react streamed mapping", () => {
   test("streams canonical tool-call events and preserves provider call metadata", async () => {
     const emittedEvents: TuvrenStreamEvent[] = [];
     const provider = {
@@ -64,7 +64,7 @@ describe("driver-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
@@ -151,7 +151,7 @@ describe("driver-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -220,7 +220,7 @@ describe("driver-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -308,7 +308,7 @@ describe("driver-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
@@ -406,7 +406,7 @@ describe("driver-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
@@ -495,7 +495,7 @@ describe("driver-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
@@ -561,7 +561,7 @@ describe("driver-react streamed mapping", () => {
         yield finish;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -634,7 +634,7 @@ describe("driver-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
       toolExecutionMode: "parallel",
     }).create();
@@ -692,7 +692,7 @@ describe("driver-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -740,7 +740,7 @@ describe("driver-react streamed mapping", () => {
         } as const;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 

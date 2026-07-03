@@ -23,18 +23,18 @@ import type {
   TuvrenModelResponse,
   TuvrenProvider,
 } from "@tuvren/core/provider";
-import { createDriverRegistry } from "../../../../../../../typescript/runtime/src/lib/driver-registry.ts";
-import { createTuvrenRuntime as createTuvrenRuntimeCore } from "../../../../../../../typescript/runtime/src/lib/runtime-core.ts";
-import { createFakeKernelHarness } from "../../../../../../../typescript/runtime/test/fake-kernel.ts";
-import { readBranchContextManifest } from "../../../../../../../typescript/runtime/test/runtime-core-test-helpers.ts";
-import { createReActDriver, REACT_DRIVER_ID } from "../src/index.ts";
+import { createDriverRegistry } from "../../../runtime/src/lib/driver-registry.ts";
+import { createTuvrenRuntime as createTuvrenRuntimeCore } from "../../../runtime/src/lib/runtime-core.ts";
+import { createFakeKernelHarness } from "../../../runtime/test/fake-kernel.ts";
+import { readBranchContextManifest } from "../../../runtime/test/runtime-core-test-helpers.ts";
+import { createReActRunner, REACT_RUNNER_ID } from "../src/index.ts";
 import {
   collectEvents,
   createDriverExecutionContext,
   textSignal,
-} from "./react-driver-test-helpers.ts";
+} from "./react-runner-test-helpers.ts";
 
-describe("driver-react integration aroundModel", () => {
+describe("runner-react integration aroundModel", () => {
   test("executes end to end through runtime-core for aroundModel short-circuit synthesis", async () => {
     const harness = createFakeKernelHarness();
     let providerCalls = 0;
@@ -52,9 +52,9 @@ describe("driver-react integration aroundModel", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "generate",
         }),
       ]),
@@ -117,9 +117,9 @@ describe("driver-react integration aroundModel", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
@@ -193,7 +193,7 @@ describe("driver-react integration aroundModel", () => {
         yield finish;
       },
     } satisfies TuvrenProvider;
-    const driver = createReActDriver({
+    const driver = createReActRunner({
       providerCallMode: "stream",
     }).create();
 
@@ -262,9 +262,9 @@ describe("driver-react integration aroundModel", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
@@ -335,9 +335,9 @@ describe("driver-react integration aroundModel", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
@@ -409,9 +409,9 @@ describe("driver-react integration aroundModel", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "generate",
         }),
       ]),
@@ -473,9 +473,9 @@ describe("driver-react integration aroundModel", () => {
       },
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
-      defaultDriverId: REACT_DRIVER_ID,
+      defaultDriverId: REACT_RUNNER_ID,
       driverRegistry: createDriverRegistry([
-        createReActDriver({
+        createReActRunner({
           providerCallMode: "generate",
         }),
       ]),

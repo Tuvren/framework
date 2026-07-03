@@ -40,8 +40,8 @@
         "../../../../../typescript/core/src/tools/index.ts"
       ],
       "@tuvren/sdk": ["../../../../../typescript/sdk/src/index.ts"],
-      "@tuvren/driver-react": [
-        "../../../../framework/implementations/typescript/drivers/react/src/index.ts"
+      "@tuvren/runner-react": [
+        "../../../../../typescript/runners/react/src/index.ts"
       ],
       "@tuvren/provider-bridge-ai-sdk": [
         "../../../../../typescript/providers/bridge-ai-sdk/src/index.ts"
@@ -67,7 +67,7 @@
     "../../../../../typescript/kernel/backends/memory/src/**/*.ts",
     "../../../../../typescript/kernel/backends/postgres/src/**/*.ts",
     "../../../../../typescript/kernel/backends/sqlite/src/**/*.ts",
-    "../../../../framework/implementations/typescript/drivers/react/src/**/*.ts",
+    "../../../../../typescript/runners/react/src/**/*.ts",
     "../../../../../typescript/runtime/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-core/src/**/*.ts",
     "../../../../framework/implementations/typescript/stream-sse/src/**/*.ts",

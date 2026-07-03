@@ -19,9 +19,7 @@
       "@tuvren/core/extensions": ["../core/dist/extensions/index.d.ts"],
       "@tuvren/core/telemetry": ["../core/dist/telemetry/index.d.ts"],
       "@tuvren/sdk": ["../sdk/dist/index.d.ts"],
-      "@tuvren/driver-react": [
-        "../../boundaries/framework/implementations/typescript/drivers/react/dist/index.d.ts"
-      ],
+      "@tuvren/runner-react": ["../runners/react/dist/index.d.ts"],
       "@tuvren/kernel-protocol": ["../kernel/protocol/dist/index.d.ts"],
       "@tuvren/kernel-runtime": ["../kernel/runtime/dist/index.d.ts"],
       "@tuvren/runtime-api": [

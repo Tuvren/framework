@@ -21,7 +21,7 @@
     "@tuvren/backend-memory": "workspace:*",
     "@tuvren/backend-postgres": "workspace:*",
     "@tuvren/backend-sqlite": "workspace:*",
-    "@tuvren/driver-react": "workspace:*",
+    "@tuvren/runner-react": "workspace:*",
     "@tuvren/provider-bridge-ai-sdk": "workspace:*",
     "@tuvren/runtime": "workspace:*",
     "@tuvren/stream-agui": "workspace:*",

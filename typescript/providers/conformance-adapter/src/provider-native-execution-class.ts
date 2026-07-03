@@ -27,7 +27,7 @@ import type { LanguageModelV3 } from "@ai-sdk/provider";
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createDriverRegistry, createTuvrenRuntime } from "@tuvren/runtime";
-import { createReActDriver } from "../../../../boundaries/framework/implementations/typescript/drivers/react/src/index.ts";
+import { createReActRunner } from "../../../runners/react/src/index.ts";
 import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
 
 // ---------------------------------------------------------------------------
@@ -100,7 +100,7 @@ function filterEventsByType(
 // ---------------------------------------------------------------------------
 // Operation: providers.provider-native.attribution
 //
-// Exercises the full stack (bridge → react-driver generate mode → runtime)
+// Exercises the full stack (bridge → react-runner generate mode → runtime)
 // with a mock model that returns an Anthropic code_execution result.
 // Projects observable evidence for provider-native execution class checks.
 // ---------------------------------------------------------------------------
@@ -114,7 +114,7 @@ export async function runProviderNativeAttribution(): Promise<
   const runtime = createTuvrenRuntime({
     defaultDriverId: "react",
     driverRegistry: createDriverRegistry([
-      createReActDriver({ providerCallMode: "generate" }),
+      createReActRunner({ providerCallMode: "generate" }),
     ]),
     kernel,
   });

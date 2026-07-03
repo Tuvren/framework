@@ -1,8 +1,8 @@
 {
-  "name": "framework-driver-react",
-  "$schema": "../../../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/framework/implementations/typescript/drivers/react",
-  "sourceRoot": "boundaries/framework/implementations/typescript/drivers/react/src",
+  "name": "runner-react",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/runners/react",
+  "sourceRoot": "typescript/runners/react/src",
   "projectType": "library",
   "tags": ["boundary:framework", "layer:implementation"],
   "implicitDependencies": ["!framework-runtime"],
@@ -11,14 +11,14 @@
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/drivers/react",
+        "cwd": "typescript/runners/react",
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && node --input-type=module -e \"await import('./dist/index.js')\""
       }
     },
     "bench": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/drivers/react",
+        "cwd": "typescript/runners/react",
         "command": "bun bench/react-stream.bench.ts"
       }
     },
@@ -26,7 +26,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check boundaries/framework/implementations/typescript/drivers/react"
+        "command": "bunx --bun @biomejs/biome check typescript/runners/react"
       }
     },
     "test": {
@@ -39,7 +39,7 @@
         }
       ],
       "options": {
-        "cwd": "boundaries/framework/implementations/typescript/drivers/react",
+        "cwd": "typescript/runners/react",
         "command": "bun test"
       }
     },
@@ -47,7 +47,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bun tools/scripts/typecheck-project.ts boundaries/framework/implementations/typescript/drivers/react"
+        "command": "bun tools/scripts/typecheck-project.ts typescript/runners/react"
       }
     }
   }

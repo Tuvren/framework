@@ -7,53 +7,33 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@tuvren/core-types": [
-        "../../../../../../typescript/core-types/dist/index.d.ts"
-      ],
-      "@tuvren/core": ["../../../../../../typescript/core/dist/index.d.ts"],
-      "@tuvren/core/errors": [
-        "../../../../../../typescript/core/dist/errors/index.d.ts"
-      ],
-      "@tuvren/core/messages": [
-        "../../../../../../typescript/core/dist/messages/index.d.ts"
-      ],
-      "@tuvren/core/events": [
-        "../../../../../../typescript/core/dist/events/index.d.ts"
-      ],
-      "@tuvren/core/execution": [
-        "../../../../../../typescript/core/dist/execution/index.d.ts"
-      ],
-      "@tuvren/core/tools": [
-        "../../../../../../typescript/core/dist/tools/index.d.ts"
-      ],
-      "@tuvren/core/driver": [
-        "../../../../../../typescript/core/dist/driver/index.d.ts"
-      ],
-      "@tuvren/core/provider": [
-        "../../../../../../typescript/core/dist/provider/index.d.ts"
-      ],
-      "@tuvren/core/extensions": [
-        "../../../../../../typescript/core/dist/extensions/index.d.ts"
-      ],
+      "@tuvren/core-types": ["../../core-types/dist/index.d.ts"],
+      "@tuvren/core": ["../../core/dist/index.d.ts"],
+      "@tuvren/core/errors": ["../../core/dist/errors/index.d.ts"],
+      "@tuvren/core/messages": ["../../core/dist/messages/index.d.ts"],
+      "@tuvren/core/events": ["../../core/dist/events/index.d.ts"],
+      "@tuvren/core/execution": ["../../core/dist/execution/index.d.ts"],
+      "@tuvren/core/tools": ["../../core/dist/tools/index.d.ts"],
+      "@tuvren/core/driver": ["../../core/dist/driver/index.d.ts"],
+      "@tuvren/core/provider": ["../../core/dist/provider/index.d.ts"],
+      "@tuvren/core/extensions": ["../../core/dist/extensions/index.d.ts"],
       "@tuvren/runtime-api": [
-        "../../../../contracts/runtime-api/implementations/typescript/dist/index.d.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/index.d.ts"
       ],
       "@tuvren/runtime-api/events": [
-        "../../../../contracts/runtime-api/implementations/typescript/dist/events.d.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/events.d.ts"
       ],
       "@tuvren/runtime-api/execution": [
-        "../../../../contracts/runtime-api/implementations/typescript/dist/execution.d.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/execution.d.ts"
       ],
       "@tuvren/runtime-api/provider": [
-        "../../../../contracts/runtime-api/implementations/typescript/dist/provider.d.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/provider.d.ts"
       ],
       "@tuvren/runtime-api/tools": [
-        "../../../../contracts/runtime-api/implementations/typescript/dist/tools.d.ts"
+        "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/dist/tools.d.ts"
       ],
-      "@tuvren/provider-api": [
-        "../../../../../../typescript/providers/provider-api/dist/index.d.ts"
-      ],
-      "@tuvren/driver-react": ["./src/index.ts"]
+      "@tuvren/provider-api": ["../../providers/provider-api/dist/index.d.ts"],
+      "@tuvren/runner-react": ["./src/index.ts"]
     },
     "rootDir": "./src",
     "target": "esnext",

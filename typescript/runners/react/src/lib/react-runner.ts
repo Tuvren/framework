@@ -47,16 +47,16 @@ import Ajv2020 from "ajv/dist/2020.js";
 import {
   type ModelExecutionOutcome,
   runAroundModelChain,
-} from "./react-driver-around-model.js";
+} from "./react-runner-around-model.js";
 import {
   createAroundModelContextSnapshot,
   preparePromptState,
-} from "./react-driver-prompt.js";
+} from "./react-runner-prompt.js";
 import {
   executeGenerateCall,
   executeStreamCall,
   flushBufferedAssistantSequences,
-} from "./react-driver-stream.js";
+} from "./react-runner-stream.js";
 
 const STRUCTURED_OUTPUT_AJV_OPTIONS = {
   addUsedSchema: false,
@@ -82,19 +82,19 @@ const JSON_SCHEMA_DRAFT_2020_12_URIS = new Set([
   "https://json-schema.org/draft/2020-12/schema#",
 ]);
 
-export const REACT_DRIVER_ID = "react";
+export const REACT_RUNNER_ID = "react";
 
-export type ReActDriverProviderCallMode = "generate" | "stream";
+export type ReActRunnerProviderCallMode = "generate" | "stream";
 
-export type ReActDriverProviderCallModeResolver =
-  | ReActDriverProviderCallMode
+export type ReActRunnerProviderCallModeResolver =
+  | ReActRunnerProviderCallMode
   | ((input: {
       config: Readonly<AgentConfig>;
       iterationCount: number;
       provider: TuvrenProvider;
-    }) => ReActDriverProviderCallMode);
+    }) => ReActRunnerProviderCallMode);
 
-export type ReActDriverToolExecutionModeResolver =
+export type ReActRunnerToolExecutionModeResolver =
   | DriverToolExecutionMode
   | ((input: {
       config: Readonly<AgentConfig>;
@@ -102,21 +102,21 @@ export type ReActDriverToolExecutionModeResolver =
       response: TuvrenModelResponse;
     }) => DriverToolExecutionMode);
 
-export interface ReActDriverOptions {
-  providerCallMode?: ReActDriverProviderCallModeResolver;
-  toolExecutionMode?: ReActDriverToolExecutionModeResolver;
+export interface ReActRunnerOptions {
+  providerCallMode?: ReActRunnerProviderCallModeResolver;
+  toolExecutionMode?: ReActRunnerToolExecutionModeResolver;
 }
 
-interface ResolvedReActDriverOptions {
-  providerCallMode: ReActDriverProviderCallModeResolver;
-  toolExecutionMode: ReActDriverToolExecutionModeResolver;
+interface ResolvedReActRunnerOptions {
+  providerCallMode: ReActRunnerProviderCallModeResolver;
+  toolExecutionMode: ReActRunnerToolExecutionModeResolver;
 }
 
-class ReActDriver implements RuntimeDriver {
-  readonly id = REACT_DRIVER_ID;
-  private readonly options: ResolvedReActDriverOptions;
+class ReActRunner implements RuntimeDriver {
+  readonly id = REACT_RUNNER_ID;
+  private readonly options: ResolvedReActRunnerOptions;
 
-  constructor(options: ResolvedReActDriverOptions) {
+  constructor(options: ResolvedReActRunnerOptions) {
     this.options = options;
   }
 
@@ -154,19 +154,19 @@ class ReActDriver implements RuntimeDriver {
   }
 }
 
-export function createReActDriver(
-  options?: ReActDriverOptions
+export function createReActRunner(
+  options?: ReActRunnerOptions
 ): RuntimeDriverFactory {
-  const resolvedOptions: ResolvedReActDriverOptions = {
+  const resolvedOptions: ResolvedReActRunnerOptions = {
     providerCallMode: options?.providerCallMode ?? "stream",
     toolExecutionMode: options?.toolExecutionMode ?? "parallel",
   };
 
   return {
     create() {
-      return new ReActDriver(resolvedOptions);
+      return new ReActRunner(resolvedOptions);
     },
-    id: REACT_DRIVER_ID,
+    id: REACT_RUNNER_ID,
   };
 }
 
@@ -228,7 +228,7 @@ function buildEmptyPartsResult(
 
 async function executeIteration(
   context: DriverExecutionContext,
-  options: ResolvedReActDriverOptions
+  options: ResolvedReActRunnerOptions
 ): Promise<DriverExecutionResult> {
   const promptState = preparePromptState({
     config: context.config,
@@ -386,7 +386,7 @@ async function executeIteration(
 async function callProvider(
   aroundContext: AroundModelContext,
   context: DriverExecutionContext,
-  options: ResolvedReActDriverOptions
+  options: ResolvedReActRunnerOptions
 ): Promise<ModelExecutionOutcome> {
   const provider = resolveProvider(context.config.model);
   const providerCallMode = resolveProviderCallMode(
@@ -531,10 +531,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function resolveProviderCallMode(
-  resolver: ReActDriverProviderCallModeResolver,
+  resolver: ReActRunnerProviderCallModeResolver,
   context: DriverExecutionContext,
   provider: TuvrenProvider
-): ReActDriverProviderCallMode {
+): ReActRunnerProviderCallMode {
   const resolvedMode: unknown =
     typeof resolver === "function"
       ? resolver({
@@ -560,7 +560,7 @@ function resolveProviderCallMode(
 }
 
 function resolveToolExecutionMode(
-  resolver: ReActDriverToolExecutionModeResolver,
+  resolver: ReActRunnerToolExecutionModeResolver,
   context: DriverExecutionContext,
   response: TuvrenModelResponse
 ): DriverToolExecutionMode {

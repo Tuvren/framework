@@ -34,11 +34,11 @@ import {
   type NormalizedAroundModelResult,
   normalizeAroundModelResult,
   normalizeNextAroundModelContext,
-} from "./react-driver-prompt.js";
+} from "./react-runner-prompt.js";
 import {
   type BufferedAssistantSequence,
   createBufferedAssistantSequence,
-} from "./react-driver-stream.js";
+} from "./react-runner-stream.js";
 
 export interface ModelExecutionOutcome {
   assistantEventReconciliation?: DriverAssistantEventReconciliation;

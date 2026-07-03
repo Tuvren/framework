@@ -33,11 +33,11 @@ import type { PayloadCodec } from "@tuvren/core/lifecycle";
 import type { TuvrenProvider } from "@tuvren/core/provider";
 import type { TuvrenTelemetrySink } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
-import type { ReActDriverOptions } from "@tuvren/driver-react";
-import { createReActDriver } from "@tuvren/driver-react";
 import type { RuntimeBackend, RuntimeKernel } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import type { McpToolSource } from "@tuvren/mcp-client";
+import type { ReActRunnerOptions } from "@tuvren/runner-react";
+import { createReActRunner } from "@tuvren/runner-react";
 import { createDriverRegistry } from "./driver-registry.js";
 import { createOrchestrationRuntime } from "./orchestration-runtime.js";
 import {
@@ -50,7 +50,7 @@ import {
 export type { MemoryBackendOptions } from "@tuvren/backend-memory";
 export type { PostgresBackendOptions } from "@tuvren/backend-postgres";
 export type { SqliteBackendOptions } from "@tuvren/backend-sqlite";
-export type { ReActDriverOptions } from "@tuvren/driver-react";
+export type { ReActRunnerOptions } from "@tuvren/runner-react";
 
 export type BackendKind = "memory" | "sqlite" | "postgres";
 export type DriverKind = "react";
@@ -85,7 +85,7 @@ export interface CreateTuvrenOptions {
   driver?:
     | DriverKind
     | RuntimeDriverFactory
-    | { kind: "react"; options?: ReActDriverOptions };
+    | { kind: "react"; options?: ReActRunnerOptions };
   extensions?: TuvrenExtension[];
   /** Pre-built kernel — when supplied the factory skips kernel construction. */
   kernel?: RuntimeKernel;
@@ -309,16 +309,16 @@ function buildBackendFromKind(
 
 function buildDriver(spec: CreateTuvrenOptions["driver"]) {
   if (spec === undefined || spec === "react") {
-    return createReActDriver();
+    return createReActRunner();
   }
 
   if (isRuntimeDriverFactory(spec)) {
     return spec;
   }
 
-  const kindSpec = spec as { kind: string; options?: ReActDriverOptions };
+  const kindSpec = spec as { kind: string; options?: ReActRunnerOptions };
   if (kindSpec.kind === "react") {
-    return createReActDriver(kindSpec.options);
+    return createReActRunner(kindSpec.options);
   }
 
   throw new TuvrenValidationError(

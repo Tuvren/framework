@@ -27,7 +27,7 @@ import {
   executeGenerateCall,
   executeStreamCall,
   flushBufferedAssistantSequences,
-} from "../src/lib/react-driver-stream.ts";
+} from "../src/lib/react-runner-stream.ts";
 
 const SAMPLE_COUNT = 5;
 const WARMUP_ITERATIONS = 10;

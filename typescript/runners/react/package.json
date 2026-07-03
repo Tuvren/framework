@@ -1,5 +1,5 @@
 {
-  "name": "@tuvren/driver-react",
+  "name": "@tuvren/runner-react",
   "private": true,
   "version": "0.0.0",
   "type": "module",

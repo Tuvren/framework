@@ -26,7 +26,7 @@ import type { LanguageModelV3 } from "@ai-sdk/provider";
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createDriverRegistry, createTuvrenRuntime } from "@tuvren/runtime";
-import { createReActDriver } from "../../../../boundaries/framework/implementations/typescript/drivers/react/src/index.ts";
+import { createReActRunner } from "../../../runners/react/src/index.ts";
 import { createAiSdkProviderBridge } from "../../bridge-ai-sdk/src/index.ts";
 
 // ---------------------------------------------------------------------------
@@ -114,7 +114,7 @@ export async function runProviderMediatedAttribution(): Promise<
   const runtime = createTuvrenRuntime({
     defaultDriverId: "react",
     driverRegistry: createDriverRegistry([
-      createReActDriver({ providerCallMode: "generate" }),
+      createReActRunner({ providerCallMode: "generate" }),
     ]),
     kernel,
   });

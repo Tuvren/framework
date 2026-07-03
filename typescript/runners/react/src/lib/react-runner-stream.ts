@@ -36,7 +36,7 @@ import {
   serializeAssistantDeltaValue,
   throwIfAborted,
   waitForAbortable,
-} from "./react-driver-stream-support.js";
+} from "./react-runner-stream-support.js";
 
 export interface BufferedAssistantSequence {
   cancelled?: boolean;

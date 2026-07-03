@@ -23,7 +23,7 @@
       "path": "../testkit/tsconfig.lib.json"
     },
     {
-      "path": "../../../boundaries/framework/implementations/typescript/drivers/react/tsconfig.lib.json"
+      "path": "../../runners/react/tsconfig.lib.json"
     }
   ]
 }

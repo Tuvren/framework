@@ -1,5 +1,5 @@
 {
-  "extends": "../../../../../../tsconfig.base.json",
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"],
     "rootDir": "./src",
@@ -8,25 +8,25 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../../../../contracts/runtime-api/implementations/typescript/tsconfig.lib.json"
+      "path": "../../../boundaries/framework/contracts/runtime-api/implementations/typescript/tsconfig.lib.json"
     },
     {
-      "path": "../../../../../../typescript/core-types/tsconfig.lib.json"
+      "path": "../../core-types/tsconfig.lib.json"
     },
     {
-      "path": "../../stream-sse/tsconfig.lib.json"
+      "path": "../../../boundaries/framework/implementations/typescript/stream-sse/tsconfig.lib.json"
     },
     {
-      "path": "../../stream-core/tsconfig.lib.json"
+      "path": "../../../boundaries/framework/implementations/typescript/stream-core/tsconfig.lib.json"
     },
     {
-      "path": "../../stream-agui/tsconfig.lib.json"
+      "path": "../../../boundaries/framework/implementations/typescript/stream-agui/tsconfig.lib.json"
     },
     {
-      "path": "../../../../../../typescript/providers/provider-api/tsconfig.lib.json"
+      "path": "../../providers/provider-api/tsconfig.lib.json"
     },
     {
-      "path": "../../../../../../typescript/core/tsconfig.lib.json"
+      "path": "../../core/tsconfig.lib.json"
     }
   ]
 }

@@ -9,11 +9,11 @@
   "workspaces": [
     "boundaries/*/contracts/*/implementations/*",
     "boundaries/*/implementations/*/*",
-    "boundaries/framework/implementations/typescript/drivers/*",
     "typescript/*",
     "typescript/kernel/*",
     "typescript/kernel/backends/*",
     "typescript/providers/*",
+    "typescript/runners/*",
     "typescript/tools/*"
   ],
   "scripts": {

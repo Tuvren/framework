@@ -8,9 +8,7 @@
       "@tuvren/backend-memory": ["../kernel/backends/memory/src/index.ts"],
       "@tuvren/backend-sqlite": ["../kernel/backends/sqlite/src/index.ts"],
       "@tuvren/backend-postgres": ["../kernel/backends/postgres/src/index.ts"],
-      "@tuvren/driver-react": [
-        "../../boundaries/framework/implementations/typescript/drivers/react/src/index.ts"
-      ],
+      "@tuvren/runner-react": ["../runners/react/src/index.ts"],
       "@tuvren/core": ["../core/src/index.ts"],
       "@tuvren/core-types": ["../core-types/src/index.ts"],
       "@tuvren/core/driver": ["../core/src/driver/index.ts"],
@@ -69,7 +67,7 @@
     "../kernel/backends/memory/src/**/*.ts",
     "../kernel/backends/sqlite/src/**/*.ts",
     "../kernel/backends/postgres/src/**/*.ts",
-    "../../boundaries/framework/implementations/typescript/drivers/react/src/**/*.ts",
+    "../runners/react/src/**/*.ts",
     "../kernel/runtime/src/**/*.ts",
     "../tools/mcp-client/src/**/*.ts",
     "../core-types/src/**/*.ts",

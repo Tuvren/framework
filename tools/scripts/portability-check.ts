@@ -83,9 +83,8 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   },
   {
     classification: "Bun-and-Node validated",
-    packageName: "@tuvren/driver-react",
-    packageRoot:
-      "boundaries/framework/implementations/typescript/drivers/react",
+    packageName: "@tuvren/runner-react",
+    packageRoot: "typescript/runners/react",
   },
   {
     classification: "Bun-and-Node validated",

@@ -23,7 +23,7 @@
     "@tuvren/backend-memory": "workspace:*",
     "@tuvren/backend-postgres": "workspace:*",
     "@tuvren/backend-sqlite": "workspace:*",
-    "@tuvren/driver-react": "workspace:*",
+    "@tuvren/runner-react": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/kernel-runtime": "workspace:*",
     "@tuvren/mcp-client": "workspace:*",
