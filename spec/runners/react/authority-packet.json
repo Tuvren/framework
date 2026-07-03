@@ -34,9 +34,9 @@
   },
   "forbiddenAuthoritySources": [
     "typescript/runners/react",
-    "typescript/conformance-runner",
+    "typescript/certification",
     "typescript/conformance-adapter",
-    "rust/conformance-runner",
+    "rust/certification",
     "rust/conformance-adapter",
     "docs",
     ".constitution"

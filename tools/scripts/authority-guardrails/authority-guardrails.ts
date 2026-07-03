@@ -933,7 +933,7 @@ function checkRunnerSourceText(
   const failures: GuardrailFailure[] = [
     ...collectForbiddenRunnerOrAdapterTokenFailures(source, sourceLabel),
     ...collectRunnerCheckIdFailures(source, sourceLabel, planCheckIds),
-    ...(sourceLabel.includes("/conformance-runner/")
+    ...(sourceLabel.includes("/certification/")
       ? collectRunnerAssertionLiteralFailures(
           source,
           sourceLabel,
@@ -1542,7 +1542,7 @@ async function collectConformanceSourceRoots(
     }
 
     if (
-      (entry.name === "conformance-runner" ||
+      (entry.name === "certification" ||
         entry.name === "conformance-adapter") &&
       existsSync(resolve(entryPath, "src"))
     ) {

@@ -14,11 +14,11 @@ load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 native_binary(
     name = "build",
     src = "//tools/bazel:nx-run.sh",
-    env = {"NX_TARGET": "providers-mcp-client:build"},
+    env = {"NX_TARGET": "mcp-client:build"},
 )
 
 native_binary(
     name = "test",
     src = "//tools/bazel:nx-run.sh",
-    env = {"NX_TARGET": "providers-mcp-client:test"},
+    env = {"NX_TARGET": "mcp-client:test"},
 )

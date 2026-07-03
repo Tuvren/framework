@@ -89,7 +89,7 @@
   "forbiddenAuthoritySources": [
     "typescript/providers/provider-api",
     "typescript/providers/bridge-ai-sdk",
-    "typescript/providers/conformance-runner",
+    "typescript/providers/certification",
     "typescript/providers/conformance-adapter",
     "docs",
     ".constitution"

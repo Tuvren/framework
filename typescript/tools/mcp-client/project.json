@@ -1,5 +1,5 @@
 {
-  "name": "providers-mcp-client",
+  "name": "mcp-client",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "root": "typescript/tools/mcp-client",
   "sourceRoot": "typescript/tools/mcp-client/src",

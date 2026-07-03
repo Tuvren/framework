@@ -523,7 +523,7 @@ function checkAdapterCoverage(
 ): PortabilityGateFailure[] {
   // A packet that declares `conformancePlans` must be referenced by *every*
   // adapter manifest of the matching boundary, not just one. The shared
-  // runner discovers plans per adapter manifest (`tools/conformance/runner/
+  // runner discovers plans per adapter manifest (`tools/conformance/harness/
   // run.ts:606-620`), so a packet that one adapter references but another
   // omits silently disappears from the omitting adapter's measured evidence
   // even though the portability gate would still pass. For a cross-
@@ -851,7 +851,7 @@ async function readPlanApplicabilityCapabilities(
 ): Promise<readonly string[]> {
   // Returns the union of plan-level applicability capabilities and every
   // check-level `capabilities` array. The shared runner decides applicability
-  // from that exact union (`tools/conformance/runner/run.ts:663-665`), so an
+  // from that exact union (`tools/conformance/harness/run.ts:663-665`), so an
   // earlier gate version that only read `plan.applicability.capabilities`
   // would miss check-scoped capability gaps — a check tagged with a
   // capability no adapter advertises would run as `nonApplicable` forever

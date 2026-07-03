@@ -186,7 +186,7 @@ const EVIDENCE = {
     adapterCapability: "framework.driver-api",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
       "spec/conformance/runners/plans/driver-api-core.json; spec/conformance/runners/plans/driver-api-extended.json",
     fixture: "spec/conformance/runners/scenarios/driver-api-scenarios.json",
@@ -196,7 +196,7 @@ const EVIDENCE = {
     adapterCapability: "framework.event-stream",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
       "boundaries/framework/conformance/plans/event-stream-core.json; boundaries/framework/conformance/plans/event-stream-extended.json",
     fixture: "boundaries/framework/conformance/fixtures/stream-events.json",
@@ -207,7 +207,7 @@ const EVIDENCE = {
     adapterCapability: "kernel.protocol; kernel.logical",
     authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-rust-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
     conformancePlan:
       "spec/conformance/kernel/plans/kernel-protocol-core.json; spec/conformance/kernel/plans/kernel-protocol-extended.json",
     fixture:
@@ -228,7 +228,7 @@ const EVIDENCE = {
     adapterCapability: "kernel.scope-isolation",
     authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
     conformancePlan:
       "spec/conformance/kernel/plans/kernel-scope-isolation.json",
     fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
@@ -248,7 +248,7 @@ const EVIDENCE = {
     adapterCapability: "kernel.reclamation",
     authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
     conformancePlan: "spec/conformance/kernel/plans/kernel-reclamation.json",
     fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
@@ -258,7 +258,7 @@ const EVIDENCE = {
     adapterCapability: "providers.provider-api; providers.ai-sdk-bridge",
     authorityPacket: "spec/providers/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.providers-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.providers-typescript-certification.json",
     conformancePlan:
       "spec/conformance/providers/plans/provider-api-bridge.json; spec/conformance/providers/plans/provider-api-bridge-extended.json",
     fixture: "spec/conformance/providers/fixtures/provider-fixtures.json",
@@ -284,7 +284,7 @@ const EVIDENCE = {
     adapterCapability: "providers.conversation-state-ownership",
     authorityPacket: "spec/providers/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.providers-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.providers-typescript-certification.json",
     conformancePlan:
       "spec/conformance/providers/plans/provider-api-conversation-state.json",
     fixture: "spec/conformance/providers/fixtures/provider-fixtures.json",
@@ -295,7 +295,7 @@ const EVIDENCE = {
     adapterCapability: "framework.react-driver",
     authorityPacket: "spec/runners/react/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
       "spec/conformance/runners/plans/react-driver-callables.json; spec/conformance/runners/plans/react-driver-extended.json",
     fixture: "spec/conformance/runners/scenarios/driver-api-scenarios.json",
@@ -306,7 +306,7 @@ const EVIDENCE = {
     adapterCapability: "framework.runtime-api",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
       "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
@@ -322,7 +322,7 @@ const EVIDENCE = {
     adapterCapability: "framework.runtime-api",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
       "spec/conformance/tools/plans/tool-contracts-extended.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
@@ -333,7 +333,7 @@ const EVIDENCE = {
     adapterCapability: "framework.orchestration",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
       "spec/conformance/engine/plans/runtime-api-orchestration.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
@@ -360,7 +360,7 @@ const EVIDENCE = {
       "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
     authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
       "spec/conformance/kernel/plans/kernel-run-liveness.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
     fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
@@ -371,7 +371,7 @@ const EVIDENCE = {
     adapterCapability: "kernel.restart-recovery",
     authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json",
     conformancePlan:
       "spec/conformance/kernel/plans/kernel-restart-recovery.json",
     fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
@@ -387,7 +387,7 @@ const EVIDENCE = {
     adapterCapability: "framework.runtime-api",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
       "spec/conformance/tools/plans/capability-orchestration-integration.json; spec/conformance/tools/plans/tuvren-server-execution-class.json; spec/conformance/tools/plans/tuvren-client-execution-class.json; boundaries/framework/conformance/plans/invocation-lifecycle-observation.json; spec/conformance/tools/plans/capability-policy.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
@@ -402,7 +402,7 @@ const EVIDENCE = {
     adapterCapability: "framework.runtime-api",
     authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
       "spec/conformance/engine/plans/runtime-api-callables-extended.json",
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
@@ -1878,7 +1878,7 @@ function promotedEpicAfDecision(
     evidence,
     followUpTicket,
     implementationEvidence:
-      "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
+      "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
     surface,
   };
 }

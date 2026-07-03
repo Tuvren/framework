@@ -11,11 +11,11 @@ so treat these as conservative lower bounds for CI.
 
 The old `codegen`/`conformance` `targetDefaults` pulled in workspace-wide globs
 (`boundaries/*/conformance/**`, …). Because a project-level `inputs` array
-*replaces* the targetDefault (Nx does not merge), every conformance runner fell
+*replaces* the targetDefault (Nx does not merge), every certification project fell
 through to that broad default — so editing one boundary's fixture invalidated
 every other boundary's conformance cache.
 
-**Method.** Warm the `providers-typescript-conformance-runner:conformance`
+**Method.** Warm the `providers-typescript-certification:conformance`
 cache (no DB, no build deps), then edit an *unrelated* kernel fixture
 (`boundaries/kernel/conformance/plans/kernel-protocol-core.json`) and re-run the
 providers target. Old config = `nx.json` + providers `project.json` from
@@ -48,7 +48,7 @@ wall-clock against the full typecheck lane.
 
 - Projects selected by the 1-file edit: **6 of 28** typecheck-capable projects
   (`providers-mcp-client` + its dependents `providers-bridge-ai-sdk`,
-  `providers-typescript-conformance-runner`, `framework-runtime-core`,
+  `providers-typescript-certification`, `framework-runtime-core`,
   `framework-runtime`, `host-repl`).
 - Cold wall-clock:
 

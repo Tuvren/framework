@@ -1,10 +1,10 @@
 [workspace]
 members = [
   "rust/conformance-adapter",
-  "rust/conformance-runner",
+  "rust/certification",
   "rust/kernel",
   "rust/kernel-conformance-adapter",
-  "rust/kernel-conformance-runner",
+  "rust/kernel-certification",
   "rust/kernel-grpc-service",
 ]
 resolver = "3"

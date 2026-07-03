@@ -22,16 +22,16 @@ import {
   assertConformanceEvidence,
   createCheckResult,
 } from "../../scripts/lib/conformance-contract.js";
+import {
+  type AssertionContext,
+  evaluateAssertions,
+  evaluateRequiredEvidence,
+} from "../harness/assertion-engine/index.js";
 import type {
   CompiledConformancePlanCheck,
   ConformancePlanCheck,
 } from "../plan-compiler/index.js";
 import { loadConformancePlan } from "../plan-compiler/index.js";
-import {
-  type AssertionContext,
-  evaluateAssertions,
-  evaluateRequiredEvidence,
-} from "../runner/assertion-engine/index.js";
 
 interface MetaCase {
   check: ConformancePlanCheck;

@@ -96,10 +96,10 @@
   },
   "forbiddenAuthoritySources": [
     "typescript/kernel/protocol",
-    "typescript/kernel/conformance-runner",
+    "typescript/kernel/certification",
     "typescript/kernel/conformance-adapter",
     "rust/kernel",
-    "rust/kernel-conformance-runner",
+    "rust/kernel-certification",
     "rust/kernel-conformance-adapter",
     "docs",
     ".constitution"

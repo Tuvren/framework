@@ -1,0 +1,35 @@
+{
+  "name": "kernel-typescript-postgres-certification",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/kernel/certification-postgres",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "language:typescript", "layer:certification"],
+  "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/typescript/kernel/conformance-adapter/**/*",
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*"
+      ],
+      "dependsOn": [
+        {
+          "projects": [
+            "backend-postgres",
+            "kernel-runtime",
+            "kernel-typescript-conformance-adapter"
+          ],
+          "target": "build",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter-postgres.json --concurrency 4 --summary-only"
+      }
+    }
+  }
+}

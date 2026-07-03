@@ -56,7 +56,7 @@ Load the toolchain through direnv, and manage long-lived devenv services only wh
 
 - Let `.envrc` / direnv provide the repository environment before running Bun, Cargo, Buf, TypeSpec, Weaver, Nx, or validation commands.
 - Run `bun run services:up` once at the start of a session when postgres or another devenv-managed service is required. It wraps `devenv up -d` idempotently (a second call is a no-op instead of a hard failure), so it is safe to re-run. This is a manual session helper only — do not embed it inside scripts, Nx targets, or runner commands.
-- `devenv up` itself is **not idempotent** — raw `devenv up -d` exits with "Processes already running" if the devenv daemon is already active. Calling it a second time from a conformance runner or test harness will fail the entire run, which is why runners must never call it; use `bun run services:up` at session start instead.
+- `devenv up` itself is **not idempotent** — raw `devenv up -d` exits with "Processes already running" if the devenv daemon is already active. Calling it a second time from a certification project or test harness will fail the entire run, which is why runners must never call it; use `bun run services:up` at session start instead.
 - Commands that need postgres assume direnv has already loaded the environment and that the caller has started the service with `bun run services:up`; they must run the underlying `bun`, `cargo`, or native command directly.
 - Run `bun run services:down` (or `devenv processes down`) to stop all devenv-managed services cleanly at the end of a session or to recover from a stale daemon that is blocking a new start.
 
@@ -74,9 +74,9 @@ Keep public naming and boundaries clean.
 ## Conformance
 Keep semantic decisions in shared plans and shared runner code.
 
-- Use `tools/conformance/runner/run.ts` as the shared semantic conformance engine.
+- Use `tools/conformance/harness/run.ts` as the shared semantic conformance engine.
 - Put adapter hosts under `boundaries/<area>/implementations/<lang>/conformance-adapter/`.
-- Keep implementation `conformance-runner/` projects as wrappers only.
+- Keep implementation `certification/` projects as wrappers only.
 - Do not add assertions, pass/fail grading, required-evidence grading, compatibility evidence writing, check IDs, or check-scoped evidence to adapters or implementation runners.
 - Do not let adapters receive `checkId`, call `emitEvidence`, decide pass/fail, replay fixtures as implementation proof, or map adapter/protocol failures into `$.result.error`.
 - Select promoted checks by capability or surface requirement, not by language, adapter ID, implementation ID, or runner name.

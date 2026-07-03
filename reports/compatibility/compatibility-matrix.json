@@ -491,7 +491,7 @@
             "providers.framework-owned-tool-execution",
             "providers.rejects-native-strict-structured-output"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+          "evidencePath": "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
           "reportLabel": "TypeScript framework runtime baseline",
           "reportStatus": "capability_subset_pass",
           "status": "pass",
@@ -521,7 +521,7 @@
             "nonApplicableChecks": 463
           },
           "declaredCapabilities": ["framework.batteries-included"],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-batteries-included-conformance-runner.json",
+          "evidencePath": "reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json",
           "reportLabel": "TypeScript framework batteries-included runtime",
           "reportStatus": "capability_subset_pass",
           "status": "pass",
@@ -619,7 +619,7 @@
             "kernel.run-liveness",
             "kernel.scope-isolation"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json",
+          "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json",
           "reportLabel": "TypeScript process-local kernel baseline",
           "reportStatus": "capability_subset_pass",
           "status": "pass",
@@ -721,7 +721,7 @@
             "kernel.run-liveness",
             "kernel.scope-isolation"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
+          "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json",
           "reportLabel": "TypeScript SQLite durable kernel",
           "reportStatus": "capability_subset_pass",
           "status": "pass",
@@ -825,7 +825,7 @@
             "kernel.scope-isolation",
             "kernel.shared-lease-clock"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
+          "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
           "reportLabel": "TypeScript PostgreSQL durable kernel",
           "reportStatus": "full_pass",
           "status": "pass",
@@ -920,7 +920,7 @@
             "providers.provider-native-execution-class",
             "providers.rejects-native-strict-structured-output"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.providers-typescript-conformance-runner.json",
+          "evidencePath": "reports/compatibility/evidence/certification-harness.providers-typescript-certification.json",
           "reportLabel": "TypeScript AI SDK provider bridge",
           "reportStatus": "full_pass",
           "status": "pass",
@@ -991,7 +991,7 @@
             "kernel.logical",
             "kernel.protocol"
           ],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.kernel-rust-conformance-runner.json",
+          "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
           "reportLabel": "Rust process-local kernel baseline",
           "reportStatus": "capability_subset_pass",
           "status": "pass",
@@ -1015,7 +1015,7 @@
             "nonApplicableChecks": 475
           },
           "declaredCapabilities": [],
-          "evidencePath": "reports/compatibility/evidence/shared-conformance-runner.framework-rust-conformance-runner.json",
+          "evidencePath": "reports/compatibility/evidence/certification-harness.framework-rust-certification.json",
           "reportLabel": "Rust framework unsupported stub",
           "reportStatus": "unsupported",
           "status": "unsupported",

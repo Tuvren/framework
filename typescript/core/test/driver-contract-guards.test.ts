@@ -21,7 +21,7 @@ import {
   type DriverExecutionContext,
   isRuntimeDriver,
   type RuntimeDriver,
-} from "../src/driver/index.ts";
+} from "../src/driver/index.js";
 
 describe("driver-contract-guards", () => {
   test("accepts explicit driver contracts", async () => {

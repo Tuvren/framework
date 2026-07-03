@@ -81,17 +81,17 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "kernel-runtime",
   "backend-memory",
   "backend-sqlite",
-  "providers-mcp-client",
+  "mcp-client",
   "provider-api",
   "framework-event-stream",
   "framework-runtime-api",
   // Keep the kernel testkit in the repo-global test lane so boundary-owned
-  // fixture drift cannot hide behind the narrower conformance-runner coverage.
+  // fixture drift cannot hide behind the narrower certification coverage.
   "kernel-testkit",
   "backend-postgres",
-  "kernel-typescript-conformance-runner",
-  "framework-typescript-conformance-runner",
-  "providers-typescript-conformance-runner",
+  "kernel-typescript-certification",
+  "framework-typescript-certification",
+  "providers-typescript-certification",
   "providers-testkit",
   "framework-testkit",
   "providers-bridge-ai-sdk",
@@ -138,6 +138,7 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "providers-testkit",
   "framework-testkit",
   "providers-bridge-ai-sdk",
+  "mcp-client",
   "framework-stream-core",
   "framework-stream-sse",
   "framework-stream-agui",
@@ -195,7 +196,7 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
   },
   {
     command: ["bun", "tools/conformance/meta-conformance/run.ts"],
-    id: "shared conformance runner meta-conformance",
+    id: "certification harness meta-conformance",
   },
   {
     command: ["bun", "tools/conformance/vocabulary/validate-vocabulary.ts"],
@@ -257,10 +258,10 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
           "run",
           "nx",
           "run",
-          "kernel-rust-conformance-runner:conformance",
+          "kernel-rust-certification:conformance",
           "--skipNxCache",
         ],
-        id: "Rust kernel conformance runner",
+        id: "Rust kernel certification",
       },
       {
         command: [

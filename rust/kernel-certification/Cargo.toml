@@ -1,0 +1,11 @@
+[package]
+name = "tuvren-kernel-rust-certification"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tuvren-kernel-rust.workspace = true

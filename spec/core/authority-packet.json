@@ -252,9 +252,9 @@
     "boundaries/framework/contracts/runtime-api/implementations/typescript",
     "boundaries/framework/contracts/event-stream/implementations/typescript",
     "typescript/runtime",
-    "typescript/conformance-runner",
+    "typescript/certification",
     "typescript/conformance-adapter",
-    "rust/conformance-runner",
+    "rust/certification",
     "rust/conformance-adapter",
     "docs",
     ".constitution"

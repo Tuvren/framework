@@ -56,7 +56,7 @@ const INNER_LOOP_AUTHORITY_GATE_IDS: readonly string[] = [
   "adapter protocol validation",
   "certification discovery parity",
   "workspace test-lane coverage",
-  "shared conformance runner meta-conformance",
+  "certification harness meta-conformance",
   "vocabulary-check verification",
 ];
 

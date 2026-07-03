@@ -1,0 +1,67 @@
+{
+  "name": "framework-typescript-certification",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/certification",
+  "projectType": "library",
+  "tags": ["boundary:framework", "language:typescript", "layer:certification"],
+  "implicitDependencies": ["framework-typescript-conformance-adapter"],
+  "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "conformanceEngine",
+        "{workspaceRoot}/boundaries/framework/conformance/**/*",
+        "{workspaceRoot}/spec/conformance/engine/**/*",
+        "{workspaceRoot}/spec/conformance/tools/**/*",
+        "{workspaceRoot}/spec/conformance/runners/**/*",
+        "{workspaceRoot}/typescript/conformance-adapter/**/*"
+      ],
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        },
+        {
+          "projects": ["host-repl"],
+          "target": "build",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter typescript/conformance-adapter/adapter.json --summary-only"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/certification"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/certification",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/certification"
+      }
+    }
+  }
+}

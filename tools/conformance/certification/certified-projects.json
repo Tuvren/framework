@@ -1,13 +1,13 @@
 {
-  "description": "The certification fleet: every Nx project that runs the shared semantic conformance engine (tools/conformance/runner/run.ts) against an implementation adapter. This manifest is machine-diffed both directions against tag-based discovery (projects tagged layer:conformance-runner) by tools/conformance/certification/validate-certification-discovery.ts, which hard-fails on any divergence: a project moved or retired without deliberate manifest maintenance, or a new runner added without registration, breaks the authority gate instead of silently dropping out of (or never entering) certification. The `conformance` lane runs exactly this validated set. GH issue #87 M2.9.",
+  "description": "The certification fleet: every Nx project that runs the shared semantic conformance engine (tools/conformance/harness/run.ts) against an implementation adapter. This manifest is machine-diffed both directions against tag-based discovery (projects tagged layer:certification) by tools/conformance/certification/validate-certification-discovery.ts, which hard-fails on any divergence: a project moved or retired without deliberate manifest maintenance, or a new runner added without registration, breaks the authority gate instead of silently dropping out of (or never entering) certification. The `conformance` lane runs exactly this validated set. GH issue #87 M2.9.",
   "projects": [
-    "framework-batteries-included-conformance-runner",
-    "framework-rust-conformance-runner",
-    "framework-typescript-conformance-runner",
-    "kernel-rust-conformance-runner",
-    "kernel-typescript-conformance-runner",
-    "kernel-typescript-postgres-conformance-runner",
-    "kernel-typescript-sqlite-conformance-runner",
-    "providers-typescript-conformance-runner"
+    "framework-batteries-included-certification",
+    "framework-rust-certification",
+    "framework-typescript-certification",
+    "kernel-rust-certification",
+    "kernel-typescript-certification",
+    "kernel-typescript-postgres-certification",
+    "kernel-typescript-sqlite-certification",
+    "providers-typescript-certification"
   ]
 }

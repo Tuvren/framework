@@ -22,7 +22,7 @@
 # already-running case so the command is safe to call repeatedly.
 #
 # This is a manual, top-level convenience only. Do NOT embed it inside Nx
-# targets, conformance runners, or the verify lanes — those still assume the
+# targets, certification projects, or the verify lanes — those still assume the
 # caller has already started services once, per the repository guidelines.
 
 set -euo pipefail

@@ -29,7 +29,7 @@ part of the cross-language contract.
 
 ## Conformance adapter status
 
-The shared conformance runner dispatches `event-stream-sse.decode-trace` and
+The shared certification harness dispatches `event-stream-sse.decode-trace` and
 `event-stream-sse.report-wire-compliance` operations against any adapter that
 declares the `framework.event-stream-sse` capability. The TypeScript framework
 adapter at `typescript/conformance-adapter/`

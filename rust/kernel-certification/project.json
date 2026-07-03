@@ -1,0 +1,50 @@
+{
+  "name": "kernel-rust-certification",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "rust/kernel-certification",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "language:rust", "layer:certification"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "options": {
+        "cwd": ".",
+        "command": "cargo build -p tuvren-kernel-rust-certification -p tuvren-kernel-rust-conformance-adapter"
+      }
+    },
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/rust/kernel/**/*",
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/rust/kernel-certification/**/*",
+        "{workspaceRoot}/Cargo.toml",
+        "{workspaceRoot}/Cargo.lock",
+        "{workspaceRoot}/rust-toolchain.toml"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json --summary-only"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "cargo fmt --package tuvren-kernel-rust-certification -- --check && cargo fmt --package tuvren-kernel-rust-conformance-adapter -- --check && cargo clippy -p tuvren-kernel-rust-certification --all-targets -- -D warnings && cargo clippy -p tuvren-kernel-rust-conformance-adapter --all-targets -- -D warnings"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "cargo test -p tuvren-kernel-rust-certification -p tuvren-kernel-rust-conformance-adapter"
+      }
+    }
+  }
+}

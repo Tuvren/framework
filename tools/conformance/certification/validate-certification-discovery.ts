@@ -19,7 +19,7 @@
  * Certification-discovery parity gate (GH issue #87 M2.9).
  *
  * Discovers the certification fleet from the repo itself — every Nx project
- * tagged `layer:conformance-runner` — and hard-fails unless that discovered
+ * tagged `layer:certification` — and hard-fails unless that discovered
  * set exactly matches the checked-in manifest
  * (`certified-projects.json`), every discovered project actually exposes a
  * `conformance` target, every target that invokes the shared semantic engine
@@ -49,9 +49,9 @@ const MANIFEST_PATH = join(
   ROOT,
   "tools/conformance/certification/certified-projects.json"
 );
-const CERTIFICATION_TAG = "layer:conformance-runner";
+const CERTIFICATION_TAG = "layer:certification";
 const NON_CERTIFICATION_TAG = "layer:testkit";
-const SHARED_ENGINE_PATH = "tools/conformance/runner/run.ts";
+const SHARED_ENGINE_PATH = "tools/conformance/harness/run.ts";
 
 interface ProjectRecord {
   conformanceCommand: string | undefined;

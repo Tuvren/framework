@@ -17,7 +17,7 @@
 /**
  * Conformance adapter operations for the Tuvren-server execution class
  * check set (KRT-AX006). Each operation returns structured evidence that
- * the shared conformance runner asserts against the tuvren-server-execution-class
+ * the shared certification harness asserts against the tuvren-server-execution-class
  * plan's checks.
  *
  * Adapter rules: no assertion logic, no pass/fail grading, no evidence

@@ -17,7 +17,7 @@
 /**
  * Conformance adapter operations for the invocation-lifecycle-observation
  * check set (KRT-BA005). Each operation returns structured evidence that
- * the shared conformance runner asserts against the plan's checks.
+ * the shared certification harness asserts against the plan's checks.
  *
  * Adapter rules: no assertion logic, no pass/fail grading, no evidence
  * field names that imply semantic verdicts. Raw observational data only.

@@ -44,11 +44,11 @@ const EXCLUDED_TEST_PROJECTS: ReadonlyMap<string, string> = new Map([
     "covered by verify's Rust workspace tests step (cargo test --workspace)",
   ],
   [
-    "kernel-rust-conformance-runner",
+    "kernel-rust-certification",
     "covered by verify's Rust workspace tests step (cargo test --workspace)",
   ],
   [
-    "framework-rust-conformance-runner",
+    "framework-rust-certification",
     "covered by verify's Rust workspace tests step (cargo test --workspace)",
   ],
 ]);

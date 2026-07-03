@@ -17,7 +17,7 @@
 /**
  * Conformance adapter operations for the provider-native execution class
  * check set (KRT-AY007). Returns structured evidence that the shared
- * conformance runner asserts against the provider-native-execution-class plan.
+ * certification harness asserts against the provider-native-execution-class plan.
  *
  * Adapter rules: no assertions, no pass/fail grading, no evidence field names
  * that imply semantic verdicts. Raw observational data only.

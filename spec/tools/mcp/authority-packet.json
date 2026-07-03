@@ -28,7 +28,7 @@
   "forbiddenAuthoritySources": [
     "typescript/tools/mcp-client",
     "typescript/providers/testkit",
-    "typescript/providers/conformance-runner",
+    "typescript/providers/certification",
     "typescript/providers/conformance-adapter",
     "docs",
     ".constitution"

@@ -19,7 +19,7 @@
  * (KRT-BD007). Each operation drives a real runtime over the framework bounds
  * guard (ADR-043) and returns raw observational data — captured stream events,
  * the settled ExecutionResult summary, and captured telemetry — for the shared
- * conformance runner to grade.
+ * certification harness to grade.
  *
  * Adapter rules: no assertion logic, no pass/fail grading, no verdict booleans
  * about whether a bound "held". Raw observations only.
