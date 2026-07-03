@@ -34,6 +34,10 @@
 import { loadNxProjectFiles, targetCommandStrings } from "./lib/nx-projects.js";
 import { WORKSPACE_TEST_PROJECTS } from "./verify.js";
 
+// Token match, not substring: "cargo" must appear as a standalone command
+// word so e.g. a wrapper named cargo-shim.ts cannot satisfy the check.
+const CARGO_COMMAND_TOKEN = /(^|\s)cargo(\s|$)/;
+
 const EXCLUDED_TEST_PROJECTS: ReadonlyMap<string, string> = new Map([
   [
     "kernel-rust-kernel",
@@ -107,9 +111,7 @@ for (const [name, reason] of EXCLUDED_TEST_PROJECTS) {
     continue;
   }
   const commands = targetCommandStrings(project.project.targets.test);
-  // Token match, not substring: "cargo" must appear as a standalone command
-  // word so e.g. a wrapper named cargo-shim.ts cannot satisfy the check.
-  if (!commands.some((command) => /(^|\s)cargo(\s|$)/.test(command))) {
+  if (!commands.some((command) => CARGO_COMMAND_TOKEN.test(command))) {
     problems.push(
       `exclusion for ${name} (${project.path}) claims "${reason}" but its test command no longer invokes cargo: "${commands.join("; ")}"`
     );
