@@ -19,7 +19,7 @@
 // behavior; only the import source changed below.
 
 import { describe, expect, test } from "bun:test";
-import { isTuvrenToolDefinition } from "@tuvren/core/tools";
+import { isTuvrenToolDefinition } from "../src/tools/index.js";
 
 describe("runtime-contract-guards tool definition contracts", () => {
   test("rejects tool definitions with invalid schemas", () => {

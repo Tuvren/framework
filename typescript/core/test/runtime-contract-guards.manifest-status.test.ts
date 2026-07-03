@@ -19,7 +19,7 @@
 // behavior; only the import sources changed below.
 
 import { describe, expect, test } from "bun:test";
-import { isExecutionStatus } from "@tuvren/core/execution";
+import { isExecutionStatus } from "../src/execution/index.js";
 import { frameworkContractFixtures } from "./runtime-contract-guards-fixtures.js";
 
 describe("runtime-contract-guards manifest and status contracts", () => {

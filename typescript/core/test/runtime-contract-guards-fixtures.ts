@@ -20,7 +20,7 @@
 // module already imported @tuvren/core directly (never the shim itself), so
 // the move is byte-identical except for this provenance note.
 
-import type { TuvrenStreamEvent } from "@tuvren/core/events";
+import type { TuvrenStreamEvent } from "../src/events/index.js";
 import type {
   AgentConfig,
   ContextManifest,
@@ -31,10 +31,13 @@ import type {
   OrchestrationResult,
   OrchestrationRuntime,
   TuvrenRuntime,
-} from "@tuvren/core/execution";
-import type { TuvrenMessage } from "@tuvren/core/messages";
-import type { ProviderStreamChunk } from "@tuvren/core/provider";
-import type { ApprovalRequest, TuvrenToolDefinition } from "@tuvren/core/tools";
+} from "../src/execution/index.js";
+import type { TuvrenMessage } from "../src/messages/index.js";
+import type { ProviderStreamChunk } from "../src/provider/index.js";
+import type {
+  ApprovalRequest,
+  TuvrenToolDefinition,
+} from "../src/tools/index.js";
 
 // Binding-local harness only: cross-implementation runtime-api authority lives
 // in the packet TypeSpec and conformance plans, not in these TypeScript values.

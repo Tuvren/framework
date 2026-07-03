@@ -19,15 +19,15 @@
 // without adding behavior; only the import sources changed below.
 
 import { describe, expect, test } from "bun:test";
-import { isTuvrenStreamEvent } from "@tuvren/core/events";
-import { isTuvrenMessage } from "@tuvren/core/messages";
+import { isTuvrenStreamEvent } from "../src/events/index.js";
+import { isTuvrenMessage } from "../src/messages/index.js";
 import {
   assertApprovalResponse,
   assertApprovalResponseForRequest,
   isApprovalRequest,
   isApprovalResponse,
   isApprovalResponseForRequest,
-} from "@tuvren/core/tools";
+} from "../src/tools/index.js";
 import { frameworkContractFixtures } from "./runtime-contract-guards-fixtures.js";
 
 describe("runtime-contract-guards approval contracts", () => {

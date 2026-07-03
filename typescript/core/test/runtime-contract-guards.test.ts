@@ -38,24 +38,24 @@ import { describe, expect, test } from "bun:test";
 import {
   assertTuvrenStreamEvent,
   isTuvrenStreamEvent,
-} from "@tuvren/core/events";
+} from "../src/events/index.js";
 import {
   assertContextManifest,
   assertExecutionStatus,
   isExecutionStatus,
-} from "@tuvren/core/execution";
-import { assertTuvrenMessage, isTuvrenMessage } from "@tuvren/core/messages";
+} from "../src/execution/index.js";
+import { assertTuvrenMessage, isTuvrenMessage } from "../src/messages/index.js";
 import {
   assertProviderStreamChunk,
   assertTuvrenModelResponse,
   isProviderStreamChunk,
-} from "@tuvren/core/provider";
+} from "../src/provider/index.js";
 import {
   assertApprovalRequest,
   assertTuvrenToolDefinition,
   isApprovalRequest,
   isTuvrenToolDefinition,
-} from "@tuvren/core/tools";
+} from "../src/tools/index.js";
 import {
   frameworkContractFixtures,
   invalidFrameworkContractFixtures,

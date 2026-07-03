@@ -19,10 +19,10 @@
 // events} without adding behavior; only the import sources changed below.
 
 import { describe, expect, test } from "bun:test";
-import { isTuvrenStreamEvent } from "@tuvren/core/events";
-import { isTuvrenMessage } from "@tuvren/core/messages";
-import { isProviderStreamChunk } from "@tuvren/core/provider";
-import { isApprovalResponse } from "@tuvren/core/tools";
+import { isTuvrenStreamEvent } from "../src/events/index.js";
+import { isTuvrenMessage } from "../src/messages/index.js";
+import { isProviderStreamChunk } from "../src/provider/index.js";
+import { isApprovalResponse } from "../src/tools/index.js";
 
 describe("runtime-contract-guards execution shape contracts", () => {
   test("rejects stream events that omit required fields", () => {
