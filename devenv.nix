@@ -21,6 +21,10 @@
     pkgs.nodejs_24
     pkgs.protobuf
     pkgs.protoc-gen-es
+    # kernel-testkit's production-path isolation test spawns `rg`; declare it
+    # here so the dependency is hermetic instead of ambient host tooling
+    # (absent on CI runners inside `devenv shell`).
+    pkgs.ripgrep
     pkgs.weaver
   ];
 }
