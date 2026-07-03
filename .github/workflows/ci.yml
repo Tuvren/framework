@@ -101,6 +101,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Full history + all refs: verify's kernel-interop-governance
+          # breaking check diffs the proto baseline against origin/master
+          # (AGAINST_BRANCH_CANDIDATES), which a default shallow
+          # single-ref clone does not have (measured on live run
+          # 28675243688 — the check found zero inspectable branches).
+          fetch-depth: 0
 
       - name: Install Nix
         # Pinned by major version; v22 confirmed current via the GitHub
