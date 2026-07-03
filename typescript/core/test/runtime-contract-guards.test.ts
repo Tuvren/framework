@@ -17,7 +17,8 @@
 // Ported from the retired @tuvren/runtime-api shim's `runtime-api.test.ts`
 // (epic 87, M9.2). Only the tests that exercise real @tuvren/core guard
 // behavior are ported; two classes of test were deliberately NOT ported
-// (recorded in MIGRATION_INVENTORY.md, not authored here as new coverage):
+// (recorded in the epic-87 migration ledger's M9.2 addendum, preserved in
+// git history — not authored here as new coverage):
 //   - "exposes narrow runtime-api subpaths without changing contract
 //     behavior" and "accepts file.done stream events through the focused
 //     events surface" (subpath variant) asserted that the shim's OWN

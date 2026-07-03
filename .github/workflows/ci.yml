@@ -111,9 +111,8 @@ jobs:
 
       - name: Install Nix
         # Pinned by major version; v22 confirmed current via the GitHub
-        # releases API at authoring time (87-M10.2).
-        # see the "could not verify locally" list in this PR's description
-        # and MIGRATION_INVENTORY.md's M10.2 addendum.
+        # releases API at authoring time (87-M10.2; full authoring record
+        # in the epic-87 migration ledger's M10.2 addendum, git history).
         uses: DeterminateSystems/nix-installer-action@v22
 
       - name: Install devenv
@@ -137,8 +136,8 @@ jobs:
             # as the bootstrap either: it runs the very validators that fail
             # cold before it generates anything. Generating the one missing
             # artifact family directly is the minimal honest bootstrap; the
-            # verify-phase-ordering question is recorded as a follow-up in
-            # MIGRATION_INVENTORY.md (M10.2 addendum).
+            # verify-phase-ordering question is recorded as a post-epic
+            # follow-up in issue #87's closing record.
             bun run nx run kernel-interop-grpc:codegen
             bun run services:up
             bun run verify

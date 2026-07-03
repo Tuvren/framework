@@ -61,8 +61,10 @@ physical move: its 7 live type-position consumer imports were rewired to
 the matching `@tuvren/core/*` subpaths, its unique behavioral test
 coverage (guard functions with no other dedicated coverage) was ported to
 `typescript/core/test/runtime-contract-guards*.test.ts`, and the package
-tree plus this contract root were removed. See
-`MIGRATION_INVENTORY.md`'s M9.2 addendum for the full accounting.
+tree plus this contract root were removed. The full accounting lives in
+the migration ledger's M9.2 addendum, preserved in git history
+(`MIGRATION_INVENTORY.md`, deleted at the epic-87 cutover) and in the
+epic's closing record on issue #87.
 
 The reference host shell, `@tuvren/repl-host`, now lives at
 `typescript/host/repl/` (moved at 87-M9.3; Nx project name `host-repl`
