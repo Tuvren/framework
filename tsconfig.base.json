@@ -39,9 +39,6 @@
       "@tuvren/runtime-api/tools": [
         "./boundaries/framework/contracts/runtime-api/implementations/typescript/src/tools.ts"
       ],
-      "@tuvren/event-stream": [
-        "./boundaries/framework/contracts/event-stream/implementations/typescript/src/index.ts"
-      ],
       "@tuvren/provider-api": [
         "./typescript/providers/provider-api/src/index.ts"
       ],

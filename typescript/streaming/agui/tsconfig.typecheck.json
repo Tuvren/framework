@@ -15,9 +15,6 @@
       "@tuvren/core/messages": ["../../core/src/messages/index.ts"],
       "@tuvren/core/provider": ["../../core/src/provider/index.ts"],
       "@tuvren/core/tools": ["../../core/src/tools/index.ts"],
-      "@tuvren/event-stream": [
-        "../../../boundaries/framework/contracts/event-stream/implementations/typescript/src/index.ts"
-      ],
       "@tuvren/framework-testkit": ["../../testkit/src/index.ts"],
       "@tuvren/stream-agui": ["./src/index.ts"],
       "@tuvren/stream-core": ["../core/src/index.ts"]
@@ -29,7 +26,6 @@
     "test/**/*.ts",
     "smoke/**/*.ts",
     "../../testkit/src/**/*.ts",
-    "../../../boundaries/framework/contracts/event-stream/implementations/typescript/src/**/*.ts",
     "../core/src/**/*.ts",
     "../../core-types/src/**/*.ts"
   ]

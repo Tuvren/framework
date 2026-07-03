@@ -33,14 +33,6 @@
         "zod": "4.4.3",
       },
     },
-    "boundaries/framework/contracts/event-stream/implementations/typescript": {
-      "name": "@tuvren/event-stream",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/runtime-api": "workspace:*",
-      },
-    },
     "boundaries/framework/contracts/runtime-api/implementations/typescript": {
       "name": "@tuvren/runtime-api",
       "version": "0.0.0",
@@ -90,7 +82,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@ag-ui/core": "0.0.52",
-        "@tuvren/event-stream": "workspace:*",
         "@tuvren/stream-agui": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
         "@tuvren/stream-sse": "workspace:*",
@@ -344,7 +335,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@tuvren/core": "workspace:*",
-        "@tuvren/event-stream": "workspace:*",
         "ajv": "8.18.0",
       },
     },
@@ -929,8 +919,6 @@
     "@tuvren/core": ["@tuvren/core@workspace:typescript/core"],
 
     "@tuvren/core-types": ["@tuvren/core-types@workspace:typescript/core-types"],
-
-    "@tuvren/event-stream": ["@tuvren/event-stream@workspace:boundaries/framework/contracts/event-stream/implementations/typescript"],
 
     "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:typescript/testkit"],
 

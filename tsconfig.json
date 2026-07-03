@@ -21,9 +21,6 @@
       "path": "./typescript/runners/react"
     },
     {
-      "path": "./boundaries/framework/contracts/event-stream/implementations/typescript"
-    },
-    {
       "path": "./typescript/providers/provider-api"
     },
     {

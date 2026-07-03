@@ -16,10 +16,7 @@
       "@tuvren/core/runner": ["../core/dist/runner/index.d.ts"],
       "@tuvren/core/provider": ["../core/dist/provider/index.d.ts"],
       "@tuvren/core/extensions": ["../core/dist/extensions/index.d.ts"],
-      "@tuvren/core/telemetry": ["../core/dist/telemetry/index.d.ts"],
-      "@tuvren/event-stream": [
-        "../../boundaries/framework/contracts/event-stream/implementations/typescript/dist/index.d.ts"
-      ]
+      "@tuvren/core/telemetry": ["../core/dist/telemetry/index.d.ts"]
     },
     "rootDir": "./src",
     "target": "esnext",

@@ -11,9 +11,6 @@
       "path": "../../core/tsconfig.lib.json"
     },
     {
-      "path": "../../../boundaries/framework/contracts/event-stream/implementations/typescript/tsconfig.lib.json"
-    },
-    {
       "path": "../../core-types/tsconfig.lib.json"
     },
     {

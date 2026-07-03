@@ -250,7 +250,6 @@
     "typescript/core",
     "typescript/core-types",
     "boundaries/framework/contracts/runtime-api/implementations/typescript",
-    "boundaries/framework/contracts/event-stream/implementations/typescript",
     "typescript/runtime",
     "typescript/certification",
     "typescript/conformance-adapter",

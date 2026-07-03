@@ -5,7 +5,6 @@
   "type": "module",
   "dependencies": {
     "@ag-ui/core": "0.0.52",
-    "@tuvren/event-stream": "workspace:*",
     "@tuvren/stream-agui": "workspace:*",
     "@tuvren/stream-core": "workspace:*",
     "@tuvren/stream-sse": "workspace:*"

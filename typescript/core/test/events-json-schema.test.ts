@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
+// Ported from the retired @tuvren/event-stream shim (epic 87, M8.1c). The
+// shim re-exported this vocabulary from @tuvren/core/events without adding
+// behavior; this file preserves the JSON Schema artifact conformance
+// coverage that lived alongside it so spec/streaming/artifacts/json-schema
+// keeps a measured validator against the core event shapes it describes.
+
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
-import {
-  type ApprovalResolvedEvent,
-  assertTuvrenStreamEvent,
-  isTuvrenStreamEvent,
-  type StateCheckpointEvent,
-  type TextDoneEvent,
-} from "../src/index.ts";
+import type {
+  ApprovalResolvedEvent,
+  StateCheckpointEvent,
+} from "../src/events/index.js";
 
 const EXPECTED_EVENT_STREAM_ARTIFACT_SCHEMAS = [
   "ApprovalDecision",
@@ -76,30 +79,10 @@ const EXPECTED_EVENT_STREAM_ARTIFACT_SCHEMAS = [
   "TuvrenStreamEvent",
 ] as const;
 
-describe("event-stream contracts", () => {
-  test("re-exports the canonical runtime event vocabulary and named variants", () => {
-    const event = {
-      messageId: "message-1",
-      source: {
-        agent: "primary",
-        runner: "react",
-        threadId: "thread-main",
-      },
-      text: "Need approval before continuing.",
-      timestamp: 1_717_171_717_171,
-      type: "text.done",
-    } satisfies TextDoneEvent;
-
-    expect(isTuvrenStreamEvent(event)).toBe(true);
-    expect(() => assertTuvrenStreamEvent(event)).not.toThrow();
-  });
-
+describe("event-stream JSON Schema artifacts", () => {
   test("emits JSON Schema artifacts that match richer event payload variants", () => {
     const ajv = loadJsonSchemas(
-      new URL(
-        "../../../../../../../spec/streaming/artifacts/json-schema",
-        import.meta.url
-      )
+      new URL("../../../spec/streaming/artifacts/json-schema", import.meta.url)
     );
     const approvalResolvedEvent = {
       response: {

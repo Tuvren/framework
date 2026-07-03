@@ -14,16 +14,9 @@
       "@tuvren/core/telemetry": ["../core/src/telemetry/index.ts"],
       "@tuvren/core/messages": ["../core/src/messages/index.ts"],
       "@tuvren/core/provider": ["../core/src/provider/index.ts"],
-      "@tuvren/core/tools": ["../core/src/tools/index.ts"],
-      "@tuvren/event-stream": [
-        "../../boundaries/framework/contracts/event-stream/implementations/typescript/src/index.ts"
-      ]
+      "@tuvren/core/tools": ["../core/src/tools/index.ts"]
     },
     "types": ["bun", "node"]
   },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts",
-    "../../boundaries/framework/contracts/event-stream/implementations/typescript/src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }
