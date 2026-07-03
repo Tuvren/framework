@@ -730,8 +730,16 @@ async function checkInventoryMdJsonConsistency(
   // reliably name every required source by literal path (some paths are
   // paraphrased in prose for readability). On-disk source path presence and
   // packet-registration are already enforced by `checkRequiredSources`, which
-  // is the structural guard for that class of drift. Packet-path drift is
-  // similarly caught by `checkExpectedPacketsPresent`.
+  // is the structural guard for that class of drift.
+  //
+  // Packet PATHS are the exception (added 87-M4.2b): unlike required-source
+  // paths they are never paraphrased — the MD's packet list and surface
+  // table cite each packet's home literally — and unlike disk-presence
+  // (checkExpectedPacketsPresent) the MD mention is exactly what drifted,
+  // silently, at 87-M2.2, 87-M1.5, and 87-M4.1 when packet homes moved.
+  // Anchoring every expectedPackets[].packetPath verbatim makes each future
+  // packet lift force the paired MD edit instead of leaving it to review
+  // discipline.
   if (!existsSync(INVENTORY_PATH)) {
     return [];
   }
@@ -745,6 +753,15 @@ async function checkInventoryMdJsonConsistency(
       failures.push({
         rule: "inventory-md-json-consistency",
         message: `inventory JSON lists packetId ${entry.packetId} but ${inventoryRel} does not mention it; paired-edit drift — revise the MD and JSON together`,
+      });
+    }
+  }
+
+  for (const entry of inventory.expectedPackets) {
+    if (!mdContent.includes(entry.packetPath)) {
+      failures.push({
+        rule: "inventory-md-json-consistency",
+        message: `inventory JSON locates packet ${entry.packetId} at ${entry.packetPath} but ${inventoryRel} does not cite that path; paired-edit drift — a packet lift must update the MD's packet list and surface table together with the JSON`,
       });
     }
   }
