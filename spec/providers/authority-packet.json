@@ -135,11 +135,11 @@
   "freshnessChecks": [
     {
       "artifact": "spec/providers/artifacts/json-schema",
-      "regenerateCommand": "bun run nx run provider-api:codegen"
+      "regenerateCommand": "bun run nx run providers-spec:codegen"
     },
     {
       "artifact": "spec/providers/artifacts/openapi",
-      "regenerateCommand": "bun run nx run provider-api:codegen"
+      "regenerateCommand": "bun run nx run providers-spec:codegen"
     }
   ]
 }

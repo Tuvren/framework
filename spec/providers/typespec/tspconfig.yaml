@@ -4,13 +4,13 @@ emit:
   - "@typespec/openapi3"
 options:
   "@typespec/json-schema":
-    emitter-output-dir: "{project-root}/../../artifacts/json-schema"
+    emitter-output-dir: "{project-root}/../artifacts/json-schema"
     file-type: json
     emitAllModels: true
     emitAllRefs: true
     seal-object-schemas: true
   "@typespec/openapi3":
-    emitter-output-dir: "{project-root}/../../artifacts/openapi"
+    emitter-output-dir: "{project-root}/../artifacts/openapi"
     file-type: json
     output-file: "provider-api.openapi.json"
     openapi-versions:
