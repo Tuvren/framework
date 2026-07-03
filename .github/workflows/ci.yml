@@ -90,7 +90,10 @@ on:
 # master) so we don't burn CI minutes on stale commits.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel master runs: two quick merges would otherwise leave the
+  # intermediate master commit with no completed CI record, which makes
+  # bisecting/regression attribution fuzzier. PR refs still cancel.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
   verify:

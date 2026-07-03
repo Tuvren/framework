@@ -113,8 +113,14 @@ export function loadNxProjectFiles(root: string): NxProjectFile[] {
     } catch (error) {
       throw new Error(`unparseable project.json at ${path}: ${error}`);
     }
+    // Nx would infer a name from the directory here, but the discovery
+    // gates built on this index (certification parity, test-lane coverage)
+    // exist to hard-fail instead of silently narrowing — a live project
+    // this loader cannot index would escape both. Fail loud.
     if (typeof project.name !== "string") {
-      continue;
+      throw new Error(
+        `project.json without a string name at ${path} — the discovery gates cannot index it; add an explicit name`
+      );
     }
     records.push({ name: project.name, path, project });
   }

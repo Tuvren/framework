@@ -73,7 +73,10 @@ const ROOT_TESTS_ROOT = resolve(REPO_ROOT, "tests");
 // equivalent live scan root is the whole `typescript/` tree — the patterns
 // below are framework-fixture-specific enough that scanning kernel/providers
 // packages too does not risk false positives.
-const FRAMEWORK_TYPESCRIPT_ROOT = "typescript";
+// NOTE: the scan root is the ENTIRE typescript/ language tree, not one
+// boundary subtree — patterns added to the lists below must stay
+// framework-unique or they will false-positive on kernel/providers packages.
+const TYPESCRIPT_SCAN_ROOT = "typescript";
 const TYPESCRIPT_OWNED_CONFORMANCE_PATTERNS: readonly RegExp[] = [
   /@tuvren\/framework-testkit/u,
   /\bframeworkStreamTestFixtures\b/u,
@@ -428,7 +431,7 @@ async function checkTypescriptOwnedFrameworkFixtures(): Promise<
   GuardrailFailure[]
 > {
   const sourcePaths = await findSourceFiles(
-    resolve(REPO_ROOT, FRAMEWORK_TYPESCRIPT_ROOT)
+    resolve(REPO_ROOT, TYPESCRIPT_SCAN_ROOT)
   );
   const failures: GuardrailFailure[] = [];
 

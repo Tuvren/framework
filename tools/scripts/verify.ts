@@ -18,6 +18,7 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import process from "node:process";
 import { runCommand } from "./lib/command-runner.js";
+import { loadNxProjectFiles } from "./lib/nx-projects.js";
 import {
   assertWorktreeUnchanged,
   readWorktreeSnapshot,
@@ -31,15 +32,31 @@ import {
 // fail loudly if the script shape ever stops being parseable.
 const rootCodegenScript: string =
   JSON.parse(readFileSync("package.json", "utf8")).scripts?.codegen ?? "";
-const codegenProjectsMatch = /run-many -t codegen -p (\S+)/.exec(
-  rootCodegenScript
-);
-if (!codegenProjectsMatch) {
+const codegenProjectsMatches = [
+  ...rootCodegenScript.matchAll(/run-many -t codegen -p (\S+)/g),
+];
+if (codegenProjectsMatches.length !== 1) {
   throw new Error(
-    "verify: could not extract the codegen project list from package.json's codegen script; refusing to run a possibly-stale inline copy"
+    `verify: expected exactly one "run-many -t codegen -p <list>" in package.json's codegen script, found ${codegenProjectsMatches.length}; refusing to run a possibly-stale inline copy`
   );
 }
-const CODEGEN_PROJECTS = codegenProjectsMatch[1];
+const CODEGEN_PROJECTS = codegenProjectsMatches[0][1];
+// The regex captures one whitespace-free token, so a quoted/space-separated
+// list or a flag reorder would capture garbage. Validate every captured
+// name against the real project index so the loud-failure guarantee holds.
+{
+  const knownProjects = new Set(
+    loadNxProjectFiles(process.cwd()).map((file) => file.name)
+  );
+  const unknown = CODEGEN_PROJECTS.split(",").filter(
+    (name) => !knownProjects.has(name)
+  );
+  if (unknown.length > 0) {
+    throw new Error(
+      `verify: codegen project list captured from package.json contains unknown Nx projects (${unknown.join(", ")}) — the script shape changed; fix the parse or the script`
+    );
+  }
+}
 
 export interface VerificationStep {
   command: readonly string[];

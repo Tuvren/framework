@@ -32,6 +32,14 @@
  *  - a new runner wired to the shared engine but never registered;
  *  - a `conformance` target added without declaring whether it certifies.
  *
+ * Known residual sliver: the engine back-check matches the engine path as a
+ * command-text substring, so a target that reaches the engine INDIRECTLY
+ * (a wrapper shell script or intermediate bun script that itself invokes
+ * run.ts) escapes it. The conformance-target classification check and the
+ * tag/manifest parity still cover such a project if it certifies through a
+ * `conformance` target — but if you introduce an engine wrapper script,
+ * extend the match here to include the wrapper's path.
+ *
  * Discovery reads `project.json` files directly (filesystem walk via the
  * shared tools/scripts/lib/nx-projects.ts index, no Nx daemon) so the gate
  * stays sub-second and sees unstaged working-tree state. Projects declared
