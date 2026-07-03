@@ -6,7 +6,7 @@
 
 Read this after the kernel specification. This document defines the human semantic model for the initial Kraken framework runner behavior built on the frozen kernel.
 
-Kraken is the execution engine inside Tuvren Runtime. This specification defines the engine-layer framework and runner semantics, not the public product namespace.
+Kraken is the execution engine inside Tuvren. This specification defines the engine-layer framework and runner semantics, not the public product namespace.
 
 Epic AD freezes the portability reading of this Markdown. Portable cross-implementation meaning is freeze-covered when the docs-to-authority matrix maps the claim to boundary-owned authority packets, generated artifacts where applicable, conformance plans, fixtures, adapter capabilities, and compatibility evidence. Claims classified as missing-conformance-follow-up, implementation-local-evidence, implementation-defined, explicitly deferred, or stale-corrected in `.constitution/reports/epic-ad-docs-to-authority-coverage-matrix.json` are not portable machine authority until a later packet and conformance change promotes them.
 
@@ -1436,7 +1436,7 @@ When optional state observability is enabled, the framework emits:
 
 ## 7. Host Contract
 
-The host is the process or service that embeds Tuvren Runtime and, through it, exposes the Kraken framework to external consumers (APIs, UIs, protocol endpoints).
+The host is the process or service that embeds Tuvren and, through it, exposes the Kraken framework to external consumers (APIs, UIs, protocol endpoints).
 
 ### 7.1 ExecutionHandle
 

@@ -396,7 +396,55 @@ const INTEROP_RUNNERS: readonly InteropRunner[] = [
 
 await main();
 
+/**
+ * Fleet parity: CONFORMANCE_RUNNERS above is a hand-maintained projection of
+ * the certification manifest (tools/conformance/certification/
+ * certified-projects.json — itself machine-diffed against tag-based
+ * discovery). Nothing else links the two, so a ninth certification project
+ * could be gate-forced into the manifest yet silently never appear in
+ * compatibility evidence. Hard-fail on any divergence, in both codegen and
+ * --check modes. INTEROP_RUNNERS is deliberately outside this check: interop
+ * pairs are not certification-fleet members.
+ */
+async function assertConformanceRunnerParity(): Promise<void> {
+  const manifestPath = resolve(
+    REPO_ROOT,
+    "tools/conformance/certification/certified-projects.json"
+  );
+  const manifest: { projects: string[] } = JSON.parse(
+    await readFile(manifestPath, "utf8")
+  );
+  const manifestProjects = new Set(manifest.projects);
+  const runnerProjects = new Set(
+    CONFORMANCE_RUNNERS.map((runner) => runner.project)
+  );
+  const missingHere = [...manifestProjects].filter(
+    (name) => !runnerProjects.has(name)
+  );
+  const missingInManifest = [...runnerProjects].filter(
+    (name) => !manifestProjects.has(name)
+  );
+  if (missingHere.length > 0 || missingInManifest.length > 0) {
+    const problems = [
+      ...missingHere.map(
+        (name) =>
+          `certified project ${name} is in the certification manifest but has no CONFORMANCE_RUNNERS entry — it would never appear in compatibility evidence`
+      ),
+      ...missingInManifest.map(
+        (name) =>
+          `CONFORMANCE_RUNNERS entry ${name} is not in the certification manifest — retire it or register the project`
+      ),
+    ];
+    console.error("compatibility-report: FAIL (fleet parity)");
+    for (const problem of problems) {
+      console.error(`  - ${problem}`);
+    }
+    process.exit(1);
+  }
+}
+
 async function main(): Promise<void> {
+  await assertConformanceRunnerParity();
   const allowFailingEvidence = process.argv.includes(
     ALLOW_FAILING_EVIDENCE_FLAG
   );

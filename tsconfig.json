@@ -58,6 +58,15 @@
     },
     {
       "path": "./typescript/host/repl"
+    },
+    {
+      "path": "./typescript/telemetry/otel"
+    },
+    {
+      "path": "./typescript/telemetry/semconv"
+    },
+    {
+      "path": "./typescript/tools/mcp-client"
     }
   ]
 }

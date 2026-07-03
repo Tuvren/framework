@@ -31,7 +31,7 @@
  * so an exclusion cannot silently outlive its justification.
  */
 
-import { loadNxProjectFiles } from "./lib/nx-projects.js";
+import { loadNxProjectFiles, targetCommandStrings } from "./lib/nx-projects.js";
 import { WORKSPACE_TEST_PROJECTS } from "./verify.js";
 
 const EXCLUDED_TEST_PROJECTS: ReadonlyMap<string, string> = new Map([
@@ -106,10 +106,10 @@ for (const [name, reason] of EXCLUDED_TEST_PROJECTS) {
     );
     continue;
   }
-  const command = project.project.targets.test.options?.command ?? "";
-  if (!command.includes("cargo")) {
+  const commands = targetCommandStrings(project.project.targets.test);
+  if (!commands.some((command) => command.includes("cargo"))) {
     problems.push(
-      `exclusion for ${name} (${project.path}) claims "${reason}" but its test command no longer invokes cargo: "${command}"`
+      `exclusion for ${name} (${project.path}) claims "${reason}" but its test command no longer invokes cargo: "${commands.join("; ")}"`
     );
   }
 }

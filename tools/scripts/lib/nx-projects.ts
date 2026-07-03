@@ -26,14 +26,47 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
+// nx:run-commands accepts a single `command` string or a `commands` array
+// whose entries are strings or `{ command: string, ... }` objects; gates
+// that inspect command text must scan both shapes — and `configurations`
+// overrides, which carry the same dual shape per configuration name.
+export interface NxCommandOptions {
+  command?: string;
+  commands?: (string | { command?: string })[];
+}
+
 export interface NxProjectTarget {
-  options?: {
-    command?: string;
-    // nx:run-commands also accepts a `commands` array whose entries are
-    // strings or `{ command: string, ... }` objects; gates that inspect
-    // command text must scan both shapes.
-    commands?: (string | { command?: string })[];
+  configurations?: Record<string, NxCommandOptions>;
+  options?: NxCommandOptions;
+}
+
+/**
+ * Every command string an nx:run-commands target can execute: the base
+ * `options` (single `command` string or `commands` array of strings /
+ * `{ command }` objects) plus every named `configurations` override.
+ * Gates that back-check command text (certification discovery, workspace
+ * test-lane coverage) must scan all of these, or a target rewritten in an
+ * equally-valid alternate shape silently escapes the gate.
+ */
+export function targetCommandStrings(target: NxProjectTarget): string[] {
+  const out: string[] = [];
+  const collect = (options: NxCommandOptions | undefined): void => {
+    if (typeof options?.command === "string") {
+      out.push(options.command);
+    }
+    for (const entry of options?.commands ?? []) {
+      if (typeof entry === "string") {
+        out.push(entry);
+      } else if (typeof entry?.command === "string") {
+        out.push(entry.command);
+      }
+    }
   };
+  collect(target.options);
+  for (const configuration of Object.values(target.configurations ?? {})) {
+    collect(configuration);
+  }
+  return out;
 }
 
 export interface NxProjectJson {

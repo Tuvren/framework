@@ -39,11 +39,12 @@ if output="$(devenv up -d 2>&1)"; then
 fi
 
 # Idempotency hinges on devenv's human-readable "already running" message. That
-# string is an upstream UX detail that could be reworded across devenv versions;
-# `devenv.lock` pins the version, so the phrasing is stable for this repo. If a
-# future devenv bump changes the wording, this branch stops matching and re-runs
-# revert to a hard failure (the footgun this wrapper removes) — update the regex
-# alongside the lock bump if that happens.
+# string is an upstream UX detail that could be reworded across devenv CLI
+# versions. Nothing in this repo pins the CLI for local dev (`devenv.lock`
+# pins the project's inputs, not the devenv binary on PATH; CI pins its own
+# install in ci.yml) — so if a devenv upgrade rewords the message, this
+# branch stops matching and re-runs revert to a hard failure (the footgun
+# this wrapper removes). Update the regex if that happens.
 if echo "${output}" | grep -qiE "already running"; then
   echo "services:up: devenv-managed services already running (no-op)."
   exit 0

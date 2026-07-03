@@ -1,1 +1,8 @@
+# Recorded disposition (epic #87 PR review): this is the one Bazel file under
+# a spec/ root, and it stays. exports_files() is a visibility declaration —
+# configuration, not language tooling output, which is what the repo's
+# structure rule bans from spec/. The fixture itself is the authority
+# artifact; //rust/kernel:kernel_baseline_test consumes it by label, and an
+# alias package outside spec/ would only add indirection without making
+# spec/ any more authoritative.
 exports_files(["kernel-protocol-deterministic.json"])

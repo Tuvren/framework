@@ -8,3 +8,8 @@
 # none of the wildcard bazel commands complete, in local dev or in CI once
 # `devenv shell` has been entered at least once.
 .devenv
+# Same failure class, preemptively: several popular npm packages ship their
+# own BUILD/BUILD.bazel files, which would break the wildcard package walk
+# the moment `bun install` pulls one in (none do today — checked at epic #87
+# PR review). Ignoring node_modules also speeds package discovery.
+node_modules

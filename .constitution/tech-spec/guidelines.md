@@ -9,11 +9,6 @@ the multi-language transition foundation:
 .
 ├── .constitution/
 ├── docs/
-├── telemetry/
-│   ├── semconv/
-│   │   └── tuvren-runtime.yaml
-│   ├── semantic-conventions.md
-│   └── otel-attributes.json
 ├── reports/
 │   └── compatibility/
 ├── tools/

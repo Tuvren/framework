@@ -20,9 +20,12 @@ in consumer-facing APIs.
   runtime, providers, runners, streaming, tools/drivers, telemetry, and
   the host REPL, plus each boundary's conformance adapters and
   certification wrappers.
-- `rust/` — the Rust kernel implementation (`rust/kernel`) and its
-  conformance adapter/certification wrapper, currently the framework's
-  second language.
+- `rust/` — the Rust implementation line, currently the framework's
+  second language: the kernel (`rust/kernel`), its gRPC service
+  (`rust/kernel-grpc-service`), and both the kernel-specific and generic
+  framework conformance adapter/certification pairs
+  (`rust/kernel-conformance-adapter` + `rust/kernel-certification`,
+  `rust/conformance-adapter` + `rust/certification`).
 - `tools/` — shared, language-neutral tooling: the semantic conformance
   engine (`tools/conformance/harness/run.ts`), the adapter protocol,
   certification discovery, codegen/validation scripts, and generators.

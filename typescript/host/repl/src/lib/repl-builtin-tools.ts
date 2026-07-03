@@ -53,7 +53,7 @@ export function createReplBuiltinTools(): TuvrenToolDefinition[] {
         return {
           hits: [
             {
-              title: "Tuvren Runtime",
+              title: "Tuvren",
               url: "https://example.invalid/tuvren",
             },
           ],

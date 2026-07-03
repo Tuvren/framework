@@ -217,7 +217,7 @@ export function hasSearchToolContinuation(
     hits.some(
       (hit) =>
         isPlainRecord(hit) &&
-        hit.title === "Tuvren Runtime" &&
+        hit.title === "Tuvren" &&
         hit.url === "https://example.invalid/tuvren"
     )
   );
@@ -265,7 +265,7 @@ export function hasApprovalToolContinuation(
     searchHits.some(
       (hit) =>
         isPlainRecord(hit) &&
-        hit.title === "Tuvren Runtime" &&
+        hit.title === "Tuvren" &&
         hit.url === "https://example.invalid/tuvren"
     ) &&
     isPlainRecord(emailResult) &&

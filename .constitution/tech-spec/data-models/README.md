@@ -296,7 +296,7 @@ erDiagram
 ### 3.6 Boundary-Owned Contract, Conformance, and Compatibility Assets
 
 - **Purpose:** Define the machine-readable assets that preserve one semantic system across TypeScript and future implementation lines.
-- **Storage Shape:** Boundary-owned authored sources under `contracts/spec/`, `conformance/`, and `interop/`; reviewed generated artifacts under boundary-owned `artifacts/`; generated compatibility output under `reports/compatibility/`; and observability conventions under `telemetry/`.
+- **Storage Shape:** Boundary-owned authored sources under `spec/<port>/` (TypeSpec, CDDL, proto), `spec/conformance/<port>/`, and `spec/conformance/interop/`; reviewed generated artifacts under `spec/<port>/artifacts/`; generated compatibility output under `reports/compatibility/`; and observability conventions under `spec/telemetry/`.
 - **Constraints / Invariants:**
   - Authored sources are primary. This includes `.tsp`, `.cddl`, `.proto`, JSON conformance fixtures, and conformance fixture schemas.
   - Framework- and provider-facing shape contracts may promote TypeSpec to the authored source and emit JSON Schema 2020-12 plus OpenAPI artifacts under the owning contract package.
@@ -312,7 +312,7 @@ erDiagram
   - Freeze-gate reporting must name which claims are authority-backed and shared-conformance-covered, which remain implementation-local or implementation-defined, which are explicitly deferred, and which stale claims require docs cleanup before a future implementation line is authorized.
   - Checked-in generated language bindings, if they exist, must live under the consuming implementation tree rather than a shared root generated directory.
   - `reports/compatibility/compatibility-matrix.json` is generated from actual suite and interop results, is never hand-authored as a semantic claim, and should be suitable for near-public readiness scrutiny once the measured evidence exists.
-  - `telemetry/semconv/tuvren-runtime.yaml` is the authored observability source for current and future implementation lines; reviewed summaries and generated language helpers are downstream outputs of that source.
+  - `spec/telemetry/semconv/tuvren-runtime.yaml` is the authored observability source for current and future implementation lines; reviewed summaries and generated language helpers are downstream outputs of that source.
 - **Indexes / Access Paths:**
   - by boundary ownership: `spec/<port>/` (language-neutral authority), `spec/conformance/<port>/...`, `spec/interop/...` or `spec/conformance/interop/<channel>/...`
   - by repo-global generated outputs: `reports/compatibility/...`
@@ -495,7 +495,7 @@ type TranscriptFile = [TranscriptHeader, ...TranscriptEntry[]];
 
 ### 3.10 Operational Telemetry Record Model
 
-- **Purpose:** Per ADR-042, the operational telemetry surface emits structured, lineage-correlated records an operator can use to reconstruct what a turn did. The vocabulary is the authored OpenTelemetry semantic convention at `telemetry/semconv/tuvren-runtime.yaml`; this section defines the TypeScript record shape the sink receives.
+- **Purpose:** Per ADR-042, the operational telemetry surface emits structured, lineage-correlated records an operator can use to reconstruct what a turn did. The vocabulary is the authored OpenTelemetry semantic convention at `spec/telemetry/semconv/tuvren-runtime.yaml`; this section defines the TypeScript record shape the sink receives.
 - **Storage Shape:** Not persisted by the runtime; handed to the configured `TuvrenTelemetrySink` (§4.18) for the sink to export, buffer, or drop. Records are plain serializable objects keyed by runtime lineage.
 - **Constraints / Invariants:**
   - Every record carries the lineage correlation keys it can know: `threadId`, `branchId`, `turnId`, `runId`, and where relevant `turnNodeHash`. Attribute keys come from the semconv source (run id, turn id, branch id, runner id, tool call id, checkpoint hash, parent checkpoint hash, resumed-from hash, backend id, provider id).

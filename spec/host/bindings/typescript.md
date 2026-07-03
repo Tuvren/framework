@@ -1,11 +1,13 @@
 # TypeScript Binding Appendix
 
-`@tuvren/runtime-api` and the engine package `@tuvren/runtime` (which absorbed
-the retired `@tuvren/runtime-core` shim) are TypeScript binding
-projections for the neutral host contract (the `messages`, `events`,
-`execution`, `tools`, `provider`, and `extensions` binding sections of
-`tuvren.shared.core` per ADR-037 — `runtime-api` has no standalone
-authority packet). TypeScript function signatures,
+The engine package `@tuvren/runtime` (which absorbed the retired
+`@tuvren/runtime-core` shim) and the `@tuvren/core` type subpaths are the
+TypeScript binding projections for the neutral host contract (the
+`messages`, `events`, `execution`, `tools`, `provider`, and `extensions`
+binding sections of `tuvren.shared.core` per ADR-037). The former
+`@tuvren/runtime-api` shim was retired at 87-M9.2 — it never had a
+standalone authority packet, and its type surface lives on as
+`@tuvren/core` subpath exports. TypeScript function signatures,
 `Promise`, `AsyncIterable`, `AbortSignal`, `Uint8Array`, and language-native
 errors are binding conveniences only.
 

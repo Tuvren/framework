@@ -7,7 +7,8 @@
 # adoption was researched and reverted — rules_js only consumes pnpm
 # lockfiles (no bun.lock path) and every TS suite in this repo is
 # bun:test-based with no upstream Bazel support (aspect-build/rules_js#1258
-# open). The 17 TypeScript BUILD.bazel targets are therefore M1.2-pattern
+# open). The TypeScript Bazel surface (16 BUILD.bazel files declaring 32
+# `native_binary` targets at review time) is therefore M1.2-pattern
 # shims (`native_binary` -> tools/bazel/nx-run.sh, which shells back out to
 # `bun run nx run <target>`), not hermetic builds/tests. Only the Rust
 # targets under //rust/kernel — the one Rust crate in the Bazel graph —
@@ -72,6 +73,11 @@
 
 name: CI
 
+# Least privilege: nothing in this workflow writes through GITHUB_TOKEN, and
+# the default token scope is an org/repo setting that may be write-all.
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -114,7 +120,11 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v22
 
       - name: Install devenv
-        run: nix profile install nixpkgs#devenv
+        # Pinned to the exact nixpkgs revision providing devenv 2.1.2 (the
+        # version in local dev at pin time; binary-cached on cache.nixos.org).
+        # A floating `nixpkgs#devenv` would let CI's devenv CLI drift with no
+        # repo change — devenv.lock pins the project's inputs, not the CLI.
+        run: nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
 
       # No direnv daemon in CI, so we enter the devenv shell directly rather
       # than relying on .envrc's `use devenv` hook (that hook is a local
@@ -157,7 +167,11 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v22
 
       - name: Install devenv
-        run: nix profile install nixpkgs#devenv
+        # Pinned to the exact nixpkgs revision providing devenv 2.1.2 (the
+        # version in local dev at pin time; binary-cached on cache.nixos.org).
+        # A floating `nixpkgs#devenv` would let CI's devenv CLI drift with no
+        # repo change — devenv.lock pins the project's inputs, not the CLI.
+        run: nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
 
       - name: bazel build //... (all targets, incl. TS shim launchers)
         run: devenv shell -- bazel build //...

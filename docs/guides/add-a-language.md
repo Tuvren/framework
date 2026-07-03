@@ -24,9 +24,18 @@ Before writing any code, read, for the port you are targeting:
 
 - `spec/<port>/README.md` — the port's own "pointer, not oracle" framing
   and directory map.
-- `spec/<port>/authority-packet.json` — the machine-readable authority
-  manifest: `authoritativeSources`, `conformancePlans`,
-  `bindingProjections`, `forbiddenAuthoritySources`, `verificationPaths`.
+- The port's authority packet — the machine-readable authority manifest:
+  `authoritativeSources`, `conformancePlans`, `bindingProjections`,
+  `forbiddenAuthoritySources`, `verificationPaths`. Its location differs
+  by port: `kernel`, `core`, `providers`, `telemetry`, and `interop` keep
+  a port-root `spec/<port>/authority-packet.json`, while `tools`,
+  `runners`, and `streaming` nest their packets per covered surface
+  (`spec/tools/mcp/authority-packet.json`,
+  `spec/runners/react/authority-packet.json`,
+  `spec/streaming/sse/authority-packet.json`) because the packet covers
+  only that surface, not the whole port. `host` has no packet at all —
+  its contract sections are owned by `tuvren.shared.core` per ADR-037
+  (see `spec/host/README.md`).
 - The port's neutral artifacts. These differ by port — do not assume one
   shape:
   - `kernel` is CDDL-only: `spec/kernel/cddl/kernel-records.cddl` describes
@@ -235,7 +244,9 @@ and confirm your adapter round-trips the protocol schema
 ## 7. Update the authority packet's binding projections
 
 Once your implementation exists, add your language to the target port's
-`bindingProjections` in `spec/<port>/authority-packet.json` (e.g.
+`bindingProjections` in its authority packet (port-root
+`spec/<port>/authority-packet.json`, or the per-surface nested location
+listed in §0 for `tools`/`runners`/`streaming`; e.g.
 `"rust": "rust/kernel"`) and add your new implementation, adapter, and
 certification paths to that packet's `forbiddenAuthoritySources` list —
 implementation trees are binding projections, never authority sources,

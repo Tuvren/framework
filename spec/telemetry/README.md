@@ -1,5 +1,15 @@
 # Telemetry port — semconv authority
 
+> **Naming disposition (2026-07, epic #87 PR review):** the semconv
+> registry identity `tuvren-runtime` and the `tuvren.runtime.*` attribute
+> namespace are deliberately kept, even though "Tuvren Runtime" was
+> retired as a product name by epic #87 §14. Here "runtime" names the
+> observed component (runtime-as-component, like upstream OTel's
+> `process.runtime.*`), not the product, and the identity flows into the
+> generated sinks in both languages — renaming it would be a breaking
+> telemetry-vocabulary change with no product-naming payoff. Do not flag
+> these identifiers in future naming sweeps.
+
 The telemetry semantic-convention vocabulary is physically consolidated here
 as of 87-M8.2a (lifted from `boundaries/telemetry/semconv/spec/` and the
 top-level `telemetry/` tree):

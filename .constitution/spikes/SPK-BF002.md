@@ -1,5 +1,12 @@
 # Spike Report: KRT-BF002 Crypto-Shredding Envelope + Host-Key Custody
 
+> **Path note (2026-07, epic #87 PR review):** This is a point-in-time
+> spike baseline; its body is preserved verbatim below and is not
+> rewritten. Paths cited as `boundaries/providers/implementations/typescript`
+> now live under `typescript/providers/` (bridge-ai-sdk) and
+> `typescript/tools/mcp-client/` (the MCP client moved ports at 87-M5).
+> None of these location shifts change the spike's findings.
+
 ## 1. Context & Objective
 - **Triggering upstream file/section:** `.constitution/tech-spec/adrs/ADR-051-data-lifecycle-reachability-reclamation-and-crypto-shr.md`; Architecture "Data Lifecycle, Reclamation & Erasure Model" + Secret Isolation Model; Architecture flow §4.17 (`.constitution/architecture/flows/flow-tenant-offboarding-erasure.md`).
 - **Target:** The host-key-encrypted untrusted-edge payload envelope that makes sensitive payloads erasable by key destruction (crypto-shredding) while leaving the lineage hash structure intact, with keys held entirely by the host. This unlocks the implementation ticket **KRT-BF005** and is reused by **KRT-BH002** (carried provider-continuity artifacts as shreddable references).

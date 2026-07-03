@@ -44,7 +44,7 @@ import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import {
   loadNxProjectFiles,
-  type NxProjectTarget,
+  targetCommandStrings,
 } from "../../scripts/lib/nx-projects.js";
 
 const ROOT = process.cwd();
@@ -57,43 +57,34 @@ const NON_CERTIFICATION_TAG = "layer:testkit";
 const SHARED_ENGINE_PATH = "tools/conformance/harness/run.ts";
 
 interface ProjectRecord {
-  conformanceCommands: readonly string[];
+  /**
+   * Names of targets (any target, not just `conformance`) whose command
+   * strings — base `options` plus `configurations` overrides, both the
+   * single-string and `commands`-array shapes — invoke the shared engine.
+   * The back-check must see every shape and every target name, or a
+   * runner wired to the engine under a different target name or an
+   * alternate command shape silently escapes the certified fleet.
+   */
+  engineInvokingTargets: readonly string[];
   hasConformanceTarget: boolean;
   name: string;
   path: string;
   tags: readonly string[];
 }
 
-/**
- * Every command string a conformance target can execute: nx:run-commands
- * accepts a single `options.command` string OR an `options.commands` array
- * of strings / `{ command }` objects. The engine back-check below must see
- * all of them, or an array-form target could invoke the shared engine
- * without joining the certified fleet.
- */
-function commandStrings(options: NxProjectTarget["options"]): string[] {
-  const out: string[] = [];
-  if (typeof options?.command === "string") {
-    out.push(options.command);
-  }
-  for (const entry of options?.commands ?? []) {
-    if (typeof entry === "string") {
-      out.push(entry);
-    } else if (typeof entry?.command === "string") {
-      out.push(entry.command);
-    }
-  }
-  return out;
-}
-
 function loadProjects(): ProjectRecord[] {
   return loadNxProjectFiles(ROOT).map((file) => {
-    const conformance = file.project.targets?.conformance;
+    const targets = file.project.targets ?? {};
+    const engineInvokingTargets = Object.entries(targets)
+      .filter(([, target]) =>
+        targetCommandStrings(target).some((command) =>
+          command.includes(SHARED_ENGINE_PATH)
+        )
+      )
+      .map(([targetName]) => targetName);
     return {
-      conformanceCommands: conformance
-        ? commandStrings(conformance.options)
-        : [],
-      hasConformanceTarget: conformance !== undefined,
+      engineInvokingTargets,
+      hasConformanceTarget: targets.conformance !== undefined,
       name: file.name,
       path: file.path,
       tags: file.project.tags ?? [],
@@ -159,18 +150,23 @@ for (const project of discovered) {
 }
 
 for (const project of projects) {
-  if (!project.hasConformanceTarget) {
-    continue;
-  }
-  const invokesEngine = project.conformanceCommands.some((command) =>
-    command.includes(SHARED_ENGINE_PATH)
-  );
-  if (invokesEngine && !discoveredNames.has(project.name)) {
+  // Engine back-check: ANY target invoking the shared engine — whatever the
+  // target is named, whichever command shape or configuration override it
+  // uses — must belong to the certified fleet or be explicitly classified
+  // non-certification.
+  if (
+    project.engineInvokingTargets.length > 0 &&
+    !(
+      discoveredNames.has(project.name) ||
+      project.tags.includes(NON_CERTIFICATION_TAG)
+    )
+  ) {
     problems.push(
-      `${project.name} (${project.path}) invokes the shared engine (${SHARED_ENGINE_PATH}) but is not tagged ${CERTIFICATION_TAG}`
+      `${project.name} (${project.path}) invokes the shared engine (${SHARED_ENGINE_PATH}) from target(s) ${project.engineInvokingTargets.join(", ")} but is neither tagged ${CERTIFICATION_TAG} nor ${NON_CERTIFICATION_TAG}`
     );
   }
   if (
+    project.hasConformanceTarget &&
     !(
       discoveredNames.has(project.name) ||
       project.tags.includes(NON_CERTIFICATION_TAG)
