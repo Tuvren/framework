@@ -35,7 +35,6 @@ const EXCLUDE_SRC_PREFIXES = [
   "typescript/core-types/src",
   "boundaries/framework/contracts/runtime-api/implementations/typescript/src",
   "boundaries/framework/contracts/event-stream/implementations/typescript/src",
-  "boundaries/framework/contracts/tool-contracts/implementations/typescript/src",
   "boundaries/framework/contracts/driver-api/implementations/typescript/src",
   // The codemod script itself
   "tools/scripts/migrate-to-core.ts",

@@ -21,9 +21,6 @@
       "path": "./boundaries/framework/implementations/typescript/drivers/react"
     },
     {
-      "path": "./boundaries/framework/contracts/tool-contracts/implementations/typescript"
-    },
-    {
       "path": "./boundaries/framework/contracts/event-stream/implementations/typescript"
     },
     {

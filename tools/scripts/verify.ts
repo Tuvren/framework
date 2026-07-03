@@ -86,7 +86,6 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-event-stream",
   "framework-runtime-api",
   "framework-driver-api",
-  "framework-tool-contracts",
   // Keep the kernel testkit in the repo-global test lane so boundary-owned
   // fixture drift cannot hide behind the narrower conformance-runner coverage.
   "kernel-testkit",
@@ -122,7 +121,6 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "framework-runtime-api",
   "framework-driver-api",
   "framework-event-stream",
-  "framework-tool-contracts",
   "framework-testkit",
   "framework-runtime",
   "framework-driver-react",
@@ -139,7 +137,6 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "framework-event-stream",
   "framework-runtime-api",
   "framework-runtime",
-  "framework-tool-contracts",
   "provider-api",
   "providers-testkit",
   "framework-testkit",
