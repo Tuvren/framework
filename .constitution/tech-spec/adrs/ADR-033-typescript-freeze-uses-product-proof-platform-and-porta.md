@@ -1,5 +1,7 @@
 ### ADR-033 TypeScript Freeze Uses Product Proof, Platform, and Portability Gates
 
+> **Path/terminology note (2026-07, epic #87, M10.3b):** This ADR is a historical decision record; its body below is preserved verbatim and is not rewritten. Epic #87 renamed "driver" → "runner" repo-wide (e.g. the ReAct Driver → the ReAct Runner, `@tuvren/driver-api` → the `@tuvren/core/runner` subpath, `driverId`/`DriverKind` → `runnerId`/`RunnerKind`) and relocated `boundaries/<area>/...` paths into `spec/<port>/...` (language-neutral authority) plus `typescript/<area>/...` / `rust/<area>/...` (language-specific implementations); `implementations/<lang>/` subtrees moved to top-level `typescript/`/`rust/` trees. Any `driver` term or `boundaries/`-rooted path below reflects the pre-epic-#87 name or location as of this decision's date; see `.constitution/tech-spec/guidelines.md` and `.constitution/tech-spec/stack.md` for the current map. This note does not change the decision recorded below.
+
 - **Status:** accepted
 - **Context:** The AG closure proves an important subset of promoted semantics, but it does not by itself prove that the full TypeScript line is productized enough to freeze or that Rust can resume safely against the intended portable scope.
 - **Decision:** TypeScript freeze uses three staged gates:

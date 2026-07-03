@@ -8,8 +8,8 @@ Epic AD generated the normative claim inventory, coverage matrix, deferred-surfa
 
 - `docs/KrakenFrameworkSpecification.md`
 - `docs/KrakenKernelSpecification.md`
-- `boundaries/*/contracts/*/spec/authority-packet.json`
-- `boundaries/*/conformance/plans/*.json`
+- `spec/*/authority-packet.json`
+- `spec/conformance/*/plans/*.json`
 - `reports/compatibility/compatibility-matrix.json` and `reports/compatibility/evidence/*.json`
 
 ## Claim Counts

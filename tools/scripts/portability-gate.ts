@@ -102,7 +102,9 @@ interface PortabilityInventoryManifest {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
+const SPEC_ROOT = resolve(REPO_ROOT, "spec");
+const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
+const RUST_ROOT = resolve(REPO_ROOT, "rust");
 const INVENTORY_PATH = resolve(
   REPO_ROOT,
   ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
@@ -520,7 +522,7 @@ function checkAdapterCoverage(
 ): PortabilityGateFailure[] {
   // A packet that declares `conformancePlans` must be referenced by *every*
   // adapter manifest of the matching boundary, not just one. The shared
-  // runner discovers plans per adapter manifest (`tools/conformance/runner/
+  // runner discovers plans per adapter manifest (`tools/conformance/harness/
   // run.ts:606-620`), so a packet that one adapter references but another
   // omits silently disappears from the omitting adapter's measured evidence
   // even though the portability gate would still pass. For a cross-
@@ -614,7 +616,7 @@ async function loadAllManifests(): Promise<
   Map<string, AuthorityPacketManifest>
 > {
   const manifests = new Map<string, AuthorityPacketManifest>();
-  const paths = await findFilesByName(BOUNDARIES_ROOT, MANIFEST_FILE_NAME);
+  const paths = await findFilesByName(SPEC_ROOT, MANIFEST_FILE_NAME);
 
   for (const manifestPath of paths) {
     const manifest = JSON.parse(
@@ -630,9 +632,16 @@ async function loadAllAdapterManifests(): Promise<
   Map<string, AdapterManifest>
 > {
   const manifests = new Map<string, AdapterManifest>();
-  const paths = await findFiles(BOUNDARIES_ROOT, (name) =>
-    ADAPTER_MANIFEST_NAME_PATTERN.test(name)
+  const adapterRoots = [TYPESCRIPT_ROOT, RUST_ROOT].filter((root) =>
+    existsSync(root)
   );
+  const paths = (
+    await Promise.all(
+      adapterRoots.map((root) =>
+        findFiles(root, (name) => ADAPTER_MANIFEST_NAME_PATTERN.test(name))
+      )
+    )
+  ).flat();
 
   for (const manifestPath of paths) {
     const manifest = JSON.parse(
@@ -717,8 +726,16 @@ async function checkInventoryMdJsonConsistency(
   // reliably name every required source by literal path (some paths are
   // paraphrased in prose for readability). On-disk source path presence and
   // packet-registration are already enforced by `checkRequiredSources`, which
-  // is the structural guard for that class of drift. Packet-path drift is
-  // similarly caught by `checkExpectedPacketsPresent`.
+  // is the structural guard for that class of drift.
+  //
+  // Packet PATHS are the exception (added 87-M4.2b): unlike required-source
+  // paths they are never paraphrased — the MD's packet list and surface
+  // table cite each packet's home literally — and unlike disk-presence
+  // (checkExpectedPacketsPresent) the MD mention is exactly what drifted,
+  // silently, at 87-M2.2, 87-M1.5, and 87-M4.1 when packet homes moved.
+  // Anchoring every expectedPackets[].packetPath verbatim makes each future
+  // packet lift force the paired MD edit instead of leaving it to review
+  // discipline.
   if (!existsSync(INVENTORY_PATH)) {
     return [];
   }
@@ -732,6 +749,15 @@ async function checkInventoryMdJsonConsistency(
       failures.push({
         rule: "inventory-md-json-consistency",
         message: `inventory JSON lists packetId ${entry.packetId} but ${inventoryRel} does not mention it; paired-edit drift — revise the MD and JSON together`,
+      });
+    }
+  }
+
+  for (const entry of inventory.expectedPackets) {
+    if (!mdContent.includes(entry.packetPath)) {
+      failures.push({
+        rule: "inventory-md-json-consistency",
+        message: `inventory JSON locates packet ${entry.packetId} at ${entry.packetPath} but ${inventoryRel} does not cite that path; paired-edit drift — a packet lift must update the MD's packet list and surface table together with the JSON`,
       });
     }
   }
@@ -821,7 +847,7 @@ async function readPlanApplicabilityCapabilities(
 ): Promise<readonly string[]> {
   // Returns the union of plan-level applicability capabilities and every
   // check-level `capabilities` array. The shared runner decides applicability
-  // from that exact union (`tools/conformance/runner/run.ts:663-665`), so an
+  // from that exact union (`tools/conformance/harness/run.ts:663-665`), so an
   // earlier gate version that only read `plan.applicability.capabilities`
   // would miss check-scoped capability gaps — a check tagged with a
   // capability no adapter advertises would run as `nonApplicable` forever

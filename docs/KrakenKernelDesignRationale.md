@@ -5,7 +5,7 @@
 
 Read after `KrakenKernelSpecification.md`. This document explains decisions; it does not define the contract.
 
-Kraken is the execution engine inside Tuvren Runtime, so this rationale stays intentionally engine-focused.
+Kraken is the execution engine inside Tuvren, so this rationale stays intentionally engine-focused.
 
 ---
 

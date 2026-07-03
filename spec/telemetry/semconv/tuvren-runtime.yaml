@@ -1,0 +1,128 @@
+groups:
+  - id: tuvren.runtime.identity
+    type: attribute_group
+    brief: Runtime identity and correlation attributes for Tuvren Runtime telemetry.
+    stability: development
+    attributes:
+      - id: tuvren.runtime.run.id
+        type: string
+        brief: The Tuvren runtime run identifier.
+        examples: ["run_main"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.turn.id
+        type: string
+        brief: The Tuvren runtime turn identifier.
+        examples: ["turn_main"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.branch.id
+        type: string
+        brief: The Tuvren runtime branch identifier.
+        examples: ["branch_main"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.thread.id
+        type: string
+        brief: The Tuvren runtime thread identifier.
+        examples: ["thread_main"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.scope.id
+        type: string
+        brief: The host-bound Scope (tenancy partition identity, ADR-048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument.
+        examples: ["tuvren.scope.default", "tenant-a"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.runner.id
+        type: string
+        brief: The active runner identifier for the runtime execution.
+        examples: ["react"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.tool_call.id
+        type: string
+        brief: The current tool call identifier when the execution is inside tool work.
+        examples: ["tool_call_1"]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.checkpoint.hash
+        type: string
+        brief: The current checkpoint hash observed during runtime progression.
+        examples:
+          [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          ]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.parent_checkpoint.hash
+        type: string
+        brief: The parent checkpoint hash that the current checkpoint extends from.
+        examples:
+          [
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          ]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.resumed_from.hash
+        type: string
+        brief: The checkpoint hash that a resumed execution continued from.
+        examples:
+          [
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          ]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.backend.id
+        type: string
+        brief: The backend implementation identifier selected by the runtime.
+        examples: ["sqlite"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.provider.id
+        type: string
+        brief: The provider bridge or provider identifier used for model work.
+        examples: ["ai-sdk-openai"]
+        stability: development
+        requirement_level: recommended
+      - id: tuvren.runtime.error.code
+        type: string
+        brief: The stable Tuvren runtime error code associated with a failed telemetry span.
+        examples: ["runtime_error"]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.capability.execution_class
+        type: string
+        brief: The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client).
+        examples: ["tuvren-server", "provider-native"]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.capability.owner
+        type: string
+        brief: The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-046 AW006.
+        examples: ["tuvren", "provider"]
+        stability: development
+        requirement_level: opt_in
+  - id: tuvren.runtime.bounds
+    type: attribute_group
+    brief: Framework-enforced execution-bounds attributes carried by the execution.bounded telemetry event (ADR-043, KRT-BD006).
+    stability: development
+    attributes:
+      - id: tuvren.runtime.bound
+        type: string
+        brief: The hard-stop execution bound that was breached (maxIterations, maxToolCalls, or maxWallClockMs).
+        examples: ["maxIterations", "maxWallClockMs"]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.bound.limit
+        type: string
+        brief: The configured limit for the breached bound, emitted as a decimal string. The authoritative integer value lives on the canonical error-event details and the failed ExecutionResult.
+        examples: ["64", "256"]
+        stability: development
+        requirement_level: opt_in
+      - id: tuvren.runtime.bound.observed
+        type: string
+        brief: The observed value at breach time, emitted as a decimal string. The authoritative integer value lives on the canonical error-event details and the failed ExecutionResult.
+        examples: ["65", "257"]
+        stability: development
+        requirement_level: opt_in

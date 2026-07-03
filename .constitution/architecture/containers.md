@@ -3,7 +3,7 @@
 ### Host Integration Boundary
 
 - **Logical Type:** External boundary adapter
-- **Responsibility:** Expose Tuvren Runtime to embedding environments, initiate turns, await terminal execution results, consume event streams, list and read durable state through the host-facing Durable-Read Surface, surface status, deliver steering, route approvals, and trigger cancellation. The first product-depth proof host is a serious REPL CLI built against this same boundary rather than a privileged internal harness, with both an interactive operating mode and a headless stdin-driven mode.
+- **Responsibility:** Expose Tuvren to embedding environments, initiate turns, await terminal execution results, consume event streams, list and read durable state through the host-facing Durable-Read Surface, surface status, deliver steering, route approvals, and trigger cancellation. The first product-depth proof host is a serious REPL CLI built against this same boundary rather than a privileged internal harness, with both an interactive operating mode and a headless stdin-driven mode.
 - **Inputs:** User or system signals, approval responses, steering signals, cancellation requests, runtime events, durable-read queries (list threads, list branches, get state at TurnNode, walk turn history, read branch messages).
 - **Outputs:** Turn-start requests, control signals, terminal execution results, translated protocol events, host-visible execution status, durable-read responses, captured transcript artifacts.
 - **Depends on:** Framework Shared Services (including its Durable-Read Surface), Event Stream Adapter Layer.
@@ -11,32 +11,32 @@
 ### Curated Host-Facing SDK Surface
 
 - **Logical Type:** Host-developer ergonomics boundary
-- **Responsibility:** Compose the underlying runtime containers into one curated host-facing surface that a host developer consumes. This is a logical boundary, not a single physical artifact: it groups a Shared Primitive Container (subpath-exported primitives covering messages, tools, events, errors, execution, driver contracts, provider contracts, and extensions) and a Slim Convenience Container (re-exports the curated primitives and exposes the Batteries-Included Composition entrypoint that assembles kernel, backend, driver registry, and framework runtime from one factory call). Leaf integration containers (backends, stream adapters, drivers, provider bridges, MCP Client Container, Schema Authoring Helper, Tool Source Container) peer-depend on the Shared Primitive Container so that one runtime instance always sees one primitive instance.
-- **Inputs:** Host-developer composition requests (which backend, which driver, which provider, which tools), leaf integration container choices, primitive imports from subpaths.
+- **Responsibility:** Compose the underlying runtime containers into one curated host-facing surface that a host developer consumes. This is a logical boundary, not a single physical artifact: it groups a Shared Primitive Container (subpath-exported primitives covering messages, tools, events, errors, execution, runner contracts, provider contracts, and extensions) and a Slim Convenience Container (re-exports the curated primitives and exposes the Batteries-Included Composition entrypoint that assembles kernel, backend, runner registry, and framework runtime from one factory call). Leaf integration containers (backends, stream adapters, runners, provider bridges, MCP Client Container, Schema Authoring Helper, Tool Source Container) peer-depend on the Shared Primitive Container so that one runtime instance always sees one primitive instance.
+- **Inputs:** Host-developer composition requests (which backend, which runner, which provider, which tools), leaf integration container choices, primitive imports from subpaths.
 - **Outputs:** A wired-up Framework Shared Services instance the host can drive through the Host Integration Boundary; curated primitive exports consumable by hosts, extensions, and downstream packages.
-- **Depends on:** Shared Primitive Container, Slim Convenience Container, Framework Shared Services, Kernel Boundary, Durable State Boundary (through chosen backend), Driver Runtime, Provider Gateway, Tool Execution Gateway, Schema Authoring Helper, MCP Client Container.
+- **Depends on:** Shared Primitive Container, Slim Convenience Container, Framework Shared Services, Kernel Boundary, Durable State Boundary (through chosen backend), Runner Runtime, Provider Gateway, Tool Execution Gateway, Schema Authoring Helper, MCP Client Container.
 
 ### Framework Shared Services
 
 - **Logical Type:** Application service layer
-- **Responsibility:** Own the stable framework contracts and shared runtime services above the kernel, including execution-handle lifecycle, turn/run orchestration shell, context manifest maintenance, event publication, extension coordination, driver selection, terminal-value resolution on every execution handle (the unified `awaitResult` surface), and the Durable-Read Surface. The Durable-Read Surface composes existing kernel structural primitives (`branch.list`, `node.get`, `node.walkBack`, `tree.resolve`, `tree.manifest`, `store.get`) and the new kernel `thread.list` primitive into host-facing operations: list threads owned by the runtime instance (with cursor-based pagination and optional filters), list branches inside a thread, read structured runtime state at any TurnNode, walk turn history of a branch as an async iterator with a cursor (newest-first), and read durable conversational messages on a branch without requiring the host to reconstruct messages from TurnTree references and the content-addressed object store by hand. Framework Shared Services also owns Execution Bound enforcement: it caps per-turn iterations, tool calls, and resource budget above driver discretion, and when a configured bound is reached it forces a safe terminal outcome (a typed bounded-execution result) rather than allowing an unbounded loop. It emits canonical runtime activity to the Telemetry & Observability Boundary in the same vocabulary it publishes to the Event Stream Adapter Layer.
-- **Inputs:** Host commands, execution state from durable history, extension contributions, driver-emitted control outcomes, provider and tool gateway results, durable-read queries from hosts, execution-bound configuration.
-- **Outputs:** Driver invocation requests, kernel syscalls (read and write), runtime status transitions, event publication, approval state, steering incorporation, host-visible execution handles with terminal-value resolution, host-facing durable-read responses.
-- **Depends on:** Driver Runtime, Context Assembly and Engineering, Extension Runtime, Orchestration Runtime, Kernel Boundary, Event Stream Adapter Layer.
+- **Responsibility:** Own the stable framework contracts and shared runtime services above the kernel, including execution-handle lifecycle, turn/run orchestration shell, context manifest maintenance, event publication, extension coordination, runner selection, terminal-value resolution on every execution handle (the unified `awaitResult` surface), and the Durable-Read Surface. The Durable-Read Surface composes existing kernel structural primitives (`branch.list`, `node.get`, `node.walkBack`, `tree.resolve`, `tree.manifest`, `store.get`) and the new kernel `thread.list` primitive into host-facing operations: list threads owned by the runtime instance (with cursor-based pagination and optional filters), list branches inside a thread, read structured runtime state at any TurnNode, walk turn history of a branch as an async iterator with a cursor (newest-first), and read durable conversational messages on a branch without requiring the host to reconstruct messages from TurnTree references and the content-addressed object store by hand. Framework Shared Services also owns Execution Bound enforcement: it caps per-turn iterations, tool calls, and resource budget above runner discretion, and when a configured bound is reached it forces a safe terminal outcome (a typed bounded-execution result) rather than allowing an unbounded loop. It emits canonical runtime activity to the Telemetry & Observability Boundary in the same vocabulary it publishes to the Event Stream Adapter Layer.
+- **Inputs:** Host commands, execution state from durable history, extension contributions, runner-emitted control outcomes, provider and tool gateway results, durable-read queries from hosts, execution-bound configuration.
+- **Outputs:** Runner invocation requests, kernel syscalls (read and write), runtime status transitions, event publication, approval state, steering incorporation, host-visible execution handles with terminal-value resolution, host-facing durable-read responses.
+- **Depends on:** Runner Runtime, Context Assembly and Engineering, Extension Runtime, Orchestration Runtime, Kernel Boundary, Event Stream Adapter Layer.
 
-### Driver Runtime
+### Runner Runtime
 
 - **Logical Type:** Execution strategy boundary
-- **Responsibility:** Implement one concrete execution model over shared framework primitives. The initial baseline is the ReAct Driver, which renders prompts, interprets provider responses, evaluates loop decisions, and determines when to continue, pause, hand off, fail, or end a turn.
-- **Inputs:** Active context, driver configuration, provider responses, tool results, extension verdicts, steering state, and framework-owned control constraints.
-- **Outputs:** Canonical assistant messages, tool batches, runtime resolutions, driver-specific state transitions, and context-engineering or orchestration intents.
+- **Responsibility:** Implement one concrete execution model over shared framework primitives. The initial baseline is the ReAct Runner, which renders prompts, interprets provider responses, evaluates loop decisions, and determines when to continue, pause, hand off, fail, or end a turn.
+- **Inputs:** Active context, runner configuration, provider responses, tool results, extension verdicts, steering state, and framework-owned control constraints.
+- **Outputs:** Canonical assistant messages, tool batches, runtime resolutions, runner-specific state transitions, and context-engineering or orchestration intents.
 - **Depends on:** Provider Gateway, Tool Execution Gateway, Extension Runtime, Context Assembly and Engineering.
 
 ### Context Assembly and Engineering
 
 - **Logical Type:** Domain service layer
 - **Responsibility:** Build the active working context from durable history, maintain the context manifest, and execute explicit context reshaping actions such as reduction, compaction, substitution, or handoff context rewrites.
-- **Inputs:** TurnTree state, message lineage, context policies, extension-generated context plans, handoff intents, steering signals, and driver requests.
+- **Inputs:** TurnTree state, message lineage, context policies, extension-generated context plans, handoff intents, steering signals, and runner requests.
 - **Outputs:** Active message sets, rebuilt manifests, replacement message collections, and context-engineering actions for checkpointing.
 - **Depends on:** Kernel Boundary.
 
@@ -46,7 +46,7 @@
 - **Responsibility:** Host lifecycle hooks, around-model wrappers, around-tool wrappers, system prompt contributions, extension-owned state updates, and declared shared exports within bounded contracts.
 - **Inputs:** Execution context, manifests, prompts, tool calls, model responses, tool results, iteration outcomes.
 - **Outputs:** Verdicts, state updates, custom events, prompt contributions, pause requests, and wrapped execution behavior.
-- **Depends on:** Framework Shared Services, Driver Runtime, Event Stream Adapter Layer.
+- **Depends on:** Framework Shared Services, Runner Runtime, Event Stream Adapter Layer.
 
 ### Provider Gateway
 
@@ -147,8 +147,8 @@
 ### Event Stream Adapter Layer
 
 - **Logical Type:** Outbound protocol adaptation boundary
-- **Responsibility:** Convert canonical Kraken runtime events into host-facing protocol shapes while preserving source attribution, execution ordering, and driver/runtime distinctions. Canonical events and SSE are core portable surfaces; ecosystem-specific adapters are downstream projections.
-- **Inputs:** Canonical runtime events, custom events, worker-forwarded events, and driver-attributed event metadata.
+- **Responsibility:** Convert canonical Kraken runtime events into host-facing protocol shapes while preserving source attribution, execution ordering, and runner/runtime distinctions. Canonical events and SSE are core portable surfaces; ecosystem-specific adapters are downstream projections.
+- **Inputs:** Canonical runtime events, custom events, worker-forwarded events, and runner-attributed event metadata.
 - **Outputs:** Protocol-ready event streams for host consumers.
 - **Depends on:** Framework Shared Services, Extension Runtime, Orchestration Runtime.
 
@@ -156,9 +156,9 @@
 
 - **Logical Type:** Outbound operational-telemetry adaptation boundary
 - **Responsibility:** Observe canonical runtime activity and produce correlated operational telemetry — structured records of turns, runs, model interactions, tool calls, checkpoints, approvals, steering, recovery events, and errors — keyed to runtime lineage concepts (thread, branch, turn, run, TurnNode) so an operator can reconstruct what a turn did after the fact. This surface is distinct from the Event Stream Adapter Layer: the event stream serves a host UI consuming one live turn, while operational telemetry serves monitoring, postmortems, performance investigation, and incident response, and may correlate across turns and runs. The canonical telemetry vocabulary is boundary-owned portable authority; a vendor-neutral export edge projects that vocabulary into standard observability tooling without coupling the runtime to any one vendor or wire format. The boundary must never emit secrets (see the Secret Isolation Model in §5).
-- **Inputs:** Canonical runtime activity signals from Framework Shared Services, Driver Runtime, Tool Execution Gateway, and Orchestration Runtime, including checkpoint and recovery telemetry derived by framework/runtime observation of kernel outcomes rather than by direct kernel-owned emission; telemetry configuration (sampling, redaction, export target selection).
+- **Inputs:** Canonical runtime activity signals from Framework Shared Services, Runner Runtime, Tool Execution Gateway, and Orchestration Runtime, including checkpoint and recovery telemetry derived by framework/runtime observation of kernel outcomes rather than by direct kernel-owned emission; telemetry configuration (sampling, redaction, export target selection).
 - **Outputs:** Correlated operational telemetry records in the canonical telemetry vocabulary; vendor-neutral telemetry exports for external observability tooling.
-- **Depends on:** Framework Shared Services, Driver Runtime, Tool Execution Gateway, Orchestration Runtime.
+- **Depends on:** Framework Shared Services, Runner Runtime, Tool Execution Gateway, Orchestration Runtime.
 
 ### Reference Host
 
@@ -235,27 +235,27 @@
 ### 2.1 Communication Relationships
 
 - Host Integration Boundary -> Framework Shared Services: synchronous execution commands, control signals, and durable-read queries
-- Framework Shared Services -> Driver Runtime: in-process execution strategy invocation
+- Framework Shared Services -> Runner Runtime: in-process execution strategy invocation
 - Framework Shared Services -> Kernel Boundary: synchronous runtime syscalls (read and write), checkpoint orchestration, and structural enumeration
 - Framework Shared Services <-> Context Assembly and Engineering: in-process context reads and explicit context rewrite actions
-- Driver Runtime -> Provider Gateway: synchronous request / streaming response interaction
-- Driver Runtime -> Tool Execution Gateway: synchronous or batched tool dispatch
-- Driver Runtime <-> Extension Runtime: in-process lifecycle callbacks and wrapper invocation
+- Runner Runtime -> Provider Gateway: synchronous request / streaming response interaction
+- Runner Runtime -> Tool Execution Gateway: synchronous or batched tool dispatch
+- Runner Runtime <-> Extension Runtime: in-process lifecycle callbacks and wrapper invocation
 - Tool Execution Gateway <-> Tool Source Container: tool resolution and tool-set composition for the active agent segment
 - Tool Source Container <- Schema Authoring Helper: registers tool definitions whose original authoring schema has been normalized to the boundary CustomSchema contract
 - MCP Client Container <-> External MCP Servers: protocol-bound tool advertisement, invocation, and result exchange over stdio or HTTP/SSE
 - MCP Client Container -> Tool Source Container: contributes MCP-advertised tools as Tuvren tool definitions
-- Driver Runtime -> Capability Registry / Binding & Endpoint Resolver / Capability Policy Engine: request which tool surfaces are exposed and resolve which execution class and endpoint owns each capability invocation
+- Runner Runtime -> Capability Registry / Binding & Endpoint Resolver / Capability Policy Engine: request which tool surfaces are exposed and resolve which execution class and endpoint owns each capability invocation
 - Tool Source Container / Provider Gateway -> Capability Registry: contribute capabilities and tool surfaces (built-in, MCP-advertised, provider-native, provider-mediated)
 - Binding & Endpoint Resolver -> Provider Gateway / Tool Execution Gateway / Client Endpoint Boundary / MCP Client Container: route a resolved capability invocation to its execution-class endpoint
 - Capability Policy Engine <-> Capability Registry / Binding & Endpoint Resolver: exposure-time and invocation-time policy decisions
 - Client Endpoint Boundary <-> External Client Endpoints: lease, dispatch an invocation envelope, and receive a client-reported result under partial observability
-- Curated Host-Facing SDK Surface -> Framework Shared Services / Kernel Boundary / Durable State Boundary / Driver Runtime / Provider Gateway / Tool Execution Gateway / Schema Authoring Helper / MCP Client Container: assembles these containers through the Batteries-Included Composition for one runtime instance per host
+- Curated Host-Facing SDK Surface -> Framework Shared Services / Kernel Boundary / Durable State Boundary / Runner Runtime / Provider Gateway / Tool Execution Gateway / Schema Authoring Helper / MCP Client Container: assembles these containers through the Batteries-Included Composition for one runtime instance per host
 - Reference Host -> Curated Host-Facing SDK Surface: consumes the host-facing SDK exclusively, in both interactive and headless modes
 - Orchestration Runtime <-> Framework Shared Services: in-process worker launch, handoff, and resume coordination
 - Kernel Boundary -> Durable State Boundary: atomic persistence transactions and structural enumeration (subject to backend capability)
 - Framework Shared Services / Orchestration Runtime / Extension Runtime -> Event Stream Adapter Layer: canonical event publication
-- Framework Shared Services / Driver Runtime / Tool Execution Gateway / Orchestration Runtime -> Telemetry & Observability Boundary: canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)
+- Framework Shared Services / Runner Runtime / Tool Execution Gateway / Orchestration Runtime -> Telemetry & Observability Boundary: canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)
 - Telemetry & Observability Boundary -> External Observability Tooling: vendor-neutral operational-telemetry export
 - Framework Shared Services / Provider Gateway / Kernel Boundary -> Contract Authority Assets: consume boundary-owned machine-readable shapes for validation and generated support
 - Language-specific runners -> Behavioral Conformance Assets: execute shared suites without redefining semantics locally
@@ -269,11 +269,11 @@
 ### 2.2 Boundary Notes
 
 - The architecture keeps the Kernel Boundary and Durable State Boundary distinct so later implementation work can vary backend realization without changing logical design.
-- Framework Shared Services exist so host control, event vocabulary, context manifest handling, execution-handle semantics, and durable-read composition do not get welded to the first driver.
+- Framework Shared Services exist so host control, event vocabulary, context manifest handling, execution-handle semantics, and durable-read composition do not get welded to the first runner.
 - The Durable-Read Surface is a Framework Shared Services responsibility, not a separate container; it is logically grouped with execution-handle management because both are host-facing read paths over kernel structural primitives.
-- Driver Runtime is a logical boundary, not a promise that every future driver needs a separate process or deployment unit.
-- The current active driver is ReAct-oriented, but the architecture keeps room for future workflow-oriented drivers such as pipeline, router, evaluator-optimizer, or orchestrator-worker patterns.
-- Ordered multi-agent pipelines are in current product scope, but they remain driver-level orchestration policy above the shared handoff/orchestration primitives rather than shared-core semantics.
+- Runner Runtime is a logical boundary, not a promise that every future runner needs a separate process or deployment unit.
+- The current active runner is ReAct-oriented, but the architecture keeps room for future workflow-oriented runners such as pipeline, router, evaluator-optimizer, or orchestrator-worker patterns.
+- Ordered multi-agent pipelines are in current product scope, but they remain runner-level orchestration policy above the shared handoff/orchestration primitives rather than shared-core semantics.
 - Target-state Epic AT makes the Reference Host the sole first-party proving host by retiring the historical playground host. It consumes the same Curated Host-Facing SDK Surface that downstream hosts use; both its interactive and headless modes share one execution path and one package.
 - Contract authority, behavioral conformance, and interop transport are separate containers on purpose; no single artifact type is allowed to silently become the meaning of the runtime.
 - Native language toolchains may differ, but their outputs must still fit the same boundary-owned contract, conformance, and compatibility system.
@@ -284,9 +284,9 @@
 - The Schema Authoring Helper sits above the Tool Execution Gateway and below the host; it never narrows what is legal at the boundary CustomSchema contract, it only enriches the authoring side with type inference and ergonomic defaults.
 - The MCP Client Container is one instance of the Tool Source Container abstraction; built-in static tool registries are another instance; future tool sources slot into the same abstraction.
 - The Telemetry & Observability Boundary and the Event Stream Adapter Layer are distinct outbound surfaces on purpose: the event stream is a real-time, single-turn, host-UI projection, while operational telemetry is a correlated, cross-turn, operator/observability projection. They share one canonical runtime activity vocabulary so they cannot diverge into two incompatible descriptions of the same runtime.
-- Execution Bound enforcement is a Framework Shared Services responsibility, not a driver responsibility, precisely so that a misbehaving or adversarial driver cannot opt out of the runtime's safety limits; drivers still own loop-continuation policy strictly within those bounds.
+- Execution Bound enforcement is a Framework Shared Services responsibility, not a runner responsibility, precisely so that a misbehaving or adversarial runner cannot opt out of the runtime's safety limits; runners still own loop-continuation policy strictly within those bounds.
 - Secret isolation is a cross-cutting boundary rule rather than a container: credentials are confined to the Provider Gateway and MCP Client Container edges, and the Kernel Boundary, Durable State Boundary, Telemetry & Observability Boundary, and transcript surfaces are credential-free zones.
-- The fault-injection seam used to verify durability and recovery is a verification-time capability at the persistence boundary, not a production control path; it exists to drive crash-recovery conformance and must not be reachable by hosts or drivers in normal operation.
+- The fault-injection seam used to verify durability and recovery is a verification-time capability at the persistence boundary, not a production control path; it exists to drive crash-recovery conformance and must not be reachable by hosts or runners in normal operation.
 - Capability orchestration sits above the execution edges: the Capability Registry, Binding & Endpoint Resolver, and Capability Policy Engine are framework responsibilities that decide what is exposed, what is invoked, and by whom, while the Provider Gateway, Tool Execution Gateway, Client Endpoint Boundary, and MCP Client Container are the execution-class endpoints. The Tool Execution Gateway is specifically the Tuvren-server execution class; today's developer-defined runtime-executed tools resolve to it unchanged.
 - MCP is a binding mechanism, not a container-level execution class: the same MCP server may be reached as a provider-mediated, Tuvren-server, or Tuvren-client binding. The MCP Client Container is the client path Tuvren runs (server-side, or client-side when a client runs it); provider-mediated MCP is configured through the Provider Gateway.
 - The Client Endpoint Boundary is a leased, partially-observable execution edge, not an ordinary in-process tool path: client endpoints may be unavailable or return stale results, and the runtime records client-reported outcomes rather than directly observing execution.
@@ -302,12 +302,12 @@
 C4Container
 title Container Diagram
 Person(hostUser, "Host / Integrator", "Starts turns, observes execution, resolves control decisions, lists threads, replays transcripts")
-System_Boundary(tuvren_runtime, "Tuvren Runtime") {
+System_Boundary(tuvren_runtime, "Tuvren") {
   Container(hostBoundary, "Host Integration Boundary", "Boundary Adapter", "Entry point for turns, durable reads, steering, approval, cancellation, status")
   Container(refHost, "Reference Host", "First-Party Proving Host", "Interactive readline + headless stdin modes over the curated SDK only; transcript capture and replay")
   Container(sdkSurface, "Curated Host-Facing SDK Surface", "Host-Developer Ergonomics Boundary", "Shared primitive container + slim convenience container with batteries-included composition")
-  Container(frameworkServices, "Framework Shared Services", "Application Service Layer", "Execution-handle lifecycle, awaitResult terminal-value surface, Durable-Read Surface, event publication, driver selection")
-  Container(driverRuntime, "Driver Runtime", "Execution Strategy Boundary", "Concrete execution model; initial baseline is the ReAct-oriented driver")
+  Container(frameworkServices, "Framework Shared Services", "Application Service Layer", "Execution-handle lifecycle, awaitResult terminal-value surface, Durable-Read Surface, event publication, runner selection")
+  Container(runnerRuntime, "Runner Runtime", "Execution Strategy Boundary", "Concrete execution model; initial baseline is the ReAct-oriented runner")
   Container(contextLayer, "Context Assembly and Engineering", "Domain Service", "Builds active context and performs context rewrites")
   Container(extensionRuntime, "Extension Runtime", "Policy Runtime", "Hooks, wrappers, prompt contributions, extension state")
   Container(providerGateway, "Provider Gateway", "Integration Boundary", "Canonical <-> provider translation")
@@ -344,17 +344,17 @@ Rel(hostUser, refHost, "Drives the first-party proving host interactively or hea
 Rel(refHost, sdkSurface, "Consumes the curated host-facing SDK exclusively")
 Rel(sdkSurface, frameworkServices, "Composes a runtime instance via the batteries-included composition")
 Rel(hostBoundary, frameworkServices, "Execution commands, control signals, durable-read queries")
-Rel(frameworkServices, driverRuntime, "Invokes active driver")
+Rel(frameworkServices, runnerRuntime, "Invokes active runner")
 Rel(frameworkServices, contextLayer, "Reads and rewrites active context")
 Rel(frameworkServices, kernelBoundary, "Run lifecycle, checkpoints, lineage operations, structural enumeration")
-Rel(driverRuntime, extensionRuntime, "Lifecycle callbacks and wrappers")
-Rel(driverRuntime, providerGateway, "Canonical prompts / model responses")
-Rel(driverRuntime, toolGateway, "Tool batches / tool results")
+Rel(runnerRuntime, extensionRuntime, "Lifecycle callbacks and wrappers")
+Rel(runnerRuntime, providerGateway, "Canonical prompts / model responses")
+Rel(runnerRuntime, toolGateway, "Tool batches / tool results")
 Rel(toolGateway, toolSource, "Resolve tool definitions for active segment")
 Rel(toolSource, mcpClient, "MCP-advertised tools translated into Tuvren tool definitions")
 Rel(toolSource, schemaHelper, "Tool definitions authored through schema-agnostic helper")
-Rel(driverRuntime, capRegistry, "Requests eligible tool surfaces for the active segment")
-Rel(driverRuntime, bindingResolver, "Resolves capability invocations to an execution class and endpoint")
+Rel(runnerRuntime, capRegistry, "Requests eligible tool surfaces for the active segment")
+Rel(runnerRuntime, bindingResolver, "Resolves capability invocations to an execution class and endpoint")
 Rel(toolSource, capRegistry, "Contributes capabilities and tool surfaces")
 Rel(providerGateway, capRegistry, "Declares provider-native and provider-mediated capabilities")
 Rel(capRegistry, policyEngine, "Exposure-time policy over candidate tool surfaces")
@@ -375,7 +375,7 @@ Rel(orchestrationRuntime, eventAdapter, "Descendant-attributed orchestration eve
 Rel(extensionRuntime, eventAdapter, "Custom events")
 Rel(eventAdapter, hostBoundary, "Host-facing event streams")
 Rel(frameworkServices, telemetry, "Operational-telemetry signals (incl. checkpoint and recovery events)")
-Rel(driverRuntime, telemetry, "Driver execution telemetry")
+Rel(runnerRuntime, telemetry, "Runner execution telemetry")
 Rel(toolGateway, telemetry, "Tool execution telemetry")
 Rel(telemetry, observabilityTooling, "Vendor-neutral telemetry export")
 Rel(frameworkServices, contractAssets, "Consumes contract shapes")

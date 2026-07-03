@@ -1,0 +1,45 @@
+{
+  "name": "providers-typescript-certification",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/providers/certification",
+  "projectType": "library",
+  "tags": ["boundary:providers", "language:typescript", "layer:certification"],
+  "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/providers/**/*",
+        "{workspaceRoot}/spec/conformance/tools/**/*",
+        "{workspaceRoot}/typescript/providers/conformance-adapter/**/*"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter typescript/providers/conformance-adapter/adapter.json --summary-only"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/providers/certification"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/providers/certification",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/providers/certification"
+      }
+    }
+  }
+}

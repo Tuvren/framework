@@ -1,0 +1,54 @@
+{
+  "packetId": "tuvren.framework.react-runner",
+  "version": "0.1.0",
+  "boundary": "framework",
+  "surface": "react-runner",
+  "humanAuthorityRefs": [
+    "docs/KrakenFrameworkSpecification.md#56-runner-contract",
+    ".constitution/tech-spec/contracts/README.md#46-runner-runtime-contract"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "spec/conformance/runners/plans/react-runner-callables.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/runners/plans/react-runner-extended.json",
+      "format": "conformance-plan"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.framework.react-runner.callables",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/runners/plans/react-runner-callables.json"
+    },
+    {
+      "planId": "tuvren.framework.react-runner.extended",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/runners/plans/react-runner-extended.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript-react-runner": "typescript/runners/react"
+  },
+  "forbiddenAuthoritySources": [
+    "typescript/runners/react",
+    "typescript/certification",
+    "typescript/conformance-adapter",
+    "rust/certification",
+    "rust/conformance-adapter",
+    "docs",
+    ".constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/runners/plans/react-runner-callables.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/runners/plans/react-runner-extended.json"
+    }
+  ]
+}

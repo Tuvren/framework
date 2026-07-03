@@ -1,0 +1,39 @@
+{
+  "name": "backend-memory",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/kernel/backends/memory",
+  "sourceRoot": "typescript/kernel/backends/memory/src",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/kernel/backends/memory",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/kernel/backends/memory"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/backends/memory",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/kernel/backends/memory"
+      }
+    }
+  }
+}

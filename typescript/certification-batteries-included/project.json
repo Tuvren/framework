@@ -1,0 +1,36 @@
+{
+  "name": "framework-batteries-included-certification",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/certification-batteries-included",
+  "projectType": "library",
+  "tags": ["boundary:framework", "language:typescript", "layer:certification"],
+  "implicitDependencies": ["framework-typescript-conformance-adapter"],
+  "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/schemas/**/*",
+        "{workspaceRoot}/spec/conformance/engine/**/*",
+        "{workspaceRoot}/spec/conformance/tools/**/*",
+        "{workspaceRoot}/spec/conformance/runners/**/*",
+        "{workspaceRoot}/spec/conformance/streaming/**/*",
+        "{workspaceRoot}/spec/conformance/telemetry/**/*",
+        "{workspaceRoot}/typescript/conformance-adapter/**/*"
+      ],
+      "dependsOn": [
+        {
+          "projects": ["framework-typescript-conformance-adapter"],
+          "target": "build-batteries-included",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter typescript/conformance-adapter/adapter-batteries-included.json --summary-only"
+      }
+    }
+  }
+}

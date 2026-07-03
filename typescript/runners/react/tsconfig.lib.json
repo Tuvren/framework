@@ -1,0 +1,29 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../core-types/tsconfig.lib.json"
+    },
+    {
+      "path": "../../streaming/sse/tsconfig.lib.json"
+    },
+    {
+      "path": "../../streaming/core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../streaming/agui/tsconfig.lib.json"
+    },
+    {
+      "path": "../../providers/provider-api/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/tsconfig.lib.json"
+    }
+  ]
+}

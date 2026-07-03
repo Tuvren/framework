@@ -1,0 +1,92 @@
+{
+  "packetId": "tuvren.telemetry.semconv",
+  "version": "0.1.0",
+  "boundary": "telemetry",
+  "surface": "semconv",
+  "humanAuthorityRefs": [
+    "spec/telemetry/artifacts/semantic-conventions.md",
+    "docs/KrakenKernelSpecification.md",
+    "docs/KrakenFrameworkSpecification.md"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "spec/telemetry/semconv/tuvren-runtime.yaml",
+      "format": "semconv-yaml"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "spec/telemetry/artifacts/otel-attributes.json",
+      "generatedFrom": "spec/telemetry/semconv/tuvren-runtime.yaml",
+      "generator": "weaver"
+    },
+    {
+      "path": "spec/telemetry/artifacts/semantic-conventions.md",
+      "generatedFrom": "spec/telemetry/semconv/tuvren-runtime.yaml",
+      "generator": "weaver"
+    },
+    {
+      "path": "typescript/telemetry/semconv/src/lib/generated/tuvren-runtime-telemetry.ts",
+      "generatedFrom": "spec/telemetry/semconv/tuvren-runtime.yaml",
+      "generator": "weaver"
+    },
+    {
+      "path": "rust/kernel/src/generated/tuvren_runtime_telemetry.rs",
+      "generatedFrom": "spec/telemetry/semconv/tuvren-runtime.yaml",
+      "generator": "weaver"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "typescript/telemetry/semconv",
+    "rust": "rust/kernel"
+  },
+  "forbiddenAuthoritySources": [
+    "typescript/telemetry/semconv",
+    "rust/kernel",
+    "spec/telemetry/artifacts/semantic-conventions.md",
+    "docs",
+    ".constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "vocabulary-check",
+      "target": "spec/telemetry/semconv/tuvren-runtime.yaml",
+      "resolvedArtifact": "spec/telemetry/artifacts/otel-attributes.json",
+      "resolvedKeyPath": "attributes.*.key"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "spec/telemetry/artifacts/otel-attributes.json"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "spec/telemetry/artifacts/semantic-conventions.md"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "typescript/telemetry/semconv/src/lib/generated/tuvren-runtime-telemetry.ts"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "rust/kernel/src/generated/tuvren_runtime_telemetry.rs"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "spec/telemetry/artifacts/otel-attributes.json",
+      "regenerateCommand": "bun run nx run telemetry-spec:codegen"
+    },
+    {
+      "artifact": "spec/telemetry/artifacts/semantic-conventions.md",
+      "regenerateCommand": "bun run nx run telemetry-spec:codegen"
+    },
+    {
+      "artifact": "typescript/telemetry/semconv/src/lib/generated/tuvren-runtime-telemetry.ts",
+      "regenerateCommand": "bun run nx run telemetry-spec:codegen"
+    },
+    {
+      "artifact": "rust/kernel/src/generated/tuvren_runtime_telemetry.rs",
+      "regenerateCommand": "bun run nx run telemetry-spec:codegen"
+    }
+  ]
+}

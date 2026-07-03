@@ -30,7 +30,7 @@
     },
     "conformance": {
       "cache": true,
-      "//": "Baseline only. Each conformance runner declares scoped inputs in project.json; project-level inputs REPLACE this default (Nx does not merge). Implementation-under-test coverage differs by language: TypeScript runners reach it through the Nx project graph via transitive ^production (kernel runners import the impl in-process; providers reach it via framework-runtime; framework runners spawn a built adapter subprocess with no import edge, so they declare an implicitDependencies edge to the adapter project to pull framework-runtime back into ^production). Rust runners instead need explicit implementations/rust/** globs because cargo crates are not modeled in the Nx project graph. The shared conformanceEngine namedInput globs tools/conformance/** plus tools/scripts/lib/conformance-contract.ts — the one module the engine entry (tools/conformance/runner/run.ts) imports from outside tools/conformance/ (re-verify with `nx show target inputs <runner>:conformance --check <file>` if run.ts gains another external import). Do not add cross-boundary or root tests/** globs here; that re-introduces cross-boundary cache poisoning. Known limitation: packet-driven plan SELECTION (boundaries/*/contracts/**/spec/authority-packet.json) is enforced by the authority-packet validation gate but is not part of the conformance cache key, so a rare repoint/removal of an existing plan selection that touches no conformance/** file can serve a stale cached result.",
+      "//": "Baseline only. Each certification project declares scoped inputs in project.json; project-level inputs REPLACE this default (Nx does not merge). Implementation-under-test coverage differs by language: TypeScript runners reach it through the Nx project graph via transitive ^production (kernel runners import the impl in-process; providers reach it via framework-runtime; framework runners spawn a built adapter subprocess with no import edge, so they declare an implicitDependencies edge to the adapter project to pull framework-runtime back into ^production). Rust runners instead need explicit {workspaceRoot}/rust/<crate> globs because cargo crates are not modeled in the Nx project graph. The shared conformanceEngine namedInput globs tools/conformance/** plus tools/scripts/lib/conformance-contract.ts — the one module the engine entry (tools/conformance/harness/run.ts) imports from outside tools/conformance/ (re-verify with `nx show target inputs <runner>:conformance --check <file>` if run.ts gains another external import). Do not add cross-boundary or root tests/** globs here; that re-introduces cross-boundary cache poisoning. Known limitation: packet-driven plan SELECTION (spec/*/authority-packet.json) is enforced by the authority-packet validation gate but is not part of the conformance cache key, so a rare repoint/removal of an existing plan selection that touches no conformance/** file can serve a stale cached result.",
       "inputs": ["default", "^production", "conformanceEngine"]
     },
     "interop-smoke": {
@@ -39,9 +39,10 @@
         "default",
         "^production",
         "{workspaceRoot}/tools/scripts/**/*",
-        "{workspaceRoot}/boundaries/*/interop/**/*",
-        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/package.json",
-        "{workspaceRoot}/boundaries/framework/implementations/typescript/runtime-core/tsconfig.kernel-interop.generated.json",
+        "{workspaceRoot}/spec/interop/**/*",
+        "{workspaceRoot}/spec/conformance/interop/**/*",
+        "{workspaceRoot}/typescript/runtime/package.json",
+        "{workspaceRoot}/typescript/runtime/tsconfig.kernel-interop.generated.json",
         "{workspaceRoot}/bun.lock",
         "{workspaceRoot}/devenv.nix",
         "{workspaceRoot}/devenv.lock",
@@ -82,8 +83,8 @@
         "{workspaceRoot}/rust-toolchain.toml",
         "{workspaceRoot}/devenv.nix",
         "{workspaceRoot}/devenv.lock",
-        "{workspaceRoot}/boundaries/kernel/conformance/**/*",
-        "{workspaceRoot}/boundaries/kernel/interop/**/*"
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/spec/interop/**/*"
       ]
     },
     "typecheck": {

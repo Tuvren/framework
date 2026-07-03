@@ -1,16 +1,16 @@
 ## 6. Logical Risks & Technical Debt
 
-- **Risk:** Shared framework services absorb ReAct-specific semantics and quietly erase the value of driver modularity.
-- **Why it matters:** Future workflow-oriented drivers would either duplicate framework logic or be forced into a ReAct-shaped abstraction they do not actually fit.
-- **Mitigation or follow-up:** Keep driver contracts explicit in the implementation layer and treat the current behavior as the ReAct baseline rather than as anonymous “framework default” behavior.
+- **Risk:** Shared framework services absorb ReAct-specific semantics and quietly erase the value of runner modularity.
+- **Why it matters:** Future workflow-oriented runners would either duplicate framework logic or be forced into a ReAct-shaped abstraction they do not actually fit.
+- **Mitigation or follow-up:** Keep runner contracts explicit in the implementation layer and treat the current behavior as the ReAct baseline rather than as anonymous “framework default” behavior.
 
-- **Risk:** Driver plurality inflates early scope beyond what a solo developer can validate well.
-- **Why it matters:** Trying to implement multiple drivers now would dilute the quality of the kernel, provider, and host foundations.
-- **Mitigation or follow-up:** Ship one production-depth driver first, keep future drivers as deferred scope, and use the architecture only to preserve the conceptual boundary.
+- **Risk:** Runner plurality inflates early scope beyond what a solo developer can validate well.
+- **Why it matters:** Trying to implement multiple runners now would dilute the quality of the kernel, provider, and host foundations.
+- **Mitigation or follow-up:** Ship one production-depth runner first, keep future runners as deferred scope, and use the architecture only to preserve the conceptual boundary.
 
-- **Risk:** Host-facing contracts and event vocabulary drift if adapters or drivers bypass shared framework services.
+- **Risk:** Host-facing contracts and event vocabulary drift if adapters or runners bypass shared framework services.
 - **Why it matters:** Different hosts would observe different runtime truths, weakening portability and operability.
-- **Mitigation or follow-up:** Route host controls and canonical event publication through the shared framework layer even when a driver has specialized execution behavior.
+- **Mitigation or follow-up:** Route host controls and canonical event publication through the shared framework layer even when a runner has specialized execution behavior.
 
 - **Risk (mitigated):** The first-party proving host relies on privileged seams that downstream hosts cannot use, creating false confidence in the SDK.
 - **Why it mattered:** The product would appear host-buildable while still depending on implementation-local shortcuts, undermining both SDK quality and later portability work.
@@ -60,13 +60,13 @@
 - **Why it matters:** The durability, observability, and replay surfaces that make Tuvren trustworthy would become the exact channel through which secrets escape, and replayable transcripts would be unsafe to share.
 - **Mitigation or follow-up:** Enforce the Secret Isolation Model: confine credentials to the Provider Gateway and MCP Client Container edges, treat the durable, telemetry, and transcript surfaces as credential-free zones, and assert their absence through conformance and review rather than relying on redaction alone.
 
-- **Risk:** Execution bounds are placed at driver discretion instead of framework enforcement.
-- **Why it matters:** A misbehaving, buggy, or adversarial driver could then opt out of the runtime's safety limits, reintroducing the runaway loops and resource exhaustion that bounded execution exists to prevent.
-- **Mitigation or follow-up:** Keep Execution Bound enforcement in Framework Shared Services above driver discretion; drivers may choose to continue only within the framework-enforced bounds, and conformance asserts that exceeding a bound yields the typed bounded-execution terminal outcome.
+- **Risk:** Execution bounds are placed at runner discretion instead of framework enforcement.
+- **Why it matters:** A misbehaving, buggy, or adversarial runner could then opt out of the runtime's safety limits, reintroducing the runaway loops and resource exhaustion that bounded execution exists to prevent.
+- **Mitigation or follow-up:** Keep Execution Bound enforcement in Framework Shared Services above runner discretion; runners may choose to continue only within the framework-enforced bounds, and conformance asserts that exceeding a bound yields the typed bounded-execution terminal outcome.
 
 - **Risk:** The fault-injection seam used for recovery verification leaks into production control paths.
-- **Why it matters:** A failure-injection capability reachable by hosts or drivers in normal operation would be both a reliability hazard and an attack surface.
-- **Mitigation or follow-up:** Scope the fault-injection seam to verification-time only at the persistence boundary; it must not be reachable through the host-facing SDK, drivers, or any production path, and its realization is a TechSpec-controlled test seam rather than a runtime feature.
+- **Why it matters:** A failure-injection capability reachable by hosts or runners in normal operation would be both a reliability hazard and an attack surface.
+- **Mitigation or follow-up:** Scope the fault-injection seam to verification-time only at the persistence boundary; it must not be reachable through the host-facing SDK, runners, or any production path, and its realization is a TechSpec-controlled test seam rather than a runtime feature.
 
 - **Risk:** The execution-class distinction collapses into a single `origin` field or a rigid tool subclass taxonomy.
 - **Why it matters:** Either shortcut hard-codes current deployment patterns and re-hides who executes, who owns state and credentials, who can cancel or retry, and what is observable — exactly the unsafe single abstraction the capability model exists to remove.

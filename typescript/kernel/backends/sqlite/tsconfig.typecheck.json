@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../../../",
+    "allowImportingTsExtensions": true,
+    "types": ["bun", "node"]
+  },
+  "include": [
+    "bench/**/*.ts",
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../../protocol/src/**/*.ts",
+    "../../testkit/src/**/*.ts",
+    "../../../core-types/src/**/*.ts"
+  ]
+}

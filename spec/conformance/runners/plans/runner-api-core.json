@@ -1,0 +1,86 @@
+{
+  "planId": "tuvren.framework.runner-api.core",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.shared.core",
+  "applicability": {
+    "capabilities": ["framework.runner-api"]
+  },
+  "scenarios": {
+    "runner-api-scenarios": "../scenarios/runner-api-scenarios.json"
+  },
+  "checks": [
+    {
+      "checkId": "runner-api.execute.resolution",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "input": { "scenarioPath": "$.runner-hook-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.runner.phase",
+          "equals": "completed"
+        }
+      ],
+      "evidence": ["runner.phase"]
+    },
+    {
+      "checkId": "runner-api.resume.approval",
+      "operation": "runner.resume",
+      "scenario": "runner-api-scenarios",
+      "input": { "scenarioPath": "$.runner-resume-approval" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.runner.resolutionType",
+          "equals": "end_turn"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.runner.approvalDecisionCallIds",
+          "equals": ["call-search"]
+        },
+        {
+          "kind": "resultField",
+          "field": "$.runner.pendingToolCallIds",
+          "equals": ["call-search"]
+        }
+      ],
+      "evidence": [
+        "runner.resolutionType",
+        "runner.approvalDecisionCallIds",
+        "runner.pendingToolCallIds"
+      ]
+    },
+    {
+      "checkId": "runner-api.resume.requires-pending-call",
+      "operation": "runner.resume",
+      "scenario": "runner-api-scenarios",
+      "input": { "scenarioPath": "$.runner-resume-missing-pending-call" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.runner.resolutionType",
+          "equals": "fail"
+        },
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "evidence": ["runner.resolutionType", "result.error.code"]
+    },
+    {
+      "checkId": "runner-api.error.envelope",
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "input": { "scenarioPath": "$.runner-provider-failure" },
+      "assertions": [
+        {
+          "kind": "errorEnvelope",
+          "path": "$.result.error"
+        }
+      ],
+      "evidence": ["result.error.code"]
+    }
+  ]
+}

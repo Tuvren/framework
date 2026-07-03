@@ -1,0 +1,32 @@
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "tuvren_kernel_rust",
+    srcs = glob(["src/**/*.rs"]),
+    edition = "2024",
+    deps = [
+        "@crates//:ciborium",
+        "@crates//:hex",
+        "@crates//:serde",
+        "@crates//:serde_json",
+        "@crates//:sha2",
+        "@crates//:thiserror",
+        "@crates//:tokio",
+    ],
+)
+
+rust_test(
+    name = "kernel_baseline_test",
+    srcs = ["tests/kernel_baseline.rs"],
+    compile_data = [
+        "//spec/conformance/kernel/fixtures:kernel-protocol-deterministic.json",
+    ],
+    edition = "2024",
+    deps = [
+        ":tuvren_kernel_rust",
+        "@crates//:hex",
+        "@crates//:serde_json",
+    ],
+)

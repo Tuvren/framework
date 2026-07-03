@@ -1,0 +1,20 @@
+{
+  "adapterId": "rust-kernel",
+  "implementationId": "rust-kernel",
+  "language": "rust",
+  "boundary": "kernel",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": ["cargo", "run", "-p", "tuvren-kernel-rust-conformance-adapter"],
+  "capabilities": [
+    "kernel.protocol",
+    "kernel.logical",
+    "kernel-protocol.thread.enumeration"
+  ],
+  "authorityPackets": ["spec/kernel/authority-packet.json"],
+  "suiteId": "tuvren.kernel.protocol",
+  "suiteVersion": "0.1.0"
+}

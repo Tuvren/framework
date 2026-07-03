@@ -51,7 +51,7 @@ interface ExtractedSemconvVocabulary {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
+const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const MANIFEST_FILE_NAME = "authority-packet.json";
 const SEMCONV_YAML_FORMAT = "semconv-yaml";
 
@@ -74,7 +74,14 @@ async function main(): Promise<void> {
 }
 
 async function validateVocabularies(): Promise<ValidationFailure[]> {
-  const manifestPaths = await findAuthorityPacketManifests(BOUNDARIES_ROOT);
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail this gate loudly, never pass it vacuously.
+  const manifestPaths = (await findAuthorityPacketManifests(SPEC_ROOT)).sort();
+  if (manifestPaths.length === 0) {
+    throw new Error(
+      `vocabulary gate found zero authority packets under ${SPEC_ROOT} — refusing to report a vacuous pass`
+    );
+  }
   const failures: ValidationFailure[] = [];
 
   for (const manifestPath of manifestPaths) {

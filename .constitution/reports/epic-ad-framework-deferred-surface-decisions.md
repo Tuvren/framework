@@ -12,14 +12,13 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 | backend-authoritative lease clock | 1 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | capability orchestration | 9 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | conversation-state ownership | 1 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| driver contract | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | extension contracts | 5 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | extension state and prompt contracts | 4 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
-| framework driver framing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | framework event stream | 7 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | framework execution bounds | 7 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| framework runner framing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | framework state schema | 3 | authority-backed-conformance-covered | KRT-AF001 if portability is selected | No, if kept local/deferred |
-| future framework drivers | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
+| future framework runners | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | handoff and context engineering | 6 | authority-backed-conformance-covered | KRT-AF005 | No, if kept local/deferred |
 | host execution handle | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | orchestration optional worker modes | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
@@ -27,6 +26,7 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 | orchestration static config and extension scoping | 1 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | provider API bridge | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | ReAct and extension hooks | 8 | authority-backed-conformance-covered | KRT-AF003 | No, if kept local/deferred |
+| runner contract | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | runtime and ReAct execution | 8 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | runtime lifecycle recovery | 5 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | runtime loop policy | 1 | authority-backed-conformance-covered | KRT-AF003 | No, if kept local/deferred |

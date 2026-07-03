@@ -21,45 +21,30 @@ import { findConformancePlans, loadConformancePlan } from "./index.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
-  [
-    "tuvren.framework.runtime-api",
-    ["boundaries/framework/contracts/runtime-api/spec/typespec/main.tsp"],
-  ],
-  [
-    "tuvren.framework.driver-api",
-    ["boundaries/framework/contracts/driver-api/spec/typespec/main.tsp"],
-  ],
-  [
-    "tuvren.framework.event-stream",
-    ["boundaries/framework/conformance/plans/event-stream-core.json"],
-  ],
-  [
-    "tuvren.framework.react-driver",
-    ["boundaries/framework/contracts/driver-api/spec/typespec/main.tsp"],
-  ],
+  ["tuvren.framework.react-runner", ["spec/runners/typespec/main.tsp"]],
   [
     "tuvren.kernel.protocol",
     [
-      "boundaries/kernel/conformance/plans/kernel-protocol-core.json",
-      "boundaries/kernel/conformance/plans/kernel-protocol-extended.json",
-      "boundaries/kernel/conformance/plans/kernel-run-liveness.json",
-      "boundaries/kernel/conformance/plans/kernel-restart-recovery.json",
-      "boundaries/kernel/conformance/plans/kernel-scope-isolation.json",
-      "boundaries/kernel/conformance/plans/kernel-reclamation.json",
+      "spec/conformance/kernel/plans/kernel-protocol-core.json",
+      "spec/conformance/kernel/plans/kernel-protocol-extended.json",
+      "spec/conformance/kernel/plans/kernel-run-liveness.json",
+      "spec/conformance/kernel/plans/kernel-restart-recovery.json",
+      "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+      "spec/conformance/kernel/plans/kernel-reclamation.json",
     ],
   ],
   [
     "tuvren.providers.provider-api",
     [
-      "boundaries/providers/conformance/plans/provider-api-bridge.json",
-      "boundaries/providers/conformance/plans/provider-native-execution-class.json",
-      "boundaries/providers/conformance/plans/provider-mediated-execution-class.json",
-      "boundaries/providers/conformance/plans/provider-api-conversation-state.json",
+      "spec/conformance/providers/plans/provider-api-bridge.json",
+      "spec/conformance/providers/plans/provider-native-execution-class.json",
+      "spec/conformance/providers/plans/provider-mediated-execution-class.json",
+      "spec/conformance/providers/plans/provider-api-conversation-state.json",
     ],
   ],
 ]);
 const OPERATION_LITERAL_PATTERN =
-  /"(?:runtime|driver|event-stream|kernel|providers)\.[a-z0-9_.-]+"/gu;
+  /"(?:runtime|runner|event-stream|kernel|providers)\.[a-z0-9_.-]+"/gu;
 
 const planPaths = await findConformancePlans();
 const operationCache = new Map<string, Promise<ReadonlySet<string>>>();

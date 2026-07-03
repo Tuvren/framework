@@ -52,7 +52,9 @@ interface FileSnapshot {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const BOUNDARIES_ROOT = resolve(REPO_ROOT, "boundaries");
+const SPEC_ROOT = resolve(REPO_ROOT, "spec");
+const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
+const RUST_ROOT = resolve(REPO_ROOT, "rust");
 const COMPATIBILITY_EVIDENCE_ROOT = resolve(
   REPO_ROOT,
   "reports/compatibility/evidence"
@@ -62,8 +64,19 @@ const FIXTURE_ROOT = resolve(
   "tools/scripts/authority-guardrails/__fixtures__"
 );
 const ROOT_TESTS_ROOT = resolve(REPO_ROOT, "tests");
-const FRAMEWORK_TYPESCRIPT_ROOT =
-  "boundaries/framework/implementations/typescript";
+// The framework boundary's TypeScript implementation used to live entirely
+// under one contract root (`boundaries/framework/implementations/typescript`)
+// so a single subtree scan covered every framework-owned package. Since the
+// M3 moves it is scattered across the language root (`typescript/runtime`,
+// `typescript/testkit`, `typescript/conformance-adapter`, `typescript/streaming/*`,
+// `typescript/telemetry/otel`, `typescript/runners/react`, …), so the
+// equivalent live scan root is the whole `typescript/` tree — the patterns
+// below are framework-fixture-specific enough that scanning kernel/providers
+// packages too does not risk false positives.
+// NOTE: the scan root is the ENTIRE typescript/ language tree, not one
+// boundary subtree — patterns added to the lists below must stay
+// framework-unique or they will false-positive on kernel/providers packages.
+const TYPESCRIPT_SCAN_ROOT = "typescript";
 const TYPESCRIPT_OWNED_CONFORMANCE_PATTERNS: readonly RegExp[] = [
   /@tuvren\/framework-testkit/u,
   /\bframeworkStreamTestFixtures\b/u,
@@ -94,7 +107,7 @@ const FORBIDDEN_VOCABULARY_PATTERNS: readonly RegExp[] = [
   /\bUint8Array\b/u,
   /\bBuffer\b/u,
   /\bVec<u8>\b/u,
-  /\breact_driver_[a-z0-9_]*\b/u,
+  /\breact_runner_[a-z0-9_]*\b/u,
   /\brust_framework_[a-z0-9_]*\b/u,
   /\btypescript_framework_[a-z0-9_]*\b/u,
 ];
@@ -138,10 +151,14 @@ async function main(): Promise<void> {
 }
 
 async function loadAuthorityPackets(): Promise<AuthorityPacketManifest[]> {
-  const manifestPaths = await findFiles(
-    BOUNDARIES_ROOT,
-    "authority-packet.json"
-  );
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail this gate loudly, never pass it vacuously.
+  const manifestPaths = await findFiles(SPEC_ROOT, "authority-packet.json");
+  if (manifestPaths.length === 0) {
+    throw new Error(
+      `authority guardrails found zero packets under ${SPEC_ROOT} — refusing to report a vacuous pass`
+    );
+  }
   const manifests: AuthorityPacketManifest[] = [];
 
   for (const manifestPath of manifestPaths) {
@@ -419,7 +436,7 @@ async function checkTypescriptOwnedFrameworkFixtures(): Promise<
   GuardrailFailure[]
 > {
   const sourcePaths = await findSourceFiles(
-    resolve(REPO_ROOT, FRAMEWORK_TYPESCRIPT_ROOT)
+    resolve(REPO_ROOT, TYPESCRIPT_SCAN_ROOT)
   );
   const failures: GuardrailFailure[] = [];
 
@@ -928,7 +945,7 @@ function checkRunnerSourceText(
   const failures: GuardrailFailure[] = [
     ...collectForbiddenRunnerOrAdapterTokenFailures(source, sourceLabel),
     ...collectRunnerCheckIdFailures(source, sourceLabel, planCheckIds),
-    ...(sourceLabel.includes("/conformance-runner/")
+    ...(sourceLabel.includes("/certification/")
       ? collectRunnerAssertionLiteralFailures(
           source,
           sourceLabel,
@@ -1107,9 +1124,7 @@ async function runFixtureSelfTests(): Promise<GuardrailFailure[]> {
     [
       {
         authoritativeSources: [],
-        forbiddenAuthoritySources: [
-          "boundaries/framework/contracts/runtime-api/implementations/typescript",
-        ],
+        forbiddenAuthoritySources: ["typescript/certification"],
         packetId: "tuvren.fixture.forbidden-authority-evidence",
       },
     ]
@@ -1513,7 +1528,15 @@ async function findSourceFiles(directory: string): Promise<string[]> {
 }
 
 async function findConformanceSourceRoots(): Promise<string[]> {
-  const roots = await collectConformanceSourceRoots(BOUNDARIES_ROOT);
+  // Both language roots always exist post-cutover; a missing one is a
+  // broken checkout and must throw, not silently narrow the scan.
+  const roots = (
+    await Promise.all(
+      [TYPESCRIPT_ROOT, RUST_ROOT].map((root) =>
+        collectConformanceSourceRoots(root)
+      )
+    )
+  ).flat();
   return roots
     .map((root) => relative(REPO_ROOT, root))
     .sort((left, right) => left.localeCompare(right));
@@ -1537,7 +1560,7 @@ async function collectConformanceSourceRoots(
     }
 
     if (
-      (entry.name === "conformance-runner" ||
+      (entry.name === "certification" ||
         entry.name === "conformance-adapter") &&
       existsSync(resolve(entryPath, "src"))
     ) {

@@ -1,0 +1,61 @@
+{
+  "name": "kernel-interop-grpc",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "spec/interop",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "layer:interop"],
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/tools/scripts/kernel-interop-governance.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+        "{workspaceRoot}/buf.yaml",
+        "{workspaceRoot}/buf.gen.yaml",
+        "{workspaceRoot}/typescript/runtime/package.json",
+        "{workspaceRoot}/typescript/runtime/tsconfig.kernel-interop.generated.json",
+        "{workspaceRoot}/bun.lock",
+        "{workspaceRoot}/devenv.nix",
+        "{workspaceRoot}/devenv.lock"
+      ],
+      "outputs": [
+        "{workspaceRoot}/typescript/runtime/src/lib/generated/kernel-interop"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/kernel-interop-governance.ts codegen"
+      }
+    },
+    "breaking": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/kernel-interop-governance.ts breaking"
+      }
+    },
+    "interop-smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/kernel-interop-governance.ts interop-smoke"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/biome.jsonc",
+        "{workspaceRoot}/tools/scripts/kernel-interop-governance.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+        "{workspaceRoot}/buf.yaml"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/kernel-interop-governance.ts lint && bunx --bun @biomejs/biome check spec/interop tools/scripts/kernel-interop-governance.ts"
+      }
+    }
+  }
+}

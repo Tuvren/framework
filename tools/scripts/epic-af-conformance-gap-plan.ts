@@ -23,7 +23,7 @@ const MATRIX_PATH =
 const PLAN_JSON_PATH =
   ".constitution/reports/epic-af-conformance-gap-plan.json";
 const PLAN_MD_PATH = ".constitution/reports/epic-af-conformance-gap-plan.md";
-const BOUNDARIES_ROOT = "boundaries";
+const SPEC_ROOT = "spec";
 
 type MatrixClassification =
   | "authority-backed-conformance-covered"
@@ -92,17 +92,17 @@ interface CliOptions {
 
 const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
   "ReAct and extension hooks": {
-    adapterOperation: "driver.execute",
-    capabilityRequirement: "framework.react-driver",
+    adapterOperation: "runner.execute",
+    capabilityRequirement: "framework.react-runner",
     checkIds: [
-      "react-driver-af.extension.phase-order-before-around-after",
-      "react-driver-af.extension.around-tool-nesting",
-      "react-driver-af.extension.after-iteration-terminal-state-nondurable",
+      "react-runner-af.extension.phase-order-before-around-after",
+      "react-runner-af.extension.around-tool-nesting",
+      "react-runner-af.extension.after-iteration-terminal-state-nondurable",
     ],
     deliveryTicket: "KRT-AF003",
     disposition: "promote",
     evidenceUpdate:
-      "Refresh TypeScript and Rust-framework non-applicable compatibility evidence after react-driver-extended gains AF checks.",
+      "Refresh TypeScript and Rust-framework non-applicable compatibility evidence after react-runner-extended gains AF checks.",
     rationale:
       "Hook ordering and around-hook nesting are portable ReAct behavior; adapter observations must expose traces, not expected sequences.",
     requiredEvidence: [
@@ -163,11 +163,11 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     ],
   },
   "aroundModel live/durable reconciliation": {
-    adapterOperation: "driver.execute",
-    capabilityRequirement: "framework.react-driver",
+    adapterOperation: "runner.execute",
+    capabilityRequirement: "framework.react-runner",
     checkIds: [
-      "react-driver-af.around-model-post-stream-replacement",
-      "react-driver-af.around-model-retry-final-response-durable",
+      "react-runner-af.around-model-post-stream-replacement",
+      "react-runner-af.around-model-retry-final-response-durable",
     ],
     deliveryTicket: "KRT-AF003",
     disposition: "promote",
@@ -184,24 +184,22 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
   },
   "framework state schema": {
     adapterOperation: "runtime.context-transform; runtime.cancel-execution",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     capabilityRequirement: "framework.runtime-api",
     checkIds: [
       "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
       "runtime-lifecycle-af.cancel-running-stages-partial-status",
       "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
       "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
-      "runtime-lifecycle-af.context-transform-driver-sees-rewritten-context",
+      "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context",
     ],
     conformancePlan:
-      "boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
+      "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
     deliveryTicket: "KRT-AF001",
     disposition: "promote",
     evidenceUpdate:
       "Refresh framework compatibility evidence with runtime.status.partial and context-engineering tree-head observations; Rust framework remains non-applicable.",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     rationale:
       "The full TypeScript state layout stays implementation-local, but runtime.status.partial and context-engineering new-tree/source-checkpoint observations are portable runtime-api behavior.",
     requiredEvidence: [
@@ -211,7 +209,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "context.rewrittenMessageCount",
       "context.createdNewHead",
       "context.snapshotMessageCounts",
-      "context.driverObservedMessageCount",
+      "context.runnerObservedMessageCount",
     ],
   },
   "handoff and context engineering": {
@@ -273,7 +271,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "kernel-restart-af.paused-run-excluded-from-stale-preemption",
     ],
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-restart-recovery.json; boundaries/kernel/conformance/plans/kernel-run-liveness.json",
+      "spec/conformance/kernel/plans/kernel-restart-recovery.json; spec/conformance/kernel/plans/kernel-run-liveness.json",
     deliveryTicket: "KRT-AF006",
     disposition: "promote",
     evidenceUpdate:
@@ -292,16 +290,16 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
     ],
   },
   "runtime loop policy": {
-    adapterOperation: "driver.execute",
-    capabilityRequirement: "framework.driver-api",
-    checkIds: ["driver-api-af.invalid-loop-policy-tool-call-hard-fail"],
+    adapterOperation: "runner.execute",
+    capabilityRequirement: "framework.runner-api",
+    checkIds: ["runner-api-af.invalid-loop-policy-tool-call-hard-fail"],
     deliveryTicket: "KRT-AF003",
     disposition: "promote",
     evidenceUpdate:
       "Refresh framework compatibility evidence with invalid_loop_policy error envelope.",
     rationale:
-      "Invalid tool-call loop-policy combinations are shared driver-seam behavior.",
-    requiredEvidence: ["driver.resolutionType", "result.error.code"],
+      "Invalid tool-call loop-policy combinations are shared runner-seam behavior.",
+    requiredEvidence: ["runner.resolutionType", "result.error.code"],
   },
   "shared framework type shapes": {
     adapterOperation:
@@ -365,8 +363,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
   },
   "tool and approval contracts": {
     adapterOperation: "runtime.tool-execute; runtime.approval-resolve",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     capabilityRequirement:
       "framework.runtime-api; providers.framework-owned-tool-execution",
     checkIds: [
@@ -375,7 +372,7 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
       "tool-contracts-af.approval-message-attaches-to-tool-result",
     ],
     conformancePlan:
-      "boundaries/framework/conformance/plans/tool-contracts-extended.json",
+      "spec/conformance/tools/plans/tool-contracts-extended.json",
     deliveryTicket: "KRT-AF004",
     disposition: "promote",
     evidenceUpdate:
@@ -393,15 +390,14 @@ const SURFACE_PLANS: Readonly<Record<string, SurfacePlan>> = {
   },
   "tool parallelism and event ordering": {
     adapterOperation: "runtime.tool-execute",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     capabilityRequirement: "framework.runtime-api",
     checkIds: [
       "tool-contracts-af.tool-parallel-wave-starts-before-results",
       "tool-contracts-af.mixed-approval-gated-tool-start-after-resume",
     ],
     conformancePlan:
-      "boundaries/framework/conformance/plans/tool-contracts-extended.json",
+      "spec/conformance/tools/plans/tool-contracts-extended.json",
     deliveryTicket: "KRT-AF004",
     disposition: "promote",
     evidenceUpdate:
@@ -593,7 +589,16 @@ async function readImplementedCheckEvidence(): Promise<
 > {
   const checks = new Map<string, Set<string>>();
 
-  for (const planPath of await findConformancePlanPaths(BOUNDARIES_ROOT)) {
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail this gate loudly, never pass it vacuously.
+  const planPaths = await findConformancePlanPaths(SPEC_ROOT);
+  if (planPaths.length === 0) {
+    throw new Error(
+      `epic-af gap plan found zero conformance plans under ${SPEC_ROOT} — refusing to report a vacuous pass`
+    );
+  }
+
+  for (const planPath of planPaths) {
     const plan = JSON.parse(await readFile(planPath, "utf8")) as unknown;
 
     if (!(isRecord(plan) && Array.isArray(plan.checks))) {
@@ -637,13 +642,25 @@ async function findConformancePlanPaths(directory: string): Promise<string[]> {
     if (
       entry.isFile() &&
       entry.name.endsWith(".json") &&
-      entryPath.includes("/conformance/plans/")
+      isConformancePlansPath(entryPath)
     ) {
       paths.push(entryPath);
     }
   }
 
   return paths.sort();
+}
+
+// Tolerates a port segment between "conformance" and "plans" (e.g.
+// spec/conformance/kernel/plans/x.json) — only the immediate parent
+// directory name and a "conformance" ancestor segment are required.
+function isConformancePlansPath(entryPath: string): boolean {
+  const segments = entryPath.split("/");
+  const plansIndex = segments.lastIndexOf("plans");
+  return (
+    plansIndex === segments.length - 2 &&
+    segments.slice(0, plansIndex).includes("conformance")
+  );
 }
 
 function createPlannedSurfaces(

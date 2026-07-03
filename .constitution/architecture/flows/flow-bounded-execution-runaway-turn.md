@@ -5,7 +5,7 @@
 ```mermaid
 sequenceDiagram
 participant Framework as Framework Shared Services
-participant Driver as Driver Runtime
+participant Runner as Runner Runtime
 participant Tooling as Tool Execution Gateway
 participant Kernel as Kernel Boundary
 participant Telemetry as Telemetry & Observability Boundary
@@ -13,10 +13,10 @@ participant Host as Host Integration Boundary
 
 loop each iteration
   Framework->>Framework: check iteration / tool-call / resource budget against configured bounds
-  Framework->>Driver: run iteration (within bounds)
-  Driver->>Tooling: tool batch
-  Tooling-->>Driver: tool results
-  Driver-->>Framework: loop decision (continue requested)
+  Framework->>Runner: run iteration (within bounds)
+  Runner->>Tooling: tool batch
+  Tooling-->>Runner: tool results
+  Runner-->>Framework: loop decision (continue requested)
 end
 Framework->>Framework: configured execution bound reached
 Framework->>Kernel: checkpoint a safe terminal outcome (bounded-execution result)

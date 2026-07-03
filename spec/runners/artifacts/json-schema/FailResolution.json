@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/FailResolution.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "fail"
+    },
+    "error": {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ErrorEnvelope.json"
+    },
+    "fatality": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "hard"
+        },
+        {
+          "type": "string",
+          "const": "soft"
+        }
+      ]
+    }
+  },
+  "required": ["type", "error", "fatality"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

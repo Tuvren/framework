@@ -1,0 +1,39 @@
+{
+  "name": "shared-core-types",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/core-types",
+  "sourceRoot": "typescript/core-types/src",
+  "projectType": "library",
+  "tags": ["boundary:shared", "layer:contract"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/core-types",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      },
+      "dependsOn": ["^build"]
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/core-types"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/core-types",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/core-types"
+      }
+    }
+  }
+}

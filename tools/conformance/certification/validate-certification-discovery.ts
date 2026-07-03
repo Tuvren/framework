@@ -1,0 +1,195 @@
+#!/usr/bin/env bun
+/**
+ * Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * Certification-discovery parity gate (GH issue #87 M2.9).
+ *
+ * Discovers the certification fleet from the repo itself — every Nx project
+ * tagged `layer:certification` — and hard-fails unless that discovered
+ * set exactly matches the checked-in manifest
+ * (`certified-projects.json`), every discovered project actually exposes a
+ * `conformance` target, every target that invokes the shared semantic engine
+ * belongs to the fleet, and every other `conformance` target is explicitly
+ * classified as non-certification (`layer:testkit`).
+ *
+ * Failure modes this makes loud instead of silent:
+ *  - a runner project moved/retired without deliberate manifest maintenance
+ *    (discovered ⊂ manifest, or manifest ⊂ discovered);
+ *  - a new runner wired to the shared engine but never registered;
+ *  - a `conformance` target added without declaring whether it certifies.
+ *
+ * Known residual sliver: the engine back-check matches the engine path as a
+ * command-text substring, so a target that reaches the engine INDIRECTLY
+ * (a wrapper shell script or intermediate bun script that itself invokes
+ * run.ts) escapes it. The conformance-target classification check and the
+ * tag/manifest parity still cover such a project if it certifies through a
+ * `conformance` target — but if you introduce an engine wrapper script,
+ * extend the match here to include the wrapper's path.
+ *
+ * Discovery reads `project.json` files directly (filesystem walk via the
+ * shared tools/scripts/lib/nx-projects.ts index, no Nx daemon) so the gate
+ * stays sub-second and sees unstaged working-tree state. Projects declared
+ * without a `project.json` would be invisible to it; this repo defines every
+ * Nx project through `project.json`, and the manifest cross-check catches a
+ * runner disappearing from discovery for any reason.
+ */
+
+import { readFileSync } from "node:fs";
+import { join, relative } from "node:path";
+import {
+  loadNxProjectFiles,
+  targetCommandStrings,
+} from "../../scripts/lib/nx-projects.js";
+
+const ROOT = process.cwd();
+const MANIFEST_PATH = join(
+  ROOT,
+  "tools/conformance/certification/certified-projects.json"
+);
+const CERTIFICATION_TAG = "layer:certification";
+const NON_CERTIFICATION_TAG = "layer:testkit";
+const SHARED_ENGINE_PATH = "tools/conformance/harness/run.ts";
+
+interface ProjectRecord {
+  /**
+   * Names of targets (any target, not just `conformance`) whose command
+   * strings — base `options` plus `configurations` overrides, both the
+   * single-string and `commands`-array shapes — invoke the shared engine.
+   * The back-check must see every shape and every target name, or a
+   * runner wired to the engine under a different target name or an
+   * alternate command shape silently escapes the certified fleet.
+   */
+  engineInvokingTargets: readonly string[];
+  hasConformanceTarget: boolean;
+  name: string;
+  path: string;
+  tags: readonly string[];
+}
+
+function loadProjects(): ProjectRecord[] {
+  return loadNxProjectFiles(ROOT).map((file) => {
+    const targets = file.project.targets ?? {};
+    const engineInvokingTargets = Object.entries(targets)
+      .filter(([, target]) =>
+        targetCommandStrings(target).some((command) =>
+          command.includes(SHARED_ENGINE_PATH)
+        )
+      )
+      .map(([targetName]) => targetName);
+    return {
+      engineInvokingTargets,
+      hasConformanceTarget: targets.conformance !== undefined,
+      name: file.name,
+      path: file.path,
+      tags: file.project.tags ?? [],
+    };
+  });
+}
+
+function fail(problems: string[]): never {
+  console.error("certification-discovery: FAIL");
+  for (const problem of problems) {
+    console.error(`  - ${problem}`);
+  }
+  process.exit(1);
+}
+
+const manifest: { projects: string[] } = JSON.parse(
+  readFileSync(MANIFEST_PATH, "utf8")
+);
+const manifestSet = new Set(manifest.projects);
+if (manifestSet.size !== manifest.projects.length) {
+  fail(["manifest lists a duplicate project id"]);
+}
+
+const projects = loadProjects();
+const byName = new Map(projects.map((p) => [p.name, p]));
+if (byName.size !== projects.length) {
+  const seen = new Set<string>();
+  const dupes: string[] = [];
+  for (const p of projects) {
+    if (seen.has(p.name)) {
+      dupes.push(`${p.name} (${p.path})`);
+    }
+    seen.add(p.name);
+  }
+  fail([`duplicate Nx project names in the tree: ${dupes.join(", ")}`]);
+}
+
+const discovered = projects.filter((p) => p.tags.includes(CERTIFICATION_TAG));
+const discoveredNames = new Set(discovered.map((p) => p.name));
+const problems: string[] = [];
+
+for (const project of discovered) {
+  if (!project.hasConformanceTarget) {
+    problems.push(
+      `${project.name} (${project.path}) is tagged ${CERTIFICATION_TAG} but has no conformance target`
+    );
+  }
+}
+
+for (const name of manifest.projects) {
+  if (!discoveredNames.has(name)) {
+    problems.push(
+      `manifest lists ${name} but no project tagged ${CERTIFICATION_TAG} with that name exists — if it was retired or renamed, update ${relative(ROOT, MANIFEST_PATH)} deliberately`
+    );
+  }
+}
+for (const project of discovered) {
+  if (!manifestSet.has(project.name)) {
+    problems.push(
+      `${project.name} (${project.path}) is tagged ${CERTIFICATION_TAG} but is not registered in ${relative(ROOT, MANIFEST_PATH)} — register it so the certification lane runs it`
+    );
+  }
+}
+
+for (const project of projects) {
+  // Engine back-check: ANY target invoking the shared engine — whatever the
+  // target is named, whichever command shape or configuration override it
+  // uses — must belong to the certified fleet or be explicitly classified
+  // non-certification.
+  if (
+    project.engineInvokingTargets.length > 0 &&
+    !(
+      discoveredNames.has(project.name) ||
+      project.tags.includes(NON_CERTIFICATION_TAG)
+    )
+  ) {
+    problems.push(
+      `${project.name} (${project.path}) invokes the shared engine (${SHARED_ENGINE_PATH}) from target(s) ${project.engineInvokingTargets.join(", ")} but is neither tagged ${CERTIFICATION_TAG} nor ${NON_CERTIFICATION_TAG}`
+    );
+  }
+  if (
+    project.hasConformanceTarget &&
+    !(
+      discoveredNames.has(project.name) ||
+      project.tags.includes(NON_CERTIFICATION_TAG)
+    )
+  ) {
+    problems.push(
+      `${project.name} (${project.path}) has a conformance target but is neither tagged ${CERTIFICATION_TAG} (certification fleet) nor ${NON_CERTIFICATION_TAG} (explicitly non-certification) — classify it`
+    );
+  }
+}
+
+if (problems.length > 0) {
+  fail(problems);
+}
+
+console.log(
+  `certification-discovery: OK — ${discovered.length} certification runners discovered, manifest in exact parity`
+);

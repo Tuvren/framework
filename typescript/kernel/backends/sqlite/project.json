@@ -1,0 +1,61 @@
+{
+  "name": "backend-sqlite",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/kernel/backends/sqlite",
+  "sourceRoot": "typescript/kernel/backends/sqlite/src",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/kernel/backends/sqlite",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && mkdir -p dist/migrations && cp migrations/*.sql dist/migrations/"
+      }
+    },
+    "bench": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/backends/sqlite",
+        "command": "rm -rf .tmp-bench && bunx --bun tsc --project tsconfig.bench.json --pretty false && mkdir -p .tmp-bench/typescript/kernel/backends/sqlite/migrations && cp migrations/*.sql .tmp-bench/typescript/kernel/backends/sqlite/migrations/ && node .tmp-bench/typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.js"
+      }
+    },
+    "retention-dry-run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/backends/sqlite",
+        "command": "rm -rf .tmp-bench && bunx --bun tsc --project tsconfig.bench.json --pretty false && mkdir -p .tmp-bench/typescript/kernel/backends/sqlite/migrations && cp migrations/*.sql .tmp-bench/typescript/kernel/backends/sqlite/migrations/ && node .tmp-bench/typescript/kernel/backends/sqlite/bench/sqlite-retention-dry-run.js"
+      }
+    },
+    "smoke-native": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/backends/sqlite",
+        "command": "node -e \"const Database=require('better-sqlite3'); const db=new Database(':memory:'); console.log(db.prepare('SELECT 1 AS value').get().value); db.close();\""
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/kernel/backends/sqlite"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build", "smoke-native"],
+      "options": {
+        "cwd": "typescript/kernel/backends/sqlite",
+        "command": "rm -rf .tmp-tests && bunx --bun tsc --project tsconfig.test.json --pretty false && mkdir -p .tmp-tests/typescript/kernel/backends/sqlite/migrations && cp migrations/*.sql .tmp-tests/typescript/kernel/backends/sqlite/migrations/ && node --test .tmp-tests/typescript/kernel/backends/sqlite/test/*.test.js"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/kernel/backends/sqlite"
+      }
+    }
+  }
+}

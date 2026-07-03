@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/RunnerRuntimeResolution.json",
+  "anyOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/ContinueIterationResolution.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/EndTurnResolution.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/PauseResolution.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/HandoffResolution.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/FailResolution.json"
+    }
+  ]
+}

@@ -1,0 +1,231 @@
+{
+  "planId": "tuvren.framework.runtime-api.operational-telemetry",
+  "planVersion": "0.3.0",
+  "packetId": "tuvren.shared.core",
+  "applicability": {
+    "capabilities": ["framework.runtime-api"]
+  },
+  "fixtures": {
+    "secret-isolation": "../../providers/fixtures/secret-isolation-fixtures.json"
+  },
+  "scenarios": {
+    "operational-telemetry-scenarios": "../scenarios/operational-telemetry-scenarios.json"
+  },
+  "checks": [
+    {
+      "checkId": "runtime-api-operational-telemetry.completed-turn-events",
+      "operation": "runtime.operational-telemetry",
+      "scenario": "operational-telemetry-scenarios",
+      "input": { "scenarioPath": "$.completed-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.eventKinds",
+          "contains": "turn.start"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.eventKinds",
+          "contains": "turn.end"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.eventKinds",
+          "contains": "state.checkpoint"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.eventsHaveLineage",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "result.telemetry.eventKinds",
+        "result.telemetry.eventsHaveLineage"
+      ]
+    },
+    {
+      "checkId": "runtime-api-operational-telemetry.completed-turn-spans",
+      "operation": "runtime.operational-telemetry",
+      "scenario": "operational-telemetry-scenarios",
+      "input": { "scenarioPath": "$.completed-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.spanKinds",
+          "contains": "turn"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.spanKinds",
+          "contains": "run"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.spanKinds",
+          "contains": "iteration"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.spanKinds",
+          "contains": "model_call"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.spansHaveLineage",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "result.telemetry.spanKinds",
+        "result.telemetry.spansHaveLineage"
+      ]
+    },
+    {
+      "checkId": "runtime-api-operational-telemetry.error-path",
+      "operation": "runtime.operational-telemetry",
+      "scenario": "operational-telemetry-scenarios",
+      "input": { "scenarioPath": "$.error-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.eventKinds",
+          "contains": "error"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.spanKinds",
+          "contains": "model_call"
+        }
+      ],
+      "evidence": ["result.telemetry.eventKinds", "result.telemetry.spanKinds"]
+    },
+    {
+      "checkId": "runtime-api-operational-telemetry.tool-spans",
+      "operation": "runtime.operational-telemetry",
+      "scenario": "operational-telemetry-scenarios",
+      "input": { "scenarioPath": "$.tool-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.spanKinds",
+          "contains": "tool_call"
+        }
+      ],
+      "evidence": ["result.telemetry.spanKinds"]
+    },
+    {
+      "checkId": "runtime-api-operational-telemetry.approval-events",
+      "operation": "runtime.operational-telemetry",
+      "scenario": "operational-telemetry-scenarios",
+      "input": { "scenarioPath": "$.approval-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.eventKinds",
+          "contains": "approval.requested"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.eventKinds",
+          "contains": "approval.resolved"
+        }
+      ],
+      "evidence": ["result.telemetry.eventKinds"]
+    },
+    {
+      "checkId": "runtime-api-operational-telemetry.recovery-records",
+      "operation": "runtime.operational-telemetry",
+      "scenario": "operational-telemetry-scenarios",
+      "input": { "scenarioPath": "$.recovery-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.eventKinds",
+          "contains": "recovery.resumed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetry.spanKinds",
+          "contains": "recovery"
+        }
+      ],
+      "evidence": ["result.telemetry.eventKinds", "result.telemetry.spanKinds"]
+    },
+    {
+      "checkId": "secret-isolation.telemetry-attributes-and-error-summaries",
+      "operation": "runtime.secret-isolation.telemetry",
+      "fixture": "secret-isolation",
+      "assertions": [
+        {
+          "kind": "secretAbsence",
+          "field": "$.telemetry",
+          "secretsPath": "$.fixture.secretValues"
+        }
+      ],
+      "evidence": ["result.telemetry"]
+    },
+    {
+      "checkId": "scope-isolation.telemetry-and-transcript-correlation",
+      "operation": "runtime.scope-isolation.surfaces",
+      "input": {
+        "scopeA": "tuvren.scope.alpha",
+        "scopeB": "tuvren.scope.bravo",
+        "scopeAValues": ["tuvren.scope.alpha"],
+        "scopeBValues": ["tuvren.scope.bravo"]
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.scopeA.observedTelemetryScopes",
+          "equalsPath": "$.input.scopeAValues"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.scopeA.observedTranscriptScope",
+          "equalsPath": "$.input.scopeA"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.scopeB.observedTelemetryScopes",
+          "equalsPath": "$.input.scopeBValues"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.scopeB.observedTranscriptScope",
+          "equalsPath": "$.input.scopeB"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.scopeA.telemetry",
+          "secretsPath": "$.input.scopeBValues"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.scopeA.transcript",
+          "secretsPath": "$.input.scopeBValues"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.scopeB.telemetry",
+          "secretsPath": "$.input.scopeAValues"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.scopeB.transcript",
+          "secretsPath": "$.input.scopeAValues"
+        }
+      ],
+      "evidence": [
+        "result.scopeA.observedTelemetryScopes",
+        "result.scopeA.observedTranscriptScope",
+        "result.scopeA.telemetry",
+        "result.scopeA.transcript",
+        "result.scopeB.observedTelemetryScopes",
+        "result.scopeB.observedTranscriptScope",
+        "result.scopeB.telemetry",
+        "result.scopeB.transcript"
+      ]
+    }
+  ]
+}

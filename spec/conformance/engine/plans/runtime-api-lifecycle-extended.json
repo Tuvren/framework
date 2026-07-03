@@ -1,0 +1,607 @@
+{
+  "applicability": {
+    "capabilities": ["framework.runtime-api"]
+  },
+  "checks": [
+    {
+      "assertions": [
+        {
+          "equals": "completed",
+          "field": "$.runtime.phase",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.execute-turn.phase-completed",
+      "input": {
+        "scenarioPath": "$.completed-turn"
+      },
+      "operation": "runtime.execute-turn",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.runtime.phase"]
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.runtime.phase",
+          "kind": "resultField",
+          "matches": "^(running|paused|completed|failed)$"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.execute-turn.phase-enum",
+      "input": {
+        "scenarioPath": "$.completed-turn"
+      },
+      "operation": "runtime.execute-turn",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.runtime.phase"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.inputSignal.accepted",
+          "kind": "resultField"
+        },
+        {
+          "equals": "invalid_tuvren_message",
+          "field": "$.inputSignal.error.code",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-callable-af.input-signal-empty-parts-rejected",
+      "input": {
+        "scenarioPath": "$.input-signal-empty-parts"
+      },
+      "operation": "runtime.execute-turn",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["inputSignal.error.code", "inputSignal.accepted"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "paused",
+          "field": "$.trace.approval.evidence.approval.pausedPhase",
+          "kind": "stateField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.approval-resolve.paused-phase-trace",
+      "evidence": ["trace.approval.evidence.approval.pausedPhase"],
+      "input": {
+        "scenarioPath": "$.paused-turn-resume"
+      },
+      "operation": "runtime.approval-resolve",
+      "scenario": "runtime-api-scenarios",
+      "steps": [
+        {
+          "input": {
+            "scenarioPath": "$.paused-turn-resume"
+          },
+          "operation": "runtime.approval-resolve",
+          "stepId": "approval"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "completed",
+          "field": "$.trace.approval.evidence.approval.resumedPhase",
+          "kind": "stateField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.approval-resolve.resumed-phase-trace",
+      "evidence": ["trace.approval.evidence.approval.resumedPhase"],
+      "input": {
+        "scenarioPath": "$.paused-turn-resume"
+      },
+      "operation": "runtime.approval-resolve",
+      "scenario": "runtime-api-scenarios",
+      "steps": [
+        {
+          "input": {
+            "scenarioPath": "$.paused-turn-resume"
+          },
+          "operation": "runtime.approval-resolve",
+          "stepId": "approval"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "completed",
+          "field": "$.branch.completedTurnPhase",
+          "kind": "stateField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.source-phase-completed",
+      "evidence": ["branch.completedTurnPhase"],
+      "input": {
+        "scenarioPath": "$.branch-from-completed-head"
+      },
+      "operation": "runtime.branch-create",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.branch.sourceMessageCount",
+          "kind": "stateField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.source-message-count",
+      "evidence": ["branch.sourceMessageCount"],
+      "input": {
+        "scenarioPath": "$.branch-from-completed-head"
+      },
+      "operation": "runtime.branch-create",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.branch.sourceHeadTurnNodeHash",
+          "kind": "stateField",
+          "matches": "^[a-f0-9]{64}$"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.source-head-hash-format",
+      "evidence": ["branch.sourceHeadTurnNodeHash"],
+      "input": {
+        "scenarioPath": "$.branch-from-completed-head"
+      },
+      "operation": "runtime.branch-create",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.branch.createdHeadTurnNodeHash",
+          "kind": "stateField",
+          "matches": "^[a-f0-9]{64}$"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.branch-create.created-head-hash-format",
+      "evidence": ["branch.createdHeadTurnNodeHash"],
+      "input": {
+        "scenarioPath": "$.branch-from-completed-head"
+      },
+      "operation": "runtime.branch-create",
+      "scenario": "runtime-api-scenarios"
+    },
+    {
+      "assertions": [
+        {
+          "equals": 3,
+          "field": "$.context.messageCount",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.context-transform.message-count",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.context.messageCount"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "Shared context engineering summary.",
+          "field": "$.context.summaryText",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.context-transform.summary-text",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.context.summaryText"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "completed",
+          "field": "$.runtime.phase",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.context-transform.runtime-phase-completed",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.runtime.phase"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.context.createdNewHead",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-creates-new-tree-heads",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["context.createdNewHead"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 1,
+          "field": "$.context.sourceMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": [1, 2, 3],
+          "field": "$.context.snapshotMessageCounts",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-preserves-source-checkpoint",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "context.sourceMessageCount",
+        "context.snapshotMessageCounts"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.context.rewrittenMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": 2,
+          "field": "$.context.runnerObservedMessageCount",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.context-transform-runner-sees-rewritten-context",
+      "input": {
+        "scenarioPath": "$.context-transform-append-summary"
+      },
+      "operation": "runtime.context-transform",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "context.rewrittenMessageCount",
+        "context.runnerObservedMessageCount"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.cancellation.cancelInvocations",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.cancellation.errorEventCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.runtime.phase",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.cancel-running-idempotent-fails-once",
+      "controls": {
+        "cancelAfterEvent": "turn.start",
+        "deadlineMs": 1000
+      },
+      "operation": "runtime.cancel-execution",
+      "evidence": [
+        "cancellation.cancelInvocations",
+        "cancellation.errorEventCount",
+        "runtime.phase"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.cancellation.runtimeStatusPartial",
+          "kind": "resultField"
+        },
+        {
+          "equals": "interrupted",
+          "field": "$.cancellation.partialAssistantText",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-af.cancel-running-stages-partial-status",
+      "controls": {
+        "cancelAfterEvent": "iteration.end",
+        "deadlineMs": 1000
+      },
+      "operation": "runtime.cancel-execution",
+      "evidence": [
+        "cancellation.runtimeStatusPartial",
+        "cancellation.partialAssistantText"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 1,
+          "field": "$.recovery.uncommittedStagedResults",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.uncommitted-count",
+      "input": {
+        "scenarioPath": "$.recover-staged-result"
+      },
+      "operation": "runtime.recover-result",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.recovery.uncommittedStagedResults"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "tool-search",
+          "field": "$.recovery.firstTaskId",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.first-task-id",
+      "input": {
+        "scenarioPath": "$.recover-staged-result"
+      },
+      "operation": "runtime.recover-result",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.recovery.firstTaskId"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "message",
+          "field": "$.recovery.firstObjectType",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.first-object-type",
+      "input": {
+        "scenarioPath": "$.recover-staged-result"
+      },
+      "operation": "runtime.recover-result",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.recovery.firstObjectType"]
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.recovery.lastTurnNodeHash",
+          "kind": "resultField",
+          "matches": "^[a-f0-9]{64}$"
+        }
+      ],
+      "checkId": "runtime-lifecycle-ext.recover-result.last-turn-node-hash-format",
+      "input": {
+        "scenarioPath": "$.recover-staged-result"
+      },
+      "operation": "runtime.recover-result",
+      "scenario": "runtime-api-scenarios",
+      "evidence": ["result.recovery.lastTurnNodeHash"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.recovery.sameTurn",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.originalUserMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.recovery.recoveredAssistantVisible",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.preemptCalls",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.same-signal-iterate",
+      "input": {
+        "scenarioPath": "$.stale-recovery-same-signal-iterate"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.sameTurn",
+        "result.recovery.originalUserMessageCount",
+        "result.recovery.recoveredAssistantVisible",
+        "result.recovery.staleRunStatus",
+        "result.recovery.preemptCalls"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": false,
+          "field": "$.recovery.sameTurn",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.originalUserMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.freshUserMessageCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.recovery.preemptCalls",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.signal-mismatch-fresh-turn",
+      "input": {
+        "scenarioPath": "$.stale-recovery-signal-mismatch"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.sameTurn",
+        "result.recovery.originalUserMessageCount",
+        "result.recovery.freshUserMessageCount",
+        "result.recovery.staleRunStatus",
+        "result.recovery.preemptCalls"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.recovery.sameTurn",
+          "kind": "resultField"
+        },
+        {
+          "equals": "completed",
+          "field": "$.recovery.phase",
+          "kind": "resultField"
+        },
+        {
+          "equals": "reviewer",
+          "field": "$.recovery.activeAgent",
+          "kind": "resultField"
+        },
+        {
+          "equals": "reviewer",
+          "field": "$.recovery.branchStatusActiveAgent",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.handoff-context-active-agent",
+      "input": {
+        "scenarioPath": "$.stale-recovery-handoff-context"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.sameTurn",
+        "result.recovery.phase",
+        "result.recovery.activeAgent",
+        "result.recovery.branchStatusActiveAgent",
+        "result.recovery.staleRunStatus"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.recovery.sameTurn",
+          "kind": "resultField"
+        },
+        {
+          "equals": "completed",
+          "field": "$.recovery.phase",
+          "kind": "resultField"
+        },
+        {
+          "equals": 0,
+          "field": "$.recovery.runnerExecuteCalls",
+          "kind": "resultField"
+        },
+        {
+          "equals": "completed",
+          "field": "$.recovery.branchRuntimePhase",
+          "kind": "resultField"
+        },
+        {
+          "equals": "failed",
+          "field": "$.recovery.staleRunStatus",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-ext.stale-recovery.finalize-terminal-status",
+      "input": {
+        "scenarioPath": "$.stale-recovery-finalize-status"
+      },
+      "operation": "runtime.recover-stale-run",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.recovery.sameTurn",
+        "result.recovery.phase",
+        "result.recovery.runnerExecuteCalls",
+        "result.recovery.branchRuntimePhase",
+        "result.recovery.staleRunStatus"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 1,
+          "field": "$.proposal.clientDispatchCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": false,
+          "field": "$.proposal.clientSuccessCommitted",
+          "kind": "resultField"
+        }
+      ],
+      "capabilities": ["framework.run-liveness"],
+      "checkId": "runtime-lifecycle-af.client-result-as-proposal-authority-lost",
+      "input": {
+        "scenarioPath": "$.client-result-as-proposal-authority-lost"
+      },
+      "operation": "runtime.client-result-as-proposal",
+      "scenario": "runtime-api-scenarios",
+      "evidence": [
+        "result.proposal.clientDispatchCount",
+        "result.proposal.clientSuccessCommitted"
+      ]
+    }
+  ],
+  "packetId": "tuvren.shared.core",
+  "planId": "tuvren.framework.runtime-api.lifecycle-extended",
+  "planVersion": "0.2.0",
+  "scenarios": {
+    "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
+  }
+}

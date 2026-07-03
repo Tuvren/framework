@@ -37,107 +37,77 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/core-types",
-    packageRoot:
-      "boundaries/shared/contracts/core-types/implementations/typescript",
+    packageRoot: "typescript/core-types",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/kernel-protocol",
-    packageRoot:
-      "boundaries/kernel/contracts/protocol/implementations/typescript",
+    packageRoot: "typescript/kernel/protocol",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/kernel-testkit",
-    packageRoot: "boundaries/kernel/implementations/typescript/testkit",
+    packageRoot: "typescript/kernel/testkit",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/provider-api",
-    packageRoot:
-      "boundaries/providers/contracts/provider-api/implementations/typescript",
+    packageRoot: "typescript/providers/provider-api",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/provider-testkit",
-    packageRoot: "boundaries/providers/implementations/typescript/testkit",
-  },
-  {
-    classification: "Bun-and-Node validated",
-    packageName: "@tuvren/runtime-api",
-    packageRoot:
-      "boundaries/framework/contracts/runtime-api/implementations/typescript",
-  },
-  {
-    classification: "Bun-and-Node validated",
-    packageName: "@tuvren/driver-api",
-    packageRoot:
-      "boundaries/framework/contracts/driver-api/implementations/typescript",
-  },
-  {
-    classification: "Bun-and-Node validated",
-    packageName: "@tuvren/event-stream",
-    packageRoot:
-      "boundaries/framework/contracts/event-stream/implementations/typescript",
-  },
-  {
-    classification: "Bun-and-Node validated",
-    packageName: "@tuvren/tool-contracts",
-    packageRoot:
-      "boundaries/framework/contracts/tool-contracts/implementations/typescript",
+    packageRoot: "typescript/providers/testkit",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/framework-testkit",
-    packageRoot: "boundaries/framework/implementations/typescript/testkit",
-  },
-  {
-    classification: "Bun-and-Node validated",
-    packageName: "@tuvren/runtime-core",
-    packageRoot: "boundaries/framework/implementations/typescript/runtime-core",
+    packageRoot: "typescript/testkit",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/runtime",
-    packageRoot: "boundaries/framework/implementations/typescript/runtime",
+    packageRoot: "typescript/runtime",
   },
   {
     classification: "Bun-and-Node validated",
-    packageName: "@tuvren/driver-react",
-    packageRoot:
-      "boundaries/framework/implementations/typescript/drivers/react",
+    packageName: "@tuvren/runner-react",
+    packageRoot: "typescript/runners/react",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/stream-core",
-    packageRoot: "boundaries/framework/implementations/typescript/stream-core",
+    packageRoot: "typescript/streaming/core",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/stream-sse",
-    packageRoot: "boundaries/framework/implementations/typescript/stream-sse",
+    packageRoot: "typescript/streaming/sse",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/stream-agui",
-    packageRoot: "boundaries/framework/implementations/typescript/stream-agui",
+    packageRoot: "typescript/streaming/agui",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/telemetry-otel",
-    packageRoot:
-      "boundaries/framework/implementations/typescript/telemetry-otel",
+    packageRoot: "typescript/telemetry/otel",
+  },
+  {
+    classification: "Bun-and-Node validated",
+    packageName: "@tuvren/telemetry-semconv",
+    packageRoot: "typescript/telemetry/semconv",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/provider-bridge-ai-sdk",
-    packageRoot:
-      "boundaries/providers/implementations/typescript/bridge-ai-sdk",
+    packageRoot: "typescript/providers/bridge-ai-sdk",
   },
   {
     classification: "Bun-and-Node validated",
     packageName: "@tuvren/backend-memory",
-    packageRoot: "boundaries/kernel/implementations/typescript/backend-memory",
+    packageRoot: "typescript/kernel/backends/memory",
   },
 ];
 

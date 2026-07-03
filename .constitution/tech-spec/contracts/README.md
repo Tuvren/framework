@@ -1,6 +1,6 @@
 # Interface Contracts
 
-> **Authority note:** This file is descriptive documentation migrated verbatim from `TechSpec.md §4`. The authoritative raw interface contracts are boundary-owned (TypeSpec `main.tsp`, generated JSON Schema, `.proto`, and language bindings under `boundaries/<area>/contracts/<surface>/spec/`). Per ADR-023/024/025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation contract oracle — it points to boundary authority rather than duplicating raw contract files.
+> **Authority note:** This file is descriptive documentation migrated verbatim from `TechSpec.md §4`. The authoritative raw interface contracts are boundary-owned (TypeSpec `main.tsp`, generated JSON Schema, `.proto`, and language bindings under `spec/<port>/`, e.g. `spec/core/`, `spec/kernel/`, `spec/providers/`, `spec/tools/`, `spec/runners/`, `spec/host/`, `spec/interop/`). Per ADR-023/024/025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation contract oracle — it points to boundary authority rather than duplicating raw contract files.
 
 ## 4. Interface Contract
 
@@ -42,12 +42,12 @@ Concrete code examples already defined in the authoritative specs such as `struc
 ### 4.1 Host-Facing TypeScript Framework API
 
 - **Style:** library API
-- **Authentication / Authorization:** Not built into Tuvren Runtime. Host applications authenticate and authorize their own callers before exposing runtime operations.
+- **Authentication / Authorization:** Not built into Tuvren. Host applications authenticate and authorize their own callers before exposing runtime operations.
 - **Compatibility Strategy:** Exported TypeScript framework APIs follow semantic versioning. Additive methods and additive optional fields are minor-compatible.
 - **Validator note:** Runtime `is*` / `assert*` guards treat the current released payload shapes as exact for that version. Minor releases that add optional fields must extend those validators in the same release; older releases are not required to accept newer payloads.
 - **Error model:** Typed `TuvrenError` subclasses with stable `code` values plus canonical `error` stream events.
-- **Driver note:** The host-facing framework API is driver-neutral. Callers may select a concrete driver, but the host surface does not become ReAct-specific.
-- **Package partition note:** Per ADR-037, the merged `boundaries/shared/contracts/core/spec/authority-packet.json` is the single machine authority anchor for the shared framework runtime semantics, host-facing runtime surface, event vocabulary, tool contracts, driver contracts, and provider contracts. `@tuvren/core` exposes these through subpath exports (`/messages`, `/tools`, `/events`, `/errors`, `/execution`, `/driver`, `/provider`, `/extensions`, `/telemetry`); the historical `@tuvren/runtime-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, `@tuvren/driver-api`, and `@tuvren/core-types` packages remain as deprecated re-export shims for one cycle and then are removed. `@tuvren/runtime` is the slim convenience package exposing `createTuvren({...})` plus curated re-exports.
+- **Runner note:** The host-facing framework API is runner-neutral. Callers may select a concrete runner, but the host surface does not become ReAct-specific.
+- **Package partition note:** Per ADR-037, the merged `spec/core/authority-packet.json` is the single machine authority anchor for the shared framework runtime semantics, host-facing runtime surface, event vocabulary, tool contracts, runner contracts, and provider contracts. `@tuvren/core` exposes these through subpath exports (`/messages`, `/tools`, `/events`, `/errors`, `/execution`, `/runner`, `/provider`, `/extensions`, `/telemetry`, `/capabilities`, `/lifecycle`); the historical `@tuvren/runtime-api`, `@tuvren/event-stream`, `@tuvren/tool-contracts`, and `@tuvren/driver-api` packages have been fully absorbed and removed (the Epic 87 M6 driver→runner rename retired `@tuvren/driver-api` into `@tuvren/core/runner`). `@tuvren/core-types` remains as a deprecated re-export shim pending removal. `@tuvren/runtime` is the slim convenience package exposing `createTuvren({...})` plus curated re-exports.
 - **Durable-read note:** Per ADR-036, the `TuvrenRuntime` interface now exposes `listThreads`, `listBranches`, `getTurnState`, `getTurnHistory`, and `readBranchMessages` as host-facing durable-read operations that compose existing kernel structural primitives plus the new `thread.list` syscall (ADR-034). Pagination follows the Architecture §6 rule: history surfaces use cursor + async iterator (`getTurnHistory`); collection surfaces use cursor + optional limit (`listThreads`, `readBranchMessages`). Exception: `listBranches` is intentionally unbounded because branches per thread are bounded by O(1) active divergence paths in v1 and the underlying `kernel.branch.list` primitive is itself unpaginated. Cursors are opaque to the host; their runtime structure is specified in §3.8.
 - **Handle terminal-value note:** Per ADR-035, `ExecutionHandle` now exposes `awaitResult(): Promise<ExecutionResult>` on the base interface. `OrchestrationHandle.awaitResult()` overrides to return `OrchestrationResult` (a type intersection `ExecutionResult & { childResults: Record<string, ExecutionResult> }`) with subtree-aggregated final values.
 
@@ -124,7 +124,7 @@ export interface TuvrenRuntime {
     threadId: string;
     branchId: string;
     schemaId?: string;
-    driverId?: string;
+    runnerId?: string;
     config: AgentConfig;
     tools?: TuvrenToolDefinition[];
     parentTurnId?: string | null;
@@ -207,7 +207,7 @@ export interface OrchestrationRuntime {
     threadId: string;
     branchId: string;
     schemaId?: string;
-    driverId?: string;
+    runnerId?: string;
     tools?: TuvrenToolDefinition[];
     parentTurnId?: string | null;
   }): OrchestrationHandle;
@@ -215,7 +215,7 @@ export interface OrchestrationRuntime {
 
 - `spawn()` is valid only while the current orchestration handle is running.
 - `spawn()` starts the child execution immediately; `awaitResult()` does not satisfy the parent launch precondition by itself.
-- Child launches inherit the caller's explicit execution surface (`driverId`, per-request `tools`) because `spawn()` intentionally stays minimal.
+- Child launches inherit the caller's explicit execution surface (`runnerId`, per-request `tools`) because `spawn()` intentionally stays minimal.
 - `InputSignal.parts` and persisted message `parts` are non-empty arrays in the shared contract; empty payload arrays are rejected at validation time.
 - Once `resolveApproval(...)` returns a replacement handle, further control calls on the old paused handle are invalid.
 
@@ -440,7 +440,7 @@ export interface RuntimeKernelRunLiveness {
 
 Turn parent validation is branch-aware through the active head lineage rather than branch-id equality alone: the first Turn on a forked Branch may use the source Branch head Turn as `parentTurnId` when both Turns share a Thread and the parent head matches `startTurnNodeHash`; subsequent Turns on that fork use the immediately previous Turn on the fork.
 
-The target TypeScript implementation package for this surface is `@tuvren/kernel-runtime` under `boundaries/kernel/implementations/typescript/runtime-kernel`. It composes a `RuntimeBackend` into the documented `RuntimeKernel` surface; backend packages remain storage adapters and must not become alternate syscall implementations.
+The target TypeScript implementation package for this surface is `@tuvren/kernel-runtime` under `typescript/kernel/runtime`. It composes a `RuntimeBackend` into the documented `RuntimeKernel` surface; backend packages remain storage adapters and must not become alternate syscall implementations.
 
 ### 4.3 Backend Adapter Contract
 
@@ -564,7 +564,7 @@ export declare function createMemoryBackend(options?: {
 
 - **Style:** library API
 - **Authentication / Authorization:** Credentials stay in bridge configuration and host environment resolution; they are never persisted as core runtime state
-- **Compatibility Strategy:** Tuvren Runtime owns the provider contract; the AI SDK bridge adapts to external package changes behind it
+- **Compatibility Strategy:** Tuvren owns the provider contract; the AI SDK bridge adapts to external package changes behind it
 - **Error model:** Provider and bridge failures normalize into Tuvren provider errors with bridge-specific diagnostics
 - **Structured-output dialects:** `StructuredOutputRequest.schema` defaults to JSON Schema draft-07 when `$schema` is absent. Draft-2019-09 and draft-2020-12 schemas are supported when the schema declares the matching `$schema` URI. Dynamic request schemas compile in isolated validator contexts so repeated `$id` values from different host requests do not collide across turns. Unsupported dialects, schema compilation failures, and data mismatches fail with `structured_output_validation`. `StructuredOutputRequest.strict` is not mapped generically by the baseline AI SDK bridge; `strict: true` fails fast as `invalid_ai_sdk_bridge_config` so the host must use explicit provider-specific options instead of relying on a silent no-op.
 - **AI SDK baseline:** `@tuvren/provider-bridge-ai-sdk` adapts `LanguageModelV3` and `ProviderV3` from `@ai-sdk/provider@3.0.8`. The baseline bridge does not accept `LanguageModelV2`, AI SDK `ToolLoopAgent`, AI SDK UI messages, or AI SDK transport helpers as runtime inputs.
@@ -654,7 +654,7 @@ export type ProviderStreamChunk =
   | { type: "error"; error: unknown };
 ```
 
-On normal stream completion, `finish` is only valid after any started structured-output or tool-call part has been completed by its corresponding `structured_done` or `tool_call_done` chunk. A final-only `structured_done` chunk is valid; the driver synthesizes the missing `structured.delta` from the final data before publishing `structured.done`, matching the generated-response event shape. Cancellation partial finalization is the only path that may preserve incomplete accumulated content.
+On normal stream completion, `finish` is only valid after any started structured-output or tool-call part has been completed by its corresponding `structured_done` or `tool_call_done` chunk. A final-only `structured_done` chunk is valid; the runner synthesizes the missing `structured.delta` from the final data before publishing `structured.done`, matching the generated-response event shape. Cancellation partial finalization is the only path that may preserve incomplete accumulated content.
 
 ### 4.5 Canonical Event Stream Contract
 
@@ -667,7 +667,7 @@ On normal stream completion, `finish` is only valid after any started structured
 ```ts
 export interface EventSource {
   agent: string;
-  driver?: string;
+  runner?: string;
   workerId?: string;
   threadId?: string;
 }
@@ -853,20 +853,21 @@ export type TuvrenStreamEvent =
     };
 ```
 
-### 4.6 Driver Runtime Contract
+### 4.6 Runner Runtime Contract
 
 - **Style:** library API
-- **Authentication / Authorization:** Internal contract between shared runtime foundations and concrete driver implementations
-- **Compatibility Strategy:** Breaking changes to driver execution entrypoints, driver result semantics, or registry ownership are semver-major because future drivers depend on this seam rather than on `runtime-core` internals
-- **Error model:** Driver implementations return `RuntimeResolution` outcomes and may raise typed `TuvrenRuntimeError` failures for invalid driver behavior
+- **Authentication / Authorization:** Internal contract between shared runtime foundations and concrete runner implementations
+- **Compatibility Strategy:** Breaking changes to runner execution entrypoints, runner result semantics, or registry ownership are semver-major because future runners depend on this seam rather than on `runtime-core` internals
+- **Error model:** Runner implementations return `RuntimeResolution` outcomes and may raise typed `TuvrenRuntimeError` failures for invalid runner behavior
+- **Naming note:** Per Epic 87 M6, the "driver" concept was renamed to "runner" repo-wide. The ReAct Driver is now the ReAct Runner (`@tuvren/runner-react`); `@tuvren/driver-api` no longer exists and this contract is absorbed into `@tuvren/core`, exposed at the `@tuvren/core/runner` subpath.
 
 ```ts
-export interface DriverRuntimePort {
+export interface RunnerRuntimePort {
   emit(event: TuvrenStreamEvent): Promise<void> | void;
   now(): EpochMs;
 }
 
-export interface DriverHandoffPort {
+export interface RunnerHandoffPort {
   createContextPlan(input: {
     targetAgent: string;
     reason: string;
@@ -876,65 +877,68 @@ export interface DriverHandoffPort {
   }): HandoffContextPlan;
 }
 
-export interface DriverExecutionContext {
+export interface RunnerExecutionContext {
   turnId: string;
   threadId: string;
   branchId: string;
   schemaId: string;
   iterationCount: number;
   config: Readonly<AgentConfig>;
-  handoff: DriverHandoffPort;
+  handoff: RunnerHandoffPort;
   messages: ReadonlyArray<TuvrenMessage>;
   manifest: Readonly<ContextManifest>;
   toolRegistry: Readonly<ToolRegistry>;
   signal?: AbortSignal;
-  runtime: DriverRuntimePort;
+  runtime: RunnerRuntimePort;
 }
 
-export interface DriverResumeContext extends DriverExecutionContext {
+export interface RunnerResumeContext extends RunnerExecutionContext {
   approval: ApprovalResponse;
   resumedFrom?: HashString;
 }
 
-export interface DriverExtensionStateUpdate {
+export interface RunnerExtensionStateUpdate {
   extensionName: string;
   state: Record<string, unknown>;
 }
 
-export interface DriverExecutionResult {
-  assistantEventReconciliation?: "allow_final_sequence_divergence";
+export type RunnerAssistantEventReconciliation =
+  "allow_final_sequence_divergence";
+
+export interface RunnerExecutionResult {
+  assistantEventReconciliation?: RunnerAssistantEventReconciliation;
   resolution: RuntimeResolution;
   messages?: TuvrenMessage[];
   partial?: boolean;
-  stateUpdates?: DriverExtensionStateUpdate[];
+  stateUpdates?: RunnerExtensionStateUpdate[];
   toolExecutionMode?: "parallel" | "sequential";
 }
 
-export interface RuntimeDriver {
+export interface RuntimeRunner {
   readonly id: string;
-  execute(context: DriverExecutionContext): Promise<DriverExecutionResult>;
-  resume?(context: DriverResumeContext): Promise<DriverExecutionResult>;
+  execute(context: RunnerExecutionContext): Promise<RunnerExecutionResult>;
+  resume?(context: RunnerResumeContext): Promise<RunnerExecutionResult>;
 }
 
-export interface RuntimeDriverFactory {
+export interface RuntimeRunnerFactory {
   readonly id: string;
-  create(): RuntimeDriver;
+  create(): RuntimeRunner;
 }
 
-export interface DriverRegistry {
-  register(driver: RuntimeDriver | RuntimeDriverFactory): void;
-  resolve(driverId: string): RuntimeDriver | RuntimeDriverFactory | undefined;
-  list(): Array<RuntimeDriver | RuntimeDriverFactory>;
+export interface RunnerRegistry {
+  register(runner: RuntimeRunner | RuntimeRunnerFactory): void;
+  resolve(runnerId: string): RuntimeRunner | RuntimeRunnerFactory | undefined;
+  list(): Array<RuntimeRunner | RuntimeRunnerFactory>;
 }
 ```
 
-`DriverExecutionResult` may contain at most one assistant message per iteration. `toolExecutionMode` is required when that assistant message requests tool calls and omitted otherwise. A failed `partial` result may still contain interrupted tool-call content; those calls are staged as durable context only and are not executed while the resolution remains failed. `stateUpdates` carries per-extension manifest updates collected by concrete driver-owned `aroundModel` execution so the shared core can apply them at the same checkpoint that commits the assistant message and manifest. `assistantEventReconciliation` is optional and reserved for explicit driver-signaled streaming cases such as `aroundModel` post-stream durable replacement. This keeps sequential-vs-parallel selection, extension-state durability, and narrow assistant-stream validation policy on the shared driver boundary instead of on runtime-core construction options. Approval resume remains framework-owned; any driver `resume(...)` method is optional and not part of the current shared-core execution path.
+`RunnerExecutionResult` may contain at most one assistant message per iteration. `toolExecutionMode` is required when that assistant message requests tool calls and omitted otherwise. A failed `partial` result may still contain interrupted tool-call content; those calls are staged as durable context only and are not executed while the resolution remains failed. `stateUpdates` carries per-extension manifest updates collected by concrete runner-owned `aroundModel` execution so the shared core can apply them at the same checkpoint that commits the assistant message and manifest. `assistantEventReconciliation` is optional and reserved for explicit runner-signaled streaming cases such as `aroundModel` post-stream durable replacement. This keeps sequential-vs-parallel selection, extension-state durability, and narrow assistant-stream validation policy on the shared runner boundary instead of on runtime-core construction options. Approval resume remains framework-owned; any runner `resume(...)` method is optional and not part of the current shared-core execution path.
 
 The current provider-neutral content contract does not define a dedicated
 handoff content part inside `TuvrenModelResponse.parts`. Baseline Epic K
-handoff preservation therefore remains on the existing shared driver seam:
-concrete drivers return `RuntimeResolution.handoff` and build the associated
-`HandoffContextPlan` through `DriverHandoffPort` when a higher layer or
+handoff preservation therefore remains on the existing shared runner seam:
+concrete runners return `RuntimeResolution.handoff` and build the associated
+`HandoffContextPlan` through `RunnerHandoffPort` when a higher layer or
 provider-native integration has already identified a handoff. Provider-native
 tool-like handoff detection remains a future bridge or contract concern and is
 not introduced into the current provider-neutral content model in this pass.
@@ -942,13 +946,13 @@ not introduced into the current provider-neutral content model in this pass.
 Baseline ReAct also evaluates `AgentConfig.loopPolicy` during iteration
 resolution composition. For assistant responses without executable tool calls,
 `loopPolicy` may request either continuation or turn termination. For assistant
-responses that do request executable tool calls, the current shared driver seam
+responses that do request executable tool calls, the current shared runner seam
 requires `continue: true` and `executeTools: true`; any custom policy that
 returns a non-continuing or non-executing decision for executable tool calls is
 rejected as `invalid_loop_policy` rather than producing a partial or
-terminal-with-tools driver result shape that the shared core does not support.
+terminal-with-tools runner result shape that the shared core does not support.
 
-`runtime.emit(...)` is limited to driver-owned stream content and custom events. Framework-owned lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, and `error` remain shared-core responsibilities and are rejected if a driver tries to emit them directly. Shared core publishes driver-emitted content and custom events as they occur, while still retaining them for post-call validation and response synthesis. Because publication is live, already-forwarded driver events are not retracted if a later validation step fails, including post-stream structured-output validation; instead the turn terminates with the relevant contract error. If a driver emits assistant content events for a successful durable assistant response, that emitted assistant sequence must normally reconcile to the durable assistant message in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise runtime-core rejects it as an invalid stream event. The one intentional exception is `aroundModel` post-stream response replacement: when an `aroundModel` wrapper has already allowed a live assistant sequence to stream via `next()` and then returns a different final durable response, the driver must return `assistantEventReconciliation: "allow_final_sequence_divergence"` so shared core validates the emitted assistant sequences as complete standalone assistant messages instead of requiring equality with the checkpointed durable assistant message. Shared core honors that exception only when the active agent config includes at least one `aroundModel` handler, assistant content events were actually emitted, the final emitted assistant sequence actually diverges from the durable assistant message, and neither side requests tools. In that divergence case, shared core still synthesizes the `AfterIterationContext.response` value from the durable assistant checkpoint so hook-visible `TuvrenModelResponse` values remain internally coherent even when the live stream differed. On terminal `fail` paths before a durable assistant message exists, emitted assistant content may remain as an interrupted partial sequence; shared core validates that sequence for allowed event shapes and ordering, but does not require durable-message equality in that failure case. When a driver returns a durable assistant message without emitting matching assistant content events, runtime-core synthesizes those missing assistant stream events from the durable message so the public stream and persisted history stay aligned.
+`runtime.emit(...)` is limited to runner-owned stream content and custom events. Framework-owned lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, and `error` remain shared-core responsibilities and are rejected if a runner tries to emit them directly. Shared core publishes runner-emitted content and custom events as they occur, while still retaining them for post-call validation and response synthesis. Because publication is live, already-forwarded runner events are not retracted if a later validation step fails, including post-stream structured-output validation; instead the turn terminates with the relevant contract error. If a runner emits assistant content events for a successful durable assistant response, that emitted assistant sequence must normally reconcile to the durable assistant message in `RunnerExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise runtime-core rejects it as an invalid stream event. The one intentional exception is `aroundModel` post-stream response replacement: when an `aroundModel` wrapper has already allowed a live assistant sequence to stream via `next()` and then returns a different final durable response, the runner must return `assistantEventReconciliation: "allow_final_sequence_divergence"` so shared core validates the emitted assistant sequences as complete standalone assistant messages instead of requiring equality with the checkpointed durable assistant message. Shared core honors that exception only when the active agent config includes at least one `aroundModel` handler, assistant content events were actually emitted, the final emitted assistant sequence actually diverges from the durable assistant message, and neither side requests tools. In that divergence case, shared core still synthesizes the `AfterIterationContext.response` value from the durable assistant checkpoint so hook-visible `TuvrenModelResponse` values remain internally coherent even when the live stream differed. On terminal `fail` paths before a durable assistant message exists, emitted assistant content may remain as an interrupted partial sequence; shared core validates that sequence for allowed event shapes and ordering, but does not require durable-message equality in that failure case. When a runner returns a durable assistant message without emitting matching assistant content events, runtime-core synthesizes those missing assistant stream events from the durable message so the public stream and persisted history stay aligned.
 
 ### 4.7 Host Stream Adapter, Reference Host, and Hardening Contracts
 
@@ -1017,24 +1021,23 @@ export declare function toAgUiEvents(
 - **Error model:** Validation, generation, or suite-shape failures stop CI or local verification and do not count as runtime behavior.
 
 ```text
-boundaries/<area>/contracts/<surface>/
-  spec/
-    typespec/        # when TypeSpec is the authored contract source
-    cddl/            # when CDDL is the authored record-grammar source
+spec/<port>/
+  typespec/        # when TypeSpec is the authored contract source
+  cddl/            # when CDDL is the authored record-grammar source
   artifacts/
     json-schema/
     openapi/
-  src/
-  test/
+  authority-packet.json
 
-boundaries/<area>/conformance/
+spec/conformance/<port>/
   schemas/
   fixtures/
   scenarios/
+  plans/
 ```
 
 - TypeSpec is the preferred authored source for framework- and provider-facing machine-readable shape contracts when a contract package is promoted to that level.
-- Kernel protocol record grammar is authored under `boundaries/kernel/contracts/protocol/spec/cddl/`.
+- Kernel protocol record grammar is authored under `spec/kernel/cddl/`.
 - Conformance fixture schemas use JSON Schema 2020-12 and validate language-neutral fixtures and scenarios.
 - Conformance suite manifests must mature from listing fixtures to listing named semantic checks, their fixture or scenario inputs, required assertions, expected evidence fields, and implementation-runner applicability.
 - High-value semantics currently proven only in TypeScript package tests must be triaged as one of: promoted to boundary-owned conformance, intentionally implementation-specific, deferred with a named rationale, or obsolete.
@@ -1053,7 +1056,7 @@ TypeScript framework already depends on through `RuntimeKernel`. It must
 include the thread, branch, turn, and run lifecycle operations needed to
 preserve the current `TuvrenRuntime` surface over a remote kernel path, while
 keeping framework-owned `ExecutionHandle` controls such as `cancel()`,
-`steer(...)`, `resolveApproval(...)`, and driver-loop execution out of the
+`steer(...)`, `resolveApproval(...)`, and runner-loop execution out of the
 kernel transport entirely.
 
 ```proto
@@ -1090,12 +1093,12 @@ service KernelRunService {
 }
 ```
 
-- Authored `.proto` files live under `boundaries/kernel/interop/grpc/proto/`.
+- Authored `.proto` files live under `spec/interop/proto/tuvren/kernel/interop/`.
 - Event envelopes and stable error payloads are part of the transport surface where real cross-process execution needs them.
 - Path values, verdicts, and staged-result outcomes must preserve the kernel
   contract's union semantics in Protobuf with `oneof` envelopes rather than
   parallel optional fields.
-- The interop surface must stay narrower than the full framework API during the first Rust phase and must not absorb host or driver-owned control semantics in order to make the remote kernel path convenient.
+- The interop surface must stay narrower than the full framework API during the first Rust phase and must not absorb host or runner-owned control semantics in order to make the remote kernel path convenient.
 
 ### 4.10 Compatibility Ledger Contract
 
@@ -1179,7 +1182,7 @@ service KernelRunService {
 - **Compatibility Strategy:** Per the §2.1 authority-packet compatibility rule. Adding declared sources, generated artifacts, plans, or binding projections is minor; removing a declared authoritative source, removing a referenced conformance plan, or relaxing a declared forbidden authority source is major.
 - **Error model:** Manifest-validation failures, missing declared sources, unreachable generated artifacts, undeclared generated outputs, and references to declared forbidden authority sources stop CI through the §ADR-027 freshness gate.
 
-The manifest lives at `boundaries/<area>/contracts/<surface>/spec/authority-packet.json` for contract surfaces, and at `boundaries/<area>/conformance/spec/authority-packet.json` or `boundaries/<area>/interop/<channel>/spec/authority-packet.json` for behavior-rooted or interop-rooted surfaces. Each manifest validates against the JSON Schema below, which lives at `tools/schemas/authority-packet.schema.json`.
+The manifest lives at `spec/<port>/authority-packet.json` for contract surfaces (e.g. `spec/core/authority-packet.json`, `spec/kernel/authority-packet.json`, `spec/tools/mcp/authority-packet.json`, `spec/runners/react/authority-packet.json`), and at `spec/conformance/<port>/authority-packet.json` or `spec/conformance/interop/<channel>/spec/authority-packet.json` for behavior-rooted or interop-rooted surfaces. Each manifest validates against the JSON Schema below, which lives at `tools/schemas/authority-packet.schema.json`.
 
 ```json
 {
@@ -1339,7 +1342,7 @@ The manifest lives at `boundaries/<area>/contracts/<surface>/spec/authority-pack
 - **Compatibility Strategy:** Plans use `planVersion` independent of npm/crate versions. Adding new checks or new applicable capabilities is minor; removing a check or tightening an existing assertion is major.
 - **Error model:** Plan-loading failures, schema validation failures against the plan schema, and unresolved `$ref`s to fixtures or scenarios stop CI before any adapter executes.
 
-A conformance plan is data-owned per ADR-025. Plans live alongside the surface they verify under `boundaries/<area>/conformance/plans/<plan-id>.json` (or under a sibling `interop/<channel>/plans/` directory for interop-rooted plans). Plans validate against `tools/schemas/conformance-plan.schema.json`.
+A conformance plan is data-owned per ADR-025. Plans live alongside the surface they verify under `spec/conformance/<port>/plans/<plan-id>.json` (e.g. `spec/conformance/kernel/plans/`, `spec/conformance/providers/plans/`, `spec/conformance/runners/plans/`) or under a sibling `spec/conformance/interop/<channel>/plans/` directory for interop-rooted plans. Plans validate against `tools/schemas/conformance-plan.schema.json`.
 
 ```json
 {
@@ -1682,7 +1685,7 @@ export declare function createMcpToolSource(
 
 - **Style:** library API
 - **Authentication / Authorization:** Not applicable
-- **Compatibility Strategy:** Adding a new accepted `BackendKind` or `DriverKind` is semver-minor; removing one is semver-major. Changing the default `driver` is semver-major. Renaming a field on `CreateTuvrenOptions` is semver-major.
+- **Compatibility Strategy:** Adding a new accepted `BackendKind` or `RunnerKind` is semver-minor; removing one is semver-major. Changing the default `runner` is semver-major. Renaming a field on `CreateTuvrenOptions` is semver-major.
 - **Error model:** `TuvrenValidationError` code `invalid_createtuvren_options` for malformed options, including conflicting duplicate configuration between top-level `telemetry` / `bounds` and their `runtimeOptions` aliases; backend-specific construction errors normalize through the backend's own error contract; MCP construction errors surface via `TuvrenProviderError`.
 
 ```ts
@@ -1696,14 +1699,14 @@ import type { TuvrenProvider } from "@tuvren/core/provider";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { TuvrenTelemetrySink } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
-import type { RuntimeDriverFactory } from "@tuvren/core/driver";
+import type { RuntimeRunnerFactory } from "@tuvren/core/runner";
 import type { EpochMs } from "@tuvren/core";
 // RuntimeKernel and RuntimeBackend are kernel-protocol types (not part of @tuvren/core)
 import type { RuntimeKernel, RuntimeBackend } from "@tuvren/kernel-protocol";
 import type { McpToolSource } from "@tuvren/mcp-client";
 
 export type BackendKind = "memory" | "sqlite" | "postgres";
-export type DriverKind = "react";
+export type RunnerKind = "react";
 
 export interface MemoryBackendOptions {
   now?: () => EpochMs;
@@ -1724,7 +1727,7 @@ export interface PostgresBackendOptions {
   username?: string;
 }
 
-export interface ReActDriverOptions {
+export interface ReActRunnerOptions {
   providerCallMode?: "stream" | "generate";
   toolExecutionMode?: "parallel" | "sequential";
 }
@@ -1739,7 +1742,7 @@ export interface RuntimeWarning {
 // to createTuvrenRuntime. This type is a public host-facing name (passed in CreateTuvrenOptions);
 // renaming it would be a semver-major breaking change and is deferred to a future API cleanup.
 // The actual RuntimeCoreOptions (in runtime-core/src/lib/runtime-core.ts) includes additional
-// factory-managed fields: kernel, driverRegistry, defaultDriverId. createTuvren controls those
+// factory-managed fields: kernel, runnerRegistry, defaultRunnerId. createTuvren controls those
 // internally and excludes them via the Omit below; hosts only ever configure the five public
 // fields shown before the internal ones.
 export interface RuntimeCoreOptions {
@@ -1749,8 +1752,8 @@ export interface RuntimeCoreOptions {
   telemetry?: TuvrenTelemetrySink;
   bounds?: ExecutionBounds;
   /** @internal — managed by createTuvren */ kernel?: RuntimeKernel;
-  /** @internal — managed by createTuvren */ driverRegistry?: unknown;
-  /** @internal — managed by createTuvren */ defaultDriverId?: string;
+  /** @internal — managed by createTuvren */ runnerRegistry?: unknown;
+  /** @internal — managed by createTuvren */ defaultRunnerId?: string;
 }
 
 export interface CreateTuvrenOptions {
@@ -1760,10 +1763,10 @@ export interface CreateTuvrenOptions {
     | { kind: "memory"; options?: MemoryBackendOptions }
     | { kind: "sqlite"; options: SqliteBackendOptions }
     | { kind: "postgres"; options: PostgresBackendOptions };
-  driver?:
-    | DriverKind
-    | RuntimeDriverFactory
-    | { kind: "react"; options?: ReActDriverOptions };
+  runner?:
+    | RunnerKind
+    | RuntimeRunnerFactory
+    | { kind: "react"; options?: ReActRunnerOptions };
   provider?: TuvrenProvider;
   tools?: Array<TuvrenToolDefinition | McpToolSource>;
   extensions?: TuvrenExtension[];
@@ -1771,7 +1774,7 @@ export interface CreateTuvrenOptions {
   bounds?: ExecutionBounds;
   /** Advanced: supply a pre-built kernel instead of letting the factory build one from `backend`. */
   kernel?: RuntimeKernel;
-  runtimeOptions?: Omit<RuntimeCoreOptions, "kernel" | "driverRegistry" | "defaultDriverId">;
+  runtimeOptions?: Omit<RuntimeCoreOptions, "kernel" | "runnerRegistry" | "defaultRunnerId">;
 }
 
 export interface TuvrenInstance {
@@ -1848,7 +1851,7 @@ export declare const NoopTelemetrySink: TuvrenTelemetrySink;
 - **Compatibility Strategy:** §2.1 execution bounds compatibility. Reuses the `failed` `ExecutionResult` discriminant from ADR-035; no new union variant.
 - **Error model:** Reaching a hard-stop bound finalizes the turn as a `failed` `ExecutionResult` whose `error` is a `TuvrenRuntimeError` with code `execution_bound_exceeded` and `details: ExecutionBoundExceededDetails`. A fatal canonical `error` event carries the same code/details for live stream consumers, and the matching `turn.end` event marks the failed terminal state. The bound metadata remains on the `ExecutionResult`, the canonical `error` event details, and the bounded-execution telemetry event rather than on `turn.end`.
 
-- Bounds are configured via `createTuvren({ bounds?: ExecutionBounds })` and `RuntimeCoreOptions.bounds`. Unset fields take the documented safe defaults (§3.11). Each configured field must be a finite positive integer; the runtime rejects `Infinity`, `NaN`, zero, and negative values during construction. `maxIterations` and `maxToolCalls` are checked at iteration and tool-batch boundaries, with `AgentConfig.maxIterations` clamped to `bounds.maxIterations`; `maxWallClockMs` wraps the whole turn with a deadline that propagates an abort signal through `TuvrenPrompt.signal` and `ToolExecutionContext.signal`, and late completions after abort are ignored; and `maxConcurrentToolCalls` throttles tool execution to the configured cap. A driver cannot raise or disable a framework bound.
+- Bounds are configured via `createTuvren({ bounds?: ExecutionBounds })` and `RuntimeCoreOptions.bounds`. Unset fields take the documented safe defaults (§3.11). Each configured field must be a finite positive integer; the runtime rejects `Infinity`, `NaN`, zero, and negative values during construction. `maxIterations` and `maxToolCalls` are checked at iteration and tool-batch boundaries, with `AgentConfig.maxIterations` clamped to `bounds.maxIterations`; `maxWallClockMs` wraps the whole turn with a deadline that propagates an abort signal through `TuvrenPrompt.signal` and `ToolExecutionContext.signal`, and late completions after abort are ignored; and `maxConcurrentToolCalls` throttles tool execution to the configured cap. A runner cannot raise or disable a framework bound.
 - `maxConcurrentToolCalls` is a resource cap, not a terminal failure threshold: the framework queues or throttles work so a compliant turn stays within the configured parallelism instead of surfacing `execution_bound_exceeded` purely for requesting more parallel tools than the cap allows. When `AgentConfig.maxParallelToolCalls` or `defaultMaxParallelToolCalls` is present, the effective parallel-tool limit is the minimum of that value and `bounds.maxConcurrentToolCalls`; the framework bound is the non-bypassable ceiling.
 
 ### 4.20 Fault-Injection and Recovery Verification Seam (Test-Only)
@@ -1859,7 +1862,7 @@ export declare const NoopTelemetrySink: TuvrenTelemetrySink;
 - **Error model:** Injected checkpoint-commit faults surface as `TuvrenPersistenceError`, the same error family the runtime already raises on real persistence failure, so recovery code under test cannot tell an injected persistence fault from a real one. The seam does not claim a separate recovery-operation injection mode.
 
 - `createFaultInjectingBackend(inner, plan)` wraps a real backend and interrupts `transact` at the `FaultPlan.point` relative to the durable commit, optionally racing a concurrent writer (§3.12).
-- The seam is consumed only by the `kernel-crash-recovery` check set in `kernel-restart-recovery.json` and by recovery scenario tests; it must not be imported by `@tuvren/core`, `@tuvren/runtime`, any backend, the host-facing SDK, any driver, or the reference host.
+- The seam is consumed only by the `kernel-crash-recovery` check set in `kernel-restart-recovery.json` and by recovery scenario tests; it must not be imported by `@tuvren/core`, `@tuvren/runtime`, any backend, the host-facing SDK, any runner, or the reference host.
 - Recovery invariant asserted by the plan: a recovered branch head is always a committed TurnNode; no torn or partial TurnNode is observable; staged-but-uncommitted work is fully recovered or fully absent; the runtime resumes only unfinished work or fails the run cleanly with `TuvrenRecoveryError`; and two writers racing one branch head never corrupt lineage (one wins; the other observes a typed lineage conflict).
 
 ### 4.21 Capability Orchestration Contract
@@ -1870,7 +1873,7 @@ export declare const NoopTelemetrySink: TuvrenTelemetrySink;
 - **Error model:** Exposure denials remove a surface from the model-visible set (no error to the model) — the enforcement wiring that filters the tool-set before the model sees it lands in Epic BB; invocation-time enforcement is active as of Epic AW. Invocation denials and unavailable bindings surface as `tool.result` with `isError: true` carrying the appropriate existing error family — `TuvrenValidationError` for local input-contract violations (`tool_input_validation_failed`), `TuvrenProviderError` for provider/mediated/MCP-advertised failures (e.g. `mcp_tool_input_invalid`), and a new `capability_binding_unavailable` `TuvrenRuntimeError` when no admissible binding exists (for example a Tuvren-client endpoint is not attached). Provider-native invocation failures are recorded from provider-exposed results.
 
 - The runtime resolves each model-visible tool call through: Capability Registry (which surfaces are eligible) → Capability Policy Engine (exposure-time; wiring into tool-set construction lands in Epic BB) → the model sees only exposed surfaces → on a tool call, Binding & Endpoint Resolver (resolve capability → execution class + endpoint) → Capability Policy Engine (invocation-time; active as of Epic AW) → dispatch to the execution-class endpoint. This preserves the conceptual invariant.
-- Exposure-time policy inputs: provider, model, user/org permissions, data-residency, endpoint availability. Invocation-time policy inputs: approval requirements, credential boundary, user-presence, idempotency/retry, risk classification. Both are framework-owned decision points above driver discretion (consistent with the §4.19 bounds guard and the §5.6.3 approval/secret rules).
+- Exposure-time policy inputs: provider, model, user/org permissions, data-residency, endpoint availability. Invocation-time policy inputs: approval requirements, credential boundary, user-presence, idempotency/retry, risk classification. Both are framework-owned decision points above runner discretion (consistent with the §4.19 bounds guard and the §5.6.3 approval/secret rules).
 - Execution-class dispatch: `tuvren-server` → Tool Execution Gateway (full lifecycle; today's `execute` path); `provider-native` → Provider Gateway enables/configures the provider tool and records provider-exposed events/results only; `provider-mediated` → Provider Gateway configures the mediated relationship (e.g. provider-invoked remote MCP) and records what the provider/tool protocol exposes; `tuvren-client` → Client Endpoint Boundary leases an attached endpoint, dispatches an invocation envelope, and records the client-reported result (lands in Epic AZ).
 - Observation honesty: the runtime emits a canonical invocation event tagged with the execution class and `owner` (`provider` | `tuvren`) plus a `CapabilityObservation`. It must not expose a cancel/retry/audit affordance for an invocation whose class does not grant it. Secret isolation (§5.6.3) applies to every class: no provider/MCP/client credential reaches durable state, events, telemetry, or transcripts.
 - Back-compatibility: `defineTool(...)` / `TuvrenToolDefinition` continue to produce a Tuvren-server capability; existing hosts require no change. New execution classes are opt-in via capability/binding configuration.

@@ -29,14 +29,14 @@ const KERNEL_TYPECHECK_PROJECTS = [
   "backend-memory",
   "backend-sqlite",
   "backend-postgres",
-  "kernel-typescript-conformance-runner",
+  "kernel-typescript-certification",
 ] as const;
 
 const KERNEL_CONFORMANCE_PROJECTS = [
   "kernel-testkit",
-  "kernel-typescript-conformance-runner",
-  "kernel-typescript-sqlite-conformance-runner",
-  "kernel-typescript-postgres-conformance-runner",
+  "kernel-typescript-certification",
+  "kernel-typescript-sqlite-certification",
+  "kernel-typescript-postgres-certification",
 ] as const;
 
 const FRESH_FLAG = "--fresh";

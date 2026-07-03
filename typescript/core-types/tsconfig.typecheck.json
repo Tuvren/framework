@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/core": ["../core/src/index.ts"],
+      "@tuvren/core-types": ["./src/index.ts"]
+    },
+    "types": ["bun", "node"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "../core/src/**/*.ts"]
+}

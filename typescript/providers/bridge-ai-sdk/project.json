@@ -1,0 +1,54 @@
+{
+  "name": "providers-bridge-ai-sdk",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/providers/bridge-ai-sdk",
+  "sourceRoot": "typescript/providers/bridge-ai-sdk/src",
+  "projectType": "library",
+  "tags": ["boundary:providers", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/providers/bridge-ai-sdk",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/providers/bridge-ai-sdk",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/providers/bridge-ai-sdk"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": "typescript/providers/bridge-ai-sdk",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/providers/bridge-ai-sdk"
+      }
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "name": "host-repl",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/host/repl",
+  "sourceRoot": "typescript/host/repl/src",
+  "projectType": "application",
+  "tags": ["boundary:hosts", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/host/repl",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/host/repl",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/host/repl"
+      }
+    },
+    "scenario": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/host/repl",
+        "command": "node dist/cli.js --scenario streaming --backend memory --provider fixture"
+      }
+    },
+    "scenario-gemini": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build", "^build"],
+      "options": {
+        "cwd": "typescript/host/repl",
+        "command": "bun dist/gemini-cli.js --provider ai-sdk-google"
+      }
+    },
+    "interop-smoke": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/repl-host-interop-smoke.ts"
+      }
+    },
+    "scenario-sqlite": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/host/repl",
+        "command": "bash -lc 'node dist/cli.js --scenario reload --backend sqlite --provider fixture --sqlite-path auto && printf \".status\\n.turn start streaming\\n.turn await\\n.exit\\n\" | node dist/cli.js --headless --stream-jsonl --backend sqlite --provider fixture --sqlite-path auto | bun smoke/assert-headless-jsonl.ts'"
+      }
+    },
+    "scenario-postgres": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/host/repl",
+        "command": "bash -lc 'node dist/cli.js --scenario reload --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto && printf \".status\\n.turn start streaming\\n.turn await\\n.exit\\n\" | node dist/cli.js --headless --stream-jsonl --backend postgres --provider fixture --postgres-database tuvren_runtime --postgres-schema auto | bun smoke/assert-headless-jsonl.ts'"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build", "^build"],
+      "options": {
+        "cwd": "typescript/host/repl",
+        "command": "bun test"
+      }
+    },
+    "test-local": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/host/repl",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/host/repl"
+      }
+    }
+  }
+}

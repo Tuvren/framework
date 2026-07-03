@@ -5,7 +5,7 @@
 
 Read after `KrakenFrameworkSpecification.md`. This document explains decisions; it does not define the contract.
 
-Kraken is the execution engine inside Tuvren Runtime, so this rationale stays intentionally engine-focused rather than product-marketing focused.
+Kraken is the execution engine inside Tuvren, so this rationale stays intentionally engine-focused rather than product-marketing focused.
 
 ---
 
@@ -16,7 +16,7 @@ Kraken is the execution engine inside Tuvren Runtime, so this rationale stays in
 Analysis of seven frameworks (OpenAI Agents SDK, Hermes, LangGraph, LangChain, Pi, Cloudflare Agents, Google ADK) reveals the same pattern under different names:
 
 1. There is always some durable representation of progress.
-2. There is always some execution driver that advances step by step.
+2. There is always some execution runner that advances step by step.
 3. There is always some mechanism turning model output into executable actions.
 4. There is always some interception point where external policy can alter execution.
 5. There is always some way to stop, pause, or resume safely.

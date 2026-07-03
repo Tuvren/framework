@@ -1,0 +1,29 @@
+{
+  "name": "kernel-typescript-conformance-adapter",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/kernel/conformance-adapter",
+  "sourceRoot": "typescript/kernel/conformance-adapter/src",
+  "projectType": "library",
+  "tags": [
+    "boundary:kernel",
+    "language:typescript",
+    "layer:conformance-adapter"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/kernel/conformance-adapter",
+        "command": "bunx --bun tsup --config tsup.config.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/kernel/conformance-adapter"
+      }
+    }
+  }
+}

@@ -25,8 +25,8 @@ Every remaining non-authority surface is listed below with its current posture. 
 | --- | ---: | --- | --- | --- |
 | extension contracts | 5 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | extension state and prompt contracts | 4 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
-| framework driver framing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
-| future framework drivers | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
+| framework runner framing | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
+| future framework runners | 1 | explicitly-deferred | Future TechSpec/Tasks revision after TypeScript freeze closure | No, if kept local/deferred |
 | kernel backend acceleration indexes | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel backend physical storage | 2 | implementation-defined | N/A unless AF promotes the surface | No, if kept local/deferred |
 | kernel capability-gated syscalls | 4 | missing-conformance-follow-up | KRT-AM010 | Yes, until AF/docs evidence resolves it |

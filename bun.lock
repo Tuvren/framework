@@ -33,165 +33,28 @@
         "zod": "4.4.3",
       },
     },
-    "boundaries/framework/contracts/driver-api/implementations/typescript": {
-      "name": "@tuvren/driver-api",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/core-types": "workspace:*",
-        "@tuvren/runtime-api": "workspace:*",
-      },
-    },
-    "boundaries/framework/contracts/event-stream/implementations/typescript": {
-      "name": "@tuvren/event-stream",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/runtime-api": "workspace:*",
-      },
-    },
-    "boundaries/framework/contracts/runtime-api/implementations/typescript": {
-      "name": "@tuvren/runtime-api",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/core-types": "workspace:*",
-      },
-    },
-    "boundaries/framework/contracts/tool-contracts/implementations/typescript": {
-      "name": "@tuvren/tool-contracts",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/core-types": "workspace:*",
-        "@tuvren/runtime-api": "workspace:*",
-      },
-    },
-    "boundaries/framework/implementations/typescript/conformance-runner": {
-      "name": "@tuvren/framework-typescript-conformance-runner",
+    "typescript/certification": {
+      "name": "@tuvren/framework-typescript-certification",
       "version": "0.0.0",
       "dependencies": {
         "@ag-ui/core": "0.0.52",
-        "@tuvren/event-stream": "workspace:*",
         "@tuvren/stream-agui": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
         "@tuvren/stream-sse": "workspace:*",
       },
     },
-    "boundaries/framework/implementations/typescript/drivers/react": {
-      "name": "@tuvren/driver-react",
+    "typescript/core": {
+      "name": "@tuvren/core",
       "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/provider-api": "workspace:*",
-        "ajv": "8.18.0",
-      },
-      "devDependencies": {
-        "@tuvren/stream-agui": "workspace:*",
-        "@tuvren/stream-core": "workspace:*",
-        "@tuvren/stream-sse": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
     },
-    "boundaries/framework/implementations/typescript/runtime": {
-      "name": "@tuvren/runtime",
-      "version": "0.0.0",
-      "dependencies": {
-        "@bufbuild/protobuf": "2.11.0",
-        "@connectrpc/connect": "2.1.1",
-        "@connectrpc/connect-node": "2.1.1",
-        "@tuvren/backend-memory": "workspace:*",
-        "@tuvren/backend-postgres": "workspace:*",
-        "@tuvren/backend-sqlite": "workspace:*",
-        "@tuvren/driver-react": "workspace:*",
-        "@tuvren/kernel-protocol": "workspace:*",
-        "@tuvren/kernel-runtime": "workspace:*",
-        "@tuvren/mcp-client": "workspace:*",
-        "ajv": "8.18.0",
-      },
-      "devDependencies": {
-        "@ag-ui/core": "0.0.52",
-        "@tuvren/kernel-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/framework/implementations/typescript/runtime-core": {
-      "name": "@tuvren/runtime-core",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/runtime": "workspace:*",
-      },
-      "devDependencies": {
-        "@ag-ui/core": "0.0.52",
-        "@tuvren/framework-testkit": "workspace:*",
-        "@tuvren/stream-agui": "workspace:*",
-        "@tuvren/stream-core": "workspace:*",
-        "@tuvren/stream-sse": "workspace:*",
-      },
-    },
-    "boundaries/framework/implementations/typescript/stream-agui": {
-      "name": "@tuvren/stream-agui",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ag-ui/core": "0.0.52",
-        "@tuvren/stream-core": "workspace:*",
-      },
-      "devDependencies": {
-        "@tuvren/framework-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/framework/implementations/typescript/stream-core": {
-      "name": "@tuvren/stream-core",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@tuvren/framework-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/framework/implementations/typescript/stream-sse": {
-      "name": "@tuvren/stream-sse",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/stream-core": "workspace:*",
-      },
-      "devDependencies": {
-        "@tuvren/framework-testkit": "workspace:*",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/framework/implementations/typescript/telemetry-otel": {
-      "name": "@tuvren/telemetry-otel",
-      "version": "0.0.0",
-      "dependencies": {
-        "@opentelemetry/api": "1.9.1",
-      },
-      "devDependencies": {
-        "@opentelemetry/sdk-trace-base": "2.7.1",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/framework/implementations/typescript/testkit": {
-      "name": "@tuvren/framework-testkit",
+    "typescript/core-types": {
+      "name": "@tuvren/core-types",
       "version": "0.0.0",
       "dependencies": {
         "@tuvren/core": "workspace:*",
-        "@tuvren/event-stream": "workspace:*",
-        "ajv": "8.18.0",
       },
     },
-    "boundaries/hosts/implementations/typescript/repl": {
+    "typescript/host/repl": {
       "name": "@tuvren/repl-host",
       "version": "0.0.0",
       "dependencies": {
@@ -203,8 +66,8 @@
         "@tuvren/backend-memory": "workspace:*",
         "@tuvren/backend-postgres": "workspace:*",
         "@tuvren/backend-sqlite": "workspace:*",
-        "@tuvren/driver-react": "workspace:*",
         "@tuvren/provider-bridge-ai-sdk": "workspace:*",
+        "@tuvren/runner-react": "workspace:*",
         "@tuvren/runtime": "workspace:*",
         "@tuvren/stream-agui": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
@@ -214,17 +77,7 @@
         "@copilotkit/aimock": "1.15.1",
       },
     },
-    "boundaries/kernel/contracts/protocol/implementations/typescript": {
-      "name": "@tuvren/kernel-protocol",
-      "version": "0.0.0",
-      "dependencies": {
-        "cbor-x": "1.6.4",
-      },
-      "peerDependencies": {
-        "@tuvren/core": "workspace:*",
-      },
-    },
-    "boundaries/kernel/implementations/typescript/backend-memory": {
+    "typescript/kernel/backends/memory": {
       "name": "@tuvren/backend-memory",
       "version": "0.0.0",
       "dependencies": {
@@ -237,7 +90,7 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/kernel/implementations/typescript/backend-postgres": {
+    "typescript/kernel/backends/postgres": {
       "name": "@tuvren/backend-postgres",
       "version": "0.0.0",
       "dependencies": {
@@ -252,7 +105,7 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/kernel/implementations/typescript/backend-sqlite": {
+    "typescript/kernel/backends/sqlite": {
       "name": "@tuvren/backend-sqlite",
       "version": "0.0.0",
       "dependencies": {
@@ -268,8 +121,8 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/kernel/implementations/typescript/conformance-runner": {
-      "name": "@tuvren/kernel-typescript-conformance-runner",
+    "typescript/kernel/certification": {
+      "name": "@tuvren/kernel-typescript-certification",
       "version": "0.0.0",
       "dependencies": {
         "@tuvren/backend-memory": "workspace:*",
@@ -280,7 +133,17 @@
         "@tuvren/kernel-testkit": "workspace:*",
       },
     },
-    "boundaries/kernel/implementations/typescript/runtime-kernel": {
+    "typescript/kernel/protocol": {
+      "name": "@tuvren/kernel-protocol",
+      "version": "0.0.0",
+      "dependencies": {
+        "cbor-x": "1.6.4",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/kernel/runtime": {
       "name": "@tuvren/kernel-runtime",
       "version": "0.0.0",
       "dependencies": {
@@ -293,7 +156,7 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/kernel/implementations/typescript/testkit": {
+    "typescript/kernel/testkit": {
       "name": "@tuvren/kernel-testkit",
       "version": "0.0.0",
       "dependencies": {
@@ -303,15 +166,7 @@
         "ajv": "8.18.0",
       },
     },
-    "boundaries/providers/contracts/provider-api/implementations/typescript": {
-      "name": "@tuvren/provider-api",
-      "version": "0.0.0",
-      "dependencies": {
-        "@tuvren/core": "workspace:*",
-        "@tuvren/runtime-api": "workspace:*",
-      },
-    },
-    "boundaries/providers/implementations/typescript/bridge-ai-sdk": {
+    "typescript/providers/bridge-ai-sdk": {
       "name": "@tuvren/provider-bridge-ai-sdk",
       "version": "0.0.0",
       "dependencies": {
@@ -321,8 +176,8 @@
         "ajv": "8.18.0",
       },
       "devDependencies": {
-        "@tuvren/driver-react": "workspace:*",
         "@tuvren/provider-testkit": "workspace:*",
+        "@tuvren/runner-react": "workspace:*",
         "@tuvren/runtime": "workspace:*",
         "@types/json-schema": "^7.0.15",
       },
@@ -330,8 +185,8 @@
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/providers/implementations/typescript/conformance-runner": {
-      "name": "@tuvren/providers-typescript-conformance-runner",
+    "typescript/providers/certification": {
+      "name": "@tuvren/providers-typescript-certification",
       "version": "0.0.0",
       "dependencies": {
         "@ai-sdk/provider": "3.0.8",
@@ -343,19 +198,14 @@
         "@tuvren/runtime": "workspace:*",
       },
     },
-    "boundaries/providers/implementations/typescript/mcp-client": {
-      "name": "@tuvren/mcp-client",
+    "typescript/providers/provider-api": {
+      "name": "@tuvren/provider-api",
       "version": "0.0.0",
       "dependencies": {
-        "@modelcontextprotocol/sdk": "1.29.0",
-        "ajv": "8.18.0",
-        "zod": "4.4.3",
-      },
-      "peerDependencies": {
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/providers/implementations/typescript/testkit": {
+    "typescript/providers/testkit": {
       "name": "@tuvren/provider-testkit",
       "version": "0.0.0",
       "dependencies": {
@@ -367,24 +217,135 @@
         "zod": "4.4.3",
       },
     },
-    "boundaries/shared/contracts/core-types/implementations/typescript": {
-      "name": "@tuvren/core-types",
+    "typescript/runners/react": {
+      "name": "@tuvren/runner-react",
       "version": "0.0.0",
       "dependencies": {
+        "@tuvren/provider-api": "workspace:*",
+        "ajv": "8.18.0",
+      },
+      "devDependencies": {
+        "@tuvren/stream-agui": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+        "@tuvren/stream-sse": "workspace:*",
+      },
+      "peerDependencies": {
         "@tuvren/core": "workspace:*",
       },
     },
-    "boundaries/shared/contracts/core/implementations/typescript": {
-      "name": "@tuvren/core",
+    "typescript/runtime": {
+      "name": "@tuvren/runtime",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bufbuild/protobuf": "2.11.0",
+        "@connectrpc/connect": "2.1.1",
+        "@connectrpc/connect-node": "2.1.1",
+        "@tuvren/backend-memory": "workspace:*",
+        "@tuvren/backend-postgres": "workspace:*",
+        "@tuvren/backend-sqlite": "workspace:*",
+        "@tuvren/kernel-protocol": "workspace:*",
+        "@tuvren/kernel-runtime": "workspace:*",
+        "@tuvren/mcp-client": "workspace:*",
+        "@tuvren/runner-react": "workspace:*",
+        "@tuvren/telemetry-semconv": "workspace:*",
+        "ajv": "8.18.0",
+      },
+      "devDependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@tuvren/kernel-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+        "@tuvren/sdk": "workspace:*",
+      },
+    },
+    "typescript/sdk": {
+      "name": "@tuvren/sdk",
       "version": "0.0.0",
       "peerDependencies": {
         "@standard-schema/spec": "^1.1.0",
+        "@tuvren/core": "workspace:*",
         "zod": "^4.4.3",
       },
       "optionalPeers": [
         "@standard-schema/spec",
         "zod",
       ],
+    },
+    "typescript/streaming/agui": {
+      "name": "@tuvren/stream-agui",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ag-ui/core": "0.0.52",
+        "@tuvren/stream-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/streaming/core": {
+      "name": "@tuvren/stream-core",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/streaming/sse": {
+      "name": "@tuvren/stream-sse",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/stream-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/telemetry/otel": {
+      "name": "@tuvren/telemetry-otel",
+      "version": "0.0.0",
+      "dependencies": {
+        "@opentelemetry/api": "1.9.1",
+      },
+      "devDependencies": {
+        "@opentelemetry/sdk-trace-base": "2.7.1",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
+    "typescript/telemetry/semconv": {
+      "name": "@tuvren/telemetry-semconv",
+      "version": "0.0.0",
+    },
+    "typescript/testkit": {
+      "name": "@tuvren/framework-testkit",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/core": "workspace:*",
+        "ajv": "8.18.0",
+      },
+    },
+    "typescript/tools/mcp-client": {
+      "name": "@tuvren/mcp-client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "1.29.0",
+        "ajv": "8.18.0",
+        "zod": "4.4.3",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+        "@tuvren/sdk": "workspace:*",
+      },
     },
   },
   "trustedDependencies": [
@@ -945,61 +906,55 @@
 
     "@swc/types": ["@swc/types@0.1.26", "", { "dependencies": { "@swc/counter": "^0.1.3" } }, "sha512-lyMwd7WGgG79RS7EERZV3T8wMdmPq3xwyg+1nmAM64kIhx5yl+juO2PYIHb7vTiPgPCj8LYjsNV2T5wiQHUEaw=="],
 
-    "@tuvren/backend-memory": ["@tuvren/backend-memory@workspace:boundaries/kernel/implementations/typescript/backend-memory"],
+    "@tuvren/backend-memory": ["@tuvren/backend-memory@workspace:typescript/kernel/backends/memory"],
 
-    "@tuvren/backend-postgres": ["@tuvren/backend-postgres@workspace:boundaries/kernel/implementations/typescript/backend-postgres"],
+    "@tuvren/backend-postgres": ["@tuvren/backend-postgres@workspace:typescript/kernel/backends/postgres"],
 
-    "@tuvren/backend-sqlite": ["@tuvren/backend-sqlite@workspace:boundaries/kernel/implementations/typescript/backend-sqlite"],
+    "@tuvren/backend-sqlite": ["@tuvren/backend-sqlite@workspace:typescript/kernel/backends/sqlite"],
 
-    "@tuvren/core": ["@tuvren/core@workspace:boundaries/shared/contracts/core/implementations/typescript"],
+    "@tuvren/core": ["@tuvren/core@workspace:typescript/core"],
 
-    "@tuvren/core-types": ["@tuvren/core-types@workspace:boundaries/shared/contracts/core-types/implementations/typescript"],
+    "@tuvren/core-types": ["@tuvren/core-types@workspace:typescript/core-types"],
 
-    "@tuvren/driver-api": ["@tuvren/driver-api@workspace:boundaries/framework/contracts/driver-api/implementations/typescript"],
+    "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:typescript/testkit"],
 
-    "@tuvren/driver-react": ["@tuvren/driver-react@workspace:boundaries/framework/implementations/typescript/drivers/react"],
+    "@tuvren/framework-typescript-certification": ["@tuvren/framework-typescript-certification@workspace:typescript/certification"],
 
-    "@tuvren/event-stream": ["@tuvren/event-stream@workspace:boundaries/framework/contracts/event-stream/implementations/typescript"],
+    "@tuvren/kernel-protocol": ["@tuvren/kernel-protocol@workspace:typescript/kernel/protocol"],
 
-    "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:boundaries/framework/implementations/typescript/testkit"],
+    "@tuvren/kernel-runtime": ["@tuvren/kernel-runtime@workspace:typescript/kernel/runtime"],
 
-    "@tuvren/framework-typescript-conformance-runner": ["@tuvren/framework-typescript-conformance-runner@workspace:boundaries/framework/implementations/typescript/conformance-runner"],
+    "@tuvren/kernel-testkit": ["@tuvren/kernel-testkit@workspace:typescript/kernel/testkit"],
 
-    "@tuvren/kernel-protocol": ["@tuvren/kernel-protocol@workspace:boundaries/kernel/contracts/protocol/implementations/typescript"],
+    "@tuvren/kernel-typescript-certification": ["@tuvren/kernel-typescript-certification@workspace:typescript/kernel/certification"],
 
-    "@tuvren/kernel-runtime": ["@tuvren/kernel-runtime@workspace:boundaries/kernel/implementations/typescript/runtime-kernel"],
+    "@tuvren/mcp-client": ["@tuvren/mcp-client@workspace:typescript/tools/mcp-client"],
 
-    "@tuvren/kernel-testkit": ["@tuvren/kernel-testkit@workspace:boundaries/kernel/implementations/typescript/testkit"],
+    "@tuvren/provider-api": ["@tuvren/provider-api@workspace:typescript/providers/provider-api"],
 
-    "@tuvren/kernel-typescript-conformance-runner": ["@tuvren/kernel-typescript-conformance-runner@workspace:boundaries/kernel/implementations/typescript/conformance-runner"],
+    "@tuvren/provider-bridge-ai-sdk": ["@tuvren/provider-bridge-ai-sdk@workspace:typescript/providers/bridge-ai-sdk"],
 
-    "@tuvren/mcp-client": ["@tuvren/mcp-client@workspace:boundaries/providers/implementations/typescript/mcp-client"],
+    "@tuvren/provider-testkit": ["@tuvren/provider-testkit@workspace:typescript/providers/testkit"],
 
-    "@tuvren/provider-api": ["@tuvren/provider-api@workspace:boundaries/providers/contracts/provider-api/implementations/typescript"],
+    "@tuvren/providers-typescript-certification": ["@tuvren/providers-typescript-certification@workspace:typescript/providers/certification"],
 
-    "@tuvren/provider-bridge-ai-sdk": ["@tuvren/provider-bridge-ai-sdk@workspace:boundaries/providers/implementations/typescript/bridge-ai-sdk"],
+    "@tuvren/repl-host": ["@tuvren/repl-host@workspace:typescript/host/repl"],
 
-    "@tuvren/provider-testkit": ["@tuvren/provider-testkit@workspace:boundaries/providers/implementations/typescript/testkit"],
+    "@tuvren/runner-react": ["@tuvren/runner-react@workspace:typescript/runners/react"],
 
-    "@tuvren/providers-typescript-conformance-runner": ["@tuvren/providers-typescript-conformance-runner@workspace:boundaries/providers/implementations/typescript/conformance-runner"],
+    "@tuvren/runtime": ["@tuvren/runtime@workspace:typescript/runtime"],
 
-    "@tuvren/repl-host": ["@tuvren/repl-host@workspace:boundaries/hosts/implementations/typescript/repl"],
+    "@tuvren/sdk": ["@tuvren/sdk@workspace:typescript/sdk"],
 
-    "@tuvren/runtime": ["@tuvren/runtime@workspace:boundaries/framework/implementations/typescript/runtime"],
+    "@tuvren/stream-agui": ["@tuvren/stream-agui@workspace:typescript/streaming/agui"],
 
-    "@tuvren/runtime-api": ["@tuvren/runtime-api@workspace:boundaries/framework/contracts/runtime-api/implementations/typescript"],
+    "@tuvren/stream-core": ["@tuvren/stream-core@workspace:typescript/streaming/core"],
 
-    "@tuvren/runtime-core": ["@tuvren/runtime-core@workspace:boundaries/framework/implementations/typescript/runtime-core"],
+    "@tuvren/stream-sse": ["@tuvren/stream-sse@workspace:typescript/streaming/sse"],
 
-    "@tuvren/stream-agui": ["@tuvren/stream-agui@workspace:boundaries/framework/implementations/typescript/stream-agui"],
+    "@tuvren/telemetry-otel": ["@tuvren/telemetry-otel@workspace:typescript/telemetry/otel"],
 
-    "@tuvren/stream-core": ["@tuvren/stream-core@workspace:boundaries/framework/implementations/typescript/stream-core"],
-
-    "@tuvren/stream-sse": ["@tuvren/stream-sse@workspace:boundaries/framework/implementations/typescript/stream-sse"],
-
-    "@tuvren/telemetry-otel": ["@tuvren/telemetry-otel@workspace:boundaries/framework/implementations/typescript/telemetry-otel"],
-
-    "@tuvren/tool-contracts": ["@tuvren/tool-contracts@workspace:boundaries/framework/contracts/tool-contracts/implementations/typescript"],
+    "@tuvren/telemetry-semconv": ["@tuvren/telemetry-semconv@workspace:typescript/telemetry/semconv"],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.9.0", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-6+7nlbMVX/PVDCwaIQ8nTOPveOcFLSt8GcXdx8hD0bt39uWxYT88uXzqTd4fTvqta7oeUJqudepapKNt2DYJFw=="],
 

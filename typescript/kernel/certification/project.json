@@ -1,0 +1,55 @@
+{
+  "name": "kernel-typescript-certification",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/kernel/certification",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "language:typescript", "layer:certification"],
+  "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/typescript/kernel/conformance-adapter/**/*"
+      ],
+      "dependsOn": [
+        {
+          "projects": [
+            "backend-memory",
+            "kernel-runtime",
+            "kernel-typescript-conformance-adapter"
+          ],
+          "target": "build",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter.json --concurrency 4 --summary-only"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/kernel/certification"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/certification",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/kernel/certification"
+      }
+    }
+  }
+}

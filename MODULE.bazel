@@ -1,0 +1,41 @@
+"""Bzlmod root module for the Tuvren runtime (bzlmod only, no WORKSPACE).
+
+Governing rulings (full milestone history: issue #87; the epic-time
+MIGRATION_INVENTORY.md ledger was deleted at cutover — git history only):
+- Postgres exception (M1.6): the PostgreSQL kernel backend and its
+  certification project stay Nx-driven with no BUILD.bazel target —
+  devenv-managed Postgres is not idempotent, so it cannot join a hermetic
+  Bazel graph as-is (invariant §10.5).
+- TypeScript-hermeticity reversal (M3.0): real aspect_rules_js/rules_ts
+  adoption was researched and reverted — rules_js has no bun.lock path and
+  every TS suite here is bun:test-based with no upstream Bazel support
+  (aspect-build/rules_js#1258). All TypeScript BUILD.bazel targets are
+  M1.2-pattern native_binary -> tools/bazel/nx-run.sh shims; real ruleset
+  adoption is a post-epic follow-up. Rust targets remain genuinely hermetic
+  under rules_rust.
+"""
+
+module(
+    name = "tuvren_runtime",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "rules_rust", version = "0.71.2")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2024",
+    versions = ["1.95.0"],
+)
+use_repo(rust, "rust_toolchains")
+
+register_toolchains("@rust_toolchains//:all")
+
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "//:Cargo.lock",
+    manifests = ["//:Cargo.toml"],
+)
+use_repo(crate, "crates")

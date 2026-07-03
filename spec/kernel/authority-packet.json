@@ -1,0 +1,133 @@
+{
+  "packetId": "tuvren.kernel.protocol",
+  "version": "0.10.0",
+  "boundary": "kernel",
+  "surface": "protocol",
+  "humanAuthorityRefs": [
+    "docs/KrakenKernelSpecification.md",
+    "docs/KrakenKernelSpecification.md#23-hash",
+    "docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012",
+    "docs/KrakenKernelSpecification.md#run-execution-leases"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "spec/kernel/cddl/kernel-records.cddl",
+      "format": "cddl"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-protocol-core.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-protocol-extended.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-run-liveness.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-restart-recovery.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/plans/kernel-reclamation.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json",
+      "format": "fixture-set"
+    },
+    {
+      "path": "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
+      "format": "fixture-set"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.kernel.protocol.core",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-protocol-core.json"
+    },
+    {
+      "planId": "tuvren.kernel.protocol.extended",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/kernel/plans/kernel-protocol-extended.json"
+    },
+    {
+      "planId": "tuvren.kernel.run-liveness",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/kernel/plans/kernel-run-liveness.json"
+    },
+    {
+      "planId": "tuvren.kernel.restart-recovery",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/kernel/plans/kernel-restart-recovery.json"
+    },
+    {
+      "planId": "tuvren.kernel.scope-isolation",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/kernel/plans/kernel-scope-isolation.json"
+    },
+    {
+      "planId": "tuvren.kernel.reclamation",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/kernel/plans/kernel-reclamation.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "typescript/kernel/protocol",
+    "rust": "rust/kernel"
+  },
+  "bindingSections": {
+    "scope-isolation": {
+      "description": "Scope-resolved object identity (kernel spec §2.3, docs/KrakenKernelSpecification.md#23-hash). A Scope is a host-bound partition identity supplied at backend/connection construction; the kernel syscall surface stays scope-free. Hash resolution to durable storage is confined to the constructing Scope, so identical content under two Scopes is two independent durable objects and store.has / store.get / enumeration can never observe content outside the constructing Scope. The cross-scope isolation conformance contract for this surface lives at spec/conformance/kernel/plans/kernel-scope-isolation.json (capability kernel.scope-isolation, registered above). KRT-BE001 declared the surface and the conformance-plan reference; KRT-BE007 promoted the plan to runnable, registered, evidence-backed conformance: the kernel memory, SQLite, and PostgreSQL adapters advertise kernel.scope-isolation and answer the kernel.scope-isolation.cross-scope-probe operation, and per-backend compatibility evidence records that store.has / store.get / enumeration stay scope-confined across all three backends (KRT-BE003 through KRT-BE006 realize the scope binding the probe exercises)."
+    },
+    "reclamation": {
+      "description": "Capability-gated reachability reclamation primitive plus host-owned crypto-shredding erasure (kernel spec §9.4, docs/KrakenKernelSpecification.md#94-maintenancereclamation-capability-v012; ADR-051). A backend advertises maintenance.reclamation through the BackendCapability descriptor (§9.1); when supported, the kernel marks durable state reachable from live roots — non-archived branch heads, thread roots, and active-run staged work — within the constructing Scope, then sweeps only the unreachable remainder. The sweep is grace-windowed against the oldest active execution lease so it can never race recovery, and a structurally shared object stays marked via any live root (the keep closure is a set-union over live roots, not exclusive-lineage release). A backend advertising non-support rejects reclamation with TuvrenPersistenceError code kernel_capability_unsupported. Reclamation never edits committed lineage; it only releases unreachable storage. Erasure is crypto-shredding: §9.4 keeps it a substrate/edge concern outside the kernel, which stores only opaque ciphertext envelopes, so destroying the host-held key renders a payload unrecoverable while every referencing kernel hash (object, turn node, turn tree, branch head) stays byte-identical. The data-lifecycle conformance contract for this surface lives at spec/conformance/kernel/plans/kernel-reclamation.json (capability kernel.reclamation, registered above). KRT-BF001 declared the surface and the conformance-plan reference; KRT-BF003/BF004 realize the primitive across memory, SQLite, and PostgreSQL; KRT-BF007 promoted the plan to runnable, registered, evidence-backed conformance: the kernel memory, SQLite, and PostgreSQL adapters advertise kernel.reclamation and answer the kernel.reclamation.reclaim-probe operation (no reachable state released, archived branch and its exclusive lineage released, shared object retained via a live root, grace window held under an active lease) and the kernel.reclamation.erasure-probe operation (a host-side codec encrypts at the edge, the kernel stores only the ciphertext envelope, and after the host destroys the key the payload is unrecoverable while the referencing lineage stays structurally intact), and per-backend compatibility evidence records both across all three backends."
+    },
+    "run-liveness": {
+      "description": "Backend-authoritative execution-lease clock (kernel spec §5.2 Run Execution Leases, docs/KrakenKernelSpecification.md#run-execution-leases; ADR-050) composed with side-effect-once under preemption (framework spec \"Running Lease Ownership\", v0.21; ADR-052). When a backend is the shared rendezvous for more than one execution owner, lease-expiry stamping and the expiry comparison are evaluated in that backend's own clock within the same transaction as the lease write or preemption check, and the renewal margin is measured in backend time so an owner relinquishes execution authority before the backend deems its lease preemptable; the BackendCapability descriptor (§9.1) advertises shared-lease-clock support, while single-writer embedded backends advertise non-support and keep the in-process clock because no cross-owner contention exists. Side-effect-once layers an idempotency envelope on top of fencing: side-effecting invocations carry an idempotency identity derived from (runId, callId, fencingToken) on the Tuvren-server tool dispatch path and the Client Endpoint Boundary dispatch envelope so an external system or client environment can deduplicate a retried effect; on loss of execution authority an in-flight nonRetryable invocation is not retried under the dead owner (completed, durably-staged results are still recovered by callId); and a client-reported result is a proposal that becomes durable state only through a runtime commit under a valid run fencing token, so a stale or late client report can never mutate committed history. The run-liveness conformance contract for this surface lives at spec/conformance/kernel/plans/kernel-run-liveness.json (capability kernel.run-liveness, registered above). KRT-BG001 declares the surface and the conformance-plan reference; KRT-BG002 realizes the backend-time lease clock and the shared-lease-clock capability bit across the memory, SQLite, and PostgreSQL backends; KRT-BG003 and KRT-BG004 realize the idempotency envelope, the no-retry-on-authority-loss guarantee, and the client-result-as-proposal invariant; KRT-BG005 promotes the plan to runnable, registered, evidence-backed conformance by exercising preemption under simulated worker clock skew against the PostgreSQL backend (the side effect occurs at most once via the idempotency identity, no stale client report is committed, and per-run evidence is recorded)."
+    }
+  },
+  "forbiddenAuthoritySources": [
+    "typescript/kernel/protocol",
+    "typescript/kernel/certification",
+    "typescript/kernel/conformance-adapter",
+    "rust/kernel",
+    "rust/kernel-certification",
+    "rust/kernel-conformance-adapter",
+    "docs",
+    ".constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-protocol-core.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-protocol-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-run-liveness.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-restart-recovery.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-scope-isolation.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/kernel/plans/kernel-reclamation.json"
+    }
+  ]
+}

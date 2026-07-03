@@ -1,0 +1,37 @@
+{
+  "name": "streaming-spec",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "spec/streaming",
+  "projectType": "library",
+  "tags": ["boundary:framework", "layer:contract"],
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/streaming/typespec/**/*",
+        "{workspaceRoot}/spec/streaming/artifacts/**/*",
+        "{workspaceRoot}/spec/streaming/sse/typespec/**/*",
+        "{workspaceRoot}/spec/streaming/sse/artifacts/**/*",
+        "{workspaceRoot}/bun.lock"
+      ],
+      "outputs": [
+        "{workspaceRoot}/spec/streaming/artifacts/json-schema",
+        "{workspaceRoot}/spec/streaming/sse/artifacts/json-schema"
+      ],
+      "options": {
+        "cwd": "spec/streaming",
+        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun tsp compile ./sse/typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts ./sse/artifacts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": ["default", "{workspaceRoot}/biome.jsonc"],
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check spec/streaming"
+      }
+    }
+  }
+}

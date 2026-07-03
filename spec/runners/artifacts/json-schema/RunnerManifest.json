@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/RunnerManifest.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/NonEmptyString.json"
+    },
+    "version": {
+      "type": "string"
+    },
+    "capabilities": {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/Metadata.json"
+    }
+  },
+  "required": ["id"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

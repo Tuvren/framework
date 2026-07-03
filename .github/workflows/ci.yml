@@ -1,0 +1,191 @@
+# CI for Tuvren/framework (epic #87 M10.2 — greenfield; no prior .github/ existed).
+#
+# ── Governing scope (read before editing) ──────────────────────────────────
+# Issue #87's original DoD said "Bazel is the canonical CI path; Nx demoted
+# to optional inner-loop convenience." That was RE-SCOPED by the recorded
+# M3.0 reversal (see MODULE.bazel's header): real aspect_rules_js/rules_ts
+# adoption was researched and reverted — rules_js only consumes pnpm
+# lockfiles (no bun.lock path) and every TS suite in this repo is
+# bun:test-based with no upstream Bazel support (aspect-build/rules_js#1258
+# open). The TypeScript Bazel surface (16 BUILD.bazel files declaring 32
+# `native_binary` targets at review time) is therefore M1.2-pattern
+# shims (`native_binary` -> tools/bazel/nx-run.sh, which shells back out to
+# `bun run nx run <target>`), not hermetic builds/tests. Only the Rust
+# targets under //rust/kernel — the one Rust crate in the Bazel graph —
+# are genuinely hermetic under rules_rust; the other workspace crates
+# (kernel-grpc-service, adapters, certifications) are covered by the
+# cargo lanes inside "verify".
+#
+# Consequently:
+#   - "verify" (Nx/`bun run verify`) is the PRIMARY semantic gate. It is NOT
+#     demoted by this workflow.
+#   - "bazel" is a standing hermetic-build + Rust-test gate, run at the scope
+#     locally proven green for epic #87 M10.2:
+#       * `bazel build //...`  — builds every target in the graph, including
+#         the TS shims (cheap: it only builds the launcher binaries, it does
+#         not execute the underlying Nx targets — that only happens via
+#         `bazel run`, which requires BUILD_WORKSPACE_DIRECTORY and is out of
+#         scope for a wildcard CI gate).
+#       * `bazel test //...`   — genuinely executes only the one real Bazel
+#         test target in the graph, //rust/kernel:kernel_baseline_test. The
+#         TS shims' `:test` targets are `native_binary` (runnable, not
+#         `native_test`/`sh_test`), so `kind(test, //...)` does not select
+#         them and `bazel test //...` correctly does not attempt to run
+#         them here — their actual test execution is covered by "verify"
+#         through Nx/bun:test, not by this job.
+#   - Real rules_js/rules_ts adoption remains a recorded POST-EPIC follow-up,
+#     gated on upstream bun:test support landing in rules_js.
+#
+# ── Postgres exception (M1.6) ───────────────────────────────────────────────
+# The PostgreSQL kernel backend and its certification project intentionally
+# carry no BUILD.bazel target and stay Nx-driven (invariant §10.5's
+# sanctioned exception: devenv-managed Postgres is not idempotent, so it
+# cannot join a hermetic Bazel graph as-is). `bun run verify:kernel`
+# includes PostgreSQL conformance, so the "verify" job below provisions
+# Postgres via `devenv processes` (through `bun run services:up`) before
+# running `bun run verify`.
+#
+# ── Toolchain provisioning ───────────────────────────────────────────────—
+# This repo's tools (bun, cargo/rustc, bazel via bazelisk, buf, protoc,
+# weaver, postgres) are declared once in devenv.nix/rust-toolchain.toml and
+# provisioned through Nix + devenv, not through per-tool GitHub Actions
+# setup steps — this keeps CI's toolchain identical to local dev by
+# construction instead of drifting from a second, hand-maintained
+# declaration. Two third-party pieces are needed to get there:
+#   1. DeterminateSystems/nix-installer-action installs Nix itself.
+#   2. `nix profile install nixpkgs#devenv` installs the devenv CLI once Nix
+#      is present, avoiding a second marketplace Action just for devenv.
+# Both actions are pinned by major version, confirmed current against the
+# GitHub releases API at authoring time (87-M10.2): checkout@v7,
+# nix-installer-action@v22. Provisioning itself validated green on this
+# workflow's first live run (28674899850).
+#
+# ── .bazelignore ─────────────────────────────────────────────────────────—
+# `.bazelignore` (repo root) excludes `.devenv`. Measured while authoring
+# this lane: devenv's local profile/gc-root tree is a symlink farm into the
+# Nix store that Bazel's default package-discovery walk descends into and
+# chokes on (a vendored upb source tree pulled in by a Nix package's debug
+# symbols breaks `bazel query/build/test //...` outright). Without this
+# file, every wildcard Bazel command in the "bazel" job below fails, in CI
+# exactly as it does in local dev once `devenv shell`/`direnv allow` has
+# run at least once. Keep this file whenever `.devenv` is materialized
+# before a wildcard Bazel invocation.
+
+name: CI
+
+# Least privilege: nothing in this workflow writes through GITHUB_TOKEN, and
+# the default token scope is an org/repo setting that may be write-all.
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  # Manual re-runs while iterating on CI itself.
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref (new push to a PR, or a re-push to
+# master) so we don't burn CI minutes on stale commits.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # Never cancel master runs: two quick merges would otherwise leave the
+  # intermediate master commit with no completed CI record, which makes
+  # bisecting/regression attribution fuzzier. PR refs still cancel.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  verify:
+    name: verify (primary semantic gate — bun run verify)
+    runs-on: ubuntu-latest
+    # Generous ceiling: `bun run verify` runs the full release gate (lint,
+    # typecheck, test, codegen freshness, conformance, compatibility
+    # evidence, Rust workspace checks, PostgreSQL conformance) across every
+    # affected project. Local runs of the narrower `bun run check` alone
+    # take low single-digit minutes; `verify` is materially larger.
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Full history + all refs: verify's kernel-interop-governance
+          # breaking check diffs the proto baseline against origin/master
+          # (AGAINST_BRANCH_CANDIDATES), which a default shallow
+          # single-ref clone does not have (measured on live run
+          # 28675243688 — the check found zero inspectable branches).
+          fetch-depth: 0
+
+      - name: Install Nix
+        # Pinned by major version; v22 confirmed current via the GitHub
+        # releases API at authoring time (87-M10.2; full authoring record
+        # in the epic-87 migration ledger's M10.2 addendum, git history).
+        uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Install devenv
+        # Pinned to the exact nixpkgs revision providing devenv 2.1.2 (the
+        # version in local dev at pin time; binary-cached on cache.nixos.org).
+        # A floating `nixpkgs#devenv` would let CI's devenv CLI drift with no
+        # repo change — devenv.lock pins the project's inputs, not the CLI.
+        # The version grep makes the pin self-verifying: bump the hash and
+        # the expected version together or this step fails.
+        run: |
+          nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
+          devenv version | grep -F "devenv 2.1.2"
+
+      # No direnv daemon in CI, so we enter the devenv shell directly rather
+      # than relying on .envrc's `use devenv` hook (that hook is a local
+      # dev/direnv convenience only).
+      - name: bun install, start services, run verify
+        run: |
+          devenv shell -- bash -c '
+            set -euo pipefail
+            bun install --frozen-lockfile
+            # Cold-start bootstrap (measured on this workflow first live
+            # run, 28674899850): the kernel-interop generated bindings at
+            # typescript/runtime/src/lib/generated/kernel-interop are
+            # gitignored by design, and verify runs its authority-packet
+            # and guardrails freshness gates BEFORE its own interop-codegen
+            # phase — so a fresh checkout fails those gates on the missing
+            # artifact. The root package.json codegen script cannot serve
+            # as the bootstrap either: it runs the very validators that fail
+            # cold before it generates anything. Generating the one missing
+            # artifact family directly is the minimal honest bootstrap; the
+            # verify-phase-ordering question is recorded as a post-epic
+            # follow-up in the issue 87 closing record.
+            bun run nx run kernel-interop-grpc:codegen
+            bun run services:up
+            bun run verify
+          '
+
+  bazel:
+    name: bazel (standing hermetic gate — rust/kernel build+test, TS shim build only)
+    runs-on: ubuntu-latest
+    # bazel build //... + bazel test //... measured locally (epic #87 M10.2)
+    # at well under 5 minutes on a warm Bazel cache; a cold CI cache plus
+    # crate_universe resolution for rules_rust's crate.from_cargo extension
+    # is slower, so this leaves real headroom.
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Install devenv
+        # Pinned to the exact nixpkgs revision providing devenv 2.1.2 (the
+        # version in local dev at pin time; binary-cached on cache.nixos.org).
+        # A floating `nixpkgs#devenv` would let CI's devenv CLI drift with no
+        # repo change — devenv.lock pins the project's inputs, not the CLI.
+        # The version grep makes the pin self-verifying: bump the hash and
+        # the expected version together or this step fails.
+        run: |
+          nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
+          devenv version | grep -F "devenv 2.1.2"
+
+      - name: bazel build //... (all targets, incl. TS shim launchers)
+        run: devenv shell -- bazel build //...
+
+      - name: bazel test //... (rust/kernel hermetic tests; TS shims are native_binary, not native_test — not selected by `bazel test`)
+        run: devenv shell -- bazel test //...

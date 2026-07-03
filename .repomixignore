@@ -41,20 +41,17 @@ dist/
 **/*_pb.ts
 
 # Generated conformance plans (large JSON)
-boundaries/framework/conformance/plans/
+spec/conformance/engine/plans/
 
 # Large conformance adapter source
-boundaries/framework/implementations/typescript/conformance-adapter/src/
-
-# Kernel backend-sqlite source (very large)
-boundaries/kernel/implementations/typescript/backend-sqlite/src/
+typescript/conformance-adapter/src/
 
 # Test helpers and fixtures (in test/ dirs, non-test files)
 **/test/*-helpers.ts
 **/test/*-fixtures.ts
 **/test/fake-*.ts
 **/test/runtime-core-test-helpers.ts
-**/test/orchestration-runtime-driver-helpers.ts
+**/test/orchestration-runtime-runner-helpers.ts
 
 # Git
 .git/

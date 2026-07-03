@@ -46,7 +46,7 @@ interface TelemetryGeneratorTarget {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const SEMCONV_REGISTRY_PATH = "telemetry/semconv";
+const SEMCONV_REGISTRY_PATH = "spec/telemetry/semconv";
 const WEAVER_TEMPLATE_ROOT = resolve(REPO_ROOT, "tools/generators/telemetry");
 const WEAVER_RESOLVED_REGISTRY_TARGET = "resolved-registry";
 const GENERATOR_PLAN_PATH = resolve(
@@ -55,13 +55,16 @@ const GENERATOR_PLAN_PATH = resolve(
 );
 const REGISTRY_MANIFEST_PATH = resolve(
   REPO_ROOT,
-  "telemetry/semconv/registry_manifest.yaml"
+  "spec/telemetry/semconv/registry_manifest.yaml"
 );
 const MARKDOWN_OUTPUT_PATH = resolve(
   REPO_ROOT,
-  "telemetry/semantic-conventions.md"
+  "spec/telemetry/artifacts/semantic-conventions.md"
 );
-const JSON_OUTPUT_PATH = resolve(REPO_ROOT, "telemetry/otel-attributes.json");
+const JSON_OUTPUT_PATH = resolve(
+  REPO_ROOT,
+  "spec/telemetry/artifacts/otel-attributes.json"
+);
 const NEWLINE_PATTERN = /\r?\n/u;
 
 await main();
@@ -420,9 +423,9 @@ function renderTelemetryMarkdown(registry: ResolvedTelemetryRegistry): string {
     )
     .join("\n");
 
-  return `# Tuvren Runtime Semantic Conventions
+  return `# Tuvren Semantic Conventions
 
-Generated from \`telemetry/semconv/tuvren-runtime.yaml\` via \`weaver\`.
+Generated from \`spec/telemetry/semconv/tuvren-runtime.yaml\` via \`weaver\`.
 
 - Schema URL: \`${registry.schemaUrl}\`
 - Resolved registry: \`${registry.registryUrl}\`
@@ -533,7 +536,7 @@ function renderTelemetryRust(registry: ResolvedTelemetryRegistry): string {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Generated from telemetry/semconv/tuvren-runtime.yaml via weaver.
+// Generated from spec/telemetry/semconv/tuvren-runtime.yaml via weaver.
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TuvrenRuntimeTelemetryAttributeDefinition {

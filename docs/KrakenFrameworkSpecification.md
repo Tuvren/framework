@@ -4,36 +4,36 @@
 **Status**: Human semantic authority; machine portability classified by Epic AD. v0.21 adds the SaaS-readiness target semantics (conversation-state ownership, backend-authoritative lease clock at the framework liveness layer, and side-effect-once under preemption with the client-result-as-proposal invariant); their portable machine authority is classified as deferred until the SaaS-readiness epics promote them.
 **Basis**: Kernel Specification v0.12 (frozen)
 
-Read this after the kernel specification. This document defines the human semantic model for the initial Kraken framework driver behavior built on the frozen kernel.
+Read this after the kernel specification. This document defines the human semantic model for the initial Kraken framework runner behavior built on the frozen kernel.
 
-Kraken is the execution engine inside Tuvren Runtime. This specification defines the engine-layer framework and driver semantics, not the public product namespace.
+Kraken is the execution engine inside Tuvren. This specification defines the engine-layer framework and runner semantics, not the public product namespace.
 
 Epic AD freezes the portability reading of this Markdown. Portable cross-implementation meaning is freeze-covered when the docs-to-authority matrix maps the claim to boundary-owned authority packets, generated artifacts where applicable, conformance plans, fixtures, adapter capabilities, and compatibility evidence. Claims classified as missing-conformance-follow-up, implementation-local-evidence, implementation-defined, explicitly deferred, or stale-corrected in `.constitution/reports/epic-ad-docs-to-authority-coverage-matrix.json` are not portable machine authority until a later packet and conformance change promotes them.
 
-This document describes the shared framework semantic model plus the initial ReAct Driver execution semantics. It does not claim that ReAct is the only possible Kraken driver. Future drivers may reuse the shared framework types and kernel primitives defined here while specifying different control-flow behavior after a later plan activates them. The companion rationale document is explanatory only.
+This document describes the shared framework semantic model plus the initial ReAct Runner execution semantics. It does not claim that ReAct is the only possible Kraken runner. Future runners may reuse the shared framework types and kernel primitives defined here while specifying different control-flow behavior after a later plan activates them. The companion rationale document is explanatory only.
 
 ---
 
-## 0. Driver Framing
+## 0. Runner Framing
 
 Kraken is organized in three semantic layers:
 
 - **Kernel:** durable mechanism only
 - **Framework:** shared runtime model, host-facing concepts, and integration vocabulary built on the kernel
-- **Driver:** one concrete execution model implemented over the shared framework and kernel primitives
+- **Runner:** one concrete execution model implemented over the shared framework and kernel primitives
 
 This document therefore serves two purposes:
 
-- define the shared semantic types that drivers and framework integrations rely on
-- define the first production-depth driver, the **ReAct Driver**
+- define the shared semantic types that runners and framework integrations rely on
+- define the first production-depth runner, the **ReAct Runner**
 
-Unless a section says otherwise, terms such as messages, tool calls, structured output, approvals, event shapes, and context manifests are framework-level semantics. Iterative loop behavior, runtime resolution precedence in the active agent loop, and model-tool-feedback execution are specified here as the ReAct Driver baseline rather than as the only possible Kraken execution model.
+Unless a section says otherwise, terms such as messages, tool calls, structured output, approvals, event shapes, and context manifests are framework-level semantics. Iterative loop behavior, runtime resolution precedence in the active agent loop, and model-tool-feedback execution are specified here as the ReAct Runner baseline rather than as the only possible Kraken execution model.
 
 ---
 
 ## 1. Shared Types
 
-All shared framework types and all types used by the initial ReAct Driver are defined here.
+All shared framework types and all types used by the initial ReAct Runner are defined here.
 
 ### 1.1 Content Parts
 
@@ -104,7 +104,7 @@ Separate `tool` role even though some providers merge tool results into user mes
 
 ### 1.3 InputSignal
 
-Canonical inbound signal accepted by the framework and its drivers.
+Canonical inbound signal accepted by the framework and its runners.
 
 ```
 InputSignal
@@ -155,7 +155,7 @@ TuvrenModelResponse
 
 ### 1.5 RuntimeResolution
 
-The exhaustive type for runtime control flow outcomes in the shared framework model. The initial ReAct Driver maps its loop policy, extension verdicts, handoff detection, and error handling into this type.
+The exhaustive type for runtime control flow outcomes in the shared framework model. The initial ReAct Runner maps its loop policy, extension verdicts, handoff detection, and error handling into this type.
 
 ```
 RuntimeResolution =
@@ -220,7 +220,7 @@ The handoff builder returns the complete replacement hash array for the active `
 
 **Resolution precedence**: `fail(hard) > pause > handoff > end_turn > fail(soft) > continue_iteration`. `fail(soft)` is uniformly non-terminal: it records the error condition, may emit events and state effects, and does not by itself terminate the Turn or iteration loop. When extension verdicts, loop policy, and handoff detection all produce resolutions in the same iteration, the highest-precedence resolution wins.
 
-**Kernel verdict algebra**: The kernel provides a five-verdict algebra (`Abort > Pause > Modify > Retry > Proceed`). The initial ReAct Driver currently consumes three of these (`Abort` variants via intercept verdicts, `Pause` via tool approval, `Proceed` as the default). The kernel's `Modify` and `Retry` verdicts are reserved for future framework or driver use.
+**Kernel verdict algebra**: The kernel provides a five-verdict algebra (`Abort > Pause > Modify > Retry > Proceed`). The initial ReAct Runner currently consumes three of these (`Abort` variants via intercept verdicts, `Pause` via tool approval, `Proceed` as the default). The kernel's `Modify` and `Retry` verdicts are reserved for future framework or runner use.
 
 ### 1.6 ContextManifest
 
@@ -293,7 +293,7 @@ The internal event vocabulary. Discriminated union on `type`. Every event carrie
 ```
 EventSource
 ├─ agent: string
-├─ driver?: string
+├─ runner?: string
 ├─ workerId?: string
 └─ threadId?: string
 ```
@@ -445,7 +445,7 @@ TuvrenProvider
 
 `generate` returns a complete response. `stream` yields normalized intermediate chunks. Authentication, retry, rate limiting, timeout, HTTP config are internal to each adapter.
 
-The provider never generates framework execution identity (`messageId`, `timestamp`). Those are driver concerns. The provider translates between its native wire format and the normalized `ProviderStreamChunk` / `TuvrenModelResponse` types.
+The provider never generates framework execution identity (`messageId`, `timestamp`). Those are runner concerns. The provider translates between its native wire format and the normalized `ProviderStreamChunk` / `TuvrenModelResponse` types.
 
 ### 3.2 ProviderStreamChunk
 
@@ -467,18 +467,18 @@ ProviderStreamChunk =
   | { type: "error", error: unknown }
 ```
 
-`providerCallId` is the provider’s native tool call ID (Anthropic’s `toolu_...`, OpenAI’s `call_...`, Google’s optional `id`). The driver maps this to a framework-generated `callId` and preserves the provider ID in `providerMetadata` on the resulting `ToolCallPart`.
+`providerCallId` is the provider’s native tool call ID (Anthropic’s `toolu_...`, OpenAI’s `call_...`, Google’s optional `id`). The runner maps this to a framework-generated `callId` and preserves the provider ID in `providerMetadata` on the resulting `ToolCallPart`.
 
 When a provider needs additional tool-call continuity metadata during streaming
 (for example Google or Vertex `thoughtSignature` on function calls), the
-driver carries it on `tool_call_done.providerMetadata` and persists it on the
+runner carries it on `tool_call_done.providerMetadata` and persists it on the
 resulting `ToolCallPart`.
 
-`signature` on `reasoning_delta` carries Anthropic’s thinking continuity token. The driver preserves it in `providerMetadata` on the resulting `ReasoningPart`.
+`signature` on `reasoning_delta` carries Anthropic’s thinking continuity token. The runner preserves it in `providerMetadata` on the resulting `ReasoningPart`.
 
 ### 3.3 StreamAccumulator
 
-The accumulator builds a complete `TuvrenModelResponse` from provider stream chunks. The driver uses it to bridge the live path (immediate events) and the durable path (complete response for staging).
+The accumulator builds a complete `TuvrenModelResponse` from provider stream chunks. The runner uses it to bridge the live path (immediate events) and the durable path (complete response for staging).
 
 ```
 StreamAccumulator
@@ -487,7 +487,7 @@ StreamAccumulator
 ├─ hasContent(): boolean
 ```
 
-`absorb` processes one chunk: appends text deltas, accumulates tool call arguments, accumulates structured output deltas, captures usage and metadata. `finalize` produces the complete `TuvrenModelResponse` with all parts assembled, arguments parsed, structured output parsed into `StructuredPart.data`, and metadata merged. On normal stream completion, unfinished structured-output and tool-call parts are provider stream errors; only cancellation partial finalization may preserve incomplete accumulated content. If structured output cannot be parsed (malformed JSON or equivalent), `finalize` produces an error response. `hasContent` returns whether any chunks have been absorbed — used by the driver to detect aroundModel short-circuits that need synthetic event generation (§6.5).
+`absorb` processes one chunk: appends text deltas, accumulates tool call arguments, accumulates structured output deltas, captures usage and metadata. `finalize` produces the complete `TuvrenModelResponse` with all parts assembled, arguments parsed, structured output parsed into `StructuredPart.data`, and metadata merged. On normal stream completion, unfinished structured-output and tool-call parts are provider stream errors; only cancellation partial finalization may preserve incomplete accumulated content. If structured output cannot be parsed (malformed JSON or equivalent), `finalize` produces an error response. `hasContent` returns whether any chunks have been absorbed — used by the runner to detect aroundModel short-circuits that need synthetic event generation (§6.5).
 
 ### 3.4 Adapter Strategy
 
@@ -524,19 +524,19 @@ Inbound: the adapter maps the provider's structured response into a `StructuredP
 
 Structured output follows the same two-path model as text content:
 
-**Live path**: Provider stream chunks of type `structured_delta` are translated into `structured.delta` framework events and yielded to the output iterable immediately. The consumer sees the raw structured content building incrementally. When the provider emits `structured_done`, the driver yields `structured.done` with the final parsed data. If a provider emits `structured_done` without any prior `structured_delta`, the driver first synthesizes a `structured.delta` from the serialized final data so the live stream still satisfies the canonical delta/done contract.
+**Live path**: Provider stream chunks of type `structured_delta` are translated into `structured.delta` framework events and yielded to the output iterable immediately. The consumer sees the raw structured content building incrementally. When the provider emits `structured_done`, the runner yields `structured.done` with the final parsed data. If a provider emits `structured_done` without any prior `structured_delta`, the runner first synthesizes a `structured.delta` from the serialized final data so the live stream still satisfies the canonical delta/done contract.
 
 **Durable path**: The same chunks are accumulated by the `StreamAccumulator`. On `finalize`, the accumulator parses the accumulated content into a `StructuredPart` with the complete parsed `data`. This complete part is what gets staged as part of the durable assistant message.
 
 Both paths converge on the same durable `StructuredPart` representation. The streaming and non-streaming execution paths produce identical durable content.
 
-When `provider.generate()` is used instead of `provider.stream()`, the driver synthesizes `structured.delta` (with the full serialized content) and `structured.done` events from the complete response, consistent with the non-streaming fallback pattern (§6.3).
+When `provider.generate()` is used instead of `provider.stream()`, the runner synthesizes `structured.delta` (with the full serialized content) and `structured.done` events from the complete response, consistent with the non-streaming fallback pattern (§6.3).
 
 #### Validation
 
-**Parse responsibility**: The `StreamAccumulator` parses raw structured output into `StructuredPart.data`. If parsing fails (malformed JSON or equivalent), the accumulator produces an error response and the driver treats it as a model call failure.
+**Parse responsibility**: The `StreamAccumulator` parses raw structured output into `StructuredPart.data`. If parsing fails (malformed JSON or equivalent), the accumulator produces an error response and the runner treats it as a model call failure.
 
-**Schema validation**: After the `aroundModel` chain returns (whether it called `next` or not), the driver validates the `StructuredPart.data` against the `schema` from the prompt's `StructuredOutputRequest`. The validator uses draft-07 when `$schema` is absent or declares draft-07, draft-2019-09 when `$schema` declares that dialect, and draft-2020-12 when `$schema` declares that dialect. Dynamic request schemas are compiled in an isolated validator context so repeated `$id` values from different host requests do not collide across turns. Unsupported `$schema` dialects and schema compilation failures produce `structured_output_validation`. Provider-side enforcement via the `strict` flag is the first line of defense — providers that support native schema enforcement apply it at generation time. The framework validates after receipt regardless. This is consistent with the "framework always normalizes, never trusts the wire" principle applied to tool call argument parsing.
+**Schema validation**: After the `aroundModel` chain returns (whether it called `next` or not), the runner validates the `StructuredPart.data` against the `schema` from the prompt's `StructuredOutputRequest`. The validator uses draft-07 when `$schema` is absent or declares draft-07, draft-2019-09 when `$schema` declares that dialect, and draft-2020-12 when `$schema` declares that dialect. Dynamic request schemas are compiled in an isolated validator context so repeated `$id` values from different host requests do not collide across turns. Unsupported `$schema` dialects and schema compilation failures produce `structured_output_validation`. Provider-side enforcement via the `strict` flag is the first line of defense — providers that support native schema enforcement apply it at generation time. The framework validates after receipt regardless. This is consistent with the "framework always normalizes, never trusts the wire" principle applied to tool call argument parsing.
 
 **Failure behavior**: Schema mismatch produces `fail(hard)` with error code `structured_output_validation`. This is a defined runtime outcome, not a silent acceptance or best-effort parse. The error is staged and the Run fails through the standard `failIteration` path. The model does not see the invalid output on the next iteration — the Turn terminates.
 
@@ -587,7 +587,7 @@ Signal arrives
 
 **Structural rules:**
 
-- One Run per iteration. The loop is the driver, not the step sequence.
+- One Run per iteration. The loop is the runner, not the step sequence.
 - One Run per context engineering action. Always separate from the iteration Run.
 - Input incorporation is always the first Run.
 - Context engineering is a per-iteration check, not a per-turn phase. The manifest drives the decision. O(1).
@@ -802,7 +802,7 @@ function executeIteration(turnId, branchId, schemaId, toolRegistry, config, iter
 
   // ── Resolve loop outcome before durable staging ──
   // The current provider-neutral content model does not define a dedicated
-  // handoff content part. A concrete driver that already knows about a
+  // handoff content part. A concrete runner that already knows about a
   // provider-native or higher-layer handoff signal maps it directly into
   // RuntimeResolution.handoff and returns only conversational assistant parts
   // for durable staging.
@@ -823,7 +823,7 @@ function executeIteration(turnId, branchId, schemaId, toolRegistry, config, iter
     return failIteration(new Error("invalid_loop_policy"))
 
   resolution = decisionToResolution(decision)
-  // A concrete driver that has already identified a handoff overrides this
+  // A concrete runner that has already identified a handoff overrides this
   // loop-policy outcome with RuntimeResolution.handoff before checkpointing.
 
   if resolution.type == "fail" && resolution.fatality == "hard":
@@ -893,17 +893,17 @@ function executeTurn(input):
   threadId = input.threadId
   branchId = input.branchId
   schemaId = input.schemaId
-  driverId = input.driverId
+  runnerId = input.runnerId
   tools = input.tools
   config = input.config
   steering = input.steering
   parentTurnId = input.parentTurnId
 
   turnId = generateId()
-  activeDriverId = driverId ?? resolveDefaultDriverId()
-  activeDriver = getDriver(activeDriverId)
+  activeRunnerId = runnerId ?? resolveDefaultRunnerId()
+  activeRunner = getRunner(activeRunnerId)
 
-  function* driver():
+  function* runner():
     branch = kernel.branch.get(branchId)
     resolvedParentTurnId = parentTurnId ?? resolveParentTurnId(threadId, branchId)
     kernel.turn.create(turnId, threadId, branchId, resolvedParentTurnId, branch.headTurnNodeHash)
@@ -923,10 +923,10 @@ function executeTurn(input):
     else if turnHookResolution == fail(soft):
       log soft failure
       enteredIterationLoop = true
-      resolution = activeDriver.iterationLoop(turnId, branchId, schemaId, toolRegistry, activeConfig, steering)
+      resolution = activeRunner.iterationLoop(turnId, branchId, schemaId, toolRegistry, activeConfig, steering)
     else:
       enteredIterationLoop = true
-      resolution = activeDriver.iterationLoop(turnId, branchId, schemaId, toolRegistry, activeConfig, steering)
+      resolution = activeRunner.iterationLoop(turnId, branchId, schemaId, toolRegistry, activeConfig, steering)
 
     if enteredIterationLoop && resolution.type != "pause":
       runAfterTurnHooks(activeConfig.extensions)
@@ -937,12 +937,12 @@ function executeTurn(input):
     kernel.turn.updateHead(turnId, latestHead())
     yield { type: "turn.end", turnId, status: resolutionToStatus(resolution), timestamp: now() }
 
-  return wrapAsHandle(driver(), turnId, branchId, steering, activeDriverId)
+  return wrapAsHandle(runner(), turnId, branchId, steering, activeRunnerId)
 ```
 
-`executeTurn` returns an `ExecutionHandle` (§7.1), not a bare `AsyncIterable`. The handle wraps the internal driver generator. The `events()` method on the handle provides the iterable that drives execution.
+`executeTurn` returns an `ExecutionHandle` (§7.1), not a bare `AsyncIterable`. The handle wraps the internal runner generator. The `events()` method on the handle provides the iterable that drives execution.
 
-`driverId` is optional. When omitted, the framework resolves its configured default driver before execution begins. In the current baseline, the default driver is ReAct. Hosts may pass an explicit `driverId` when they need a concrete driver instead of the configured default.
+`runnerId` is optional. When omitted, the framework resolves its configured default runner before execution begins. In the current baseline, the default runner is ReAct. Hosts may pass an explicit `runnerId` when they need a concrete runner instead of the configured default.
 
 For a Thread's first semantic Turn, `parentTurnId` is `null`. For every subsequent semantic Turn, `parentTurnId` MUST identify the active semantic parent recorded at the Branch Head and still belong to the same Thread. On a newly forked Branch, that active parent can be the source Branch's head Turn; later Turns on the fork use the immediately previous Turn on the fork itself. When the framework resolves this parent implicitly, the resolver must be branch-aware (`resolveParentTurnId(threadId, branchId)`), so branching and rollback do not make semantic lineage ambiguous. Approval resumes stay within the existing Turn and do not create a new Turn.
 
@@ -977,7 +977,7 @@ function resumeFromApproval(approvalResponse, turnId, branchId, ...):
   8. Re-enter iterationLoop from current Branch Head
   9. Yield turn.end
 
-  return wrapAsHandle(driver(), turnId, branchId, steering)
+  return wrapAsHandle(runner(), turnId, branchId, steering)
 ```
 
 Before resumed tool execution begins, the framework MUST durably restage `runtime.status` to `running` for the active Turn. This ensures the durable state surface reflects actual execution state throughout the decision path.
@@ -1070,7 +1070,7 @@ This finalization step is independent of terminal hook outputs. `afterTurn` rema
 
 ### 4.12 Execution Bounds
 
-The framework enforces hard-stop **execution bounds** on every Turn. These bounds are framework-owned and sit *above* driver `LoopPolicy` discretion (§5.3): a driver cannot widen, disable, or opt out of them. Their purpose is to guarantee that a misbehaving or adversarial driver cannot run a Turn unbounded.
+The framework enforces hard-stop **execution bounds** on every Turn. These bounds are framework-owned and sit *above* runner `LoopPolicy` discretion (§5.3): a runner cannot widen, disable, or opt out of them. Their purpose is to guarantee that a misbehaving or adversarial runner cannot run a Turn unbounded.
 
 `ExecutionBounds` has four fields, each a finite positive integer, applied with these defaults when unset:
 
@@ -1084,7 +1084,7 @@ ExecutionBounds
 
 Bounds MAY be supplied at runtime construction. A supplied bound MUST be a finite positive integer; a non-integer, non-finite, or non-positive value MUST be rejected at construction. Supplying bounds through more than one construction channel MUST be rejected.
 
-The guard is enforced at iteration and tool-batch boundaries, above the driver's loop decisions:
+The guard is enforced at iteration and tool-batch boundaries, above the runner's loop decisions:
 
 - `maxIterations` caps the number of agent iterations in a Turn. `AgentConfig.maxIterations` MUST be clamped down to `maxIterations` and can never exceed it.
 - `maxToolCalls` caps the cumulative number of tool calls executed across the whole Turn.
@@ -1146,7 +1146,7 @@ Default: `continue = true, executeTools = true` when `finishReason == "tool_call
 
 `IterationDecision` maps to `RuntimeResolution` during resolution composition.
 
-Invalid combinations are rejected. Under the current shared driver seam,
+Invalid combinations are rejected. Under the current shared runner seam,
 assistant responses that contain executable tool calls may only proceed when the
 loop policy returns `continue: true` and `executeTools: true`. A tool-call
 response paired with `continue: true, executeTools: false` or with
@@ -1175,20 +1175,20 @@ plan.execute(ctx: ContextEngineeringContext)
 
 Default plans: `summarizeRange`, `dropIndices`, `compactToolResults`. Custom plans supported.
 
-### 5.6 Driver Contract
+### 5.6 Runner Contract
 
-Shared drivers execute against immutable snapshots of framework-owned state plus explicit capability ports. The primitive-layer shape is:
+Shared runners execute against immutable snapshots of framework-owned state plus explicit capability ports. The primitive-layer shape is:
 
 - snapshots in
 - capabilities through ports
 - explicit results out
 
 ```
-DriverRuntimePort
+RunnerRuntimePort
 ├─ emit(event: TuvrenStreamEvent): void | Promise<void>
 └─ now(): EpochMs
 
-DriverHandoffPort
+RunnerHandoffPort
 └─ createContextPlan(input: {
      targetAgent: string,
      reason: string,
@@ -1197,7 +1197,7 @@ DriverHandoffPort
      payload?: unknown
    }): HandoffContextPlan
 
-DriverExecutionContext
+RunnerExecutionContext
 ├─ turnId: string
 ├─ threadId: string
 ├─ branchId: string
@@ -1206,45 +1206,45 @@ DriverExecutionContext
 ├─ config: AgentConfig                 // read-only snapshot
 ├─ messages: TuvrenMessage[]           // read-only snapshot
 ├─ manifest: ContextManifest           // read-only snapshot
-├─ toolRegistry: ToolRegistry          // read-only driver-facing view
-├─ runtime: DriverRuntimePort
-├─ handoff: DriverHandoffPort
+├─ toolRegistry: ToolRegistry          // read-only runner-facing view
+├─ runtime: RunnerRuntimePort
+├─ handoff: RunnerHandoffPort
 └─ signal?: AbortSignal
 
-DriverResumeContext extends DriverExecutionContext
+RunnerResumeContext extends RunnerExecutionContext
 ├─ approval: ApprovalResponse
 └─ resumedFrom?: HashString
 
-DriverExecutionResult
+RunnerExecutionResult
 ├─ resolution: RuntimeResolution
 ├─ messages?: TuvrenMessage[]
 ├─ partial?: boolean
 ├─ assistantEventReconciliation?: "allow_final_sequence_divergence"
-├─ stateUpdates?: DriverExtensionStateUpdate[]
+├─ stateUpdates?: RunnerExtensionStateUpdate[]
 └─ toolExecutionMode?: "parallel" | "sequential"
 ```
 
-The driver does not mutate framework-owned state by aliasing context objects in place. If a driver needs to influence framework state, it does so through explicit returned outputs such as `messages`, `resolution`, `partial`, and `stateUpdates`, not through mutation of the execution context.
+The runner does not mutate framework-owned state by aliasing context objects in place. If a runner needs to influence framework state, it does so through explicit returned outputs such as `messages`, `resolution`, `partial`, and `stateUpdates`, not through mutation of the execution context.
 
-The shared core does not require a driver-owned approval-resume path. Approval resume is handled by the framework around the paused tool batch, so any driver `resume(...)` method is optional and outside the current shared-core execution path.
+The shared core does not require a runner-owned approval-resume path. Approval resume is handled by the framework around the paused tool batch, so any runner `resume(...)` method is optional and outside the current shared-core execution path.
 
-Portable machine artifacts for this seam capture the serializable payload contract only. Binding-level surfaces that contain callables or runtime-native capabilities — such as `AgentConfig`, `ToolRegistry`, `DriverRuntimePort`, `DriverHandoffPort`, `AbortSignal`, and the builder function inside `HandoffContextPlan` — may therefore be represented opaquely in emitted JSON Schema or equivalent packet artifacts while remaining fully typed in language bindings.
+Portable machine artifacts for this seam capture the serializable payload contract only. Binding-level surfaces that contain callables or runtime-native capabilities — such as `AgentConfig`, `ToolRegistry`, `RunnerRuntimePort`, `RunnerHandoffPort`, `AbortSignal`, and the builder function inside `HandoffContextPlan` — may therefore be represented opaquely in emitted JSON Schema or equivalent packet artifacts while remaining fully typed in language bindings.
 
-`runtime.emit(...)` is a driver-owned streaming surface, not a framework-lifecycle backdoor. Drivers may use it for custom events and assistant/provider stream-content events only. Shared-core lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, `error`, and similar framework-owned control events are emitted only by shared core itself. If a driver emits assistant content events, that emitted assistant sequence must normally reconcile to the same durable assistant message returned in `DriverExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise shared core rejects the result as an invalid stream event. The one intentional exception is `aroundModel` post-stream replacement after `next()`: once a live assistant sequence has already been emitted, the wrapper may still replace the durable assistant checkpoint, and the driver must opt into that narrower validation path by returning `assistantEventReconciliation: "allow_final_sequence_divergence"`. Shared core honors that exception only when the active agent config includes at least one `aroundModel` handler, assistant content events were actually emitted, the final emitted assistant sequence actually diverges from the durable assistant message, and neither the final live sequence nor the durable assistant message requests tools; in that case it validates the emitted assistant sequence as a standalone assistant message rather than requiring equality with the final durable assistant message. AfterIteration hooks still receive a coherent `TuvrenModelResponse` synthesized from the durable assistant checkpoint, with provider usage preserved when available. Because publication is live, later contract failures such as streamed structured-output validation errors do not retract already-forwarded assistant events; the Turn fails with the corresponding validation error instead. If a driver returns a durable assistant message without emitting matching assistant content events, shared core synthesizes the missing assistant stream events from that durable message so the public event stream still reflects the committed assistant output.
+`runtime.emit(...)` is a runner-owned streaming surface, not a framework-lifecycle backdoor. Runners may use it for custom events and assistant/provider stream-content events only. Shared-core lifecycle events such as `turn.*`, `iteration.*`, `tool.*`, `approval.*`, `state.*`, `error`, and similar framework-owned control events are emitted only by shared core itself. If a runner emits assistant content events, that emitted assistant sequence must normally reconcile to the same durable assistant message returned in `RunnerExecutionResult.messages`, including incremental delta payloads such as `text.delta`, `reasoning.delta`, `structured.delta`, and `tool_call.args_delta`, stable event identity (`messageId`, `callId`), canonical message-start/message-done ordering, and the final `finishReason`; otherwise shared core rejects the result as an invalid stream event. The one intentional exception is `aroundModel` post-stream replacement after `next()`: once a live assistant sequence has already been emitted, the wrapper may still replace the durable assistant checkpoint, and the runner must opt into that narrower validation path by returning `assistantEventReconciliation: "allow_final_sequence_divergence"`. Shared core honors that exception only when the active agent config includes at least one `aroundModel` handler, assistant content events were actually emitted, the final emitted assistant sequence actually diverges from the durable assistant message, and neither the final live sequence nor the durable assistant message requests tools; in that case it validates the emitted assistant sequence as a standalone assistant message rather than requiring equality with the final durable assistant message. AfterIteration hooks still receive a coherent `TuvrenModelResponse` synthesized from the durable assistant checkpoint, with provider usage preserved when available. Because publication is live, later contract failures such as streamed structured-output validation errors do not retract already-forwarded assistant events; the Turn fails with the corresponding validation error instead. If a runner returns a durable assistant message without emitting matching assistant content events, shared core synthesizes the missing assistant stream events from that durable message so the public event stream still reflects the committed assistant output.
 
-`DriverExecutionResult` is intentionally minimal:
+`RunnerExecutionResult` is intentionally minimal:
 
 - `resolution` is always required
 - `messages` are required whenever the iteration produces durable assistant history
 - `messages` may contain at most one assistant message per iteration
 - `messages` may be absent only for pure control outcomes with no durable assistant-history contribution, or for failures before any durable assistant output was staged
 - `partial` is valid only for failed execution results that stage an assistant message
-- `assistantEventReconciliation` is optional and only valid for explicit driver-signaled cases such as `aroundModel` post-stream durable replacement
+- `assistantEventReconciliation` is optional and only valid for explicit runner-signaled cases such as `aroundModel` post-stream durable replacement
 - `stateUpdates` carries per-extension manifest updates that must be merged at the same checkpoint that commits the assistant message and updated manifest
-- `toolExecutionMode` is required when the driver requests tool calls through assistant messages, and invalid otherwise
+- `toolExecutionMode` is required when the runner requests tool calls through assistant messages, and invalid otherwise
 - failed `partial` results may include interrupted tool-call content; those calls are durable context only, still require `toolExecutionMode` for contract completeness, and are not executed because the resolution is failed
 
-The shared driver seam does **not** carry a generic raw `response` object. Richer transient iteration artifacts belong in driver-local or runtime-internal layers unless a future shared-core need proves otherwise.
+The shared runner seam does **not** carry a generic raw `response` object. Richer transient iteration artifacts belong in runner-local or runtime-internal layers unless a future shared-core need proves otherwise.
 
 ---
 
@@ -1254,16 +1254,16 @@ The shared driver seam does **not** carry a generic raw `response` object. Riche
 
 Three distinct surfaces exist for streaming. Each has one role.
 
-**Internal driver** (not public): A generator function that yields `TuvrenStreamEvent`. Receives control signals (cancel, steer) through injected channels. The host never interacts with the generator directly.
+**Internal runner** (not public): A generator function that yields `TuvrenStreamEvent`. Receives control signals (cancel, steer) through injected channels. The host never interacts with the generator directly.
 
-**Host-facing control surface** (public): The `ExecutionHandle` (§7.1). Wraps the internal driver. Exposes `events()` for iteration, plus `cancel()`, `steer()`, and `resolveApproval()` for control.
+**Host-facing control surface** (public): The `ExecutionHandle` (§7.1). Wraps the internal runner. Exposes `events()` for iteration, plus `cancel()`, `steer()`, and `resolveApproval()` for control.
 
 **Protocol adapter consumption** (public): Adapters receive `AsyncIterable<TuvrenStreamEvent>` from `handle.events()` and transform it into external formats. Adapters never touch the handle.
 
 `events()` is a single-consumer stream for a given `ExecutionHandle`. Hosts that need multiple downstream consumers own teeing, multicast, filtering, buffering, replay, and backpressure policy outside shared core. Epic O finalized the baseline host tee path in `@tuvren/stream-core`: every required tee branch must subscribe before the first upstream pull, while the SSE and AG-UI adapters reserve their branches eagerly when constructed.
 
 ```
-Internal driver (generator)
+Internal runner (generator)
   └─→ ExecutionHandle.events()  ←─ host iterates this
         └─→ ProtocolAdapter(events)  ←─ transforms to AG-UI / SSE
 ```
@@ -1312,7 +1312,7 @@ function executeModelCall(runId, prompt, config, iterationCount):
 
 ### 6.3 Non-Streaming Fallback
 
-When `provider.generate()` is used instead of `provider.stream()`, the driver synthesizes events from the complete response: `message.start`, one delta+done pair per content part, then `message.done`. Protocol adapters see identical event shapes regardless of streaming mode — events arrive faster (all at once) but the structure is identical.
+When `provider.generate()` is used instead of `provider.stream()`, the runner synthesizes events from the complete response: `message.start`, one delta+done pair per content part, then `message.done`. Protocol adapters see identical event shapes regardless of streaming mode — events arrive faster (all at once) but the structure is identical.
 
 This same synthesis mechanism is used when aroundModel short-circuits (§6.5).
 
@@ -1320,7 +1320,7 @@ This same synthesis mechanism is used when aroundModel short-circuits (§6.5).
 
 `tool.start` and `tool.result` events describe framework-side execution. A `tool.start` event is emitted only after approval has resolved and immediately before the framework enters the first executable aroundTool/execute step for that call. It is never emitted merely because the model requested the tool (that’s `tool_call.done`).
 
-The driver chooses the execution mode for a batch (`sequential` or `parallel`). The shared framework core owns the ordering semantics once a mode is chosen.
+The runner chooses the execution mode for a batch (`sequential` or `parallel`). The shared framework core owns the ordering semantics once a mode is chosen.
 
 **Sequential execution:**
 
@@ -1356,19 +1356,19 @@ For any batch mode, non-executed outcomes that are already known (for example in
 
 ### 6.5 aroundModel Interaction with Streaming
 
-The `aroundModel` wrapper receives the complete `TuvrenModelResponse` from `next()`. It does not see or control the event stream. Stream events are emitted by the driver as the provider stream progresses, before the around chain receives the complete response.
+The `aroundModel` wrapper receives the complete `TuvrenModelResponse` from `next()`. It does not see or control the event stream. Stream events are emitted by the runner as the provider stream progresses, before the around chain receives the complete response.
 
-**Short-circuit**: If aroundModel returns without calling `next()` (cache hit, static response), no streaming events were emitted during the call. The driver detects this via `accumulator.hasContent()` and synthesizes events from the returned response using the same mechanism as the non-streaming fallback (§6.3). The consumer sees one complete message sequence.
+**Short-circuit**: If aroundModel returns without calling `next()` (cache hit, static response), no streaming events were emitted during the call. The runner detects this via `accumulator.hasContent()` and synthesizes events from the returned response using the same mechanism as the non-streaming fallback (§6.3). The consumer sees one complete message sequence.
 
 **Replacement**: If aroundModel modifies the response after calling `next()`, stream events from `next()` are already emitted and cannot be recalled. The durable path uses the modified response, even when that differs materially from the already-emitted live assistant content. This live-versus-durable divergence is intentional for post-stream replacement and is validated through the explicit `assistantEventReconciliation` contract rather than by forcing the durable checkpoint to match the earlier live stream. This exception is limited to non-tool-call assistant content; if either the final live sequence or the durable replacement requests tools, shared core rejects the result as an invalid stream event.
 
 **Retry**: If aroundModel calls `next()` multiple times (fallback to different provider), each call produces its own stream event sequence with a new `messageId`. The consumer sees multiple message sequences. Only the final response (from the last `next()` call) is staged on the durable path.
 
-When aroundModel returns `{ response, state }`, the driver merges `state` into the iteration's pending extension updates and applies it at the same checkpoint that commits the assistant message and manifest.
+When aroundModel returns `{ response, state }`, the runner merges `state` into the iteration's pending extension updates and applies it at the same checkpoint that commits the assistant message and manifest.
 
 ### 6.6 aroundTool Interaction with Streaming
 
-The driver emits `tool.start` immediately before the first executable aroundTool/execute entry for an approved or resumed tool call, and emits `tool.result` after the aroundTool chain returns. The around is invisible to the event stream.
+The runner emits `tool.start` immediately before the first executable aroundTool/execute entry for an approved or resumed tool call, and emits `tool.result` after the aroundTool chain returns. The around is invisible to the event stream.
 
 **Short-circuit** (cache hit): Both `tool.start` and `tool.result` are emitted. The result arrives instantly.
 
@@ -1406,13 +1406,13 @@ Package topology finalized by Epic O: `@tuvren/stream-core`, `@tuvren/stream-agu
 
 ### 6.10 Cancellation
 
-**User-initiated cancellation while running**: Host signals via `AbortSignal` through `handle.cancel()`. The driver aborts the provider stream, emits an `error` event with `fatal: true`, stages accumulated content as a partial assistant message (with `partial: true` on RuntimeStatus), completes the Run as `failed`, and yields `turn.end` with `"failed"`. The partial content is durable — on the next Turn, the model sees its own interrupted output.
+**User-initiated cancellation while running**: Host signals via `AbortSignal` through `handle.cancel()`. The runner aborts the provider stream, emits an `error` event with `fatal: true`, stages accumulated content as a partial assistant message (with `partial: true` on RuntimeStatus), completes the Run as `failed`, and yields `turn.end` with `"failed"`. The partial content is durable — on the next Turn, the model sees its own interrupted output.
 
 **User-initiated cancellation while paused for approval**: The shared-core semantic is equivalent to rejecting the pending tool calls and durably staging those rejection outcomes without re-entering the model on the same Turn. The framework MUST NOT reinterpret the paused Turn as failed solely because approval was declined. This is the host-facing rejection-and-stop path; higher layers remain responsible for any later host-initiated continuation after that staged rejection state.
 
 As with approval resolution, the kernel may still record the superseded paused Run through its `paused -> failed` transition because that is how paused Runs are closed at the kernel boundary. That Run-level status change does not alter the framework-level meaning of paused cancellation, which remains rejection-and-stop rather than Turn failure.
 
-**Provider stream interruption**: The driver emits an `error` event, stages an error message, and yields `turn.end` with `"failed"`.
+**Provider stream interruption**: The runner emits an `error` event, stages an error message, and yields `turn.end` with `"failed"`.
 
 ### 6.11 Durability Boundary
 
@@ -1436,7 +1436,7 @@ When optional state observability is enabled, the framework emits:
 
 ## 7. Host Contract
 
-The host is the process or service that embeds Tuvren Runtime and, through it, exposes the Kraken framework to external consumers (APIs, UIs, protocol endpoints).
+The host is the process or service that embeds Tuvren and, through it, exposes the Kraken framework to external consumers (APIs, UIs, protocol endpoints).
 
 ### 7.1 ExecutionHandle
 
@@ -1462,13 +1462,13 @@ ExecutionResult
 
 `executionStatus.phase === status` is an invariant for all terminal results.
 
-**`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the driver advances as the consumer pulls events. The stream is single-consumer per handle; calling `events()` again after consumption starts is invalid. If the only consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection.
+**`events()`** — the primary output. The host iterates this to receive all execution events. Iteration drives execution — the runner advances as the consumer pulls events. The stream is single-consumer per handle; calling `events()` again after consumption starts is invalid. If the only consumer abandons a still-running `events()` stream without calling `cancel()` separately, shared core treats that stream abandonment as cancellation of the running execution. Paused Handles remain explicit control surfaces: abandoning an already-paused stream does not synthesize rejection.
 
 If the active Run lease is lost or preempted, `events()` terminates through the framework's fatal error path. The handle becomes invalid for further control calls because its owner token can no longer safely persist progress.
 
-**`cancel()`** — while the Turn is running, triggers the AbortSignal. The driver handles staging partial content and failing the Run. If the Turn is already paused for approval, `cancel()` is treated as rejection of the pending tool calls rather than as an automatic failed terminal state. The shared-core `cancel()` path stages those rejection outcomes durably and stops the paused execution without re-entering the model on the same Turn. This is distinct from `resolveApproval(...)` with explicit `reject` decisions, which continues the same Turn through the normal iteration loop.
+**`cancel()`** — while the Turn is running, triggers the AbortSignal. The runner handles staging partial content and failing the Run. If the Turn is already paused for approval, `cancel()` is treated as rejection of the pending tool calls rather than as an automatic failed terminal state. The shared-core `cancel()` path stages those rejection outcomes durably and stops the paused execution without re-entering the model on the same Turn. This is distinct from `resolveApproval(...)` with explicit `reject` decisions, which continues the same Turn through the normal iteration loop.
 
-**`steer(signal)`** — pushes a signal into the steering channel. The driver consumes it at the next iteration boundary. Only valid when `status().phase === "running"`. Rejected if the Turn is paused or completed.
+**`steer(signal)`** — pushes a signal into the steering channel. The runner consumes it at the next iteration boundary. Only valid when `status().phase === "running"`. Rejected if the Turn is paused or completed.
 
 **`resolveApproval(response)`** — provides the human’s decision for a paused approval. Triggers the approval decision path (§4.8): closes the paused Run, applies decisions, resumes only unfinished approved or edited tool calls through the normal execution path, and returns a **new** `ExecutionHandle` for the continued Turn. Reject decisions produce canonical rejection `ToolResultPart` outcomes for the pending calls and then continue the same Turn through the normal iteration loop. Only valid when `status().phase === "paused"` and `status().approval` is present.
 
@@ -1509,7 +1509,7 @@ handle = framework.executeTurn({
   threadId,
   branchId,
   schemaId,
-  driverId: "react",
+  runnerId: "react",
   tools,
   config
 })
@@ -1637,7 +1637,7 @@ For each tool call in the batch:
                    stored as `objectType: "message"`.
 ```
 
-**Execution mode selection**: The driver chooses whether a batch executes sequentially or in parallel. The shared framework core owns the canonical ordering and durability semantics for the chosen mode (§6.4).
+**Execution mode selection**: The runner chooses whether a batch executes sequentially or in parallel. The shared framework core owns the canonical ordering and durability semantics for the chosen mode (§6.4).
 
 **Parallel execution**: Steps 1–3 synchronously for all calls. Split into approved and pending sets. Steps 4–5 concurrently for approved tools via aroundTool chain, subject to the active max-parallel-tool-call cap. If pending set is non-empty, return partial result with `ApprovalRequest` containing `completedResults` (from approved tools) and `toolCalls` (pending).
 
@@ -1645,7 +1645,7 @@ For each tool call in the batch:
 
 Individual tool failures produce error ToolResultParts. Tool failures never fail the Run.
 
-Whether one failed call aborts, rejects, or coexists with sibling results in a mixed or parallel batch is a driver- or host-level policy decision above the shared core. The shared core only defines trace integrity, call-ID ownership, and ordering/durability semantics for whichever results are ultimately produced.
+Whether one failed call aborts, rejects, or coexists with sibling results in a mixed or parallel batch is a runner- or host-level policy decision above the shared core. The shared core only defines trace integrity, call-ID ownership, and ordering/durability semantics for whichever results are ultimately produced.
 
 Incremental staging is required for crash-safe partial progress. In a parallel or sequential batch, each completed tool result becomes durably recoverable before the batch as a whole returns. Recovery can therefore skip completed tool calls by `callId` and resume only unfinished calls.
 
@@ -1861,7 +1861,7 @@ type AroundModelResult = TuvrenModelResponse | { response: TuvrenModelResponse, 
 
 `next` accepts an optional modified context — this is how tool filtering, prompt modification, model swapping, and retry work. These are call-scoped execution mechanics, not persistent policy decisions. aroundModel is an execution wrapper, not a generic verdict surface.
 
-State updates returned from aroundModel are collected by the driver and applied at the next iteration checkpoint. If the around crashes before returning, state updates are lost (ephemeral).
+State updates returned from aroundModel are collected by the runner and applied at the next iteration checkpoint. If the around crashes before returning, state updates are lost (ephemeral).
 
 #### aroundTool
 
@@ -1921,8 +1921,8 @@ Registration order: `[ext1.systemPrompt, ext2.systemPrompt, ext3.systemPrompt, b
 
 aroundModel and aroundTool interact with the streaming system as defined in §6.5 and §6.6. The key rules:
 
-- aroundModel receives the complete `TuvrenModelResponse`, not streaming events. Stream events are emitted by the driver during the provider stream, before aroundModel sees the response.
-- Short-circuit (no `next()` call): driver synthesizes events from the returned response.
+- aroundModel receives the complete `TuvrenModelResponse`, not streaming events. Stream events are emitted by the runner during the provider stream, before aroundModel sees the response.
+- Short-circuit (no `next()` call): runner synthesizes events from the returned response.
 - Single-call replacement after `next()`: if the wrapper returns a different durable response after one streamed `next()` call, the already-emitted live assistant sequence stays visible and only the durable checkpoint changes.
 - Retry (multiple `next()` calls): each produces a stream sequence with a new `messageId`. Only the final response is durable.
 - If a provider call fails after streaming has started and no durable assistant message is checkpointed, the already-emitted assistant content remains visible as an interrupted partial sequence and is followed by failure handling.
@@ -1953,7 +1953,7 @@ The extension system does not replace the five contracts. It provides an ergonom
 
 **System prompt errors**: Logged, that extension’s contribution omitted. Others unaffected.
 
-**Timeout**: Timeout ownership belongs to the framework or host layer, not to the shared core as a forced-termination guarantee. When timeout is triggered, the shared core provides the reliable semantics that follow: abort runtime-owned signals where available, fence runtime-owned callbacks and event injection surfaces, ignore late results, and prevent late timeout-losing work from re-entering durable framework state. Stronger timeout enforcement may exist in specific hosts, sandboxes, or concrete driver deployments above the core.
+**Timeout**: Timeout ownership belongs to the framework or host layer, not to the shared core as a forced-termination guarantee. When timeout is triggered, the shared core provides the reliable semantics that follow: abort runtime-owned signals where available, fence runtime-owned callbacks and event injection surfaces, ignore late results, and prevent late timeout-losing work from re-entering durable framework state. Stronger timeout enforcement may exist in specific hosts, sandboxes, or concrete runner deployments above the core.
 
 ---
 
@@ -1995,7 +1995,7 @@ tools: [{
       threadId,
       branchId,
       schemaId,
-      driverId: "react",
+      runnerId: "react",
       tools: researchConfig.tools,
       config: researchConfig
     })
@@ -2023,7 +2023,7 @@ The shared core does **not** define a canonical conversational `worker_result` p
 - child completion access
 - steering as a separate primitive already available to higher layers
 
-What happens with a worker's final result is a driver or host concern. Higher layers may, for example:
+What happens with a worker's final result is a runner or host concern. Higher layers may, for example:
 
 - inject a child result through steering while the parent is running
 - expose a sync tool that waits for a child and returns its result
@@ -2041,16 +2041,16 @@ Any higher-layer projection of child completion into parent context should be ba
 
 #### Agent-Signaled Handoff
 
-Agent-signaled handoff is preserved through the shared driver seam as
+Agent-signaled handoff is preserved through the shared runner seam as
 `RuntimeResolution.handoff`, not as an ordinary conversational history entry.
 The current provider-neutral content model does not define a dedicated handoff
-content part, so baseline drivers must not invent one inside
+content part, so baseline runners must not invent one inside
 `TuvrenModelResponse.parts` in v0.1. If a provider bridge or higher layer can
 recognize a provider-native tool-like handoff signal, it maps that signal into
 the existing handoff resolution contract instead of persisting a literal
 handoff tool call as ordinary conversation history.
 
-1. Recognizes or receives handoff intent through the concrete driver / provider integration path.
+1. Recognizes or receives handoff intent through the concrete runner / provider integration path.
 1. Does **not** persist a literal provider-native handoff control token as ordinary conversation history.
 1. Stages any remaining assistant content that is still semantically conversational.
 1. Executes handoff context engineering as a separate Run.
@@ -2182,7 +2182,7 @@ Both handoff types use `tree.create` to build new TurnTrees. Previous TurnNodes 
 
 ### 10.5 Ordered Pipelines
 
-Ordered multi-agent pipelines are not part of the shared framework core. A thin driver may build them on top of handoff semantics, typically using `last_output_only` as the handoff mode between steps.
+Ordered multi-agent pipelines are not part of the shared framework core. A thin runner may build them on top of handoff semantics, typically using `last_output_only` as the handoff mode between steps.
 
 The shared core therefore does **not** standardize sequence configuration, validation, or progression policy as part of its normative semantics.
 
@@ -2192,7 +2192,7 @@ The framework-provided orchestration primitive is minimal and handle/tree-based 
 
 ```
 OrchestrationRuntime
-└─ executeTurn(input: { agent: string, signal, threadId, branchId, schemaId?, driverId?, tools?, parentTurnId? }) → OrchestrationHandle
+└─ executeTurn(input: { agent: string, signal, threadId, branchId, schemaId?, runnerId?, tools?, parentTurnId? }) → OrchestrationHandle
 ```
 
 ```
@@ -2241,7 +2241,7 @@ Child handles are ordinary execution handles:
 - `spawn()` starts the child execution immediately; `awaitResult()` does not satisfy the parent launch precondition by itself
 - `allEvents()` means self + descendants
 - descendant events in `allEvents()` MUST carry `source` attribution sufficient to identify the originating execution node
-- child launches inherit the caller's explicit execution surface (for example `driverId` and per-request `tools`) because `spawn()` intentionally does not define its own override bag
+- child launches inherit the caller's explicit execution surface (for example `runnerId` and per-request `tools`) because `spawn()` intentionally does not define its own override bag
 
 `awaitResult()` on `OrchestrationHandle` overrides the base `ExecutionHandle.awaitResult()` surface to return `OrchestrationResult`. The parent's own `ExecutionResult` is resolved via the base-handle semantics (§7.1). After the parent settles, child results are aggregated into `childResults` keyed by worker identity. Child failures are recorded in `childResults` without failing the parent unless the parent itself also failed. The promise rejects only on cancellation, identical to the base-handle cancellation semantics.
 
@@ -2281,7 +2281,7 @@ This specification does not define:
 
 ## 11. Capability Orchestration
 
-The capability-orchestration model (ADR-046, §3.13, §4.21) classifies every model-visible tool call as a **capability invocation** against a known **execution class**, governed by a two-stage policy gate and carried by attribution metadata on every event. This section is normative: any future Kraken driver built on the shared framework inherits the model and must honour all invariants described here.
+The capability-orchestration model (ADR-046, §3.13, §4.21) classifies every model-visible tool call as a **capability invocation** against a known **execution class**, governed by a two-stage policy gate and carried by attribution metadata on every event. This section is normative: any future Kraken runner built on the shared framework inherits the model and must honour all invariants described here.
 
 ### 11.1 Tool Surface vs. Capability
 
@@ -2332,9 +2332,9 @@ Legal `EndpointKind` values:
 
 The **Capability Policy Engine** enforces a two-stage policy gate before any capability invocation reaches a tool executor.
 
-**Stage 1 — Exposure time:** `evaluateExposure` runs before the framework presents the tool list to the driver. Surfaces whose policy evaluation returns `exposed: false` are removed from the tool list. The model never sees withheld surfaces; no tool call for a withheld surface can be issued.
+**Stage 1 — Exposure time:** `evaluateExposure` runs before the framework presents the tool list to the runner. Surfaces whose policy evaluation returns `exposed: false` are removed from the tool list. The model never sees withheld surfaces; no tool call for a withheld surface can be issued.
 
-**Stage 2 — Invocation time:** `evaluateInvocation` runs at dispatch time, after the driver emits a tool call. A binding whose evaluation returns `admitted: false` is denied without calling the executor. The result surfaces as `tool.result { isError: true }` with a non-secret denial reason. The executor is never invoked.
+**Stage 2 — Invocation time:** `evaluateInvocation` runs at dispatch time, after the runner emits a tool call. A binding whose evaluation returns `admitted: false` is denied without calling the executor. The result surfaces as `tool.result { isError: true }` with a non-secret denial reason. The executor is never invoked.
 
 Both stages use a `CapabilityPolicyContext` that carries the five policy dimensions (data residency, risk class, active endpoint, user presence, credential boundary) plus per-capability metadata. Dimensions compose as deny-from-any: a capability is denied if any dimension denies it.
 

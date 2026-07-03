@@ -10,14 +10,14 @@ so treat these as conservative lower bounds for CI.
 ## W1 — Per-boundary cache input scoping (kills cross-boundary poisoning)
 
 The old `codegen`/`conformance` `targetDefaults` pulled in workspace-wide globs
-(`boundaries/*/conformance/**`, …). Because a project-level `inputs` array
-*replaces* the targetDefault (Nx does not merge), every conformance runner fell
+(`spec/conformance/**`, …). Because a project-level `inputs` array
+*replaces* the targetDefault (Nx does not merge), every certification project fell
 through to that broad default — so editing one boundary's fixture invalidated
 every other boundary's conformance cache.
 
-**Method.** Warm the `providers-typescript-conformance-runner:conformance`
+**Method.** Warm the `providers-typescript-certification:conformance`
 cache (no DB, no build deps), then edit an *unrelated* kernel fixture
-(`boundaries/kernel/conformance/plans/kernel-protocol-core.json`) and re-run the
+(`spec/conformance/kernel/plans/kernel-protocol-core.json`) and re-run the
 providers target. Old config = `nx.json` + providers `project.json` from
 `master`; new config = this branch.
 
@@ -42,14 +42,19 @@ edit previously invalidated **all 8**, now only the owning boundary's runners.
 
 ## W2 — Affected inner-loop lane (`bun run check`)
 
-**Method.** Append a line to `boundaries/providers/implementations/typescript/
-mcp-client/src/index.ts`, then compare `nx affected` selection and cold
+**Method.** Append a line to `typescript/tools/mcp-client/src/index.ts`,
+then compare `nx affected` selection and cold
 wall-clock against the full typecheck lane.
 
 - Projects selected by the 1-file edit: **6 of 28** typecheck-capable projects
-  (`providers-mcp-client` + its dependents `providers-bridge-ai-sdk`,
-  `providers-typescript-conformance-runner`, `framework-runtime-core`,
-  `framework-runtime`, `host-repl`).
+  (`mcp-client` + its dependents `providers-bridge-ai-sdk`,
+  `providers-typescript-certification`, `framework-runtime-core`,
+  `framework-runtime`, `host-repl`). `framework-runtime-core` is a historical
+  project name recorded as measured at the time — it was retired at M3.2c
+  (Epic 87) when `@tuvren/runtime-core` folded into the successor engine
+  package now at `typescript/runtime` (Nx project `framework-runtime`); the
+  measurement predates that rename and is left as originally recorded rather
+  than fabricating a re-run.
 - Cold wall-clock:
 
 | Lane | wall-clock |

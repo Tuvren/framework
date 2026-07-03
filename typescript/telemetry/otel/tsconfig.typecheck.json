@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../..",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/core": ["../../core/src/index.ts"],
+      "@tuvren/core/telemetry": ["../../core/src/telemetry/index.ts"],
+      "@tuvren/telemetry-otel": ["./src/index.ts"]
+    },
+    "types": ["bun"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "smoke/**/*.ts"]
+}

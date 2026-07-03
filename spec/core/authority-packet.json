@@ -1,0 +1,344 @@
+{
+  "packetId": "tuvren.shared.core",
+  "version": "1.7.0",
+  "boundary": "framework",
+  "surface": "core",
+  "description": "Merged shared-primitive authority packet for @tuvren/core. Absorbs tuvren.shared.core-types, tuvren.framework.runtime-api, tuvren.framework.event-stream, tuvren.framework.tool-contracts, and tuvren.framework.runner-api into a single packet with 10 binding sections per ADR-037 (Epic AP), ADR-042 (Epic AV), and ADR-046 (Epic AW: capabilities binding section added, capability JSON schemas authored in artifacts/json-schema/).",
+  "humanAuthorityRefs": [
+    "docs/KrakenKernelSpecification.md",
+    "docs/KrakenFrameworkSpecification.md",
+    ".constitution/tech-spec/adrs/ADR-037-consolidate-shared-primitives-into-tuvren-core-with-sub.md",
+    ".constitution/tech-spec/adrs/ADR-046-capability-orchestration-model-tool-surface-vs-capabili.md",
+    ".constitution/tech-spec/data-models/README.md#313-capability-orchestration-concept-shapes"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "spec/core/typespec/main.tsp",
+      "format": "typespec",
+      "bindingSection": "errors,messages,events,execution,tools,provider,extensions,runner,telemetry"
+    },
+    {
+      "path": "spec/host/typespec/main.tsp",
+      "format": "typespec",
+      "bindingSection": "messages,events,execution,tools,provider,extensions"
+    },
+    {
+      "path": "spec/streaming/typespec/main.tsp",
+      "format": "typespec",
+      "bindingSection": "events"
+    },
+    {
+      "path": "spec/tools/typespec/main.tsp",
+      "format": "typespec",
+      "bindingSection": "tools"
+    },
+    {
+      "path": "spec/runners/typespec/main.tsp",
+      "format": "typespec",
+      "bindingSection": "runner"
+    },
+    {
+      "path": "spec/conformance/engine/plans/runtime-api-lifecycle.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/engine/plans/runtime-api-callables.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/engine/plans/runtime-api-callables-extended.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/engine/plans/runtime-api-orchestration.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/streaming/plans/event-stream-core.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/streaming/plans/event-stream-extended.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/tools/plans/tool-contracts-extended.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/runners/plans/runner-api-core.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/runners/plans/runner-api-extended.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/engine/plans/runtime-api-batteries-included.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/telemetry/plans/framework-operational-telemetry.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/tools/plans/tuvren-server-execution-class.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/tools/plans/tuvren-client-execution-class.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/telemetry/plans/invocation-lifecycle-observation.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/tools/plans/capability-policy.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/tools/plans/capability-orchestration-integration.json",
+      "format": "conformance-plan"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "spec/core/artifacts/json-schema",
+      "generatedFrom": "spec/core/typespec",
+      "generator": "@typespec/json-schema",
+      "note": "Generated from the consolidated core TypeSpec at spec/core/typespec/main.tsp (Epic AP). Capability JSON schemas (Capability.json, ToolSurface.json, Binding.json, Endpoint.json, ExecutionClass.json, EndpointKind.json, CapabilityObservation.json, ExposureDecision.json, InvocationDecision.json, CapabilityInvocationAttribution.json) are authored directly per ADR-046 §3.13 and maintained alongside the TypeScript source until TypeSpec coverage is promoted."
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.framework.runtime-api.lifecycle",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/engine/plans/runtime-api-lifecycle.json"
+    },
+    {
+      "planId": "tuvren.framework.runtime-api.callables",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/engine/plans/runtime-api-callables.json"
+    },
+    {
+      "planId": "tuvren.framework.runtime-api.callables-extended",
+      "planVersion": "0.7.0",
+      "path": "spec/conformance/engine/plans/runtime-api-callables-extended.json"
+    },
+    {
+      "planId": "tuvren.framework.runtime-api.lifecycle-extended",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json"
+    },
+    {
+      "planId": "tuvren.framework.runtime-api.orchestration",
+      "planVersion": "0.3.0",
+      "path": "spec/conformance/engine/plans/runtime-api-orchestration.json"
+    },
+    {
+      "planId": "tuvren.framework.event-stream.core",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/streaming/plans/event-stream-core.json"
+    },
+    {
+      "planId": "tuvren.framework.event-stream.extended",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/streaming/plans/event-stream-extended.json"
+    },
+    {
+      "planId": "tuvren.framework.tool-contracts.extended",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/tools/plans/tool-contracts-extended.json"
+    },
+    {
+      "planId": "tuvren.framework.runner-api.core",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/runners/plans/runner-api-core.json"
+    },
+    {
+      "planId": "tuvren.framework.runner-api.extended",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/runners/plans/runner-api-extended.json"
+    },
+    {
+      "planId": "tuvren.framework.runtime-api.batteries-included",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/engine/plans/runtime-api-batteries-included.json"
+    },
+    {
+      "planId": "tuvren.framework.runtime-api.operational-telemetry",
+      "planVersion": "0.3.0",
+      "path": "spec/conformance/telemetry/plans/framework-operational-telemetry.json"
+    },
+    {
+      "planId": "tuvren.framework.tuvren-server-execution-class",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/tools/plans/tuvren-server-execution-class.json"
+    },
+    {
+      "planId": "tuvren.framework.tuvren-client-execution-class",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/tools/plans/tuvren-client-execution-class.json"
+    },
+    {
+      "planId": "tuvren.framework.invocation-lifecycle-observation",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/telemetry/plans/invocation-lifecycle-observation.json"
+    },
+    {
+      "planId": "tuvren.framework.capability-policy",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/tools/plans/capability-policy.json"
+    },
+    {
+      "planId": "tuvren.framework.capability-orchestration-integration",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/tools/plans/capability-orchestration-integration.json"
+    }
+  ],
+  "bindingSections": {
+    "root": {
+      "description": "Primitive types: HashString, EpochMs, KernelRecord family + error base classes"
+    },
+    "errors": {
+      "description": "TuvrenError hierarchy and error-code types"
+    },
+    "messages": {
+      "description": "TuvrenMessage, content parts, model config and response types"
+    },
+    "events": {
+      "description": "TuvrenStreamEvent discriminated union and all event types"
+    },
+    "execution": {
+      "description": "ExecutionHandle, TuvrenRuntime, OrchestrationHandle, context/policy types, durable-read cursors, ExecutionBounds/ExecutionBoundExceededDetails/ExecutionBoundKind (ADR-043 framework execution bounds, KRT-BD005)"
+    },
+    "tools": {
+      "description": "TuvrenToolDefinition, approval types, tool execution contracts"
+    },
+    "runner": {
+      "description": "RuntimeRunner, RunnerExecutionContext, runner contracts"
+    },
+    "provider": {
+      "description": "TuvrenProvider, ProviderStreamChunk, model response/prompt types"
+    },
+    "extensions": {
+      "description": "TuvrenExtension, ExtensionContext, lifecycle handler types"
+    },
+    "telemetry": {
+      "description": "TuvrenTelemetrySink, telemetry lineage, span, event, and kind record types"
+    },
+    "capabilities": {
+      "description": "ExecutionClass, EndpointKind, InvocationLifecycleState, Capability, ToolSurface, Endpoint, Binding, CapabilityObservation, ExposureDecision, InvocationDecision, InvocationOwner, CapabilityInvocationAttribution — ADR-046 §3.13 capability-orchestration shapes; InvocationLifecycleState added per KRT-BA001"
+    }
+  },
+  "bindingProjections": {
+    "typescript": "typescript/core",
+    "typescript-runtime": "typescript/runtime"
+  },
+  "bindingAppendices": [
+    {
+      "language": "typescript",
+      "path": "spec/core/bindings/typescript.md"
+    }
+  ],
+  "forbiddenAuthoritySources": [
+    "typescript/core",
+    "typescript/core-types",
+    "typescript/runtime",
+    "typescript/certification",
+    "typescript/conformance-adapter",
+    "rust/certification",
+    "rust/conformance-adapter",
+    "docs",
+    ".constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "schema-validation",
+      "target": "spec/core/artifacts/json-schema"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/engine/plans/runtime-api-lifecycle.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/engine/plans/runtime-api-callables.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/engine/plans/runtime-api-callables-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/engine/plans/runtime-api-lifecycle-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/engine/plans/runtime-api-orchestration.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/streaming/plans/event-stream-core.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/streaming/plans/event-stream-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/tools/plans/tool-contracts-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/runners/plans/runner-api-core.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/runners/plans/runner-api-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/engine/plans/runtime-api-batteries-included.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/telemetry/plans/framework-operational-telemetry.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/tools/plans/tuvren-server-execution-class.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/tools/plans/tuvren-client-execution-class.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/telemetry/plans/invocation-lifecycle-observation.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/tools/plans/capability-policy.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/tools/plans/capability-orchestration-integration.json"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "spec/core/artifacts/json-schema"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "spec/core/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run core-spec:codegen"
+    }
+  ]
+}

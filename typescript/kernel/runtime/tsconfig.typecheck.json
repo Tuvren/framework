@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../../",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@tuvren/backend-memory": ["../backends/memory/src/index.ts"],
+      "@tuvren/core": ["../../core/src/index.ts"],
+      "@tuvren/core-types": ["../../core-types/src/index.ts"],
+      "@tuvren/core/runner": ["../../core/src/runner/index.ts"],
+      "@tuvren/core/errors": ["../../core/src/errors/index.ts"],
+      "@tuvren/core/events": ["../../core/src/events/index.ts"],
+      "@tuvren/core/execution": ["../../core/src/execution/index.ts"],
+      "@tuvren/core/extensions": ["../../core/src/extensions/index.ts"],
+      "@tuvren/core/messages": ["../../core/src/messages/index.ts"],
+      "@tuvren/core/provider": ["../../core/src/provider/index.ts"],
+      "@tuvren/core/tools": ["../../core/src/tools/index.ts"],
+      "@tuvren/kernel-protocol": ["../protocol/src/index.ts"],
+      "@tuvren/kernel-runtime": ["./src/index.ts"]
+    },
+    "types": ["bun", "node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../protocol/src/**/*.ts",
+    "../../core-types/src/**/*.ts",
+    "../backends/memory/src/**/*.ts"
+  ]
+}

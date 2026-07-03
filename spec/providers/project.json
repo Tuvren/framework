@@ -1,0 +1,35 @@
+{
+  "name": "providers-spec",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "spec/providers",
+  "projectType": "library",
+  "tags": ["boundary:providers", "layer:contract"],
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/providers/typespec/**/*",
+        "{workspaceRoot}/spec/providers/artifacts/**/*",
+        "{workspaceRoot}/bun.lock"
+      ],
+      "outputs": [
+        "{workspaceRoot}/spec/providers/artifacts/json-schema",
+        "{workspaceRoot}/spec/providers/artifacts/openapi"
+      ],
+      "options": {
+        "cwd": "spec/providers",
+        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": ["default", "{workspaceRoot}/biome.jsonc"],
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check spec/providers"
+      }
+    }
+  }
+}

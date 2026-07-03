@@ -44,10 +44,7 @@ interface FixtureSpec {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const FIXTURES_DIR = resolve(
-  REPO_ROOT,
-  "boundaries/kernel/conformance/fixtures"
-);
+const FIXTURES_DIR = resolve(REPO_ROOT, "spec/conformance/kernel/fixtures");
 
 const HASH_ZERO = "0".repeat(64);
 const HASH_ONE = "1".repeat(64);

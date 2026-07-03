@@ -1,0 +1,13 @@
+{
+  "description": "The certification fleet: every Nx project that runs the shared semantic conformance engine (tools/conformance/harness/run.ts) against an implementation adapter. This manifest is machine-diffed both directions against tag-based discovery (projects tagged layer:certification) by tools/conformance/certification/validate-certification-discovery.ts, which hard-fails on any divergence: a project moved or retired without deliberate manifest maintenance, or a new runner added without registration, breaks the authority gate instead of silently dropping out of (or never entering) certification. The `conformance` lane runs exactly this validated set. GH issue #87 M2.9.",
+  "projects": [
+    "framework-batteries-included-certification",
+    "framework-rust-certification",
+    "framework-typescript-certification",
+    "kernel-rust-certification",
+    "kernel-typescript-certification",
+    "kernel-typescript-postgres-certification",
+    "kernel-typescript-sqlite-certification",
+    "providers-typescript-certification"
+  ]
+}

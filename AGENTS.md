@@ -1,14 +1,15 @@
 # Repository Guidelines
 
 ## Structure
-Keep this architecture-first, multi-language runtime monorepo organized by boundary.
+Keep this architecture-first, multi-language runtime monorepo organized by port, not by language.
 
-- Put runtime code and semantic assets under `boundaries/`.
-- Use `boundaries/framework/`, `kernel/`, `providers/`, `hosts/`, and `shared/` for their named runtime areas only.
-- Keep language-neutral assets at boundary, contract, conformance, and interop roots.
-- Put language-specific packages only under `implementations/<lang>/`.
-- Put boundary testkits only under `boundaries/<area>/implementations/<lang>/testkit/`.
-- Do not put `package.json`, `Cargo.toml`, `src/`, `dist/`, `test/`, `bench/`, `smoke/`, `tsconfig*.json`, generated bindings, or language tooling output at boundary or contract roots.
+- Put language-neutral runtime authority under `spec/<port>/` (`core`, `extensions`, `host`, `interop`, `kernel`, `providers`, `runners`, `streaming`, `telemetry`, `tools`) and shared conformance authority under `spec/conformance/<port>/`.
+- Put language-specific packages only under `typescript/<area>/` and `rust/<area>/`.
+- Use `typescript/core`, `typescript/sdk`, `typescript/runtime`, `typescript/kernel`, `typescript/providers`, `typescript/streaming`, `typescript/telemetry`, `typescript/runners`, `typescript/tools`, and `typescript/host` for their named runtime areas only; use `rust/kernel-grpc-service` and sibling `rust/<area>` packages for the Rust equivalents.
+- Put implementation testkits only under `<lang>/testkit/` or `<lang>/<area>/testkit/` (for example `typescript/testkit`, `typescript/kernel/testkit`, `typescript/providers/testkit`).
+- Put conformance adapter hosts under `<lang>/conformance-adapter/` or `<lang>/<area>/conformance-adapter/` (for example `typescript/conformance-adapter`, `typescript/kernel/conformance-adapter`, `typescript/providers/conformance-adapter`, `rust/conformance-adapter`, `rust/kernel-conformance-adapter`).
+- Put implementation `certification` wrapper projects under `<lang>/certification*/` or `<lang>/<area>/certification*/` (for example `typescript/certification`, `typescript/kernel/certification`, `typescript/providers/certification`, `rust/certification`, `rust/kernel-certification`).
+- Do not put `package.json`, `Cargo.toml`, `src/`, `dist/`, `test/`, `bench/`, `smoke/`, `tsconfig*.json`, generated bindings, or language tooling output under `spec/` roots.
 
 ## Authority
 Treat machine-readable authority as the source of cross-language truth.
@@ -56,7 +57,7 @@ Load the toolchain through direnv, and manage long-lived devenv services only wh
 
 - Let `.envrc` / direnv provide the repository environment before running Bun, Cargo, Buf, TypeSpec, Weaver, Nx, or validation commands.
 - Run `bun run services:up` once at the start of a session when postgres or another devenv-managed service is required. It wraps `devenv up -d` idempotently (a second call is a no-op instead of a hard failure), so it is safe to re-run. This is a manual session helper only — do not embed it inside scripts, Nx targets, or runner commands.
-- `devenv up` itself is **not idempotent** — raw `devenv up -d` exits with "Processes already running" if the devenv daemon is already active. Calling it a second time from a conformance runner or test harness will fail the entire run, which is why runners must never call it; use `bun run services:up` at session start instead.
+- `devenv up` itself is **not idempotent** — raw `devenv up -d` exits with "Processes already running" if the devenv daemon is already active. Calling it a second time from a certification project or test harness will fail the entire run, which is why runners must never call it; use `bun run services:up` at session start instead.
 - Commands that need postgres assume direnv has already loaded the environment and that the caller has started the service with `bun run services:up`; they must run the underlying `bun`, `cargo`, or native command directly.
 - Run `bun run services:down` (or `devenv processes down`) to stop all devenv-managed services cleanly at the end of a session or to recover from a stale daemon that is blocking a new start.
 
@@ -74,19 +75,19 @@ Keep public naming and boundaries clean.
 ## Conformance
 Keep semantic decisions in shared plans and shared runner code.
 
-- Use `tools/conformance/runner/run.ts` as the shared semantic conformance engine.
-- Put adapter hosts under `boundaries/<area>/implementations/<lang>/conformance-adapter/`.
-- Keep implementation `conformance-runner/` projects as wrappers only.
+- Use `tools/conformance/harness/run.ts` as the shared semantic conformance engine.
+- Put adapter hosts under `<lang>/conformance-adapter/` or `<lang>/<area>/conformance-adapter/` (for example `typescript/conformance-adapter`, `typescript/kernel/conformance-adapter`, `typescript/providers/conformance-adapter`, `rust/conformance-adapter`, `rust/kernel-conformance-adapter`).
+- Keep implementation `certification/` projects as wrappers only.
 - Do not add assertions, pass/fail grading, required-evidence grading, compatibility evidence writing, check IDs, or check-scoped evidence to adapters or implementation runners.
 - Do not let adapters receive `checkId`, call `emitEvidence`, decide pass/fail, replay fixtures as implementation proof, or map adapter/protocol failures into `$.result.error`.
 - Select promoted checks by capability or surface requirement, not by language, adapter ID, implementation ID, or runner name.
 - Treat every conformance plan `evidence` entry as required evidence.
-- Keep ReAct-specific behavior in ReAct authority packets and plans, not neutral driver plans.
+- Keep ReAct-specific behavior in ReAct authority packets and plans, not neutral runner plans.
 - Keep authority fixture validation separate from implementation conformance.
 - Use implementation-emitted events for event-stream conformance.
 - Make assertion names match the data source the runner actually evaluates; do not claim evidence coverage from an assertion that reads events, state, result, or fixture data instead.
 - Fail normal `conformance`, `codegen`, and `verify` gates when structured evidence has `status: "fail"`.
-- Compute canonical encodings (CBOR bytes, hash digests, schema signatures) with the TypeScript reference implementation and commit the result under `boundaries/<area>/conformance/fixtures/`. The committed JSON is authority; the generator is tooling. Cross-validate against another language's reference encoder before promotion once a second implementation exists, and prefer agreement between implementations over single-language computation.
+- Compute canonical encodings (CBOR bytes, hash digests, schema signatures) with the TypeScript reference implementation and commit the result under `spec/conformance/<area>/fixtures/`. The committed JSON is authority; the generator is tooling. Cross-validate against another language's reference encoder before promotion once a second implementation exists, and prefer agreement between implementations over single-language computation.
 
 ## Tests And PRs
 Validate the narrowest relevant target first, then broaden.

@@ -30,7 +30,7 @@ import {
   createCheckResult,
   createConformanceEvidenceSummary,
 } from "./lib/conformance-contract.js";
-import { readConformanceSuiteManifest } from "./lib/conformance-runner.js";
+import { readConformanceSuiteManifest } from "./lib/conformance-suite-manifest.js";
 
 interface CompatibilityMatrix {
   generatedAtMs: number;
@@ -181,10 +181,10 @@ const COMPATIBILITY_SCHEMA_PATH = resolve(
 );
 const EVIDENCE_DIRECTORY = resolve(REPO_ROOT, "reports/compatibility/evidence");
 const HERMETIC_BUILD_OUTPUT_DIRECTORIES = [
-  "boundaries/kernel/implementations/typescript/conformance-adapter/dist",
-  "boundaries/kernel/implementations/typescript/backend-memory/dist",
-  "boundaries/kernel/implementations/typescript/backend-sqlite/dist",
-  "boundaries/kernel/implementations/typescript/runtime-kernel/dist",
+  "typescript/kernel/conformance-adapter/dist",
+  "typescript/kernel/backends/memory/dist",
+  "typescript/kernel/backends/sqlite/dist",
+  "typescript/kernel/runtime/dist",
 ] as const;
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const TRANSITION_IMPLEMENTATION_VERSION = "unreleased-workspace";
@@ -200,13 +200,12 @@ const CHECK_FLAG = "--check";
 
 const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
   {
-    adapterManifestPath:
-      "boundaries/framework/implementations/typescript/conformance-adapter/adapter.json",
+    adapterManifestPath: "typescript/conformance-adapter/adapter.json",
     command: [
       "bun",
-      "tools/conformance/runner/run.ts",
+      "tools/conformance/harness/run.ts",
       "--adapter",
-      "boundaries/framework/implementations/typescript/conformance-adapter/adapter.json",
+      "typescript/conformance-adapter/adapter.json",
     ],
     implementationId: "typescript-framework",
     language: "typescript",
@@ -221,17 +220,17 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
       ],
       ["bun", "run", "nx", "run", "host-repl:build", "--skipNxCache"],
     ],
-    project: "framework-typescript-conformance-runner",
+    project: "framework-typescript-certification",
     reportLabel: "TypeScript framework runtime baseline",
   },
   {
     adapterManifestPath:
-      "boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json",
+      "typescript/conformance-adapter/adapter-batteries-included.json",
     command: [
       "bun",
-      "tools/conformance/runner/run.ts",
+      "tools/conformance/harness/run.ts",
       "--adapter",
-      "boundaries/framework/implementations/typescript/conformance-adapter/adapter-batteries-included.json",
+      "typescript/conformance-adapter/adapter-batteries-included.json",
     ],
     implementationId: "typescript-framework",
     language: "typescript",
@@ -245,17 +244,16 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
         "--skipNxCache",
       ],
     ],
-    project: "framework-batteries-included-conformance-runner",
+    project: "framework-batteries-included-certification",
     reportLabel: "TypeScript framework batteries-included runtime",
   },
   {
-    adapterManifestPath:
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+    adapterManifestPath: "typescript/kernel/conformance-adapter/adapter.json",
     command: [
       "bun",
-      "tools/conformance/runner/run.ts",
+      "tools/conformance/harness/run.ts",
       "--adapter",
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter.json",
+      "typescript/kernel/conformance-adapter/adapter.json",
       "--concurrency",
       "4",
     ],
@@ -274,17 +272,17 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
         "--skipNxCache",
       ],
     ],
-    project: "kernel-typescript-conformance-runner",
+    project: "kernel-typescript-certification",
     reportLabel: "TypeScript process-local kernel baseline",
   },
   {
     adapterManifestPath:
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
+      "typescript/kernel/conformance-adapter/adapter-sqlite.json",
     command: [
       "bun",
-      "tools/conformance/runner/run.ts",
+      "tools/conformance/harness/run.ts",
       "--adapter",
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-sqlite.json",
+      "typescript/kernel/conformance-adapter/adapter-sqlite.json",
       "--concurrency",
       "4",
     ],
@@ -303,7 +301,7 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
         "--skipNxCache",
       ],
     ],
-    project: "kernel-typescript-sqlite-conformance-runner",
+    project: "kernel-typescript-sqlite-certification",
     reportLabel: "TypeScript SQLite durable kernel",
   },
   {
@@ -316,12 +314,12 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     // target. The caller is responsible for starting the direnv-provisioned
     // Postgres service before refreshing measured evidence.
     adapterManifestPath:
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json",
+      "typescript/kernel/conformance-adapter/adapter-postgres.json",
     command: [
       "bun",
-      "tools/conformance/runner/run.ts",
+      "tools/conformance/harness/run.ts",
       "--adapter",
-      "boundaries/kernel/implementations/typescript/conformance-adapter/adapter-postgres.json",
+      "typescript/kernel/conformance-adapter/adapter-postgres.json",
       "--concurrency",
       "4",
     ],
@@ -340,49 +338,47 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
         "--skipNxCache",
       ],
     ],
-    project: "kernel-typescript-postgres-conformance-runner",
+    project: "kernel-typescript-postgres-certification",
     reportLabel: "TypeScript PostgreSQL durable kernel",
   },
   {
     adapterManifestPath:
-      "boundaries/providers/implementations/typescript/conformance-adapter/adapter.json",
+      "typescript/providers/conformance-adapter/adapter.json",
     command: [
       "bun",
-      "tools/conformance/runner/run.ts",
+      "tools/conformance/harness/run.ts",
       "--adapter",
-      "boundaries/providers/implementations/typescript/conformance-adapter/adapter.json",
+      "typescript/providers/conformance-adapter/adapter.json",
     ],
     implementationId: "typescript-providers",
     language: "typescript",
-    project: "providers-typescript-conformance-runner",
+    project: "providers-typescript-certification",
     reportLabel: "TypeScript AI SDK provider bridge",
   },
   {
-    adapterManifestPath:
-      "boundaries/kernel/implementations/rust/conformance-adapter/adapter.json",
+    adapterManifestPath: "rust/kernel-conformance-adapter/adapter.json",
     command: [
       "bun",
-      "tools/conformance/runner/run.ts",
+      "tools/conformance/harness/run.ts",
       "--adapter",
-      "boundaries/kernel/implementations/rust/conformance-adapter/adapter.json",
+      "rust/kernel-conformance-adapter/adapter.json",
     ],
     implementationId: "rust-kernel",
     language: "rust",
-    project: "kernel-rust-conformance-runner",
+    project: "kernel-rust-certification",
     reportLabel: "Rust process-local kernel baseline",
   },
   {
-    adapterManifestPath:
-      "boundaries/framework/implementations/rust/conformance-adapter/adapter.json",
+    adapterManifestPath: "rust/conformance-adapter/adapter.json",
     command: [
       "bun",
-      "tools/conformance/runner/run.ts",
+      "tools/conformance/harness/run.ts",
       "--adapter",
-      "boundaries/framework/implementations/rust/conformance-adapter/adapter.json",
+      "rust/conformance-adapter/adapter.json",
     ],
     implementationId: "rust-framework",
     language: "rust",
-    project: "framework-rust-conformance-runner",
+    project: "framework-rust-certification",
     reportLabel: "Rust framework unsupported stub",
   },
 ];
@@ -391,7 +387,7 @@ const INTEROP_RUNNERS: readonly InteropRunner[] = [
   {
     command: ["bun", "tools/scripts/repl-host-interop-smoke.ts"],
     manifestPath:
-      "boundaries/framework/interop/rust-kernel/scenarios/suite-manifest.json",
+      "spec/conformance/interop/rust-kernel/scenarios/suite-manifest.json",
     pairId: "typescript-framework__rust-kernel",
     project: "host-repl:interop-smoke",
     reportLabel: "TypeScript framework to Rust kernel interop",
@@ -400,7 +396,55 @@ const INTEROP_RUNNERS: readonly InteropRunner[] = [
 
 await main();
 
+/**
+ * Fleet parity: CONFORMANCE_RUNNERS above is a hand-maintained projection of
+ * the certification manifest (tools/conformance/certification/
+ * certified-projects.json — itself machine-diffed against tag-based
+ * discovery). Nothing else links the two, so a ninth certification project
+ * could be gate-forced into the manifest yet silently never appear in
+ * compatibility evidence. Hard-fail on any divergence, in both codegen and
+ * --check modes. INTEROP_RUNNERS is deliberately outside this check: interop
+ * pairs are not certification-fleet members.
+ */
+async function assertConformanceRunnerParity(): Promise<void> {
+  const manifestPath = resolve(
+    REPO_ROOT,
+    "tools/conformance/certification/certified-projects.json"
+  );
+  const manifest: { projects: string[] } = JSON.parse(
+    await readFile(manifestPath, "utf8")
+  );
+  const manifestProjects = new Set(manifest.projects);
+  const runnerProjects = new Set(
+    CONFORMANCE_RUNNERS.map((runner) => runner.project)
+  );
+  const missingHere = [...manifestProjects].filter(
+    (name) => !runnerProjects.has(name)
+  );
+  const missingInManifest = [...runnerProjects].filter(
+    (name) => !manifestProjects.has(name)
+  );
+  if (missingHere.length > 0 || missingInManifest.length > 0) {
+    const problems = [
+      ...missingHere.map(
+        (name) =>
+          `certified project ${name} is in the certification manifest but has no CONFORMANCE_RUNNERS entry — it would never appear in compatibility evidence`
+      ),
+      ...missingInManifest.map(
+        (name) =>
+          `CONFORMANCE_RUNNERS entry ${name} is not in the certification manifest — retire it or register the project`
+      ),
+    ];
+    console.error("compatibility-report: FAIL (fleet parity)");
+    for (const problem of problems) {
+      console.error(`  - ${problem}`);
+    }
+    process.exit(1);
+  }
+}
+
 async function main(): Promise<void> {
+  await assertConformanceRunnerParity();
   const allowFailingEvidence = process.argv.includes(
     ALLOW_FAILING_EVIDENCE_FLAG
   );
@@ -1425,7 +1469,7 @@ async function runConformanceTarget(
   });
   const evidenceFilePath = resolve(
     EVIDENCE_DIRECTORY,
-    `shared-conformance-runner.${runner.project}.json`
+    `certification-harness.${runner.project}.json`
   );
   const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
   const fallbackCheckResults =
@@ -1516,8 +1560,10 @@ async function runConformanceTarget(
 }
 
 function sanitizeEvidenceCommand(command: readonly string[]): string[] {
-  return command.map((part) =>
-    part.includes("/conformance-adapter/") ? "[adapter-manifest]" : part
+  return command.map((part, index) =>
+    index > 0 && command[index - 1] === "--adapter"
+      ? "[adapter-manifest]"
+      : part
   );
 }
 

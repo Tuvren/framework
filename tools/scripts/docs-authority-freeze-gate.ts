@@ -56,7 +56,7 @@ const SECTION_UNSAFE_CHAR_PATTERN = /[^a-z0-9]+/g;
 const TABLE_ROW_PATTERN = /^\s*\|/;
 const WHITESPACE_PATTERN = /\s+/g;
 const EVIDENCE_PATH_PATTERN =
-  /\b(?:boundaries|reports|tools|constitution)\/[^\s;,)`]+/g;
+  /\b(?:typescript|rust|spec|reports|tools|constitution)\/[^\s;,)`]+/g;
 const CLAIM_ID_HASH_LENGTH = 12;
 const REQUIRED_AUTHORITY_ANCHOR_FIELDS = [
   "authorityPacket",
@@ -182,43 +182,37 @@ interface EvidenceTemplate {
 }
 
 const EVIDENCE = {
-  driverApi: {
-    adapterCapability: "framework.driver-api",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+  runnerApi: {
+    adapterCapability: "framework.runner-api",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/driver-api-core.json; boundaries/framework/conformance/plans/driver-api-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/driver-api-scenarios.json",
-    generatedArtifact:
-      "boundaries/framework/contracts/driver-api/artifacts/json-schema",
+      "spec/conformance/runners/plans/runner-api-core.json; spec/conformance/runners/plans/runner-api-extended.json",
+    fixture: "spec/conformance/runners/scenarios/runner-api-scenarios.json",
+    generatedArtifact: "spec/runners/artifacts/json-schema",
   },
   eventStream: {
     adapterCapability: "framework.event-stream",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/event-stream-core.json; boundaries/framework/conformance/plans/event-stream-extended.json",
-    fixture: "boundaries/framework/conformance/fixtures/stream-events.json",
-    generatedArtifact:
-      "boundaries/framework/contracts/event-stream/artifacts/json-schema",
+      "spec/conformance/streaming/plans/event-stream-core.json; spec/conformance/streaming/plans/event-stream-extended.json",
+    fixture: "spec/conformance/streaming/fixtures/stream-events.json",
+    generatedArtifact: "spec/streaming/artifacts/json-schema",
   },
   kernelProtocol: {
     adapterCapability: "kernel.protocol; kernel.logical",
-    authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-rust-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-protocol-core.json; boundaries/kernel/conformance/plans/kernel-protocol-extended.json",
+      "spec/conformance/kernel/plans/kernel-protocol-core.json; spec/conformance/kernel/plans/kernel-protocol-extended.json",
     fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json; boundaries/kernel/conformance/fixtures/kernel-protocol-deterministic.json",
+      "spec/conformance/kernel/fixtures/kernel-protocol-logical.json; spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json",
     generatedArtifact:
-      "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is boundaries/kernel/contracts/protocol/spec/cddl/kernel-records.cddl",
+      "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is spec/kernel/cddl/kernel-records.cddl",
   },
   // Scope-resolved object identity (kernel spec §2.3, ADR-048/049). KRT-BE001
   // declared the surface and its conformance-plan reference in the
@@ -231,14 +225,12 @@ const EVIDENCE = {
   // claim is now authority-backed-conformance-covered.
   scopeIsolation: {
     adapterCapability: "kernel.scope-isolation",
-    authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-scope-isolation.json",
-    fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+      "spec/conformance/kernel/plans/kernel-scope-isolation.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - scope isolation is conformance-plan authority without generated schema artifacts",
   },
@@ -253,28 +245,24 @@ const EVIDENCE = {
   // §9.4 claim is now authority-backed-conformance-covered.
   reclamation: {
     adapterCapability: "kernel.reclamation",
-    authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json",
-    conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-reclamation.json",
-    fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json",
+    conformancePlan: "spec/conformance/kernel/plans/kernel-reclamation.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - data-lifecycle reclamation and crypto-shredding erasure are conformance-plan authority without generated schema artifacts",
   },
   providerApi: {
     adapterCapability: "providers.provider-api; providers.ai-sdk-bridge",
-    authorityPacket:
-      "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
+    authorityPacket: "spec/providers/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.providers-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.providers-typescript-certification.json",
     conformancePlan:
-      "boundaries/providers/conformance/plans/provider-api-bridge.json; boundaries/providers/conformance/plans/provider-api-bridge-extended.json",
-    fixture: "boundaries/providers/conformance/fixtures/provider-fixtures.json",
+      "spec/conformance/providers/plans/provider-api-bridge.json; spec/conformance/providers/plans/provider-api-bridge-extended.json",
+    fixture: "spec/conformance/providers/fixtures/provider-fixtures.json",
     generatedArtifact:
-      "boundaries/providers/contracts/provider-api/artifacts/json-schema; boundaries/providers/contracts/provider-api/artifacts/openapi",
+      "spec/providers/artifacts/json-schema; spec/providers/artifacts/openapi",
   },
   // Conversation-state ownership (framework spec §1.1 v0.21 note, ADR-053,
   // PRD CAP-P0-069). The durable lineage is the unconditional source of truth
@@ -293,41 +281,35 @@ const EVIDENCE = {
   // claim is now authority-backed-conformance-covered.
   conversationStateOwnership: {
     adapterCapability: "providers.conversation-state-ownership",
-    authorityPacket:
-      "boundaries/providers/contracts/provider-api/spec/authority-packet.json",
+    authorityPacket: "spec/providers/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.providers-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.providers-typescript-certification.json",
     conformancePlan:
-      "boundaries/providers/conformance/plans/provider-api-conversation-state.json",
-    fixture: "boundaries/providers/conformance/fixtures/provider-fixtures.json",
+      "spec/conformance/providers/plans/provider-api-conversation-state.json",
+    fixture: "spec/conformance/providers/fixtures/provider-fixtures.json",
     generatedArtifact:
       "N/A - conversation-state ownership is conformance-plan authority without generated schema artifacts",
   },
-  reactDriver: {
-    adapterCapability: "framework.react-driver",
-    authorityPacket:
-      "boundaries/framework/contracts/react-driver/spec/authority-packet.json",
+  reactRunner: {
+    adapterCapability: "framework.react-runner",
+    authorityPacket: "spec/runners/react/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/react-driver-callables.json; boundaries/framework/conformance/plans/react-driver-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/driver-api-scenarios.json",
+      "spec/conformance/runners/plans/react-runner-callables.json; spec/conformance/runners/plans/react-runner-extended.json",
+    fixture: "spec/conformance/runners/scenarios/runner-api-scenarios.json",
     generatedArtifact:
-      "N/A - react-driver packet is conformance-plan authority without generated schema artifacts",
+      "N/A - react-runner packet is conformance-plan authority without generated schema artifacts",
   },
   runtimeApi: {
     adapterCapability: "framework.runtime-api",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/runtime-api-lifecycle.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json; boundaries/framework/conformance/plans/runtime-api-callables.json; boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
-    generatedArtifact:
-      "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "spec/conformance/engine/plans/runtime-api-lifecycle.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json; spec/conformance/engine/plans/runtime-api-callables.json; spec/conformance/engine/plans/runtime-api-callables-extended.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "spec/host/artifacts/json-schema",
   },
   // KRT-AL002 G1 split tool and approval-result authority out of
   // `runtime-api` into a dedicated `tuvren.framework.tool-contracts`
@@ -336,29 +318,24 @@ const EVIDENCE = {
   // blessing stale `runtime-api` anchors for those promoted claims.
   toolContracts: {
     adapterCapability: "framework.runtime-api",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/tool-contracts-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
+      "spec/conformance/tools/plans/tool-contracts-extended.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact:
-      "boundaries/framework/contracts/tool-contracts/artifacts/json-schema; boundaries/framework/contracts/tool-contracts/artifacts/openapi/tool-contracts.openapi.json",
+      "spec/tools/artifacts/json-schema; spec/tools/artifacts/openapi/tool-contracts.openapi.json",
   },
   runtimeOrchestration: {
     adapterCapability: "framework.orchestration",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/runtime-api-orchestration.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
-    generatedArtifact:
-      "boundaries/framework/contracts/runtime-api/artifacts/json-schema",
+      "spec/conformance/engine/plans/runtime-api-orchestration.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "spec/host/artifacts/json-schema",
   },
   // Backend-authoritative execution-lease clock (kernel spec §5.2, ADR-050)
   // composed with side-effect-once under preemption (framework spec "Running
@@ -378,27 +355,23 @@ const EVIDENCE = {
   runLiveness: {
     adapterCapability:
       "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
-    authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-postgres-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json; reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-postgres-certification.json; reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json; reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-run-liveness.json; boundaries/framework/conformance/plans/runtime-api-lifecycle-extended.json",
-    fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+      "spec/conformance/kernel/plans/kernel-run-liveness.json; spec/conformance/engine/plans/runtime-api-lifecycle-extended.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - run-liveness is conformance-plan authority without generated schema artifacts",
   },
   restartRecovery: {
     adapterCapability: "kernel.restart-recovery",
-    authorityPacket:
-      "boundaries/kernel/contracts/protocol/spec/authority-packet.json",
+    authorityPacket: "spec/kernel/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.kernel-typescript-sqlite-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.kernel-typescript-sqlite-certification.json",
     conformancePlan:
-      "boundaries/kernel/conformance/plans/kernel-restart-recovery.json",
-    fixture:
-      "boundaries/kernel/conformance/fixtures/kernel-protocol-logical.json",
+      "spec/conformance/kernel/plans/kernel-restart-recovery.json",
+    fixture: "spec/conformance/kernel/fixtures/kernel-protocol-logical.json",
     generatedArtifact:
       "N/A - restart recovery is conformance-plan authority without generated schema artifacts",
   },
@@ -409,32 +382,28 @@ const EVIDENCE = {
   // promoted by Epics AW–BB.
   capabilityOrchestration: {
     adapterCapability: "framework.runtime-api",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/capability-orchestration-integration.json; boundaries/framework/conformance/plans/tuvren-server-execution-class.json; boundaries/framework/conformance/plans/tuvren-client-execution-class.json; boundaries/framework/conformance/plans/invocation-lifecycle-observation.json; boundaries/framework/conformance/plans/capability-policy.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
-    generatedArtifact: "boundaries/shared/contracts/core/artifacts/json-schema",
+      "spec/conformance/tools/plans/capability-orchestration-integration.json; spec/conformance/tools/plans/tuvren-server-execution-class.json; spec/conformance/tools/plans/tuvren-client-execution-class.json; spec/conformance/telemetry/plans/invocation-lifecycle-observation.json; spec/conformance/tools/plans/capability-policy.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "spec/core/artifacts/json-schema",
   },
   // KRT-BD008: §4.12 Execution Bounds (ADR-043) — the framework-owned hard-stop
-  // guard above driver LoopPolicy. All §4.12 normative claims are backed by the
+  // guard above runner LoopPolicy. All §4.12 normative claims are backed by the
   // runtime-api execution-bounds checks promoted into
   // `runtime-api-callables-extended.json` (KRT-BD007) and the ExecutionBounds /
   // ExecutionBoundExceededDetails shapes generated from the shared-core packet.
   executionBounds: {
     adapterCapability: "framework.runtime-api",
-    authorityPacket:
-      "boundaries/shared/contracts/core/spec/authority-packet.json",
+    authorityPacket: "spec/core/authority-packet.json",
     compatibilityEvidence:
-      "reports/compatibility/evidence/shared-conformance-runner.framework-typescript-conformance-runner.json",
+      "reports/compatibility/evidence/certification-harness.framework-typescript-certification.json",
     conformancePlan:
-      "boundaries/framework/conformance/plans/runtime-api-callables-extended.json",
-    fixture:
-      "boundaries/framework/conformance/scenarios/runtime-api-scenarios.json",
-    generatedArtifact: "boundaries/shared/contracts/core/artifacts/json-schema",
+      "spec/conformance/engine/plans/runtime-api-callables-extended.json",
+    fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+    generatedArtifact: "spec/core/artifacts/json-schema",
   },
 } as const satisfies Record<string, EvidenceTemplate>;
 
@@ -1160,10 +1129,10 @@ function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
     );
   }
 
-  if (text.includes("future drivers")) {
+  if (text.includes("future runners")) {
     return deferredDecision(
-      "future framework drivers",
-      "Future framework drivers remain deferred until a later TechSpec and Tasks revision activates a concrete driver line."
+      "future framework runners",
+      "Future framework runners remain deferred until a later TechSpec and Tasks revision activates a concrete runner line."
     );
   }
 
@@ -1181,8 +1150,8 @@ function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
     section === "kraken-framework-specification"
   ) {
     return implementationDefinedDecision(
-      "framework driver framing",
-      "Driver framing explains the current semantic layering; portable claim status is determined by the matrix rows for the referenced concrete surfaces."
+      "framework runner framing",
+      "Runner framing explains the current semantic layering; portable claim status is determined by the matrix rows for the referenced concrete surfaces."
     );
   }
 
@@ -1321,7 +1290,7 @@ function classifyFrameworkEventStreamSection(
   if (isSection(section, "6.5")) {
     return missingConformanceDecision(
       "aroundModel live/durable reconciliation",
-      EVIDENCE.reactDriver,
+      EVIDENCE.reactRunner,
       "KRT-AF003",
       "aroundModel replacement, retry, and durable/live response reconciliation need AF ReAct and extension-hook promotion before freeze closure."
     );
@@ -1409,15 +1378,15 @@ function classifyFrameworkIntegrationSection(
   }
 
   if (isSection(section, "5.6")) {
-    return authorityDecision("driver contract", EVIDENCE.driverApi);
+    return authorityDecision("runner contract", EVIDENCE.runnerApi);
   }
 
   if (isSection(section, "5.3")) {
     return missingConformanceDecision(
       "runtime loop policy",
-      EVIDENCE.driverApi,
+      EVIDENCE.runnerApi,
       "KRT-AF003",
-      "Loop-policy continuation and invalid-combination semantics are shared driver behavior that AF must promote before freeze closure."
+      "Loop-policy continuation and invalid-combination semantics are shared runner behavior that AF must promote before freeze closure."
     );
   }
 
@@ -1430,7 +1399,7 @@ function classifyFrameworkIntegrationSection(
     ) {
       return missingConformanceDecision(
         "ReAct and extension hooks",
-        EVIDENCE.reactDriver,
+        EVIDENCE.reactRunner,
         "KRT-AF003",
         "Some hook behavior is already packet-backed, but AF must choose which ordering and nesting details become portable."
       );
@@ -1445,7 +1414,7 @@ function classifyFrameworkIntegrationSection(
   if (isSectionMajor(section, "5")) {
     return implementationLocalDecision(
       "framework integration contracts",
-      "boundaries/framework/implementations/typescript/runtime-core/test/runtime-core.test.ts; boundaries/framework/implementations/typescript/drivers/react/test/react-driver.test.ts",
+      "typescript/runtime/test/runtime-core.foundation.test.ts; typescript/runners/react/test/react-runner.test.ts",
       "The local TypeScript contract implementations are not cross-language authority until selected by an authority packet and shared plan."
     );
   }
@@ -1479,7 +1448,7 @@ function classifyFrameworkRuntimeSection(
   ) {
     return missingConformanceDecision(
       "ReAct and extension hooks",
-      EVIDENCE.reactDriver,
+      EVIDENCE.reactRunner,
       "KRT-AF003",
       "Extension hook result, ordering, and persistence semantics need AF promotion before they become portable cross-language authority."
     );
@@ -1906,7 +1875,7 @@ function promotedEpicAfDecision(
     evidence,
     followUpTicket,
     implementationEvidence:
-      "Shared conformance runner evidence is the portable authority; TypeScript local tests remain regression evidence only.",
+      "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
     surface,
   };
 }
@@ -1965,8 +1934,8 @@ function renderSummary(entries: readonly CoverageEntry[]): string {
     "",
     "- `docs/KrakenFrameworkSpecification.md`",
     "- `docs/KrakenKernelSpecification.md`",
-    "- `boundaries/*/contracts/*/spec/authority-packet.json`",
-    "- `boundaries/*/conformance/plans/*.json`",
+    "- `spec/*/authority-packet.json`",
+    "- `spec/conformance/*/plans/*.json`",
     "- `reports/compatibility/compatibility-matrix.json` and `reports/compatibility/evidence/*.json`",
     "",
     "## Claim Counts",

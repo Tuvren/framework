@@ -1,0 +1,62 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../..",
+    "allowImportingTsExtensions": true,
+    "types": ["bun"],
+    "paths": {
+      "@tuvren/core": ["../../core/src/index.ts"],
+      "@tuvren/core/errors": ["../../core/src/errors/index.ts"],
+      "@tuvren/core/messages": ["../../core/src/messages/index.ts"],
+      "@tuvren/core/events": ["../../core/src/events/index.ts"],
+      "@tuvren/core/execution": ["../../core/src/execution/index.ts"],
+      "@tuvren/core/tools": ["../../core/src/tools/index.ts"],
+      "@tuvren/core/runner": ["../../core/src/runner/index.ts"],
+      "@tuvren/core/provider": ["../../core/src/provider/index.ts"],
+      "@tuvren/core/extensions": ["../../core/src/extensions/index.ts"],
+      "@tuvren/core/telemetry": ["../../core/src/telemetry/index.ts"],
+      "@tuvren/core/capabilities": ["../../core/src/capabilities/index.ts"],
+      "@tuvren/core/lifecycle": ["../../core/src/lifecycle/index.ts"],
+      "@tuvren/sdk": ["../../sdk/src/index.ts"],
+      "@tuvren/core-types": ["../../core-types/src/index.ts"],
+      "@tuvren/kernel-protocol": ["../../kernel/protocol/src/index.ts"],
+      "@tuvren/provider-api": ["../../providers/provider-api/src/index.ts"],
+      "@tuvren/provider-testkit": ["../../providers/testkit/src/index.ts"],
+      "@tuvren/mcp-client": ["../../tools/mcp-client/src/index.ts"],
+      "@tuvren/stream-core": ["../../streaming/core/src/index.ts"],
+      "@tuvren/stream-sse": ["../../streaming/sse/src/index.ts"],
+      "@tuvren/stream-agui": ["../../streaming/agui/src/index.ts"],
+      "@tuvren/telemetry-otel": ["../../telemetry/otel/src/index.ts"],
+      "@tuvren/telemetry-semconv": ["../../telemetry/semconv/src/index.ts"],
+      "@tuvren/backend-memory": ["../../kernel/backends/memory/src/index.ts"],
+      "@tuvren/kernel-runtime": ["../../kernel/runtime/src/index.ts"],
+      "@tuvren/backend-sqlite": ["../../kernel/backends/sqlite/src/index.ts"],
+      "@tuvren/backend-postgres": [
+        "../../kernel/backends/postgres/src/index.ts"
+      ],
+      "@tuvren/kernel-testkit": ["../../kernel/testkit/src/index.ts"],
+      "@tuvren/framework-testkit": ["../../testkit/src/index.ts"],
+      "@tuvren/runtime": ["../../runtime/src/index.ts"],
+      "@tuvren/repl-host": ["../../host/repl/src/index.ts"],
+      "@tuvren/runner-react": ["../../runners/react/src/index.ts"],
+      "@tuvren/provider-bridge-ai-sdk": [
+        "../../providers/bridge-ai-sdk/src/index.ts"
+      ],
+      "@ag-ui/core": [
+        "../../streaming/agui/node_modules/@ag-ui/core/dist/index.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "bench/**/*.ts",
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../../providers/provider-api/src/**/*.ts",
+    "../../core-types/src/**/*.ts",
+    "../../testkit/src/**/*.ts",
+    "../../streaming/agui/src/**/*.ts",
+    "../../streaming/core/src/**/*.ts",
+    "../../streaming/sse/src/**/*.ts"
+  ]
+}

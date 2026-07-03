@@ -1,0 +1,145 @@
+{
+  "packetId": "tuvren.providers.provider-api",
+  "version": "0.3.0",
+  "boundary": "providers",
+  "surface": "provider-api",
+  "humanAuthorityRefs": [
+    "docs/KrakenFrameworkSpecification.md",
+    ".constitution/tech-spec/contracts/README.md#44-provider-bridge-contract"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "spec/providers/typespec/main.tsp",
+      "format": "typespec"
+    },
+    {
+      "path": "spec/conformance/providers/plans/provider-api-bridge.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/providers/plans/provider-api-bridge-extended.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/providers/plans/provider-native-execution-class.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/providers/plans/provider-mediated-execution-class.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/providers/plans/provider-api-conversation-state.json",
+      "format": "conformance-plan"
+    },
+    {
+      "path": "spec/conformance/providers/fixtures/provider-fixtures.json",
+      "format": "fixture-set"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "spec/providers/artifacts/json-schema",
+      "generatedFrom": "spec/providers/typespec",
+      "generator": "@typespec/json-schema"
+    },
+    {
+      "path": "spec/providers/artifacts/openapi",
+      "generatedFrom": "spec/providers/typespec",
+      "generator": "@typespec/openapi3"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.providers.provider-api.bridge",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/providers/plans/provider-api-bridge.json"
+    },
+    {
+      "planId": "tuvren.providers.provider-api.bridge-extended",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/providers/plans/provider-api-bridge-extended.json"
+    },
+    {
+      "planId": "tuvren.providers.provider-native-execution-class",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/providers/plans/provider-native-execution-class.json"
+    },
+    {
+      "planId": "tuvren.providers.provider-mediated-execution-class",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/providers/plans/provider-mediated-execution-class.json"
+    },
+    {
+      "planId": "tuvren.providers.provider-api.conversation-state",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/providers/plans/provider-api-conversation-state.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "typescript/providers/provider-api",
+    "typescript-ai-sdk-bridge": "typescript/providers/bridge-ai-sdk"
+  },
+  "bindingAppendices": [
+    {
+      "language": "typescript",
+      "path": "spec/providers/bindings/typescript.md"
+    }
+  ],
+  "forbiddenAuthoritySources": [
+    "typescript/providers/provider-api",
+    "typescript/providers/bridge-ai-sdk",
+    "typescript/providers/certification",
+    "typescript/providers/conformance-adapter",
+    "docs",
+    ".constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "schema-validation",
+      "target": "spec/providers/artifacts/json-schema"
+    },
+    {
+      "kind": "openapi-validation",
+      "target": "spec/providers/artifacts/openapi"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/providers/plans/provider-api-bridge.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/providers/plans/provider-api-bridge-extended.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/providers/plans/provider-native-execution-class.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/providers/plans/provider-mediated-execution-class.json"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/providers/plans/provider-api-conversation-state.json"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "spec/providers/artifacts/json-schema"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "spec/providers/artifacts/openapi"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "spec/providers/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run providers-spec:codegen"
+    },
+    {
+      "artifact": "spec/providers/artifacts/openapi",
+      "regenerateCommand": "bun run nx run providers-spec:codegen"
+    }
+  ]
+}

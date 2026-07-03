@@ -1,0 +1,35 @@
+{
+  "name": "telemetry-spec",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "spec/telemetry",
+  "projectType": "library",
+  "tags": ["boundary:telemetry", "layer:tooling"],
+  "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/tools/scripts/telemetry-codegen.ts",
+        "{workspaceRoot}/tools/scripts/lib/**/*",
+        "{workspaceRoot}/tools/generators/telemetry/**/*"
+      ],
+      "outputs": [
+        "{workspaceRoot}/spec/telemetry/artifacts/semantic-conventions.md",
+        "{workspaceRoot}/spec/telemetry/artifacts/otel-attributes.json",
+        "{workspaceRoot}/typescript/telemetry/semconv/src/lib/generated/tuvren-runtime-telemetry.ts",
+        "{workspaceRoot}/rust/kernel/src/generated/tuvren_runtime_telemetry.rs"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/telemetry-codegen.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check spec/telemetry tools/generators/telemetry tools/scripts/telemetry-codegen.ts tools/scripts/lib"
+      }
+    }
+  }
+}

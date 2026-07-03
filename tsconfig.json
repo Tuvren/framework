@@ -3,73 +3,70 @@
   "files": [],
   "references": [
     {
-      "path": "./boundaries/shared/contracts/core-types/implementations/typescript"
+      "path": "./typescript/core-types"
     },
     {
-      "path": "./boundaries/kernel/contracts/protocol/implementations/typescript"
+      "path": "./typescript/sdk"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/backend-memory"
+      "path": "./typescript/kernel/protocol"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/testkit"
+      "path": "./typescript/kernel/backends/memory"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/drivers/react"
+      "path": "./typescript/kernel/testkit"
     },
     {
-      "path": "./boundaries/framework/contracts/tool-contracts/implementations/typescript"
+      "path": "./typescript/runners/react"
     },
     {
-      "path": "./boundaries/framework/contracts/event-stream/implementations/typescript"
+      "path": "./typescript/providers/provider-api"
     },
     {
-      "path": "./boundaries/providers/contracts/provider-api/implementations/typescript"
+      "path": "./typescript/kernel/backends/postgres"
     },
     {
-      "path": "./boundaries/framework/contracts/runtime-api/implementations/typescript"
+      "path": "./typescript/providers/bridge-ai-sdk"
     },
     {
-      "path": "./boundaries/framework/contracts/driver-api/implementations/typescript"
+      "path": "./typescript/kernel/backends/sqlite"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/backend-postgres"
+      "path": "./typescript/streaming/agui"
     },
     {
-      "path": "./boundaries/providers/implementations/typescript/bridge-ai-sdk"
+      "path": "./typescript/streaming/core"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/runtime-core"
+      "path": "./typescript/kernel/runtime"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/backend-sqlite"
+      "path": "./typescript/core"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/stream-agui"
+      "path": "./typescript/streaming/sse"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/stream-core"
+      "path": "./typescript/runtime"
     },
     {
-      "path": "./boundaries/kernel/implementations/typescript/runtime-kernel"
+      "path": "./typescript/testkit"
     },
     {
-      "path": "./boundaries/shared/contracts/core/implementations/typescript"
+      "path": "./typescript/providers/testkit"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/stream-sse"
+      "path": "./typescript/host/repl"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/runtime"
+      "path": "./typescript/telemetry/otel"
     },
     {
-      "path": "./boundaries/framework/implementations/typescript/testkit"
+      "path": "./typescript/telemetry/semconv"
     },
     {
-      "path": "./boundaries/providers/implementations/typescript/testkit"
-    },
-    {
-      "path": "./boundaries/hosts/implementations/typescript/repl"
+      "path": "./typescript/tools/mcp-client"
     }
   ]
 }

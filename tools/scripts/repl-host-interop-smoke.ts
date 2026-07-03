@@ -40,11 +40,11 @@ interface ReplHostInteropModule {
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const REPL_HOST_DIST_PATH = resolve(
   REPO_ROOT,
-  "boundaries/hosts/implementations/typescript/repl/dist/index.js"
+  "typescript/host/repl/dist/index.js"
 );
 const REPL_HOST_CLI_PATH = resolve(
   REPO_ROOT,
-  "boundaries/hosts/implementations/typescript/repl/dist/cli.js"
+  "typescript/host/repl/dist/cli.js"
 );
 const WAIT_TIMEOUT_MS = 30_000;
 
@@ -92,7 +92,7 @@ async function main(): Promise<void> {
 async function ensureInteropArtifacts(): Promise<void> {
   // Defer to Nx for the workspace build graph: `host-repl:build` pulls in
   // `^build` and the explicit `kernel-interop-grpc:codegen` dependency from
-  // `runtime-core`'s project.json, so this single invocation produces a fresh
+  // the engine's (`typescript/runtime`) project.json, so this single invocation produces a fresh
   // `host-repl/dist/index.js` (the module imported below) plus every upstream
   // workspace dist the smoke transitively needs. Earlier revisions hand-rolled
   // 16 sequential `bunx --bun tsup` invocations here, which collapsed under

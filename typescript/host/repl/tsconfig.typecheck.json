@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": "../../../",
+    "allowImportingTsExtensions": true,
+    "types": ["bun", "node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "smoke/**/*.ts",
+    "../../../typescript/kernel/backends/memory/src/**/*.ts",
+    "../../../typescript/kernel/backends/postgres/src/**/*.ts",
+    "../../../typescript/kernel/backends/sqlite/src/**/*.ts",
+    "../../../typescript/runners/react/src/**/*.ts",
+    "../../../typescript/runtime/src/**/*.ts",
+    "../../../typescript/streaming/core/src/**/*.ts",
+    "../../../typescript/streaming/sse/src/**/*.ts",
+    "../../../typescript/streaming/agui/src/**/*.ts",
+    "../../../typescript/providers/bridge-ai-sdk/src/**/*.ts"
+  ]
+}

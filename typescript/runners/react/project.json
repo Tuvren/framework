@@ -1,0 +1,54 @@
+{
+  "name": "runner-react",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/runners/react",
+  "sourceRoot": "typescript/runners/react/src",
+  "projectType": "library",
+  "tags": ["boundary:framework", "layer:implementation"],
+  "implicitDependencies": ["!framework-runtime"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/runners/react",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false && node --input-type=module -e \"await import('./dist/index.js')\""
+      }
+    },
+    "bench": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/runners/react",
+        "command": "bun bench/react-stream.bench.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/runners/react"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": "typescript/runners/react",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/runners/react"
+      }
+    }
+  }
+}

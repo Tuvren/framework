@@ -1,0 +1,59 @@
+{
+  "name": "kernel-testkit",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/kernel/testkit",
+  "sourceRoot": "typescript/kernel/testkit/src",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "layer:testkit"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/kernel/testkit",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/spec/conformance/kernel/**/*"
+      ],
+      "options": {
+        "cwd": "typescript/kernel/testkit",
+        "command": "bun test ./test/kernel-conformance.test.ts"
+      }
+    },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/kernel/testkit",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/kernel/testkit spec/conformance/kernel"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/testkit",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/kernel/testkit"
+      }
+    }
+  }
+}

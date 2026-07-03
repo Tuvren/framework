@@ -1,5 +1,7 @@
 # KRT-BH005 — Bridge `providerExecuted`/`dynamic` Fidelity Audit
 
+> **Path/terminology note (2026-07, epic #87, M10.3b):** This is a historical diagnostic report; its body is preserved verbatim below and is not rewritten. At the time of this audit, `@tuvren/provider-bridge-ai-sdk` lived at `boundaries/providers/implementations/typescript/bridge-ai-sdk/`; epic #87 relocated it to `typescript/providers/bridge-ai-sdk/`. The audited package identity and findings are unaffected by the move.
+
 **Status:** closed (audit completed; one defect found and fixed)
 **Epic:** BH — Conversation-State Ownership Hardening (KRT)
 **Authority:** TechSpec ADR-055 (bridge fidelity audit); ADR-005 (baseline bridge); AY002/AY004 (provider-native/mediated execution classes)

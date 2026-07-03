@@ -1,0 +1,18 @@
+warn-as-error: true
+emit:
+  - "@typespec/json-schema"
+  - "@typespec/openapi3"
+options:
+  "@typespec/json-schema":
+    emitter-output-dir: "{project-root}/../artifacts/json-schema"
+    file-type: json
+    emitAllModels: true
+    emitAllRefs: true
+    seal-object-schemas: true
+  "@typespec/openapi3":
+    emitter-output-dir: "{project-root}/../artifacts/openapi"
+    file-type: json
+    output-file: "tool-contracts.openapi.json"
+    openapi-versions:
+      - 3.1.0
+    seal-object-schemas: true

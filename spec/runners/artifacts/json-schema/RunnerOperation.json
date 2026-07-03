@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/runner-api/RunnerOperation.json",
+  "type": "object",
+  "properties": {
+    "operation": {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/RunnerOperationName.json"
+    },
+    "manifest": {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/RunnerManifest.json"
+    },
+    "context": {
+      "anyOf": [
+        {
+          "$ref": "https://tuvren.dev/schemas/framework/runner-api/RunnerExecutionContext.json"
+        },
+        {
+          "$ref": "https://tuvren.dev/schemas/framework/runner-api/RunnerResumeContext.json"
+        }
+      ]
+    },
+    "result": {
+      "$ref": "https://tuvren.dev/schemas/framework/runner-api/RunnerExecutionResult.json"
+    }
+  },
+  "required": ["operation"],
+  "unevaluatedProperties": {
+    "not": {}
+  }
+}

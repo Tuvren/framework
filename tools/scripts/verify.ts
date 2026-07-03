@@ -15,12 +15,59 @@
  */
 
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import { runCommand } from "./lib/command-runner.js";
+import { loadNxProjectFiles } from "./lib/nx-projects.js";
 import {
   assertWorktreeUnchanged,
   readWorktreeSnapshot,
 } from "./lib/worktree-guard.js";
+
+// The codegen freshness phase must regenerate exactly the projects the root
+// `codegen` script regenerates. That list was previously duplicated inline
+// here and drifted at 87-M4.2c (the dead `provider-api` entry made Nx
+// silently regenerate nothing for the providers port — run-many exits 0 for
+// projects without the target). Derive it from package.json instead, and
+// fail loudly if the script shape ever stops being parseable.
+const rootCodegenScript: string =
+  JSON.parse(readFileSync("package.json", "utf8")).scripts?.codegen ?? "";
+const codegenProjectsMatches = [
+  ...rootCodegenScript.matchAll(/run-many -t codegen -p (\S+)/g),
+];
+if (codegenProjectsMatches.length !== 1) {
+  throw new Error(
+    `verify: expected exactly one "run-many -t codegen -p <list>" in package.json's codegen script, found ${codegenProjectsMatches.length}; refusing to run a possibly-stale inline copy`
+  );
+}
+const CODEGEN_PROJECTS = codegenProjectsMatches[0][1];
+// The regex captures one whitespace-free token, so a quoted/space-separated
+// list or a flag reorder would capture garbage. Validate every captured
+// name against the real project index so the loud-failure guarantee holds —
+// and require each to still DECLARE a codegen target, because run-many
+// exits 0 for projects without the target (the exact 87-M4.2c silent-no-op
+// this derivation exists to prevent: existing-but-targetless is just as
+// silent as nonexistent).
+{
+  const projectsByName = new Map(
+    loadNxProjectFiles(process.cwd()).map((file) => [file.name, file])
+  );
+  const names = CODEGEN_PROJECTS.split(",");
+  const unknown = names.filter((name) => !projectsByName.has(name));
+  if (unknown.length > 0) {
+    throw new Error(
+      `verify: codegen project list captured from package.json contains unknown Nx projects (${unknown.join(", ")}) — the script shape changed; fix the parse or the script`
+    );
+  }
+  const targetless = names.filter(
+    (name) => projectsByName.get(name)?.project.targets?.codegen === undefined
+  );
+  if (targetless.length > 0) {
+    throw new Error(
+      `verify: codegen project(s) ${targetless.join(", ")} no longer declare a codegen target — run-many would silently regenerate nothing for them (87-M4.2c class); update package.json's codegen script`
+    );
+  }
+}
 
 export interface VerificationStep {
   command: readonly string[];
@@ -51,18 +98,30 @@ export interface VerificationPhase {
 const DEFAULT_MAX_CONCURRENCY = 8;
 
 export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
+  // M3.1: full test-target coverage — every Nx project declaring a `test`
+  // target belongs here or in validate-workspace-test-coverage.ts's
+  // documented exclusions (currently only the cargo-covered Rust projects).
+  // That gate enforces exact parity in both directions.
+  "shared-core",
+  "shared-core-types",
+  "sdk",
+  "kernel-contract-protocol",
+  "kernel-runtime",
+  "backend-memory",
+  "backend-sqlite",
+  "mcp-client",
   "provider-api",
-  "framework-event-stream",
-  "framework-runtime-api",
-  "framework-driver-api",
-  "framework-tool-contracts",
+  // framework-runtime-api (@tuvren/runtime-api) is gone entirely (deprecated
+  // shim retired at M9.2, successor @tuvren/core/{execution,events,messages,
+  // provider,tools}). Its dead test-lane entry had already been caught by
+  // the M3.1 coverage gate before the retirement.
   // Keep the kernel testkit in the repo-global test lane so boundary-owned
-  // fixture drift cannot hide behind the narrower conformance-runner coverage.
+  // fixture drift cannot hide behind the narrower certification coverage.
   "kernel-testkit",
   "backend-postgres",
-  "kernel-typescript-conformance-runner",
-  "framework-typescript-conformance-runner",
-  "providers-typescript-conformance-runner",
+  "kernel-typescript-certification",
+  "framework-typescript-certification",
+  "providers-typescript-certification",
   "providers-testkit",
   "framework-testkit",
   "providers-bridge-ai-sdk",
@@ -70,9 +129,12 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-stream-sse",
   "framework-stream-agui",
   "framework-telemetry-otel",
-  "framework-runtime-core",
+  "telemetry-semconv",
+  // framework-runtime-core is gone entirely (deprecated shim retired at
+  // M3.2c, successor @tuvren/runtime). Its dead test-lane entry had already
+  // been caught by the M3.1 coverage gate before the retirement.
   "framework-runtime",
-  "framework-driver-react",
+  "runner-react",
   "host-repl",
 ];
 
@@ -86,37 +148,35 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "provider-api",
   "providers-testkit",
   "providers-bridge-ai-sdk",
-  "framework-runtime-api",
-  "framework-driver-api",
-  "framework-event-stream",
-  "framework-tool-contracts",
   "framework-testkit",
-  "framework-runtime-core",
   "framework-runtime",
-  "framework-driver-react",
+  "runner-react",
   "framework-stream-core",
   "framework-stream-sse",
   "framework-stream-agui",
   "framework-telemetry-otel",
+  "telemetry-semconv",
   "host-repl",
 ];
 
 export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "kernel-testkit",
-  "framework-driver-api",
-  "framework-event-stream",
-  "framework-runtime-api",
-  "framework-runtime-core",
+  // framework-event-stream (@tuvren/event-stream) is gone entirely
+  // (deprecated shim retired at M8.1c, successor @tuvren/core/events).
+  // framework-runtime-api (@tuvren/runtime-api) is gone entirely (deprecated
+  // shim retired at M9.2, successor @tuvren/core/{execution,events,messages,
+  // provider,tools}).
   "framework-runtime",
-  "framework-tool-contracts",
   "provider-api",
   "providers-testkit",
   "framework-testkit",
   "providers-bridge-ai-sdk",
+  "mcp-client",
   "framework-stream-core",
   "framework-stream-sse",
   "framework-stream-agui",
   "framework-telemetry-otel",
+  "telemetry-semconv",
   "host-repl",
 ];
 
@@ -158,8 +218,19 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
     id: "adapter protocol validation",
   },
   {
+    command: [
+      "bun",
+      "tools/conformance/certification/validate-certification-discovery.ts",
+    ],
+    id: "certification discovery parity",
+  },
+  {
+    command: ["bun", "tools/scripts/validate-workspace-test-coverage.ts"],
+    id: "workspace test-lane coverage",
+  },
+  {
     command: ["bun", "tools/conformance/meta-conformance/run.ts"],
-    id: "shared conformance runner meta-conformance",
+    id: "certification harness meta-conformance",
   },
   {
     command: ["bun", "tools/conformance/vocabulary/validate-vocabulary.ts"],
@@ -221,10 +292,10 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
           "run",
           "nx",
           "run",
-          "kernel-rust-conformance-runner:conformance",
+          "kernel-rust-certification:conformance",
           "--skipNxCache",
         ],
-        id: "Rust kernel conformance runner",
+        id: "Rust kernel certification",
       },
       {
         command: [
@@ -256,7 +327,7 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
           "-t",
           "codegen",
           "-p",
-          "shared-core-types,framework-runtime-api,framework-event-stream,framework-event-stream-sse,framework-driver-api,framework-tool-contracts,provider-api,telemetry-semconv,compatibility-reporting,kernel-interop-grpc",
+          CODEGEN_PROJECTS,
           "--skipNxCache",
         ],
         id: "telemetry, compatibility, and interop code generation",

@@ -1,0 +1,53 @@
+{
+  "name": "framework-rust-certification",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "rust/certification",
+  "projectType": "library",
+  "tags": ["boundary:framework", "language:rust", "layer:certification"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "options": {
+        "cwd": ".",
+        "command": "cargo build -p tuvren-framework-rust-certification -p tuvren-framework-rust-conformance-adapter"
+      }
+    },
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/schemas/**/*",
+        "{workspaceRoot}/spec/conformance/engine/**/*",
+        "{workspaceRoot}/spec/conformance/runners/**/*",
+        "{workspaceRoot}/spec/conformance/streaming/**/*",
+        "{workspaceRoot}/spec/conformance/telemetry/**/*",
+        "{workspaceRoot}/rust/conformance-adapter/**/*",
+        "{workspaceRoot}/rust/certification/**/*",
+        "{workspaceRoot}/Cargo.toml",
+        "{workspaceRoot}/Cargo.lock",
+        "{workspaceRoot}/rust-toolchain.toml"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter rust/conformance-adapter/adapter.json --summary-only"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "cargo fmt --package tuvren-framework-rust-certification -- --check && cargo fmt --package tuvren-framework-rust-conformance-adapter -- --check && cargo clippy -p tuvren-framework-rust-certification --all-targets -- -D warnings && cargo clippy -p tuvren-framework-rust-conformance-adapter --all-targets -- -D warnings"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "cargo test -p tuvren-framework-rust-certification -p tuvren-framework-rust-conformance-adapter"
+      }
+    }
+  }
+}

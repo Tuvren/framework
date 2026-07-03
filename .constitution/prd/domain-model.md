@@ -5,11 +5,11 @@
 ```mermaid
 C4Context
 title System Context
-Person(builder, "Runtime Integrator", "Builds agentic products on top of Tuvren Runtime")
+Person(builder, "Runtime Integrator", "Builds agentic products on top of Tuvren")
 Person(approver, "Human Approver", "Reviews sensitive actions when approval is required")
 Person(operator, "Reference-Host Operator", "Drives the reference host interactively or headlessly for demos, tests, and replays")
-System(runtime, "Tuvren Runtime", "Embeddable stateful agent runtime kernel plus framework with curated host-facing SDK")
-System_Ext(host, "Host Application", "API, UI, CLI, editor, or service embedding Tuvren Runtime")
+System(runtime, "Tuvren", "Embeddable stateful agent runtime kernel plus framework with curated host-facing SDK")
+System_Ext(host, "Host Application", "API, UI, CLI, editor, or service embedding Tuvren")
 System_Ext(modelProviders, "Model Providers", "Generate responses and tool-call intents")
 System_Ext(externalTools, "External Tools and Systems", "Operations invoked by the runtime")
 System_Ext(mcpServers, "External MCP Servers", "Advertise tools consumed by the runtime over stdio or HTTP/SSE")

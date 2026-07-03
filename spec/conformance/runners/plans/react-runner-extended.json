@@ -1,0 +1,283 @@
+{
+  "applicability": {
+    "capabilities": ["framework.react-runner"]
+  },
+  "checks": [
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.hooks.beforeIteration",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-ext.before-iteration-twice",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.hooks.beforeIteration"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.hooks.aroundModel",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-ext.around-model-twice",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.hooks.aroundModel"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 2,
+          "field": "$.hooks.afterIteration",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-ext.after-iteration-twice",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.hooks.afterIteration"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 1,
+          "field": "$.hooks.aroundTool",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-ext.around-tool-once",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.hooks.aroundTool"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": [
+            "beforeIteration",
+            "aroundModel.before",
+            "aroundModel.after",
+            "aroundTool.before",
+            "aroundTool.after",
+            "afterIteration",
+            "beforeIteration",
+            "aroundModel.before",
+            "aroundModel.after",
+            "afterIteration"
+          ],
+          "field": "$.hooks.phaseTrace",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-af.extension.phase-order-before-around-after",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["hooks.phaseTrace"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": ["aroundTool.before", "tool.execute", "aroundTool.after"],
+          "field": "$.hooks.aroundToolTrace",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-af.extension.around-tool-nesting",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["hooks.aroundToolTrace"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.hooks.terminalMutationAttempted",
+          "kind": "resultField"
+        },
+        {
+          "equals": "runner hook turn completed",
+          "field": "$.hooks.terminalMutationDurableText",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-af.extension.after-iteration-terminal-state-nondurable",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": [
+        "hooks.terminalMutationAttempted",
+        "hooks.terminalMutationDurableText"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "modified",
+          "field": "$.aroundModel.finalAssistantText",
+          "kind": "resultField"
+        },
+        {
+          "equals": 1,
+          "field": "$.aroundModel.messageStartCount",
+          "kind": "resultField"
+        },
+        {
+          "equals": ["provider"],
+          "field": "$.aroundModel.streamedTextDone",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-af.around-model-post-stream-replacement",
+      "input": {
+        "scenarioPath": "$.runner-around-model-post-stream-replacement"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": [
+        "aroundModel.finalAssistantText",
+        "aroundModel.messageStartCount",
+        "aroundModel.streamedTextDone"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": "second attempt",
+          "field": "$.aroundModel.finalAssistantText",
+          "kind": "resultField"
+        },
+        {
+          "equals": 2,
+          "field": "$.provider.generate.callCount",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-af.around-model-retry-final-response-durable",
+      "input": {
+        "scenarioPath": "$.runner-around-model-retry-final-response"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": [
+        "aroundModel.finalAssistantText",
+        "provider.generate.callCount"
+      ]
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.hooks.beforeIteration",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-ext.hook-field-present.before-iteration-present",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.hooks.beforeIteration"]
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.hooks.afterIteration",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-ext.hook-field-present.after-iteration-present",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.hooks.afterIteration"]
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.hooks.aroundModel",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-ext.hook-field-present.around-model-present",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.hooks.aroundModel"]
+    },
+    {
+      "assertions": [
+        {
+          "field": "$.hooks.aroundTool",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "react-runner-ext.hook-field-present.around-tool-present",
+      "input": {
+        "scenarioPath": "$.runner-hook-turn"
+      },
+      "operation": "runner.execute",
+      "scenario": "runner-api-scenarios",
+      "evidence": ["result.hooks.aroundTool"]
+    },
+    {
+      "assertions": [
+        {
+          "equals": 4,
+          "field": "$.trace.checkpoint.evidence.checkpoint.manifestPathCount",
+          "kind": "stateField"
+        }
+      ],
+      "checkId": "react-runner-ext.checkpoint-manifest-path-count",
+      "evidence": ["trace.checkpoint.evidence.checkpoint.manifestPathCount"],
+      "input": {
+        "scenarioPath": "$.runner-checkpoint-turn"
+      },
+      "operation": "runner.checkpoint",
+      "scenario": "runner-api-scenarios",
+      "steps": [
+        {
+          "input": {
+            "scenarioPath": "$.runner-checkpoint-turn"
+          },
+          "operation": "runner.checkpoint",
+          "stepId": "checkpoint"
+        }
+      ]
+    }
+  ],
+  "packetId": "tuvren.framework.react-runner",
+  "planId": "tuvren.framework.react-runner.extended",
+  "planVersion": "0.1.0",
+  "scenarios": {
+    "runner-api-scenarios": "../scenarios/runner-api-scenarios.json"
+  }
+}

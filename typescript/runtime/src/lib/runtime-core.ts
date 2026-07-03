@@ -1,0 +1,1321 @@
+/**
+ * Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { randomUUID } from "node:crypto";
+import {
+  assertScope,
+  DEFAULT_SCOPE,
+  type EpochMs,
+  type HashString,
+  type KernelRecord,
+  type Scope,
+  TuvrenRuntimeError,
+} from "@tuvren/core";
+import type { TuvrenStreamEvent } from "@tuvren/core/events";
+import type {
+  AgentConfig,
+  BranchMessagesCursor,
+  BranchSummary,
+  ContextManifest,
+  ExecutionBounds,
+  ExecutionHandle,
+  HandoffContextBuilder,
+  ListThreadsCursor,
+  ReclamationSummary,
+  RuntimeMaintenance,
+  RuntimeResolution,
+  ThreadSummary,
+  TurnHistoryCursor,
+  TurnSnapshot,
+  TuvrenRuntime,
+} from "@tuvren/core/execution";
+import type { ErasedPayload, PayloadCodec } from "@tuvren/core/lifecycle";
+import type {
+  ToolCallPart,
+  ToolResultPart,
+  TuvrenMessage,
+} from "@tuvren/core/messages";
+import type { TuvrenModelResponse } from "@tuvren/core/provider";
+import type {
+  RunnerExecutionContext,
+  RunnerRegistry,
+} from "@tuvren/core/runner";
+import type { TuvrenTelemetrySink } from "@tuvren/core/telemetry";
+import type { ApprovalResponse } from "@tuvren/core/tools";
+import type {
+  RuntimeKernel as KrakenKernel,
+  TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/sdk";
+import {
+  getTurnHistory,
+  getTurnState,
+  listBranches,
+  listThreads,
+  readBranchMessages,
+} from "./durable-reads.js";
+import type { PayloadCodecBinding } from "./payload-codec-seam.js";
+import { createRunnerRegistry } from "./runner-registry.js";
+import {
+  createBoundExceededError,
+  getBoundExceededDetails,
+  isBoundExceededError,
+  normalizeExecutionBounds,
+  type ResolvedExecutionBounds,
+} from "./runtime-core-bounds.js";
+import {
+  executeRuntimeIterationPhaseFacade,
+  runRuntimeExecutionLoopFacade,
+} from "./runtime-core-execution-orchestration.js";
+import {
+  createRuntimeExecutionHandle,
+  createRuntimeResumedExecutionHandle,
+  startRuntimeExecutionSession,
+} from "./runtime-core-execution-session.js";
+import {
+  materializeRuntimeCoreContextMessages,
+  materializeRuntimeCoreRunner,
+  resolveRuntimeCoreFailureActiveConfig,
+  resolveRuntimeCoreHandoffSourceContext,
+} from "./runtime-core-facade-adapters.js";
+import {
+  applyRuntimeCoreAfterIterationResolution,
+  applyRuntimeCoreContextEngineeringPlan,
+  applyRuntimeCoreRequestedToolBatchIfNeeded,
+  commitRuntimeCorePendingExtensionStateUpdates,
+  completeRuntimeCoreExecution,
+  completeRuntimeCoreIterationArtifacts,
+  completeRuntimeCoreIterationRun,
+  createRuntimeCoreExecutionLoopState,
+  createRuntimeCoreExecutionTurnIfNeeded,
+  createRuntimeCoreIterationTree,
+  createRuntimeCoreRunnerExecutionContext,
+  createRuntimeCoreRunnerHandoffContextPlan,
+  createRuntimeCoreToolBatchEnvironment,
+  executeRuntimeCoreRunnerCall,
+  failRuntimeCoreInvalidPauseResolutionIfNeeded,
+  finishRuntimeCoreResumedExecutionStart,
+  handleRuntimeCoreExecutionFailure,
+  incorporateRuntimeCoreInput,
+  incorporateRuntimeCoreSteering,
+  prepareRuntimeCoreFreshExecutionStart,
+  publishRuntimeCoreApprovalResolved,
+  publishRuntimeCorePauseOutcome,
+  publishRuntimeCoreTurnStart,
+  resolveRuntimeCoreExecutionBranchHead,
+  resumeRuntimeCorePausedToolExecution,
+  stageRuntimeCoreRunnerMessages,
+} from "./runtime-core-facade-execution.js";
+import {
+  createRuntimeCoreFacadeHosts,
+  type RuntimeCoreFacadeHosts,
+} from "./runtime-core-facade-hosts.js";
+import {
+  ensureSchemaIdFacade,
+  loadHeadStateFacade,
+  readRecoveredActiveAgentNameFacade,
+  readRecoveredRuntimeStatusFacade,
+  resolveExecutionSchemaIdFacade,
+  resolveParentTurnIdFacade,
+} from "./runtime-core-facade-ops.js";
+import {
+  cloneAgentConfigForRequest,
+  createReadonlyRunnerToolRegistry,
+  createRunnerAgentConfigSnapshot,
+  normalizeManifestExtensionStateWarningBudget,
+  normalizeMaxParallelToolCalls,
+  normalizeRunLivenessOptions,
+  resolveActiveMaxParallelToolCalls,
+} from "./runtime-core-facade-utils.js";
+import { finalizePausedCancellation as finalizeRuntimePausedCancellation } from "./runtime-core-finalization.js";
+import type { ActiveRunLease } from "./runtime-core-liveness.js";
+import type { HeadState, LoopState } from "./runtime-core-loop.js";
+import {
+  createRuntimeRunnerStreamEvent,
+  emitRuntimeCheckpointEvents,
+  emitRuntimeWarning,
+  ensureRuntimeAssistantEvents,
+  flushRuntimeBufferedEventsIfResolutionAllows,
+  publishRuntimeCustomNamedEvent,
+  publishRuntimeProjectedErrorEvent,
+  publishRuntimeStreamEvent,
+  stageRuntimeManifestRecord,
+  stageRuntimeMessageRecord,
+  stageRuntimeStatusRecordValue,
+  stageRuntimeTurnLineageRecord,
+  storeRuntimeEventKernelRecord,
+  storeRuntimeKernelRecordValue,
+} from "./runtime-core-observability.js";
+import type { LoopOutcome } from "./runtime-core-recovery.js";
+import { hasRunLivenessKernel } from "./runtime-core-response.js";
+import {
+  advanceRuntimeCoreTurnAndBranchHead,
+  checkpointRuntimeCoreResumeRunningStatus,
+  completeRuntimeCoreRecoveredTerminalExecution,
+  completeRuntimeCoreTrackedRun,
+  createRuntimeCoreTrackedRun,
+  failRuntimeCoreTrackedRunWithoutBranchAdvance,
+  reconcileRuntimeCoreCheckpointedPauseResolution,
+  recoverRuntimeCoreExpiredExecutionBranchIfNeeded,
+  resolveRuntimeCoreCheckpointedPausedRun,
+  stopRuntimeCoreRunLeaseLoop,
+  syncRuntimeCoreRunLeaseStateFromStepResult,
+} from "./runtime-core-runtime-lifecycle.js";
+import {
+  createFrozenSnapshot,
+  detachPromise,
+  normalizeInputSignal,
+  projectError,
+} from "./runtime-core-shared.js";
+import { prepareResumedExecutionStartPrelude as prepareRuntimeResumedExecutionStartPrelude } from "./runtime-core-startup.js";
+import { finalizeTurnStatus as finalizeRuntimeTurnStatus } from "./runtime-core-status.js";
+import {
+  createRuntimeTelemetryEmitter,
+  type RuntimeTelemetryEmitter,
+} from "./runtime-core-telemetry.js";
+import { finalizeRejectedPausedToolCancellation as finalizeRejectedRuntimePausedToolCancellation } from "./runtime-core-tool-resume.js";
+import {
+  applyRuntimeCoreTerminalAgentTransitionIfNeeded,
+  createRuntimeCoreContextHelperBundle,
+  resolveRuntimeCoreDefaultHandoffContextBuilder,
+} from "./runtime-core-transition-support.js";
+import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
+import type {
+  ExecutionSessionRequest,
+  PauseContext,
+} from "./runtime-execution-types.js";
+import type { ToolExecutionMode } from "./tool-execution.js";
+
+export const DEFAULT_AGENT_SCHEMA_ID = "tuvren.agent.v1";
+export const DEFAULT_MAX_PARALLEL_TOOL_CALLS = 10;
+export const DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES = 256 * 1024;
+
+export interface RuntimeRunLivenessOptions {
+  executionOwnerId: string;
+  leaseDurationMs: number;
+  renewBeforeMs?: number;
+}
+export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
+  incorporationRules: [
+    { objectType: "message", targetPath: "messages" },
+    { objectType: "context_manifest", targetPath: "context.manifest" },
+    { objectType: "turn_lineage", targetPath: "turn.lineage" },
+    { objectType: "runtime_status", targetPath: "runtime.status" },
+  ],
+  paths: [
+    { collection: "ordered", path: "messages" },
+    { collection: "single", path: "context.manifest" },
+    { collection: "single", path: "turn.lineage" },
+    { collection: "single", path: "runtime.status" },
+  ],
+  schemaId: DEFAULT_AGENT_SCHEMA_ID,
+};
+
+export interface RuntimeCoreOptions {
+  /**
+   * Framework-enforced per-turn execution bounds (ADR-043, KRT-BD006). Applied
+   * above the runner's loop policy; unset fields take the §3.11 safe defaults
+   * and every configured bound must be a finite positive integer.
+   */
+  bounds?: ExecutionBounds;
+  createId?: () => string;
+  defaultMaxParallelToolCalls?: number;
+  defaultRunnerId: string;
+  enableStateObservability?: boolean;
+  handoffContextBuilder?: HandoffContextBuilder;
+  kernel: KrakenKernel;
+  manifestExtensionStateWarningBudgetBytes?: false | number;
+  now?: () => EpochMs;
+  onWarning?: (warning: RuntimeWarning) => void;
+  /**
+   * Opt-in crypto-shredding codec (ADR-051, KRT-BF005). When supplied, durable
+   * untrusted-edge message payloads are encrypted under host-held keys before
+   * `store.put`/`staging.stage` and decrypted on durable read; destroying a key
+   * renders the payload unrecoverable while leaving the lineage hash structure
+   * intact. Defaults to a plaintext identity codec, so unset hosts are unchanged.
+   */
+  payloadCodec?: PayloadCodec;
+  /**
+   * Substrate partition-drop callback for full tenant offboarding (ADR-051,
+   * §4.17). Wired by `createTuvren` from the owned backend's `purgeScope`; left
+   * unset when the runtime is constructed against an externally-supplied kernel
+   * (no owned substrate), in which case `maintenance.purgeScope()` rejects.
+   */
+  purgeScope?: () => Promise<void>;
+  resolveAgentConfig?: (agentName: string) => AgentConfig | undefined;
+  resolveParentTurnId?: (
+    threadId: string,
+    branchId: string
+  ) => Promise<string | null> | string | null;
+  runLiveness?: RuntimeRunLivenessOptions;
+  runnerRegistry?: RunnerRegistry;
+  /**
+   * The host-bound Scope this runtime is constructed against (ADR-048). It is
+   * correlation context for operational telemetry and transcripts only — never
+   * a kernel syscall argument — and should match the Scope the host bound to
+   * the durable backend. Defaults to the single-tenant default Scope.
+   */
+  scope?: Scope;
+  telemetry?: TuvrenTelemetrySink;
+}
+
+interface ResolvedRuntimeCoreOptions {
+  bounds: ResolvedExecutionBounds;
+  createId: () => string;
+  defaultMaxParallelToolCalls: number;
+  defaultRunnerId: string;
+  enableStateObservability: boolean;
+  handoffContextBuilder?: HandoffContextBuilder;
+  kernel: KrakenKernel;
+  manifestExtensionStateWarningBudgetBytes: false | number;
+  now: () => EpochMs;
+  onWarning?: (warning: RuntimeWarning) => void;
+  payloadCodec: PayloadCodec;
+  purgeScope?: () => Promise<void>;
+  resolveAgentConfig?: (agentName: string) => AgentConfig | undefined;
+  resolveParentTurnId?: (
+    threadId: string,
+    branchId: string
+  ) => Promise<string | null> | string | null;
+  runLiveness?: ResolvedRuntimeRunLivenessOptions;
+  runnerRegistry: RunnerRegistry;
+  scope: Scope;
+  telemetry?: TuvrenTelemetrySink;
+}
+
+interface ResolvedRuntimeRunLivenessOptions {
+  executionOwnerId: string;
+  leaseDurationMs: number;
+  renewBeforeMs: number;
+}
+
+export interface RuntimeWarning {
+  activeAgent: string;
+  budgetBytes: number;
+  code: "manifest_extension_state_budget_exceeded";
+  extensionName: string;
+  observedBytes: number;
+  runId: string;
+  threadId: string;
+  turnId: string;
+}
+
+interface ExecutedIterationResult {
+  iterationRunId: string;
+  partial: boolean;
+  requestedToolCalls: ToolCallPart[];
+  resolution: RuntimeResolution;
+  runnerResponse: TuvrenModelResponse;
+  stableHeadTurnNodeHash: HashString;
+  toolExecutionMode: ToolExecutionMode;
+  toolResults: ToolResultPart[];
+  turnNodeHash: HashString | undefined;
+}
+
+type IterationPhaseResult =
+  | {
+      kind: "executed";
+      result: ExecutedIterationResult;
+    }
+  | {
+      kind: "outcome";
+      outcome: LoopOutcome;
+    };
+
+interface BoundsTurnState {
+  boundedTelemetryEmitted: boolean;
+  deadlineMs: number;
+  toolCallCount: number;
+  wallClockTimer?: ReturnType<typeof setTimeout>;
+}
+
+class RuntimeCore implements TuvrenRuntime {
+  private readonly activeRunLeaseControllers = new WeakMap<
+    RuntimeExecutionHandle,
+    ActiveRunLease
+  >();
+  private readonly boundsTurnStates = new WeakMap<
+    RuntimeExecutionHandle,
+    BoundsTurnState
+  >();
+  private readonly manifestExtensionStateWarningKeys = new WeakMap<
+    RuntimeExecutionHandle,
+    Set<string>
+  >();
+  private readonly hosts: RuntimeCoreFacadeHosts;
+  private readonly options: ResolvedRuntimeCoreOptions;
+  private readonly telemetry: RuntimeTelemetryEmitter;
+
+  constructor(options: RuntimeCoreOptions) {
+    this.options = {
+      bounds: normalizeExecutionBounds(options.bounds),
+      createId: options.createId ?? randomUUID,
+      defaultRunnerId: options.defaultRunnerId,
+      defaultMaxParallelToolCalls: normalizeMaxParallelToolCalls(
+        options.defaultMaxParallelToolCalls ?? DEFAULT_MAX_PARALLEL_TOOL_CALLS,
+        "defaultMaxParallelToolCalls"
+      ),
+      runnerRegistry: options.runnerRegistry ?? createRunnerRegistry(),
+      enableStateObservability: options.enableStateObservability ?? true,
+      handoffContextBuilder: options.handoffContextBuilder,
+      kernel: options.kernel,
+      manifestExtensionStateWarningBudgetBytes:
+        options.manifestExtensionStateWarningBudgetBytes === undefined
+          ? DEFAULT_MANIFEST_EXTENSION_STATE_WARNING_BUDGET_BYTES
+          : normalizeManifestExtensionStateWarningBudget(
+              options.manifestExtensionStateWarningBudgetBytes
+            ),
+      now: options.now ?? Date.now,
+      onWarning: options.onWarning,
+      payloadCodec: options.payloadCodec ?? IDENTITY_PAYLOAD_CODEC,
+      purgeScope: options.purgeScope,
+      resolveAgentConfig: options.resolveAgentConfig,
+      resolveParentTurnId: options.resolveParentTurnId,
+      runLiveness:
+        options.runLiveness === undefined
+          ? undefined
+          : normalizeRunLivenessOptions(options.runLiveness),
+      scope: resolveRuntimeScope(options.scope),
+      telemetry: options.telemetry,
+    };
+    this.telemetry = createRuntimeTelemetryEmitter({
+      now: () => this.now(),
+      scope: this.options.scope,
+      sink: this.options.telemetry,
+    });
+
+    if (
+      this.options.runLiveness !== undefined &&
+      !hasRunLivenessKernel(this.options.kernel)
+    ) {
+      throw new TuvrenRuntimeError(
+        "runLiveness requires a kernel that implements the kernel.run-liveness extension",
+        {
+          code: "missing_run_liveness_extension",
+        }
+      );
+    }
+
+    this.hosts = createRuntimeCoreFacadeHosts({
+      activeRunLeaseControllers: this.activeRunLeaseControllers,
+      advanceTurnAndBranchHead: (handle, turnNodeHash) =>
+        advanceRuntimeCoreTurnAndBranchHead(
+          this.options.kernel,
+          handle,
+          turnNodeHash
+        ),
+      applyTerminalAgentTransitionIfNeeded: (...args) =>
+        applyRuntimeCoreTerminalAgentTransitionIfNeeded(
+          {
+            contextOps: this.hosts.contextOps,
+            kernel: this.options.kernel,
+            payloadCodecBinding: this.payloadBinding(),
+          },
+          ...args
+        ),
+      checkpointResumeRunningStatus: (...args) =>
+        checkpointRuntimeCoreResumeRunningStatus(this.hosts.status, ...args),
+      cloneAgentConfigForRequest,
+      commitPendingExtensionStateUpdates: (...args) =>
+        commitRuntimeCorePendingExtensionStateUpdates(this.hosts, ...args),
+      completeExecution: (...args) =>
+        completeRuntimeCoreExecution(this.hosts, ...args),
+      completeIterationRun: (...args) =>
+        completeRuntimeCoreIterationRun(this.hosts, ...args),
+      completeTrackedRun: (...args) =>
+        completeRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
+      createContextEngineeringHelpers: (messageHashes, messages) =>
+        createRuntimeCoreContextHelperBundle(
+          this.options.kernel,
+          this.payloadBinding(),
+          messageHashes,
+          messages
+        ),
+      createRunnerAgentConfigSnapshot,
+      createRunnerHandoffContextPlan: (...args) =>
+        createRuntimeCoreRunnerHandoffContextPlan(this.hosts, ...args),
+      createRunnerPublishedEvent: (handle, event, loopState) =>
+        createRuntimeRunnerStreamEvent(
+          this.hosts.events,
+          handle,
+          event,
+          loopState
+        ),
+      createId: () => this.createId(),
+      createIterationTree: (...args) =>
+        createRuntimeCoreIterationTree(this.hosts, ...args),
+      createReadonlyRunnerToolRegistry,
+      createToolBatchEnvironment: (...args) =>
+        createRuntimeCoreToolBatchEnvironment(this.hosts, ...args),
+      createTrackedRun: (...args) =>
+        createRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
+      defaultRunnerId: this.options.defaultRunnerId,
+      defaultMaxParallelToolCalls: this.options.defaultMaxParallelToolCalls,
+      emitStateObservability: (
+        handle,
+        loopState,
+        turnNodeHash,
+        iterationCount,
+        manifest
+      ) =>
+        this.emitRuntimeStateObservability(
+          handle,
+          loopState,
+          turnNodeHash,
+          iterationCount,
+          manifest
+        ),
+      enableStateObservability: () => this.options.enableStateObservability,
+      failTrackedRunWithoutBranchAdvance: (...args) =>
+        failRuntimeCoreTrackedRunWithoutBranchAdvance(
+          this.hosts.turnProgress,
+          ...args
+        ),
+      finalizeRejectedPausedToolCancellation: (...args) =>
+        finalizeRejectedRuntimePausedToolCancellation(
+          this.hosts.toolResume,
+          ...args
+        ),
+      finalizeTurnStatus: (...args) =>
+        finalizeRuntimeTurnStatus(this.hosts.status, ...args),
+      getManifestExtensionStateWarningBudgetBytes: () =>
+        this.options.onWarning === undefined
+          ? false
+          : this.options.manifestExtensionStateWarningBudgetBytes,
+      getOrCreateManifestExtensionStateWarningKeys: (handle) => {
+        let warningKeys = this.manifestExtensionStateWarningKeys.get(handle);
+        if (warningKeys === undefined) {
+          warningKeys = new Set<string>();
+          this.manifestExtensionStateWarningKeys.set(handle, warningKeys);
+        }
+        return warningKeys;
+      },
+      kernel: this.options.kernel,
+      loadHeadState: (branchId) =>
+        loadHeadStateFacade(
+          this.options.kernel,
+          this.payloadBinding(),
+          branchId
+        ),
+      payloadCodecBinding: this.payloadBinding(),
+      manifestExtensionStateWarning: (warning) =>
+        emitRuntimeWarning(this.options.onWarning, warning),
+      materializeContextMessages: (hashes, helpers) =>
+        materializeRuntimeCoreContextMessages(hashes, helpers),
+      now: () => this.now(),
+      publishCustomEvent: (handle, event, loopState) =>
+        publishRuntimeCustomNamedEvent(
+          this.hosts.events,
+          handle,
+          event,
+          loopState
+        ),
+      publishEvent: (handle, event, loopState) =>
+        this.publishRuntimeEvent(handle, event, loopState),
+      publishPauseOutcome: (...args) =>
+        publishRuntimeCorePauseOutcome(this.hosts, ...args),
+      publishProjectedError: (handle, error, fatal, loopState) =>
+        this.publishRuntimeProjectedError(handle, error, fatal, loopState),
+      readRecoveredActiveAgentName: (turnTreeHash) =>
+        readRecoveredActiveAgentNameFacade(this.options.kernel, turnTreeHash),
+      readRecoveredRuntimeStatus: (turnTreeHash) =>
+        readRecoveredRuntimeStatusFacade(this.options.kernel, turnTreeHash),
+      resolveActiveMaxParallelToolCalls: (
+        loopState,
+        defaultMaxParallelToolCalls
+      ) =>
+        // Clamp the runner/agent/default parallelism to the framework bound so
+        // parallel tool execution never exceeds maxConcurrentToolCalls. (BD006)
+        Math.min(
+          resolveActiveMaxParallelToolCalls(
+            loopState.activeConfig,
+            defaultMaxParallelToolCalls
+          ),
+          this.options.bounds.maxConcurrentToolCalls
+        ),
+      resolveAgentConfig: this.options.resolveAgentConfig,
+      resolveCheckpointedPausedRun: (...args) =>
+        resolveRuntimeCoreCheckpointedPausedRun(
+          this.hosts.turnProgress,
+          ...args
+        ),
+      resolveDefaultHandoffContextBuilder: (mode) =>
+        resolveRuntimeCoreDefaultHandoffContextBuilder(
+          this.options.handoffContextBuilder,
+          mode
+        ),
+      resolveFailureActiveConfig: (handle) =>
+        resolveRuntimeCoreFailureActiveConfig(
+          handle.request.config,
+          handle.status().activeAgent ?? handle.request.config.name,
+          this.options.resolveAgentConfig
+        ),
+      resolveHandoffSourceContext: (
+        plan,
+        headState,
+        loopState,
+        targetConfig,
+        helpers
+      ) =>
+        resolveRuntimeCoreHandoffSourceContext(
+          {
+            cloneAgentConfigForRequest,
+            kernel: this.options.kernel,
+          },
+          plan,
+          headState,
+          loopState,
+          targetConfig,
+          helpers
+        ),
+      resolveParentTurnId: (threadId, branchId, explicitParentTurnId) =>
+        resolveParentTurnIdFacade(
+          this.options.kernel,
+          this.options.resolveParentTurnId,
+          threadId,
+          branchId,
+          explicitParentTurnId
+        ),
+      resolveTargetAgent: (targetAgent) =>
+        this.options.resolveAgentConfig?.(targetAgent) ?? {
+          name: targetAgent,
+        },
+      resumePausedToolExecution: (...args) =>
+        resumeRuntimeCorePausedToolExecution(this.hosts, ...args),
+      runLivenessOptions: this.options.runLiveness,
+      stageManifest: (runId, manifest, warningContext) =>
+        stageRuntimeManifestRecord(
+          this.hosts.persistence,
+          runId,
+          manifest,
+          warningContext
+        ),
+      stageMessage: (runId, message, taskId) =>
+        stageRuntimeMessageRecord(
+          this.hosts.persistence,
+          runId,
+          message,
+          taskId as string
+        ),
+      stageRuntimeStatus: (runId, status, taskId) =>
+        stageRuntimeStatusRecordValue(
+          this.hosts.persistence,
+          runId,
+          status,
+          taskId
+        ),
+      stageTurnLineage: (runId, turnId, taskId) =>
+        stageRuntimeTurnLineageRecord(
+          this.hosts.persistence,
+          runId,
+          turnId,
+          taskId
+        ),
+      storeEventRecord: (event) =>
+        storeRuntimeEventKernelRecord(this.hosts.persistence, event),
+      storeKernelRecord: (value, label) =>
+        storeRuntimeKernelRecordValue(this.hosts.persistence, value, label),
+      syncRunLeaseStateFromStepResult: (...args) =>
+        syncRuntimeCoreRunLeaseStateFromStepResult(
+          this.hosts.liveness,
+          ...args
+        ),
+      treeCreate: (schemaId, changes, baseTurnTreeHash) =>
+        this.options.kernel.tree.create(schemaId, changes, baseTurnTreeHash),
+    });
+  }
+
+  async createBranch(input: {
+    branchId?: string;
+    fromTurnNodeHash: HashString;
+    threadId: string;
+  }): Promise<{
+    branchId: string;
+    headTurnNodeHash: HashString;
+    threadId: string;
+  }> {
+    return await this.options.kernel.branch.create(
+      input.branchId ?? this.createId(),
+      input.threadId,
+      input.fromTurnNodeHash
+    );
+  }
+
+  async createThread(input: {
+    initialBranchId?: string;
+    schemaId?: string;
+    threadId?: string;
+  }): Promise<{
+    branchId: string;
+    rootTurnNodeHash: HashString;
+    rootTurnTreeHash: HashString;
+    threadId: string;
+  }> {
+    const schemaId = await this.ensureSchemaId(input.schemaId);
+    return await this.options.kernel.thread.create(
+      input.threadId ?? this.createId(),
+      schemaId,
+      input.initialBranchId ?? this.createId()
+    );
+  }
+
+  executeTurn(input: ExecutionSessionRequest): ExecutionHandle {
+    return this.createExecutionHandle(input);
+  }
+
+  // ── Durable-Read Surface (KRT-AO003..AO005) ────────────────────────────
+  listThreads(options?: {
+    limit?: number;
+    cursor?: ListThreadsCursor;
+    filter?: { schemaId?: string };
+  }): Promise<{ threads: ThreadSummary[]; nextCursor?: ListThreadsCursor }> {
+    return listThreads(this.options.kernel, options);
+  }
+
+  listBranches(input: { threadId: string }): Promise<BranchSummary[]> {
+    return listBranches(this.options.kernel, input);
+  }
+
+  // ── Data-Lifecycle Maintenance Surface (ADR-051, §4.17) ────────────────
+  get maintenance(): RuntimeMaintenance {
+    return {
+      reclaim: (options?: { nowMs?: EpochMs }): Promise<ReclamationSummary> =>
+        // The kernel reclamation summary is structurally the host-facing
+        // ReclamationSummary; capability gating + grace-windowing live in the
+        // kernel/backend, so the runtime only forwards the mechanism call.
+        this.options.kernel.maintenance.reclaim(options),
+      purgeScope: (): Promise<void> => this.purgeBoundScope(),
+    };
+  }
+
+  private async purgeBoundScope(): Promise<void> {
+    if (this.options.purgeScope === undefined) {
+      throw new TuvrenRuntimeError(
+        "maintenance.purgeScope is unavailable: the runtime does not own a backend that supports dropping a Scope partition (for example when constructed with an externally-supplied kernel)",
+        { code: "scope_purge_unsupported" }
+      );
+    }
+    await this.options.purgeScope();
+  }
+
+  getTurnState(input: {
+    threadId: string;
+    branchId: string;
+    turnNodeHash?: HashString;
+  }): Promise<TurnSnapshot> {
+    return getTurnState(this.options.kernel, input);
+  }
+
+  getTurnHistory(
+    input: { threadId: string; branchId: string },
+    options?: { limit?: number; before?: TurnHistoryCursor }
+  ): AsyncIterableIterator<TurnSnapshot> {
+    return getTurnHistory(this.options.kernel, input, options);
+  }
+
+  readBranchMessages(input: {
+    branchId: string;
+    limit?: number;
+    after?: BranchMessagesCursor;
+  }): Promise<{
+    messages: (ErasedPayload | TuvrenMessage)[];
+    nextCursor?: BranchMessagesCursor;
+  }> {
+    return readBranchMessages(
+      this.options.kernel,
+      this.payloadBinding(),
+      input
+    );
+  }
+
+  async getThread(threadId: string): Promise<{
+    rootTurnNodeHash: HashString;
+    schemaId: string;
+    threadId: string;
+  } | null> {
+    return await this.options.kernel.thread.get(threadId);
+  }
+
+  async setBranchHead(input: {
+    branchId: string;
+    turnNodeHash: HashString;
+  }): Promise<{
+    archiveBranchId?: string;
+    branchId: string;
+    headTurnNodeHash: HashString;
+  }> {
+    const result = await this.options.kernel.branch.setHead(
+      input.branchId,
+      input.turnNodeHash
+    );
+
+    return {
+      archiveBranchId: result.archiveBranch?.branchId,
+      branchId: result.branch.branchId,
+      headTurnNodeHash: result.branch.headTurnNodeHash,
+    };
+  }
+
+  createExecutionHandle(
+    request: ExecutionSessionRequest
+  ): RuntimeExecutionHandle {
+    return createRuntimeExecutionHandle(
+      this,
+      request,
+      () => this.createId(),
+      DEFAULT_AGENT_SCHEMA_ID,
+      createFrozenSnapshot,
+      normalizeInputSignal
+    );
+  }
+
+  createResumedExecutionHandle(
+    previousHandle: RuntimeExecutionHandle,
+    pauseContext: PauseContext,
+    response: ApprovalResponse
+  ): RuntimeExecutionHandle {
+    const resumedHandle = createRuntimeResumedExecutionHandle(
+      this,
+      previousHandle,
+      pauseContext,
+      response
+    );
+    // Execution bounds are per logical turn. A resumed handle continues the same
+    // turn, so carry the cumulative tool-call count and the end-to-end wall-clock
+    // deadline forward; otherwise a runner could reset two hard-stop budgets on
+    // every approval pause. The per-loop-run abort timer is re-armed against the
+    // carried deadline when the resumed loop enters. (ADR-043, BD006)
+    const previousBounds = this.boundsTurnStates.get(previousHandle);
+    if (previousBounds !== undefined) {
+      this.boundsTurnStates.set(resumedHandle, {
+        boundedTelemetryEmitted: previousBounds.boundedTelemetryEmitted,
+        deadlineMs: previousBounds.deadlineMs,
+        toolCallCount: previousBounds.toolCallCount,
+      });
+    }
+    return resumedHandle;
+  }
+
+  cancelPausedExecution(handle: RuntimeExecutionHandle): void {
+    const pauseContext = handle.takePauseContextForCancellation();
+
+    if (pauseContext === undefined) {
+      return;
+    }
+
+    const cancellationTask = finalizeRuntimePausedCancellation(
+      this.hosts.finalization,
+      handle,
+      pauseContext,
+      async (
+        activeHandle,
+        resolution,
+        partial,
+        loopState,
+        enteredIterationLoop
+      ) =>
+        await completeRuntimeCoreExecution(
+          this.hosts,
+          activeHandle,
+          resolution,
+          partial,
+          loopState,
+          enteredIterationLoop
+        )
+    );
+    handle.rememberPausedCancellation(cancellationTask);
+    detachPromise(cancellationTask);
+  }
+
+  async startExecution(handle: RuntimeExecutionHandle): Promise<void> {
+    await startRuntimeExecutionSession(
+      {
+        completeExecution: (...args) =>
+          completeRuntimeCoreExecution(this.hosts, ...args),
+        completeRecoveredTerminalExecution: (...args) =>
+          completeRuntimeCoreRecoveredTerminalExecution(
+            this.hosts.expiredRecovery,
+            ...args
+          ),
+        createExecutionLoopState: (...args) =>
+          createRuntimeCoreExecutionLoopState(this.hosts, ...args),
+        createExecutionTurnIfNeeded: (...args) =>
+          createRuntimeCoreExecutionTurnIfNeeded(this.hosts, ...args),
+        emitStateObservability: (
+          handle,
+          loopState,
+          turnNodeHash,
+          iterationCount,
+          manifest
+        ) =>
+          this.emitRuntimeStateObservability(
+            handle,
+            loopState,
+            turnNodeHash,
+            iterationCount,
+            manifest
+          ),
+        emitRecoveryFailed: (activeHandle, activeLoopState, error) =>
+          this.telemetry.recovery({
+            error,
+            handle: activeHandle,
+            loopState: activeLoopState,
+            status: "error",
+          }),
+        emitRecoveryResumed: (activeHandle, activeLoopState) =>
+          this.telemetry.recovery({
+            handle: activeHandle,
+            loopState: activeLoopState,
+            status: "ok",
+          }),
+        finishResumedExecutionStart: (...args) =>
+          finishRuntimeCoreResumedExecutionStart(this.hosts, ...args),
+        handleExecutionFailure: (...args) =>
+          handleRuntimeCoreExecutionFailure(this.hosts, ...args),
+        prepareFreshExecutionStart: (...args) =>
+          prepareRuntimeCoreFreshExecutionStart(
+            this.hosts,
+            ...args,
+            async (activeHandle, activeSchemaId, activeLoopState) =>
+              await incorporateRuntimeCoreInput(
+                this.hosts,
+                activeHandle,
+                activeSchemaId,
+                activeLoopState
+              )
+          ),
+        prepareResumedExecutionStartPrelude: (...args) =>
+          prepareRuntimeResumedExecutionStartPrelude(
+            this.hosts.startup,
+            ...args,
+            async (event) =>
+              await storeRuntimeEventKernelRecord(
+                this.hosts.persistence,
+                event as KernelRecord
+              ),
+            async (runId, status, eventHash) =>
+              await this.options.kernel.run.complete(runId, status, eventHash)
+          ),
+        publishApprovalResolved: (...args) =>
+          publishRuntimeCoreApprovalResolved(this.hosts, ...args),
+        publishPauseOutcome: (...args) =>
+          publishRuntimeCorePauseOutcome(this.hosts, ...args),
+        publishTurnStart: (...args) =>
+          publishRuntimeCoreTurnStart(this.hosts, ...args),
+        recoverExpiredExecutionBranchIfNeeded: (...args) =>
+          recoverRuntimeCoreExpiredExecutionBranchIfNeeded(
+            this.hosts.expiredRecovery,
+            ...args
+          ),
+        resolveExecutionBranchHead: (...args) =>
+          resolveRuntimeCoreExecutionBranchHead(this.hosts, ...args),
+        resolveExecutionSchemaId: (request) =>
+          resolveExecutionSchemaIdFacade(
+            this.options.kernel,
+            async (schemaId) =>
+              await ensureSchemaIdFacade(this.options.kernel, schemaId),
+            request
+          ),
+        runExecutionLoop: (...args) => this.runExecutionLoop(...args),
+        stopRunLeaseLoop: (activeHandle) =>
+          stopRuntimeCoreRunLeaseLoop(this.hosts.liveness, activeHandle),
+      },
+      handle
+    );
+  }
+
+  private async runExecutionLoop(
+    handle: RuntimeExecutionHandle,
+    schemaId: string,
+    loopState: LoopState
+  ): Promise<LoopOutcome> {
+    // Arm the end-to-end wall-clock deadline for the duration of this loop run
+    // (resume re-enters with the remaining budget against the same deadline).
+    this.armWallClockBound(handle);
+    try {
+      return await this.runExecutionLoopFacade(handle, schemaId, loopState);
+    } finally {
+      this.disarmWallClockBound(handle);
+    }
+  }
+
+  private async runExecutionLoopFacade(
+    handle: RuntimeExecutionHandle,
+    schemaId: string,
+    loopState: LoopState
+  ): Promise<LoopOutcome> {
+    return await runRuntimeExecutionLoopFacade(
+      {
+        applyContextEngineeringPlan: (...args) =>
+          applyRuntimeCoreContextEngineeringPlan(this.hosts, ...args),
+        applyTerminalAgentTransitionIfNeeded: (...args) =>
+          applyRuntimeCoreTerminalAgentTransitionIfNeeded(
+            {
+              contextOps: this.hosts.contextOps,
+              kernel: this.options.kernel,
+              payloadCodecBinding: this.payloadBinding(),
+            },
+            ...args
+          ),
+        boundsDeadlineMs: (boundsHandle) =>
+          this.getBoundsTurnState(boundsHandle).deadlineMs,
+        commitPendingExtensionStateUpdates: (...args) =>
+          commitRuntimeCorePendingExtensionStateUpdates(this.hosts, ...args),
+        createId: () => this.createId(),
+        executionBounds: () => this.options.bounds,
+        executeIterationPhase: (...args) => this.executeIterationPhase(...args),
+        incorporateQueuedSteeringIfNeeded: (...args) =>
+          this.incorporateQueuedSteeringIfNeeded(...args),
+        loadHeadState: (branchId) =>
+          loadHeadStateFacade(
+            this.options.kernel,
+            this.payloadBinding(),
+            branchId
+          ),
+        now: () => this.now(),
+        publishCustomEvent: (handle, event, loopState) =>
+          publishRuntimeCustomNamedEvent(
+            this.hosts.events,
+            handle,
+            event,
+            loopState
+          ),
+        publishEvent: (handle, event, loopState) =>
+          this.publishRuntimeEvent(handle, event, loopState),
+        publishProjectedError: (handle, error, fatal, loopState) =>
+          this.publishRuntimeProjectedError(handle, error, fatal, loopState),
+        recordBoundsToolCalls: (boundsHandle, count) =>
+          this.recordBoundsToolCalls(boundsHandle, count),
+      },
+      handle,
+      schemaId,
+      loopState
+    );
+  }
+
+  private async incorporateQueuedSteeringIfNeeded(
+    handle: RuntimeExecutionHandle,
+    schemaId: string,
+    loopState: LoopState
+  ): Promise<void> {
+    const steeringSignal = handle.consumeSteeringSignal();
+
+    if (steeringSignal !== undefined) {
+      await incorporateRuntimeCoreSteering(
+        this.hosts,
+        handle,
+        schemaId,
+        steeringSignal,
+        loopState
+      );
+    }
+  }
+
+  private async executeIterationPhase(
+    handle: RuntimeExecutionHandle,
+    schemaId: string,
+    loopState: LoopState,
+    headState: HeadState | undefined,
+    iterationCount: number
+  ): Promise<IterationPhaseResult> {
+    return await executeRuntimeIterationPhaseFacade(
+      {
+        applyAfterIterationResolution: (...args) =>
+          applyRuntimeCoreAfterIterationResolution(this.hosts, ...args),
+        applyRequestedToolBatchIfNeeded: (input) =>
+          applyRuntimeCoreRequestedToolBatchIfNeeded(this.hosts, input),
+        beginIterationStep: async (runId, stepId) => {
+          await this.options.kernel.run.beginStep(runId, stepId);
+        },
+        completeIterationArtifacts: (...args) =>
+          completeRuntimeCoreIterationArtifacts(this.hosts, ...args),
+        createRunnerExecutionContext: (...args) =>
+          this.createRunnerExecutionContext(...args),
+        createId: () => this.createId(),
+        createTrackedRun: (...args) =>
+          createRuntimeCoreTrackedRun(this.hosts.liveness, ...args),
+        ensureRunnerAssistantEvents: (
+          handle,
+          messages,
+          emittedEvents,
+          loopState
+        ) =>
+          ensureRuntimeAssistantEvents(
+            this.hosts.events,
+            handle,
+            messages,
+            emittedEvents,
+            loopState
+          ),
+        executeRunner: async (...args) => {
+          const startMs = this.now();
+
+          try {
+            const result = await executeRuntimeCoreRunnerCall(...args);
+            this.telemetry.span({
+              handle,
+              kind: "model_call",
+              loopState,
+              name: "tuvren.runtime.model_call",
+              startMs,
+              status: "ok",
+            });
+            return result;
+          } catch (error: unknown) {
+            this.telemetry.span({
+              error,
+              handle,
+              kind: "model_call",
+              loopState,
+              name: "tuvren.runtime.model_call",
+              startMs,
+              status: "error",
+            });
+            throw error;
+          }
+        },
+        failInvalidPauseResolutionIfNeeded: (...args) =>
+          failRuntimeCoreInvalidPauseResolutionIfNeeded(this.hosts, ...args),
+        failTrackedRunWithoutBranchAdvance: (...args) =>
+          failRuntimeCoreTrackedRunWithoutBranchAdvance(
+            this.hosts.turnProgress,
+            ...args
+          ),
+        flushBufferedRunnerEventsIfNeeded: (handle, resolution, events) =>
+          flushRuntimeBufferedEventsIfResolutionAllows(
+            handle,
+            resolution,
+            events
+          ),
+        materializeRunner: (runnerId) =>
+          materializeRuntimeCoreRunner(this.options.runnerRegistry, runnerId),
+        now: () => this.now(),
+        reconcileCheckpointedPauseResolution: (...args) =>
+          reconcileRuntimeCoreCheckpointedPauseResolution(
+            this.hosts.turnProgress,
+            ...args
+          ),
+        stageRunnerMessages: (...args) =>
+          stageRuntimeCoreRunnerMessages(this.hosts, ...args),
+        publishEvent: (h, event, ls) => this.publishRuntimeEvent(h, event, ls),
+      },
+      handle,
+      schemaId,
+      loopState,
+      headState,
+      iterationCount
+    );
+  }
+
+  private createRunnerExecutionContext(
+    handle: RuntimeExecutionHandle,
+    schemaId: string,
+    loopState: LoopState,
+    headState: HeadState,
+    iterationCount: number,
+    emittedRunnerEvents: TuvrenStreamEvent[]
+  ): RunnerExecutionContext {
+    return createRuntimeCoreRunnerExecutionContext(
+      this.hosts,
+      handle,
+      schemaId,
+      loopState,
+      headState,
+      iterationCount,
+      emittedRunnerEvents
+    );
+  }
+
+  private async ensureSchemaId(schemaId?: string): Promise<string> {
+    return await ensureSchemaIdFacade(this.options.kernel, schemaId);
+  }
+
+  private createId(): string {
+    return this.options.createId();
+  }
+
+  private now(): EpochMs {
+    return this.options.now();
+  }
+
+  // The crypto-shredding binding (codec + Scope) threaded to every message
+  // write/read seam (KRT-BF005).
+  private payloadBinding(): PayloadCodecBinding {
+    return { codec: this.options.payloadCodec, scope: this.options.scope };
+  }
+
+  // ── Execution Bounds (ADR-043, KRT-BD006) ───────────────────────────────
+
+  private getBoundsTurnState(handle: RuntimeExecutionHandle): BoundsTurnState {
+    let state = this.boundsTurnStates.get(handle);
+    if (state === undefined) {
+      state = {
+        boundedTelemetryEmitted: false,
+        deadlineMs: this.now() + this.options.bounds.maxWallClockMs,
+        toolCallCount: 0,
+      };
+      this.boundsTurnStates.set(handle, state);
+    }
+    return state;
+  }
+
+  /**
+   * Arm the end-to-end wall-clock deadline as a real timer so the framework
+   * stops awaiting in-flight model/tool work at `maxWallClockMs` by aborting
+   * the handle with the bounds terminal error. The abort propagates through
+   * `TuvrenPrompt.signal` and `ToolExecutionContext.signal`. The timer is
+   * unref'd so it never keeps the process alive.
+   */
+  private armWallClockBound(handle: RuntimeExecutionHandle): void {
+    const state = this.getBoundsTurnState(handle);
+    if (state.wallClockTimer !== undefined) {
+      return;
+    }
+    const limit = this.options.bounds.maxWallClockMs;
+    const remaining = Math.max(0, state.deadlineMs - this.now());
+    const timer = setTimeout(() => {
+      handle.abortWithError(
+        createBoundExceededError("maxWallClockMs", limit, limit)
+      );
+    }, remaining);
+    if (typeof timer.unref === "function") {
+      timer.unref();
+    }
+    state.wallClockTimer = timer;
+  }
+
+  private disarmWallClockBound(handle: RuntimeExecutionHandle): void {
+    const state = this.boundsTurnStates.get(handle);
+    if (state?.wallClockTimer !== undefined) {
+      clearTimeout(state.wallClockTimer);
+      state.wallClockTimer = undefined;
+    }
+  }
+
+  private recordBoundsToolCalls(
+    handle: RuntimeExecutionHandle,
+    count: number
+  ): number {
+    const state = this.getBoundsTurnState(handle);
+    state.toolCallCount += count;
+    return state.toolCallCount;
+  }
+
+  /**
+   * Emit the bounded-execution telemetry event exactly once per handle when a
+   * fatal terminal error is the bounds error. Wired into the projected-error
+   * path so it fires for both the loop-boundary and in-flight-abort routes.
+   */
+  private emitBoundedTelemetryIfNeeded(
+    handle: RuntimeExecutionHandle,
+    error: Error,
+    loopState: LoopState
+  ): void {
+    const details = getBoundExceededDetails(error);
+    if (details === undefined) {
+      return;
+    }
+    const state = this.getBoundsTurnState(handle);
+    if (state.boundedTelemetryEmitted) {
+      return;
+    }
+    state.boundedTelemetryEmitted = true;
+    this.telemetry.bounded({ details, handle, loopState });
+  }
+
+  private publishRuntimeEvent(
+    handle: RuntimeExecutionHandle,
+    event: TuvrenStreamEvent,
+    loopState: LoopState
+  ): void {
+    publishRuntimeStreamEvent(this.hosts.events, handle, event, loopState);
+    this.telemetry.eventFromStream(handle, event, loopState);
+  }
+
+  private publishRuntimeProjectedError(
+    handle: RuntimeExecutionHandle,
+    error: Error,
+    fatal: boolean,
+    loopState: LoopState
+  ): void {
+    publishRuntimeProjectedErrorEvent(
+      this.hosts.events,
+      handle,
+      error,
+      fatal,
+      loopState
+    );
+    this.telemetry.eventFromStream(
+      handle,
+      {
+        error: projectError(error),
+        fatal,
+        timestamp: this.now(),
+        type: "error",
+      },
+      loopState
+    );
+    // A fatal bounds error anchors the terminal bounded-execution path: emit the
+    // execution.bounded telemetry event alongside the fatal error event (before
+    // the failed turn.end), exactly once per handle. (ADR-043, BD006)
+    if (fatal && isBoundExceededError(error)) {
+      this.emitBoundedTelemetryIfNeeded(handle, error, loopState);
+    }
+  }
+
+  private emitRuntimeStateObservability(
+    handle: RuntimeExecutionHandle,
+    loopState: LoopState,
+    turnNodeHash: HashString,
+    iterationCount: number,
+    manifest?: ContextManifest
+  ): void {
+    emitRuntimeCheckpointEvents(
+      this.hosts.events,
+      handle,
+      loopState,
+      turnNodeHash,
+      iterationCount,
+      manifest
+    );
+    this.telemetry.eventFromStream(
+      handle,
+      {
+        iterationCount,
+        timestamp: this.now(),
+        turnNodeHash,
+        type: "state.checkpoint",
+      },
+      loopState
+    );
+  }
+}
+
+// Resolves the host-supplied correlation Scope, defaulting single-tenant hosts
+// to the default Scope and rejecting an empty binding the same way the durable
+// backends do (assertScope), so telemetry and transcripts always carry a valid
+// Scope identifier.
+function resolveRuntimeScope(scope: Scope | undefined): Scope {
+  const resolved = scope ?? DEFAULT_SCOPE;
+  assertScope(resolved);
+  return resolved;
+}
+
+export function createTuvrenRuntime(
+  options: RuntimeCoreOptions
+): TuvrenRuntime {
+  return new RuntimeCore(options);
+}
