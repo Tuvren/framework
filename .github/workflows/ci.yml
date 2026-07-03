@@ -137,7 +137,7 @@ jobs:
             # cold before it generates anything. Generating the one missing
             # artifact family directly is the minimal honest bootstrap; the
             # verify-phase-ordering question is recorded as a post-epic
-            # follow-up in issue #87's closing record.
+            # follow-up in the issue 87 closing record.
             bun run nx run kernel-interop-grpc:codegen
             bun run services:up
             bun run verify
