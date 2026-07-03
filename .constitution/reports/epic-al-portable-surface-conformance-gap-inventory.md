@@ -37,13 +37,13 @@ authoritative behavioral specs are not authority for any cross-language semantic
   - `.constitution/reports/epic-af-conformance-gap-plan.md` / `.json`
   - `.constitution/reports/epic-ad-docs-to-authority-coverage-matrix.json`
 - Current authority packets (the 9 promoted surfaces after Epic AP package consolidation plus Epic AS):
-  - `boundaries/shared/contracts/core/spec/authority-packet.json`
+  - `spec/core/authority-packet.json`
   - `spec/kernel/authority-packet.json`
   - `boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`
   - `boundaries/framework/contracts/react-driver/spec/authority-packet.json`
-  - `boundaries/providers/contracts/provider-api/spec/authority-packet.json`
+  - `spec/providers/authority-packet.json`
   - `boundaries/providers/contracts/mcp/spec/authority-packet.json`
-  - `boundaries/kernel/interop/grpc/spec/authority-packet.json`
+  - `spec/interop/authority-packet.json`
   - `boundaries/framework/interop/rust-kernel/spec/authority-packet.json`
   - `boundaries/telemetry/semconv/spec/authority-packet.json`
 - Current conformance plans (21):
@@ -80,11 +80,11 @@ the surface's current decisive-assertion coverage.
 
 | Surface | Packet | Plans | Decisive coverage | Notes |
 | --- | --- | --- | --- | --- |
-| Shared core primitives + capability-orchestration surface | `tuvren.shared.core` (`boundaries/shared/contracts/core/spec/authority-packet.json`) | `runtime-api-lifecycle{,-extended}`, `runtime-api-callables{,-extended}`, `runtime-api-orchestration`, `runtime-api-batteries-included`, `event-stream-core`, `event-stream-extended`, `driver-api-core`, `driver-api-extended`, `tool-contracts-extended`, `framework-operational-telemetry`, `tuvren-server-execution-class`, `tuvren-client-execution-class`, `invocation-lifecycle-observation`, `capability-policy`, `capability-orchestration-integration` | `resultField`, `stateField`, `eventSequence`, `terminalEvent`, `noEvent`, `errorEnvelope` per plan inspection | Epic AP absorbed the former `core-types`, `runtime-api`, `event-stream`, `driver-api`, and `tool-contracts` packets into one consolidated core packet with binding sections for the eight `@tuvren/core/*` subpaths. Epics AW–BC (Tooling block) added the capability-orchestration surface: four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, and the cross-class integration check set (`capability-orchestration-integration.json`, KRT-BC001). The integration plan is now a required authoritative source for `tuvren.shared.core` in the portability inventory (v0.4.0). |
+| Shared core primitives + capability-orchestration surface | `tuvren.shared.core` (`spec/core/authority-packet.json`) | `runtime-api-lifecycle{,-extended}`, `runtime-api-callables{,-extended}`, `runtime-api-orchestration`, `runtime-api-batteries-included`, `event-stream-core`, `event-stream-extended`, `driver-api-core`, `driver-api-extended`, `tool-contracts-extended`, `framework-operational-telemetry`, `tuvren-server-execution-class`, `tuvren-client-execution-class`, `invocation-lifecycle-observation`, `capability-policy`, `capability-orchestration-integration` | `resultField`, `stateField`, `eventSequence`, `terminalEvent`, `noEvent`, `errorEnvelope` per plan inspection | Epic AP absorbed the former `core-types`, `runtime-api`, `event-stream`, `driver-api`, and `tool-contracts` packets into one consolidated core packet with binding sections for the eight `@tuvren/core/*` subpaths. Epics AW–BC (Tooling block) added the capability-orchestration surface: four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, and the cross-class integration check set (`capability-orchestration-integration.json`, KRT-BC001). The integration plan is now a required authoritative source for `tuvren.shared.core` in the portability inventory (v0.4.0). |
 | Kernel protocol semantics | `tuvren.kernel.protocol` (`spec/kernel/authority-packet.json`) | `kernel-protocol-core`, `kernel-protocol-extended`, `kernel-run-liveness`, `kernel-restart-recovery` | `resultField`, `stateField`, `eventSequence` per plan inspection | Records appendix matrix and recovery edges promoted by AF KRT-AF006 are runner-observed. KRT-AL002 registered `spec/cddl/kernel-records.cddl` as a CDDL authoritative source on the packet. |
 | Framework SSE projection | `tuvren.framework.event-stream-sse` (`boundaries/framework/contracts/event-stream-sse/spec/authority-packet.json`) | `event-stream-sse` | `eventSequence`, `resultField`, `ordering`, `errorEnvelope` per plan inspection | KRT-AL002/AL003 promoted the EventSource-compatible wire projection through TypeSpec, byte-trace fixtures, and WHATWG-conformant adapter decoding. |
 | Framework ReAct driver behavior | `tuvren.framework.react-driver` (`boundaries/framework/contracts/react-driver/spec/authority-packet.json`) | `react-driver-callables`, `react-driver-extended` | `eventSequence`, `stateField`, `noEvent` per plan inspection | No TypeSpec; data-owned per ADR-025. AF promoted hook ordering, around-hook nesting, after-iteration terminality, and live/durable aroundModel reconciliation. |
-| Provider bridge contract | `tuvren.providers.provider-api` (`boundaries/providers/contracts/provider-api/spec/authority-packet.json`) | `provider-api-bridge`, `provider-api-bridge-extended` | `resultField`, `eventSequence`, `errorEnvelope` per plan inspection | The provider-neutral contract is portable. The `bridge-ai-sdk` projection (TS implementation that adapts the AI SDK to this contract) is a standing exception — see §4. |
+| Provider bridge contract | `tuvren.providers.provider-api` (`spec/providers/authority-packet.json`) | `provider-api-bridge`, `provider-api-bridge-extended` | `resultField`, `eventSequence`, `errorEnvelope` per plan inspection | The provider-neutral contract is portable. The `bridge-ai-sdk` projection (TS implementation that adapts the AI SDK to this contract) is a standing exception — see §4. |
 | MCP Client Container translation contract | `tuvren.providers.mcp` (`boundaries/providers/contracts/mcp/spec/authority-packet.json`) | `providers-mcp-client` | `resultField` per plan inspection | Epic AS promotes the Tuvren-owned translation, validation, auth-header, and transport-parity rules for `@tuvren/mcp-client`. The upstream MCP wire protocol remains owned by the official `@modelcontextprotocol/sdk`; Tuvren's authority packet covers the tool-source projection only. |
 
 ## 4. Standing implementation-specific exceptions
@@ -167,7 +167,7 @@ artifacts landed.
   packet or tool-specific conformance plan.
 - **Closure state after AL002 + AP**: tool-call, approval, and result behavior now
   live under the consolidated `tuvren.shared.core` authority packet at
-  `boundaries/shared/contracts/core/spec/authority-packet.json`. The packet declares
+  `spec/core/authority-packet.json`. The packet declares
   the `tool-contracts-extended.json` conformance plan and a tool-contract binding
   section instead of introducing a standalone `tuvren.framework.tool-contracts`
   packet.
@@ -215,7 +215,7 @@ artifacts landed.
 
 ### G4. Kernel gRPC interop seam has no authority packet
 
-- **Current state**: `boundaries/kernel/interop/grpc/proto/tuvren/kernel/interop/v1/`
+- **Current state**: `spec/interop/proto/tuvren/kernel/interop/v1/`
   contains `kernel_services.proto` and `kernel_types.proto`. `verify.ts` runs
   `kernel-rust-grpc-service:interop-smoke` and `kernel-interop-grpc:interop-smoke`.
   Per `§4.11`, interop surfaces should own a packet at
@@ -225,7 +225,7 @@ artifacts landed.
   files as `format: "proto"` authoritative sources, the generated Rust/TS bindings
   as generated artifacts, the existing `interop-smoke` lane as an `interop-smoke`
   verification path, and freshness checks tied to the codegen command.
-- **Proposed packet home**: `boundaries/kernel/interop/grpc/spec/authority-packet.json`
+- **Proposed packet home**: `spec/interop/authority-packet.json`
 - **Recommended verification path kinds**: `interop-smoke` (already declared in the
   enum), plus `freshness-check` for generated bindings.
 - **Hand-off to AL002**: create the packet, register the existing `.proto` sources,
@@ -528,7 +528,7 @@ pre-closure recommendations when package consolidation changed the landing shape
 
 1. **G1** — Close tool contracts through the consolidated
    `tuvren.shared.core` packet at
-   `boundaries/shared/contracts/core/spec/authority-packet.json`. Add the
+   `spec/core/authority-packet.json`. Add the
    `tool-contracts-extended` plan with decisive
    `resultField`/`eventSequence`/`ordering`/`errorEnvelope` assertions over
    tool execution and approval flow. Wire the plan into the existing
@@ -544,7 +544,7 @@ pre-closure recommendations when package consolidation changed the landing shape
    listed in §8.E5 as decisive assertions where applicable (Last-Event-ID
    reconnection, `retry:` semantics, Content-Type, line-ending normalization).
 4. **G4** — Add `tuvren.kernel.interop.grpc` packet at
-   `boundaries/kernel/interop/grpc/spec/authority-packet.json` referencing the
+   `spec/interop/authority-packet.json` referencing the
    existing `.proto` files as `format: "proto"` authoritative sources and the
    existing `kernel-interop-grpc:interop-smoke` Nx target as the `interop-smoke`
    verification path.
