@@ -1512,8 +1512,10 @@ async function runConformanceTarget(
 }
 
 function sanitizeEvidenceCommand(command: readonly string[]): string[] {
-  return command.map((part) =>
-    part.includes("/conformance-adapter/") ? "[adapter-manifest]" : part
+  return command.map((part, index) =>
+    index > 0 && command[index - 1] === "--adapter"
+      ? "[adapter-manifest]"
+      : part
   );
 }
 

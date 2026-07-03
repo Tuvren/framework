@@ -1656,7 +1656,7 @@
     "bun",
     "tools/conformance/harness/run.ts",
     "--adapter",
-    "rust/kernel-conformance-adapter/adapter.json"
+    "[adapter-manifest]"
   ],
   "exitCode": 0,
   "implementationId": "rust-kernel",
