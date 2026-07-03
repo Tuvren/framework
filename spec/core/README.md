@@ -23,7 +23,7 @@ runners, streaming, telemetry), each binding checks to
 `tuvren.shared.core` or to their own packets as applicable.
 
 The TypeScript reference implementation is `@tuvren/core` at
-`typescript/core/` (behavior-free by gate; executable helpers live in
+`typescript/core/` (behavior-free by design; executable helpers live in
 `@tuvren/sdk` at `typescript/sdk/`). This README is a pointer, not an
 oracle — cross-language truth lives in the packet, the TypeSpec source,
 and the committed conformance plans that bind to it.

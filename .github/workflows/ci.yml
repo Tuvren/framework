@@ -73,11 +73,6 @@ on:
   push:
     branches:
       - master
-      # TEMP(87-M10.2): epic branch included so this greenfield workflow gets
-      # its first live validation before the PR opens. REMOVE this branch
-      # entry in the PR-preparation commit (AGENTS.md: no branch-specific
-      # config survives merge).
-      - feat/epic-87-sovereign-polyglot-framework
   pull_request:
   # Manual re-runs while iterating on CI itself.
   workflow_dispatch:
