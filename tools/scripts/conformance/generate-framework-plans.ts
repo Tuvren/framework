@@ -764,11 +764,11 @@ function buildToolContractsExtended(): Plan {
     planId: "tuvren.framework.tool-contracts.extended",
     planVersion: "0.2.0",
     scenarios: {
-      // Plan-file-relative: this plan stays at boundaries/framework/
-      // conformance/plans/ until M5 while the scenario moved to the
-      // engine-seam home at 87-M3.4.
+      // Plan-file-relative: the plan moved to spec/conformance/tools/plans/
+      // at 87-M5.1c; the scenario has sat at the engine-seam home since
+      // 87-M3.4. Both live four levels deep under spec/conformance/.
       "runtime-api-scenarios":
-        "../../../../spec/conformance/engine/scenarios/runtime-api-scenarios.json",
+        "../../engine/scenarios/runtime-api-scenarios.json",
     },
   };
 }

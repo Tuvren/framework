@@ -33,9 +33,9 @@ import {
   startMockMcpHttpServer,
   startOfficialMcpEverythingStreamableHttpServer,
 } from "@tuvren/provider-testkit";
-import { createMcpToolSource } from "../../../../boundaries/providers/implementations/typescript/mcp-client/src/index.ts";
-import type { MCPClient } from "../../../../boundaries/providers/implementations/typescript/mcp-client/src/lib/mcp-sdk-client.ts";
-import { createMcpToolSourceInternal } from "../../../../boundaries/providers/implementations/typescript/mcp-client/src/lib/mcp-tool-source.ts";
+import { createMcpToolSource } from "../../../tools/mcp-client/src/index.ts";
+import type { MCPClient } from "../../../tools/mcp-client/src/lib/mcp-sdk-client.ts";
+import { createMcpToolSourceInternal } from "../../../tools/mcp-client/src/lib/mcp-tool-source.ts";
 import type {
   AdapterCapabilities,
   AdapterControls,

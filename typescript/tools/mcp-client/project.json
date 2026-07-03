@@ -1,8 +1,8 @@
 {
   "name": "providers-mcp-client",
-  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
-  "root": "boundaries/providers/implementations/typescript/mcp-client",
-  "sourceRoot": "boundaries/providers/implementations/typescript/mcp-client/src",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/tools/mcp-client",
+  "sourceRoot": "typescript/tools/mcp-client/src",
   "projectType": "library",
   "tags": ["boundary:providers", "layer:implementation"],
   "targets": {
@@ -10,7 +10,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],
       "options": {
-        "cwd": "boundaries/providers/implementations/typescript/mcp-client",
+        "cwd": "typescript/tools/mcp-client",
         "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
       }
     },
@@ -18,7 +18,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
       "options": {
-        "cwd": "boundaries/providers/implementations/typescript/mcp-client",
+        "cwd": "typescript/tools/mcp-client",
         "command": "bun test ./smoke/package-exports.ts"
       }
     },
@@ -26,13 +26,13 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check boundaries/providers/implementations/typescript/mcp-client"
+        "command": "bunx --bun @biomejs/biome check typescript/tools/mcp-client"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "boundaries/providers/implementations/typescript/mcp-client",
+        "cwd": "typescript/tools/mcp-client",
         "command": "bun test"
       }
     },
@@ -40,7 +40,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "bun tools/scripts/typecheck-project.ts boundaries/providers/implementations/typescript/mcp-client"
+        "command": "bun tools/scripts/typecheck-project.ts typescript/tools/mcp-client"
       }
     }
   }

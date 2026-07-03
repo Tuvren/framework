@@ -27,8 +27,7 @@ MCP (`tuvren.providers.mcp`, the tool bus-driver) joined this port at
 unchanged) moved cross-port to `spec/tools/mcp/authority-packet.json`,
 and the tools-owned conformance plans are consolidated at
 `spec/conformance/tools/plans/`. The `@tuvren/mcp-client` implementation
-remains at `boundaries/providers/implementations/typescript/mcp-client`
-until it moves at M5.2.
+moved to `typescript/tools/mcp-client` at 87-M5.2.
 
 The deprecated `@tuvren/tool-contracts` shim package (import-dead;
 successor `@tuvren/core/tools`) was retired at 87-M5.1b.

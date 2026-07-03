@@ -13,7 +13,8 @@
     "typescript/*",
     "typescript/kernel/*",
     "typescript/kernel/backends/*",
-    "typescript/providers/*"
+    "typescript/providers/*",
+    "typescript/tools/*"
   ],
   "scripts": {
     "lint": "bunx --bun @biomejs/biome check .",

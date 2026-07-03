@@ -7,14 +7,10 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@tuvren/core": ["../../../../../typescript/core/dist/index.d.ts"],
-      "@tuvren/core/errors": [
-        "../../../../../typescript/core/dist/errors/index.d.ts"
-      ],
-      "@tuvren/core/tools": [
-        "../../../../../typescript/core/dist/tools/index.d.ts"
-      ],
-      "@tuvren/sdk": ["../../../../../typescript/sdk/dist/index.d.ts"]
+      "@tuvren/core": ["../../core/dist/index.d.ts"],
+      "@tuvren/core/errors": ["../../core/dist/errors/index.d.ts"],
+      "@tuvren/core/tools": ["../../core/dist/tools/index.d.ts"],
+      "@tuvren/sdk": ["../../sdk/dist/index.d.ts"]
     },
     "rootDir": "./src",
     "target": "esnext",

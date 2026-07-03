@@ -52,7 +52,7 @@
         "./typescript/providers/testkit/src/index.ts"
       ],
       "@tuvren/mcp-client": [
-        "./boundaries/providers/implementations/typescript/mcp-client/src/index.ts"
+        "./typescript/tools/mcp-client/src/index.ts"
       ],
       "@tuvren/stream-core": [
         "./boundaries/framework/implementations/typescript/stream-core/src/index.ts"

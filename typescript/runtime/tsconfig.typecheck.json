@@ -29,9 +29,7 @@
       "@tuvren/framework-testkit": ["../testkit/src/index.ts"],
       "@tuvren/kernel-protocol": ["../kernel/protocol/src/index.ts"],
       "@tuvren/kernel-runtime": ["../kernel/runtime/src/index.ts"],
-      "@tuvren/mcp-client": [
-        "../../boundaries/providers/implementations/typescript/mcp-client/src/index.ts"
-      ],
+      "@tuvren/mcp-client": ["../tools/mcp-client/src/index.ts"],
       "@tuvren/runtime": ["./src/index.ts"],
       "@tuvren/runtime-api": [
         "../../boundaries/framework/contracts/runtime-api/implementations/typescript/src/index.ts"
@@ -77,7 +75,7 @@
     "../kernel/backends/postgres/src/**/*.ts",
     "../../boundaries/framework/implementations/typescript/drivers/react/src/**/*.ts",
     "../kernel/runtime/src/**/*.ts",
-    "../../boundaries/providers/implementations/typescript/mcp-client/src/**/*.ts",
+    "../tools/mcp-client/src/**/*.ts",
     "../core-types/src/**/*.ts",
     "../../boundaries/framework/implementations/typescript/stream-core/src/**/*.ts",
     "../../boundaries/framework/implementations/typescript/stream-sse/src/**/*.ts",
