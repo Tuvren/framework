@@ -42,10 +42,17 @@
       "@tuvren/backend-sqlite": [
         "./typescript/kernel/backends/sqlite/src/index.ts"
       ],
+      "@tuvren/backend-postgres": [
+        "./typescript/kernel/backends/postgres/src/index.ts"
+      ],
       "@tuvren/kernel-testkit": ["./typescript/kernel/testkit/src/index.ts"],
       "@tuvren/framework-testkit": ["./typescript/testkit/src/index.ts"],
       "@tuvren/runtime": ["./typescript/runtime/src/index.ts"],
-      "@tuvren/repl-host": ["./typescript/host/repl/src/index.ts"]
+      "@tuvren/repl-host": ["./typescript/host/repl/src/index.ts"],
+      "@tuvren/runner-react": ["./typescript/runners/react/src/index.ts"],
+      "@tuvren/provider-bridge-ai-sdk": [
+        "./typescript/providers/bridge-ai-sdk/src/index.ts"
+      ]
     },
     "strict": true,
     "composite": true,
