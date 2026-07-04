@@ -127,13 +127,19 @@ the multi-language transition foundation:
 │   │       │                                # RunnerRegistry, RunnerExecutionResult, etc.
 │   │       ├── provider/
 │   │       ├── extensions/
-│   │       └── telemetry/                   # ADR-042: TuvrenTelemetrySink + telemetry record types
+│   │       └── telemetry/                   # ADR-042: TuvrenTelemetrySink + telemetry record types;
+│   │                                        # ADR-058 adds TelemetryDestination (funnel-routing contract)
 │   ├── core-types/                          # deprecated shim package (console.warn re-export);
 │   │                                        # scheduled for removal, retained on disk today
-│   ├── runtime/                             # @tuvren/runtime (per ADR-040)
-│   │                                        # exposes createTuvren + curated re-exports;
+│   ├── runtime/                             # @tuvren/runtime (ADR-040, demoted per ADR-057):
+│   │                                        # internal engine package consumed via @tuvren/sdk;
+│   │                                        # not host-facing, excluded from the stable-core guarantee;
 │   │                                        # src/lib/ absorbs the former runtime-core package
 │   │   └── src/lib/
+│   ├── sdk/                                 # @tuvren/sdk (ADR-057): the slim convenience/composition
+│   │                                        # tier — createTuvren + curated re-exports + schema/codec
+│   │                                        # helpers; peer-deps @tuvren/core, deps @tuvren/runtime;
+│   │                                        # zero backend/runner/provider dependencies
 │   ├── kernel/
 │   │   ├── protocol/                        # @tuvren/kernel-protocol; kernel-types.ts lives at
 │   │   │                                    # src/lib/kernel-types.ts and is NOT absorbed into
@@ -251,9 +257,9 @@ conformance-plan JSON Schemas live under `tools/schemas/`.
   - no floating-point values in normative kernel records
   - timestamps are safe-integer epoch milliseconds
 - **Testing Expectations:**
-  - unit tests for pure logic in `typescript/core` (the consolidated `@tuvren/core` package per ADR-037), `typescript/kernel/protocol`, `typescript/kernel/backends/memory`, `typescript/kernel/backends/sqlite`, `typescript/kernel/backends/postgres`, `typescript/runtime` (the consolidated convenience package per ADR-040), `typescript/runners/react`, and `typescript/tools/mcp-client` (per ADR-039)
+  - unit tests for pure logic in `typescript/core` (the consolidated `@tuvren/core` package per ADR-037), `typescript/kernel/protocol`, `typescript/kernel/backends/memory`, `typescript/kernel/backends/sqlite`, `typescript/kernel/backends/postgres`, `typescript/runtime` (the internal engine package per ADR-040/ADR-057), `typescript/sdk` (the composition tier per ADR-057), `typescript/runners/react`, and `typescript/tools/mcp-client` (per ADR-039)
   - unit tests for the Schema Authoring Helper detection precedence (per ADR-038) covering at least: wrapped schema branch, Zod v4 branch, Zod v3 via Standard Schema branch, Standard Schema non-zod branch, lazy function branch, and bare TuvrenJsonSchema branch, plus the ambiguous-case fixtures named in ADR-038
-  - unit tests for the `createTuvren` batteries-included composition across all three `BackendKind` values and the `aimock-openai` provider
+  - unit tests for the `createTuvren` batteries-included composition across constructed instances of all three official backends and the `aimock-openai` provider (per ADR-057 the string-kind shorthands are retired; the composition tests pass constructed backend/runner instances)
   - unit tests for transcript JSONL writer/reader round-trips covering every record kind in §3.9
   - unit tests for durable-read cursor encode/decode round-trips and rejection of malformed cursors
   - golden-byte tests for deterministic CBOR encodings
@@ -508,3 +514,30 @@ Each epic is active scope in `Tasks.md` and builds on the foundation:
 - **Epic BA — Invocation Lifecycle & Observation Model: CLOSED.** Landed: `InvocationLifecycleState` union type in `@tuvren/core/capabilities` (6 phases: resolved → policy-admitted → dispatched → completed/failed/ignored); provider-native/mediated `tool.start`/`tool.result` attribution events routed through `publishRuntimeEvent` so the telemetry emitter observes them (BA002 gap); `null` as the JSON-serializable "not observed" sentinel for provider tool inputs; cross-class resume/recovery semantics proven through unit tests and conformance (tuvren-server fails clean per durability, provider classes resolve from observed state, tuvren-client stale/unavailable paths surface CAPABILITY_RESULT_STALE/CAPABILITY_BINDING_UNAVAILABLE, turn abort terminates cleanly); lifecycle telemetry depth confirmed using existing semconv (no extension needed); `invocation-lifecycle-observation` conformance check set (19 checks: BA001–BA003 invariants); 424 runtime tests pass; 399/399 framework conformance checks pass; `bun run verify` exits 0.
 - **Epic BB — Exposure & Invocation Policy Model: CLOSED.** Landed: `PolicyCapabilityMetadata` type; `CapabilityPolicyContext` extended with all §4.21 dimensions; `TuvrenToolDefinition` BB policy fields; `AgentConfig.policyContextInputs`; five-dimension policy engine (residency, risk/approval, active-endpoint, user-presence, credential-boundary) with deterministic composition; exposure-time filtering wired; invocation-time context populated from real config; resume-path check added; `nonRetryable` overrides idempotency; `requiresApproval` bridges to approval flow; `capability-policy` conformance check set (26 checks, 26/26 pass); 472 runtime tests pass; 425/425 framework conformance checks pass.
 - **Epic BC — Tooling Restructuring Closeout:** cross-class integration conformance, the normative "Capability Orchestration" section in `docs/KrakenFrameworkSpecification.md` (minor bump), the capability-surface portability inventory and authority-packet finalization, and a clean `bun run verify`.
+
+### 5.8 Migration Plans for the v0.32.0 SDK-Boundary and Two-Funnel Revision
+
+Sequencing for ADR-056/057/058 lives in the execution plan (the constitution's tasks layer); this section records only the physical migration constraints the ADRs impose.
+
+#### 5.8.1 Experimental Marker (ADR-056)
+
+1. Tag every export of `@tuvren/core/capabilities` with TSDoc `/** @experimental */`; add the subpath-level notice to its docs.
+2. Record the marker declarations in the `spec/core/authority-packet.json` surface listing so gate, docs, and conformance read one source.
+3. The API-snapshot gate (built in the freeze epic) consumes tags per the ADR-056 diff table; the consistency floor (untagged export under a declared-experimental subpath fails the build) lands with the gate.
+
+#### 5.8.2 SDK Composition Tier (ADR-057)
+
+1. One coordinated commit resolves the dependency-edge inversion: remove `@tuvren/sdk` from `@tuvren/runtime`'s `peerDependencies`, add `@tuvren/runtime` to `@tuvren/sdk`'s `dependencies`, and move `create-tuvren.ts` plus its composition helpers from `typescript/runtime/src/lib/` to `typescript/sdk/src/lib/`. Any intermediate state is a workspace dependency cycle.
+2. Retire the ADR-040 string-kind shorthands from `CreateTuvrenOptions` (instances-only shape per ADR-057 §2); update the batteries-included conformance check set to target the `@tuvren/sdk` surface.
+3. Remove the curated `@tuvren/core` re-exports from `@tuvren/runtime/src/index.ts`; `@tuvren/sdk` re-exports the curated set alongside `createTuvren`.
+4. Re-point the Reference Host: `typescript/host/repl/package.json` drops `@tuvren/runtime`, adds `@tuvren/sdk`; all 14 importing modules migrate to `@tuvren/sdk` / `@tuvren/core` subpaths / leaf-package instances.
+5. Add the host-boundary check to the canonical verification path: no import of `@tuvren/runtime`, `@tuvren/kernel-protocol`, or `@tuvren/kernel-runtime` from `typescript/host/**` or documentation examples.
+6. Mark `@tuvren/runtime` internal in its `README.md` and `package.json` description.
+
+#### 5.8.3 Two-Funnel Routing Contract (ADR-058)
+
+1. Add `TelemetryDestination` (deliver, buffering descriptor, operational-signal channel) to `@tuvren/core/telemetry`; declare it in the core authority packet's `/telemetry` binding section.
+2. Widen the `telemetry` option on `CreateTuvrenOptions` to `TuvrenTelemetrySink | TelemetryDestination | { sink?; destination? }` (backward-compatible pre-freeze widening).
+3. Extend the telemetry emission boundary in `typescript/runtime/src/lib/runtime-core-telemetry.ts` with destination delivery + failure-to-operational-signal conversion; no emission path may throw into session execution.
+4. Add the funnel-isolation conformance check set (destination healthy-vs-unavailable session equivalence; no content payload on the telemetry funnel under default routing; failure-to-signal mapping). No proto change: kernel interop stays funnel-unaware.
+5. Official destination adapter packages are deferred per CAP-P1-073 and ship additively post-freeze.

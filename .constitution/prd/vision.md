@@ -2,7 +2,7 @@
 
 ## 0. Version
 
-v0.11.0 — current local Stage 1 SemVer; full history in `changelog.md`.
+v0.12.0 — current local Stage 1 SemVer; full history in `changelog.md`.
 
 ## 1. Executive Summary & Target Archetype
 
@@ -26,6 +26,8 @@ v0.11.0 — current local Stage 1 SemVer; full history in `changelog.md`.
 - Host-developer ergonomics are a first-class product outcome on equal footing with semantic correctness. A curated host-facing SDK boundary, a batteries-included entrypoint, schema-agnostic tool authoring, and a first-party tool ecosystem surface are part of the product, not a courtesy facade.
 - Single-tenant durable state must be inspectable, enumerable, and replayable through the host-facing SDK rather than through private kernel access; the first-party reference host must not need any seam that downstream hosts cannot also use.
 - Production trustworthiness is a first-class product outcome on equal footing with semantic correctness and host-developer ergonomics: the durability and recovery promises must be demonstrably true under failure, the runtime must be observable enough to operate and debug in production, and untrusted edges must be governed rather than implicitly trusted.
+- Tuvren must emit session content and operational telemetry as two separable data funnels born at the same runtime execution: the content funnel is the tenant-owned data a session needs to work; the telemetry funnel is the operational metadata around it. How each funnel persists — split, unified into one store, or mixed across storage substrates — is the host's construction-time decision, never a fork of the runtime.
+- The curated host-facing SDK boundary is the only supported host-developer surface; internal runtime machinery is not a host-facing API, and the first-party reference host must model what a real downstream host imports rather than what the monorepo makes reachable.
 - Tuvren is a cross-provider capability orchestration runtime, not only a tool executor. It decides which tool surfaces are exposed to a model, which capabilities back them, where execution authority lives, which policies apply before exposure and before invocation, and what it can observe, persist, resume, cancel, retry, or audit.
 - Tuvren must distinguish the model-facing Tool Surface from the underlying Capability, and must represent the execution class that owns each capability invocation rather than treating every tool as a locally executed developer function.
 - Tuvren must never imply stronger control than the execution class actually grants; provider-owned and client-owned invocations are represented as known capabilities with explicit observation and control limits.
@@ -54,6 +56,7 @@ v0.11.0 — current local Stage 1 SemVer; full history in `changelog.md`.
 - A host running the runtime across more than one worker can trust that recovering a stale execution never re-runs a non-idempotent side effect and that a stale or late client-reported result can never mutate committed history.
 - A builder can trust that the runtime remains the source of truth for conversation state — a provider request is always reconstructable from durable lineage — even when the chosen provider offers stateful, server-side conversation APIs.
 - A host developer can install a versioned, published SDK from the standard package registry, pin the stable core, and tell at a glance which surfaces are still experimental and excluded from the stability guarantee.
+- A SaaS host can keep each tenant's session content in the tenant's own store while routing operational telemetry to a centralized store — or unify both, or mix storage substrates per funnel — purely through construction-time configuration, with session behavior unchanged and no session ever depending on the telemetry destination being reachable.
 
 ### 1.3 Scope Distinctions That Must Remain Stable
 

@@ -339,6 +339,21 @@
 - **Capability:** The product must allow operational telemetry to be exported to standard, vendor-neutral observability tooling without coupling the runtime's canonical telemetry vocabulary to any one observability vendor or wire format.
 - **Rationale:** Adopters operate Tuvren inside existing observability stacks; a vendor-neutral export path is the difference between telemetry that is usable in production and telemetry that is trapped inside the runtime.
 
+- **Priority:** P0
+- **Capability ID:** CAP-P0-071
+- **Capability:** The product must treat session content and operational telemetry as two distinct data funnels that originate together at the runtime: the content funnel carries the durable state a session needs to be correct, continuable, and recoverable, while the telemetry funnel carries operational metadata about usage and behavior that no session depends on for correctness.
+- **Rationale:** A SaaS host must be able to keep tenant-owned session data inside the tenant's own store while aggregating operational telemetry centrally; that separation is only possible if the product itself never entangles the two kinds of data in one undifferentiated stream.
+
+- **Priority:** P0
+- **Capability ID:** CAP-P0-072
+- **Capability:** The product must let the host decide, when the runtime is constructed, how each funnel is persisted: routed to separate destinations, unified into a single store, or mixed across different storage substrates — without changing session behavior.
+- **Rationale:** Funnel routing is a deployment-topology decision that belongs to the host. One host wants one database for everything; another wants tenant data in the tenant's own store and telemetry in a centralized one; both must be first-class configurations rather than forks of the runtime.
+
+- **Priority:** P1
+- **Capability ID:** CAP-P1-073
+- **Capability:** The product should offer ready-made durable telemetry persistence options so a host can stand up the split-funnel topology without authoring its own telemetry store integration.
+- **Rationale:** The contract makes the separation possible; ready-made persistence options make it practical. They are additive and can follow the stable contract without breaking it.
+
 ### Epic: Execution Safety and Trust Boundaries
 
 - **Priority:** P0
@@ -407,10 +422,12 @@
 - The capability-orchestration model reframes how tools are represented without removing any existing tool capability: a developer-defined tool executed by the runtime (CAP-P0-013) is the Tuvren-server execution class, validated tool inputs (CAP-P1-015) and approval gating (CAP-P0-016/CAP-P0-017) continue to apply, and the MCP client integration (CAP-P0-041) becomes an MCP binding. Provider-native, provider-mediated, and Tuvren-client classes are additive.
 - The capability-orchestration capabilities (CAP-P0-056 through CAP-P1-063) define the target model; their implementation is phased, with the core split delivered first and the deep per-class build-out (notably the Tuvren-client endpoint lifecycle and advanced policy) sequenced behind it. The PRD commits to the model; sequencing lives in the execution plan.
 - The SaaS-readiness capabilities (CAP-P0-064 through CAP-P0-070) make the runtime embeddable as a multi-tenant SaaS substrate without the product itself becoming a hosted service. They are mechanism commitments — a scope seam, scoped identity, reclamation, erasure, side-effect-once recovery, conversation-state ownership, and a published stable SDK — that hosts compose into their own tenancy, retention, and deployment policy. The product still does not ship a hosted control plane or define tenant policy.
+- The two-funnel capabilities (CAP-P0-071/CAP-P0-072) commit to the content/telemetry separation and the construction-time routing contract; ready-made telemetry persistence (CAP-P1-073) is additive and sequenced behind the stable contract in the execution plan. Funnel routing is a topology mechanism in the same spirit as the scope seam: the product provides the separation and the routing choice, the host owns the policy of where each funnel lives.
 
 ### 4.2 Distinction Notes
 
 - A paused turn is not a completed turn and not a failed turn; it represents approval-gated continuation of already-started work.
+- The content funnel is not the telemetry funnel: both are born at the runtime during the same execution, but only the content funnel is load-bearing for session correctness, continuity, and recovery; telemetry describes the execution without being required by it.
 - A handoff is not a worker result and not a branch creation; it is a control transfer within the same ongoing work item.
 - Context engineering changes the active working set, not the fact that prior committed history still exists.
 - Semantic neutrality is not toolchain neutrality; implementations may use native package and build workflows while preserving shared runtime meaning at the boundary seams.

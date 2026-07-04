@@ -27,7 +27,22 @@ Rel(runtime, clientEndpoints, "Leases and dispatches client-side capability invo
 Rel(runtime, observability, "Exports operational telemetry in a vendor-neutral format")
 ```
 
-### 7.2 Domain Model
+### 7.2 Data Funnels
+
+```mermaid
+flowchart LR
+  exec["Runtime execution<br/>(one turn)"] --> cf["Content Funnel<br/>session-critical durable state"]
+  exec --> tf["Telemetry Funnel<br/>operational metadata"]
+  cf --> routing{"Funnel Routing<br/>host construction-time choice"}
+  tf --> routing
+  routing --> tenant[("Tenant-owned store")]
+  routing --> central[("Centralized telemetry store")]
+  routing --> unified[("Unified single store")]
+```
+
+Both funnels originate at the same execution; only the content funnel is load-bearing for correctness, continuity, and recovery. The routing node is a host decision — split, unified, or mixed substrates — never a runtime fork.
+
+### 7.3 Domain Model
 
 ```mermaid
 classDiagram

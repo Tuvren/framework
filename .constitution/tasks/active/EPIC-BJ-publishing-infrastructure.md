@@ -1,0 +1,260 @@
+# Epic BJ — Publishing Infrastructure (KRT)
+
+**Status:** Active. Governed by PRD v0.12.0 CAP-P0-070 (published stable SDK with an explicitly marked experimental boundary), CAP-P0-071/CAP-P0-072 (two-funnel content/telemetry separation and construction-time funnel routing); TechSpec v0.32.0 ADR-056 (TSDoc `@experimental` as the canonical experimental-surface marker), ADR-057 (`@tuvren/sdk` becomes the composition tier, `@tuvren/runtime` demoted to internal engine), ADR-058 (construction-time funnel-routing `TelemetryDestination` contract with one-directional failure isolation).
+
+This epic realizes part of the retired Epic BI's intent (`.constitution/archived/EPIC-BI-sdk-stabilization-publication.md` — retired unexecuted, with a ticket absorption map recorded in its supersession note): BI's experimental-marker ticket and its publication-scaffolding ambitions are re-scoped here under ADR-056/057/058's amended decisions. This epic does not perform an actual registry publish — that remains Epic BL.
+
+**Total: 32 points.**
+
+#### KRT-BJ001 SDK Composition-Tier Migration (ADR-057)
+- **Type:** Chore
+- **Effort:** 5
+- **Dependencies:** None
+- **Category:** Tech-Debt
+- **Capability / Contract Mapping:** PRD CAP-P0-070; TechSpec ADR-057 (amends ADR-037/040/054)
+- **Scope (In-Scope Files):**
+  - `typescript/runtime/src/index.ts` (root export barrel — strip curated `@tuvren/core` re-exports and `createTuvren`)
+  - `typescript/runtime/src/lib/create-tuvren.ts` (move to sdk)
+  - `typescript/sdk/src/index.ts` (new root export of `createTuvren` + curated re-exports)
+  - `typescript/runtime/package.json` (remove `@tuvren/sdk` from `peerDependencies`/`peerDependenciesMeta`)
+  - `typescript/sdk/package.json` (add `@tuvren/runtime` as a regular `dependencies` entry)
+  - `typescript/runtime/README.md` (mark internal/engine-only) — verify existence before editing; create alongside if absent
+  - `spec/conformance/engine/plans/runtime-api-batteries-included.json` (retarget assertions to the sdk surface; drop string-kind cases)
+- **Scope (Out-of-Scope Files):**
+  - `typescript/host/repl/**` (covered by KRT-BJ002)
+  - `typescript/core/src/**` (host-facing contract types already live here per the audit in ADR-057; no type migration needed)
+- **Verification Command:** `bun run nx run sdk:typecheck && bun run nx run framework-runtime:typecheck && bun run conformance`
+- **Expected Success Output:** `exit 0`
+- **STOP Conditions:**
+  - STOP if any intermediate commit state leaves `runtime` peer-depending on `sdk` while `sdk` depends on `runtime` (dependency cycle); land the peer-dep removal and the new dependency edge in the same commit.
+  - STOP if a host-facing contract type is found to originate only in `@tuvren/runtime` (contradicting the ADR-057 audit) rather than already existing on a `@tuvren/core` subpath; escalate instead of inventing a new home for it.
+- **Description:** Perform the coordinated ADR-057 migration as one unit: relocate `createTuvren` and its curated re-exports from `@tuvren/runtime`'s root export to `@tuvren/sdk`'s root export; correct the currently inverted dependency edge between the two packages; retire the ADR-040 string-kind backend/runner shorthands so `CreateTuvrenOptions` accepts constructed instances/factories only (`backend`, `runner` required, no `"memory"|"sqlite"|"postgres"` tags, no implicit `"react"` runner default); strip `@tuvren/runtime`'s public surface of curated `@tuvren/core` re-exports so it carries no host-facing convenience aliases; mark `@tuvren/runtime` as an internal engine package in its README and `package.json` description; move the `runtime-api-batteries-included` conformance check set's target surface from `@tuvren/runtime` to `@tuvren/sdk` with assertions updated for the instances-only option shape.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the ADR-057 composition-tier migration
+When the workspace is built after the migration
+Then @tuvren/sdk's root export includes createTuvren and the curated @tuvren/core re-exports
+And @tuvren/runtime's root export carries no host-facing re-exports and no createTuvren
+And @tuvren/sdk depends on @tuvren/runtime as a regular dependency, not a peer dependency
+And @tuvren/runtime no longer lists @tuvren/sdk in its peerDependencies
+And CreateTuvrenOptions accepts only constructed backend/runner instances, with no string-kind shorthand
+And the workspace typecheck and conformance lanes pass with no dependency cycle
+```
+
+#### KRT-BJ002 Reference Host Re-Point to the Host Import Contract
+- **Type:** Chore
+- **Effort:** 3
+- **Dependencies:** KRT-BJ001
+- **Category:** Tech-Debt
+- **Capability / Contract Mapping:** PRD CAP-P0-070; TechSpec ADR-057 §3/§6
+- **Scope (In-Scope Files):**
+  - `typescript/host/repl/package.json` (drop `@tuvren/runtime`, add `@tuvren/sdk`)
+  - `typescript/host/repl/src/cli.ts`
+  - `typescript/host/repl/src/lib/repl-types.ts`
+  - `typescript/host/repl/src/lib/repl-replay.ts`
+  - `typescript/host/repl/src/lib/proof-extension.ts`
+  - `typescript/host/repl/src/lib/repl-config.ts`
+  - `typescript/host/repl/src/lib/repl-scenarios-support.ts`
+  - `typescript/host/repl/src/lib/repl-builtin-tools.ts`
+  - `typescript/host/repl/src/lib/repl-scenarios.ts`
+  - `typescript/host/repl/src/lib/repl-host.ts`
+  - `typescript/host/repl/src/lib/repl-provider.ts`
+  - `typescript/host/repl/src/lib/repl-transcript.ts`
+  - `typescript/host/repl/src/lib/repl-live-output.ts`
+  - `typescript/host/repl/src/lib/repl-headless-mode.ts`
+  - `typescript/host/repl/src/lib/repl-shell.ts`
+
+  (this list is the full 14-file `@tuvren/runtime`-importing set confirmed by `grep -rl "@tuvren/runtime" typescript/host/repl/src`; `gemini-cli.ts` and `index.ts` under the same root did not match and are excluded)
+- **Scope (Out-of-Scope Files):**
+  - `typescript/sdk/**` (already re-pointed in KRT-BJ001)
+  - `typescript/host/repl/src/lib` files outside the 14 enumerated above
+- **Verification Command:** `bun run nx run host-repl:typecheck && bun run nx run host-repl:test`
+- **Expected Success Output:** `exit 0`
+- **STOP Conditions:**
+  - STOP if any of the 14 files needs a symbol that is not re-exported from `@tuvren/sdk` or a `@tuvren/core` subpath and has no leaf-package instance equivalent; escalate rather than reintroducing a `@tuvren/runtime` import.
+- **Description:** Re-point every Reference Host module that currently imports `@tuvren/runtime` to import `createTuvren` and curated primitives from `@tuvren/sdk` (or `@tuvren/core` subpaths where the sdk does not re-export them) and to construct leaf-package instances (backends, runner, stream adapters, provider bridge) directly; update `typescript/host/repl/package.json` to drop the `@tuvren/runtime` dependency and add `@tuvren/sdk`. This makes the Reference Host the first proof that the ADR-057 host import contract is exercised by first-party code, not just documented.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the Reference Host under typescript/host/repl
+When its source is re-pointed to the host import contract
+Then none of the 14 enumerated modules imports @tuvren/runtime
+And typescript/host/repl/package.json no longer depends on @tuvren/runtime and depends on @tuvren/sdk
+And the host-repl typecheck and test lanes pass unchanged in behavior
+```
+
+#### KRT-BJ003 Automated Host-Boundary Check
+- **Type:** Chore
+- **Effort:** 3
+- **Dependencies:** KRT-BJ002
+- **Category:** DX
+- **Capability / Contract Mapping:** PRD CAP-P0-070; TechSpec ADR-057 §3
+- **Scope (In-Scope Files):**
+  - `tools/scripts/host-boundary-gate.ts` (new — sibling to `tools/scripts/portability-gate.ts`)
+  - `tools/scripts/check.ts` (register the new gate id in `AUTHORITY_GATE_STEPS`/`INNER_LOOP_AUTHORITY_GATE_IDS`)
+  - `tools/scripts/verify.ts` (wire the gate into the canonical verification path alongside the existing portability/authority-packet gates)
+  - `package.json` (root — add an npm script entry if the gate is also exposed standalone, matching the `portability-gate`/`release-check` convention)
+- **Scope (Out-of-Scope Files):**
+  - `typescript/host/repl/src/**` (already migrated in KRT-BJ002; this ticket only adds the guard)
+  - `tools/scripts/authority-guardrails/authority-guardrails.ts` (a distinct, unrelated gate family — do not fold this check into it)
+- **Verification Command:** `bun run check`
+- **Expected Success Output:** `exit 0`
+- **STOP Conditions:**
+  - STOP if enforcing the check against current documentation examples would require rewriting doc content outside this epic's file scope; narrow the gate to `typescript/host/**` and file a follow-up for docs instead of silently excluding the whole documentation-examples clause.
+- **Description:** Add a new fail-loud gate script, following the existing `portability-gate.ts` pattern (license header, explicit rationale comment, deterministic exit code), that scans `typescript/host/**` (and documentation code examples where present) for imports of `@tuvren/runtime`, `@tuvren/kernel-protocol`, or `@tuvren/kernel-runtime`, and fails the run if any are found. Wire the new gate into `check.ts`'s cheap authority-gate step list and into `verify.ts`'s canonical verification path so the ADR-057 host import contract cannot silently regress.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the host-boundary gate registered in the canonical verification path
+When a file under typescript/host/** imports @tuvren/runtime, @tuvren/kernel-protocol, or @tuvren/kernel-runtime
+Then bun run check and bun run verify fail loudly identifying the offending file and import
+And when no such import exists, the gate passes with exit 0 as part of bun run check
+```
+
+#### KRT-BJ004 Funnel-Routing Contract (ADR-058)
+- **Type:** Feature
+- **Effort:** 5
+- **Dependencies:** KRT-BJ001
+- **Category:** Feature-Evolution
+- **Capability / Contract Mapping:** PRD CAP-P0-071, CAP-P0-072; TechSpec ADR-058 §1-§4
+- **Scope (In-Scope Files):**
+  - `typescript/core/src/telemetry/index.ts` (add `TelemetryDestination` contract type, `deliver` signature, operational-signal callback shape)
+  - `typescript/core/src/telemetry/telemetry-destination.ts` (new lib file backing the destination contract, consistent with the existing barrel-re-export pattern seen in `typescript/core/src/capabilities/index.ts`)
+  - `typescript/sdk/src/index.ts` (widen the `telemetry` option on `CreateTuvrenOptions` — sink | destination | route object — per this epic's KRT-BJ001 relocation)
+  - `typescript/runtime/src/lib/runtime-core-telemetry.ts` (failure isolation: catch `TelemetryDestination.deliver`/`TuvrenTelemetrySink` errors at the boundary, convert to operational signal, never propagate into session/content-funnel path)
+  - `spec/core/authority-packet.json` (`telemetry` binding section, line ~232) and `spec/core/bindings/typescript.md` (line ~246) — declare the new `/telemetry` `TelemetryDestination` binding
+- **Scope (Out-of-Scope Files):**
+  - Concrete destination adapter packages (deferred per ADR-058 §6, out of this epic entirely — named deferred Epic BO)
+  - `typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-utils.ts` (the ADR-044 secret-screening gap named in ADR-058's context is KRT-BK004's scope, not this ticket's)
+- **Verification Command:** `bun run nx run shared-core:typecheck && bun run nx run sdk:typecheck && bun run nx run framework-runtime:typecheck`
+- **Expected Success Output:** `exit 0`
+- **STOP Conditions:**
+  - STOP if implementing failure isolation would require the Kernel syscall surface or the gRPC interop layer to become funnel-aware (a proto change); ADR-058 §5 explicitly forbids this — escalate instead of adding one.
+  - STOP if the `telemetry` option widening breaks an existing `TuvrenTelemetrySink`-only construction call; the union must stay backward-compatible per ADR-058's consequences.
+- **Description:** Introduce the `TelemetryDestination` contract on `@tuvren/core/telemetry` as a durable delivery target distinct from the existing push-based `TuvrenTelemetrySink`, with buffering/backpressure policy owned by the destination descriptor and delivery failures surfaced only through an operational-signal channel, never thrown into the caller. Widen the `telemetry` option on `CreateTuvrenOptions` (now homed on `@tuvren/sdk` per KRT-BJ001) to accept a sink, a destination, or a route object combining both, giving hosts a construction-time funnel-routing seam for split, unified, or mixed-substrate topologies. Extend the one-directional failure-isolation invariant already implemented for sinks in `runtime-core-telemetry.ts` to destinations, so a destination delivery failure degrades telemetry only and never fails, blocks, or delays a content-funnel commit or kernel checkpoint. Declare the new binding in the core authority packet so cross-language conformance has a machine-readable anchor.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the TelemetryDestination contract on @tuvren/core/telemetry
+When a host constructs createTuvren with telemetry as a sink, a destination, or a route object
+Then the construction succeeds for all three shapes without a signature-breaking change to the sink-only form
+And a TelemetryDestination.deliver failure is caught at the telemetry boundary and surfaced as an operational signal
+And the same failure never throws into, blocks, or delays a content-funnel commit or kernel checkpoint
+And the core authority packet's telemetry binding lists the new TelemetryDestination contract
+```
+
+#### KRT-BJ005 Funnel-Isolation Conformance Check Set
+- **Type:** Chore
+- **Effort:** 3
+- **Dependencies:** KRT-BJ004
+- **Category:** Feature-Evolution
+- **Capability / Contract Mapping:** PRD CAP-P0-071, CAP-P0-072; TechSpec ADR-058 §5
+- **Scope (In-Scope Files):**
+  - `spec/conformance/telemetry/plans/framework-operational-telemetry.json` (extend with the new funnel-isolation checks, following the existing `checkId`/`assertions` shape at line ~15)
+  - `spec/conformance/telemetry/scenarios/operational-telemetry-scenarios.json` (add destination healthy/unavailable scenario fixtures)
+  - `tools/conformance/harness/run.ts` (add shared-runner-owned assertion kinds only if the existing `resultField`/lineage assertion kinds cannot express destination-health equivalence or the no-content-payload check — do not add grading logic to adapters)
+- **Scope (Out-of-Scope Files):**
+  - Any `<lang>/conformance-adapter/**` implementation (adapters must not receive `checkId`, grade pass/fail, or write compatibility evidence per the repository's conformance rules)
+  - `typescript/core/src/telemetry/**` (contract itself is KRT-BJ004's scope, not this ticket's)
+- **Verification Command:** `bun run conformance`
+- **Expected Success Output:** `exit 0`
+- **STOP Conditions:**
+  - STOP if a proposed assertion would require an adapter to compute pass/fail or map a protocol failure into `$.result.error`; keep grading in the shared runner per the repository's conformance rules.
+- **Description:** Add three new checks to the telemetry conformance plan per ADR-058 §5: (a) a destination healthy-vs-unavailable session-result equivalence check (the flow §4.19 unhappy path — same turn produces identical session results regardless of destination health); (b) a no-content-payload-on-telemetry-funnel check under default routing; (c) a failure-to-operational-signal mapping check (a destination delivery failure surfaces a signal rather than an exception or a silent drop). All assertions are shared-runner-owned and evaluate implementation-emitted events/results, never adapter-side grading.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the extended telemetry conformance plan
+When a turn runs with a healthy telemetry destination versus an unavailable one
+Then the session result is identical between the two runs
+And no content-funnel payload appears in the telemetry funnel's emitted records under default routing
+And a simulated destination delivery failure produces an operational signal rather than a thrown exception or a silent drop
+And bun run conformance reports these checks passing without adapter-side pass/fail grading
+```
+
+#### KRT-BJ006 Experimental Markers on the Capabilities Surface (ADR-056)
+- **Type:** Chore
+- **Effort:** 3
+- **Dependencies:** None
+- **Category:** Docs
+- **Capability / Contract Mapping:** PRD CAP-P0-070; TechSpec ADR-056
+- **Scope (In-Scope Files):**
+  - `typescript/core/src/capabilities/index.ts` (add `@experimental` TSDoc tag to every re-exported type: `AttachedClientEndpoint`, `Binding`, `Capability`, `CapabilityInvocationAttribution`, `CapabilityObservation`, `CapabilityPolicyContext`, `CapabilityPolicyEngine`, `ClientDispatchResult`, `ClientEndpointBoundary`, `ClientEndpointCapabilityAdvertisement`, `ClientInvocationEnvelope`, `ClientReportedResult`, `Endpoint`, `EndpointKind`, `ExecutionClass`, `ExposureDecision`, `InvocationDecision`, `InvocationLifecycleState`, `InvocationOwner`, `PolicyCapabilityMetadata`, `ToolSurface`, `TuvrenSandboxExecutor`, plus a subpath-level experimental notice in the file's module doc comment)
+  - `spec/core/authority-packet.json` (record the marker declaration in the core authority packet's surface listing)
+- **Scope (Out-of-Scope Files):**
+  - `typescript/core/src/lib/capability-shapes.ts` (the canonical declaration site — ADR-056 tags the re-export barrel, not necessarily the underlying declaration; do not duplicate tags there unless the freeze-gate tooling requires it)
+  - The freeze/diff gate implementation itself (that is KRT-BL002's scope in Epic BL; this ticket only applies the markers)
+- **Verification Command:** `bun run nx run shared-core:typecheck && bun run lint`
+- **Expected Success Output:** `exit 0`
+- **STOP Conditions:**
+  - STOP if any export under `typescript/core/src/capabilities/index.ts` cannot be given an individual `@experimental` tag (e.g., a re-export syntax that only allows a whole-statement comment) without restructuring the barrel; escalate rather than silently leaving an export untagged, since ADR-056's consistency floor treats an untagged export under a declared-experimental subpath as a defect.
+- **Description:** Apply the ADR-056 canonical experimental-surface marker — a TSDoc `@experimental` release tag on the individual export — to every current export of `@tuvren/core/capabilities`, plus a subpath-level experimental notice in the module doc comment so the boundary is visible without reading each export's docs. Record the marker declaration (which exports/subpath carry `@experimental` and why) in the core authority packet's surface listing so conformance plans, generated docs, and the Epic BL freeze-gate expectations read from one authored source.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the @tuvren/core/capabilities subpath
+When its exports are reviewed after this ticket
+Then every currently exported type carries an individual @experimental TSDoc tag
+And the subpath's module documentation carries a subpath-level experimental notice
+And the core authority packet's surface listing records the marker declaration
+```
+
+#### KRT-BJ007 Package Manifest Publication Readiness
+- **Type:** Chore
+- **Effort:** 5
+- **Dependencies:** KRT-BJ001
+- **Category:** Feature-Evolution
+- **Capability / Contract Mapping:** PRD CAP-P0-070; TechSpec ADR-057 §5 (stable-core enumeration), ADR-054 (precedent)
+- **Scope (In-Scope Files):**
+  - `typescript/core/package.json`
+  - `typescript/sdk/package.json`
+  - `typescript/backend-memory/package.json`, `typescript/backend-postgres/package.json`, `typescript/backend-sqlite/package.json` (verify exact directory names before editing — backends were referenced via workspace name `@tuvren/backend-*` in `typescript/runtime/package.json`)
+  - `typescript/runners/react/package.json`
+  - `typescript/providers/bridge-ai-sdk/package.json`
+  - `typescript/streaming/core/package.json`, `typescript/streaming/sse/package.json`, `typescript/streaming/agui/package.json`
+  - `typescript/tools/mcp-client/package.json`
+  - `typescript/telemetry/otel/package.json`, `typescript/telemetry/semconv/package.json`
+  - Internal-stays-private set (no `files`/publication fields added, `private: true` retained): `typescript/runtime/package.json`, `typescript/testkit/package.json`, `typescript/certification/package.json`, `typescript/kernel/testkit/package.json`, `typescript/kernel/certification/package.json`, `typescript/providers/testkit/package.json`, `typescript/providers/certification/package.json`, `typescript/host/repl/package.json`, `typescript/core-types/package.json`, `typescript/kernel/protocol/package.json`, `typescript/kernel/runtime/package.json`
+- **Scope (Out-of-Scope Files):**
+  - `rust/**/Cargo.toml` (Rust publication readiness is not part of this ticket's TypeScript-scoped manifests)
+  - Any actual `npm publish`/registry credential wiring (Epic BL)
+- **Verification Command:** `bun run lint && bun run nx run shared-core:typecheck`
+- **Expected Success Output:** `exit 0`
+- **STOP Conditions:**
+  - STOP if a package directory named in this ticket does not exist as listed; re-verify the real path with `ls typescript/**/package.json` before editing rather than guessing a plausible name.
+  - STOP if any package intended to stay private per ADR-057's stable-core enumeration is found to be a runtime dependency of a to-be-published package in a way that would force it to also publish; escalate the topology question rather than flipping its private flag as a side effect.
+- **Description:** For every publishable TypeScript package in the ADR-057 stable-core set (`@tuvren/core`, `@tuvren/sdk`, and the leaf packages — backends, stream adapters, ReAct runner, AI SDK provider bridge, MCP client, telemetry packages), add a `files` allowlist scoped to `dist` and essential metadata, a `license` field matching the root `LICENSE` (Apache-2.0), a `description`, and a `repository` field. Decide the `private` flag per package: internal-only packages (testkits, certification wrappers, conformance-adapters, `@tuvren/runtime`, `@tuvren/repl-host`, kernel protocol/runtime packages) keep `private: true` and receive no publication fields. Establish the versioning baseline that will replace the current `0.0.0` placeholder at actual publish time (a version scheme decision, not a version bump performed in this ticket).
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the ADR-057 stable-core package set
+When each publishable package.json is reviewed after this ticket
+Then it declares a files allowlist, license, description, and repository field
+And its license value matches the root LICENSE (Apache-2.0)
+And every package outside the stable-core set retains private: true with no publication fields added
+And bun run lint passes with no manifest-schema regressions
+```
+
+#### KRT-BJ008 Release Versioning Pipeline Scaffolding
+- **Type:** Chore
+- **Effort:** 5
+- **Dependencies:** KRT-BJ007
+- **Category:** Feature-Evolution
+- **Capability / Contract Mapping:** PRD CAP-P0-070; TechSpec ADR-057 (peer-dep consequences), ADR-037 (single-core-version peer-dep model)
+- **Scope (In-Scope Files):**
+  - `tools/scripts/release-lane.ts` (new — a release lane script sibling to `tools/scripts/release-check.ts`)
+  - `tools/scripts/release-check.ts` (extend or reference from the new lane; verify current contents before assuming its scope)
+  - `package.json` (root — add a `release` or `release:check` script entry following the existing `"release-check": "bun tools/scripts/release-check.ts"` convention at line 44)
+  - Changeset-class tooling config (new — e.g. `.changeset/config.json`, only if the chosen changeset-class tool requires a config file; verify no existing `.changeset/` directory before creating one)
+- **Scope (Out-of-Scope Files):**
+  - Any actual `npm publish` invocation or registry credential/token handling (explicitly deferred to Epic BL)
+  - `rust/**/Cargo.toml` version fields (Rust release tooling is out of scope for this TypeScript-scoped ticket)
+- **Verification Command:** `bun run nx run shared-core:typecheck && bun tools/scripts/release-check.ts`
+- **Expected Success Output:** `exit 0`
+- **STOP Conditions:**
+  - STOP if the chosen changeset-class tool's default multi-version-per-leaf model would require leaf packages to peer-dep divergent `@tuvren/core` versions; ADR-037's single-instance guarantee (one `@tuvren/core` version across leaves) must not be weakened — configure the tool to enforce a single core version, or escalate if it cannot.
+  - STOP before wiring any real registry publish step; this ticket is scaffolding only.
+- **Description:** Introduce changeset-class release-versioning tooling (recording per-package change intents and computing version bumps) configured to honor the ADR-037 peer-dependency single-instance model, so every leaf package's peer-dependency on `@tuvren/core` resolves to one version across a release. Add a release lane script that runs the versioning computation and manifest updates without invoking an actual registry publish, leaving the real publish step for Epic BL.
+- **Acceptance Criteria (Gherkin):**
+```gherkin
+Given the changeset-class release tooling scaffolded by this ticket
+When the release lane script runs against a set of pending package changes
+Then it computes version bumps for the affected publishable packages
+And every leaf package's @tuvren/core peer-dependency resolves to a single consistent version
+And no step in the lane invokes an actual registry publish
+And bun tools/scripts/release-check.ts exits 0 against the scaffolded configuration
+```
