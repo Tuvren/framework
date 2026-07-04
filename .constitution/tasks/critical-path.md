@@ -97,7 +97,7 @@ The letters BJ–BM were **reclaimed** by the active Post-Audit SDK-Readiness bl
 
 ## 3. Build Order (Mermaid)
 
-Active Post-Audit SDK-Readiness block only (Epics AM–BH are closed; Epic BI is retired; Epics BN–BS are deferred and excluded). Arrows express "depends on" (tail depends on head's completion). BJ and BK run in parallel; BM is fully independent; BL's freeze-candidate audit (BL001) fans in from **seven** BJ/BK tickets — four from BJ (BJ003/BJ005/BJ006/BJ008) and three from BK (BK002/BK004/BK006). Every ticket drawn without an incoming arrow (BJ006, BK003–BK009, and all nine of BM) has `Dependencies: None` and is an independent root schedulable at block open; the `priorClosed` arrows mark each epic's representative entry point, not the only available starts.
+Active Post-Audit SDK-Readiness block only (Epics AM–BH are closed; Epic BI is retired; Epics BN–BS are deferred and excluded). Arrows express "depends on" (tail depends on head's completion). BJ and BK run in parallel; BM is fully independent; BL's freeze-candidate audit (BL001) fans in from **seven** BJ/BK tickets — four from BJ (BJ003/BJ005/BJ006/BJ008) and three from BK (BK002/BK004/BK006). Every ticket with `Dependencies: None` — BJ006, BK003–BK009, and all nine of BM — is an independent root schedulable at block open. The `priorClosed` arrows mark each epic's representative entry point (BJ001, BK001, BM001), not the only available starts, so the remaining no-dependency nodes drawn without an incoming arrow (BJ006, BK003–BK009, BM002–BM009) are independent roots, not orphans.
 
 ```mermaid
 flowchart LR

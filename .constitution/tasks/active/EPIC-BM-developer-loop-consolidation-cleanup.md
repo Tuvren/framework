@@ -2,7 +2,9 @@
 
 **Status:** Active — fully parallel to Epics BJ/BK; no cross-epic dependencies in either direction. Every ticket in this epic is independently schedulable (each declares `Dependencies: None`) and none touches kernel-authority or interop-protocol surfaces owned by BJ/BK. Governing authority: the 2026-07-04 audit `.constitution/reports/audit-2026-07-04-170703-post-epic-87-baseline.md` findings [G-01] (CI and verification-lane throughput), [C-02] (conformance harness CPU/latency waste), [E-02] (consolidation cluster — small, high-certainty cleanups), and [E-03] (structural watch items) clusters.
 
-This epic converts those findings into atomic, independently mergeable DX/perf/tech-debt tickets; none of them change semantic gate behavior — every ticket's STOP condition guards against a caching, consolidation, or cleanup change silently weakening what a gate actually validates.
+This epic converts those findings into atomic DX/perf/tech-debt tickets; none of them change semantic gate behavior — every ticket's STOP condition guards against a caching, consolidation, or cleanup change silently weakening what a gate actually validates.
+
+"Independently schedulable" and "fully parallel" here mean **dependency-free scheduling** (no BM ticket must wait on another), **not conflict-free concurrent merges**: several BM tickets partition the same tooling files by scope/line-range — e.g. BM002 and BM006 both edit `tools/scripts/verify.ts`, BM002 and BM003 both edit `tools/scripts/verify-kernel.ts`, BM005 and BM006 both edit `tools/scripts/portability-check.ts`, and BM001 and BM002 both touch the root `package.json`. The scopes are deliberately partitioned (e.g. BM002 carves the `KERNEL_*_PROJECTS` literals out to BM003 in its Out-of-Scope), so there is no ordering dependency — only a merge-sequence one: whichever of two file-sharing tickets lands second rebases on the first.
 
 **Total: 18 points.**
 
