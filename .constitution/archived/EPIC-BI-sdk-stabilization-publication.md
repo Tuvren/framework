@@ -1,5 +1,7 @@
 ### Epic BI — SDK Stabilization + npm Publication (KRT)
 
+> **Superseded (2026-07-04, tasks v0.39.0):** Retired unexecuted and replaced by the BJ/BK/BL/BM block. The 2026-07-04 constitutional audit (`.constitution/reports/audit-2026-07-04-170703-post-epic-87-baseline.md`) showed this epic's starting assumption — packages nearly publishable — was wrong (zero publishing infrastructure existed), and the pre-freeze interview added scope this epic never carried (ADR-056/057/058: experimental markers, sdk-as-composition, funnel routing). Its five tickets' intent is absorbed: KRT-BI001→KRT-BL001, KRT-BI002→KRT-BJ006, KRT-BI003→KRT-BL002, KRT-BI004→KRT-BJ007/BJ008/BL003, KRT-BI005→KRT-BL004. No KRT-BI ticket was started; nothing to carry over. Historical record below preserved verbatim.
+
 **Status:** Active. Fifth epic of the SaaS-Readiness block. Realizes ADR-054 (public SDK API stability + registry publication; experimental capabilities subpath) for PRD CAP-P0-070. **Gated to run after Epics BE and BF** so the frozen public surface already accounts for scope binding and erasure (freeze-after-tenancy+GC, resolved fork Q3). Mostly tooling, config, and docs; sized at the lower end of the epic heuristic.
 
 **KRT-BI001 Public-Surface API Audit of the Stable Core**

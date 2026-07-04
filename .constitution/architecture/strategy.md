@@ -2,7 +2,7 @@
 
 ## 0. Version
 
-v0.11.0 — current local Stage 2 SemVer; full history in `changelog.md`.
+v0.12.0 — current local Stage 2 SemVer; full history in `changelog.md`.
 
 ## 1. Architectural Strategy & Archetype Alignment
 
@@ -40,6 +40,8 @@ v0.11.0 — current local Stage 2 SemVer; full history in `changelog.md`.
 - **Reclaimable, erasable durable state:** Immutable content-addressed lineage must still be operable in production. The Kernel owns a reachability-based reclamation mechanism (mechanism, not retention policy) that releases only state unreachable from live lineage; sensitive untrusted-edge payloads are stored as host-key-encrypted references so a host can erase a subject's data by destroying its key (crypto-shredding) while the lineage hash structure stays intact. The host owns retention policy and erasure keys; the runtime owns the reclamation and shred-reference mechanisms.
 - **Conversation state is runtime-owned:** The durable lineage is the unconditional source of truth for a provider request; a request is always reconstructable from lineage. Provider server-side state and continuity artifacts are reconstructable optimizations the Provider Gateway may carry but never depends on, and provider-side caching is correctness-neutral. The runtime never delegates conversation-state correctness to a provider's stateful API.
 - **Execution authority is backend-clocked:** When a backend is the shared rendezvous for more than one worker, the backend's own clock — not any single worker's wall clock — is the authority for whether an execution lease has expired, and a worker relinquishes execution authority before the backend deems its lease preemptable. Recovering a stale execution must never re-run a non-idempotent external side effect; a client-reported result is a proposal that becomes durable state only under valid execution authority.
+- **Two-funnel data separation:** One runtime execution emits two separable data funnels. The content funnel — lineage, messages, durable state — is what a session needs to be correct, continuable, and recoverable, and lands at the Durable State Boundary. The telemetry funnel — operational metadata about usage and behavior — lands at the Telemetry & Observability Boundary and is never load-bearing for session correctness: a telemetry-destination failure must not fail, block, or corrupt a content-funnel commit. Where each funnel persists (split destinations, one unified store, or mixed substrates per funnel) is a construction-time host routing decision, in the same mechanism-in/policy-out spirit as the scope seam.
+- **The curated SDK surface is the only host-facing tier:** A host consumes the shared-primitive boundary, the convenience boundary, and the leaf integration containers it selects — never the internal machinery those boundaries compose, even where a shared repository makes that machinery technically reachable. The Reference Host models what a real downstream host imports, not what the repository exposes.
 
 ### 1.3 Named Trust Relationships
 
