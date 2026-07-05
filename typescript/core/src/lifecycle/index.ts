@@ -16,11 +16,17 @@
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
 // Data-lifecycle: crypto-shredding payload codec contract (ADR-051, SPK-BF002 /
-// KRT-BF005). The batteries-included identity and AES-256-GCM codec
-// implementations live in @tuvren/sdk.
+// KRT-BF005). The behavior-free identity codec and the envelope discriminant the
+// runtime read seam depends on live here on the ABI tier (ADR-057, so the runtime
+// never imports @tuvren/sdk); the batteries-included AES-256-GCM codec
+// implementation lives in @tuvren/sdk.
 export {
+  createIdentityPayloadCodec,
+  ENVELOPE_MAGIC,
   type ErasedPayload,
+  IDENTITY_PAYLOAD_CODEC,
   isErasedPayload,
+  isPayloadEnvelope,
   type PayloadCodec,
   type PayloadCodecContext,
   type PayloadDecryptResult,

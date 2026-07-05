@@ -240,28 +240,31 @@
         "@bufbuild/protobuf": "2.11.0",
         "@connectrpc/connect": "2.1.1",
         "@connectrpc/connect-node": "2.1.1",
-        "@tuvren/backend-memory": "workspace:*",
-        "@tuvren/backend-postgres": "workspace:*",
-        "@tuvren/backend-sqlite": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
-        "@tuvren/kernel-runtime": "workspace:*",
-        "@tuvren/mcp-client": "workspace:*",
-        "@tuvren/runner-react": "workspace:*",
         "@tuvren/telemetry-semconv": "workspace:*",
         "ajv": "8.18.0",
       },
       "devDependencies": {
         "@ag-ui/core": "0.0.52",
+        "@tuvren/backend-memory": "workspace:*",
+        "@tuvren/kernel-runtime": "workspace:*",
         "@tuvren/kernel-testkit": "workspace:*",
       },
       "peerDependencies": {
         "@tuvren/core": "workspace:*",
-        "@tuvren/sdk": "workspace:*",
       },
     },
     "typescript/sdk": {
       "name": "@tuvren/sdk",
       "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/kernel-protocol": "workspace:*",
+        "@tuvren/kernel-runtime": "workspace:*",
+        "@tuvren/runtime": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/backend-memory": "workspace:*",
+      },
       "peerDependencies": {
         "@standard-schema/spec": "^1.1.0",
         "@tuvren/core": "workspace:*",

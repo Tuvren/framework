@@ -115,3 +115,56 @@ export interface PayloadCodec {
   /** Stable identifier, e.g. `"identity"` or `"aes-256-gcm"`. */
   readonly id: string;
 }
+
+// ── Identity codec (default) ─────────────────────────────────────────────────
+
+/**
+ * The default codec: no envelope, plaintext stored and returned verbatim. A
+ * runtime with no `payloadCodec` behaves exactly as it did before BF005, so
+ * existing single-tenant hosts are unaffected and stored data stays plaintext.
+ *
+ * This is the payload-codec analogue of {@link isErasedPayload} and
+ * `NoopTelemetrySink`: a behavior-free default the *runtime* depends on to fill
+ * an unset seam. It lives on `@tuvren/core` (the ABI tier) — not `@tuvren/sdk` —
+ * so the runtime can reference it without importing the composition tier, which
+ * would otherwise create a `@tuvren/sdk ⇄ @tuvren/runtime` dependency cycle
+ * (ADR-057). The batteries-included AES-256-GCM codec stays in `@tuvren/sdk`.
+ */
+export const IDENTITY_PAYLOAD_CODEC: PayloadCodec = {
+  decrypt(stored) {
+    return Promise.resolve({ plaintext: stored, status: "available" });
+  },
+  encrypt(plaintext) {
+    return Promise.resolve(plaintext);
+  },
+  id: "identity",
+};
+
+export function createIdentityPayloadCodec(): PayloadCodec {
+  return IDENTITY_PAYLOAD_CODEC;
+}
+
+// ── Envelope discriminant ─────────────────────────────────────────────────────
+//
+// The 4-byte magic that prefixes every AEAD envelope written by a real codec
+// (the wire format itself and its (de)serialization live with the AES codec in
+// `@tuvren/sdk`). The runtime read seam calls {@link isPayloadEnvelope} to detect
+// an envelope and pass non-envelope (plaintext / identity-codec) bytes through
+// unchanged, so plaintext and ciphertext can coexist during migration. The magic
+// and its predicate live here — a single source of truth shared by the runtime
+// read seam and the sdk codec — so the detection can never drift from the writer.
+// CBOR-encoded kernel records never begin with this magic (a CBOR map/array
+// major-type byte is 0x80–0xBF, never 0x54 'T'), so it cannot collide with a
+// plaintext record.
+
+export const ENVELOPE_MAGIC = Uint8Array.of(0x54, 0x56, 0x45, 0x31); // "TVE1"
+
+export function isPayloadEnvelope(bytes: Uint8Array): boolean {
+  return (
+    bytes.length >= ENVELOPE_MAGIC.length &&
+    bytes[0] === ENVELOPE_MAGIC[0] &&
+    bytes[1] === ENVELOPE_MAGIC[1] &&
+    bytes[2] === ENVELOPE_MAGIC[2] &&
+    bytes[3] === ENVELOPE_MAGIC[3]
+  );
+}

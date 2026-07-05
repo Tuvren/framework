@@ -30,10 +30,23 @@
  * package stays free of any host-runtime dependency.
  */
 
-import type {
-  PayloadCodec,
-  PayloadCodecContext,
-  PayloadDecryptResult,
+import {
+  ENVELOPE_MAGIC,
+  isPayloadEnvelope,
+  type PayloadCodec,
+  type PayloadCodecContext,
+  type PayloadDecryptResult,
+} from "@tuvren/core/lifecycle";
+
+// The behavior-free identity codec and the envelope discriminant now live on the
+// `@tuvren/core` ABI tier (ADR-057, breaking the sdk⇄runtime cycle). Re-export the
+// identity helpers here so the historical `@tuvren/sdk` payload-codec surface —
+// `IDENTITY_PAYLOAD_CODEC`, `createIdentityPayloadCodec`, `isPayloadEnvelope` —
+// stays intact for existing importers.
+export {
+  createIdentityPayloadCodec,
+  IDENTITY_PAYLOAD_CODEC,
+  isPayloadEnvelope,
 } from "@tuvren/core/lifecycle";
 
 // ── Keyring contract ─────────────────────────────────────────────────────────
@@ -48,27 +61,6 @@ export interface PayloadKeyring {
   resolve(
     keyRef: string
   ): Promise<Uint8Array | undefined> | Uint8Array | undefined;
-}
-
-// ── Identity codec (default) ─────────────────────────────────────────────────
-
-/**
- * The default codec: no envelope, plaintext stored and returned verbatim. A
- * runtime with no `payloadCodec` behaves exactly as it did before BF005, so
- * existing single-tenant hosts are unaffected and stored data stays plaintext.
- */
-export const IDENTITY_PAYLOAD_CODEC: PayloadCodec = {
-  decrypt(stored) {
-    return Promise.resolve({ plaintext: stored, status: "available" });
-  },
-  encrypt(plaintext) {
-    return Promise.resolve(plaintext);
-  },
-  id: "identity",
-};
-
-export function createIdentityPayloadCodec(): PayloadCodec {
-  return IDENTITY_PAYLOAD_CODEC;
 }
 
 // ── Envelope wire format ─────────────────────────────────────────────────────
@@ -95,22 +87,13 @@ export function createIdentityPayloadCodec(): PayloadCodec {
 // PayloadCodecContext, so a ciphertext moved to a different Scope/edge fails
 // the GCM tag check.
 
-const ENVELOPE_MAGIC = Uint8Array.of(0x54, 0x56, 0x45, 0x31); // "TVE1"
+// ENVELOPE_MAGIC and isPayloadEnvelope are imported from @tuvren/core/lifecycle
+// (single source of truth for the discriminant); serialize/parse below consume it.
 const ENVELOPE_VERSION = 1;
 const ALG_AES_256_GCM = 1;
 const AES_256_GCM_KEY_BYTES = 32;
 const GCM_IV_BYTES = 12;
 const GCM_TAG_BITS = 128;
-
-export function isPayloadEnvelope(bytes: Uint8Array): boolean {
-  return (
-    bytes.length >= ENVELOPE_MAGIC.length &&
-    bytes[0] === ENVELOPE_MAGIC[0] &&
-    bytes[1] === ENVELOPE_MAGIC[1] &&
-    bytes[2] === ENVELOPE_MAGIC[2] &&
-    bytes[3] === ENVELOPE_MAGIC[3]
-  );
-}
 
 interface ParsedEnvelope {
   algId: number;

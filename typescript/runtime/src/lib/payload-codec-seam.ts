@@ -33,11 +33,11 @@
  */
 
 import type { Scope } from "@tuvren/core";
-import type {
-  PayloadCodec,
-  PayloadDecryptResult,
+import {
+  isPayloadEnvelope,
+  type PayloadCodec,
+  type PayloadDecryptResult,
 } from "@tuvren/core/lifecycle";
-import { isPayloadEnvelope } from "@tuvren/sdk";
 
 /**
  * The stable AAD/record-kind tag bound into every message envelope. The four

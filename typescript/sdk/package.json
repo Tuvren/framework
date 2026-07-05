@@ -12,6 +12,14 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@tuvren/kernel-protocol": "workspace:*",
+    "@tuvren/kernel-runtime": "workspace:*",
+    "@tuvren/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@tuvren/backend-memory": "workspace:*"
+  },
   "peerDependenciesMeta": {
     "@tuvren/core": {
       "optional": false

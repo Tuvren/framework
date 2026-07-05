@@ -2,6 +2,7 @@
   "name": "@tuvren/runtime",
   "private": true,
   "version": "0.0.0",
+  "description": "Internal Tuvren orchestration engine (ADR-057) — not a host-facing API. Hosts compose the framework through @tuvren/sdk and their chosen leaf packages; this package is not semver-guaranteed.",
   "type": "module",
   "exports": {
     ".": {
@@ -14,31 +15,23 @@
   "types": "./dist/index.d.ts",
   "devDependencies": {
     "@ag-ui/core": "0.0.52",
+    "@tuvren/backend-memory": "workspace:*",
+    "@tuvren/kernel-runtime": "workspace:*",
     "@tuvren/kernel-testkit": "workspace:*"
   },
   "dependencies": {
     "@bufbuild/protobuf": "2.11.0",
     "@connectrpc/connect": "2.1.1",
     "@connectrpc/connect-node": "2.1.1",
-    "@tuvren/backend-memory": "workspace:*",
-    "@tuvren/backend-postgres": "workspace:*",
-    "@tuvren/backend-sqlite": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",
-    "@tuvren/kernel-runtime": "workspace:*",
-    "@tuvren/mcp-client": "workspace:*",
-    "@tuvren/runner-react": "workspace:*",
     "@tuvren/telemetry-semconv": "workspace:*",
     "ajv": "8.18.0"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*",
-    "@tuvren/sdk": "workspace:*"
+    "@tuvren/core": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {
-      "optional": false
-    },
-    "@tuvren/sdk": {
       "optional": false
     }
   }

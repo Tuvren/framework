@@ -31,13 +31,19 @@ import { describe, expect, test } from "bun:test";
 import { randomBytes } from "node:crypto";
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import { createAesGcmPayloadCodec, isPayloadEnvelope } from "@tuvren/sdk";
-import { createTuvrenRuntime } from "../src/index.ts";
+import { createTuvrenRuntime } from "../../runtime/src/index.ts";
 import {
   createRunnerRegistry,
   createStaticRunner,
-} from "./orchestration-runtime-runner-helpers.ts";
-import { assistantText, textSignal } from "./runtime-core-test-helpers.ts";
+} from "../../runtime/test/orchestration-runtime-runner-helpers.ts";
+import {
+  assistantText,
+  textSignal,
+} from "../../runtime/test/runtime-core-test-helpers.ts";
+import {
+  createAesGcmPayloadCodec,
+  isPayloadEnvelope,
+} from "../src/lib/payload-codec.js";
 
 const SCOPE = "tenant.context-engineering";
 const USER_SECRET = "USER-PII-rewrite-path-7777";

@@ -22,8 +22,8 @@ import type {
   ListThreadsCursor,
   TurnHistoryCursor,
 } from "@tuvren/core/execution";
+import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/sdk";
 import {
   getTurnHistory,
   getTurnState,
