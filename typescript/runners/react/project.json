@@ -31,13 +31,6 @@
     },
     "test": {
       "executor": "nx:run-commands",
-      "dependsOn": [
-        {
-          "projects": ["kernel-interop-grpc"],
-          "target": "codegen",
-          "params": "ignore"
-        }
-      ],
       "options": {
         "cwd": "typescript/runners/react",
         "command": "bun test"

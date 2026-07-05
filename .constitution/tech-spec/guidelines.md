@@ -138,7 +138,8 @@ the multi-language transition foundation:
 │   │   └── src/lib/
 │   ├── sdk/                                 # @tuvren/sdk (ADR-057): the slim convenience/composition
 │   │                                        # tier — createTuvren + curated re-exports + schema/codec
-│   │                                        # helpers; peer-deps @tuvren/core, deps @tuvren/runtime;
+│   │                                        # helpers; peer-deps @tuvren/core, deps @tuvren/runtime +
+│   │                                        # @tuvren/kernel-protocol + @tuvren/kernel-runtime;
 │   │                                        # zero backend/runner/provider dependencies. The opt-in
 │   │                                        # ./advanced subpath (ADR-059) re-exports the low-level
 │   │                                        # composition factories (createOrchestrationRuntime,
