@@ -107,6 +107,9 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "sdk",
   "kernel-contract-protocol",
   "kernel-runtime",
+  // @tuvren/kernel-grpc-client leaf (ADR-059 / KRT-BJ002): owns the relocated
+  // gRPC transport codec, whose round-trip tests run only in this lane.
+  "kernel-grpc-client",
   "backend-memory",
   "backend-sqlite",
   "mcp-client",

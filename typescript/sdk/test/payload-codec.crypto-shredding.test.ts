@@ -28,7 +28,7 @@
 import { describe, expect, test } from "bun:test";
 import { randomBytes } from "node:crypto";
 import { createMemoryBackend } from "@tuvren/backend-memory";
-import { isErasedPayload } from "@tuvren/core/lifecycle";
+import { isErasedPayload, isPayloadEnvelope } from "@tuvren/core/lifecycle";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createTuvrenRuntime } from "../../runtime/src/index.ts";
 import {
@@ -41,7 +41,6 @@ import {
 } from "../../runtime/test/runtime-core-test-helpers.ts";
 import {
   createAesGcmPayloadCodec,
-  isPayloadEnvelope,
   type PayloadKeyring,
 } from "../src/lib/payload-codec.js";
 

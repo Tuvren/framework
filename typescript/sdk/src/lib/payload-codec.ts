@@ -39,15 +39,12 @@ import {
 } from "@tuvren/core/lifecycle";
 
 // The behavior-free identity codec and the envelope discriminant now live on the
-// `@tuvren/core` ABI tier (ADR-057, breaking the sdk⇄runtime cycle). Re-export the
-// identity helpers here so the historical `@tuvren/sdk` payload-codec surface —
-// `IDENTITY_PAYLOAD_CODEC`, `createIdentityPayloadCodec`, `isPayloadEnvelope` —
-// stays intact for existing importers.
-export {
-  createIdentityPayloadCodec,
-  IDENTITY_PAYLOAD_CODEC,
-  isPayloadEnvelope,
-} from "@tuvren/core/lifecycle";
+// `@tuvren/core` ABI tier (ADR-057, breaking the sdk⇄runtime cycle). The public
+// `@tuvren/sdk` surface re-publishes the identity helpers straight from
+// `@tuvren/core/lifecycle` in the package barrel (`src/index.ts`) rather than
+// funnelling them through this implementation module, which keeps this file a
+// real module (not a lint-flagged barrel) while leaving the host-facing surface
+// unchanged.
 
 // ── Keyring contract ─────────────────────────────────────────────────────────
 

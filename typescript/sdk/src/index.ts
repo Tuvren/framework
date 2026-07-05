@@ -87,7 +87,15 @@ export type {
   PayloadCodecContext,
   PayloadDecryptResult,
 } from "@tuvren/core/lifecycle";
-export { isErasedPayload } from "@tuvren/core/lifecycle";
+// The identity codec and envelope discriminant relocated to the @tuvren/core ABI
+// tier (ADR-057, sdk⇄runtime cycle break); re-publish them on the sdk surface
+// directly from their new home so existing @tuvren/sdk importers are unaffected.
+export {
+  createIdentityPayloadCodec,
+  IDENTITY_PAYLOAD_CODEC,
+  isErasedPayload,
+  isPayloadEnvelope,
+} from "@tuvren/core/lifecycle";
 export type {
   ContentPart,
   FilePart,
@@ -153,15 +161,11 @@ export {
   type McpToolSource,
   type TuvrenInstance,
 } from "./lib/create-tuvren.js";
-
 // ── Developer helpers ─────────────────────────────────────────────────────────
 // Payload-codec implementations (contract lives in @tuvren/core/lifecycle).
 export {
   type AesGcmPayloadCodecOptions,
   createAesGcmPayloadCodec,
-  createIdentityPayloadCodec,
-  IDENTITY_PAYLOAD_CODEC,
-  isPayloadEnvelope,
   type PayloadKeyring,
 } from "./lib/payload-codec.js";
 // Schema-authoring helpers (tool contracts live in @tuvren/core/tools).
