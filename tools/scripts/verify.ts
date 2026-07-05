@@ -199,6 +199,10 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
     id: "Epic AL portability gate",
   },
   {
+    command: ["bun", "run", "host-boundary:check"],
+    id: "ADR-057 host import boundary gate",
+  },
+  {
     command: ["bun", "run", "docs:af-gap-plan:check"],
     id: "Epic AF conformance gap plan freshness",
   },

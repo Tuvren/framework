@@ -35,6 +35,7 @@
     "docs:af-gap-plan": "bun tools/scripts/epic-af-conformance-gap-plan.ts",
     "docs:af-gap-plan:check": "bun tools/scripts/epic-af-conformance-gap-plan.ts --check",
     "portability:check": "bun tools/scripts/portability-gate.ts",
+    "host-boundary:check": "bun tools/scripts/host-boundary-gate.ts",
     "services:up": "bash tools/scripts/services-up.sh",
     "services:down": "devenv processes down",
     "check": "bun tools/scripts/check.ts",
