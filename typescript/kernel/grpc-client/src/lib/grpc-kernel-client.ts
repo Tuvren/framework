@@ -83,7 +83,7 @@ import {
   toProtoStepDeclaration,
   toProtoTurnTreeSchema,
   toProtoVerdict,
-} from "./runtime-kernel-grpc-codec.js";
+} from "./grpc-kernel-client-codec.js";
 
 export interface GrpcRuntimeKernelOptions {
   baseUrl: string;

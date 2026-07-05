@@ -139,12 +139,20 @@ the multi-language transition foundation:
 │   ├── sdk/                                 # @tuvren/sdk (ADR-057): the slim convenience/composition
 │   │                                        # tier — createTuvren + curated re-exports + schema/codec
 │   │                                        # helpers; peer-deps @tuvren/core, deps @tuvren/runtime;
-│   │                                        # zero backend/runner/provider dependencies
+│   │                                        # zero backend/runner/provider dependencies. The opt-in
+│   │                                        # ./advanced subpath (ADR-059) re-exports the low-level
+│   │                                        # composition factories (createOrchestrationRuntime,
+│   │                                        # createRunnerRegistry, createTuvrenRuntime,
+│   │                                        # createRuntimeKernel) for advanced hosts
 │   ├── kernel/
 │   │   ├── protocol/                        # @tuvren/kernel-protocol; kernel-types.ts lives at
 │   │   │                                    # src/lib/kernel-types.ts and is NOT absorbed into
 │   │   │                                    # @tuvren/core/execution by ADR-037
 │   │   ├── runtime/                         # @tuvren/kernel-runtime
+│   │   ├── grpc-client/                     # @tuvren/kernel-grpc-client (ADR-059): host-facing
+│   │   │                                    # kernel-transport leaf owning createGrpcRuntimeKernel +
+│   │   │                                    # the kernel-interop generated bindings/codec relocated
+│   │   │                                    # out of @tuvren/runtime
 │   │   ├── backends/
 │   │   │   ├── memory/
 │   │   │   ├── sqlite/
@@ -530,9 +538,10 @@ Sequencing for ADR-056/057/058 lives in the execution plan (the constitution's t
 1. One coordinated commit resolves the dependency-edge inversion: remove `@tuvren/sdk` from `@tuvren/runtime`'s `peerDependencies`, add `@tuvren/runtime` to `@tuvren/sdk`'s `dependencies`, and move `create-tuvren.ts` plus its composition helpers from `typescript/runtime/src/lib/` to `typescript/sdk/src/lib/`. Any intermediate state is a workspace dependency cycle.
 2. Retire the ADR-040 string-kind shorthands from `CreateTuvrenOptions` (instances-only shape per ADR-057 §2); update the batteries-included conformance check set to target the `@tuvren/sdk` surface.
 3. Remove the curated `@tuvren/core` re-exports from `@tuvren/runtime/src/index.ts`; `@tuvren/sdk` re-exports the curated set alongside `createTuvren`.
-4. Re-point the Reference Host: `typescript/host/repl/package.json` drops `@tuvren/runtime`, adds `@tuvren/sdk`; all 14 importing modules migrate to `@tuvren/sdk` / `@tuvren/core` subpaths / leaf-package instances.
-5. Add the host-boundary check to the canonical verification path: no import of `@tuvren/runtime`, `@tuvren/kernel-protocol`, or `@tuvren/kernel-runtime` from `typescript/host/**` or documentation examples.
+4. Re-point the Reference Host: `typescript/host/repl/package.json` drops `@tuvren/runtime`, adds `@tuvren/sdk`; all 14 importing modules migrate to `@tuvren/sdk` / `@tuvren/core` subpaths / leaf-package instances. Engine composition factories the host genuinely needs (`createOrchestrationRuntime`, `createRunnerRegistry`, `createTuvrenRuntime`, `createRuntimeKernel`) come from the `@tuvren/sdk/advanced` subpath, and `createGrpcRuntimeKernel` from the `@tuvren/kernel-grpc-client` leaf (both per ADR-059).
+5. Add the host-boundary check to the canonical verification path: no import of `@tuvren/runtime`, `@tuvren/kernel-protocol`, or `@tuvren/kernel-runtime` from `typescript/host/**` or documentation examples. The check allows `@tuvren/sdk` (root and `/advanced`) and the host-facing `@tuvren/kernel-grpc-client` leaf (ADR-059).
 6. Mark `@tuvren/runtime` internal in its `README.md` and `package.json` description.
+7. **Advanced composition surface + gRPC-client leaf (ADR-059, amends §3/§6).** ADR-057's grounding checked host-facing types only; the Reference Host also consumes engine *factory functions* with no curated home. Add the opt-in `@tuvren/sdk/advanced` subpath (`createOrchestrationRuntime`, `createRunnerRegistry`, `createTuvrenRuntime`, `createRuntimeKernel` — re-exported from `@tuvren/runtime`/`@tuvren/kernel-runtime`, install weight unchanged since `@tuvren/sdk` already deps both) and extract the `@tuvren/kernel-grpc-client` leaf (`typescript/kernel/grpc-client/`) owning `createGrpcRuntimeKernel` + the relocated kernel-interop generated bindings/codec. Retarget the kernel-interop codegen (`buf.gen.yaml` out-path, `tools/scripts/kernel-interop-governance.ts` path constants, the `kernel-interop-grpc` Nx `outputs`) from `typescript/runtime` to the leaf, and drop `@connectrpc/*` + `@bufbuild/protobuf` from `@tuvren/runtime`. The leaf joins the publishable set (KRT-BJ007/BJ008 + the ADR-054/056 freeze); `@tuvren/sdk/advanced` is an additional entry of the already-frozen `@tuvren/sdk`.
 
 #### 5.8.3 Two-Funnel Routing Contract (ADR-058)
 

@@ -25,14 +25,6 @@
 // the behavior-free `@tuvren/core` ABI package. The internal `@tuvren/runtime`
 // engine is not a host-facing surface; hosts never import it directly.
 
-// ── Batteries-included composition entrypoint (ADR-040 / ADR-057) ─────────────
-export {
-  type CreateTuvrenOptions,
-  createTuvren,
-  type McpToolSource,
-  type TuvrenInstance,
-} from "./lib/create-tuvren.js";
-
 // ── Curated @tuvren/core re-exports ───────────────────────────────────────────
 export type {
   EpochMs,
@@ -139,7 +131,6 @@ export {
   assertApprovalResponse,
   assertTuvrenToolDefinition,
 } from "@tuvren/core/tools";
-
 // ── Host-facing kernel-protocol contract types ────────────────────────────────
 // Re-exported so a host can type the backend/kernel instances it constructs and
 // passes into `createTuvren` without importing `@tuvren/kernel-protocol`
@@ -155,6 +146,13 @@ export {
   encodeDeterministicKernelRecord,
   hashKernelRecord,
 } from "@tuvren/kernel-protocol";
+// ── Batteries-included composition entrypoint (ADR-040 / ADR-057) ─────────────
+export {
+  type CreateTuvrenOptions,
+  createTuvren,
+  type McpToolSource,
+  type TuvrenInstance,
+} from "./lib/create-tuvren.js";
 
 // ── Developer helpers ─────────────────────────────────────────────────────────
 // Payload-codec implementations (contract lives in @tuvren/core/lifecycle).

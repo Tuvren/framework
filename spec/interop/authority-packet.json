@@ -19,18 +19,18 @@
   ],
   "generatedArtifacts": [
     {
-      "path": "typescript/runtime/src/lib/generated/kernel-interop",
+      "path": "typescript/kernel/grpc-client/src/lib/generated/kernel-interop",
       "generatedFrom": "spec/interop/proto",
       "generator": "protoc-gen-es"
     }
   ],
   "bindingProjections": {
-    "typescript": "typescript/runtime",
+    "typescript": "typescript/kernel/grpc-client",
     "rust": "rust/kernel-grpc-service"
   },
   "forbiddenAuthoritySources": [
-    "typescript/runtime",
-    "typescript/runtime/src/lib/generated/kernel-interop",
+    "typescript/kernel/grpc-client",
+    "typescript/kernel/grpc-client/src/lib/generated/kernel-interop",
     "rust/kernel-grpc-service",
     "spec/interop/proto/README.md",
     "docs",
@@ -43,12 +43,12 @@
     },
     {
       "kind": "freshness-check",
-      "target": "typescript/runtime/src/lib/generated/kernel-interop"
+      "target": "typescript/kernel/grpc-client/src/lib/generated/kernel-interop"
     }
   ],
   "freshnessChecks": [
     {
-      "artifact": "typescript/runtime/src/lib/generated/kernel-interop",
+      "artifact": "typescript/kernel/grpc-client/src/lib/generated/kernel-interop",
       "regenerateCommand": "bun run nx run kernel-interop-grpc:codegen"
     }
   ]

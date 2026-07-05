@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-import { defineConfig } from "tsup";
+// biome-ignore-all lint/performance/noBarrelFile: This subpath entrypoint is the intentional advanced composition surface.
+// Advanced composition surface (ADR-057 addendum): low-level factories for
+// hosts that build multi-agent orchestration, custom runner registries, or a
+// bespoke kernel, beyond the batteries-included `createTuvren`.
 
-export default defineConfig({
-  clean: true,
-  dts: false,
-  entry: ["src/index.ts", "src/advanced.ts"],
-  format: ["esm"],
-  outDir: "dist",
-  sourcemap: false,
-  tsconfig: "tsconfig.tsup.json",
-  target: "esnext",
-});
+export {
+  createRuntimeKernel,
+  type RuntimeKernelOptions,
+} from "@tuvren/kernel-runtime";
+export {
+  createOrchestrationRuntime,
+  createRunnerRegistry,
+  createTuvrenRuntime,
+  type OrchestrationRuntimeOptions,
+  type RuntimeCoreOptions,
+} from "@tuvren/runtime";

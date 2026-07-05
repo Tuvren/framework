@@ -14,15 +14,6 @@
  * limitations under the License.
  */
 
-import { defineConfig } from "tsup";
-
-export default defineConfig({
-  clean: true,
-  dts: false,
-  entry: ["src/index.ts", "src/advanced.ts"],
-  format: ["esm"],
-  outDir: "dist",
-  sourcemap: false,
-  tsconfig: "tsconfig.tsup.json",
-  target: "esnext",
-});
+export type { GrpcRuntimeKernelOptions } from "./lib/grpc-kernel-client.js";
+// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
+export { createGrpcRuntimeKernel } from "./lib/grpc-kernel-client.js";

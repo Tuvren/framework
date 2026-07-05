@@ -32,14 +32,16 @@ import {
   runReplScenario,
   runReplScenarioMatrix,
 } from "@tuvren/repl-host";
+import type {
+  TuvrenPrompt,
+  TuvrenProvider,
+  TuvrenStreamEvent,
+  TuvrenToolDefinition,
+} from "@tuvren/sdk";
 import {
   TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
   TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
-  type TuvrenPrompt,
-  type TuvrenProvider,
-  type TuvrenStreamEvent,
-  type TuvrenToolDefinition,
-} from "@tuvren/runtime";
+} from "@tuvren/telemetry-semconv";
 import {
   createReplBuiltinTools,
   textSignal,

@@ -66,12 +66,15 @@
         "@tuvren/backend-memory": "workspace:*",
         "@tuvren/backend-postgres": "workspace:*",
         "@tuvren/backend-sqlite": "workspace:*",
+        "@tuvren/kernel-grpc-client": "workspace:*",
+        "@tuvren/mcp-client": "workspace:*",
         "@tuvren/provider-bridge-ai-sdk": "workspace:*",
         "@tuvren/runner-react": "workspace:*",
-        "@tuvren/runtime": "workspace:*",
+        "@tuvren/sdk": "workspace:*",
         "@tuvren/stream-agui": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
         "@tuvren/stream-sse": "workspace:*",
+        "@tuvren/telemetry-semconv": "workspace:*",
       },
       "devDependencies": {
         "@copilotkit/aimock": "1.15.1",
@@ -131,6 +134,19 @@
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/kernel-runtime": "workspace:*",
         "@tuvren/kernel-testkit": "workspace:*",
+      },
+    },
+    "typescript/kernel/grpc-client": {
+      "name": "@tuvren/kernel-grpc-client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bufbuild/protobuf": "2.11.0",
+        "@connectrpc/connect": "2.1.1",
+        "@connectrpc/connect-node": "2.1.1",
+        "@tuvren/kernel-protocol": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
       },
     },
     "typescript/kernel/protocol": {
@@ -237,9 +253,6 @@
       "name": "@tuvren/runtime",
       "version": "0.0.0",
       "dependencies": {
-        "@bufbuild/protobuf": "2.11.0",
-        "@connectrpc/connect": "2.1.1",
-        "@connectrpc/connect-node": "2.1.1",
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/telemetry-semconv": "workspace:*",
         "ajv": "8.18.0",
@@ -922,6 +935,8 @@
     "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:typescript/testkit"],
 
     "@tuvren/framework-typescript-certification": ["@tuvren/framework-typescript-certification@workspace:typescript/certification"],
+
+    "@tuvren/kernel-grpc-client": ["@tuvren/kernel-grpc-client@workspace:typescript/kernel/grpc-client"],
 
     "@tuvren/kernel-protocol": ["@tuvren/kernel-protocol@workspace:typescript/kernel/protocol"],
 

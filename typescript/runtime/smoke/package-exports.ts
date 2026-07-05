@@ -24,7 +24,6 @@ import {
   createBindingResolver,
   createCapabilityPolicyEngine,
   createCapabilityRegistry,
-  createGrpcRuntimeKernel,
   createOrchestrationRuntime,
   createRunnerRegistry,
   createToolRegistry,
@@ -37,7 +36,6 @@ describe("runtime package exports", () => {
     expect(typeof createTuvrenRuntime).toBe("function");
     expect(typeof createOrchestrationRuntime).toBe("function");
     expect(typeof createRunnerRegistry).toBe("function");
-    expect(typeof createGrpcRuntimeKernel).toBe("function");
     expect(typeof createBindingResolver).toBe("function");
     expect(typeof createCapabilityRegistry).toBe("function");
     expect(typeof createCapabilityPolicyEngine).toBe("function");
@@ -58,5 +56,6 @@ describe("runtime package exports", () => {
     expect(runtime.NoopTelemetrySink).toBeUndefined();
     expect(runtime.createMemoryBackend).toBeUndefined();
     expect(runtime.createRuntimeKernel).toBeUndefined();
+    expect(runtime.createGrpcRuntimeKernel).toBeUndefined();
   });
 });

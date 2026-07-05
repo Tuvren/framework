@@ -17,16 +17,18 @@
 import {
   type ExecutionHandle,
   type InputSignal,
-  TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
-  TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
   type TuvrenPrompt,
   type TuvrenProvider,
   TuvrenRuntimeError,
   type TuvrenStreamEvent,
-} from "@tuvren/runtime";
+} from "@tuvren/sdk";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
+import {
+  TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
+  TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
+} from "@tuvren/telemetry-semconv";
 import { createReplBuiltinTools, textSignal } from "./repl-builtin-tools.js";
 import {
   INVALID_REPL_CONFIG_CODE,

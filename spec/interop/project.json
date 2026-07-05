@@ -14,14 +14,14 @@
         "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
         "{workspaceRoot}/buf.yaml",
         "{workspaceRoot}/buf.gen.yaml",
-        "{workspaceRoot}/typescript/runtime/package.json",
-        "{workspaceRoot}/typescript/runtime/tsconfig.kernel-interop.generated.json",
+        "{workspaceRoot}/typescript/kernel/grpc-client/package.json",
+        "{workspaceRoot}/typescript/kernel/grpc-client/tsconfig.kernel-interop.generated.json",
         "{workspaceRoot}/bun.lock",
         "{workspaceRoot}/devenv.nix",
         "{workspaceRoot}/devenv.lock"
       ],
       "outputs": [
-        "{workspaceRoot}/typescript/runtime/src/lib/generated/kernel-interop"
+        "{workspaceRoot}/typescript/kernel/grpc-client/src/lib/generated/kernel-interop"
       ],
       "options": {
         "cwd": ".",

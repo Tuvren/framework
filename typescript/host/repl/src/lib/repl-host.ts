@@ -17,17 +17,19 @@
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { createPostgresBackend } from "@tuvren/backend-postgres";
 import { createSqliteBackend } from "@tuvren/backend-sqlite";
+import { createGrpcRuntimeKernel } from "@tuvren/kernel-grpc-client";
 import { createReActRunner, REACT_RUNNER_ID } from "@tuvren/runner-react";
 import {
-  createGrpcRuntimeKernel,
-  createRunnerRegistry,
-  createRuntimeKernel,
   createTuvren,
-  createTuvrenRuntime as createTuvrenRuntimeCore,
   type ExecutionHandle,
   type RuntimeBackend,
   TuvrenRuntimeError,
-} from "@tuvren/runtime";
+} from "@tuvren/sdk";
+import {
+  createRunnerRegistry,
+  createRuntimeKernel,
+  createTuvrenRuntime as createTuvrenRuntimeCore,
+} from "@tuvren/sdk/advanced";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
 import { toSseFrames } from "@tuvren/stream-sse";
@@ -77,19 +79,16 @@ export async function createReplHostUsingCreateTuvren(
     scenario: config.scenario,
   });
   const instance = await createTuvren({
-    backend: createTuvrenBackendConfig(config),
+    backend: createBackend(config),
     ...(config.kernelMode === "rust-grpc"
       ? { kernel: createKernel(config) }
       : {}),
-    runner: {
-      kind: "react",
-      options: {
-        providerCallMode: "stream",
-      },
-    },
+    runner: createReActRunner({
+      providerCallMode: "stream",
+    }),
     provider,
     // Bind operational telemetry to the host's Scope (ADR-048, KRT-BE008); the
-    // durable backend is bound to the same Scope via createTuvrenBackendConfig.
+    // durable backend is bound to the same Scope via createBackend.
     ...(config.scope === undefined
       ? {}
       : { runtimeOptions: { scope: config.scope } }),
@@ -246,46 +245,6 @@ function createBackend(config: ReplConfig): RuntimeBackend {
     databasePath: config.sqlitePath,
     ...scopeOption,
   });
-}
-
-function createTuvrenBackendConfig(
-  config: ReplConfig
-): Parameters<typeof createTuvren>[0]["backend"] {
-  // Carry the host Scope into the backend spec so `createTuvren` constructs the
-  // durable backend scope-bound (ADR-048/049, KRT-BE008); unset means default.
-  const scopeOption = config.scope === undefined ? {} : { scope: config.scope };
-
-  if (config.backend === "memory") {
-    return { kind: "memory", options: scopeOption };
-  }
-
-  if (config.backend === "postgres") {
-    return {
-      kind: "postgres",
-      options: {
-        database: config.postgresDatabase,
-        schemaName: config.postgresSchemaName,
-        ...scopeOption,
-      },
-    };
-  }
-
-  if (config.sqlitePath === undefined) {
-    throw new TuvrenRuntimeError(
-      "sqlite repl backend requires a database path",
-      {
-        code: INVALID_REPL_CONFIG_CODE,
-      }
-    );
-  }
-
-  return {
-    kind: "sqlite",
-    options: {
-      databasePath: config.sqlitePath,
-      ...scopeOption,
-    },
-  };
 }
 
 async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
