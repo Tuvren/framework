@@ -57,7 +57,7 @@ import type {
   RunnerExecutionContext,
   RunnerRegistry,
 } from "@tuvren/core/runner";
-import type { TuvrenTelemetrySink } from "@tuvren/core/telemetry";
+import type { TelemetryRouting } from "@tuvren/core/telemetry";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 import type {
   RuntimeKernel as KrakenKernel,
@@ -272,7 +272,7 @@ export interface RuntimeCoreOptions {
    * the durable backend. Defaults to the single-tenant default Scope.
    */
   scope?: Scope;
-  telemetry?: TuvrenTelemetrySink;
+  telemetry?: TelemetryRouting;
 }
 
 interface ResolvedRuntimeCoreOptions {
@@ -296,7 +296,7 @@ interface ResolvedRuntimeCoreOptions {
   runLiveness?: ResolvedRuntimeRunLivenessOptions;
   runnerRegistry: RunnerRegistry;
   scope: Scope;
-  telemetry?: TuvrenTelemetrySink;
+  telemetry?: TelemetryRouting;
 }
 
 interface ResolvedRuntimeRunLivenessOptions {
@@ -397,7 +397,7 @@ class RuntimeCore implements TuvrenRuntime {
     this.telemetry = createRuntimeTelemetryEmitter({
       now: () => this.now(),
       scope: this.options.scope,
-      sink: this.options.telemetry,
+      telemetry: this.options.telemetry,
     });
 
     if (

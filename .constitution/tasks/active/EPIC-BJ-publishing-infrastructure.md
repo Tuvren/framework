@@ -175,6 +175,18 @@ And the same failure never throws into, blocks, or delays a content-funnel commi
 And the core authority packet's telemetry binding lists the new TelemetryDestination contract
 ```
 
+##### KRT-BJ004 Deviations & Justifications
+- **Touched Files (out-of-scope):**
+  - `typescript/runtime/src/lib/runtime-core.ts`
+  - `typescript/sdk/src/lib/create-tuvren.ts`
+  - `typescript/sdk/tsconfig.typecheck.json`
+  - `typescript/runtime/test/runtime-core.telemetry.test.ts`
+- **Justification:** The In-Scope list names `runtime-core-telemetry.ts` (the emitter) and `sdk/src/index.ts` (the option), but end-to-end option widening spans two adjacent files the list omits, and the contract needs a test:
+  - `runtime-core.ts` — the `telemetry` option field and its type are declared on `RuntimeCoreOptions`/`ResolvedRuntimeCoreOptions` here (the emitter in `runtime-core-telemetry.ts` only consumes them). Widening the option from `TuvrenTelemetrySink` to the `TelemetryRouting` union so the sdk-facing shape actually reaches the emitter required changing the field type and the single emitter call site in this file. Type-widening + passthrough only; the failure-isolation behavior itself lives in the in-scope emitter file.
+  - `create-tuvren.ts` — `CreateTuvrenOptions` is *defined* here; `sdk/src/index.ts` (the named In-Scope file) only re-exports it. The actual `telemetry?: TelemetryRouting` field widening therefore landed in `create-tuvren.ts`, while `index.ts` was still touched in-scope to re-publish the new `@tuvren/core/telemetry` contract types (`TelemetryDestination`, `TelemetryRoute`, `TelemetryOperationalSignal(Kind)`, `TelemetryBufferingPolicy`, `TelemetryRouting`) on the sdk surface.
+  - `sdk/tsconfig.typecheck.json` — build-config only: added a `@tuvren/core/telemetry` source-mapping entry so sdk's source-only `typecheck` resolves the new subpath types from `@tuvren/core` source rather than stale package `dist/*.d.ts` (identical precedent to BJ001's `@tuvren/core/lifecycle` mapping). No runtime or source effect.
+  - `runtime-core.telemetry.test.ts` — automated tests are a required deliverable (skill §3). Extended the existing telemetry test with 5 destination/route/isolation cases proving the Gherkin: bare-destination routing, a route threading both channels, a throwing destination isolated into a `delivery_failed` operational signal, a throwing sink surfaced as a `sink_failed` signal on the destination channel, and healthy-vs-unavailable destinations yielding an identical session result. None trips a BJ004 STOP condition (no kernel/gRPC/proto change; the union stays backward-compatible with sink-only construction).
+
 #### KRT-BJ005 Funnel-Isolation Conformance Check Set
 - **Type:** Chore
 - **Effort:** 3

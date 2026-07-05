@@ -33,7 +33,7 @@ import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { PayloadCodec } from "@tuvren/core/lifecycle";
 import type { TuvrenProvider } from "@tuvren/core/provider";
 import type { RuntimeRunnerFactory } from "@tuvren/core/runner";
-import type { TuvrenTelemetrySink } from "@tuvren/core/telemetry";
+import type { TelemetryRouting } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import type { RuntimeBackend, RuntimeKernel } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
@@ -103,7 +103,14 @@ export interface CreateTuvrenOptions {
     RuntimeCoreOptions,
     "defaultRunnerId" | "runnerRegistry" | "kernel"
   >;
-  telemetry?: TuvrenTelemetrySink;
+  /**
+   * Construction-time telemetry funnel routing (ADR-058). Accepts a bare
+   * `TuvrenTelemetrySink` (ADR-042, backward-compatible), a bare
+   * `TelemetryDestination`, or a `TelemetryRoute` combining both — the seam a
+   * host uses to choose split, unified, or mixed-substrate topologies without
+   * changing session behavior.
+   */
+  telemetry?: TelemetryRouting;
   tools?: Array<McpToolSource | TuvrenToolDefinition>;
 }
 

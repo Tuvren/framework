@@ -230,7 +230,7 @@
       "description": "TuvrenExtension, ExtensionContext, lifecycle handler types"
     },
     "telemetry": {
-      "description": "TuvrenTelemetrySink, telemetry lineage, span, event, and kind record types"
+      "description": "TuvrenTelemetrySink, telemetry lineage, span, event, and kind record types; plus the ADR-058 construction-time funnel-routing contract (KRT-BJ004): TelemetryDestination (durable delivery target with deliver(batch) + optional buffering policy and onOperationalSignal channel), TelemetryRoute (sink+destination pairing), TelemetryOperationalSignal/TelemetryOperationalSignalKind (funnel-health signals: delivery_failed/sink_failed/buffer_overflow), TelemetryBufferingPolicy, and the TelemetryRouting union (the widened createTuvren telemetry option). One-directional failure isolation is enforced at the @tuvren/runtime telemetry boundary, not in these type declarations."
     },
     "capabilities": {
       "description": "ExecutionClass, EndpointKind, InvocationLifecycleState, Capability, ToolSurface, Endpoint, Binding, CapabilityObservation, ExposureDecision, InvocationDecision, InvocationOwner, CapabilityInvocationAttribution — ADR-046 §3.13 capability-orchestration shapes; InvocationLifecycleState added per KRT-BA001"

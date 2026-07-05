@@ -84,3 +84,16 @@ export const NoopTelemetrySink: TuvrenTelemetrySink = Object.freeze({
   event: () => undefined,
   span: () => undefined,
 });
+
+// ── Telemetry-funnel destination contract (ADR-058) ───────────────────────────
+// The durable-destination half of the two-funnel routing seam lives in a
+// sibling module to keep the frozen sink/span/event block above untouched; it is
+// re-published here so `@tuvren/core/telemetry` remains the single import site.
+export type {
+  TelemetryBufferingPolicy,
+  TelemetryDestination,
+  TelemetryOperationalSignal,
+  TelemetryOperationalSignalKind,
+  TelemetryRoute,
+  TelemetryRouting,
+} from "./telemetry-destination.js";

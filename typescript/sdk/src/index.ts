@@ -119,9 +119,15 @@ export type {
 } from "@tuvren/core/provider";
 export { assertTuvrenModelResponse } from "@tuvren/core/provider";
 export type {
+  TelemetryBufferingPolicy,
+  TelemetryDestination,
   TelemetryEvent,
   TelemetryEventKind,
   TelemetryLineage,
+  TelemetryOperationalSignal,
+  TelemetryOperationalSignalKind,
+  TelemetryRoute,
+  TelemetryRouting,
   TelemetrySpan,
   TelemetrySpanKind,
   TuvrenTelemetrySink,

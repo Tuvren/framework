@@ -9,6 +9,7 @@
       "@tuvren/core/errors": ["../core/src/errors/index.ts"],
       "@tuvren/core/tools": ["../core/src/tools/index.ts"],
       "@tuvren/core/lifecycle": ["../core/src/lifecycle/index.ts"],
+      "@tuvren/core/telemetry": ["../core/src/telemetry/index.ts"],
       "@tuvren/sdk": ["./src/index.ts"]
     },
     "types": ["bun", "node"]
