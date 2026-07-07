@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/stream-sse",
-  "private": true,
+  "description": "Tuvren SSE stream adapter leaf: projects Tuvren stream events onto Server-Sent Events for HTTP hosts.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/streaming/sse"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {

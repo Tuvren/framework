@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/backend-memory",
-  "private": true,
+  "description": "Tuvren in-memory backend leaf: a non-durable store for tests, prototypes, and ephemeral sessions, constructed by the host and passed into createTuvren.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/kernel/backends/memory"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {

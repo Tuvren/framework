@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/core",
-  "private": true,
+  "description": "Tuvren's behavior-free core ABI: the shared contract types, error taxonomy, message and stream-event shapes, tool and provider contracts, and telemetry contracts every Tuvren package and host builds against.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/core"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {

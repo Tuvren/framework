@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/sdk",
-  "private": true,
+  "description": "The Tuvren host-facing composition tier: createTuvren, curated @tuvren/core re-exports, host-facing kernel contract types, developer helpers, and the @tuvren/sdk/advanced composition surface. The single SDK entrypoint a host imports alongside its chosen leaf packages.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/sdk"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {

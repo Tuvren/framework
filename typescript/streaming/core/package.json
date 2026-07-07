@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/stream-core",
-  "private": true,
+  "description": "Tuvren streaming core: the shared stream-adapter contract and helpers for projecting Tuvren stream events onto transport-specific encodings.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/streaming/core"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {

@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/kernel-grpc-client",
-  "private": true,
+  "description": "Tuvren kernel-transport leaf: createGrpcRuntimeKernel and the generated gRPC client bindings for hosts that talk to a remote Tuvren kernel service, passed into createTuvren's kernel option.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/kernel/grpc-client"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {

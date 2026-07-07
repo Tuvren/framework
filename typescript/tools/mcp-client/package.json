@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/mcp-client",
-  "private": true,
+  "description": "Tuvren MCP client leaf: createMcpToolSource for connecting Model Context Protocol servers as Tuvren tool sources.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/tools/mcp-client"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {
