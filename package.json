@@ -43,10 +43,12 @@
     "verify:kernel:fresh": "bun tools/scripts/verify-kernel.ts --fresh",
     "verify": "bun tools/scripts/verify.ts",
     "release-check": "bun tools/scripts/release-check.ts",
+    "release": "bun tools/scripts/release-lane.ts",
     "graph": "bun run nx graph"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.10",
+    "@changesets/cli": "^2.31.0",
     "@nx/js": "22.6.3",
     "@nx/workspace": "22.6.3",
     "@standard-schema/spec": "1.1.0",
