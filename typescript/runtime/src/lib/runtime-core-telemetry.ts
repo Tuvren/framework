@@ -25,6 +25,7 @@ import {
   type TelemetryEventKind,
   type TelemetryLineage,
   type TelemetryOperationalSignal,
+  type TelemetryOperationalSignalKind,
   type TelemetryRoute,
   type TelemetryRouting,
   type TelemetrySpan,
@@ -130,6 +131,24 @@ export function createRuntimeTelemetryEmitter(input: {
     emitFallbackWarning();
   };
 
+  // The isolation boundary is absolute: even a secondary failure while
+  // projecting or signaling the original throw (e.g. a thrown value whose
+  // string coercion itself throws) must degrade to the last-resort warning,
+  // never re-enter the session/content-funnel path.
+  const signalTelemetryFailure = (
+    kind: TelemetryOperationalSignalKind,
+    error: unknown
+  ) => {
+    try {
+      emitOperationalSignal({
+        error: toOperationalSignalError(error),
+        kind,
+      });
+    } catch {
+      emitFallbackWarning();
+    }
+  };
+
   // ADR-058 §3: one-directional failure isolation. A sink or destination throw
   // is caught here at the telemetry boundary, converted to an operational
   // signal, and can never fail, block, or delay a kernel checkpoint or a
@@ -145,10 +164,7 @@ export function createRuntimeTelemetryEmitter(input: {
     try {
       destination.deliver(records);
     } catch (error) {
-      emitOperationalSignal({
-        error: toOperationalSignalError(error),
-        kind: "delivery_failed",
-      });
+      signalTelemetryFailure("delivery_failed", error);
     }
   };
 
@@ -156,10 +172,7 @@ export function createRuntimeTelemetryEmitter(input: {
     try {
       sink.event(event);
     } catch (error) {
-      emitOperationalSignal({
-        error: toOperationalSignalError(error),
-        kind: "sink_failed",
-      });
+      signalTelemetryFailure("sink_failed", error);
     }
 
     safeDeliver([event]);
@@ -169,10 +182,7 @@ export function createRuntimeTelemetryEmitter(input: {
     try {
       sink.span(span);
     } catch (error) {
-      emitOperationalSignal({
-        error: toOperationalSignalError(error),
-        kind: "sink_failed",
-      });
+      signalTelemetryFailure("sink_failed", error);
     }
 
     safeDeliver([span]);
@@ -526,12 +536,23 @@ function createSpanError(error: unknown): TelemetrySpanError | undefined {
   }
 
   const projection = projectError(
-    error instanceof Error ? error : new Error(String(error))
+    error instanceof Error ? error : new Error(coerceThrownToMessage(error))
   );
   return {
     code: projection.code ?? "runtime_error",
     message: projection.message,
   };
+}
+
+// A host can throw a value whose string coercion itself throws (a null-prototype
+// object, a throwing `toString`). The telemetry boundary must stay throw-proof
+// even while describing such a value (ADR-058 §3), so the coercion is guarded.
+function coerceThrownToMessage(thrown: unknown): string {
+  try {
+    return String(thrown);
+  } catch {
+    return "thrown value could not be coerced to a message";
+  }
 }
 
 // ADR-058 §2: resolve the construction-time `telemetry` routing union into its

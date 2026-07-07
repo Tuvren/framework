@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
 import type {
@@ -329,6 +329,79 @@ describe("runtime operational telemetry", () => {
     expect(unavailable.events.map((event) => event.type)).toEqual(
       healthy.events.map((event) => event.type)
     );
+  });
+
+  test("contains a pathological non-coercible destination throw at the boundary (ADR-058 §3)", async () => {
+    const signals: TelemetryOperationalSignal[] = [];
+    const destination: TelemetryDestination = {
+      deliver() {
+        // A null-prototype object defeats String(): no toString, no
+        // Symbol.toPrimitive. The projection inside the catch handler must not
+        // itself throw into the session path while describing this value.
+        throw Object.create(null);
+      },
+      onOperationalSignal(signal) {
+        signals.push(signal);
+      },
+    };
+
+    const { phase } = await runTelemetryTurn(destination);
+
+    expect(phase).toBe("completed");
+    expect(signals.length).toBeGreaterThan(0);
+    expect(signals.every((signal) => signal.kind === "delivery_failed")).toBe(
+      true
+    );
+  });
+
+  test("falls back to a one-shot warning when a failing destination has no signal callback (ADR-058 §1)", async () => {
+    const warn = spyOn(console, "warn").mockImplementation(() => {
+      /* silence the last-resort warning in test output */
+    });
+    try {
+      const destination: TelemetryDestination = {
+        deliver() {
+          throw new Error("destination unavailable");
+        },
+      };
+
+      const { phase } = await runTelemetryTurn(destination);
+
+      expect(phase).toBe("completed");
+      // anti-spam: exactly one lifetime warning per emitter despite a full
+      // turn's worth of failed deliveries
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  test("degrades to the last-resort warning when the signal callback itself throws (ADR-058 §1)", async () => {
+    const warn = spyOn(console, "warn").mockImplementation(() => {
+      /* silence the last-resort warning in test output */
+    });
+    try {
+      const destination: TelemetryDestination = {
+        deliver() {
+          // biome-ignore lint/style/useThrowOnlyError: a non-Error throw whose string coercion itself throws is the regression under test (ADR-058 §3 boundary hardening)
+          throw {
+            toString() {
+              throw new Error("uncoercible");
+            },
+          };
+        },
+        onOperationalSignal() {
+          throw new Error("broken health callback");
+        },
+      };
+
+      const { phase } = await runTelemetryTurn(destination);
+
+      expect(phase).toBe("completed");
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   test("redacts credential-shaped error summaries", () => {
