@@ -170,6 +170,11 @@
         },
         {
           "kind": "resultField",
+          "field": "$.funnel.healthy.eventTypes",
+          "contains": "turn.start"
+        },
+        {
+          "kind": "resultField",
           "field": "$.funnel.unavailable.phase",
           "equalsPath": "$.result.funnel.healthy.phase"
         },
