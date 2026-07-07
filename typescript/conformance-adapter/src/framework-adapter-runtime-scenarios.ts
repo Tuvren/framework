@@ -15,6 +15,7 @@
  */
 
 import { assertHashString, TuvrenPersistenceError } from "@tuvren/core";
+import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   BranchMessagesCursor,
   ExecutionHandle,
@@ -23,6 +24,7 @@ import type {
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
 import type {
+  TelemetryDestination,
   TelemetryEvent,
   TelemetrySpan,
   TuvrenTelemetrySink,
@@ -245,9 +247,21 @@ export function createFrameworkAdapterRuntimeScenarios(
       input,
       "runtime.operational-telemetry"
     );
+    const scenarioCase = dependencies.readRecordString(scenario, "case");
+
+    // ADR-058 §5 funnel-isolation scenarios (KRT-BJ005): these cases construct
+    // their own telemetry routing, so they branch before the push-based sink
+    // capture the remaining cases share.
+    if (scenarioCase === "destination-health") {
+      return await runDestinationHealthEquivalence();
+    }
+
+    if (scenarioCase === "content-isolation") {
+      return await runContentFunnelIsolation(scenario);
+    }
+
     const capture = createTelemetryCapture();
     const harness = createConformanceKernelHarness();
-    const scenarioCase = dependencies.readRecordString(scenario, "case");
     const runner = createOperationalTelemetryRunner(scenarioCase);
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
@@ -448,6 +462,159 @@ export function createFrameworkAdapterRuntimeScenarios(
       evidence: { telemetry },
       result: { telemetry },
     };
+  }
+
+  // ADR-058 §5a/§5c (KRT-BJ005): run the same deterministic turn against a
+  // telemetry destination, reporting the implementation-observed session event
+  // types, terminal phase, delivered telemetry record kinds, and
+  // operational-signal kinds. This function only measures; the shared
+  // conformance plan owns the healthy-vs-unavailable equivalence and
+  // failure-to-signal grading.
+  async function runTelemetryDestinationTurn(options: {
+    failDelivery: boolean;
+  }): Promise<{
+    deliveredRecordKinds: string[];
+    eventTypes: string[];
+    operationalSignalKinds: string[];
+    phase: string;
+  }> {
+    const deliveredRecordKinds: string[] = [];
+    const operationalSignalKinds: string[] = [];
+    const destination: TelemetryDestination = {
+      deliver(batch) {
+        if (options.failDelivery) {
+          throw new Error("conformance destination unavailable");
+        }
+
+        deliveredRecordKinds.push(...batch.map((record) => record.kind));
+      },
+      onOperationalSignal(signal) {
+        operationalSignalKinds.push(signal.kind);
+      },
+    };
+    const harness = createConformanceKernelHarness();
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner(() => ({
+          messages: [assistantText("completed")],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        })),
+      ]),
+      kernel: harness.kernel,
+      now: createDeterministicClock(),
+      telemetry: destination,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: AGENT_NAME },
+      signal: textSignal("run"),
+      threadId: thread.threadId,
+    });
+    const events = await collectValues(handle.events());
+
+    return {
+      deliveredRecordKinds,
+      eventTypes: events.map((event) => event.type),
+      operationalSignalKinds,
+      phase: handle.status().phase,
+    };
+  }
+
+  async function runDestinationHealthEquivalence(): Promise<AdapterProjection> {
+    const healthy = await runTelemetryDestinationTurn({ failDelivery: false });
+    const unavailable = await runTelemetryDestinationTurn({
+      failDelivery: true,
+    });
+    const funnel = { healthy, unavailable };
+
+    return {
+      evidence: { funnel },
+      result: { funnel },
+    };
+  }
+
+  // ADR-058 §5b (KRT-BJ005): run a turn whose input signal and assistant reply
+  // carry the scenario-owned content markers under default push-based routing,
+  // and report both funnels' surfaces — the content-funnel message texts and
+  // the raw telemetry records — so the shared plan can grade content-payload
+  // absence on the telemetry funnel without adapter-side pass/fail decisions.
+  async function runContentFunnelIsolation(
+    scenario: Record<string, unknown>
+  ): Promise<AdapterProjection> {
+    const markers = readContentMarkers(scenario);
+    const capture = createTelemetryCapture();
+    const harness = createConformanceKernelHarness();
+    const runtime = createTuvrenRuntimeCore({
+      createId: createConformanceIdFactory(),
+      defaultRunnerId: RUNNER_ID,
+      runnerRegistry: createRunnerRegistry([
+        createStaticRunner(() => ({
+          messages: [assistantText(markers.assistant)],
+          resolution: {
+            reason: "done",
+            type: "end_turn",
+          },
+        })),
+      ]),
+      kernel: harness.kernel,
+      now: createDeterministicClock(),
+      telemetry: capture.sink,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: AGENT_NAME },
+      signal: textSignal(markers.user),
+      threadId: thread.threadId,
+    });
+    const events = await collectValues(handle.events());
+    const projection = {
+      contentFunnel: {
+        messageTexts: readTextDoneTexts(events),
+      },
+      telemetry: {
+        events: capture.events,
+        spans: capture.spans,
+      },
+      telemetryEventKinds: capture.events.map((event) => event.kind),
+    };
+
+    return {
+      evidence: projection,
+      result: projection,
+    };
+  }
+
+  function readContentMarkers(scenario: Record<string, unknown>): {
+    assistant: string;
+    user: string;
+  } {
+    const value = dependencies.readProperty(
+      scenario,
+      "contentMarkers",
+      "$.scenario.contentMarkers"
+    );
+
+    if (
+      !Array.isArray(value) ||
+      value.length !== 2 ||
+      !value.every(
+        (entry): entry is string =>
+          typeof entry === "string" && entry.length > 0
+      )
+    ) {
+      throw new Error(
+        "content-isolation scenario requires two non-empty contentMarkers strings"
+      );
+    }
+
+    return { assistant: value[1], user: value[0] };
   }
 
   async function runCancelledRuntimeTurn(controls: {
@@ -1720,6 +1887,14 @@ function createTelemetryCapture(): {
     },
     spans,
   };
+}
+
+// The content funnel's assistant-text surface: `text.done` stream events carry
+// the full message text the session emitted (ADR-058 §5b evidence source).
+function readTextDoneTexts(events: readonly TuvrenStreamEvent[]): string[] {
+  return events.flatMap((event) =>
+    event.type === "text.done" ? [event.text] : []
+  );
 }
 
 function summarizeTelemetry(capture: {
