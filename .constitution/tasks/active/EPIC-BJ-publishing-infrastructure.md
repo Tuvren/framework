@@ -252,6 +252,11 @@ And the subpath's module documentation carries a subpath-level experimental noti
 And the core authority packet's surface listing records the marker declaration
 ```
 
+##### KRT-BJ006 Deviations & Justifications
+- **No out-of-scope files touched** — the milestone lands exactly in the two In-Scope files.
+- **STOP-condition near-miss, resolved without escalation:** the ticket's STOP condition (an export that cannot carry an individual `@experimental` tag without restructuring the barrel) was nearly tripped by tooling rather than syntax: the barrel's original single grouped `export type { …22 types… }` only admits one whole-statement TSDoc comment, so the tags required a one-export-per-statement layout — and Biome's default-on `assist/source/organizeImports` action then *merged the 22 individual statements back into one grouped export*, silently stripping the per-export tags on the first `--write` pass. Resolved with a file-level `// biome-ignore-all assist/source/organizeImports` suppression (with an ADR-056 reason string) — the same mechanism the file already uses for `lint/performance/noBarrelFile` — rather than restructuring the barrel or escalating, since the re-export syntax itself supports individual tags once one-per-statement. Verified stable: `biome check --write` now reports no fixes and the file retains 22 statements with 22 tags.
+- **Authority-packet mechanics:** the packet schema (`tools/schemas/authority-packet.schema.json`) constrains `bindingSections` entries to a single `description` string (`additionalProperties: false`), so the ADR-056 marker declaration is recorded as description text in the `capabilities` binding section (naming the subpath-wide experimental declaration, all 22 tagged exports, the consistency floor, the graduation rule, and the KRT-BL002 deferral of the consuming gate) — the same pattern KRT-BJ004 used for the ADR-058 telemetry declaration. No schema change was needed or made.
+
 #### KRT-BJ007 Package Manifest Publication Readiness
 - **Type:** Chore
 - **Effort:** 5
