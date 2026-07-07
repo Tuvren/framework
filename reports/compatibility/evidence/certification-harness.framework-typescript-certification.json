@@ -8645,6 +8645,124 @@
     {
       "assertionResults": [
         {
+          "assertionId": "runtime-api-operational-telemetry.content-funnel-isolation.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.content-funnel-isolation.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.content-funnel-isolation.3.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.content-funnel-isolation.requiredEvidence.result.contentFunnel.messageTexts",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.content-funnel-isolation.requiredEvidence.result.telemetry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.content-funnel-isolation.requiredEvidence.result.telemetryEventKinds",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-operational-telemetry.content-funnel-isolation",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.operational-telemetry"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-failure-signal.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-failure-signal.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-failure-signal.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-failure-signal.requiredEvidence.result.funnel.unavailable.deliveredRecordKinds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-failure-signal.requiredEvidence.result.funnel.unavailable.operationalSignalKinds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-failure-signal.requiredEvidence.result.funnel.unavailable.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-operational-telemetry.destination-failure-signal",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.operational-telemetry"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.requiredEvidence.result.funnel.healthy.deliveredRecordKinds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.requiredEvidence.result.funnel.healthy.eventTypes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.requiredEvidence.result.funnel.healthy.phase",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.requiredEvidence.result.funnel.unavailable.eventTypes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "runtime-api-operational-telemetry.destination-health-equivalence.requiredEvidence.result.funnel.unavailable.phase",
+          "status": "pass"
+        }
+      ],
+      "checkId": "runtime-api-operational-telemetry.destination-health-equivalence",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.operational-telemetry"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "runtime-api-operational-telemetry.error-path.1.resultField",
           "status": "pass"
         },
@@ -10335,9 +10453,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 463,
-    "totalChecks": 475,
-    "applicableChecks": 463,
+    "passedChecks": 466,
+    "totalChecks": 478,
+    "applicableChecks": 466,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",
