@@ -1,0 +1,60 @@
+{
+  "name": "kernel-grpc-client",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/kernel/grpc-client",
+  "sourceRoot": "typescript/kernel/grpc-client/src",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "^build",
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": "typescript/kernel/grpc-client",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/kernel/grpc-client"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": "typescript/kernel/grpc-client",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/kernel/grpc-client"
+      }
+    }
+  }
+}

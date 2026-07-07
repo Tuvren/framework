@@ -20,9 +20,14 @@ import type { ExecutionBoundExceededDetails } from "@tuvren/core/execution";
 import {
   NoopTelemetrySink,
   type TelemetryAttributeValue,
+  type TelemetryDestination,
   type TelemetryEvent,
   type TelemetryEventKind,
   type TelemetryLineage,
+  type TelemetryOperationalSignal,
+  type TelemetryOperationalSignalKind,
+  type TelemetryRoute,
+  type TelemetryRouting,
   type TelemetrySpan,
   type TelemetrySpanError,
   type TelemetrySpanKind,
@@ -81,10 +86,15 @@ export interface RuntimeTelemetryEmitter {
 export function createRuntimeTelemetryEmitter(input: {
   now(): EpochMs;
   scope: string;
-  sink?: TuvrenTelemetrySink;
+  telemetry?: TelemetryRouting;
 }): RuntimeTelemetryEmitter {
-  const sink = input.sink ?? NoopTelemetrySink;
-  let sinkWarningEmitted = false;
+  // ADR-058 §2: normalize the construction-time routing union (bare sink, bare
+  // destination, or a route object) once into its sink + destination channels.
+  const { sink: routedSink, destination } = normalizeTelemetryRouting(
+    input.telemetry
+  );
+  const sink = routedSink ?? NoopTelemetrySink;
+  let fallbackWarningEmitted = false;
   const turnStarts = new WeakMap<RuntimeExecutionHandle, TimedSpanStart>();
   const iterationStarts = new WeakMap<RuntimeExecutionHandle, TimedSpanStart>();
   const toolStarts = new WeakMap<
@@ -92,29 +102,90 @@ export function createRuntimeTelemetryEmitter(input: {
     Map<string, TimedSpanStart>
   >();
 
-  const emitSinkWarning = () => {
-    if (sinkWarningEmitted) {
+  // ADR-058 §1/§3: the operational-signal channel is the destination's
+  // callback. When present it is invoked for every funnel-health event (never
+  // one-shot, so an operator sees each failure); when absent, or when the
+  // callback itself throws, the runtime falls back to a single last-resort
+  // warning so a degraded funnel is never fully silent. Neither path ever
+  // rethrows into the session/content-funnel path.
+  const emitFallbackWarning = () => {
+    if (fallbackWarningEmitted) {
       return;
     }
 
-    sinkWarningEmitted = true;
-    console.warn("Tuvren telemetry sink threw; dropping telemetry record");
+    fallbackWarningEmitted = true;
+    console.warn("Tuvren telemetry delivery failed; dropping telemetry record");
+  };
+
+  const emitOperationalSignal = (signal: TelemetryOperationalSignal) => {
+    if (destination?.onOperationalSignal !== undefined) {
+      try {
+        destination.onOperationalSignal(signal);
+        return;
+      } catch {
+        // A broken health callback must not silence the funnel entirely; fall
+        // through to the last-resort warning. Never rethrow.
+      }
+    }
+
+    emitFallbackWarning();
+  };
+
+  // The isolation boundary is absolute: even a secondary failure while
+  // projecting or signaling the original throw (e.g. a thrown value whose
+  // string coercion itself throws) must degrade to the last-resort warning,
+  // never re-enter the session/content-funnel path.
+  const signalTelemetryFailure = (
+    kind: TelemetryOperationalSignalKind,
+    error: unknown
+  ) => {
+    try {
+      emitOperationalSignal({
+        error: toOperationalSignalError(error),
+        kind,
+      });
+    } catch {
+      emitFallbackWarning();
+    }
+  };
+
+  // ADR-058 §3: one-directional failure isolation. A sink or destination throw
+  // is caught here at the telemetry boundary, converted to an operational
+  // signal, and can never fail, block, or delay a kernel checkpoint or a
+  // content-funnel commit. Every runtime telemetry record fans out to both the
+  // emission sink and (if routed) the durable destination.
+  const safeDeliver = (
+    records: ReadonlyArray<TelemetryEvent | TelemetrySpan>
+  ) => {
+    if (destination === undefined) {
+      return;
+    }
+
+    try {
+      destination.deliver(records);
+    } catch (error) {
+      signalTelemetryFailure("delivery_failed", error);
+    }
   };
 
   const safeEvent = (event: TelemetryEvent) => {
     try {
       sink.event(event);
-    } catch {
-      emitSinkWarning();
+    } catch (error) {
+      signalTelemetryFailure("sink_failed", error);
     }
+
+    safeDeliver([event]);
   };
 
   const safeSpan = (span: TelemetrySpan) => {
     try {
       sink.span(span);
-    } catch {
-      emitSinkWarning();
+    } catch (error) {
+      signalTelemetryFailure("sink_failed", error);
     }
+
+    safeDeliver([span]);
   };
 
   const emitEvent = (
@@ -465,10 +536,76 @@ function createSpanError(error: unknown): TelemetrySpanError | undefined {
   }
 
   const projection = projectError(
-    error instanceof Error ? error : new Error(String(error))
+    error instanceof Error ? error : new Error(coerceThrownToMessage(error))
   );
   return {
     code: projection.code ?? "runtime_error",
     message: projection.message,
+  };
+}
+
+// A host can throw a value whose string coercion itself throws (a null-prototype
+// object, a throwing `toString`). The telemetry boundary must stay throw-proof
+// even while describing such a value (ADR-058 §3), so the coercion is guarded.
+function coerceThrownToMessage(thrown: unknown): string {
+  try {
+    return String(thrown);
+  } catch {
+    return "thrown value could not be coerced to a message";
+  }
+}
+
+// ADR-058 §2: resolve the construction-time `telemetry` routing union into its
+// sink + destination channels. Detection is structural because the route object
+// (`{ sink?; destination? }`) has all-optional members and would otherwise
+// subsume the bare-sink/bare-destination forms: a value exposing `event`+`span`
+// is a sink, a value exposing `deliver` is a destination, and anything else is
+// treated as a route.
+function normalizeTelemetryRouting(telemetry: TelemetryRouting | undefined): {
+  destination?: TelemetryDestination;
+  sink?: TuvrenTelemetrySink;
+} {
+  if (telemetry === undefined) {
+    return {};
+  }
+
+  const shape = telemetry as {
+    deliver?: unknown;
+    event?: unknown;
+    span?: unknown;
+  };
+
+  if (typeof shape.event === "function" && typeof shape.span === "function") {
+    return { sink: telemetry as TuvrenTelemetrySink };
+  }
+
+  if (typeof shape.deliver === "function") {
+    return { destination: telemetry as TelemetryDestination };
+  }
+
+  const route = telemetry as TelemetryRoute;
+  return {
+    ...(route.destination === undefined
+      ? {}
+      : { destination: route.destination }),
+    ...(route.sink === undefined ? {} : { sink: route.sink }),
+  };
+}
+
+// Project a caught throw into the already-secret-screened operational-signal
+// error shape (ADR-058 §1 reuses `TelemetrySpanError`), applying the same
+// summary sanitization the span emitter uses so a delivery failure cannot leak
+// credential-shaped text onto the telemetry funnel (ADR-044).
+function toOperationalSignalError(
+  error: unknown
+): TelemetrySpanError | undefined {
+  const projected = createSpanError(error);
+  if (projected === undefined) {
+    return undefined;
+  }
+
+  return {
+    code: projected.code,
+    message: sanitizeTelemetryErrorSummary(projected.message),
   };
 }

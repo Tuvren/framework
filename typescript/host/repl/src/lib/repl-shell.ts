@@ -20,15 +20,15 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import {
-  createMcpToolSource,
-  createOrchestrationRuntime,
-  type ExecutionHandle,
-  type InputSignal,
-  type LoopPolicy,
-  type OrchestrationHandle,
-  type TuvrenStreamEvent,
-} from "@tuvren/runtime";
+import { createMcpToolSource } from "@tuvren/mcp-client";
+import type {
+  ExecutionHandle,
+  InputSignal,
+  LoopPolicy,
+  OrchestrationHandle,
+  TuvrenStreamEvent,
+} from "@tuvren/sdk";
+import { createOrchestrationRuntime } from "@tuvren/sdk/advanced";
 import { createProofExtension } from "./proof-extension.js";
 import { createReplBuiltinTools, textSignal } from "./repl-builtin-tools.js";
 import { assertValidReplConfig } from "./repl-config.js";

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { TuvrenExtension } from "@tuvren/runtime";
+import type { TuvrenExtension } from "@tuvren/sdk";
 
 export const PROOF_EXTENSION_NAME = "proof-extension";
 export const PROOF_EXTENSION_EVENT_NAME = "proof-extension.before_turn";

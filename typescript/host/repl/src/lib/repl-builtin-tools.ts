@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { InputSignal, TuvrenToolDefinition } from "@tuvren/runtime";
+import type { InputSignal, TuvrenToolDefinition } from "@tuvren/sdk";
 
 const CALCULATOR_OPERATIONS = [
   "add",

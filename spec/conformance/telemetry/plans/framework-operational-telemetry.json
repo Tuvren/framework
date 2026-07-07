@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.framework.runtime-api.operational-telemetry",
-  "planVersion": "0.3.0",
+  "planVersion": "0.4.0",
   "packetId": "tuvren.shared.core",
   "applicability": {
     "capabilities": ["framework.runtime-api"]
@@ -151,6 +151,102 @@
         }
       ],
       "evidence": ["result.telemetry.eventKinds", "result.telemetry.spanKinds"]
+    },
+    {
+      "checkId": "runtime-api-operational-telemetry.destination-health-equivalence",
+      "operation": "runtime.operational-telemetry",
+      "scenario": "operational-telemetry-scenarios",
+      "input": { "scenarioPath": "$.destination-health-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.funnel.healthy.phase",
+          "equals": "completed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.funnel.healthy.deliveredRecordKinds",
+          "contains": "turn.start"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.funnel.healthy.eventTypes",
+          "contains": "turn.start"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.funnel.unavailable.phase",
+          "equalsPath": "$.result.funnel.healthy.phase"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.funnel.unavailable.eventTypes",
+          "equalsPath": "$.result.funnel.healthy.eventTypes"
+        }
+      ],
+      "evidence": [
+        "result.funnel.healthy.deliveredRecordKinds",
+        "result.funnel.healthy.eventTypes",
+        "result.funnel.healthy.phase",
+        "result.funnel.unavailable.eventTypes",
+        "result.funnel.unavailable.phase"
+      ]
+    },
+    {
+      "checkId": "runtime-api-operational-telemetry.content-funnel-isolation",
+      "operation": "runtime.operational-telemetry",
+      "scenario": "operational-telemetry-scenarios",
+      "input": { "scenarioPath": "$.content-isolation-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.contentFunnel.messageTexts",
+          "containsPath": "$.scenario.contentMarkers.1"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.telemetryEventKinds",
+          "contains": "turn.start"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.telemetry",
+          "secretsPath": "$.scenario.contentMarkers"
+        }
+      ],
+      "evidence": [
+        "result.contentFunnel.messageTexts",
+        "result.telemetry",
+        "result.telemetryEventKinds"
+      ]
+    },
+    {
+      "checkId": "runtime-api-operational-telemetry.destination-failure-signal",
+      "operation": "runtime.operational-telemetry",
+      "scenario": "operational-telemetry-scenarios",
+      "input": { "scenarioPath": "$.destination-health-turn" },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.funnel.unavailable.phase",
+          "equals": "completed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.funnel.unavailable.operationalSignalKinds",
+          "contains": "delivery_failed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.funnel.unavailable.deliveredRecordKinds",
+          "equals": []
+        }
+      ],
+      "evidence": [
+        "result.funnel.unavailable.deliveredRecordKinds",
+        "result.funnel.unavailable.operationalSignalKinds",
+        "result.funnel.unavailable.phase"
+      ]
     },
     {
       "checkId": "secret-isolation.telemetry-attributes-and-error-summaries",

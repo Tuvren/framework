@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import type { MemoryBackendOptions } from "@tuvren/backend-memory";
-import { createMemoryBackend } from "@tuvren/backend-memory";
-import type { PostgresBackendOptions } from "@tuvren/backend-postgres";
-import { createPostgresBackend } from "@tuvren/backend-postgres";
-import type { SqliteBackendOptions } from "@tuvren/backend-sqlite";
-import { createSqliteBackend } from "@tuvren/backend-sqlite";
+// The batteries-included composition entrypoint (ADR-040, retargeted by
+// ADR-057). It lives on `@tuvren/sdk`, the host-facing composition tier: it
+// composes the internal `@tuvren/runtime` engine with host-constructed leaf
+// instances (backend, runner, provider, tools). Per ADR-057 §2 the options are
+// instances-only — the kind-tagged string shorthands (`"memory"`, `"react"`,
+// …) are retired, so this file carries no backend/runner/provider dependency;
+// the host constructs those from the leaf packages it chose and passes them in.
+
 import { TuvrenValidationError } from "@tuvren/core";
 import type {
   AgentConfig,
@@ -31,51 +33,46 @@ import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { PayloadCodec } from "@tuvren/core/lifecycle";
 import type { TuvrenProvider } from "@tuvren/core/provider";
 import type { RuntimeRunnerFactory } from "@tuvren/core/runner";
-import type { TuvrenTelemetrySink } from "@tuvren/core/telemetry";
+import type { TelemetryRouting } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import type { RuntimeBackend, RuntimeKernel } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import type { McpToolSource } from "@tuvren/mcp-client";
-import type { ReActRunnerOptions } from "@tuvren/runner-react";
-import { createReActRunner } from "@tuvren/runner-react";
-import { createOrchestrationRuntime } from "./orchestration-runtime.js";
-import { createRunnerRegistry } from "./runner-registry.js";
 import {
+  createOrchestrationRuntime,
+  createRunnerRegistry,
   createTuvrenRuntime,
   type RuntimeCoreOptions,
-} from "./runtime-core.js";
+} from "@tuvren/runtime";
 
-// ── Public type exports ─────────────────────────────────────────────────────
-
-export type { MemoryBackendOptions } from "@tuvren/backend-memory";
-export type { PostgresBackendOptions } from "@tuvren/backend-postgres";
-export type { SqliteBackendOptions } from "@tuvren/backend-sqlite";
-export type { ReActRunnerOptions } from "@tuvren/runner-react";
-
-export type BackendKind = "memory" | "sqlite" | "postgres";
-export type RunnerKind = "react";
+// ── Public options ────────────────────────────────────────────────────────────
 
 /**
- * Structural interface for an MCP tool source. Defined here so hosts can
- * reference the type without importing `@tuvren/mcp-client` directly.
- * When Epic AS lands, `@tuvren/mcp-client` exports an identical structural
- * interface and the re-export from `@tuvren/runtime` in KRT-AS009 makes
- * the two structurally compatible.
+ * Structural shape of an MCP tool source. Declared here — structurally identical
+ * to `@tuvren/mcp-client`'s `McpToolSource` — so `@tuvren/sdk` does not depend on
+ * `@tuvren/mcp-client` (which itself depends on `@tuvren/sdk` for `defineTool`;
+ * a package dependency would form a cycle). A real `createMcpToolSource(...)`
+ * result from `@tuvren/mcp-client` is structurally assignable to this type, so a
+ * host passes it straight into `tools` with no adapter. `createTuvren` only
+ * duck-types this shape (via `isMcpToolSource`), never a nominal import.
  */
+export interface McpToolSource {
+  close(): Promise<void>;
+  refresh(): Promise<{ tools: TuvrenToolDefinition[] }>;
+  readonly serverName: string;
+  readonly tools: TuvrenToolDefinition[];
+}
+
 export interface CreateTuvrenOptions {
   /**
-   * Backend spec or pre-built `RuntimeBackend` instance. When an explicit
-   * instance is passed, `createTuvren` takes ownership: `[Symbol.asyncDispose]`
-   * will call `close()` on it. Do not share a backend across multiple
-   * `TuvrenInstance` objects unless you manage its lifecycle externally and
-   * pass a no-op wrapper.
+   * Pre-built durable backend instance (ADR-057: instances only — no
+   * `"memory"`/`"sqlite"`/`"postgres"` string shorthand). Construct it from the
+   * leaf package you chose — `createMemoryBackend()`, `createSqliteBackend({
+   * databasePath })`, `createPostgresBackend({ ... })` — and pass the instance.
+   * `createTuvren` takes ownership: `[Symbol.asyncDispose]` calls `close()` on
+   * it. Do not share a backend across multiple `TuvrenInstance` objects unless
+   * you manage its lifecycle externally and pass a no-op-closing wrapper.
    */
-  backend:
-    | BackendKind
-    | RuntimeBackend
-    | { kind: "memory"; options?: MemoryBackendOptions }
-    | { kind: "sqlite"; options: SqliteBackendOptions }
-    | { kind: "postgres"; options?: PostgresBackendOptions };
+  backend: RuntimeBackend;
   /**
    * Framework-enforced per-turn execution bounds (ADR-043, KRT-BD006). Supply
    * at the top level or via `runtimeOptions.bounds`, but not both. Unset fields
@@ -89,21 +86,31 @@ export interface CreateTuvrenOptions {
    * Opt-in crypto-shredding codec (ADR-051, KRT-BF005). Supply at the top level
    * or via `runtimeOptions.payloadCodec`, but not both. Unset defaults to a
    * plaintext identity codec, leaving existing hosts unchanged. Use
-   * `createAesGcmPayloadCodec({ keyring })` from `@tuvren/runtime` for the
+   * `createAesGcmPayloadCodec({ keyring })` from `@tuvren/sdk` for the
    * batteries-included AES-256-GCM codec, or implement `PayloadCodec` over a
    * KMS/HSM.
    */
   payloadCodec?: PayloadCodec;
   provider?: TuvrenProvider;
-  runner?:
-    | RunnerKind
-    | RuntimeRunnerFactory
-    | { kind: "react"; options?: ReActRunnerOptions };
+  /**
+   * Pre-built runner factory instance (ADR-057: instances only — no `"react"`
+   * string shorthand and no implicit default). Construct it from the leaf
+   * package you chose, e.g. `createReActRunner()` from `@tuvren/runner-react`,
+   * and pass the instance.
+   */
+  runner: RuntimeRunnerFactory;
   runtimeOptions?: Omit<
     RuntimeCoreOptions,
     "defaultRunnerId" | "runnerRegistry" | "kernel"
   >;
-  telemetry?: TuvrenTelemetrySink;
+  /**
+   * Construction-time telemetry funnel routing (ADR-058). Accepts a bare
+   * `TuvrenTelemetrySink` (ADR-042, backward-compatible), a bare
+   * `TelemetryDestination`, or a `TelemetryRoute` combining both — the seam a
+   * host uses to choose split, unified, or mixed-substrate topologies without
+   * changing session behavior.
+   */
+  telemetry?: TelemetryRouting;
   tools?: Array<McpToolSource | TuvrenToolDefinition>;
 }
 
@@ -156,7 +163,7 @@ export function createTuvren(
   const { kernel, disposeBackend, purgeScope } =
     resolveKernelAndDispose(options);
 
-  const runner = buildRunner(options.runner);
+  const runner = options.runner;
   const runnerRegistry = createRunnerRegistry([runner]);
 
   const mcpSources = collectMcpSources(options.tools);
@@ -232,10 +239,11 @@ function resolveKernelAndDispose(options: CreateTuvrenOptions): {
     // stays unavailable on the resulting runtime.
     return { kernel: options.kernel, disposeBackend: () => Promise.resolve() };
   }
-  const { backend, disposeBackend } = buildBackend(options.backend);
+
+  const backend = options.backend;
   return {
     kernel: createRuntimeKernel({ backend }),
-    disposeBackend,
+    disposeBackend: tryCloseBackend(backend),
     // Surface the substrate partition-drop (ADR-051, §4.17) only when the owned
     // backend implements it; otherwise the runtime maintenance surface reports
     // it as unsupported.
@@ -246,85 +254,6 @@ function resolveKernelAndDispose(options: CreateTuvrenOptions): {
         }
       : {}),
   };
-}
-
-function buildBackend(spec: CreateTuvrenOptions["backend"]): {
-  backend: RuntimeBackend;
-  disposeBackend: () => Promise<void>;
-} {
-  if (isRuntimeBackend(spec)) {
-    return { backend: spec, disposeBackend: tryCloseBackend(spec) };
-  }
-
-  if (typeof spec === "string") {
-    return buildBackendFromKind(spec, undefined);
-  }
-
-  return buildBackendFromKind(spec.kind, spec.options);
-}
-
-function buildBackendFromKind(
-  kind: BackendKind,
-  options: unknown
-): { backend: RuntimeBackend; disposeBackend: () => Promise<void> } {
-  switch (kind) {
-    case "memory": {
-      const b = createMemoryBackend(
-        options as Parameters<typeof createMemoryBackend>[0]
-      );
-      return { backend: b, disposeBackend: () => Promise.resolve() };
-    }
-    case "sqlite": {
-      if (
-        options === undefined ||
-        options === null ||
-        typeof options !== "object" ||
-        !("databasePath" in options)
-      ) {
-        throw new TuvrenValidationError(
-          'createTuvren: "sqlite" backend requires options.databasePath',
-          { code: "invalid_createtuvren_options" }
-        );
-      }
-      const b = createSqliteBackend(
-        options as Parameters<typeof createSqliteBackend>[0]
-      );
-      return { backend: b, disposeBackend: () => b.close() };
-    }
-    case "postgres": {
-      const b = createPostgresBackend(
-        options as Parameters<typeof createPostgresBackend>[0]
-      );
-      return { backend: b, disposeBackend: tryCloseBackend(b) };
-    }
-    default: {
-      const _exhaustive: never = kind;
-      throw new TuvrenValidationError(
-        `createTuvren: unknown backend kind "${_exhaustive as string}"`,
-        { code: "invalid_createtuvren_options" }
-      );
-    }
-  }
-}
-
-function buildRunner(spec: CreateTuvrenOptions["runner"]) {
-  if (spec === undefined || spec === "react") {
-    return createReActRunner();
-  }
-
-  if (isRuntimeRunnerFactory(spec)) {
-    return spec;
-  }
-
-  const kindSpec = spec as { kind: string; options?: ReActRunnerOptions };
-  if (kindSpec.kind === "react") {
-    return createReActRunner(kindSpec.options);
-  }
-
-  throw new TuvrenValidationError(
-    `createTuvren: unknown runner kind "${kindSpec.kind}"`,
-    { code: "invalid_createtuvren_options" }
-  );
 }
 
 function collectMcpSources(
@@ -364,26 +293,8 @@ function isMcpToolSource(
   );
 }
 
-function isRuntimeBackend(value: unknown): value is RuntimeBackend {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as Record<string, unknown>).transact === "function" &&
-    typeof (value as Record<string, unknown>).capabilities === "function"
-  );
-}
-
-function isRuntimeRunnerFactory(value: unknown): value is RuntimeRunnerFactory {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as Record<string, unknown>).create === "function" &&
-    typeof (value as Record<string, unknown>).id === "string"
-  );
-}
-
-function tryCloseBackend(backend: unknown): () => Promise<void> {
-  const b = backend as Record<string, unknown>;
+function tryCloseBackend(backend: RuntimeBackend): () => Promise<void> {
+  const b = backend as unknown as Record<string, unknown>;
   if (typeof b.close === "function") {
     return () => (b.close as () => Promise<void>)();
   }

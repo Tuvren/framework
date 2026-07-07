@@ -411,6 +411,9 @@
     "runtime-api-operational-telemetry.approval-events",
     "runtime-api-operational-telemetry.completed-turn-events",
     "runtime-api-operational-telemetry.completed-turn-spans",
+    "runtime-api-operational-telemetry.content-funnel-isolation",
+    "runtime-api-operational-telemetry.destination-failure-signal",
+    "runtime-api-operational-telemetry.destination-health-equivalence",
     "runtime-api-operational-telemetry.error-path",
     "runtime-api-operational-telemetry.recovery-records",
     "runtime-api-operational-telemetry.tool-spans",
@@ -495,9 +498,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 475,
+    "totalChecks": 478,
     "applicableChecks": 0,
-    "nonApplicableChecks": 475
+    "nonApplicableChecks": 478
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

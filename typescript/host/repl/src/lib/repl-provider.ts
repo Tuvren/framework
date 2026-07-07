@@ -30,7 +30,7 @@ import {
   type TuvrenPrompt,
   type TuvrenProvider,
   TuvrenRuntimeError,
-} from "@tuvren/runtime";
+} from "@tuvren/sdk";
 import {
   DEFAULT_GEMINI_REPL_MODEL_ID,
   INVALID_REPL_CONFIG_CODE,

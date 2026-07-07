@@ -16,7 +16,14 @@
       "@tuvren/provider-bridge-ai-sdk": [
         "../../../typescript/providers/bridge-ai-sdk/dist/index.d.ts"
       ],
-      "@tuvren/runtime": ["../../../typescript/runtime/dist/index.d.ts"],
+      "@tuvren/sdk": ["../../../typescript/sdk/dist/index.d.ts"],
+      "@tuvren/sdk/advanced": ["../../../typescript/sdk/dist/advanced.d.ts"],
+      "@tuvren/kernel-grpc-client": [
+        "../../../typescript/kernel/grpc-client/dist/index.d.ts"
+      ],
+      "@tuvren/telemetry-semconv": [
+        "../../../typescript/telemetry/semconv/dist/index.d.ts"
+      ],
       "@tuvren/stream-agui": [
         "../../../typescript/streaming/agui/dist/index.d.ts"
       ],

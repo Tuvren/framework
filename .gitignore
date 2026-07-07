@@ -12,7 +12,7 @@ target
 .cache
 .tmp-tests
 .tmp-bench
-typescript/runtime/src/lib/generated/kernel-interop/
+typescript/kernel/grpc-client/src/lib/generated/kernel-interop/
 .claude/
 .env
 .env.*

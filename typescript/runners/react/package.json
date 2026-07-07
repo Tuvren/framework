@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/runner-react",
-  "private": true,
+  "description": "Tuvren ReAct runner leaf: the reason-act agent loop implementation a host constructs and passes into createTuvren.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/runners/react"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {

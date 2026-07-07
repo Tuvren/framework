@@ -36,17 +36,39 @@ import {
 } from "@tuvren/backend-memory";
 import { TuvrenRuntimeError } from "@tuvren/core";
 import { isErasedPayload, type PayloadCodec } from "@tuvren/core/lifecycle";
+import type { RuntimeRunnerFactory } from "@tuvren/core/runner";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import { createAesGcmPayloadCodec, type PayloadKeyring } from "@tuvren/sdk";
-import { createTuvren, createTuvrenRuntime } from "../src/index.ts";
+import { createTuvrenRuntime } from "../../runtime/src/index.ts";
 import {
   createRunnerRegistry,
   createStaticRunner,
-} from "./orchestration-runtime-runner-helpers.ts";
-import { assistantText, textSignal } from "./runtime-core-test-helpers.ts";
+} from "../../runtime/test/orchestration-runtime-runner-helpers.ts";
+import {
+  assistantText,
+  textSignal,
+} from "../../runtime/test/runtime-core-test-helpers.ts";
+import { createTuvren } from "../src/lib/create-tuvren.js";
+import {
+  createAesGcmPayloadCodec,
+  type PayloadKeyring,
+} from "../src/lib/payload-codec.js";
 
 const SCOPE_A = "tenant.A";
 const SCOPE_B = "tenant.B";
+
+// ADR-057: createTuvren requires a constructed runner factory instance. These
+// maintenance-surface tests never execute a turn, so a minimal end-turn factory
+// suffices — the runner is registered but never invoked.
+function offboardingRunnerFactory(): RuntimeRunnerFactory {
+  return {
+    create: () =>
+      createStaticRunner(() => ({
+        messages: [],
+        resolution: { reason: "done", type: "end_turn" },
+      })),
+    id: "offboarding-test-runner",
+  };
+}
 
 interface Tenant {
   framework: ReturnType<typeof createTuvrenRuntime>;
@@ -234,7 +256,8 @@ describe("KRT-BF006 tenant offboarding flow", () => {
 
   test("createTuvren wires the maintenance surface onto an owned backend", async () => {
     await using instance = await createTuvren({
-      backend: { kind: "memory", options: { scope: SCOPE_A } },
+      backend: createMemoryBackend({ scope: SCOPE_A }),
+      runner: offboardingRunnerFactory(),
     });
 
     // Reclamation runs through the kernel (memory advertises the capability).
@@ -252,7 +275,11 @@ describe("KRT-BF006 tenant offboarding flow", () => {
     // When a kernel is supplied it takes precedence and the (required) backend
     // spec is ignored — createTuvren never owns a substrate to drive a partition
     // drop against, so purgeScope stays unavailable.
-    await using instance = await createTuvren({ backend: "memory", kernel });
+    await using instance = await createTuvren({
+      backend: createMemoryBackend(),
+      runner: offboardingRunnerFactory(),
+      kernel,
+    });
 
     // Reclamation still works (it only needs the kernel), but the partition
     // drop has no owned substrate to act on and is reported as unsupported.

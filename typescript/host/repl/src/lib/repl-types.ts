@@ -24,11 +24,11 @@ import type {
   InputSignal,
   TuvrenProvider,
   TuvrenRuntime,
-  TuvrenRuntimeTelemetryAttributeKey,
   TuvrenStreamEvent,
   TuvrenToolDefinition,
-} from "@tuvren/runtime";
+} from "@tuvren/sdk";
 import type { TuvrenSseFrame } from "@tuvren/stream-sse";
+import type { TuvrenRuntimeTelemetryAttributeKey } from "@tuvren/telemetry-semconv";
 
 export type ReplBackendMode = "memory" | "postgres" | "sqlite";
 export type ReplKernelMode = "rust-grpc" | "typescript-local";

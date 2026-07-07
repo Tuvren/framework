@@ -50,6 +50,7 @@ const CARGO_MANIFEST_PATTERN = /(^|\/)Cargo\.(toml|lock)$/;
 const INNER_LOOP_AUTHORITY_GATE_IDS: readonly string[] = [
   "docs-to-authority freeze gate",
   "Epic AL portability gate",
+  "ADR-057 host import boundary gate",
   "Epic AF conformance gap plan freshness",
   "authority packet validation",
   "conformance plan validation",

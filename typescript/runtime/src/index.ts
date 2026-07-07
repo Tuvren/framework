@@ -14,176 +14,15 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional curated host-facing SDK surface.
-export type {
-  MemoryBackendOptions,
-  MemoryScopeStore,
-} from "@tuvren/backend-memory";
-export {
-  createMemoryBackend,
-  createMemoryScopeStore,
-} from "@tuvren/backend-memory";
-export type { PostgresBackendOptions } from "@tuvren/backend-postgres";
-export {
-  createPostgresBackend,
-  destroyPostgresBackend,
-} from "@tuvren/backend-postgres";
-export type { SqliteBackendOptions } from "@tuvren/backend-sqlite";
-export { createSqliteBackend } from "@tuvren/backend-sqlite";
-export type {
-  EpochMs,
-  HashString,
-  KernelRecord,
-  Scope,
-  TuvrenErrorCode,
-  TuvrenErrorOptions,
-} from "@tuvren/core";
-export {
-  assertHashString,
-  assertScope,
-  DEFAULT_SCOPE,
-  isScope,
-  TuvrenError,
-  TuvrenLineageError,
-  TuvrenPersistenceError,
-  TuvrenProviderError,
-  TuvrenRecoveryError,
-  TuvrenRuntimeError,
-  TuvrenValidationError,
-} from "@tuvren/core";
-export type {
-  CustomEvent,
-  ErrorEvent,
-  EventSource,
-  IterationEndEvent,
-  IterationStartEvent,
-  MessageDoneEvent,
-  MessageStartEvent,
-  StateCheckpointEvent,
-  SteeringIncorporatedEvent,
-  TurnEndEvent,
-  TurnStartEvent,
-  TuvrenStreamEvent,
-} from "@tuvren/core/events";
-export { assertTuvrenStreamEvent } from "@tuvren/core/events";
-export type {
-  AgentConfig,
-  ContextManifest,
-  ExecutionHandle,
-  ExecutionStatus,
-  InputSignal,
-  LoopPolicy,
-  OrchestrationHandle,
-  OrchestrationRuntime,
-  ReclamationSummary,
-  RuntimeMaintenance,
-  RuntimeResolution,
-  TuvrenRuntime,
-} from "@tuvren/core/execution";
-export { assertExecutionStatus } from "@tuvren/core/execution";
-export type { TuvrenExtension } from "@tuvren/core/extensions";
-// Data-lifecycle crypto-shredding payload codec (ADR-051, KRT-BF005): the
-// contract lives in @tuvren/core/lifecycle; the batteries-included codec
-// implementations live in @tuvren/sdk.
-export type {
-  ErasedPayload,
-  PayloadCodec,
-  PayloadCodecContext,
-  PayloadDecryptResult,
-} from "@tuvren/core/lifecycle";
-export { isErasedPayload } from "@tuvren/core/lifecycle";
-export type {
-  ContentPart,
-  FilePart,
-  ReasoningPart,
-  StructuredPart,
-  TextPart,
-  ToolCallPart,
-  ToolResultPart,
-  TuvrenJsonSchema,
-  TuvrenMessage,
-  TuvrenModelConfig,
-} from "@tuvren/core/messages";
-export { assertTuvrenMessage } from "@tuvren/core/messages";
-export type {
-  ProviderStreamChunk,
-  ProviderUsage,
-  StructuredOutputRequest,
-  TuvrenModelResponse,
-  TuvrenPrompt,
-  TuvrenProvider,
-} from "@tuvren/core/provider";
-export { assertTuvrenModelResponse } from "@tuvren/core/provider";
-export type {
-  TelemetryEvent,
-  TelemetryEventKind,
-  TelemetryLineage,
-  TelemetrySpan,
-  TelemetrySpanKind,
-  TuvrenTelemetrySink,
-} from "@tuvren/core/telemetry";
-export { NoopTelemetrySink } from "@tuvren/core/telemetry";
-export type {
-  ApprovalRequest,
-  ApprovalResponse,
-  PendingToolCall,
-  ToolExecutionResult,
-  TuvrenToolDefinition,
-} from "@tuvren/core/tools";
-export {
-  assertApprovalRequest,
-  assertApprovalResponse,
-  assertTuvrenToolDefinition,
-} from "@tuvren/core/tools";
-export type {
-  RuntimeBackend,
-  RuntimeKernel,
-  RuntimeKernelRunLiveness,
-  TurnTreeSchema,
-} from "@tuvren/kernel-protocol";
-export {
-  decodeDeterministicKernelRecord,
-  encodeDeterministicKernelRecord,
-  hashKernelRecord,
-} from "@tuvren/kernel-protocol";
-export type { RuntimeKernelOptions } from "@tuvren/kernel-runtime";
-export { createRuntimeKernel } from "@tuvren/kernel-runtime";
-export type { McpToolSource } from "@tuvren/mcp-client";
-export { createMcpToolSource } from "@tuvren/mcp-client";
-export type { ReActRunnerOptions } from "@tuvren/runner-react";
-export { createReActRunner, REACT_RUNNER_ID } from "@tuvren/runner-react";
-// SDK-tier executables re-exported for surface compatibility: schema-authoring
-// helpers (defineTool et al.) and the batteries-included payload codecs.
-export type {
-  AesGcmPayloadCodecOptions,
-  FlexibleSchema,
-  LazySchema,
-  PayloadKeyring,
-  Schema,
-  StandardSchema,
-  ZodSchema,
-} from "@tuvren/sdk";
-export {
-  asSchema,
-  createAesGcmPayloadCodec,
-  createIdentityPayloadCodec,
-  defineTool,
-  IDENTITY_PAYLOAD_CODEC,
-  isPayloadEnvelope,
-  jsonSchema,
-  schemaSymbol,
-  standardSchema,
-  zodSchema,
-} from "@tuvren/sdk";
-export type {
-  TuvrenRuntimeTelemetryAttributeDefinition,
-  TuvrenRuntimeTelemetryAttributeKey,
-} from "@tuvren/telemetry-semconv";
-export {
-  TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS,
-  TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES,
-  TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
-} from "@tuvren/telemetry-semconv";
+// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional internal-engine surface.
+// @tuvren/runtime — the internal orchestration engine (ADR-057). This is NOT a
+// host-facing package: hosts compose the framework through `@tuvren/sdk`
+// (`createTuvren` + the curated `@tuvren/core` re-exports) and the leaf packages
+// they choose, never by importing `@tuvren/runtime` directly. The engine surface
+// below (runtime/orchestration/runner/capability/context/handoff/kernel-bridge
+// factories) is consumed by `@tuvren/sdk` and by the conformance adapters that
+// exercise the engine at a lower level; it carries no host-facing re-exports and
+// is not semver-guaranteed.
 export type { BindingResolver } from "./lib/binding-resolver.js";
 export { createBindingResolver } from "./lib/binding-resolver.js";
 export type {
@@ -199,13 +38,6 @@ export {
   createEmptyContextManifest,
   updateContextManifest,
 } from "./lib/context-manifest.js";
-export type {
-  BackendKind,
-  CreateTuvrenOptions,
-  RunnerKind,
-  TuvrenInstance,
-} from "./lib/create-tuvren.js";
-export { createTuvren } from "./lib/create-tuvren.js";
 export type { ExtensionStateUpdate } from "./lib/extension-runtime.js";
 export {
   buildSharedExports,
@@ -235,6 +67,4 @@ export {
   DEFAULT_MAX_PARALLEL_TOOL_CALLS,
 } from "./lib/runtime-core.js";
 export type { ExecutionSessionRequest } from "./lib/runtime-execution-types.js";
-export type { GrpcRuntimeKernelOptions } from "./lib/runtime-kernel-grpc.js";
-export { createGrpcRuntimeKernel } from "./lib/runtime-kernel-grpc.js";
 export { createToolRegistry } from "./lib/tool-registry.js";

@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/stream-agui",
-  "private": true,
+  "description": "Tuvren AG-UI stream adapter leaf: projects Tuvren stream events onto AG-UI protocol events.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/streaming/agui"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {

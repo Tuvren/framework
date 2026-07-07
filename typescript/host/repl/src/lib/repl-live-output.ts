@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { ApprovalRequest, TuvrenStreamEvent } from "@tuvren/runtime";
+import type { ApprovalRequest, TuvrenStreamEvent } from "@tuvren/sdk";
 
 const ANSI_RESET = "\u001B[0m";
 const MAX_INLINE_EVENT_TEXT_LENGTH = 180;

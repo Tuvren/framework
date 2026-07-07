@@ -22,9 +22,10 @@ import { runCommand } from "./lib/command-runner.js";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const PROTO_ROOT = "spec/interop/proto";
-const GENERATED_ROOT = "typescript/runtime/src/lib/generated/kernel-interop";
+const GENERATED_ROOT =
+  "typescript/kernel/grpc-client/src/lib/generated/kernel-interop";
 const GENERATED_TSCONFIG =
-  "typescript/runtime/tsconfig.kernel-interop.generated.json";
+  "typescript/kernel/grpc-client/tsconfig.kernel-interop.generated.json";
 const REQUIRED_GENERATED_FILES: readonly string[] = [
   `${GENERATED_ROOT}/tuvren/kernel/interop/v1/kernel_services_pb.ts`,
   `${GENERATED_ROOT}/tuvren/kernel/interop/v1/kernel_types_pb.ts`,

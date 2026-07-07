@@ -16,7 +16,7 @@
 
 import process from "node:process";
 import { createInterface } from "node:readline/promises";
-import { DEFAULT_SCOPE, type TuvrenStreamEvent } from "@tuvren/runtime";
+import { DEFAULT_SCOPE, type TuvrenStreamEvent } from "@tuvren/sdk";
 import {
   createReplShell,
   haveAllChecksPassed,

@@ -16,7 +16,7 @@
 
 import { createReadStream, createWriteStream } from "node:fs";
 import { createInterface } from "node:readline/promises";
-import type { TuvrenStreamEvent } from "@tuvren/runtime";
+import type { TuvrenStreamEvent } from "@tuvren/sdk";
 
 export type ReplTranscriptBackendKind = "memory" | "postgres" | "sqlite";
 

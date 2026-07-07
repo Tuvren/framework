@@ -23,10 +23,19 @@ import type {
   TuvrenModelResponse,
   TuvrenProvider,
 } from "@tuvren/core/provider";
+import { createMemoryBackend } from "../../kernel/backends/memory/src/index.ts";
 import type { PostgresBackendOptions } from "../../kernel/backends/postgres/src/index.ts";
-import { destroyPostgresBackend } from "../../kernel/backends/postgres/src/index.ts";
-import type { CreateTuvrenOptions } from "../../runtime/src/lib/create-tuvren.ts";
-import { createTuvren } from "../../runtime/src/lib/create-tuvren.ts";
+import {
+  createPostgresBackend,
+  destroyPostgresBackend,
+} from "../../kernel/backends/postgres/src/index.ts";
+import { createSqliteBackend } from "../../kernel/backends/sqlite/src/index.ts";
+import type { RuntimeBackend } from "../../kernel/protocol/src/index.ts";
+import { createReActRunner } from "../../runners/react/src/index.ts";
+// ADR-057: createTuvren is now the @tuvren/sdk composition entrypoint, and it
+// accepts constructed instances only. The adapter — not createTuvren — owns the
+// plan's string backend selector → instance mapping.
+import { createTuvren } from "../../sdk/src/index.ts";
 
 interface AdapterProjection {
   events?: readonly unknown[];
@@ -99,7 +108,7 @@ async function runBatteriesIncludedLifecycle(
 
   const instance = await createTuvren({
     backend: backendSpec,
-    runner: { kind: "react", options: { providerCallMode: "generate" } },
+    runner: createReActRunner({ providerCallMode: "generate" }),
     provider,
   });
 
@@ -168,14 +177,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function buildBackendSpec(kind: string): {
-  backendSpec: CreateTuvrenOptions["backend"];
+  backendSpec: RuntimeBackend;
   cleanupPath: string | undefined;
   cleanupBackend: (() => Promise<void>) | undefined;
 } {
   switch (kind) {
     case "memory":
       return {
-        backendSpec: "memory",
+        backendSpec: createMemoryBackend(),
         cleanupBackend: undefined,
         cleanupPath: undefined,
       };
@@ -183,7 +192,7 @@ function buildBackendSpec(kind: string): {
       const dir = join(tmpdir(), `tuvren-bi-${randomUUID()}`);
       const databasePath = join(dir, "kernel.sqlite");
       return {
-        backendSpec: { kind: "sqlite", options: { databasePath } },
+        backendSpec: createSqliteBackend({ databasePath }),
         cleanupBackend: undefined,
         cleanupPath: dir,
       };
@@ -208,7 +217,7 @@ function buildBackendSpec(kind: string): {
         username: process.env.PGUSER,
       };
       return {
-        backendSpec: { kind: "postgres", options: pgOptions },
+        backendSpec: createPostgresBackend(pgOptions),
         cleanupBackend: () => destroyPostgresBackend(pgOptions),
         cleanupPath: undefined,
       };

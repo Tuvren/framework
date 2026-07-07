@@ -34,20 +34,19 @@
 import { describe, expect, test } from "bun:test";
 import { randomBytes } from "node:crypto";
 import { createMemoryBackend } from "@tuvren/backend-memory";
-import { isErasedPayload } from "@tuvren/core/lifecycle";
+import { isErasedPayload, isPayloadEnvelope } from "@tuvren/core/lifecycle";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import {
-  createAesGcmPayloadCodec,
-  isPayloadEnvelope,
-  type PayloadKeyring,
-} from "@tuvren/sdk";
-import { createTuvrenRuntime } from "../src/index.ts";
+import { createTuvrenRuntime } from "../../runtime/src/index.ts";
 import {
   createRunnerRegistry,
   createStaticRunner,
-} from "./orchestration-runtime-runner-helpers.ts";
-import { textSignal } from "./runtime-core-test-helpers.ts";
+} from "../../runtime/test/orchestration-runtime-runner-helpers.ts";
+import { textSignal } from "../../runtime/test/runtime-core-test-helpers.ts";
+import {
+  createAesGcmPayloadCodec,
+  type PayloadKeyring,
+} from "../src/lib/payload-codec.js";
 
 const SCOPE = "tenant.conversation-state-continuity";
 // A provider-namespaced continuity artifact (e.g. a Google thought signature or

@@ -11,7 +11,16 @@
       "path": "../../../typescript/runners/react/tsconfig.lib.json"
     },
     {
-      "path": "../../../typescript/runtime/tsconfig.lib.json"
+      "path": "../../../typescript/sdk/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../typescript/kernel/grpc-client/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../typescript/tools/mcp-client/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../typescript/telemetry/semconv/tsconfig.lib.json"
     },
     {
       "path": "../../../typescript/streaming/core/tsconfig.lib.json"

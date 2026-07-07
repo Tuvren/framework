@@ -18,5 +18,17 @@
   "recovery-turn": {
     "operation": "runtime.operational-telemetry",
     "case": "recovery"
+  },
+  "destination-health-turn": {
+    "operation": "runtime.operational-telemetry",
+    "case": "destination-health"
+  },
+  "content-isolation-turn": {
+    "operation": "runtime.operational-telemetry",
+    "case": "content-isolation",
+    "contentMarkers": [
+      "TUVREN-CONTENT-FUNNEL-USER-PAYLOAD-4c19e2d7",
+      "TUVREN-CONTENT-FUNNEL-ASSISTANT-PAYLOAD-b8a35f61"
+    ]
   }
 }

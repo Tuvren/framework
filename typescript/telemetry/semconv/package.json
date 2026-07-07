@@ -1,7 +1,16 @@
 {
   "name": "@tuvren/telemetry-semconv",
-  "private": true,
+  "description": "Tuvren telemetry semantic conventions: the generated attribute and metric registry shared by Tuvren telemetry emitters and sinks.",
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/telemetry/semconv"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {

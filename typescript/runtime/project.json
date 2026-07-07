@@ -38,13 +38,6 @@
     },
     "test": {
       "executor": "nx:run-commands",
-      "dependsOn": [
-        {
-          "projects": ["kernel-interop-grpc"],
-          "target": "codegen",
-          "params": "ignore"
-        }
-      ],
       "options": {
         "cwd": "typescript/runtime",
         "command": "bun test"
@@ -52,13 +45,6 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "dependsOn": [
-        {
-          "projects": ["kernel-interop-grpc"],
-          "target": "codegen",
-          "params": "ignore"
-        }
-      ],
       "options": {
         "cwd": ".",
         "command": "bun tools/scripts/typecheck-project.ts typescript/runtime"
