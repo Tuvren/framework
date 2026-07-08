@@ -107,7 +107,7 @@ Feature: Leaseless-run reclamation expiry
   - `typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts` (`dropScope`, lines 68-71; `runExclusive`, lines ~79-97)
   - `typescript/kernel/backends/memory/test/backend-memory.purge-scope.test.ts`
 - **Scope (Out-of-Scope Files):** `typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts` `purgeScope` (already file-close based, not affected by this race), `typescript/kernel/backends/postgres/src/lib/`
-- **Verification Command:** `bun run nx run kernel-backend-memory:test`
+- **Verification Command:** `bun run nx run backend-memory:test`
 - **Expected Success Output:** `exit 0`
 - **STOP Conditions:** STOP if a sentinel/conditional-delete fix cannot preserve the documented "distinct Scopes never contend" guarantee under the added test — escalate instead of shipping a partial fix.
 - **Description:** `dropScope` deletes the per-scope queue entry (`this.scopeQueues.delete(scope)`) from inside the same call that also deletes committed state, without checking whether a later caller has already chained a new continuation onto that scope's queue. A caller arriving after the deletion chains onto a fresh `Promise.resolve()` instead of the true prior continuation, letting it run concurrently with a transaction still in flight — bypassing the single-writer-per-scope guarantee during tenant purge. Fix by not unconditionally deleting the queue entry while continuations may still be chained (a resolved sentinel value, or a conditional delete that only removes the map entry if it still holds the value this call installed), then add the purge-vs-concurrent-transact race regression test that does not exist today in `backend-memory.purge-scope.test.ts`.
@@ -125,7 +125,7 @@ Feature: Purge-scope serialization safety
 
   Scenario: Purge-vs-transact race test exists and passes
     Given "backend-memory.purge-scope.test.ts"
-    When "bun run nx run kernel-backend-memory:test" runs
+    When "bun run nx run backend-memory:test" runs
     Then a test simulating a purge racing a concurrent transact on the same scope exists
     And it asserts no concurrent execution window opens
 ```
