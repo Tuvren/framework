@@ -150,13 +150,13 @@ describe("@tuvren/backend-sqlite WAL locking (KRT-BK011)", () => {
       })
     );
 
-    // (i) The same instance's own subsequent read must not observe the
-    // aborted write, and the instance itself must remain healthy.
+    // The instance itself must remain healthy and usable after the abort --
+    // whether its own subsequent read also misses the aborted write is
+    // already covered identically across backends by the shared testkit
+    // (backend-conformance-suite.ts / backend-recovery-suite.ts), so this
+    // test only re-checks it via the fresh reopen below, which is what is
+    // actually backend-specific here.
     deepStrictEqual(await backend.health(), { ok: true });
-    const seenBySameInstance = await backend.transact((tx) =>
-      tx.schemas.get(schema.schemaId)
-    );
-    strictEqual(seenBySameInstance, null);
 
     await backend.close();
 

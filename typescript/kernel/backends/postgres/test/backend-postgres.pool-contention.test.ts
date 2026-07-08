@@ -102,58 +102,65 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
       releaseXHold = resolve;
     });
 
-    // By the time `work` starts executing, `PostgresBackend.transact` has
-    // already run `SELECT ... FOR UPDATE` (loadPersistedStateForUpdate is
-    // awaited before `work` is invoked), so the row lock is genuinely held the
-    // instant this callback body starts.
-    const xPromise = backendX.transact(async (tx) => {
-      sequence.push("x-holding-row-lock");
-      markXHoldingRowLock();
-      await tx.objects.put(recordX);
-      await xHold;
-      sequence.push("x-about-to-commit");
-    });
+    try {
+      // By the time `work` starts executing, `PostgresBackend.transact` has
+      // already run `SELECT ... FOR UPDATE` (loadPersistedStateForUpdate is
+      // awaited before `work` is invoked), so the row lock is genuinely held
+      // the instant this callback body starts.
+      const xPromise = backendX.transact(async (tx) => {
+        sequence.push("x-holding-row-lock");
+        markXHoldingRowLock();
+        await tx.objects.put(recordX);
+        await xHold;
+        sequence.push("x-about-to-commit");
+      });
 
-    await xHoldingRowLock;
+      await xHoldingRowLock;
 
-    const yPromise = backendY.transact(async (tx) => {
-      sequence.push("y-work-ran-after-x-committed");
-      await tx.objects.put(recordY);
-    });
+      const yPromise = backendY.transact(async (tx) => {
+        sequence.push("y-work-ran-after-x-committed");
+        await tx.objects.put(recordY);
+      });
 
-    // Prove Y is genuinely blocked *while* X still holds the lock, instead of
-    // only inferring it from final ordering: race Y's settlement against a
-    // generous timeout. If the lock genuinely blocks, Y stays pending no
-    // matter how long, so this has no false-failure risk -- it only fails if
-    // the lock is broken, which is exactly the regression this test exists to
-    // catch.
-    const yStatusWhileXHolds = await Promise.race([
-      yPromise.then(
-        () => "settled" as const,
-        () => "settled" as const
-      ),
-      delay(300).then(() => "pending" as const),
-    ]);
-    expect(yStatusWhileXHolds).toBe("pending");
+      try {
+        // Prove Y is genuinely blocked *while* X still holds the lock, instead
+        // of only inferring it from final ordering: race Y's settlement
+        // against a generous timeout. If the lock genuinely blocks, Y stays
+        // pending no matter how long, so this has no false-failure risk -- it
+        // only fails if the lock is broken, which is exactly the regression
+        // this test exists to catch.
+        const yStatusWhileXHolds = await Promise.race([
+          yPromise.then(
+            () => "settled" as const,
+            () => "settled" as const
+          ),
+          delay(300).then(() => "pending" as const),
+        ]);
+        expect(yStatusWhileXHolds).toBe("pending");
+      } finally {
+        // Always release X's held-open transaction, even if the assertion
+        // above throws -- otherwise X's FOR UPDATE lock stays open and
+        // afterAll's DROP SCHEMA ... CASCADE teardown hangs on it.
+        releaseXHold();
+      }
 
-    releaseXHold();
+      await xPromise;
+      await yPromise;
 
-    await xPromise;
-    await yPromise;
+      expect(sequence).toEqual([
+        "x-holding-row-lock",
+        "x-about-to-commit",
+        "y-work-ran-after-x-committed",
+      ]);
 
-    expect(sequence).toEqual([
-      "x-holding-row-lock",
-      "x-about-to-commit",
-      "y-work-ran-after-x-committed",
-    ]);
-
-    await backendX.transact(async (tx) => {
-      expect(await tx.objects.has(recordX.hash)).toBe(true);
-      expect(await tx.objects.has(recordY.hash)).toBe(true);
-    });
-
-    await closeBackend(backendX);
-    await closeBackend(backendY);
+      await backendX.transact(async (tx) => {
+        expect(await tx.objects.has(recordX.hash)).toBe(true);
+        expect(await tx.objects.has(recordY.hash)).toBe(true);
+      });
+    } finally {
+      await closeBackend(backendX);
+      await closeBackend(backendY);
+    }
   });
 
   test("a single instance safely serializes several concurrent transact() calls through its one max: 1 connection without corruption or pool errors", async () => {
