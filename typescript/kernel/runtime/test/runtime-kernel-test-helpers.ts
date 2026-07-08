@@ -42,9 +42,14 @@ export interface RuntimeKernelFixture {
 }
 
 export async function createThreadFixture(
-  input: { branchId?: string; now?: () => number; threadId?: string } = {}
+  input: {
+    backend?: RuntimeBackend;
+    branchId?: string;
+    now?: () => number;
+    threadId?: string;
+  } = {}
 ): Promise<RuntimeKernelFixture> {
-  const backend = createMemoryBackend();
+  const backend = input.backend ?? createMemoryBackend();
   const kernel = createRuntimeKernel({
     backend,
     now: input.now,

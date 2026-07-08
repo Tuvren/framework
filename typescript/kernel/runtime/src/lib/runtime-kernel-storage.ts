@@ -30,6 +30,7 @@ import {
   type BranchRecord,
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
+  hashKernelRecord,
   hashOpaqueObjectBytes,
   type PathValue,
   type RunRecord,
@@ -50,6 +51,15 @@ import {
   type TurnTreeManifest,
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+
+// ADR-011 frames the ordered-path chunking threshold/size as an
+// implementation constant, not a protocol constant, so each storage-owning
+// module (memory/postgres/sqlite backends, and this runtime caller) declares
+// its own copy rather than importing a shared one. Kept in sync across all
+// five declarations by the source-text agreement test in
+// runtime-kernel-storage.chunk-constant-agreement.test.ts, not by import.
+const RUNTIME_ORDERED_PATH_CHUNK_THRESHOLD = 32;
+const RUNTIME_ORDERED_PATH_CHUNK_SIZE = 32;
 
 const DEFAULT_MEDIA_TYPE = "application/octet-stream";
 
@@ -131,6 +141,93 @@ export function toStoredTurnTreePath(
     collectionKind,
     path,
     singleHash: typeof value === "string" ? value : null,
+    turnTreeHash,
+  };
+}
+
+/**
+ * Chunk-aware counterpart to `toStoredTurnTreePath` (ADR-011, KRT-BK008).
+ * Callers that can prove `value` is a strict append onto `priorTurnTreeHash`'s
+ * already-chunked prior value for `path` reuse that prior's stable (full)
+ * chunks verbatim and only hash/store the new tail, instead of re-flattening
+ * and re-hashing the whole collection on every write past the threshold. Only
+ * `createTurnTree` callers that are structurally guaranteed append-only may
+ * pass `priorTurnTreeHash` (see the call-site comments in
+ * runtime-kernel-lineage.ts and runtime-kernel.ts); every other combination of
+ * inputs falls back to `toStoredTurnTreePath`'s exact flat behavior.
+ */
+export async function toStoredTurnTreePathChunkAware(
+  tx: RuntimeBackendTx,
+  turnTreeHash: HashString,
+  collectionKind: "ordered" | "single",
+  path: string,
+  value: PathValue,
+  priorTurnTreeHash: HashString | undefined,
+  now: () => EpochMs
+): Promise<StoredTurnTreePath> {
+  if (collectionKind !== "ordered" || priorTurnTreeHash === undefined) {
+    return toStoredTurnTreePath(turnTreeHash, collectionKind, path, value);
+  }
+
+  const items = Array.isArray(value) ? value : [];
+
+  if (items.length <= RUNTIME_ORDERED_PATH_CHUNK_THRESHOLD) {
+    return toStoredTurnTreePath(turnTreeHash, collectionKind, path, value);
+  }
+
+  const prior = await tx.turnTreePaths.get(priorTurnTreeHash, path);
+
+  if (
+    prior === null ||
+    prior.collectionKind !== "ordered" ||
+    prior.orderedEncoding !== "chunked" ||
+    items.length < prior.orderedCount
+  ) {
+    return toStoredTurnTreePath(turnTreeHash, collectionKind, path, value);
+  }
+
+  const priorChunkHashes = decodeHashArray(prior.orderedChunkListCbor);
+  const stableChunkCount = Math.floor(
+    prior.orderedCount / RUNTIME_ORDERED_PATH_CHUNK_SIZE
+  );
+  const reusedChunkHashes = priorChunkHashes.slice(0, stableChunkCount);
+  const newChunkHashes: HashString[] = [];
+
+  for (
+    let index = stableChunkCount * RUNTIME_ORDERED_PATH_CHUNK_SIZE;
+    index < items.length;
+    index += RUNTIME_ORDERED_PATH_CHUNK_SIZE
+  ) {
+    const chunkItems = items.slice(
+      index,
+      index + RUNTIME_ORDERED_PATH_CHUNK_SIZE
+    );
+    const chunkHash = await hashKernelRecord(chunkItems);
+    // Chunk content is hash-addressed, so an identical chunk of items may
+    // already exist under a different tree's history (e.g. divergent
+    // branches sharing early lineage). Backends reject a put whose
+    // createdAtMs differs from an existing record with the same key, so
+    // preserve the original stamp instead of always using `now()` — mirrors
+    // the memory/postgres/sqlite backends' own promotion-path behavior.
+    const existingChunk = await tx.orderedPathChunks.get(chunkHash);
+    await tx.orderedPathChunks.put({
+      chunkHash,
+      createdAtMs: existingChunk?.createdAtMs ?? now(),
+      itemCount: chunkItems.length,
+      itemsCbor: encodeRecord(chunkItems),
+    });
+    newChunkHashes.push(chunkHash);
+  }
+
+  return {
+    collectionKind: "ordered",
+    orderedChunkListCbor: encodeRecord([
+      ...reusedChunkHashes,
+      ...newChunkHashes,
+    ]),
+    orderedCount: items.length,
+    orderedEncoding: "chunked",
+    path,
     turnTreeHash,
   };
 }

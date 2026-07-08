@@ -532,6 +532,15 @@ export function createRuntimeKernel(
             baseManifest = await requireTreeManifest(tx, baseTurnTreeHash);
           }
 
+          // `changes` is arbitrary caller-supplied input here (validated only
+          // by validateTurnTreeChangeSet, not applyStagedResultsToManifest),
+          // so it can replace an ordered path's entire array rather than
+          // append to it. Deliberately do NOT thread `baseTurnTreeHash`
+          // through as `priorTurnTreeHash`: the chunk-aware writer trusts
+          // append-only-ness structurally, and this call site has no such
+          // guarantee (contrast with `tree.incorporate` below and
+          // `createIncorporatedTree`, which both build `changes` via
+          // applyStagedResultsToManifest and are safe to thread).
           return await createTurnTree(tx, {
             changes: { ...baseManifest, ...changes },
             now,
@@ -576,6 +585,7 @@ export function createRuntimeKernel(
           return await createTurnTree(tx, {
             changes: manifest,
             now,
+            priorTurnTreeHash: baseTurnTreeHash,
             schema,
           });
         });
