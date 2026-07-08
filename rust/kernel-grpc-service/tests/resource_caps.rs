@@ -23,27 +23,28 @@
 //! Scope note (see ticket report): only the decode-size ceiling (Gherkin
 //! scenario 2) is exercised here with a real running server and client. The
 //! per-RPC timeout and per-connection concurrency limit (Gherkin scenario 3)
-//! are not exercised behaviorally in this suite:
+//! are exercised, but not in this file — see
+//! `tests::per_rpc_timeout_terminates_a_slower_handler_with_a_cancelled_status`
+//! and
+//! `tests::concurrency_limit_per_connection_serializes_excess_requests_on_one_connection`
+//! in `src/lib.rs`'s `#[cfg(test)] mod tests`.
 //!
-//! * tonic's `GrpcTimeout` layer takes `min(client-supplied grpc-timeout
-//!   header, server-configured timeout)`, and is present on every tonic
-//!   server unconditionally (with `server_timeout: None` when unconfigured).
-//!   A test that sets a short client-side timeout would trip regardless of
-//!   whether `serve_kernel_grpc` configures `.timeout(..)` at all, so it
-//!   would prove nothing about this change.
-//! * Proving the server-side 30s ceiling (or the 64 concurrency ceiling)
-//!   fires would require an RPC handler that can be made to hang or hold a
-//!   concurrency slot on demand. No such test seam exists in
-//!   `InMemoryKernel` today, and every handler in this crate completes
-//!   near-instantly, so there is no way to observe either ceiling firing
-//!   without either waiting out a real 30-second timeout in this suite or
-//!   adding a new artificial-delay seam to the kernel — both judged out of
-//!   scope for this ticket. `.timeout(..)` and
-//!   `.concurrency_limit_per_connection(..)` are confirmed present on the
-//!   builder chain in `src/lib.rs` and are real `tonic::transport::Server`
-//!   builder methods in the pinned tonic 0.14.5 (verified against
-//!   `tonic-0.14.5/src/transport/server/mod.rs`), so this is a documented
-//!   test gap, not a silent omission.
+//! Those two tests could not live in this file: proving the server-side 30s
+//! ceiling (or the 64 concurrency ceiling) fires requires an RPC handler
+//! that can be made to hang or hold a concurrency slot on demand, and an
+//! external integration-test crate like this one only has access to the
+//! crate's public API, not the private `KernelGrpcServiceImpl` fields and
+//! `configured_server_builder` helper needed to inject a small test-only
+//! delay and small test-only timeout/concurrency values without adding new
+//! public API surface. `src/lib.rs`'s own `#[cfg(test)]` module is a
+//! descendant of the crate root, so it can construct
+//! `KernelGrpcServiceImpl` directly (mirroring the `max_walk_back_hops`
+//! precedent in the same module) and drive `configured_server_builder` —
+//! the same helper `serve_kernel_grpc` calls with the real production
+//! constants — with small values, over a real bound socket with a real
+//! tonic client. `.timeout(..)` and `.concurrency_limit_per_connection(..)`
+//! are real `tonic::transport::Server` builder methods in the pinned tonic
+//! 0.14.5 (verified against `tonic-0.14.5/src/transport/server/mod.rs`).
 
 use tuvren_kernel_rust::InMemoryKernel;
 use tuvren_kernel_rust_grpc_service::proto;

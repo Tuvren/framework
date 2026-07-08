@@ -72,6 +72,16 @@ const MAX_WALK_BACK_HOPS: usize = 10_000;
 pub struct KernelGrpcServiceImpl {
     kernel: InMemoryKernel,
     max_walk_back_hops: usize,
+    // KRT-BK006: test-only hook proving the `Server::builder()` `.timeout(..)`
+    // and `.concurrency_limit_per_connection(..)` ceilings (see
+    // `configured_server_builder` below) actually fire. Every real
+    // `InMemoryKernel` RPC handler completes near-instantly, so there is no
+    // way to make an RPC hang or hold a concurrency slot on demand without an
+    // artificial delay seam; `store_put` sleeps for this duration (when set)
+    // before calling into the kernel. `KernelGrpcServiceImpl::new` always
+    // leaves this `None` (a no-op in production); only the `#[cfg(test)]`
+    // tests below construct an instance with this set.
+    artificial_delay: Option<std::time::Duration>,
 }
 
 impl KernelGrpcServiceImpl {
@@ -79,6 +89,7 @@ impl KernelGrpcServiceImpl {
         Self {
             kernel,
             max_walk_back_hops: MAX_WALK_BACK_HOPS,
+            artificial_delay: None,
         }
     }
 
@@ -99,6 +110,28 @@ const MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES: usize = 16 * 1024 * 1024;
 const GRPC_RPC_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 const GRPC_MAX_CONCURRENT_REQUESTS_PER_CONNECTION: usize = 64;
 
+// KRT-BK006: shared cap-configuration helper so `serve_kernel_grpc`'s
+// production builder chain and the `#[cfg(test)]` timeout/concurrency-limit
+// tests below configure the *same* two ceilings through the *same* code
+// path, parameterized only by the timeout/concurrency values themselves.
+// `serve_kernel_grpc` always calls this with the real `GRPC_RPC_TIMEOUT` /
+// `GRPC_MAX_CONCURRENT_REQUESTS_PER_CONNECTION` constants, so production
+// behavior is byte-identical to before this helper was extracted; only the
+// tests below supply smaller values so the ceilings can be proven to fire
+// without waiting out a real 30s timeout or spinning up 64 concurrent
+// requests. The bare `Server` return type names `Server<Identity>` via its
+// default type parameter (`tonic::transport::Server<L = Identity>`), which
+// is exactly what `Server::builder()` itself returns before any `.layer(..)`
+// call changes `L` — no explicit `Identity` import is needed.
+fn configured_server_builder(
+    timeout: std::time::Duration,
+    max_concurrent_requests_per_connection: usize,
+) -> Server {
+    Server::builder()
+        .timeout(timeout)
+        .concurrency_limit_per_connection(max_concurrent_requests_per_connection)
+}
+
 pub async fn serve_kernel_grpc(
     address: std::net::SocketAddr,
     kernel: InMemoryKernel,
@@ -115,52 +148,54 @@ pub async fn serve_kernel_grpc(
     // `target/**/build/tuvren-kernel-rust-grpc-service-*/out/tuvren.kernel.interop.v1.rs`),
     // so it is applied to every service wrapper below instead. `.timeout` and
     // `.concurrency_limit_per_connection` are real `Server<L>` builder
-    // methods in this tonic version and are configured on the builder chain.
-    Server::builder()
-        .timeout(GRPC_RPC_TIMEOUT)
-        .concurrency_limit_per_connection(GRPC_MAX_CONCURRENT_REQUESTS_PER_CONNECTION)
-        .add_service(
-            proto::kernel_store_service_server::KernelStoreServiceServer::new(service.clone())
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .add_service(
-            proto::kernel_schema_service_server::KernelSchemaServiceServer::new(service.clone())
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .add_service(
-            proto::kernel_tree_service_server::KernelTreeServiceServer::new(service.clone())
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .add_service(
-            proto::kernel_node_service_server::KernelNodeServiceServer::new(service.clone())
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .add_service(
-            proto::kernel_thread_service_server::KernelThreadServiceServer::new(service.clone())
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .add_service(
-            proto::kernel_branch_service_server::KernelBranchServiceServer::new(service.clone())
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .add_service(
-            proto::kernel_staging_service_server::KernelStagingServiceServer::new(service.clone())
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .add_service(
-            proto::kernel_run_service_server::KernelRunServiceServer::new(service.clone())
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .add_service(
-            proto::kernel_turn_service_server::KernelTurnServiceServer::new(service.clone())
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .add_service(
-            proto::kernel_verdicts_service_server::KernelVerdictsServiceServer::new(service)
-                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
-        )
-        .serve(address)
-        .await
+    // methods in this tonic version and are configured via
+    // `configured_server_builder` above.
+    configured_server_builder(
+        GRPC_RPC_TIMEOUT,
+        GRPC_MAX_CONCURRENT_REQUESTS_PER_CONNECTION,
+    )
+    .add_service(
+        proto::kernel_store_service_server::KernelStoreServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_schema_service_server::KernelSchemaServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_tree_service_server::KernelTreeServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_node_service_server::KernelNodeServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_thread_service_server::KernelThreadServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_branch_service_server::KernelBranchServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_staging_service_server::KernelStagingServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_run_service_server::KernelRunServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_turn_service_server::KernelTurnServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_verdicts_service_server::KernelVerdictsServiceServer::new(service)
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .serve(address)
+    .await
 }
 
 #[tonic::async_trait]
@@ -169,6 +204,12 @@ impl KernelStoreService for KernelGrpcServiceImpl {
         &self,
         request: Request<proto::StorePutRequest>,
     ) -> Result<Response<proto::StorePutResponse>, Status> {
+        // KRT-BK006: test-only artificial delay hook (see `artificial_delay`
+        // doc comment) — a no-op in production since
+        // `KernelGrpcServiceImpl::new` always leaves this `None`.
+        if let Some(delay) = self.artificial_delay {
+            tokio::time::sleep(delay).await;
+        }
         let request = request.into_inner();
         let object_hash = self
             .kernel
@@ -1330,6 +1371,7 @@ mod tests {
         let service = KernelGrpcServiceImpl {
             kernel: InMemoryKernel::new(),
             max_walk_back_hops: 3,
+            artificial_delay: None,
         };
         service
             .kernel()
@@ -1429,5 +1471,186 @@ mod tests {
             stream.next().await.is_none(),
             "stream must end after the error"
         );
+    }
+
+    // KRT-BK006: gRPC per-RPC timeout and per-connection concurrency limit.
+    //
+    // These prove the `.timeout(..)` and `.concurrency_limit_per_connection(..)`
+    // ceilings configured on `serve_kernel_grpc`'s builder chain (through
+    // `configured_server_builder`) actually fire, with a real running server
+    // and a real tonic client over a real loopback socket — not merely that
+    // the builder calls are present. `configured_server_builder` is the same
+    // helper `serve_kernel_grpc` calls with the real 30s / 64 production
+    // constants, parameterized here with small test values so the ceilings
+    // can be proven without waiting out the real 30s timeout or spinning up
+    // 64 concurrent requests. Every real `InMemoryKernel` RPC handler
+    // completes near-instantly, so `store_put`'s `artificial_delay` hook
+    // (private field access — this module is a descendant of the crate
+    // root, so it is allowed, mirroring the `max_walk_back_hops` precedent
+    // above) is what makes an RPC artificially slow on demand.
+    async fn spawn_capped_test_server(
+        timeout: std::time::Duration,
+        max_concurrent_requests_per_connection: usize,
+        artificial_delay: std::time::Duration,
+    ) -> (String, tokio::task::JoinHandle<()>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind ephemeral test port");
+        let address = listener.local_addr().expect("read listener address");
+        drop(listener);
+
+        let service = KernelGrpcServiceImpl {
+            kernel: InMemoryKernel::new(),
+            max_walk_back_hops: MAX_WALK_BACK_HOPS,
+            artificial_delay: Some(artificial_delay),
+        };
+
+        let handle = tokio::spawn(async move {
+            configured_server_builder(timeout, max_concurrent_requests_per_connection)
+                .add_service(
+                    proto::kernel_store_service_server::KernelStoreServiceServer::new(service),
+                )
+                .serve(address)
+                .await
+                .expect("test gRPC server runs");
+        });
+
+        // The server's own bind happens asynchronously after this task is
+        // spawned; retry the first connection briefly rather than assuming
+        // the listener is already up.
+        let endpoint = format!("http://{address}");
+        for attempt in 0..50 {
+            match tonic::transport::Endpoint::from_shared(endpoint.clone())
+                .expect("valid endpoint")
+                .connect()
+                .await
+            {
+                Ok(_) => break,
+                Err(_) if attempt < 49 => {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+                Err(error) => panic!("server never became ready: {error}"),
+            }
+        }
+
+        (endpoint, handle)
+    }
+
+    #[tokio::test]
+    async fn per_rpc_timeout_terminates_a_slower_handler_with_a_cancelled_status() {
+        // Tonic's `GrpcTimeout` transport-service layer surfaces an expired
+        // server-side timeout as a `TimeoutExpired` error (tonic-0.14.5
+        // `src/transport/service/grpc_timeout.rs`), and `Status`'s
+        // source-chain walk maps that to `Status::cancelled(..)`
+        // (tonic-0.14.5 `src/status.rs::find_status_in_source_chain`) — so
+        // `Code::Cancelled` is the real status a client observes, not
+        // `Code::DeadlineExceeded`.
+        let configured_timeout = std::time::Duration::from_millis(150);
+        let handler_delay = std::time::Duration::from_millis(600);
+        let (endpoint, server_handle) =
+            spawn_capped_test_server(configured_timeout, 64, handler_delay).await;
+        let mut store_client =
+            proto::kernel_store_service_client::KernelStoreServiceClient::connect(endpoint)
+                .await
+                .expect("store client connects");
+
+        let started = std::time::Instant::now();
+        let error = store_client
+            .store_put(proto::StorePutRequest {
+                blob: vec![1u8, 2, 3],
+                media_type: Some("application/octet-stream".to_string()),
+            })
+            .await
+            .expect_err(
+                "a handler slower than the configured timeout must be terminated, \
+                 not awaited to completion",
+            );
+        let elapsed = started.elapsed();
+
+        assert_eq!(error.code(), Code::Cancelled);
+        // This is the assertion that would fail if `.timeout(..)` were
+        // silently removed from `configured_server_builder`: without it, the
+        // call would succeed after `handler_delay`, not fail well before it.
+        assert!(
+            elapsed < handler_delay,
+            "the configured timeout must fire before the artificially slow handler \
+             would have finished; elapsed={elapsed:?}, handler_delay={handler_delay:?}"
+        );
+
+        server_handle.abort();
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn concurrency_limit_per_connection_serializes_excess_requests_on_one_connection() {
+        // tower's `ConcurrencyLimit` (tower-0.5.3
+        // `src/limit/concurrency/service.rs`) is a semaphore: `poll_ready`
+        // blocks until a permit is free. `serve_kernel_grpc` (and
+        // `configured_server_builder`) never call `.load_shed(true)`, and
+        // tonic's own `load_shed` doc (tonic-0.14.5
+        // `src/transport/server/mod.rs`) says plainly: "The default is to
+        // buffer requests" — so requests beyond the configured concurrency
+        // limit are expected to be queued/delayed, not rejected. All calls
+        // below share one `tonic::transport::Channel` (one HTTP/2
+        // connection, cloned per task), so they are all subject to the same
+        // per-connection semaphore.
+        const CONCURRENCY_LIMIT: usize = 2;
+        const REQUEST_COUNT: usize = 4;
+        let per_request_delay = std::time::Duration::from_millis(200);
+        let (endpoint, server_handle) = spawn_capped_test_server(
+            std::time::Duration::from_secs(5),
+            CONCURRENCY_LIMIT,
+            per_request_delay,
+        )
+        .await;
+
+        let channel = tonic::transport::Endpoint::from_shared(endpoint)
+            .expect("valid endpoint")
+            .connect()
+            .await
+            .expect("channel connects");
+
+        let started = std::time::Instant::now();
+        let mut calls = Vec::with_capacity(REQUEST_COUNT);
+        for index in 0..REQUEST_COUNT {
+            let mut client =
+                proto::kernel_store_service_client::KernelStoreServiceClient::new(channel.clone());
+            calls.push(tokio::spawn(async move {
+                client
+                    .store_put(proto::StorePutRequest {
+                        blob: vec![index as u8],
+                        media_type: Some("application/octet-stream".to_string()),
+                    })
+                    .await
+            }));
+        }
+        for call in calls {
+            let response = call
+                .await
+                .expect("request task does not panic")
+                .expect("every request eventually succeeds; the limit bounds concurrency, it does not reject");
+            assert!(!response.into_inner().object_hash.is_empty());
+        }
+        let elapsed = started.elapsed();
+
+        // With no concurrency limit, all `REQUEST_COUNT` requests would run
+        // concurrently and the whole batch would complete in roughly one
+        // `per_request_delay`. With the limit configured above, at most
+        // `CONCURRENCY_LIMIT` requests can be in flight on this connection at
+        // once, so `REQUEST_COUNT` requests must run in
+        // `REQUEST_COUNT.div_ceil(CONCURRENCY_LIMIT)` sequential batches.
+        // This lower bound (with slack for scheduling jitter — jitter only
+        // ever makes `elapsed` larger, so it cannot produce a false pass)
+        // would fail if `.concurrency_limit_per_connection(..)` were
+        // silently removed from `configured_server_builder`.
+        let expected_batches = REQUEST_COUNT.div_ceil(CONCURRENCY_LIMIT);
+        let expected_minimum = per_request_delay * (expected_batches as u32) * 3 / 4;
+        assert!(
+            elapsed >= expected_minimum,
+            "excess concurrent requests on one connection must be serialized in batches of \
+             {CONCURRENCY_LIMIT}, not run all at once; elapsed={elapsed:?}, \
+             expected_minimum={expected_minimum:?}"
+        );
+
+        server_handle.abort();
     }
 }
