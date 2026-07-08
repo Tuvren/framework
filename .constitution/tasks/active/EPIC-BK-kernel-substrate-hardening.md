@@ -259,6 +259,11 @@ Feature: Kernel input hardening
     And returns a bounded result or an explicit depth-exceeded error
 ```
 
+##### KRT-BK006 Deviations & Justifications
+- **Touched Files:** `typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts` (new), `rust/kernel-grpc-service/tests/resource_caps.rs` (new)
+- **Justification:** The ticket's declared Scope (In-Scope Files) names only the two source files (with line ranges) and does not list a test directory for either language, unlike some sibling tickets. Both fixes are behavior-bearing (Security category) and are only meaningfully provable with dedicated tests: the sqlite-side test asserts the `Number.isSafeInteger`/non-negative guard rejects before touching SQL and that pagination still works after parameterizing `LIMIT ?`; the Rust-side test spins up a real server via `serve_kernel_grpc` itself (rather than `interop_smoke.rs`'s separate `spawn_kernel_server` helper, which has its own builder chain and would not exercise this change at all) to prove the 16 MiB decode-size ceiling is genuinely raised past tonic's unconfigured 4 MiB default. Both are new files in the conventional per-package test location for their language, following the same low-risk precedent already used across this epic.
+- **Known test gap (not a deviation, logged for reviewer visibility):** the per-RPC `.timeout(30s)` and `.concurrency_limit_per_connection(64)` ceilings configured on `serve_kernel_grpc`'s builder chain are exercised at runtime but not proven to fire in an automated test — every handler in `InMemoryKernel` completes near-instantly, so there is no seam to make an RPC hang or hold a concurrency slot on demand without adding scope beyond this ticket. Documented in `resource_caps.rs`'s module doc comment.
+
 #### KRT-BK007 Persistence-Model Benchmark Spike
 - **Type:** Spike
 - **Effort:** 3

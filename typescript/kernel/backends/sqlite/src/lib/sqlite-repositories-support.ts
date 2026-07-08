@@ -33,6 +33,7 @@ import {
   type StoredTurnNode,
 } from "@tuvren/kernel-protocol";
 import type Database from "better-sqlite3";
+import { persistenceError } from "./sqlite-errors.js";
 import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 
 interface SupportRepositoryContext {
@@ -136,6 +137,19 @@ interface SupportRepositoryHelpers {
     db: Database.Database,
     threadId: string
   ) => StoredThread | null;
+}
+
+// KRT-BK006: threads.list's LIMIT clause is user-input-driven. Extracted
+// out of `list()` so the guard's branching doesn't count against that
+// method's own cognitive-complexity budget.
+function assertSafeThreadListLimit(limit: number | undefined): void {
+  if (limit !== undefined && !(Number.isSafeInteger(limit) && limit >= 0)) {
+    throw persistenceError(
+      "threads.list options.limit must be a non-negative safe integer",
+      "sqlite_backend_invalid_list_limit",
+      { limit }
+    );
+  }
 }
 
 export function createSupportRepositories(
@@ -454,9 +468,14 @@ export function createSupportRepositories(
           conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
         const limit = options?.limit;
+        assertSafeThreadListLimit(limit);
+
         const fetchLimit = limit === undefined ? undefined : limit + 1;
-        const limitClause =
-          fetchLimit === undefined ? "" : `LIMIT ${fetchLimit}`;
+        const limitClause = fetchLimit === undefined ? "" : "LIMIT ?";
+
+        if (fetchLimit !== undefined) {
+          params.push(fetchLimit);
+        }
 
         const rows = db
           .prepare<

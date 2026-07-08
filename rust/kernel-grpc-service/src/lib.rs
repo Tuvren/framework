@@ -58,20 +58,46 @@ struct GoogleRpcStatus {
     details: Vec<Any>,
 }
 
+// KRT-BK006: `node_walk_back` streams the previous-turn-node chain with no
+// bound; a pathologically deep (or cyclic-by-corruption) lineage would make
+// the stream run forever. `MAX_WALK_BACK_HOPS` is the production ceiling.
+// `max_walk_back_hops` is stored per service instance (rather than always
+// reading the constant) purely so `#[cfg(test)]` unit tests below can prove
+// the depth-exceeded path fires without constructing a genuinely 10,000-deep
+// turn-node lineage; `KernelGrpcServiceImpl::new` always uses the real
+// production constant.
+const MAX_WALK_BACK_HOPS: usize = 10_000;
+
 #[derive(Clone)]
 pub struct KernelGrpcServiceImpl {
     kernel: InMemoryKernel,
+    max_walk_back_hops: usize,
 }
 
 impl KernelGrpcServiceImpl {
     pub fn new(kernel: InMemoryKernel) -> Self {
-        Self { kernel }
+        Self {
+            kernel,
+            max_walk_back_hops: MAX_WALK_BACK_HOPS,
+        }
     }
 
     pub fn kernel(&self) -> &InMemoryKernel {
         &self.kernel
     }
 }
+
+// KRT-BK006: resource ceilings for this loopback-only interop seam.
+//
+// `interop_smoke.rs` and Epic U/V's Rust<->Rust gRPC transport today only
+// ever bind to `127.0.0.1`, so these values are sized generously for that
+// traffic pattern rather than tuned as public-service limits. They exist as
+// guardrails against unbounded decode buffers, hung RPCs, and unbounded
+// per-connection fan-out on this seam, not as a production ingress policy —
+// revisit before exposing this seam beyond loopback.
+const MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES: usize = 16 * 1024 * 1024;
+const GRPC_RPC_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+const GRPC_MAX_CONCURRENT_REQUESTS_PER_CONNECTION: usize = 64;
 
 pub async fn serve_kernel_grpc(
     address: std::net::SocketAddr,
@@ -81,34 +107,57 @@ pub async fn serve_kernel_grpc(
 
     // Register the full governed kernel transport surface. Epic U stops here;
     // TypeScript client/runtime switching is intentionally left to Epic V.
+    //
+    // `.max_decoding_message_size` is NOT a `Server::builder()` method in
+    // tonic 0.14.5 (the version pinned in the workspace `Cargo.toml`/lock) —
+    // it is generated per-service by tonic-prost-build onto each
+    // `Kernel*ServiceServer<T>` wrapper (see
+    // `target/**/build/tuvren-kernel-rust-grpc-service-*/out/tuvren.kernel.interop.v1.rs`),
+    // so it is applied to every service wrapper below instead. `.timeout` and
+    // `.concurrency_limit_per_connection` are real `Server<L>` builder
+    // methods in this tonic version and are configured on the builder chain.
     Server::builder()
+        .timeout(GRPC_RPC_TIMEOUT)
+        .concurrency_limit_per_connection(GRPC_MAX_CONCURRENT_REQUESTS_PER_CONNECTION)
         .add_service(
-            proto::kernel_store_service_server::KernelStoreServiceServer::new(service.clone()),
+            proto::kernel_store_service_server::KernelStoreServiceServer::new(service.clone())
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
         )
         .add_service(
-            proto::kernel_schema_service_server::KernelSchemaServiceServer::new(service.clone()),
+            proto::kernel_schema_service_server::KernelSchemaServiceServer::new(service.clone())
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
         )
         .add_service(
-            proto::kernel_tree_service_server::KernelTreeServiceServer::new(service.clone()),
+            proto::kernel_tree_service_server::KernelTreeServiceServer::new(service.clone())
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
         )
         .add_service(
-            proto::kernel_node_service_server::KernelNodeServiceServer::new(service.clone()),
+            proto::kernel_node_service_server::KernelNodeServiceServer::new(service.clone())
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
         )
         .add_service(
-            proto::kernel_thread_service_server::KernelThreadServiceServer::new(service.clone()),
+            proto::kernel_thread_service_server::KernelThreadServiceServer::new(service.clone())
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
         )
         .add_service(
-            proto::kernel_branch_service_server::KernelBranchServiceServer::new(service.clone()),
+            proto::kernel_branch_service_server::KernelBranchServiceServer::new(service.clone())
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
         )
         .add_service(
-            proto::kernel_staging_service_server::KernelStagingServiceServer::new(service.clone()),
-        )
-        .add_service(proto::kernel_run_service_server::KernelRunServiceServer::new(service.clone()))
-        .add_service(
-            proto::kernel_turn_service_server::KernelTurnServiceServer::new(service.clone()),
+            proto::kernel_staging_service_server::KernelStagingServiceServer::new(service.clone())
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
         )
         .add_service(
-            proto::kernel_verdicts_service_server::KernelVerdictsServiceServer::new(service),
+            proto::kernel_run_service_server::KernelRunServiceServer::new(service.clone())
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+        )
+        .add_service(
+            proto::kernel_turn_service_server::KernelTurnServiceServer::new(service.clone())
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+        )
+        .add_service(
+            proto::kernel_verdicts_service_server::KernelVerdictsServiceServer::new(service)
+                .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
         )
         .serve(address)
         .await
@@ -289,10 +338,24 @@ impl KernelNodeService for KernelGrpcServiceImpl {
         request: Request<proto::NodeWalkBackRequest>,
     ) -> Result<Response<Self::NodeWalkBackStream>, Status> {
         let kernel = self.kernel.clone();
+        let max_hops = self.max_walk_back_hops;
         let mut next_hash = Some(request.into_inner().from_hash);
         let (sender, receiver) = mpsc::channel(8);
         tokio::spawn(async move {
+            let mut hops: usize = 0;
             while let Some(hash) = next_hash {
+                hops += 1;
+                if hops > max_hops {
+                    let _ = sender
+                        .send(Err(status_from_kernel_error(KernelError::new(
+                            "turn_node_walk_back_depth_exceeded",
+                            "node_walk_back exceeded the maximum traversal depth",
+                            None,
+                        ))))
+                        .await;
+                    break;
+                }
+
                 let node = match kernel.node_get(&hash) {
                     Ok(Some(node)) => node,
                     Ok(None) => {
@@ -845,6 +908,11 @@ fn kernel_error_code_to_status(code: &str) -> Code {
         | "turn_parent_not_immediate"
         | "turn_parent_required"
         | "turn_tree_schema_mismatch" => Code::FailedPrecondition,
+        // KRT-BK006: node_walk_back's hop-count ceiling is a resource guard,
+        // not a data-shape or state-machine violation, so it maps to
+        // ResourceExhausted rather than falling into the FailedPrecondition
+        // catch-all below.
+        "turn_node_walk_back_depth_exceeded" => Code::ResourceExhausted,
         _ => Code::FailedPrecondition,
     }
 }
@@ -1237,5 +1305,129 @@ fn verdict_disposition_to_proto(disposition: VerdictDisposition) -> i32 {
         VerdictDisposition::HardFail => proto::VerdictDisposition::HardFail as i32,
         VerdictDisposition::SoftFail => proto::VerdictDisposition::SoftFail as i32,
         VerdictDisposition::EndTurn => proto::VerdictDisposition::EndTurn as i32,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // KRT-BK006: `node_walk_back` depth cap.
+    //
+    // Building a genuinely 10,000-hop lineage through the full kernel API
+    // just to prove the ceiling fires would make this test slow and would
+    // not exercise anything the smaller chain below doesn't already cover,
+    // so this test constructs `KernelGrpcServiceImpl` directly (private
+    // field access — this module is a descendant of the crate root, so it
+    // is allowed) with a small `max_walk_back_hops` override instead of
+    // adding public API surface to the crate. `KernelGrpcServiceImpl::new`
+    // (used by `serve_kernel_grpc` and every other caller) always uses the
+    // real `MAX_WALK_BACK_HOPS` production constant — only this test
+    // constructs an instance with a different cap.
+    use super::*;
+    use tokio_stream::StreamExt as _;
+
+    #[tokio::test]
+    async fn node_walk_back_stops_at_the_configured_depth_cap() {
+        let service = KernelGrpcServiceImpl {
+            kernel: InMemoryKernel::new(),
+            max_walk_back_hops: 3,
+        };
+        service
+            .kernel()
+            .schema_register(TurnTreeSchema {
+                incorporation_rules: vec![IncorporationRule {
+                    object_type: "message".to_string(),
+                    target_path: "messages".to_string(),
+                }],
+                paths: vec![PathDefinition {
+                    collection: PathCollectionKind::Ordered,
+                    metadata: None,
+                    path: "messages".to_string(),
+                }],
+                schema_id: "schema_main".to_string(),
+            })
+            .expect("schema registers");
+        let thread = service
+            .kernel()
+            .thread_create("thread_main", "schema_main", "branch_main")
+            .expect("thread creates");
+        service
+            .kernel()
+            .turn_create(
+                "turn_main",
+                "thread_main",
+                "branch_main",
+                None,
+                &thread.root_turn_node_hash,
+            )
+            .expect("turn creates");
+
+        // Six checkpointed steps chained onto the genesis root node give a
+        // lineage of 7 nodes total — comfortably past the depth cap of 3
+        // configured above, without needing anywhere near the production
+        // 10,000-hop ceiling to prove the cap fires.
+        const CHAIN_LENGTH: usize = 6;
+        let steps: Vec<StepDeclaration> = (0..CHAIN_LENGTH)
+            .map(|index| StepDeclaration {
+                deterministic: false,
+                id: format!("step_{index}"),
+                metadata: None,
+                side_effects: false,
+            })
+            .collect();
+        service
+            .kernel()
+            .run_create(
+                "run_main",
+                "turn_main",
+                "branch_main",
+                "schema_main",
+                &thread.root_turn_node_hash,
+                steps,
+            )
+            .expect("run creates");
+
+        let mut last_hash = thread.root_turn_node_hash.clone();
+        for index in 0..CHAIN_LENGTH {
+            let (checkpointed, node_hash) = service
+                .kernel()
+                .run_complete_step("run_main", &format!("step_{index}"), None, Vec::new(), None)
+                .expect("step completes");
+            assert!(checkpointed);
+            last_hash = node_hash.expect("checkpoint hash");
+        }
+
+        let mut stream = KernelNodeService::node_walk_back(
+            &service,
+            Request::new(proto::NodeWalkBackRequest {
+                from_hash: last_hash,
+            }),
+        )
+        .await
+        .expect("walk stream starts")
+        .into_inner();
+
+        let mut observed_nodes = 0usize;
+        let mut terminal_status: Option<Status> = None;
+        while let Some(item) = stream.next().await {
+            match item {
+                Ok(_) => observed_nodes += 1,
+                Err(status) => {
+                    terminal_status = Some(status);
+                    break;
+                }
+            }
+        }
+
+        assert_eq!(
+            observed_nodes, 3,
+            "stream must yield exactly the capped hop count"
+        );
+        let status = terminal_status
+            .expect("stream must terminate with a depth-exceeded error, not silently end");
+        assert_eq!(status.code(), Code::ResourceExhausted);
+        assert!(
+            stream.next().await.is_none(),
+            "stream must end after the error"
+        );
     }
 }
