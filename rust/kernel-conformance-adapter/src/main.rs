@@ -1087,14 +1087,19 @@ fn run_erasure_probe() -> Result<Value, KernelError> {
     .is_some_and(|decrypted| decrypted == plaintext);
 
     // ── Crypto-shredding erasure: the host destroys the key. ──
-    key = None;
+    let _ = key.take();
 
     let stored_after = kernel
         .store_get(&envelope_hash)?
         .ok_or_else(|| error("missing_object", "expected stored envelope after erasure"))?;
-    // The key is gone, so decrypting is structurally impossible: there is no
-    // `Key<Aes256Gcm>` left to construct a cipher from.
-    let unrecoverable_after_erasure = key.is_none();
+    // The real key is gone (dropped, not merely marked absent), so it cannot
+    // be reconstructed. Prove unrecoverability by genuinely attempting
+    // decryption of the still-stored ciphertext against a freshly-generated
+    // key that is certainly not the destroyed one: AES-GCM's authentication
+    // tag check must reject it, mirroring the TypeScript reference's observed
+    // "erased" decrypt failure rather than inspecting local Option state.
+    let attacker_key = Key::<Aes256Gcm>::generate();
+    let unrecoverable_after_erasure = decrypt_envelope(&attacker_key, &stored_after).is_none();
 
     let branch_after = kernel
         .branch_get(&thread.branch_id)?

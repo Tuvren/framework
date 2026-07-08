@@ -953,13 +953,6 @@ impl InMemoryKernel {
             .get(run_id)
             .cloned()
             .ok_or_else(|| missing("run_not_found", "run does not exist"))?;
-        if run.status != RunStatus::Running {
-            return Err(KernelError::new(
-                "run_not_running",
-                "only running runs can renew their lease",
-                None,
-            ));
-        }
         if run.execution_owner_id.is_none()
             && run.fencing_token.is_none()
             && run.lease_expires_at_ms.is_none()
@@ -967,6 +960,13 @@ impl InMemoryKernel {
             return Err(KernelError::new(
                 "run_lease_not_present",
                 "run has no lease to renew",
+                None,
+            ));
+        }
+        if run.status != RunStatus::Running {
+            return Err(KernelError::new(
+                "run_not_running",
+                "only running runs can renew their lease",
                 None,
             ));
         }
@@ -2548,6 +2548,57 @@ mod tests {
         thread_id.to_string()
     }
 
+    /// Create a thread (with its initial branch) and a turn spanning the
+    /// thread root, for lease/reclamation tests that need both records.
+    fn make_thread_and_turn(
+        kernel: &InMemoryKernel,
+        thread_id: &str,
+        branch_id: &str,
+        turn_id: &str,
+        schema_id: &str,
+    ) -> (ThreadCreateResult, TurnRecord) {
+        let thread = kernel
+            .thread_create(thread_id, schema_id, branch_id)
+            .expect("thread_create");
+        let turn = kernel
+            .turn_create(
+                turn_id,
+                thread_id,
+                branch_id,
+                None,
+                &thread.root_turn_node_hash,
+            )
+            .expect("turn_create");
+        (thread, turn)
+    }
+
+    /// Build a `LeasedRunCreateInput` for a single-step run starting at the
+    /// thread root, so lease tests only need to vary owner/expiry.
+    fn leased_run_input(
+        run_id: &str,
+        thread: &ThreadCreateResult,
+        turn: &TurnRecord,
+        schema_id: &str,
+        execution_owner_id: &str,
+        lease_expires_at_ms: EpochMs,
+    ) -> LeasedRunCreateInput {
+        LeasedRunCreateInput {
+            branch_id: thread.branch_id.clone(),
+            execution_owner_id: execution_owner_id.to_string(),
+            lease_expires_at_ms,
+            run_id: run_id.to_string(),
+            schema_id: schema_id.to_string(),
+            start_turn_node_hash: thread.root_turn_node_hash.clone(),
+            steps: vec![StepDeclaration {
+                deterministic: true,
+                id: "work".to_string(),
+                metadata: None,
+                side_effects: false,
+            }],
+            turn_id: turn.turn_id.clone(),
+        }
+    }
+
     #[test]
     fn thread_list_empty_returns_no_entries() {
         let kernel = InMemoryKernel::new();
@@ -2925,5 +2976,621 @@ mod tests {
             &paused_leaseless,
             LEASELESS_RUN_EXPIRY_MS * 10
         ));
+    }
+
+    #[test]
+    fn run_liveness_renew_lease_rejects_non_running_run() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let (thread, turn) = make_thread_and_turn(&kernel, "thread_a", "branch_a", "turn_a", "s1");
+        let run = kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_a", &thread, &turn, "s1", "owner-1", 1_000_000,
+            ))
+            .expect("run_liveness_create_leased_run");
+        kernel
+            .run_complete("run_a", RunCompletionStatus::Failed, None)
+            .expect("run_complete");
+
+        let error = kernel
+            .run_liveness_renew_lease(
+                "run_a",
+                "owner-1",
+                run.fencing_token.as_deref().expect("fencing token"),
+                2_000_000,
+            )
+            .expect_err("renewing a non-running run is rejected");
+
+        assert_eq!(error.payload.code, "run_not_running");
+    }
+
+    #[test]
+    fn run_liveness_renew_lease_rejects_leaseless_run() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let thread = kernel
+            .thread_create("thread_a", "s1", "branch_a")
+            .expect("thread_create");
+        let turn = kernel
+            .turn_create(
+                "turn_a",
+                "thread_a",
+                "branch_a",
+                None,
+                &thread.root_turn_node_hash,
+            )
+            .expect("turn_create");
+        kernel
+            .run_create(
+                "run_a",
+                &turn.turn_id,
+                "branch_a",
+                "s1",
+                &thread.root_turn_node_hash,
+                vec![StepDeclaration {
+                    deterministic: true,
+                    id: "work".to_string(),
+                    metadata: None,
+                    side_effects: false,
+                }],
+            )
+            .expect("run_create");
+
+        let error = kernel
+            .run_liveness_renew_lease("run_a", "owner-1", "token-1", 2_000_000)
+            .expect_err("renewing a leaseless run is rejected");
+
+        assert_eq!(error.payload.code, "run_lease_not_present");
+    }
+
+    #[test]
+    fn run_liveness_renew_lease_rejects_expired_lease() {
+        // Ticks consumed, in order: thread_create, run_liveness_create_leased_run,
+        // run_liveness_renew_lease.
+        let kernel = kernel_with_clock(&[0, 0, 5_000]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let (thread, turn) = make_thread_and_turn(&kernel, "thread_a", "branch_a", "turn_a", "s1");
+        kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_a", &thread, &turn, "s1", "owner-1", 100,
+            ))
+            .expect("run_liveness_create_leased_run");
+
+        let error = kernel
+            .run_liveness_renew_lease("run_a", "owner-1", "irrelevant-token", 10_000)
+            .expect_err("renewing an already-expired lease is rejected");
+
+        assert_eq!(error.payload.code, "run_lease_expired");
+    }
+
+    #[test]
+    fn run_liveness_renew_lease_rejects_owner_mismatch() {
+        let kernel = kernel_with_clock(&[0, 0, 100]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let (thread, turn) = make_thread_and_turn(&kernel, "thread_a", "branch_a", "turn_a", "s1");
+        let run = kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_a", &thread, &turn, "s1", "owner-1", 10_000,
+            ))
+            .expect("run_liveness_create_leased_run");
+
+        let error = kernel
+            .run_liveness_renew_lease(
+                "run_a",
+                "owner-2",
+                run.fencing_token.as_deref().expect("fencing token"),
+                20_000,
+            )
+            .expect_err("renewing with the wrong owner is rejected");
+
+        assert_eq!(error.payload.code, "run_lease_owner_mismatch");
+    }
+
+    #[test]
+    fn run_liveness_renew_lease_rejects_token_mismatch() {
+        let kernel = kernel_with_clock(&[0, 0, 100]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let (thread, turn) = make_thread_and_turn(&kernel, "thread_a", "branch_a", "turn_a", "s1");
+        kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_a", &thread, &turn, "s1", "owner-1", 10_000,
+            ))
+            .expect("run_liveness_create_leased_run");
+
+        let error = kernel
+            .run_liveness_renew_lease("run_a", "owner-1", "stale-token", 20_000)
+            .expect_err("renewing with a stale fencing token is rejected");
+
+        assert_eq!(error.payload.code, "run_lease_token_mismatch");
+    }
+
+    #[test]
+    fn run_liveness_renew_lease_rotates_fencing_token_and_extends_expiry() {
+        let kernel = kernel_with_clock(&[0, 0, 100]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let (thread, turn) = make_thread_and_turn(&kernel, "thread_a", "branch_a", "turn_a", "s1");
+        let run = kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_a", &thread, &turn, "s1", "owner-1", 10_000,
+            ))
+            .expect("run_liveness_create_leased_run");
+        let original_token = run.fencing_token.clone().expect("fencing token");
+
+        let renewed = kernel
+            .run_liveness_renew_lease("run_a", "owner-1", &original_token, 20_000)
+            .expect("renewal succeeds");
+
+        assert_ne!(renewed.fencing_token, Some(original_token));
+        assert_eq!(renewed.lease_expires_at_ms, Some(20_000));
+    }
+
+    #[test]
+    fn run_liveness_preempt_expired_rejects_non_running_run() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let (thread, turn) = make_thread_and_turn(&kernel, "thread_a", "branch_a", "turn_a", "s1");
+        kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_a", &thread, &turn, "s1", "owner-1", 10_000,
+            ))
+            .expect("run_liveness_create_leased_run");
+        kernel
+            .run_complete("run_a", RunCompletionStatus::Failed, None)
+            .expect("run_complete");
+
+        let error = kernel
+            .run_liveness_preempt_expired("run_a", "owner-2", 20_000, "stalled")
+            .expect_err("preempting a non-running run is rejected");
+
+        assert_eq!(error.payload.code, "run_not_running");
+    }
+
+    #[test]
+    fn run_liveness_preempt_expired_rejects_leaseless_run() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let thread = kernel
+            .thread_create("thread_a", "s1", "branch_a")
+            .expect("thread_create");
+        let turn = kernel
+            .turn_create(
+                "turn_a",
+                "thread_a",
+                "branch_a",
+                None,
+                &thread.root_turn_node_hash,
+            )
+            .expect("turn_create");
+        kernel
+            .run_create(
+                "run_a",
+                &turn.turn_id,
+                "branch_a",
+                "s1",
+                &thread.root_turn_node_hash,
+                vec![StepDeclaration {
+                    deterministic: true,
+                    id: "work".to_string(),
+                    metadata: None,
+                    side_effects: false,
+                }],
+            )
+            .expect("run_create");
+
+        let error = kernel
+            .run_liveness_preempt_expired("run_a", "owner-2", 1_000, "stalled")
+            .expect_err("preempting a leaseless run is rejected");
+
+        assert_eq!(error.payload.code, "run_lease_not_present");
+    }
+
+    #[test]
+    fn run_liveness_preempt_expired_rejects_unexpired_lease() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let (thread, turn) = make_thread_and_turn(&kernel, "thread_a", "branch_a", "turn_a", "s1");
+        kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_a", &thread, &turn, "s1", "owner-1", 10_000,
+            ))
+            .expect("run_liveness_create_leased_run");
+
+        let error = kernel
+            .run_liveness_preempt_expired("run_a", "owner-2", 5_000, "stalled")
+            .expect_err("preempting an unexpired lease is rejected");
+
+        assert_eq!(error.payload.code, "run_lease_not_expired");
+    }
+
+    #[test]
+    fn run_liveness_preempt_expired_clears_lease_and_fails_run() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let (thread, turn) = make_thread_and_turn(&kernel, "thread_a", "branch_a", "turn_a", "s1");
+        kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_a", &thread, &turn, "s1", "owner-1", 10_000,
+            ))
+            .expect("run_liveness_create_leased_run");
+
+        let recovery = kernel
+            .run_liveness_preempt_expired("run_a", "owner-2", 10_000, "lease expired")
+            .expect("preemption succeeds");
+
+        let run = kernel
+            .run_get("run_a")
+            .expect("run_get")
+            .expect("run exists");
+        assert_eq!(run.execution_owner_id, None);
+        assert_eq!(run.fencing_token, None);
+        assert_eq!(run.lease_expires_at_ms, None);
+        assert_eq!(run.preemption_reason, Some("lease expired".to_string()));
+        assert_eq!(run.status, RunStatus::Failed);
+        assert!(
+            kernel
+                .node_get(&recovery.last_turn_node_hash)
+                .expect("node_get")
+                .is_some(),
+            "preemption recovery state must resolve to a real turn node"
+        );
+    }
+
+    #[test]
+    fn run_liveness_list_expired_filters_by_status_and_lease_expiry() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+
+        // Running, leased, expired at the query instant -> included.
+        let (thread_expired, turn_expired) = make_thread_and_turn(
+            &kernel,
+            "thread_expired",
+            "branch_expired",
+            "turn_expired",
+            "s1",
+        );
+        kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_expired",
+                &thread_expired,
+                &turn_expired,
+                "s1",
+                "owner-1",
+                1_000,
+            ))
+            .expect("run_liveness_create_leased_run expired");
+
+        // Running, leased, expires after the query instant -> excluded.
+        let (thread_future, turn_future) = make_thread_and_turn(
+            &kernel,
+            "thread_future",
+            "branch_future",
+            "turn_future",
+            "s1",
+        );
+        kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_future",
+                &thread_future,
+                &turn_future,
+                "s1",
+                "owner-1",
+                5_000,
+            ))
+            .expect("run_liveness_create_leased_run future");
+
+        // Running, leaseless -> never included, regardless of now_ms.
+        let thread_leaseless = kernel
+            .thread_create("thread_leaseless", "s1", "branch_leaseless")
+            .expect("thread_create leaseless");
+        let turn_leaseless = kernel
+            .turn_create(
+                "turn_leaseless",
+                "thread_leaseless",
+                "branch_leaseless",
+                None,
+                &thread_leaseless.root_turn_node_hash,
+            )
+            .expect("turn_create leaseless");
+        kernel
+            .run_create(
+                "run_leaseless",
+                &turn_leaseless.turn_id,
+                "branch_leaseless",
+                "s1",
+                &thread_leaseless.root_turn_node_hash,
+                vec![StepDeclaration {
+                    deterministic: true,
+                    id: "work".to_string(),
+                    metadata: None,
+                    side_effects: false,
+                }],
+            )
+            .expect("run_create leaseless");
+
+        // Paused, leased, with an already-stale lease -> excluded: status
+        // gates before the lease-expiry comparison.
+        let (thread_paused, turn_paused) = make_thread_and_turn(
+            &kernel,
+            "thread_paused",
+            "branch_paused",
+            "turn_paused",
+            "s1",
+        );
+        kernel
+            .run_liveness_create_leased_run(leased_run_input(
+                "run_paused",
+                &thread_paused,
+                &turn_paused,
+                "s1",
+                "owner-1",
+                1_000,
+            ))
+            .expect("run_liveness_create_leased_run paused");
+        kernel
+            .run_complete("run_paused", RunCompletionStatus::Paused, None)
+            .expect("run_complete paused");
+
+        let expired = kernel
+            .run_liveness_list_expired(1_000)
+            .expect("run_liveness_list_expired");
+        let expired_ids: Vec<&str> = expired.iter().map(|run| run.run_id.as_str()).collect();
+
+        assert_eq!(
+            expired_ids,
+            vec!["run_expired"],
+            "only the running leased run whose lease has expired at/before now_ms is included"
+        );
+    }
+
+    #[test]
+    fn maintenance_reclaim_sweeps_archived_branch_with_unreachable_head() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let thread = kernel
+            .thread_create("thread_a", "s1", "branch_a")
+            .expect("thread_create");
+        let turn = kernel
+            .turn_create(
+                "turn_a",
+                "thread_a",
+                "branch_a",
+                None,
+                &thread.root_turn_node_hash,
+            )
+            .expect("turn_create");
+        kernel
+            .run_create(
+                "run_a",
+                &turn.turn_id,
+                "branch_a",
+                "s1",
+                &thread.root_turn_node_hash,
+                vec![StepDeclaration {
+                    deterministic: false,
+                    id: "step1".to_string(),
+                    metadata: None,
+                    side_effects: false,
+                }],
+            )
+            .expect("run_create");
+        kernel
+            .run_complete_step("run_a", "step1", None, Vec::new(), None)
+            .expect("step checkpoints");
+        kernel
+            .run_complete("run_a", RunCompletionStatus::Completed, None)
+            .expect("run completes");
+
+        let set_head = kernel
+            .branch_set_head("branch_a", &thread.root_turn_node_hash)
+            .expect("rewind archives the advanced head");
+        let archived_branch_id = set_head
+            .archive_branch
+            .expect("rewind produces an archive branch")
+            .branch_id;
+
+        let summary = kernel.maintenance_reclaim().expect("reclaim succeeds");
+
+        assert!(
+            summary.released_archived_branch_count >= 1,
+            "the archived branch's unreachable head must be swept"
+        );
+        assert!(
+            kernel
+                .branch_get(&archived_branch_id)
+                .expect("branch_get")
+                .is_none(),
+            "swept archived branch must no longer resolve"
+        );
+        assert!(
+            !kernel
+                .branch_list("thread_a")
+                .expect("branch_list")
+                .iter()
+                .any(|(branch_id, _)| branch_id == &archived_branch_id),
+            "swept archived branch must not appear in branch_list"
+        );
+    }
+
+    #[test]
+    fn maintenance_reclaim_sweeps_turn_whose_head_becomes_unreachable() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let thread = kernel
+            .thread_create("thread_a", "s1", "branch_a")
+            .expect("thread_create");
+        let turn = kernel
+            .turn_create(
+                "turn_a",
+                "thread_a",
+                "branch_a",
+                None,
+                &thread.root_turn_node_hash,
+            )
+            .expect("turn_create");
+        kernel
+            .run_create(
+                "run_a",
+                &turn.turn_id,
+                "branch_a",
+                "s1",
+                &thread.root_turn_node_hash,
+                vec![StepDeclaration {
+                    deterministic: false,
+                    id: "step1".to_string(),
+                    metadata: None,
+                    side_effects: false,
+                }],
+            )
+            .expect("run_create");
+        kernel
+            .run_complete_step("run_a", "step1", None, Vec::new(), None)
+            .expect("step checkpoints");
+        kernel
+            .run_complete("run_a", RunCompletionStatus::Completed, None)
+            .expect("run completes");
+
+        // Rewinding the branch back to root leaves turn_a's head (the
+        // checkpointed node) reachable only from the archived branch, which
+        // is itself excluded from live-root seeding.
+        kernel
+            .branch_set_head("branch_a", &thread.root_turn_node_hash)
+            .expect("rewind archives the advanced head");
+
+        let summary = kernel.maintenance_reclaim().expect("reclaim succeeds");
+
+        assert!(
+            summary.released_turn_count >= 1,
+            "a turn whose head turn node is unreachable must be swept"
+        );
+        assert!(
+            kernel.turn_get("turn_a").expect("turn_get").is_none(),
+            "swept turn must no longer resolve"
+        );
+    }
+
+    #[test]
+    fn maintenance_reclaim_never_sweeps_live_branch_head_regardless_of_age() {
+        // Ticks consumed, in order: thread_create(a), run_create(a),
+        // run_complete_step(a), run_complete(a), thread_create(b),
+        // run_create(b), maintenance_reclaim. branch_a's checkpoint is
+        // stamped very early (tick 0); run_b stays active and is stamped
+        // much later (tick 1_000_000), pinning the grace horizon at
+        // 1_000_000 -- well after branch_a's content was created. If age
+        // (grace-window membership) were what protected branch_a's head, it
+        // would be swept; it survives purely because it is a live branch
+        // head, which is always seeded as a keep-closure root.
+        let kernel = kernel_with_clock(&[0, 0, 0, 0, 1_000_000, 1_000_000, 1_000_000]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+
+        let thread_a = kernel
+            .thread_create("thread_a", "s1", "branch_a")
+            .expect("thread_create a");
+        let turn_a = kernel
+            .turn_create(
+                "turn_a",
+                "thread_a",
+                "branch_a",
+                None,
+                &thread_a.root_turn_node_hash,
+            )
+            .expect("turn_create a");
+        kernel
+            .run_create(
+                "run_a",
+                &turn_a.turn_id,
+                "branch_a",
+                "s1",
+                &thread_a.root_turn_node_hash,
+                vec![StepDeclaration {
+                    deterministic: false,
+                    id: "step1".to_string(),
+                    metadata: None,
+                    side_effects: false,
+                }],
+            )
+            .expect("run_create a");
+        let (_, head_a) = kernel
+            .run_complete_step("run_a", "step1", None, Vec::new(), None)
+            .expect("step checkpoints");
+        let head_a = head_a.expect("checkpoint hash");
+        kernel
+            .run_complete("run_a", RunCompletionStatus::Completed, None)
+            .expect("run_a completes");
+
+        let thread_b = kernel
+            .thread_create("thread_b", "s1", "branch_b")
+            .expect("thread_create b");
+        let turn_b = kernel
+            .turn_create(
+                "turn_b",
+                "thread_b",
+                "branch_b",
+                None,
+                &thread_b.root_turn_node_hash,
+            )
+            .expect("turn_create b");
+        kernel
+            .run_create(
+                "run_b",
+                &turn_b.turn_id,
+                "branch_b",
+                "s1",
+                &thread_b.root_turn_node_hash,
+                vec![StepDeclaration {
+                    deterministic: true,
+                    id: "work".to_string(),
+                    metadata: None,
+                    side_effects: false,
+                }],
+            )
+            .expect("run_create b stays active to pin a late grace horizon");
+
+        let summary = kernel.maintenance_reclaim().expect("reclaim succeeds");
+
+        assert_eq!(
+            summary.released_object_count, 0,
+            "old but reachable content on a live branch must never be swept"
+        );
+        assert_eq!(
+            kernel
+                .branch_get("branch_a")
+                .expect("branch_get")
+                .expect("branch exists")
+                .head_turn_node_hash,
+            head_a,
+            "the live branch head must survive reclaim regardless of age"
+        );
+        assert!(
+            kernel.node_get(&head_a).expect("node_get").is_some(),
+            "the reachable head turn node must survive reclaim regardless of age"
+        );
     }
 }
