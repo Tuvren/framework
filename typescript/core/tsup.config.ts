@@ -32,6 +32,7 @@ export default defineConfig({
     "src/telemetry/index.ts",
     "src/capabilities/index.ts",
     "src/lifecycle/index.ts",
+    "src/security/index.ts",
   ],
   format: ["esm"],
   outDir: "dist",

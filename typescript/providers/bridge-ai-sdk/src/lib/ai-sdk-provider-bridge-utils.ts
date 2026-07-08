@@ -22,6 +22,7 @@ import type {
 } from "@ai-sdk/provider";
 import { AISDKError } from "@ai-sdk/provider";
 import { TuvrenProviderError } from "@tuvren/core";
+import { screenValueForSecretPatterns } from "@tuvren/core/security";
 import type {
   StructuredOutputRequest,
   TuvrenPrompt,
@@ -329,7 +330,14 @@ export function buildProviderMetadata(input: {
   }
 
   if (extras !== undefined) {
-    metadata.aiSdkBridge = extras;
+    // Screen only the bridge's own captured extras (raw requestBody, response
+    // headers, warnings, ...) for secret-shaped substrings before they reach
+    // "tool_call.done" event payloads and durable run records (ADR-044,
+    // KRT-BK004). `providerMetadata` above is deliberately left untouched:
+    // `readReasoningStreamSignature` reads long opaque reasoning-signature
+    // strings out of it (anthropic.signature, google/vertex.thoughtSignature),
+    // which would otherwise collide with the long-secretish pattern below.
+    metadata.aiSdkBridge = screenValueForSecretPatterns(extras);
   }
 
   return Object.keys(metadata).length === 0 ? undefined : metadata;

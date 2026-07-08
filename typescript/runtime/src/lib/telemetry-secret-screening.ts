@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
+import {
+  isSecretLikeKey,
+  REDACTED,
+  sanitizeSecretLikeText,
+} from "@tuvren/core/security";
 import type { TelemetryAttributeValue } from "@tuvren/core/telemetry";
 import { TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS } from "@tuvren/telemetry-semconv";
 
-const SECRET_KEY_PATTERN =
-  /(?:authorization|api[-_.]?key|bearer|client[-_.]?secret|credential|password|private[-_.]?key|secret|token)/iu;
-const URL_CREDENTIAL_PATTERN = /[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s@]+@/iu;
-const CONNECTION_STRING_PATTERN =
-  /\b(?:postgres|postgresql|mysql|mongodb|redis):\/\/\S+/iu;
-const AUTH_HEADER_PATTERN = /\b(?:authorization|x-api-key)\s*[:=]\s*\S+/iu;
-const CREDENTIAL_ASSIGNMENT_PATTERN =
-  /\b(?:authorization|api[-_.]?key|bearer|client[-_.]?secret|credential|password|private[-_.]?key|secret|token)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)/iu;
-const JWT_PATTERN = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/u;
-const LONG_SECRETISH_PATTERN = /\b[A-Za-z0-9_~+/.-]{32,}={0,2}\b/u;
+// The regex-based structural secret-pattern primitives (secret-key-shaped
+// names, URL-embedded credentials, connection strings, auth headers,
+// credential assignments, JWTs, long-secretish tokens) live in
+// @tuvren/core/security (ADR-044, KRT-BK004) so the AI SDK provider bridge can
+// share them without depending on @tuvren/runtime. This module keeps its own,
+// telemetry-attribute-specific policy — the allowlist, and the canonical-hash
+// / UUID exemptions below — layered on top of those shared primitives.
 const CANONICAL_HASH_PATTERN = /^[a-f0-9]{64}$/iu;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
-const REDACTED = "[redacted]";
 const HASH_ATTRIBUTE_KEYS: ReadonlySet<string> = new Set([
   "tuvren.runtime.checkpoint.hash",
   "tuvren.runtime.parent_checkpoint.hash",
@@ -100,23 +101,4 @@ function sanitizeTelemetryAttributeValue(
 
   const sanitized = sanitizeSecretLikeText(value);
   return sanitized === REDACTED ? undefined : sanitized;
-}
-
-function isSecretLikeKey(key: string): boolean {
-  return SECRET_KEY_PATTERN.test(key);
-}
-
-function sanitizeSecretLikeText(value: string): string {
-  if (
-    URL_CREDENTIAL_PATTERN.test(value) ||
-    CONNECTION_STRING_PATTERN.test(value) ||
-    AUTH_HEADER_PATTERN.test(value) ||
-    CREDENTIAL_ASSIGNMENT_PATTERN.test(value) ||
-    JWT_PATTERN.test(value) ||
-    LONG_SECRETISH_PATTERN.test(value)
-  ) {
-    return REDACTED;
-  }
-
-  return value;
 }

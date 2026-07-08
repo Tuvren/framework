@@ -29,6 +29,8 @@ import type {
   TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
+import type { TuvrenPrompt } from "@tuvren/provider-api";
+import { createAiSdkProviderBridge } from "@tuvren/provider-bridge-ai-sdk";
 import {
   createReplTranscriptWriter,
   type ReplTranscriptHeader,
@@ -239,6 +241,181 @@ export async function runSecretIsolationTelemetry(
       telemetry: {
         events: capture.events,
         spans: capture.spans,
+      },
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Operation: runtime.secret-isolation.provider-bridge
+//
+// Exercises the AI SDK provider bridge (createAiSdkProviderBridge) directly at
+// the TuvrenProvider generate/stream level -- NOT through a full kernel/
+// runtime turn, which is deliberately out of scope for this probe (KRT-BK004).
+// A fake LanguageModelV3 embeds the fixture's pattern-shaped
+// `bridgeRequestToken` in two representative places: a credential-shaped
+// requestBody value (Scenario: request-body secrets are screened) and a
+// signed-URL-shaped response header (Scenario: response headers carrying
+// signed URLs or tokens are screened). Both the `.generate()` result's
+// `providerMetadata.aiSdkBridge` and the `.stream()` result's terminal
+// "finish" chunk `providerMetadata.aiSdkBridge` are returned as RAW
+// observation -- this adapter performs no scanning or grading; the plan's
+// secretAbsence/secretPatternAbsence assertions own the verdict.
+// ---------------------------------------------------------------------------
+
+interface ProviderBridgeSecretIsolationFixture {
+  bridgeRequestToken: string;
+}
+
+function readProviderBridgeSecretFixture(
+  input: unknown
+): ProviderBridgeSecretIsolationFixture {
+  const fixture =
+    isRecord(input) && isRecord(input.fixture) ? input.fixture : {};
+  return {
+    bridgeRequestToken: readString(
+      fixture.bridgeRequestToken,
+      "missing-bridge-request-token"
+    ),
+  };
+}
+
+function createSecretIsolationBridgeUsage() {
+  return {
+    inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
+    outputTokens: { reasoning: 0, text: 1, total: 1 },
+    raw: { provider: "secret-isolation-probe-provider" },
+  };
+}
+
+// This factory intentionally has no explicit `LanguageModelV3` return-type
+// annotation: `@ai-sdk/provider` is not resolvable as a bare specifier from
+// this package (it has no package.json / declared dependency, unlike
+// `@tuvren/provider-bridge-ai-sdk`, which already depends on it). The
+// returned shape is instead assignability-checked structurally at the
+// `createAiSdkProviderBridge({ model: ... })` call site below, where TS
+// resolves `LanguageModelV3` through the bridge package's own (already
+// resolvable) import. The handful of `as const` markers below preserve the
+// literal types (`"text"`, `"stop"`, `"v3"`, ...) that assignability needs.
+function createSecretIsolationProviderBridgeModel(token: string) {
+  // A credential-shaped requestBody value that is NOT equal to any of the
+  // fixture's other (already covered) exact secrets.
+  const requestBody = JSON.stringify({
+    authorization: `Bearer ${token}`,
+    model: "secret-isolation-probe-model",
+  });
+  // A signed-URL-shaped response header embedding the same pattern-shaped
+  // token.
+  const responseHeaders: Record<string, string> = {
+    "x-signed-url": `https://cdn.tuvren.test/assets/probe?token=${token}`,
+  };
+
+  return {
+    async doGenerate() {
+      await Promise.resolve();
+      return {
+        content: [
+          {
+            text: "secret-isolation provider-bridge generate turn",
+            type: "text" as const,
+          },
+        ],
+        finishReason: { raw: "stop", unified: "stop" as const },
+        request: { body: requestBody },
+        response: { headers: responseHeaders },
+        usage: createSecretIsolationBridgeUsage(),
+        warnings: [],
+      };
+    },
+    async doStream() {
+      await Promise.resolve();
+      return {
+        request: { body: requestBody },
+        response: { headers: responseHeaders },
+        // No explicit `ReadableStream<LanguageModelV3StreamPart>` generic
+        // (same reasoning as the factory's own return type): this infers as
+        // `ReadableStream<any>`, which is bivariantly assignable to the
+        // bridge's expected stream part type.
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue({ id: "text-1", type: "text-start" });
+            controller.enqueue({
+              delta: "secret-isolation provider-bridge stream turn",
+              id: "text-1",
+              type: "text-delta",
+            });
+            controller.enqueue({ id: "text-1", type: "text-end" });
+            controller.enqueue({
+              finishReason: { raw: "stop", unified: "stop" as const },
+              type: "finish",
+              usage: createSecretIsolationBridgeUsage(),
+            });
+            controller.close();
+          },
+        }),
+      };
+    },
+    modelId: "secret-isolation-probe-model",
+    provider: "secret-isolation-probe-provider",
+    specificationVersion: "v3" as const,
+    supportedUrls: {},
+  };
+}
+
+function readFinishChunkAiSdkBridge(chunks: readonly unknown[]): unknown {
+  const finishChunk = chunks.find(
+    (chunk): chunk is Record<string, unknown> =>
+      isRecord(chunk) && chunk.type === "finish"
+  );
+  const providerMetadata = isRecord(finishChunk)
+    ? finishChunk.providerMetadata
+    : undefined;
+  return isRecord(providerMetadata) ? providerMetadata.aiSdkBridge : undefined;
+}
+
+export async function runSecretIsolationProviderBridge(
+  input: unknown
+): Promise<AdapterProjection> {
+  const fixture = readProviderBridgeSecretFixture(input);
+  const prompt: TuvrenPrompt = {
+    messages: [
+      {
+        parts: [
+          {
+            text: "secret-isolation provider-bridge probe",
+            type: "text",
+          },
+        ],
+        role: "user",
+      },
+    ],
+  };
+
+  const generateBridge = createAiSdkProviderBridge({
+    model: createSecretIsolationProviderBridgeModel(fixture.bridgeRequestToken),
+  });
+  const generateResult = await generateBridge.generate(prompt);
+  const generateAiSdkBridge = isRecord(generateResult.providerMetadata)
+    ? generateResult.providerMetadata.aiSdkBridge
+    : undefined;
+
+  const streamBridge = createAiSdkProviderBridge({
+    model: createSecretIsolationProviderBridgeModel(fixture.bridgeRequestToken),
+  });
+  const streamChunks = await collectValues(streamBridge.stream(prompt));
+  const streamAiSdkBridge = readFinishChunkAiSdkBridge(streamChunks);
+
+  return {
+    result: {
+      generate: {
+        ...(generateAiSdkBridge === undefined
+          ? {}
+          : { aiSdkBridge: generateAiSdkBridge }),
+      },
+      stream: {
+        ...(streamAiSdkBridge === undefined
+          ? {}
+          : { aiSdkBridge: streamAiSdkBridge }),
       },
     },
   };

@@ -18,6 +18,7 @@
       "@tuvren/core/provider": ["../core/dist/provider/index.d.ts"],
       "@tuvren/core/extensions": ["../core/dist/extensions/index.d.ts"],
       "@tuvren/core/telemetry": ["../core/dist/telemetry/index.d.ts"],
+      "@tuvren/core/security": ["../core/dist/security/index.d.ts"],
       "@tuvren/sdk": ["../sdk/dist/index.d.ts"],
       "@tuvren/runner-react": ["../runners/react/dist/index.d.ts"],
       "@tuvren/kernel-protocol": ["../kernel/protocol/dist/index.d.ts"],

@@ -17,6 +17,7 @@
       "@tuvren/core/runner": ["../../core/dist/runner/index.d.ts"],
       "@tuvren/core/provider": ["../../core/dist/provider/index.d.ts"],
       "@tuvren/core/extensions": ["../../core/dist/extensions/index.d.ts"],
+      "@tuvren/core/security": ["../../core/dist/security/index.d.ts"],
       "@tuvren/provider-api": ["../provider-api/dist/index.d.ts"]
     },
     "rootDir": "./src",
