@@ -58,6 +58,25 @@ export const LONG_SECRETISH_PATTERN = /\b[A-Za-z0-9_~+/.-]{32,}={0,2}\b/u;
 export const REDACTED = "[redacted]";
 
 /**
+ * The full covered value-shape pattern set, named and ordered. `sanitizeSecretLikeText`
+ * derives its OR-chain from this list, and conformance's structural leak
+ * detector (`tools/conformance/harness/secret-absence/index.ts`) derives its
+ * named findings from the same list — so a pattern added here is automatically
+ * picked up by both consumers with no risk of the two silently drifting apart.
+ */
+export const SECRET_VALUE_PATTERNS: readonly (readonly [
+  name: string,
+  pattern: RegExp,
+])[] = [
+  ["url-credential", URL_CREDENTIAL_PATTERN],
+  ["connection-string", CONNECTION_STRING_PATTERN],
+  ["auth-header", AUTH_HEADER_PATTERN],
+  ["credential-assignment", CREDENTIAL_ASSIGNMENT_PATTERN],
+  ["jwt", JWT_PATTERN],
+  ["long-secretish", LONG_SECRETISH_PATTERN],
+];
+
+/**
  * True when `key` reads as secret-shaped (e.g. contains "token", "password",
  * "secret", ...). Used to drop attributes/fields whose *name* signals a
  * credential regardless of their value shape.
@@ -73,18 +92,11 @@ export function isSecretLikeKey(key: string): boolean {
  * match, or the original string unchanged otherwise.
  */
 export function sanitizeSecretLikeText(value: string): string {
-  if (
-    URL_CREDENTIAL_PATTERN.test(value) ||
-    CONNECTION_STRING_PATTERN.test(value) ||
-    AUTH_HEADER_PATTERN.test(value) ||
-    CREDENTIAL_ASSIGNMENT_PATTERN.test(value) ||
-    JWT_PATTERN.test(value) ||
-    LONG_SECRETISH_PATTERN.test(value)
-  ) {
-    return REDACTED;
-  }
+  const matchesAnyPattern = SECRET_VALUE_PATTERNS.some(([, pattern]) =>
+    pattern.test(value)
+  );
 
-  return value;
+  return matchesAnyPattern ? REDACTED : value;
 }
 
 /**

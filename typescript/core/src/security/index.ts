@@ -27,6 +27,7 @@ export {
   LONG_SECRETISH_PATTERN,
   REDACTED,
   SECRET_KEY_PATTERN,
+  SECRET_VALUE_PATTERNS,
   sanitizeSecretLikeText,
   screenValueForSecretPatterns,
   URL_CREDENTIAL_PATTERN,
