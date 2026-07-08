@@ -47,7 +47,7 @@
       "dependsOn": ["^build", "smoke-native"],
       "options": {
         "cwd": "typescript/kernel/backends/sqlite",
-        "command": "rm -rf .tmp-tests && bunx --bun tsc --project tsconfig.test.json --pretty false && mkdir -p .tmp-tests/typescript/kernel/backends/sqlite/migrations && cp migrations/*.sql .tmp-tests/typescript/kernel/backends/sqlite/migrations/ && node --test .tmp-tests/typescript/kernel/backends/sqlite/test/*.test.js"
+        "command": "rm -rf .tmp-tests && bunx --bun tsc --project tsconfig.test.json --pretty false && mkdir -p .tmp-tests/typescript/kernel/backends/sqlite/migrations && cp migrations/*.sql .tmp-tests/typescript/kernel/backends/sqlite/migrations/ && node --experimental-test-module-mocks --test .tmp-tests/typescript/kernel/backends/sqlite/test/*.test.js"
       }
     },
     "typecheck": {

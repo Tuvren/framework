@@ -337,7 +337,7 @@ Feature: Chunk-aware TurnTree caller writes
   - `typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts` (`transact`, lines ~337-408)
   - `typescript/kernel/backends/sqlite/test/` (new or existing test file asserting rollback error shape)
 - **Scope (Out-of-Scope Files):** `health()` and `reclaim()` (KRT-BK007 concern), memory/postgres backends
-- **Verification Command:** `bun run nx run kernel-backend-sqlite:test`
+- **Verification Command:** `bun run nx run backend-sqlite:test`
 - **Expected Success Output:** `exit 0`
 - **STOP Conditions:** STOP if collapsing the double normalization changes the observable error shape (message, code, or cause chain) that any existing consumer or conformance check currently asserts against — reconcile the assertion or the fix, do not ship a silent shape change.
 - **Description:** `SqliteBackend.transact` has a nested try/catch structure where an inner catch block normalizes a thrown error and rethrows, and an outer catch block normalizes that already-normalized error again, double-wrapping errors on the rollback path. Collapse this into a single normalization point so an error thrown during a transaction is normalized exactly once regardless of which catch block ultimately handles the rollback, and add a test asserting the resulting error shape (no double-wrapping, correct `cause`/message/code).
@@ -353,10 +353,14 @@ Feature: SQLite rollback error normalization
 
   Scenario: Rollback error shape is asserted by a test
     Given the collapsed single-normalization rollback path
-    When "bun run nx run kernel-backend-sqlite:test" runs
+    When "bun run nx run backend-sqlite:test" runs
     Then a test asserts the exact error shape (message, code, cause) produced on rollback
     And that test fails if double-normalization is reintroduced
 ```
+
+##### KRT-BK009 Deviations & Justifications
+- **Touched Files:** `typescript/kernel/backends/sqlite/project.json`
+- **Justification:** The Gherkin's "that test fails if double-normalization is reintroduced" criterion cannot be satisfied by shape-only assertions, since `normalizeBackendError` is idempotent and a single vs. double call produces a byte-identical result (proven empirically during milestone review by reintroducing the double call and observing all shape-based tests stay green). Satisfying the criterion for real required a call-count spy on `normalizeBackendError` via `node:test`'s `mock.module`, which requires the `--experimental-test-module-mocks` Node flag; this was added to the package's `test` Nx target in `project.json`. Low-risk, dev-tooling-only, and the change that actually made the ticket's own written acceptance criterion true rather than merely apparently true.
 
 #### KRT-BK010 Promote In-Memory-Expressible Kernel Checks to the Rust Lane
 - **Type:** Chore

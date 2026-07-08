@@ -392,7 +392,15 @@ class SqliteBackend implements KrakenBackend {
       } catch (error: unknown) {
         active = false;
         if (this.db.inTransaction) {
-          this.db.exec("ROLLBACK");
+          // A failure here (e.g. the engine cannot complete the rollback)
+          // supersedes the original work error: normalize and throw the
+          // rollback failure instead, so no error escapes this catch
+          // unnormalized regardless of which failure ultimately surfaces.
+          try {
+            this.db.exec("ROLLBACK");
+          } catch (rollbackError: unknown) {
+            throw normalizeBackendError(rollbackError);
+          }
         }
         throw normalizeBackendError(error);
       }

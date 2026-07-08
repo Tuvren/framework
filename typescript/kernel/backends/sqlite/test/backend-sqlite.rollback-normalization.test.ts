@@ -14,12 +14,7 @@
  * limitations under the License.
  */
 
-import {
-  deepStrictEqual,
-  ok,
-  rejects,
-  strictEqual,
-} from "node:assert/strict";
+import { deepStrictEqual, ok, rejects, strictEqual } from "node:assert/strict";
 import { describe, test } from "node:test";
 import { TuvrenPersistenceError, TuvrenValidationError } from "@tuvren/core";
 import {
@@ -42,12 +37,22 @@ import {
  * is idempotent (a `TuvrenPersistenceError`/`TuvrenValidationError` input is
  * returned unchanged), so the double call never actually produced a different
  * observable shape -- but the structure was still double-normalization debt.
- * These tests pin the single-normalization invariant so it cannot silently
- * regress: (a) direct property coverage of `normalizeBackendError`'s
+ *
+ * The tests in this file verify the *shape* of the normalized error and its
+ * `cause` chain: (a) direct property coverage of `normalizeBackendError`'s
  * idempotency for every input kind it distinguishes, and (b) an end-to-end
- * `transact` rollback whose resulting error's `cause` chain proves exactly one
- * wrap occurred.
+ * `transact` rollback whose resulting error has the expected message, code,
+ * and cause. Because `normalizeBackendError` is idempotent, these shape
+ * assertions hold identically whether the rollback path normalizes once or
+ * twice -- they cannot by themselves distinguish single- from
+ * double-normalization. The structural single-normalization invariant (that
+ * `normalizeBackendError` is invoked exactly once on the rollback path) is
+ * pinned separately, by a call-count spy, in
+ * `backend-sqlite.rollback-normalization-guard.test.ts`.
  */
+
+const ROLLBACK_TRIGGER_MESSAGE_PATTERN =
+  /blocked by rollback-normalization test/u;
 
 interface ShapeableError {
   cause?: unknown;
@@ -134,10 +139,7 @@ describe("@tuvren/backend-sqlite transact rollback normalization (KRT-BK009)", (
 
     const schema = createCanonicalKernelTestSchema();
     const schemaRecord = createStoredSchemaRecord(schema, 1);
-    const objectRecord = await createStoredObjectRecord(
-      new Uint8Array([9]),
-      2
-    );
+    const objectRecord = await createStoredObjectRecord(new Uint8Array([9]), 2);
 
     await rejects(
       backend.transact(async (tx) => {
@@ -152,18 +154,20 @@ describe("@tuvren/backend-sqlite transact rollback normalization (KRT-BK009)", (
         strictEqual(error.code, "sqlite_backend_engine_error");
         ok(NORMALIZED_ENGINE_ERROR_PATTERN.test(error.message));
 
-        // (i) Normalized exactly once: `cause` points directly at the
-        // original raw sqlite error, not at an intermediate already-normalized
-        // wrapper. Double-wrapping (inner catch normalizes + outer catch
-        // normalizes again onto a non-idempotent result) would make `cause`
-        // itself a TuvrenPersistenceError/TuvrenValidationError whose OWN
-        // `.cause` holds the true original -- assert that is NOT the shape we
-        // see.
+        // (i) Shape check: `cause` points directly at the original raw sqlite
+        // error, not at an intermediate already-normalized wrapper. Note this
+        // does NOT by itself prove single-normalization: because
+        // `normalizeBackendError` is idempotent, a second call onto its own
+        // already-normalized output returns that same instance unchanged, so
+        // this cause chain is identical whether the rollback path normalizes
+        // once or twice. The call-count spy in
+        // `backend-sqlite.rollback-normalization-guard.test.ts` is what
+        // actually pins the single-normalization structural invariant.
         const { cause } = error;
         ok(cause instanceof Error);
         ok(!(cause instanceof TuvrenPersistenceError));
         ok(!(cause instanceof TuvrenValidationError));
-        ok(/blocked by rollback-normalization test/u.test(cause.message));
+        ok(ROLLBACK_TRIGGER_MESSAGE_PATTERN.test(cause.message));
 
         return true;
       }
@@ -181,9 +185,9 @@ describe("@tuvren/backend-sqlite transact rollback normalization (KRT-BK009)", (
     );
     strictEqual(afterRollback, null);
 
-    // (iii) The lock/transaction state was not corrupted by the
-    // double-rollback-attempt pattern: a subsequent transact() on the same
-    // instance succeeds normally and its write is durable.
+    // (iii) The lock/transaction state was not corrupted by the rollback
+    // attempt: a subsequent transact() on the same instance succeeds
+    // normally and its write is durable.
     await backend.transact(async (tx) => {
       await tx.schemas.put(schemaRecord);
     });
