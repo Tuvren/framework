@@ -212,6 +212,10 @@ Feature: Guardrail regenerate-command hardening
     And none require shell-only syntax to function
 ```
 
+##### KRT-BK005 Deviations & Justifications
+- **Touched Files:** `tools/scripts/authority-packet/validate-authority-packets.ts`, `tools/scripts/lib/regenerate-command-argv.ts`, `tools/scripts/lib/regenerate-command-argv.test.ts`
+- **Justification:** The new argv-parsing/allowlist logic needed a single shared home so `authority-guardrails.ts`'s runtime execution and `validate-authority-packets.ts`'s static declaration check enforce identical rules instead of two hand-maintained copies. Extracting it into `tools/scripts/lib/regenerate-command-argv.ts` and reusing it from `validate-authority-packets.ts` moves the allowlist guarantee into `bun run check`'s fast static-validation lane (a bad `regenerateCommand` now fails at validation time, not only at execution time), which is a strictly stronger, lower-risk version of the ticket's intent. This deviation was pre-declared in the approved execution plan before implementation began.
+
 #### KRT-BK006 Kernel Input Hardening: LIMIT Guard + Interop Resource Caps
 - **Type:** Security
 - **Effort:** 2
