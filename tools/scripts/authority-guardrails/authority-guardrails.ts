@@ -19,6 +19,7 @@ import { existsSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseRegenerateCommandArgv } from "../lib/regenerate-command-argv.js";
 
 interface AuthorityPacketManifest {
   authoritativeSources: Array<{
@@ -196,6 +197,18 @@ function checkFreshnessDeclarations(
         failures.push({
           check: "freshness-check",
           message: `${manifest.packetId} generated artifact lacks regenerate command: ${artifact.path}`,
+        });
+        continue;
+      }
+
+      try {
+        parseRegenerateCommandArgv(check.regenerateCommand);
+      } catch (error) {
+        failures.push({
+          check: "freshness-check",
+          message:
+            `${manifest.packetId} generated artifact has an invalid regenerate command for ` +
+            `${artifact.path}: ${error instanceof Error ? error.message : String(error)}`,
         });
       }
     }
@@ -1640,11 +1653,38 @@ function runRegenerateCommand(
   command: string
 ): Promise<{ message: string; ok: boolean }> {
   return new Promise((resolvePromise) => {
+    // A manifest-owned regenerateCommand is untrusted input (any pull request
+    // can edit a checked-in authority-packet.json), so it is parsed into an
+    // argv array and rejected loud rather than handed to a shell. See
+    // ../lib/regenerate-command-argv.ts for the metacharacter denylist and
+    // command-prefix allowlist this enforces.
+    let argv: string[];
+
+    try {
+      argv = parseRegenerateCommandArgv(command);
+    } catch (error) {
+      resolvePromise({
+        message: error instanceof Error ? error.message : String(error),
+        ok: false,
+      });
+      return;
+    }
+
+    const [executable, ...args] = argv;
+
+    if (executable === undefined) {
+      resolvePromise({
+        message: `regenerateCommand "${command}" produced an empty argv`,
+        ok: false,
+      });
+      return;
+    }
+
     // Freshness checks intentionally execute the manifest-owned command instead
     // of duplicating generator knowledge in this guardrail.
-    const child = spawn(command, {
+    const child = spawn(executable, args, {
       cwd: REPO_ROOT,
-      shell: true,
+      shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
     const output: string[] = [];
