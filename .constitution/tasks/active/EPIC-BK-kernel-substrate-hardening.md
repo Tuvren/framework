@@ -130,7 +130,9 @@ Feature: Purge-scope serialization safety
     And it asserts no concurrent execution window opens
 ```
 
-#### KRT-BK004 Provider-Bridge Secret Screening at the Seam (ADR-044/058)
+##### KRT-BK003 Deviations & Justifications
+- **Touched Files:** `typescript/kernel/backends/memory/test/backend-memory.scope-store-concurrency.test.ts` (new file, not the Gherkin-named `backend-memory.purge-scope.test.ts`).
+- **Justification:** The new test targets `MemoryScopeStore`'s internal `runExclusive`/`dropScope` serialization primitive directly (three racing actors sequenced via hand-rolled deferreds, no timers), a different concern than `backend-memory.purge-scope.test.ts`'s existing black-box `purgeScope()` behavior tests. The substantive Gherkin criterion — a purge-vs-transact race test exists under `bun run nx run backend-memory:test` (actual Nx project name; the ticket's cited `kernel-backend-memory` does not exist) and asserts no concurrent window opens — is met in a differently-named file. Achieved a genuine red-then-green TDD cycle: the test failed against unmodified source with the exact predicted ordering violation (`D-ran` before `B-done`) before the fix was applied.
 - **Type:** Security
 - **Effort:** 3
 - **Dependencies:** None
