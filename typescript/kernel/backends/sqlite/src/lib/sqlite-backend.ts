@@ -355,48 +355,40 @@ class SqliteBackend implements KrakenBackend {
           writeTracker
         );
 
-        try {
-          const result = await this.transactionContext.run(true, () =>
-            work(repositories)
-          );
-          active = false;
-          validateTransactionWriteSet(this.db, writeTracker);
-          await this.faultState.hooks?.beforeCommit?.();
+        const result = await this.transactionContext.run(true, () =>
+          work(repositories)
+        );
+        active = false;
+        validateTransactionWriteSet(this.db, writeTracker);
+        await this.faultState.hooks?.beforeCommit?.();
 
-          let committed = false;
-          const commit = (): Promise<void> => {
-            if (committed) {
-              throw new Error(
-                "sqlite backend commit hook attempted double commit"
-              );
-            }
-
-            this.db.exec("COMMIT");
-            committed = true;
-            return Promise.resolve();
-          };
-
-          if (this.faultState.hooks?.midCommit === undefined) {
-            await commit();
-          } else {
-            await this.faultState.hooks.midCommit(commit);
-
-            if (!committed) {
-              throw new Error(
-                "sqlite backend mid-commit hook must call commit exactly once"
-              );
-            }
+        let committed = false;
+        const commit = (): Promise<void> => {
+          if (committed) {
+            throw new Error(
+              "sqlite backend commit hook attempted double commit"
+            );
           }
 
-          await this.faultState.hooks?.afterCommitBeforeAck?.();
-          return result;
-        } catch (error: unknown) {
-          active = false;
-          if (this.db.inTransaction) {
-            this.db.exec("ROLLBACK");
+          this.db.exec("COMMIT");
+          committed = true;
+          return Promise.resolve();
+        };
+
+        if (this.faultState.hooks?.midCommit === undefined) {
+          await commit();
+        } else {
+          await this.faultState.hooks.midCommit(commit);
+
+          if (!committed) {
+            throw new Error(
+              "sqlite backend mid-commit hook must call commit exactly once"
+            );
           }
-          throw normalizeBackendError(error);
         }
+
+        await this.faultState.hooks?.afterCommitBeforeAck?.();
+        return result;
       } catch (error: unknown) {
         active = false;
         if (this.db.inTransaction) {
