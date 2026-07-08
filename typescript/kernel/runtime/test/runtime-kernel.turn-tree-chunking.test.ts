@@ -246,4 +246,79 @@ describe("createRuntimeKernel chunk-aware TurnTree caller writes", () => {
     const resolved = await fixture.kernel.tree.resolve(treeHash, "messages");
     expect(resolved).toEqual(hashes);
   });
+
+  test("a single batched incorporate call spanning more than one new chunk resolves correctly", async () => {
+    const fixture = await createThreadFixture();
+    const rootTurnTreeHash = await rootTurnTreeHashOf(
+      fixture.kernel,
+      fixture.rootTurnNodeHash
+    );
+
+    // Grow one at a time to a partial second chunk (40 items: chunk[0] full
+    // at 32, chunk[1] partial at 8) so a genuinely chunked, non-full-only
+    // prior exists to append onto.
+    const priorHashes = await seededHashes(40, "batch-prior");
+    const priorTreeHash = await growMessagesOneAtATime(
+      fixture.kernel,
+      rootTurnTreeHash,
+      priorHashes
+    );
+
+    const storedPrior = await fixture.backend.transact(async (tx) =>
+      tx.turnTreePaths.get(priorTreeHash, "messages")
+    );
+    expect(storedPrior?.collectionKind).toBe("ordered");
+    if (storedPrior?.collectionKind === "ordered") {
+      expect(storedPrior.orderedEncoding).toBe("chunked");
+      expect(storedPrior.orderedCount).toBe(priorHashes.length);
+    }
+
+    // One incorporate call staging 30 results at once: the delta (40 -> 70)
+    // spans the existing partial chunk[1] (8/32 items) plus a brand new
+    // chunk[2], so toStoredTurnTreePathChunkAware's new-chunk loop must
+    // iterate more than once in this single call.
+    const batchHashes = await seededHashes(30, "batch-delta");
+    const grownTreeHash = await fixture.kernel.tree.incorporate(
+      priorTreeHash,
+      batchHashes.map((objectHash, index) => ({
+        objectHash,
+        objectType: "message",
+        status: "completed" as const,
+        taskId: `batch_task_${index}`,
+        timestamp: 1,
+      }))
+    );
+
+    const expected = [...priorHashes, ...batchHashes];
+    const resolved = await fixture.kernel.tree.resolve(
+      grownTreeHash,
+      "messages"
+    );
+    expect(resolved).toEqual(expected);
+
+    const storedGrown = await fixture.backend.transact(async (tx) =>
+      tx.turnTreePaths.get(grownTreeHash, "messages")
+    );
+    expect(storedGrown?.collectionKind).toBe("ordered");
+    if (storedGrown?.collectionKind === "ordered") {
+      expect(storedGrown.orderedEncoding).toBe("chunked");
+      expect(storedGrown.orderedCount).toBe(expected.length);
+    }
+
+    // Cross-check against the unoptimized baseline (a base-less tree.create
+    // submitting the full flat array in one shot) to prove the multi-chunk
+    // delta path resolves identically to a full re-chunk.
+    const baselineTreeHash = await fixture.kernel.tree.create(
+      fixture.schemaId,
+      {
+        "context.manifest": null,
+        messages: expected,
+      }
+    );
+    const resolvedBaseline = await fixture.kernel.tree.resolve(
+      baselineTreeHash,
+      "messages"
+    );
+    expect(resolvedBaseline).toEqual(expected);
+  });
 });
