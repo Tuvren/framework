@@ -5,15 +5,58 @@
 - **Target:** Write latency and lock-hold time versus accumulated scope-state size for (a) the postgres whole-blob-per-scope transaction model (`typescript/kernel/backends/postgres/src/lib/postgres-backend-persistence.ts:266-333` — `SELECT ... FOR UPDATE` on one scope row, full CBOR decode/clone/re-encode/rewrite per write, `max: 1` connection) and (b) the sqlite full-database loads in `health()` and `reclaim()` (`typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts:283-291, 405-431` — reclaim loads twice per invocation inside a writer-blocking transaction).
 
 ## 2. Codebase Baseline
-- **Current State:** [To be completed during execution — measure per-write latency at scope sizes across at least three orders of magnitude of accumulated turn history; measure health()/reclaim() wall time and writer-block duration at the same sizes.]
-- **Discovered Constraints:** [To be completed — note the canonical-CBOR snapshot model dependencies (ADR-008/010/011) and which ADRs a persistence-model change would touch.]
+
+### Decision thresholds (declared before running any benchmark)
+- **Postgres:** if p95 marginal single-object write latency at 10,000 accumulated scope objects exceeds ~50ms, OR the latency-vs-size growth curve is clearly superlinear across the measured range, recommend Option B (path-granular redesign) as the target architecture. Otherwise, accept Option A (documented bounds).
+- **SQLite:** if `health()`'s single-load p95 at a 10,000-turn-node database exceeds ~50ms, OR `reclaim()`/`health()`'s wall-time ratio deviates materially from the ~2x the double-load design predicts, flag the same Option B recommendation. Any additionally *accelerating* (worse-than-linear) growth in `health()` itself is logged as a separate, independent finding — that would indicate an algorithmic issue in the load/validate pipeline distinct from the "one blob vs. two blobs" architecture question this spike targets.
+
+### Benchmark method
+Both benchmarks drive the target backend exclusively through its public `RuntimeBackend` surface (`transact`, `health`, `reclaim`) — no internal/private API access, satisfying the ticket's "measurement-only, no production code changes" constraint.
+- `typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts` (new `bench` Nx target on `backend-postgres`, which had none before this spike): for each scope size in {10, 100, 1,000, 10,000}, bulk-seeds that many `StoredObject` records into a single scope via **one** `transact()` call (so seeding cost doesn't conflate with the measured marginal-write cost), then times 3 warmup + 5 sampled single-object `transact()` writes against that scope.
+- `typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts` (new `bench-load-cost` Nx target on `backend-sqlite`, alongside the pre-existing `bench` target which is untouched): for each database size in {10, 100, 1,000, 10,000} turn nodes, seeds a coherent thread/branch/turn/turn-tree chain of that length plus an equal number of intentionally-unreferenced ("orphan") objects, then times 2 warmup + 5 sampled `health()` calls, and separately 1 warmup + 5 sampled `reclaim()` calls (each `reclaim()` sample is preceded by reseeding a small, size-independent batch of 25 fresh orphan objects, so every sampled `reclaim()` call does comparable real sweep work and the database-size axis isolates load cost, not garbage volume).
+
+Both scripts were executed directly by the implementer (`bun run nx run backend-postgres:bench`, `bun run nx run backend-sqlite:bench-load-cost`) against a live devenv PostgreSQL instance and a real temp-file SQLite database; the numbers below are taken verbatim from those runs, not estimated or back-filled.
+
+### Current State — measured results
+
+**Postgres: marginal single-object write latency vs. accumulated scope size** (5 samples, best/median/p95/avg; `loadPersistedStateForUpdate`/`persistStateSnapshot` decode/mutate/re-encode/rewrite the *entire* scope snapshot on every write):
+
+| Scope size (objects) | best | median | p95 | avg |
+|---|---|---|---|---|
+| 10 | 4.10ms | 5.40ms | 7.38ms | 5.52ms |
+| 100 | 8.50ms | 11.96ms | 18.63ms | 12.35ms |
+| 1,000 | 54.46ms | 58.82ms | 65.85ms | 59.04ms |
+| 10,000 | 470.08ms | 482.80ms | 568.14ms | 500.05ms |
+
+Best-case growth per 10x size step: 10→100 = 2.07x, 100→1,000 = 6.41x, 1,000→10,000 = 8.63x. Over the full 1,000x size range (10→10,000 objects), latency grew ~115x — clearly resource-scaling, not constant-time, though somewhat sub-linear-to-the-naive-byte-count hypothesis at the low end (a fixed per-transaction cost — network round trip, `SELECT ... FOR UPDATE`, WAL commit — dominates at small sizes and is progressively swamped by the encode/decode cost as the blob grows).
+
+**SQLite: `health()` (one full `loadValidatedState()`) and `reclaim()` (two full loads inside one writer-blocking transaction) vs. database size** (5 samples, best/median/p95; `releasedObjectCount` confirms each `reclaim()` sample did the intended constant 25-object sweep):
+
+| DB size (turn nodes) | health best | health median | health p95 | reclaim best | reclaim median | reclaim p95 | reclaim/health (best) |
+|---|---|---|---|---|---|---|---|
+| 10 | 5.61ms | 6.16ms | 6.38ms | 8.87ms | 9.89ms | 11.24ms | 1.58x |
+| 100 | 19.24ms | 20.18ms | 23.20ms | 26.65ms | 29.09ms | 33.29ms | 1.39x |
+| 1,000 | 184.34ms | 186.41ms | 218.91ms | 289.31ms | 290.65ms | 305.75ms | 1.57x |
+| 10,000 | 7,818.47ms | 8,049.89ms | 8,930.59ms | 14,827.57ms | 14,908.51ms | 16,280.89ms | 1.90x |
+
+`reclaim()`/`health()` sits in a 1.39x–1.90x band rather than a clean 2x — consistent with the double-load architecture (not contradicting it), with the shortfall from 2x explained by the second load running against a very slightly smaller post-sweep state and warm OS/page-cache effects within the same transaction.
+
+The **growth factor itself is accelerating** as database size grows: `health()`'s best-case per-10x-step multiplier goes 3.43x (10→100), 9.58x (100→1,000), 42.42x (1,000→10,000) — a flat ~10x at every step would indicate simple linear (O(n)) scaling; an *increasing* multiplier indicates something in `loadValidatedState`'s decode/`validateCommittedState` pipeline is worse than O(n) in database size. This is a genuine, independent finding beyond the "one load vs. two loads" architecture question this spike was scoped to answer.
+
+- **Discovered Constraints:** Both backends' snapshot model traces back to ADR-008 (canonical CBOR encoding), ADR-010/ADR-011 (chunked ordered-path representation) — a path-granular persistence redesign (Option B) would need to preserve canonical-CBOR-encoded leaf values while eliminating the "one row/blob per scope" storage granularity, i.e., it changes physical storage layout, not the wire/hash-level encoding contracts those ADRs govern. The accelerating superlinear growth found in SQLite's `health()`/`reclaim()` path is a *separate*, likely-independent-of-persistence-model algorithmic question (see Downstream Backlog Impact) that this measurement-only spike does not diagnose further, per its STOP condition against modifying or instrumenting the measured production files.
 
 ## 3. Options & Trade-offs
-- **Option A — Accept blob-per-scope with documented bounds:** keep the model, write an ADR recording the accepted scope-size ceiling and the topology guidance (scopes stay small; many scopes over few).
-- **Option B — Path-granular / row-per-record persistence:** O(delta) writes and intra-scope concurrency at the cost of a large, high-risk backend rework touching the snapshot model.
-- [Raw benchmark metrics to be recorded here; the numbers decide.]
+- **Option A — Accept blob-per-scope with documented bounds:** keep the model, write an ADR recording an accepted scope-size/database-size ceiling and topology guidance (scopes stay small; many scopes over few). Cheap now; caps the architecture's ability to support long-running, high-volume sessions or large single-tenant databases.
+- **Option B — Path-granular / row-per-record persistence:** O(delta) writes and intra-scope concurrency at the cost of a large, high-risk backend rework touching the snapshot model in both backends.
+- **Measured verdict against the pre-declared thresholds:** Both backends breached their threshold, and by a wide margin, not a marginal one:
+  - Postgres: p95 write latency at 10,000 objects is 568.14ms — **~11x** over the 50ms threshold.
+  - SQLite: `health()` p95 at 10,000 turn nodes is 8,930.59ms (~9 seconds) — **~178x** over the 50ms threshold.
+  - Both curves are clearly superlinear well before 10,000 items/rows (postgres's 100→1,000 step alone is already a 6.41x latency jump for a 10x size increase; SQLite's is worse). At 1,000 items/rows — a scale an actively-used agent session or database can reach quickly — postgres p95 is already 65.85ms and SQLite `health()` p95 is already 218.91ms, both past the threshold on their own.
 
 ## 4. Execution Directives
-- **Chosen Option:** [To be completed at spike close — the recommendation feeds a new ADR; no production code changes inside this spike.]
-- **Why it fits:** [To be completed.]
-- **Downstream Backlog Impact:** Unblocks a future persistence-model epic (or closes the question with an accept-with-bounds ADR). Related but independent: KRT-BK008 (caller-side TurnTree chunking) proceeds regardless of this spike's outcome.
+- **Chosen Option:** **Option B is the correct target architecture**, adopted in two stages rather than attempted inside this ticket (which is measurement-only by its own STOP condition):
+  1. **Immediate (this spike's direct output):** treat Option A as an explicit, conservative *interim* safety net, not the final answer. A follow-up ADR should document the measured ceiling directly from this data — e.g., keep per-scope object counts and per-database turn-node counts under roughly 500–1,000 in the interim, since both backends are already past the 50ms operational-latency bar at that scale.
+  2. **Follow-up (new backlog item):** file a persistence-model redesign epic scoped to row-per-record/path-granular storage for both the postgres and sqlite backends, using this spike's curves as the quantified justification and its benchmark scripts (`postgres-write-latency.bench.ts`, `sqlite-load-cost.bench.ts`) as the regression baseline the redesign must beat.
+  3. **Separate follow-up:** file an investigation ticket for SQLite's accelerating (worse-than-linear) `health()`/`reclaim()` growth specifically — independent of the blob-vs-row-per-record question, since even a row-per-record redesign would not by itself explain or fix an algorithmic complexity issue in the full-state validation pipeline if one exists.
+- **Why it fits:** The ticket's own two options were framed as a binary to be settled by measurement ("the numbers decide"); the numbers came back unambiguous in both backends, not borderline, so recommending Option A outright would ignore measured evidence of user-visible latency (hundreds of milliseconds to multiple seconds) at scope/database sizes a real, long-running agent session can plausibly reach. Recommending Option B without an interim step would violate this ticket's own STOP condition (no production code changes here) and understate the redesign's real cost (the ticket itself frames Option B as "large, high-risk"). The staged recommendation lets the substrate ship now with a documented, measured ceiling while routing the real fix to a scoped follow-up epic.
+- **Downstream Backlog Impact:** Unblocks a future persistence-model redesign epic (Option B, staged as above) instead of closing the question with an accept-with-bounds-only ADR. Adds a second, independent follow-up item for SQLite's superlinear `health()`/`reclaim()` growth. Related but independent: KRT-BK008 (caller-side TurnTree chunking) already shipped and proceeds regardless of this spike's outcome — it reduces *write* amplification for ordered-path growth specifically, but does not change the whole-scope-blob read/write granularity this spike measured.

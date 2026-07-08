@@ -21,6 +21,13 @@
         "command": "rm -rf .tmp-bench && bunx --bun tsc --project tsconfig.bench.json --pretty false && mkdir -p .tmp-bench/typescript/kernel/backends/sqlite/migrations && cp migrations/*.sql .tmp-bench/typescript/kernel/backends/sqlite/migrations/ && node .tmp-bench/typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.js"
       }
     },
+    "bench-load-cost": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/backends/sqlite",
+        "command": "rm -rf .tmp-bench && bunx --bun tsc --project tsconfig.bench.json --pretty false && mkdir -p .tmp-bench/typescript/kernel/backends/sqlite/migrations && cp migrations/*.sql .tmp-bench/typescript/kernel/backends/sqlite/migrations/ && node .tmp-bench/typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.js"
+      }
+    },
     "retention-dry-run": {
       "executor": "nx:run-commands",
       "options": {

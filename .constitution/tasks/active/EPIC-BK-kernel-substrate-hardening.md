@@ -313,6 +313,17 @@ Feature: Persistence-model benchmark spike
     And no other production source file under "typescript/kernel/backends/" changed
 ```
 
+##### KRT-BK007 Deviations & Justifications
+- **Touched Files (all tooling, zero `src/**` diffs):**
+  - `typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts` (new)
+  - `typescript/kernel/backends/postgres/project.json` (new `bench` target — this package had none before this spike)
+  - `typescript/kernel/backends/postgres/tsconfig.typecheck.json` (added `bench/**/*.ts` to `include`, mirroring the sibling `backend-sqlite` package's existing typecheck config, so the new bench script is actually type-checked by `bun run nx run backend-postgres:typecheck` rather than silently skipped)
+  - `typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts` (new)
+  - `typescript/kernel/backends/sqlite/project.json` (new `bench-load-cost` target, additive alongside the pre-existing `bench` target which is untouched)
+  - `.constitution/spikes/SPK-BK007.md` (declared in-scope; filled in per the ticket description)
+- **Justification:** The ticket's own STOP condition forbids production code changes and forbids instrumenting the measured files (`postgres-backend-persistence.ts`, `sqlite-backend.ts`) directly, which means the only way to measure their behavior is black-box, through each backend's public `RuntimeBackend` surface (`transact`/`health`/`reclaim`), from new benchmark scripts. `bench/` is an established, precedented non-`spec/` tooling directory in this repo (`typescript/runtime/bench/runtime-boundary.bench.ts`, `typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts`, both already existed with their own Nx `bench` targets before this ticket) — new dev/measurement scripts and their Nx wiring are not "production source" for the purposes of Gherkin Scenario 2, matching this repo's own architecture-first placement rules (`spec/` vs. language-specific dirs) and the pre-approved execution plan's explicit pre-declaration of this exact deviation class ("each backend's `package.json`/`project.json` gets a `bench` Nx target — tooling-only, precedented"). The `tsconfig.typecheck.json` edit was not separately pre-declared in the plan but follows the same tooling-only reasoning and an existing same-repo precedent (`backend-sqlite`'s own `tsconfig.typecheck.json` already includes `bench/**/*.ts`); its necessity and effect were verified directly — a deliberately introduced type error in the new postgres bench file caused `bun run nx run backend-postgres:typecheck` to fail only after this include was added, confirming the file is genuinely checked, not silently skipped.
+- **Verification performed:** Both new bench scripts were executed directly by the implementer against live infrastructure (`bun run nx run backend-postgres:bench` against a live devenv PostgreSQL instance; `bun run nx run backend-sqlite:bench-load-cost` against a real temp-file SQLite database) — the numbers recorded in `SPK-BK007.md` are taken verbatim from those runs. `git status`/`git diff` confirmed zero changes under either backend's `src/` directory. `bun run nx run backend-{postgres,sqlite}:{lint,typecheck,test}` all pass (postgres: 47/47 tests; sqlite: 99/99 tests, including all pre-existing suites, confirming the `project.json`/`tsconfig.typecheck.json` edits didn't regress anything already in place).
+
 #### KRT-BK008 TurnTree Caller-Side Chunk-Aware Writes (ADR-011)
 - **Type:** Feature
 - **Effort:** 3
