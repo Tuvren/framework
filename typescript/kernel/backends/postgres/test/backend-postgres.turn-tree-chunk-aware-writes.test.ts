@@ -68,6 +68,9 @@ async function seededHashes(count: number, seed: string): Promise<string[]> {
 describe("createPostgresBackend chunk-aware TurnTree caller writes (KRT-BK008)", () => {
   test("resolves the expected manifest after growing an ordered path past the ADR-011 chunking threshold", async () => {
     const backend = createPostgresBackend(createPostgresTestBackendOptions());
+    // 38 sequential real-Postgres round-trips (THRESHOLD + 6 `tree.incorporate`
+    // calls); the default 5000ms bun:test timeout is too tight under
+    // concurrent load (observed 5040ms during a full `bun run verify` run).
     const kernel = createRuntimeKernel({ backend, now: () => 1 });
     const schemaId = await kernel.schema.register(TEST_SCHEMA);
     const thread = await kernel.thread.create(
@@ -108,7 +111,7 @@ describe("createPostgresBackend chunk-aware TurnTree caller writes (KRT-BK008)",
       expect(storedPath.orderedEncoding).toBe("chunked");
       expect(storedPath.orderedCount).toBe(hashes.length);
     }
-  });
+  }, 20_000);
 
   test("collections at or below the chunking threshold keep the flat encoding unchanged", async () => {
     const backend = createPostgresBackend(createPostgresTestBackendOptions());
