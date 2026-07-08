@@ -20,14 +20,20 @@ use crate::cbor::encode_deterministic_kernel_record;
 use crate::identity::{hash_bytes_to_hex, hash_turn_node_identity, hash_turn_tree_identity};
 use crate::types::{
     BranchRecord, EpochMs, HashString, IncorporationRule, KernelError, KernelRecord, KernelResult,
-    ObserveResult, PathCollectionKind, PathValue, RecoveryState, RunCompletionStatus, RunRecord,
-    RunStatus, SetHeadResult, StagedResult, StagedResultStatus, StepContext, StepDeclaration,
-    ThreadCreateResult, ThreadRecord, TurnNode, TurnRecord, TurnTreeManifest, TurnTreeSchema,
-    Verdict,
+    LeasedRunCreateInput, ObserveResult, PathCollectionKind, PathValue, ReclamationSummary,
+    RecoveryState, RunCompletionStatus, RunRecord, RunStatus, SetHeadResult, StagedResult,
+    StagedResultStatus, StepContext, StepDeclaration, ThreadCreateResult, ThreadRecord, TurnNode,
+    TurnRecord, TurnTreeManifest, TurnTreeSchema, Verdict,
 };
 
 const MIN_SAFE_EPOCH_MS: EpochMs = -9_007_199_254_740_991;
 const MAX_SAFE_EPOCH_MS: EpochMs = 9_007_199_254_740_991;
+
+/// KRT-BK002/ADR-050/ADR-051: a leaseless running run whose `updated_at_ms`
+/// has gone quiet for at least this long is treated as abandoned by a
+/// crashed/disconnected creator and excluded from pinning the reclamation
+/// grace horizon. Mirrors the TypeScript `LEASELESS_RUN_EXPIRY_MS` (24h).
+const LEASELESS_RUN_EXPIRY_MS: EpochMs = 86_400_000;
 
 #[derive(Clone)]
 pub struct InMemoryKernel {
@@ -44,12 +50,23 @@ pub struct InMemoryKernelOptions {
 #[derive(Clone, Debug)]
 struct ObjectRecord {
     blob: Vec<u8>,
+    created_at_ms: EpochMs,
 }
 
 #[derive(Clone, Debug)]
 struct StoredTurnTree {
+    created_at_ms: EpochMs,
     manifest: TurnTreeManifest,
     schema_id: String,
+}
+
+/// KRT-BK010 reachability-reclamation keep closure. No `chunks` set: the Rust
+/// in-memory kernel's `StoredTurnTree.manifest` is already the fully-resolved
+/// manifest with no separate ordered-path-chunk records to track.
+struct KeepClosure {
+    objects: HashSet<HashString>,
+    turn_nodes: HashSet<HashString>,
+    turn_trees: HashSet<HashString>,
 }
 
 /// ADR-034: capability descriptor returned by InMemoryKernel::capabilities().
@@ -82,6 +99,7 @@ pub struct StoredThreadEntry {
 struct KernelState {
     archive_counter: u64,
     branches: HashMap<String, BranchRecord>,
+    fencing_token_counter: u64,
     objects: HashMap<HashString, ObjectRecord>,
     runs: HashMap<String, RunRecord>,
     run_signals: HashMap<String, Vec<KernelRecord>>,
@@ -119,10 +137,15 @@ impl InMemoryKernel {
         _media_type: Option<String>,
     ) -> KernelResult<HashString> {
         let object_hash = hash_bytes_to_hex(&blob);
+        let created_at_ms = (self.now)();
         let mut state = self.lock_state()?;
-        state
-            .objects
-            .insert(object_hash.clone(), ObjectRecord { blob });
+        state.objects.insert(
+            object_hash.clone(),
+            ObjectRecord {
+                blob,
+                created_at_ms,
+            },
+        );
         Ok(object_hash)
     }
 
@@ -191,6 +214,7 @@ impl InMemoryKernel {
         state.turn_trees.insert(
             tree_hash.clone(),
             StoredTurnTree {
+                created_at_ms: (self.now)(),
                 manifest,
                 schema_id: schema_id.to_string(),
             },
@@ -236,6 +260,7 @@ impl InMemoryKernel {
         state.turn_trees.insert(
             tree_hash.clone(),
             StoredTurnTree {
+                created_at_ms: (self.now)(),
                 manifest,
                 schema_id: schema.schema_id,
             },
@@ -342,11 +367,13 @@ impl InMemoryKernel {
             .get(schema_id)
             .cloned()
             .ok_or_else(|| missing("schema_not_found", "schema does not exist"))?;
+        let created_at_ms = (self.now)();
         let manifest = empty_manifest(&schema);
         let root_turn_tree_hash = hash_turn_tree_identity(schema_id, &manifest)?;
         state.turn_trees.insert(
             root_turn_tree_hash.clone(),
             StoredTurnTree {
+                created_at_ms,
                 manifest,
                 schema_id: schema_id.to_string(),
             },
@@ -357,10 +384,12 @@ impl InMemoryKernel {
             root_event_hash.clone(),
             ObjectRecord {
                 blob: root_event_blob,
+                created_at_ms,
             },
         );
         let mut root_node = TurnNode {
             consumed_staged_results: Vec::new(),
+            created_at_ms,
             // Root nodes include a backend-owned event object so two threads
             // sharing a schema do not collapse to the same genesis hash.
             event_hash: Some(root_event_hash),
@@ -373,7 +402,6 @@ impl InMemoryKernel {
         state
             .turn_nodes
             .insert(root_node.hash.clone(), root_node.clone());
-        let created_at_ms = (self.now)();
         state.threads.insert(
             thread_id.to_string(),
             ThreadRecord {
@@ -388,6 +416,7 @@ impl InMemoryKernel {
         state.branches.insert(
             initial_branch_id.to_string(),
             BranchRecord {
+                archived_from_branch_id: None,
                 branch_id: initial_branch_id.to_string(),
                 head_turn_node_hash: root_node.hash.clone(),
                 thread_id: thread_id.to_string(),
@@ -494,6 +523,7 @@ impl InMemoryKernel {
         }
         ensure_node_belongs_to_thread(&state, from_turn_node_hash, thread_id)?;
         let branch = BranchRecord {
+            archived_from_branch_id: None,
             branch_id: branch_id.to_string(),
             head_turn_node_hash: from_turn_node_hash.to_string(),
             thread_id: thread_id.to_string(),
@@ -543,12 +573,14 @@ impl InMemoryKernel {
         let archive_branch = if moves_forward {
             None
         } else if is_ancestor(&state, turn_node_hash, &prior_head)? {
-            let archive_head = reactively_checkpoint_active_runs_on_branch(&mut state, branch_id)?;
+            let archive_head =
+                reactively_checkpoint_active_runs_on_branch(&mut state, branch_id, (self.now)())?;
             // Backward moves preserve the abandoned head under an archive
             // branch. Any active run staging is first checkpointed onto that
             // abandoned lineage so rollback does not erase durable work.
             let archive_id = next_archive_branch_id(&mut state, branch_id);
             let archive = BranchRecord {
+                archived_from_branch_id: Some(branch_id.to_string()),
                 branch_id: archive_id.clone(),
                 head_turn_node_hash: archive_head,
                 thread_id: branch.thread_id.clone(),
@@ -778,9 +810,13 @@ impl InMemoryKernel {
                 "run already has a staged result for this task id",
             ));
         }
-        state
-            .objects
-            .insert(object_hash.clone(), ObjectRecord { blob });
+        state.objects.insert(
+            object_hash.clone(),
+            ObjectRecord {
+                blob,
+                created_at_ms: timestamp_ms,
+            },
+        );
         let staged_results = state.staged_results.entry(run_id.to_string()).or_default();
         staged_results.push(staged_result.clone());
         Ok((object_hash, staged_result))
@@ -820,74 +856,300 @@ impl InMemoryKernel {
         if state.runs.contains_key(run_id) {
             return Err(duplicate("run_already_exists", "run already exists"));
         }
-        let branch = state
-            .branches
-            .get(branch_id)
-            .ok_or_else(|| missing("branch_not_found", "branch does not exist"))?;
-        if branch.head_turn_node_hash != start_turn_node_hash {
-            return Err(KernelError::new(
-                "run_start_head_mismatch",
-                "run start turn node must match the branch head",
-                None,
-            ));
-        }
-        let turn = state
-            .turns
-            .get(turn_id)
-            .ok_or_else(|| missing("turn_not_found", "turn does not exist"))?;
-        if turn.branch_id != branch_id {
-            return Err(KernelError::new(
-                "run_turn_branch_mismatch",
-                "run turn must belong to the requested branch",
-                None,
-            ));
-        }
-        if !is_ancestor(&state, &turn.start_turn_node_hash, start_turn_node_hash)?
-            || !is_ancestor(&state, start_turn_node_hash, &turn.head_turn_node_hash)?
-        {
-            return Err(KernelError::new(
-                "run_turn_span_mismatch",
-                "run start node must be inside the referenced turn span",
-                None,
-            ));
-        }
-        if !state.schemas.contains_key(schema_id) {
-            return Err(missing("schema_not_found", "schema does not exist"));
-        }
-        let start_node = state
-            .turn_nodes
-            .get(start_turn_node_hash)
-            .ok_or_else(|| missing("turn_node_not_found", "run start turn node does not exist"))?;
-        if start_node.schema_id != schema_id {
-            return Err(KernelError::new(
-                "run_schema_mismatch",
-                "run schema must match the start turn node schema",
-                None,
-            ));
-        }
-        if state.runs.values().any(|run| {
-            run.branch_id == branch_id
-                && matches!(run.status, RunStatus::Running | RunStatus::Paused)
-        }) {
-            return Err(KernelError::new(
-                "branch_has_active_run",
-                "branch already has a running or paused run",
-                None,
-            ));
-        }
+        validate_run_creation(&state, branch_id, turn_id, schema_id, start_turn_node_hash)?;
+        let now_ms = (self.now)();
         let run = RunRecord {
             branch_id: branch_id.to_string(),
+            created_at_ms: now_ms,
             created_turn_nodes: Vec::new(),
             current_step_index: 0,
+            execution_owner_id: None,
+            fencing_token: None,
+            lease_expires_at_ms: None,
+            preemption_reason: None,
             run_id: run_id.to_string(),
             schema_id: schema_id.to_string(),
             start_turn_node_hash: start_turn_node_hash.to_string(),
             status: RunStatus::Running,
             step_sequence: steps,
             turn_id: turn_id.to_string(),
+            updated_at_ms: now_ms,
         };
         state.runs.insert(run_id.to_string(), run.clone());
         Ok(run)
+    }
+
+    /// KRT-BK010 (`kernel.run-liveness`): creates a run with an initial
+    /// execution lease (owner, fencing token, expiry) so a caller can prove
+    /// exclusive ownership and detect/preempt a stalled execution. Shares
+    /// `run_create`'s structural validation via `validate_run_creation`; the
+    /// only behavioral difference is the lease fields stamped onto the
+    /// resulting `RunRecord`.
+    pub fn run_liveness_create_leased_run(
+        &self,
+        input: LeasedRunCreateInput,
+    ) -> KernelResult<RunRecord> {
+        validate_id(&input.run_id, "invalid_run_id", "run id must not be empty")?;
+        validate_id(
+            &input.turn_id,
+            "invalid_turn_id",
+            "turn id must not be empty",
+        )?;
+        validate_id(
+            &input.branch_id,
+            "invalid_branch_id",
+            "branch id must not be empty",
+        )?;
+        validate_steps(&input.steps)?;
+        let mut state = self.lock_state()?;
+        if state.runs.contains_key(&input.run_id) {
+            return Err(duplicate("run_already_exists", "run already exists"));
+        }
+        validate_run_creation(
+            &state,
+            &input.branch_id,
+            &input.turn_id,
+            &input.schema_id,
+            &input.start_turn_node_hash,
+        )?;
+        let now_ms = (self.now)();
+        let fencing_token = generate_fencing_token(&mut state, &input.run_id, now_ms);
+        let run = RunRecord {
+            branch_id: input.branch_id,
+            created_at_ms: now_ms,
+            created_turn_nodes: Vec::new(),
+            current_step_index: 0,
+            execution_owner_id: Some(input.execution_owner_id),
+            fencing_token: Some(fencing_token),
+            lease_expires_at_ms: Some(input.lease_expires_at_ms),
+            preemption_reason: None,
+            run_id: input.run_id.clone(),
+            schema_id: input.schema_id,
+            start_turn_node_hash: input.start_turn_node_hash,
+            status: RunStatus::Running,
+            step_sequence: input.steps,
+            turn_id: input.turn_id,
+            updated_at_ms: now_ms,
+        };
+        state.runs.insert(input.run_id, run.clone());
+        Ok(run)
+    }
+
+    /// KRT-BK010 (`kernel.run-liveness`): renews a run's execution lease.
+    /// Requires the caller to present the current owner id and fencing token
+    /// (rotated on every successful renewal) so a stale/preempted owner
+    /// cannot silently keep extending a lease it no longer holds.
+    pub fn run_liveness_renew_lease(
+        &self,
+        run_id: &str,
+        execution_owner_id: &str,
+        fencing_token: &str,
+        next_lease_expires_at_ms: EpochMs,
+    ) -> KernelResult<RunRecord> {
+        validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
+        let mut state = self.lock_state()?;
+        let mut run = state
+            .runs
+            .get(run_id)
+            .cloned()
+            .ok_or_else(|| missing("run_not_found", "run does not exist"))?;
+        if run.status != RunStatus::Running {
+            return Err(KernelError::new(
+                "run_not_running",
+                "only running runs can renew their lease",
+                None,
+            ));
+        }
+        if run.execution_owner_id.is_none()
+            && run.fencing_token.is_none()
+            && run.lease_expires_at_ms.is_none()
+        {
+            return Err(KernelError::new(
+                "run_lease_not_present",
+                "run has no lease to renew",
+                None,
+            ));
+        }
+        let now_ms = (self.now)();
+        if run
+            .lease_expires_at_ms
+            .is_some_and(|expiry| expiry <= now_ms)
+        {
+            return Err(KernelError::new(
+                "run_lease_expired",
+                "run lease has already expired",
+                None,
+            ));
+        }
+        if run.execution_owner_id.as_deref() != Some(execution_owner_id) {
+            return Err(KernelError::new(
+                "run_lease_owner_mismatch",
+                "run lease owner does not match",
+                None,
+            ));
+        }
+        if run.fencing_token.as_deref() != Some(fencing_token) {
+            return Err(KernelError::new(
+                "run_lease_token_mismatch",
+                "run lease fencing token is stale",
+                None,
+            ));
+        }
+        run.fencing_token = Some(generate_fencing_token(&mut state, run_id, now_ms));
+        run.lease_expires_at_ms = Some(next_lease_expires_at_ms);
+        run.updated_at_ms = now_ms;
+        state.runs.insert(run_id.to_string(), run.clone());
+        Ok(run)
+    }
+
+    /// KRT-BK010 (`kernel.run-liveness`): lists running runs whose lease has
+    /// expired at or before `now_ms`. Leaseless running runs and paused runs
+    /// are never included: a leaseless run has no `lease_expires_at_ms` to
+    /// compare, and a paused run is an orderly, intentional state.
+    pub fn run_liveness_list_expired(&self, now_ms: EpochMs) -> KernelResult<Vec<RunRecord>> {
+        let state = self.lock_state()?;
+        Ok(state
+            .runs
+            .values()
+            .filter(|run| {
+                run.status == RunStatus::Running
+                    && run
+                        .lease_expires_at_ms
+                        .is_some_and(|expiry| expiry <= now_ms)
+            })
+            .cloned()
+            .collect())
+    }
+
+    /// KRT-BK010 (`kernel.run-liveness`): preempts a run whose lease has
+    /// expired, checkpointing any uncommitted staged work onto the run's
+    /// active lineage exactly as a normal terminal completion would (so a
+    /// preempted run's recovery state is coherent with the branch/turn head),
+    /// then clears the lease and marks the run failed.
+    pub fn run_liveness_preempt_expired(
+        &self,
+        run_id: &str,
+        preempting_owner_id: &str,
+        now_ms: EpochMs,
+        reason: &str,
+    ) -> KernelResult<RecoveryState> {
+        validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
+        let mut state = self.lock_state()?;
+        let mut run = state
+            .runs
+            .get(run_id)
+            .cloned()
+            .ok_or_else(|| missing("run_not_found", "run does not exist"))?;
+        if run.execution_owner_id.is_none()
+            && run.fencing_token.is_none()
+            && run.lease_expires_at_ms.is_none()
+        {
+            return Err(KernelError::new(
+                "run_lease_not_present",
+                "run has no lease to preempt",
+                None,
+            ));
+        }
+        if run.status != RunStatus::Running {
+            return Err(KernelError::new(
+                "run_not_running",
+                "only running runs can be preempted",
+                None,
+            ));
+        }
+        if run.lease_expires_at_ms.is_none_or(|expiry| expiry > now_ms) {
+            return Err(KernelError::new(
+                "run_lease_not_expired",
+                "run lease has not expired",
+                None,
+            ));
+        }
+
+        let event_blob =
+            format!("tuvren.kernel.run-liveness.preempted:{run_id}:{preempting_owner_id}:{reason}")
+                .into_bytes();
+        let event_hash = hash_bytes_to_hex(&event_blob);
+        state.objects.insert(
+            event_hash.clone(),
+            ObjectRecord {
+                blob: event_blob,
+                created_at_ms: now_ms,
+            },
+        );
+
+        let staged_results = state
+            .staged_results
+            .get(run_id)
+            .cloned()
+            .unwrap_or_default();
+        let prior_node = state
+            .turn_nodes
+            .get(&run_active_turn_node_hash(&run))
+            .cloned()
+            .ok_or_else(|| missing("turn_node_not_found", "run active turn node does not exist"))?;
+        let next_tree_hash = if staged_results.is_empty() {
+            prior_node.turn_tree_hash.clone()
+        } else {
+            incorporate_locked(
+                &mut state,
+                &prior_node.turn_tree_hash,
+                &staged_results,
+                now_ms,
+            )?
+        };
+        let mut node = TurnNode {
+            consumed_staged_results: staged_results,
+            created_at_ms: now_ms,
+            event_hash: Some(event_hash),
+            hash: String::new(),
+            previous_turn_node_hash: Some(prior_node.hash),
+            schema_id: run.schema_id.clone(),
+            turn_tree_hash: next_tree_hash,
+        };
+        node.hash = hash_turn_node_identity(&node)?;
+        state.turn_nodes.insert(node.hash.clone(), node.clone());
+        run.created_turn_nodes.push(node.hash.clone());
+        set_run_head_refs(&mut state, &run, &node.hash)?;
+        state.staged_results.remove(run_id);
+
+        run.execution_owner_id = None;
+        run.fencing_token = None;
+        run.lease_expires_at_ms = None;
+        run.preemption_reason = Some(reason.to_string());
+        run.status = RunStatus::Failed;
+        run.updated_at_ms = now_ms;
+        state.runs.insert(run_id.to_string(), run.clone());
+        state.run_signals.remove(run_id);
+
+        let last_completed_step_id = run
+            .current_step_index
+            .checked_sub(1)
+            .and_then(|index| run.step_sequence.get(index))
+            .map(|step| step.id.clone());
+
+        Ok(RecoveryState {
+            consumed_staged_results: node.consumed_staged_results,
+            last_completed_step_id,
+            last_turn_node_hash: node.hash,
+            step_sequence: run.step_sequence.clone(),
+            uncommitted_staged_results: Vec::new(),
+        })
+    }
+
+    /// ADR-034/KRT-BK010: fetches a run by id without altering its state.
+    pub fn run_get(&self, run_id: &str) -> KernelResult<Option<RunRecord>> {
+        validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
+        let state = self.lock_state()?;
+        Ok(state.runs.get(run_id).cloned())
+    }
+
+    /// KRT-BK010 (`kernel.reclamation`): reachability-reclamation sweep. Ports
+    /// `reclaimBackendState` (shared TS backend-invariant module) onto this
+    /// backend's own maps; see the free functions below for the algorithm.
+    pub fn maintenance_reclaim(&self) -> KernelResult<ReclamationSummary> {
+        let now_ms = (self.now)();
+        let mut state = self.lock_state()?;
+        Ok(reclaim_state(&mut state, now_ms))
     }
 
     pub fn run_begin_step(&self, run_id: &str, step_id: &str) -> KernelResult<StepContext> {
@@ -972,6 +1234,7 @@ impl InMemoryKernel {
                 None,
             ));
         }
+        let now_ms = (self.now)();
         for annotation in observe_results
             .iter()
             .flat_map(|observe_result| observe_result.annotations.iter())
@@ -981,6 +1244,7 @@ impl InMemoryKernel {
                 object_hash,
                 ObjectRecord {
                     blob: annotation.clone(),
+                    created_at_ms: now_ms,
                 },
             );
         }
@@ -1003,6 +1267,7 @@ impl InMemoryKernel {
 
         if !checkpoint_required {
             run.current_step_index += 1;
+            run.updated_at_ms = now_ms;
             set_next_step_signals(&mut state, run_id, next_signals);
             state.runs.insert(run_id.to_string(), run);
             return Ok((false, None));
@@ -1018,10 +1283,16 @@ impl InMemoryKernel {
                 ensure_turn_tree_schema(&state, &tree_hash, &run.schema_id)?;
                 tree_hash
             }
-            None => incorporate_locked(&mut state, &prior_node.turn_tree_hash, &staged_results)?,
+            None => incorporate_locked(
+                &mut state,
+                &prior_node.turn_tree_hash,
+                &staged_results,
+                now_ms,
+            )?,
         };
         let mut node = TurnNode {
             consumed_staged_results: staged_results,
+            created_at_ms: now_ms,
             event_hash,
             hash: String::new(),
             previous_turn_node_hash: Some(prior_node.hash),
@@ -1037,6 +1308,7 @@ impl InMemoryKernel {
         // refs commit, preserving retry/recovery state on validation failures.
         state.staged_results.remove(run_id);
         set_next_step_signals(&mut state, run_id, next_signals);
+        run.updated_at_ms = now_ms;
         state.runs.insert(run_id.to_string(), run);
         Ok((true, Some(node.hash)))
     }
@@ -1076,6 +1348,7 @@ impl InMemoryKernel {
             .unwrap_or_default();
         ensure_event_hash_exists(&state, event_hash.as_deref())?;
         let checkpoint_required = event_hash.is_some() || !staged_results.is_empty();
+        let now_ms = (self.now)();
         let terminal_hash = if checkpoint_required {
             let prior_node = state
                 .turn_nodes
@@ -1087,10 +1360,16 @@ impl InMemoryKernel {
             let next_tree_hash = if staged_results.is_empty() {
                 prior_node.turn_tree_hash.clone()
             } else {
-                incorporate_locked(&mut state, &prior_node.turn_tree_hash, &staged_results)?
+                incorporate_locked(
+                    &mut state,
+                    &prior_node.turn_tree_hash,
+                    &staged_results,
+                    now_ms,
+                )?
             };
             let mut node = TurnNode {
                 consumed_staged_results: staged_results,
+                created_at_ms: now_ms,
                 event_hash,
                 hash: String::new(),
                 previous_turn_node_hash: Some(prior_node.hash),
@@ -1110,6 +1389,7 @@ impl InMemoryKernel {
         };
         state.run_signals.remove(run_id);
         run.status = terminal_status;
+        run.updated_at_ms = now_ms;
         state.runs.insert(run_id.to_string(), run);
         Ok(terminal_hash)
     }
@@ -1200,6 +1480,7 @@ fn incorporate_locked(
     state: &mut KernelState,
     base_turn_tree_hash: &str,
     staged_results: &[StagedResult],
+    now_ms: EpochMs,
 ) -> KernelResult<HashString> {
     let base_tree = state
         .turn_trees
@@ -1231,6 +1512,7 @@ fn incorporate_locked(
     state.turn_trees.insert(
         tree_hash.clone(),
         StoredTurnTree {
+            created_at_ms: now_ms,
             manifest,
             schema_id: schema.schema_id,
         },
@@ -1241,6 +1523,7 @@ fn incorporate_locked(
 fn reactively_checkpoint_active_runs_on_branch(
     state: &mut KernelState,
     branch_id: &str,
+    now_ms: EpochMs,
 ) -> KernelResult<HashString> {
     let run_ids = state
         .runs
@@ -1278,9 +1561,10 @@ fn reactively_checkpoint_active_runs_on_branch(
             .cloned()
             .ok_or_else(|| missing("turn_node_not_found", "run active turn node does not exist"))?;
         let next_tree_hash =
-            incorporate_locked(state, &prior_node.turn_tree_hash, &staged_results)?;
+            incorporate_locked(state, &prior_node.turn_tree_hash, &staged_results, now_ms)?;
         let mut node = TurnNode {
             consumed_staged_results: staged_results,
+            created_at_ms: now_ms,
             event_hash: None,
             hash: String::new(),
             previous_turn_node_hash: Some(prior_node.hash),
@@ -1381,6 +1665,467 @@ fn next_archive_branch_id(state: &mut KernelState, branch_id: &str) -> String {
             return archive_id;
         }
     }
+}
+
+/// Shared structural validation for `run_create` and
+/// `run_liveness_create_leased_run`: the branch must exist and its head must
+/// match the run's start node, the turn must exist and belong to the branch
+/// with the start node inside its span, the schema must exist and match the
+/// start node's schema, and the branch must not already have an active run.
+fn validate_run_creation(
+    state: &KernelState,
+    branch_id: &str,
+    turn_id: &str,
+    schema_id: &str,
+    start_turn_node_hash: &str,
+) -> KernelResult<()> {
+    let branch = state
+        .branches
+        .get(branch_id)
+        .ok_or_else(|| missing("branch_not_found", "branch does not exist"))?;
+    if branch.head_turn_node_hash != start_turn_node_hash {
+        return Err(KernelError::new(
+            "run_start_head_mismatch",
+            "run start turn node must match the branch head",
+            None,
+        ));
+    }
+    let turn = state
+        .turns
+        .get(turn_id)
+        .ok_or_else(|| missing("turn_not_found", "turn does not exist"))?;
+    if turn.branch_id != branch_id {
+        return Err(KernelError::new(
+            "run_turn_branch_mismatch",
+            "run turn must belong to the requested branch",
+            None,
+        ));
+    }
+    if !is_ancestor(state, &turn.start_turn_node_hash, start_turn_node_hash)?
+        || !is_ancestor(state, start_turn_node_hash, &turn.head_turn_node_hash)?
+    {
+        return Err(KernelError::new(
+            "run_turn_span_mismatch",
+            "run start node must be inside the referenced turn span",
+            None,
+        ));
+    }
+    if !state.schemas.contains_key(schema_id) {
+        return Err(missing("schema_not_found", "schema does not exist"));
+    }
+    let start_node = state
+        .turn_nodes
+        .get(start_turn_node_hash)
+        .ok_or_else(|| missing("turn_node_not_found", "run start turn node does not exist"))?;
+    if start_node.schema_id != schema_id {
+        return Err(KernelError::new(
+            "run_schema_mismatch",
+            "run schema must match the start turn node schema",
+            None,
+        ));
+    }
+    if state.runs.values().any(|run| {
+        run.branch_id == branch_id && matches!(run.status, RunStatus::Running | RunStatus::Paused)
+    }) {
+        return Err(KernelError::new(
+            "branch_has_active_run",
+            "branch already has a running or paused run",
+            None,
+        ));
+    }
+    Ok(())
+}
+
+/// KRT-BK010: generates a fresh, unique fencing token by hashing a
+/// per-kernel monotonic counter together with the run id and the current
+/// clock reading. This crate has no external randomness dependency, so a
+/// counter-derived hash is used instead of a UUID.
+fn generate_fencing_token(state: &mut KernelState, run_id: &str, now_ms: EpochMs) -> String {
+    state.fencing_token_counter += 1;
+    hash_bytes_to_hex(
+        format!(
+            "tuvren.kernel.fencing-token:{run_id}:{}:{now_ms}",
+            state.fencing_token_counter
+        )
+        .as_bytes(),
+    )
+}
+
+// KRT-BK010 (`kernel.reclamation`): a faithful port of the shared TypeScript
+// `reclaimBackendState` reachability-reclamation algorithm
+// (typescript/kernel/backends/shared/src/lib/backend-invariant-reclamation.ts)
+// onto `KernelState`'s own maps. Two deliberate simplifications versus the TS
+// original, both because the underlying structures are simpler here:
+//   - No ordered-path-chunk closure: `StoredTurnTree.manifest` is already the
+//     fully-resolved manifest, so `close_turn_tree_reachability` only needs to
+//     walk manifest values, not a separate chunked-path record.
+//   - No per-run "observe annotations" map to clean up: annotation objects
+//     already live directly in `objects` via `run_complete_step`'s existing
+//     annotation-storing loop, so sweeping a run only touches `runs`,
+//     `staged_results`, and `run_signals`.
+
+fn reclaim_state(state: &mut KernelState, now_ms: EpochMs) -> ReclamationSummary {
+    let grace_horizon_ms = compute_grace_horizon_ms(state, now_ms);
+    let keep = compute_keep_closure(state, grace_horizon_ms);
+    let keep_turn_ids = collect_kept_turn_ids(state, &keep.turn_nodes);
+    sweep(state, &keep, &keep_turn_ids, grace_horizon_ms)
+}
+
+/// The grace horizon is the `created_at_ms` of the oldest active execution
+/// (running or paused run) — the conservative in-flight write horizon. No
+/// durable state created at or after this instant is released. A leaseless
+/// running run whose `updated_at_ms` has gone quiet for at least
+/// `LEASELESS_RUN_EXPIRY_MS` is excluded from pinning this horizon
+/// (KRT-BK002): it is treated as abandoned by a crashed/disconnected
+/// creator. The run's own reachable lineage stays fully protected regardless,
+/// via `seed_active_run_roots`'s unconditional `is_active_run(status)` check.
+fn compute_grace_horizon_ms(state: &KernelState, now_ms: EpochMs) -> EpochMs {
+    let mut grace_horizon_ms = EpochMs::MAX;
+    for run in state.runs.values() {
+        if is_active_run(&run.status)
+            && !is_expired_leaseless_running_run(run, now_ms)
+            && run.created_at_ms < grace_horizon_ms
+        {
+            grace_horizon_ms = run.created_at_ms;
+        }
+    }
+    grace_horizon_ms
+}
+
+fn compute_keep_closure(state: &KernelState, grace_horizon_ms: EpochMs) -> KeepClosure {
+    let mut keep = KeepClosure {
+        objects: HashSet::new(),
+        turn_nodes: HashSet::new(),
+        turn_trees: HashSet::new(),
+    };
+    let mut turn_node_stack: Vec<HashString> = Vec::new();
+    let mut turn_tree_stack: Vec<HashString> = Vec::new();
+
+    seed_live_roots(state, &mut turn_node_stack, &mut keep);
+    seed_grace_roots(
+        state,
+        grace_horizon_ms,
+        &mut turn_node_stack,
+        &mut turn_tree_stack,
+        &mut keep,
+    );
+    close_turn_node_reachability(state, &mut keep, &mut turn_node_stack, &mut turn_tree_stack);
+    close_turn_tree_reachability(state, &mut keep, &mut turn_tree_stack);
+
+    keep
+}
+
+/// Live roots: non-archived branch heads, thread roots, active-run staged work.
+fn seed_live_roots(
+    state: &KernelState,
+    turn_node_stack: &mut Vec<HashString>,
+    keep: &mut KeepClosure,
+) {
+    for branch in state.branches.values() {
+        if branch.archived_from_branch_id.is_none() {
+            turn_node_stack.push(branch.head_turn_node_hash.clone());
+        }
+    }
+    for thread in state.threads.values() {
+        turn_node_stack.push(thread.root_turn_node_hash.clone());
+    }
+    seed_active_run_roots(state, turn_node_stack, keep);
+}
+
+/// Active-run roots: start/created turn nodes and staged results for running
+/// or paused runs.
+fn seed_active_run_roots(
+    state: &KernelState,
+    turn_node_stack: &mut Vec<HashString>,
+    keep: &mut KeepClosure,
+) {
+    for run in state.runs.values() {
+        if is_active_run(&run.status) {
+            turn_node_stack.push(run.start_turn_node_hash.clone());
+            for hash in &run.created_turn_nodes {
+                turn_node_stack.push(hash.clone());
+            }
+        }
+    }
+    for (run_id, results) in &state.staged_results {
+        if let Some(run) = state.runs.get(run_id)
+            && is_active_run(&run.status)
+        {
+            for staged_result in results {
+                keep.objects.insert(staged_result.object_hash.clone());
+            }
+        }
+    }
+}
+
+/// Grace-window roots: any durable state newer than the oldest active
+/// execution lease is retained, and its reference closure is retained with it.
+fn seed_grace_roots(
+    state: &KernelState,
+    grace_horizon_ms: EpochMs,
+    turn_node_stack: &mut Vec<HashString>,
+    turn_tree_stack: &mut Vec<HashString>,
+    keep: &mut KeepClosure,
+) {
+    for (hash, turn_node) in &state.turn_nodes {
+        if turn_node.created_at_ms >= grace_horizon_ms {
+            turn_node_stack.push(hash.clone());
+        }
+    }
+    for (hash, turn_tree) in &state.turn_trees {
+        if turn_tree.created_at_ms >= grace_horizon_ms {
+            turn_tree_stack.push(hash.clone());
+        }
+    }
+    for (hash, object) in &state.objects {
+        if object.created_at_ms >= grace_horizon_ms {
+            keep.objects.insert(hash.clone());
+        }
+    }
+}
+
+/// Closure over turn nodes (walk ancestors via `previous_turn_node_hash`).
+fn close_turn_node_reachability(
+    state: &KernelState,
+    keep: &mut KeepClosure,
+    turn_node_stack: &mut Vec<HashString>,
+    turn_tree_stack: &mut Vec<HashString>,
+) {
+    while let Some(hash) = turn_node_stack.pop() {
+        if keep.turn_nodes.contains(&hash) {
+            continue;
+        }
+        let Some(turn_node) = state.turn_nodes.get(&hash) else {
+            continue;
+        };
+        keep.turn_nodes.insert(hash.clone());
+        if let Some(previous) = &turn_node.previous_turn_node_hash {
+            turn_node_stack.push(previous.clone());
+        }
+        turn_tree_stack.push(turn_node.turn_tree_hash.clone());
+        if let Some(event_hash) = &turn_node.event_hash {
+            keep.objects.insert(event_hash.clone());
+        }
+        for staged_result in &turn_node.consumed_staged_results {
+            keep.objects.insert(staged_result.object_hash.clone());
+        }
+    }
+}
+
+/// Closure over turn trees → manifest objects. No chunk handling: Rust's
+/// `StoredTurnTree.manifest` has no separate ordered-path-chunk records.
+fn close_turn_tree_reachability(
+    state: &KernelState,
+    keep: &mut KeepClosure,
+    turn_tree_stack: &mut Vec<HashString>,
+) {
+    while let Some(hash) = turn_tree_stack.pop() {
+        if keep.turn_trees.contains(&hash) {
+            continue;
+        }
+        let Some(tree) = state.turn_trees.get(&hash) else {
+            continue;
+        };
+        keep.turn_trees.insert(hash.clone());
+        for value in tree.manifest.values() {
+            match value {
+                PathValue::Single(object_hash) => {
+                    keep.objects.insert(object_hash.clone());
+                }
+                PathValue::Ordered(hashes) => {
+                    for object_hash in hashes {
+                        keep.objects.insert(object_hash.clone());
+                    }
+                }
+                PathValue::Null => {}
+            }
+        }
+    }
+}
+
+/// A turn is retained iff its head turn node is retained.
+fn collect_kept_turn_ids(
+    state: &KernelState,
+    keep_turn_nodes: &HashSet<HashString>,
+) -> HashSet<String> {
+    state
+        .turns
+        .values()
+        .filter(|turn| keep_turn_nodes.contains(&turn.head_turn_node_hash))
+        .map(|turn| turn.turn_id.clone())
+        .collect()
+}
+
+/// Releases every record outside the keep closure (and, for hash-addressed
+/// content, older than the grace horizon). Deletion order is irrelevant.
+fn sweep(
+    state: &mut KernelState,
+    keep: &KeepClosure,
+    keep_turn_ids: &HashSet<String>,
+    grace_horizon_ms: EpochMs,
+) -> ReclamationSummary {
+    ReclamationSummary {
+        released_archived_branch_count: sweep_archived_branches(state, &keep.turn_nodes),
+        released_object_count: sweep_objects(state, &keep.objects, grace_horizon_ms),
+        released_run_count: sweep_runs(state, &keep.turn_nodes, keep_turn_ids),
+        released_turn_count: sweep_turns(state, keep_turn_ids),
+        released_turn_node_count: sweep_turn_nodes(state, &keep.turn_nodes, grace_horizon_ms),
+        released_turn_tree_count: sweep_turn_trees(state, &keep.turn_trees, grace_horizon_ms),
+        retained_object_count: state.objects.len(),
+    }
+}
+
+fn sweep_runs(
+    state: &mut KernelState,
+    keep_turn_nodes: &HashSet<HashString>,
+    keep_turn_ids: &HashSet<String>,
+) -> usize {
+    let run_ids: Vec<String> = state.runs.keys().cloned().collect();
+    let mut released = 0;
+    for run_id in run_ids {
+        let retained = {
+            let run = state.runs.get(&run_id).expect("run exists during sweep");
+            let mut run_turn_node_hashes = vec![run.start_turn_node_hash.clone()];
+            run_turn_node_hashes.extend(run.created_turn_nodes.iter().cloned());
+            keep_turn_ids.contains(&run.turn_id)
+                && run_turn_node_hashes
+                    .iter()
+                    .all(|hash| keep_turn_nodes.contains(hash))
+        };
+        if !retained {
+            state.runs.remove(&run_id);
+            state.staged_results.remove(&run_id);
+            state.run_signals.remove(&run_id);
+            released += 1;
+        }
+    }
+    released
+}
+
+fn sweep_turns(state: &mut KernelState, keep_turn_ids: &HashSet<String>) -> usize {
+    let turn_ids: Vec<String> = state.turns.keys().cloned().collect();
+    let mut released = 0;
+    for turn_id in turn_ids {
+        if !keep_turn_ids.contains(&turn_id) {
+            state.turns.remove(&turn_id);
+            released += 1;
+        }
+    }
+    released
+}
+
+/// Archived branches (`archived_from_branch_id.is_some()`) are swept when
+/// their head turn node is not in the keep set. Non-archived (live, named)
+/// branches are never swept regardless of reachability.
+fn sweep_archived_branches(
+    state: &mut KernelState,
+    keep_turn_nodes: &HashSet<HashString>,
+) -> usize {
+    let branch_ids: Vec<String> = state.branches.keys().cloned().collect();
+    let mut released = 0;
+    for branch_id in branch_ids {
+        let should_release = {
+            let branch = state
+                .branches
+                .get(&branch_id)
+                .expect("branch exists during sweep");
+            branch.archived_from_branch_id.is_some()
+                && !keep_turn_nodes.contains(&branch.head_turn_node_hash)
+        };
+        if should_release {
+            state.branches.remove(&branch_id);
+            released += 1;
+        }
+    }
+    released
+}
+
+fn sweep_turn_nodes(
+    state: &mut KernelState,
+    keep_turn_nodes: &HashSet<HashString>,
+    grace_horizon_ms: EpochMs,
+) -> usize {
+    let hashes: Vec<HashString> = state.turn_nodes.keys().cloned().collect();
+    let mut released = 0;
+    for hash in hashes {
+        let should_release = {
+            let node = state
+                .turn_nodes
+                .get(&hash)
+                .expect("turn node exists during sweep");
+            !keep_turn_nodes.contains(&hash) && node.created_at_ms < grace_horizon_ms
+        };
+        if should_release {
+            state.turn_nodes.remove(&hash);
+            released += 1;
+        }
+    }
+    released
+}
+
+fn sweep_turn_trees(
+    state: &mut KernelState,
+    keep_turn_trees: &HashSet<HashString>,
+    grace_horizon_ms: EpochMs,
+) -> usize {
+    let hashes: Vec<HashString> = state.turn_trees.keys().cloned().collect();
+    let mut released = 0;
+    for hash in hashes {
+        let should_release = {
+            let tree = state
+                .turn_trees
+                .get(&hash)
+                .expect("turn tree exists during sweep");
+            !keep_turn_trees.contains(&hash) && tree.created_at_ms < grace_horizon_ms
+        };
+        if should_release {
+            state.turn_trees.remove(&hash);
+            released += 1;
+        }
+    }
+    released
+}
+
+fn sweep_objects(
+    state: &mut KernelState,
+    keep_objects: &HashSet<HashString>,
+    grace_horizon_ms: EpochMs,
+) -> usize {
+    let hashes: Vec<HashString> = state.objects.keys().cloned().collect();
+    let mut released = 0;
+    for hash in hashes {
+        let should_release = {
+            let object = state
+                .objects
+                .get(&hash)
+                .expect("object exists during sweep");
+            !keep_objects.contains(&hash) && object.created_at_ms < grace_horizon_ms
+        };
+        if should_release {
+            state.objects.remove(&hash);
+            released += 1;
+        }
+    }
+    released
+}
+
+fn is_active_run(status: &RunStatus) -> bool {
+    matches!(status, RunStatus::Running | RunStatus::Paused)
+}
+
+/// A leaseless running run (no `execution_owner_id`/`fencing_token`/
+/// `lease_expires_at_ms` at all) whose `updated_at_ms` has not advanced in at
+/// least `LEASELESS_RUN_EXPIRY_MS` is treated as abandoned by a
+/// crashed/disconnected creator. Judged on last-activity time
+/// (`updated_at_ms`), not an explicit expiry field, since a leaseless run has
+/// no such field. Only `Running` is eligible — `Paused` is an orderly,
+/// intentional state and never auto-expires this way.
+fn is_expired_leaseless_running_run(run: &RunRecord, now_ms: EpochMs) -> bool {
+    run.status == RunStatus::Running
+        && run.execution_owner_id.is_none()
+        && run.fencing_token.is_none()
+        && run.lease_expires_at_ms.is_none()
+        && now_ms - run.updated_at_ms >= LEASELESS_RUN_EXPIRY_MS
 }
 
 fn set_next_step_signals(state: &mut KernelState, run_id: &str, signals: Vec<KernelRecord>) {
@@ -1961,5 +2706,224 @@ mod tests {
     fn capabilities_advertises_thread_enumeration() {
         let kernel = InMemoryKernel::new();
         assert!(kernel.capabilities().thread_enumeration);
+    }
+
+    #[test]
+    fn maintenance_reclaim_releases_unreachable_orphan_with_no_active_run() {
+        let kernel = InMemoryKernel::new();
+        let orphan_hash = kernel
+            .store_put(b"orphan".to_vec(), None)
+            .expect("store succeeds");
+
+        let summary = kernel.maintenance_reclaim().expect("reclaim succeeds");
+
+        assert!(
+            !kernel
+                .store_has(&orphan_hash)
+                .expect("store lookup succeeds")
+        );
+        assert!(summary.released_object_count >= 1);
+    }
+
+    #[test]
+    fn maintenance_reclaim_retains_object_reachable_from_live_branch_head() {
+        let kernel = InMemoryKernel::new();
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let created = kernel
+            .thread_create("thread_a", "s1", "branch_a")
+            .expect("thread_create");
+        let root_node = kernel
+            .node_get(&created.root_turn_node_hash)
+            .expect("node_get")
+            .expect("root node exists");
+        let root_event_hash = root_node
+            .event_hash
+            .clone()
+            .expect("root node has event hash");
+
+        let summary = kernel.maintenance_reclaim().expect("reclaim succeeds");
+
+        assert!(
+            kernel
+                .store_has(&root_event_hash)
+                .expect("store lookup succeeds")
+        );
+        assert!(
+            kernel
+                .node_get(&created.root_turn_node_hash)
+                .expect("node_get")
+                .is_some()
+        );
+        assert_eq!(summary.released_object_count, 0);
+    }
+
+    #[test]
+    fn leaseless_running_run_past_admin_expiry_does_not_pin_grace_horizon() {
+        // Ticks consumed, in order: thread_create, run_create, store_put (orphan),
+        // maintenance_reclaim.
+        let kernel = kernel_with_clock(&[0, 0, 10, LEASELESS_RUN_EXPIRY_MS + 10]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let thread = kernel
+            .thread_create("thread_a", "s1", "branch_a")
+            .expect("thread_create");
+        let turn = kernel
+            .turn_create(
+                "turn_a",
+                "thread_a",
+                "branch_a",
+                None,
+                &thread.root_turn_node_hash,
+            )
+            .expect("turn_create");
+        kernel
+            .run_create(
+                "run_a",
+                &turn.turn_id,
+                "branch_a",
+                "s1",
+                &thread.root_turn_node_hash,
+                vec![StepDeclaration {
+                    deterministic: true,
+                    id: "work".to_string(),
+                    metadata: None,
+                    side_effects: false,
+                }],
+            )
+            .expect("run_create");
+        let orphan_hash = kernel
+            .store_put(b"leaseless-expiry-orphan".to_vec(), None)
+            .expect("store succeeds");
+
+        kernel.maintenance_reclaim().expect("reclaim succeeds");
+
+        assert!(
+            !kernel
+                .store_has(&orphan_hash)
+                .expect("store lookup succeeds"),
+            "a leaseless running run quiet past the admin expiry horizon must not pin reclamation"
+        );
+    }
+
+    #[test]
+    fn leaseless_running_run_within_admin_expiry_still_pins_grace_horizon() {
+        // Ticks consumed, in order: thread_create, run_create, store_put (orphan),
+        // maintenance_reclaim.
+        let kernel = kernel_with_clock(&[0, 0, 10, 1_000]);
+        kernel
+            .schema_register(minimal_schema("s1"))
+            .expect("schema_register");
+        let thread = kernel
+            .thread_create("thread_a", "s1", "branch_a")
+            .expect("thread_create");
+        let turn = kernel
+            .turn_create(
+                "turn_a",
+                "thread_a",
+                "branch_a",
+                None,
+                &thread.root_turn_node_hash,
+            )
+            .expect("turn_create");
+        kernel
+            .run_create(
+                "run_a",
+                &turn.turn_id,
+                "branch_a",
+                "s1",
+                &thread.root_turn_node_hash,
+                vec![StepDeclaration {
+                    deterministic: true,
+                    id: "work".to_string(),
+                    metadata: None,
+                    side_effects: false,
+                }],
+            )
+            .expect("run_create");
+        let orphan_hash = kernel
+            .store_put(b"leaseless-active-orphan".to_vec(), None)
+            .expect("store succeeds");
+
+        kernel.maintenance_reclaim().expect("reclaim succeeds");
+
+        assert!(
+            kernel
+                .store_has(&orphan_hash)
+                .expect("store lookup succeeds"),
+            "a leaseless running run still quiet within the admin expiry horizon must pin reclamation"
+        );
+    }
+
+    #[test]
+    fn expired_leaseless_running_run_truth_table() {
+        fn run_with(
+            status: RunStatus,
+            execution_owner_id: Option<&str>,
+            fencing_token: Option<&str>,
+            lease_expires_at_ms: Option<EpochMs>,
+            updated_at_ms: EpochMs,
+        ) -> RunRecord {
+            RunRecord {
+                branch_id: "branch".to_string(),
+                created_at_ms: 0,
+                created_turn_nodes: Vec::new(),
+                current_step_index: 0,
+                execution_owner_id: execution_owner_id.map(str::to_string),
+                fencing_token: fencing_token.map(str::to_string),
+                lease_expires_at_ms,
+                preemption_reason: None,
+                run_id: "run".to_string(),
+                schema_id: "schema".to_string(),
+                start_turn_node_hash: "hash".to_string(),
+                status,
+                step_sequence: Vec::new(),
+                turn_id: "turn".to_string(),
+                updated_at_ms,
+            }
+        }
+
+        // Leaseless (no owner/token/expiry) and quiet for >= the expiry horizon -> expired.
+        let old_leaseless = run_with(RunStatus::Running, None, None, None, 0);
+        assert!(is_expired_leaseless_running_run(
+            &old_leaseless,
+            LEASELESS_RUN_EXPIRY_MS
+        ));
+
+        // Leaseless but quiet for less than the expiry horizon -> not expired.
+        let recent_leaseless = run_with(RunStatus::Running, None, None, None, 1);
+        assert!(!is_expired_leaseless_running_run(
+            &recent_leaseless,
+            LEASELESS_RUN_EXPIRY_MS
+        ));
+
+        // Any lease field present at all -> never treated as an expired
+        // leaseless run, regardless of how long it has been quiet.
+        let leased_owner_only = run_with(RunStatus::Running, Some("owner"), None, None, 0);
+        assert!(!is_expired_leaseless_running_run(
+            &leased_owner_only,
+            LEASELESS_RUN_EXPIRY_MS * 10
+        ));
+
+        let leased_token_only = run_with(RunStatus::Running, None, Some("token"), None, 0);
+        assert!(!is_expired_leaseless_running_run(
+            &leased_token_only,
+            LEASELESS_RUN_EXPIRY_MS * 10
+        ));
+
+        let leased_expiry_only = run_with(RunStatus::Running, None, None, Some(1_000), 0);
+        assert!(!is_expired_leaseless_running_run(
+            &leased_expiry_only,
+            LEASELESS_RUN_EXPIRY_MS * 10
+        ));
+
+        // Paused is an orderly state and never auto-expires this way, even if leaseless.
+        let paused_leaseless = run_with(RunStatus::Paused, None, None, None, 0);
+        assert!(!is_expired_leaseless_running_run(
+            &paused_leaseless,
+            LEASELESS_RUN_EXPIRY_MS * 10
+        ));
     }
 }

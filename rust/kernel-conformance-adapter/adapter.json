@@ -12,7 +12,9 @@
   "capabilities": [
     "kernel.protocol",
     "kernel.logical",
-    "kernel-protocol.thread.enumeration"
+    "kernel-protocol.thread.enumeration",
+    "kernel.run-liveness",
+    "kernel.reclamation"
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "suiteId": "tuvren.kernel.protocol",
