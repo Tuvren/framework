@@ -1,12 +1,12 @@
 {
-  "name": "@tuvren/backend-memory",
-  "description": "Tuvren in-memory backend leaf: a non-durable store for tests, prototypes, and ephemeral sessions, constructed by the host and passed into createTuvren.",
+  "name": "@tuvren/backend-shared",
+  "description": "Shared kernel-backend invariant core: the reclamation, record-utils, and run-transition-legality logic common to the memory, SQLite, and PostgreSQL backends, parameterized by backend-owned error-code prefix.",
   "version": "0.0.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Tuvren/framework.git",
-    "directory": "typescript/kernel/backends/memory"
+    "directory": "typescript/kernel/backends/shared"
   },
   "files": [
     "dist"
@@ -22,7 +22,6 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@tuvren/backend-shared": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*"
   },
   "devDependencies": {

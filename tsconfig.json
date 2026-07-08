@@ -15,6 +15,9 @@
       "path": "./typescript/kernel/backends/memory"
     },
     {
+      "path": "./typescript/kernel/backends/shared"
+    },
+    {
       "path": "./typescript/kernel/testkit"
     },
     {

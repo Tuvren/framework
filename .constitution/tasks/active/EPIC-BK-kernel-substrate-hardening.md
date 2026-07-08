@@ -49,6 +49,10 @@ Feature: Shared kernel-backend invariant core
     And the sqlite and postgres backends carry their own existing prefixes unchanged
 ```
 
+##### KRT-BK001 Deviations & Justifications
+- **Touched Files:** `bun.lock`, `tools/scripts/verify.ts`, `tsconfig.base.json`, `tsconfig.json`, each backend's `package.json`, and each backend's `tsconfig.dts.json`/`tsconfig.lib.json` (plus memory's `tsconfig.typecheck.json`, its only local paths override).
+- **Justification:** The ticket's Scope explicitly authorized creating a new shared-core package ("a new `typescript/kernel/backends/core/` package if cross-package reuse requires it"). A new Nx/Bun-workspace package cannot build, link, or typecheck without workspace-manifest wiring: `bun.lock` records the new package's install graph, `tsconfig.base.json`/`tsconfig.json` register its project reference, `tools/scripts/verify.ts` registers it in `WORKSPACE_TEST_PROJECTS`/`WORKSPACE_BUILD_PROJECTS` so `bun run check`'s workspace-coverage gate doesn't fail on an unregistered project, and each consuming backend's `package.json`/`tsconfig.dts.json`/`tsconfig.lib.json` add the new `@tuvren/backend-shared` dependency edge. These are necessary, mechanical consequences of the pre-authorized new package, not scope creep — behavior of the extracted logic itself is unchanged (verified: `bun run verify:kernel` conformance counts identical pre/post at memory 64/68, sqlite 67/68, postgres 68/68).
+
 #### KRT-BK002 Reclamation Horizon: Leaseless-Run Expiry Path
 - **Type:** Feature
 - **Effort:** 3

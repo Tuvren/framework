@@ -39,6 +39,9 @@
       "@tuvren/backend-memory": [
         "./typescript/kernel/backends/memory/src/index.ts"
       ],
+      "@tuvren/backend-shared": [
+        "./typescript/kernel/backends/shared/src/index.ts"
+      ],
       "@tuvren/kernel-runtime": ["./typescript/kernel/runtime/src/index.ts"],
       "@tuvren/kernel-grpc-client": [
         "./typescript/kernel/grpc-client/src/index.ts"
