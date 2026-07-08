@@ -22,6 +22,7 @@
 // backend-owned (they are not part of this extraction) and are injected into
 // the shared algorithm.
 import { reclaimBackendState as reclaimSharedBackendState } from "@tuvren/backend-shared";
+import type { EpochMs } from "@tuvren/core";
 import type { ReclamationSummary } from "@tuvren/kernel-protocol";
 import { type BackendState, decodeHashStringArray } from "./sqlite-records.js";
 import {
@@ -30,11 +31,18 @@ import {
 } from "./sqlite-run-invariants.js";
 import { resolveStoredTurnTreePathValue } from "./sqlite-state-validation.js";
 
-export function reclaimBackendState(state: BackendState): ReclamationSummary {
-  return reclaimSharedBackendState(state, {
-    decodeHashStringArray,
-    decodeRunCreatedTurnNodeHashes,
-    decodeTurnNodeConsumedStagedResultObjectHashes,
-    resolveStoredTurnTreePathValue,
-  });
+export function reclaimBackendState(
+  state: BackendState,
+  nowMs: EpochMs
+): ReclamationSummary {
+  return reclaimSharedBackendState(
+    state,
+    {
+      decodeHashStringArray,
+      decodeRunCreatedTurnNodeHashes,
+      decodeTurnNodeConsumedStagedResultObjectHashes,
+      resolveStoredTurnTreePathValue,
+    },
+    nowMs
+  );
 }

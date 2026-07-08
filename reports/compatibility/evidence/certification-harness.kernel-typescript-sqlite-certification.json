@@ -1892,6 +1892,50 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.reclaim.leaselessRunPastAdminExpiryDoesNotPinReclamation",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.result.reclaim.leaselessRunPastAdminExpiryDoesNotPinReclamation",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.reclaim.leaselessRunWithinAdminExpiryStillPinsReclamation",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.result.reclaim.leaselessRunWithinAdminExpiryStillPinsReclamation",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+      "details": {
+        "adapterId": "typescript-kernel-sqlite",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.1.resultField",
           "status": "pass"
         },
@@ -3013,9 +3057,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 67,
-    "totalChecks": 68,
-    "applicableChecks": 67,
+    "passedChecks": 69,
+    "totalChecks": 70,
+    "applicableChecks": 69,
     "nonApplicableChecks": 1
   },
   "suiteId": "tuvren.kernel.protocol",

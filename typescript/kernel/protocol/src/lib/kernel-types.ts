@@ -527,14 +527,20 @@ export interface BackendCapability {
  */
 export interface ReclamationOptions {
   /**
-   * Optional clock reference (epoch ms) a backend MAY consult while evaluating
-   * the grace window. The kernel supplies its own `now()` so any wall-clock
-   * comparison stays consistent with the rest of the syscall surface. The grace
-   * horizon itself is derived structurally from the constructing Scope's own
-   * active runs (the oldest active execution lease / in-flight write horizon):
-   * the reference memory backend retains everything at or after that horizon and
-   * therefore does not consult `nowMs`. The field is reserved for backends that
-   * additionally impose a wall-clock floor on releasable state.
+   * Clock reference (epoch ms) a backend consults while evaluating the grace
+   * window. The kernel supplies its own `now()` so any wall-clock comparison
+   * stays consistent with the rest of the syscall surface. The grace horizon's
+   * pinning value is still derived structurally from the constructing Scope's
+   * own active runs (the oldest active execution lease / in-flight write
+   * horizon): every reference backend retains everything at or after that
+   * horizon. `nowMs` is consulted only to decide whether a leaseless running
+   * run (no executionOwnerId/fencingToken/leaseExpiresAtMs) whose updatedAtMs
+   * has gone quiet for at least the administrative leaseless-expiry horizon
+   * (KRT-BK002, ADR-050/ADR-051) should be excluded from pinning the grace
+   * horizon — treating it as abandoned by a crashed/disconnected creator so it
+   * no longer blocks reclamation of state created after it. That run's own
+   * reachable lineage stays fully protected regardless, via the independent
+   * active-run live-root closure.
    */
   nowMs?: EpochMs;
 }

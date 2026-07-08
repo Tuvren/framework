@@ -648,10 +648,129 @@ async function runReclamationProbe(): Promise<Record<string, unknown>> {
     { now: () => clock }
   );
 
+  // KRT-BK002 leaseless-expiry probes. A leaseless running run (no
+  // executionOwnerId/fencingToken/leaseExpiresAtMs at all) whose creator
+  // crashes must eventually stop pinning the grace horizon, or an unrelated
+  // orphan created after it would never become reclaimable (ADR-050/
+  // ADR-051). Two phases mirror grace-window discipline: (A) a leaseless
+  // running run whose updatedAtMs has gone quiet past the 24h default
+  // administrative expiry horizon is excluded from pinning, so a
+  // subsequently-created orphan is released; (B) the same shape, but with
+  // reclaim invoked well within the expiry horizon, still pins the horizon so
+  // the orphan is retained. Each phase uses its own clock closure so neither
+  // perturbs `graceObservations`' clock above.
+  let leaselessExpiredClock = 0;
+  const leaselessExpiredObservations = await withConfiguredBackend(
+    ADAPTER_CONFIG,
+    async (backend) => {
+      const kernel = createRuntimeKernel({
+        backend,
+        now: () => leaselessExpiredClock,
+      });
+      await kernel.schema.register(schema);
+
+      const thread = await kernel.thread.create(
+        "thread_leaseless_expired",
+        schema.schemaId,
+        "branch_leaseless_expired"
+      );
+      const turn = await kernel.turn.create(
+        "turn_leaseless_expired",
+        thread.threadId,
+        thread.branchId,
+        null,
+        thread.rootTurnNodeHash
+      );
+      // A leaseless running run (no executionOwnerId/fencingToken/
+      // leaseExpiresAtMs) whose creator crashes and never transitions it out
+      // of "running".
+      await kernel.run.create(
+        "run_leaseless_expired",
+        turn.turnId,
+        thread.branchId,
+        schema.schemaId,
+        thread.rootTurnNodeHash,
+        [{ deterministic: true, id: "work", sideEffects: false }]
+      );
+
+      leaselessExpiredClock = 10;
+      const orphan = await kernel.store.put(
+        new TextEncoder().encode("leaseless-expiry-orphan")
+      );
+
+      // Past the run's updatedAtMs (t=0) by more than the 24h default
+      // leaseless-expiry horizon: the run is excluded from pinning the grace
+      // horizon, so this orphan (created after the run, at t=10) becomes
+      // reclaimable.
+      leaselessExpiredClock = 86_400_000 + 5000;
+      await kernel.maintenance.reclaim();
+
+      return {
+        leaselessRunPastAdminExpiryDoesNotPinReclamation:
+          !(await kernel.store.has(orphan)),
+      };
+    },
+    { now: () => leaselessExpiredClock }
+  );
+
+  let leaselessActiveClock = 0;
+  const leaselessActiveObservations = await withConfiguredBackend(
+    ADAPTER_CONFIG,
+    async (backend) => {
+      const kernel = createRuntimeKernel({
+        backend,
+        now: () => leaselessActiveClock,
+      });
+      await kernel.schema.register(schema);
+
+      const thread = await kernel.thread.create(
+        "thread_leaseless_active",
+        schema.schemaId,
+        "branch_leaseless_active"
+      );
+      const turn = await kernel.turn.create(
+        "turn_leaseless_active",
+        thread.threadId,
+        thread.branchId,
+        null,
+        thread.rootTurnNodeHash
+      );
+      // A leaseless running run whose updatedAtMs (t=0) is still well within
+      // the 24h default leaseless-expiry horizon at reclaim time.
+      await kernel.run.create(
+        "run_leaseless_active",
+        turn.turnId,
+        thread.branchId,
+        schema.schemaId,
+        thread.rootTurnNodeHash,
+        [{ deterministic: true, id: "work", sideEffects: false }]
+      );
+
+      leaselessActiveClock = 10;
+      const orphan = await kernel.store.put(
+        new TextEncoder().encode("leaseless-active-orphan")
+      );
+
+      // Well under the 24h expiry horizon since run creation at t=0: the run
+      // still pins the grace horizon, so this orphan (created after the run,
+      // at t=10) stays retained.
+      leaselessActiveClock = 1000;
+      await kernel.maintenance.reclaim();
+
+      return {
+        leaselessRunWithinAdminExpiryStillPinsReclamation:
+          await kernel.store.has(orphan),
+      };
+    },
+    { now: () => leaselessActiveClock }
+  );
+
   return createProjection({
     reclaim: {
       ...reachabilityObservations,
       ...graceObservations,
+      ...leaselessExpiredObservations,
+      ...leaselessActiveObservations,
     },
   });
 }

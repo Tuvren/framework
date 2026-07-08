@@ -37,6 +37,7 @@ import {
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
   type ListThreadsCursorPayload,
+  type ReclamationOptions,
   type ReclamationSummary,
   type StoredBranch,
   type StoredRun,
@@ -354,7 +355,7 @@ class PostgresBackend implements KrakenBackend {
     }
   }
 
-  async reclaim(): Promise<ReclamationSummary> {
+  async reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
         "postgres backend reclamation must not run inside a transaction",
@@ -391,9 +392,16 @@ class PostgresBackend implements KrakenBackend {
         const draftState = cloneState(baseState);
         // The snapshot backend reclaims by rewriting the scope snapshot row:
         // sweep the in-memory draft, validate the referentially-closed result,
-        // and re-persist it. Reachability and the grace window are derived from
-        // the draft's own active runs (§9.4), so no clock argument is required.
-        const summary = reclaimBackendState(draftState);
+        // and re-persist it. Reachability and the grace horizon's pinning value
+        // are still derived structurally from the draft's own active runs
+        // (§9.4); a clock argument is required so a leaseless running run whose
+        // updatedAtMs has gone quiet past the administrative expiry horizon
+        // (KRT-BK002, ADR-050/ADR-051) can be excluded from pinning that
+        // horizon, judged against this wall-clock reference.
+        const summary = reclaimBackendState(
+          draftState,
+          options?.nowMs ?? this.now()
+        );
         validateCommittedState(draftState, baseState);
 
         await persistStateSnapshot(

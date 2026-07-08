@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
+import type { EpochMs } from "@tuvren/core";
 import type {
   ReclamationSummary,
   StoredRun,
   StoredTurnNode,
   StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
+import {
+  isExpiredLeaselessRunningRun,
+  LEASELESS_RUN_EXPIRY_MS,
+} from "./backend-invariant-record-utils.js";
 import type { BackendState } from "./backend-invariant-state.js";
 
 /**
@@ -75,12 +80,23 @@ export interface BackendInvariantReclamationDeps {
  * reference closure of (live roots ∪ everything created at/after the grace
  * horizon), so every retained record only references other retained records
  * and the committed-state invariants hold after deletion.
+ *
+ * `nowMs` is the caller-supplied wall-clock reference (ADR-050/ADR-051,
+ * KRT-BK002) used only to decide whether a leaseless running run has gone
+ * quiet long enough to be excluded from pinning the grace horizon; it never
+ * changes which records are reachable.
  */
 export function reclaimBackendState(
   state: BackendState,
-  deps: BackendInvariantReclamationDeps
+  deps: BackendInvariantReclamationDeps,
+  nowMs: EpochMs,
+  leaselessRunExpiryMs: number = LEASELESS_RUN_EXPIRY_MS
 ): ReclamationSummary {
-  const graceHorizonMs = computeGraceHorizonMs(state);
+  const graceHorizonMs = computeGraceHorizonMs(
+    state,
+    nowMs,
+    leaselessRunExpiryMs
+  );
   const keep = computeKeepClosure(state, graceHorizonMs, deps);
   const keepTurnIds = collectKeptTurnIds(state, keep.turnNodes);
   return sweep(state, keep, keepTurnIds, graceHorizonMs, deps);
@@ -92,11 +108,28 @@ export function reclaimBackendState(
  * created at or after this instant is released, so reclamation can never race a
  * live execution's checkpoint or recovery. With no active execution there is no
  * in-flight horizon, so everything unreachable is releasable.
+ *
+ * A leaseless running run (no executionOwnerId/fencingToken/leaseExpiresAtMs)
+ * whose updatedAtMs has gone quiet for at least leaselessRunExpiryMs is
+ * excluded from pinning this horizon: it is treated as abandoned by a
+ * crashed/disconnected creator, so it no longer blocks reclamation of state
+ * created after it. The run's own reachable lineage stays fully protected
+ * regardless, via seedActiveRunRoots's independent isActiveRun(status) check —
+ * excluding a run from the horizon pin never affects that run's own retained
+ * state, only whether *other*, unrelated state created after it is releasable.
  */
-function computeGraceHorizonMs(state: BackendState): number {
+function computeGraceHorizonMs(
+  state: BackendState,
+  nowMs: EpochMs,
+  leaselessRunExpiryMs: number
+): number {
   let graceHorizonMs = Number.POSITIVE_INFINITY;
   for (const run of state.runs.values()) {
-    if (isActiveRun(run.status) && run.createdAtMs < graceHorizonMs) {
+    if (
+      isActiveRun(run.status) &&
+      !isExpiredLeaselessRunningRun(run, nowMs, leaselessRunExpiryMs) &&
+      run.createdAtMs < graceHorizonMs
+    ) {
       graceHorizonMs = run.createdAtMs;
     }
   }

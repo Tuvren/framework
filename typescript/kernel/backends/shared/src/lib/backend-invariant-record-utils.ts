@@ -661,6 +661,35 @@ export function cloneBytes(bytes: Uint8Array): Uint8Array {
   return Uint8Array.from(bytes);
 }
 
+/**
+ * Default administrative expiry horizon (ms) for a leaseless running run with
+ * no recent activity — see isExpiredLeaselessRunningRun.
+ */
+export const LEASELESS_RUN_EXPIRY_MS = 86_400_000; // 24h
+
+/**
+ * A leaseless running run (no executionOwnerId/fencingToken/leaseExpiresAtMs
+ * at all) whose updatedAtMs has not advanced in at least
+ * leaselessRunExpiryMs is treated as abandoned by a crashed/disconnected
+ * creator. Unlike isExpiredLeasedRunningRun, this is judged on last-activity
+ * time (updatedAtMs), not an explicit expiry field, since a leaseless run has
+ * no such field. Only "running" is eligible — a "paused" run is an orderly,
+ * intentional state and never auto-expires this way.
+ */
+export function isExpiredLeaselessRunningRun(
+  run: StoredRun,
+  nowMs: EpochMs,
+  leaselessRunExpiryMs: number = LEASELESS_RUN_EXPIRY_MS
+): boolean {
+  return (
+    run.status === "running" &&
+    run.executionOwnerId === undefined &&
+    run.fencingToken === undefined &&
+    run.leaseExpiresAtMs === undefined &&
+    nowMs - run.updatedAtMs >= leaselessRunExpiryMs
+  );
+}
+
 export function areStoredObjectsEqual(
   left: StoredObject,
   right: StoredObject

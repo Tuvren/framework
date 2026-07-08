@@ -1671,6 +1671,8 @@
     "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
     "kernel.reclamation.erasure_preserves_referencing_lineage",
     "kernel.reclamation.grace_window_holds_under_active_lease",
+    "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+    "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
     "kernel.reclamation.reachable_from_live_root_is_retained",
     "kernel.reclamation.unreachable_past_grace_is_released",
     "kernel-restart-af.invalid-staged-result-reexecutes",
@@ -1695,9 +1697,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 42,
-    "totalChecks": 68,
+    "totalChecks": 70,
     "applicableChecks": 42,
-    "nonApplicableChecks": 26
+    "nonApplicableChecks": 28
   },
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

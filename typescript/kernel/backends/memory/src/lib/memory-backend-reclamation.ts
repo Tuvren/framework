@@ -21,6 +21,7 @@
 // helpers below stay backend-owned (they are not part of this extraction)
 // and are injected into the shared algorithm.
 import { reclaimBackendState as reclaimSharedBackendState } from "@tuvren/backend-shared";
+import type { EpochMs } from "@tuvren/core";
 import type { ReclamationSummary } from "@tuvren/kernel-protocol";
 import {
   decodeRunCreatedTurnNodeHashes,
@@ -32,11 +33,18 @@ import {
 } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
 
-export function reclaimBackendState(state: BackendState): ReclamationSummary {
-  return reclaimSharedBackendState(state, {
-    decodeHashStringArray,
-    decodeRunCreatedTurnNodeHashes,
-    decodeTurnNodeConsumedStagedResultObjectHashes,
-    resolveStoredTurnTreePathValue,
-  });
+export function reclaimBackendState(
+  state: BackendState,
+  nowMs: EpochMs
+): ReclamationSummary {
+  return reclaimSharedBackendState(
+    state,
+    {
+      decodeHashStringArray,
+      decodeRunCreatedTurnNodeHashes,
+      decodeTurnNodeConsumedStagedResultObjectHashes,
+      resolveStoredTurnTreePathValue,
+    },
+    nowMs
+  );
 }

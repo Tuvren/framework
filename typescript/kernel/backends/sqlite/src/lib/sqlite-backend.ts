@@ -36,6 +36,7 @@ import {
   hashKernelRecord,
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
+  type ReclamationOptions,
   type ReclamationSummary,
   type StoredOrderedPathChunk,
   type StoredTurnTreePath,
@@ -407,7 +408,7 @@ class SqliteBackend implements KrakenBackend {
     });
   }
 
-  reclaim(): Promise<ReclamationSummary> {
+  reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
         "sqlite backend reclamation must not run inside a transaction",
@@ -425,10 +426,17 @@ class SqliteBackend implements KrakenBackend {
 
         const state = await loadValidatedState(this.db);
         const survivorKeysBefore = captureReclamationKeys(state);
-        // Reachability and the grace window are derived from the loaded state's
-        // own active runs (§9.4); reclaimBackendState mutates the in-memory
-        // projection so the surviving key sets reveal exactly what to delete.
-        const summary = reclaimBackendState(state);
+        // Reachability and the grace horizon's pinning value are derived from
+        // the loaded state's own active runs (§9.4); reclaimBackendState
+        // mutates the in-memory projection so the surviving key sets reveal
+        // exactly what to delete. The clock argument lets a leaseless running
+        // run whose updatedAtMs has gone quiet past the administrative expiry
+        // horizon (KRT-BK002, ADR-050/ADR-051) be excluded from pinning that
+        // horizon.
+        const summary = reclaimBackendState(
+          state,
+          options?.nowMs ?? this.now()
+        );
         applyReclamationDeletions(this.db, survivorKeysBefore, state);
 
         await loadValidatedState(this.db);

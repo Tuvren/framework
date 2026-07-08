@@ -26,7 +26,11 @@ export type {
   BackendInvariantRecordUtils,
   BackendInvariantRecordUtilsConfig,
 } from "./lib/backend-invariant-record-utils.js";
-export { createBackendInvariantRecordUtils } from "./lib/backend-invariant-record-utils.js";
+export {
+  createBackendInvariantRecordUtils,
+  isExpiredLeaselessRunningRun,
+  LEASELESS_RUN_EXPIRY_MS,
+} from "./lib/backend-invariant-record-utils.js";
 export type {
   BackendInvariantRunLogic,
   BackendInvariantRunLogicConfig,
