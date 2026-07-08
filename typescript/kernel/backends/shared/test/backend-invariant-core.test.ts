@@ -15,21 +15,12 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { createKernelBackendInvariantCore } from "@tuvren/backend-shared";
+import {
+  createBackendInvariantRecordUtils,
+  createBackendInvariantRunLogic,
+} from "@tuvren/backend-shared";
 import { TuvrenPersistenceError } from "@tuvren/core";
-import type { StoredRun, StoredTurnNode } from "@tuvren/kernel-protocol";
-
-function createCore(errorPrefix: string) {
-  return createKernelBackendInvariantCore({
-    decodeHashStringArray: () => [],
-    decodeRunCreatedTurnNodeHashes: (_run: StoredRun) => [],
-    decodeTurnNodeConsumedStagedResultObjectHashes: (
-      _turnNode: StoredTurnNode
-    ) => [],
-    errorPrefix,
-    resolveStoredTurnTreePathValue: () => null,
-  });
-}
+import type { StoredRun } from "@tuvren/kernel-protocol";
 
 function captureThrownCode(fn: () => void): string {
   try {
@@ -41,32 +32,38 @@ function captureThrownCode(fn: () => void): string {
   throw new Error("expected fn() to throw a TuvrenPersistenceError");
 }
 
-describe("@tuvren/backend-shared createKernelBackendInvariantCore", () => {
+describe("@tuvren/backend-shared createBackendInvariantRecordUtils", () => {
   test("parameterizes record-utils error codes by errorPrefix, matching each backend's pre-extraction literal", () => {
-    const memoryCore = createCore("memory");
-    const postgresCore = createCore("postgres");
-    const sqliteCore = createCore("sqlite");
+    const memoryRecordUtils = createBackendInvariantRecordUtils({
+      errorPrefix: "memory",
+    });
+    const sqliteRecordUtils = createBackendInvariantRecordUtils({
+      errorPrefix: "sqlite",
+    });
 
     expect(
       captureThrownCode(() =>
-        memoryCore.assertRunStatusTransition("completed", "running")
+        memoryRecordUtils.assertRunStatusTransition("completed", "running")
       )
     ).toBe("memory_backend_run_status_transition_illegal");
     expect(
       captureThrownCode(() =>
-        postgresCore.assertRunStatusTransition("completed", "running")
-      )
-    ).toBe("postgres_backend_run_status_transition_illegal");
-    expect(
-      captureThrownCode(() =>
-        sqliteCore.assertRunStatusTransition("completed", "running")
+        sqliteRecordUtils.assertRunStatusTransition("completed", "running")
       )
     ).toBe("sqlite_backend_run_status_transition_illegal");
   });
+});
 
+describe("@tuvren/backend-shared createBackendInvariantRunLogic", () => {
   test("parameterizes run-logic error codes by errorPrefix, matching each backend's pre-extraction literal", () => {
-    const memoryCore = createCore("memory");
-    const postgresCore = createCore("postgres");
+    const memoryRunLogic = createBackendInvariantRunLogic({
+      decodeRunCreatedTurnNodeHashes: (_run: StoredRun) => [],
+      errorPrefix: "memory",
+    });
+    const sqliteRunLogic = createBackendInvariantRunLogic({
+      decodeRunCreatedTurnNodeHashes: (_run: StoredRun) => [],
+      errorPrefix: "sqlite",
+    });
 
     const existingRun = {
       branchId: "branch_1",
@@ -88,7 +85,7 @@ describe("@tuvren/backend-shared createKernelBackendInvariantCore", () => {
 
     expect(
       captureThrownCode(() =>
-        memoryCore.assertRunUpdateIsLegal(
+        memoryRunLogic.assertRunUpdateIsLegal(
           existingRun,
           nextRunWithDifferentBranch
         )
@@ -96,11 +93,11 @@ describe("@tuvren/backend-shared createKernelBackendInvariantCore", () => {
     ).toBe("memory_backend_run_branch_immutable");
     expect(
       captureThrownCode(() =>
-        postgresCore.assertRunUpdateIsLegal(
+        sqliteRunLogic.assertRunUpdateIsLegal(
           existingRun,
           nextRunWithDifferentBranch
         )
       )
-    ).toBe("postgres_backend_run_branch_immutable");
+    ).toBe("sqlite_backend_run_branch_immutable");
   });
 });

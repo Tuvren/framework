@@ -15,9 +15,6 @@
     },
     {
       "path": "../../protocol/tsconfig.lib.json"
-    },
-    {
-      "path": "../../testkit/tsconfig.lib.json"
     }
   ]
 }

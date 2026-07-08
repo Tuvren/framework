@@ -24,9 +24,6 @@
   "dependencies": {
     "@tuvren/kernel-protocol": "workspace:*"
   },
-  "devDependencies": {
-    "@tuvren/kernel-testkit": "workspace:*"
-  },
   "peerDependencies": {
     "@tuvren/core": "workspace:*"
   },
