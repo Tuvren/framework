@@ -420,7 +420,7 @@ Feature: Rust kernel conformance promotion
   - `typescript/kernel/backends/sqlite/test/` (new backend-specific test files: SQL edge cases, WAL/locking, pool/connection behavior)
   - `typescript/kernel/backends/postgres/test/` (new backend-specific test files: connection-pool exhaustion under `max: 1`, `FOR UPDATE` contention behavior)
 - **Scope (Out-of-Scope Files):** shared testkit packages (`typescript/kernel/testkit/`) — do not duplicate cross-backend semantics already covered there; this ticket adds backend-*specific* coverage only
-- **Verification Command:** `bun run nx run kernel-backend-sqlite:test` and `bun run nx run kernel-backend-postgres:test`
+- **Verification Command:** `bun run nx run backend-sqlite:test` and `bun run nx run backend-postgres:test`
 - **Expected Success Output:** `exit 0`
 - **STOP Conditions:** STOP if a proposed new test duplicates behavior already asserted by the shared testkit — redirect that case to the testkit instead of adding a backend-local duplicate.
 - **Description:** The audit found postgres at a 0.27 and sqlite at a 0.25 test:src ratio, the thinnest in the repo, with the shared testkit carrying cross-backend semantics but backend-specific behavior (SQL edge cases, WAL/locking under sqlite's single-connection-per-file model, `max: 1` connection-pool and `FOR UPDATE` row-contention behavior under postgres) left thinly covered. Add targeted backend-local tests for this backend-specific behavior without duplicating suites the shared testkit already exercises against all backends uniformly.
