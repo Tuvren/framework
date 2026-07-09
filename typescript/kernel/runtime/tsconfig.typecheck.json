@@ -6,6 +6,7 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@tuvren/backend-memory": ["../backends/memory/src/index.ts"],
+      "@tuvren/backend-shared": ["../backends/shared/src/index.ts"],
       "@tuvren/core": ["../../core/src/index.ts"],
       "@tuvren/core-types": ["../../core-types/src/index.ts"],
       "@tuvren/core/runner": ["../../core/src/runner/index.ts"],
