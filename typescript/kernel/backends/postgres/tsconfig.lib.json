@@ -18,6 +18,9 @@
     },
     {
       "path": "../../testkit/tsconfig.lib.json"
+    },
+    {
+      "path": "../shared/tsconfig.lib.json"
     }
   ]
 }

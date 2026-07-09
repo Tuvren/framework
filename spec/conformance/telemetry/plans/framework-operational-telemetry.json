@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.framework.runtime-api.operational-telemetry",
-  "planVersion": "0.4.0",
+  "planVersion": "0.5.0",
   "packetId": "tuvren.shared.core",
   "applicability": {
     "capabilities": ["framework.runtime-api"]
@@ -260,6 +260,32 @@
         }
       ],
       "evidence": ["result.telemetry"]
+    },
+    {
+      "checkId": "secret-isolation.provider-bridge-request-and-headers",
+      "operation": "runtime.secret-isolation.provider-bridge",
+      "fixture": "secret-isolation",
+      "assertions": [
+        {
+          "kind": "secretAbsence",
+          "field": "$.generate",
+          "secretsPath": "$.fixture.secretValues"
+        },
+        {
+          "kind": "secretPatternAbsence",
+          "field": "$.generate"
+        },
+        {
+          "kind": "secretAbsence",
+          "field": "$.stream",
+          "secretsPath": "$.fixture.secretValues"
+        },
+        {
+          "kind": "secretPatternAbsence",
+          "field": "$.stream"
+        }
+      ],
+      "evidence": ["result.generate", "result.stream"]
     },
     {
       "checkId": "scope-isolation.telemetry-and-transcript-correlation",

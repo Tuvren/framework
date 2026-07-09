@@ -20,6 +20,7 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
+import { parseRegenerateCommandArgv } from "../lib/regenerate-command-argv.js";
 
 interface AuthorityPacketManifest {
   authoritativeSources: Array<{
@@ -261,6 +262,18 @@ function validateGeneratedArtifacts(
       failures.push({
         manifestPath,
         message: `freshness check for ${artifact.path} lacks a regenerate command`,
+      });
+      continue;
+    }
+
+    try {
+      parseRegenerateCommandArgv(check.regenerateCommand);
+    } catch (error) {
+      failures.push({
+        manifestPath,
+        message:
+          `freshness check for ${artifact.path} has an invalid regenerate command: ` +
+          `${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }

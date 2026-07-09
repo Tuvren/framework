@@ -36,6 +36,7 @@ import {
   hashKernelRecord,
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
+  type ReclamationOptions,
   type ReclamationSummary,
   type StoredOrderedPathChunk,
   type StoredTurnTreePath,
@@ -355,59 +356,59 @@ class SqliteBackend implements KrakenBackend {
           writeTracker
         );
 
-        try {
-          const result = await this.transactionContext.run(true, () =>
-            work(repositories)
-          );
-          active = false;
-          validateTransactionWriteSet(this.db, writeTracker);
-          await this.faultState.hooks?.beforeCommit?.();
+        const result = await this.transactionContext.run(true, () =>
+          work(repositories)
+        );
+        active = false;
+        validateTransactionWriteSet(this.db, writeTracker);
+        await this.faultState.hooks?.beforeCommit?.();
 
-          let committed = false;
-          const commit = (): Promise<void> => {
-            if (committed) {
-              throw new Error(
-                "sqlite backend commit hook attempted double commit"
-              );
-            }
-
-            this.db.exec("COMMIT");
-            committed = true;
-            return Promise.resolve();
-          };
-
-          if (this.faultState.hooks?.midCommit === undefined) {
-            await commit();
-          } else {
-            await this.faultState.hooks.midCommit(commit);
-
-            if (!committed) {
-              throw new Error(
-                "sqlite backend mid-commit hook must call commit exactly once"
-              );
-            }
+        let committed = false;
+        const commit = (): Promise<void> => {
+          if (committed) {
+            throw new Error(
+              "sqlite backend commit hook attempted double commit"
+            );
           }
 
-          await this.faultState.hooks?.afterCommitBeforeAck?.();
-          return result;
-        } catch (error: unknown) {
-          active = false;
-          if (this.db.inTransaction) {
-            this.db.exec("ROLLBACK");
+          this.db.exec("COMMIT");
+          committed = true;
+          return Promise.resolve();
+        };
+
+        if (this.faultState.hooks?.midCommit === undefined) {
+          await commit();
+        } else {
+          await this.faultState.hooks.midCommit(commit);
+
+          if (!committed) {
+            throw new Error(
+              "sqlite backend mid-commit hook must call commit exactly once"
+            );
           }
-          throw normalizeBackendError(error);
         }
+
+        await this.faultState.hooks?.afterCommitBeforeAck?.();
+        return result;
       } catch (error: unknown) {
         active = false;
         if (this.db.inTransaction) {
-          this.db.exec("ROLLBACK");
+          // A failure here (e.g. the engine cannot complete the rollback)
+          // supersedes the original work error: normalize and throw the
+          // rollback failure instead, so no error escapes this catch
+          // unnormalized regardless of which failure ultimately surfaces.
+          try {
+            this.db.exec("ROLLBACK");
+          } catch (rollbackError: unknown) {
+            throw normalizeBackendError(rollbackError);
+          }
         }
         throw normalizeBackendError(error);
       }
     });
   }
 
-  reclaim(): Promise<ReclamationSummary> {
+  reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
         "sqlite backend reclamation must not run inside a transaction",
@@ -425,10 +426,17 @@ class SqliteBackend implements KrakenBackend {
 
         const state = await loadValidatedState(this.db);
         const survivorKeysBefore = captureReclamationKeys(state);
-        // Reachability and the grace window are derived from the loaded state's
-        // own active runs (§9.4); reclaimBackendState mutates the in-memory
-        // projection so the surviving key sets reveal exactly what to delete.
-        const summary = reclaimBackendState(state);
+        // Reachability and the grace horizon's pinning value are derived from
+        // the loaded state's own active runs (§9.4); reclaimBackendState
+        // mutates the in-memory projection so the surviving key sets reveal
+        // exactly what to delete. The clock argument lets a leaseless running
+        // run whose updatedAtMs has gone quiet past the administrative expiry
+        // horizon (KRT-BK002, ADR-050/ADR-051) be excluded from pinning that
+        // horizon.
+        const summary = reclaimBackendState(
+          state,
+          options?.nowMs ?? this.now()
+        );
         applyReclamationDeletions(this.db, survivorKeysBefore, state);
 
         await loadValidatedState(this.db);

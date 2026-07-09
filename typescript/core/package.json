@@ -72,6 +72,11 @@
       "types": "./dist/lifecycle/index.d.ts",
       "import": "./dist/lifecycle/index.js",
       "default": "./dist/lifecycle/index.js"
+    },
+    "./security": {
+      "types": "./dist/security/index.d.ts",
+      "import": "./dist/security/index.js",
+      "default": "./dist/security/index.js"
     }
   },
   "main": "./dist/index.js",

@@ -19,6 +19,7 @@
       "@tuvren/core/telemetry": ["../../core/src/telemetry/index.ts"],
       "@tuvren/core/capabilities": ["../../core/src/capabilities/index.ts"],
       "@tuvren/core/lifecycle": ["../../core/src/lifecycle/index.ts"],
+      "@tuvren/core/security": ["../../core/src/security/index.ts"],
       "@tuvren/sdk": ["../../sdk/src/index.ts"],
       "@tuvren/core-types": ["../../core-types/src/index.ts"],
       "@tuvren/kernel-protocol": ["../../kernel/protocol/src/index.ts"],
@@ -31,6 +32,7 @@
       "@tuvren/telemetry-otel": ["../../telemetry/otel/src/index.ts"],
       "@tuvren/telemetry-semconv": ["../../telemetry/semconv/src/index.ts"],
       "@tuvren/backend-memory": ["../../kernel/backends/memory/src/index.ts"],
+      "@tuvren/backend-shared": ["../../kernel/backends/shared/src/index.ts"],
       "@tuvren/kernel-runtime": ["../../kernel/runtime/src/index.ts"],
       "@tuvren/backend-sqlite": ["../../kernel/backends/sqlite/src/index.ts"],
       "@tuvren/backend-postgres": [

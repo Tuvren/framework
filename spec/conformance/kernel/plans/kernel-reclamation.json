@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.kernel.reclamation",
-  "planVersion": "0.2.0",
+  "planVersion": "0.3.0",
   "packetId": "tuvren.kernel.protocol",
   "applicability": {
     "capabilities": ["kernel.reclamation"]
@@ -89,6 +89,30 @@
         }
       ],
       "evidence": ["erasure.lineageStructurallyIntactAfterErasure"]
+    },
+    {
+      "checkId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+      "operation": "kernel.reclamation.reclaim-probe",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.reclaim.leaselessRunPastAdminExpiryDoesNotPinReclamation",
+          "equals": true
+        }
+      ],
+      "evidence": ["reclaim.leaselessRunPastAdminExpiryDoesNotPinReclamation"]
+    },
+    {
+      "checkId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+      "operation": "kernel.reclamation.reclaim-probe",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.reclaim.leaselessRunWithinAdminExpiryStillPinsReclamation",
+          "equals": true
+        }
+      ],
+      "evidence": ["reclaim.leaselessRunWithinAdminExpiryStillPinsReclamation"]
     }
   ]
 }

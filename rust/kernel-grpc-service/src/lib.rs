@@ -58,19 +58,78 @@ struct GoogleRpcStatus {
     details: Vec<Any>,
 }
 
+// KRT-BK006: `node_walk_back` streams the previous-turn-node chain with no
+// bound; a pathologically deep (or cyclic-by-corruption) lineage would make
+// the stream run forever. `MAX_WALK_BACK_HOPS` is the production ceiling.
+// `max_walk_back_hops` is stored per service instance (rather than always
+// reading the constant) purely so `#[cfg(test)]` unit tests below can prove
+// the depth-exceeded path fires without constructing a genuinely 10,000-deep
+// turn-node lineage; `KernelGrpcServiceImpl::new` always uses the real
+// production constant.
+const MAX_WALK_BACK_HOPS: usize = 10_000;
+
 #[derive(Clone)]
 pub struct KernelGrpcServiceImpl {
     kernel: InMemoryKernel,
+    max_walk_back_hops: usize,
+    // KRT-BK006: test-only hook proving the `Server::builder()` `.timeout(..)`
+    // and `.concurrency_limit_per_connection(..)` ceilings (see
+    // `configured_server_builder` below) actually fire. Every real
+    // `InMemoryKernel` RPC handler completes near-instantly, so there is no
+    // way to make an RPC hang or hold a concurrency slot on demand without an
+    // artificial delay seam; `store_put` sleeps for this duration (when set)
+    // before calling into the kernel. `KernelGrpcServiceImpl::new` always
+    // leaves this `None` (a no-op in production); only the `#[cfg(test)]`
+    // tests below construct an instance with this set.
+    artificial_delay: Option<std::time::Duration>,
 }
 
 impl KernelGrpcServiceImpl {
     pub fn new(kernel: InMemoryKernel) -> Self {
-        Self { kernel }
+        Self {
+            kernel,
+            max_walk_back_hops: MAX_WALK_BACK_HOPS,
+            artificial_delay: None,
+        }
     }
 
     pub fn kernel(&self) -> &InMemoryKernel {
         &self.kernel
     }
+}
+
+// KRT-BK006: resource ceilings for this loopback-only interop seam.
+//
+// `interop_smoke.rs` and Epic U/V's Rust<->Rust gRPC transport today only
+// ever bind to `127.0.0.1`, so these values are sized generously for that
+// traffic pattern rather than tuned as public-service limits. They exist as
+// guardrails against unbounded decode buffers, hung RPCs, and unbounded
+// per-connection fan-out on this seam, not as a production ingress policy —
+// revisit before exposing this seam beyond loopback.
+const MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES: usize = 16 * 1024 * 1024;
+const GRPC_RPC_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+const GRPC_MAX_CONCURRENT_REQUESTS_PER_CONNECTION: usize = 64;
+
+// KRT-BK006: shared cap-configuration helper so `serve_kernel_grpc`'s
+// production builder chain and the `#[cfg(test)]` timeout/concurrency-limit
+// tests below configure the *same* two ceilings through the *same* code
+// path, parameterized only by the timeout/concurrency values themselves.
+// `serve_kernel_grpc` always calls this with the real `GRPC_RPC_TIMEOUT` /
+// `GRPC_MAX_CONCURRENT_REQUESTS_PER_CONNECTION` constants, so production
+// behavior is byte-identical to before this helper was extracted; only the
+// tests below supply smaller values so the ceilings can be proven to fire
+// without waiting out a real 30s timeout or spinning up 64 concurrent
+// requests. The bare `Server` return type names `Server<Identity>` via its
+// default type parameter (`tonic::transport::Server<L = Identity>`), which
+// is exactly what `Server::builder()` itself returns before any `.layer(..)`
+// call changes `L` — no explicit `Identity` import is needed.
+fn configured_server_builder(
+    timeout: std::time::Duration,
+    max_concurrent_requests_per_connection: usize,
+) -> Server {
+    Server::builder()
+        .timeout(timeout)
+        .concurrency_limit_per_connection(max_concurrent_requests_per_connection)
 }
 
 pub async fn serve_kernel_grpc(
@@ -81,37 +140,62 @@ pub async fn serve_kernel_grpc(
 
     // Register the full governed kernel transport surface. Epic U stops here;
     // TypeScript client/runtime switching is intentionally left to Epic V.
-    Server::builder()
-        .add_service(
-            proto::kernel_store_service_server::KernelStoreServiceServer::new(service.clone()),
-        )
-        .add_service(
-            proto::kernel_schema_service_server::KernelSchemaServiceServer::new(service.clone()),
-        )
-        .add_service(
-            proto::kernel_tree_service_server::KernelTreeServiceServer::new(service.clone()),
-        )
-        .add_service(
-            proto::kernel_node_service_server::KernelNodeServiceServer::new(service.clone()),
-        )
-        .add_service(
-            proto::kernel_thread_service_server::KernelThreadServiceServer::new(service.clone()),
-        )
-        .add_service(
-            proto::kernel_branch_service_server::KernelBranchServiceServer::new(service.clone()),
-        )
-        .add_service(
-            proto::kernel_staging_service_server::KernelStagingServiceServer::new(service.clone()),
-        )
-        .add_service(proto::kernel_run_service_server::KernelRunServiceServer::new(service.clone()))
-        .add_service(
-            proto::kernel_turn_service_server::KernelTurnServiceServer::new(service.clone()),
-        )
-        .add_service(
-            proto::kernel_verdicts_service_server::KernelVerdictsServiceServer::new(service),
-        )
-        .serve(address)
-        .await
+    //
+    // `.max_decoding_message_size` is NOT a `Server::builder()` method in
+    // tonic 0.14.5 (the version pinned in the workspace `Cargo.toml`/lock) —
+    // it is generated per-service by tonic-prost-build onto each
+    // `Kernel*ServiceServer<T>` wrapper (see
+    // `target/**/build/tuvren-kernel-rust-grpc-service-*/out/tuvren.kernel.interop.v1.rs`),
+    // so it is applied to every service wrapper below instead. `.timeout` and
+    // `.concurrency_limit_per_connection` are real `Server<L>` builder
+    // methods in this tonic version and are configured via
+    // `configured_server_builder` above.
+    configured_server_builder(
+        GRPC_RPC_TIMEOUT,
+        GRPC_MAX_CONCURRENT_REQUESTS_PER_CONNECTION,
+    )
+    .add_service(
+        proto::kernel_store_service_server::KernelStoreServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_schema_service_server::KernelSchemaServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_tree_service_server::KernelTreeServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_node_service_server::KernelNodeServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_thread_service_server::KernelThreadServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_branch_service_server::KernelBranchServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_staging_service_server::KernelStagingServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_run_service_server::KernelRunServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_turn_service_server::KernelTurnServiceServer::new(service.clone())
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .add_service(
+        proto::kernel_verdicts_service_server::KernelVerdictsServiceServer::new(service)
+            .max_decoding_message_size(MAX_GRPC_DECODE_MESSAGE_SIZE_BYTES),
+    )
+    .serve(address)
+    .await
 }
 
 #[tonic::async_trait]
@@ -120,6 +204,12 @@ impl KernelStoreService for KernelGrpcServiceImpl {
         &self,
         request: Request<proto::StorePutRequest>,
     ) -> Result<Response<proto::StorePutResponse>, Status> {
+        // KRT-BK006: test-only artificial delay hook (see `artificial_delay`
+        // doc comment) — a no-op in production since
+        // `KernelGrpcServiceImpl::new` always leaves this `None`.
+        if let Some(delay) = self.artificial_delay {
+            tokio::time::sleep(delay).await;
+        }
         let request = request.into_inner();
         let object_hash = self
             .kernel
@@ -289,10 +379,24 @@ impl KernelNodeService for KernelGrpcServiceImpl {
         request: Request<proto::NodeWalkBackRequest>,
     ) -> Result<Response<Self::NodeWalkBackStream>, Status> {
         let kernel = self.kernel.clone();
+        let max_hops = self.max_walk_back_hops;
         let mut next_hash = Some(request.into_inner().from_hash);
         let (sender, receiver) = mpsc::channel(8);
         tokio::spawn(async move {
+            let mut hops: usize = 0;
             while let Some(hash) = next_hash {
+                hops += 1;
+                if hops > max_hops {
+                    let _ = sender
+                        .send(Err(status_from_kernel_error(KernelError::new(
+                            "turn_node_walk_back_depth_exceeded",
+                            "node_walk_back exceeded the maximum traversal depth",
+                            None,
+                        ))))
+                        .await;
+                    break;
+                }
+
                 let node = match kernel.node_get(&hash) {
                     Ok(Some(node)) => node,
                     Ok(None) => {
@@ -845,6 +949,11 @@ fn kernel_error_code_to_status(code: &str) -> Code {
         | "turn_parent_not_immediate"
         | "turn_parent_required"
         | "turn_tree_schema_mismatch" => Code::FailedPrecondition,
+        // KRT-BK006: node_walk_back's hop-count ceiling is a resource guard,
+        // not a data-shape or state-machine violation, so it maps to
+        // ResourceExhausted rather than falling into the FailedPrecondition
+        // catch-all below.
+        "turn_node_walk_back_depth_exceeded" => Code::ResourceExhausted,
         _ => Code::FailedPrecondition,
     }
 }
@@ -1237,5 +1346,311 @@ fn verdict_disposition_to_proto(disposition: VerdictDisposition) -> i32 {
         VerdictDisposition::HardFail => proto::VerdictDisposition::HardFail as i32,
         VerdictDisposition::SoftFail => proto::VerdictDisposition::SoftFail as i32,
         VerdictDisposition::EndTurn => proto::VerdictDisposition::EndTurn as i32,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // KRT-BK006: `node_walk_back` depth cap.
+    //
+    // Building a genuinely 10,000-hop lineage through the full kernel API
+    // just to prove the ceiling fires would make this test slow and would
+    // not exercise anything the smaller chain below doesn't already cover,
+    // so this test constructs `KernelGrpcServiceImpl` directly (private
+    // field access — this module is a descendant of the crate root, so it
+    // is allowed) with a small `max_walk_back_hops` override instead of
+    // adding public API surface to the crate. `KernelGrpcServiceImpl::new`
+    // (used by `serve_kernel_grpc` and every other caller) always uses the
+    // real `MAX_WALK_BACK_HOPS` production constant — only this test
+    // constructs an instance with a different cap.
+    use super::*;
+    use tokio_stream::StreamExt as _;
+
+    #[tokio::test]
+    async fn node_walk_back_stops_at_the_configured_depth_cap() {
+        let service = KernelGrpcServiceImpl {
+            kernel: InMemoryKernel::new(),
+            max_walk_back_hops: 3,
+            artificial_delay: None,
+        };
+        service
+            .kernel()
+            .schema_register(TurnTreeSchema {
+                incorporation_rules: vec![IncorporationRule {
+                    object_type: "message".to_string(),
+                    target_path: "messages".to_string(),
+                }],
+                paths: vec![PathDefinition {
+                    collection: PathCollectionKind::Ordered,
+                    metadata: None,
+                    path: "messages".to_string(),
+                }],
+                schema_id: "schema_main".to_string(),
+            })
+            .expect("schema registers");
+        let thread = service
+            .kernel()
+            .thread_create("thread_main", "schema_main", "branch_main")
+            .expect("thread creates");
+        service
+            .kernel()
+            .turn_create(
+                "turn_main",
+                "thread_main",
+                "branch_main",
+                None,
+                &thread.root_turn_node_hash,
+            )
+            .expect("turn creates");
+
+        // Six checkpointed steps chained onto the genesis root node give a
+        // lineage of 7 nodes total — comfortably past the depth cap of 3
+        // configured above, without needing anywhere near the production
+        // 10,000-hop ceiling to prove the cap fires.
+        const CHAIN_LENGTH: usize = 6;
+        let steps: Vec<StepDeclaration> = (0..CHAIN_LENGTH)
+            .map(|index| StepDeclaration {
+                deterministic: false,
+                id: format!("step_{index}"),
+                metadata: None,
+                side_effects: false,
+            })
+            .collect();
+        service
+            .kernel()
+            .run_create(
+                "run_main",
+                "turn_main",
+                "branch_main",
+                "schema_main",
+                &thread.root_turn_node_hash,
+                steps,
+            )
+            .expect("run creates");
+
+        let mut last_hash = thread.root_turn_node_hash.clone();
+        for index in 0..CHAIN_LENGTH {
+            let (checkpointed, node_hash) = service
+                .kernel()
+                .run_complete_step("run_main", &format!("step_{index}"), None, Vec::new(), None)
+                .expect("step completes");
+            assert!(checkpointed);
+            last_hash = node_hash.expect("checkpoint hash");
+        }
+
+        let mut stream = KernelNodeService::node_walk_back(
+            &service,
+            Request::new(proto::NodeWalkBackRequest {
+                from_hash: last_hash,
+            }),
+        )
+        .await
+        .expect("walk stream starts")
+        .into_inner();
+
+        let mut observed_nodes = 0usize;
+        let mut terminal_status: Option<Status> = None;
+        while let Some(item) = stream.next().await {
+            match item {
+                Ok(_) => observed_nodes += 1,
+                Err(status) => {
+                    terminal_status = Some(status);
+                    break;
+                }
+            }
+        }
+
+        assert_eq!(
+            observed_nodes, 3,
+            "stream must yield exactly the capped hop count"
+        );
+        let status = terminal_status
+            .expect("stream must terminate with a depth-exceeded error, not silently end");
+        assert_eq!(status.code(), Code::ResourceExhausted);
+        assert!(
+            stream.next().await.is_none(),
+            "stream must end after the error"
+        );
+    }
+
+    // KRT-BK006: gRPC per-RPC timeout and per-connection concurrency limit.
+    //
+    // These prove the `.timeout(..)` and `.concurrency_limit_per_connection(..)`
+    // ceilings configured on `serve_kernel_grpc`'s builder chain (through
+    // `configured_server_builder`) actually fire, with a real running server
+    // and a real tonic client over a real loopback socket — not merely that
+    // the builder calls are present. `configured_server_builder` is the same
+    // helper `serve_kernel_grpc` calls with the real 30s / 64 production
+    // constants, parameterized here with small test values so the ceilings
+    // can be proven without waiting out the real 30s timeout or spinning up
+    // 64 concurrent requests. Every real `InMemoryKernel` RPC handler
+    // completes near-instantly, so `store_put`'s `artificial_delay` hook
+    // (private field access — this module is a descendant of the crate
+    // root, so it is allowed, mirroring the `max_walk_back_hops` precedent
+    // above) is what makes an RPC artificially slow on demand.
+    async fn spawn_capped_test_server(
+        timeout: std::time::Duration,
+        max_concurrent_requests_per_connection: usize,
+        artificial_delay: std::time::Duration,
+    ) -> (String, tokio::task::JoinHandle<()>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind ephemeral test port");
+        let address = listener.local_addr().expect("read listener address");
+        drop(listener);
+
+        let service = KernelGrpcServiceImpl {
+            kernel: InMemoryKernel::new(),
+            max_walk_back_hops: MAX_WALK_BACK_HOPS,
+            artificial_delay: Some(artificial_delay),
+        };
+
+        let handle = tokio::spawn(async move {
+            configured_server_builder(timeout, max_concurrent_requests_per_connection)
+                .add_service(
+                    proto::kernel_store_service_server::KernelStoreServiceServer::new(service),
+                )
+                .serve(address)
+                .await
+                .expect("test gRPC server runs");
+        });
+
+        // The server's own bind happens asynchronously after this task is
+        // spawned; retry the first connection briefly rather than assuming
+        // the listener is already up.
+        let endpoint = format!("http://{address}");
+        for attempt in 0..50 {
+            match tonic::transport::Endpoint::from_shared(endpoint.clone())
+                .expect("valid endpoint")
+                .connect()
+                .await
+            {
+                Ok(_) => break,
+                Err(_) if attempt < 49 => {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+                Err(error) => panic!("server never became ready: {error}"),
+            }
+        }
+
+        (endpoint, handle)
+    }
+
+    #[tokio::test]
+    async fn per_rpc_timeout_terminates_a_slower_handler_with_a_cancelled_status() {
+        // Tonic's `GrpcTimeout` transport-service layer surfaces an expired
+        // server-side timeout as a `TimeoutExpired` error (tonic-0.14.5
+        // `src/transport/service/grpc_timeout.rs`), and `Status`'s
+        // source-chain walk maps that to `Status::cancelled(..)`
+        // (tonic-0.14.5 `src/status.rs::find_status_in_source_chain`) — so
+        // `Code::Cancelled` is the real status a client observes, not
+        // `Code::DeadlineExceeded`.
+        let configured_timeout = std::time::Duration::from_millis(150);
+        let handler_delay = std::time::Duration::from_millis(600);
+        let (endpoint, server_handle) =
+            spawn_capped_test_server(configured_timeout, 64, handler_delay).await;
+        let mut store_client =
+            proto::kernel_store_service_client::KernelStoreServiceClient::connect(endpoint)
+                .await
+                .expect("store client connects");
+
+        let started = std::time::Instant::now();
+        let error = store_client
+            .store_put(proto::StorePutRequest {
+                blob: vec![1u8, 2, 3],
+                media_type: Some("application/octet-stream".to_string()),
+            })
+            .await
+            .expect_err(
+                "a handler slower than the configured timeout must be terminated, \
+                 not awaited to completion",
+            );
+        let elapsed = started.elapsed();
+
+        assert_eq!(error.code(), Code::Cancelled);
+        // This is the assertion that would fail if `.timeout(..)` were
+        // silently removed from `configured_server_builder`: without it, the
+        // call would succeed after `handler_delay`, not fail well before it.
+        assert!(
+            elapsed < handler_delay,
+            "the configured timeout must fire before the artificially slow handler \
+             would have finished; elapsed={elapsed:?}, handler_delay={handler_delay:?}"
+        );
+
+        server_handle.abort();
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn concurrency_limit_per_connection_serializes_excess_requests_on_one_connection() {
+        // tower's `ConcurrencyLimit` (tower-0.5.3
+        // `src/limit/concurrency/service.rs`) is a semaphore: `poll_ready`
+        // blocks until a permit is free. `serve_kernel_grpc` (and
+        // `configured_server_builder`) never call `.load_shed(true)`, and
+        // tonic's own `load_shed` doc (tonic-0.14.5
+        // `src/transport/server/mod.rs`) says plainly: "The default is to
+        // buffer requests" — so requests beyond the configured concurrency
+        // limit are expected to be queued/delayed, not rejected. All calls
+        // below share one `tonic::transport::Channel` (one HTTP/2
+        // connection, cloned per task), so they are all subject to the same
+        // per-connection semaphore.
+        const CONCURRENCY_LIMIT: usize = 2;
+        const REQUEST_COUNT: usize = 4;
+        let per_request_delay = std::time::Duration::from_millis(200);
+        let (endpoint, server_handle) = spawn_capped_test_server(
+            std::time::Duration::from_secs(5),
+            CONCURRENCY_LIMIT,
+            per_request_delay,
+        )
+        .await;
+
+        let channel = tonic::transport::Endpoint::from_shared(endpoint)
+            .expect("valid endpoint")
+            .connect()
+            .await
+            .expect("channel connects");
+
+        let started = std::time::Instant::now();
+        let mut calls = Vec::with_capacity(REQUEST_COUNT);
+        for index in 0..REQUEST_COUNT {
+            let mut client =
+                proto::kernel_store_service_client::KernelStoreServiceClient::new(channel.clone());
+            calls.push(tokio::spawn(async move {
+                client
+                    .store_put(proto::StorePutRequest {
+                        blob: vec![index as u8],
+                        media_type: Some("application/octet-stream".to_string()),
+                    })
+                    .await
+            }));
+        }
+        for call in calls {
+            let response = call
+                .await
+                .expect("request task does not panic")
+                .expect("every request eventually succeeds; the limit bounds concurrency, it does not reject");
+            assert!(!response.into_inner().object_hash.is_empty());
+        }
+        let elapsed = started.elapsed();
+
+        // With no concurrency limit, all `REQUEST_COUNT` requests would run
+        // concurrently and the whole batch would complete in roughly one
+        // `per_request_delay`. With the limit configured above, at most
+        // `CONCURRENCY_LIMIT` requests can be in flight on this connection at
+        // once, so `REQUEST_COUNT` requests must run in
+        // `REQUEST_COUNT.div_ceil(CONCURRENCY_LIMIT)` sequential batches.
+        // This lower bound (with slack for scheduling jitter — jitter only
+        // ever makes `elapsed` larger, so it cannot produce a false pass)
+        // would fail if `.concurrency_limit_per_connection(..)` were
+        // silently removed from `configured_server_builder`.
+        let expected_batches = REQUEST_COUNT.div_ceil(CONCURRENCY_LIMIT);
+        let expected_minimum = per_request_delay * (expected_batches as u32) * 3 / 4;
+        assert!(
+            elapsed >= expected_minimum,
+            "excess concurrent requests on one connection must be serialized in batches of \
+             {CONCURRENCY_LIMIT}, not run all at once; elapsed={elapsed:?}, \
+             expected_minimum={expected_minimum:?}"
+        );
+
+        server_handle.abort();
     }
 }

@@ -85,6 +85,7 @@
       "name": "@tuvren/backend-memory",
       "version": "0.0.0",
       "dependencies": {
+        "@tuvren/backend-shared": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
       },
       "devDependencies": {
@@ -98,6 +99,7 @@
       "name": "@tuvren/backend-postgres",
       "version": "0.0.0",
       "dependencies": {
+        "@tuvren/backend-shared": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
         "postgres": "3.4.9",
       },
@@ -109,10 +111,21 @@
         "@tuvren/core": "workspace:*",
       },
     },
+    "typescript/kernel/backends/shared": {
+      "name": "@tuvren/backend-shared",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tuvren/kernel-protocol": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:*",
+      },
+    },
     "typescript/kernel/backends/sqlite": {
       "name": "@tuvren/backend-sqlite",
       "version": "0.0.0",
       "dependencies": {
+        "@tuvren/backend-shared": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
         "better-sqlite3": "12.8.0",
       },
@@ -964,6 +977,8 @@
     "@tuvren/backend-memory": ["@tuvren/backend-memory@workspace:typescript/kernel/backends/memory"],
 
     "@tuvren/backend-postgres": ["@tuvren/backend-postgres@workspace:typescript/kernel/backends/postgres"],
+
+    "@tuvren/backend-shared": ["@tuvren/backend-shared@workspace:typescript/kernel/backends/shared"],
 
     "@tuvren/backend-sqlite": ["@tuvren/backend-sqlite@workspace:typescript/kernel/backends/sqlite"],
 

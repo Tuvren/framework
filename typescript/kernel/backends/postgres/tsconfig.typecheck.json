@@ -7,6 +7,7 @@
     "types": ["bun", "node"]
   },
   "include": [
+    "bench/**/*.ts",
     "src/**/*.ts",
     "test/**/*.ts",
     "../../protocol/src/**/*.ts",

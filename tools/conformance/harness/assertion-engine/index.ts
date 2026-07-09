@@ -21,7 +21,10 @@ import type {
   ConformancePlanAssertion,
   ConformancePlanCheck,
 } from "../../plan-compiler/index.js";
-import { findSecretLeaks } from "../secret-absence/index.js";
+import {
+  findSecretLeaks,
+  findSecretPatternLeaks,
+} from "../secret-absence/index.js";
 
 export interface AssertionContext {
   events?: readonly unknown[];
@@ -136,6 +139,8 @@ function evaluateAssertion(
       return assertNoEvent(assertion, context);
     case "secretAbsence":
       return assertSecretAbsence(assertion, context);
+    case "secretPatternAbsence":
+      return assertSecretPatternAbsence(assertion, context);
     default:
       return assertNever(assertion.kind);
   }
@@ -279,6 +284,37 @@ function assertSecretAbsence(
     throw new Error(
       `secret leak detected in ${assertion.field}: ${findings
         .map((finding) => finding.variant)
+        .join(", ")}`
+    );
+  }
+
+  return true;
+}
+
+function assertSecretPatternAbsence(
+  assertion: ConformancePlanAssertion,
+  context: AssertionContext
+): boolean {
+  if (assertion.field === undefined) {
+    throw new Error("secretPatternAbsence assertion requires field");
+  }
+
+  const surface = readPath(context.result, assertion.field);
+  // Mirrors assertSecretAbsence: a pattern-absence check must fail loud on a
+  // missing surface too — absence cannot be proven on something that was
+  // never scanned, and a surface that resolves to an explicit null must fail
+  // rather than vacuously pass.
+  if (surface === undefined || surface === null) {
+    throw new Error(
+      `secretPatternAbsence surface ${assertion.field} is missing from the result`
+    );
+  }
+
+  const findings = findSecretPatternLeaks(surface);
+  if (findings.length > 0) {
+    throw new Error(
+      `secret-pattern leak detected in ${assertion.field}: ${findings
+        .map((finding) => finding.pattern)
         .join(", ")}`
     );
   }

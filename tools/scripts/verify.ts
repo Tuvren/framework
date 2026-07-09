@@ -110,6 +110,11 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   // @tuvren/kernel-grpc-client leaf (ADR-059 / KRT-BJ002): owns the relocated
   // gRPC transport codec, whose round-trip tests run only in this lane.
   "kernel-grpc-client",
+  // backend-shared (@tuvren/backend-shared, KRT-BK001): the shared
+  // kernel-backend invariant core the memory, SQLite, and PostgreSQL
+  // backends delegate to for reclamation, record-utils, and
+  // run-transition-legality logic.
+  "backend-shared",
   "backend-memory",
   "backend-sqlite",
   "mcp-client",
@@ -145,6 +150,7 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "shared-core-types",
   "kernel-contract-protocol",
   "kernel-testkit",
+  "backend-shared",
   "backend-memory",
   "backend-sqlite",
   "backend-postgres",

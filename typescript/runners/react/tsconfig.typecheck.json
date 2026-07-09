@@ -18,6 +18,7 @@
       "@tuvren/core/telemetry": ["../../core/src/telemetry/index.ts"],
       "@tuvren/core/capabilities": ["../../core/src/capabilities/index.ts"],
       "@tuvren/core/lifecycle": ["../../core/src/lifecycle/index.ts"],
+      "@tuvren/core/security": ["../../core/src/security/index.ts"],
       "@tuvren/sdk": ["../../sdk/src/index.ts"],
       "@tuvren/core-types": ["../../core-types/src/index.ts"],
       "@tuvren/kernel-protocol": ["../../kernel/protocol/src/index.ts"],

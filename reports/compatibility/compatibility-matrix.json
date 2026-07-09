@@ -401,6 +401,7 @@
             "runtime-api-operational-telemetry.recovery-records",
             "runtime-api-operational-telemetry.tool-spans",
             "scope-isolation.telemetry-and-transcript-correlation",
+            "secret-isolation.provider-bridge-request-and-headers",
             "secret-isolation.telemetry-attributes-and-error-summaries",
             "runtime-orchestration-af.handoff-last-output-only-builder",
             "runtime-orchestration-af.handoff-rejects-multiple-intents",
@@ -476,9 +477,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 466,
-            "totalChecks": 478,
-            "applicableChecks": 466,
+            "passedChecks": 467,
+            "totalChecks": 479,
+            "applicableChecks": 467,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -519,9 +520,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 478,
+            "totalChecks": 479,
             "applicableChecks": 12,
-            "nonApplicableChecks": 466
+            "nonApplicableChecks": 467
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json",
@@ -592,6 +593,8 @@
             "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
             "kernel.reclamation.erasure_preserves_referencing_lineage",
             "kernel.reclamation.grace_window_holds_under_active_lease",
+            "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+            "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
             "kernel.reclamation.reachable_from_live_root_is_retained",
             "kernel.reclamation.unreachable_past_grace_is_released",
             "kernel.crash-recovery.concurrent_writer",
@@ -607,9 +610,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 64,
-            "totalChecks": 68,
-            "applicableChecks": 64,
+            "passedChecks": 66,
+            "totalChecks": 70,
+            "applicableChecks": 66,
             "nonApplicableChecks": 4
           },
           "declaredCapabilities": [
@@ -690,6 +693,8 @@
             "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
             "kernel.reclamation.erasure_preserves_referencing_lineage",
             "kernel.reclamation.grace_window_holds_under_active_lease",
+            "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+            "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
             "kernel.reclamation.reachable_from_live_root_is_retained",
             "kernel.reclamation.unreachable_past_grace_is_released",
             "kernel-restart-af.invalid-staged-result-reexecutes",
@@ -708,9 +713,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 67,
-            "totalChecks": 68,
-            "applicableChecks": 67,
+            "passedChecks": 69,
+            "totalChecks": 70,
+            "applicableChecks": 69,
             "nonApplicableChecks": 1
           },
           "declaredCapabilities": [
@@ -792,6 +797,8 @@
             "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
             "kernel.reclamation.erasure_preserves_referencing_lineage",
             "kernel.reclamation.grace_window_holds_under_active_lease",
+            "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+            "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
             "kernel.reclamation.reachable_from_live_root_is_retained",
             "kernel.reclamation.unreachable_past_grace_is_released",
             "kernel-restart-af.invalid-staged-result-reexecutes",
@@ -811,9 +818,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 68,
-            "totalChecks": 68,
-            "applicableChecks": 68,
+            "passedChecks": 70,
+            "totalChecks": 70,
+            "applicableChecks": 70,
             "nonApplicableChecks": 0
           },
           "declaredCapabilities": [
@@ -980,19 +987,33 @@
             "kernel.protocol.schema_roundtrip.f-staged-interrupted",
             "kernel.protocol.schema_roundtrip.f-with-event-hash",
             "kernel.protocol.schema_roundtrip.f-with-prev-turn",
-            "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash"
+            "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+            "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
+            "kernel.reclamation.erasure_preserves_referencing_lineage",
+            "kernel.reclamation.grace_window_holds_under_active_lease",
+            "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+            "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+            "kernel.reclamation.reachable_from_live_root_is_retained",
+            "kernel.reclamation.unreachable_past_grace_is_released",
+            "kernel-restart-af.expired-running-requires-preemption",
+            "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+            "kernel.run-liveness.expired_listing",
+            "kernel.run-liveness.lease_renewal",
+            "kernel.run-liveness.stale_preemption"
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 42,
-            "totalChecks": 68,
-            "applicableChecks": 42,
-            "nonApplicableChecks": 26
+            "passedChecks": 54,
+            "totalChecks": 70,
+            "applicableChecks": 54,
+            "nonApplicableChecks": 16
           },
           "declaredCapabilities": [
             "kernel-protocol.thread.enumeration",
             "kernel.logical",
-            "kernel.protocol"
+            "kernel.protocol",
+            "kernel.reclamation",
+            "kernel.run-liveness"
           ],
           "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-rust-certification.json",
           "reportLabel": "Rust process-local kernel baseline",
@@ -1013,9 +1034,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 478,
+            "totalChecks": 479,
             "applicableChecks": 0,
-            "nonApplicableChecks": 478
+            "nonApplicableChecks": 479
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-rust-certification.json",

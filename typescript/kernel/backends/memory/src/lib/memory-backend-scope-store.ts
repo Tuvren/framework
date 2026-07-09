@@ -59,15 +59,21 @@ export class MemoryScopeStore {
   /**
    * Drops a Scope's entire partition from the substrate (full tenant
    * offboarding; kernel spec §9.4). Removes the committed state so a later
-   * `getState` re-creates an empty partition, and forgets the per-Scope
-   * serialization queue. Distinct Scopes sharing this store are untouched, so
-   * isolation-by-construction makes offboarding one tenant invisible to every
-   * other. Callers must hold the per-Scope lock (`runExclusive`) so the drop
-   * does not race a concurrent transaction on the same Scope.
+   * `getState` re-creates an empty partition. Distinct Scopes sharing this
+   * store are untouched, so isolation-by-construction makes offboarding one
+   * tenant invisible to every other. Callers must hold the per-Scope lock
+   * (`runExclusive`) so the drop does not race a concurrent transaction on
+   * the same Scope.
+   *
+   * Deliberately does not touch the per-Scope serialization queue: a purge
+   * runs as `work` inside `runExclusive` exactly like any transaction, and
+   * only `runExclusive`'s own `finally` may retire that queue slot (KRT-BK003
+   * — a blind `scopeQueues.delete` here could wipe out a later caller's
+   * queue registration before that caller's turn arrives, letting it run
+   * concurrently with this still-in-flight purge).
    */
   dropScope(scope: Scope): void {
     this.states.delete(scope);
-    this.scopeQueues.delete(scope);
   }
 
   /**
@@ -81,11 +87,9 @@ export class MemoryScopeStore {
     const gate = new Promise<void>((resolve) => {
       releaseQueue = resolve;
     });
+    const chainedTransaction = priorTransaction.then(() => gate);
 
-    this.scopeQueues.set(
-      scope,
-      priorTransaction.then(() => gate)
-    );
+    this.scopeQueues.set(scope, chainedTransaction);
 
     await priorTransaction;
 
@@ -93,6 +97,15 @@ export class MemoryScopeStore {
       return await work();
     } finally {
       releaseQueue?.();
+
+      // Only retire the queue slot if it still holds the entry this call
+      // installed. A later caller may have already chained onto it (or,
+      // for a purge's `work`, `dropScope` may run first) — in that case the
+      // slot belongs to that later caller now, and it must keep serializing
+      // behind this call's gate until this call is genuinely done (KRT-BK003).
+      if (this.scopeQueues.get(scope) === chainedTransaction) {
+        this.scopeQueues.delete(scope);
+      }
     }
   }
 }

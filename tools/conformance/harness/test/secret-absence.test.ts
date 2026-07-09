@@ -15,9 +15,15 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { findSecretLeaks } from "../secret-absence/index.ts";
+import {
+  findSecretLeaks,
+  findSecretPatternLeaks,
+  hasSecretPatternResidue,
+} from "../secret-absence/index.ts";
 
 const SECRET = "tuvren-secretiso-mcp-bearer-3a1c5e7b9d2f4a6c8e0b1d3f5a7c9e1b";
+const JWT_SHAPED =
+  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZWNyZXQtYWJzZW5jZS10ZXN0In0.QVzX9k3f7c9a1e2b4d6f8a0c5e7b9d1f3a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3b";
 
 describe("secret-absence scanner (KRT-BD004)", () => {
   test("reports no leak for a secret-free surface", () => {
@@ -72,5 +78,58 @@ describe("secret-absence scanner (KRT-BD004)", () => {
     const findings = findSecretLeaks(surface, [SECRET, other]);
     expect(findings).toHaveLength(1);
     expect(findings[0]?.secret).toBe(SECRET);
+  });
+});
+
+describe("secret-pattern scanner (KRT-BK004)", () => {
+  test("reports no leak for a pattern-free surface", () => {
+    const surface = {
+      events: [{ name: "tool", type: "tool.start" }],
+      records: [{ message: "hello", role: "user" }],
+    };
+    expect(findSecretPatternLeaks(surface)).toEqual([]);
+    expect(hasSecretPatternResidue(surface)).toBe(false);
+  });
+
+  test("detects a JWT-shaped value nested in the surface, structurally, with no configured secret list", () => {
+    const surface = { aiSdkBridge: { requestBody: JWT_SHAPED } };
+    const findings = findSecretPatternLeaks(surface);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.pattern).toBe("jwt");
+    expect(hasSecretPatternResidue(surface)).toBe(true);
+  });
+
+  test("detects a connection-string-shaped value nested in an array", () => {
+    // No embedded "user:pass@" credentials here (unlike url-credential-shaped
+    // values), so this exercises the connection-string pattern specifically.
+    const surface = {
+      warnings: ["fine", ["mongodb://db.internal:27017/app"]],
+    };
+    const findings = findSecretPatternLeaks(surface);
+    expect(
+      findings.some((finding) => finding.pattern === "connection-string")
+    ).toBe(true);
+  });
+
+  test("detects a signed-URL-shaped response header value embedding a JWT", () => {
+    const surface = {
+      response: {
+        headers: {
+          "x-signed-url": `https://cdn.test/asset?token=${JWT_SHAPED}`,
+        },
+      },
+    };
+    expect(hasSecretPatternResidue(surface)).toBe(true);
+  });
+
+  test("does not flag an ordinary short string", () => {
+    const surface = { modelId: "gpt-test", provider: "mock" };
+    expect(findSecretPatternLeaks(surface)).toEqual([]);
+  });
+
+  test("finding previews never echo the full raw matched value", () => {
+    const surface = { requestBody: JWT_SHAPED };
+    const findings = findSecretPatternLeaks(surface);
+    expect(findings[0]?.preview.length).toBeLessThan(JWT_SHAPED.length);
   });
 });

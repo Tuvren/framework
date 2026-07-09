@@ -8907,6 +8907,40 @@
     {
       "assertionResults": [
         {
+          "assertionId": "secret-isolation.provider-bridge-request-and-headers.1.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.provider-bridge-request-and-headers.2.secretPatternAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.provider-bridge-request-and-headers.3.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.provider-bridge-request-and-headers.4.secretPatternAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.provider-bridge-request-and-headers.requiredEvidence.result.generate",
+          "status": "pass"
+        },
+        {
+          "assertionId": "secret-isolation.provider-bridge-request-and-headers.requiredEvidence.result.stream",
+          "status": "pass"
+        }
+      ],
+      "checkId": "secret-isolation.provider-bridge-request-and-headers",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.operational-telemetry"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "secret-isolation.telemetry-attributes-and-error-summaries.1.secretAbsence",
           "status": "pass"
         },
@@ -10453,9 +10487,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 466,
-    "totalChecks": 478,
-    "applicableChecks": 466,
+    "passedChecks": 467,
+    "totalChecks": 479,
+    "applicableChecks": 467,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

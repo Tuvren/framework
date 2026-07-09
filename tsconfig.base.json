@@ -18,6 +18,7 @@
         "./typescript/core/src/capabilities/index.ts"
       ],
       "@tuvren/core/lifecycle": ["./typescript/core/src/lifecycle/index.ts"],
+      "@tuvren/core/security": ["./typescript/core/src/security/index.ts"],
       "@tuvren/sdk": ["./typescript/sdk/src/index.ts"],
       "@tuvren/sdk/advanced": ["./typescript/sdk/src/advanced.ts"],
       "@tuvren/core-types": ["./typescript/core-types/src/index.ts"],
@@ -38,6 +39,9 @@
       ],
       "@tuvren/backend-memory": [
         "./typescript/kernel/backends/memory/src/index.ts"
+      ],
+      "@tuvren/backend-shared": [
+        "./typescript/kernel/backends/shared/src/index.ts"
       ],
       "@tuvren/kernel-runtime": ["./typescript/kernel/runtime/src/index.ts"],
       "@tuvren/kernel-grpc-client": [

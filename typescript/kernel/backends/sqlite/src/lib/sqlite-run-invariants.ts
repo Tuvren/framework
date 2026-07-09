@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import {
+  createBackendInvariantRecordUtils,
+  createBackendInvariantRunLogic,
+} from "@tuvren/backend-shared";
 import { assertHashString } from "@tuvren/core";
 import {
   decodeDeterministicKernelRecord,
@@ -24,263 +28,35 @@ import {
 } from "@tuvren/kernel-protocol";
 import { persistenceError } from "./sqlite-errors.js";
 import { type BackendState, decodeHashStringArray } from "./sqlite-records.js";
-import { areBytesEqual, ensureTurnNodeExists } from "./sqlite-state-utils.js";
+import { ensureTurnNodeExists } from "./sqlite-state-utils.js";
 
 export type TurnNodeRelationship = "backward" | "forward" | "lateral" | "same";
 
-export function assertRunUpdateIsLegal(
-  existingRun: StoredRun,
-  nextRun: StoredRun
-): void {
-  assertImmutableField(
-    existingRun.branchId,
-    nextRun.branchId,
-    "record.branchId",
-    "sqlite_backend_run_branch_immutable"
-  );
-  assertImmutableField(
-    existingRun.turnId,
-    nextRun.turnId,
-    "record.turnId",
-    "sqlite_backend_run_turn_immutable"
-  );
-  assertImmutableField(
-    existingRun.schemaId,
-    nextRun.schemaId,
-    "record.schemaId",
-    "sqlite_backend_run_schema_immutable"
-  );
-  assertImmutableField(
-    existingRun.startTurnNodeHash,
-    nextRun.startTurnNodeHash,
-    "record.startTurnNodeHash",
-    "sqlite_backend_run_start_immutable"
-  );
-  assertImmutableField(
-    existingRun.createdAtMs,
-    nextRun.createdAtMs,
-    "record.createdAtMs",
-    "sqlite_backend_run_created_at_immutable"
-  );
-  assertImmutableBytes(
-    existingRun.stepSequenceCbor,
-    nextRun.stepSequenceCbor,
-    "record.stepSequenceCbor",
-    "sqlite_backend_run_step_sequence_immutable"
-  );
-  assertMonotonicUpdatedAtMs(
-    existingRun.updatedAtMs,
-    nextRun.updatedAtMs,
-    "record.updatedAtMs",
-    "sqlite_backend_run_updated_at_regressed"
-  );
+// This module is a thin delegate to the shared kernel-backend invariant core
+// (KRT-BK001) for the run-transition-legality and immutability-primitive
+// surface: `assertRunUpdateIsLegal` (and its private sub-assertions) and
+// `assertImmutableField`/`assertImmutableOptionalField`/`assertImmutableBytes`
+// are identical to the memory and PostgreSQL backends' copies modulo the
+// `sqlite_backend_*` error-code prefix. See @tuvren/backend-shared for the
+// actual implementation. `decodeRunCreatedTurnNodeHashes` stays backend-owned
+// (it is not part of this extraction, and this same module still needs it
+// below for sqlite-specific lineage checks) and is injected into the shared
+// run-logic factory. `function` hoisting makes the later declaration in this
+// module available here at call time.
+const runLogic = createBackendInvariantRunLogic({
+  decodeRunCreatedTurnNodeHashes,
+  errorPrefix: "sqlite",
+});
+const recordUtils = createBackendInvariantRecordUtils({
+  errorPrefix: "sqlite",
+});
 
-  if (
-    existingRun.status === "running" ||
-    (existingRun.status === "paused" && nextRun.status === "failed")
-  ) {
-    assertMonotonicRunStepIndex(existingRun, nextRun);
-    assertAppendOnlyRunCreatedTurnNodes(existingRun, nextRun);
-  } else {
-    assertImmutableField(
-      existingRun.currentStepIndex,
-      nextRun.currentStepIndex,
-      "record.currentStepIndex",
-      "sqlite_backend_run_step_index_immutable_after_halt"
-    );
-    assertImmutableBytes(
-      existingRun.createdTurnNodesCbor,
-      nextRun.createdTurnNodesCbor,
-      "record.createdTurnNodesCbor",
-      "sqlite_backend_run_created_turn_nodes_immutable_after_halt"
-    );
-  }
-
-  assertRunLeaseUpdateIsLegal(existingRun, nextRun);
-  assertRunStatusTransition(existingRun.status, nextRun.status);
-}
-
-function assertRunLeaseUpdateIsLegal(
-  existingRun: StoredRun,
-  nextRun: StoredRun
-): void {
-  assertExecutionOwnerUpdateIsLegal(existingRun, nextRun);
-  assertFencingTokenUpdateIsLegal(existingRun, nextRun);
-  assertLeaseExpiryUpdateIsLegal(existingRun, nextRun);
-  assertPreemptionReasonUpdateIsLegal(existingRun, nextRun);
-}
-
-function assertExecutionOwnerUpdateIsLegal(
-  existingRun: StoredRun,
-  nextRun: StoredRun
-): void {
-  if (
-    existingRun.executionOwnerId !== undefined &&
-    nextRun.status === "running"
-  ) {
-    assertImmutableField(
-      existingRun.executionOwnerId,
-      nextRun.executionOwnerId,
-      "record.executionOwnerId",
-      "sqlite_backend_run_execution_owner_immutable"
-    );
-    return;
-  }
-
-  if (
-    existingRun.executionOwnerId === undefined &&
-    nextRun.executionOwnerId !== undefined
-  ) {
-    throw persistenceError(
-      "stored runs must not gain execution ownership after creation",
-      "sqlite_backend_run_execution_owner_late_set",
-      { runId: existingRun.runId }
-    );
-  }
-}
-
-function assertFencingTokenUpdateIsLegal(
-  existingRun: StoredRun,
-  nextRun: StoredRun
-): void {
-  if (existingRun.status !== "running" || nextRun.status !== "running") {
-    return;
-  }
-
-  if (existingRun.fencingToken !== undefined) {
-    if (nextRun.fencingToken === undefined) {
-      throw persistenceError(
-        "stored running leased runs must retain a fencing token",
-        "sqlite_backend_run_fencing_token_missing",
-        { runId: existingRun.runId }
-      );
-    }
-
-    if (existingRun.fencingToken === nextRun.fencingToken) {
-      throw persistenceError(
-        "stored running leased runs must rotate fencing tokens on renewal",
-        "sqlite_backend_run_fencing_token_not_rotated",
-        { runId: existingRun.runId }
-      );
-    }
-
-    return;
-  }
-
-  if (nextRun.fencingToken !== undefined) {
-    throw persistenceError(
-      "stored runs must not gain a fencing token after creation",
-      "sqlite_backend_run_fencing_token_late_set",
-      { runId: existingRun.runId }
-    );
-  }
-}
-
-function assertLeaseExpiryUpdateIsLegal(
-  existingRun: StoredRun,
-  nextRun: StoredRun
-): void {
-  if (
-    existingRun.leaseExpiresAtMs !== undefined &&
-    nextRun.leaseExpiresAtMs === undefined &&
-    nextRun.status === "running"
-  ) {
-    throw persistenceError(
-      "stored running leased runs must retain a lease expiry",
-      "sqlite_backend_run_lease_expiry_missing",
-      { runId: existingRun.runId }
-    );
-  }
-}
-
-function assertPreemptionReasonUpdateIsLegal(
-  existingRun: StoredRun,
-  nextRun: StoredRun
-): void {
-  if (existingRun.preemptionReason !== undefined) {
-    assertImmutableField(
-      existingRun.preemptionReason,
-      nextRun.preemptionReason,
-      "record.preemptionReason",
-      "sqlite_backend_run_preemption_reason_immutable"
-    );
-    return;
-  }
-
-  if (nextRun.preemptionReason !== undefined && nextRun.status !== "failed") {
-    throw persistenceError(
-      "stored runs must only record preemptionReason on failed runs",
-      "sqlite_backend_run_preemption_reason_invalid_status",
-      { runId: existingRun.runId, status: nextRun.status }
-    );
-  }
-}
-
-function assertMonotonicRunStepIndex(
-  existingRun: StoredRun,
-  nextRun: StoredRun
-): void {
-  if (nextRun.currentStepIndex < existingRun.currentStepIndex) {
-    throw persistenceError(
-      "stored runs must not move currentStepIndex backwards",
-      "sqlite_backend_run_step_index_regressed",
-      {
-        nextCurrentStepIndex: nextRun.currentStepIndex,
-        previousCurrentStepIndex: existingRun.currentStepIndex,
-        runId: existingRun.runId,
-      }
-    );
-  }
-}
-
-export function assertMonotonicUpdatedAtMs(
-  previousUpdatedAtMs: number,
-  nextUpdatedAtMs: number,
-  label: string,
-  code: string
-): void {
-  if (nextUpdatedAtMs < previousUpdatedAtMs) {
-    throw persistenceError(`${label} must not move backwards`, code, {
-      nextUpdatedAtMs,
-      previousUpdatedAtMs,
-    });
-  }
-}
-
-function assertAppendOnlyRunCreatedTurnNodes(
-  existingRun: StoredRun,
-  nextRun: StoredRun
-): void {
-  const existingTurnNodeHashes = decodeRunCreatedTurnNodeHashes(existingRun);
-  const nextTurnNodeHashes = decodeRunCreatedTurnNodeHashes(nextRun);
-
-  if (nextTurnNodeHashes.length < existingTurnNodeHashes.length) {
-    throw persistenceError(
-      "stored runs must keep createdTurnNodesCbor append-only",
-      "sqlite_backend_run_created_turn_nodes_not_append_only",
-      {
-        nextCount: nextTurnNodeHashes.length,
-        previousCount: existingTurnNodeHashes.length,
-        runId: existingRun.runId,
-      }
-    );
-  }
-
-  for (const [index, turnNodeHash] of existingTurnNodeHashes.entries()) {
-    if (nextTurnNodeHashes[index] !== turnNodeHash) {
-      throw persistenceError(
-        "stored runs must keep createdTurnNodesCbor append-only",
-        "sqlite_backend_run_created_turn_nodes_not_append_only",
-        {
-          index,
-          nextTurnNodeHash: nextTurnNodeHashes[index],
-          previousTurnNodeHash: turnNodeHash,
-          runId: existingRun.runId,
-        }
-      );
-    }
-  }
-}
+export const { assertMonotonicUpdatedAtMs, assertRunUpdateIsLegal } = runLogic;
+export const {
+  assertImmutableBytes,
+  assertImmutableField,
+  assertImmutableOptionalField,
+} = recordUtils;
 
 export function assertRunStartTurnNodeWithinTurnSpan(
   state: BackendState,
@@ -585,74 +361,6 @@ export function decodeTurnNodeConsumedStagedResultObjectHashes(
   }
 
   return objectHashes;
-}
-
-function assertRunStatusTransition(
-  previousStatus: StoredRun["status"],
-  nextStatus: StoredRun["status"]
-): void {
-  if (previousStatus === nextStatus) {
-    return;
-  }
-
-  const isLegalTransition =
-    (previousStatus === "running" &&
-      (nextStatus === "completed" ||
-        nextStatus === "failed" ||
-        nextStatus === "paused")) ||
-    (previousStatus === "paused" && nextStatus === "failed");
-
-  if (!isLegalTransition) {
-    throw persistenceError(
-      "stored runs must not use illegal status transitions",
-      "sqlite_backend_run_status_transition_illegal",
-      {
-        nextStatus,
-        previousStatus,
-      }
-    );
-  }
-}
-
-export function assertImmutableField<T>(
-  previousValue: T,
-  nextValue: T,
-  label: string,
-  code: string
-): void {
-  if (previousValue !== nextValue) {
-    throw persistenceError(`${label} must remain immutable`, code, {
-      nextValue,
-      previousValue,
-    });
-  }
-}
-
-export function assertImmutableOptionalField<T>(
-  previousValue: T | undefined,
-  nextValue: T | undefined,
-  label: string,
-  code: string
-): void {
-  if (previousValue !== nextValue) {
-    throw persistenceError(`${label} must remain immutable`, code, {
-      nextValue,
-      previousValue,
-    });
-  }
-}
-
-export function assertImmutableBytes(
-  previousValue: Uint8Array,
-  nextValue: Uint8Array,
-  label: string,
-  code: string
-): void {
-  if (!areBytesEqual(previousValue, nextValue)) {
-    throw persistenceError(`${label} must remain immutable`, code, {
-      label,
-    });
-  }
 }
 
 export function validateHashString(hash: string): string {

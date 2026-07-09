@@ -57,7 +57,7 @@ import {
   requireTreeManifest,
   requireTurnNode,
   requireTurnTree,
-  toStoredTurnTreePath,
+  toStoredTurnTreePathChunkAware,
 } from "./runtime-kernel-storage.js";
 
 export function composeModifyVerdict(
@@ -714,6 +714,7 @@ export async function createIncorporatedTree(
   return await createTurnTree(tx, {
     changes: manifest,
     now: input.now,
+    priorTurnTreeHash: baseTurnTreeHash,
     schema,
   });
 }
@@ -723,6 +724,17 @@ export async function createTurnTree(
   input: {
     changes: TurnTreeChangeSet;
     now: () => EpochMs;
+    /**
+     * Base tree this write is a structurally-guaranteed append-only
+     * extension of (KRT-BK008, ADR-011). Only pass this when `changes` was
+     * produced by `applyStagedResultsToManifest` against the manifest at
+     * this exact hash — an arbitrary/overwritten `changes` set must omit it,
+     * since the chunk-aware caller trusts append-only-ness structurally
+     * rather than re-verifying prefix content. See the call-site comment in
+     * `runtime-kernel.ts`'s `tree.create` for the case that must NOT thread
+     * this through.
+     */
+    priorTurnTreeHash?: HashString;
     schema: TurnTreeSchema;
   }
 ): Promise<HashString> {
@@ -745,12 +757,17 @@ export async function createTurnTree(
     schemaId: input.schema.schemaId,
   });
   await tx.turnTreePaths.putMany(
-    input.schema.paths.map((path) =>
-      toStoredTurnTreePath(
-        hash,
-        path.collection,
-        path.path,
-        manifest[path.path]
+    await Promise.all(
+      input.schema.paths.map((path) =>
+        toStoredTurnTreePathChunkAware(
+          tx,
+          hash,
+          path.collection,
+          path.path,
+          manifest[path.path],
+          input.priorTurnTreeHash,
+          input.now
+        )
       )
     )
   );

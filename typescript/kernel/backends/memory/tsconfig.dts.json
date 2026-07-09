@@ -9,6 +9,7 @@
     "paths": {
       "@tuvren/core-types": ["../../../core-types/dist/index.d.ts"],
       "@tuvren/kernel-protocol": ["../../protocol/dist/index.d.ts"],
+      "@tuvren/backend-shared": ["../shared/dist/index.d.ts"],
       "@tuvren/backend-memory": ["./src/index.ts"]
     },
     "rootDir": "./src",

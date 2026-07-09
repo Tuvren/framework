@@ -71,6 +71,7 @@ fn deterministic_identity_matches_shared_fixture_vectors() {
         .as_object()
         .expect("staged result");
     let node = TurnNode {
+        created_at_ms: 0,
         consumed_staged_results: vec![StagedResult {
             interrupt_payload: None,
             object_hash: staged["objectHash"]

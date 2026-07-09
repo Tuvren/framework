@@ -1,0 +1,35 @@
+{
+  "name": "@tuvren/backend-shared",
+  "description": "Shared kernel-backend invariant core: the reclamation, record-utils, and run-transition-legality logic common to the memory, SQLite, and PostgreSQL backends, parameterized by backend-owned error-code prefix.",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/kernel/backends/shared"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@tuvren/kernel-protocol": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tuvren/core": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@tuvren/core": {
+      "optional": false
+    }
+  }
+}

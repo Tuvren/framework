@@ -42,6 +42,7 @@ import {
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
   type ListThreadsCursorPayload,
+  type ReclamationOptions,
   type ReclamationSummary,
   type StoredBranch,
   type StoredRun,
@@ -198,14 +199,17 @@ class MemoryBackend implements KrakenBackend {
     return Promise.resolve({ ok: true });
   }
 
-  reclaim(): Promise<ReclamationSummary> {
+  reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
     // Reclamation serializes against this Scope exactly like a transaction:
     // clone the committed state, sweep the unreachable remainder, validate the
     // referential invariants of the result, then swap it in atomically.
     return this.store.runExclusive(this.scope, () => {
       const baseState = this.store.getState(this.scope);
       const draftState = cloneState(baseState);
-      const summary = reclaimBackendState(draftState);
+      const summary = reclaimBackendState(
+        draftState,
+        options?.nowMs ?? this.now()
+      );
       validateCommittedState(draftState, baseState);
       this.store.setState(this.scope, draftState);
       return Promise.resolve(summary);

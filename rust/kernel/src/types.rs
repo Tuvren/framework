@@ -123,6 +123,7 @@ pub struct ObserveResult {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TurnNode {
     pub consumed_staged_results: Vec<StagedResult>,
+    pub created_at_ms: EpochMs,
     pub event_hash: Option<HashString>,
     pub hash: HashString,
     pub previous_turn_node_hash: Option<HashString>,
@@ -139,6 +140,7 @@ pub struct ThreadRecord {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BranchRecord {
+    pub archived_from_branch_id: Option<String>,
     pub branch_id: String,
     pub head_turn_node_hash: HashString,
     pub thread_id: String,
@@ -172,14 +174,49 @@ pub enum RunCompletionStatus {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RunRecord {
     pub branch_id: String,
+    pub created_at_ms: EpochMs,
     pub created_turn_nodes: Vec<HashString>,
     pub current_step_index: usize,
+    pub execution_owner_id: Option<String>,
+    pub fencing_token: Option<String>,
+    pub lease_expires_at_ms: Option<EpochMs>,
+    pub preemption_reason: Option<String>,
     pub run_id: String,
     pub schema_id: String,
     pub start_turn_node_hash: HashString,
     pub status: RunStatus,
     pub step_sequence: Vec<StepDeclaration>,
     pub turn_id: String,
+    pub updated_at_ms: EpochMs,
+}
+
+/// KRT-BK010: input for creating a run with an initial execution lease
+/// (`kernel.run-liveness`). Mirrors `RunLivenessCreateLeasedRunInput` in the
+/// TypeScript kernel protocol.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LeasedRunCreateInput {
+    pub branch_id: String,
+    pub execution_owner_id: String,
+    pub lease_expires_at_ms: EpochMs,
+    pub run_id: String,
+    pub schema_id: String,
+    pub start_turn_node_hash: HashString,
+    pub steps: Vec<StepDeclaration>,
+    pub turn_id: String,
+}
+
+/// KRT-BK010: reachability-reclamation sweep summary (`kernel.reclamation`).
+/// Mirrors the TypeScript `ReclamationSummary` shape, minus ordered-path-chunk
+/// counts: the Rust in-memory kernel has no TurnTree chunking to sweep.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ReclamationSummary {
+    pub released_archived_branch_count: usize,
+    pub released_object_count: usize,
+    pub released_run_count: usize,
+    pub released_turn_count: usize,
+    pub released_turn_node_count: usize,
+    pub released_turn_tree_count: usize,
+    pub retained_object_count: usize,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

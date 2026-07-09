@@ -70,6 +70,7 @@ import { createFrameworkAdapterRuntimeScenarios } from "./framework-adapter-runt
 import { createFrameworkAdapterSchemaAuthoring } from "./framework-adapter-schema-authoring.ts";
 import {
   runScopeIsolationSurfaces,
+  runSecretIsolationProviderBridge,
   runSecretIsolationRuntimeApi,
   runSecretIsolationTelemetry,
 } from "./framework-adapter-secret-isolation.ts";
@@ -430,6 +431,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runSecretIsolationRuntimeApi(input);
       case "runtime.secret-isolation.telemetry":
         return runSecretIsolationTelemetry(input);
+      case "runtime.secret-isolation.provider-bridge":
+        return runSecretIsolationProviderBridge(input);
       case "runtime.scope-isolation.surfaces":
         return runScopeIsolationSurfaces(input);
       case "runtime.trust-boundary.approval-gate":

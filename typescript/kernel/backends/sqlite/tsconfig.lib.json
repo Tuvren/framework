@@ -18,6 +18,9 @@
     },
     {
       "path": "../../protocol/tsconfig.lib.json"
+    },
+    {
+      "path": "../shared/tsconfig.lib.json"
     }
   ]
 }

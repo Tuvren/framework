@@ -222,3 +222,51 @@ describe("secretAbsence assertion (KRT-BD004)", () => {
     expect(evaluation?.status).toBe("fail");
   });
 });
+
+describe("secretPatternAbsence assertion (KRT-BK004)", () => {
+  const JWT_SHAPED =
+    "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhc3NlcnRpb24tZW5naW5lLXRlc3QifQ.QVzX9k3f7c9a1e2b4d6f8a0c5e7b9d1f3a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3b";
+
+  test("passes when the result surface carries no pattern-shaped secret residue", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ field: "$.surface", kind: "secretPatternAbsence" }]),
+      { result: { surface: { events: [{ type: "tool.start" }] } } }
+    );
+    expect(evaluation?.status).toBe("pass");
+  });
+
+  test("fails when a pattern-shaped secret (not equal to any configured value) leaks into the surface", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ field: "$.surface", kind: "secretPatternAbsence" }]),
+      { result: { surface: { records: [{ auth: JWT_SHAPED }] } } }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
+
+  test("fails when the declared surface is missing from the result", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ field: "$.missing", kind: "secretPatternAbsence" }]),
+      { result: {} }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
+
+  test("fails loud when the declared surface is explicitly null", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ field: "$.surface", kind: "secretPatternAbsence" }]),
+      { result: { surface: null } }
+    );
+    expect(evaluation?.status).toBe("fail");
+  });
+
+  test("does not require a secretsPath, unlike secretAbsence", () => {
+    const check = buildCheck([
+      { field: "$.surface", kind: "secretPatternAbsence" },
+    ]);
+    expect(check.assertions[0]?.secretsPath).toBeUndefined();
+    const [evaluation] = evaluateAssertions(check, {
+      result: { surface: { ok: true } },
+    });
+    expect(evaluation?.status).toBe("pass");
+  });
+});
