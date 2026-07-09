@@ -1093,13 +1093,21 @@ fn run_erasure_probe() -> Result<Value, KernelError> {
         .store_get(&envelope_hash)?
         .ok_or_else(|| error("missing_object", "expected stored envelope after erasure"))?;
     // The real key is gone (dropped, not merely marked absent), so it cannot
-    // be reconstructed. Prove unrecoverability by genuinely attempting
-    // decryption of the still-stored ciphertext against a freshly-generated
-    // key that is certainly not the destroyed one: AES-GCM's authentication
-    // tag check must reject it, mirroring the TypeScript reference's observed
-    // "erased" decrypt failure rather than inspecting local Option state.
-    let attacker_key = Key::<Aes256Gcm>::generate();
-    let unrecoverable_after_erasure = decrypt_envelope(&attacker_key, &stored_after).is_none();
+    // be reconstructed. Mirror the TypeScript reference's keyring-resolution
+    // failure: attempt decryption through the same `key` slot erasure just
+    // cleared, rather than substituting an unrelated key. An unrelated key
+    // would always fail AES-GCM's authentication check regardless of whether
+    // `key.take()` above ever ran, making the assertion insensitive to a
+    // regression that skips or breaks the erasure step. Routing through
+    // `key.as_ref()` keeps the check mutation-sensitive: if erasure is
+    // skipped, `key` is still `Some`, decryption still succeeds, and this
+    // correctly reports the payload as recoverable.
+    let unrecoverable_after_erasure = match key.as_ref() {
+        None => true,
+        Some(surviving_key) => decrypt_envelope(surviving_key, &stored_after)
+            .map(|decrypted| decrypted != plaintext)
+            .unwrap_or(true),
+    };
 
     let branch_after = kernel
         .branch_get(&thread.branch_id)?
