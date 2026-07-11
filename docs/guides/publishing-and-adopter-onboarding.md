@@ -26,8 +26,9 @@ tiers:
   `createTuvren` entrypoint, curated `@tuvren/core` re-exports, developer
   helpers, and the `@tuvren/sdk/advanced` composition surface.
 - The **leaf adapters** you choose: backends (`@tuvren/backend-memory`,
-  `@tuvren/backend-sqlite`, `@tuvren/backend-postgres`,
-  `@tuvren/backend-shared`), the runner (`@tuvren/runner-react`), the
+  `@tuvren/backend-sqlite`, `@tuvren/backend-postgres` — plus
+  `@tuvren/backend-shared`, their shared support package, which arrives
+  transitively rather than being chosen), the runner (`@tuvren/runner-react`), the
   provider bridge (`@tuvren/provider-bridge-ai-sdk`), stream adapters
   (`@tuvren/stream-core`, `@tuvren/stream-sse`, `@tuvren/stream-agui`),
   the MCP client (`@tuvren/mcp-client`), the OTel telemetry adapter
@@ -171,14 +172,15 @@ A host application imports exactly three kinds of packages:
    adapters, MCP client, telemetry adapter).
 
 **Never import `@tuvren/runtime` or a kernel package
-(`@tuvren/kernel-protocol`, `@tuvren/kernel-runtime`) directly**, and
-never import `@tuvren/provider-api` or `@tuvren/telemetry-semconv`. They
-appear in your lockfile as transitive dependencies — that is expected and
-correct — but nothing about their module surface is guaranteed between
-releases, and this repository's own verification fails if reference-host
-code imports them. Anything they provide that a host legitimately needs is
-already re-exported through `@tuvren/sdk` or `@tuvren/core`; if you find a
-gap, file an issue rather than reaching under the seam.
+(`@tuvren/kernel-protocol`, `@tuvren/kernel-runtime`) directly** — this
+repository's own verification fails if reference-host code imports any of
+those three — and likewise avoid `@tuvren/provider-api` and
+`@tuvren/telemetry-semconv`. All five appear in your lockfile as
+transitive dependencies — that is expected and correct — but nothing
+about their module surface is guaranteed between releases. Anything they
+provide that a host legitimately needs is already re-exported through
+`@tuvren/sdk` or `@tuvren/core`; if you find a gap, file an issue rather
+than reaching under the seam.
 
 (`@tuvren/kernel-grpc-client` is the one kernel-named package that *is*
 host-facing: it is the leaf adapter you install to point an instance at a
@@ -264,9 +266,9 @@ one-shot warning) — they never throw into, block, or delay your session.
 ## 6. The Reference Host as a living example
 
 `typescript/host/repl` (the Tuvren REPL reference host) is a complete,
-runnable host built strictly on the section-4 import contract: it composes
+runnable host built on the section-4 import contract: it composes
 `createTuvren` from `@tuvren/sdk` with leaf backends and the ReAct runner,
-and imports nothing from `@tuvren/runtime` or the kernel packages — a
+and imports nothing from `@tuvren/runtime` or the kernel packages — the
 boundary this repository enforces mechanically in its verification lanes.
 Clone the repository and read that package when you want to see the
 documented contract carried through a real interactive application
