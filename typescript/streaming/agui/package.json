@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/stream-agui",
   "description": "Tuvren AG-UI stream adapter leaf: projects Tuvren stream events onto AG-UI protocol events.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -29,7 +29,7 @@
     "@tuvren/framework-testkit": "workspace:*"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*"
+    "@tuvren/core": "workspace:~"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {

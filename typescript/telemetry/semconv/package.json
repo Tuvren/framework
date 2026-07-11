@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/telemetry-semconv",
-  "description": "Tuvren telemetry semantic conventions: the generated attribute and metric registry shared by Tuvren telemetry emitters and sinks.",
-  "version": "0.0.0",
+  "description": "Internal Tuvren telemetry semantic-convention registry (generated) — an engine dependency of @tuvren/runtime, not a host-installable package and not part of the semver-guaranteed stable core (KRT-BL001 retraction).",
+  "version": "0.1.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

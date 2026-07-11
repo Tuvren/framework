@@ -36,6 +36,8 @@
     "docs:af-gap-plan:check": "bun tools/scripts/epic-af-conformance-gap-plan.ts --check",
     "portability:check": "bun tools/scripts/portability-gate.ts",
     "host-boundary:check": "bun tools/scripts/host-boundary-gate.ts",
+    "api-freeze": "bun tools/scripts/api-freeze-gate.ts --update",
+    "api-freeze:check": "bun tools/scripts/api-freeze-gate.ts --check",
     "services:up": "bash tools/scripts/services-up.sh",
     "services:down": "devenv processes down",
     "check": "bun tools/scripts/check.ts",
@@ -44,6 +46,9 @@
     "verify": "bun tools/scripts/verify.ts",
     "release-check": "bun tools/scripts/release-check.ts",
     "release": "bun tools/scripts/release-lane.ts",
+    "publish:preflight": "bun tools/scripts/publish-registry.ts --preflight",
+    "publish:dry-run": "bun tools/scripts/publish-registry.ts --dry-run",
+    "publish:registry": "bun tools/scripts/publish-registry.ts --publish",
     "graph": "bun run nx graph"
   },
   "devDependencies": {

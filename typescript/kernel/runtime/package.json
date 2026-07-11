@@ -1,7 +1,6 @@
 {
   "name": "@tuvren/kernel-runtime",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": {
@@ -19,11 +18,21 @@
     "@tuvren/backend-memory": "workspace:*"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*"
+    "@tuvren/core": "workspace:~"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {
       "optional": false
     }
-  }
+  },
+  "description": "Internal Tuvren kernel runtime engine (ADR-057) — an engine dependency of @tuvren/sdk, not a host-facing API. Not semver-guaranteed.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/kernel/runtime"
+  },
+  "files": [
+    "dist"
+  ]
 }

@@ -4,7 +4,7 @@ Closed epics AW, AX, AY, AZ, BA, BB, BC, BD, BE, BF, BG, BH, BJ, BK. Detail for 
 
 ### Completed Work Ledger (Epics AX–BK)
 
-Completed ticket detail is removed from the active execution plan and retained through git history plus archived support artifacts. This ledger is the live audit summary for the most recently closed epics; older closure records live in git history and `.constitution/archived/`. The Epic BC closeout retains its full ticket bodies in `.constitution/tasks/completed/EPIC-BC-tooling-restructuring-closeout.md`, Epic BD in `.constitution/tasks/completed/EPIC-BD-trust-boundary-security-hardening.md`, Epic BE in `.constitution/tasks/completed/EPIC-BE-tenancy-scope-seam-isolation.md`, Epic BF in `.constitution/tasks/completed/EPIC-BF-data-lifecycle-reclamation-erasure.md`, Epic BG in `.constitution/tasks/completed/EPIC-BG-lease-clock-side-effect-once.md`, Epic BH in `.constitution/tasks/completed/EPIC-BH-conversation-state-ownership.md`, Epic BJ in `.constitution/tasks/completed/EPIC-BJ-publishing-infrastructure.md`, and Epic BK in `.constitution/tasks/completed/EPIC-BK-kernel-substrate-hardening.md`.
+Completed ticket detail is removed from the active execution plan and retained through git history plus archived support artifacts. This ledger is the live audit summary for the most recently closed epics; older closure records live in git history and `.constitution/archived/`. The Epic BC closeout retains its full ticket bodies in `.constitution/tasks/completed/EPIC-BC-tooling-restructuring-closeout.md`, Epic BD in `.constitution/tasks/completed/EPIC-BD-trust-boundary-security-hardening.md`, Epic BE in `.constitution/tasks/completed/EPIC-BE-tenancy-scope-seam-isolation.md`, Epic BF in `.constitution/tasks/completed/EPIC-BF-data-lifecycle-reclamation-erasure.md`, Epic BG in `.constitution/tasks/completed/EPIC-BG-lease-clock-side-effect-once.md`, Epic BH in `.constitution/tasks/completed/EPIC-BH-conversation-state-ownership.md`, Epic BJ in `.constitution/tasks/completed/EPIC-BJ-publishing-infrastructure.md`, Epic BK in `.constitution/tasks/completed/EPIC-BK-kernel-substrate-hardening.md`, and Epic BL in `.constitution/tasks/completed/EPIC-BL-sdk-freeze-registry-publication.md`.
 
 | Epic | Points | Closed Outcome | Evidence Anchor |
 | --- | ---: | --- | --- |
@@ -73,4 +73,8 @@ Completed ticket detail is removed from the active execution plan and retained t
 ### Epic BK — Kernel Substrate Hardening (KRT)
 
 **Status:** **CLOSED (2026-07-08).** See Completed Work Ledger. Full ticket bodies (KRT-BK001–BK011), per-ticket Deviations & Justifications, and the Epic BL/BN hand-off notes retained in `.constitution/tasks/completed/EPIC-BK-kernel-substrate-hardening.md` and git history.
+
+### Epic BL — SDK Freeze and Registry Publication (KRT)
+
+**Status:** **CLOSED (2026-07-11).** First real registry publish executed: 19 packages live at `0.1.0` with npm provenance. Full ticket bodies (KRT-BL001–BL004), per-ticket Deviations & Justifications, and the outgoing hand-offs (npm trusted-publishing migration before January 2027, the TypeScript 7 dual-pin proposal, and doc/tooling residuals) retained in `.constitution/tasks/completed/EPIC-BL-sdk-freeze-registry-publication.md` and git history.
 

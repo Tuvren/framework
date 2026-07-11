@@ -42,3 +42,8 @@ those carry the stable, semver-guaranteed host-facing contract.
 
 The engine surface here is consumed by `@tuvren/sdk` and by the conformance
 adapters that exercise the engine at a lower level than `createTuvren`.
+
+For adopter onboarding — the host import contract, stable vs.
+`@experimental` surfaces, and an install-plus-first-Turn walkthrough — see
+`docs/guides/publishing-and-adopter-onboarding.md` in the
+[Tuvren framework repository](https://github.com/Tuvren/framework).

@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/backend-sqlite",
   "description": "Tuvren SQLite backend leaf: durable single-node session persistence, constructed by the host and passed into createTuvren.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -32,7 +32,7 @@
     "@types/better-sqlite3": "7.6.13"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*"
+    "@tuvren/core": "workspace:~"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {

@@ -224,7 +224,10 @@ describe("@tuvren/kernel-testkit fixtures", () => {
             line.includes("/conformance-adapter/") ||
             line.includes("/test/") ||
             line.includes("/bench/") ||
-            line.includes("package.json:")
+            line.includes("package.json:") ||
+            // Changeset-generated release notes list dependency bumps by
+            // package name; documentation, not a production import path.
+            line.includes("CHANGELOG.md:")
           )
       );
 
