@@ -8,8 +8,13 @@
 #   1. Land the release commit (versions computed by `bun run release`,
 #      release gate green).
 #   2. Configure the `NPM_TOKEN` repository secret (granular automation token
-#      with publish rights for the @tuvren scope). Trusted publishing can
-#      replace the token once the packages exist on the registry.
+#      with publish rights for the @tuvren scope; minimal scope + short
+#      expiry). The token is needed only for the FIRST publish of each
+#      package: npm's January 2027 change ends direct publishing with
+#      2FA-bypass tokens (github.blog changelog 2026-07-08), so once the
+#      packages exist, configure GitHub Actions trusted publishing (OIDC) for
+#      all of them on npmjs.com and delete this secret — the workflow already
+#      carries `id-token: write` and needs no changes for that switch.
 #   3. Trigger this workflow (workflow_dispatch). Leave `dry_run: true` for a
 #      full rehearsal; set it to `false` for the real publish.
 #   4. After a real publish, run the acceptance check locally:
