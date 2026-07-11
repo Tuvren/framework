@@ -51,14 +51,28 @@
 # provisioned through Nix + devenv, not through per-tool GitHub Actions
 # setup steps — this keeps CI's toolchain identical to local dev by
 # construction instead of drifting from a second, hand-maintained
-# declaration. Two third-party pieces are needed to get there:
-#   1. DeterminateSystems/nix-installer-action installs Nix itself.
-#   2. `nix profile install nixpkgs#devenv` installs the devenv CLI once Nix
-#      is present, avoiding a second marketplace Action just for devenv.
-# Both actions are pinned by major version, confirmed current against the
-# GitHub releases API at authoring time (87-M10.2): checkout@v7,
-# nix-installer-action@v22. Provisioning itself validated green on this
+# declaration. The Nix-install + devenv-install steps (and their pins) live
+# in one shared composite action, .github/actions/setup-toolchain/action.yml
+# (KRT-BM001) — both jobs call it, so the pins have exactly one home.
+# checkout@v7 confirmed current against the GitHub releases API at
+# authoring time (87-M10.2). Provisioning itself validated green on this
 # workflow's first live run (28674899850).
+#
+# ── Caching (KRT-BM001) ─────────────────────────────────────────────────—
+# Three cache families, all keyed on exact lockfile/input hashes so a key
+# hit can never mask stale dependency state:
+#   * Nix store — inside the composite action, keyed on devenv.lock +
+#     devenv.nix + devenv.yaml (+ the action file carrying the devenv CLI
+#     nixpkgs pin).
+#   * bun install cache — keyed on bun.lock; `bun install --frozen-lockfile`
+#     re-resolves from the lockfile regardless, the cache only skips
+#     re-downloads.
+#   * cargo registry/git/target — keyed on Cargo.lock + rust-toolchain.toml;
+#     cargo revalidates fingerprints against the lock, stale artifacts are
+#     rebuilt, never trusted.
+# Prefix restore-keys are safe for all three for the same reason: each tool
+# re-resolves from its committed lock, the caches are content stores, not
+# resolution state.
 #
 # ── .bazelignore ─────────────────────────────────────────────────────────—
 # `.bazelignore` (repo root) excludes `.devenv`. Measured while authoring
@@ -116,22 +130,25 @@ jobs:
           # 28675243688 — the check found zero inspectable branches).
           fetch-depth: 0
 
-      - name: Install Nix
-        # Pinned by major version; v22 confirmed current via the GitHub
-        # releases API at authoring time (87-M10.2; full authoring record
-        # in the epic-87 migration ledger's M10.2 addendum, git history).
-        uses: DeterminateSystems/nix-installer-action@v22
+      - name: Setup toolchain (Nix + devenv + Nix store cache)
+        uses: ./.github/actions/setup-toolchain
 
-      - name: Install devenv
-        # Pinned to the exact nixpkgs revision providing devenv 2.1.2 (the
-        # version in local dev at pin time; binary-cached on cache.nixos.org).
-        # A floating `nixpkgs#devenv` would let CI's devenv CLI drift with no
-        # repo change — devenv.lock pins the project's inputs, not the CLI.
-        # The version grep makes the pin self-verifying: bump the hash and
-        # the expected version together or this step fails.
-        run: |
-          nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
-          devenv version | grep -F "devenv 2.1.2"
+      - name: Cache bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Cache cargo registry and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: cargo-${{ runner.os }}-
 
       # No direnv daemon in CI, so we enter the devenv shell directly rather
       # than relying on .envrc's `use devenv` hook (that hook is a local
@@ -170,19 +187,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v22
-
-      - name: Install devenv
-        # Pinned to the exact nixpkgs revision providing devenv 2.1.2 (the
-        # version in local dev at pin time; binary-cached on cache.nixos.org).
-        # A floating `nixpkgs#devenv` would let CI's devenv CLI drift with no
-        # repo change — devenv.lock pins the project's inputs, not the CLI.
-        # The version grep makes the pin self-verifying: bump the hash and
-        # the expected version together or this step fails.
-        run: |
-          nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
-          devenv version | grep -F "devenv 2.1.2"
+      - name: Setup toolchain (Nix + devenv + Nix store cache)
+        uses: ./.github/actions/setup-toolchain
 
       - name: bazel build //... (all targets, incl. TS shim launchers)
         run: devenv shell -- bazel build //...
