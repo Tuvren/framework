@@ -90,6 +90,80 @@ const INTERNAL_PUBLISHED_PACKAGES: readonly string[] = [
 const PLACEHOLDER_VERSION = "0.0.0";
 const INTERNAL_POSTURE_PATTERN = /[Ii]nternal/;
 
+// The consumer program exercises only the published host import contract
+// (ADR-057 item 3): @tuvren/sdk root, @tuvren/core types, and the two chosen
+// leaf packages. It never imports @tuvren/runtime or a kernel package.
+const FIRST_TURN_SOURCE = `import { createMemoryBackend } from "@tuvren/backend-memory";
+import type { TuvrenModelResponse, TuvrenProvider } from "@tuvren/core/provider";
+import { createReActRunner } from "@tuvren/runner-react";
+import { createTuvren } from "@tuvren/sdk";
+
+const response: TuvrenModelResponse = {
+  finishReason: "stop",
+  parts: [{ text: "first-turn-ok", type: "text" }],
+  usage: { inputTokens: 1, outputTokens: 1 },
+};
+
+const provider: TuvrenProvider = {
+  generate: () => Promise.resolve(structuredClone(response)),
+  id: "consumer-smoke-provider",
+  async *stream() {
+    await Promise.resolve();
+    yield* [];
+  },
+};
+
+await using instance = await createTuvren({
+  backend: createMemoryBackend(),
+  provider,
+  runner: createReActRunner({ providerCallMode: "generate" }),
+});
+
+const thread = await instance.runtime.createThread({});
+// The orchestration tier carries createTuvren's default agent config, which
+// is where the construction-time provider is bound (ADR-040/057).
+const handle = instance.orchestration.executeTurn({
+  agent: "agent",
+  branchId: thread.branchId,
+  signal: { parts: [{ text: "hello tuvren", type: "text" }] },
+  threadId: thread.threadId,
+});
+
+// Consuming the event stream is what starts orchestration execution; drain
+// it concurrently with awaiting the result (same pattern as the
+// batteries-included conformance adapter).
+const drained = (async () => {
+  const events = [];
+  for await (const event of handle.allEvents()) {
+    events.push(event);
+  }
+  return events;
+})();
+
+const result = await handle.awaitResult();
+const events = await drained;
+
+if (events.length === 0) {
+  throw new Error("first turn emitted no stream events");
+}
+
+if (result.status !== "completed") {
+  throw new Error(\`first turn did not complete: \${result.status}\`);
+}
+
+const read = await instance.runtime.readBranchMessages({
+  branchId: thread.branchId,
+});
+
+if (read.messages.length === 0) {
+  throw new Error("durable read returned no messages after the first turn");
+}
+
+console.log(
+  \`first turn completed with \${read.messages.length} durable message(s)\`
+);
+`;
+
 await main();
 
 async function main(): Promise<void> {
@@ -578,80 +652,6 @@ async function verifyConsumerInstall(
     await rm(workDir, { force: true, recursive: true });
   }
 }
-
-// The consumer program exercises only the published host import contract
-// (ADR-057 item 3): @tuvren/sdk root, @tuvren/core types, and the two chosen
-// leaf packages. It never imports @tuvren/runtime or a kernel package.
-const FIRST_TURN_SOURCE = `import { createMemoryBackend } from "@tuvren/backend-memory";
-import type { TuvrenModelResponse, TuvrenProvider } from "@tuvren/core/provider";
-import { createReActRunner } from "@tuvren/runner-react";
-import { createTuvren } from "@tuvren/sdk";
-
-const response: TuvrenModelResponse = {
-  finishReason: "stop",
-  parts: [{ text: "first-turn-ok", type: "text" }],
-  usage: { inputTokens: 1, outputTokens: 1 },
-};
-
-const provider: TuvrenProvider = {
-  generate: () => Promise.resolve(structuredClone(response)),
-  id: "consumer-smoke-provider",
-  async *stream() {
-    await Promise.resolve();
-    yield* [];
-  },
-};
-
-await using instance = await createTuvren({
-  backend: createMemoryBackend(),
-  provider,
-  runner: createReActRunner({ providerCallMode: "generate" }),
-});
-
-const thread = await instance.runtime.createThread({});
-// The orchestration tier carries createTuvren's default agent config, which
-// is where the construction-time provider is bound (ADR-040/057).
-const handle = instance.orchestration.executeTurn({
-  agent: "agent",
-  branchId: thread.branchId,
-  signal: { parts: [{ text: "hello tuvren", type: "text" }] },
-  threadId: thread.threadId,
-});
-
-// Consuming the event stream is what starts orchestration execution; drain
-// it concurrently with awaiting the result (same pattern as the
-// batteries-included conformance adapter).
-const drained = (async () => {
-  const events = [];
-  for await (const event of handle.allEvents()) {
-    events.push(event);
-  }
-  return events;
-})();
-
-const result = await handle.awaitResult();
-const events = await drained;
-
-if (events.length === 0) {
-  throw new Error("first turn emitted no stream events");
-}
-
-if (result.status !== "completed") {
-  throw new Error(\`first turn did not complete: \${result.status}\`);
-}
-
-const read = await instance.runtime.readBranchMessages({
-  branchId: thread.branchId,
-});
-
-if (read.messages.length === 0) {
-  throw new Error("durable read returned no messages after the first turn");
-}
-
-console.log(
-  \`first turn completed with \${read.messages.length} durable message(s)\`
-);
-`;
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
 
