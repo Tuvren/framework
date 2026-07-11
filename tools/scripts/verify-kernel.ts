@@ -15,6 +15,7 @@
  */
 
 import process from "node:process";
+import { loadNxProjectFiles } from "./lib/nx-projects.js";
 import {
   hasVerificationFailure,
   printVerificationSummary,
@@ -38,6 +39,42 @@ const KERNEL_CONFORMANCE_PROJECTS = [
   "kernel-typescript-sqlite-certification",
   "kernel-typescript-postgres-certification",
 ] as const;
+
+// Validate both literal lists against the live Nx project graph before any
+// step runs (KRT-BM003). This is the same stale-list bug class that hit the
+// codegen project list at incident 87-M4.2c: `nx run-many` exits 0 for
+// projects that don't exist or no longer declare the requested target, so a
+// renamed kernel project would silently drop out of this gate. Mirrors the
+// CODEGEN_PROJECTS guard in verify.ts.
+{
+  const projectsByName = new Map(
+    loadNxProjectFiles(process.cwd()).map((file) => [file.name, file])
+  );
+
+  const lists: readonly [string, readonly string[]][] = [
+    ["typecheck", KERNEL_TYPECHECK_PROJECTS],
+    ["conformance", KERNEL_CONFORMANCE_PROJECTS],
+  ];
+
+  for (const [target, names] of lists) {
+    const unknown = names.filter((name) => !projectsByName.has(name));
+    if (unknown.length > 0) {
+      throw new Error(
+        `verify-kernel: KERNEL_${target.toUpperCase()}_PROJECTS contains unknown Nx projects (${unknown.join(", ")}) — update tools/scripts/verify-kernel.ts`
+      );
+    }
+
+    const targetless = names.filter(
+      (name) =>
+        projectsByName.get(name)?.project.targets?.[target] === undefined
+    );
+    if (targetless.length > 0) {
+      throw new Error(
+        `verify-kernel: project(s) ${targetless.join(", ")} no longer declare a ${target} target — run-many would silently skip them (87-M4.2c class); update tools/scripts/verify-kernel.ts`
+      );
+    }
+  }
+}
 
 const FRESH_FLAG = "--fresh";
 const args = process.argv.slice(2);
