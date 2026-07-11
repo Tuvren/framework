@@ -44,14 +44,24 @@ jobs:
   publish:
     name: publish curated package set (${{ inputs.dry_run && 'dry run' || 'REAL' }})
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
+      # Same toolchain-parity approach as ci.yml: the publishable set includes
+      # @tuvren/kernel-grpc-client, whose build regenerates the gitignored
+      # kernel-interop bindings (buf + protoc-gen-es, both devenv-provided).
+      # Running inside `devenv shell` publishes with exactly the toolchain the
+      # local `bun run verify` release gate was proven against, instead of
+      # hand-mirroring individual tools onto the runner.
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Install devenv
+        run: |
+          nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
+          devenv version | grep -F "devenv 2.1.2"
 
       - name: Set up npm auth
         uses: actions/setup-node@v4
@@ -59,21 +69,18 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build the publishable package set
-        run: bun tools/scripts/publish-registry.ts --build
-
-      - name: Publication preflight (freeze gate, tilde ranges, topology, tarball completeness)
-        run: bun tools/scripts/publish-registry.ts --preflight
-
-      - name: Publish
+      - name: Build, preflight, publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            bun tools/scripts/publish-registry.ts --dry-run
-          else
-            bun tools/scripts/publish-registry.ts --publish
-          fi
+          devenv shell -- bash -c '
+            set -euo pipefail
+            bun install --frozen-lockfile
+            bun tools/scripts/publish-registry.ts --build
+            bun tools/scripts/publish-registry.ts --preflight
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              bun tools/scripts/publish-registry.ts --dry-run
+            else
+              bun tools/scripts/publish-registry.ts --publish
+            fi
+          '
