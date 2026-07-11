@@ -3,34 +3,9 @@
   "authority": ["ADR-054", "ADR-056", "ADR-057"],
   "entrypoints": {
     "@tuvren/core": {
-      "assertEpochMs": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is EpochMs",
-        "stability": "stable"
-      },
-      "assertHashString": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is HashString",
-        "stability": "stable"
-      },
-      "assertKernelRecord": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is KernelRecord",
-        "stability": "stable"
-      },
-      "assertScope": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is Scope",
-        "stability": "stable"
-      },
-      "assertTuvrenErrorCode": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenErrorCode",
-        "stability": "stable"
-      },
       "DEFAULT_SCOPE": {
         "kind": "value",
-        "signature": "__@iterator@49: () => StringIterator<string>; anchor: (name: string) => string; at: (index: number) => string | undefined; big: () => string; blink: () => string; bold: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; codePointAt: (pos: number) => number | undefined; concat: (...strings: string[]) => string; endsWith: (searchString: string, endPosition?: number) => boolean; fixed: () => string; fontcolor: (color: string) => string; fontsize: { (size: number): string; (size: string): string; }; includes: (searchString: string, position?: number) => boolean; indexOf: (searchString: string, position?: number) => number; italics: () => string; lastIndexOf: (searchString: string, position?: number) => number; length: number; link: (url: string) => string; localeCompare: { (that: string): number; (that: string, locales?: string | string[], options?: Intl.CollatorOptions): number; (that: string, locales?: Intl.LocalesArgument, options?: Intl.CollatorOptions): number; }; match: { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }; matchAll: (regexp: RegExp) => RegExpStringIterator<RegExpExecArray>; normalize: { (form: \"NFC\" | \"NFD\" | \"NFKC\" | \"NFKD\"): string; (form?: string): string; }; padEnd: (maxLength: number, fillString?: string) => string; padStart: (maxLength: number, fillString?: string) => string; repeat: (count: number) => string; replace: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }; replaceAll: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }; search: { (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }; slice: (start?: number, end?: number) => string; small: () => string; split: { (separator: string | RegExp, limit?: number): string[]; (splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[]; }; startsWith: (searchString: string, position?: number) => boolean; strike: () => string; sub: () => string; substr: (from: number, length?: number) => string; substring: (start: number, end?: number) => string; sup: () => string; toLocaleLowerCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLocaleUpperCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLowerCase: () => string; toString: () => string; toUpperCase: () => string; trim: () => string; trimEnd: () => string; trimLeft: () => string; trimRight: () => string; trimStart: () => string; valueOf: () => string",
+        "signature": "string",
         "stability": "stable"
       },
       "EpochMs": {
@@ -41,31 +16,6 @@
       "HashString": {
         "kind": "type",
         "signature": "export type HashString = string;",
-        "stability": "stable"
-      },
-      "isEpochMs": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is EpochMs",
-        "stability": "stable"
-      },
-      "isHashString": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is HashString",
-        "stability": "stable"
-      },
-      "isKernelRecord": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is KernelRecord",
-        "stability": "stable"
-      },
-      "isScope": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is Scope",
-        "stability": "stable"
-      },
-      "isTuvrenErrorCode": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is TuvrenErrorCode",
         "stability": "stable"
       },
       "KernelArray": {
@@ -131,6 +81,56 @@
       "TuvrenValidationError": {
         "kind": "value",
         "signature": "new (message: string, options: TuvrenErrorOptions): TuvrenValidationError; prototype: TuvrenValidationError instance: cause: unknown; code: string; details: unknown; message: string; name: string; stack: string | undefined",
+        "stability": "stable"
+      },
+      "assertEpochMs": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is EpochMs",
+        "stability": "stable"
+      },
+      "assertHashString": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is HashString",
+        "stability": "stable"
+      },
+      "assertKernelRecord": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is KernelRecord",
+        "stability": "stable"
+      },
+      "assertScope": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is Scope",
+        "stability": "stable"
+      },
+      "assertTuvrenErrorCode": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenErrorCode",
+        "stability": "stable"
+      },
+      "isEpochMs": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is EpochMs",
+        "stability": "stable"
+      },
+      "isHashString": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is HashString",
+        "stability": "stable"
+      },
+      "isKernelRecord": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is KernelRecord",
+        "stability": "stable"
+      },
+      "isScope": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is Scope",
+        "stability": "stable"
+      },
+      "isTuvrenErrorCode": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is TuvrenErrorCode",
         "stability": "stable"
       }
     },
@@ -247,44 +247,34 @@
       }
     },
     "@tuvren/core/errors": {
-      "assertTuvrenErrorCode": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenErrorCode",
-        "stability": "stable"
-      },
       "CAPABILITY_BINDING_UNAVAILABLE": {
         "kind": "value",
-        "signature": "__@iterator@49: () => StringIterator<string>; anchor: (name: string) => string; at: (index: number) => string | undefined; big: () => string; blink: () => string; bold: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; codePointAt: (pos: number) => number | undefined; concat: (...strings: string[]) => string; endsWith: (searchString: string, endPosition?: number) => boolean; fixed: () => string; fontcolor: (color: string) => string; fontsize: { (size: number): string; (size: string): string; }; includes: (searchString: string, position?: number) => boolean; indexOf: (searchString: string, position?: number) => number; italics: () => string; lastIndexOf: (searchString: string, position?: number) => number; length: number; link: (url: string) => string; localeCompare: { (that: string): number; (that: string, locales?: string | string[], options?: Intl.CollatorOptions): number; (that: string, locales?: Intl.LocalesArgument, options?: Intl.CollatorOptions): number; }; match: { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }; matchAll: (regexp: RegExp) => RegExpStringIterator<RegExpExecArray>; normalize: { (form: \"NFC\" | \"NFD\" | \"NFKC\" | \"NFKD\"): string; (form?: string): string; }; padEnd: (maxLength: number, fillString?: string) => string; padStart: (maxLength: number, fillString?: string) => string; repeat: (count: number) => string; replace: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }; replaceAll: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }; search: { (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }; slice: (start?: number, end?: number) => string; small: () => string; split: { (separator: string | RegExp, limit?: number): string[]; (splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[]; }; startsWith: (searchString: string, position?: number) => boolean; strike: () => string; sub: () => string; substr: (from: number, length?: number) => string; substring: (start: number, end?: number) => string; sup: () => string; toLocaleLowerCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLocaleUpperCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLowerCase: () => string; toString: () => string; toUpperCase: () => string; trim: () => string; trimEnd: () => string; trimLeft: () => string; trimRight: () => string; trimStart: () => string; valueOf: () => string",
+        "signature": "\"capability_binding_unavailable\"",
         "stability": "stable"
       },
       "CAPABILITY_RESULT_STALE": {
         "kind": "value",
-        "signature": "__@iterator@49: () => StringIterator<string>; anchor: (name: string) => string; at: (index: number) => string | undefined; big: () => string; blink: () => string; bold: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; codePointAt: (pos: number) => number | undefined; concat: (...strings: string[]) => string; endsWith: (searchString: string, endPosition?: number) => boolean; fixed: () => string; fontcolor: (color: string) => string; fontsize: { (size: number): string; (size: string): string; }; includes: (searchString: string, position?: number) => boolean; indexOf: (searchString: string, position?: number) => number; italics: () => string; lastIndexOf: (searchString: string, position?: number) => number; length: number; link: (url: string) => string; localeCompare: { (that: string): number; (that: string, locales?: string | string[], options?: Intl.CollatorOptions): number; (that: string, locales?: Intl.LocalesArgument, options?: Intl.CollatorOptions): number; }; match: { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }; matchAll: (regexp: RegExp) => RegExpStringIterator<RegExpExecArray>; normalize: { (form: \"NFC\" | \"NFD\" | \"NFKC\" | \"NFKD\"): string; (form?: string): string; }; padEnd: (maxLength: number, fillString?: string) => string; padStart: (maxLength: number, fillString?: string) => string; repeat: (count: number) => string; replace: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }; replaceAll: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }; search: { (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }; slice: (start?: number, end?: number) => string; small: () => string; split: { (separator: string | RegExp, limit?: number): string[]; (splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[]; }; startsWith: (searchString: string, position?: number) => boolean; strike: () => string; sub: () => string; substr: (from: number, length?: number) => string; substring: (start: number, end?: number) => string; sup: () => string; toLocaleLowerCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLocaleUpperCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLowerCase: () => string; toString: () => string; toUpperCase: () => string; trim: () => string; trimEnd: () => string; trimLeft: () => string; trimRight: () => string; trimStart: () => string; valueOf: () => string",
+        "signature": "\"capability_result_stale\"",
         "stability": "stable"
       },
       "EXECUTION_BOUND_EXCEEDED": {
         "kind": "value",
-        "signature": "__@iterator@49: () => StringIterator<string>; anchor: (name: string) => string; at: (index: number) => string | undefined; big: () => string; blink: () => string; bold: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; codePointAt: (pos: number) => number | undefined; concat: (...strings: string[]) => string; endsWith: (searchString: string, endPosition?: number) => boolean; fixed: () => string; fontcolor: (color: string) => string; fontsize: { (size: number): string; (size: string): string; }; includes: (searchString: string, position?: number) => boolean; indexOf: (searchString: string, position?: number) => number; italics: () => string; lastIndexOf: (searchString: string, position?: number) => number; length: number; link: (url: string) => string; localeCompare: { (that: string): number; (that: string, locales?: string | string[], options?: Intl.CollatorOptions): number; (that: string, locales?: Intl.LocalesArgument, options?: Intl.CollatorOptions): number; }; match: { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }; matchAll: (regexp: RegExp) => RegExpStringIterator<RegExpExecArray>; normalize: { (form: \"NFC\" | \"NFD\" | \"NFKC\" | \"NFKD\"): string; (form?: string): string; }; padEnd: (maxLength: number, fillString?: string) => string; padStart: (maxLength: number, fillString?: string) => string; repeat: (count: number) => string; replace: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }; replaceAll: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }; search: { (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }; slice: (start?: number, end?: number) => string; small: () => string; split: { (separator: string | RegExp, limit?: number): string[]; (splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[]; }; startsWith: (searchString: string, position?: number) => boolean; strike: () => string; sub: () => string; substr: (from: number, length?: number) => string; substring: (start: number, end?: number) => string; sup: () => string; toLocaleLowerCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLocaleUpperCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLowerCase: () => string; toString: () => string; toUpperCase: () => string; trim: () => string; trimEnd: () => string; trimLeft: () => string; trimRight: () => string; trimStart: () => string; valueOf: () => string",
-        "stability": "stable"
-      },
-      "isTuvrenErrorCode": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is TuvrenErrorCode",
+        "signature": "\"execution_bound_exceeded\"",
         "stability": "stable"
       },
       "TOOL_INPUT_VALIDATION_FAILED": {
         "kind": "value",
-        "signature": "__@iterator@49: () => StringIterator<string>; anchor: (name: string) => string; at: (index: number) => string | undefined; big: () => string; blink: () => string; bold: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; codePointAt: (pos: number) => number | undefined; concat: (...strings: string[]) => string; endsWith: (searchString: string, endPosition?: number) => boolean; fixed: () => string; fontcolor: (color: string) => string; fontsize: { (size: number): string; (size: string): string; }; includes: (searchString: string, position?: number) => boolean; indexOf: (searchString: string, position?: number) => number; italics: () => string; lastIndexOf: (searchString: string, position?: number) => number; length: number; link: (url: string) => string; localeCompare: { (that: string): number; (that: string, locales?: string | string[], options?: Intl.CollatorOptions): number; (that: string, locales?: Intl.LocalesArgument, options?: Intl.CollatorOptions): number; }; match: { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }; matchAll: (regexp: RegExp) => RegExpStringIterator<RegExpExecArray>; normalize: { (form: \"NFC\" | \"NFD\" | \"NFKC\" | \"NFKD\"): string; (form?: string): string; }; padEnd: (maxLength: number, fillString?: string) => string; padStart: (maxLength: number, fillString?: string) => string; repeat: (count: number) => string; replace: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }; replaceAll: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }; search: { (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }; slice: (start?: number, end?: number) => string; small: () => string; split: { (separator: string | RegExp, limit?: number): string[]; (splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[]; }; startsWith: (searchString: string, position?: number) => boolean; strike: () => string; sub: () => string; substr: (from: number, length?: number) => string; substring: (start: number, end?: number) => string; sup: () => string; toLocaleLowerCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLocaleUpperCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLowerCase: () => string; toString: () => string; toUpperCase: () => string; trim: () => string; trimEnd: () => string; trimLeft: () => string; trimRight: () => string; trimStart: () => string; valueOf: () => string",
+        "signature": "\"tool_input_validation_failed\"",
         "stability": "stable"
       },
       "TOOL_INVOCATION_RATE_LIMITED": {
         "kind": "value",
-        "signature": "__@iterator@49: () => StringIterator<string>; anchor: (name: string) => string; at: (index: number) => string | undefined; big: () => string; blink: () => string; bold: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; codePointAt: (pos: number) => number | undefined; concat: (...strings: string[]) => string; endsWith: (searchString: string, endPosition?: number) => boolean; fixed: () => string; fontcolor: (color: string) => string; fontsize: { (size: number): string; (size: string): string; }; includes: (searchString: string, position?: number) => boolean; indexOf: (searchString: string, position?: number) => number; italics: () => string; lastIndexOf: (searchString: string, position?: number) => number; length: number; link: (url: string) => string; localeCompare: { (that: string): number; (that: string, locales?: string | string[], options?: Intl.CollatorOptions): number; (that: string, locales?: Intl.LocalesArgument, options?: Intl.CollatorOptions): number; }; match: { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }; matchAll: (regexp: RegExp) => RegExpStringIterator<RegExpExecArray>; normalize: { (form: \"NFC\" | \"NFD\" | \"NFKC\" | \"NFKD\"): string; (form?: string): string; }; padEnd: (maxLength: number, fillString?: string) => string; padStart: (maxLength: number, fillString?: string) => string; repeat: (count: number) => string; replace: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }; replaceAll: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }; search: { (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }; slice: (start?: number, end?: number) => string; small: () => string; split: { (separator: string | RegExp, limit?: number): string[]; (splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[]; }; startsWith: (searchString: string, position?: number) => boolean; strike: () => string; sub: () => string; substr: (from: number, length?: number) => string; substring: (start: number, end?: number) => string; sup: () => string; toLocaleLowerCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLocaleUpperCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLowerCase: () => string; toString: () => string; toUpperCase: () => string; trim: () => string; trimEnd: () => string; trimLeft: () => string; trimRight: () => string; trimStart: () => string; valueOf: () => string",
+        "signature": "\"tool_invocation_rate_limited\"",
         "stability": "stable"
       },
       "TOOL_RESULT_VALIDATION_FAILED": {
         "kind": "value",
-        "signature": "__@iterator@49: () => StringIterator<string>; anchor: (name: string) => string; at: (index: number) => string | undefined; big: () => string; blink: () => string; bold: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; codePointAt: (pos: number) => number | undefined; concat: (...strings: string[]) => string; endsWith: (searchString: string, endPosition?: number) => boolean; fixed: () => string; fontcolor: (color: string) => string; fontsize: { (size: number): string; (size: string): string; }; includes: (searchString: string, position?: number) => boolean; indexOf: (searchString: string, position?: number) => number; italics: () => string; lastIndexOf: (searchString: string, position?: number) => number; length: number; link: (url: string) => string; localeCompare: { (that: string): number; (that: string, locales?: string | string[], options?: Intl.CollatorOptions): number; (that: string, locales?: Intl.LocalesArgument, options?: Intl.CollatorOptions): number; }; match: { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }; matchAll: (regexp: RegExp) => RegExpStringIterator<RegExpExecArray>; normalize: { (form: \"NFC\" | \"NFD\" | \"NFKC\" | \"NFKD\"): string; (form?: string): string; }; padEnd: (maxLength: number, fillString?: string) => string; padStart: (maxLength: number, fillString?: string) => string; repeat: (count: number) => string; replace: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }; replaceAll: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }; search: { (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }; slice: (start?: number, end?: number) => string; small: () => string; split: { (separator: string | RegExp, limit?: number): string[]; (splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[]; }; startsWith: (searchString: string, position?: number) => boolean; strike: () => string; sub: () => string; substr: (from: number, length?: number) => string; substring: (start: number, end?: number) => string; sup: () => string; toLocaleLowerCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLocaleUpperCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLowerCase: () => string; toString: () => string; toUpperCase: () => string; trim: () => string; trimEnd: () => string; trimLeft: () => string; trimRight: () => string; trimStart: () => string; valueOf: () => string",
+        "signature": "\"tool_result_validation_failed\"",
         "stability": "stable"
       },
       "TuvrenError": {
@@ -331,6 +321,16 @@
         "kind": "value",
         "signature": "new (message: string, options: TuvrenErrorOptions): TuvrenValidationError; prototype: TuvrenValidationError instance: cause: unknown; code: string; details: unknown; message: string; name: string; stack: string | undefined",
         "stability": "stable"
+      },
+      "assertTuvrenErrorCode": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenErrorCode",
+        "stability": "stable"
+      },
+      "isTuvrenErrorCode": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is TuvrenErrorCode",
+        "stability": "stable"
       }
     },
     "@tuvren/core/events": {
@@ -342,11 +342,6 @@
       "ApprovalResolvedEvent": {
         "kind": "type",
         "signature": "export interface ApprovalResolvedEvent { response: ApprovalResponse; source?: EventSource; timestamp: EpochMs; type: \"approval.resolved\"; }",
-        "stability": "stable"
-      },
-      "assertTuvrenStreamEvent": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenStreamEvent",
         "stability": "stable"
       },
       "CustomEvent": {
@@ -367,11 +362,6 @@
       "FileDoneEvent": {
         "kind": "type",
         "signature": "export interface FileDoneEvent { data: string | Uint8Array; filename?: string; mediaType: string; messageId: string; source?: EventSource; timestamp: EpochMs; type: \"file.done\"; }",
-        "stability": "stable"
-      },
-      "isTuvrenStreamEvent": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is TuvrenStreamEvent",
         "stability": "stable"
       },
       "IterationEndEvent": {
@@ -493,6 +483,16 @@
         "kind": "type",
         "signature": "export type TuvrenStreamEvent = TurnStartEvent | TurnEndEvent | IterationStartEvent | IterationEndEvent | MessageStartEvent | TextDeltaEvent | TextDoneEvent | ReasoningDeltaEvent | ReasoningDoneEvent | FileDoneEvent | StructuredDeltaEvent | StructuredDoneEvent | ToolCallStartEvent | ToolCallArgsDeltaEvent | ToolCallDoneEvent | MessageDoneEvent | ToolStartEvent | ToolResultEvent | ToolAuditEvent | ApprovalRequestedEvent | ApprovalResolvedEvent | SteeringIncorporatedEvent | StateSnapshotEvent | StateCheckpointEvent | ErrorEvent | CustomEvent;",
         "stability": "stable"
+      },
+      "assertTuvrenStreamEvent": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenStreamEvent",
+        "stability": "stable"
+      },
+      "isTuvrenStreamEvent": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is TuvrenStreamEvent",
+        "stability": "stable"
       }
     },
     "@tuvren/core/execution": {
@@ -524,21 +524,6 @@
       "AroundModelResult": {
         "kind": "type",
         "signature": "export type AroundModelResult = TuvrenModelResponse | { response: TuvrenModelResponse; state?: Record<string, unknown>; };",
-        "stability": "stable"
-      },
-      "assertContextManifest": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is ContextManifest",
-        "stability": "stable"
-      },
-      "assertExecutionStatus": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is ExecutionStatus",
-        "stability": "stable"
-      },
-      "assertTuvrenMessage": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenMessage",
         "stability": "stable"
       },
       "BranchMessagesCursor": {
@@ -671,16 +656,6 @@
         "signature": "export interface InterceptResult { error?: Error; reason?: string; state?: Record<string, unknown>; verdict?: \"endTurn\" | \"softFail\" | \"hardFail\"; }",
         "stability": "stable"
       },
-      "isExecutionStatus": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is ExecutionStatus",
-        "stability": "stable"
-      },
-      "isTuvrenMessage": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is TuvrenMessage",
-        "stability": "stable"
-      },
       "IterationDecision": {
         "kind": "type",
         "signature": "export interface IterationDecision { continue: boolean; executeTools: boolean; reason?: string; }",
@@ -775,6 +750,31 @@
         "kind": "type",
         "signature": "export interface TuvrenRuntime { createBranch(input: { branchId?: string; threadId: string; fromTurnNodeHash: HashString; }): Promise<{ branchId: string; threadId: string; headTurnNodeHash: HashString; }>; createThread(input: { threadId?: string; schemaId?: string; initialBranchId?: string; }): Promise<{ threadId: string; branchId: string; rootTurnNodeHash: HashString; rootTurnTreeHash: HashString; }>; executeTurn(input: { signal: InputSignal; threadId: string; branchId: string; schemaId?: string; runnerId?: string; config: AgentConfig; tools?: TuvrenToolDefinition[]; parentTurnId?: string | null; }): ExecutionHandle; getThread(threadId: string): Promise<{ threadId: string; schemaId: string; rootTurnNodeHash: HashString; } | null>; getTurnHistory(input: { threadId: string; branchId: string; }, options?: { limit?: number; before?: TurnHistoryCursor; }): AsyncIterableIterator<TurnSnapshot>; getTurnState(input: { threadId: string; branchId: string; turnNodeHash?: HashString; }): Promise<TurnSnapshot>; listBranches(input: { threadId: string; }): Promise<BranchSummary[]>; listThreads(options?: { limit?: number; cursor?: ListThreadsCursor; filter?: { schemaId?: string; }; }): Promise<{ threads: ThreadSummary[]; nextCursor?: ListThreadsCursor; }>; maintenance: RuntimeMaintenance; readBranchMessages(input: { branchId: string; limit?: number; after?: BranchMessagesCursor; }): Promise<{ messages: (ErasedPayload | TuvrenMessage)[]; nextCursor?: BranchMessagesCursor; }>; setBranchHead(input: { branchId: string; turnNodeHash: HashString; }): Promise<{ branchId: string; headTurnNodeHash: HashString; archiveBranchId?: string; }>; }",
         "stability": "stable"
+      },
+      "assertContextManifest": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is ContextManifest",
+        "stability": "stable"
+      },
+      "assertExecutionStatus": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is ExecutionStatus",
+        "stability": "stable"
+      },
+      "assertTuvrenMessage": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenMessage",
+        "stability": "stable"
+      },
+      "isExecutionStatus": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is ExecutionStatus",
+        "stability": "stable"
+      },
+      "isTuvrenMessage": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is TuvrenMessage",
+        "stability": "stable"
       }
     },
     "@tuvren/core/extensions": {
@@ -860,14 +860,9 @@
       }
     },
     "@tuvren/core/lifecycle": {
-      "createIdentityPayloadCodec": {
-        "kind": "value",
-        "signature": "call (): PayloadCodec",
-        "stability": "stable"
-      },
       "ENVELOPE_MAGIC": {
         "kind": "value",
-        "signature": "BYTES_PER_ELEMENT: number; __@iterator@49: () => ArrayIterator<number>; __@toStringTag@715: \"Uint8Array\"; at: (index: number) => number | undefined; buffer: ArrayBuffer; byteLength: number; byteOffset: number; copyWithin: (target: number, start: number, end?: number) => Uint8Array<ArrayBuffer>; entries: () => ArrayIterator<[number, number]>; every: (predicate: (value: number, index: number, array: Uint8Array<ArrayBuffer>) => unknown, thisArg?: any) => boolean; fill: (value: number, start?: number, end?: number) => Uint8Array<ArrayBuffer>; filter: (predicate: (value: number, index: number, array: Uint8Array<ArrayBuffer>) => any, thisArg?: any) => Uint8Array<ArrayBuffer>; find: (predicate: (value: number, index: number, obj: Uint8Array<ArrayBuffer>) => boolean, thisArg?: any) => number | undefined; findIndex: (predicate: (value: number, index: number, obj: Uint8Array<ArrayBuffer>) => boolean, thisArg?: any) => number; forEach: (callbackfn: (value: number, index: number, array: Uint8Array<ArrayBuffer>) => void, thisArg?: any) => void; includes: (searchElement: number, fromIndex?: number) => boolean; indexOf: (searchElement: number, fromIndex?: number) => number; join: (separator?: string) => string; keys: () => ArrayIterator<number>; lastIndexOf: (searchElement: number, fromIndex?: number) => number; length: number; map: (callbackfn: (value: number, index: number, array: Uint8Array<ArrayBuffer>) => number, thisArg?: any) => Uint8Array<ArrayBuffer>; reduce: { (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: Uint8Array<ArrayBuffer>) => number): number; (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: Uint8Array<ArrayBuffer>) => number, initialValue: number): number; <U>(callbackfn: (previousValue: U, currentValue: number, currentIndex: number, array: Uint8Array<ArrayBuffer>) => U, initialValue: U): U; }; reduceRight: { (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: Uint8Array<ArrayBuffer>) => number): number; (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: Uint8Array<ArrayBuffer>) => number, initialValue: number): number; <U>(callbackfn: (previousValue: U, currentValue: number, currentIndex: number, array: Uint8Array<ArrayBuffer>) => U, initialValue: U): U; }; reverse: () => Uint8Array<ArrayBuffer>; set: (array: ArrayLike<number>, offset?: number) => void; slice: (start?: number, end?: number) => Uint8Array<ArrayBuffer>; some: (predicate: (value: number, index: number, array: Uint8Array<ArrayBuffer>) => unknown, thisArg?: any) => boolean; sort: (compareFn?: ((a: number, b: number) => number) | undefined) => Uint8Array<ArrayBuffer>; subarray: (begin?: number, end?: number) => Uint8Array<ArrayBuffer>; toLocaleString: { (): string; (locales: string | string[], options?: Intl.NumberFormatOptions): string; }; toString: () => string; valueOf: () => Uint8Array<ArrayBuffer>; values: () => ArrayIterator<number>",
+        "signature": "Uint8Array<ArrayBuffer>",
         "stability": "stable"
       },
       "ErasedPayload": {
@@ -878,16 +873,6 @@
       "IDENTITY_PAYLOAD_CODEC": {
         "kind": "value",
         "signature": "decrypt: (stored: Uint8Array, context: PayloadCodecContext) => Promise<PayloadDecryptResult>; encrypt: (plaintext: Uint8Array, context: PayloadCodecContext) => Promise<Uint8Array>; id: string",
-        "stability": "stable"
-      },
-      "isErasedPayload": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is ErasedPayload",
-        "stability": "stable"
-      },
-      "isPayloadEnvelope": {
-        "kind": "value",
-        "signature": "call (bytes: Uint8Array): boolean",
         "stability": "stable"
       },
       "PayloadCodec": {
@@ -904,22 +889,27 @@
         "kind": "type",
         "signature": "export type PayloadDecryptResult = { plaintext: Uint8Array; status: \"available\"; } | { keyRef: string; reason: string; status: \"erased\"; };",
         "stability": "stable"
+      },
+      "createIdentityPayloadCodec": {
+        "kind": "value",
+        "signature": "call (): PayloadCodec",
+        "stability": "stable"
+      },
+      "isErasedPayload": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is ErasedPayload",
+        "stability": "stable"
+      },
+      "isPayloadEnvelope": {
+        "kind": "value",
+        "signature": "call (bytes: Uint8Array): boolean",
+        "stability": "stable"
       }
     },
     "@tuvren/core/messages": {
       "ApprovalDecisionType": {
         "kind": "type",
         "signature": "export type ApprovalDecisionType = \"approve\" | \"edit\" | \"reject\" | (string & {});",
-        "stability": "stable"
-      },
-      "assertTuvrenMessage": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenMessage",
-        "stability": "stable"
-      },
-      "assertTuvrenModelResponse": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenModelResponse",
         "stability": "stable"
       },
       "ContentPart": {
@@ -930,16 +920,6 @@
       "FilePart": {
         "kind": "type",
         "signature": "export interface FilePart { data: string | Uint8Array; filename?: string; mediaType: string; providerMetadata?: Record<string, unknown>; type: \"file\"; }",
-        "stability": "stable"
-      },
-      "isTuvrenMessage": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is TuvrenMessage",
-        "stability": "stable"
-      },
-      "isTuvrenModelResponse": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is TuvrenModelResponse",
         "stability": "stable"
       },
       "ReasoningPart": {
@@ -996,12 +976,10 @@
         "kind": "type",
         "signature": "export interface TuvrenPrompt { config?: TuvrenModelConfig; messages: TuvrenMessage[]; providerContinuity?: Record<string, unknown>; providerMediatedTools?: ProviderMediatedToolConfig[]; providerNativeTools?: ProviderNativeToolDeclaration[]; responseFormat?: StructuredOutputRequest; signal?: AbortSignal; tools?: RenderedToolDefinition[]; }",
         "stability": "stable"
-      }
-    },
-    "@tuvren/core/provider": {
-      "assertProviderStreamChunk": {
+      },
+      "assertTuvrenMessage": {
         "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is ProviderStreamChunk",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenMessage",
         "stability": "stable"
       },
       "assertTuvrenModelResponse": {
@@ -1009,16 +987,18 @@
         "signature": "call (value: unknown, label?: string): asserts value is TuvrenModelResponse",
         "stability": "stable"
       },
-      "isProviderStreamChunk": {
+      "isTuvrenMessage": {
         "kind": "value",
-        "signature": "call (value: unknown): value is ProviderStreamChunk",
+        "signature": "call (value: unknown): value is TuvrenMessage",
         "stability": "stable"
       },
       "isTuvrenModelResponse": {
         "kind": "value",
         "signature": "call (value: unknown): value is TuvrenModelResponse",
         "stability": "stable"
-      },
+      }
+    },
+    "@tuvren/core/provider": {
       "ProviderMediatedToolConfig": {
         "kind": "type",
         "signature": "export interface ProviderMediatedToolConfig { capabilityId?: string; endpoint: string; mediationType: \"mcp\"; name: string; providerOptions?: Record<string, unknown>; }",
@@ -1063,39 +1043,29 @@
         "kind": "type",
         "signature": "export interface TuvrenProvider { generate(prompt: TuvrenPrompt): Promise<TuvrenModelResponse>; readonly id: string; stream(prompt: TuvrenPrompt): AsyncIterable<ProviderStreamChunk>; }",
         "stability": "stable"
+      },
+      "assertProviderStreamChunk": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is ProviderStreamChunk",
+        "stability": "stable"
+      },
+      "assertTuvrenModelResponse": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenModelResponse",
+        "stability": "stable"
+      },
+      "isProviderStreamChunk": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is ProviderStreamChunk",
+        "stability": "stable"
+      },
+      "isTuvrenModelResponse": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is TuvrenModelResponse",
+        "stability": "stable"
       }
     },
     "@tuvren/core/runner": {
-      "assertRunnerExecutionResult": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is RunnerExecutionResult",
-        "stability": "stable"
-      },
-      "assertRunnerHandoffContextPlan": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is HandoffContextPlan",
-        "stability": "stable"
-      },
-      "assertRunnerHandoffSourceContext": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is HandoffSourceContext",
-        "stability": "stable"
-      },
-      "assertRunnerRuntimeResolution": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is RuntimeResolution",
-        "stability": "stable"
-      },
-      "assertRuntimeRunner": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is RuntimeRunner",
-        "stability": "stable"
-      },
-      "isRuntimeRunner": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is RuntimeRunner",
-        "stability": "stable"
-      },
       "RunnerAssistantEventReconciliation": {
         "kind": "type",
         "signature": "export type RunnerAssistantEventReconciliation = \"allow_final_sequence_divergence\";",
@@ -1150,42 +1120,87 @@
         "kind": "type",
         "signature": "export interface RuntimeRunnerFactory { create(): RuntimeRunner; readonly id: string; }",
         "stability": "stable"
+      },
+      "assertRunnerExecutionResult": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is RunnerExecutionResult",
+        "stability": "stable"
+      },
+      "assertRunnerHandoffContextPlan": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is HandoffContextPlan",
+        "stability": "stable"
+      },
+      "assertRunnerHandoffSourceContext": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is HandoffSourceContext",
+        "stability": "stable"
+      },
+      "assertRunnerRuntimeResolution": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is RuntimeResolution",
+        "stability": "stable"
+      },
+      "assertRuntimeRunner": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is RuntimeRunner",
+        "stability": "stable"
+      },
+      "isRuntimeRunner": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is RuntimeRunner",
+        "stability": "stable"
       }
     },
     "@tuvren/core/security": {
       "AUTH_HEADER_PATTERN": {
         "kind": "value",
-        "signature": "__@match@119: (string: string) => RegExpMatchArray | null; __@matchAll@1014: (str: string) => RegExpStringIterator<RegExpExecArray>; __@replace@130: { (string: string, replaceValue: string): string; (string: string, replacer: (substring: string, ...args: any[]) => string): string; }; __@search@142: (string: string) => number; __@split@152: (string: string, limit?: number) => string[]; compile: (pattern: string, flags?: string) => RegExp; dotAll: boolean; exec: (string: string) => RegExpExecArray | null; flags: string; global: boolean; hasIndices: boolean; ignoreCase: boolean; lastIndex: number; multiline: boolean; source: string; sticky: boolean; test: (string: string) => boolean; unicode: boolean",
+        "signature": "RegExp",
         "stability": "stable"
       },
       "CONNECTION_STRING_PATTERN": {
         "kind": "value",
-        "signature": "__@match@119: (string: string) => RegExpMatchArray | null; __@matchAll@1014: (str: string) => RegExpStringIterator<RegExpExecArray>; __@replace@130: { (string: string, replaceValue: string): string; (string: string, replacer: (substring: string, ...args: any[]) => string): string; }; __@search@142: (string: string) => number; __@split@152: (string: string, limit?: number) => string[]; compile: (pattern: string, flags?: string) => RegExp; dotAll: boolean; exec: (string: string) => RegExpExecArray | null; flags: string; global: boolean; hasIndices: boolean; ignoreCase: boolean; lastIndex: number; multiline: boolean; source: string; sticky: boolean; test: (string: string) => boolean; unicode: boolean",
+        "signature": "RegExp",
         "stability": "stable"
       },
       "CREDENTIAL_ASSIGNMENT_PATTERN": {
         "kind": "value",
-        "signature": "__@match@119: (string: string) => RegExpMatchArray | null; __@matchAll@1014: (str: string) => RegExpStringIterator<RegExpExecArray>; __@replace@130: { (string: string, replaceValue: string): string; (string: string, replacer: (substring: string, ...args: any[]) => string): string; }; __@search@142: (string: string) => number; __@split@152: (string: string, limit?: number) => string[]; compile: (pattern: string, flags?: string) => RegExp; dotAll: boolean; exec: (string: string) => RegExpExecArray | null; flags: string; global: boolean; hasIndices: boolean; ignoreCase: boolean; lastIndex: number; multiline: boolean; source: string; sticky: boolean; test: (string: string) => boolean; unicode: boolean",
+        "signature": "RegExp",
+        "stability": "stable"
+      },
+      "JWT_PATTERN": {
+        "kind": "value",
+        "signature": "RegExp",
+        "stability": "stable"
+      },
+      "LONG_SECRETISH_PATTERN": {
+        "kind": "value",
+        "signature": "RegExp",
+        "stability": "stable"
+      },
+      "REDACTED": {
+        "kind": "value",
+        "signature": "\"[redacted]\"",
+        "stability": "stable"
+      },
+      "SECRET_KEY_PATTERN": {
+        "kind": "value",
+        "signature": "RegExp",
+        "stability": "stable"
+      },
+      "SECRET_VALUE_PATTERNS": {
+        "kind": "value",
+        "signature": "readonly (readonly [name: string, pattern: RegExp])[]",
+        "stability": "stable"
+      },
+      "URL_CREDENTIAL_PATTERN": {
+        "kind": "value",
+        "signature": "RegExp",
         "stability": "stable"
       },
       "isSecretLikeKey": {
         "kind": "value",
         "signature": "call (key: string): boolean",
-        "stability": "stable"
-      },
-      "JWT_PATTERN": {
-        "kind": "value",
-        "signature": "__@match@119: (string: string) => RegExpMatchArray | null; __@matchAll@1014: (str: string) => RegExpStringIterator<RegExpExecArray>; __@replace@130: { (string: string, replaceValue: string): string; (string: string, replacer: (substring: string, ...args: any[]) => string): string; }; __@search@142: (string: string) => number; __@split@152: (string: string, limit?: number) => string[]; compile: (pattern: string, flags?: string) => RegExp; dotAll: boolean; exec: (string: string) => RegExpExecArray | null; flags: string; global: boolean; hasIndices: boolean; ignoreCase: boolean; lastIndex: number; multiline: boolean; source: string; sticky: boolean; test: (string: string) => boolean; unicode: boolean",
-        "stability": "stable"
-      },
-      "LONG_SECRETISH_PATTERN": {
-        "kind": "value",
-        "signature": "__@match@119: (string: string) => RegExpMatchArray | null; __@matchAll@1014: (str: string) => RegExpStringIterator<RegExpExecArray>; __@replace@130: { (string: string, replaceValue: string): string; (string: string, replacer: (substring: string, ...args: any[]) => string): string; }; __@search@142: (string: string) => number; __@split@152: (string: string, limit?: number) => string[]; compile: (pattern: string, flags?: string) => RegExp; dotAll: boolean; exec: (string: string) => RegExpExecArray | null; flags: string; global: boolean; hasIndices: boolean; ignoreCase: boolean; lastIndex: number; multiline: boolean; source: string; sticky: boolean; test: (string: string) => boolean; unicode: boolean",
-        "stability": "stable"
-      },
-      "REDACTED": {
-        "kind": "value",
-        "signature": "__@iterator@49: () => StringIterator<string>; anchor: (name: string) => string; at: (index: number) => string | undefined; big: () => string; blink: () => string; bold: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; codePointAt: (pos: number) => number | undefined; concat: (...strings: string[]) => string; endsWith: (searchString: string, endPosition?: number) => boolean; fixed: () => string; fontcolor: (color: string) => string; fontsize: { (size: number): string; (size: string): string; }; includes: (searchString: string, position?: number) => boolean; indexOf: (searchString: string, position?: number) => number; italics: () => string; lastIndexOf: (searchString: string, position?: number) => number; length: number; link: (url: string) => string; localeCompare: { (that: string): number; (that: string, locales?: string | string[], options?: Intl.CollatorOptions): number; (that: string, locales?: Intl.LocalesArgument, options?: Intl.CollatorOptions): number; }; match: { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }; matchAll: (regexp: RegExp) => RegExpStringIterator<RegExpExecArray>; normalize: { (form: \"NFC\" | \"NFD\" | \"NFKC\" | \"NFKD\"): string; (form?: string): string; }; padEnd: (maxLength: number, fillString?: string) => string; padStart: (maxLength: number, fillString?: string) => string; repeat: (count: number) => string; replace: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }; replaceAll: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }; search: { (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }; slice: (start?: number, end?: number) => string; small: () => string; split: { (separator: string | RegExp, limit?: number): string[]; (splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[]; }; startsWith: (searchString: string, position?: number) => boolean; strike: () => string; sub: () => string; substr: (from: number, length?: number) => string; substring: (start: number, end?: number) => string; sup: () => string; toLocaleLowerCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLocaleUpperCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLowerCase: () => string; toString: () => string; toUpperCase: () => string; trim: () => string; trimEnd: () => string; trimLeft: () => string; trimRight: () => string; trimStart: () => string; valueOf: () => string",
         "stability": "stable"
       },
       "sanitizeSecretLikeText": {
@@ -1196,21 +1211,6 @@
       "screenValueForSecretPatterns": {
         "kind": "value",
         "signature": "call (value: unknown): unknown",
-        "stability": "stable"
-      },
-      "SECRET_KEY_PATTERN": {
-        "kind": "value",
-        "signature": "__@match@119: (string: string) => RegExpMatchArray | null; __@matchAll@1014: (str: string) => RegExpStringIterator<RegExpExecArray>; __@replace@130: { (string: string, replaceValue: string): string; (string: string, replacer: (substring: string, ...args: any[]) => string): string; }; __@search@142: (string: string) => number; __@split@152: (string: string, limit?: number) => string[]; compile: (pattern: string, flags?: string) => RegExp; dotAll: boolean; exec: (string: string) => RegExpExecArray | null; flags: string; global: boolean; hasIndices: boolean; ignoreCase: boolean; lastIndex: number; multiline: boolean; source: string; sticky: boolean; test: (string: string) => boolean; unicode: boolean",
-        "stability": "stable"
-      },
-      "SECRET_VALUE_PATTERNS": {
-        "kind": "value",
-        "signature": "__@iterator@49: () => ArrayIterator<readonly [name: string, pattern: RegExp]>; __@unscopables@69: { readonly [x: number]: boolean | undefined; readonly length?: boolean | undefined; toString?: boolean | undefined; toLocaleString?: boolean | undefined; concat?: boolean | undefined; join?: boolean | undefined; slice?: boolean | undefined; indexOf?: boolean | undefined; lastIndexOf?: boolean | undefined; every?: boolean | undefined; some?: boolean | undefined; forEach?: boolean | undefined; map?: boolean | undefined; filter?: boolean | undefined; reduce?: boolean | undefined; reduceRight?: boolean | undefined; find?: boolean | undefined; findIndex?: boolean | undefined; entries?: boolean | undefined; keys?: boolean | undefined; values?: boolean | undefined; includes?: boolean | undefined; flatMap?: boolean | undefined; flat?: boolean | undefined; at?: boolean | undefined; [Symbol.iterator]?: boolean | undefined; readonly [Symbol.unscopables]?: boolean | undefined; }; at: (index: number) => readonly [name: string, pattern: RegExp] | undefined; concat: { (...items: ConcatArray<readonly [name: string, pattern: RegExp]>[]): (readonly [name: string, pattern: RegExp])[]; (...items: (readonly [name: string, pattern: RegExp] | ConcatArray<readonly [name: string, pattern: RegExp]>)[]): (readonly [name: string, pattern: RegExp])[]; }; entries: () => ArrayIterator<[number, readonly [name: string, pattern: RegExp]]>; every: { <S extends readonly [name: string, pattern: RegExp]>(predicate: (value: readonly [name: string, pattern: RegExp], index: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => value is S, thisArg?: any): this is readonly S[]; (predicate: (value: readonly [name: string, pattern: RegExp], index: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => unknown, thisArg?: any): boolean; }; filter: { <S extends readonly [name: string, pattern: RegExp]>(predicate: (value: readonly [name: string, pattern: RegExp], index: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => value is S, thisArg?: any): S[]; (predicate: (value: readonly [name: string, pattern: RegExp], index: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => unknown, thisArg?: any): (readonly [name: string, pattern: RegExp])[]; }; find: { <S extends readonly [name: string, pattern: RegExp]>(predicate: (value: readonly [name: string, pattern: RegExp], index: number, obj: readonly (readonly [name: string, pattern: RegExp])[]) => value is S, thisArg?: any): S | undefined; (predicate: (value: readonly [name: string, pattern: RegExp], index: number, obj: readonly (readonly [name: string, pattern: RegExp])[]) => unknown, thisArg?: any): readonly [name: string, pattern: RegExp] | undefined; }; findIndex: (predicate: (value: readonly [name: string, pattern: RegExp], index: number, obj: readonly (readonly [name: string, pattern: RegExp])[]) => unknown, thisArg?: any) => number; flat: <A, D extends number = 1>(this: A, depth?: D | undefined) => FlatArray<A, D>[]; flatMap: <U, This = undefined>(callback: (this: This, value: readonly [name: string, pattern: RegExp], index: number, array: (readonly [name: string, pattern: RegExp])[]) => U | readonly U[], thisArg?: This | undefined) => U[]; forEach: (callbackfn: (value: readonly [name: string, pattern: RegExp], index: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => void, thisArg?: any) => void; includes: (searchElement: readonly [name: string, pattern: RegExp], fromIndex?: number) => boolean; indexOf: (searchElement: readonly [name: string, pattern: RegExp], fromIndex?: number) => number; join: (separator?: string) => string; keys: () => ArrayIterator<number>; lastIndexOf: (searchElement: readonly [name: string, pattern: RegExp], fromIndex?: number) => number; length: number; map: <U>(callbackfn: (value: readonly [name: string, pattern: RegExp], index: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => U, thisArg?: any) => U[]; reduce: { (callbackfn: (previousValue: readonly [name: string, pattern: RegExp], currentValue: readonly [name: string, pattern: RegExp], currentIndex: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => readonly [name: string, pattern: RegExp]): readonly [name: string, pattern: RegExp]; (callbackfn: (previousValue: readonly [name: string, pattern: RegExp], currentValue: readonly [name: string, pattern: RegExp], currentIndex: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => readonly [name: string, pattern: RegExp], initialValue: readonly [name: string, pattern: RegExp]): readonly [name: string, pattern: RegExp]; <U>(callbackfn: (previousValue: U, currentValue: readonly [name: string, pattern: RegExp], currentIndex: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => U, initialValue: U): U; }; reduceRight: { (callbackfn: (previousValue: readonly [name: string, pattern: RegExp], currentValue: readonly [name: string, pattern: RegExp], currentIndex: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => readonly [name: string, pattern: RegExp]): readonly [name: string, pattern: RegExp]; (callbackfn: (previousValue: readonly [name: string, pattern: RegExp], currentValue: readonly [name: string, pattern: RegExp], currentIndex: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => readonly [name: string, pattern: RegExp], initialValue: readonly [name: string, pattern: RegExp]): readonly [name: string, pattern: RegExp]; <U>(callbackfn: (previousValue: U, currentValue: readonly [name: string, pattern: RegExp], currentIndex: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => U, initialValue: U): U; }; slice: (start?: number, end?: number) => (readonly [name: string, pattern: RegExp])[]; some: (predicate: (value: readonly [name: string, pattern: RegExp], index: number, array: readonly (readonly [name: string, pattern: RegExp])[]) => unknown, thisArg?: any) => boolean; toLocaleString: { (): string; (locales: string | string[], options?: Intl.NumberFormatOptions & Intl.DateTimeFormatOptions): string; }; toString: () => string; values: () => ArrayIterator<readonly [name: string, pattern: RegExp]>",
-        "stability": "stable"
-      },
-      "URL_CREDENTIAL_PATTERN": {
-        "kind": "value",
-        "signature": "__@match@119: (string: string) => RegExpMatchArray | null; __@matchAll@1014: (str: string) => RegExpStringIterator<RegExpExecArray>; __@replace@130: { (string: string, replaceValue: string): string; (string: string, replacer: (substring: string, ...args: any[]) => string): string; }; __@search@142: (string: string) => number; __@split@152: (string: string, limit?: number) => string[]; compile: (pattern: string, flags?: string) => RegExp; dotAll: boolean; exec: (string: string) => RegExpExecArray | null; flags: string; global: boolean; hasIndices: boolean; ignoreCase: boolean; lastIndex: number; multiline: boolean; source: string; sticky: boolean; test: (string: string) => boolean; unicode: boolean",
         "stability": "stable"
       }
     },
@@ -1332,26 +1332,6 @@
         "signature": "export type AroundToolSpec = AroundToolHandler | { tools: string[]; handler: AroundToolHandler; };",
         "stability": "stable"
       },
-      "assertApprovalRequest": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is ApprovalRequest",
-        "stability": "stable"
-      },
-      "assertApprovalResponse": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is ApprovalResponse",
-        "stability": "stable"
-      },
-      "assertApprovalResponseForRequest": {
-        "kind": "value",
-        "signature": "call (value: unknown, request: ApprovalRequest, label?: string): asserts value is ApprovalResponse",
-        "stability": "stable"
-      },
-      "assertTuvrenToolDefinition": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenToolDefinition",
-        "stability": "stable"
-      },
       "CustomSchema": {
         "kind": "type",
         "signature": "export interface CustomSchema { toJSONSchema(): TuvrenJsonSchema; validate(input: unknown): ValidationResult; }",
@@ -1360,26 +1340,6 @@
       "ExecuteFunction": {
         "kind": "type",
         "signature": "export type ExecuteFunction = (input: unknown, context: ToolExecutionContext) => Promise<unknown> | unknown;",
-        "stability": "stable"
-      },
-      "isApprovalRequest": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is ApprovalRequest",
-        "stability": "stable"
-      },
-      "isApprovalResponse": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is ApprovalResponse",
-        "stability": "stable"
-      },
-      "isApprovalResponseForRequest": {
-        "kind": "value",
-        "signature": "call (value: unknown, request: ApprovalRequest): value is ApprovalResponse",
-        "stability": "stable"
-      },
-      "isTuvrenToolDefinition": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is TuvrenToolDefinition",
         "stability": "stable"
       },
       "PendingToolCall": {
@@ -1446,6 +1406,46 @@
         "kind": "type",
         "signature": "export type ValidationResult = { valid: true; value: unknown; } | { valid: false; error: ValidationErrorPayload; };",
         "stability": "stable"
+      },
+      "assertApprovalRequest": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is ApprovalRequest",
+        "stability": "stable"
+      },
+      "assertApprovalResponse": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is ApprovalResponse",
+        "stability": "stable"
+      },
+      "assertApprovalResponseForRequest": {
+        "kind": "value",
+        "signature": "call (value: unknown, request: ApprovalRequest, label?: string): asserts value is ApprovalResponse",
+        "stability": "stable"
+      },
+      "assertTuvrenToolDefinition": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenToolDefinition",
+        "stability": "stable"
+      },
+      "isApprovalRequest": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is ApprovalRequest",
+        "stability": "stable"
+      },
+      "isApprovalResponse": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is ApprovalResponse",
+        "stability": "stable"
+      },
+      "isApprovalResponseForRequest": {
+        "kind": "value",
+        "signature": "call (value: unknown, request: ApprovalRequest): value is ApprovalResponse",
+        "stability": "stable"
+      },
+      "isTuvrenToolDefinition": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is TuvrenToolDefinition",
+        "stability": "stable"
       }
     },
     "@tuvren/sdk": {
@@ -1469,56 +1469,6 @@
         "signature": "export interface ApprovalResponse { decisions: ApprovalDecision[]; }",
         "stability": "stable"
       },
-      "asSchema": {
-        "kind": "value",
-        "signature": "call <T>(schema: FlexibleSchema<T>): Schema<T>",
-        "stability": "stable"
-      },
-      "assertApprovalRequest": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is ApprovalRequest",
-        "stability": "stable"
-      },
-      "assertApprovalResponse": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is ApprovalResponse",
-        "stability": "stable"
-      },
-      "assertExecutionStatus": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is ExecutionStatus",
-        "stability": "stable"
-      },
-      "assertHashString": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is HashString",
-        "stability": "stable"
-      },
-      "assertScope": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is Scope",
-        "stability": "stable"
-      },
-      "assertTuvrenMessage": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenMessage",
-        "stability": "stable"
-      },
-      "assertTuvrenModelResponse": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenModelResponse",
-        "stability": "stable"
-      },
-      "assertTuvrenStreamEvent": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenStreamEvent",
-        "stability": "stable"
-      },
-      "assertTuvrenToolDefinition": {
-        "kind": "value",
-        "signature": "call (value: unknown, label?: string): asserts value is TuvrenToolDefinition",
-        "stability": "stable"
-      },
       "ContentPart": {
         "kind": "type",
         "signature": "export type ContentPart = TextPart | ReasoningPart | ToolCallPart | ToolResultPart | FilePart | StructuredPart;",
@@ -1527,21 +1477,6 @@
       "ContextManifest": {
         "kind": "type",
         "signature": "export interface ContextManifest { byRole: ContextManifestCounters; extensions: Record<string, unknown>; lastAssistantMessageIndex: number; lastUserMessageIndex: number; messageCount: number; tokenEstimate: number; toolCalls: ContextManifestNameCounters; toolResults: ContextManifestNameCounters; turnBoundaries: number[]; }",
-        "stability": "stable"
-      },
-      "createAesGcmPayloadCodec": {
-        "kind": "value",
-        "signature": "call (options: AesGcmPayloadCodecOptions): PayloadCodec",
-        "stability": "stable"
-      },
-      "createIdentityPayloadCodec": {
-        "kind": "value",
-        "signature": "call (): PayloadCodec",
-        "stability": "stable"
-      },
-      "createTuvren": {
-        "kind": "value",
-        "signature": "call (options: CreateTuvrenOptions): Promise<TuvrenInstance>",
         "stability": "stable"
       },
       "CreateTuvrenOptions": {
@@ -1554,24 +1489,9 @@
         "signature": "export interface CustomEvent { data: unknown; name: string; source?: EventSource; timestamp: EpochMs; type: \"custom\"; }",
         "stability": "stable"
       },
-      "decodeDeterministicKernelRecord": {
-        "kind": "value",
-        "signature": "call (bytes: Uint8Array): KernelRecord",
-        "stability": "stable"
-      },
       "DEFAULT_SCOPE": {
         "kind": "value",
-        "signature": "__@iterator@49: () => StringIterator<string>; anchor: (name: string) => string; at: (index: number) => string | undefined; big: () => string; blink: () => string; bold: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; codePointAt: (pos: number) => number | undefined; concat: (...strings: string[]) => string; endsWith: (searchString: string, endPosition?: number) => boolean; fixed: () => string; fontcolor: (color: string) => string; fontsize: { (size: number): string; (size: string): string; }; includes: (searchString: string, position?: number) => boolean; indexOf: (searchString: string, position?: number) => number; italics: () => string; lastIndexOf: (searchString: string, position?: number) => number; length: number; link: (url: string) => string; localeCompare: { (that: string): number; (that: string, locales?: string | string[], options?: Intl.CollatorOptions): number; (that: string, locales?: Intl.LocalesArgument, options?: Intl.CollatorOptions): number; }; match: { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }; matchAll: (regexp: RegExp) => RegExpStringIterator<RegExpExecArray>; normalize: { (form: \"NFC\" | \"NFD\" | \"NFKC\" | \"NFKD\"): string; (form?: string): string; }; padEnd: (maxLength: number, fillString?: string) => string; padStart: (maxLength: number, fillString?: string) => string; repeat: (count: number) => string; replace: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }; replaceAll: { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; }; search: { (regexp: string | RegExp): number; (searcher: { [Symbol.search](string: string): number; }): number; }; slice: (start?: number, end?: number) => string; small: () => string; split: { (separator: string | RegExp, limit?: number): string[]; (splitter: { [Symbol.split](string: string, limit?: number): string[]; }, limit?: number): string[]; }; startsWith: (searchString: string, position?: number) => boolean; strike: () => string; sub: () => string; substr: (from: number, length?: number) => string; substring: (start: number, end?: number) => string; sup: () => string; toLocaleLowerCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLocaleUpperCase: { (locales?: string | string[]): string; (locales?: Intl.LocalesArgument): string; }; toLowerCase: () => string; toString: () => string; toUpperCase: () => string; trim: () => string; trimEnd: () => string; trimLeft: () => string; trimRight: () => string; trimStart: () => string; valueOf: () => string",
-        "stability": "stable"
-      },
-      "defineTool": {
-        "kind": "value",
-        "signature": "call <INPUT, OUTPUT>(options: { name: string; description: string; inputSchema: FlexibleSchema<INPUT>; execute: (input: INPUT, context: ToolExecutionContext) => Promise<OUTPUT> | OUTPUT; approval?: ApprovalPolicy; idempotent?: boolean; maxRetries?: number; metadata?: Record<string, unknown>; outputSchema?: TuvrenJsonSchema | CustomSchema; timeout?: number; }): TuvrenToolDefinition",
-        "stability": "stable"
-      },
-      "encodeDeterministicKernelRecord": {
-        "kind": "value",
-        "signature": "call (value: KernelRecord): Uint8Array",
+        "signature": "string",
         "stability": "stable"
       },
       "EpochMs": {
@@ -1614,11 +1534,6 @@
         "signature": "export type FlexibleSchema<T = unknown> = Schema<T> | ZodSchema<T> | StandardSchema<T> | LazySchema<T> | TuvrenJsonSchema;",
         "stability": "stable"
       },
-      "hashKernelRecord": {
-        "kind": "value",
-        "signature": "call (value: KernelRecord): Promise<HashString>",
-        "stability": "stable"
-      },
       "HashString": {
         "kind": "type",
         "signature": "export type HashString = string;",
@@ -1634,21 +1549,6 @@
         "signature": "export interface InputSignal { parts: NonEmptyArray<ContentPart>; }",
         "stability": "stable"
       },
-      "isErasedPayload": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is ErasedPayload",
-        "stability": "stable"
-      },
-      "isPayloadEnvelope": {
-        "kind": "value",
-        "signature": "call (bytes: Uint8Array): boolean",
-        "stability": "stable"
-      },
-      "isScope": {
-        "kind": "value",
-        "signature": "call (value: unknown): value is Scope",
-        "stability": "stable"
-      },
       "IterationEndEvent": {
         "kind": "type",
         "signature": "export interface IterationEndEvent { iterationCount: number; source?: EventSource; timestamp: EpochMs; type: \"iteration.end\"; }",
@@ -1657,11 +1557,6 @@
       "IterationStartEvent": {
         "kind": "type",
         "signature": "export interface IterationStartEvent { iterationCount: number; source?: EventSource; timestamp: EpochMs; type: \"iteration.start\"; }",
-        "stability": "stable"
-      },
-      "jsonSchema": {
-        "kind": "value",
-        "signature": "call <T = unknown>(schema: TuvrenJsonSchema, options?: { validate?: Schema<T>[\"validate\"]; }): Schema<T>",
         "stability": "stable"
       },
       "KernelRecord": {
@@ -1784,19 +1679,9 @@
         "signature": "export interface Schema<T = unknown> { readonly _type: T; readonly jsonSchema: TuvrenJsonSchema; readonly validate?: (value: unknown) => { success: true; value: T; } | { success: false; error: TuvrenValidationError; }; readonly [schemaSymbol]: true; }",
         "stability": "stable"
       },
-      "schemaSymbol": {
-        "kind": "value",
-        "signature": "__@toPrimitive@2905: (hint: string) => symbol; __@toStringTag@715: string; description: string | undefined; toString: () => string; valueOf: () => symbol",
-        "stability": "stable"
-      },
       "Scope": {
         "kind": "type",
         "signature": "export type Scope = string;",
-        "stability": "stable"
-      },
-      "standardSchema": {
-        "kind": "value",
-        "signature": "call <T>(schema: StandardSchema<T>): Schema<T>",
         "stability": "stable"
       },
       "StandardSchema": {
@@ -2019,14 +1904,129 @@
         "signature": "new (message: string, options: TuvrenErrorOptions): TuvrenValidationError; prototype: TuvrenValidationError instance: cause: unknown; code: string; details: unknown; message: string; name: string; stack: string | undefined",
         "stability": "stable"
       },
-      "zodSchema": {
-        "kind": "value",
-        "signature": "call <T>(schema: ZodSchema<T>): Schema<T>",
-        "stability": "stable"
-      },
       "ZodSchema": {
         "kind": "type",
         "signature": "export type ZodSchema<T = unknown> = import(\"zod/v3\").Schema<T, import(\"zod/v3\").ZodTypeDef, unknown> | import(\"zod/v4\").ZodType<T>;",
+        "stability": "stable"
+      },
+      "asSchema": {
+        "kind": "value",
+        "signature": "call <T>(schema: FlexibleSchema<T>): Schema<T>",
+        "stability": "stable"
+      },
+      "assertApprovalRequest": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is ApprovalRequest",
+        "stability": "stable"
+      },
+      "assertApprovalResponse": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is ApprovalResponse",
+        "stability": "stable"
+      },
+      "assertExecutionStatus": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is ExecutionStatus",
+        "stability": "stable"
+      },
+      "assertHashString": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is HashString",
+        "stability": "stable"
+      },
+      "assertScope": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is Scope",
+        "stability": "stable"
+      },
+      "assertTuvrenMessage": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenMessage",
+        "stability": "stable"
+      },
+      "assertTuvrenModelResponse": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenModelResponse",
+        "stability": "stable"
+      },
+      "assertTuvrenStreamEvent": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenStreamEvent",
+        "stability": "stable"
+      },
+      "assertTuvrenToolDefinition": {
+        "kind": "value",
+        "signature": "call (value: unknown, label?: string): asserts value is TuvrenToolDefinition",
+        "stability": "stable"
+      },
+      "createAesGcmPayloadCodec": {
+        "kind": "value",
+        "signature": "call (options: AesGcmPayloadCodecOptions): PayloadCodec",
+        "stability": "stable"
+      },
+      "createIdentityPayloadCodec": {
+        "kind": "value",
+        "signature": "call (): PayloadCodec",
+        "stability": "stable"
+      },
+      "createTuvren": {
+        "kind": "value",
+        "signature": "call (options: CreateTuvrenOptions): Promise<TuvrenInstance>",
+        "stability": "stable"
+      },
+      "decodeDeterministicKernelRecord": {
+        "kind": "value",
+        "signature": "call (bytes: Uint8Array): KernelRecord",
+        "stability": "stable"
+      },
+      "defineTool": {
+        "kind": "value",
+        "signature": "call <INPUT, OUTPUT>(options: { name: string; description: string; inputSchema: FlexibleSchema<INPUT>; execute: (input: INPUT, context: ToolExecutionContext) => Promise<OUTPUT> | OUTPUT; approval?: ApprovalPolicy; idempotent?: boolean; maxRetries?: number; metadata?: Record<string, unknown>; outputSchema?: TuvrenJsonSchema | CustomSchema; timeout?: number; }): TuvrenToolDefinition",
+        "stability": "stable"
+      },
+      "encodeDeterministicKernelRecord": {
+        "kind": "value",
+        "signature": "call (value: KernelRecord): Uint8Array",
+        "stability": "stable"
+      },
+      "hashKernelRecord": {
+        "kind": "value",
+        "signature": "call (value: KernelRecord): Promise<HashString>",
+        "stability": "stable"
+      },
+      "isErasedPayload": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is ErasedPayload",
+        "stability": "stable"
+      },
+      "isPayloadEnvelope": {
+        "kind": "value",
+        "signature": "call (bytes: Uint8Array): boolean",
+        "stability": "stable"
+      },
+      "isScope": {
+        "kind": "value",
+        "signature": "call (value: unknown): value is Scope",
+        "stability": "stable"
+      },
+      "jsonSchema": {
+        "kind": "value",
+        "signature": "call <T = unknown>(schema: TuvrenJsonSchema, options?: { validate?: Schema<T>[\"validate\"]; }): Schema<T>",
+        "stability": "stable"
+      },
+      "schemaSymbol": {
+        "kind": "value",
+        "signature": "typeof schemaSymbol",
+        "stability": "stable"
+      },
+      "standardSchema": {
+        "kind": "value",
+        "signature": "call <T>(schema: StandardSchema<T>): Schema<T>",
+        "stability": "stable"
+      },
+      "zodSchema": {
+        "kind": "value",
+        "signature": "call <T>(schema: ZodSchema<T>): Schema<T>",
         "stability": "stable"
       }
     }
@@ -2035,7 +2035,7 @@
     {
       "bump": "baseline",
       "changes": ["initial freeze baseline"],
-      "recordedAt": "2026-07-11T04:51:57.377Z"
+      "recordedAt": "2026-07-11T05:05:26.408Z"
     }
   ]
 }

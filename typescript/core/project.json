@@ -42,10 +42,11 @@
       },
       "cache": true,
       "inputs": [
+        "{workspaceRoot}/typescript/**/package.json",
+        "!{workspaceRoot}/typescript/**/node_modules/**",
+        "!{workspaceRoot}/typescript/**/dist/**",
         "{workspaceRoot}/typescript/core/src/**/*",
-        "{workspaceRoot}/typescript/core/package.json",
         "{workspaceRoot}/typescript/sdk/src/**/*",
-        "{workspaceRoot}/typescript/sdk/package.json",
         "{workspaceRoot}/typescript/kernel/protocol/src/**/*",
         "{workspaceRoot}/typescript/kernel/runtime/src/**/*",
         "{workspaceRoot}/typescript/runtime/src/**/*",

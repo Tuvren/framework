@@ -90,6 +90,7 @@ const AUTHORITY_DECLARATION_MARKER =
 const DIST_PREFIX_PATTERN = /^\.\/dist\//;
 const DECLARATION_SUFFIX_PATTERN = /\.d\.ts$/;
 const WHITESPACE_RUN_PATTERN = /\s+/g;
+const WELL_KNOWN_SYMBOL_ID_PATTERN = /^(__@[^@]+)@\d+$/;
 
 interface SnapshotFile {
   $description: string;
@@ -168,6 +169,9 @@ async function main(): Promise<void> {
     WHOLLY_EXPERIMENTAL_ENTRYPOINTS
   );
 
+  printFindings(diff.allowed, "allowed");
+  printFindings(diff.blocked, "BLOCKED");
+
   if (reportFloorViolations(diff)) {
     process.exitCode = 1;
     return;
@@ -182,10 +186,18 @@ async function main(): Promise<void> {
     return;
   }
 
-  printFindings(diff.allowed, "allowed");
-  printFindings(diff.blocked, "BLOCKED");
-
   if (checkMode) {
+    // ADR-056: a signature change on an @experimental export is "ALLOWED,
+    // not gated" — when drift is exclusively that class, the verification
+    // path stays green and the snapshot refreshes opportunistically on the
+    // next `bun run api-freeze` run.
+    if (diff.impliedBump === "experimental-only") {
+      console.log(
+        "[api-freeze-gate] experimental-only drift — not gated (ADR-056); refresh the snapshot opportunistically with `bun run api-freeze`"
+      );
+      return;
+    }
+
     reportCheckModeDrift(diff);
     process.exitCode = 1;
     return;
@@ -490,9 +502,16 @@ function describeExport(
 
 /**
  * Deterministic structural text for a value export's type: every call and
- * construct signature plus each property with its checker-resolved type text.
- * Referenced named types print by name; their own shape changes are caught at
- * their own snapshot entries (see the known limitation in the module header).
+ * construct signature, plus — ONLY for types declared inside this repo — each
+ * property with its checker-resolved type text. Types declared outside the
+ * repo (primitives, lib.d.ts shapes like RegExp/Uint8Array) print via
+ * `typeToString` instead of member expansion: expanding lib members embeds
+ * TS-internal symbol-ID counters in well-known-symbol names (`__@iterator@49`)
+ * that shift on unrelated source edits, corrupting the snapshot with false
+ * blocked findings (M2 review P1). Residual well-known-symbol names from
+ * in-repo types are ID-normalized for the same reason. Referenced named types
+ * print by name; their own shape changes are caught at their own snapshot
+ * entries (see the known limitation in the module header).
  */
 function structuralTypeText(
   type: ts.Type,
@@ -513,23 +532,59 @@ function structuralTypeText(
     );
   }
 
-  const properties = checker
-    .getPropertiesOfType(type)
-    .map(
-      (property) =>
-        `${property.getName()}: ${checker.typeToString(
-          checker.getTypeOfSymbolAtLocation(property, location),
-          location,
-          ts.TypeFormatFlags.NoTruncation
-        )}`
-    )
-    .sort();
+  if (typeIsDeclaredInRepo(type)) {
+    const properties = checker
+      .getPropertiesOfType(type)
+      .map(
+        (property) =>
+          `${normalizeMemberName(property.getName())}: ${checker.typeToString(
+            checker.getTypeOfSymbolAtLocation(property, location),
+            location,
+            ts.TypeFormatFlags.NoTruncation
+          )}`
+      )
+      .sort();
 
-  parts.push(...properties);
+    parts.push(...properties);
+  }
 
   return parts.length > 0
     ? parts.join("; ")
     : checker.typeToString(type, location, ts.TypeFormatFlags.NoTruncation);
+}
+
+/**
+ * True when the type is an object type whose symbol has a declaration inside
+ * this repository (not lib.d.ts / node_modules). Non-object types (primitives,
+ * unique symbols) always print via `typeToString`, never member expansion —
+ * their apparent members are lib.d.ts surface, not ours.
+ */
+function typeIsDeclaredInRepo(type: ts.Type): boolean {
+  if (!hasTypeFlag(type, ts.TypeFlags.Object)) {
+    return false;
+  }
+
+  const symbol = type.getSymbol() ?? type.aliasSymbol;
+
+  return (symbol?.getDeclarations() ?? []).some((declaration) => {
+    const fileName = declaration.getSourceFile().fileName;
+
+    return fileName.startsWith(REPO_ROOT) && !fileName.includes("node_modules");
+  });
+}
+
+function hasTypeFlag(type: ts.Type, flag: ts.TypeFlags): boolean {
+  // biome-ignore lint/suspicious/noBitwiseOperators: ts.TypeFlags is a bitflag enum; masking is the API's membership test.
+  return (type.flags & flag) !== 0;
+}
+
+/**
+ * Strip the TS-internal symbol-ID counter from escaped well-known-symbol
+ * member names (`__@toStringTag@715` → `__@toStringTag`); the counter is a
+ * checker allocation order, not API surface.
+ */
+function normalizeMemberName(name: string): string {
+  return name.replace(WELL_KNOWN_SYMBOL_ID_PATTERN, "$1");
 }
 
 /**
@@ -630,7 +685,9 @@ function describeSurface(surface: ApiSurface): string {
 }
 
 function sortRecord<T>(record: Record<string, T>): Record<string, T> {
+  // Codepoint order, not localeCompare: the canonical snapshot order must not
+  // depend on the regenerating machine's system locale.
   return Object.fromEntries(
-    Object.entries(record).sort(([a], [b]) => a.localeCompare(b))
+    Object.entries(record).sort(([a], [b]) => (a < b ? -1 : 1))
   );
 }
