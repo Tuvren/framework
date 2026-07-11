@@ -53,6 +53,10 @@ When an export under a subpath declared wholly experimental lacks the @experimen
 Then the gate fails the build under the ADR-056 consistency floor
 ```
 
+##### KRT-BL002 Deviations & Justifications
+- **Touched Files:** `tools/scripts/lib/api-freeze-model.ts` (new), `tools/scripts/lib/api-freeze-model.test.ts` (new), `tools/scripts/check.ts`, `tools/scripts/verify.ts`
+- **Justification:** The ticket scope names `tools/scripts/api-freeze-gate.ts` and "package.json (`check`/`verify` script wiring)". (1) The ADR-056 diff table was extracted into a pure `lib/` module with a bun-test file so the classification semantics are unit-testable independently of compiler extraction — the same split KRT-BK005 used (`lib/regenerate-command-argv.ts` + test); it is part of the named tool, not a second tool. (2) Since Epic BK, the canonical gate lists live in `tools/scripts/verify.ts` (`AUTHORITY_GATE_STEPS`) and `tools/scripts/check.ts` (`INNER_LOOP_AUTHORITY_GATE_IDS`), not in `package.json` command strings; wiring the gate into the `check`/`verify` path therefore requires those two files. `package.json` gained only the `api-freeze` / `api-freeze:check` script entries the ticket anticipated.
+
 #### KRT-BL003 Registry Publication Pipeline + First Publish
 - **Type:** Feature
 - **Effort:** 5

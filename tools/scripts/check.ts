@@ -51,6 +51,11 @@ const INNER_LOOP_AUTHORITY_GATE_IDS: readonly string[] = [
   "docs-to-authority freeze gate",
   "Epic AL portability gate",
   "ADR-057 host import boundary gate",
+  // ~1.4s (one in-memory tsc program over the core+sdk source barrels) —
+  // above the <500ms of the other gates but well under the ~4s guardrails
+  // exclusion threshold, and a stable-surface break is exactly the drift the
+  // inner loop must surface before a contributor builds on it (KRT-BL002).
+  "ADR-054/056 API-surface freeze gate",
   "Epic AF conformance gap plan freshness",
   "authority packet validation",
   "conformance plan validation",

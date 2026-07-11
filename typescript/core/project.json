@@ -33,6 +33,27 @@
         "cwd": ".",
         "command": "bun tools/scripts/typecheck-project.ts typescript/core tsconfig.lib.json tsconfig.spec.json"
       }
+    },
+    "api-freeze-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/api-freeze-gate.ts --check"
+      },
+      "cache": true,
+      "inputs": [
+        "{workspaceRoot}/typescript/core/src/**/*",
+        "{workspaceRoot}/typescript/core/package.json",
+        "{workspaceRoot}/typescript/sdk/src/**/*",
+        "{workspaceRoot}/typescript/sdk/package.json",
+        "{workspaceRoot}/typescript/kernel/protocol/src/**/*",
+        "{workspaceRoot}/typescript/kernel/runtime/src/**/*",
+        "{workspaceRoot}/typescript/runtime/src/**/*",
+        "{workspaceRoot}/tools/scripts/api-freeze-gate.ts",
+        "{workspaceRoot}/tools/scripts/lib/api-freeze-model.ts",
+        "{workspaceRoot}/tools/scripts/__snapshots__/api-surface/**/*",
+        "{workspaceRoot}/spec/core/authority-packet.json"
+      ]
     }
   }
 }

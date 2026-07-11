@@ -209,6 +209,10 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
     id: "ADR-057 host import boundary gate",
   },
   {
+    command: ["bun", "run", "api-freeze:check"],
+    id: "ADR-054/056 API-surface freeze gate",
+  },
+  {
     command: ["bun", "run", "docs:af-gap-plan:check"],
     id: "Epic AF conformance gap plan freshness",
   },

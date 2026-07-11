@@ -36,6 +36,8 @@
     "docs:af-gap-plan:check": "bun tools/scripts/epic-af-conformance-gap-plan.ts --check",
     "portability:check": "bun tools/scripts/portability-gate.ts",
     "host-boundary:check": "bun tools/scripts/host-boundary-gate.ts",
+    "api-freeze": "bun tools/scripts/api-freeze-gate.ts --update",
+    "api-freeze:check": "bun tools/scripts/api-freeze-gate.ts --check",
     "services:up": "bash tools/scripts/services-up.sh",
     "services:down": "devenv processes down",
     "check": "bun tools/scripts/check.ts",
