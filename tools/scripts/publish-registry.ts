@@ -96,6 +96,10 @@ async function main(): Promise<void> {
   const mode = process.argv[2];
 
   switch (mode) {
+    case "--build": {
+      await buildPublishableSet();
+      break;
+    }
     case "--preflight": {
       await runPreflight();
       break;
@@ -118,10 +122,50 @@ async function main(): Promise<void> {
     }
     default: {
       console.error(
-        "[publish-registry] usage: bun tools/scripts/publish-registry.ts --preflight | --dry-run | --publish | --verify-consumer <version>"
+        "[publish-registry] usage: bun tools/scripts/publish-registry.ts --build | --preflight | --dry-run | --publish | --verify-consumer <version>"
       );
       process.exitCode = 1;
     }
+  }
+}
+
+// ── Build ────────────────────────────────────────────────────────────────────
+
+/**
+ * Build exactly the publishable package set (plus whatever `^build` deps Nx
+ * pulls in). A bare `nx run-many -t build` also runs gRPC codegen and Rust
+ * builds that need the devenv toolchain — unavailable and unnecessary on the
+ * publish runner, whose only job is producing the npm `dist/` artifacts.
+ */
+async function buildPublishableSet(): Promise<void> {
+  const publishable = (await readWorkspacePackages()).filter(
+    (pkg) => pkg.manifest.private !== true
+  );
+  const projects = await Promise.all(
+    publishable.map(async (pkg) => {
+      const project = JSON.parse(
+        await readFile(path.join(pkg.directory, "project.json"), "utf8")
+      ) as { name?: string };
+
+      if (project.name === undefined) {
+        throw new Error(
+          `[publish-registry] ${pkg.name}: project.json has no name; cannot scope the build`
+        );
+      }
+
+      return project.name;
+    })
+  );
+
+  const build = spawnSync(
+    "bun",
+    ["run", "nx", "run-many", "-t", "build", "-p", projects.join(",")],
+    { cwd: REPO_ROOT, stdio: "inherit" }
+  );
+
+  if (build.status !== 0) {
+    process.exitCode = 1;
+    throw new Error("[publish-registry] publishable-set build failed");
   }
 }
 

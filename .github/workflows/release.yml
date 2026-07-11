@@ -63,7 +63,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build the publishable package set
-        run: bun run nx run-many -t build
+        run: bun tools/scripts/publish-registry.ts --build
 
       - name: Publication preflight (freeze gate, tilde ranges, topology, tarball completeness)
         run: bun tools/scripts/publish-registry.ts --preflight
