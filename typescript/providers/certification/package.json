@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/providers-typescript-certification",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "dependencies": {
     "@ai-sdk/provider": "3.0.8",

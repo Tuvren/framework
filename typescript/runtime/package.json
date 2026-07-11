@@ -1,6 +1,6 @@
 {
   "name": "@tuvren/runtime",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Internal Tuvren orchestration engine (ADR-057) — not a host-facing API. Hosts compose the framework through @tuvren/sdk and their chosen leaf packages; this package is not semver-guaranteed.",
   "type": "module",
   "exports": {

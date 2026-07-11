@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/telemetry-otel",
   "description": "Tuvren OpenTelemetry sink leaf: createOtelTelemetrySink bridges Tuvren telemetry events and spans onto OpenTelemetry.",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

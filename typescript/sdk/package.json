@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/sdk",
   "description": "The Tuvren host-facing composition tier: createTuvren, curated @tuvren/core re-exports, host-facing kernel contract types, developer helpers, and the @tuvren/sdk/advanced composition surface. The single SDK entrypoint a host imports alongside its chosen leaf packages.",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
