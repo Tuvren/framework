@@ -29,6 +29,12 @@ permissions:
   contents: read
   id-token: write
 
+# Two dispatched publishes must never interleave: npm's duplicate-version
+# rejection is the only other guard against a torn release.
+concurrency:
+  group: registry-publish
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: publish curated package set (${{ inputs.dry_run && 'dry run' || 'REAL' }})

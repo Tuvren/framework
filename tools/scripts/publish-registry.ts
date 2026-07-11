@@ -275,30 +275,34 @@ function validateDependencyRanges(
   }
 
   // Registry-resolution closure: every @tuvren dependency of a published
-  // package must itself be published.
-  for (const [depName, range] of Object.entries({
-    ...manifest.dependencies,
-    ...manifest.optionalDependencies,
-    ...manifest.peerDependencies,
-  })) {
-    if (!depName.startsWith("@tuvren/")) {
-      continue;
-    }
+  // package must itself be published. Sections are checked separately — a
+  // name appearing in two sections must not mask a bad range in one of them
+  // (merging would defer the failure from preflight to mid-publish).
+  for (const section of [
+    "dependencies",
+    "optionalDependencies",
+    "peerDependencies",
+  ] as const) {
+    for (const [depName, range] of Object.entries(manifest[section] ?? {})) {
+      if (!depName.startsWith("@tuvren/")) {
+        continue;
+      }
 
-    if (!publishableNames.has(depName)) {
-      failures.push(
-        `${name}: depends on ${depName}, which is not publishable — registry installs would fail to resolve`
-      );
-    }
+      if (!publishableNames.has(depName)) {
+        failures.push(
+          `${name}: ${section} entry ${depName} is not publishable — registry installs would fail to resolve`
+        );
+      }
 
-    if (
-      range.startsWith("workspace:") &&
-      range !== "workspace:~" &&
-      range !== "workspace:*"
-    ) {
-      failures.push(
-        `${name}: workspace range "${range}" on ${depName} has no defined materialization — use workspace:~ or workspace:*`
-      );
+      if (
+        range.startsWith("workspace:") &&
+        range !== "workspace:~" &&
+        range !== "workspace:*"
+      ) {
+        failures.push(
+          `${name}: workspace range "${range}" on ${depName} (${section}) has no defined materialization — use workspace:~ or workspace:*`
+        );
+      }
     }
   }
 
@@ -472,7 +476,7 @@ async function verifyConsumerInstall(
 ): Promise<void> {
   if (version === undefined || version === "") {
     console.error(
-      "[publish-registry] --verify-consumer requires the published version, e.g. --verify-consumer 1.0.0"
+      "[publish-registry] --verify-consumer requires the published version, e.g. --verify-consumer 0.1.0"
     );
     process.exitCode = 1;
     return;
