@@ -48,10 +48,11 @@
 // not-yet-published dependency.
 
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { walkPackageManifests } from "./lib/walk-package-manifests.js";
 
 interface WorkspacePackage {
   readonly directory: string;
@@ -392,6 +393,19 @@ function validateDependencyRanges(
     );
   }
 
+  // The classification itself is also load-bearing: a package that references
+  // @tuvren/core in dependencies/optionalDependencies would bundle a second
+  // core instance in consumer trees, defeating ADR-037's single-instance
+  // guarantee even with a correct range (the reason provider-api was
+  // reclassified to a peer in KRT-BL003).
+  for (const section of ["dependencies", "optionalDependencies"] as const) {
+    if (manifest[section]?.["@tuvren/core"] !== undefined) {
+      failures.push(
+        `${name}: @tuvren/core appears in ${section} — ADR-037 requires it as a peerDependency (single shared instance) on every published package`
+      );
+    }
+  }
+
   // Registry-resolution closure: every @tuvren dependency of a published
   // package must itself be published. Sections are checked separately — a
   // name appearing in two sections must not mask a bad range in one of them
@@ -466,6 +480,9 @@ async function publishPackages(
     await writeFile(manifestPath, `${JSON.stringify(materialized, null, 2)}\n`);
 
     try {
+      // This flag is what makes the packages public — the matching
+      // `access: "public"` in .changeset/config.json only governs a
+      // `changeset publish` invocation, which this pipeline does not use.
       const args = [
         "publish",
         "--access",
@@ -559,6 +576,11 @@ function topologicalOrder(packages: WorkspacePackage[]): WorkspacePackage[] {
       );
     }
 
+    // Peer edges are included deliberately: a peer is provided by the
+    // consumer, so it is not strictly a publish-order constraint, but
+    // ordering by it too keeps the "never reference a not-yet-published
+    // package" guarantee conservative. Today no @tuvren peer target has
+    // @tuvren edges of its own, so this cannot manufacture a false cycle.
     for (const depName of Object.keys({
       ...pkg.manifest.dependencies,
       ...pkg.manifest.optionalDependencies,
@@ -658,7 +680,7 @@ async function verifyConsumerInstall(
 async function readWorkspacePackages(): Promise<WorkspacePackage[]> {
   const packages: WorkspacePackage[] = [];
 
-  for (const manifestPath of await findManifests(
+  for (const manifestPath of await walkPackageManifests(
     path.join(REPO_ROOT, "typescript")
   )) {
     const manifest = JSON.parse(
@@ -677,29 +699,7 @@ async function readWorkspacePackages(): Promise<WorkspacePackage[]> {
   return packages;
 }
 
-async function findManifests(dir: string): Promise<string[]> {
-  const found: string[] = [];
-  const entries = await readdir(dir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    if (entry.isFile() && entry.name === "package.json") {
-      found.push(path.join(dir, entry.name));
-    } else if (
-      entry.isDirectory() &&
-      entry.name !== "node_modules" &&
-      entry.name !== "dist" &&
-      !entry.name.startsWith(".")
-    ) {
-      found.push(...(await findManifests(path.join(dir, entry.name))));
-    }
-  }
-
-  return found;
-}
-
 async function fileExists(filePath: string): Promise<boolean> {
-  const { stat } = await import("node:fs/promises");
-
   try {
     await stat(filePath);
     return true;

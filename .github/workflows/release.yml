@@ -63,6 +63,11 @@ jobs:
           nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
           devenv version | grep -F "devenv 2.1.2"
 
+      # setup-node writes the registry + auth stanza (reading the token from
+      # $NODE_AUTH_TOKEN) into a user-level .npmrc it points $NPM_CONFIG_USERCONFIG
+      # at. Both env vars survive into the `devenv shell` subshell below, so the
+      # devenv-provided npm resolves the same auth — nothing here depends on the
+      # runner's own node/npm being the one that publishes.
       - name: Set up npm auth
         uses: actions/setup-node@v4
         with:

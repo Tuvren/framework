@@ -46,13 +46,10 @@
         "{workspaceRoot}/typescript/**/package.json",
         "!{workspaceRoot}/typescript/**/node_modules/**",
         "!{workspaceRoot}/typescript/**/dist/**",
-        "{workspaceRoot}/typescript/core/src/**/*",
-        "{workspaceRoot}/typescript/sdk/src/**/*",
-        "{workspaceRoot}/typescript/kernel/protocol/src/**/*",
-        "{workspaceRoot}/typescript/kernel/runtime/src/**/*",
-        "{workspaceRoot}/typescript/runtime/src/**/*",
+        "{workspaceRoot}/typescript/**/src/**/*",
         "{workspaceRoot}/tools/scripts/api-freeze-gate.ts",
         "{workspaceRoot}/tools/scripts/lib/api-freeze-model.ts",
+        "{workspaceRoot}/tools/scripts/lib/walk-package-manifests.ts",
         "{workspaceRoot}/tools/scripts/__snapshots__/api-surface/**/*",
         "{workspaceRoot}/spec/core/authority-packet.json"
       ]

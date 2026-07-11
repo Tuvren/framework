@@ -67,6 +67,7 @@ import {
   runDiffTableSelfTest,
   type SurfaceDiff,
 } from "./lib/api-freeze-model.js";
+import { walkPackageManifests } from "./lib/walk-package-manifests.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../");
 const SNAPSHOT_PATH = path.join(
@@ -318,9 +319,12 @@ async function resolveEntrypointTargets(): Promise<EntrypointTarget[]> {
 async function buildWorkspaceSourcePaths(): Promise<Record<string, string[]>> {
   const paths: Record<string, string[]> = {};
 
-  for (const manifestPath of await findWorkspaceManifests("typescript")) {
+  for (const absoluteManifestPath of await walkPackageManifests(
+    path.join(REPO_ROOT, "typescript")
+  )) {
+    const manifestPath = path.relative(REPO_ROOT, absoluteManifestPath);
     const manifest = JSON.parse(
-      await readFile(path.join(REPO_ROOT, manifestPath), "utf8")
+      await readFile(absoluteManifestPath, "utf8")
     ) as { exports?: Record<string, { types?: string }>; name?: string };
 
     if (
@@ -349,32 +353,6 @@ async function buildWorkspaceSourcePaths(): Promise<Record<string, string[]>> {
   }
 
   return paths;
-}
-
-/** Recursively find workspace package manifests, skipping build/dependency output. */
-async function findWorkspaceManifests(relativeDir: string): Promise<string[]> {
-  const { readdir } = await import("node:fs/promises");
-  const found: string[] = [];
-  const entries = await readdir(path.join(REPO_ROOT, relativeDir), {
-    withFileTypes: true,
-  });
-
-  for (const entry of entries) {
-    if (entry.isFile() && entry.name === "package.json") {
-      found.push(path.join(relativeDir, entry.name));
-    } else if (
-      entry.isDirectory() &&
-      entry.name !== "node_modules" &&
-      entry.name !== "dist" &&
-      !entry.name.startsWith(".")
-    ) {
-      found.push(
-        ...(await findWorkspaceManifests(path.join(relativeDir, entry.name)))
-      );
-    }
-  }
-
-  return found;
 }
 
 function extractSurface(
