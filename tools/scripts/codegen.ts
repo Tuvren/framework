@@ -24,19 +24,18 @@
 
 import process from "node:process";
 import {
-  AUTHORITY_GATE_STEPS,
   CODEGEN_PROJECTS,
   hasVerificationFailure,
   printVerificationSummary,
   runVerificationPhases,
-  type VerificationStep,
+  selectAuthorityGateSteps,
 } from "./verify.js";
 
 // The exact validator subset (and order) package.json's previous inline
 // chain ran, selected by ID from verify's shared AUTHORITY_GATE_STEPS so
 // this lane cannot silently diverge from `verify`'s gate: if an ID stops
-// matching a verify step, buildCodegenValidators throws instead of quietly
-// dropping a check. Note this is deliberately NOT all of
+// matching a verify step, selectAuthorityGateSteps throws instead of
+// quietly dropping a check. Note this is deliberately NOT all of
 // AUTHORITY_GATE_STEPS — the old chain never ran the host import boundary
 // gate, the API-surface freeze gate, or the workspace test-lane coverage
 // gate, and this migration is a refactor, not a behavior change.
@@ -53,33 +52,22 @@ const CODEGEN_VALIDATOR_IDS: readonly string[] = [
   "machine authority guardrails",
 ];
 
-function buildCodegenValidators(): VerificationStep[] {
-  return CODEGEN_VALIDATOR_IDS.map((id) => {
-    const step = AUTHORITY_GATE_STEPS.find((candidate) => candidate.id === id);
-
-    if (step === undefined) {
-      throw new Error(
-        `codegen: validator id "${id}" no longer matches a verify gate step. ` +
-          "Update CODEGEN_VALIDATOR_IDS to track tools/scripts/verify.ts."
-      );
-    }
-
-    return step;
-  });
-}
-
 const results = await runVerificationPhases([
   {
     id: "codegen authority validators",
-    steps: buildCodegenValidators(),
+    steps: selectAuthorityGateSteps(CODEGEN_VALIDATOR_IDS, "codegen"),
   },
   {
     // Regeneration runs after the validators, as the old chain did. Cached
     // Nx execution is intentional here (unlike verify's freshness phase,
     // which uses --skipNxCache): this lane exists to materialize/refresh
     // generated artifacts for local work, not to prove uncached freshness.
+    // For the same reason it opts out of the worktree-purity guard —
+    // refreshing stale checked-in artifacts is this phase's job, not a
+    // read-only step gone rogue (the old && chain had no guard either).
     concurrency: 1,
     id: "artifact code generation",
+    mutatesWorktree: true,
     steps: [
       {
         command: [

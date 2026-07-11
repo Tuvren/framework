@@ -77,6 +77,13 @@ export interface VerificationPhase {
   /** Max steps to run at once. Defaults to the phase size (capped). 1 = serial. */
   concurrency?: number;
   id: string;
+  /**
+   * Opt out of the worktree-purity guard for phases that are SUPPOSED to
+   * mutate checked-in files (e.g. the codegen lane's artifact regeneration,
+   * KRT-BM002). Every verification phase must leave this unset: the guard
+   * is what catches a read-only step silently mutating the tree.
+   */
+  mutatesWorktree?: boolean;
   steps: readonly VerificationStep[];
 }
 
@@ -253,6 +260,29 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
     id: "machine authority guardrails",
   },
 ];
+
+/**
+ * Selects steps from AUTHORITY_GATE_STEPS by ID for a derived lane (check's
+ * inner loop, the codegen lane). Throws if an ID no longer matches a verify
+ * gate step, so a derived lane can never silently diverge from this file.
+ */
+export function selectAuthorityGateSteps(
+  ids: readonly string[],
+  lane: string
+): VerificationStep[] {
+  return ids.map((id) => {
+    const step = AUTHORITY_GATE_STEPS.find((candidate) => candidate.id === id);
+
+    if (step === undefined) {
+      throw new Error(
+        `${lane}: authority gate id "${id}" no longer matches a verify gate step. ` +
+          "Update the lane's ID list to track tools/scripts/verify.ts."
+      );
+    }
+
+    return step;
+  });
+}
 
 export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
   {
@@ -451,14 +481,18 @@ export async function runVerificationPhases(
   const results: VerificationResult[] = [];
 
   for (const phase of phases) {
-    const before = await readWorktreeSnapshot(process.cwd());
+    const before = phase.mutatesWorktree
+      ? undefined
+      : await readWorktreeSnapshot(process.cwd());
     const phaseResults = await runPhase(phase);
     results.push(...phaseResults);
 
-    await assertWorktreeUnchanged(before, {
-      cwd: process.cwd(),
-      label: `verification phase "${phase.id}"`,
-    });
+    if (before !== undefined) {
+      await assertWorktreeUnchanged(before, {
+        cwd: process.cwd(),
+        label: `verification phase "${phase.id}"`,
+      });
+    }
 
     if (phaseResults.some((result) => result.code !== 0)) {
       return results;

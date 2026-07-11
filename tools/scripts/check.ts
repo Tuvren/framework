@@ -24,12 +24,11 @@
 import process from "node:process";
 import { runCommand } from "./lib/command-runner.js";
 import {
-  AUTHORITY_GATE_STEPS,
   hasVerificationFailure,
   printVerificationSummary,
   runVerificationPhases,
+  selectAuthorityGateSteps,
   type VerificationPhase,
-  type VerificationStep,
 } from "./verify.js";
 
 const BASE_FLAG = "--base=";
@@ -41,7 +40,7 @@ const CARGO_MANIFEST_PATTERN = /(^|\/)Cargo\.(toml|lock)$/;
 // drift here is cheap to detect and expensive to discover late. We select these
 // by ID from verify's shared AUTHORITY_GATE_STEPS rather than re-declaring the
 // commands, so the inner loop cannot silently diverge from `verify`'s gate: if
-// one of these IDs stops matching a verify step, buildInnerLoopAuthorityGate
+// one of these IDs stops matching a verify step, selectAuthorityGateSteps
 // throws instead of quietly dropping that check.
 //
 // `machine authority guardrails` is intentionally omitted: it runs ~4s (vs
@@ -67,21 +66,6 @@ const INNER_LOOP_AUTHORITY_GATE_IDS: readonly string[] = [
   "vocabulary-check verification",
 ];
 
-function buildInnerLoopAuthorityGate(): VerificationStep[] {
-  return INNER_LOOP_AUTHORITY_GATE_IDS.map((id) => {
-    const step = AUTHORITY_GATE_STEPS.find((candidate) => candidate.id === id);
-
-    if (step === undefined) {
-      throw new Error(
-        `check: authority gate id "${id}" no longer matches a verify gate step. ` +
-          "Update INNER_LOOP_AUTHORITY_GATE_IDS to track tools/scripts/verify.ts."
-      );
-    }
-
-    return step;
-  });
-}
-
 const args = process.argv.slice(2);
 const baseArg = args.find((arg) => arg.startsWith(BASE_FLAG));
 const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
@@ -94,7 +78,7 @@ const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
 const phases: VerificationPhase[] = [
   {
     id: "inner-loop authority gate",
-    steps: buildInnerLoopAuthorityGate(),
+    steps: selectAuthorityGateSteps(INNER_LOOP_AUTHORITY_GATE_IDS, "check"),
   },
   {
     concurrency: 1,
