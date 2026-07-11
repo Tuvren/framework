@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import Ajv2020 from "ajv/dist/2020.js";
 import type {
   CompiledConformancePlanCheck,
   ConformancePlanCheck,
@@ -22,6 +23,7 @@ import type {
 import {
   evaluateAssertions,
   evaluateRequiredEvidence,
+  getCompiledSchemaValidator,
 } from "../assertion-engine/index.ts";
 
 function buildCheck(
@@ -268,5 +270,71 @@ describe("secretPatternAbsence assertion (KRT-BK004)", () => {
       result: { surface: { ok: true } },
     });
     expect(evaluation?.status).toBe("pass");
+  });
+});
+
+describe("schemaValid validator memoization (KRT-BM004)", () => {
+  test("the same schema content compiles once regardless of key order", () => {
+    const first = getCompiledSchemaValidator(
+      JSON.parse('{"type":"object","properties":{"a":{"type":"number"}}}')
+    );
+    const second = getCompiledSchemaValidator(
+      JSON.parse('{"properties":{"a":{"type":"number"}},"type":"object"}')
+    );
+
+    expect(second).toBe(first);
+    expect(first({ a: 1 })).toBe(true);
+    expect(first({ a: "not a number" })).toBe(false);
+  });
+
+  test("distinct schemas get distinct validators", () => {
+    const permissive = getCompiledSchemaValidator(
+      JSON.parse('{"type":"object"}')
+    );
+    const strict = getCompiledSchemaValidator(
+      JSON.parse('{"type":"object","additionalProperties":false}')
+    );
+
+    expect(strict).not.toBe(permissive);
+    expect(permissive({ extra: true })).toBe(true);
+    expect(strict({ extra: true })).toBe(false);
+  });
+
+  test('schemas differing only in a literal "__proto__" property never collide', () => {
+    // JSON.parse creates an OWN "__proto__" property; a naive sorted-key
+    // rebuild through a plain object would drop it via the inherited setter
+    // and collapse these two schemas onto one cache entry. The invariant is
+    // that each schema gets its own validator whose verdicts match a fresh,
+    // uncached compile of that exact schema — whatever Ajv's own semantics
+    // for "__proto__"-named properties happen to be.
+    const withProtoSchema = JSON.parse(
+      '{"type":"object","properties":{"__proto__":{"type":"number"}},"additionalProperties":false}'
+    );
+    const withoutProtoSchema = JSON.parse(
+      '{"type":"object","properties":{},"additionalProperties":false}'
+    );
+
+    const withProtoProperty = getCompiledSchemaValidator(withProtoSchema);
+    const withoutProtoProperty = getCompiledSchemaValidator(withoutProtoSchema);
+
+    expect(withProtoProperty).not.toBe(withoutProtoProperty);
+
+    const freshWithProto = new Ajv2020({
+      allErrors: true,
+      strict: false,
+    }).compile(withProtoSchema);
+    const freshWithoutProto = new Ajv2020({
+      allErrors: true,
+      strict: false,
+    }).compile(withoutProtoSchema);
+
+    for (const value of [
+      JSON.parse('{"__proto__":1}'),
+      JSON.parse('{"__proto__":"not a number"}'),
+      JSON.parse("{}"),
+    ]) {
+      expect(withProtoProperty(value)).toBe(freshWithProto(value));
+      expect(withoutProtoProperty(value)).toBe(freshWithoutProto(value));
+    }
   });
 });

@@ -189,7 +189,12 @@ function assertTerminalEvent(
 // typescript/runtime/src/lib/tool-execution-helpers.ts.
 const schemaValidatorCache = new Map<string, ValidateFunction>();
 
-function getCompiledSchemaValidator(schema: AnySchema): ValidateFunction {
+// Exported for the assertion-engine unit tests (memoization identity and
+// collision-safety assertions); production callers go through
+// assertSchemaValid.
+export function getCompiledSchemaValidator(
+  schema: AnySchema
+): ValidateFunction {
   const key = canonicalSchemaKey(schema);
   const cached = schemaValidatorCache.get(key);
 
@@ -205,11 +210,15 @@ function getCompiledSchemaValidator(schema: AnySchema): ValidateFunction {
 
 // JSON.stringify is key-order sensitive, so serialize with sorted object
 // keys: the same schema loaded from differently-ordered JSON still hits one
-// cache entry, while any semantic difference changes the key.
+// cache entry, while any semantic difference changes the key. The rebuilt
+// object is null-prototype so a literal "__proto__" property name lands as
+// an own property instead of vanishing through the inherited setter — with
+// a plain {} two schemas differing only in a "__proto__" member would
+// serialize identically and collide.
 function canonicalSchemaKey(value: unknown): string {
   return JSON.stringify(value, (_key, node: unknown) => {
     if (isRecord(node) && !Array.isArray(node)) {
-      const sorted: Record<string, unknown> = {};
+      const sorted: Record<string, unknown> = Object.create(null);
       for (const key of Object.keys(node).sort()) {
         sorted[key] = node[key];
       }

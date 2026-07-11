@@ -322,3 +322,7 @@ Feature: Small documentation and readiness findings are resolved
     Then the database accepts connections without a startup race
     And services-up.sh remains a manual, top-level-only convenience script
 ```
+
+##### KRT-BM004 Deviations & Justifications
+- **Touched Files:** `tools/conformance/harness/test/assertion-engine.test.ts` (in addition to the two declared in-scope files)
+- **Justification:** The independent spec review found the sorted-key canonicalizer silently dropped literal `"__proto__"` schema properties (assignment through the inherited setter), which is exactly the collision class the ticket's STOP condition names. The fix (null-prototype accumulator) plus the repo rule "give every claimed scenario matrix an automated check path" required regression tests for the memoization identity, distinct-schema separation, and the `__proto__` collision case; they were colocated with the existing assertion-engine suite.
