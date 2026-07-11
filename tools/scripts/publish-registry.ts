@@ -88,6 +88,22 @@ const INTERNAL_PUBLISHED_PACKAGES: readonly string[] = [
   "@tuvren/telemetry-semconv",
 ];
 
+/**
+ * Single owner of the workspace-protocol range vocabulary: preflight accepts
+ * exactly the ranges this table can materialize, so the STOP-condition
+ * predicate and the publish-time transform cannot drift apart.
+ * `workspace:~` → `~<version>` (the ADR-037 tilde range), `workspace:*` →
+ * `<version>` (exact pin, safe under the fixed `["@tuvren/*"]` group).
+ * Declared above the top-level `await main()` — anything below it is in the
+ * temporal dead zone while main runs.
+ */
+const WORKSPACE_RANGE_MATERIALIZERS: Readonly<
+  Record<string, (version: string) => string>
+> = {
+  "workspace:*": (version) => version,
+  "workspace:~": (version) => `~${version}`,
+};
+
 const PLACEHOLDER_VERSION = "0.0.0";
 const INTERNAL_POSTURE_PATTERN = /[Ii]nternal/;
 
@@ -262,7 +278,7 @@ async function runPreflight(): Promise<WorkspacePackage[]> {
 
   if (freezeGate.status !== 0) {
     failures.push(
-      `the ADR-054/056 freeze gate does not pass on this commit:\n${freezeGate.stdout}${freezeGate.stderr}`
+      `the ADR-054/056 freeze gate does not pass on this commit:\n${freezeGate.stdout ?? ""}${freezeGate.stderr ?? ""}`
     );
   }
 
@@ -337,6 +353,15 @@ async function validatePackage(
   if (!(await fileExists(path.join(directory, "dist")))) {
     failures.push(
       `${name}: dist/ is not built — run the build lane before publishing`
+    );
+  }
+
+  // Unlike LICENSE/README (which npm auto-includes), dist ships only if the
+  // `files` allowlist names it — a misconfigured allowlist would publish a
+  // code-less tarball that every other check here still passes.
+  if (manifest.files !== undefined && !manifest.files.includes("dist")) {
+    failures.push(
+      `${name}: "files" allowlist does not include "dist" — the tarball would ship no code`
     );
   }
 
@@ -428,8 +453,7 @@ function validateDependencyRanges(
 
       if (
         range.startsWith("workspace:") &&
-        range !== "workspace:~" &&
-        range !== "workspace:*"
+        WORKSPACE_RANGE_MATERIALIZERS[range] === undefined
       ) {
         failures.push(
           `${name}: workspace range "${range}" on ${depName} (${section}) has no defined materialization — use workspace:~ or workspace:*`
@@ -453,13 +477,32 @@ function assertProvenanceCapableEnvironment(): void {
   }
 }
 
+/**
+ * True only when the registry positively confirms the exact version exists.
+ * Any failure (network, auth, spawn) returns false so the loop proceeds to a
+ * real `npm publish`, whose own duplicate-version rejection stays the
+ * backstop — this check may only ever skip work, never invent it.
+ */
+function isAlreadyPublished(name: string, version: string): boolean {
+  const result = spawnSync(
+    "npm",
+    ["view", `${name}@${version}`, "version", "--json"],
+    { encoding: "utf8" }
+  );
+
+  return (
+    result.status === 0 &&
+    (result.stdout ?? "").trim() === JSON.stringify(version)
+  );
+}
+
 function assertCleanWorktree(): void {
   const status = spawnSync("git", ["status", "--porcelain"], {
     cwd: REPO_ROOT,
     encoding: "utf8",
   });
 
-  if (status.stdout.trim() !== "") {
+  if (status.status !== 0 || (status.stdout ?? "").trim() !== "") {
     console.error(
       "[publish-registry] --publish requires a clean worktree; the published artifacts must correspond to a commit"
     );
@@ -474,6 +517,22 @@ async function publishPackages(
 ): Promise<void> {
   for (const pkg of ordered) {
     const materialized = materializeManifest(pkg);
+
+    // Resumability: published versions are immutable, so a real-publish run
+    // that failed mid-loop (network, registry, auth) would otherwise be
+    // unresumable — re-running hits npm's duplicate-version rejection on the
+    // packages that already made it. Skipping those turns "re-run the release
+    // workflow" into the recovery path for a torn release.
+    if (
+      !options.dryRun &&
+      isAlreadyPublished(pkg.name, materialized.version ?? "")
+    ) {
+      console.log(
+        `[publish-registry] already on the registry, skipping: ${pkg.name}@${materialized.version}`
+      );
+      continue;
+    }
+
     const manifestPath = path.join(pkg.directory, "package.json");
     const original = await readFile(manifestPath, "utf8");
 
@@ -516,11 +575,6 @@ async function publishPackages(
   }
 }
 
-/**
- * Materialize workspace-protocol ranges against the lockstep release version:
- * `workspace:~` → `~<version>` (the ADR-037 tilde range), `workspace:*` →
- * `<version>` (exact pin, safe under the fixed `["@tuvren/*"]` group).
- */
 function materializeManifest(pkg: WorkspacePackage): PackageManifest {
   const manifest = structuredClone(pkg.manifest);
   const version = manifest.version;
@@ -541,10 +595,10 @@ function materializeManifest(pkg: WorkspacePackage): PackageManifest {
     }
 
     for (const [depName, range] of Object.entries(entries)) {
-      if (range === "workspace:~") {
-        entries[depName] = `~${version}`;
-      } else if (range === "workspace:*") {
-        entries[depName] = version;
+      const materialize = WORKSPACE_RANGE_MATERIALIZERS[range];
+
+      if (materialize !== undefined) {
+        entries[depName] = materialize(version);
       } else if (range.startsWith("workspace:")) {
         throw new Error(
           `${pkg.name}: unexpected workspace range "${range}" on ${depName} survived preflight`

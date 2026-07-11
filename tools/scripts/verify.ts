@@ -209,7 +209,11 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
     id: "ADR-057 host import boundary gate",
   },
   {
-    command: ["bun", "run", "api-freeze:check"],
+    // Routed through the cached Nx target (inputs: workspace sources +
+    // manifests, gate scripts, snapshot, core authority packet) so unchanged
+    // surfaces replay from cache; `bun run api-freeze:check` is the same gate
+    // uncached for manual runs.
+    command: ["bunx", "nx", "run", "shared-core:api-freeze-check"],
     id: "ADR-054/056 API-surface freeze gate",
   },
   {
