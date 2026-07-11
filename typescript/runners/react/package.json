@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/runner-react",
   "description": "Tuvren ReAct runner leaf: the reason-act agent loop implementation a host constructs and passes into createTuvren.",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -31,7 +31,7 @@
     "@tuvren/stream-sse": "workspace:*"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*"
+    "@tuvren/core": "workspace:~"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {

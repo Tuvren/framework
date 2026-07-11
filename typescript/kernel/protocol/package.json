@@ -1,7 +1,6 @@
 {
   "name": "@tuvren/kernel-protocol",
-  "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "exports": {
     ".": {
@@ -16,11 +15,21 @@
     "cbor-x": "1.6.4"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*"
+    "@tuvren/core": "workspace:~"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {
       "optional": false
     }
-  }
+  },
+  "description": "Internal Tuvren kernel protocol contracts (ADR-057) — an engine dependency of @tuvren/sdk and the backend packages, not a host-facing API. Hosts type kernel instances via @tuvren/sdk re-exports; this package is not semver-guaranteed.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/kernel/protocol"
+  },
+  "files": [
+    "dist"
+  ]
 }

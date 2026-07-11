@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/stream-core",
   "description": "Tuvren streaming core: the shared stream-adapter contract and helpers for projecting Tuvren stream events onto transport-specific encodings.",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
     "@tuvren/framework-testkit": "workspace:*"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*"
+    "@tuvren/core": "workspace:~"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {

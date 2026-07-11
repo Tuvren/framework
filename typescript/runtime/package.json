@@ -1,7 +1,6 @@
 {
   "name": "@tuvren/runtime",
-  "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Internal Tuvren orchestration engine (ADR-057) — not a host-facing API. Hosts compose the framework through @tuvren/sdk and their chosen leaf packages; this package is not semver-guaranteed.",
   "type": "module",
   "exports": {
@@ -25,11 +24,20 @@
     "ajv": "8.18.0"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*"
+    "@tuvren/core": "workspace:~"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {
       "optional": false
     }
-  }
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/runtime"
+  },
+  "files": [
+    "dist"
+  ]
 }

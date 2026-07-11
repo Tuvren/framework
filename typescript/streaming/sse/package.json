@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/stream-sse",
   "description": "Tuvren SSE stream adapter leaf: projects Tuvren stream events onto Server-Sent Events for HTTP hosts.",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -28,7 +28,7 @@
     "@tuvren/framework-testkit": "workspace:*"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*"
+    "@tuvren/core": "workspace:~"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {

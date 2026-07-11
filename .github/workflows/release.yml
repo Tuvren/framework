@@ -1,0 +1,68 @@
+# KRT-BL003: registry publication with npm provenance.
+#
+# Provenance requires a CI OIDC context (`id-token: write`), which is why the
+# real publish lives here and not in a local command — see
+# tools/scripts/publish-registry.ts, which refuses `--publish` outside CI.
+#
+# Operator flow:
+#   1. Land the release commit (versions computed by `bun run release`,
+#      release gate green).
+#   2. Configure the `NPM_TOKEN` repository secret (granular automation token
+#      with publish rights for the @tuvren scope). Trusted publishing can
+#      replace the token once the packages exist on the registry.
+#   3. Trigger this workflow (workflow_dispatch). Leave `dry_run: true` for a
+#      full rehearsal; set it to `false` for the real publish.
+#   4. After a real publish, run the acceptance check locally:
+#      `bun tools/scripts/publish-registry.ts --verify-consumer <version>`.
+
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Rehearse only (npm publish --dry-run); no registry mutation"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: publish curated package set (${{ inputs.dry_run && 'dry run' || 'REAL' }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Set up npm auth
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build the publishable package set
+        run: bun run nx run-many -t build
+
+      - name: Publication preflight (freeze gate, tilde ranges, topology, tarball completeness)
+        run: bun tools/scripts/publish-registry.ts --preflight
+
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            bun tools/scripts/publish-registry.ts --dry-run
+          else
+            bun tools/scripts/publish-registry.ts --publish
+          fi

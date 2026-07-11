@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/framework-typescript-certification",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "dependencies": {
     "@ag-ui/core": "0.0.52",

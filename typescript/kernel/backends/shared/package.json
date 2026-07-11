@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/backend-shared",
   "description": "Shared kernel-backend invariant core: the reclamation, record-utils, and run-transition-legality logic common to the memory, SQLite, and PostgreSQL backends, parameterized by backend-owned error-code prefix.",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
     "@tuvren/kernel-protocol": "workspace:*"
   },
   "peerDependencies": {
-    "@tuvren/core": "workspace:*"
+    "@tuvren/core": "workspace:~"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {
