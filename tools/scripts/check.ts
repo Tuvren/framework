@@ -27,7 +27,8 @@ import {
   AUTHORITY_GATE_STEPS,
   hasVerificationFailure,
   printVerificationSummary,
-  runVerification,
+  runVerificationPhases,
+  type VerificationPhase,
   type VerificationStep,
 } from "./verify.js";
 
@@ -85,44 +86,62 @@ const args = process.argv.slice(2);
 const baseArg = args.find((arg) => arg.startsWith(BASE_FLAG));
 const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
 
-const steps: VerificationStep[] = [
-  ...buildInnerLoopAuthorityGate(),
+// The authority validators are the same independent family verify's first
+// phase already runs concurrently, so they share one concurrent phase here
+// too (KRT-BM002). The affected lane gets its own phase (Nx parallelizes
+// internally), and the Rust gate stays serial — clippy and cargo test share
+// the target dir and interleaving two large Rust builds helps nothing.
+const phases: VerificationPhase[] = [
   {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "affected",
-      "-t",
-      "typecheck,test,lint",
-      `--base=${base}`,
-    ],
+    id: "inner-loop authority gate",
+    steps: buildInnerLoopAuthorityGate(),
+  },
+  {
+    concurrency: 1,
     id: `affected typecheck/test/lint (base ${base})`,
+    steps: [
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "affected",
+          "-t",
+          "typecheck,test,lint",
+          `--base=${base}`,
+        ],
+        id: `affected typecheck/test/lint (base ${base})`,
+      },
+    ],
   },
 ];
 
 if (await rustChangedSince(base)) {
-  steps.push(
-    {
-      command: [
-        "cargo",
-        "clippy",
-        "--workspace",
-        "--all-targets",
-        "--",
-        "-D",
-        "warnings",
-      ],
-      id: "Rust workspace lint (rust files changed)",
-    },
-    {
-      command: ["cargo", "test", "--workspace"],
-      id: "Rust workspace tests (rust files changed)",
-    }
-  );
+  phases.push({
+    concurrency: 1,
+    id: "Rust workspace gate (rust files changed)",
+    steps: [
+      {
+        command: [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings",
+        ],
+        id: "Rust workspace lint (rust files changed)",
+      },
+      {
+        command: ["cargo", "test", "--workspace"],
+        id: "Rust workspace tests (rust files changed)",
+      },
+    ],
+  });
 }
 
-const results = await runVerification(steps);
+const results = await runVerificationPhases(phases);
 printVerificationSummary(results);
 
 if (hasVerificationFailure(results)) {

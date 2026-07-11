@@ -18,8 +18,8 @@ import process from "node:process";
 import {
   hasVerificationFailure,
   printVerificationSummary,
-  runVerification,
-  type VerificationStep,
+  runVerificationPhases,
+  type VerificationPhase,
 } from "./verify.js";
 
 const KERNEL_TYPECHECK_PROJECTS = [
@@ -47,74 +47,100 @@ if (args.some((arg) => arg !== FRESH_FLAG)) {
 }
 
 const fresh = args.includes(FRESH_FLAG);
-const results = await runVerification(createKernelVerificationSteps({ fresh }));
+const results = await runVerificationPhases(
+  createKernelVerificationPhases({ fresh })
+);
 printVerificationSummary(results);
 
 if (hasVerificationFailure(results)) {
   process.exitCode = 1;
 }
 
-function createKernelVerificationSteps(options: {
+// Independent steps share a concurrent phase instead of one-step serial
+// phases (KRT-BM002). The groupings below are dependency-honest:
+// - The two authority validators are read-only and independent.
+// - Typecheck (source-only targets), the testkit test run, and the
+//   compatibility evidence check touch disjoint targets and read-only
+//   evidence, so they run concurrently; Nx serializes its own cache access.
+// - The conformance run-many stays in its own serial phase: it drives real
+//   services (PostgreSQL) and already parallelizes internally.
+function createKernelVerificationPhases(options: {
   fresh: boolean;
-}): readonly VerificationStep[] {
+}): readonly VerificationPhase[] {
   const cacheModeArgs = options.fresh ? ["--skipNxCache"] : [];
 
   return [
     {
-      command: [
-        "bun",
-        "tools/scripts/authority-packet/validate-authority-packets.ts",
+      id: "kernel authority and conformance-plan validation",
+      steps: [
+        {
+          command: [
+            "bun",
+            "tools/scripts/authority-packet/validate-authority-packets.ts",
+          ],
+          id: "kernel authority packet validation",
+        },
+        {
+          command: ["bun", "tools/conformance/plan-compiler/validate-plans.ts"],
+          id: "kernel conformance plan validation",
+        },
       ],
-      id: "kernel authority packet validation",
     },
     {
-      command: ["bun", "tools/conformance/plan-compiler/validate-plans.ts"],
-      id: "kernel conformance plan validation",
-    },
-    {
-      command: [
-        "bun",
-        "run",
-        "nx",
-        "run-many",
-        "-t",
-        "typecheck",
-        "-p",
-        KERNEL_TYPECHECK_PROJECTS.join(","),
-        "--parallel=4",
-        ...cacheModeArgs,
+      id: "kernel typecheck, testkit tests, and compatibility evidence",
+      steps: [
+        {
+          command: [
+            "bun",
+            "run",
+            "nx",
+            "run-many",
+            "-t",
+            "typecheck",
+            "-p",
+            KERNEL_TYPECHECK_PROJECTS.join(","),
+            "--parallel=4",
+            ...cacheModeArgs,
+          ],
+          id: "kernel TypeScript typecheck",
+        },
+        {
+          command: [
+            "bun",
+            "run",
+            "nx",
+            "run",
+            "kernel-testkit:test",
+            ...cacheModeArgs,
+          ],
+          id: "kernel testkit tests",
+        },
+        {
+          command: ["bun", "run", "compatibility:check"],
+          id: "workspace compatibility evidence check",
+        },
       ],
-      id: "kernel TypeScript typecheck",
     },
     {
-      command: [
-        "bun",
-        "run",
-        "nx",
-        "run",
-        "kernel-testkit:test",
-        ...cacheModeArgs,
+      concurrency: 1,
+      id: "kernel conformance",
+      steps: [
+        {
+          command: [
+            "bun",
+            "run",
+            "nx",
+            "run-many",
+            "-t",
+            "conformance",
+            "-p",
+            KERNEL_CONFORMANCE_PROJECTS.join(","),
+            "--parallel=3",
+            ...cacheModeArgs,
+          ],
+          id: "kernel memory, SQLite, and PostgreSQL conformance",
+        },
       ],
-      id: "kernel testkit tests",
-    },
-    {
-      command: [
-        "bun",
-        "run",
-        "nx",
-        "run-many",
-        "-t",
-        "conformance",
-        "-p",
-        KERNEL_CONFORMANCE_PROJECTS.join(","),
-        "--parallel=3",
-        ...cacheModeArgs,
-      ],
-      id: "kernel memory, SQLite, and PostgreSQL conformance",
-    },
-    {
-      command: ["bun", "run", "compatibility:check"],
-      id: "workspace compatibility evidence check",
     },
   ];
 }
