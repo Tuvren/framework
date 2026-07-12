@@ -32,10 +32,35 @@ if ! command -v devenv >/dev/null 2>&1; then
   exit 1
 fi
 
+# Bounded readiness wait: `devenv up -d` returns before PostgreSQL accepts
+# connections, so a kernel verify lane launched immediately afterwards could
+# race the database's startup. Poll until ready (or time out loudly) so this
+# script does not report success until the database actually is. This stays
+# inside the manual convenience script — never embed it in Nx targets or
+# runner commands (see header).
+wait_for_postgres() {
+  if ! command -v pg_isready >/dev/null 2>&1; then
+    echo "services:up: 'pg_isready' not found on PATH; skipping the readiness wait." >&2
+    return 0
+  fi
+
+  for _ in $(seq 1 30); do
+    if pg_isready >/dev/null 2>&1; then
+      echo "services:up: PostgreSQL is accepting connections."
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "services:up: PostgreSQL did not become ready within 30s; check 'devenv processes' logs." >&2
+  return 1
+}
+
 if output="$(devenv up -d 2>&1)"; then
   [ -n "${output}" ] && echo "${output}"
   echo "services:up: devenv-managed services started."
-  exit 0
+  wait_for_postgres
+  exit $?
 fi
 
 # Idempotency hinges on devenv's human-readable "already running" message. That
@@ -47,7 +72,8 @@ fi
 # this wrapper removes). Update the regex if that happens.
 if echo "${output}" | grep -qiE "already running"; then
   echo "services:up: devenv-managed services already running (no-op)."
-  exit 0
+  wait_for_postgres
+  exit $?
 fi
 
 echo "${output}" >&2

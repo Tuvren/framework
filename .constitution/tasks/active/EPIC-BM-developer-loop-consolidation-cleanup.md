@@ -339,3 +339,6 @@ Feature: Small documentation and readiness findings are resolved
 ##### KRT-BM008 Deviations & Justifications
 - **Touched Files:** root `package.json` (lint script), in addition to the runtime sources/test helpers and the new `tools/scripts/kraken-surface-gate.ts`.
 - **Justification:** The ticket's description requires the guard be "wired into `bun run lint` or `bun run codegen`"; wiring into `bun run lint` necessarily edits the root lint script entry. Locally-defined internal helper names (`decodeKrakenMessageRecord`, `toKrakenMessages`, `isKrakenRunnerFactory`) were left untouched per the ticket's out-of-scope clause for intentional internal `Kraken*` naming at definition sites.
+
+##### KRT-BM009 Resolution Notes
+- **(c)** Closed as already-resolved per the ticket's STOP condition: `docs/perf-benchmarks.md`'s only retired-name reference (`framework-runtime-core`, lines 51-55) is already a deliberate, self-annotating historical footnote ("left as originally recorded rather than fabricating a re-run"); no unannotated stale name was found elsewhere in the file, so the passage was preserved as-is.
