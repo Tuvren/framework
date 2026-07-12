@@ -78,3 +78,7 @@ Completed ticket detail is removed from the active execution plan and retained t
 
 **Status:** **CLOSED (2026-07-11).** First real registry publish executed: 19 packages live at `0.1.0` with npm provenance. Full ticket bodies (KRT-BL001–BL004), per-ticket Deviations & Justifications, and the outgoing hand-offs (npm trusted-publishing migration before January 2027, the TypeScript 7 dual-pin proposal, and doc/tooling residuals) retained in `.constitution/tasks/completed/EPIC-BL-sdk-freeze-registry-publication.md` and git history.
 
+
+### Epic BM — Developer-Loop and Consolidation Cleanup (KRT)
+
+**Status:** **CLOSED (2026-07-11).** All nine independent DX/perf/tech-debt tickets landed (CI caching + shared setup, phase-engine consolidation, drift-guarded kernel project lists, conformance Ajv memoization, portability-check bounded concurrency, `@tuvren/core-types` shim removal, workspace manifest hygiene, Kraken-alias cleanup + public-surface lint guard, small-findings sweep) with no semantic gate's pass/fail meaning changed, completing the Post-Audit SDK-Readiness block at 97/97 story points. Full ticket bodies (KRT-BM001–BM009), per-ticket Deviations & Justifications, and the STOP-condition resolution notes retained in `.constitution/tasks/completed/EPIC-BM-developer-loop-consolidation-cleanup.md` and git history.
