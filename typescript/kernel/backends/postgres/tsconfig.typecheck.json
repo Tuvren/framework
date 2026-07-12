@@ -11,7 +11,6 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "../../protocol/src/**/*.ts",
-    "../../testkit/src/**/*.ts",
-    "../../../core-types/src/**/*.ts"
+    "../../testkit/src/**/*.ts"
   ]
 }

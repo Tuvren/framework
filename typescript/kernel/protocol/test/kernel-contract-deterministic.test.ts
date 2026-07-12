@@ -16,7 +16,6 @@
 
 import { describe, expect, test } from "bun:test";
 import { TuvrenValidationError } from "@tuvren/core";
-import { deterministicKernelRecordFixture } from "../../../core-types/test/kernel-record-fixtures.js";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
@@ -32,6 +31,7 @@ import {
   kernelProtocolLogicalFixtures,
   kernelProtocolStoredFixtures,
 } from "./kernel-protocol-fixtures.js";
+import { deterministicKernelRecordFixture } from "./kernel-record-fixtures.ts";
 
 function invokeHashTurnTreeIdentity(
   schemaId: string,

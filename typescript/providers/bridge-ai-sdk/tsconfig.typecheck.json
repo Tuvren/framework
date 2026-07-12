@@ -20,7 +20,6 @@
       "@tuvren/core/lifecycle": ["../../core/src/lifecycle/index.ts"],
       "@tuvren/core/security": ["../../core/src/security/index.ts"],
       "@tuvren/sdk": ["../../sdk/src/index.ts"],
-      "@tuvren/core-types": ["../../core-types/src/index.ts"],
       "@tuvren/kernel-protocol": ["../../kernel/protocol/src/index.ts"],
       "@tuvren/provider-api": ["../../providers/provider-api/src/index.ts"],
       "@tuvren/provider-testkit": ["../../providers/testkit/src/index.ts"],
@@ -62,7 +61,6 @@
     "../../streaming/agui/src/**/*.ts",
     "../../streaming/core/src/**/*.ts",
     "../../streaming/sse/src/**/*.ts",
-    "../../kernel/protocol/src/**/*.ts",
-    "../../core-types/src/**/*.ts"
+    "../../kernel/protocol/src/**/*.ts"
   ]
 }

@@ -21,7 +21,6 @@
       "@tuvren/core/security": ["./typescript/core/src/security/index.ts"],
       "@tuvren/sdk": ["./typescript/sdk/src/index.ts"],
       "@tuvren/sdk/advanced": ["./typescript/sdk/src/advanced.ts"],
-      "@tuvren/core-types": ["./typescript/core-types/src/index.ts"],
       "@tuvren/kernel-protocol": ["./typescript/kernel/protocol/src/index.ts"],
       "@tuvren/provider-api": [
         "./typescript/providers/provider-api/src/index.ts"

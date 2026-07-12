@@ -98,7 +98,6 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   // documented exclusions (currently only the cargo-covered Rust projects).
   // That gate enforces exact parity in both directions.
   "shared-core",
-  "shared-core-types",
   "sdk",
   "kernel-contract-protocol",
   "kernel-runtime",
@@ -142,7 +141,6 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
 ];
 
 export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
-  "shared-core-types",
   "kernel-contract-protocol",
   "kernel-testkit",
   "backend-shared",

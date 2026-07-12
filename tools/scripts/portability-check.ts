@@ -36,11 +36,6 @@ interface DocumentedPackageSurface {
 const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
-    packageName: "@tuvren/core-types",
-    packageRoot: "typescript/core-types",
-  },
-  {
-    classification: "Bun-and-Node validated",
     packageName: "@tuvren/kernel-protocol",
     packageRoot: "typescript/kernel/protocol",
   },
