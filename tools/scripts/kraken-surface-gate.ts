@@ -79,6 +79,17 @@ function collectEntryFiles(packageDir: string): string[] {
   const manifest = JSON.parse(
     readFileSync(join(packageDir, "package.json"), "utf8")
   );
+
+  // No exports map and no src entry barrel: the package declares no public
+  // source surface to guard (the certification wrapper projects). Anything
+  // with an explicit exports map must resolve every subpath, below.
+  if (
+    manifest.exports === undefined &&
+    !existsSync(join(packageDir, "src/index.ts"))
+  ) {
+    return [];
+  }
+
   const subpaths = Object.keys(manifest.exports ?? { ".": true });
   const entries: string[] = [];
 
@@ -91,9 +102,16 @@ function collectEntryFiles(packageDir: string): string[] {
       existsSync(join(packageDir, relativePath))
     );
 
-    if (candidate !== undefined) {
-      entries.push(join(packageDir, candidate));
+    // Fail loud instead of silently skipping: a subpath this resolver cannot
+    // map to a source file would otherwise become an unscanned public
+    // surface, which reads as "verified clean" when it was never looked at.
+    if (candidate === undefined) {
+      throw new Error(
+        `kraken-surface-gate: ${packageDir} exports subpath "${subpath}" but no source entry exists at the conventional locations (${sourceCandidatesForExport(subpath).join(", ")}) — extend sourceCandidatesForExport`
+      );
     }
+
+    entries.push(join(packageDir, candidate));
   }
 
   return entries;
@@ -106,7 +124,10 @@ const WHITESPACE = /\s+/;
 const NAMED_EXPORT_BLOCK = /export\s+(?:type\s+)?\{([^}]*)\}/g;
 const DECLARATION_EXPORT =
   /export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:const|let|var|function\*?|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/g;
-const WILDCARD_EXPORT = /export\s+\*\s+from/;
+// Any `export *` form is unverifiable name-by-name — including the ES2020
+// namespace re-export `export * as Ns from`, which would otherwise slip a
+// (possibly Kraken*-named) namespace binding past both extraction branches.
+const WILDCARD_EXPORT = /export\s+\*/;
 
 function exportedNames(source: string): string[] {
   const names: string[] = [];
