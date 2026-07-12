@@ -46,9 +46,12 @@ Cross-language truth lives in committed, machine-readable authority under `spec/
 ## Guides
 
 - [How conformance works](docs/guides/how-conformance-works.md)
+- [Streaming and events](docs/guides/streaming-and-events.md)
 - [Adding a new implementation language](docs/guides/add-a-language.md)
 - [Adding a new driver](docs/guides/add-a-driver.md)
 - [Adding a new runner](docs/guides/add-a-runner.md)
+- [Adding a new kernel backend](docs/guides/add-a-kernel-backend.md)
+- [Publishing and adopter onboarding](docs/guides/publishing-and-adopter-onboarding.md)
 - [Kernel Specification](docs/KrakenKernelSpecification.md)
 - [Framework Specification](docs/KrakenFrameworkSpecification.md)
 
