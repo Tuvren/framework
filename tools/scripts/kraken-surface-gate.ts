@@ -90,6 +90,22 @@ function collectEntryFiles(packageDir: string): string[] {
     return [];
   }
 
+  // A string-form or conditions-only exports map ("exports": "./dist/x.js",
+  // or an object with only condition keys like "import"/"types") yields zero
+  // dot subpaths and would leave the whole package unscanned while still
+  // counting as "checked" — fail loud instead, mirroring the unresolvable-
+  // subpath branch below.
+  if (
+    manifest.exports !== undefined &&
+    (typeof manifest.exports !== "object" ||
+      manifest.exports === null ||
+      !Object.keys(manifest.exports).some((key) => key.startsWith(".")))
+  ) {
+    throw new Error(
+      `kraken-surface-gate: ${packageDir} declares an "exports" form with no "." subpaths (string shorthand or conditions-only object) — the resolver cannot map it to source entries and the package would go unscanned; use dot-subpath exports or extend the resolver`
+    );
+  }
+
   const subpaths = Object.keys(manifest.exports ?? { ".": true });
   const entries: string[] = [];
 
@@ -122,17 +138,107 @@ const TYPE_PREFIX = /^\s*type\s+/;
 const RENAMED_EXPORT = /\bas\s+([A-Za-z_$][\w$]*)\s*$/;
 const WHITESPACE = /\s+/;
 const NAMED_EXPORT_BLOCK = /export\s+(?:type\s+)?\{([^}]*)\}/g;
-// `const\s+enum` must precede `const` so the capture lands on the enum's
-// name instead of the literal "enum"; `namespace`/`module` bind a public
+// Single-name declaration forms only; `const`/`let`/`var` go through the
+// declarator scanner below because one statement can bind several names
+// (`export const a = 1, KrakenB = 2;`). `const\s+enum` stays here so the
+// capture lands on the enum's name; `namespace`/`module` bind a public
 // namespace name just like a class or enum does.
 const DECLARATION_EXPORT =
-  /export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:const\s+enum|const|let|var|function\*?|class|interface|type|enum|namespace|module)\s+([A-Za-z_$][\w$]*)/g;
+  /export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:const\s+enum|function\*?|class|interface|type|enum|namespace|module)\s+([A-Za-z_$][\w$]*)/g;
+const VARIABLE_EXPORT = /export\s+(?:declare\s+)?(?:const|let|var)\s+/g;
+const CONST_ENUM_TAIL = /^enum\s/;
+const LEADING_IDENTIFIER = /^\s*([A-Za-z_$][\w$]*)/;
 // Any `export *` form is unverifiable name-by-name — including the ES2020
 // namespace re-export `export * as Ns from`, which would otherwise slip a
 // (possibly Kraken*-named) namespace binding past both extraction branches.
 const WILDCARD_EXPORT = /export\s+\*/;
 
-function exportedNames(source: string): string[] {
+function skipStringLiteral(source: string, start: number): number {
+  const quote = source[start];
+  let index = start + 1;
+
+  while (index < source.length) {
+    const char = source[index];
+
+    if (char === "\\") {
+      index += 2;
+    } else if (char === quote) {
+      return index + 1;
+    } else {
+      index += 1;
+    }
+  }
+
+  return index;
+}
+
+// Splits the declarator list of an `export const/let/var` statement at
+// top-level commas (commas inside initializer parens/brackets/braces or
+// string literals do not separate declarators), stopping at the top-level
+// semicolon that ends the statement.
+function splitTopLevelDeclarators(source: string, start: number): string[] {
+  const segments: string[] = [];
+  let depth = 0;
+  let segmentStart = start;
+  let index = start;
+
+  while (index < source.length) {
+    const char = source[index];
+
+    if (char === '"' || char === "'" || char === "`") {
+      index = skipStringLiteral(source, index);
+      continue;
+    }
+
+    if (char === "(" || char === "[" || char === "{") {
+      depth += 1;
+    } else if (char === ")" || char === "]" || char === "}") {
+      depth -= 1;
+    } else if (depth === 0 && char === ",") {
+      segments.push(source.slice(segmentStart, index));
+      segmentStart = index + 1;
+    } else if (depth === 0 && char === ";") {
+      break;
+    }
+
+    index += 1;
+  }
+
+  segments.push(source.slice(segmentStart, index));
+  return segments;
+}
+
+function variableExportNames(source: string, entry: string): string[] {
+  const names: string[] = [];
+
+  for (const match of source.matchAll(VARIABLE_EXPORT)) {
+    const start = match.index + match[0].length;
+
+    // `export const enum X` is a single-name declaration handled by
+    // DECLARATION_EXPORT, not a variable declarator list.
+    if (CONST_ENUM_TAIL.test(source.slice(start))) {
+      continue;
+    }
+
+    for (const segment of splitTopLevelDeclarators(source, start)) {
+      const name = segment.match(LEADING_IDENTIFIER)?.[1];
+
+      // Destructuring or otherwise unnameable declarators cannot be verified
+      // name-by-name — reject them the same way `export *` is rejected.
+      if (name === undefined) {
+        throw new Error(
+          `kraken-surface-gate: ${entry} exports a variable declarator this scanner cannot name ("${segment.trim().slice(0, 60)}") — destructuring export patterns cannot be verified name-by-name; export named bindings explicitly`
+        );
+      }
+
+      names.push(name);
+    }
+  }
+
+  return names;
+}
+
+function exportedNames(source: string, entry: string): string[] {
   const names: string[] = [];
 
   for (const match of source.matchAll(NAMED_EXPORT_BLOCK)) {
@@ -157,6 +263,8 @@ function exportedNames(source: string): string[] {
       names.push(name);
     }
   }
+
+  names.push(...variableExportNames(source, entry));
 
   return names;
 }
@@ -183,7 +291,7 @@ for (const packageDir of resolveWorkspaceDirs()) {
       continue;
     }
 
-    for (const name of exportedNames(source)) {
+    for (const name of exportedNames(source, entry)) {
       if (name.includes("Kraken")) {
         violations.push({ entry, exportedName: name, packageName });
       }
