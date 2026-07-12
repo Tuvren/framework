@@ -31,7 +31,7 @@ import {
   kernelProtocolLogicalFixtures,
   kernelProtocolStoredFixtures,
 } from "./kernel-protocol-fixtures.js";
-import { deterministicKernelRecordFixture } from "./kernel-record-fixtures.ts";
+import { deterministicKernelRecordFixture } from "./kernel-record-fixtures.js";
 
 function invokeHashTurnTreeIdentity(
   schemaId: string,

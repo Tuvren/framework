@@ -122,8 +122,11 @@ const TYPE_PREFIX = /^\s*type\s+/;
 const RENAMED_EXPORT = /\bas\s+([A-Za-z_$][\w$]*)\s*$/;
 const WHITESPACE = /\s+/;
 const NAMED_EXPORT_BLOCK = /export\s+(?:type\s+)?\{([^}]*)\}/g;
+// `const\s+enum` must precede `const` so the capture lands on the enum's
+// name instead of the literal "enum"; `namespace`/`module` bind a public
+// namespace name just like a class or enum does.
 const DECLARATION_EXPORT =
-  /export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:const|let|var|function\*?|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/g;
+  /export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:const\s+enum|const|let|var|function\*?|class|interface|type|enum|namespace|module)\s+([A-Za-z_$][\w$]*)/g;
 // Any `export *` form is unverifiable name-by-name — including the ES2020
 // namespace re-export `export * as Ns from`, which would otherwise slip a
 // (possibly Kraken*-named) namespace binding past both extraction branches.
