@@ -15,14 +15,21 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional internal-engine surface.
-// @tuvren/runtime — the internal orchestration engine (ADR-057). This is NOT a
-// host-facing package: hosts compose the framework through `@tuvren/sdk`
-// (`createTuvren` + the curated `@tuvren/core` re-exports) and the leaf packages
-// they choose, never by importing `@tuvren/runtime` directly. The engine surface
-// below (runtime/orchestration/runner/capability/context/handoff/kernel-bridge
-// factories) is consumed by `@tuvren/sdk` and by the conformance adapters that
-// exercise the engine at a lower level; it carries no host-facing re-exports and
-// is not semver-guaranteed.
+
+/**
+ * `@tuvren/runtime` — the internal orchestration engine (ADR-057).
+ *
+ * This is NOT a host-facing package: hosts compose the framework through
+ * `@tuvren/sdk` (`createTuvren` + the curated `@tuvren/core` re-exports) and
+ * the leaf packages they choose, never by importing `@tuvren/runtime`
+ * directly. The engine surface below (runtime/orchestration/runner/
+ * capability/context/handoff/kernel-bridge factories) is consumed by
+ * `@tuvren/sdk` and by the conformance adapters that exercise the engine at a
+ * lower level; it carries no host-facing re-exports and is not
+ * semver-guaranteed.
+ *
+ * @packageDocumentation
+ */
 export type { BindingResolver } from "./lib/binding-resolver.js";
 export { createBindingResolver } from "./lib/binding-resolver.js";
 export type {

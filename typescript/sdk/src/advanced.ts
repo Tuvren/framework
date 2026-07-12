@@ -15,9 +15,17 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This subpath entrypoint is the intentional advanced composition surface.
-// Advanced composition surface (ADR-057 addendum): low-level factories for
-// hosts that build multi-agent orchestration, custom runner registries, or a
-// bespoke kernel, beyond the batteries-included `createTuvren`.
+
+/**
+ * `@tuvren/sdk/advanced` — the advanced composition surface (ADR-057 addendum).
+ *
+ * Low-level factories for hosts that build multi-agent orchestration, custom
+ * runner registries, or a bespoke kernel, beyond the batteries-included
+ * `createTuvren` entrypoint exposed by the package root. Most hosts never need
+ * this subpath: `createTuvren` composes the same factories with safe defaults.
+ *
+ * @packageDocumentation
+ */
 
 export {
   createRuntimeKernel,

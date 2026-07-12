@@ -36,6 +36,14 @@ import type {
   PauseContext,
 } from "./runtime-execution-types.js";
 
+/**
+ * Runtime-core operations {@link startRuntimeExecutionSession} sequences.
+ *
+ * Each member is one already-bound phase of the session (recovery, turn
+ * creation, resume/fresh preludes, the iteration loop, completion, failure
+ * handling), so the start function owns only the ordering and branching
+ * between them.
+ */
 interface RuntimeExecutionStartDependencies {
   completeExecution(
     handle: RuntimeExecutionHandle,
@@ -134,6 +142,15 @@ interface RuntimeExecutionStartDependencies {
   stopRunLeaseLoop(handle: RuntimeExecutionHandle): void;
 }
 
+/**
+ * Create the {@link RuntimeExecutionHandle} for a fresh execution request.
+ *
+ * The request is defensively normalized before it reaches the handle: the
+ * agent config is cloned for the request, the caller-supplied tools are
+ * replaced with a frozen snapshot, and the input signal is normalized. The
+ * handle receives a newly generated turn id and the request's schema id (or
+ * the default agent schema id when the request names none).
+ */
 export function createRuntimeExecutionHandle(
   owner: RuntimeExecutionHandleRuntime,
   request: ExecutionSessionRequest,

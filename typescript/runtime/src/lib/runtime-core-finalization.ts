@@ -26,8 +26,22 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { PauseContext } from "./runtime-execution-types.js";
 import { createToolRegistry } from "./tool-registry.js";
 
+/**
+ * Error wrapper signalling that turn finalization itself failed.
+ *
+ * Thrown by {@link completeExecution} when `finalizeTurnStatus` rejects, so
+ * that {@link handleExecutionFailure} can distinguish "the execution failed"
+ * from "the execution's outcome could not be persisted" and project both the
+ * original root cause (when the resolution was already a hard failure) and
+ * the finalization error itself.
+ */
 export class FinalizationFailure extends Error {
+  /** The error raised while finalizing the turn status. */
   readonly finalizationError: Error;
+  /**
+   * The hard-failure error the turn was being finalized with, when
+   * finalization was persisting a failed resolution; `undefined` otherwise.
+   */
   readonly rootCause?: Error;
 
   constructor(finalizationError: Error, rootCause?: Error) {
@@ -38,6 +52,11 @@ export class FinalizationFailure extends Error {
   }
 }
 
+/**
+ * Capability surface the finalization helpers require from the runtime core:
+ * turn-status persistence, head-state loading, run completion, event
+ * publication, and failure-time config resolution.
+ */
 export interface RuntimeCoreFinalizationHost {
   createId(): string;
   defaultRunnerId(): string;
@@ -82,6 +101,17 @@ export interface RuntimeCoreFinalizationHost {
   storeEventRecord(event: Record<string, unknown>): Promise<string>;
 }
 
+/**
+ * Publish the events for an execution that paused awaiting tool approval.
+ *
+ * When a pause context is present it is remembered on the handle for a later
+ * resume, an `approval.requested` event is published under the paused
+ * agent/runner identity, and the turn is closed with a `paused` `turn.end`
+ * event.
+ *
+ * @returns `true` when a pause was published (the caller must stop the
+ *   execution flow); `false` when `pauseContext` is `undefined`.
+ */
 export function publishPauseOutcome(
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
@@ -119,6 +149,10 @@ export function publishPauseOutcome(
   return true;
 }
 
+/**
+ * Publish an `approval.resolved` event for a resumed execution, or do nothing
+ * when no approval response is present.
+ */
 export function publishApprovalResolved(
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
@@ -140,6 +174,25 @@ export function publishApprovalResolved(
   );
 }
 
+/**
+ * Terminal failure path for an execution session: pick the authoritative
+ * error, persist a failed turn status when possible, and project the failure.
+ *
+ * Error precedence: a wall-clock execution-bound abort wins over whatever the
+ * interrupted work threw (BD006, see inline comment), then a
+ * {@link FinalizationFailure}'s root cause, then the normalized thrown error.
+ * The effective error is remembered on the handle, the active run is failed
+ * via `failActiveRunIfNeeded`, and — when the kernel turn exists — the turn
+ * status is finalized as a hard failure. Every path ends with the handle in
+ * the `failed` phase and a fatal error event; a secondary finalization error
+ * is additionally projected as non-fatal. This function itself never throws
+ * for finalization problems.
+ *
+ * @param error - The value thrown out of the execution flow; may be a
+ *   {@link FinalizationFailure} produced by {@link completeExecution}.
+ * @param failActiveRunIfNeeded - Callback that marks the handle's active
+ *   kernel run (if any) as failed before status finalization.
+ */
 export async function handleExecutionFailure(
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
@@ -232,6 +285,24 @@ export async function handleExecutionFailure(
   );
 }
 
+/**
+ * Complete an execution with its final resolution and close the turn.
+ *
+ * When the iteration loop was entered, the extensions' after-turn hooks run
+ * first against the finalized head state; a failing hook resolution is
+ * projected as a non-fatal error but does not change the outcome. The turn
+ * status is then finalized, a hard-failure resolution is projected as a
+ * fatal error event, and the handle status plus a `turn.end` event are
+ * emitted with the phase derived via {@link resolutionToPhase}.
+ *
+ * @param partial - Whether the resolution represents a partial result (for
+ *   example a cancellation after some progress).
+ * @param enteredIterationLoop - Gates the after-turn hooks; pass `false` for
+ *   preludes that never reached the loop.
+ * @throws FinalizationFailure when persisting the turn status fails, wrapping
+ *   the finalization error and — for a hard-failure resolution — the original
+ *   root cause.
+ */
 export async function completeExecution(
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
@@ -299,6 +370,14 @@ export async function completeExecution(
   );
 }
 
+/**
+ * Finalize an execution that was cancelled while paused for tool approval.
+ *
+ * Rebuilds the loop state from the pause context, marks the paused run as
+ * `failed` (recording a `paused_run_cancelled` event), lets the host
+ * finalize the rejected paused tool calls into a cancellation outcome, and
+ * completes the execution with that outcome via `completeExecutionFn`.
+ */
 export async function finalizePausedCancellation(
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,
@@ -343,6 +422,12 @@ export async function finalizePausedCancellation(
   );
 }
 
+/**
+ * Move the handle to the `failed` phase and project a finalization failure:
+ * the root cause (when present) as the fatal error and the finalization
+ * error as a secondary non-fatal error, or the finalization error alone as
+ * fatal.
+ */
 function projectFinalizationFailure(
   host: RuntimeCoreFinalizationHost,
   handle: RuntimeExecutionHandle,

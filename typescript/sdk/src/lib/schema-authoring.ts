@@ -27,6 +27,13 @@ import type {
 
 // ── Branded symbol ─────────────────────────────────────────────────────────
 
+/**
+ * Well-known brand symbol (`Symbol.for("tuvren.schema")`) marking a value as
+ * an already-normalized {@link Schema}. `asSchema` checks for this key first,
+ * so branded values pass through unchanged. Registered globally via
+ * `Symbol.for` so independently-loaded copies of the package agree on the
+ * brand.
+ */
 export const schemaSymbol = Symbol.for("tuvren.schema");
 
 // ── Schema types (ADR-038) ─────────────────────────────────────────────────
@@ -237,6 +244,19 @@ export function asSchema<T>(schema: FlexibleSchema<T>): Schema<T> {
  * `OUTPUT` is inferred from `execute`'s return type but is not carried
  * into the unparameterized `TuvrenToolDefinition` return type.  It is
  * reserved for a forthcoming typed-definition surface.
+ *
+ * @example
+ * ```ts
+ * import { z } from "zod";
+ * import { defineTool } from "@tuvren/sdk";
+ *
+ * const weather = defineTool({
+ *   name: "get_weather",
+ *   description: "Look up the current weather for a city",
+ *   inputSchema: z.object({ city: z.string() }),
+ *   execute: async ({ city }) => fetchWeather(city),
+ * });
+ * ```
  */
 export function defineTool<INPUT, OUTPUT>(options: {
   name: string;

@@ -30,6 +30,15 @@ import {
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
+/**
+ * Capability surface the execution-startup helpers require from the runtime
+ * core.
+ *
+ * The startup helpers in this module are pure orchestration: every kernel,
+ * event, and configuration effect is delegated through this host so the
+ * runtime core facade can supply its own implementations while the startup
+ * sequencing stays testable in isolation.
+ */
 export interface RuntimeCoreStartupHost {
   applyTerminalAgentTransitionIfNeeded(
     handle: RuntimeExecutionHandle,
@@ -147,6 +156,23 @@ export interface RuntimeCoreStartupHost {
   ): Promise<void>;
 }
 
+/**
+ * Build the initial {@link LoopState} for an execution session.
+ *
+ * When the handle resumes a paused turn, the paused runner id, tool registry,
+ * client endpoint boundary, and carried extension-state updates are restored
+ * from the pause context so the resumed turn continues with the exact
+ * instances it paused with; otherwise fresh instances are derived from the
+ * resolved active config and the request.
+ *
+ * @param host - Runtime capability surface used to resolve config, tools, and
+ *   client endpoint boundaries.
+ * @param handle - Execution handle whose request (and optional resume
+ *   context) seeds the state.
+ * @param recoveredExecution - Recovery record from an expired execution, used
+ *   by the host when resolving the active config.
+ * @returns A fresh loop state with `enteredIterationLoop` set to `false`.
+ */
 export function createExecutionLoopState(
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
@@ -185,6 +211,19 @@ export function createExecutionLoopState(
   };
 }
 
+/**
+ * Create the kernel turn record for a fresh execution, if one is needed.
+ *
+ * Skipped entirely when the handle resumes a paused turn or when a recovered
+ * turn is being reused (`reuseRecoveredTurn`), since the turn already exists
+ * in the kernel in both cases. Otherwise the parent turn id is resolved
+ * (validating branch lineage via the host) and a new turn is created against
+ * the given branch head.
+ *
+ * @param branchHeadHash - Branch head the new turn is anchored to.
+ * @param reuseRecoveredTurn - `true` when recovery already assigned an
+ *   existing turn id to the handle.
+ */
 export async function createExecutionTurnIfNeeded(
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
@@ -210,6 +249,13 @@ export async function createExecutionTurnIfNeeded(
   );
 }
 
+/**
+ * Publish the `turn.start` stream event for this execution.
+ *
+ * When the handle resumes a paused turn, the event carries the paused turn
+ * node hash as `resumedFrom` so consumers can correlate the resumption with
+ * the original pause point.
+ */
 export function publishTurnStart(
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
@@ -228,6 +274,31 @@ export function publishTurnStart(
   );
 }
 
+/**
+ * Run the fresh-start prelude before the iteration loop is entered.
+ *
+ * Incorporates the request input (unless recovery already did, and only when
+ * an `incorporateInput` callback is supplied), loads the branch head state,
+ * moves the handle status to `running`, and runs the extensions'
+ * before-turn hooks. State updates produced by the hooks are carried on the
+ * loop state for the first iteration to commit.
+ *
+ * The prelude can short-circuit the whole execution: when a before-turn hook
+ * yields a resolution, a soft failure is projected as a non-fatal error event
+ * (and the loop still runs), while any other resolution commits the pending
+ * extension-state updates and completes the execution immediately.
+ *
+ * @param recoveredExecutionMode - Recovery mode; `"skip_fresh_prelude"`
+ *   suppresses the before-turn hooks while still restoring running status.
+ * @param recoveredIterationCount - Iteration count restored from a recovered
+ *   execution; defaults to `0` for a truly fresh start.
+ * @param needsInputReincorporation - Forces input incorporation even when a
+ *   recovery mode is present.
+ * @param incorporateInput - Callback that incorporates the request signal
+ *   into the branch; omitted by callers that already incorporated it.
+ * @returns `true` when the execution was completed by a before-turn hook
+ *   resolution and the caller must not enter the iteration loop.
+ */
 export async function prepareFreshExecutionStart(
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
@@ -310,6 +381,19 @@ export async function prepareFreshExecutionStart(
   return true;
 }
 
+/**
+ * Run the resume-side prelude for an execution resumed from a pause.
+ *
+ * Marks the paused run as `failed` (recording a `paused_run_resolved` event
+ * so the pause is durably resolved) and checkpoints the running status at the
+ * paused iteration count. The state-observability emission produced by that
+ * checkpoint is deferred to the caller, which publishes it only after
+ * `turn.start` so the event order stays stable.
+ *
+ * @returns `undefined` when the handle is not resuming (fresh start);
+ *   otherwise `{ completed: false, pendingStateObservability }` where the
+ *   pending observability payload, if present, must be emitted by the caller.
+ */
 export async function prepareResumedExecutionStartPrelude(
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
@@ -359,6 +443,21 @@ export async function prepareResumedExecutionStartPrelude(
   };
 }
 
+/**
+ * Complete the resume-side startup by replaying the paused tool execution.
+ *
+ * Handles, in order: a cancellation that arrived while paused (completing the
+ * execution with the cancelled resolution), the actual resumed tool
+ * execution, a re-pause outcome (published and left pending), a soft failure
+ * (projected as a non-fatal error, letting the loop continue), and a terminal
+ * resolution (optionally routed through a terminal agent transition before
+ * completing the execution).
+ *
+ * @returns `true` when the execution reached a terminal outcome (completed,
+ *   cancelled, or re-paused) and the caller must not enter the iteration
+ *   loop; `false` when the loop should run, including for a fresh
+ *   (non-resumed) handle.
+ */
 export async function finishResumedExecutionStart(
   host: RuntimeCoreStartupHost,
   handle: RuntimeExecutionHandle,
@@ -433,6 +532,10 @@ export async function finishResumedExecutionStart(
   return false;
 }
 
+/**
+ * Resolve the current head turn-node hash of the execution's branch via the
+ * host.
+ */
 export async function resolveExecutionBranchHead(
   host: RuntimeCoreStartupHost,
   branchId: string,

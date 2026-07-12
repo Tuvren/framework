@@ -22,6 +22,10 @@ import type { DurableRuntimeStatus } from "./runtime-core-recovery.js";
 import type { TurnLineageRecord } from "./runtime-core-response.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Warning payload emitted once per extension when its serialized manifest
+ * state exceeds the configured budget.
+ */
 interface ManifestExtensionStateWarning {
   activeAgent: string;
   budgetBytes: number;

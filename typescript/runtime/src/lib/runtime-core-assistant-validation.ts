@@ -34,6 +34,12 @@ import {
 } from "./runtime-core-assistant-validation-sequences.js";
 import { inferFinishReason } from "./runtime-core-recovery.js";
 
+/**
+ * Mutable cursor state used while replaying a runner-emitted assistant event
+ * sequence against the parts of the durable assistant message. `partIndex`
+ * points at the durable part currently being matched; `deltaBuffer` and
+ * `sawDelta` accumulate delta payloads until the part's done event closes it.
+ */
 interface AssistantDeltaValidationState {
   completed: boolean;
   currentMessageId: string | undefined;
@@ -44,11 +50,25 @@ interface AssistantDeltaValidationState {
   toolCallStarted: boolean;
 }
 
+/**
+ * Result of checking one event against message.start/message.done boundary
+ * rules: `handled` means the event was consumed by boundary processing and
+ * needs no part-level validation; `error` carries a boundary violation.
+ */
 interface AssistantBoundaryValidation {
   error?: TuvrenRuntimeError;
   handled: boolean;
 }
 
+/**
+ * Returns whether a stream event type belongs to the assistant content
+ * envelope: message.start/message.done plus the text, reasoning, file,
+ * structured, and tool_call content events emitted between them.
+ *
+ * Used to select the runner-emitted events that participate in assistant
+ * event validation and synthesis; `custom` and runtime lifecycle events are
+ * excluded.
+ */
 export function isAssistantContentStreamEvent(
   type: TuvrenStreamEvent["type"]
 ): boolean {
@@ -71,6 +91,15 @@ export function isAssistantContentStreamEvent(
   }
 }
 
+/**
+ * Returns whether a stream event type participates in structural (non-delta)
+ * assistant validation.
+ *
+ * This is the {@link isAssistantContentStreamEvent} subset without the
+ * `*.delta` and `tool_call.args_delta` types; delta events are validated
+ * separately by accumulating their payloads against the durable message
+ * parts.
+ */
 export function isAssistantValidationEvent(
   type: TuvrenStreamEvent["type"]
 ): boolean {
@@ -89,6 +118,16 @@ export function isAssistantValidationEvent(
   }
 }
 
+/**
+ * Asserts that a runner-emitted stream event uses only the event types
+ * runners may emit directly: `custom` plus the assistant content envelope.
+ *
+ * Shared-core lifecycle events (run, turn, tool, error projections, and so
+ * on) are owned by the runtime and must never be emitted by runners.
+ *
+ * @throws TuvrenRuntimeError with code `invalid_stream_event` when the event
+ * type is not runner-emittable.
+ */
 export function assertRunnerRuntimeEvent(event: TuvrenStreamEvent): void {
   switch (event.type) {
     case "custom":
@@ -118,10 +157,26 @@ export function assertRunnerRuntimeEvent(event: TuvrenStreamEvent): void {
   }
 }
 
+/**
+ * Serializes a structured-output or tool-call input value into the canonical
+ * delta string used when synthesizing assistant delta events.
+ *
+ * @returns `JSON.stringify(value)`, or the string `"null"` when the value is
+ * not JSON-serializable (for example `undefined`).
+ */
 export function serializeAssistantDeltaValue(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 
+/**
+ * Validates assistant content events that were emitted without a durable
+ * assistant message being returned.
+ *
+ * This is only acceptable for hard-failed runs (where the stream may be
+ * truncated) and for envelope-only provider-native/mediated responses backed
+ * by pre-staged provider tool messages (AY003); any other combination is an
+ * invalid stream.
+ */
 function validateMissingAssistantMessage(
   assistantEvents: TuvrenStreamEvent[],
   messages: TuvrenMessage[],
@@ -149,6 +204,36 @@ function validateMissingAssistantMessage(
   );
 }
 
+/**
+ * Validates that runner-emitted assistant content events are consistent with
+ * the durable assistant message the runner returned.
+ *
+ * Emitted events are filtered to assistant content events and split into
+ * message.start → message.done sequences. Every non-final sequence must be a
+ * well-formed standalone sequence; the final sequence must additionally match
+ * the durable assistant message part-for-part, including reassembled delta
+ * buffers and a finish reason consistent with the message's tool-call
+ * content. Emitting assistant events without a durable assistant message is
+ * only allowed for hard failures and envelope-only provider tool responses
+ * (AY003).
+ *
+ * When `assistantEventReconciliation` is `"allow_final_sequence_divergence"`,
+ * the final sequence may diverge from the durable message, provided an
+ * `aroundModel` extension is active, the divergence actually exists, and
+ * neither the message nor the final sequence involves tool calls; the final
+ * sequence must still be internally well formed.
+ *
+ * @param messages - Durable messages returned by the runner.
+ * @param emittedEvents - Every event the runner emitted during execution.
+ * @param resolution - Effective resolution for the iteration; a hard "fail"
+ * relaxes the durable-message requirement for truncated streams.
+ * @param assistantEventReconciliation - Optional runner opt-out of final
+ * sequence matching; invalid when no assistant events were emitted.
+ * @param activeExtensions - Extensions active in the current agent config,
+ * used to authorize reconciliation.
+ * @returns A `TuvrenRuntimeError` describing the first violation, or
+ * `undefined` when the emitted events are valid.
+ */
 export function validateRunnerAssistantEvents(
   messages: TuvrenMessage[],
   emittedEvents: TuvrenStreamEvent[],
@@ -252,6 +337,12 @@ export function validateRunnerAssistantEvents(
   return finalSequenceMatchError;
 }
 
+/**
+ * Validates the final assistant event sequence against the durable assistant
+ * message: the non-delta events must match the synthesized expected sequence
+ * one-for-one, and the delta events must reassemble each message part
+ * exactly.
+ */
 function validateAssistantSequenceAgainstMessage(
   assistantMessage: Extract<TuvrenMessage, { role: "assistant" }>,
   finalAssistantSequence: TuvrenStreamEvent[]
@@ -305,6 +396,12 @@ function validateAssistantSequenceAgainstMessage(
   return undefined;
 }
 
+/**
+ * Replays the full assistant event sequence (deltas included) against the
+ * durable message parts, requiring exactly one message.start/message.done
+ * bracket, per-part delta buffers that reassemble each part's content, and
+ * no dangling buffers or open tool calls at the end.
+ */
 function validateRunnerAssistantDeltas(
   message: Extract<TuvrenMessage, { role: "assistant" }>,
   assistantEvents: TuvrenStreamEvent[]
@@ -358,6 +455,12 @@ function validateRunnerAssistantDeltas(
   return undefined;
 }
 
+/**
+ * Handles message.start/message.done bracketing for the delta replay: the
+ * first event must be message.start, all subsequent events must carry the
+ * same messageId, no event may follow message.done, and the message.done
+ * finish reason must agree with the durable message's tool-call content.
+ */
 function validateAssistantMessageBoundary(
   event: TuvrenStreamEvent,
   expectedFinishReason: TuvrenModelResponse["finishReason"],
@@ -452,6 +555,10 @@ function getAssistantEventMessageId(
   }
 }
 
+/**
+ * Dispatches one content event to the validator for the durable message part
+ * the replay cursor currently points at; events past the last part fail.
+ */
 function validateRunnerAssistantDeltaEvent(
   parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"],
   event: TuvrenStreamEvent,
@@ -627,6 +734,11 @@ function validateToolCallAssistantDeltaEvent(
   return undefined;
 }
 
+/**
+ * Returns whether an accumulated delta buffer reassembles the expected
+ * durable value, either as a raw string match or by parsing the buffer as
+ * JSON and comparing deeply.
+ */
 function doesSerializedDeltaMatchValue(
   serializedDelta: string,
   expectedValue: unknown
@@ -658,6 +770,12 @@ function isProviderOnlyResponseEventSet(
   );
 }
 
+/**
+ * Returns true for a tool-role message whose parts are all provider-owned
+ * tool results (`providerMetadata.owner === "provider"`), i.e. results the
+ * provider executed itself and pre-staged instead of routing through the
+ * Tool Execution Gateway (AY003).
+ */
 function isPrestagedProviderToolMessage(message: TuvrenMessage): boolean {
   if (message.role !== "tool") {
     return false;

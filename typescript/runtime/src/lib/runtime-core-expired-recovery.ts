@@ -32,10 +32,26 @@ import {
 import { toOrderedHashArray } from "./runtime-core-response.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Options enabling expired-run recovery for a runtime instance.
+ */
 export interface RuntimeCoreExpiredRecoveryOptions {
+  /**
+   * Stable owner identifier this execution uses when preempting an expired
+   * run's lease.
+   */
   executionOwnerId: string;
 }
 
+/**
+ * Host seam for expired-execution recovery.
+ *
+ * Supplies the runtime kernel (optionally with run-liveness support), the
+ * recovery clock and owner options, branch-head loading, durable
+ * status/agent readers, and terminal turn-end publication used by
+ * {@link recoverExpiredExecutionBranchIfNeeded} and
+ * {@link completeRecoveredTerminalExecution}.
+ */
 export interface RuntimeCoreExpiredRecoveryHost {
   getNow(): EpochMs;
   getRunLivenessOptions(): RuntimeCoreExpiredRecoveryOptions | undefined;
@@ -56,6 +72,31 @@ export interface RuntimeCoreExpiredRecoveryHost {
   ): Promise<DurableRuntimeStatus | undefined>;
 }
 
+/**
+ * Detect and preempt an expired run on the branch before starting a new
+ * execution.
+ *
+ * Returns `undefined` when recovery is not applicable: the kernel lacks
+ * run-liveness support, liveness options are not configured, or no expired
+ * run exists for the branch. Otherwise the expired run is preempted under
+ * this owner's ID (`stale_running_recovery`); a lost preemption race is
+ * classified into a `recoveryContended` result instead of throwing.
+ *
+ * After preemption the recovered branch head is classified by the phase the
+ * stale run died in (see `classifyRecoveredExecutionMode`):
+ *
+ * - `reuse_turn`: the incoming signal is compared against the recovered
+ *   turn's last user message to decide whether input must be
+ *   re-incorporated; a mismatch yields a bare `preempted` result.
+ * - Other modes require the signal to match the recovered turn; on match
+ *   the recovered agent name, estimated iteration count, and durable
+ *   runtime status are returned alongside the mode.
+ *
+ * @param branchId - Branch whose expired run should be recovered.
+ * @param signal - Incoming input signal used to match the recovered turn.
+ * @returns The recovery classification, or `undefined` when there is
+ *   nothing to recover.
+ */
 export async function recoverExpiredExecutionBranchIfNeeded(
   host: RuntimeCoreExpiredRecoveryHost,
   branchId: string,
@@ -155,6 +196,17 @@ export async function recoverExpiredExecutionBranchIfNeeded(
   };
 }
 
+/**
+ * Replay a recovered execution that had already reached a durable terminal
+ * status.
+ *
+ * Used for `complete_terminal_status` recoveries: the handle's status is
+ * replaced with the recovered agent, manifest, and terminal phase, and the
+ * matching turn-end event is published — no new iterations run.
+ *
+ * @throws TuvrenRuntimeError with code `missing_recovered_terminal_status`
+ *   when the recovery lacks a durable `completed`/`failed` runtime status.
+ */
 export async function completeRecoveredTerminalExecution(
   host: RuntimeCoreExpiredRecoveryHost,
   handle: RuntimeExecutionHandle,
@@ -185,6 +237,14 @@ export async function completeRecoveredTerminalExecution(
   host.publishTurnEnd(handle, recoveredRuntimeStatus.state, loopState);
 }
 
+/**
+ * Estimate how many iterations the expired execution completed by counting
+ * assistant messages appended after the turn's starting message set.
+ *
+ * Falls back to `1` when the turn or its start node cannot be resolved, when
+ * the recovered head does not extend the start messages, or when no
+ * assistant messages were appended.
+ */
 async function estimateRecoveredIterationCount(
   kernel: RuntimeKernel,
   turnId: string,

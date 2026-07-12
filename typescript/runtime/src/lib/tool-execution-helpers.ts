@@ -55,6 +55,11 @@ const ajv = new Ajv({
 });
 const validatorCache = new WeakMap<object, ValidateFunction>();
 
+/**
+ * Approval provenance recorded on a `ToolResultPart`'s `output.approval`
+ * field: the decision type, its optional host message, and — for `edit`
+ * decisions — the original/edited input pair.
+ */
 interface ApprovalResultMetadata {
   editedInput?: unknown;
   message?: string;
@@ -62,6 +67,16 @@ interface ApprovalResultMetadata {
   type: string;
 }
 
+/**
+ * Control-flow signal that unwinds the `aroundTool` chain when a nested
+ * layer requests an approval pause.
+ *
+ * Carries the `ApprovalRequest` to surface to the host plus the extension
+ * state updates accumulated on the way up, so a pause does not lose state
+ * written by outer handlers. Callers of the chain catch this signal and
+ * convert it into the approval arm of a tool outcome; it is never surfaced
+ * as a tool failure.
+ */
 // This remains throw-based intentionally: aroundTool handlers receive
 // `next(): Promise<ToolResultPart>`, so a nested pause has no value-level way to
 // short-circuit that contract without widening the public handler surface.
@@ -76,6 +91,23 @@ export class ToolPauseSignal extends Error {
   }
 }
 
+/**
+ * Wraps a {@link ToolBatchEnvironment} with a fence composed from the
+ * environment's own signal and a batch-level abort signal.
+ *
+ * Once the fence aborts, `publishEvent`, `publishCustom`, and
+ * `reportSoftError` become silent no-ops, and `stageResult` throws the abort
+ * reason both before and after the underlying staging call — the
+ * commit-under-valid-authority gate of ADR-052 / KRT-BG004: a result produced
+ * after execution authority is lost (lease loss, cancellation, wall-clock
+ * deadline, or sibling batch failure) is never committed to durable history
+ * under the dead owner.
+ *
+ * @param batchSignal - Signal aborted when any sibling call in the parallel
+ *   batch fails (see `executeConcurrentToolCalls`).
+ * @returns A shallow copy of the environment with fenced publication and
+ *   staging seams and `signal` set to the composed fence signal.
+ */
 export function createBatchScopedEnvironment(
   environment: ToolBatchEnvironment,
   batchSignal: AbortSignal
@@ -130,6 +162,20 @@ export function createBatchScopedEnvironment(
   };
 }
 
+/**
+ * Builds the `ToolExecutionContext` handed to `tool.execute` (and to
+ * declarative approval-policy functions, framework spec §8.3/§8.4).
+ *
+ * `emit`/`forward` publish onto the turn stream but become no-ops once
+ * `timeoutSignal` aborts, so a timed-out tool cannot keep emitting events.
+ * `idempotencyKey` is derived from `(runId, callId, fencingToken)` so
+ * external systems can deduplicate a side effect retried under a new
+ * execution owner (ADR-052 side-effect-once; see
+ * `deriveIdempotencyKey` in idempotency-identity.ts). Tool `metadata` is
+ * deep-cloned (preserving functions) so the tool cannot mutate the registry's
+ * definition, and `signal` falls back to the batch signal when no per-call
+ * timeout signal exists.
+ */
 export function createToolExecutionContext(
   toolCall: ToolCallPart,
   tool: TuvrenToolDefinition,
@@ -169,6 +215,17 @@ export function createToolExecutionContext(
   };
 }
 
+/**
+ * Builds the isolated `AroundToolContext` passed to one `aroundTool` handler.
+ *
+ * Every data field (`input`, `manifest`, `sharedExports`, `extensionState`,
+ * `tool`, `toolCall`) is a deep clone — handlers observe snapshots and cannot
+ * mutate runtime state in place; state flows back only through the handler's
+ * returned `state` and through the context object it passes to `next()`.
+ * `emit`/`forward` publish to the turn stream and are silenced once the
+ * handler's timeout signal aborts. `extensionState` is this extension's own
+ * slice of the context manifest.
+ */
 export function createAroundToolContext(
   toolCall: ExecutableToolCall,
   extensionName: string,
@@ -206,6 +263,17 @@ export function createAroundToolContext(
   };
 }
 
+/**
+ * Applies the (optional) replacement context an `aroundTool` handler passed
+ * to `next(context)` onto the executable call for the rest of the chain.
+ *
+ * The handler-controlled fields (`input`, `tool`, `toolCall`, and an
+ * overriding `approvalDecision`) come from the replacement context, while the
+ * runtime-owned `approvalAudit` and `sandboxExecutor` are always preserved
+ * from the base call — a handler cannot bypass the configured sandbox
+ * isolation boundary (AX004) or erase edit-audit provenance. With no
+ * replacement context, the base call is returned unchanged.
+ */
 export function toExecutableToolCall(
   base: ExecutableToolCall,
   nextContext: AroundToolContext | undefined
@@ -226,6 +294,16 @@ export function toExecutableToolCall(
   };
 }
 
+/**
+ * Emits the call's `tool.start` event exactly once, in wave turn order.
+ *
+ * Waits for the call's turn in the wave's start chain, re-checks `emitted`
+ * (a nested `aroundTool` `next()` may have emitted while waiting), publishes
+ * `tool.start` with capability attribution, then settles the wave barrier and
+ * releases the next call's turn. Per framework spec §6.4, `tool.start` fires
+ * only when the framework actually enters the first executable step for the
+ * call — never merely because the model requested the tool.
+ */
 export async function emitToolStartIfNeeded(
   toolCall: ExecutableToolCall,
   environment: ToolBatchEnvironment,
@@ -256,6 +334,15 @@ export async function emitToolStartIfNeeded(
   toolStartState.releaseTurn();
 }
 
+/**
+ * Builds the `PendingToolCall` entry for a call awaiting host approval,
+ * offering the default decision set (`approve`, `edit`, `reject`).
+ *
+ * @param input - The validated input the call would execute with.
+ * @param message - Optional prompt override (e.g. the policy engine's
+ *   `requiresApproval` reason).
+ * @defaultValue message - `Approve tool "<name>"?`
+ */
 export function createPendingToolCall(
   toolCall: { callId: string; name: string },
   input: unknown,
@@ -270,6 +357,16 @@ export function createPendingToolCall(
   };
 }
 
+/**
+ * Guarantees that an `aroundTool`-supplied `ApprovalRequest` includes the
+ * call being paused.
+ *
+ * If the extension already listed the call, its entry is refreshed with the
+ * current input and name; otherwise a default pending entry is appended.
+ * This keeps the extension free to add other pending calls while making it
+ * impossible to pause a call without representing it in the request.
+ * Returns a new request object; the input is not mutated.
+ */
 export function normalizeApprovalRequest(
   toolCall: { callId: string; name: string },
   input: unknown,
@@ -309,6 +406,12 @@ export function normalizeApprovalRequest(
   };
 }
 
+/**
+ * True when the error is the `invalid_approval_request` runtime error raised
+ * for a malformed or misused `aroundTool` approval (e.g. requesting approval
+ * after `next()` already ran). These are extension programming errors and
+ * propagate out of the batch instead of becoming tool-failure results.
+ */
 export function isApprovalRequestValidationError(error: unknown): boolean {
   return (
     error instanceof Error &&
@@ -317,12 +420,20 @@ export function isApprovalRequestValidationError(error: unknown): boolean {
   );
 }
 
+/** Type guard narrowing a `Promise.allSettled` entry to a rejection. */
 export function isRejectedPromiseResult(
   result: PromiseSettledResult<unknown>
 ): result is PromiseRejectedResult {
   return result.status === "rejected";
 }
 
+/**
+ * Evaluates a tool's declarative approval policy (framework spec §8.4):
+ * a boolean is returned as-is, a function policy is invoked with the
+ * validated input and the tool's execution context.
+ *
+ * @returns `true` when the invocation must pause for host approval.
+ */
 export async function evaluateApprovalPolicy(
   policy: NonNullable<TuvrenToolDefinition["approval"]>,
   input: unknown,
@@ -331,6 +442,19 @@ export async function evaluateApprovalPolicy(
   return typeof policy === "function" ? await policy(input, context) : policy;
 }
 
+/**
+ * Validates a tool's output value against its declared `outputSchema`
+ * (AX001).
+ *
+ * Supports both schema flavors from framework spec §8.2: a custom schema
+ * object exposing `validate()` (whose returned `value` may be a coerced or
+ * transformed copy), or a plain JSON Schema compiled with Ajv (in which case
+ * `value` is the input untouched). A `validate()` implementation that throws
+ * is reported as a validation failure, not an execution error.
+ *
+ * @returns `{ valid: true, value }` with the value to forward, or
+ *   `{ valid: false, details }` with validator diagnostics.
+ */
 export function validateToolOutput(
   schema: NonNullable<TuvrenToolDefinition["outputSchema"]>,
   output: unknown
@@ -369,6 +493,19 @@ export function validateToolOutput(
   return { details: formatAjvErrors(validator.errors), valid: false };
 }
 
+/**
+ * Validates a tool-call input against the tool's `inputSchema` (framework
+ * spec §8.6 step 2; re-run on the resume path for `edit` decisions).
+ *
+ * Same dual-flavor semantics as {@link validateToolOutput}: custom
+ * `validate()` schemas may return a coerced `value`, Ajv-compiled JSON
+ * Schemas return the original input. Compiled validators are cached per
+ * schema object (see `getCompiledValidator`), so repeated invocations of the
+ * same tool do not recompile.
+ *
+ * @returns `{ valid: true, value }` with the value the tool should execute
+ *   with, or `{ valid: false, details }` with validator diagnostics.
+ */
 export function validateToolInput(
   tool: TuvrenToolDefinition,
   input: unknown

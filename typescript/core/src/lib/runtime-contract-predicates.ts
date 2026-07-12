@@ -102,6 +102,12 @@ const SCHEMA_RECORD_KEYWORDS = [
   "properties",
 ];
 
+/**
+ * Validates the shared stream-event envelope: `timestamp` must be a
+ * canonical `EpochMs` (safe integer, never `-0`) and `source`, when present
+ * and defined, must be a valid {@link EventSource} attribution record
+ * (KrakenFrameworkSpecification §1.8).
+ */
 export function hasCanonicalEpochMsTimestampAndValidSource(
   value: Record<string, unknown>
 ): value is Record<string, unknown> & { timestamp: number } {
@@ -120,6 +126,7 @@ export function hasCanonicalEpochMsTimestampAndValidSource(
   return true;
 }
 
+/** True when `value[key]` is `undefined` or a boolean. */
 export function isOptionalBooleanProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -127,6 +134,7 @@ export function isOptionalBooleanProperty<
   return value[key] === undefined || typeof value[key] === "boolean";
 }
 
+/** True when `value[key]` is `undefined` or a valid {@link ApprovalPolicy}. */
 export function isOptionalApprovalPolicy<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -134,6 +142,10 @@ export function isOptionalApprovalPolicy<
   return value[key] === undefined || isApprovalPolicy(value[key]);
 }
 
+/**
+ * True when `value[key]` is `undefined` or a canonical `HashString`
+ * (lowercase 64-character SHA-256 hex digest).
+ */
 export function isOptionalHashStringProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -141,6 +153,11 @@ export function isOptionalHashStringProperty<
   return value[key] === undefined || isHashString(value[key]);
 }
 
+/**
+ * True when `value[key]` is `undefined` or a JSON-serializable plain-object
+ * record (see {@link isSerializableRecord}). Used for optional
+ * `providerMetadata`/`metadata`-style fields.
+ */
 export function isOptionalSerializableRecordProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -148,6 +165,10 @@ export function isOptionalSerializableRecordProperty<
   return value[key] === undefined || isSerializableRecord(value[key]);
 }
 
+/**
+ * True when `value[key]` is `undefined` or any JSON-serializable contract
+ * value (see {@link isSerializableContractValue}).
+ */
 export function isOptionalSerializableContractValueProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -155,6 +176,7 @@ export function isOptionalSerializableContractValueProperty<
   return value[key] === undefined || isSerializableContractValue(value[key]);
 }
 
+/** True when `value[key]` is `undefined` or a valid {@link ProviderUsage}. */
 export function isOptionalProviderUsage<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -162,6 +184,7 @@ export function isOptionalProviderUsage<
   return value[key] === undefined || isProviderUsage(value[key]);
 }
 
+/** True when `value[key]` is `undefined` or a string (empty allowed). */
 export function isOptionalStringProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -169,6 +192,10 @@ export function isOptionalStringProperty<
   return value[key] === undefined || typeof value[key] === "string";
 }
 
+/**
+ * True when `value[key]` is `undefined` or a non-empty (after trimming)
+ * string.
+ */
 export function isOptionalNonEmptyStringProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -176,6 +203,7 @@ export function isOptionalNonEmptyStringProperty<
   return value[key] === undefined || isNonEmptyStringProperty(value, key);
 }
 
+/** True when `value[key]` is a non-empty (after trimming) string. */
 export function isNonEmptyStringProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -183,16 +211,22 @@ export function isNonEmptyStringProperty<
   return isNonEmptyStringValue(value[key]);
 }
 
+/** True when `value` is a string with non-whitespace content. */
 export function isNonEmptyStringValue(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+/** True when `value` is an array with at least one element. */
 export function isNonEmptyArray(
   value: unknown
 ): value is [unknown, ...unknown[]] {
   return Array.isArray(value) && value.length > 0;
 }
 
+/**
+ * True when `value[key]` is `undefined` or a valid timeout (non-negative
+ * finite number of milliseconds; see {@link isTimeoutMs}).
+ */
 export function isOptionalTimeoutProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -200,10 +234,17 @@ export function isOptionalTimeoutProperty<
   return value[key] === undefined || isTimeoutMs(value[key]);
 }
 
+/**
+ * True when `value` is a valid {@link ApprovalPolicy}: a static boolean or a
+ * per-invocation policy function. The function is never invoked here — the
+ * check stays structural so probing untrusted input cannot execute user
+ * code.
+ */
 export function isApprovalPolicy(value: unknown): value is ApprovalPolicy {
   return typeof value === "boolean" || typeof value === "function";
 }
 
+/** True when `value[key]` is a finite number greater than or equal to zero. */
 export function isNonNegativeFiniteNumberProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -216,6 +257,16 @@ export function isNonNegativeFiniteNumberProperty<
   );
 }
 
+/**
+ * Returns `true` when `value` is a structurally valid JSON Schema for the
+ * shared contract seam: either a boolean schema or a JSON-serializable
+ * plain object whose standard keywords (`type`, `required`, `enum`,
+ * numeric bounds, string keywords, subschema keywords, ...) all have
+ * well-formed shapes, recursively.
+ *
+ * This is a structural guard, not a metaschema engine: structurally valid
+ * but unsatisfiable schemas are intentionally accepted.
+ */
 export function isTuvrenJsonSchema(value: unknown): value is TuvrenJsonSchema {
   return (
     typeof value === "boolean" ||
@@ -223,24 +274,46 @@ export function isTuvrenJsonSchema(value: unknown): value is TuvrenJsonSchema {
   );
 }
 
+/**
+ * Returns `true` when `value` is a JSON-serializable contract value:
+ * `null`, booleans, strings, finite numbers, and acyclic arrays/plain
+ * objects thereof. Cyclic structures and non-plain objects (class
+ * instances, symbol keys, accessor properties) are rejected so the value
+ * round-trips through JSON without loss.
+ */
 export function isSerializableContractValue(
   value: unknown
 ): value is TuvrenJsonValue {
   return isKrakenJsonValue(value, new WeakSet());
 }
 
+/**
+ * Returns `true` when `value` is a plain-object record whose values are all
+ * JSON-serializable contract values (see
+ * {@link isSerializableContractValue}).
+ */
 export function isSerializableRecord(
   value: unknown
 ): value is { [key: string]: TuvrenJsonValue } {
   return isKrakenJsonObject(value, new WeakSet());
 }
 
+/**
+ * Returns `true` when `value` is usable as a tool input/output schema:
+ * either a structurally valid JSON Schema ({@link isTuvrenJsonSchema}) or an
+ * executable {@link CustomSchema} exposing `toJSONSchema()` and
+ * `validate()` functions.
+ */
 export function isKrakenToolSchema(
   value: unknown
 ): value is TuvrenJsonSchema | CustomSchema {
   return isTuvrenJsonSchema(value) || isCustomSchema(value);
 }
 
+/**
+ * True when `value` is a valid {@link ProviderUsage}: exactly `inputTokens`
+ * and `outputTokens`, both non-negative safe integers.
+ */
 export function isProviderUsage(value: unknown): value is ProviderUsage {
   return (
     isPlainObject(value) &&
@@ -250,10 +323,12 @@ export function isProviderUsage(value: unknown): value is ProviderUsage {
   );
 }
 
+/** True when `value` is a valid timeout: a non-negative finite number (ms). */
 export function isTimeoutMs(value: unknown): boolean {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
+/** True when `value[key]` is a non-negative safe integer. */
 export function isNonNegativeSafeIntegerProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,

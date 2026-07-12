@@ -81,6 +81,23 @@ const STRUCTURED_OUTPUT_REQUEST_KEYS = new Set(["name", "schema", "strict"]);
 const CONTEXT_POLICY_KEYS = new Set(["evaluate"]);
 const LOOP_POLICY_KEYS = new Set(["evaluate"]);
 
+/**
+ * Returns `true` when `value` structurally satisfies the {@link RuntimeRunner}
+ * contract (KrakenFrameworkSpecification §5.6).
+ *
+ * A valid runner is an object with:
+ * - `id`: a non-empty (after trimming) string identifier, and
+ * - `execute`: a function, and
+ * - `resume`: absent or a function (approval resume is framework-owned, so
+ *   `resume` is optional on the shared seam).
+ *
+ * Never throws: property-access traps or other probe failures collapse to
+ * `false`.
+ *
+ * @param value - Untrusted candidate to probe.
+ * @returns `true` when `value` can be used as a `RuntimeRunner`.
+ * @see {@link assertRuntimeRunner} for the throwing variant.
+ */
 export function isRuntimeRunner(value: unknown): value is RuntimeRunner {
   return safePredicate(
     () =>
@@ -95,6 +112,17 @@ export function isRuntimeRunner(value: unknown): value is RuntimeRunner {
   );
 }
 
+/**
+ * Asserts that `value` satisfies the {@link RuntimeRunner} contract.
+ *
+ * Same structural check as {@link isRuntimeRunner}, expressed as a TypeScript
+ * assertion for registration seams that must reject invalid runners eagerly.
+ *
+ * @param value - Untrusted candidate runner.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_runner_contract` when the
+ *   value is not a valid runner; the offending value is attached as `details`.
+ */
 export function assertRuntimeRunner(
   value: unknown,
   label = "value"
@@ -107,6 +135,49 @@ export function assertRuntimeRunner(
   }
 }
 
+/**
+ * Asserts that `value` is a contract-valid {@link RunnerExecutionResult}
+ * (KrakenFrameworkSpecification §5.6, "`RunnerExecutionResult` is
+ * intentionally minimal").
+ *
+ * Field-level invariants enforced:
+ * - Only the keys `resolution`, `messages`, `partial`,
+ *   `assistantEventReconciliation`, `stateUpdates`, and `toolExecutionMode`
+ *   may be present; any other key is rejected.
+ * - `resolution` is required and must be a valid {@link RuntimeResolution}
+ *   variant (see {@link assertRunnerRuntimeResolution}).
+ * - `partial`, when present, must be a boolean.
+ * - `assistantEventReconciliation`, when provided, must be exactly
+ *   `"allow_final_sequence_divergence"` (the aroundModel post-stream
+ *   replacement opt-in).
+ * - `toolExecutionMode`, when provided, must be `"parallel"` or
+ *   `"sequential"`.
+ * - `stateUpdates`, when present, must be an array of records containing
+ *   exactly `extensionName` (string) and `state` (object).
+ * - `messages`, when present, must be an array of valid `TuvrenMessage`
+ *   values in which every entry is either a single assistant message with no
+ *   `tool_result` parts, or a pre-staged provider tool message (AY003: role
+ *   `tool` whose parts are all `tool_result` with
+ *   `providerMetadata.owner === "provider"`). At most one assistant message
+ *   is allowed per result.
+ *
+ * Cross-field invariants enforced:
+ * - `partial: true` is only valid when `resolution.type === "fail"` and the
+ *   result stages an assistant message.
+ * - `toolExecutionMode` is required exactly when an assistant message
+ *   requests tool calls (contains a `tool_call` part), and invalid otherwise.
+ * - When tool calls are requested, `resolution` must be
+ *   `continue_iteration` — except for a failed `partial` result, whose
+ *   interrupted tool calls are durable context only and are never executed.
+ * - A `pause` resolution requires runner messages with tool calls.
+ * - `assistantEventReconciliation` requires an assistant message to
+ *   reconcile against.
+ *
+ * @param value - Untrusted result returned by a runner `execute`/`resume`.
+ * @param label - Prefix used in error messages (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_runner_result` naming the
+ *   first violated invariant.
+ */
 export function assertRunnerExecutionResult(
   value: unknown,
   label = "value"
@@ -192,6 +263,27 @@ export function assertRunnerExecutionResult(
   );
 }
 
+/**
+ * Asserts that `value` is a valid {@link RuntimeResolution} discriminated
+ * union variant (KrakenFrameworkSpecification §1.5).
+ *
+ * Each variant is validated against its exact key set — unknown extra keys
+ * are rejected:
+ * - `continue_iteration`: no payload fields.
+ * - `end_turn`: requires a string `reason`.
+ * - `pause`: requires a string `reason` and a valid `approval`
+ *   `ApprovalRequest` (validated via `assertApprovalRequest`).
+ * - `handoff`: requires a string `targetAgent` and a valid `contextPlan`
+ *   (validated via {@link assertRunnerHandoffContextPlan}); additionally,
+ *   `contextPlan.targetAgent` must equal the resolution's `targetAgent`.
+ * - `fail`: requires `error` to be an `Error` instance and `fatality` to be
+ *   `"hard"` or `"soft"`.
+ *
+ * @param value - Untrusted candidate resolution.
+ * @param label - Prefix used in error messages (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_runner_result` when the
+ *   value is not one of the variants above.
+ */
 export function assertRunnerRuntimeResolution(
   value: unknown,
   label = "value"
@@ -263,6 +355,25 @@ export function assertRunnerRuntimeResolution(
   });
 }
 
+/**
+ * Asserts that `value` is a valid {@link HandoffContextPlan}
+ * (KrakenFrameworkSpecification §1.5).
+ *
+ * Enforces:
+ * - `targetAgent`, `reason`, and `mode` are strings, `builder` is a function,
+ *   and `sourceContext` is an object.
+ * - `sourceContext` is a valid {@link HandoffSourceContext} (see
+ *   {@link assertRunnerHandoffSourceContext}).
+ * - Target-agent identity is consistent across the plan:
+ *   `sourceContext.handoffIntent.targetAgent` and
+ *   `sourceContext.targetAgent.name` must both equal the plan's
+ *   `targetAgent`.
+ *
+ * @param value - Untrusted candidate handoff plan.
+ * @param label - Prefix used in error messages (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_runner_result` on any
+ *   structural or identity mismatch.
+ */
 export function assertRunnerHandoffContextPlan(
   value: unknown,
   label = "value"
@@ -314,6 +425,27 @@ export function assertRunnerHandoffContextPlan(
   }
 }
 
+/**
+ * Asserts that `value` is a valid {@link HandoffSourceContext}
+ * (KrakenFrameworkSpecification §1.5).
+ *
+ * Enforces:
+ * - `messages` is an array whose entries are all valid `TuvrenMessage`
+ *   values (any role — this is source conversation history, not runner
+ *   output).
+ * - `manifest` is a valid `ContextManifest`.
+ * - `handoffIntent` is an object with a string `targetAgent`.
+ * - `helpers` exposes the context-engineering functions `loadMessage`,
+ *   `storeMessage`, and `storeMessages`.
+ * - `sourceAgent` and `targetAgent` are structurally valid `AgentConfig`
+ *   snapshots (exact key allowlist, policy/model/responseFormat/tool/
+ *   extension shape checks).
+ *
+ * @param value - Untrusted candidate handoff source context.
+ * @param label - Prefix used in error messages (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_runner_result` on the
+ *   first violated invariant.
+ */
 export function assertRunnerHandoffSourceContext(
   value: unknown,
   label = "value"
@@ -425,6 +557,12 @@ function assertRunnerMessages(
   }
 }
 
+/**
+ * True for a role-`tool` message whose parts are all `tool_result` parts
+ * attributed to the provider (`providerMetadata.owner === "provider"`).
+ * These AY003 pre-staged provider results may accompany the assistant
+ * message in `RunnerExecutionResult.messages`.
+ */
 function isPrestagedProviderToolMessage(message: TuvrenMessage): boolean {
   if (message.role !== "tool") {
     return false;
@@ -442,6 +580,11 @@ function isPrestagedProviderToolMessage(message: TuvrenMessage): boolean {
   });
 }
 
+/**
+ * Enforces the `partial` invariant: `partial: true` is only valid for failed
+ * execution results (`resolution.type === "fail"`) that stage at least one
+ * assistant message (KrakenFrameworkSpecification §5.6).
+ */
 function assertRunnerPartialResult(
   value: {
     messages?: TuvrenMessage[];
@@ -475,6 +618,11 @@ function assertRunnerPartialResult(
   }
 }
 
+/**
+ * Enforces the `toolExecutionMode` invariant: the mode is required when the
+ * staged assistant message requests tool calls and invalid when it does not
+ * (KrakenFrameworkSpecification §5.6).
+ */
 function assertRunnerToolExecutionMode(
   value: {
     messages?: TuvrenMessage[];
@@ -505,6 +653,12 @@ function assertRunnerToolExecutionMode(
   }
 }
 
+/**
+ * Enforces cross-field compatibility between staged messages and the
+ * resolution: requested tool calls force `continue_iteration` (except a
+ * failed `partial` result), `pause` requires pending tool calls, and
+ * `assistantEventReconciliation` requires an assistant message.
+ */
 function assertRunnerResolutionCompatibility(
   value: {
     assistantEventReconciliation?: RunnerAssistantEventReconciliation;

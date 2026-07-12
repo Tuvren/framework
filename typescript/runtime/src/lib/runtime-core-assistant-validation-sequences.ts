@@ -22,12 +22,21 @@ import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import { inferFinishReason } from "./runtime-core-recovery.js";
 import { cloneValue } from "./runtime-core-shared.js";
 
+/**
+ * Delta accumulation state for an open reasoning, structured, or text part
+ * inside a standalone assistant sequence.
+ */
 interface StandaloneAssistantActivePartState {
   deltaBuffer: string;
   kind: "reasoning" | "structured" | "text";
   sawDelta: boolean;
 }
 
+/**
+ * Delta accumulation state for an open tool_call part inside a standalone
+ * assistant sequence; `callId` and `name` pin subsequent args_delta/done
+ * events to the started call.
+ */
 interface StandaloneAssistantToolCallState {
   callId: string;
   deltaBuffer: string;
@@ -36,17 +45,38 @@ interface StandaloneAssistantToolCallState {
   sawDelta: boolean;
 }
 
+/**
+ * Part-level cursor for standalone sequence validation: either no part is
+ * open ("idle") or a delta-bearing part is being accumulated.
+ */
 type StandaloneAssistantPartState =
   | { kind: "idle" }
   | StandaloneAssistantActivePartState
   | StandaloneAssistantToolCallState;
 
+/**
+ * Mutable state threaded through standalone assistant sequence validation:
+ * the messageId every event must belong to, the currently open part, and
+ * whether any tool_call part has been seen (used to check the finish
+ * reason).
+ */
 interface StandaloneAssistantValidationState {
   currentMessageId: string;
   partState: StandaloneAssistantPartState;
   sawToolCallPart: boolean;
 }
 
+/**
+ * Splits runner-emitted assistant content events into message.start →
+ * message.done sequences.
+ *
+ * Sequences must be strictly bracketed: a message.start inside an open
+ * sequence, an event outside any open sequence, an unterminated trailing
+ * sequence, or an empty event list all produce a validation error.
+ *
+ * @returns The ordered list of complete sequences, or a `TuvrenRuntimeError`
+ * when bracketing is violated.
+ */
 export function splitAssistantEventSequences(
   assistantEvents: TuvrenStreamEvent[]
 ): TuvrenRuntimeError | TuvrenStreamEvent[][] {
@@ -82,6 +112,20 @@ export function splitAssistantEventSequences(
   return sequences;
 }
 
+/**
+ * Validates a single assistant event sequence for internal consistency
+ * without comparing it to a durable message.
+ *
+ * The sequence must open with message.start and close with message.done,
+ * every event must belong to the same messageId, every opened part must be
+ * closed (no dangling delta buffers), structured/text/tool_call done
+ * payloads must match their accumulated deltas, and the finish reason must
+ * agree with whether the sequence contains tool-call parts.
+ *
+ * Used for non-final sequences and for final sequences whose divergence
+ * from the durable message was explicitly allowed via
+ * assistantEventReconciliation.
+ */
 export function validateStandaloneAssistantSequence(
   assistantEvents: TuvrenStreamEvent[]
 ): TuvrenRuntimeError | undefined {
@@ -129,6 +173,15 @@ export function validateStandaloneAssistantSequence(
   return undefined;
 }
 
+/**
+ * Validates assistant events emitted by a hard-failed run, where the last
+ * sequence may legitimately be truncated.
+ *
+ * Complete sequences are held to the same rules as
+ * {@link validateStandaloneAssistantSequence}; a trailing sequence without a
+ * message.done is tolerated because the failure interrupted the stream
+ * mid-message.
+ */
 export function validateFailedRunnerAssistantEvents(
   assistantEvents: TuvrenStreamEvent[]
 ): TuvrenRuntimeError | undefined {
@@ -181,6 +234,16 @@ export function validateFailedRunnerAssistantEvents(
   return undefined;
 }
 
+/**
+ * Synthesizes the expected non-delta assistant event sequence for a durable
+ * assistant message.
+ *
+ * Produces a message.start, one done-style event per message part (with
+ * tool_call parts expanding to tool_call.start + tool_call.done), and a
+ * message.done whose finish reason is inferred from the message content.
+ * Timestamps are fixed to 0; {@link assistantValidationEventsMatch} never
+ * compares them.
+ */
 export function synthesizeAssistantValidationEvents(
   message: Extract<TuvrenMessage, { role: "assistant" }>,
   messageId: string
@@ -265,6 +328,14 @@ export function synthesizeAssistantValidationEvents(
   return events;
 }
 
+/**
+ * Compares an actual runner-emitted validation event against a synthesized
+ * expected event, checking only semantically significant fields.
+ *
+ * Timestamps are ignored. Structured data, tool inputs, and provider
+ * metadata use deep equality; file data uses byte-wise comparison; finish
+ * reasons only distinguish "tool_call" from every non-tool_call reason.
+ */
 export function assistantValidationEventsMatch(
   actualEvent: TuvrenStreamEvent,
   expectedEvent: TuvrenStreamEvent
@@ -337,6 +408,11 @@ export function assistantValidationEventsMatch(
   }
 }
 
+/**
+ * Returns whether an assistant event sequence contains any tool-call
+ * activity: tool_call.start/args_delta/done events or a message.done with
+ * finishReason "tool_call".
+ */
 export function assistantSequenceRequestsTools(
   events: TuvrenStreamEvent[]
 ): boolean {
@@ -349,6 +425,11 @@ export function assistantSequenceRequestsTools(
   );
 }
 
+/**
+ * Compares finish reasons at the granularity assistant validation cares
+ * about: "tool_call" must match exactly, while all non-tool_call reasons
+ * (stop, length, and so on) are treated as interchangeable.
+ */
 export function doesFinishReasonMatchAssistantContent(
   actualFinishReason: TuvrenModelResponse["finishReason"],
   expectedFinishReason: TuvrenModelResponse["finishReason"]
@@ -360,6 +441,10 @@ export function doesFinishReasonMatchAssistantContent(
   return actualFinishReason !== "tool_call";
 }
 
+/**
+ * Creates the shared `invalid_stream_event` error returned for every
+ * assistant event/delta validation failure.
+ */
 export function createAssistantDeltaValidationError(): TuvrenRuntimeError {
   return new TuvrenRuntimeError(
     "runner-emitted assistant deltas must match the durable assistant message",
@@ -369,6 +454,11 @@ export function createAssistantDeltaValidationError(): TuvrenRuntimeError {
   );
 }
 
+/**
+ * Dispatches one in-sequence content event to the validator for the
+ * currently open part state; message.start/message.done inside the body are
+ * always invalid.
+ */
 function validateStandaloneAssistantPartEvent(
   event: TuvrenStreamEvent,
   state: StandaloneAssistantValidationState
@@ -573,6 +663,10 @@ function getAssistantEventMessageId(
   }
 }
 
+/**
+ * Requires finishReason "tool_call" exactly when the sequence contained a
+ * tool_call part, and any non-tool_call reason otherwise.
+ */
 function doesFinishReasonMatchToolCallPresence(
   finishReason: TuvrenModelResponse["finishReason"],
   hasToolCallPart: boolean
@@ -584,6 +678,11 @@ function doesFinishReasonMatchToolCallPresence(
   return finishReason !== "tool_call";
 }
 
+/**
+ * Deep equality with byte-wise handling for Uint8Array file payloads, which
+ * isDeepStrictEqual alone would already compare but is special-cased here to
+ * short-circuit on length.
+ */
 function areStreamEventValuesEqual(left: unknown, right: unknown): boolean {
   if (left instanceof Uint8Array && right instanceof Uint8Array) {
     if (left.length !== right.length) {
@@ -602,6 +701,11 @@ function areStreamEventValuesEqual(left: unknown, right: unknown): boolean {
   return isDeepStrictEqual(left, right);
 }
 
+/**
+ * Returns whether an accumulated delta buffer reassembles the expected done
+ * payload, either as a raw string match or by parsing the buffer as JSON
+ * and comparing deeply.
+ */
 function doesSerializedDeltaMatchValue(
   serializedDelta: string,
   expectedValue: unknown

@@ -22,8 +22,17 @@ import {
   type RuntimeRunnerFactory,
 } from "@tuvren/core/runner";
 
+/**
+ * A registrable runner: either a ready {@link RuntimeRunner} instance or a
+ * {@link RuntimeRunnerFactory} that builds one on demand. Both expose an `id`.
+ */
 type RunnerEntry = RuntimeRunner | RuntimeRunnerFactory;
 
+/**
+ * Minimal in-memory {@link RunnerRegistry}: a `Map` keyed by runner id with
+ * duplicate-registration rejection. Entries are stored as-is; factories are
+ * only materialized later via {@link materializeRunner}.
+ */
 class BasicRunnerRegistry implements RunnerRegistry {
   private readonly runners = new Map<string, RunnerEntry>();
 
@@ -54,6 +63,18 @@ class BasicRunnerRegistry implements RunnerRegistry {
   }
 }
 
+/**
+ * Creates a runner registry pre-populated with the given runners or runner
+ * factories.
+ *
+ * @param runners - Entries to register up front; each must expose a non-empty
+ *   string `id`, unique within the registry.
+ * @returns A {@link RunnerRegistry} supporting `register`, `resolve`, and
+ *   `list`.
+ * @throws TuvrenRuntimeError with code `invalid_runner_registration` when an
+ *   entry has no non-empty `id`, or `duplicate_runner_registration` when two
+ *   entries share an id.
+ */
 export function createRunnerRegistry(
   runners: RunnerEntry[] = []
 ): RunnerRegistry {
@@ -66,6 +87,18 @@ export function createRunnerRegistry(
   return registry;
 }
 
+/**
+ * Turns a registry entry into a usable runner instance.
+ *
+ * A {@link RuntimeRunnerFactory} is invoked (`entry.create()`); a ready
+ * {@link RuntimeRunner} passes through unchanged. The result is validated
+ * with `assertRuntimeRunner` before it is returned.
+ *
+ * @param entry - The runner or runner factory resolved from a registry.
+ * @returns The materialized, shape-validated runner.
+ * @throws TuvrenValidationError when the materialized value does not satisfy
+ *   the `RuntimeRunner` contract (via `assertRuntimeRunner`).
+ */
 export function materializeRunner(entry: RunnerEntry): RuntimeRunner {
   const candidate =
     "create" in entry && typeof entry.create === "function"
