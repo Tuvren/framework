@@ -246,7 +246,7 @@ function spawnCommandCaptured(
   args: readonly string[],
   cwd: string
 ): Promise<{ code: number; output: string }> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const child = spawn(executable, args, {
       cwd,
       env: process.env,
@@ -257,7 +257,12 @@ function spawnCommandCaptured(
     child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
     child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
 
-    child.once("error", reject);
+    // A spawn failure (e.g. missing runtime binary) is reported through the
+    // same collect-all failure path as a failing import, so the remaining
+    // checks still run to completion instead of the pool rejecting mid-run.
+    child.once("error", (error) => {
+      resolve({ code: 1, output: `${String(error)}\n` });
+    });
     child.once("close", (code) => {
       resolve({
         code: code ?? 1,
