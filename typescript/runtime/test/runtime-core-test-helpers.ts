@@ -30,11 +30,11 @@ import type {
 import { assertContextManifest } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import { assertTuvrenMessage } from "@tuvren/core/messages";
-import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
-  type RuntimeKernel as KrakenKernel,
+  type RuntimeKernel,
 } from "@tuvren/kernel-protocol";
 
 export async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
@@ -48,7 +48,7 @@ export async function collectEvents<T>(events: AsyncIterable<T>): Promise<T[]> {
 }
 
 export async function readBranchCheckpointEventTypes(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   branchId: string
 ): Promise<string[]> {
   const branch = await kernel.branch.get(branchId);
@@ -327,7 +327,7 @@ function toNonEmptyArray<T>(values: T[]): [T, ...T[]] | undefined {
 }
 
 export function buildHandoffPlan(
-  context: Parameters<KrakenRunner["execute"]>[0],
+  context: Parameters<RuntimeRunner["execute"]>[0],
   sourceAgent: AgentConfig,
   targetAgent: AgentConfig,
   builder: HandoffContextPlan["builder"]
@@ -405,7 +405,7 @@ export function createStaticExecutionHandle(
 }
 
 export async function overwriteBranchSinglePath(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   branchId: string,
   turnId: string,
   path: "context.manifest" | "runtime.status",
@@ -578,7 +578,7 @@ export function extractLastMessageHash(manifest: {
 }
 
 export async function readBranchContextManifest(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   branchId: string
 ): Promise<ContextManifest> {
   const branch = await kernel.branch.get(branchId);

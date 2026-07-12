@@ -17,7 +17,7 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 import type { TuvrenRuntime } from "@tuvren/core/execution";
-import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
   createOrchestrationRuntime,
@@ -612,7 +612,7 @@ describe("orchestration-runtime child lifecycle", () => {
             };
           },
           id: "raw",
-        } satisfies KrakenRunner,
+        } satisfies RuntimeRunner,
       ]),
       kernel: harness.kernel,
     });

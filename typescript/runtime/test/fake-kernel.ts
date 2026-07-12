@@ -30,10 +30,10 @@ import {
   encodeDeterministicKernelRecord,
   hashTurnNodeIdentity,
   hashTurnTreeIdentity,
-  type RuntimeKernel as KrakenKernel,
   type PathValue,
   type RecoveryState,
   type RunRecord,
+  type RuntimeKernel,
   type RuntimeKernelRunLiveness,
   type StagedResult,
   type StepContext,
@@ -83,7 +83,7 @@ interface FakeKernelState {
 }
 
 export interface FakeKernelHarness {
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   readBranchManifest(branchId: string): Promise<TurnTreeManifest>;
   readBranchMessages(branchId: string): Promise<unknown[]>;
   readBranchRuns(branchId: string): Promise<RunRecord[]>;
@@ -96,7 +96,7 @@ export interface FakeKernelHarness {
 export interface FakeRunLivenessKernelHarness {
   getPreemptCalls(): number;
   getRenewLeaseCalls(): number;
-  kernel: KrakenKernel & RuntimeKernelRunLiveness;
+  kernel: RuntimeKernel & RuntimeKernelRunLiveness;
   leasedRuns: Map<string, FakeLeasedRunRecord>;
 }
 
@@ -113,7 +113,7 @@ export function createFakeKernelHarness(): FakeKernelHarness {
   };
   let clock = 1;
 
-  const kernel: KrakenKernel = {
+  const kernel: RuntimeKernel = {
     branch: {
       async create(branchId, threadId, fromTurnNodeHash) {
         const thread = requireThread(state, threadId);
@@ -793,7 +793,7 @@ export function createFakeRunLivenessKernelHarness(
           };
         },
       },
-    } satisfies KrakenKernel & RuntimeKernelRunLiveness,
+    } satisfies RuntimeKernel & RuntimeKernelRunLiveness,
     leasedRuns,
   };
 }

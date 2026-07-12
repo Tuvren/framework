@@ -17,22 +17,22 @@
 // biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity lint/suspicious/useAwait: Shared runner test doubles intentionally centralize event emission and async contract stubs.
 
 import type {
-  RuntimeRunner as KrakenRunner,
-  RuntimeRunnerFactory as KrakenRunnerFactory,
   RunnerExecutionContext,
   RunnerExecutionResult,
+  RuntimeRunner,
+  RuntimeRunnerFactory,
 } from "@tuvren/core/runner";
 import { createRunnerRegistry as createBaseRunnerRegistry } from "../src/index.ts";
 
 export function createRunnerRegistry(
-  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
-  entry: KrakenRunner | KrakenRunnerFactory
-): KrakenRunner | KrakenRunnerFactory {
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory {
   if (isKrakenRunnerFactory(entry)) {
     return {
       create() {
@@ -46,12 +46,12 @@ function wrapRunnerEntry(
 }
 
 function isKrakenRunnerFactory(
-  entry: KrakenRunner | KrakenRunnerFactory
-): entry is KrakenRunnerFactory {
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory {
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(runner: KrakenRunner): KrakenRunner {
+function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
   const resume = runner.resume;
 
   return {
@@ -98,7 +98,7 @@ export function createStaticRunner(
     context: RunnerExecutionContext
   ) => RunnerExecutionResult | Promise<RunnerExecutionResult>,
   id = "fake"
-): KrakenRunner {
+): RuntimeRunner {
   let emittedMessageSequence = 0;
 
   return {

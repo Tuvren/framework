@@ -25,11 +25,8 @@ import type {
   HandoffContextPlan,
   HandoffSourceContext,
 } from "@tuvren/core/execution";
-import type {
-  RuntimeRunner as KrakenRunner,
-  RunnerRegistry,
-} from "@tuvren/core/runner";
-import type { RuntimeKernel as KrakenKernel } from "@tuvren/kernel-protocol";
+import type { RunnerRegistry, RuntimeRunner } from "@tuvren/core/runner";
+import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 import type { PayloadCodecBinding } from "./payload-codec-seam.js";
 import { materializeRunner } from "./runner-registry.js";
 import {
@@ -62,7 +59,7 @@ const MISSING_CONTEXT_MESSAGE_HASH_PATTERN = /"(.+)"/;
 
 export interface FacadeOpsDependencies {
   cloneAgentConfigForRequest(config: AgentConfig): AgentConfig;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   resolveAgentConfig?(name: string): AgentConfig | undefined;
   resolveParentTurnIdOption?: (
     threadId: string,
@@ -120,7 +117,7 @@ export function materializeContextMessagesFacade(
 }
 
 export async function loadHeadStateFacade(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   branchId: string
 ): Promise<HeadState> {
@@ -128,21 +125,21 @@ export async function loadHeadStateFacade(
 }
 
 export async function readRecoveredActiveAgentNameFacade(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   turnTreeHash: HashString
 ): Promise<string | undefined> {
   return await readRuntimeRecoveredActiveAgentName(kernel, turnTreeHash);
 }
 
 export async function readRecoveredRuntimeStatusFacade(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   turnTreeHash: HashString
 ): Promise<DurableRuntimeStatus | undefined> {
   return await readRuntimeRecoveredRuntimeStatus(kernel, turnTreeHash);
 }
 
 export async function resolveExecutionSchemaIdFacade(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   ensureSchemaId: (schemaId?: string) => Promise<string>,
   request: ExecutionSessionRequest
 ): Promise<string> {
@@ -154,7 +151,7 @@ export async function resolveExecutionSchemaIdFacade(
 }
 
 export async function resolveParentTurnIdFacade(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   resolveParentTurnIdOption: FacadeOpsDependencies["resolveParentTurnIdOption"],
   threadId: string,
   branchId: string,
@@ -170,7 +167,7 @@ export async function resolveParentTurnIdFacade(
 }
 
 export async function advanceTurnAndBranchHeadFacade(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   handle: RuntimeExecutionHandle,
   turnNodeHash: HashString
 ): Promise<void> {
@@ -181,7 +178,7 @@ export async function advanceTurnAndBranchHeadFacade(
 export function materializeRunnerFacade(
   runnerRegistry: RunnerRegistry,
   runnerId: string
-): KrakenRunner {
+): RuntimeRunner {
   const runnerEntry = runnerRegistry.resolve(runnerId);
 
   if (runnerEntry === undefined) {
@@ -217,7 +214,7 @@ export function resolveFailureActiveConfigFacade(
 }
 
 export async function ensureSchemaIdFacade(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   schemaId?: string
 ): Promise<string> {
   const resolvedSchemaId = schemaId ?? DEFAULT_AGENT_SCHEMA_ID;

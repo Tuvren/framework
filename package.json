@@ -18,7 +18,7 @@
     "typescript/tools/*"
   ],
   "scripts": {
-    "lint": "bunx --bun @biomejs/biome check .",
+    "lint": "bunx --bun @biomejs/biome check . && bun tools/scripts/kraken-surface-gate.ts",
     "format": "bunx --bun @biomejs/biome check --write .",
     "nx": "bun ./tools/run-nx.mjs",
     "typecheck": "bun run nx run-many -t typecheck --parallel=4",

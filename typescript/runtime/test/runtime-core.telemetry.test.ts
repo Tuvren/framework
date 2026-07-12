@@ -16,7 +16,7 @@
 
 import { describe, expect, spyOn, test } from "bun:test";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type {
   TelemetryDestination,
   TelemetryEvent,
@@ -53,7 +53,7 @@ describe("runtime operational telemetry", () => {
       resume() {
         return Promise.reject(new Error("resume was not expected"));
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -110,7 +110,7 @@ describe("runtime operational telemetry", () => {
       resume() {
         return Promise.reject(new Error("resume was not expected"));
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -163,7 +163,7 @@ describe("runtime operational telemetry", () => {
       resume() {
         return Promise.reject(new Error("resume was not expected"));
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -214,7 +214,7 @@ describe("runtime operational telemetry", () => {
       resume() {
         return Promise.reject(new Error("resume was not expected"));
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -505,7 +505,7 @@ async function runTelemetryTurn(
     resume() {
       return Promise.reject(new Error("resume was not expected"));
     },
-  } satisfies KrakenRunner;
+  } satisfies RuntimeRunner;
   const runtime = createTuvrenRuntime({
     defaultRunnerId: "fake",
     runnerRegistry: createRunnerRegistry([runner]),

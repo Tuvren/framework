@@ -16,9 +16,9 @@
 
 import type { EpochMs, HashString, KernelRecord } from "@tuvren/core";
 import type {
-  RuntimeKernel as KrakenKernel,
   RunCompletionStatus,
   RunRecord,
+  RuntimeKernel,
   RuntimeKernelRunLiveness,
 } from "@tuvren/kernel-protocol";
 import {
@@ -66,7 +66,7 @@ export interface RuntimeCoreLivenessHost {
   getActiveRunId(handle: RuntimeExecutionHandle): string | undefined;
   getNow(): EpochMs;
   getRunLivenessOptions(): RuntimeCoreLivenessOptions | undefined;
-  getRuntimeKernel(): KrakenKernel;
+  getRuntimeKernel(): RuntimeKernel;
   rememberActiveLease(
     handle: RuntimeExecutionHandle,
     lease: ActiveRunLease
@@ -147,8 +147,8 @@ export function syncRunLeaseStateFromStepResult(
 }
 
 function resolveRunLivenessKernel(
-  kernel: KrakenKernel
-): (KrakenKernel & RuntimeKernelRunLiveness) | undefined {
+  kernel: RuntimeKernel
+): (RuntimeKernel & RuntimeKernelRunLiveness) | undefined {
   if (!hasRunLivenessKernel(kernel)) {
     return undefined;
   }
@@ -266,7 +266,7 @@ async function runLeaseLoop(
   input: {
     activeLease: ActiveRunLease;
     handle: RuntimeExecutionHandle;
-    kernel: KrakenKernel & RuntimeKernelRunLiveness;
+    kernel: RuntimeKernel & RuntimeKernelRunLiveness;
     runId: string;
     signal: AbortSignal;
   }

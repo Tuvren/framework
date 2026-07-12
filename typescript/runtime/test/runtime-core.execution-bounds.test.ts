@@ -22,7 +22,7 @@ import type {
   ExecutionBoundExceededDetails,
   ExecutionResult,
 } from "@tuvren/core/execution";
-import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type {
   TelemetryEvent,
   TuvrenTelemetrySink,
@@ -83,11 +83,11 @@ const runawayTextRunner = {
   async resume() {
     throw new Error("resume was not expected");
   },
-} satisfies KrakenRunner;
+} satisfies RuntimeRunner;
 
 function createBoundsRuntime(options: {
   bounds?: RuntimeCoreOptions["bounds"];
-  runner: KrakenRunner;
+  runner: RuntimeRunner;
   now?: () => EpochMs;
   telemetry?: TuvrenTelemetrySink;
 }) {
@@ -212,7 +212,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const { runtime } = createBoundsRuntime({
       bounds: { maxToolCalls: 2, maxIterations: 100 },
       runner: batchRunner,
@@ -286,7 +286,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const { runtime } = createBoundsRuntime({
       bounds: { maxWallClockMs: 25 },
       runner: hangingRunner,
@@ -349,7 +349,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
 
     const { runtime } = createBoundsRuntime({
       bounds: { maxWallClockMs: 1000, maxIterations: 100 },
@@ -466,7 +466,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
 
     const { runtime } = createBoundsRuntime({
       bounds: { maxConcurrentToolCalls: 1 },
@@ -511,7 +511,7 @@ describe("framework execution bounds (KRT-BD006)", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const { runtime } = createBoundsRuntime({ runner: normalRunner });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({

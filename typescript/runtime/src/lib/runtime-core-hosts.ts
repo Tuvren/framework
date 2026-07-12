@@ -31,8 +31,8 @@ import type {
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import type {
-  RuntimeKernel as KrakenKernel,
   RunCompletionStatus,
+  RuntimeKernel,
 } from "@tuvren/kernel-protocol";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import {
@@ -106,7 +106,7 @@ interface ContextOpsHostDependencies {
     iterationCount: number,
     manifest?: ContextManifest
   ): void;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   loadHeadState(branchId: string): Promise<HeadState>;
   materializeContextMessages(
     hashes: HashString[],
@@ -158,13 +158,13 @@ interface PersistenceHostDependencies {
   getOrCreateManifestExtensionStateWarningKeys(
     handle: RuntimeExecutionHandle
   ): Set<string>;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   payloadCodecBinding: PayloadCodecBinding;
 }
 
 interface LivenessHostDependencies {
   activeRunLeaseControllers: WeakMap<RuntimeExecutionHandle, ActiveRunLease>;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   now(): EpochMs;
   runLivenessOptions?:
     | {
@@ -177,7 +177,7 @@ interface LivenessHostDependencies {
 }
 
 interface ExpiredRecoveryHostDependencies {
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   loadHeadState(branchId: string): Promise<HeadState>;
   now(): EpochMs;
   publishEvent(
@@ -221,7 +221,7 @@ interface TurnProgressHostDependencies {
     iterationCount: number,
     manifest?: ContextManifest
   ): void;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   storeEventRecord(event: KernelRecord): Promise<HashString>;
   syncRunLeaseStateFromStepResult(
     handle: RuntimeExecutionHandle,
@@ -248,7 +248,7 @@ interface FinalizationHostDependencies {
     partial: boolean,
     loopState: LoopState
   ): Promise<void>;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   loadHeadState(branchId: string): Promise<HeadState>;
   now(): EpochMs;
   publishCustomEvent(
@@ -324,7 +324,7 @@ interface StartupHostDependencies {
     iterationCount: number,
     manifest?: ContextManifest
   ): void;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   loadHeadState(branchId: string): Promise<HeadState>;
   now(): EpochMs;
   publishCustomEvent(
@@ -398,7 +398,7 @@ interface StateCommitHostDependencies {
     iterationCount: number,
     manifest?: ContextManifest
   ): void;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   loadHeadState(branchId: string): Promise<HeadState>;
   now(): EpochMs;
   publishEvent(
