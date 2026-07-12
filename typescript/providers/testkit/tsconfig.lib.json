@@ -5,7 +5,6 @@
     "outDir": "./dist",
     "paths": {
       "@tuvren/core": ["../../core/dist/index.d.ts"],
-      "@tuvren/core-types": ["../../core-types/dist/index.d.ts"],
       "@tuvren/core/runner": ["../../core/dist/runner/index.d.ts"],
       "@tuvren/core/errors": ["../../core/dist/errors/index.d.ts"],
       "@tuvren/core/events": ["../../core/dist/events/index.d.ts"],

@@ -36,9 +36,9 @@ import type {
 } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type {
-  RuntimeRunner as KrakenRunner,
   RunnerExecutionContext,
   RunnerExecutionResult,
+  RuntimeRunner,
 } from "@tuvren/core/runner";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
@@ -213,7 +213,7 @@ interface RuntimeIterationPhaseDependencies {
     loopState: LoopState
   ): TuvrenStreamEvent[];
   executeRunner(
-    runner: KrakenRunner,
+    runner: RuntimeRunner,
     context: RunnerExecutionContext
   ): Promise<RunnerExecutionResult>;
   failInvalidPauseResolutionIfNeeded(
@@ -233,7 +233,7 @@ interface RuntimeIterationPhaseDependencies {
     resolution: RuntimeResolution,
     events: TuvrenStreamEvent[]
   ): TuvrenStreamEvent[];
-  materializeRunner(runnerId: string): KrakenRunner;
+  materializeRunner(runnerId: string): RuntimeRunner;
   now(): number;
   /**
    * Publish through the full runtime event + telemetry path (KRT-BA002).

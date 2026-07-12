@@ -22,7 +22,7 @@ import type {
   HandoffSourceContext,
 } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
-import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type { FacadeOpsDependencies } from "./runtime-core-facade-ops.js";
 import {
   materializeContextMessagesFacade,
@@ -63,7 +63,7 @@ export function materializeRuntimeCoreContextMessages(
 export function materializeRuntimeCoreRunner(
   runnerRegistry: Parameters<typeof materializeRunnerFacade>[0],
   runnerId: string
-): KrakenRunner {
+): RuntimeRunner {
   return materializeRunnerFacade(runnerRegistry, runnerId);
 }
 

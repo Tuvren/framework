@@ -3,9 +3,6 @@
   "files": [],
   "references": [
     {
-      "path": "./typescript/core-types"
-    },
-    {
       "path": "./typescript/sdk"
     },
     {

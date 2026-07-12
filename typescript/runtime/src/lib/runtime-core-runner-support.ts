@@ -22,8 +22,8 @@ import type {
 } from "@tuvren/core/execution";
 import {
   assertRunnerExecutionResult,
-  type RuntimeRunner as KrakenRunner,
   type RunnerExecutionContext,
+  type RuntimeRunner,
 } from "@tuvren/core/runner";
 import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
@@ -217,10 +217,10 @@ export function createRunnerHandoffContextPlan(
 }
 
 export async function executeRunner(
-  runner: KrakenRunner,
+  runner: RuntimeRunner,
   context: RunnerExecutionContext
 ): Promise<
-  | Awaited<ReturnType<KrakenRunner["execute"]>>
+  | Awaited<ReturnType<RuntimeRunner["execute"]>>
   | { resolution: RuntimeResolution }
 > {
   try {

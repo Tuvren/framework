@@ -248,7 +248,6 @@
   ],
   "forbiddenAuthoritySources": [
     "typescript/core",
-    "typescript/core-types",
     "typescript/runtime",
     "typescript/certification",
     "typescript/conformance-adapter",

@@ -18,7 +18,6 @@
       "@tuvren/core/provider": ["../core/src/provider/index.ts"],
       "@tuvren/core/runner": ["../core/src/runner/index.ts"],
       "@tuvren/core/security": ["../core/src/security/index.ts"],
-      "@tuvren/core-types": ["../core-types/src/index.ts"],
       "@tuvren/kernel-protocol": ["../kernel/protocol/src/index.ts"],
       "@tuvren/kernel-runtime": ["../kernel/runtime/src/index.ts"],
       "@tuvren/backend-memory": ["../kernel/backends/memory/src/index.ts"],

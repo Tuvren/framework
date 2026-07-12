@@ -15,7 +15,6 @@
  */
 
 import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
 import process from "node:process";
 import { runCommand } from "./lib/command-runner.js";
 import { loadNxProjectFiles } from "./lib/nx-projects.js";
@@ -25,29 +24,18 @@ import {
 } from "./lib/worktree-guard.js";
 
 // The codegen freshness phase must regenerate exactly the projects the root
-// `codegen` script regenerates. That list was previously duplicated inline
-// here and drifted at 87-M4.2c (the dead `provider-api` entry made Nx
-// silently regenerate nothing for the providers port — run-many exits 0 for
-// projects without the target). Derive it from package.json instead, and
-// fail loudly if the script shape ever stops being parseable.
-const rootCodegenScript: string =
-  JSON.parse(readFileSync("package.json", "utf8")).scripts?.codegen ?? "";
-const codegenProjectsMatches = [
-  ...rootCodegenScript.matchAll(/run-many -t codegen -p (\S+)/g),
-];
-if (codegenProjectsMatches.length !== 1) {
-  throw new Error(
-    `verify: expected exactly one "run-many -t codegen -p <list>" in package.json's codegen script, found ${codegenProjectsMatches.length}; refusing to run a possibly-stale inline copy`
-  );
-}
-const CODEGEN_PROJECTS = codegenProjectsMatches[0][1];
-// The regex captures one whitespace-free token, so a quoted/space-separated
-// list or a flag reorder would capture garbage. Validate every captured
-// name against the real project index so the loud-failure guarantee holds —
-// and require each to still DECLARE a codegen target, because run-many
-// exits 0 for projects without the target (the exact 87-M4.2c silent-no-op
-// this derivation exists to prevent: existing-but-targetless is just as
-// silent as nonexistent).
+// `codegen` lane regenerates. That list drifted when duplicated at 87-M4.2c
+// (the dead `provider-api` entry made Nx silently regenerate nothing for the
+// providers port — run-many exits 0 for projects without the target). This
+// constant is now the single source of truth: verify's codegen-freshness
+// phase and the root `codegen` script (tools/scripts/codegen.ts, KRT-BM002)
+// both consume it, so the two lanes cannot drift apart.
+export const CODEGEN_PROJECTS =
+  "core-spec,host-spec,streaming-spec,runners-spec,tools-spec,providers-spec,telemetry-spec,compatibility-reporting,kernel-interop-grpc";
+// Validate every name against the real project index, and require each to
+// still DECLARE a codegen target, because run-many exits 0 for projects
+// without the target (the exact 87-M4.2c silent-no-op this guard exists to
+// prevent: existing-but-targetless is just as silent as nonexistent).
 {
   const projectsByName = new Map(
     loadNxProjectFiles(process.cwd()).map((file) => [file.name, file])
@@ -56,7 +44,7 @@ const CODEGEN_PROJECTS = codegenProjectsMatches[0][1];
   const unknown = names.filter((name) => !projectsByName.has(name));
   if (unknown.length > 0) {
     throw new Error(
-      `verify: codegen project list captured from package.json contains unknown Nx projects (${unknown.join(", ")}) — the script shape changed; fix the parse or the script`
+      `verify: CODEGEN_PROJECTS contains unknown Nx projects (${unknown.join(", ")}) — update tools/scripts/verify.ts`
     );
   }
   const targetless = names.filter(
@@ -64,7 +52,7 @@ const CODEGEN_PROJECTS = codegenProjectsMatches[0][1];
   );
   if (targetless.length > 0) {
     throw new Error(
-      `verify: codegen project(s) ${targetless.join(", ")} no longer declare a codegen target — run-many would silently regenerate nothing for them (87-M4.2c class); update package.json's codegen script`
+      `verify: codegen project(s) ${targetless.join(", ")} no longer declare a codegen target — run-many would silently regenerate nothing for them (87-M4.2c class); update CODEGEN_PROJECTS in tools/scripts/verify.ts`
     );
   }
 }
@@ -89,6 +77,13 @@ export interface VerificationPhase {
   /** Max steps to run at once. Defaults to the phase size (capped). 1 = serial. */
   concurrency?: number;
   id: string;
+  /**
+   * Opt out of the worktree-purity guard for phases that are SUPPOSED to
+   * mutate checked-in files (e.g. the codegen lane's artifact regeneration,
+   * KRT-BM002). Every verification phase must leave this unset: the guard
+   * is what catches a read-only step silently mutating the tree.
+   */
+  mutatesWorktree?: boolean;
   steps: readonly VerificationStep[];
 }
 
@@ -103,7 +98,6 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   // documented exclusions (currently only the cargo-covered Rust projects).
   // That gate enforces exact parity in both directions.
   "shared-core",
-  "shared-core-types",
   "sdk",
   "kernel-contract-protocol",
   "kernel-runtime",
@@ -147,7 +141,6 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
 ];
 
 export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
-  "shared-core-types",
   "kernel-contract-protocol",
   "kernel-testkit",
   "backend-shared",
@@ -265,6 +258,29 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
     id: "machine authority guardrails",
   },
 ];
+
+/**
+ * Selects steps from AUTHORITY_GATE_STEPS by ID for a derived lane (check's
+ * inner loop, the codegen lane). Throws if an ID no longer matches a verify
+ * gate step, so a derived lane can never silently diverge from this file.
+ */
+export function selectAuthorityGateSteps(
+  ids: readonly string[],
+  lane: string
+): VerificationStep[] {
+  return ids.map((id) => {
+    const step = AUTHORITY_GATE_STEPS.find((candidate) => candidate.id === id);
+
+    if (step === undefined) {
+      throw new Error(
+        `${lane}: authority gate id "${id}" no longer matches a verify gate step. ` +
+          "Update the lane's ID list to track tools/scripts/verify.ts."
+      );
+    }
+
+    return step;
+  });
+}
 
 export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
   {
@@ -448,26 +464,13 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
 ];
 
 /**
- * Runs the verification pipeline.
- *
- * - Called with no arguments (release-check, the `verify` entry point) it runs
- *   the full phased pipeline with intra-phase parallelism.
- * - Called with an explicit step list (verify-kernel, check) it runs each step
- *   as its own serial phase, preserving the original per-step worktree guard.
+ * Runs the full phased verification pipeline (release-check and the `verify`
+ * entry point). The other lanes (verify-kernel, check, codegen) build their
+ * own phase lists and call runVerificationPhases directly — it is the single
+ * phase-engine entry point for all four lanes (KRT-BM002).
  */
-export function runVerification(
-  steps?: readonly VerificationStep[]
-): Promise<VerificationResult[]> {
-  const phases =
-    steps === undefined
-      ? DEFAULT_VERIFICATION_PHASES
-      : steps.map((step) => ({
-          concurrency: 1,
-          id: step.id,
-          steps: [step],
-        }));
-
-  return runVerificationPhases(phases);
+export function runVerification(): Promise<VerificationResult[]> {
+  return runVerificationPhases(DEFAULT_VERIFICATION_PHASES);
 }
 
 export async function runVerificationPhases(
@@ -476,14 +479,18 @@ export async function runVerificationPhases(
   const results: VerificationResult[] = [];
 
   for (const phase of phases) {
-    const before = await readWorktreeSnapshot(process.cwd());
+    const before = phase.mutatesWorktree
+      ? undefined
+      : await readWorktreeSnapshot(process.cwd());
     const phaseResults = await runPhase(phase);
     results.push(...phaseResults);
 
-    await assertWorktreeUnchanged(before, {
-      cwd: process.cwd(),
-      label: `verification phase "${phase.id}"`,
-    });
+    if (before !== undefined) {
+      await assertWorktreeUnchanged(before, {
+        cwd: process.cwd(),
+        label: `verification phase "${phase.id}"`,
+      });
+    }
 
     if (phaseResults.some((result) => result.code !== 0)) {
       return results;

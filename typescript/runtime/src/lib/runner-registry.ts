@@ -16,13 +16,13 @@
 
 import { TuvrenRuntimeError } from "@tuvren/core";
 import {
-  assertRuntimeRunner as assertKrakenRunner,
-  type RuntimeRunner as KrakenRunner,
-  type RuntimeRunnerFactory as KrakenRunnerFactory,
+  assertRuntimeRunner,
   type RunnerRegistry,
+  type RuntimeRunner,
+  type RuntimeRunnerFactory,
 } from "@tuvren/core/runner";
 
-type RunnerEntry = KrakenRunner | KrakenRunnerFactory;
+type RunnerEntry = RuntimeRunner | RuntimeRunnerFactory;
 
 class BasicRunnerRegistry implements RunnerRegistry {
   private readonly runners = new Map<string, RunnerEntry>();
@@ -66,13 +66,13 @@ export function createRunnerRegistry(
   return registry;
 }
 
-export function materializeRunner(entry: RunnerEntry): KrakenRunner {
+export function materializeRunner(entry: RunnerEntry): RuntimeRunner {
   const candidate =
     "create" in entry && typeof entry.create === "function"
       ? entry.create()
       : entry;
 
-  assertKrakenRunner(candidate, "runner");
+  assertRuntimeRunner(candidate, "runner");
   return candidate;
 }
 

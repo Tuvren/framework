@@ -185,13 +185,24 @@ export async function findConformancePlans(): Promise<string[]> {
   return paths.map((path) => relative(REPO_ROOT, path)).sort();
 }
 
-async function createPlanValidator(): Promise<ValidateFunction<unknown>> {
-  const schema = readJsonSchema(
-    JSON.parse(await readFile(PLAN_SCHEMA_PATH, "utf8")) as unknown,
-    PLAN_SCHEMA_PATH
-  );
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  return ajv.compile(schema);
+// Read and compile the plan schema once per process instead of once per
+// loadConformancePlan call (KRT-BM004; audit finding [C-02]). The schema is
+// a single fixed file (PLAN_SCHEMA_PATH), so the memo is a lone promise —
+// no cache-key collision surface. Caching the promise (not the resolved
+// value) also collapses concurrent first calls onto one read+compile.
+let planValidatorPromise: Promise<ValidateFunction<unknown>> | undefined;
+
+function createPlanValidator(): Promise<ValidateFunction<unknown>> {
+  planValidatorPromise ??= (async () => {
+    const schema = readJsonSchema(
+      JSON.parse(await readFile(PLAN_SCHEMA_PATH, "utf8")) as unknown,
+      PLAN_SCHEMA_PATH
+    );
+    const ajv = new Ajv2020({ allErrors: true, strict: false });
+    return ajv.compile(schema);
+  })();
+
+  return planValidatorPromise;
 }
 
 // Tolerates a port segment between "conformance" and "plans" (e.g.

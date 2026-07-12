@@ -36,6 +36,14 @@ in consumer-facing APIs.
 ## Quickstart
 
 ```sh
+# 0. One-time prerequisites: install Nix and devenv (as CI's setup-toolchain
+#    action does), plus direnv for the local .envrc hook (CI enters the devenv
+#    shell directly instead). CI pins the canonical devenv version in
+#    .github/actions/setup-toolchain/action.yml.
+curl -fsSL https://install.determinate.systems/nix | sh -s -- install
+# ... restart your shell so `nix` is on PATH, then:
+nix profile install nixpkgs#devenv nixpkgs#direnv   # then enable direnv's shell hook
+
 # 1. Load the repo toolchain (bun, cargo, bazel, buf, weaver, postgres — via Nix/devenv)
 direnv allow   # or: eval "$(devenv direnvrc)" && use devenv
 

@@ -26,7 +26,7 @@ import {
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import {
   decodeDeterministicKernelRecord,
-  type RuntimeKernel as KrakenKernel,
+  type RuntimeKernel,
 } from "@tuvren/kernel-protocol";
 import { createEmptyContextManifest } from "./context-manifest.js";
 import {
@@ -45,7 +45,7 @@ import { isRecord } from "./runtime-core-shared.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
 export async function loadHeadState(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   branchId: string
 ): Promise<HeadState> {
@@ -89,14 +89,14 @@ export async function loadHeadState(
 }
 
 export async function readRecoveredActiveAgentName(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   turnTreeHash: HashString
 ): Promise<string | undefined> {
   return (await readRecoveredRuntimeStatus(kernel, turnTreeHash))?.activeAgent;
 }
 
 export async function readRecoveredRuntimeStatus(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   turnTreeHash: HashString
 ): Promise<DurableRuntimeStatus | undefined> {
   const runtimeStatusHash = toOptionalHash(
@@ -141,7 +141,7 @@ export async function readRecoveredRuntimeStatus(
 }
 
 export async function resolveExecutionSchemaId(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   ensureSchemaId: (schemaId?: string) => Promise<string>,
   request: ExecutionSessionRequest
 ): Promise<string> {
@@ -154,7 +154,7 @@ export async function resolveExecutionSchemaId(
 }
 
 export async function resolveParentTurnId(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   resolveConfiguredParentTurnId:
     | ((
         threadId: string,
@@ -179,7 +179,7 @@ export async function resolveParentTurnId(
 }
 
 async function assertValidParentTurnId(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   threadId: string,
   branchId: string,
   parentTurnId: string | null
@@ -238,7 +238,7 @@ async function assertValidParentTurnId(
 }
 
 async function readManifest(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   hash: HashString
 ): Promise<ContextManifest> {
   const payload = await kernel.store.get(hash);
@@ -258,7 +258,7 @@ async function readManifest(
 }
 
 async function readMessages(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   hashes: HashString[]
 ): Promise<TuvrenMessage[]> {
@@ -272,7 +272,7 @@ async function readMessages(
 }
 
 async function readMessage(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   hash: HashString
 ): Promise<TuvrenMessage> {
@@ -305,11 +305,11 @@ async function readMessage(
 }
 
 async function readBranchHeadState(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   branchId: string
 ): Promise<{
   branchHeadHash: HashString;
-  turnNode: Exclude<Awaited<ReturnType<KrakenKernel["node"]["get"]>>, null>;
+  turnNode: Exclude<Awaited<ReturnType<RuntimeKernel["node"]["get"]>>, null>;
 }> {
   const branch = await kernel.branch.get(branchId);
 
@@ -337,7 +337,7 @@ async function readBranchHeadState(
 }
 
 async function readBranchActiveTurnId(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   branchId: string
 ): Promise<string | null> {
   const { turnNode } = await readBranchHeadState(kernel, branchId);

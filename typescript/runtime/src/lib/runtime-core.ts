@@ -59,10 +59,7 @@ import type {
 } from "@tuvren/core/runner";
 import type { TelemetryRouting } from "@tuvren/core/telemetry";
 import type { ApprovalResponse } from "@tuvren/core/tools";
-import type {
-  RuntimeKernel as KrakenKernel,
-  TurnTreeSchema,
-} from "@tuvren/kernel-protocol";
+import type { RuntimeKernel, TurnTreeSchema } from "@tuvren/kernel-protocol";
 import {
   getTurnHistory,
   getTurnState,
@@ -239,7 +236,7 @@ export interface RuntimeCoreOptions {
   defaultRunnerId: string;
   enableStateObservability?: boolean;
   handoffContextBuilder?: HandoffContextBuilder;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   manifestExtensionStateWarningBudgetBytes?: false | number;
   now?: () => EpochMs;
   onWarning?: (warning: RuntimeWarning) => void;
@@ -282,7 +279,7 @@ interface ResolvedRuntimeCoreOptions {
   defaultRunnerId: string;
   enableStateObservability: boolean;
   handoffContextBuilder?: HandoffContextBuilder;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   manifestExtensionStateWarningBudgetBytes: false | number;
   now: () => EpochMs;
   onWarning?: (warning: RuntimeWarning) => void;

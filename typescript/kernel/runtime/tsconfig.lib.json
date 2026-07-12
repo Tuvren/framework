@@ -14,9 +14,6 @@
       "path": "../protocol/tsconfig.lib.json"
     },
     {
-      "path": "../../core-types/tsconfig.lib.json"
-    },
-    {
       "path": "../backends/memory/tsconfig.lib.json"
     }
   ]

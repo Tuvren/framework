@@ -12,9 +12,6 @@
     },
     {
       "path": "../protocol/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core-types/tsconfig.lib.json"
     }
   ]
 }

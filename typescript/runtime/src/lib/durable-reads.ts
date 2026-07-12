@@ -32,7 +32,7 @@ import type { ErasedPayload } from "@tuvren/core/lifecycle";
 import { assertTuvrenMessage, type TuvrenMessage } from "@tuvren/core/messages";
 import {
   decodeDeterministicKernelRecord,
-  type RuntimeKernel as KrakenKernel,
+  type RuntimeKernel,
 } from "@tuvren/kernel-protocol";
 import {
   decryptStoredMessage,
@@ -149,7 +149,7 @@ function decodeBranchMessagesCursor(
 // ── listThreads (KRT-AO003) ──────────────────────────────────────────────────
 
 export async function listThreads(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   options?: {
     limit?: number;
     cursor?: ListThreadsCursor;
@@ -218,7 +218,7 @@ export async function listThreads(
 // ── listBranches (KRT-AO003) ─────────────────────────────────────────────────
 
 export async function listBranches(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   input: { threadId: string }
 ): Promise<BranchSummary[]> {
   const entries = await kernel.branch.list(input.threadId);
@@ -232,7 +232,7 @@ export async function listBranches(
 // ── Shared helper: build TurnSnapshot from a turn node hash ──────────────────
 
 async function buildTurnSnapshot(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   turnNodeHash: string
 ): Promise<TurnSnapshot> {
   const node = await kernel.node.get(turnNodeHash);
@@ -281,7 +281,7 @@ async function buildTurnSnapshot(
 // ── getTurnState (KRT-AO004) ─────────────────────────────────────────────────
 
 export async function getTurnState(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   input: {
     threadId: string;
     branchId: string;
@@ -332,7 +332,7 @@ export async function getTurnState(
 // amendment; deferred to a future epic.
 
 export async function* getTurnHistory(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   input: { threadId: string; branchId: string },
   options?: { limit?: number; before?: TurnHistoryCursor }
 ): AsyncIterableIterator<TurnSnapshot> {
@@ -401,7 +401,7 @@ export async function* getTurnHistory(
 // ── readBranchMessages helpers ───────────────────────────────────────────────
 
 async function resolveTreeMessageHashes(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   treeHash: string
 ): Promise<string[]> {
   try {
@@ -422,7 +422,7 @@ async function resolveTreeMessageHashes(
 }
 
 async function assertPrefixStability(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   recordedHead: string,
   position: number,
   currentMessageHashes: string[]
@@ -463,7 +463,7 @@ async function assertPrefixStability(
 }
 
 async function resolveCursorStartIndex(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   cursorPayload: BranchMessagesCursorPayload,
   currentHead: string,
   messageHashes: string[]
@@ -486,7 +486,7 @@ async function resolveCursorStartIndex(
 // ── readBranchMessages (KRT-AO005) ───────────────────────────────────────────
 
 export async function readBranchMessages(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   input: {
     branchId: string;

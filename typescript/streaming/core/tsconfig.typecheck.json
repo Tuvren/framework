@@ -10,7 +10,6 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "smoke/**/*.ts",
-    "../../testkit/src/**/*.ts",
-    "../../core-types/src/**/*.ts"
+    "../../testkit/src/**/*.ts"
   ]
 }

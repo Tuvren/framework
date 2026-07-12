@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { AnySchema } from "ajv";
+import type { AnySchema, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 import type {
   CompiledConformancePlanCheck,
@@ -179,6 +179,55 @@ function assertTerminalEvent(
     : value === assertion.eventType;
 }
 
+// Compile each distinct schema once per process instead of once per
+// schemaValid assertion (KRT-BM004; audit finding [C-02]). Schemas arrive as
+// fixture-embedded values without a reliable `$id`, and the same logical
+// schema is re-read as a fresh object per plan/fixture load — so reference
+// identity is NOT a safe cache key. Key by content (stable JSON) instead:
+// two structurally identical schemas share a compiled validator, and two
+// distinct schemas can never collide. Mirrors the memoization pattern in
+// typescript/runtime/src/lib/tool-execution-helpers.ts.
+const schemaValidatorCache = new Map<string, ValidateFunction>();
+
+// Exported for the assertion-engine unit tests (memoization identity and
+// collision-safety assertions); production callers go through
+// assertSchemaValid.
+export function getCompiledSchemaValidator(
+  schema: AnySchema
+): ValidateFunction {
+  const key = canonicalSchemaKey(schema);
+  const cached = schemaValidatorCache.get(key);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const validate = ajv.compile(schema);
+  schemaValidatorCache.set(key, validate);
+  return validate;
+}
+
+// JSON.stringify is key-order sensitive, so serialize with sorted object
+// keys: the same schema loaded from differently-ordered JSON still hits one
+// cache entry, while any semantic difference changes the key. The rebuilt
+// object is null-prototype so a literal "__proto__" property name lands as
+// an own property instead of vanishing through the inherited setter — with
+// a plain {} two schemas differing only in a "__proto__" member would
+// serialize identically and collide.
+function canonicalSchemaKey(value: unknown): string {
+  return JSON.stringify(value, (_key, node: unknown) => {
+    if (isRecord(node) && !Array.isArray(node)) {
+      const sorted: Record<string, unknown> = Object.create(null);
+      for (const key of Object.keys(node).sort()) {
+        sorted[key] = node[key];
+      }
+      return sorted;
+    }
+    return node;
+  });
+}
+
 function assertSchemaValid(
   assertion: ConformancePlanAssertion,
   context: AssertionContext
@@ -189,8 +238,9 @@ function assertSchemaValid(
 
   const value = readPath(context, assertion.path ?? "$.result");
   const schema = readPath(context, assertion.schema);
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  const validate = ajv.compile(readJsonSchema(schema, assertion.schema));
+  const validate = getCompiledSchemaValidator(
+    readJsonSchema(schema, assertion.schema)
+  );
   return validate(value) === true;
 }
 

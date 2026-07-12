@@ -108,7 +108,7 @@ Vercel AI SDK wraps this in a do/while. Pi uses nested while loops with steering
 
 **Streaming is not in the content model**: Content types represent complete durable content. Streaming deltas are transport — handled by `stream()`, accumulated into complete types.
 
-**Zero runtime dependencies**: `@tuvren/core-types` contains only interfaces. No Zod, no classes, no serialization.
+**Zero runtime dependencies**: `@tuvren/core` ships type definitions plus a minimal error hierarchy and assertion helpers. No Zod, no serialization, no third-party runtime dependencies.
 
 ### 2.4 Streaming
 

@@ -1,0 +1,48 @@
+# Shared toolchain setup for every CI job (KRT-BM001).
+#
+# Both the "verify" and "bazel" jobs previously carried byte-identical inline
+# Nix-install + devenv-install steps; this composite action is now the single
+# home for those pins (nix-installer-action@v22, devenv 2.1.2 via the exact
+# nixpkgs revision below). Bump a pin here and every job picks it up — no
+# duplicated inline copy may be reintroduced in ci.yml.
+#
+# The Nix store cache sits between the Nix install and the devenv install so
+# both the devenv CLI closure and the project's devenv shell closure restore
+# from cache. The primary key hashes only exact Nix inputs (devenv.lock,
+# devenv.nix, devenv.yaml, and this file, which carries the nixpkgs pin for
+# the devenv CLI). The prefix fallback restore is safe for a Nix store —
+# store paths are content-addressed and evaluation always re-resolves from
+# the locked inputs, so a stale restored store can only pre-seed valid paths,
+# never substitute wrong dependency state for the pinned one.
+name: Setup toolchain
+description: Install Nix and devenv with Nix store caching (shared by all CI jobs)
+
+runs:
+  using: composite
+  steps:
+    - name: Install Nix
+      # Pinned by major version; v22 confirmed current via the GitHub
+      # releases API at authoring time (87-M10.2; full authoring record
+      # in the epic-87 migration ledger's M10.2 addendum, git history).
+      uses: DeterminateSystems/nix-installer-action@v22
+
+    - name: Cache the Nix store
+      uses: nix-community/cache-nix-action@v7
+      with:
+        primary-key: nix-${{ runner.os }}-${{ hashFiles('devenv.lock', 'devenv.nix', 'devenv.yaml', '.github/actions/setup-toolchain/action.yml') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-
+        # Trim dead paths before saving so the cache stays bounded; live
+        # profile/gc-roots (the devenv CLI and shell closures) are kept.
+        gc-max-store-size-linux: 6G
+
+    - name: Install devenv
+      # Pinned to the exact nixpkgs revision providing devenv 2.1.2 (the
+      # version in local dev at pin time; binary-cached on cache.nixos.org).
+      # A floating `nixpkgs#devenv` would let CI's devenv CLI drift with no
+      # repo change — devenv.lock pins the project's inputs, not the CLI.
+      # The version grep makes the pin self-verifying: bump the hash and
+      # the expected version together or this step fails.
+      shell: bash
+      run: |
+        nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
+        devenv version | grep -F "devenv 2.1.2"

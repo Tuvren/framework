@@ -7,7 +7,6 @@
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
-      "@tuvren/core-types": ["../core-types/dist/index.d.ts"],
       "@tuvren/core": ["../core/dist/index.d.ts"],
       "@tuvren/core/errors": ["../core/dist/errors/index.d.ts"],
       "@tuvren/core/messages": ["../core/dist/messages/index.d.ts"],

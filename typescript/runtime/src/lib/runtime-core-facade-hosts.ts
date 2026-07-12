@@ -28,9 +28,9 @@ import type {
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import type {
-  RuntimeKernel as KrakenKernel,
   PathValue,
   RunCompletionStatus,
+  RuntimeKernel,
 } from "@tuvren/kernel-protocol";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { PayloadCodecBinding } from "./payload-codec-seam.js";
@@ -204,7 +204,7 @@ interface RuntimeCoreFacadeHostDependencies {
   getOrCreateManifestExtensionStateWarningKeys(
     handle: RuntimeExecutionHandle
   ): Set<string>;
-  kernel: KrakenKernel;
+  kernel: RuntimeKernel;
   loadHeadState(branchId: string): Promise<HeadState>;
   manifestExtensionStateWarning(warning: {
     activeAgent: string;

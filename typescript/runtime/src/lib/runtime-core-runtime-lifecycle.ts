@@ -20,8 +20,8 @@ import type {
   RuntimeResolution,
 } from "@tuvren/core/execution";
 import type {
-  RuntimeKernel as KrakenKernel,
   RunCompletionStatus,
+  RuntimeKernel,
 } from "@tuvren/kernel-protocol";
 import {
   completeRecoveredTerminalExecution as completeRuntimeRecoveredTerminalExecution,
@@ -164,7 +164,7 @@ export function syncRuntimeCoreRunLeaseStateFromStepResult(
 }
 
 export async function advanceRuntimeCoreTurnAndBranchHead(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   handle: RuntimeExecutionHandle,
   turnNodeHash: HashString
 ): Promise<void> {

@@ -6,7 +6,6 @@
   "dependencies": {
     "@tuvren/backend-memory": "workspace:*",
     "@tuvren/backend-sqlite": "workspace:*",
-    "@tuvren/core-types": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/kernel-runtime": "workspace:*",
     "@tuvren/kernel-testkit": "workspace:*"

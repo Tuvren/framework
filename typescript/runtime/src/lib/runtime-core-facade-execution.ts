@@ -32,8 +32,8 @@ import type {
 } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type {
-  RuntimeRunner as KrakenRunner,
   RunnerExecutionContext,
+  RuntimeRunner,
 } from "@tuvren/core/runner";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
@@ -439,7 +439,7 @@ export function createRuntimeCoreRunnerHandoffContextPlan(
 }
 
 export async function executeRuntimeCoreRunnerCall(
-  runner: KrakenRunner,
+  runner: RuntimeRunner,
   context: RunnerExecutionContext
 ) {
   return await executeRuntimeRunner(runner, context);

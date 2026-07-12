@@ -22,7 +22,7 @@ import type {
 } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { ToolRegistry } from "@tuvren/core/tools";
-import type { RuntimeKernel as KrakenKernel } from "@tuvren/kernel-protocol";
+import type { RuntimeKernel } from "@tuvren/kernel-protocol";
 import {
   createLastOutputOnlyHandoffContextBuilder,
   createPreserveTraceHandoffContextBuilder,
@@ -72,7 +72,7 @@ export function resolveRuntimeCoreDefaultHandoffContextBuilder(
 }
 
 export function createRuntimeCoreContextHelperBundle(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
   messageHashes: HashString[],
   messages: TuvrenMessage[]
@@ -101,7 +101,7 @@ export function createRuntimeCoreContextHelperBundle(
 export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
   dependencies: {
     contextOps: RuntimeCoreContextOpsHost;
-    kernel: KrakenKernel;
+    kernel: RuntimeKernel;
     payloadCodecBinding: PayloadCodecBinding;
   },
   handle: RuntimeExecutionHandle,

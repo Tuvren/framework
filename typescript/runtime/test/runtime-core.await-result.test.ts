@@ -16,7 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
-import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
@@ -66,7 +66,7 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -105,7 +105,7 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -143,7 +143,7 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -180,7 +180,7 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -215,7 +215,7 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -276,7 +276,7 @@ describe("framework-runtime-core awaitResult", () => {
         };
       },
       id: "fake",
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
 
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
@@ -302,6 +302,6 @@ describe("framework-runtime-core awaitResult", () => {
   });
 });
 
-function createRunnerRegistry(runners: KrakenRunner[] = []) {
+function createRunnerRegistry(runners: RuntimeRunner[] = []) {
   return createBaseRunnerRegistry(runners);
 }

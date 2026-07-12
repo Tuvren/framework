@@ -17,7 +17,7 @@
 import { type EpochMs, TuvrenRuntimeError } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type {
-  RuntimeKernel as KrakenKernel,
+  RuntimeKernel,
   RuntimeKernelRunLiveness,
 } from "@tuvren/kernel-protocol";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
@@ -39,7 +39,9 @@ export interface RuntimeCoreExpiredRecoveryOptions {
 export interface RuntimeCoreExpiredRecoveryHost {
   getNow(): EpochMs;
   getRunLivenessOptions(): RuntimeCoreExpiredRecoveryOptions | undefined;
-  getRuntimeKernel(): (KrakenKernel & RuntimeKernelRunLiveness) | KrakenKernel;
+  getRuntimeKernel():
+    | (RuntimeKernel & RuntimeKernelRunLiveness)
+    | RuntimeKernel;
   loadHeadState(branchId: string): Promise<HeadState>;
   publishTurnEnd(
     handle: RuntimeExecutionHandle,
@@ -184,7 +186,7 @@ export async function completeRecoveredTerminalExecution(
 }
 
 async function estimateRecoveredIterationCount(
-  kernel: KrakenKernel,
+  kernel: RuntimeKernel,
   turnId: string,
   recoveredHeadState: HeadState
 ): Promise<number> {

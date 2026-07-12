@@ -30,9 +30,9 @@ import type {
 } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type {
-  RuntimeRunner as KrakenRunner,
   RunnerExecutionContext,
   RunnerExecutionResult,
+  RuntimeRunner,
 } from "@tuvren/core/runner";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import { observationForClass } from "./capability-attribution.js";
@@ -192,7 +192,7 @@ export interface RuntimeCoreIterationHost {
     }
   ): TuvrenStreamEvent[];
   executeRunner(
-    runner: KrakenRunner,
+    runner: RuntimeRunner,
     context: RunnerExecutionContext
   ): Promise<RunnerExecutionResult>;
   failInvalidPauseResolutionIfNeeded(
@@ -212,7 +212,7 @@ export interface RuntimeCoreIterationHost {
     resolution: RuntimeResolution,
     events: TuvrenStreamEvent[]
   ): TuvrenStreamEvent[];
-  materializeRunner(runnerId: string): KrakenRunner;
+  materializeRunner(runnerId: string): RuntimeRunner;
   now(): number;
   /**
    * Publish an event through the full runtime event + telemetry path. Used by

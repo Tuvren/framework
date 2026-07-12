@@ -498,7 +498,7 @@ StreamAccumulator
 Both produce identical behavior from the framework’s perspective. Package topology:
 
 ```
-@tuvren/core-types                         zero dependencies, types only
+@tuvren/core                               zero third-party dependencies
 @tuvren/provider-anthropic            direct, depends on @anthropic-ai/sdk
 @tuvren/provider-openai               direct, depends on openai
 @tuvren/provider-google               direct, depends on @google/genai

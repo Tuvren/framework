@@ -36,11 +36,6 @@ interface DocumentedPackageSurface {
 const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   {
     classification: "Bun-and-Node validated",
-    packageName: "@tuvren/core-types",
-    packageRoot: "typescript/core-types",
-  },
-  {
-    classification: "Bun-and-Node validated",
     packageName: "@tuvren/kernel-protocol",
     packageRoot: "typescript/kernel/protocol",
   },
@@ -143,51 +138,136 @@ for (const surface of DOCUMENTED_PACKAGE_SURFACES) {
   );
 }
 
-for (const surface of PORTABLE_PACKAGE_SURFACES) {
+// One import check per surface × runtime, run through a bounded pool
+// instead of one sequential child process at a time (KRT-BM005; audit
+// finding [G-01] — this sits on the codegen/verify critical path). The cap
+// is deliberately small: import checks are startup-bound, and a modest pool
+// keeps CI-runner memory pressure (and the flake risk the ticket's STOP
+// condition names) low while still collapsing most of the serial wall-clock.
+const IMPORT_CHECK_CONCURRENCY = 4;
+
+interface ImportCheck {
+  args: readonly string[];
+  executable: string;
+  label: string;
+  surface: PortablePackageSurface;
+}
+
+const checks: ImportCheck[] = PORTABLE_PACKAGE_SURFACES.flatMap((surface) => {
   const importSource = `await import(${JSON.stringify(surface.packageName)});`;
 
-  await runImportCheck("Bun", "bun", ["--eval", importSource], surface);
-  await runImportCheck(
-    "Node",
-    "node",
-    ["--input-type=module", "--eval", importSource],
-    surface
-  );
-}
+  return [
+    {
+      args: ["--eval", importSource],
+      executable: "bun",
+      label: "Bun",
+      surface,
+    },
+    {
+      args: ["--input-type=module", "--eval", importSource],
+      executable: "node",
+      label: "Node",
+      surface,
+    },
+  ];
+});
 
-async function runImportCheck(
-  label: string,
-  executable: string,
-  args: readonly string[],
-  surface: PortablePackageSurface
-): Promise<void> {
-  console.log("");
-  console.log(`==> ${label} import check for ${surface.packageName}`);
+const failures = await runImportChecks(checks);
 
-  const code = await spawnCommand(executable, args, surface.packageRoot);
-
-  if (code !== 0) {
-    throw new Error(
-      `${label} import check for ${surface.packageName} failed with code ${code}`
-    );
+if (failures.length > 0) {
+  console.error("");
+  for (const failure of failures) {
+    console.error(failure);
   }
+  console.error(
+    `portability-check: ${failures.length} of ${checks.length} import checks failed`
+  );
+  process.exit(1);
 }
 
-function spawnCommand(
+// Every check runs to completion even after one fails — a single run
+// surfaces every failing surface at once, and the summary above names each.
+async function runImportChecks(
+  allChecks: readonly ImportCheck[]
+): Promise<string[]> {
+  const failed: string[] = [];
+  let nextIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const index = nextIndex;
+      nextIndex += 1;
+
+      if (index >= allChecks.length) {
+        return;
+      }
+
+      const check = allChecks[index] as ImportCheck;
+      const message = await runImportCheck(check);
+
+      if (message !== undefined) {
+        failed.push(message);
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(IMPORT_CHECK_CONCURRENCY, allChecks.length) },
+      worker
+    )
+  );
+
+  return failed;
+}
+
+async function runImportCheck(check: ImportCheck): Promise<string | undefined> {
+  const { output, code } = await spawnCommandCaptured(
+    check.executable,
+    check.args,
+    check.surface.packageRoot
+  );
+
+  // Buffered while the child ran, printed as one atomic block on completion
+  // so concurrent checks' output never interleaves mid-line and every line
+  // stays attributable to its surface.
+  const status = code === 0 ? "ok" : `FAILED (exit ${code})`;
+  process.stdout.write(
+    `\n==> ${check.label} import check for ${check.surface.packageName}: ${status}\n${output}`
+  );
+
+  return code === 0
+    ? undefined
+    : `${check.label} import check for ${check.surface.packageName} failed with code ${code}`;
+}
+
+function spawnCommandCaptured(
   executable: string,
   args: readonly string[],
   cwd: string
-): Promise<number> {
-  return new Promise<number>((resolve, reject) => {
+): Promise<{ code: number; output: string }> {
+  return new Promise((resolve) => {
     const child = spawn(executable, args, {
       cwd,
       env: process.env,
-      stdio: "inherit",
+      stdio: ["ignore", "pipe", "pipe"],
     });
 
-    child.once("error", reject);
+    const chunks: Buffer[] = [];
+    child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
+    child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
+
+    // A spawn failure (e.g. missing runtime binary) is reported through the
+    // same collect-all failure path as a failing import, so the remaining
+    // checks still run to completion instead of the pool rejecting mid-run.
+    child.once("error", (error) => {
+      resolve({ code: 1, output: `${String(error)}\n` });
+    });
     child.once("close", (code) => {
-      resolve(code ?? 1);
+      resolve({
+        code: code ?? 1,
+        output: Buffer.concat(chunks).toString("utf8"),
+      });
     });
   });
 }

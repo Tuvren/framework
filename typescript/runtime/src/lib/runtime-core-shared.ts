@@ -146,6 +146,13 @@ export function createFrozenSnapshot<T>(value: T): T {
   return freezeSnapshot(cloneValuePreservingFunctions(value));
 }
 
+/**
+ * Detaches a promise from the caller's control flow, swallowing its
+ * rejection solely to prevent an unhandled-rejection crash. This is NOT an
+ * error-handling mechanism: the detached task must route its own errors
+ * (log, telemetry signal, state transition) before this boundary, because
+ * any rejection reaching here is silently discarded.
+ */
 export function detachPromise(task: Promise<unknown>): void {
   task.catch(() => undefined);
 }

@@ -14,9 +14,6 @@
       "path": "../provider-api/tsconfig.lib.json"
     },
     {
-      "path": "../../core-types/tsconfig.lib.json"
-    },
-    {
       "path": "../testkit/tsconfig.lib.json"
     },
     {

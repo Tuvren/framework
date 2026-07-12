@@ -24,11 +24,11 @@
 import process from "node:process";
 import { runCommand } from "./lib/command-runner.js";
 import {
-  AUTHORITY_GATE_STEPS,
   hasVerificationFailure,
   printVerificationSummary,
-  runVerification,
-  type VerificationStep,
+  runVerificationPhases,
+  selectAuthorityGateSteps,
+  type VerificationPhase,
 } from "./verify.js";
 
 const BASE_FLAG = "--base=";
@@ -40,7 +40,7 @@ const CARGO_MANIFEST_PATTERN = /(^|\/)Cargo\.(toml|lock)$/;
 // drift here is cheap to detect and expensive to discover late. We select these
 // by ID from verify's shared AUTHORITY_GATE_STEPS rather than re-declaring the
 // commands, so the inner loop cannot silently diverge from `verify`'s gate: if
-// one of these IDs stops matching a verify step, buildInnerLoopAuthorityGate
+// one of these IDs stops matching a verify step, selectAuthorityGateSteps
 // throws instead of quietly dropping that check.
 //
 // `machine authority guardrails` is intentionally omitted: it runs ~4s (vs
@@ -66,63 +66,66 @@ const INNER_LOOP_AUTHORITY_GATE_IDS: readonly string[] = [
   "vocabulary-check verification",
 ];
 
-function buildInnerLoopAuthorityGate(): VerificationStep[] {
-  return INNER_LOOP_AUTHORITY_GATE_IDS.map((id) => {
-    const step = AUTHORITY_GATE_STEPS.find((candidate) => candidate.id === id);
-
-    if (step === undefined) {
-      throw new Error(
-        `check: authority gate id "${id}" no longer matches a verify gate step. ` +
-          "Update INNER_LOOP_AUTHORITY_GATE_IDS to track tools/scripts/verify.ts."
-      );
-    }
-
-    return step;
-  });
-}
-
 const args = process.argv.slice(2);
 const baseArg = args.find((arg) => arg.startsWith(BASE_FLAG));
 const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
 
-const steps: VerificationStep[] = [
-  ...buildInnerLoopAuthorityGate(),
+// The authority validators are the same independent family verify's first
+// phase already runs concurrently, so they share one concurrent phase here
+// too (KRT-BM002). The affected lane gets its own phase (Nx parallelizes
+// internally), and the Rust gate stays serial — clippy and cargo test share
+// the target dir and interleaving two large Rust builds helps nothing.
+const phases: VerificationPhase[] = [
   {
-    command: [
-      "bun",
-      "run",
-      "nx",
-      "affected",
-      "-t",
-      "typecheck,test,lint",
-      `--base=${base}`,
-    ],
+    id: "inner-loop authority gate",
+    steps: selectAuthorityGateSteps(INNER_LOOP_AUTHORITY_GATE_IDS, "check"),
+  },
+  {
+    concurrency: 1,
     id: `affected typecheck/test/lint (base ${base})`,
+    steps: [
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "affected",
+          "-t",
+          "typecheck,test,lint",
+          `--base=${base}`,
+        ],
+        id: `affected typecheck/test/lint (base ${base})`,
+      },
+    ],
   },
 ];
 
 if (await rustChangedSince(base)) {
-  steps.push(
-    {
-      command: [
-        "cargo",
-        "clippy",
-        "--workspace",
-        "--all-targets",
-        "--",
-        "-D",
-        "warnings",
-      ],
-      id: "Rust workspace lint (rust files changed)",
-    },
-    {
-      command: ["cargo", "test", "--workspace"],
-      id: "Rust workspace tests (rust files changed)",
-    }
-  );
+  phases.push({
+    concurrency: 1,
+    id: "Rust workspace gate (rust files changed)",
+    steps: [
+      {
+        command: [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings",
+        ],
+        id: "Rust workspace lint (rust files changed)",
+      },
+      {
+        command: ["cargo", "test", "--workspace"],
+        id: "Rust workspace tests (rust files changed)",
+      },
+    ],
+  });
 }
 
-const results = await runVerification(steps);
+const results = await runVerificationPhases(phases);
 printVerificationSummary(results);
 
 if (hasVerificationFailure(results)) {

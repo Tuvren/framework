@@ -26,7 +26,7 @@ import type {
   InputSignal,
 } from "@tuvren/core/execution";
 import type { ContentPart, TuvrenMessage } from "@tuvren/core/messages";
-import type { RuntimeRunner as KrakenRunner } from "@tuvren/core/runner";
+import type { RuntimeRunner } from "@tuvren/core/runner";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 import { assertApprovalResponseForRequest } from "@tuvren/core/tools";
 import { isBoundExceededError } from "./runtime-core-bounds.js";
@@ -60,7 +60,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
   private readonly eventsQueue: AsyncEventQueue<TuvrenStreamEvent>;
   private eventStreamClaimed = false;
   private lastErrorProjection?: TuvrenErrorProjection;
-  private materializedRunner?: KrakenRunner;
+  private materializedRunner?: RuntimeRunner;
   private materializedRunnerId?: string;
   private pendingPausedCancellation?: Promise<void>;
   private pauseContext?: PauseContext;
@@ -447,8 +447,8 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
   getOrCreateRunner(
     runnerId: string,
-    materialize: (runnerId: string) => KrakenRunner
-  ): KrakenRunner {
+    materialize: (runnerId: string) => RuntimeRunner
+  ): RuntimeRunner {
     if (
       this.materializedRunner !== undefined &&
       this.materializedRunnerId === runnerId

@@ -18,9 +18,9 @@
 import { describe, expect, test } from "bun:test";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type {
-  RuntimeRunner as KrakenRunner,
-  RuntimeRunnerFactory as KrakenRunnerFactory,
   RunnerExecutionResult,
+  RuntimeRunner,
+  RuntimeRunnerFactory,
 } from "@tuvren/core/runner";
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
@@ -54,7 +54,7 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -103,7 +103,7 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -160,7 +160,7 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -246,7 +246,7 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -320,7 +320,7 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -402,7 +402,7 @@ describe("framework-runtime-core", () => {
       async resume() {
         throw new Error("resume was not expected");
       },
-    } satisfies KrakenRunner;
+    } satisfies RuntimeRunner;
     const runtime = createTuvrenRuntime({
       defaultRunnerId: "fake",
       runnerRegistry: createRunnerRegistry([runner]),
@@ -495,14 +495,14 @@ describe("framework-runtime-core", () => {
 });
 
 function createRunnerRegistry(
-  runners: Array<KrakenRunner | KrakenRunnerFactory> = []
+  runners: Array<RuntimeRunner | RuntimeRunnerFactory> = []
 ) {
   return createBaseRunnerRegistry(runners.map(wrapRunnerEntry));
 }
 
 function wrapRunnerEntry(
-  entry: KrakenRunner | KrakenRunnerFactory
-): KrakenRunner | KrakenRunnerFactory {
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): RuntimeRunner | RuntimeRunnerFactory {
   if (isKrakenRunnerFactory(entry)) {
     return {
       create() {
@@ -516,12 +516,12 @@ function wrapRunnerEntry(
 }
 
 function isKrakenRunnerFactory(
-  entry: KrakenRunner | KrakenRunnerFactory
-): entry is KrakenRunnerFactory {
+  entry: RuntimeRunner | RuntimeRunnerFactory
+): entry is RuntimeRunnerFactory {
   return "create" in entry && typeof entry.create === "function";
 }
 
-function wrapRunner(runner: KrakenRunner): KrakenRunner {
+function wrapRunner(runner: RuntimeRunner): RuntimeRunner {
   const resume = runner.resume;
 
   return {

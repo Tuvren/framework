@@ -22,8 +22,8 @@ import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type { RunnerAssistantEventReconciliation } from "@tuvren/core/runner";
 import type { ApprovalRequest, ApprovalResponse } from "@tuvren/core/tools";
 import type {
-  RuntimeKernel as KrakenKernel,
   PathValue,
+  RuntimeKernel,
   RuntimeKernelRunLiveness,
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
@@ -195,7 +195,7 @@ export function isTurnLineageRecord(
 
 export function hasRunLivenessKernel(
   kernel: unknown
-): kernel is KrakenKernel & RuntimeKernelRunLiveness {
+): kernel is RuntimeKernel & RuntimeKernelRunLiveness {
   return (
     typeof kernel === "object" &&
     kernel !== null &&

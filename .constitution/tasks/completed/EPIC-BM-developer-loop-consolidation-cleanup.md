@@ -322,3 +322,23 @@ Feature: Small documentation and readiness findings are resolved
     Then the database accepts connections without a startup race
     And services-up.sh remains a manual, top-level-only convenience script
 ```
+
+##### KRT-BM004 Deviations & Justifications
+- **Touched Files:** `tools/conformance/harness/test/assertion-engine.test.ts` (in addition to the two declared in-scope files)
+- **Justification:** The independent spec review found the sorted-key canonicalizer silently dropped literal `"__proto__"` schema properties (assignment through the inherited setter), which is exactly the collision class the ticket's STOP condition names. The fix (null-prototype accumulator) plus the repo rule "give every claimed scenario matrix an automated check path" required regression tests for the memoization identity, distinct-schema separation, and the `__proto__` collision case; they were colocated with the existing assertion-engine suite.
+
+##### KRT-BM006 Deviations & Justifications
+- **Touched Files:** `spec/core/authority-packet.json` (dropped the deleted `typescript/core-types` path from `forbiddenAuthoritySources`), `spec/core/bindings/typescript.md` (binding projection now names `@tuvren/core`), `.constitution/tech-spec/{stack.md,guidelines.md,contracts/README.md,data-models/README.md}` (shim described as removed instead of pending removal), `typescript/kernel/protocol/test/kernel-records.test.ts` (relocated with the fixture), `docs/KrakenFrameworkSpecification.md` and `docs/KrakenFrameworkDesignRationale.md` (package-topology and design-rationale passages repointed from `@tuvren/core-types` to `@tuvren/core`), `bun.lock` (workspace member removed).
+- **Justification:** The repo rule "keep contracts, conformance, and constitution aligned when semantics change" and the skill's keep-the-spec-folders-honest step require the machine authority and live constitution to stop describing a package that no longer exists. `kernel-records.test.ts` covers real `@tuvren/core` assertion/predicate behavior with the same fixture the protocol suite uses, so it moved with the fixture into `typescript/kernel/protocol/test/` rather than silently dropping coverage.
+
+##### KRT-BM007 Resolution Notes
+- **(a)** The duplicated compile+copy-migrations pipeline across backend-sqlite's `build`/`bench`/`bench-load-cost`/`retention-dry-run`/`test` targets now routes through `tools/scripts/compile-with-migrations.ts` (parameterized by `--tsconfig`, `--out`, optional `--clean`). `bench-load-cost` was included because it carried the identical inline pipeline the audit flagged on its four named siblings.
+- **(b)** Closed as already-resolved: `@tuvren/runner-react` was verified to already sit under `devDependencies` in `typescript/providers/bridge-ai-sdk/package.json` (line 31) before this epic — the audit finding was stale against the live file; no change made, per the ticket's STOP condition.
+- **(c)** Closed as intentional, per STOP-condition review: `typescript/sdk`'s `"zod": "^4.4.3"` stays a caret range. It is an OPTIONAL peerDependency whose coupling is type-only (`import("zod/v3")`/`import("zod/v4")` type positions; runtime dispatch is duck-typed through the Standard Schema `~standard.vendor` protocol), so an exact peer pin would break every host on a routine zod patch bump for zero correctness benefit. The sibling "exact pin" precedents (`providers/testkit`, `tools/mcp-client`) are regular `dependencies` — a different declaration class; no exact-pin *peer* precedent exists in the workspace.
+
+##### KRT-BM008 Deviations & Justifications
+- **Touched Files:** root `package.json` (lint script), in addition to the runtime sources/test helpers and the new `tools/scripts/kraken-surface-gate.ts`.
+- **Justification:** The ticket's description requires the guard be "wired into `bun run lint` or `bun run codegen`"; wiring into `bun run lint` necessarily edits the root lint script entry. Locally-defined internal helper names (`decodeKrakenMessageRecord`, `toKrakenMessages`, `isKrakenRunnerFactory`) were left untouched per the ticket's out-of-scope clause for intentional internal `Kraken*` naming at definition sites.
+
+##### KRT-BM009 Resolution Notes
+- **(c)** Closed as already-resolved per the ticket's STOP condition: `docs/perf-benchmarks.md`'s only retired-name reference (`framework-runtime-core`, lines 51-55) is already a deliberate, self-annotating historical footnote ("left as originally recorded rather than fabricating a re-run"); no unannotated stale name was found elsewhere in the file, so the passage was preserved as-is.
