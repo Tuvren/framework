@@ -82,8 +82,10 @@ of a given port is judged against the same neutral checks.
 
 ## Guides
 
+- [How conformance works](docs/guides/how-conformance-works.md)
 - [Adding a new implementation language](docs/guides/add-a-language.md)
 - [Adding a new driver](docs/guides/add-a-driver.md)
+- [Adding a new runner](docs/guides/add-a-runner.md)
 - [Kernel Specification](docs/KrakenKernelSpecification.md)
 - [Framework Specification](docs/KrakenFrameworkSpecification.md)
 

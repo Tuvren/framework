@@ -12,8 +12,7 @@ category.
 execution around a model (ReAct today: `typescript/runners/react`,
 `@tuvren/runner-react`, authority at `spec/runners/`). If you're trying to
 add a new execution strategy, not a new resource integration, this is the
-wrong guide — there is no equivalent `add-a-runner.md` yet, so start from
-`spec/runners/README.md` and `typescript/runners/react` directly.
+wrong guide — read `docs/guides/add-a-runner.md` instead.
 
 This is an inversion of older naming in this codebase's history: what used
 to be called "Driver Runtime" / "ReAct Driver" is now "Runner Runtime" /
@@ -189,5 +188,7 @@ bun run check
 - `docs/guides/add-a-language.md` — authoring a new language
   implementation, adapter, and certification wrapper from scratch.
 - `spec/tools/README.md` — the `tools` port's own authority map.
-- `typescript/runners/react` — the precedent for execution strategies
-  ("runners"), if that's actually what you're building.
+- `docs/guides/add-a-runner.md` — authoring an execution strategy
+  ("runner"), if that's actually what you're building.
+- `docs/guides/how-conformance-works.md` — the shared conformance engine,
+  adapter protocol, and evidence model your driver's checks run through.

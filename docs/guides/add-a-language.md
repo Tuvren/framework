@@ -254,8 +254,12 @@ and the packet's own guardrail list should say so explicitly.
 
 ## See also
 
+- `docs/guides/how-conformance-works.md` — the shared conformance engine,
+  adapter protocol, plan schema, and evidence model in depth.
 - `docs/guides/add-a-driver.md` — authoring a new resource-adapter
   ("driver") rather than a new language.
+- `docs/guides/add-a-runner.md` — authoring a new execution strategy
+  ("runner") rather than a new language.
 - `docs/KrakenKernelSpecification.md`, `docs/KrakenFrameworkSpecification.md`
   — the human-authored specs the kernel and framework authority packets
   point back to.
