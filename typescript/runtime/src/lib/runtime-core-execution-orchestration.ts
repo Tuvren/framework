@@ -490,6 +490,12 @@ export async function stageRuntimeRunnerMessagesFacade(
   );
 }
 
+/**
+ * Pass-through facade over `applyRequestedToolBatchIfNeeded`
+ * (`runtime-core-runner.ts`): executes the iteration's requested tool batch
+ * when the resolution calls for it, yielding either an updated resolution or
+ * a short-circuit loop outcome.
+ */
 export async function applyRuntimeRequestedToolBatchIfNeededFacade(
   host: RuntimeCoreRunnerHost,
   input: {
@@ -509,6 +515,11 @@ export async function applyRuntimeRequestedToolBatchIfNeededFacade(
   return await applyRuntimeRequestedToolBatchIfNeeded(host, input);
 }
 
+/**
+ * Pass-through facade over `completeIterationArtifacts`
+ * (`runtime-core-runner.ts`): commits the iteration's durable artifacts and
+ * returns the new turn-node hash, if the iteration advanced one.
+ */
 export async function completeRuntimeIterationArtifactsFacade(
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
@@ -535,6 +546,11 @@ export async function completeRuntimeIterationArtifactsFacade(
   );
 }
 
+/**
+ * Pass-through facade over `applyAfterIterationResolution`
+ * (`runtime-core-runner.ts`): runs after-iteration extension hooks and
+ * returns the (possibly overridden) resolution.
+ */
 export async function applyRuntimeAfterIterationResolutionFacade(
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
@@ -563,6 +579,11 @@ export async function applyRuntimeAfterIterationResolutionFacade(
   );
 }
 
+/**
+ * Pass-through facade over `resumePausedToolExecution`
+ * (`runtime-core-tool-resume.ts`): resumes a turn paused on tool approval and
+ * drives it to a loop outcome.
+ */
 export async function resumeRuntimePausedToolExecutionFacade(
   host: Parameters<typeof resumeRuntimePausedToolExecution>[0],
   handle: RuntimeExecutionHandle,
@@ -579,6 +600,11 @@ export async function resumeRuntimePausedToolExecutionFacade(
   );
 }
 
+/**
+ * Pass-through facade over `createToolBatchEnvironment`
+ * (`runtime-core-runner-support.ts`): assembles the environment a requested
+ * tool batch executes in.
+ */
 export function createRuntimeToolBatchEnvironmentFacade(
   host: RuntimeCoreRunnerSupportHost,
   handle: RuntimeExecutionHandle,
@@ -597,6 +623,11 @@ export function createRuntimeToolBatchEnvironmentFacade(
   );
 }
 
+/**
+ * Pass-through facade over `createRunnerHandoffContextPlan`
+ * (`runtime-core-runner-support.ts`): builds the context plan for a
+ * runner-requested agent handoff.
+ */
 export function createRuntimeRunnerHandoffContextPlanFacade(
   host: RuntimeCoreRunnerSupportHost,
   input: {
@@ -617,6 +648,11 @@ export function createRuntimeRunnerHandoffContextPlanFacade(
   );
 }
 
+/**
+ * Pass-through facade over `completeIterationRun`
+ * (`runtime-core-turn-progress.ts`): closes the iteration's kernel run and
+ * returns the advanced turn-node hash, when one was produced.
+ */
 export async function completeRuntimeIterationRunFacade(
   host: RuntimeCoreTurnProgressHost,
   handle: RuntimeExecutionHandle,
@@ -639,6 +675,11 @@ export async function completeRuntimeIterationRunFacade(
   );
 }
 
+/**
+ * Pass-through facade over `createIterationTree`
+ * (`runtime-core-turn-progress.ts`): creates the turn tree that appends the
+ * iteration's messages, manifest, and runtime status onto the base tree.
+ */
 export async function createRuntimeIterationTreeFacade(
   host: RuntimeCoreTurnProgressHost,
   schemaId: string,
@@ -659,6 +700,11 @@ export async function createRuntimeIterationTreeFacade(
   );
 }
 
+/**
+ * Pass-through facade over `incorporateInput`
+ * (`runtime-core-state-commit.ts`): durably incorporates the request's input
+ * signal into the turn before the first iteration.
+ */
 export async function incorporateRuntimeInputFacade(
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
@@ -668,6 +714,11 @@ export async function incorporateRuntimeInputFacade(
   await incorporateRuntimeInput(host, handle, schemaId, loopState);
 }
 
+/**
+ * Pass-through facade over `incorporateSteering`
+ * (`runtime-core-state-commit.ts`): durably incorporates a queued steering
+ * signal between iterations.
+ */
 export async function incorporateRuntimeSteeringFacade(
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
@@ -678,6 +729,11 @@ export async function incorporateRuntimeSteeringFacade(
   await incorporateRuntimeSteering(host, handle, schemaId, signal, loopState);
 }
 
+/**
+ * Pass-through facade over `commitPendingExtensionStateUpdates`
+ * (`runtime-core-state-commit.ts`): persists extension manifest-state
+ * updates gathered during an iteration.
+ */
 export async function commitRuntimePendingExtensionStateUpdatesFacade(
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
@@ -696,6 +752,11 @@ export async function commitRuntimePendingExtensionStateUpdatesFacade(
   );
 }
 
+/**
+ * Pass-through facade over `applyContextEngineeringPlan`
+ * (`runtime-core-context-ops.ts`): commits a runner/extension context
+ * rewrite (compaction, pruning, replacement) as a durable turn-state change.
+ */
 export async function applyRuntimeContextEngineeringPlanFacade(
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
@@ -714,6 +775,11 @@ export async function applyRuntimeContextEngineeringPlanFacade(
   );
 }
 
+/**
+ * Pass-through facade over `applyHandoff`
+ * (`runtime-core-context-ops.ts`): applies an agent handoff plan and returns
+ * the new active config, tool registry, and client-endpoint boundary.
+ */
 export async function applyRuntimeHandoffFacade(
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
