@@ -20,6 +20,11 @@ import {
   createBackendInvariantRecordUtils,
 } from "./backend-invariant-record-utils.js";
 
+/**
+ * Configuration for {@link createBackendInvariantRunLogic}: the record-utils
+ * error-prefix config plus the one backend-owned decoder the run-legality
+ * checks need.
+ */
 export interface BackendInvariantRunLogicConfig
   extends BackendInvariantRecordUtilsConfig {
   /**
@@ -39,12 +44,36 @@ export interface BackendInvariantRunLogicConfig
  * `BackendInvariantRecordUtils`.
  */
 export interface BackendInvariantRunLogic {
+  /**
+   * Asserts that a record's `updatedAtMs` never moves backwards across an
+   * update.
+   *
+   * @param previousUpdatedAtMs - The stored record's current `updatedAtMs`.
+   * @param nextUpdatedAtMs - The candidate replacement's `updatedAtMs`.
+   * @param label - Human-readable field label used in the error message
+   *   (e.g. `"record.updatedAtMs"`).
+   * @param updatedAtCode - Fully-formed backend-prefixed error code raised
+   *   on regression.
+   * @throws TuvrenPersistenceError when `nextUpdatedAtMs` is less than
+   *   `previousUpdatedAtMs`.
+   */
   assertMonotonicUpdatedAtMs(
     previousUpdatedAtMs: number,
     nextUpdatedAtMs: number,
     label: string,
     updatedAtCode: string
   ): void;
+  /**
+   * Asserts that replacing `existingRun` with `nextRun` is a legal stored-run
+   * transition: identity/lineage fields stay immutable, `updatedAtMs` and
+   * `currentStepIndex` are monotonic, `createdTurnNodesCbor` is append-only
+   * while the run can still progress, lease fields (execution owner, fencing
+   * token, lease expiry, preemption reason) follow the lease lifecycle rules,
+   * and the status change is a legal run-status transition.
+   *
+   * @throws TuvrenPersistenceError with a backend-prefixed
+   *   `<prefix>_backend_run_*` code identifying the first violated invariant.
+   */
   assertRunUpdateIsLegal(existingRun: StoredRun, nextRun: StoredRun): void;
 }
 
@@ -145,6 +174,10 @@ export function createBackendInvariantRunLogic(
     assertRunStatusTransition(existingRun.status, nextRun.status);
   }
 
+  /**
+   * Lease-lifecycle legality: ownership, fencing token, lease expiry, and
+   * preemption reason each follow their own set-once/rotate/retain rules.
+   */
   function assertRunLeaseUpdateIsLegal(
     existingRun: StoredRun,
     nextRun: StoredRun
@@ -155,6 +188,10 @@ export function createBackendInvariantRunLogic(
     assertPreemptionReasonUpdateIsLegal(existingRun, nextRun);
   }
 
+  /**
+   * `executionOwnerId` is immutable while the run stays running and must
+   * never be gained after creation; a leaseless run stays leaseless.
+   */
   function assertExecutionOwnerUpdateIsLegal(
     existingRun: StoredRun,
     nextRun: StoredRun
@@ -184,6 +221,11 @@ export function createBackendInvariantRunLogic(
     }
   }
 
+  /**
+   * A leased run that stays running must retain a fencing token and must
+   * rotate it on every renewal (same token twice means a stale writer); a
+   * leaseless run must never gain one after creation.
+   */
   function assertFencingTokenUpdateIsLegal(
     existingRun: StoredRun,
     nextRun: StoredRun
@@ -221,6 +263,7 @@ export function createBackendInvariantRunLogic(
     }
   }
 
+  /** A leased run that stays running must not drop its lease expiry. */
   function assertLeaseExpiryUpdateIsLegal(
     existingRun: StoredRun,
     nextRun: StoredRun
@@ -238,6 +281,10 @@ export function createBackendInvariantRunLogic(
     }
   }
 
+  /**
+   * `preemptionReason` is write-once and may only be recorded on a run that
+   * is transitioning to (or already in) `failed` status.
+   */
   function assertPreemptionReasonUpdateIsLegal(
     existingRun: StoredRun,
     nextRun: StoredRun

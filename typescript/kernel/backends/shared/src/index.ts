@@ -14,6 +14,24 @@
  * limitations under the License.
  */
 
+/**
+ * Shared persistence-invariant logic for the Tuvren kernel backends.
+ *
+ * This package extracts the invariant surfaces that the memory, SQLite, and
+ * PostgreSQL backends previously each hardcoded: record clone/equality/compare
+ * helpers and immutability assertions ({@link createBackendInvariantRecordUtils}),
+ * run-transition legality checks ({@link createBackendInvariantRunLogic}), the
+ * reachability-based reclamation sweep ({@link reclaimBackendState}), and the
+ * structural durable-state shape they all operate on ({@link BackendState}).
+ *
+ * The only backend-specific behavior threaded through these factories is the
+ * error-code prefix (`memory` / `sqlite` / `postgres`) and backend-owned CBOR
+ * lineage decoders, which are injected rather than imported so this package
+ * never depends on a single backend's modules.
+ *
+ * @packageDocumentation
+ */
+
 // Individual sub-factories/functions are exposed directly (rather than
 // composed into a single umbrella factory) so a backend shim that only needs
 // one invariant surface (e.g. reclamation alone) is not forced to also supply

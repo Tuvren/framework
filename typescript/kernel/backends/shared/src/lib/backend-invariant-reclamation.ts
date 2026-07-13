@@ -136,6 +136,11 @@ function computeGraceHorizonMs(
   return graceHorizonMs;
 }
 
+/**
+ * Builds the full keep set: seed live roots and grace-window roots, then close
+ * over turn-node ancestry and turn-tree manifests so the set is referentially
+ * complete before any deletion decision is made.
+ */
 function computeKeepClosure(
   state: BackendState,
   graceHorizonMs: number,
@@ -291,6 +296,10 @@ function closeTurnTreeReachability(
   }
 }
 
+/**
+ * Retains every object hash a turn-tree path resolves to, plus the chunk
+ * hashes backing a chunked ordered path's chunk list.
+ */
 function keepPathObjects(
   state: BackendState,
   storedPath: StoredTurnTreePath,
@@ -371,6 +380,11 @@ function sweep(
   };
 }
 
+/**
+ * A run is retained iff its turn is retained AND every turn node it references
+ * (start node plus created lineage) is retained; releasing a run also drops
+ * its staged results and observe annotations.
+ */
 function sweepRuns(
   state: BackendState,
   keepTurnNodes: Set<string>,
@@ -407,6 +421,10 @@ function sweepTurns(state: BackendState, keepTurnIds: Set<string>): number {
   return released;
 }
 
+/**
+ * Only archived branches are ever swept (live branch heads are keep-closure
+ * roots), and only when their head turn node was not retained.
+ */
 function sweepArchivedBranches(
   state: BackendState,
   keepTurnNodes: Set<string>
@@ -485,6 +503,7 @@ function sweepObjects(
   return released;
 }
 
+/** Running and paused runs are the active executions that pin reclamation. */
 function isActiveRun(status: string): boolean {
   return status === "running" || status === "paused";
 }

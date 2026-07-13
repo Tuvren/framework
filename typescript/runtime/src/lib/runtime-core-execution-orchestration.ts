@@ -754,8 +754,8 @@ export async function commitRuntimePendingExtensionStateUpdatesFacade(
 
 /**
  * Pass-through facade over `applyContextEngineeringPlan`
- * (`runtime-core-context-ops.ts`): commits a runner/extension context
- * rewrite (compaction, pruning, replacement) as a durable turn-state change.
+ * (`runtime-core-context-ops.ts`): executes a context-engineering plan's
+ * message-set rewrite and commits it as a durable turn-state change.
  */
 export async function applyRuntimeContextEngineeringPlanFacade(
   host: RuntimeCoreContextOpsHost,

@@ -461,6 +461,10 @@ function freezeSnapshot<T>(value: T, seen = new Set<object>()): T {
   return Object.freeze(value);
 }
 
+/**
+ * Returns the event without its `source` attribution (or the event itself
+ * when it carries none), revalidating the stripped shape before returning.
+ */
 export function stripEventSource(event: TuvrenStreamEvent): TuvrenStreamEvent {
   if (event.source === undefined) {
     return event;
