@@ -85,6 +85,10 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ResumeContext } from "./runtime-execution-types.js";
 import type { ToolExecutionMode } from "./tool-execution.js";
 
+/**
+ * Late-bound dependency bag adapted into the execution loop's host seam by
+ * {@link runRuntimeExecutionLoopFacade}.
+ */
 interface RuntimeExecutionLoopDependencies {
   applyContextEngineeringPlan(
     handle: RuntimeExecutionHandle,
@@ -146,6 +150,10 @@ interface RuntimeExecutionLoopDependencies {
   recordBoundsToolCalls(handle: RuntimeExecutionHandle, count: number): number;
 }
 
+/**
+ * Late-bound dependency bag adapted into the iteration phase's host seam by
+ * {@link executeRuntimeIterationPhaseFacade}.
+ */
 interface RuntimeIterationPhaseDependencies {
   applyAfterIterationResolution(
     handle: RuntimeExecutionHandle,
@@ -259,6 +267,11 @@ interface RuntimeIterationPhaseDependencies {
   ): Promise<HashString[]>;
 }
 
+/**
+ * Facade over the loop module's `runExecutionLoop`: adapt the dependency
+ * bag into the loop host seam and run the turn's iteration loop to a
+ * terminal {@link LoopOutcome} using `dependencies.now()` as the clock.
+ */
 export async function runRuntimeExecutionLoopFacade(
   dependencies: RuntimeExecutionLoopDependencies,
   handle: RuntimeExecutionHandle,
@@ -308,6 +321,15 @@ export async function runRuntimeExecutionLoopFacade(
   );
 }
 
+/**
+ * Facade over the iteration module's `executeIterationPhase`: adapt the
+ * dependency bag into the iteration host seam and execute one iteration
+ * (runner invocation, tool batch, artifact completion) against the given
+ * head state.
+ *
+ * @throws TuvrenRuntimeError with code `missing_head_state` when called
+ *   without a head state — iteration execution always requires one.
+ */
 export async function executeRuntimeIterationPhaseFacade(
   dependencies: RuntimeIterationPhaseDependencies,
   handle: RuntimeExecutionHandle,

@@ -341,6 +341,16 @@ export function isNonNegativeSafeIntegerProperty<
   );
 }
 
+/**
+ * True when `value` is a valid last-message index for a history of
+ * `messageCount` messages: a safe integer in `[-1, messageCount)`, where
+ * `-1` is the "no such message" sentinel and is the only valid value when
+ * `messageCount` is zero. Used for `ContextManifest` last-role indexes
+ * (KrakenFrameworkSpecification §1.6).
+ *
+ * @param value - Candidate index.
+ * @param messageCount - Total number of messages the index refers into.
+ */
 export function isMessageIndexValue(
   value: unknown,
   messageCount: number
@@ -356,10 +366,16 @@ export function isMessageIndexValue(
   return value < messageCount;
 }
 
+/** True when `value` is a non-negative safe integer. */
 export function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
+/**
+ * True when no two decisions target the same `callId` — each approval
+ * decision must apply to exactly one pending tool call
+ * (KrakenFrameworkSpecification §1.7).
+ */
 export function hasUniqueApprovalDecisionCallIds(
   decisions: ApprovalDecision[]
 ): boolean {
@@ -376,6 +392,16 @@ export function hasUniqueApprovalDecisionCallIds(
   return true;
 }
 
+/**
+ * True when `decisions` exactly covers `toolCalls`: same cardinality, every
+ * decision `callId` matches a pending call, and each decision `type` is one
+ * of the decision options that pending call offered
+ * (KrakenFrameworkSpecification §1.7).
+ *
+ * Callers should also check {@link hasUniqueApprovalDecisionCallIds}; with
+ * unique ids, equal length plus id membership implies one decision per
+ * pending call.
+ */
 export function hasApprovalDecisionCoverage(
   decisions: ApprovalDecision[],
   toolCalls: PendingToolCall[]
@@ -405,10 +431,17 @@ export function hasApprovalDecisionCoverage(
   return true;
 }
 
+/** True when `values` contains no duplicate strings. */
 export function hasUniqueStrings(values: string[]): boolean {
   return new Set(values).size === values.length;
 }
 
+/**
+ * True when `value` is a valid {@link EventSource} attribution record
+ * (KrakenFrameworkSpecification §1.8): a plain object with a non-empty
+ * `agent` string, optional non-empty `runner`, `threadId`, and `workerId`
+ * strings, and no other keys.
+ */
 export function isEventSource(value: unknown): value is EventSource {
   if (
     !(
@@ -447,6 +480,12 @@ export function isEventSource(value: unknown): value is EventSource {
   return true;
 }
 
+/**
+ * True when `value` is a valid {@link TuvrenErrorProjection}: the
+ * serializable, data-only projection of an error carried by `error` stream
+ * events — a string `message`, optional string `code`, and optional
+ * JSON-serializable `details`, with no other keys.
+ */
 export function isTuvrenErrorProjection(
   value: unknown
 ): value is TuvrenErrorProjection {
@@ -459,6 +498,14 @@ export function isTuvrenErrorProjection(
   );
 }
 
+/**
+ * True when `value` is a plain, fully-enumerable data object: prototype is
+ * `Object.prototype` or `null`, no symbol-keyed properties, and every own
+ * property is enumerable. Class instances, proxies with non-enumerable
+ * descriptors, and prototype-carrying objects are rejected so
+ * contract-boundary objects round-trip through JSON-like serialization
+ * without hidden state. Never throws.
+ */
 export function isPlainObject(
   value: unknown
 ): value is Record<string, unknown> {
@@ -487,6 +534,10 @@ export function isPlainObject(
   }
 }
 
+/**
+ * True when `value[key]` is a string; narrows the object type so the caller
+ * can read the property as `string` afterwards.
+ */
 export function isStringProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -494,6 +545,13 @@ export function isStringProperty<
   return typeof value[key] === "string";
 }
 
+/**
+ * Runs `check` and converts any thrown error into `false`.
+ *
+ * Wrap `is*` guard bodies with this when probing untrusted input, so a
+ * hostile getter or revoked proxy can never turn a boolean probe into an
+ * exception.
+ */
 export function safePredicate(check: () => boolean): boolean {
   try {
     return check();
@@ -504,6 +562,13 @@ export function safePredicate(check: () => boolean): boolean {
   }
 }
 
+/**
+ * True when every own enumerable key of `value` belongs to `allowedKeys`.
+ *
+ * This is the exact-surface check behind every contract guard: unknown
+ * extra fields are rejected rather than ignored, so the validated payload
+ * surface always matches the released contract version.
+ */
 export function hasOnlyAllowedKeys(
   value: Record<string, unknown>,
   allowedKeys: ReadonlySet<string>
@@ -514,6 +579,11 @@ export function hasOnlyAllowedKeys(
   return Object.keys(value).every((key) => allowedKeys.has(key));
 }
 
+/**
+ * True when `value` carries only the shared stream-event envelope keys
+ * (`type`, `timestamp`, `source`) plus this variant's `eventSpecificKeys`,
+ * and the variant's own `predicate` passes.
+ */
 export function matchesStreamEventVariant(
   value: Record<string, unknown>,
   eventSpecificKeys: string[],
@@ -522,6 +592,11 @@ export function matchesStreamEventVariant(
   return hasOnlyStreamEventKeys(value, eventSpecificKeys) && predicate();
 }
 
+/**
+ * True when `values` contains no structural duplicates, comparing by a
+ * canonical key (object keys sorted, so `{a:1,b:2}` equals `{b:2,a:1}`).
+ * Used to reject degenerate JSON Schema `enum` arrays.
+ */
 export function hasUniqueTuvrenJsonValues(values: TuvrenJsonValue[]): boolean {
   const seenValues = new Set<string>();
 

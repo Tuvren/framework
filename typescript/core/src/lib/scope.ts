@@ -32,10 +32,22 @@ export type Scope = string;
  */
 export const DEFAULT_SCOPE: Scope = "tuvren.scope.default";
 
+/**
+ * True when `value` is a usable {@link Scope}: any non-empty string. The
+ * content is opaque to the runtime — the host owns the mapping from its
+ * tenancy model to a Scope.
+ */
 export function isScope(value: unknown): value is Scope {
   return typeof value === "string" && value.length > 0;
 }
 
+/**
+ * Asserts that `value` is a usable {@link Scope}.
+ *
+ * @param value - Untrusted candidate scope.
+ * @param label - Name used in the error message (defaults to `"scope"`).
+ * @throws TypeError when {@link isScope} rejects the value.
+ */
 export function assertScope(
   value: unknown,
   label = "scope"

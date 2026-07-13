@@ -15,6 +15,15 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+
+/**
+ * `@tuvren/core/events` — the canonical `TuvrenStreamEvent` vocabulary
+ * (KrakenFrameworkSpecification §1.8): the per-event payload types, the
+ * `EventSource` attribution record, and the stream-event guards.
+ *
+ * @packageDocumentation
+ */
+
 export {
   assertTuvrenStreamEvent,
   isTuvrenStreamEvent,

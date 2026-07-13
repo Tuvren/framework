@@ -336,6 +336,14 @@ export function findInvalidRunnerResolution(
   return undefined;
 }
 
+/**
+ * Validates that every runner-returned extension state update targets an
+ * extension active in the current agent config.
+ *
+ * @returns A `TuvrenRuntimeError` with code `invalid_runner_result` naming
+ * the first unknown extension, or `undefined` when all targets are active
+ * (or no updates were returned).
+ */
 export function findInvalidRunnerStateUpdateError(
   activeExtensions: TuvrenExtension[],
   stateUpdates: RunnerExecutionResult["stateUpdates"]
@@ -367,6 +375,11 @@ export function findInvalidRunnerStateUpdateError(
   return undefined;
 }
 
+/**
+ * Appends runner-returned extension state updates to the loop's carried
+ * updates, cloning each state payload so later mutation by the runner cannot
+ * leak into staged manifests.
+ */
 export function applyRunnerStateUpdates(
   loopState: {
     carriedStateUpdates: ExtensionStateUpdate[];
@@ -385,6 +398,15 @@ export function applyRunnerStateUpdates(
   );
 }
 
+/**
+ * Aggregates the runner-result validations for one iteration in precedence
+ * order: resolution/tool-call consistency (skipped when a cancellation
+ * resolution overrides the runner's), assistant event validation, then
+ * extension state-update targeting.
+ *
+ * @returns The first validation error found, or `undefined` when the runner
+ * result is acceptable.
+ */
 export function findInvalidRunnerExecutionError(
   activeExtensions: TuvrenExtension[],
   requestedToolCallCount: number,
@@ -413,6 +435,10 @@ export function findInvalidRunnerExecutionError(
   return findInvalidRunnerStateUpdateError(activeExtensions, stateUpdates);
 }
 
+/**
+ * Collects every tool_call part from the assistant messages, preserving
+ * message and part order.
+ */
 export function extractToolCallsFromMessages(
   messages: TuvrenMessage[]
 ): ToolCallPart[] {
@@ -502,6 +528,26 @@ function emitProviderToolAttributionEvents(
   }
 }
 
+/**
+ * Executes one full runner iteration against the current branch head.
+ *
+ * The phase creates a tracked iteration run, executes the runner, validates
+ * its output (resolution/tool-call consistency, assistant event fidelity,
+ * extension state-update targets), stages the runner's durable messages,
+ * emits provider tool attribution events for pre-staged provider results
+ * (AY003), applies the requested tool batch, commits iteration artifacts
+ * (manifest, optional pause status, iteration tree), and runs the
+ * after-iteration hooks with checkpointed-pause reconciliation.
+ *
+ * Lease loss detected after runner execution discards runner progress and
+ * fails the tracked run without advancing the branch; invalid runner output
+ * likewise fails the run and yields a hard-fail outcome. Cancellation is
+ * re-checked at each checkpoint so a cancel observed mid-phase overrides the
+ * working resolution.
+ *
+ * @returns An "executed" result carrying the iteration outputs, or an
+ * "outcome" that terminates the iteration loop.
+ */
 export async function executeIterationPhase(
   host: RuntimeCoreIterationHost,
   input: {

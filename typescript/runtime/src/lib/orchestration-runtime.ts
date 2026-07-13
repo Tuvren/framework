@@ -41,12 +41,35 @@ import {
   normalizeInputSignal,
 } from "./runtime-core-shared.js";
 
+/** Options for {@link createOrchestrationRuntime}. */
 export interface OrchestrationRuntimeOptions {
+  /**
+   * The named agents this orchestration surface can execute or spawn.
+   * Configs are snapshotted at construction (preserving function-valued
+   * hooks), so later host mutation of the passed objects has no effect.
+   */
   agents: Record<string, AgentConfig>;
+  /** The underlying framework runtime executions are delegated to. */
   framework: TuvrenRuntime;
+  /**
+   * Clock used for orchestration timestamps.
+   *
+   * @defaultValue `Date.now`
+   */
   now?: () => EpochMs;
 }
 
+/**
+ * Host-facing wrapper over one {@link OrchestrationNode}.
+ *
+ * A handle is a generation token: `resolveApproval` deactivates the current
+ * handle (freezing its last observed status) and returns a fresh handle over
+ * the resumed node, so every other method throws
+ * `invalid_orchestration_handle` when called on a superseded handle. Spawned
+ * children are tracked so `awaitResult` aggregates their results — including
+ * across an approval resume, where pre-pause children are forwarded to the
+ * replacement handle.
+ */
 class OrchestrationHandleImpl implements OrchestrationHandle {
   private active = true;
   private inactiveStatus?: ExecutionStatus;
@@ -74,6 +97,12 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     return this.node.allEvents();
   }
 
+  /**
+   * Awaits this node's terminal result, then aggregates every spawned
+   * child's result (keyed by worker id) into the returned
+   * `OrchestrationResult`; a child failure is captured per-child and never
+   * rejects the parent await.
+   */
   async awaitResult(): Promise<OrchestrationResult> {
     this.assertActive("awaitResult");
     const ownResult = await this.node.awaitResult();
@@ -106,6 +135,12 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     return this.node.events();
   }
 
+  /**
+   * Resumes a paused execution with an approval response. Supersedes this
+   * handle: the returned replacement is the only handle on which further
+   * calls are valid, while this one keeps answering `status()` with the
+   * pre-resume status.
+   */
   resolveApproval(response: ApprovalResponse): OrchestrationHandle {
     this.assertActive("resolveApproval");
     const pausedStatus = this.node.currentStatus();
@@ -116,6 +151,11 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     return new OrchestrationHandleImpl(resumedNode, this.spawnedChildNodes);
   }
 
+  /**
+   * Spawns a child agent execution and returns its own handle. The child is
+   * also tracked on this parent (by worker id) so the parent's `awaitResult`
+   * includes it in `childResults`.
+   */
   spawn(input: { agent: string; signal: InputSignal }): OrchestrationHandle {
     this.assertActive("spawn");
     const childNode = this.node.spawn({
@@ -131,6 +171,11 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
     return new OrchestrationHandleImpl(childNode);
   }
 
+  /**
+   * Returns a defensive clone of the current execution status; remains
+   * callable on a superseded handle, where it reports the status frozen at
+   * deactivation time.
+   */
   status(): ExecutionStatus {
     const status =
       this.active || this.inactiveStatus === undefined
@@ -201,6 +246,12 @@ class OrchestrationHandleImpl implements OrchestrationHandle {
   }
 }
 
+/**
+ * The orchestration surface over a framework runtime: resolves named agent
+ * configs, starts turn executions as {@link OrchestrationNode}s, and serves
+ * as the node host that provisions child bindings for `spawn` (each child
+ * gets a fresh thread inheriting the parent's schema, runner, and tools).
+ */
 class OrchestrationRuntimeImpl
   implements OrchestrationRuntime, OrchestrationRuntimeNodeHost
 {
@@ -218,6 +269,13 @@ class OrchestrationRuntimeImpl
     this.now = now;
   }
 
+  /**
+   * Executes a turn for a named agent on an existing thread/branch, wrapping
+   * the framework execution handle in an orchestration node and handle.
+   *
+   * @throws TuvrenRuntimeError with code `unknown_orchestration_agent` when
+   *   the agent name is not configured.
+   */
   executeTurn(input: {
     agent: string;
     branchId: string;
@@ -255,6 +313,15 @@ class OrchestrationRuntimeImpl
     return new OrchestrationHandleImpl(node);
   }
 
+  /**
+   * Provisions the execution binding for a spawned child
+   * ({@link OrchestrationRuntimeNodeHost} contract): creates a fresh thread
+   * using the parent's schema (explicit binding schema first, then the parent
+   * thread's), and starts the child turn with the parent's runner and tools.
+   *
+   * @throws TuvrenRuntimeError with code `invalid_orchestration_parent` when
+   *   the parent thread no longer resolves.
+   */
   async createChildBinding(
     parentBinding: ExecutionBinding,
     workerId: string,
@@ -326,6 +393,17 @@ class OrchestrationRuntimeImpl
   }
 }
 
+/**
+ * Creates the multi-agent orchestration surface over a framework runtime.
+ *
+ * The result executes named agents (`executeTurn`), supports approval
+ * pause/resume via generation-scoped handles, and spawns child agent
+ * executions whose results the parent handle aggregates.
+ *
+ * @param options - The agent map, the framework runtime to delegate to, and
+ *   an optional clock override.
+ * @returns An `OrchestrationRuntime` bound to the supplied framework.
+ */
 export function createOrchestrationRuntime(
   options: OrchestrationRuntimeOptions
 ): OrchestrationRuntime {

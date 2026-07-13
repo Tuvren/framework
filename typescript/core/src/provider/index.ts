@@ -15,6 +15,16 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+
+/**
+ * `@tuvren/core/provider` — the model provider contract
+ * (KrakenFrameworkSpecification §3): `TuvrenProvider`, the
+ * `ProviderStreamChunk` vocabulary (§3.2), model response/usage/prompt
+ * types, provider-owned tool declaration types, and their guards.
+ *
+ * @packageDocumentation
+ */
+
 export {
   assertProviderStreamChunk,
   assertTuvrenModelResponse,

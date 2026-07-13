@@ -15,9 +15,18 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
-// Shared structural secret-pattern screening (ADR-044, KRT-BK004). Kept as its
-// own focused subpath so any @tuvren/core consumer can screen values for
-// secret-shaped substrings without pulling in the rest of the core surface.
+
+/**
+ * `@tuvren/core/security` — shared structural secret-pattern screening
+ * (ADR-044, KRT-BK004): the named secret-shape regexes, the `REDACTED`
+ * sentinel, and the key/value screening helpers. Kept as its own focused
+ * subpath so any `@tuvren/core` consumer can screen values for
+ * secret-shaped substrings without pulling in the rest of the core
+ * surface.
+ *
+ * @packageDocumentation
+ */
+
 export {
   AUTH_HEADER_PATTERN,
   CONNECTION_STRING_PATTERN,

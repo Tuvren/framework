@@ -61,6 +61,13 @@ import type {
   PauseContext,
 } from "./runtime-execution-types.js";
 
+// Each builder in this module adapts a flat dependency bag (callbacks bound by
+// RuntimeCore plus the kernel) into the narrow host interface one split
+// `runtime-core-*` module consumes, closing over kernel syscalls where the
+// module needs them. The `*HostDependencies` interfaces below describe those
+// bags; they are internal wiring, not a public contract.
+
+/** Dependencies for {@link buildRuntimeCoreContextOpsHost}. */
 interface ContextOpsHostDependencies {
   advanceTurnAndBranchHead(
     handle: RuntimeExecutionHandle,
@@ -142,6 +149,7 @@ interface ContextOpsHostDependencies {
   ): void;
 }
 
+/** Dependencies for {@link buildRuntimeCorePersistenceHost}. */
 interface PersistenceHostDependencies {
   emitWarning(warning: {
     activeAgent: string;
@@ -162,6 +170,7 @@ interface PersistenceHostDependencies {
   payloadCodecBinding: PayloadCodecBinding;
 }
 
+/** Dependencies for {@link buildRuntimeCoreLivenessHost}. */
 interface LivenessHostDependencies {
   activeRunLeaseControllers: WeakMap<RuntimeExecutionHandle, ActiveRunLease>;
   kernel: RuntimeKernel;
@@ -176,6 +185,7 @@ interface LivenessHostDependencies {
   storeEventRecord(event: KernelRecord): Promise<HashString>;
 }
 
+/** Dependencies for {@link buildRuntimeCoreExpiredRecoveryHost}. */
 interface ExpiredRecoveryHostDependencies {
   kernel: RuntimeKernel;
   loadHeadState(branchId: string): Promise<HeadState>;
@@ -203,6 +213,7 @@ interface ExpiredRecoveryHostDependencies {
     | undefined;
 }
 
+/** Dependencies for {@link buildRuntimeCoreTurnProgressHost}. */
 interface TurnProgressHostDependencies {
   advanceTurnAndBranchHead(
     handle: RuntimeExecutionHandle,
@@ -230,6 +241,7 @@ interface TurnProgressHostDependencies {
   ): void;
 }
 
+/** Dependencies for {@link buildRuntimeCoreFinalizationHost}. */
 interface FinalizationHostDependencies {
   createId(): string;
   defaultRunnerId: string;
@@ -271,6 +283,7 @@ interface FinalizationHostDependencies {
   storeEventRecord(event: KernelRecord): Promise<HashString>;
 }
 
+/** Dependencies for {@link buildRuntimeCoreStartupHost}. */
 interface StartupHostDependencies {
   applyTerminalAgentTransitionIfNeeded(
     handle: RuntimeExecutionHandle,
@@ -362,6 +375,7 @@ interface StartupHostDependencies {
   ): Promise<import("./runtime-core-recovery.js").LoopOutcome>;
 }
 
+/** Dependencies for {@link buildRuntimeCoreStateCommitHost}. */
 interface StateCommitHostDependencies {
   advanceTurnAndBranchHead(
     handle: RuntimeExecutionHandle,
@@ -437,6 +451,7 @@ interface StateCommitHostDependencies {
   ): void;
 }
 
+/** Dependencies for {@link buildRuntimeCoreRunnerSupportHost}. */
 interface RunnerSupportHostDependencies {
   cloneAgentConfigForRequest(config: LoopState["activeConfig"]): AgentConfig;
   createContextEngineeringHelpers(
@@ -478,6 +493,13 @@ interface RunnerSupportHostDependencies {
   ): Promise<HashString>;
 }
 
+/**
+ * Builds the host seam for the context-operations module
+ * (`runtime-core-context-ops.ts`): head-state loading, context-message
+ * materialization, tool-registry/client-endpoint construction, handoff source
+ * resolution, and the kernel run-step + tree-create calls that commit context
+ * changes.
+ */
 export function buildRuntimeCoreContextOpsHost(
   dependencies: ContextOpsHostDependencies
 ): RuntimeCoreContextOpsHost {
@@ -533,6 +555,10 @@ export function buildRuntimeCoreContextOpsHost(
   };
 }
 
+/**
+ * Builds the host seam for the events module (`runtime-core-events.ts`): id
+ * generation, the state-observability toggle, and the clock.
+ */
 export function buildRuntimeCoreEventsHost(
   createId: () => string,
   enableStateObservability: () => boolean,
@@ -545,6 +571,12 @@ export function buildRuntimeCoreEventsHost(
   };
 }
 
+/**
+ * Builds the host seam for the persistence module
+ * (`runtime-core-persistence.ts`): kernel record encoding, the
+ * crypto-shredding message-encryption seam, manifest extension-state budget
+ * warnings, and the kernel `staging.stage` / `store.put` writes.
+ */
 export function buildRuntimeCorePersistenceHost(
   dependencies: PersistenceHostDependencies
 ): RuntimeCorePersistenceHost {
@@ -572,6 +604,12 @@ export function buildRuntimeCorePersistenceHost(
   };
 }
 
+/**
+ * Builds the host seam for the run-liveness module
+ * (`runtime-core-liveness.ts`): kernel run create/complete, the per-handle
+ * active-lease bookkeeping (backed by the runtime's `WeakMap`), the active
+ * run id stored on the handle, and the liveness configuration.
+ */
 export function buildRuntimeCoreLivenessHost(
   dependencies: LivenessHostDependencies
 ): RuntimeCoreLivenessHost {
@@ -619,6 +657,12 @@ export function buildRuntimeCoreLivenessHost(
   };
 }
 
+/**
+ * Builds the host seam for the expired-run recovery module
+ * (`runtime-core-expired-recovery.ts`): reading the recovered runtime status
+ * and active agent from a durable turn tree, head-state loading, and the
+ * recovered `turn.end` event publication.
+ */
 export function buildRuntimeCoreExpiredRecoveryHost(
   dependencies: ExpiredRecoveryHostDependencies
 ): RuntimeCoreExpiredRecoveryHost {
@@ -646,6 +690,12 @@ export function buildRuntimeCoreExpiredRecoveryHost(
   };
 }
 
+/**
+ * Builds the host seam for the turn-progress module
+ * (`runtime-core-turn-progress.ts`): branch-head advancement, kernel
+ * run/step completion, tree creation, and lease synchronization from step
+ * results.
+ */
 export function buildRuntimeCoreTurnProgressHost(
   dependencies: TurnProgressHostDependencies
 ): RuntimeCoreTurnProgressHost {
@@ -681,6 +731,12 @@ export function buildRuntimeCoreTurnProgressHost(
   };
 }
 
+/**
+ * Builds the host seam for the finalization module
+ * (`runtime-core-finalization.ts`): turn-status finalization, rejected
+ * paused-tool cancellation, kernel turn existence/run completion checks, and
+ * the event publication paths used while a turn is being closed out.
+ */
 export function buildRuntimeCoreFinalizationHost(
   dependencies: FinalizationHostDependencies
 ): RuntimeCoreFinalizationHost {
@@ -708,6 +764,19 @@ export function buildRuntimeCoreFinalizationHost(
   };
 }
 
+/**
+ * Builds the host seam for the startup module (`runtime-core-startup.ts`),
+ * which prepares fresh and resumed execution starts.
+ *
+ * Besides forwarding the dependency bag, this builder owns two decisions:
+ * `resolveActiveConfig` picks the active agent config with precedence
+ * resumed-pause context → recovered execution's agent (via
+ * `resolveAgentConfig`, falling back to the request config when the names
+ * match) → the request config; and `resolveBranchHeadHash` validates that the
+ * branch exists and belongs to the requested thread before returning its
+ * head, throwing `missing_branch` / `branch_thread_mismatch` lineage errors
+ * otherwise.
+ */
 export function buildRuntimeCoreStartupHost(
   dependencies: StartupHostDependencies
 ): RuntimeCoreStartupHost {
@@ -809,6 +878,12 @@ export function buildRuntimeCoreStartupHost(
   };
 }
 
+/**
+ * Builds the host seam for the state-commit module
+ * (`runtime-core-state-commit.ts`): staging of messages, manifests, runtime
+ * status, and turn lineage; kernel run-step begin/complete; tracked-run
+ * lifecycle; and branch-head advancement after a commit.
+ */
 export function buildRuntimeCoreStateCommitHost(
   dependencies: StateCommitHostDependencies
 ): RuntimeCoreStateCommitHost {
@@ -841,6 +916,13 @@ export function buildRuntimeCoreStateCommitHost(
   };
 }
 
+/**
+ * Builds the host seam for the runner-support module
+ * (`runtime-core-runner-support.ts`): agent-config cloning/snapshots,
+ * context-engineering helpers, parallel-tool-call resolution, handoff target
+ * resolution, and staging of tool-result messages (each wrapped as a
+ * single-part `tool` role message keyed by order index and call id).
+ */
 export function buildRuntimeCoreRunnerSupportHost(
   dependencies: RunnerSupportHostDependencies
 ): RuntimeCoreRunnerSupportHost {

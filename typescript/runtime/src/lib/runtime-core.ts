@@ -838,6 +838,13 @@ class RuntimeCore implements TuvrenRuntime {
   }
 
   // ── Data-Lifecycle Maintenance Surface (ADR-051, §4.17) ────────────────
+
+  /**
+   * The data-lifecycle maintenance surface (ADR-051, §4.17): `reclaim`
+   * forwards to the kernel's reclamation mechanism, and `purgeScope` drops
+   * the bound Scope's substrate partition when the runtime owns a backend
+   * that supports it (rejecting with `scope_purge_unsupported` otherwise).
+   */
   get maintenance(): RuntimeMaintenance {
     return {
       reclaim: (options?: { nowMs?: EpochMs }): Promise<ReclamationSummary> =>
@@ -859,6 +866,8 @@ class RuntimeCore implements TuvrenRuntime {
     await this.options.purgeScope();
   }
 
+  /** Reads a turn snapshot at the branch head, or at an explicit turn node
+   * when `turnNodeHash` is supplied. */
   getTurnState(input: {
     threadId: string;
     branchId: string;
@@ -867,6 +876,8 @@ class RuntimeCore implements TuvrenRuntime {
     return getTurnState(this.options.kernel, input);
   }
 
+  /** Iterates turn snapshots backwards from the branch head (or from the
+   * `before` cursor), newest first. */
   getTurnHistory(
     input: { threadId: string; branchId: string },
     options?: { limit?: number; before?: TurnHistoryCursor }
@@ -874,6 +885,11 @@ class RuntimeCore implements TuvrenRuntime {
     return getTurnHistory(this.options.kernel, input, options);
   }
 
+  /**
+   * Reads a branch's messages oldest-first with cursor pagination, decrypting
+   * durable payloads through the bound codec; a crypto-shredded message
+   * surfaces as an `ErasedPayload` marker instead of its content.
+   */
   readBranchMessages(input: {
     branchId: string;
     limit?: number;
@@ -889,6 +905,7 @@ class RuntimeCore implements TuvrenRuntime {
     );
   }
 
+  /** Fetches a thread's root metadata, or `null` when it does not exist. */
   async getThread(threadId: string): Promise<{
     rootTurnNodeHash: HashString;
     schemaId: string;
@@ -897,6 +914,11 @@ class RuntimeCore implements TuvrenRuntime {
     return await this.options.kernel.thread.get(threadId);
   }
 
+  /**
+   * Moves a branch head to an explicit turn node (for example to rewind or
+   * fast-forward a branch). When the kernel preserves the displaced lineage on
+   * an archive branch, its id is surfaced as `archiveBranchId`.
+   */
   async setBranchHead(input: {
     branchId: string;
     turnNodeHash: HashString;
@@ -917,6 +939,12 @@ class RuntimeCore implements TuvrenRuntime {
     };
   }
 
+  /**
+   * Builds a fresh execution handle for a turn request. The request's config
+   * and tools are defensively cloned/frozen so post-hoc host mutation cannot
+   * leak into the running turn; the loop starts on first consumption of the
+   * handle (event stream or `awaitResult`).
+   */
   createExecutionHandle(
     request: ExecutionSessionRequest
   ): RuntimeExecutionHandle {
@@ -930,6 +958,12 @@ class RuntimeCore implements TuvrenRuntime {
     );
   }
 
+  /**
+   * Builds the handle that continues a paused execution after an approval
+   * response, carrying the previous handle's per-turn bounds state forward
+   * (cumulative tool-call count and wall-clock deadline) so a pause/resume
+   * cycle can never reset the hard-stop budgets.
+   */
   createResumedExecutionHandle(
     previousHandle: RuntimeExecutionHandle,
     pauseContext: PauseContext,
@@ -957,6 +991,12 @@ class RuntimeCore implements TuvrenRuntime {
     return resumedHandle;
   }
 
+  /**
+   * Finalizes a handle that is paused on tool approval as cancelled. A no-op
+   * when the handle holds no pause context (nothing is paused, or the pause
+   * was already consumed by a resume). The finalization runs detached; the
+   * handle records it so later observers can await the same task.
+   */
   cancelPausedExecution(handle: RuntimeExecutionHandle): void {
     const pauseContext = handle.takePauseContextForCancellation();
 
@@ -988,6 +1028,14 @@ class RuntimeCore implements TuvrenRuntime {
     detachPromise(cancellationTask);
   }
 
+  /**
+   * Drives an execution session end to end: wires the session-facade
+   * callbacks over this runtime's hosts, then delegates to
+   * `startRuntimeExecutionSession`, which prepares a fresh or resumed start,
+   * recovers expired runs when needed, and runs the iteration loop to a
+   * terminal outcome. Invoked once per handle by the handle's lazy-start
+   * paths; not called directly by hosts.
+   */
   async startExecution(handle: RuntimeExecutionHandle): Promise<void> {
     await startRuntimeExecutionSession(
       {
@@ -1085,6 +1133,11 @@ class RuntimeCore implements TuvrenRuntime {
     );
   }
 
+  /**
+   * Runs one loop entry (fresh start or resume) with the wall-clock bound
+   * armed for its duration; a resume re-enters against the same carried
+   * deadline rather than a fresh budget.
+   */
   private async runExecutionLoop(
     handle: RuntimeExecutionHandle,
     schemaId: string,
@@ -1154,6 +1207,10 @@ class RuntimeCore implements TuvrenRuntime {
     );
   }
 
+  /**
+   * Consumes one queued steering signal from the handle, if any, and
+   * incorporates it into the turn before the next iteration.
+   */
   private async incorporateQueuedSteeringIfNeeded(
     handle: RuntimeExecutionHandle,
     schemaId: string,
@@ -1172,6 +1229,11 @@ class RuntimeCore implements TuvrenRuntime {
     }
   }
 
+  /**
+   * Executes one iteration phase — runner call, tool batch, artifact commit —
+   * through the iteration-phase facade, wrapping the runner call in a
+   * `tuvren.runtime.model_call` telemetry span.
+   */
   private async executeIterationPhase(
     handle: RuntimeExecutionHandle,
     schemaId: string,
@@ -1307,6 +1369,11 @@ class RuntimeCore implements TuvrenRuntime {
 
   // ── Execution Bounds (ADR-043, KRT-BD006) ───────────────────────────────
 
+  /**
+   * Returns the per-turn bounds state for a handle, initializing the
+   * wall-clock deadline (`now + maxWallClockMs`) and a zero tool-call count
+   * on first access.
+   */
   private getBoundsTurnState(handle: RuntimeExecutionHandle): BoundsTurnState {
     let state = this.boundsTurnStates.get(handle);
     if (state === undefined) {
@@ -1345,6 +1412,7 @@ class RuntimeCore implements TuvrenRuntime {
     state.wallClockTimer = timer;
   }
 
+  /** Cancels the armed wall-clock timer, if any, when a loop run exits. */
   private disarmWallClockBound(handle: RuntimeExecutionHandle): void {
     const state = this.boundsTurnStates.get(handle);
     if (state?.wallClockTimer !== undefined) {
@@ -1353,6 +1421,10 @@ class RuntimeCore implements TuvrenRuntime {
     }
   }
 
+  /**
+   * Adds a batch's tool-call count to the turn's cumulative total and returns
+   * the new total for `maxToolCalls` enforcement by the loop facade.
+   */
   private recordBoundsToolCalls(
     handle: RuntimeExecutionHandle,
     count: number
@@ -1384,6 +1456,7 @@ class RuntimeCore implements TuvrenRuntime {
     this.telemetry.bounded({ details, handle, loopState });
   }
 
+  /** Publishes a stream event to the handle and mirrors it into telemetry. */
   private publishRuntimeEvent(
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
@@ -1393,6 +1466,11 @@ class RuntimeCore implements TuvrenRuntime {
     this.telemetry.eventFromStream(handle, event, loopState);
   }
 
+  /**
+   * Publishes a projected `error` stream event (and its telemetry mirror);
+   * a fatal bound-exceeded error additionally triggers the once-per-handle
+   * `execution.bounded` telemetry emission.
+   */
   private publishRuntimeProjectedError(
     handle: RuntimeExecutionHandle,
     error: Error,
@@ -1424,6 +1502,8 @@ class RuntimeCore implements TuvrenRuntime {
     }
   }
 
+  /** Emits `state.checkpoint` observability events plus their telemetry
+   * mirror after turn state advances. */
   private emitRuntimeStateObservability(
     handle: RuntimeExecutionHandle,
     loopState: LoopState,
@@ -1462,6 +1542,23 @@ function resolveRuntimeScope(scope: Scope | undefined): Scope {
   return resolved;
 }
 
+/**
+ * Creates the engine implementation of the host-facing `TuvrenRuntime`
+ * contract over a kernel.
+ *
+ * This is the low-level factory consumed by `createTuvren` (which supplies
+ * `defaultRunnerId`, `runnerRegistry`, and `kernel` itself) and by hosts on
+ * the advanced composition surface.
+ *
+ * @param options - See {@link RuntimeCoreOptions}; `kernel` and
+ *   `defaultRunnerId` are required.
+ * @returns A `TuvrenRuntime` bound to the supplied kernel, registry, codec,
+ *   bounds, and telemetry routing.
+ * @throws TuvrenRuntimeError with code `missing_run_liveness_extension` when
+ *   `runLiveness` is configured against a kernel lacking the
+ *   `kernel.run-liveness` extension, or a validation error when a numeric
+ *   option (bounds, parallelism, budgets) is out of range.
+ */
 export function createTuvrenRuntime(
   options: RuntimeCoreOptions
 ): TuvrenRuntime {

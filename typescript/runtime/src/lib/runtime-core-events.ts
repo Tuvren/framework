@@ -35,12 +35,26 @@ import {
 import { cloneValue, projectError } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Capability surface the event-publication helpers require from the runtime
+ * core.
+ */
 export interface RuntimeCoreEventsHost {
+  /** Generate a unique id (used for synthesized message ids). */
   createId(): string;
+  /**
+   * Whether `state.checkpoint`/`state.snapshot` observability events should
+   * be emitted at all.
+   */
   enableStateObservability(): boolean;
+  /** Current time used to stamp event timestamps. */
   now(): EpochMs;
 }
 
+/**
+ * Publish a named `custom` stream event (as emitted by extensions and
+ * handoffs), stamped with the current time and the active source identity.
+ */
 export function publishCustomEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -60,6 +74,10 @@ export function publishCustomEvent(
   );
 }
 
+/**
+ * Publish a stream event on the handle after decorating and validating it via
+ * {@link createPublishedEvent}.
+ */
 export function publishEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,

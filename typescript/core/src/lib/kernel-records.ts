@@ -16,8 +16,30 @@
 
 const HASH_STRING_PATTERN = /^[0-9a-f]{64}$/;
 
+/**
+ * A kernel content address: the lowercase 64-character hex encoding of a
+ * SHA-256 digest. Hashes identify write-once durable Objects
+ * (KrakenKernelSpecification §2.1, §2.3); identical canonical blobs produce
+ * identical hashes.
+ */
 export type HashString = string;
+
+/**
+ * A Unix-epoch timestamp in milliseconds, restricted to the canonical
+ * kernel integer profile: a safe integer that is never `-0`.
+ */
 export type EpochMs = number;
+
+/**
+ * The restricted value profile allowed to cross the kernel boundary and be
+ * durably stored: `null`, booleans, strings, canonical integers (safe
+ * integers, never `-0` — fractional numbers are excluded), `Uint8Array`
+ * byte payloads, and acyclic dense arrays / plain objects thereof.
+ *
+ * The profile is deliberately narrower than JSON so every record has a
+ * canonical blob encoding and therefore a stable content-address hash
+ * (KrakenKernelSpecification §2.2–2.3).
+ */
 export type KernelRecord =
   | null
   | boolean
@@ -26,15 +48,31 @@ export type KernelRecord =
   | Uint8Array
   | KernelArray
   | KernelObject;
+
+/** An array of {@link KernelRecord} values (dense, no holes when validated). */
 export type KernelArray = KernelRecord[];
+
+/** A plain string-keyed object whose values are all {@link KernelRecord}s. */
 export interface KernelObject {
   [key: string]: KernelRecord;
 }
 
+/**
+ * True when `value` is a canonical {@link HashString}: exactly 64 lowercase
+ * hexadecimal characters (a SHA-256 digest). Uppercase or mixed-case hex is
+ * rejected.
+ */
 export function isHashString(value: unknown): value is HashString {
   return typeof value === "string" && HASH_STRING_PATTERN.test(value);
 }
 
+/**
+ * Asserts that `value` is a canonical {@link HashString}.
+ *
+ * @param value - Untrusted candidate hash.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TypeError when {@link isHashString} rejects the value.
+ */
 export function assertHashString(
   value: unknown,
   label = "value"
@@ -46,10 +84,21 @@ export function assertHashString(
   }
 }
 
+/**
+ * True when `value` is a canonical {@link EpochMs}: a safe integer that is
+ * not `-0`. Fractional or non-finite numbers are rejected.
+ */
 export function isEpochMs(value: unknown): value is EpochMs {
   return isCanonicalKernelInteger(value);
 }
 
+/**
+ * Asserts that `value` is a canonical {@link EpochMs} timestamp.
+ *
+ * @param value - Untrusted candidate timestamp.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws RangeError when {@link isEpochMs} rejects the value.
+ */
 export function assertEpochMs(
   value: unknown,
   label = "value"
@@ -61,10 +110,35 @@ export function assertEpochMs(
   }
 }
 
+/**
+ * True when `value` matches the restricted {@link KernelRecord} profile,
+ * checked recursively:
+ *
+ * - Numbers must be canonical kernel integers (safe integers, never `-0`);
+ *   fractional numbers are rejected.
+ * - Arrays must be dense (no holes), with only enumerable plain index
+ *   properties and no symbol keys or accessors.
+ * - Objects must be plain (`Object.prototype` or `null` prototype) with
+ *   only enumerable data properties and no symbol keys.
+ * - `Uint8Array` values must carry no extra own properties beyond their
+ *   indices.
+ * - Cyclic structures are rejected.
+ *
+ * These constraints guarantee the record has one canonical byte encoding,
+ * which is what makes content-address hashing stable
+ * (KrakenKernelSpecification §2.2–2.3).
+ */
 export function isKernelRecord(value: unknown): value is KernelRecord {
   return isKernelRecordValueInternal(value, new WeakSet<object>());
 }
 
+/**
+ * Asserts that `value` matches the restricted {@link KernelRecord} profile.
+ *
+ * @param value - Untrusted candidate record.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TypeError when {@link isKernelRecord} rejects the value.
+ */
 export function assertKernelRecord(
   value: unknown,
   label = "value"

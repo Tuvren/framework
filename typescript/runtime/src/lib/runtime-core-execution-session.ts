@@ -183,6 +183,17 @@ export function createRuntimeExecutionHandle(
   );
 }
 
+/**
+ * Create the {@link RuntimeExecutionHandle} that resumes a paused execution
+ * with an approval response.
+ *
+ * The new handle keeps the previous handle's turn id, schema id, iteration
+ * count, and manifest, but adopts the paused agent config and runner id from
+ * the pause context and carries a `resumedFrom` record (approval response,
+ * pause context, paused run id, paused turn node hash). Runner caches and
+ * the steering queue are transferred from the previous handle, resumed
+ * cancellation is primed, and the status is reset to the `running` phase.
+ */
 export function createRuntimeResumedExecutionHandle(
   owner: RuntimeExecutionHandleRuntime,
   previousHandle: RuntimeExecutionHandle,
@@ -217,6 +228,25 @@ export function createRuntimeResumedExecutionHandle(
   return handle;
 }
 
+/**
+ * Drive a runtime execution session from start to terminal outcome.
+ *
+ * Linear phases: honor a pending paused-cancellation or an already-settled or
+ * pre-aborted handle; resolve the schema id and branch head; recover an
+ * expired execution on the branch (emitting `recovery failed` and rethrowing
+ * on error or on contended recovery, adopting the recovered turn id and
+ * re-resolving the branch head after preemption); create the kernel turn when
+ * needed; run the resumed or fresh prelude (either of which may complete the
+ * session early, including recovered terminal-status completion); publish
+ * `turn.start`, the resolved approval, and any deferred state observability;
+ * then run the iteration loop and either publish a pause outcome or complete
+ * the execution with the loop's resolution.
+ *
+ * Any error thrown by these phases is routed to
+ * `dependencies.handleExecutionFailure`, and the run-lease loop is stopped
+ * and the handle finished unconditionally in the `finally` block, so the
+ * returned promise never rejects.
+ */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Session startup intentionally linearizes recovery, resume, publication, and prelude checkpoints in one place.
 export async function startRuntimeExecutionSession(
   dependencies: RuntimeExecutionStartDependencies,

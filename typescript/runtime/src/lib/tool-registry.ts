@@ -35,6 +35,15 @@ import {
 } from "@tuvren/core/tools";
 import { cloneSnapshotPreservingFunctions } from "./runtime-core-shared.js";
 
+/**
+ * Map-backed `ToolRegistry` implementation (framework spec §8.5).
+ *
+ * Definitions are defensively cloned (preserving functions) on `register`,
+ * `get`, and `list`, so neither the registering caller nor consumers can
+ * mutate the registry's stored definition in place. Duplicate names are
+ * rejected at registration time. `resolve` is the runtime-internal fast path
+ * that returns the stored definition without an extra per-invocation clone.
+ */
 class BasicToolRegistry implements ToolRegistry {
   private readonly tools = new Map<string, TuvrenToolDefinition>();
 
@@ -87,10 +96,29 @@ class BasicToolRegistry implements ToolRegistry {
   }
 }
 
+/**
+ * Deep-clones a tool definition while keeping its `execute`, `approval`, and
+ * schema `validate` functions callable.
+ */
 function cloneToolDefinition(tool: TuvrenToolDefinition): TuvrenToolDefinition {
   return cloneSnapshotPreservingFunctions(tool);
 }
 
+/**
+ * Builds the active tool registry for an agent segment from explicit host
+ * tools plus extension-contributed tools (framework spec §8.5/§9.2).
+ *
+ * Explicit tools register first, then each extension's `tools` in extension
+ * order; any name collision — including a collision between a host tool and
+ * an extension tool — raises `duplicate_tool_registration`. Every definition
+ * is validated via `assertTuvrenToolDefinition` on registration.
+ *
+ * @param explicitTools - Tools declared directly on the agent config.
+ * @param extensions - Extensions whose `tools` merge into the registry;
+ *   duplicate extension names raise `duplicate_extension_registration`.
+ * @throws TuvrenRuntimeError on duplicate tool or extension names, or on an
+ *   invalid tool definition.
+ */
 export function createToolRegistry(
   explicitTools: TuvrenToolDefinition[] = [],
   extensions: TuvrenExtension[] = []
@@ -111,6 +139,15 @@ export function createToolRegistry(
   return registry;
 }
 
+/**
+ * Resolves a tool by name for execution-path lookups.
+ *
+ * When the registry is the runtime's own {@link BasicToolRegistry}, the
+ * stored definition is returned directly, skipping the defensive clone that
+ * `get()` performs on every call; custom `ToolRegistry` implementations fall
+ * back to their public `get()`. Callers must treat the returned definition
+ * as read-only.
+ */
 export function resolveToolDefinition(
   registry: ToolRegistry,
   name: string
@@ -122,6 +159,11 @@ export function resolveToolDefinition(
   return registry.get(name);
 }
 
+/**
+ * Rejects duplicate extension names before their tools merge, so a
+ * misconfigured host fails fast with `duplicate_extension_registration`
+ * rather than with a confusing tool-name collision.
+ */
 function assertUniqueExtensionNames(extensions: TuvrenExtension[]): void {
   const names = new Set<string>();
 
@@ -142,6 +184,11 @@ function assertUniqueExtensionNames(extensions: TuvrenExtension[]): void {
   }
 }
 
+/**
+ * Type guard for the custom-schema flavor of framework spec §8.2: an object
+ * exposing `toJSONSchema()` for provider rendering, as opposed to a plain
+ * JSON Schema value.
+ */
 function isCustomSchema(
   value: TuvrenJsonSchema | CustomSchema
 ): value is CustomSchema {
@@ -153,6 +200,10 @@ function isCustomSchema(
   );
 }
 
+/**
+ * Renders a tool schema to plain JSON Schema for `toDefinitions()`, invoking
+ * `toJSONSchema()` on custom schemas and passing JSON Schema through as-is.
+ */
 function toJsonSchema(
   value: TuvrenJsonSchema | CustomSchema
 ): TuvrenJsonSchema {

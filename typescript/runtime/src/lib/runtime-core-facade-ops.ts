@@ -139,8 +139,9 @@ export function materializeContextMessagesFacade(
 }
 
 /**
- * Loads the current {@link HeadState} (head turn tree, messages, manifest)
- * for a branch from the kernel, decoding payloads through the codec binding.
+ * Loads the current {@link HeadState} (branch-head turn node, decoded
+ * messages, and manifest) for a branch from the kernel, decoding payloads
+ * through the codec binding.
  */
 export async function loadHeadStateFacade(
   kernel: RuntimeKernel,
@@ -217,6 +218,11 @@ export async function resolveParentTurnIdFacade(
   );
 }
 
+/**
+ * Advances durable head state to a new turn-node hash: first the turn head
+ * (`kernel.turn.updateHead`), then the branch head (`kernel.branch.setHead`),
+ * in that order.
+ */
 export async function advanceTurnAndBranchHeadFacade(
   kernel: RuntimeKernel,
   handle: RuntimeExecutionHandle,
@@ -226,6 +232,12 @@ export async function advanceTurnAndBranchHeadFacade(
   await kernel.branch.setHead(handle.request.branchId, turnNodeHash);
 }
 
+/**
+ * Materializes a {@link RuntimeRunner} instance from the runner registry.
+ *
+ * @throws TuvrenRuntimeError with code `unknown_runner` when `runnerId` is
+ *   not registered.
+ */
 export function materializeRunnerFacade(
   runnerRegistry: RunnerRegistry,
   runnerId: string
@@ -244,6 +256,14 @@ export function materializeRunnerFacade(
   return materializeRunner(runnerEntry);
 }
 
+/**
+ * Resolves the {@link AgentConfig} to attribute a failure to when the active
+ * agent may differ from the requesting agent.
+ *
+ * Resolution order: the host's `resolveAgentConfig` hook, then the request
+ * config when its name matches the active agent, and finally a minimal
+ * name-only config so failure reporting never lacks an agent identity.
+ */
 export function resolveFailureActiveConfigFacade(
   requestConfig: AgentConfig,
   activeAgentName: string,
@@ -264,6 +284,17 @@ export function resolveFailureActiveConfigFacade(
   };
 }
 
+/**
+ * Ensures a usable kernel schema id, defaulting to the framework's
+ * `DEFAULT_AGENT_SCHEMA_ID` when none is given.
+ *
+ * An already-registered schema is validated for framework compatibility and
+ * reused. The default agent schema is registered lazily on first use.
+ *
+ * @returns The resolved, registered schema id.
+ * @throws TuvrenRuntimeError with code `unknown_schema` when a non-default
+ *   schema id is requested but not registered.
+ */
 export async function ensureSchemaIdFacade(
   kernel: RuntimeKernel,
   schemaId?: string

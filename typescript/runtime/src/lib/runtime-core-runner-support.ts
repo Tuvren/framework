@@ -34,6 +34,13 @@ import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import { createServerRateLimiter } from "./server-rate-limiter.js";
 import type { ToolBatchEnvironment } from "./tool-execution.js";
 
+/**
+ * Host capabilities backing the tool-batch environment and handoff-plan
+ * helpers in this module: config cloning and freezing, context-engineering
+ * helper construction, parallelism resolution, event and error publication,
+ * fencing-token access, and tool-result staging. Implemented by the
+ * runtime-core orchestration layer.
+ */
 export interface RuntimeCoreRunnerSupportHost {
   cloneAgentConfigForRequest(
     config: LoopState["activeConfig"]
@@ -87,6 +94,20 @@ export interface RuntimeCoreRunnerSupportHost {
   ): Promise<string>;
 }
 
+/**
+ * Assembles the {@link ToolBatchEnvironment} passed to `executeToolBatch`
+ * for one iteration.
+ *
+ * The server-execution rate limiter is created lazily on the first iteration
+ * and cached on the loop state so a single budget spans the whole turn (it
+ * is intentionally not re-evaluated on agent handoff). Capability policy
+ * metadata and context inputs are included so the invocation-time policy
+ * check can run inside tool-call resolution (BB001–BB004), and sandbox
+ * executor lookup strips the "sandbox:" endpoint-id prefix added by the
+ * binding resolver so `AgentConfig.sandboxExecutors` stays keyed by raw
+ * endpoint ids (AX004). The environment also carries the active run-lease
+ * fencing token for side-effect-once idempotency (ADR-052).
+ */
 export function createToolBatchEnvironment(
   host: RuntimeCoreRunnerSupportHost,
   handle: RuntimeExecutionHandle,
@@ -171,6 +192,16 @@ export function createToolBatchEnvironment(
   };
 }
 
+/**
+ * Builds the {@link HandoffContextPlan} a runner receives from
+ * `handoff.createContextPlan`.
+ *
+ * Defaults the mode to "preserve_trace", resolves a default context builder
+ * when none is supplied, resolves the target agent config by name, and
+ * packages a source context of cloned messages, manifest, and handoff
+ * intent plus frozen source/target agent-config snapshots so the plan
+ * cannot mutate live loop state.
+ */
 export function createRunnerHandoffContextPlan(
   host: RuntimeCoreRunnerSupportHost,
   input: {
@@ -216,6 +247,12 @@ export function createRunnerHandoffContextPlan(
   } satisfies HandoffContextPlan;
 }
 
+/**
+ * Executes a runner against its execution context and asserts the shape of
+ * its result, converting any thrown error (including a result-shape
+ * violation) into a hard "fail" resolution instead of propagating the
+ * exception into the iteration loop.
+ */
 export async function executeRunner(
   runner: RuntimeRunner,
   context: RunnerExecutionContext
@@ -238,6 +275,10 @@ export async function executeRunner(
   }
 }
 
+/**
+ * Formats the staging task id for a tool result; a thin alias over
+ * {@link formatToolResultTaskId} for host wiring.
+ */
 export function formatToolResultTask(
   orderIndex: number,
   callId: string

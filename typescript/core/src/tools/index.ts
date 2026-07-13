@@ -15,6 +15,15 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+
+/**
+ * `@tuvren/core/tools` — the tool contract surface: `TuvrenToolDefinition`
+ * (KrakenFrameworkSpecification §8.1), the approval request/response types
+ * (§1.7), tool registry/dispatch/execution types, and their guards.
+ *
+ * @packageDocumentation
+ */
+
 export {
   assertApprovalRequest,
   assertApprovalResponse,

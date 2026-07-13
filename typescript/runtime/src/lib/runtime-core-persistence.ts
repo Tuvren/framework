@@ -37,8 +37,21 @@ interface ManifestExtensionStateWarning {
   turnId: string;
 }
 
+/**
+ * Host seam for staging and storing kernel records.
+ *
+ * Provides deterministic record encoding, the message-encryption codec, the
+ * run-scoped staging and content-addressed store primitives, and the
+ * manifest extension-state warning configuration used by the staging
+ * helpers in this module.
+ */
 export interface RuntimeCorePersistenceHost {
+  /** Emit a manifest extension-state budget warning to the host. */
   emitWarning(warning: ManifestExtensionStateWarning): void;
+  /**
+   * Deterministically encode a value as a kernel record; `label` is used in
+   * encoding diagnostics.
+   */
   encodeKernelRecord(value: unknown, label: string): Uint8Array;
   /**
    * Crypto-shredding seam (KRT-BF005): encrypt an encoded message record under
@@ -46,19 +59,39 @@ export interface RuntimeCorePersistenceHost {
    * returns the bytes unchanged, so no-codec hosts stage plaintext as before.
    */
   encryptMessageRecord(record: Uint8Array): Promise<Uint8Array>;
+  /**
+   * Per-extension serialized-size budget in bytes for manifest extension
+   * state, or `false` when the warning is disabled.
+   */
   getManifestExtensionStateWarningBudgetBytes(): false | number;
+  /**
+   * Set of extension names already warned for this execution handle, used to
+   * emit each budget warning at most once per extension.
+   */
   getOrCreateManifestExtensionStateWarningKeys(
     handle: RuntimeExecutionHandle
   ): Set<string>;
+  /** Stage an encoded record into the given run and return its hash. */
   stageRecord(
     runId: string,
     record: Uint8Array,
     taskId: string,
     objectType: string
   ): Promise<HashString>;
+  /** Store an encoded record content-addressed and return its hash. */
   storeRecord(record: Uint8Array): Promise<HashString>;
 }
 
+/**
+ * Stage a context manifest record for the run.
+ *
+ * When `warningContext` is provided, each extension's manifest state is
+ * checked against the host's byte budget first and a
+ * `manifest_extension_state_budget_exceeded` warning is emitted once per
+ * extension per execution.
+ *
+ * @returns Hash of the staged manifest record.
+ */
 export async function stageManifest(
   host: RuntimeCorePersistenceHost,
   runId: string,
@@ -86,6 +119,13 @@ export async function stageManifest(
   );
 }
 
+/**
+ * Stage a message record for the run, encrypting the encoded bytes through
+ * the host payload codec first (crypto-shredding seam, KRT-BF005; the
+ * default identity codec stages plaintext).
+ *
+ * @returns Hash of the staged message record.
+ */
 export async function stageMessage(
   host: RuntimeCorePersistenceHost,
   runId: string,
@@ -102,6 +142,11 @@ export async function stageMessage(
   );
 }
 
+/**
+ * Stage a turn-lineage record marking `turnId` as the active turn.
+ *
+ * @returns Hash of the staged turn-lineage record.
+ */
 export async function stageTurnLineage(
   host: RuntimeCorePersistenceHost,
   runId: string,
@@ -121,6 +166,12 @@ export async function stageTurnLineage(
   );
 }
 
+/**
+ * Stage a durable runtime-status record, dropping `undefined` fields so the
+ * encoded record stays deterministic.
+ *
+ * @returns Hash of the staged runtime-status record.
+ */
 export async function stageRuntimeStatus(
   host: RuntimeCorePersistenceHost,
   runId: string,
@@ -138,6 +189,12 @@ export async function stageRuntimeStatus(
   );
 }
 
+/**
+ * Encode and store an arbitrary value as a content-addressed kernel record
+ * (unstaged, not tied to a run).
+ *
+ * @returns Hash of the stored record.
+ */
 export async function storeKernelRecord(
   host: RuntimeCorePersistenceHost,
   value: unknown,
@@ -146,6 +203,11 @@ export async function storeKernelRecord(
   return await host.storeRecord(host.encodeKernelRecord(value, label));
 }
 
+/**
+ * Store an event record content-addressed under the `"event"` label.
+ *
+ * @returns Hash of the stored event record.
+ */
 export async function storeEventRecord(
   host: RuntimeCorePersistenceHost,
   event: KernelRecord
@@ -153,6 +215,11 @@ export async function storeEventRecord(
   return await storeKernelRecord(host, event, "event");
 }
 
+/**
+ * Emit a budget warning for each manifest extension whose approximate
+ * serialized size exceeds the host budget, at most once per extension per
+ * execution handle.
+ */
 function warnManifestExtensionStateBudgetIfNeeded(
   host: RuntimeCorePersistenceHost,
   handle: RuntimeExecutionHandle,
@@ -199,6 +266,10 @@ function warnManifestExtensionStateBudgetIfNeeded(
   }
 }
 
+/**
+ * Approximate a value's serialized size as UTF-8 JSON bytes; returns
+ * `undefined` for values that cannot be JSON-serialized.
+ */
 function approximateSerializedByteLength(value: unknown): number | undefined {
   try {
     return new TextEncoder().encode(JSON.stringify(value)).byteLength;

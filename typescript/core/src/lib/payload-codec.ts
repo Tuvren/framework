@@ -86,6 +86,10 @@ export interface ErasedPayload {
   reason: string;
 }
 
+/**
+ * True when `value` is an {@link ErasedPayload} marker: `kind` is exactly
+ * `"erased"` and `keyRef`/`reason` are strings.
+ */
 export function isErasedPayload(value: unknown): value is ErasedPayload {
   return (
     typeof value === "object" &&
@@ -140,6 +144,10 @@ export const IDENTITY_PAYLOAD_CODEC: PayloadCodec = {
   id: "identity",
 };
 
+/**
+ * Returns the shared {@link IDENTITY_PAYLOAD_CODEC} instance — a factory
+ * spelling for call sites that expect to construct their codec.
+ */
 export function createIdentityPayloadCodec(): PayloadCodec {
   return IDENTITY_PAYLOAD_CODEC;
 }
@@ -157,8 +165,15 @@ export function createIdentityPayloadCodec(): PayloadCodec {
 // major-type byte is 0x80–0xBF, never 0x54 'T'), so it cannot collide with a
 // plaintext record.
 
+/** The 4-byte AEAD envelope magic, ASCII `"TVE1"` (see block comment above). */
 export const ENVELOPE_MAGIC = Uint8Array.of(0x54, 0x56, 0x45, 0x31); // "TVE1"
 
+/**
+ * True when `bytes` begins with {@link ENVELOPE_MAGIC}, i.e. the stored
+ * payload is a codec-written AEAD envelope rather than plaintext bytes.
+ * Lets the runtime read seam pass identity-codec/plaintext data through
+ * unchanged so plaintext and ciphertext can coexist during migration.
+ */
 export function isPayloadEnvelope(bytes: Uint8Array): boolean {
   return (
     bytes.length >= ENVELOPE_MAGIC.length &&

@@ -15,8 +15,21 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
-// Root: primitive types (HashString, EpochMs, KernelRecord family) + error base re-exports.
-// Most imports should go through the focused subpaths (/errors, /messages, /events, etc.).
+
+/**
+ * `@tuvren/core` root entrypoint: kernel primitive types (`HashString`,
+ * `EpochMs`, the `KernelRecord` family) with their guards, the host-bound
+ * tenancy `Scope` seam (ADR-048/049), and the `TuvrenError` family
+ * re-exported for convenience per ADR-037.
+ *
+ * Most imports should go through the focused subpaths (`/errors`,
+ * `/messages`, `/events`, `/execution`, `/tools`, `/runner`, `/provider`,
+ * `/extensions`, `/telemetry`, `/lifecycle`, `/security`, `/capabilities`)
+ * instead of this root.
+ *
+ * @packageDocumentation
+ */
+
 export type {
   EpochMs,
   HashString,

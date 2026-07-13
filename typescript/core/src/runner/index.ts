@@ -15,6 +15,16 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+
+/**
+ * `@tuvren/core/runner` — the shared runner seam
+ * (KrakenFrameworkSpecification §5.6): the `RuntimeRunner` contract, its
+ * execution/resume context and result shapes, the runtime/handoff
+ * capability ports, the runner registry, and the runner-contract guards.
+ *
+ * @packageDocumentation
+ */
+
 export type {
   RunnerAssistantEventReconciliation,
   RunnerExecutionContext,

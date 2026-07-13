@@ -43,6 +43,10 @@ import {
 import type { DurableRuntimeStatus } from "./runtime-core-recovery.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Invoke an optional warning callback, swallowing any error it throws so a
+ * faulty host warning handler can never disturb execution.
+ */
 export function emitRuntimeWarning<TWarning>(
   onWarning: ((warning: TWarning) => void) | undefined,
   warning: TWarning
@@ -54,6 +58,11 @@ export function emitRuntimeWarning<TWarning>(
   }
 }
 
+/**
+ * Facade over the persistence module's `stageManifest`: stage a context
+ * manifest for the run, emitting extension-state budget warnings when a
+ * warning context is provided.
+ */
 export async function stageRuntimeManifestRecord(
   host: RuntimeCorePersistenceHost,
   runId: string,
@@ -66,6 +75,10 @@ export async function stageRuntimeManifestRecord(
   return await stageRuntimeManifest(host, runId, manifest, warningContext);
 }
 
+/**
+ * Facade over the persistence module's `stageMessage`: stage an encoded
+ * (and codec-encrypted) message record for the run.
+ */
 export async function stageRuntimeMessageRecord(
   host: RuntimeCorePersistenceHost,
   runId: string,
@@ -75,6 +88,10 @@ export async function stageRuntimeMessageRecord(
   return await stageRuntimeMessage(host, runId, message, taskId);
 }
 
+/**
+ * Facade over the persistence module's `stageTurnLineage`: stage the
+ * active-turn lineage record for the run.
+ */
 export async function stageRuntimeTurnLineageRecord(
   host: RuntimeCorePersistenceHost,
   runId: string,
@@ -84,6 +101,10 @@ export async function stageRuntimeTurnLineageRecord(
   return await stageRuntimeTurnLineage(host, runId, turnId, taskId);
 }
 
+/**
+ * Facade over the persistence module's `stageRuntimeStatus`: stage a
+ * durable runtime-status record for the run.
+ */
 export async function stageRuntimeStatusRecordValue(
   host: RuntimeCorePersistenceHost,
   runId: string,
@@ -93,6 +114,10 @@ export async function stageRuntimeStatusRecordValue(
   return await stageRuntimeStatusRecord(host, runId, status, taskId);
 }
 
+/**
+ * Facade over the persistence module's `storeKernelRecord`: encode and
+ * store a value as a content-addressed kernel record.
+ */
 export async function storeRuntimeKernelRecordValue(
   host: RuntimeCorePersistenceHost,
   value: unknown,
@@ -101,6 +126,10 @@ export async function storeRuntimeKernelRecordValue(
   return await storeRuntimeKernelRecord(host, value, label);
 }
 
+/**
+ * Facade over the persistence module's `storeEventRecord`: store an event
+ * record content-addressed and return its hash.
+ */
 export async function storeRuntimeEventKernelRecord(
   host: RuntimeCorePersistenceHost,
   event: KernelRecord
@@ -108,6 +137,10 @@ export async function storeRuntimeEventKernelRecord(
   return await storeRuntimeEventRecord(host, event);
 }
 
+/**
+ * Facade over the events module's `publishCustomEvent`: wrap a named payload
+ * as a timestamped `custom` stream event and publish it.
+ */
 export function publishRuntimeCustomNamedEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -117,6 +150,10 @@ export function publishRuntimeCustomNamedEvent(
   publishRuntimeCustomEvent(host, handle, event, loopState);
 }
 
+/**
+ * Facade over the events module's `publishEvent`: publish a stream event
+ * through the full runtime event and telemetry path.
+ */
 export function publishRuntimeStreamEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -126,6 +163,11 @@ export function publishRuntimeStreamEvent(
   publishRuntimeEvent(host, handle, event, loopState);
 }
 
+/**
+ * Facade over the events module's `createPublishedEvent`: stamp a stream
+ * event with its source attribution (agent, runner, thread) and validate it,
+ * returning the publishable event without publishing it.
+ */
 export function createRuntimePublishedStreamEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -135,6 +177,11 @@ export function createRuntimePublishedStreamEvent(
   return createRuntimePublishedEvent(host, handle, event, loopState);
 }
 
+/**
+ * Facade over the events module's `createRunnerPublishedEvent`: validate a
+ * runner-emitted event and stamp it with the active agent/runner/thread
+ * source, returning the publishable event without publishing it.
+ */
 export function createRuntimeRunnerStreamEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -144,6 +191,10 @@ export function createRuntimeRunnerStreamEvent(
   return createRuntimeRunnerPublishedEvent(host, handle, event, loopState);
 }
 
+/**
+ * Facade over the events module's `flushBufferedRunnerEvents`: flush
+ * buffered runner events to the handle's stream unconditionally.
+ */
 export function flushRuntimeBufferedEvents(
   handle: RuntimeExecutionHandle,
   events: TuvrenStreamEvent[]
@@ -151,6 +202,11 @@ export function flushRuntimeBufferedEvents(
   flushRuntimeBufferedRunnerEvents(handle, events);
 }
 
+/**
+ * Facade over the events module's `flushBufferedRunnerEventsIfNeeded`:
+ * flush buffered runner events unless the resolution requires suppressing
+ * them, returning the events that remain visible.
+ */
 export function flushRuntimeBufferedEventsIfResolutionAllows(
   handle: RuntimeExecutionHandle,
   resolution: import("@tuvren/core/execution").RuntimeResolution,
@@ -159,6 +215,12 @@ export function flushRuntimeBufferedEventsIfResolutionAllows(
   return flushRuntimeBufferedRunnerEventsIfNeeded(handle, resolution, events);
 }
 
+/**
+ * Facade over the events module's `ensureRunnerAssistantEvents`: when the
+ * runner produced an assistant message but emitted no assistant content
+ * events, synthesize the corresponding message events (source-stamped,
+ * unpublished); returns an empty array otherwise.
+ */
 export function ensureRuntimeAssistantEvents(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -175,6 +237,11 @@ export function ensureRuntimeAssistantEvents(
   );
 }
 
+/**
+ * Facade over the events module's `publishProjectedError`: project an error,
+ * remember it on the handle, and publish it as an `error` stream event
+ * marked with its fatality.
+ */
 export function publishRuntimeProjectedErrorEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -185,6 +252,11 @@ export function publishRuntimeProjectedErrorEvent(
   publishRuntimeProjectedError(host, handle, error, fatal, loopState);
 }
 
+/**
+ * Facade over the events module's `emitStateObservability`: when state
+ * observability is enabled, publish a `state.checkpoint` event for the new
+ * turn node and, if a manifest is provided, a `state.snapshot` event.
+ */
 export function emitRuntimeCheckpointEvents(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
