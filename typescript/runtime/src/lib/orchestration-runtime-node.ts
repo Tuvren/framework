@@ -288,6 +288,11 @@ export class OrchestrationNode {
     this.ensureWatchingCurrentBinding();
   }
 
+  /**
+   * Returns the bound execution's live status; before the binding resolves it
+   * reports this node's local status (`running`, or `failed` after an
+   * initialization failure).
+   */
   currentStatus(): ExecutionStatus {
     if (this.currentBinding !== undefined) {
       return this.currentBinding.handle.status();
@@ -303,6 +308,13 @@ export class OrchestrationNode {
     return this.localHandleStatus;
   }
 
+  /**
+   * Returns the single-consumer stream of this node's own events (children
+   * excluded), lazily starting execution on first `next()`.
+   *
+   * @throws TuvrenRuntimeError with code `event_stream_already_consumed` when
+   *   claimed twice within one binding generation.
+   */
   events(): AsyncIterable<TuvrenStreamEvent> {
     return createSingleConsumerLazyStream({
       alreadyConsumedCode: "event_stream_already_consumed",
@@ -325,10 +337,17 @@ export class OrchestrationNode {
     });
   }
 
+  /** Whether execution has been started (explicitly or by a lazy-start
+   * consumer). */
   hasStartedExecution(): boolean {
     return this.startedExecution;
   }
 
+  /**
+   * Tracks a child node: watches its settlement (to drop it and possibly
+   * close the subtree) and, when a subtree stream is being consumed, starts
+   * forwarding the child's events into it.
+   */
   registerChild(child: OrchestrationNode): void {
     this.children.add(child);
     detachPromise(this.observeChildSettlement(child));
@@ -338,6 +357,15 @@ export class OrchestrationNode {
     }
   }
 
+  /**
+   * Sends a steering signal to the bound execution. Before the binding
+   * resolves, a running node queues the signal for replay once the handle
+   * exists.
+   *
+   * @throws TuvrenRuntimeError with code `orchestration_parent_not_started`
+   *   when execution has not started, or `orchestration_parent_inactive`
+   *   when the node is no longer running.
+   */
   steer(signal: InputSignal): void {
     const normalizedSignal = normalizeInputSignal(
       signal,
@@ -373,6 +401,17 @@ export class OrchestrationNode {
     this.pendingSteering.push(normalizedSignal);
   }
 
+  /**
+   * Resumes a paused execution with an approval response, in place: swaps the
+   * resumed handle into the binding, bumps the binding generation (detaching
+   * the superseded watcher), reopens any unclaimed event-stream surfaces for
+   * the new generation, and starts watching the resumed handle.
+   *
+   * @returns This node (the caller wraps it in a fresh handle).
+   * @throws TuvrenRuntimeError with code `orchestration_parent_not_started`
+   *   when no binding exists yet, or `invalid_approval_resolution` when the
+   *   execution is not paused.
+   */
   replaceAfterApproval(response: ApprovalResponse): OrchestrationNode {
     const binding = this.requireCurrentBinding("resolveApproval");
     const status = binding.handle.status();
@@ -406,6 +445,17 @@ export class OrchestrationNode {
     return this;
   }
 
+  /**
+   * Spawns a child node running another agent. The child binding is
+   * provisioned asynchronously by the host ({@link OrchestrationRuntimeNodeHost.createChildBinding})
+   * after verifying this parent is `running`; the child is registered on this
+   * node and its execution starts immediately.
+   *
+   * @throws TuvrenRuntimeError with code `orchestration_parent_not_started`
+   *   when execution has not started; a non-running parent surfaces
+   *   `orchestration_parent_inactive` (synchronously when the binding is
+   *   ready, otherwise through the child's failed initialization).
+   */
   spawn(input: ChildSpawnRequest): OrchestrationNode {
     if (!this.startedExecution) {
       throw new TuvrenRuntimeError(
@@ -475,6 +525,10 @@ export class OrchestrationNode {
     return childNode;
   }
 
+  /**
+   * Marks execution as started and ensures the current binding generation is
+   * being watched; idempotent.
+   */
   startExecution(): void {
     if (this.startedExecution) {
       this.ensureWatchingCurrentBinding();
@@ -485,6 +539,11 @@ export class OrchestrationNode {
     this.ensureWatchingCurrentBinding();
   }
 
+  /**
+   * Stamps child events with `source` attribution (agent, thread, worker id)
+   * without overwriting attribution the event already carries; root-node
+   * events (no worker id) pass through unchanged.
+   */
   private decorateEvent(
     event: TuvrenStreamEvent,
     binding: ExecutionBinding
@@ -504,6 +563,10 @@ export class OrchestrationNode {
     };
   }
 
+  /**
+   * Starts (at most once per binding generation) the detached watcher that
+   * consumes the bound handle's events and settles this node.
+   */
   private ensureWatchingCurrentBinding(): void {
     if (
       this.currentBindingPromise === undefined ||
@@ -566,6 +629,11 @@ export class OrchestrationNode {
     this.maybeCancelUnobservedExecution();
   }
 
+  /**
+   * Cancels a running execution once nothing observes it anymore (no event
+   * streams, no subtree streams, no result awaiters), so an abandoned handle
+   * does not keep burning model/tool work.
+   */
   private maybeCancelUnobservedExecution(): void {
     const currentPhase =
       this.currentBinding?.handle.status().phase ?? this.selfPhase;
@@ -762,6 +830,13 @@ export class OrchestrationNode {
     }
   }
 
+  /**
+   * The per-generation watcher: awaits the binding, mirrors every handle
+   * event into the self stream and the subtree fan-out (with attribution),
+   * then settles the node from the handle's terminal phase. A generation
+   * bump (approval resume) makes a superseded watcher return silently; a
+   * watch failure publishes a fatal error event and settles the node failed.
+   */
   private async watchCurrentBinding(
     generation: number,
     bindingPromise: Promise<ExecutionBinding>
@@ -826,6 +901,15 @@ export class OrchestrationNode {
   }
 }
 
+/**
+ * Builds an `AsyncIterable` that may be claimed by exactly one consumer and
+ * defers all side effects (claim, queue creation, `onStart`) to the first
+ * `next()` call. Completion, early `return()`, or the queue closing all
+ * funnel through a single idempotent `onClose`.
+ *
+ * @throws TuvrenRuntimeError with `input.alreadyConsumedCode` when a second
+ *   consumer starts iterating while the stream is already claimed.
+ */
 function createSingleConsumerLazyStream<T>(input: {
   alreadyConsumedCode: string;
   alreadyConsumedMessage: string;

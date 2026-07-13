@@ -14,6 +14,16 @@
  * limitations under the License.
  */
 
+/**
+ * `@tuvren/core/telemetry` — the host-facing telemetry contract: the
+ * span/event vocabulary with its lineage correlation context, the
+ * `TuvrenTelemetrySink` seam with its behavior-free `NoopTelemetrySink`
+ * default, and the telemetry-funnel destination/routing contract (ADR-058)
+ * re-published from the sibling `telemetry-destination` module.
+ *
+ * @packageDocumentation
+ */
+
 import type { EpochMs, HashString, TuvrenErrorCode } from "../index.js";
 
 /**

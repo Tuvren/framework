@@ -446,6 +446,11 @@ export async function executeRuntimeIterationPhaseFacade(
   );
 }
 
+/**
+ * Pass-through facade over `createRunnerExecutionContext`
+ * (`runtime-core-runner.ts`): builds the context object handed to a runner's
+ * `execute` for one iteration.
+ */
 export function createRuntimeRunnerExecutionContextFacade(
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
@@ -466,6 +471,11 @@ export function createRuntimeRunnerExecutionContextFacade(
   );
 }
 
+/**
+ * Pass-through facade over `stageRunnerMessages`
+ * (`runtime-core-runner.ts`): stages the runner-produced messages for a run
+ * and returns their object hashes.
+ */
 export async function stageRuntimeRunnerMessagesFacade(
   host: RuntimeCoreRunnerHost,
   runId: string,
