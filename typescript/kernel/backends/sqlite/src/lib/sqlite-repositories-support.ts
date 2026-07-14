@@ -36,12 +36,23 @@ import type Database from "better-sqlite3";
 import { persistenceError } from "./sqlite-errors.js";
 import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 
+/**
+ * Per-transaction dependencies shared by every repository this module
+ * builds; mirrors the sibling core-family context in
+ * sqlite-repositories-core.js, minus `now` since none of these repositories
+ * stamp timestamps of their own.
+ */
 interface SupportRepositoryContext {
   assertTransactionActive: () => void;
   db: Database.Database;
   writeTracker: TransactionWriteTracker;
 }
 
+/**
+ * Backend-owned lookup, comparison, cloning, and invariant-assertion
+ * functions injected into {@link createSupportRepositories}, mirroring the
+ * role `CoreRepositoryHelpers` plays for the core record families.
+ */
 interface SupportRepositoryHelpers {
   areStoredObjectsEqual: (left: StoredObject, right: StoredObject) => boolean;
   areStoredSchemasEqual: (left: StoredSchema, right: StoredSchema) => boolean;
@@ -152,6 +163,17 @@ function assertSafeThreadListLimit(limit: number | undefined): void {
   }
 }
 
+/**
+ * Builds the `observeAnnotations`, `objects`, `orderedPathChunks`,
+ * `schemas`, `stagedResults`, and `threads` repositories of a
+ * `RuntimeBackendTx`, backed by direct SQL against the transaction's
+ * connection. Content-addressed families (`objects`, `orderedPathChunks`,
+ * `schemas`) treat a write colliding with an existing identity as a no-op
+ * unless it matches byte-for-byte
+ * ({@link SupportRepositoryHelpers.ensureImmutableRecordMatch}); mutable
+ * writes still record touched keys on `context.writeTracker` where later
+ * pre-commit validation depends on them (staged results, threads).
+ */
 export function createSupportRepositories(
   context: SupportRepositoryContext,
   helpers: SupportRepositoryHelpers
@@ -446,6 +468,11 @@ export function createSupportRepositories(
 
         return Promise.resolve();
       },
+      // Keyset (not OFFSET) pagination: the cursor carries the last page's
+      // (createdAtMs, threadId) so the WHERE clause resumes strictly after
+      // it, keeping pagination stable under concurrent inserts. Requests one
+      // extra row (`fetchLimit = limit + 1`) to detect whether a next page
+      // exists without a separate COUNT query.
       list(options) {
         assertTransactionActive();
         const params: (string | number)[] = [];

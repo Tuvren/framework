@@ -57,6 +57,18 @@ import {
   ensureTurnTreeExists,
 } from "./sqlite-state-utils.js";
 
+// Database-backed counterpart to memory-backend-state.ts / turn-tree
+// manifest validation: the same committed-state invariant suite, evaluated
+// against a `BackendState` projection loaded from SQLite rows rather than
+// the memory backend's live maps. `ValidationHelpers` injects the
+// lineage-relationship assertions from sqlite-db-lineage.js so this module
+// stays free of a direct dependency on that SQL-query layer.
+
+/**
+ * Backend-owned lineage and decoding helpers injected into
+ * {@link validateCommittedState} and {@link validateTurnTreePathInvariants},
+ * mirroring the corresponding imports in memory-backend-state.ts.
+ */
 interface ValidationHelpers {
   assertActiveRunHeadAlignment: (
     run: StoredRun,
@@ -107,6 +119,15 @@ interface ValidationHelpers {
   validateHashString: (hash: string) => string;
 }
 
+/**
+ * Re-validates every record in a loaded state projection against the
+ * kernel-protocol schema/identity assertions (`assertStored*`), the same
+ * checks each record passed on its original write. Guards against a
+ * database mutated outside this backend (manual SQL, a restored backup)
+ * ever being accepted as valid without first re-proving every row is
+ * well-formed and, for content-addressed families, that its identity still
+ * matches its content.
+ */
 export async function validateLoadedState(state: BackendState): Promise<void> {
   for (const objectRecord of state.objects.values()) {
     await assertStoredObjectIdentity(objectRecord, "stored object row");
@@ -185,6 +206,22 @@ export async function validateLoadedState(state: BackendState): Promise<void> {
   }
 }
 
+/**
+ * Validates the full committed-state invariant suite over a loaded state
+ * projection before it may be persisted: thread roots are unique genesis
+ * nodes, branch heads and archives are lineage-legal, turn nodes/turns/runs
+ * are referentially and schema-consistent, and turn-tree manifests match
+ * their stored paths.
+ *
+ * @param state - The loaded (post-transaction) state projection to
+ *   validate.
+ * @param baseState - The state projection loaded before the transaction;
+ *   used for cross-transaction invariants such as backward branch moves
+ *   requiring an archive branch created in the same transaction.
+ * @throws The injected persistence error with a `sqlite_backend_*` code on
+ *   the first violated invariant; the caller must then abort the
+ *   transaction.
+ */
 export function validateCommittedState(
   state: BackendState,
   baseState: BackendState,
@@ -198,6 +235,7 @@ export function validateCommittedState(
   validateTurnTreePathInvariants(state, helpers);
 }
 
+/** Every stored thread's root turn node is a genesis node and unique. */
 function validateThreadInvariants(state: BackendState): void {
   const rootTurnNodeOwners = new Map<string, string>();
 
@@ -255,6 +293,13 @@ function validateThreadInvariants(state: BackendState): void {
   }
 }
 
+/**
+ * Every stored branch head belongs to its thread; every archive branch
+ * references a same-thread source branch that existed (with a matching
+ * head) before the transaction and was paired with a backward move; and
+ * every backward head move on a pre-existing branch is paired with an
+ * archive branch preserving the abandoned head.
+ */
 function validateBranchInvariants(
   state: BackendState,
   baseState: BackendState,
@@ -382,6 +427,10 @@ function validateBranchInvariants(
   }
 }
 
+/**
+ * Every stored turn node uses its turn tree's schema, and every staged
+ * result it consumed exists as an object.
+ */
 function validateTurnNodeInvariants(
   state: BackendState,
   helpers: ValidationHelpers
@@ -418,6 +467,11 @@ function validateTurnNodeInvariants(
   }
 }
 
+/**
+ * Every stored turn references a branch on its own thread, its start and
+ * head turn nodes belong to that thread with the head descending from the
+ * start, and its semantic-parent link is canonical.
+ */
 function validateTurnInvariants(
   state: BackendState,
   helpers: ValidationHelpers
@@ -462,6 +516,13 @@ function validateTurnInvariants(
   }
 }
 
+/**
+ * Every stored run references consistent turn/branch/schema identity, its
+ * start and created turn nodes lie within its turn's span in canonical
+ * contiguous order, an active run's position matches its branch and turn
+ * heads, at most one run per branch is active, and staged results exist
+ * only for runs still `running`.
+ */
 function validateRunInvariants(
   state: BackendState,
   helpers: ValidationHelpers
@@ -591,6 +652,15 @@ function validateRunInvariants(
   }
 }
 
+/**
+ * Validates every stored turn-tree path collection: no turn tree references
+ * an empty path collection, every ordered path's `orderedCount` agrees with
+ * its decoded (inline or chunked) hash count, and every turn tree's decoded
+ * manifest matches its indexed path rows exactly.
+ *
+ * @throws The injected persistence error with a `sqlite_backend_*` code on
+ *   the first violated invariant.
+ */
 export function validateTurnTreePathInvariants(
   state: BackendState,
   helpers: ValidationHelpers
@@ -614,6 +684,7 @@ export function validateTurnTreePathInvariants(
   }
 }
 
+/** Dispatches each stored turn-tree path to its encoding-specific cardinality check. */
 function validateTurnTreePathCardinalityMetadata(
   state: BackendState,
   helpers: ValidationHelpers
@@ -634,6 +705,13 @@ function validateTurnTreePathCardinalityMetadata(
   }
 }
 
+/**
+ * Asserts a `flat` ordered path's `orderedCount` matches its decoded inline
+ * hash array length.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_turn_tree_path_ordered_count_mismatch`.
+ */
 function validateOrderedFlatPathCardinality(
   storedPath: Extract<
     StoredTurnTreePath,
@@ -659,6 +737,16 @@ function validateOrderedFlatPathCardinality(
   }
 }
 
+/**
+ * Asserts a `chunked` ordered path's referenced chunks are canonically laid
+ * out (via {@link ValidationHelpers.assertChunkedTurnTreePathChunkLayout}),
+ * each chunk's `itemCount` matches its decoded items, and the chunks'
+ * summed item count matches the path's `orderedCount`.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_ordered_path_chunk_item_count_mismatch` or
+ *   `sqlite_backend_turn_tree_path_ordered_count_mismatch`.
+ */
 function validateOrderedChunkedPathCardinality(
   state: BackendState,
   storedPath: Extract<
@@ -718,6 +806,8 @@ function validateOrderedChunkedPathCardinality(
   }
 }
 
+// Unused; retained only as documented dead code pending removal (superseded
+// by listTurnsByThread in sqlite-integrity-assertions.js).
 function _listTurnsByThread(
   state: BackendState,
   threadId: string,
@@ -737,6 +827,7 @@ function _listTurnsByThread(
   return turns;
 }
 
+/** Loads and decodes the turn-tree schema stored under `schemaId`. */
 function getSchemaForSchemaId(
   state: BackendState,
   schemaId: string,
@@ -746,6 +837,7 @@ function getSchemaForSchemaId(
   return decodeSchemaRecord(schemaRecord.schemaCbor, `${label} schema`);
 }
 
+/** Loads and decodes the turn-tree schema a stored turn tree references. */
 function getSchemaForTurnTree(
   state: BackendState,
   turnTree: StoredTurnTree
@@ -753,6 +845,17 @@ function getSchemaForTurnTree(
   return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
 }
 
+/**
+ * Asserts that a turn node reaches the thread's root turn node by walking
+ * `previousTurnNodeHash` ancestry over the loaded state projection — i.e.
+ * the node genuinely belongs to the thread rather than merely existing in
+ * it.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_thread_lineage_mismatch` when the walk exhausts
+ *   ancestry without reaching the thread root, or
+ *   `sqlite_backend_cyclic_turn_node_lineage` on a lineage cycle.
+ */
 function assertTurnNodeBelongsToThread(
   state: BackendState,
   turnNodeHash: string,
@@ -798,6 +901,17 @@ function assertTurnNodeBelongsToThread(
   );
 }
 
+/**
+ * Asserts that `descendantTurnNodeHash` is the ancestor itself or a
+ * descendant of it along the `previousTurnNodeHash` chain over the loaded
+ * state projection. Used to keep turn heads append-only: a turn's new head
+ * must extend its previous head.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_turn_node_not_descendant` when the ancestor is not on
+ *   the descendant's lineage, or `sqlite_backend_cyclic_turn_node_lineage`
+ *   on a lineage cycle.
+ */
 function assertTurnNodeDescendsFrom(
   state: BackendState,
   descendantTurnNodeHash: string,
@@ -841,6 +955,19 @@ function assertTurnNodeDescendsFrom(
   );
 }
 
+/**
+ * Asserts that a turn tree's decoded manifest and its indexed path rows
+ * agree exactly: the stored paths cover every schema-defined path, no more
+ * and no fewer, and each stored path resolves to the same logical value the
+ * manifest records for that path.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_invalid_turn_tree_manifest`,
+ *   `sqlite_backend_missing_turn_tree_paths`,
+ *   `sqlite_backend_turn_tree_path_count_mismatch`,
+ *   `sqlite_backend_missing_turn_tree_path`, or
+ *   `sqlite_backend_turn_tree_manifest_path_mismatch`.
+ */
 function assertTurnTreeManifestMatchesStoredPaths(
   state: BackendState,
   turnTree: StoredTurnTree
@@ -912,6 +1039,12 @@ function assertTurnTreeManifestMatchesStoredPaths(
   }
 }
 
+/**
+ * Resolves a stored turn-tree path to its logical value: the single hash (or
+ * `null`) for `single` paths, the inline hash array for `flat` ordered
+ * paths, or the concatenation of all referenced chunks' items for `chunked`
+ * ordered paths.
+ */
 export function resolveStoredTurnTreePathValue(
   state: BackendState,
   storedPath: StoredTurnTreePath
@@ -948,6 +1081,11 @@ export function resolveStoredTurnTreePathValue(
   return resolvedHashes;
 }
 
+/**
+ * Compares a decoded manifest path value against a resolved stored-path
+ * value: strict equality for `null`/string values, element-wise equality for
+ * hash arrays.
+ */
 function areManifestPathValuesEqual(
   left: unknown,
   right: string[] | string | null
@@ -972,6 +1110,7 @@ function areManifestPathValuesEqual(
   return true;
 }
 
+/** Decodes a schema record's CBOR bytes into a validated `TurnTreeSchema`. */
 function decodeSchemaRecord(bytes: Uint8Array, label: string): TurnTreeSchema {
   return decodeTurnTreeSchema(bytes, label);
 }

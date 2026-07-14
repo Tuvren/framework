@@ -83,12 +83,25 @@ import {
   toTurnRecord,
 } from "./runtime-kernel-storage.js";
 
+/**
+ * Encodes a `thread.list` cursor payload (ADR-034) as the opaque
+ * {@link KernelThreadListCursor} string callers pass back on the next page
+ * request: JSON, then URL-safe base64.
+ */
 function encodeCursor(
   payload: ListThreadsCursorPayload
 ): KernelThreadListCursor {
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
 }
 
+/**
+ * Inverse of {@link encodeCursor}: decodes and validates an opaque
+ * `thread.list` cursor back into its {@link ListThreadsCursorPayload} shape.
+ *
+ * @throws TuvrenValidationError With code `invalid_durable_read_cursor` when
+ *   the cursor is not valid base64url, does not decode to JSON, or has an
+ *   unexpected shape.
+ */
 function decodeCursor(
   cursor: KernelThreadListCursor
 ): ListThreadsCursorPayload {
@@ -132,12 +145,40 @@ function decodeCursor(
   return parsed as ListThreadsCursorPayload;
 }
 
+/**
+ * Construction options for {@link createRuntimeKernel}.
+ */
 export interface RuntimeKernelOptions {
+  /** Durable storage backend the kernel drives (kernel spec §8.1). */
   backend: RuntimeBackend;
+  /**
+   * Generates fencing tokens for leased runs (kernel spec §5.2).
+   *
+   * @defaultValue `randomUUID` from `node:crypto`.
+   */
   createFencingToken?: () => string;
+  /**
+   * Clock the kernel uses for durable timestamps and lease-expiry
+   * comparisons, injectable for deterministic tests.
+   *
+   * @defaultValue `() => Date.now() as EpochMs`.
+   */
   now?: () => EpochMs;
 }
 
+/**
+ * Builds the reference in-process {@link RuntimeKernel} implementation
+ * (with the {@link RuntimeKernelRunLiveness} extension always included) over
+ * a caller-supplied {@link RuntimeBackend}.
+ *
+ * This is the TypeScript binding's sole kernel construction path: every
+ * syscall group (`branch`, `maintenance`, `node`, `run`, `runLiveness`,
+ * `schema`, `staging`, `store`, `thread`, `tree`, `turn`, `verdicts`) is
+ * implemented here or delegated to the sibling `runtime-kernel-*` modules,
+ * driving `options.backend` transactionally per kernel spec §7/§8.1. See the
+ * {@link RuntimeKernel} and {@link RuntimeKernelRunLiveness} interfaces in
+ * `@tuvren/kernel-protocol` for the full per-operation contract.
+ */
 export function createRuntimeKernel(
   options: RuntimeKernelOptions
 ): RuntimeKernel & RuntimeKernelRunLiveness {

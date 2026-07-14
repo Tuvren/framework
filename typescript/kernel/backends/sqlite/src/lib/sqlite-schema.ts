@@ -70,21 +70,26 @@ export const INITIAL_SCHEMA_REQUIRED_INDEXES = [
   "idx_staged_results_run_id_status",
   "idx_staged_results_object_hash",
 ] as const;
+/** Tables the targeted-validation migration must have created. */
 export const TARGETED_VALIDATION_REQUIRED_TABLES = [
   "turn_node_lineage_roots",
 ] as const;
+/** Tables the observe-annotations migration must have created. */
 export const OBSERVE_ANNOTATIONS_REQUIRED_TABLES = [
   "observe_annotations",
 ] as const;
+/** Indexes the targeted-validation migration must have created. */
 export const TARGETED_VALIDATION_REQUIRED_INDEXES = [
   "idx_turn_node_lineage_roots_root_depth",
   "idx_threads_root_turn_node_hash",
   "idx_branches_archived_from_branch_id",
   "idx_turns_thread_branch_head_turn_node",
 ] as const;
+/** Indexes the observe-annotations migration must have created. */
 export const OBSERVE_ANNOTATIONS_REQUIRED_INDEXES = [
   "idx_observe_annotations_run_id_created_at_ms",
 ] as const;
+/** Indexes the run-liveness migration must have created. */
 export const RUN_LIVENESS_REQUIRED_INDEXES = [
   "idx_runs_status_lease_expires_at_ms",
 ] as const;

@@ -50,6 +50,12 @@ export class TransactionWriteTracker {
   readonly turnNodeHashes = new Set<string>();
   readonly turnTreeHashes = new Set<string>();
 
+  /**
+   * Returns the branch's pre-transaction row, loading and caching it as the
+   * `before` snapshot on first call for this branch so later
+   * {@link recordBranchSet} calls in the same transaction preserve the
+   * original baseline instead of overwriting it with an intermediate write.
+   */
   captureBranchBaseline(
     db: Database.Database,
     branchId: string
@@ -71,6 +77,12 @@ export class TransactionWriteTracker {
     return before === null ? null : cloneStoredBranch(before);
   }
 
+  /**
+   * Records a branch write, preserving the transaction's original `before`
+   * baseline across repeated writes to the same branch, and marks both the
+   * written branch and (when set) its archive source for active-run
+   * validation.
+   */
   recordBranchSet(before: StoredBranch | null, after: StoredBranch): void {
     const existing = this.branchWrites.get(after.branchId);
     this.branchWrites.set(after.branchId, {
@@ -86,6 +98,10 @@ export class TransactionWriteTracker {
     }
   }
 
+  /**
+   * Records a run write and marks the run's branch (and, on a branch change,
+   * its prior branch) for active-run validation.
+   */
   recordRunSet(before: StoredRun | null, after: StoredRun): void {
     this.runIds.add(after.runId);
     this.stagedResultRunIds.add(after.runId);
@@ -96,20 +112,28 @@ export class TransactionWriteTracker {
     }
   }
 
+  /** Records a staged-result write for its owning run. */
   recordStagedResultSet(record: StoredStagedResult): void {
     this.stagedResultRunIds.add(record.runId);
     this.runIds.add(record.runId);
   }
 
+  /** Records that a run's staged results were cleared. */
   recordStagedResultClear(runId: string): void {
     this.stagedResultRunIds.add(runId);
     this.runIds.add(runId);
   }
 
+  /** Records a thread insert. */
   recordThreadPut(record: StoredThread): void {
     this.threadIds.add(record.threadId);
   }
 
+  /**
+   * Records a turn write and marks its branch for active-run validation. A
+   * head-hash change also marks the turn for dependent (run-span) validation,
+   * since runs anchored to this turn's span may now be invalidated.
+   */
   recordTurnSet(before: StoredTurn | null, after: StoredTurn): void {
     this.turnIds.add(after.turnId);
     this.branchIdsForActiveRunValidation.add(after.branchId);
@@ -119,19 +143,23 @@ export class TransactionWriteTracker {
     }
   }
 
+  /** Records a turn-node insert. */
   recordTurnNodePut(record: StoredTurnNode): void {
     this.turnNodeHashes.add(record.hash);
   }
 
+  /** Records a turn-tree path write for its owning turn tree. */
   recordTurnTreePathWrite(turnTreeHash: string): void {
     this.turnTreeHashes.add(turnTreeHash);
   }
 
+  /** Records a turn-tree insert. */
   recordTurnTreePut(record: StoredTurnTree): void {
     this.turnTreeHashes.add(record.hash);
   }
 }
 
+/** Shallow-clones a stored branch row for before/after snapshotting. */
 function cloneStoredBranch(record: StoredBranch): StoredBranch {
   return { ...record };
 }

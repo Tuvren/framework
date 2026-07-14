@@ -34,6 +34,19 @@ import {
 } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
 
+// This file is a fork of the memory backend's module of the same name (see
+// KRT-BK001): the lineage-invariant algorithms are identical, differing only
+// in the `postgres_backend_*` error-code prefix. Keep the two in lockstep.
+
+/**
+ * Asserts that a turn node reaches the thread's root turn node by walking
+ * `previousTurnNodeHash` ancestry — i.e. the node genuinely belongs to the
+ * thread rather than merely existing in the store.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_thread_lineage_mismatch`
+ *   when the walk exhausts ancestry without reaching the thread root, or
+ *   `postgres_backend_cyclic_turn_node_lineage` on a lineage cycle.
+ */
 export function assertTurnNodeBelongsToThread(
   state: BackendState,
   turnNodeHash: string,
@@ -79,6 +92,15 @@ export function assertTurnNodeBelongsToThread(
   );
 }
 
+/**
+ * Asserts that `descendantTurnNodeHash` is the ancestor itself or a
+ * descendant of it along the `previousTurnNodeHash` chain. Used to keep turn
+ * heads append-only: a turn's new head must extend its previous head.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_turn_node_not_descendant`
+ *   when the ancestor is not on the descendant's lineage, or
+ *   `postgres_backend_cyclic_turn_node_lineage` on a lineage cycle.
+ */
 export function assertTurnNodeDescendsFrom(
   state: BackendState,
   descendantTurnNodeHash: string,
@@ -122,6 +144,14 @@ export function assertTurnNodeDescendsFrom(
   );
 }
 
+/**
+ * Asserts that a branch head move stays on one lineage line: the new head
+ * must be the same node, a descendant (forward move), or an ancestor
+ * (backward move, e.g. a rewind) of the current head. Lateral jumps onto an
+ * unrelated lineage are rejected.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_branch_head_lateral_move`.
+ */
 export function assertBranchHeadMoveIsLinear(
   state: BackendState,
   previousHeadTurnNodeHash: string,
@@ -146,6 +176,13 @@ export function assertBranchHeadMoveIsLinear(
   }
 }
 
+/**
+ * Asserts that a run's start turn node lies within its turn's span: at or
+ * after the turn's start node and at or before the turn's head node on the
+ * same lineage.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_run_turn_span_mismatch`.
+ */
 export function assertRunStartTurnNodeWithinTurnSpan(
   state: BackendState,
   turn: StoredTurn,
@@ -195,6 +232,14 @@ export function assertRunStartTurnNodeWithinTurnSpan(
   }
 }
 
+/**
+ * Asserts that a turn node recorded in a run's `createdTurnNodesCbor` lineage
+ * lies within the run's turn span (between the turn's start node and head
+ * node, inclusive).
+ *
+ * @throws TuvrenPersistenceError
+ *   `postgres_backend_run_created_turn_node_outside_turn_span`.
+ */
 export function assertRunCreatedTurnNodeWithinTurnSpan(
   state: BackendState,
   turn: StoredTurn,
@@ -244,6 +289,15 @@ export function assertRunCreatedTurnNodeWithinTurnSpan(
   }
 }
 
+/**
+ * Asserts that a run's `createdTurnNodesCbor` decodes to a canonical lineage:
+ * unique hashes forming a contiguous `previousTurnNodeHash` chain that starts
+ * immediately after the run's start turn node.
+ *
+ * @throws TuvrenPersistenceError
+ *   `postgres_backend_run_created_turn_nodes_duplicate` or
+ *   `postgres_backend_run_created_turn_nodes_not_contiguous`.
+ */
 export function assertRunCreatedTurnNodesAreCanonical(
   state: BackendState,
   run: StoredRun
@@ -293,6 +347,16 @@ export function assertRunCreatedTurnNodesAreCanonical(
   }
 }
 
+/**
+ * Asserts that an active (running/paused) run's active turn node — the last
+ * created node, or the start node when none exist — is simultaneously the
+ * branch head and the turn head, so an in-flight run can never drift from
+ * the lineage position the branch and turn claim.
+ *
+ * @throws TuvrenPersistenceError
+ *   `postgres_backend_active_run_branch_head_mismatch` or
+ *   `postgres_backend_active_run_turn_head_mismatch`.
+ */
 export function assertActiveRunHeadAlignment(
   run: StoredRun,
   branch: StoredBranch,
@@ -329,6 +393,19 @@ export function assertActiveRunHeadAlignment(
   }
 }
 
+/**
+ * Asserts a turn's semantic-parent link is canonical: a turn whose start node
+ * is another turn's head must name a parent (`null` is only legal for a turn
+ * with no predecessor at its start node); the parent must live on the same
+ * thread and chain contiguously (parent head === child start); and when the
+ * parent shares the branch it must be the immediately previous semantic turn,
+ * not an earlier one.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_turn_parent_required`,
+ *   `postgres_backend_turn_parent_thread_mismatch`,
+ *   `postgres_backend_turn_parent_start_turn_node_mismatch`, or
+ *   `postgres_backend_turn_parent_not_immediate_predecessor`.
+ */
 export function assertTurnParentLink(
   state: BackendState,
   turn: StoredTurn,

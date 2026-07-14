@@ -34,6 +34,12 @@ import type Database from "better-sqlite3";
 import { persistenceError } from "./sqlite-errors.js";
 import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 
+/**
+ * Per-transaction dependencies shared by every repository this module
+ * builds: the open connection, the guard that rejects use after the
+ * transaction ends, a clock for timestamps, and the write tracker that
+ * records touched keys for pre-commit validation.
+ */
 interface CoreRepositoryContext {
   assertTransactionActive: () => void;
   db: Database.Database;
@@ -41,6 +47,14 @@ interface CoreRepositoryContext {
   writeTracker: TransactionWriteTracker;
 }
 
+/**
+ * Backend-owned lookup, comparison, cloning, and invariant-assertion
+ * functions injected into {@link createCoreRepositories}. Keeping them
+ * injected rather than imported directly lets this module stay a pure
+ * mapping from `RuntimeBackendTx` methods to SQL statements, with every
+ * cross-cutting invariant check delegated to `sqlite-lookups.js`,
+ * `sqlite-db-lineage.js`, `sqlite-state-utils.js`, and `sqlite-records.js`.
+ */
 interface CoreRepositoryHelpers {
   areStoredBranchesEqual?: never;
   areStoredRunsEqual?: never;
@@ -191,6 +205,20 @@ interface CoreRepositoryHelpers {
   ) => StoredTurnTreePath[];
 }
 
+/**
+ * Builds the `branches`, `runs`, `turnNodes`, `turnTreePaths`, `turnTrees`,
+ * and `turns` repositories of a `RuntimeBackendTx`, backed by direct SQL
+ * against the transaction's connection.
+ *
+ * Every `set`/`put` validates referenced foreign records exist, enforces
+ * per-family immutable fields and monotonic `updatedAtMs`, and — for
+ * content-addressed families (`turnNodes`, `turnTrees`, `turnTreePaths`) —
+ * treats a write that collides with an existing identity as a no-op unless
+ * it matches byte-for-byte ({@link CoreRepositoryHelpers.ensureImmutableRecordMatch}).
+ * Every successful write also records the touched keys on
+ * `context.writeTracker` so `validateTransactionWriteSet` can re-check
+ * exactly the affected records before commit.
+ */
 export function createCoreRepositories(
   context: CoreRepositoryContext,
   helpers: CoreRepositoryHelpers

@@ -36,6 +36,12 @@ import {
   cloneEncodedBytes,
 } from "./sqlite-records.js";
 
+// Existence-check helpers below operate on an already-loaded `BackendState`
+// projection (see sqlite-records.js), not the live database; each throws the
+// backend's uniform persistence error, coded
+// `sqlite_backend_missing_<family>_reference`, when the referenced record is
+// absent from that projection.
+
 export function ensureObjectExists(
   state: BackendState,
   hash: string,
@@ -198,6 +204,11 @@ export function ensureRunExists(
   return record;
 }
 
+// Clone helpers below deep-copy any CBOR-carrying byte fields (via
+// cloneBytes/cloneEncodedBytes) while spreading everything else, so a caller
+// mutating a returned record can never corrupt the loaded state projection
+// it was read from.
+
 export function cloneStoredObject(record: StoredObject): StoredObject {
   return {
     ...record,
@@ -284,6 +295,12 @@ export function cloneStoredTurn(record: StoredTurn): StoredTurn {
   return { ...record };
 }
 
+/**
+ * Derives an observe annotation's identity key from its logical fields
+ * (`runId`, `createdAtMs`, `annotationHash`, `turnNodeHash`) — distinct from
+ * its storage `record_key`, which additionally disambiguates repeats of the
+ * same identity via {@link nextObserveAnnotationRecordKey}.
+ */
 export function keyObserveAnnotation(record: StoredObserveAnnotation): string {
   return [
     record.runId,
@@ -293,6 +310,12 @@ export function keyObserveAnnotation(record: StoredObserveAnnotation): string {
   ].join("\0");
 }
 
+/**
+ * Computes the storage `record_key` for a new observe annotation: its
+ * identity key (see {@link keyObserveAnnotation}) suffixed with the count of
+ * rows already sharing that identity, so repeated annotations with identical
+ * logical fields still get distinct primary keys instead of colliding.
+ */
 export function nextObserveAnnotationRecordKey(
   db: Database.Database,
   record: StoredObserveAnnotation
@@ -342,6 +365,11 @@ export function cloneStoredTurnTreePath(
     orderedChunkListCbor: cloneEncodedBytes(record.orderedChunkListCbor),
   };
 }
+
+// Equality helpers below compare a stored record's full field set
+// (byte-for-byte for any CBOR payload) so `ensureImmutableRecordMatch` can
+// tell a legitimate idempotent rewrite of a content-addressed record apart
+// from a genuine mutation attempt.
 
 export function areStoredObjectsEqual(
   left: StoredObject,
@@ -485,6 +513,10 @@ export function areStoredTurnTreePathsEqual(
   return false;
 }
 
+// Comparator helpers below give every listing endpoint a stable, deterministic
+// order: primarily by `createdAtMs`, falling back to the record's identity
+// key to break ties between same-millisecond writes.
+
 export function compareStoredBranch(
   left: StoredBranch,
   right: StoredBranch
@@ -539,6 +571,7 @@ export function compareStoredStagedResult(
   );
 }
 
+/** Shared ordering: `leftTimestamp`/`rightTimestamp` first, then key. */
 function compareByTimestampAndKey(
   leftTimestamp: number,
   rightTimestamp: number,
@@ -552,6 +585,7 @@ function compareByTimestampAndKey(
   return leftKey.localeCompare(rightKey);
 }
 
+/** Byte-for-byte equality of two `Uint8Array`s. */
 export function areBytesEqual(left: Uint8Array, right: Uint8Array): boolean {
   if (left.byteLength !== right.byteLength) {
     return false;
