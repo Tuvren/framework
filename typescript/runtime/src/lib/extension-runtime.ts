@@ -29,12 +29,23 @@ import type {
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import { runWithTimeout } from "./execution-timeouts.js";
 
+/**
+ * A state patch returned by one extension's hook, keyed by extension name.
+ * The runtime shallow-merges `state` into that extension's slice of
+ * `ContextManifest.extensions` when the iteration's manifest is updated
+ * (KrakenFrameworkSpecification §9).
+ */
 export interface ExtensionStateUpdate {
   extensionName: string;
   state: Record<string, unknown>;
 }
 
+/** Options for {@link collectSystemPrompts}. */
 export interface CollectSystemPromptsOptions {
+  /**
+   * Called when a computed `systemPrompt` contribution throws; the failing
+   * extension is skipped and collection continues with the remaining ones.
+   */
   onError?(input: { error: Error; extensionName: string }): void;
 }
 
@@ -60,6 +71,13 @@ interface AfterIterationOptions extends HookExecutionOptions {
   toolResults?: AfterIterationContext["toolResults"];
 }
 
+/**
+ * Projects each extension's `exports`-listed keys out of its manifest state
+ * slice into the cross-extension visibility map handed to hooks as
+ * `sharedExports` (KrakenFrameworkSpecification §9). Extensions that declare
+ * no exports are omitted; declared keys absent from state are skipped, and
+ * exported values are cloned so consumers cannot mutate manifest state.
+ */
 export function buildSharedExports(
   extensions: TuvrenExtension[],
   manifest: ContextManifest
@@ -88,6 +106,14 @@ export function buildSharedExports(
   return sharedExports;
 }
 
+/**
+ * Collects extension `systemPrompt` contributions in registration order,
+ * accepting both static strings and computed contributions (called with
+ * cloned extension state, the manifest, and {@link buildSharedExports}
+ * output). A computed contribution that throws is skipped and surfaced via
+ * {@link CollectSystemPromptsOptions.onError}; one returning `undefined`
+ * contributes nothing (KrakenFrameworkSpecification §9).
+ */
 export function collectSystemPrompts(
   extensions: TuvrenExtension[],
   manifest: ContextManifest,
@@ -128,24 +154,47 @@ export function collectSystemPrompts(
   return prompts;
 }
 
+/**
+ * Runs `beforeTurn` hooks in registration order and composes their verdicts
+ * by RuntimeResolution precedence (KrakenFrameworkSpecification §9). A hook
+ * that throws or exceeds its extension `timeout` contributes a `softFail`
+ * resolution instead of aborting the pass.
+ */
 export async function runBeforeTurnHooks(
   options: HookExecutionOptions
 ): Promise<HookRunResult> {
   return await runInterceptHooks(options, "beforeTurn", false);
 }
 
+/**
+ * Runs `beforeIteration` hooks in registration order. Behaves like
+ * {@link runBeforeTurnHooks}, and additionally surfaces the first
+ * context-engineering plan (`cePlan`) a hook returns.
+ */
 export async function runBeforeIterationHooks(
   options: HookExecutionOptions
 ): Promise<HookRunResult> {
   return await runInterceptHooks(options, "beforeIteration", false);
 }
 
+/**
+ * Runs `afterTurn` hooks in reverse registration order
+ * (KrakenFrameworkSpecification §9); otherwise behaves like
+ * {@link runBeforeTurnHooks}.
+ */
 export async function runAfterTurnHooks(
   options: HookExecutionOptions
 ): Promise<HookRunResult> {
   return await runInterceptHooks(options, "afterTurn", true);
 }
 
+/**
+ * Runs `afterIteration` hooks in reverse registration order, giving each the
+ * complete committed iteration — model response, tool results, and the loop
+ * resolution — alongside the standard hook context
+ * (KrakenFrameworkSpecification §9). Verdicts compose by RuntimeResolution
+ * precedence, and a hook that throws or times out contributes a `softFail`.
+ */
 export async function runAfterIterationHooks(
   options: AfterIterationOptions
 ): Promise<HookRunResult> {

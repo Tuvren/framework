@@ -27,6 +27,14 @@ import type {
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { ToolExecutionMode } from "./tool-execution.js";
 
+/**
+ * Input for starting one turn-execution session: the thread/branch
+ * coordinates the turn commits against, the active {@link AgentConfig}, and
+ * the incorporated {@link InputSignal}. `runnerId`, `schemaId`, and `tools`
+ * override the runtime's registered defaults when present; `parentTurnId`
+ * names the preceding semantic turn per `turn.create`'s legality rules
+ * (KrakenKernelSpecification §5.3).
+ */
 export interface ExecutionSessionRequest {
   branchId: string;
   config: AgentConfig;
@@ -38,6 +46,12 @@ export interface ExecutionSessionRequest {
   tools?: TuvrenToolDefinition[];
 }
 
+/**
+ * Snapshot of the iteration in flight when an approval pause interrupts the
+ * loop: the model response that requested the tools, the tool results
+ * gathered before the pause, and the {@link ToolExecutionMode} to resume
+ * under (KrakenFrameworkSpecification §8).
+ */
 export interface PausedIterationState {
   iterationCount: number;
   response: TuvrenModelResponse;
@@ -45,6 +59,13 @@ export interface PausedIterationState {
   toolResults: ToolResultPart[];
 }
 
+/**
+ * Everything the runtime persists at an approval pause so the turn can
+ * resume later in a fresh process: the pending {@link ApprovalRequest}, the
+ * active config/runner/tool-registry, extension state updates carried across
+ * the pause, and the paused run/turn-node coordinates
+ * (KrakenFrameworkSpecification §4, approval resume).
+ */
 export interface PauseContext {
   activeConfig: AgentConfig;
   activeRunnerId: string;
@@ -59,6 +80,12 @@ export interface PauseContext {
   pauseReason: string;
 }
 
+/**
+ * Pairs the host's {@link ApprovalResponse} with the stored
+ * {@link PauseContext} to continue a paused turn. Resume continues the
+ * existing semantic turn: `beforeTurn`/`afterTurn` hooks are not re-fired
+ * (KrakenFrameworkSpecification §4).
+ */
 export interface ResumeContext {
   approval: ApprovalResponse;
   pauseContext: PauseContext;

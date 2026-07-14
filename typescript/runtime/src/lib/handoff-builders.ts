@@ -19,6 +19,13 @@ import type { ToolResultPart, TuvrenMessage } from "@tuvren/core/messages";
 
 type UserMessageParts = Extract<TuvrenMessage, { role: "user" }>["parts"];
 
+/**
+ * Builds the default `preserve_trace` handoff context builder
+ * (KrakenFrameworkSpecification §10): the receiving agent gets a single
+ * user message carrying the source agent, the handoff reason, and a
+ * chronological summarized trace of the prior conversation — never raw
+ * reasoning, raw tool-call inputs, or the original message history.
+ */
 export function createPreserveTraceHandoffContextBuilder(): HandoffContextBuilder {
   return (context) => {
     // `preserve_trace` is a chronological summarized trace on purpose. The
@@ -44,6 +51,14 @@ export function createPreserveTraceHandoffContextBuilder(): HandoffContextBuilde
   };
 }
 
+/**
+ * Builds the `last_output_only` handoff context builder
+ * (KrakenFrameworkSpecification §10): the receiving agent gets a clean-slate
+ * user message containing only the previous agent's final visible output
+ * parts (text/structured/file), forwarded as canonical content parts rather
+ * than textified. Falls back to a single empty text part when no assistant
+ * output exists.
+ */
 export function createLastOutputOnlyHandoffContextBuilder(): HandoffContextBuilder {
   return (context) => {
     // `last_output_only` forwards the prior agent's final visible output parts

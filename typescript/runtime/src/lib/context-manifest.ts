@@ -20,6 +20,11 @@ import type { ExtensionStateUpdate } from "./extension-runtime.js";
 
 const TOKEN_ESTIMATE_DIVISOR = 4;
 
+/**
+ * Builds a zeroed `ContextManifest` (KrakenFrameworkSpecification §1.6):
+ * empty counters and extension state, `-1` sentinels for the last
+ * assistant/user message indexes, and no turn boundaries.
+ */
 export function createEmptyContextManifest(): ContextManifest {
   return {
     byRole: {
@@ -45,6 +50,11 @@ export function createEmptyContextManifest(): ContextManifest {
   };
 }
 
+/**
+ * Builds a `ContextManifest` from a full message history plus optional
+ * initial per-extension state. Turn boundaries default to the offsets of the
+ * user messages when `turnBoundaryOffsets` is not supplied.
+ */
 export function createContextManifest(
   messages: TuvrenMessage[],
   extensionState: Record<string, unknown> = {},
@@ -55,6 +65,13 @@ export function createContextManifest(
   return updateContextManifest(manifest, messages, [], turnBoundaryOffsets);
 }
 
+/**
+ * Returns a new manifest with `messages` appended to `manifest`'s counters
+ * (role tallies, tool call/result totals, token estimate, boundaries) and
+ * with each {@link ExtensionStateUpdate} shallow-merged into its extension's
+ * state slice. The input manifest is never mutated; `turnBoundaryOffsets`
+ * indexes into `messages` and defaults to its user-message offsets.
+ */
 export function updateContextManifest(
   manifest: ContextManifest,
   messages: TuvrenMessage[],
@@ -76,6 +93,7 @@ export function updateContextManifest(
   return nextManifest;
 }
 
+/** Deep-copies a manifest so callers can evolve one without aliasing. */
 export function cloneContextManifest(
   manifest: ContextManifest
 ): ContextManifest {
