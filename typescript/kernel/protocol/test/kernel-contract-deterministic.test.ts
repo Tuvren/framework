@@ -429,6 +429,28 @@ describe("deterministic identity", () => {
     ).toThrow("schema.paths must be a dense data-only array");
   });
 
+  test("rejects an empty TurnTree schemaId with the TurnTree identity code", async () => {
+    let caught: unknown;
+
+    try {
+      await invokeHashTurnTreeIdentity(
+        "",
+        kernelProtocolLogicalFixtures.turnTreeChangeSet,
+        kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
+      );
+    } catch (error: unknown) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(TuvrenValidationError);
+    expect((caught as TuvrenValidationError).code).toBe(
+      "invalid_turn_tree_hash"
+    );
+    expect((caught as TuvrenValidationError).message).toBe(
+      "schemaId must be a non-empty string"
+    );
+  });
+
   test("hashes opaque object bytes without structured-record canonicalization", async () => {
     const digestHex = await hashOpaqueObjectBytes(
       kernelProtocolDeterministicFixtures.rawOpaqueBytes
