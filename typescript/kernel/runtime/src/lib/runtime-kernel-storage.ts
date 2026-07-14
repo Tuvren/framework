@@ -275,8 +275,8 @@ export async function requireTreeManifest(
  * thread's TurnNode lineage before returning the node at `hash`.
  *
  * @throws TuvrenRuntimeError With code `kernel_runtime_lineage_mismatch` when
- *   the walk reaches a thread root other than `thread.rootTurnNodeHash`
- *   without ever encountering `hash`.
+ *   the lineage walk from `hash` reaches the thread genesis without ever
+ *   encountering `thread.rootTurnNodeHash`.
  */
 export async function requireThreadTurnNode(
   tx: RuntimeBackendTx,
