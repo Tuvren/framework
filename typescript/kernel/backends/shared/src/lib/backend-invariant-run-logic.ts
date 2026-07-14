@@ -308,6 +308,7 @@ export function createBackendInvariantRunLogic(
     }
   }
 
+  /** Asserts `currentStepIndex` never moves backwards across a run update. */
   function assertMonotonicRunStepIndex(
     existingRun: StoredRun,
     nextRun: StoredRun
@@ -325,6 +326,7 @@ export function createBackendInvariantRunLogic(
     }
   }
 
+  /** Implements the {@link BackendInvariantRunLogic.assertMonotonicUpdatedAtMs} contract. */
   function assertMonotonicUpdatedAtMs(
     previousUpdatedAtMs: number,
     nextUpdatedAtMs: number,
@@ -343,6 +345,10 @@ export function createBackendInvariantRunLogic(
     }
   }
 
+  /**
+   * Asserts `createdTurnNodesCbor`'s decoded hash lineage only ever grows,
+   * with every previously recorded hash preserved at its original index.
+   */
   function assertAppendOnlyRunCreatedTurnNodes(
     existingRun: StoredRun,
     nextRun: StoredRun

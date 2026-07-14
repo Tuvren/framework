@@ -27,50 +27,112 @@ import {
   createStoredTurnNodeRecord,
 } from "./kernel-test-fixtures.js";
 
+/**
+ * A point in a backend transaction's commit sequence where a fault can be
+ * injected: `before-commit` (durable write not yet attempted),
+ * `mid-commit` (the durable write itself, wrapped so the fault fires after
+ * the write completes but before the transaction is acknowledged
+ * successful — simulating a crash after a partial commit), or
+ * `after-commit-before-ack` (the write fully committed, fault fires before
+ * the caller observes success).
+ */
 export type FaultPoint =
   | "before-commit"
   | "mid-commit"
   | "after-commit-before-ack";
 
+/**
+ * Describes when and how {@link createFaultInjectingBackend} should inject a
+ * fault.
+ */
 export interface FaultPlan {
+  /**
+   * When set, runs a second, independent transaction that moves the named
+   * branch's head to a sibling turn node immediately after the faulted
+   * transaction finishes — simulating a concurrent writer racing the
+   * interrupted transaction. Only runs when the fault actually fires.
+   */
   concurrentWriter?: {
     branchId: string;
   };
+  /**
+   * Narrows which transaction the fault applies to: `branchId` requires the
+   * transaction to have touched that branch (via `branches.get`/`set` or
+   * `turns.set`), `operation: "checkpoint"` requires the transaction to have
+   * called `turnNodes.put` (the sole action that marks a transaction as a
+   * checkpoint; `turns.set`/`stagedResults.clearRun` only preserve that
+   * classification if already set). Omitted fields match any transaction.
+   */
   match?: {
     branchId?: string;
     operation?: "checkpoint";
   };
+  /** Which commit-sequence point the fault fires at. */
   point: FaultPoint;
+  /**
+   * `"always"` injects the fault on every matching transaction; `"once"`
+   * injects it only on the first match and lets every later matching
+   * transaction proceed normally.
+   */
   policy: "always" | "once";
 }
 
+/** Coarse classification of what a transaction did, for `plan.match.operation`. */
 type FaultOperation = "checkpoint" | "unknown";
 
+/**
+ * Mirrors a backend's own internal fault-hook shape (see e.g. the
+ * `postgres-backend.ts` / `sqlite-backend.ts` `BackendFaultHooks`), used to
+ * install this module's injected-fault logic into a backend's real commit
+ * sequence.
+ */
 interface BackendFaultHooks {
   afterCommitBeforeAck?(): Promise<void>;
   beforeCommit?(): Promise<void>;
   midCommit?(commit: () => Promise<void>): Promise<void>;
 }
 
+/** The hidden per-backend seam {@link readFaultInjectionControl} looks for. */
 interface BackendFaultInjectionControl {
   setFaultHooks(hooks: BackendFaultHooks | null): void;
   supportsFaultPoint(point: FaultPoint): boolean;
 }
 
+/** What one in-flight transaction has done so far, for fault-plan matching. */
 interface TransactionRecording {
   branchIds: Set<string>;
   operation: FaultOperation;
 }
 
+/** A branch's head turn node as observed before the faulted transaction ran. */
 interface ConcurrentWriterSnapshot {
   branch: StoredBranch;
   head: StoredTurnNode;
 }
 
+/** Captures a `transact` call's result without re-throwing, so cleanup can run first. */
 type TransactionOutcome<T> =
   | { status: "fulfilled"; value: T }
   | { error: unknown; status: "rejected" };
 
+/**
+ * Wraps a `RuntimeBackend` so its next matching `transact` call (per
+ * `plan`) fails at a chosen point in the commit sequence, for exercising a
+ * backend's crash-recovery behavior. `capabilities`/`health`/`reclaim`/
+ * `purgeScope`/`close`/`destroy` pass straight through to `inner`
+ * unmodified; only `transact` is instrumented.
+ *
+ * Requires the wrapped backend to expose a hidden fault-injection control
+ * surface (found by shape via `Object.getOwnPropertySymbols`, not a public
+ * API) for `mid-commit` and `before-commit` points; backends that do not
+ * expose it can still use `before-commit` by throwing before the real
+ * commit is attempted, but `mid-commit` and `after-commit-before-ack`
+ * always require the control surface.
+ *
+ * @throws TuvrenPersistenceError `kernel_fault_point_unsupported` when the
+ *   plan's point fires but the wrapped backend has no matching control
+ *   surface, or `kernel_persistence_fault_injected` for the fault itself.
+ */
 export function createFaultInjectingBackend(
   inner: RuntimeBackend,
   plan: FaultPlan
@@ -199,6 +261,7 @@ export function createFaultInjectingBackend(
   return decorated;
 }
 
+/** Locates a backend's hidden fault-injection control surface, if it exposes one. */
 function readFaultInjectionControl(
   backend: RuntimeBackend
 ): BackendFaultInjectionControl | undefined {
@@ -215,6 +278,7 @@ function readFaultInjectionControl(
   return undefined;
 }
 
+/** Structural check for the hidden `BackendFaultInjectionControl` shape. */
 function isBackendFaultInjectionControl(
   value: unknown
 ): value is BackendFaultInjectionControl {
@@ -226,6 +290,14 @@ function isBackendFaultInjectionControl(
   );
 }
 
+/**
+ * Builds the backend-local commit hooks that fire the injected fault at
+ * `plan.point` once `shouldInject()` reports the current transaction
+ * matches, marking the plan consumed and throwing
+ * {@link createInjectedFaultError}; a mismatched point on a matching
+ * transaction throws {@link createUnsupportedFaultPointError} instead of
+ * silently no-op-ing.
+ */
 function createFaultHooks(
   control: BackendFaultInjectionControl,
   plan: FaultPlan,
@@ -284,6 +356,7 @@ function createFaultHooks(
   };
 }
 
+/** Fresh, empty recording for one `transact` call. */
 function createTransactionRecording(): TransactionRecording {
   return {
     branchIds: new Set<string>(),
@@ -291,6 +364,12 @@ function createTransactionRecording(): TransactionRecording {
   };
 }
 
+/**
+ * Wraps a transaction handle so touched branch IDs and a coarse
+ * `"checkpoint"` vs `"unknown"` operation classification are captured into
+ * `recording` as `work` calls the repositories, for {@link matchesFaultPlan}
+ * to later evaluate `plan.match` against.
+ */
 function createRecordingTransactionProxy(
   tx: RuntimeBackendTx,
   recording: TransactionRecording
@@ -335,6 +414,11 @@ function createRecordingTransactionProxy(
   };
 }
 
+/**
+ * Captures a branch's current head turn node before the faulted
+ * transaction runs, as the basis {@link runConcurrentWriter} extends from.
+ * Returns `undefined` if the branch or its head does not (yet) exist.
+ */
 async function readConcurrentWriterSnapshot(
   backend: RuntimeBackend,
   branchId: string
@@ -356,6 +440,12 @@ async function readConcurrentWriterSnapshot(
   });
 }
 
+/**
+ * Runs an independent transaction that appends a sibling turn node after
+ * `snapshot.head` and moves `snapshot.branch`'s head onto it — simulating a
+ * second writer that raced ahead while the faulted transaction was
+ * interrupted.
+ */
 async function runConcurrentWriter(
   backend: RuntimeBackend,
   snapshot: ConcurrentWriterSnapshot
@@ -385,6 +475,7 @@ async function runConcurrentWriter(
   });
 }
 
+/** Evaluates whether a completed transaction's recording satisfies `plan`. */
 function matchesFaultPlan(
   plan: FaultPlan,
   recording: TransactionRecording,
@@ -411,6 +502,7 @@ function matchesFaultPlan(
   return true;
 }
 
+/** Builds the error thrown when a planned fault fires. */
 function createInjectedFaultError(
   _operation: FaultOperation,
   point: FaultPoint
@@ -424,6 +516,7 @@ function createInjectedFaultError(
   );
 }
 
+/** Builds the error thrown when a plan targets a point the backend cannot honor. */
 function createUnsupportedFaultPointError(
   point: FaultPoint
 ): TuvrenPersistenceError {
@@ -436,6 +529,7 @@ function createUnsupportedFaultPointError(
   );
 }
 
+/** Reads an optional method off `value` if present and callable. */
 function readOptionalMethod(
   value: object,
   key: "close" | "destroy"

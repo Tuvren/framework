@@ -30,6 +30,12 @@ import {
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
+/**
+ * Deterministic-encoding fixtures loaded from the checked-in kernel
+ * conformance suite manifest (`spec/conformance/kernel/scenarios/suite-manifest.json`):
+ * canonical CBOR/hash values a reference implementation must reproduce
+ * byte-for-byte. See {@link kernelProtocolDeterministicFixtures}.
+ */
 export interface KernelProtocolDeterministicFixtureSet {
   rawOpaqueBytes: number[];
   rawOpaqueBytesSha256Hex: string;
@@ -47,6 +53,11 @@ export interface KernelProtocolDeterministicFixtureSet {
   turnTreeSchemaRecordSha256Hex: string;
 }
 
+/**
+ * Logical (non-deterministic-encoding) fixtures loaded from the same
+ * checked-in manifest as {@link KernelProtocolDeterministicFixtureSet}. See
+ * {@link kernelProtocolLogicalFixtures}.
+ */
 export interface KernelProtocolLogicalFixtureSet {
   branchHeadListEntry: [string, string];
   recoveryState: RecoveryState;
@@ -71,10 +82,19 @@ const LOWERCASE_HEX_PATTERN = /^[0-9a-f]+$/u;
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 const kernelConformanceFixtureIndex = loadKernelConformanceFixtureIndex();
 
+/**
+ * The canonical turn-tree schema fixture the conformance suite manifest
+ * defines, loaded and validated once at module load. Callers that need a
+ * private mutable copy should clone it (see
+ * `createCanonicalKernelTestSchema` in kernel-test-fixtures.js) rather than
+ * mutate this shared instance.
+ */
 export const canonicalKernelTestSchemaFixture: TurnTreeSchema =
   loadCanonicalKernelTestSchema();
+/** Loaded, schema-validated deterministic-encoding conformance fixtures. */
 export const kernelProtocolDeterministicFixtures: KernelProtocolDeterministicFixtureSet =
   loadKernelProtocolDeterministicFixtures();
+/** Loaded, schema-validated logical conformance fixtures. */
 export const kernelProtocolLogicalFixtures: KernelProtocolLogicalFixtureSet =
   loadKernelProtocolLogicalFixtures();
 

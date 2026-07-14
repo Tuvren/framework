@@ -34,6 +34,14 @@ import {
   createStoredTurnTreeRecord,
 } from "./kernel-test-fixtures.js";
 
+/**
+ * Registers foundational invariant cases — deterministic list ordering,
+ * mid-transaction rollback on validation failure, schema-mismatch
+ * rejection, and cross-record reference-mismatch rejection — against
+ * `options.testApi`. Called by `registerBackendInvariantRunStateCases` in
+ * backend-invariant-suite-run-state.js; not intended to be called
+ * standalone.
+ */
 export function registerBackendInvariantFoundationCases(
   options: BackendConformanceSuiteOptions
 ): void {

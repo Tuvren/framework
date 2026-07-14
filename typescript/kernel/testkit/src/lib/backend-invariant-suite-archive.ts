@@ -26,6 +26,12 @@ import {
   createStoredTurnTreeRecord,
 } from "./kernel-test-fixtures.js";
 
+/**
+ * Registers archive-branch invariant cases (forged archives, stale
+ * rollback state) against `options.testApi`. Called by
+ * `registerBackendInvariantSuite` in backend-invariant-suite.js; not
+ * intended to be called standalone.
+ */
 export function registerBackendInvariantArchiveCases(
   options: BackendConformanceSuiteOptions
 ): void {
@@ -95,6 +101,11 @@ export function registerBackendInvariantArchiveCases(
   });
 }
 
+/**
+ * Builds the shared unpersisted fixture set (schema, turn tree, a
+ * three-node genesis→middle→head lineage, thread, and branch at the head)
+ * that every archive-rollback test case in this suite starts from.
+ */
 export async function createArchiveRollbackFixtures(): Promise<{
   branch: StoredBranch;
   headNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
@@ -162,6 +173,12 @@ export async function createArchiveRollbackFixtures(): Promise<{
   };
 }
 
+/**
+ * Builds {@link createArchiveRollbackFixtures}' fixture set and persists it
+ * (schema, turn tree/paths, all three turn nodes, thread, branch) into a
+ * fresh backend, returning both the backend and the fixtures for the
+ * calling test case to build forged/stale archive attempts against.
+ */
 async function createArchiveRollbackScenario(
   options: BackendConformanceSuiteOptions
 ): Promise<{

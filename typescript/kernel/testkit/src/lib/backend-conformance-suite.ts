@@ -37,6 +37,15 @@ import {
 
 const BOOM_ERROR_PATTERN = /boom/u;
 
+/**
+ * Registers the shared backend-conformance test suite — health reporting,
+ * transaction rollback isolation, idempotent content-addressed writes,
+ * cross-thread lineage rejection, and end-to-end record round-tripping —
+ * against `options.testApi`, using a fresh `options.createBackend()`
+ * instance per case. Any `RuntimeBackend` implementation that passes this
+ * suite satisfies the baseline `RuntimeBackendTx` contract every kernel
+ * backend must uphold.
+ */
 export function registerBackendConformanceSuite(
   options: BackendConformanceSuiteOptions
 ): void {

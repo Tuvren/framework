@@ -16,13 +16,24 @@
 
 import type { RuntimeBackend as KrakenBackend } from "@tuvren/kernel-protocol";
 
+/**
+ * Minimal test-runner surface the shared backend suites register against —
+ * a thin shim over whichever test framework (Vitest, Bun test, etc.) the
+ * calling package uses, so this package stays framework-agnostic.
+ */
 export interface BackendTestSuiteApi {
   describe(name: string, register: () => void): void;
   test(name: string, run: () => Promise<void> | void): void;
 }
 
+/** Builds a fresh `RuntimeBackend` instance for one test case. */
 export type BackendFactory = () => KrakenBackend;
 
+/**
+ * Options shared by every `register*Suite` entry point in this package:
+ * how to construct the backend under test, which test framework to
+ * register against, and an optional override for the top-level suite name.
+ */
 export interface BackendConformanceSuiteOptions {
   createBackend: BackendFactory;
   suiteName?: string;

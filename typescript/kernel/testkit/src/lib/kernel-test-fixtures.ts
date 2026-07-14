@@ -33,10 +33,17 @@ import {
 } from "@tuvren/kernel-protocol";
 import { canonicalKernelTestSchemaFixture } from "./kernel-conformance-fixtures.js";
 
+/**
+ * Returns a fresh deep clone of the canonical kernel test schema (a
+ * `messages` ordered path plus a `context.manifest` single path) shared by
+ * the conformance/invariant/recovery suites, so test cases can rely on a
+ * consistent schema without accidentally sharing mutable state.
+ */
 export function createCanonicalKernelTestSchema(): TurnTreeSchema {
   return structuredClone(canonicalKernelTestSchemaFixture);
 }
 
+/** Builds a `StoredSchema` row encoding `schema`'s paths and incorporation rules. */
 export function createStoredSchemaRecord(
   schema: TurnTreeSchema,
   createdAtMs: number
@@ -58,6 +65,7 @@ export function createStoredSchemaRecord(
   };
 }
 
+/** Builds a `StoredObject` row for `bytes`, hashing it as an opaque object. */
 export async function createStoredObjectRecord(
   bytes: Uint8Array,
   createdAtMs: number
@@ -71,6 +79,7 @@ export async function createStoredObjectRecord(
   };
 }
 
+/** Builds a `StoredTurnTree` row for `manifest`, deriving its content-addressed hash. */
 export async function createStoredTurnTreeRecord(
   schema: TurnTreeSchema,
   manifest: TurnTreeManifest,
@@ -84,6 +93,7 @@ export async function createStoredTurnTreeRecord(
   };
 }
 
+/** Builds a `StoredOrderedPathChunk` row for `hashes`, deriving its content-addressed hash. */
 export async function createStoredOrderedPathChunkRecord(
   hashes: string[],
   createdAtMs: number
@@ -96,6 +106,10 @@ export async function createStoredOrderedPathChunkRecord(
   };
 }
 
+/**
+ * Builds a `StoredTurnNode` row from its logical identity fields, encoding
+ * `consumedStagedResults` and deriving the node's content-addressed hash.
+ */
 export async function createStoredTurnNodeRecord(input: {
   consumedStagedResults: StagedResult[];
   createdAtMs: number;
@@ -147,16 +161,30 @@ export async function createStoredTurnNodeRecord(input: {
   };
 }
 
+/**
+ * Builds `count` deterministic, distinct hash strings starting at
+ * `offset`, via {@link createHashFromIndex}.
+ */
 export function createHashSequence(count: number, offset = 0): string[] {
   return Array.from({ length: count }, (_, index) =>
     createHashFromIndex(index + offset)
   );
 }
 
+/**
+ * Deterministically derives a 64-hex-character hash-shaped string from an
+ * index — not a real content hash, just a distinct, readable placeholder
+ * for fixtures that only need referential identity.
+ */
 export function createHashFromIndex(index: number): string {
   return index.toString(16).padStart(64, "0");
 }
 
+/**
+ * Builds a clock function that returns `initialValue`, then a strictly
+ * increasing integer on every call — useful for deterministic `createdAtMs`
+ * sequencing in tests without depending on wall-clock time.
+ */
 export function createIncrementingClock(initialValue: number): () => number {
   let currentValue = initialValue;
 
@@ -167,12 +195,22 @@ export function createIncrementingClock(initialValue: number): () => number {
   };
 }
 
+/** Resolves after `durationMs` milliseconds — for timing-sensitive test scenarios. */
 export function delay(durationMs: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, durationMs);
   });
 }
 
+/**
+ * Builds the indexed `StoredTurnTreePath` rows for `manifest`, matching the
+ * canonical kernel test schema's two paths (`context.manifest` as `single`,
+ * `messages` as a flat `ordered` collection) — the rows a `turnTreePaths.putMany`
+ * call needs alongside a `turnTrees.put` of `turnTree`.
+ *
+ * @throws Error when `manifest` does not match the canonical test schema's
+ *   shape (a `messages` array and a `context.manifest` hash-or-null).
+ */
 export function createCanonicalTurnTreePaths(
   turnTree: StoredTurnTree,
   manifest: TurnTreeManifest

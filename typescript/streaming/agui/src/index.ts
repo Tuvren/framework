@@ -14,5 +14,16 @@
  * limitations under the License.
  */
 
+/**
+ * @packageDocumentation
+ *
+ * `@tuvren/stream-agui` is the AG-UI protocol adapter for `TuvrenStreamEvent`
+ * streams (KrakenFrameworkSpecification §6.1): {@link toAgUiEvents} maps the
+ * canonical event stream onto the `@ag-ui/core` event model, using
+ * `CUSTOM` events (with a fixed `tuvren.runtime.*` warning code) as the
+ * fallback for canonical events that have no first-class AG-UI counterpart,
+ * and coercing a paused turn into a `CUSTOM` pause marker followed by
+ * `RUN_FINISHED` so AG-UI lifecycle consumers stay well-formed.
+ */
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export { toAgUiEvents } from "./lib/stream-agui.js";

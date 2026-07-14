@@ -22,37 +22,74 @@ import {
 
 const UINT8_ARRAY_JSON_MARKER = "Uint8Array";
 
+/**
+ * Shape every protocol adapter implements (framework spec §6.1 "Protocol
+ * adapter consumption"): a pure transform from the canonical
+ * `TuvrenStreamEvent` stream to an external wire format. Adapters consume
+ * `AsyncIterable<TuvrenStreamEvent>` — typically one branch of
+ * {@link teeTuvrenStreamEvents} — and never touch the `ExecutionHandle`
+ * directly.
+ */
 export type StreamProtocolAdapter<T> = (
   events: AsyncIterable<TuvrenStreamEvent>
 ) => AsyncIterable<T>;
 
+/**
+ * A non-fatal adapter-level observation, reported through
+ * {@link StreamAdapterOptions.onWarning} rather than thrown. `code` is a
+ * stable identifier suitable for deduplication (see
+ * {@link createStreamAdapterWarningReporter}); `details` carries
+ * adapter-specific context.
+ */
 export interface StreamAdapterWarning {
   code: string;
   details?: unknown;
   message: string;
 }
 
+/** Shared adapter construction options accepted by protocol adapters in sibling packages. */
 export interface StreamAdapterOptions {
+  /** Receives each distinct warning code once per reporter (see {@link createStreamAdapterWarningReporter}). */
   onWarning?: (warning: StreamAdapterWarning) => void;
 }
 
+/** A pending `next()` call on an {@link AsyncBroadcastQueue}, settled once a value, close, or failure arrives. */
 interface AsyncQueueWaiter<T> {
   reject(error: unknown): void;
   resolve(result: IteratorResult<T>): void;
 }
 
+/** Per-branch bookkeeping for {@link teeTuvrenStreamEvents}. */
 interface TeeBranchState {
+  /** True once the branch's `[Symbol.asyncIterator]()` has been called; a branch may only be claimed once. */
   claimed: boolean;
+  /** True while the branch is still eligible to receive events (cleared on `return()` or source close). */
   open: boolean;
+  /** Per-branch single-slot buffer feeding this branch's consumer. */
   queue: AsyncBroadcastQueue<TuvrenStreamEvent>;
 }
 
+/** Canonical named event sequences exposed as {@link streamAdapterFixtures}. */
 interface TextFixtureSet {
+  /** A turn that streams assistant text, executes one tool, and completes normally. */
   completedTurn: readonly TuvrenStreamEvent[];
+  /** A turn that fails with a fatal error. */
   failedTurn: readonly TuvrenStreamEvent[];
+  /** A turn that pauses on a tool approval request. */
   pausedTurn: readonly TuvrenStreamEvent[];
 }
 
+/**
+ * Single-consumer async queue with exactly one buffered slot, used as the
+ * per-branch buffer in {@link teeTuvrenStreamEvents}.
+ *
+ * {@link canAcceptValue} enforces the one-slot invariant: a branch that has
+ * not yet been polled holds at most one unread event, giving a
+ * claimed-but-not-yet-polled branch a consistent replay point without
+ * letting tee fanout drain the upstream handle into an unbounded queue.
+ * `close()` and `fail()` are idempotent and mutually exclusive — the first
+ * call wins.
+ */
 class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
   private closed = false;
   private failure?: unknown;
@@ -60,6 +97,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
   private readonly producerWaiters: Array<() => void> = [];
   private readonly waiters: AsyncQueueWaiter<T>[] = [];
 
+  /** Marks the queue exhausted; every pending and future `next()` resolves `{ done: true }`. A no-op if already closed or failed. */
   close(): void {
     if (this.closed || this.failure !== undefined) {
       return;
@@ -76,6 +114,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
     }
   }
 
+  /** Marks the queue failed; every pending and future `next()` rejects with `error`. A no-op if already closed or failed. */
   fail(error: unknown): void {
     if (this.closed || this.failure !== undefined) {
       return;
@@ -89,6 +128,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
     }
   }
 
+  /** True when a `push()` can currently be accepted: a consumer is waiting, or the one-slot buffer is empty. */
   canAcceptValue(): boolean {
     // Each branch intentionally keeps at most one unread buffered event. That
     // gives claimed-but-not-yet-polled branches a consistent replay point
@@ -97,6 +137,14 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
     return this.waiters.length > 0 || this.items.length === 0;
   }
 
+  /**
+   * Delivers `value` to a waiting consumer, or buffers it in the single slot.
+   * Silently dropped if the queue is already closed or failed.
+   *
+   * @throws TuvrenRuntimeError with code `invalid_stream_adapter_state` if
+   *   called when {@link canAcceptValue} is `false` — callers must check
+   *   capacity (e.g. via `waitForCapacity`) before pushing.
+   */
   push(value: T): void {
     if (this.closed || this.failure !== undefined) {
       return;
@@ -174,6 +222,7 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
     };
   }
 
+  /** Resolves once {@link canAcceptValue} is true (or the queue closes/fails), for producers to await before pushing. */
   async waitForCapacity(): Promise<void> {
     while (
       !this.closed &&
@@ -197,6 +246,14 @@ class AsyncBroadcastQueue<T> implements AsyncIterable<T> {
   }
 }
 
+/**
+ * Deep-clones a `TuvrenStreamEvent` (via `structuredClone`) and re-validates
+ * the clone, so a tee branch or fixture consumer cannot observe another
+ * consumer's mutations to the same logical event.
+ *
+ * @throws If the cloned value somehow fails `assertTuvrenStreamEvent`
+ *   (defensive; a valid input event always produces a valid clone).
+ */
 export function cloneTuvrenStreamEvent(
   event: TuvrenStreamEvent
 ): TuvrenStreamEvent {
@@ -205,6 +262,11 @@ export function cloneTuvrenStreamEvent(
   return clonedEvent;
 }
 
+/**
+ * Wraps a fixed event list as a fresh, one-pass `AsyncIterable`, cloning each
+ * event on yield so repeated iterations (or fixtures shared across tests)
+ * never alias mutable state.
+ */
 export function createFixtureStream(
   events: readonly TuvrenStreamEvent[]
 ): AsyncIterable<TuvrenStreamEvent> {
@@ -216,6 +278,17 @@ export function createFixtureStream(
   })();
 }
 
+/**
+ * Builds a warning callback that de-duplicates by `code`: each distinct
+ * `warning.code` is forwarded to `options.onWarning` at most once per
+ * reporter instance, and a throwing `onWarning` is swallowed — warning
+ * observers are non-authoritative, so adapter output must keep flowing even
+ * if a host-side logger or test hook throws.
+ *
+ * @param options.onWarning - Sink invoked with a cloned warning (see
+ *   {@link cloneWarning}) the first time each code is reported; omit to
+ *   silently discard warnings while still deduplicating.
+ */
 export function createStreamAdapterWarningReporter(
   options?: StreamAdapterOptions
 ): (warning: StreamAdapterWarning) => void {
@@ -241,6 +314,11 @@ export function createStreamAdapterWarningReporter(
   };
 }
 
+/**
+ * Serializes a `TuvrenStreamEvent` to JSON, encoding any `Uint8Array` field
+ * (e.g. binary `file.done` payloads) as `{ type: "Uint8Array", data: number[] }`
+ * so binary content survives a JSON round-trip.
+ */
 export function serializeTuvrenStreamEvent(event: TuvrenStreamEvent): string {
   return JSON.stringify(event, (_key, value: unknown) => {
     if (value instanceof Uint8Array) {
@@ -254,6 +332,42 @@ export function serializeTuvrenStreamEvent(event: TuvrenStreamEvent): string {
   });
 }
 
+/**
+ * Fans a single-consumer `TuvrenStreamEvent` stream out to `branchCount`
+ * independent, single-consumer branches (framework spec §6.1: "Hosts that
+ * need multiple downstream consumers own teeing, multicast, filtering,
+ * buffering, replay, and backpressure policy outside shared core").
+ *
+ * Source pulls are lazy and demand-driven: the upstream `events` iterator is
+ * not read until the first branch begins consumption, and each subsequent
+ * pull waits for every still-claimed, still-open branch to have buffer
+ * capacity (backpressure across all branches, not just the slowest). Once
+ * every claimed branch has closed (or none were ever claimed after the
+ * source has already been read from), the source iterator's `return()` is
+ * called to release its resources.
+ *
+ * Two invariants are enforced per branch, both throwing
+ * `TuvrenRuntimeError`:
+ *
+ * - **Claim-before-first-pull**: a branch's `[Symbol.asyncIterator]()` must
+ *   be called before the source's first `next()` call begins, or it throws
+ *   with code `event_stream_subscription_too_late` — tee fanout cannot
+ *   reconstruct an already-consumed prefix for a late joiner without
+ *   buffering the entire upstream stream.
+ * - **Single consumption**: a branch may only be iterated once; a second
+ *   `[Symbol.asyncIterator]()` call throws with code
+ *   `event_stream_already_consumed`.
+ *
+ * A source failure propagates to every still-open branch via `queue.fail`,
+ * normalized to an `Error` first.
+ *
+ * @param branchCount - Number of independent branches to produce; must be a
+ *   positive integer.
+ * @returns Exactly `branchCount` async iterables, each a single-consumer view
+ *   of the same underlying event sequence.
+ * @throws TuvrenRuntimeError with code `invalid_stream_branch_count` when
+ *   `branchCount` is not a positive integer.
+ */
 export function teeTuvrenStreamEvents(
   events: AsyncIterable<TuvrenStreamEvent>,
   branchCount: number
@@ -289,6 +403,7 @@ export function teeTuvrenStreamEvents(
   let sourceStarted = false;
   let sourceReturning = false;
 
+  /** Marks every branch closed (source exhausted). */
   const closeBranches = () => {
     for (const branch of branches) {
       branch.open = false;
@@ -296,12 +411,14 @@ export function teeTuvrenStreamEvents(
     }
   };
 
+  /** Propagates a source failure to every branch's queue. */
   const failBranches = (error: unknown) => {
     for (const branch of branches) {
       branch.queue.fail(error);
     }
   };
 
+  /** Number of branches that are both claimed and still open — the demand signal driving source pulls. */
   const countClaimedOpenBranches = (): number => {
     let openBranchCount = 0;
 
@@ -314,6 +431,11 @@ export function teeTuvrenStreamEvents(
     return openBranchCount;
   };
 
+  /**
+   * Waits until every claimed, open branch has buffer capacity, so the next
+   * source pull cannot overrun a slow branch's single-slot queue. Resolves
+   * immediately once there are no claimed-open branches left.
+   */
   const waitForClaimedBranchCapacity = async (): Promise<void> => {
     for (;;) {
       const openBranches = branches.filter(
@@ -340,6 +462,14 @@ export function teeTuvrenStreamEvents(
     }
   };
 
+  /**
+   * The single background loop that reads the upstream `events` iterator and
+   * broadcasts each event to every claimed, open branch. Started at most
+   * once (guarded by {@link ensureSourceStarted}); stops when the source
+   * completes, every branch closes, or the source throws (in which case the
+   * error is normalized and delivered to every branch instead of being
+   * thrown from this loop).
+   */
   const pumpSource = async (): Promise<void> => {
     try {
       for (;;) {
@@ -374,6 +504,7 @@ export function teeTuvrenStreamEvents(
     }
   };
 
+  /** Starts {@link pumpSource} on the first branch's first `next()` call; idempotent thereafter. */
   const ensureSourceStarted = (): void => {
     if (sourceStarted) {
       return;
@@ -383,6 +514,12 @@ export function teeTuvrenStreamEvents(
     detachPromise(pumpSource());
   };
 
+  /**
+   * Calls `sourceIterator.return()` once no claimed branch remains open,
+   * releasing the upstream resource early instead of waiting for it to
+   * exhaust on its own. A no-op if the source already closed, is already
+   * returning, or a claimed branch is still open.
+   */
   const stopSourceIfNeeded = async (): Promise<void> => {
     if (sourceClosed || sourceReturning || countClaimedOpenBranches() > 0) {
       return;
@@ -458,6 +595,13 @@ export function teeTuvrenStreamEvents(
   }));
 }
 
+/**
+ * Canonical `TuvrenStreamEvent` sequences for adapter and conformance tests:
+ * a normal completed turn (assistant text plus one tool call), a fatally
+ * failed turn, and a turn paused on tool approval. Consume through
+ * {@link createFixtureStream} rather than iterating the arrays directly, so
+ * events are cloned per use.
+ */
 export const streamAdapterFixtures: TextFixtureSet = {
   completedTurn: [
     {
@@ -642,6 +786,12 @@ export const streamAdapterFixtures: TextFixtureSet = {
   ],
 };
 
+/**
+ * Deep-clones a warning for delivery to `onWarning`; falls back to a
+ * code/message-only copy (dropping `details`) if `details` is not
+ * structured-cloneable, so a non-cloneable detail payload never breaks
+ * warning delivery entirely.
+ */
 function cloneWarning(warning: StreamAdapterWarning): StreamAdapterWarning {
   try {
     return structuredClone(warning);
@@ -653,10 +803,12 @@ function cloneWarning(warning: StreamAdapterWarning): StreamAdapterWarning {
   }
 }
 
+/** Fires `promise` without awaiting it, swallowing any rejection (background pump loops are not awaited by callers). */
 function detachPromise(promise: Promise<unknown>): void {
   promise.catch(() => undefined);
 }
 
+/** Normalizes a thrown value from the source iterator to an `Error` before delivering it to branch queues. */
 function normalizeQueueError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
