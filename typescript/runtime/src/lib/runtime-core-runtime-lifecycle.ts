@@ -52,6 +52,10 @@ import {
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
+/**
+ * Facade over the status module's `failActiveRunIfNeeded`: fail the
+ * handle's active tracked run if one is still registered.
+ */
 export async function failRuntimeCoreActiveRunIfNeeded(
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle
@@ -59,6 +63,12 @@ export async function failRuntimeCoreActiveRunIfNeeded(
   await failRuntimeActiveRunIfNeeded(host, handle);
 }
 
+/**
+ * Facade over the status module's `checkpointResumeRunningStatus`: durably
+ * checkpoint a `running` runtime status (folding in any carried extension
+ * state) when resuming execution, returning the pending state-observability
+ * payload when a new turn node was produced.
+ */
 export async function checkpointRuntimeCoreResumeRunningStatus(
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle,
@@ -84,6 +94,11 @@ export async function checkpointRuntimeCoreResumeRunningStatus(
   );
 }
 
+/**
+ * Facade over the liveness module's `createTrackedRun`: create a kernel run
+ * with the given step plan and register it on the handle as the active
+ * tracked run.
+ */
 export async function createRuntimeCoreTrackedRun(
   host: RuntimeCoreLivenessHost,
   handle: RuntimeExecutionHandle,
@@ -110,6 +125,12 @@ export async function createRuntimeCoreTrackedRun(
   );
 }
 
+/**
+ * Facade over the expired-recovery module's
+ * `recoverExpiredExecutionBranchIfNeeded`: detect and preempt an expired
+ * run on the branch, returning the recovery classification or `undefined`
+ * when there is nothing to recover.
+ */
 export async function recoverRuntimeCoreExpiredExecutionBranchIfNeeded(
   host: RuntimeCoreExpiredRecoveryHost,
   branchId: string,
@@ -122,6 +143,12 @@ export async function recoverRuntimeCoreExpiredExecutionBranchIfNeeded(
   );
 }
 
+/**
+ * Facade over the liveness module's `completeTrackedRun`: complete a
+ * tracked kernel run (stopping its lease-renewal loop and clearing the
+ * handle's active-run bookkeeping), returning the completion result with
+ * the advanced turn node hash when the run moved the turn forward.
+ */
 export async function completeRuntimeCoreTrackedRun(
   host: RuntimeCoreLivenessHost,
   handle: RuntimeExecutionHandle,
@@ -132,6 +159,11 @@ export async function completeRuntimeCoreTrackedRun(
   return await completeRuntimeTrackedRun(host, handle, runId, status, event);
 }
 
+/**
+ * Facade over the liveness module's `stopRunLeaseLoop`: stop the handle's
+ * background lease-renewal loop, optionally only when it belongs to the
+ * given run.
+ */
 export function stopRuntimeCoreRunLeaseLoop(
   host: RuntimeCoreLivenessHost,
   handle: RuntimeExecutionHandle,
@@ -140,6 +172,12 @@ export function stopRuntimeCoreRunLeaseLoop(
   stopRuntimeRunLeaseLoop(host, handle, runId);
 }
 
+/**
+ * Facade over the expired-recovery module's
+ * `completeRecoveredTerminalExecution`: replay a recovered execution's
+ * durable terminal status onto the handle and publish the matching turn-end
+ * event.
+ */
 export async function completeRuntimeCoreRecoveredTerminalExecution(
   host: RuntimeCoreExpiredRecoveryHost,
   handle: RuntimeExecutionHandle,
@@ -154,6 +192,11 @@ export async function completeRuntimeCoreRecoveredTerminalExecution(
   );
 }
 
+/**
+ * Facade over the liveness module's `syncRunLeaseStateFromStepResult`: fold
+ * lease data piggybacked on a step-completion result into the handle's
+ * active lease so the renewal loop never renews with a stale fencing token.
+ */
 export function syncRuntimeCoreRunLeaseStateFromStepResult(
   host: RuntimeCoreLivenessHost,
   handle: RuntimeExecutionHandle,
@@ -163,6 +206,10 @@ export function syncRuntimeCoreRunLeaseStateFromStepResult(
   syncRuntimeRunLeaseStateFromStepResult(host, handle, runId, stepResult);
 }
 
+/**
+ * Facade over the facade-ops module's `advanceTurnAndBranchHeadFacade`:
+ * advance the turn and branch head in the kernel to the given turn node.
+ */
 export async function advanceRuntimeCoreTurnAndBranchHead(
   kernel: RuntimeKernel,
   handle: RuntimeExecutionHandle,
@@ -171,6 +218,11 @@ export async function advanceRuntimeCoreTurnAndBranchHead(
   await advanceTurnAndBranchHeadFacade(kernel, handle, turnNodeHash);
 }
 
+/**
+ * Facade over the turn-progress module's
+ * `failTrackedRunWithoutBranchAdvance`: fail a tracked run and restore the
+ * branch head to its stable position so failed work is not observable.
+ */
 export async function failRuntimeCoreTrackedRunWithoutBranchAdvance(
   host: RuntimeCoreTurnProgressHost,
   handle: RuntimeExecutionHandle,
@@ -185,6 +237,12 @@ export async function failRuntimeCoreTrackedRunWithoutBranchAdvance(
   );
 }
 
+/**
+ * Facade over the turn-progress module's
+ * `reconcileCheckpointedPauseResolution`: when a pause was durably
+ * checkpointed but the final resolution is not `pause`, override the paused
+ * run; returns the resolution unchanged.
+ */
 export async function reconcileRuntimeCoreCheckpointedPauseResolution(
   host: RuntimeCoreTurnProgressHost,
   checkpointedPause: boolean,
@@ -201,6 +259,11 @@ export async function reconcileRuntimeCoreCheckpointedPauseResolution(
   );
 }
 
+/**
+ * Facade over the turn-progress module's `resolveCheckpointedPausedRun`:
+ * complete a durably checkpointed paused run as `failed` with a
+ * `paused_run_overridden` event recording the superseding resolution.
+ */
 export async function resolveRuntimeCoreCheckpointedPausedRun(
   host: RuntimeCoreTurnProgressHost,
   runId: string,

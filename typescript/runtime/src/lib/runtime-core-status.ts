@@ -26,6 +26,14 @@ import type { DurableRuntimeStatus } from "./runtime-core-recovery.js";
 import { resolutionToPhase } from "./runtime-core-response.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Host seam for durable runtime-status transitions.
+ *
+ * Provides tracked-run and run-step lifecycle operations, record staging,
+ * tree creation, branch-head advancement, and observability emission used by
+ * {@link failActiveRunIfNeeded}, {@link finalizeTurnStatus}, and
+ * {@link checkpointResumeRunningStatus}.
+ */
 export interface RuntimeCoreStatusHost {
   advanceTurnAndBranchHead(
     handle: RuntimeExecutionHandle,
@@ -95,6 +103,13 @@ export interface RuntimeCoreStatusHost {
   ): Promise<HashString>;
 }
 
+/**
+ * Fail the handle's active tracked run, if one is still registered.
+ *
+ * Takes (and clears) the active run ID from the handle; does nothing when no
+ * run is active. Used to close out an in-flight kernel run when execution
+ * terminates abnormally.
+ */
 export async function failActiveRunIfNeeded(
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle
@@ -108,6 +123,19 @@ export async function failActiveRunIfNeeded(
   await host.completeTrackedRun(handle, activeRunId, "failed");
 }
 
+/**
+ * Durably record the turn's terminal runtime status.
+ *
+ * Maps the resolution to a terminal phase, then runs a single-step tracked
+ * kernel run (`finalize_turn_status`) that stages the final
+ * runtime-status record (marking `partial` only for failed turns with
+ * partial output) and completes with a `turn_status_finalized` event. When
+ * the step yields a new turn node, the turn and branch head advance and
+ * state observability is emitted.
+ *
+ * @param resolution - Terminal resolution whose phase is persisted.
+ * @param partial - Whether the turn produced partial output before failing.
+ */
 export async function finalizeTurnStatus(
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle,
@@ -167,6 +195,23 @@ export async function finalizeTurnStatus(
   }
 }
 
+/**
+ * Checkpoint a `running` runtime status when resuming an execution.
+ *
+ * Runs a single-step tracked kernel run (`resume_running_status`) that
+ * stages a `running` status — and, when the loop carries pending extension
+ * state updates, a manifest updated with them — into a new turn tree derived
+ * from the current head. On success the turn and branch head advance, the
+ * handle's in-memory status is set to `running`, and
+ * {@link LoopState.carriedStateUpdates} is cleared.
+ *
+ * @param emitObservability - When false, the durable checkpoint is written
+ *   but state observability emission is deferred to the caller.
+ * @defaultValue `emitObservability` defaults to `true`.
+ * @returns The pending state-observability payload (`turnNodeHash`,
+ *   iteration, and the manifest only when carried updates changed it) when
+ *   the checkpoint produced a new turn node, or `undefined` when it did not.
+ */
 export async function checkpointResumeRunningStatus(
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle,
@@ -290,6 +335,10 @@ export async function checkpointResumeRunningStatus(
   return undefined;
 }
 
+/**
+ * Store the step event, complete the run step, and synchronize the handle's
+ * run-lease state from the step result.
+ */
 async function completeRunStep(
   host: RuntimeCoreStatusHost,
   handle: RuntimeExecutionHandle,

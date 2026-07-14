@@ -28,6 +28,7 @@ import type {
   TuvrenPrompt,
 } from "@tuvren/provider-api";
 
+/** A single content part of any Tuvren message that carries a `parts` array. */
 type TuvrenPromptPart = Extract<
   TuvrenPrompt["messages"][number],
   {
@@ -35,12 +36,21 @@ type TuvrenPromptPart = Extract<
   }
 >["parts"][number];
 
+/** A plain JSON object, as accepted by {@link cloneJsonObject} and {@link isJsonValue}. */
 interface JsonObject {
   [key: string]: JsonValue | undefined;
 }
 
+/** Any JSON-serializable value: primitive, `null`, plain object, or array thereof. */
 type JsonValue = null | boolean | JsonObject | JsonValue[] | number | string;
 
+/**
+ * Per-tool bookkeeping for one streamed tool invocation, keyed by the
+ * provider call id in `StreamMappingState.toolStates`. Tracks the incremental
+ * input buffer, lifecycle flags (`started`/`ended`/`doneEmitted`), and merged
+ * provider metadata so the terminal `tool_call_done` chunk can be emitted
+ * exactly once with complete data.
+ */
 export interface StreamToolState {
   doneEmitted: boolean;
   ended: boolean;
@@ -60,6 +70,11 @@ export interface StreamToolState {
   started: boolean;
 }
 
+/**
+ * Provider-metadata keys allowed to replay on assistant `reasoning` parts:
+ * the opaque continuity artifacts (signatures, encrypted reasoning content)
+ * each provider requires to accept its own prior reasoning back.
+ */
 const ASSISTANT_REASONING_REPLAY_PROVIDER_KEYS = {
   anthropic: new Set(["redactedData", "signature"]),
   azure: new Set(["reasoningEncryptedContent"]),
@@ -68,11 +83,20 @@ const ASSISTANT_REASONING_REPLAY_PROVIDER_KEYS = {
   vertex: new Set(["thoughtSignature"]),
 } as const;
 
+/**
+ * Provider-metadata keys allowed to replay on assistant `text` and
+ * `tool_call` parts (Gemini thought signatures ride on those part types).
+ */
 const ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS = {
   google: new Set(["thoughtSignature"]),
   vertex: new Set(["thoughtSignature"]),
 } as const;
 
+/**
+ * Records a stream part's provider metadata (with part type and ids) into the
+ * per-call collection surfaced on the finish chunk's provider metadata.
+ * Parts without `providerMetadata` are ignored.
+ */
 export function captureStreamPartMetadata(
   collection: unknown[],
   part: LanguageModelV3StreamPart
@@ -91,6 +115,12 @@ export function captureStreamPartMetadata(
   );
 }
 
+/**
+ * Maps a prompt part's stored `providerMetadata` to AI SDK `providerOptions`
+ * for replay: keeps provider-namespaced plain objects, and lifts a legacy
+ * flat `signature` string into the `anthropic` namespace. Returns
+ * `undefined` when nothing survives sanitization.
+ */
 export function mapPromptProviderOptions(
   providerMetadata: Record<string, unknown> | undefined
 ): SharedV3ProviderOptions | undefined {
@@ -107,6 +137,15 @@ export function mapPromptProviderOptions(
     : cloneProviderOptions(normalized);
 }
 
+/**
+ * Maps an assistant part's stored `providerMetadata` to the replay
+ * `providerOptions`, filtered to the allow-listed continuity keys for the
+ * part type ({@link ASSISTANT_REASONING_REPLAY_PROVIDER_KEYS} /
+ * {@link ASSISTANT_TEXT_REPLAY_PROVIDER_KEYS}). A flat `signature` string on
+ * a reasoning part is routed into the active provider's namespace. Returns
+ * `undefined` for part types with no replay contract or when nothing
+ * survives filtering.
+ */
 export function mapAssistantReplayProviderOptions(
   activeProvider: string,
   part: TuvrenPromptPart
@@ -153,6 +192,11 @@ export function mapAssistantReplayProviderOptions(
   }
 }
 
+/**
+ * Routes a flat (non-namespaced) reasoning `signature` into the active
+ * provider's namespace under its expected key (`signature` for anthropic,
+ * `thoughtSignature` for google/vertex), without overwriting existing keys.
+ */
 function applyFlatReasoningSignature(
   providerOptions: Record<string, unknown>,
   activeProvider: string,
@@ -173,6 +217,11 @@ function applyFlatReasoningSignature(
   );
 }
 
+/**
+ * Picks the provider-options namespace for a flat reasoning signature from
+ * the active provider name; anything that is not vertex/google-flavored is
+ * treated as anthropic.
+ */
 function getFlatReasoningSignatureProviderNamespace(
   activeProvider: string
 ): "anthropic" | "google" | "vertex" {
@@ -187,6 +236,11 @@ function getFlatReasoningSignatureProviderNamespace(
   return "anthropic";
 }
 
+/**
+ * Keeps provider-namespaced plain-object entries and lifts a flat
+ * `signature` into the `anthropic` namespace; returns `undefined` when no
+ * provider options remain.
+ */
 function normalizePromptProviderMetadata(
   providerMetadata: Record<string, unknown>
 ): Record<string, unknown> | undefined {
@@ -214,6 +268,7 @@ function normalizePromptProviderMetadata(
   return hasProviderOptions ? normalized : undefined;
 }
 
+/** Clones a provider-options record, collapsing an empty record to `undefined`. */
 function cloneProviderOptionsOrUndefined(
   providerOptions: Record<string, unknown>
 ): SharedV3ProviderOptions | undefined {
@@ -222,6 +277,10 @@ function cloneProviderOptionsOrUndefined(
     : cloneProviderOptions(providerOptions);
 }
 
+/**
+ * Filters provider metadata down to the allow-listed replay keys per
+ * provider namespace, dropping namespaces that end up empty.
+ */
 function collectAssistantReplayProviderOptions(
   providerMetadata: Record<string, unknown>,
   allowedProviderKeys: Record<string, Set<string>>
@@ -255,6 +314,10 @@ function collectAssistantReplayProviderOptions(
   return normalized;
 }
 
+/**
+ * Merges additions into one provider namespace without overwriting keys the
+ * namespace already defines (existing values win).
+ */
 export function mergePromptProviderNamespace(
   current: unknown,
   additions: Record<string, unknown>
@@ -276,6 +339,10 @@ export function mergePromptProviderNamespace(
   return merged;
 }
 
+/**
+ * Sanitizes a generate result's response metadata (body, headers, id,
+ * modelId, ISO timestamp) for provider-metadata attribution.
+ */
 export function sanitizeGenerateResponseMetadata(
   response: LanguageModelV3GenerateResult["response"]
 ): unknown {
@@ -295,6 +362,10 @@ export function sanitizeGenerateResponseMetadata(
   });
 }
 
+/**
+ * Extracts the well-typed fields (id, modelId, ISO timestamp) from a
+ * `response-metadata` stream part, omitting anything malformed.
+ */
 export function sanitizeResponseMetadata(
   response: Extract<LanguageModelV3StreamPart, { type: "response-metadata" }>
 ): Record<string, unknown> {
@@ -317,6 +388,16 @@ export function sanitizeResponseMetadata(
   };
 }
 
+/**
+ * Assembles the provider metadata attached to a response or finish chunk:
+ * the provider's own metadata namespaces plus the bridge's captured extras
+ * under an `aiSdkBridge` key.
+ *
+ * Only the bridge extras are screened for secret-shaped substrings before
+ * they can reach event payloads and durable run records (ADR-044); the
+ * provider namespaces are left intact because reasoning-signature strings
+ * would otherwise trip the screening (see the inline note).
+ */
 export function buildProviderMetadata(input: {
   bridgeExtras: Record<string, unknown>;
   providerMetadata?: Record<string, unknown>;
@@ -343,6 +424,11 @@ export function buildProviderMetadata(input: {
   return Object.keys(metadata).length === 0 ? undefined : metadata;
 }
 
+/**
+ * Deep-merges two provider-metadata records: same-named provider namespaces
+ * merge key-by-key with `next` winning; other entries are cloned through.
+ * Returns the surviving record, or `undefined` when both inputs are.
+ */
 export function mergeProviderMetadataRecords(
   current: Record<string, unknown> | undefined,
   next: Record<string, unknown> | undefined
@@ -381,6 +467,11 @@ export function mergeProviderMetadataRecords(
   return merged;
 }
 
+/**
+ * Reads the opaque reasoning signature from stream-part provider metadata,
+ * checking `anthropic.signature`, then `google.thoughtSignature`, then
+ * `vertex.thoughtSignature`.
+ */
 export function readReasoningStreamSignature(
   providerMetadata: Record<string, unknown> | undefined
 ): string | undefined {
@@ -414,6 +505,10 @@ export function readReasoningStreamSignature(
     : undefined;
 }
 
+/**
+ * True when provider metadata carries Anthropic redacted-reasoning content
+ * (`anthropic.redactedData`), which streams no visible text.
+ */
 export function hasAnthropicRedactedReasoningMetadata(
   providerMetadata: Record<string, unknown> | undefined
 ): boolean {
@@ -431,6 +526,10 @@ export function hasAnthropicRedactedReasoningMetadata(
   );
 }
 
+/**
+ * Sanitizes a record via {@link sanitizeMetadataValue}, returning `undefined`
+ * unless the result is still a plain object.
+ */
 export function sanitizeRecord(
   value: Record<string, unknown> | undefined
 ): Record<string, unknown> | undefined {
@@ -442,6 +541,13 @@ export function sanitizeRecord(
   return isPlainObject(sanitized) ? sanitized : undefined;
 }
 
+/**
+ * Recursively converts an arbitrary value into a JSON-safe shape for
+ * metadata and error details: Dates/URLs become strings, `Uint8Array`
+ * becomes a base64-tagged object, Errors keep name and message,
+ * `undefined` object entries are dropped, and anything non-plain is
+ * stringified.
+ */
 export function sanitizeMetadataValue(value: unknown): unknown {
   if (
     value === null ||
@@ -499,6 +605,13 @@ export function sanitizeMetadataValue(value: unknown): unknown {
   return String(value);
 }
 
+/**
+ * Deep-clones a provider-options record, enforcing that every provider
+ * namespace is a plain JSON-serializable object.
+ *
+ * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
+ *   a namespace entry is not a plain object.
+ */
 export function cloneProviderOptions(
   value: SharedV3ProviderOptions | Record<string, unknown> | undefined
 ): SharedV3ProviderOptions | undefined {
@@ -526,6 +639,7 @@ export function cloneProviderOptions(
   return cloned;
 }
 
+/** Shallow-clones a headers record so callers cannot mutate bridge defaults. */
 export function cloneHeaders(
   value: Record<string, string | undefined> | undefined
 ): Record<string, string | undefined> | undefined {
@@ -538,6 +652,10 @@ export function cloneHeaders(
   };
 }
 
+/**
+ * Structurally clones metadata values (arrays, plain objects, `Uint8Array`);
+ * other values are returned as-is.
+ */
 export function cloneMetadataValue<T>(value: T): T {
   if (value instanceof Uint8Array) {
     return new Uint8Array(value) as T;
@@ -560,16 +678,25 @@ export function cloneMetadataValue<T>(value: T): T {
   return value;
 }
 
+/** Clones binary file data; string (URL/base64) file data is immutable as-is. */
 export function cloneFileData(value: string | Uint8Array): string | Uint8Array {
   return value instanceof Uint8Array ? new Uint8Array(value) : value;
 }
 
+/**
+ * Deep-clones a structured-output schema before handing it to Ajv or the AI
+ * SDK, so neither can observe later host mutations.
+ */
 export function cloneJsonSchema(
   schema: StructuredOutputRequest["schema"]
 ): JSONSchema7 {
   return cloneMetadataValue(schema) as JSONSchema7;
 }
 
+/**
+ * Parses text as JSON, wrapping any parse failure in a `TuvrenProviderError`
+ * with the given code and the offending text in its details.
+ */
 export function parseJsonInput(
   text: string,
   label: string,
@@ -607,6 +734,11 @@ export function isProviderOwnedToolPart(part: {
   return part.providerExecuted === true || part.dynamic === true;
 }
 
+/**
+ * Builds the `unsupported_ai_sdk_content` rejection for provider-owned tool
+ * execution the host never declared provider-native/mediated — the baseline
+ * bridge's protection against silently accepting provider-side execution.
+ */
 export function providerOwnedToolExecutionUnsupportedError(
   toolName: string,
   model: {
@@ -626,6 +758,13 @@ export function providerOwnedToolExecutionUnsupportedError(
   );
 }
 
+/**
+ * Looks up the tool state seeded by `tool-input-start` for a provider call
+ * id.
+ *
+ * @throws TuvrenProviderError with code `unsupported_ai_sdk_stream_part`
+ *   when input parts arrive before the tool input started.
+ */
 export function requireToolState(
   toolStates: Map<string, StreamToolState>,
   id: string,
@@ -655,6 +794,11 @@ export function requireToolState(
   );
 }
 
+/**
+ * Builds the `unsupported_ai_sdk_stream_part` rejection for stream parts
+ * outside the baseline contract, tagging provider-owned approval/result
+ * parts with a machine-readable `reason`.
+ */
 export function unsupportedStreamPartError(
   partType: string,
   model: {
@@ -682,6 +826,12 @@ export function unsupportedStreamPartError(
   );
 }
 
+/**
+ * Normalizes any thrown value into a `TuvrenProviderError`: existing
+ * `TuvrenProviderError`s pass through unchanged (their original code wins),
+ * `AISDKError`s and plain `Error`s keep their message with the error name in
+ * details, and anything else is sanitized into the details.
+ */
 export function normalizeBridgeError(
   error: unknown,
   code: string,
@@ -711,6 +861,10 @@ export function normalizeBridgeError(
   });
 }
 
+/**
+ * Constructs a `TuvrenProviderError` with a stable bridge error code and
+ * sanitized (JSON-safe) details.
+ */
 export function bridgeError(
   message: string,
   code: string,
@@ -726,6 +880,11 @@ export function bridgeError(
   });
 }
 
+/**
+ * Strict plain-object predicate: `Object.prototype` or `null` prototype
+ * only, no symbol keys, and only enumerable data properties — the shape the
+ * bridge accepts for provider options and metadata records.
+ */
 export function isPlainObject(
   value: unknown
 ): value is Record<string, unknown> {
@@ -748,6 +907,10 @@ export function isPlainObject(
   );
 }
 
+/**
+ * Recursive JSON-value predicate; non-finite numbers and non-plain objects
+ * are rejected.
+ */
 export function isJsonValue(value: unknown): value is JsonValue {
   if (value === null || typeof value === "string") {
     return true;
@@ -772,6 +935,12 @@ export function isJsonValue(value: unknown): value is JsonValue {
   return Object.values(value).every((entry) => isJsonValue(entry));
 }
 
+/**
+ * Deep-clones a record as a JSON object, dropping `undefined` entries.
+ *
+ * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
+ *   an entry is not JSON-serializable.
+ */
 export function cloneJsonObject(value: Record<string, unknown>): JsonObject {
   const cloned: JsonObject = {};
 
@@ -797,6 +966,7 @@ export function cloneJsonObject(value: Record<string, unknown>): JsonObject {
   return cloned;
 }
 
+/** Recursively clones one already-validated {@link JsonValue}. */
 function cloneJsonValue(value: JsonValue): JsonValue {
   if (
     value === null ||

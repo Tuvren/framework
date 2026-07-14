@@ -47,6 +47,16 @@ import type { LoopState } from "./runtime-core-loop.js";
 import { createFrozenSnapshot } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Resolve the handoff context builder for a handoff mode.
+ *
+ * `last_output_only` always uses the built-in last-output-only builder (an
+ * explicit builder is ignored); `preserve_trace` prefers the explicit
+ * builder and falls back to the built-in preserve-trace builder.
+ *
+ * @throws TuvrenRuntimeError with code `invalid_handoff_mode` for any other
+ *   mode, which requires an explicit builder resolved elsewhere.
+ */
 export function resolveRuntimeCoreDefaultHandoffContextBuilder(
   handoffContextBuilder: HandoffContextBuilder | undefined,
   mode: string
@@ -71,6 +81,18 @@ export function resolveRuntimeCoreDefaultHandoffContextBuilder(
   }
 }
 
+/**
+ * Build the context-engineering helper bundle over the current message
+ * window.
+ *
+ * Wires the kernel store and payload codec into the helpers: message
+ * rewrites are encoded, encrypted through the crypto-shredding seam
+ * (KRT-BF005), and stored via `kernel.store.put`, with provisional pending
+ * hashes remapped to the canonical post-store hashes.
+ *
+ * @param messageHashes - Ordered hashes of the current head messages.
+ * @param messages - The decoded messages matching `messageHashes`.
+ */
 export function createRuntimeCoreContextHelperBundle(
   kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
@@ -98,6 +120,24 @@ export function createRuntimeCoreContextHelperBundle(
   );
 }
 
+/**
+ * Apply a terminal `handoff` resolution by switching the active agent.
+ *
+ * Returns `false` without side effects for non-handoff resolutions. For a
+ * handoff, the context plan is applied through the context-ops host; on
+ * success the loop state's active config, tool registry, and client
+ * endpoint boundary are replaced and carried state updates are cleared, and
+ * the function returns `true` so the loop continues under the new agent.
+ *
+ * If applying the handoff throws and a stable head hash is provided, the
+ * branch head is rolled back to `stableHeadTurnNodeHash` and the handle's
+ * status manifest is restored from the rolled-back head before the error is
+ * rethrown.
+ *
+ * @param stableHeadTurnNodeHash - Branch-head hash to restore on failure;
+ *   when omitted, failures propagate without rollback.
+ * @returns Whether a handoff transition was applied (loop should continue).
+ */
 export async function applyRuntimeCoreTerminalAgentTransitionIfNeeded(
   dependencies: {
     contextOps: RuntimeCoreContextOpsHost;

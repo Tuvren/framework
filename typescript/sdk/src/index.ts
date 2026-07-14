@@ -15,15 +15,28 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package root is the intentional SDK surface.
-// @tuvren/sdk — the host-facing composition tier (ADR-057). It is the single
-// curated surface a host imports alongside `@tuvren/core` and the leaf packages
-// it chose: the batteries-included `createTuvren` composition entrypoint, the
-// curated `@tuvren/core` re-exports a host reaches for, the host-facing
-// kernel-protocol contract types (so a host can type the backend/kernel
-// instances it passes in without importing `@tuvren/kernel-protocol` directly),
-// and the developer helpers (schema authoring, payload codecs) extracted from
-// the behavior-free `@tuvren/core` ABI package. The internal `@tuvren/runtime`
-// engine is not a host-facing surface; hosts never import it directly.
+
+/**
+ * `@tuvren/sdk` — the host-facing composition tier (ADR-057).
+ *
+ * This is the single curated surface a host imports alongside `@tuvren/core`
+ * and the leaf packages it chose. It provides:
+ *
+ * - the batteries-included {@link createTuvren} composition entrypoint,
+ * - the curated `@tuvren/core` re-exports a host reaches for,
+ * - the host-facing kernel-protocol contract types (so a host can type the
+ *   backend/kernel instances it passes in without importing
+ *   `@tuvren/kernel-protocol` directly), and
+ * - the developer helpers (schema authoring, payload codecs) extracted from
+ *   the behavior-free `@tuvren/core` ABI package.
+ *
+ * The internal `@tuvren/runtime` engine is not a host-facing surface; hosts
+ * never import it directly. Hosts that need the low-level factories (custom
+ * kernels, bespoke runner registries, multi-agent orchestration) use the
+ * `@tuvren/sdk/advanced` subpath instead.
+ *
+ * @packageDocumentation
+ */
 
 // ── Curated @tuvren/core re-exports ───────────────────────────────────────────
 export type {

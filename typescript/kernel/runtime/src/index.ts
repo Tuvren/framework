@@ -14,6 +14,20 @@
  * limitations under the License.
  */
 
+/**
+ * Reference in-process implementation of the `RuntimeKernel` syscall surface
+ * (docs/KrakenKernelSpecification.md §7) over a pluggable `RuntimeBackend`
+ * (§8.1), both defined in `@tuvren/kernel-protocol`.
+ *
+ * This package drives the kernel's transactional lineage, lifecycle, and
+ * storage logic (branch head movement, run checkpointing, TurnTree
+ * construction) against any conforming backend via
+ * {@link createRuntimeKernel} — it is the runtime counterpart to the
+ * protocol types and validation guards exported by `@tuvren/kernel-protocol`.
+ *
+ * @packageDocumentation
+ */
+
 export type { RuntimeKernelOptions } from "./lib/runtime-kernel.js";
 // biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export { createRuntimeKernel } from "./lib/runtime-kernel.js";

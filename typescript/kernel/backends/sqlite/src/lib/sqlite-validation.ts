@@ -85,6 +85,7 @@ interface SqliteTableInfoPragmaRow {
   type: string;
 }
 
+/** Reads the applied-migration ledger (`backend_sqlite_migrations`), name-ordered. */
 export function loadAppliedMigrationNames(db: Database.Database): string[] {
   return (
     db
@@ -93,6 +94,17 @@ export function loadAppliedMigrationNames(db: Database.Database): string[] {
   ).map((row) => row.name);
 }
 
+/**
+ * Validates the database's migration posture against the checked-in
+ * migration files: rejects applied migrations this package version does not
+ * recognize, then — for each recognized applied migration — verifies the
+ * tables, columns, foreign keys, and indexes it should have produced,
+ * matching the expected shape for that migration generation (older ledgers
+ * are checked against the pre-migration table definitions, not the newest).
+ *
+ * @throws The injected persistence error with a `sqlite_backend_*` code on
+ *   the first posture mismatch (e.g. `sqlite_backend_unknown_applied_migration`).
+ */
 export function validateMigrationState(
   db: Database.Database,
   persistenceError: SqlitePersistenceErrorFactory
@@ -168,6 +180,14 @@ export function validateMigrationState(
     validateCurrentPackageSchemaShape(db, persistenceError);
   }
 }
+
+// Per-migration validators below come in two flavors, both called from
+// validateMigrationState: `*SchemaPresence` checks only that a migration's
+// own tables/columns/indexes exist (cheap, run for every applied
+// migration), while `*SchemaShape` additionally checks the full expected
+// column/foreign-key/index shape for every table visible at that migration
+// generation (run only once, for the latest applied migration, since older
+// generations are subsumed by later ones' shape checks).
 
 function validateBaselineSchemaPresence(
   db: Database.Database,
@@ -359,6 +379,9 @@ function validateObserveAnnotationsSchemaPresence(
   }
 }
 
+// Unused; retained only as documented dead code pending removal (superseded
+// by validatePreRunLivenessSchemaShape, which this function just forwards
+// to).
 function _validateObserveAnnotationsSchemaShape(
   db: Database.Database,
   persistenceError: SqlitePersistenceErrorFactory
@@ -449,6 +472,13 @@ function validateRunLivenessSchemaShape(
   );
 }
 
+/**
+ * Validates every table and index in `tableDefinitions`/`indexDefinitions`
+ * against the live database schema for one migration generation, via
+ * {@link validateSqliteTableSchema} and {@link validateSqliteIndexSchema}.
+ * Shared by every per-migration-generation shape validator so each one only
+ * needs to supply the table/index definitions for its generation.
+ */
 function validateSqliteSchemaShape(
   db: Database.Database,
   migrationName: string,
@@ -477,6 +507,7 @@ function validateSqliteSchemaShape(
   }
 }
 
+/** Lists `sqlite_master` object names of the given `type`, name-ordered. */
 function loadSqliteMasterNames(
   db: Database.Database,
   type: "index" | "table"
@@ -492,6 +523,14 @@ function loadSqliteMasterNames(
   );
 }
 
+/**
+ * Validates one table's live column shape (via `PRAGMA table_info`) and
+ * foreign keys (via `PRAGMA foreign_key_list`) against `expectedSchema`.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_applied_migration_schema_mismatch` on the first
+ *   mismatch.
+ */
 function validateSqliteTableSchema(
   db: Database.Database,
   migrationName: string,
@@ -546,6 +585,17 @@ function validateSqliteTableSchema(
   }
 }
 
+/**
+ * Validates one index's live definition (via `PRAGMA index_list` and
+ * `PRAGMA index_info`) against `expectedSchema`: every checked-in index must
+ * be a complete (non-partial), user-created (`origin: "c"`) index over
+ * exactly the expected columns in order, with the expected uniqueness.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_applied_migration_index_missing` when the index does
+ *   not exist, or `sqlite_backend_applied_migration_index_mismatch` when its
+ *   definition differs.
+ */
 function validateSqliteIndexSchema(
   db: Database.Database,
   migrationName: string,
@@ -605,6 +655,7 @@ function validateSqliteIndexSchema(
   }
 }
 
+/** Groups `PRAGMA foreign_key_list` rows by foreign key id into one entry per key. */
 function groupForeignKeyRows(
   rows: readonly SqliteForeignKeyPragmaRow[]
 ): ExpectedSqliteForeignKeySchema[] {
@@ -635,6 +686,7 @@ function groupForeignKeyRows(
     });
 }
 
+/** Order-sensitive equality of two expected-column-schema lists. */
 function areExpectedColumnsEqual(
   left: readonly ExpectedSqliteColumnSchema[],
   right: readonly ExpectedSqliteColumnSchema[]
@@ -659,6 +711,7 @@ function areExpectedColumnsEqual(
   return true;
 }
 
+/** Order-insensitive equality of two expected-foreign-key-schema lists. */
 function areExpectedForeignKeysEqual(
   left: readonly ExpectedSqliteForeignKeySchema[],
   right: readonly ExpectedSqliteForeignKeySchema[]
@@ -688,6 +741,7 @@ function areExpectedForeignKeysEqual(
   return true;
 }
 
+/** Deterministic ordering for foreign-key schemas, used to normalize before comparing. */
 function compareExpectedForeignKeys(
   left: ExpectedSqliteForeignKeySchema,
   right: ExpectedSqliteForeignKeySchema
@@ -707,6 +761,7 @@ function compareExpectedForeignKeys(
     );
 }
 
+/** Field-wise equality of two resolved index definitions. */
 function areExpectedIndexDefinitionsEqual(
   left: {
     columns: readonly string[];
@@ -732,6 +787,7 @@ function areExpectedIndexDefinitionsEqual(
   );
 }
 
+/** Order-sensitive equality of two string arrays. */
 function areStringArraysEqual(
   left: readonly string[],
   right: readonly string[]

@@ -35,6 +35,7 @@ import type {
 } from "@tuvren/kernel-protocol";
 import type { BackendState } from "./backend-invariant-state.js";
 
+/** Configuration for {@link createBackendInvariantRecordUtils}. */
 export interface BackendInvariantRecordUtilsConfig {
   /**
    * The backend-owned error-code prefix (e.g. `"memory"`, `"sqlite"`,
@@ -657,6 +658,7 @@ export function createBackendInvariantRecordUtils(
   };
 }
 
+/** Copies a byte array so a caller mutating the result cannot corrupt stored state. */
 export function cloneBytes(bytes: Uint8Array): Uint8Array {
   return Uint8Array.from(bytes);
 }
@@ -689,6 +691,11 @@ export function isExpiredLeaselessRunningRun(
     nowMs - run.updatedAtMs >= leaselessRunExpiryMs
   );
 }
+
+// Equality helpers below compare a stored record's full field set
+// (byte-for-byte for any CBOR payload), letting a backend's
+// ensureImmutableRecordMatch tell a legitimate idempotent rewrite of a
+// content-addressed record apart from a genuine mutation attempt.
 
 export function areStoredObjectsEqual(
   left: StoredObject,
@@ -832,6 +839,10 @@ export function areStoredTurnTreePathsEqual(
   return false;
 }
 
+// Comparator helpers below give every listing endpoint a stable,
+// deterministic order: primarily by `createdAtMs`, falling back to the
+// record's identity key to break ties between same-millisecond writes.
+
 export function compareStoredBranch(
   left: StoredBranch,
   right: StoredBranch
@@ -886,6 +897,7 @@ export function compareStoredStagedResult(
   );
 }
 
+/** Shared ordering: `leftTimestamp`/`rightTimestamp` first, then key. */
 export function compareByTimestampAndKey(
   leftTimestamp: number,
   rightTimestamp: number,
@@ -899,6 +911,7 @@ export function compareByTimestampAndKey(
   return leftKey.localeCompare(rightKey);
 }
 
+/** Byte-for-byte equality of two `Uint8Array`s. */
 export function areBytesEqual(left: Uint8Array, right: Uint8Array): boolean {
   if (left.byteLength !== right.byteLength) {
     return false;

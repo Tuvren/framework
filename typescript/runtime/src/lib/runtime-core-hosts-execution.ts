@@ -27,6 +27,7 @@ import type { RuntimeCoreStatusHost } from "./runtime-core-status.js";
 import type { RuntimeCoreToolResumeHost } from "./runtime-core-tool-resume.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/** Dependency bag adapted into a {@link RuntimeCoreRunnerHost}. */
 interface RunnerHostDependencies {
   completeIterationRun: RuntimeCoreRunnerHost["completeIterationRun"];
   createIterationTree: RuntimeCoreRunnerHost["createIterationTree"];
@@ -50,6 +51,7 @@ interface RunnerHostDependencies {
   stageRuntimeStatus: RuntimeCoreRunnerHost["stageRuntimeStatus"];
 }
 
+/** Dependency bag adapted into a {@link RuntimeCoreToolResumeHost}. */
 interface ToolResumeHostDependencies {
   beginIterationStep(runId: string, stepId: string): Promise<void>;
   completeIterationRun: RuntimeCoreToolResumeHost["completeIterationRun"];
@@ -78,6 +80,7 @@ interface ToolResumeHostDependencies {
   stageRuntimeStatus: RuntimeCoreToolResumeHost["stageRuntimeStatus"];
 }
 
+/** Dependency bag adapted into a {@link RuntimeCoreStatusHost}. */
 interface StatusHostDependencies {
   advanceTurnAndBranchHead(
     handle: RuntimeExecutionHandle,
@@ -124,6 +127,13 @@ interface StatusHostDependencies {
   ): Promise<HashString>;
 }
 
+/**
+ * Assemble a {@link RuntimeCoreRunnerHost} from late-bound dependencies.
+ *
+ * Every member delegates through an arrow closure rather than binding the
+ * dependency function directly, so callers may swap or spy on dependency
+ * members after the host is built.
+ */
 export function buildRuntimeCoreRunnerHost(
   dependencies: RunnerHostDependencies
 ): RuntimeCoreRunnerHost {
@@ -153,6 +163,10 @@ export function buildRuntimeCoreRunnerHost(
   };
 }
 
+/**
+ * Assemble a {@link RuntimeCoreToolResumeHost} from late-bound dependencies,
+ * used by the paused-tool-execution resume path.
+ */
 export function buildRuntimeCoreToolResumeHost(
   dependencies: ToolResumeHostDependencies
 ): RuntimeCoreToolResumeHost {
@@ -184,6 +198,10 @@ export function buildRuntimeCoreToolResumeHost(
   };
 }
 
+/**
+ * Assemble a {@link RuntimeCoreStatusHost} from late-bound dependencies,
+ * used by the durable runtime-status transition helpers.
+ */
 export function buildRuntimeCoreStatusHost(
   dependencies: StatusHostDependencies
 ): RuntimeCoreStatusHost {

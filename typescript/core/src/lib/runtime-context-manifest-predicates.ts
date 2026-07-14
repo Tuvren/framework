@@ -49,6 +49,30 @@ const CONTEXT_MANIFEST_COUNTER_KEYS = new Set([
 ]);
 const CONTEXT_MANIFEST_NAME_COUNTER_KEYS = new Set(["byName", "total"]);
 
+/**
+ * Returns `true` when `value` is a structurally and arithmetically valid
+ * {@link ContextManifest} (KrakenFrameworkSpecification §1.6).
+ *
+ * Beyond the exact key set (`byRole`, `extensions`,
+ * `lastAssistantMessageIndex`, `lastUserMessageIndex`, `messageCount`,
+ * `tokenEstimate`, `toolCalls`, `toolResults`, `turnBoundaries`) and
+ * per-field shape checks, the manifest's internal bookkeeping must be
+ * self-consistent:
+ *
+ * - `byRole` counters sum exactly to `messageCount`.
+ * - Each last-role index is `-1` when that role count is zero; otherwise
+ *   it lies in `[roleCount - 1, messageCount)`.
+ * - `toolCalls.total` and `toolResults.total` each equal the sum of their
+ *   `byName` counters.
+ * - `turnBoundaries` is strictly increasing within `[0, messageCount)`,
+ *   empty exactly when there are no user messages, never longer than the
+ *   user-message count, never colliding with the known last assistant
+ *   index, and its first entry leaves enough index space before the last
+ *   user message to fit all declared user messages. With a single user
+ *   message the sole boundary must be that message's index, and when the
+ *   boundary count equals the user count the final boundary must be the
+ *   last user index.
+ */
 export function isContextManifest(value: unknown): value is ContextManifest {
   const byRole = isPlainObject(value) ? value.byRole : undefined;
   const messageCount = isPlainObject(value) ? value.messageCount : undefined;
@@ -134,6 +158,7 @@ export function isContextManifest(value: unknown): value is ContextManifest {
   return true;
 }
 
+/** True when `value[key]` is `undefined` or a valid {@link ContextManifest}. */
 export function isOptionalContextManifestProperty<
   TKey extends string,
   TObject extends Record<string, unknown>,

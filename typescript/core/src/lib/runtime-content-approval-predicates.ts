@@ -91,6 +91,27 @@ const APPROVAL_DECISION_KEYS = new Set([
   "message",
 ]);
 
+/**
+ * Returns `true` when `value` is a structurally valid {@link ContentPart}
+ * (KrakenFrameworkSpecification §1.1).
+ *
+ * The part must carry a known `type` discriminant (`text`, `reasoning`,
+ * `tool_call`, `tool_result`, `file`, or `structured`) and match that
+ * variant's exact key set:
+ * - `text`: string `text`.
+ * - `reasoning`: string `text` plus boolean `redacted`; a non-redacted
+ *   reasoning part must have non-empty text.
+ * - `tool_call`: non-empty `callId`/`name`, plus a present,
+ *   JSON-serializable `input`.
+ * - `tool_result`: non-empty `callId`/`name`, a present JSON-serializable
+ *   `output`, and optional boolean `isError`.
+ * - `file`: `data` as string or `Uint8Array`, non-empty `mediaType`, and
+ *   optional `filename`.
+ * - `structured`: a present JSON-serializable `data` and optional `name`.
+ *
+ * Every variant additionally allows an optional serializable
+ * `providerMetadata` record.
+ */
 export function isContentPart(value: unknown): value is ContentPart {
   if (
     !(
@@ -157,6 +178,12 @@ export function isContentPart(value: unknown): value is ContentPart {
   }
 }
 
+/**
+ * Returns `true` when `value` is specifically a valid {@link ToolResultPart}
+ * (the `tool_result` variant of {@link isContentPart}): non-empty
+ * `callId`/`name`, a present JSON-serializable `output`, optional boolean
+ * `isError`, and optional serializable `providerMetadata`.
+ */
 export function isToolResultPart(value: unknown): value is ToolResultPart {
   return (
     isPlainObject(value) &&
@@ -171,6 +198,13 @@ export function isToolResultPart(value: unknown): value is ToolResultPart {
   );
 }
 
+/**
+ * Returns `true` when `value` is a valid {@link PendingToolCall} inside an
+ * approval request (KrakenFrameworkSpecification §1.7): non-empty
+ * `callId`, `name`, and human-facing `message` strings, a present
+ * JSON-serializable `input`, and a non-empty `decisions` array of unique,
+ * non-empty decision-type strings the operator may choose from.
+ */
 export function isPendingToolCall(value: unknown): value is PendingToolCall {
   return (
     isPlainObject(value) &&
@@ -187,6 +221,15 @@ export function isPendingToolCall(value: unknown): value is PendingToolCall {
   );
 }
 
+/**
+ * Returns `true` when `value` is a valid {@link ApprovalDecision}
+ * (KrakenFrameworkSpecification §1.7).
+ *
+ * Requires non-empty `callId` and `type` strings and an optional non-empty
+ * `message`, with no unknown keys. The `editedInput` field is coupled to
+ * the decision type: an `edit` decision must carry a JSON-serializable
+ * `editedInput`, and every other decision type must omit it.
+ */
 export function isApprovalDecision(value: unknown): value is ApprovalDecision {
   if (
     !(
@@ -220,6 +263,12 @@ export function isApprovalDecision(value: unknown): value is ApprovalDecision {
   return true;
 }
 
+/**
+ * True when every `callId` is distinct across an approval request's pending
+ * `toolCalls` and already-`completedResults` combined, so each decision and
+ * each completed result maps to exactly one call
+ * (KrakenFrameworkSpecification §1.7).
+ */
 export function hasDistinctApprovalRequestCallIds(
   toolCalls: PendingToolCall[],
   completedResults: ToolResultPart[]

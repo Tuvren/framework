@@ -14,6 +14,30 @@
  * limitations under the License.
  */
 
+/**
+ * Shared conformance/invariant/recovery test suites and fixtures for
+ * `RuntimeBackend` implementations.
+ *
+ * {@link registerBackendConformanceSuite}, {@link registerBackendInvariantSuite},
+ * and {@link registerBackendRecoverySuite} each register a battery of test
+ * cases against a {@link BackendTestSuiteApi} (a thin shim over the calling
+ * package's own test framework), exercising a fresh backend from
+ * {@link BackendFactory} per case. Any `RuntimeBackend` implementation that
+ * passes all three suites upholds the same transactional, referential, and
+ * lineage invariants as the reference (memory) backend.
+ *
+ * {@link createFaultInjectingBackend} wraps a `RuntimeBackend` so its next
+ * matching transaction fails at a chosen {@link FaultPoint} per a
+ * {@link FaultPlan}, for exercising crash-recovery behavior.
+ *
+ * The `create*` and `delay` exports from `kernel-test-fixtures.js` build
+ * canonical `Stored*` records and small deterministic helpers (hash
+ * sequences, incrementing clocks) shared across the suites and available to
+ * package-local tests.
+ *
+ * @packageDocumentation
+ */
+
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export { registerBackendConformanceSuite } from "./lib/backend-conformance-suite.js";
 export { registerBackendInvariantSuite } from "./lib/backend-invariant-suite.js";

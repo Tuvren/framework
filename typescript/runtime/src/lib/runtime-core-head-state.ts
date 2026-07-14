@@ -44,6 +44,19 @@ import {
 import { isRecord } from "./runtime-core-shared.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
+/**
+ * Load the full {@link HeadState} of a branch from the kernel.
+ *
+ * Resolves the branch's head turn node, reads the ordered `messages` path and
+ * the `context.manifest` path from its turn tree, decodes (and decrypts) each
+ * message payload, and falls back to an empty manifest when the tree carries
+ * none.
+ *
+ * @throws TuvrenLineageError when the branch, its head turn node, a manifest,
+ *   or a message record is missing.
+ * @throws TuvrenPersistenceError with code `kernel_payload_erased` when a
+ *   message payload was crypto-shredded and cannot be reconstructed.
+ */
 export async function loadHeadState(
   kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
@@ -88,6 +101,10 @@ export async function loadHeadState(
   };
 }
 
+/**
+ * Read the active agent name from the durable `runtime.status` record of a
+ * turn tree, or `undefined` when no valid status (or agent name) is recorded.
+ */
 export async function readRecoveredActiveAgentName(
   kernel: RuntimeKernel,
   turnTreeHash: HashString
@@ -95,6 +112,15 @@ export async function readRecoveredActiveAgentName(
   return (await readRecoveredRuntimeStatus(kernel, turnTreeHash))?.activeAgent;
 }
 
+/**
+ * Read and validate the durable `runtime.status` record from a turn tree.
+ *
+ * Tolerant by design: a missing path, missing payload, or a record whose
+ * `state` is not one of `completed`/`failed`/`paused`/`running` yields
+ * `undefined` rather than an error, because recovery must cope with turns
+ * that never wrote a status. Optional fields (`activeAgent`, `partial`,
+ * `pauseReason`) are only carried through when they have the expected type.
+ */
 export async function readRecoveredRuntimeStatus(
   kernel: RuntimeKernel,
   turnTreeHash: HashString
@@ -140,6 +166,14 @@ export async function readRecoveredRuntimeStatus(
   };
 }
 
+/**
+ * Resolve the turn-tree schema id an execution should run under.
+ *
+ * An explicit `request.schemaId` wins; otherwise the thread's recorded schema
+ * id is used when the thread exists. Either way the result is passed through
+ * `ensureSchemaId`, which is responsible for defaulting and registering the
+ * schema.
+ */
 export async function resolveExecutionSchemaId(
   kernel: RuntimeKernel,
   ensureSchemaId: (schemaId?: string) => Promise<string>,
@@ -153,6 +187,23 @@ export async function resolveExecutionSchemaId(
   return await ensureSchemaId(thread?.schemaId);
 }
 
+/**
+ * Resolve and validate the parent turn id for a new turn on a branch.
+ *
+ * Precedence: an explicit parent turn id from the request (including an
+ * explicit `null`), then the optional configured resolver, then the branch's
+ * active turn id read from the head turn tree's `turn.lineage` record. The
+ * result is always validated against the branch's actual active turn.
+ *
+ * @param resolveConfiguredParentTurnId - Optional host-configured resolver
+ *   consulted only when the request left the parent turn id `undefined`.
+ * @param explicitParentTurnId - Parent turn id from the request; `null`
+ *   explicitly requests a root turn, `undefined` defers to resolution.
+ * @returns The validated parent turn id, or `null` for a root turn.
+ * @throws TuvrenLineageError with code `invalid_parent_turn` when the
+ *   resolved parent is not the branch's active turn, does not exist, or
+ *   belongs to a different thread.
+ */
 export async function resolveParentTurnId(
   kernel: RuntimeKernel,
   resolveConfiguredParentTurnId:
@@ -178,6 +229,11 @@ export async function resolveParentTurnId(
   return parentTurnId;
 }
 
+/**
+ * Assert that `parentTurnId` matches the branch's active turn, exists in the
+ * kernel, and stays on the expected thread; throws `TuvrenLineageError`
+ * (`invalid_parent_turn`) otherwise.
+ */
 async function assertValidParentTurnId(
   kernel: RuntimeKernel,
   threadId: string,
@@ -336,6 +392,10 @@ async function readBranchHeadState(
   };
 }
 
+/**
+ * Read the branch's active turn id from the `turn.lineage` record on its head
+ * turn tree; `null` when the branch has no lineage yet (no turn created).
+ */
 async function readBranchActiveTurnId(
   kernel: RuntimeKernel,
   branchId: string

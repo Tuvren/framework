@@ -14,6 +14,24 @@
  * limitations under the License.
  */
 
+/**
+ * In-memory reference backend for the Tuvren kernel.
+ *
+ * {@link createMemoryBackend} builds a `RuntimeBackend` that keeps all durable
+ * state in process memory. It is the reference implementation the SQLite and
+ * PostgreSQL backends are held against: every transaction runs against a
+ * copy-on-write clone of the committed state, is validated against the full
+ * committed-state invariant suite, and is swapped in atomically, so partial
+ * writes are never observable.
+ *
+ * {@link createMemoryScopeStore} builds the shared scope-keyed substrate
+ * (ADR-049): passing one store to several `createMemoryBackend` calls lets
+ * backends bound to the same Scope share durable state while distinct Scopes
+ * stay isolated by construction.
+ *
+ * @packageDocumentation
+ */
+
 export type { MemoryBackendOptions } from "./lib/memory-backend.js";
 // biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export { createMemoryBackend } from "./lib/memory-backend.js";

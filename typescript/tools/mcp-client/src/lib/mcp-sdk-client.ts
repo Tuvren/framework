@@ -21,12 +21,21 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { TuvrenProviderError } from "@tuvren/core/errors";
 import type { McpTransportConfig } from "./mcp-tool-source.js";
 
+/** One tool entry as advertised by the official MCP SDK's `listTools`. */
 export type McpSdkTool = Awaited<
   ReturnType<Client["listTools"]>
 >["tools"][number];
+/** The raw paginated result of the official MCP SDK's `listTools`. */
 type McpSdkListToolsResult = Awaited<ReturnType<Client["listTools"]>>;
+/** The raw result of the official MCP SDK's `callTool`. */
 export type McpSdkToolResult = Awaited<ReturnType<Client["callTool"]>>;
 
+/**
+ * The minimal MCP transport-and-protocol surface `mcp-tool-source.ts`
+ * depends on. Implemented by {@link createSdkMcpClient}'s
+ * {@link SdkMcpClient} in production, and by fakes in tests (see
+ * `McpToolSourcePrivateOptions.client`).
+ */
 export interface MCPClient {
   close(): Promise<void>;
   initialize(): Promise<{ serverName: string }>;
@@ -34,15 +43,22 @@ export interface MCPClient {
   listTools(): Promise<McpSdkTool[]>;
 }
 
+/** Client identity reported to MCP servers during connection handshake. */
 const CLIENT_INFO = {
   name: "tuvren-mcp-client",
   version: "0.0.0",
 };
 
+/** Builds the production {@link MCPClient}, backed by the official `@modelcontextprotocol/sdk` `Client`. */
 export function createSdkMcpClient(config: McpTransportConfig): MCPClient {
   return new SdkMcpClient(config);
 }
 
+/**
+ * {@link MCPClient} implementation over the official
+ * `@modelcontextprotocol/sdk` `Client`, connected via
+ * {@link createTransport}'s stdio or Streamable HTTP transport.
+ */
 class SdkMcpClient implements MCPClient {
   private readonly client = new Client(CLIENT_INFO, {
     capabilities: {},
@@ -54,6 +70,13 @@ class SdkMcpClient implements MCPClient {
     this.config = config;
   }
 
+  /**
+   * Creates and connects the transport, returning the server's advertised
+   * name (or `"mcp-server"` when it does not report one).
+   *
+   * @throws TuvrenProviderError with code `mcp_initialize_failed` when the
+   *   transport connection fails.
+   */
   async initialize(): Promise<{ serverName: string }> {
     try {
       this.transport = createTransport(this.config);
@@ -70,6 +93,13 @@ class SdkMcpClient implements MCPClient {
     }
   }
 
+  /**
+   * Lists all of the server's tools, following `nextCursor` pagination until
+   * exhausted.
+   *
+   * @throws TuvrenProviderError with code `mcp_tool_list_failed` when
+   *   listing fails.
+   */
   async listTools(): Promise<McpSdkTool[]> {
     try {
       const tools: McpSdkTool[] = [];
@@ -93,6 +123,13 @@ class SdkMcpClient implements MCPClient {
     }
   }
 
+  /**
+   * Invokes one named tool with `input` normalized via
+   * {@link normalizeToolArguments}.
+   *
+   * @throws TuvrenProviderError with code `mcp_transport_failure` when the
+   *   call fails.
+   */
   async invokeTool(name: string, input: unknown): Promise<McpSdkToolResult> {
     try {
       return await this.client.callTool({
@@ -109,11 +146,20 @@ class SdkMcpClient implements MCPClient {
     }
   }
 
+  /** Closes the underlying transport. */
   async close(): Promise<void> {
     await this.client.close();
   }
 }
 
+/**
+ * Builds the MCP SDK transport for a connection config: `StdioClientTransport`
+ * for `stdio`, `StreamableHTTPClientTransport` (with auth/extra headers via
+ * {@link createHttpHeaders}) for `http-sse`.
+ *
+ * @throws TuvrenProviderError with code `mcp_connection_failed` for an
+ *   unrecognized transport kind.
+ */
 function createTransport(config: McpTransportConfig): Transport {
   switch (config.transport) {
     case "stdio":
@@ -140,6 +186,13 @@ function createTransport(config: McpTransportConfig): Transport {
   }
 }
 
+/**
+ * Merges the transport's plain `headers` with its `auth` credential
+ * (bearer becomes an `Authorization` header; header-auth sets the named
+ * header directly). This is the one place `McpAuth` material is turned into
+ * wire-format request headers, confined to the transport edge (README
+ * "Secret Isolation — Edge Confinement", ADR-044).
+ */
 function createHttpHeaders(
   config: Extract<McpTransportConfig, { transport: "http-sse" }>
 ): Record<string, string> {
@@ -160,6 +213,11 @@ function createHttpHeaders(
   return headers;
 }
 
+/**
+ * Coerces a tool's execution input into the plain-object shape the MCP SDK's
+ * `callTool` requires: `undefined`/`null` becomes `{}`, an existing record
+ * passes through, and any other value is wrapped as `{ value: input }`.
+ */
 function normalizeToolArguments(input: unknown): Record<string, unknown> {
   if (input === undefined || input === null) {
     return {};
@@ -172,6 +230,11 @@ function normalizeToolArguments(input: unknown): Record<string, unknown> {
   return { value: input };
 }
 
+/**
+ * Builds a `TuvrenProviderError` for an MCP failure; an existing
+ * `TuvrenProviderError` `cause` passes through unchanged (its original code
+ * and message win) instead of being double-wrapped.
+ */
 export function createProviderError(
   code: string,
   message: string,
@@ -189,6 +252,7 @@ export function createProviderError(
   });
 }
 
+/** True when a value is a non-null object (loose record predicate). */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }

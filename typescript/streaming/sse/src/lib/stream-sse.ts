@@ -28,13 +28,32 @@ const SSE_RESPONSE_HEADERS = {
 } as const;
 const SSE_NEWLINE_PATTERN = /\r?\n/u;
 
+/** One SSE frame ready for wire formatting; `data` is the JSON-serialized `TuvrenStreamEvent`. */
 export interface TuvrenSseFrame {
   data: string;
+  /** SSE `event:` field; set to the source event's `type`. */
   event?: string;
   id?: string;
   retry?: number;
 }
 
+/**
+ * Maps a `TuvrenStreamEvent` stream to {@link TuvrenSseFrame}s, one frame per
+ * event, with `event` set to the event's `type` and `data` its JSON
+ * serialization (via `serializeTuvrenStreamEvent`, which encodes any
+ * `Uint8Array` payload as a JSON marker object).
+ *
+ * A `file.done` event carrying binary (`Uint8Array`) `data` triggers a
+ * `sse_binary_payload_json_encoded` warning through `options.onWarning`,
+ * since SSE has no native binary framing and the payload is JSON-encoded
+ * instead.
+ *
+ * The source iterator is claimed synchronously (before any `await`) so that,
+ * when `events` is a `teeTuvrenStreamEvents` branch, this adapter satisfies
+ * the tee's claim-before-first-pull rule immediately upon being called,
+ * regardless of when its returned iterable is actually first iterated —
+ * letting sibling branches still subscribe afterward.
+ */
 export function toSseFrames(
   events: AsyncIterable<TuvrenStreamEvent>,
   options?: StreamAdapterOptions
@@ -72,6 +91,22 @@ async function* toSseFramesSubscribed(
   }
 }
 
+/**
+ * Wraps {@link toSseFrames} in a streaming `Response` with EventSource-compatible
+ * headers (`content-type: text/event-stream; charset=utf-8`,
+ * `cache-control: no-cache, no-transform`, `connection: keep-alive`).
+ *
+ * Frames are pulled and encoded to bytes lazily, one per `ReadableStream`
+ * `pull()`; consumer cancellation (`body.cancel()`) calls the underlying
+ * frame iterator's `return()` so upstream resources (including a tee branch)
+ * are released promptly. A pull-time error is surfaced via
+ * `controller.error()` rather than throwing synchronously.
+ *
+ * @param options - Combines {@link StreamAdapterOptions} (forwarded to
+ *   {@link toSseFrames}) with a standard `ResponseInit`; caller-supplied
+ *   headers are merged in but `content-type` is always forced back to the
+ *   SSE value (see {@link mergeSseHeaders}).
+ */
 export function toSseResponse(
   events: AsyncIterable<TuvrenStreamEvent>,
   options?: StreamAdapterOptions & ResponseInit
@@ -105,6 +140,12 @@ export function toSseResponse(
   });
 }
 
+/**
+ * Formats a {@link TuvrenSseFrame} as wire-ready SSE text: one `field: value`
+ * line per set optional field, `data:` split across one line per line of
+ * payload (matching the WHATWG multi-line `data` convention), terminated by
+ * the blank line that dispatches the event.
+ */
 function formatSseFrame(frame: TuvrenSseFrame): string {
   const lines: string[] = [];
 
@@ -133,6 +174,11 @@ function formatSseFrame(frame: TuvrenSseFrame): string {
   return `${lines.join("\n")}\n\n`;
 }
 
+/**
+ * Merges caller-supplied headers onto the canonical SSE header set, then
+ * re-forces `content-type` to the SSE value — callers may tune cache or
+ * transfer headers, but this helper must always remain EventSource-compatible.
+ */
 function mergeSseHeaders(headersInit: HeadersInit | undefined): Headers {
   const headers = new Headers(SSE_RESPONSE_HEADERS);
 
@@ -152,10 +198,12 @@ function mergeSseHeaders(headersInit: HeadersInit | undefined): Headers {
   return headers;
 }
 
+/** Replaces embedded line breaks in an `event`/`id` field value with spaces, since SSE fields are single-line. */
 function sanitizeSseField(value: string): string {
   return value.replaceAll(/\r?\n/gu, " ");
 }
 
+/** Wraps an already-obtained iterator as a single-use `AsyncIterable` that always returns the same iterator. */
 function createIteratorIterable<T>(
   iterator: AsyncIterator<T>
 ): AsyncIterable<T> {

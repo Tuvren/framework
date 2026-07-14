@@ -30,6 +30,11 @@ import { persistenceError } from "./sqlite-errors.js";
 import { type BackendState, decodeHashStringArray } from "./sqlite-records.js";
 import { ensureTurnNodeExists } from "./sqlite-state-utils.js";
 
+/**
+ * How two turn nodes relate along `previousTurnNodeHash` ancestry: `same`
+ * (identical), `forward` (target descends from source), `backward` (source
+ * descends from target), or `lateral` (neither lineage contains the other).
+ */
 export type TurnNodeRelationship = "backward" | "forward" | "lateral" | "same";
 
 // This module is a thin delegate to the shared kernel-backend invariant core
@@ -58,6 +63,13 @@ export const {
   assertImmutableOptionalField,
 } = recordUtils;
 
+/**
+ * Asserts that a run's start turn node lies within its turn's span: at or
+ * after the turn's start node and at or before the turn's head node on the
+ * same lineage.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_run_turn_span_mismatch`.
+ */
 export function assertRunStartTurnNodeWithinTurnSpan(
   state: BackendState,
   turn: StoredTurn,
@@ -107,6 +119,14 @@ export function assertRunStartTurnNodeWithinTurnSpan(
   }
 }
 
+/**
+ * Asserts that a turn node recorded in a run's `createdTurnNodesCbor` lineage
+ * lies within the run's turn span (between the turn's start node and head
+ * node, inclusive).
+ *
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_run_created_turn_node_outside_turn_span`.
+ */
 export function assertRunCreatedTurnNodeWithinTurnSpan(
   state: BackendState,
   turn: StoredTurn,
@@ -156,6 +176,15 @@ export function assertRunCreatedTurnNodeWithinTurnSpan(
   }
 }
 
+/**
+ * Asserts that a run's `createdTurnNodesCbor` decodes to a canonical lineage:
+ * unique hashes forming a contiguous `previousTurnNodeHash` chain that starts
+ * immediately after the run's start turn node.
+ *
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_run_created_turn_nodes_duplicate` or
+ *   `sqlite_backend_run_created_turn_nodes_not_contiguous`.
+ */
 export function assertRunCreatedTurnNodesAreCanonical(
   state: BackendState,
   run: StoredRun
@@ -205,6 +234,15 @@ export function assertRunCreatedTurnNodesAreCanonical(
   }
 }
 
+/**
+ * Asserts that an active (running/paused) run's active turn node — the last
+ * created node, or the start node when none exist — is simultaneously the
+ * branch head and the turn head.
+ *
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_active_run_branch_head_mismatch` or
+ *   `sqlite_backend_active_run_turn_head_mismatch`.
+ */
 export function assertActiveRunHeadAlignment(
   run: StoredRun,
   branch: StoredBranch,
@@ -241,6 +279,13 @@ export function assertActiveRunHeadAlignment(
   }
 }
 
+/**
+ * Classifies the lineage relationship from `sourceTurnNodeHash` to
+ * `targetTurnNodeHash` over the loaded state projection.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_cyclic_turn_node_lineage`
+ *   when either ancestry walk encounters a cycle.
+ */
 export function classifyTurnNodeRelationship(
   state: BackendState,
   sourceTurnNodeHash: string,
@@ -296,6 +341,10 @@ function isTurnNodeDescendantOf(
   return false;
 }
 
+/**
+ * Decodes a run's `createdTurnNodesCbor` into its ordered, append-only list
+ * of created turn node hashes.
+ */
 export function decodeRunCreatedTurnNodeHashes(run: StoredRun): string[] {
   return decodeHashStringArray(
     run.createdTurnNodesCbor,
@@ -303,11 +352,24 @@ export function decodeRunCreatedTurnNodeHashes(run: StoredRun): string[] {
   );
 }
 
+/**
+ * A run's active turn node: the most recently created node in its
+ * `createdTurnNodesCbor` lineage, or its start turn node when the run has
+ * not created any nodes yet.
+ */
 export function getRunActiveTurnNodeHash(run: StoredRun): string {
   const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
   return createdTurnNodeHashes.at(-1) ?? run.startTurnNodeHash;
 }
 
+/**
+ * Decodes a turn node's `consumedStagedResultsCbor` and extracts the
+ * validated `objectHash` of every staged result the node consumed.
+ *
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_invalid_consumed_staged_results_cbor` or
+ *   `sqlite_backend_invalid_consumed_staged_result_entry`.
+ */
 export function decodeTurnNodeConsumedStagedResultObjectHashes(
   turnNode: StoredTurnNode
 ): string[] {
@@ -363,6 +425,7 @@ export function decodeTurnNodeConsumedStagedResultObjectHashes(
   return objectHashes;
 }
 
+/** Asserts the value is a well-formed hash string and returns it. */
 export function validateHashString(hash: string): string {
   assertHashString(hash, "hash");
   return hash;

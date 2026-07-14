@@ -31,6 +31,17 @@ import {
 } from "./sqlite-run-invariants.js";
 import { resolveStoredTurnTreePathValue } from "./sqlite-state-validation.js";
 
+/**
+ * Runs the shared §9.4 reachability reclamation sweep over a loaded state
+ * projection, mutating it in place, with the SQLite backend's own CBOR
+ * lineage decoders injected. `nowMs` only affects whether an expired
+ * leaseless running run stops pinning the grace horizon; reachability is
+ * clock-independent. The caller diffs the swept projection against the
+ * pre-sweep keys to mirror the deletions into the database.
+ *
+ * @returns Counts of released and retained records.
+ * @see `reclaimBackendState` in `@tuvren/backend-shared` for the algorithm.
+ */
 export function reclaimBackendState(
   state: BackendState,
   nowMs: EpochMs

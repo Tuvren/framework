@@ -45,31 +45,78 @@ import {
 } from "./runtime-core-recovery.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Immutable snapshot of a branch head as loaded from the kernel.
+ *
+ * A `HeadState` is (re)loaded at iteration boundaries and after any operation
+ * that advances the branch head (input incorporation, context engineering,
+ * extension-state commits), so the loop always iterates against durable state.
+ */
 export interface HeadState {
+  /** Hash of the branch-head turn node this snapshot was resolved from. */
   branchHeadHash: HashString;
+  /** Context manifest resolved from the head turn tree. */
   manifest: ContextManifest;
+  /** Ordered hashes of the decoded {@link HeadState.messages}. */
   messageHashes: HashString[];
+  /** Decoded conversation messages at the branch head, in order. */
   messages: TuvrenMessage[];
+  /** The turn node record at the branch head. */
   turnNode: TurnNode;
 }
 
+/**
+ * Mutable per-turn execution state threaded through the loop.
+ *
+ * Unlike {@link HeadState}, which is a durable kernel snapshot, `LoopState`
+ * holds the in-memory active-agent configuration and carried side-band data.
+ * Agent handoffs replace {@link LoopState.activeConfig},
+ * {@link LoopState.activeToolRegistry}, and
+ * {@link LoopState.clientEndpointBoundary} in place.
+ */
 export interface LoopState {
+  /** Configuration of the currently active agent. */
   activeConfig: AgentConfig;
+  /** Identifier of the runner materialized for the active agent. */
   activeRunnerId: string;
+  /** Tool registry the active agent executes against. */
   activeToolRegistry: ToolRegistry;
+  /**
+   * Extension state updates accumulated since the last durable commit; they
+   * are flushed into the context manifest by the state-commit path and the
+   * array is reset after each commit.
+   */
   carriedStateUpdates: ExtensionStateUpdate[];
   /** Boundary for tuvren-client execution class dispatch. (KRT-AZ001) */
   clientEndpointBoundary?: import("@tuvren/core/capabilities").ClientEndpointBoundary;
+  /** True once the turn has entered at least one loop iteration. */
   enteredIterationLoop: boolean;
   /** Cached rate limiter for the active agent's server execution class. (AX003) */
   serverExecutionRateLimiter?: import("./server-rate-limiter.js").ServerRateLimiter;
 }
 
+/**
+ * Result of preparing an iteration before runner execution.
+ *
+ * Exactly one of the fields is populated: {@link headState} when the
+ * iteration may proceed, or {@link resolution} when a before-iteration hook
+ * short-circuited the turn with a terminal resolution.
+ */
 export interface IterationPreparationResult {
+  /** Fresh branch-head snapshot the iteration should execute against. */
   headState?: HeadState;
+  /** Terminal resolution produced by a before-iteration hook, if any. */
   resolution?: RuntimeResolution;
 }
 
+/**
+ * Host seam providing every capability {@link runExecutionLoop} needs.
+ *
+ * The loop itself is pure control flow; all durable effects (state commits,
+ * event publication, iteration execution, bounds accounting) are delegated
+ * through this interface so the loop can be composed by the runtime facade
+ * and exercised in isolation.
+ */
 export interface RuntimeCoreLoopHost {
   applyContextEngineeringPlan(
     handle: RuntimeExecutionHandle,
@@ -130,6 +177,43 @@ export interface RuntimeCoreLoopHost {
   recordBoundsToolCalls(handle: RuntimeExecutionHandle, count: number): number;
 }
 
+/**
+ * Run the turn's iteration loop until a terminal {@link LoopOutcome} is
+ * produced.
+ *
+ * Each pass through the loop enforces the framework execution bounds before
+ * anything else (ADR-043, BD006), in this order:
+ *
+ * 1. Wall-clock deadline (`maxWallClockMs`) — a deterministic backstop for
+ *    the out-of-band abort timer; exceeding it fails the turn hard.
+ * 2. Framework `maxIterations` hard stop — clamps
+ *    `AgentConfig.maxIterations` from above and fails the turn hard.
+ * 3. The agent's own `maxIterations` — a graceful cap that ends the turn
+ *    with an `end_turn` resolution instead of failing it.
+ * 4. Cumulative `maxToolCalls`, evaluated AFTER each tool batch completes
+ *    (ADR-043/§4.12): a single over-cap batch runs to completion and the cap
+ *    stops the next batch.
+ *
+ * Cancellation is checkpointed at iteration entry, after the iteration
+ * phase, before continuing, and before returning a terminal outcome, so an
+ * abort observed at any checkpoint converts into a hard-fail outcome.
+ *
+ * Per iteration the loop incorporates queued steering, runs before-iteration
+ * extension hooks and context policy via {@link prepareIterationState}, then
+ * delegates the model/tool work to `host.executeIterationPhase`. Pause
+ * resolutions must carry a durable pause checkpoint; terminal `handoff`
+ * resolutions may swap the active agent and continue the loop.
+ *
+ * @param host - Capability seam for durable effects and iteration execution.
+ * @param handle - Execution handle carrying status, abort signal, and request.
+ * @param schemaId - Kernel tree schema identifier for staged state.
+ * @param loopState - Mutable per-turn state; updated in place.
+ * @param now - Clock used for bounds checks and event timestamps.
+ * @returns The terminal outcome of the turn (resolution, optional pause
+ *   context, and partial-output flag).
+ * @throws TuvrenRuntimeError with code `missing_pause_checkpoint` when a
+ *   pause resolution arrives without a committed pause checkpoint.
+ */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The execution loop is intentionally kept as a single checkpointed control-flow path for cancellation and iteration semantics.
 export async function runExecutionLoop(
   host: RuntimeCoreLoopHost,
@@ -271,6 +355,7 @@ export async function runExecutionLoop(
   }
 }
 
+/** Build the hard-fail outcome for an exceeded execution bound. (BD006) */
 function boundsFailLoopOutcome(
   bound: ExecutionBoundKind,
   limit: number,
@@ -285,6 +370,10 @@ function boundsFailLoopOutcome(
   };
 }
 
+/**
+ * Mark the handle as running for the next iteration and publish the
+ * `iteration.start` stream event.
+ */
 function beginIteration(
   host: RuntimeCoreLoopHost,
   handle: RuntimeExecutionHandle,
@@ -310,6 +399,7 @@ function beginIteration(
   );
 }
 
+/** Publish the `iteration.end` stream event for the finished iteration. */
 function publishIterationEnd(
   host: RuntimeCoreLoopHost,
   handle: RuntimeExecutionHandle,
@@ -328,6 +418,15 @@ function publishIterationEnd(
   );
 }
 
+/**
+ * Prepare durable state for one iteration before runner execution.
+ *
+ * Loads the branch head, runs before-iteration extension hooks, and applies
+ * any context-engineering plan the hooks or the agent's context policy
+ * produced (reloading head state after each application). Soft-fail hook
+ * resolutions are downgraded to projected errors; any other hook resolution
+ * commits carried extension state and short-circuits the iteration.
+ */
 async function prepareIterationState(
   host: RuntimeCoreLoopHost,
   handle: RuntimeExecutionHandle,
@@ -413,6 +512,14 @@ async function prepareIterationState(
   };
 }
 
+/**
+ * Convert an executed iteration's resolution into the loop's next action.
+ *
+ * `continue_iteration` and soft failures continue the loop; a pause builds a
+ * resumable {@link LoopOutcome} with pause context (and requires a durable
+ * pause checkpoint); a terminal `handoff` that swaps the active agent also
+ * continues; anything else terminates the turn.
+ */
 async function resolveIterationOutcome(
   host: RuntimeCoreLoopHost,
   handle: RuntimeExecutionHandle,

@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
+/**
+ * @packageDocumentation
+ *
+ * `@tuvren/framework-testkit` provides shared, implementation-agnostic test
+ * helpers for exercising `TuvrenStreamEvent` streams and protocol adapters
+ * across the framework packages: stream fixture loading and synthesis,
+ * event/frame-sequence assertions, async stream capture, and an in-memory
+ * `TuvrenTelemetrySink` capture for asserting on emitted telemetry.
+ */
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional testkit surface.
 export type {
   AsyncCapture,

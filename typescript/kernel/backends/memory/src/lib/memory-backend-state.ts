@@ -40,6 +40,7 @@ import {
 import { assertTurnTreeManifestMatchesStoredPaths } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
 
+/** Creates an empty Scope partition with every record family initialized. */
 export function createEmptyState(): BackendState {
   return {
     branches: new Map(),
@@ -57,6 +58,20 @@ export function createEmptyState(): BackendState {
   };
 }
 
+/**
+ * Validates the full committed-state invariant suite over a draft state
+ * before it may be published: thread roots are unique genesis nodes, branch
+ * heads and archives are lineage-legal, turn nodes/turns/runs are
+ * referentially and schema-consistent, turn-tree manifests match their stored
+ * paths, and observe annotations never dangle.
+ *
+ * @param state - The draft (post-transaction) state to validate.
+ * @param baseState - The committed state the transaction started from; used
+ *   for cross-transaction invariants such as backward branch moves requiring
+ *   an archive branch created in the same transaction.
+ * @throws TuvrenPersistenceError with a `memory_backend_*` code on the first
+ *   violated invariant; the caller must then discard the draft.
+ */
 export function validateCommittedState(
   state: BackendState,
   baseState: BackendState

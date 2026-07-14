@@ -74,6 +74,7 @@ const SNAPSHOTS_PRIMARY_KEY_NAME = "backend_postgres_snapshots_pkey";
 const SNAPSHOT_ROW_ID = 1;
 const VALID_SCHEMA_NAME_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
+/** Connection and partition options for the PostgreSQL backend's persistence layer. */
 export interface PostgresBackendPersistenceOptions {
   connectionString?: string;
   database?: string;
@@ -103,6 +104,12 @@ interface PersistedSnapshotRow {
   snapshot_cbor: Uint8Array;
 }
 
+/**
+ * Creates a `postgres` client configured for single-connection,
+ * non-prepared-statement use (`max: 1`, `prepare: false`), matching the
+ * backend's single-writer transaction model. Prefers `options.connectionString`
+ * when set, otherwise builds the connection from the discrete fields.
+ */
 export function createPostgresClient(
   options: PostgresBackendPersistenceOptions
 ): Sql {
@@ -126,6 +133,14 @@ export function createPostgresClient(
   return postgres(configuration);
 }
 
+/**
+ * Defaults an unset schema name to `"public"` and validates it against
+ * {@link VALID_SCHEMA_NAME_PATTERN} so it is safe to interpolate into
+ * unparameterized DDL identifiers.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_invalid_schema_name` when
+ *   the name does not match the pattern.
+ */
 export function normalizeSchemaName(schemaName: string | undefined): string {
   const normalized = schemaName ?? "public";
 
@@ -140,6 +155,15 @@ export function normalizeSchemaName(schemaName: string | undefined): string {
   return normalized;
 }
 
+/**
+ * Idempotently provisions a Scope's PostgreSQL storage: creates the schema
+ * and its migrations/snapshots tables if absent, migrates a pre-scope
+ * snapshots table to the row-level-isolation shape (ADR-049), records the
+ * migration ledger, and lazily creates this Scope's snapshot row (seeded
+ * with an empty state if this is the Scope's first use). Concurrent callers
+ * provisioning the same schema are serialized via a transaction-scoped
+ * PostgreSQL advisory lock keyed on the schema name.
+ */
 export async function ensurePostgresSchemaInitialized(
   sql: Sql,
   schemaName: string,
@@ -263,6 +287,16 @@ async function migrateSnapshotsToScopePartition(
   );
 }
 
+/**
+ * Loads and decodes a Scope's persisted `BackendState` snapshot, locking its
+ * row with `FOR UPDATE` so the caller can safely mutate a draft and write it
+ * back with {@link persistStateSnapshot} inside the same transaction.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_missing_snapshot_row` when
+ *   the Scope has no snapshot row (e.g. reused after {@link deletePersistedStateSnapshot}),
+ *   or `postgres_backend_snapshot_version_unsupported` when the row's schema
+ *   version predates what this package version can decode.
+ */
 export async function loadPersistedStateForUpdate(
   sql: Sql | TransactionSql<Record<string, never>>,
   schemaName: string,
@@ -303,6 +337,11 @@ export async function loadPersistedStateForUpdate(
   return decodeSnapshot(row.snapshot_cbor);
 }
 
+/**
+ * Encodes `state` as deterministic CBOR and overwrites the Scope's snapshot
+ * row with it, stamping `updatedAtMs`. Callers must hold the row lock from a
+ * prior {@link loadPersistedStateForUpdate} in the same transaction.
+ */
 export async function persistStateSnapshot(
   sql: Sql | TransactionSql<Record<string, never>>,
   schemaName: string,
@@ -358,6 +397,12 @@ export async function deletePersistedStateSnapshot(
   );
 }
 
+/**
+ * Projects a `BackendState` into the snapshot wire format: every record
+ * family flattened to a deterministically sorted array (so the encoding is
+ * stable regardless of `Map` iteration order) and CBOR-encoded alongside the
+ * schema version.
+ */
 function encodeSnapshot(state: BackendState): Uint8Array {
   const snapshot = {
     branches: Array.from(state.branches.values(), cloneStoredBranch).sort(
@@ -412,6 +457,17 @@ function encodeSnapshot(state: BackendState): Uint8Array {
   );
 }
 
+/**
+ * Decodes the snapshot wire format back into a `BackendState`, re-validating
+ * every record with the kernel-protocol `assertStored*` guards as it is
+ * inserted (schema records first, since turn trees and turn tree paths need
+ * their schema to validate) and checking the payload's schema version.
+ *
+ * @throws TuvrenPersistenceError with code `postgres_backend_snapshot_payload_invalid`
+ *   when the payload or a field's shape is malformed, or
+ *   `postgres_backend_snapshot_payload_version_unsupported` when the
+ *   embedded version does not match {@link CURRENT_SNAPSHOT_VERSION}.
+ */
 function decodeSnapshot(value: Uint8Array): BackendState {
   const decoded = decodeDeterministicKernelRecord(toUint8Array(value));
   const snapshot = readSnapshotRecord(decoded);
@@ -560,6 +616,13 @@ function decodeSnapshot(value: Uint8Array): BackendState {
   return state;
 }
 
+// Snapshot-decoding helpers below validate the raw decoded CBOR value's
+// shape before `decodeSnapshot` hands it to the kernel-protocol `assertStored*`
+// guards, so a malformed snapshot payload fails with a clear
+// `postgres_backend_snapshot_payload_invalid` error instead of a confusing
+// downstream type error.
+
+/** Asserts the decoded snapshot root is a plain object. */
 function readSnapshotRecord(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw persistenceError(
@@ -571,6 +634,7 @@ function readSnapshotRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+/** Asserts a snapshot field is an array and validates every element with `assertRecord`. */
 function readSnapshotArray<T>(
   value: unknown,
   assertRecord: (value: unknown, label: string) => asserts value is T,
@@ -590,6 +654,11 @@ function readSnapshotArray<T>(
   });
 }
 
+/**
+ * Asserts a snapshot field is an array without validating element shape —
+ * used where the element type still needs its schema resolved (turn trees,
+ * turn tree paths) before it can be asserted.
+ */
 function readUntypedSnapshotArray(value: unknown, label: string): unknown[] {
   if (!Array.isArray(value)) {
     throw persistenceError(
@@ -602,6 +671,7 @@ function readUntypedSnapshotArray(value: unknown, label: string): unknown[] {
   return value;
 }
 
+/** Asserts the decoded snapshot's `version` field is a safe integer. */
 function readSnapshotVersion(value: unknown): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value)) {
     throw persistenceError(
@@ -614,17 +684,23 @@ function readSnapshotVersion(value: unknown): number {
   return value;
 }
 
+/** Double-quotes and escapes a PostgreSQL identifier for safe interpolation. */
 function quoteIdentifier(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
 }
 
+/** Builds a `"schema"."table"` qualified, quoted identifier. */
 function qualifyIdentifier(schemaName: string, tableName: string): string {
   return `${quoteIdentifier(schemaName)}.${quoteIdentifier(tableName)}`;
 }
 
+/** Copies a possibly-driver-specific byte buffer into a plain `Uint8Array`. */
 function toUint8Array(value: Uint8Array): Uint8Array {
   return new Uint8Array(value);
 }
+
+// Comparators below give the encoded snapshot a deterministic element order
+// per record family, by identity key, independent of `Map` iteration order.
 
 function compareStoredObject(left: StoredObject, right: StoredObject): number {
   return left.hash.localeCompare(right.hash);

@@ -40,9 +40,19 @@ import {
 } from "./memory-backend-record-utils.js";
 import type { BackendState } from "./memory-backend-types.js";
 
+/**
+ * Ordered paths with at most this many items stay inline (`flat` encoding);
+ * crossing it promotes the path to `chunked` encoding.
+ */
 const ORDERED_PATH_CHUNK_THRESHOLD = 32;
+/** Fixed item capacity of every non-final ordered path chunk. */
 export const ORDERED_PATH_CHUNK_SIZE = 32;
 
+/**
+ * Lists a thread's turns in deterministic order (`createdAtMs`, then
+ * `turnId`), optionally excluding one turn — used when validating a turn's
+ * parent link against its predecessors.
+ */
 export function listTurnsByThread(
   state: BackendState,
   threadId: string,
@@ -69,6 +79,14 @@ export function listTurnsByThread(
   return turns;
 }
 
+/**
+ * Shallow-clones a loaded snapshot's top-level maps (and their nested maps
+ * for `observeAnnotations`/`stagedResults`/`turnTreePaths`) for a
+ * copy-on-write transaction draft: inserts/deletes in the draft never touch
+ * the loaded snapshot, but the stored records themselves are shared because
+ * every write path replaces records via clone-on-write rather than mutating
+ * them in place.
+ */
 export function cloneState(state: BackendState): BackendState {
   return {
     branches: new Map(state.branches),
@@ -101,6 +119,22 @@ export function cloneState(state: BackendState): BackendState {
   };
 }
 
+/**
+ * Normalizes an incoming turn-tree path record to its canonical stored
+ * encoding: `single` paths and small ordered paths pass through unchanged; a
+ * flat ordered path above the promotion threshold is rewritten to `chunked`
+ * encoding, materializing (or reusing) content-addressed ordered-path chunk
+ * records; an already-chunked path has its chunk layout and cardinality
+ * verified against the stored chunks.
+ *
+ * @param now - Clock used to stamp `createdAtMs` on newly materialized
+ *   chunks; an existing chunk keeps its original timestamp.
+ * @returns A record safe to store (always a clone or a freshly built value).
+ * @throws TuvrenPersistenceError
+ *   `postgres_backend_chunked_turn_tree_path_below_threshold` or
+ *   `postgres_backend_chunked_turn_tree_path_count_mismatch`, plus
+ *   chunk-layout errors from {@link assertChunkedTurnTreePathChunkLayout}.
+ */
 export async function normalizeStoredTurnTreePath(
   state: BackendState,
   record: StoredTurnTreePath,
@@ -204,6 +238,7 @@ export async function normalizeStoredTurnTreePath(
   };
 }
 
+/** Loads and decodes the turn-tree schema stored under `schemaId`. */
 export function getSchemaForSchemaId(
   state: BackendState,
   schemaId: string,
@@ -213,6 +248,7 @@ export function getSchemaForSchemaId(
   return decodeTurnTreeSchema(schemaRecord.schemaCbor, `${label} schema`);
 }
 
+/** Loads and decodes the turn-tree schema a stored turn tree references. */
 export function getSchemaForTurnTree(
   state: BackendState,
   turnTree: StoredTurnTree
@@ -220,6 +256,7 @@ export function getSchemaForTurnTree(
   return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
 }
 
+/** Decodes deterministic-CBOR bytes into a validated `TurnTreeSchema`. */
 export function decodeTurnTreeSchema(
   bytes: Uint8Array,
   label: string
@@ -229,6 +266,14 @@ export function decodeTurnTreeSchema(
   return decodedValue;
 }
 
+/**
+ * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
+ * element.
+ *
+ * @throws TuvrenPersistenceError
+ *   `postgres_backend_invalid_hash_array_payload` when the payload is not an
+ *   array, or a hash-validation error naming the offending index.
+ */
 export function decodeHashStringArray(
   bytes: Uint8Array,
   label: string
@@ -253,6 +298,18 @@ export function decodeHashStringArray(
   return hashes;
 }
 
+/**
+ * Asserts that a turn tree's decoded manifest and its indexed path rows agree
+ * exactly: the stored paths cover every schema-defined path, no more and no
+ * fewer, and each stored path resolves to the same logical value the
+ * manifest records for that path.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_invalid_turn_tree_manifest`,
+ *   `postgres_backend_missing_turn_tree_paths`,
+ *   `postgres_backend_turn_tree_path_count_mismatch`,
+ *   `postgres_backend_missing_turn_tree_path`, or
+ *   `postgres_backend_turn_tree_manifest_path_mismatch`.
+ */
 export function assertTurnTreeManifestMatchesStoredPaths(
   state: BackendState,
   turnTree: StoredTurnTree
@@ -328,6 +385,12 @@ export function assertTurnTreeManifestMatchesStoredPaths(
   }
 }
 
+/**
+ * Resolves a stored turn-tree path to its logical value: the single hash (or
+ * `null`) for `single` paths, the inline hash array for `flat` ordered paths,
+ * or the concatenation of all referenced chunks' items for `chunked` ordered
+ * paths.
+ */
 export function resolveStoredTurnTreePathValue(
   state: BackendState,
   storedPath: StoredTurnTreePath
@@ -364,6 +427,11 @@ export function resolveStoredTurnTreePathValue(
   return resolvedHashes;
 }
 
+/**
+ * Compares a decoded manifest path value against a resolved stored-path
+ * value: strict equality for `null`/string values, element-wise equality for
+ * hash arrays.
+ */
 export function areManifestPathValuesEqual(
   left: unknown,
   right: string[] | string | null
@@ -388,12 +456,25 @@ export function areManifestPathValuesEqual(
   return true;
 }
 
+/**
+ * Encodes a hash array as deterministic CBOR, validating every element first
+ * so only well-formed hash strings are ever persisted.
+ */
 export function encodeHashStringArray(hashes: string[]): Uint8Array {
   return encodeDeterministicKernelRecord(
     hashes.map((hash) => validateHashString(hash))
   );
 }
 
+/**
+ * Asserts the canonical chunk layout of a chunked ordered path: every chunk
+ * holds 1..{@link ORDERED_PATH_CHUNK_SIZE} items, and every chunk except the
+ * final one is exactly full.
+ *
+ * @throws TuvrenPersistenceError
+ *   `postgres_backend_ordered_path_chunk_size_invalid` or
+ *   `postgres_backend_ordered_path_chunk_not_fixed_size`.
+ */
 export function assertChunkedTurnTreePathChunkLayout(
   chunk: StoredOrderedPathChunk,
   index: number,

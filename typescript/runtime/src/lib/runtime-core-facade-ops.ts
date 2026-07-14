@@ -55,8 +55,17 @@ import { createFrozenSnapshot } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { ExecutionSessionRequest } from "./runtime-execution-types.js";
 
+/**
+ * Extracts the quoted message hash from the error text thrown when a context
+ * message hash cannot be materialized.
+ */
 const MISSING_CONTEXT_MESSAGE_HASH_PATTERN = /"(.+)"/;
 
+/**
+ * Capabilities the facade-ops functions borrow from the runtime core: the
+ * kernel handle, agent-config cloning, and optional host-supplied resolution
+ * hooks for agent configs and parent turn ids.
+ */
 export interface FacadeOpsDependencies {
   cloneAgentConfigForRequest(config: AgentConfig): AgentConfig;
   kernel: RuntimeKernel;
@@ -67,6 +76,11 @@ export interface FacadeOpsDependencies {
   ) => Promise<string | null> | string | null;
 }
 
+/**
+ * Resolves the {@link HandoffSourceContext} an agent handoff exposes to the
+ * target agent, binding kernel record encoding, pending-hash computation, and
+ * frozen config snapshots into the underlying context resolution.
+ */
 export function resolveHandoffSourceContextFacade(
   dependencies: Pick<
     FacadeOpsDependencies,
@@ -96,6 +110,14 @@ export function resolveHandoffSourceContextFacade(
   );
 }
 
+/**
+ * Materializes context messages from their hashes, converting any
+ * materialization failure into a lineage error.
+ *
+ * @throws TuvrenLineageError with code `missing_message` when a hash cannot
+ *   be materialized; the missing hash (extracted from the quoted segment of
+ *   the original error message) is carried in `details.hash`.
+ */
 export function materializeContextMessagesFacade(
   hashes: HashString[],
   helpers: ContextEngineeringHelpers
@@ -116,6 +138,11 @@ export function materializeContextMessagesFacade(
   }
 }
 
+/**
+ * Loads the current {@link HeadState} (branch-head turn node, decoded
+ * messages, and manifest) for a branch from the kernel, decoding payloads
+ * through the codec binding.
+ */
 export async function loadHeadStateFacade(
   kernel: RuntimeKernel,
   payloadCodecBinding: PayloadCodecBinding,
@@ -124,6 +151,12 @@ export async function loadHeadStateFacade(
   return await loadRuntimeHeadState(kernel, payloadCodecBinding, branchId);
 }
 
+/**
+ * Reads the active agent name recorded in a checkpointed turn tree, used
+ * when recovering an expired execution.
+ *
+ * @returns The recorded agent name, or `undefined` when the tree carries none.
+ */
 export async function readRecoveredActiveAgentNameFacade(
   kernel: RuntimeKernel,
   turnTreeHash: HashString
@@ -131,6 +164,13 @@ export async function readRecoveredActiveAgentNameFacade(
   return await readRuntimeRecoveredActiveAgentName(kernel, turnTreeHash);
 }
 
+/**
+ * Reads the durable runtime status recorded in a checkpointed turn tree,
+ * used when recovering an expired execution.
+ *
+ * @returns The recorded {@link DurableRuntimeStatus}, or `undefined` when the
+ *   tree carries none.
+ */
 export async function readRecoveredRuntimeStatusFacade(
   kernel: RuntimeKernel,
   turnTreeHash: HashString
@@ -138,6 +178,11 @@ export async function readRecoveredRuntimeStatusFacade(
   return await readRuntimeRecoveredRuntimeStatus(kernel, turnTreeHash);
 }
 
+/**
+ * Resolves the kernel schema id an execution session should run under,
+ * ensuring the schema is registered via the provided `ensureSchemaId`
+ * callback (see {@link ensureSchemaIdFacade}).
+ */
 export async function resolveExecutionSchemaIdFacade(
   kernel: RuntimeKernel,
   ensureSchemaId: (schemaId?: string) => Promise<string>,
@@ -150,6 +195,13 @@ export async function resolveExecutionSchemaIdFacade(
   );
 }
 
+/**
+ * Resolves the parent turn id for a new turn, honoring an explicit parent
+ * turn id and the host-supplied `resolveParentTurnIdOption` hook before
+ * falling back to kernel lineage.
+ *
+ * @returns The parent turn id, or `null` when the turn has no parent.
+ */
 export async function resolveParentTurnIdFacade(
   kernel: RuntimeKernel,
   resolveParentTurnIdOption: FacadeOpsDependencies["resolveParentTurnIdOption"],
@@ -166,6 +218,11 @@ export async function resolveParentTurnIdFacade(
   );
 }
 
+/**
+ * Advances durable head state to a new turn-node hash: first the turn head
+ * (`kernel.turn.updateHead`), then the branch head (`kernel.branch.setHead`),
+ * in that order.
+ */
 export async function advanceTurnAndBranchHeadFacade(
   kernel: RuntimeKernel,
   handle: RuntimeExecutionHandle,
@@ -175,6 +232,12 @@ export async function advanceTurnAndBranchHeadFacade(
   await kernel.branch.setHead(handle.request.branchId, turnNodeHash);
 }
 
+/**
+ * Materializes a {@link RuntimeRunner} instance from the runner registry.
+ *
+ * @throws TuvrenRuntimeError with code `unknown_runner` when `runnerId` is
+ *   not registered.
+ */
 export function materializeRunnerFacade(
   runnerRegistry: RunnerRegistry,
   runnerId: string
@@ -193,6 +256,14 @@ export function materializeRunnerFacade(
   return materializeRunner(runnerEntry);
 }
 
+/**
+ * Resolves the {@link AgentConfig} to attribute a failure to when the active
+ * agent may differ from the requesting agent.
+ *
+ * Resolution order: the host's `resolveAgentConfig` hook, then the request
+ * config when its name matches the active agent, and finally a minimal
+ * name-only config so failure reporting never lacks an agent identity.
+ */
 export function resolveFailureActiveConfigFacade(
   requestConfig: AgentConfig,
   activeAgentName: string,
@@ -213,6 +284,17 @@ export function resolveFailureActiveConfigFacade(
   };
 }
 
+/**
+ * Ensures a usable kernel schema id, defaulting to the framework's
+ * `DEFAULT_AGENT_SCHEMA_ID` when none is given.
+ *
+ * An already-registered schema is validated for framework compatibility and
+ * reused. The default agent schema is registered lazily on first use.
+ *
+ * @returns The resolved, registered schema id.
+ * @throws TuvrenRuntimeError with code `unknown_schema` when a non-default
+ *   schema id is requested but not registered.
+ */
 export async function ensureSchemaIdFacade(
   kernel: RuntimeKernel,
   schemaId?: string

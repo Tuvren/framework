@@ -60,6 +60,12 @@ import {
   requireTurnNode,
 } from "./runtime-kernel-storage.js";
 
+/**
+ * Shared construction dependencies for {@link createRuntimeKernelRunApi} and
+ * {@link createRuntimeKernelRunLivenessApi}: the durable backend, the
+ * fencing-token generator used to fence stale execution owners on every
+ * lease-affecting write, and the kernel's injected clock.
+ */
 interface RuntimeKernelRunsDependencies {
   backend: RuntimeBackend;
   createFencingToken(): string;
@@ -109,6 +115,13 @@ function rebaseLeaseExpiry(
   return (backendNow() + (suppliedExpiry - ownerNow())) as EpochMs;
 }
 
+/**
+ * Builds the `run` group of the {@link RuntimeKernel} syscall surface
+ * (kernel spec §5.8): creation with legality validation, step
+ * begin/complete with declarative checkpointing (see
+ * {@link stepRequiresCheckpoint}), terminal completion with reactive
+ * checkpointing of any un-anchored staged work, and crash recovery.
+ */
 export function createRuntimeKernelRunApi(
   dependencies: RuntimeKernelRunsDependencies
 ): RuntimeKernel["run"] {
@@ -335,6 +348,13 @@ export function createRuntimeKernelRunApi(
   };
 }
 
+/**
+ * Builds the `runLiveness` group of the {@link RuntimeKernelRunLiveness}
+ * extension (kernel spec §5.2): leased run creation, lease renewal scoped to
+ * the current owner/token pair, listing runs whose lease has expired, and
+ * atomically preempting one — fencing the stale owner and marking the run
+ * `failed` while preserving verifiably complete staged work.
+ */
 export function createRuntimeKernelRunLivenessApi(
   dependencies: RuntimeKernelRunsDependencies
 ): RuntimeKernelRunLiveness["runLiveness"] {

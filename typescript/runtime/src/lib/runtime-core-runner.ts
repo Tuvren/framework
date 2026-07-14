@@ -52,6 +52,13 @@ import {
 // Exposure-time filtering helpers (BB001)
 // ---------------------------------------------------------------------------
 
+/**
+ * Collects the names of client-endpoint tools whose endpoint is currently
+ * unavailable on the client boundary, feeding the exposure policy context.
+ *
+ * @returns The unavailable capability ids, or `undefined` when no boundary
+ * is configured or every client-endpoint tool is available.
+ */
 function buildUnavailableCapabilityIds(
   tools: ReturnType<ToolRegistry["list"]>,
   boundary:
@@ -70,6 +77,10 @@ function buildUnavailableCapabilityIds(
   return unavailable.size > 0 ? unavailable : undefined;
 }
 
+/**
+ * Wraps a tool registry so lookups, listing, and definitions only see the
+ * exposed subset while `register` still writes through to the base registry.
+ */
 function createFilteredToolRegistry(
   base: ToolRegistry,
   filteredTools: ReturnType<ToolRegistry["list"]>
@@ -84,6 +95,13 @@ function createFilteredToolRegistry(
   };
 }
 
+/**
+ * Host capabilities required by the runner-facing helpers in this module:
+ * artifact staging (messages, manifests, runtime status, iteration trees),
+ * run completion and failure, event publication, tool-batch environment
+ * construction, and snapshot/handoff building. Implemented by the
+ * runtime-core orchestration layer.
+ */
 export interface RuntimeCoreRunnerHost {
   completeIterationRun(
     handle: RuntimeExecutionHandle,
@@ -170,6 +188,19 @@ export interface RuntimeCoreRunnerHost {
   ): Promise<HashString>;
 }
 
+/**
+ * Builds the frozen, read-only execution context handed to a runner for one
+ * iteration.
+ *
+ * When a capability policy engine is configured, exposure decisions are
+ * evaluated first (BB001) and denied tools are filtered out of the registry
+ * snapshot so neither the runner nor the model (via the provider bridge)
+ * ever sees withheld capabilities. Head messages and the manifest are
+ * exposed as frozen snapshots. `runtime.emit` clones each runner-emitted
+ * event (rejecting non-cloneable events with `invalid_stream_event`),
+ * records the published form in `emittedRunnerEvents` for post-execution
+ * validation, and publishes it on the handle.
+ */
 export function createRunnerExecutionContext(
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
@@ -283,6 +314,11 @@ export function createRunnerExecutionContext(
   };
 }
 
+/**
+ * Stages each runner-returned durable message in order and returns their
+ * content hashes; staging task ids encode the iteration count and message
+ * index.
+ */
 export async function stageRunnerMessages(
   host: RuntimeCoreRunnerHost,
   runId: string,
@@ -304,6 +340,18 @@ export async function stageRunnerMessages(
   return stagedMessageHashes;
 }
 
+/**
+ * Executes the runner's requested tool batch when the resolution is
+ * "continue_iteration" and tool calls exist; otherwise returns the input
+ * resolution unchanged.
+ *
+ * On success the batch's results, staged result hashes, and extension state
+ * updates are pushed into the caller's accumulators and each result is
+ * appended as a staged tool-role message. A batch that requires approval
+ * converts the resolution into a "pause" with reason "approval_required".
+ * A batch that throws fails the tracked run without a branch advance and
+ * returns a hard-fail {@link LoopOutcome}.
+ */
 export async function applyRequestedToolBatchIfNeeded(
   host: RuntimeCoreRunnerHost,
   input: {
@@ -355,6 +403,11 @@ export async function applyRequestedToolBatchIfNeeded(
   };
 }
 
+/**
+ * Runs the tool batch inside the host-built environment, converting a thrown
+ * error into a hard-fail outcome after failing the tracked run without a
+ * branch advance.
+ */
 async function executeRequestedToolBatch(
   host: RuntimeCoreRunnerHost,
   input: {
@@ -397,6 +450,15 @@ async function executeRequestedToolBatch(
   }
 }
 
+/**
+ * Commits the durable artifacts for a finished iteration: stages the
+ * manifest, stages a paused runtime status when the resolution is a pause,
+ * creates the next iteration tree (skipped for hard failures, which must not
+ * advance the branch), and completes the tracked run.
+ *
+ * @returns The committed turn node hash, or `undefined` when the run did not
+ * advance the branch.
+ */
 export async function completeIterationArtifacts(
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,
@@ -448,6 +510,15 @@ export async function completeIterationArtifacts(
   );
 }
 
+/**
+ * Runs the after-iteration extension hooks and folds their resolution into
+ * the iteration's resolution via {@link composeResolutions}.
+ *
+ * Hook-carried state updates are appended to the loop state, soft failures
+ * are surfaced as non-fatal projected errors, and a "continue_iteration"
+ * resolution is converted to "end_turn" with reason "max_iterations" once
+ * the configured iteration budget is reached.
+ */
 export async function applyAfterIterationResolution(
   host: RuntimeCoreRunnerHost,
   handle: RuntimeExecutionHandle,

@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
+/**
+ * @packageDocumentation
+ *
+ * `@tuvren/stream-sse` is the Server-Sent Events protocol adapter for
+ * `TuvrenStreamEvent` streams (KrakenFrameworkSpecification §6.1): it
+ * encodes a canonical event stream into SSE frames/`Response` bodies
+ * ({@link toSseFrames}, {@link toSseResponse}) and independently decodes raw
+ * SSE wire bytes per the WHATWG `text/event-stream` interpretation algorithm
+ * ({@link decodeSseStream}), with {@link reportSseWireCompliance} exercising
+ * both halves against live observations for conformance reporting.
+ */
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export type {
   TuvrenDecodedSseEvent,

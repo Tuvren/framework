@@ -26,12 +26,37 @@ import { assertTuvrenMessage } from "@tuvren/core/messages";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import { cloneValue } from "./runtime-core-shared.js";
 
+/**
+ * A set of context-engineering helpers together with the plumbing needed to
+ * persist messages stored through them.
+ *
+ * Messages stored via {@link HelperBundle.helpers} receive provisional hashes
+ * only; the bundle owner must call {@link HelperBundle.flush} to write the
+ * pending records to the kernel and then {@link HelperBundle.resolveHashes}
+ * to map provisional hashes to their canonical kernel hashes.
+ */
 export interface HelperBundle {
+  /**
+   * Persist all provisionally stored messages to the kernel, recording each
+   * canonical hash so subsequent lookups and {@link resolveHashes} calls see
+   * it.
+   */
   flush(): Promise<void>;
+  /** Load/store helpers handed to context-engineering and handoff plans. */
   helpers: ContextEngineeringHelpers;
+  /**
+   * Map each hash to its canonical kernel hash where a provisional mapping
+   * exists, passing already-canonical hashes through unchanged. Only
+   * meaningful after {@link flush}.
+   */
   resolveHashes(hashes: HashString[]): HashString[];
 }
 
+/**
+ * Capability surface the context helpers require from the runtime core:
+ * agent-config cloning/freezing plus message encoding and kernel record
+ * persistence (including provisional pre-persistence hashing).
+ */
 export interface RuntimeCoreContextHost {
   cloneAgentConfigForRequest(config: AgentConfig): AgentConfig;
   createFrozenAgentConfig(config: AgentConfig): AgentConfig;
@@ -40,6 +65,20 @@ export interface RuntimeCoreContextHost {
   putKernelRecord(record: Uint8Array): Promise<HashString>;
 }
 
+/**
+ * Create a {@link HelperBundle} over the current head messages.
+ *
+ * The existing messages are cloned into an in-memory index keyed by their
+ * kernel hashes. `storeMessage`/`storeMessages` validate each message, encode
+ * it, and register it under a provisional hash without touching the kernel;
+ * `loadMessage` resolves provisional, pending, and existing hashes alike and
+ * always returns a defensive clone (or `null` for an unknown hash). Nothing
+ * is persisted until the bundle's `flush` runs.
+ *
+ * @param messageHashes - Kernel hashes of the current head messages, ordered.
+ * @param messages - The decoded messages, index-aligned with
+ *   `messageHashes`.
+ */
 export function createContextEngineeringHelpers(
   host: RuntimeCoreContextHost,
   messageHashes: HashString[],
@@ -115,6 +154,13 @@ export function createContextEngineeringHelpers(
   };
 }
 
+/**
+ * Build the {@link HandoffSourceContext} handed to a handoff plan's builder.
+ *
+ * The manifest, messages, and handoff intent are deep-cloned, and both agent
+ * configs are cloned and frozen, so the builder cannot mutate live runtime
+ * state through the context it receives.
+ */
 export function resolveHandoffSourceContext(
   host: RuntimeCoreContextHost,
   plan: HandoffContextPlan,
@@ -137,6 +183,13 @@ export function resolveHandoffSourceContext(
   };
 }
 
+/**
+ * Load every message named by `hashes` through the helpers, in order.
+ *
+ * @throws Error when any hash cannot be resolved to a message — a plan must
+ *   only return hashes that exist or were stored through the same helper
+ *   bundle.
+ */
 export function materializeContextMessages(
   hashes: HashString[],
   helpers: ContextEngineeringHelpers

@@ -117,25 +117,39 @@ import {
   persistStateSnapshot,
 } from "./postgres-backend-persistence.js";
 
+/** A transaction's repository surface, plus the transaction-local clock it was built with. */
 interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
 }
 
+/**
+ * Test/conformance fault-injection hooks around the commit sequence
+ * (`FAULT_INJECTION_CONTROL`); see {@link BackendFaultInjectionControl}.
+ */
 interface BackendFaultHooks {
   afterCommitBeforeAck?(): Promise<void>;
   beforeCommit?(): Promise<void>;
   midCommit?(commit: () => Promise<void>): Promise<void>;
 }
 
+/**
+ * Internal fault-injection control surface exposed on the backend instance
+ * under the `FAULT_INJECTION_CONTROL` symbol, for the shared kernel testkit
+ * fault harness to install {@link BackendFaultHooks} and
+ * discover which named fault points this backend supports.
+ */
 interface BackendFaultInjectionControl {
   setFaultHooks(hooks: BackendFaultHooks | null): void;
   supportsFaultPoint(point: string): boolean;
 }
 
+/** Options for {@link PostgresBackend.destroy}. */
 interface PostgresBackendDestroyOptions {
+  /** When `true`, drops the backend's schema entirely after closing the connection. */
   dropSchema?: boolean;
 }
 
+/** Construction options for {@link createPostgresBackend}. */
 export interface PostgresBackendOptions
   extends PostgresBackendPersistenceOptions {}
 
@@ -151,6 +165,15 @@ const FAULT_INJECTION_CONTROL = Symbol(
   "tuvren.kernel.testkit.fault-injection-control"
 );
 
+/**
+ * `RuntimeBackend` implementation over a single PostgreSQL snapshot row per
+ * Scope. Every mutating operation (`transact`, `reclaim`, `purgeScope`)
+ * serializes on this instance's own in-process `transactionQueue` and then
+ * takes a reserved connection with `SELECT ... FOR UPDATE` on the Scope's
+ * row, so cross-process contention on the same Scope is resolved by
+ * PostgreSQL row locking while same-process contention is resolved by the
+ * queue.
+ */
 class PostgresBackend implements KrakenBackend {
   readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
     setFaultHooks: (hooks) => {
@@ -191,10 +214,16 @@ class PostgresBackend implements KrakenBackend {
     this.injectedNow = resolvedOptions.now;
   }
 
+  /** Reports the fixed {@link POSTGRES_BACKEND_CAPABILITIES} this backend supports. */
   capabilities(): BackendCapability {
     return POSTGRES_BACKEND_CAPABILITIES;
   }
 
+  /**
+   * Checks connectivity and invariant health by initializing (if needed),
+   * loading the Scope's committed snapshot, and re-validating it against
+   * itself as both draft and base state.
+   */
   async health(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
       await this.ensureInitialized();
@@ -215,6 +244,7 @@ class PostgresBackend implements KrakenBackend {
     }
   }
 
+  /** Closes the underlying connection pool. Idempotent. */
   async close(): Promise<void> {
     if (this.destroyed) {
       return;
@@ -228,6 +258,11 @@ class PostgresBackend implements KrakenBackend {
     }
   }
 
+  /**
+   * Closes the connection pool and, when `options.dropSchema` is `true`,
+   * also drops this backend's entire PostgreSQL schema. Intended for
+   * test/conformance teardown of throwaway schemas.
+   */
   async destroy(options?: PostgresBackendDestroyOptions): Promise<void> {
     await this.close();
 
@@ -236,6 +271,20 @@ class PostgresBackend implements KrakenBackend {
     }
   }
 
+  /**
+   * Runs `work` against a fresh copy-on-write draft of the Scope's committed
+   * snapshot: loads and row-locks the snapshot, clones it into a draft,
+   * exposes repositories over the draft to `work`, validates the resulting
+   * draft against the full committed-state invariant suite, then persists
+   * the draft and commits — so a caller never observes a partially
+   * validated write. Transactions on this instance are serialized (no
+   * nesting) via `transactionQueue`; the transaction's `now` is a single
+   * authoritative timestamp captured once at the start (the injected clock
+   * under test, otherwise the PostgreSQL server clock — ADR-050).
+   *
+   * @throws TuvrenPersistenceError `postgres_backend_nested_transaction` when
+   *   called from inside another transaction on this instance.
+   */
   async transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
@@ -355,6 +404,16 @@ class PostgresBackend implements KrakenBackend {
     }
   }
 
+  /**
+   * Runs the shared §9.4 reachability reclamation sweep over the Scope's
+   * committed snapshot and persists the swept result: loads and row-locks
+   * the snapshot, clones it into a draft, sweeps unreachable records from
+   * the draft, re-validates the result, then persists and commits. Must not
+   * run inside a `transact` call on this instance.
+   *
+   * @throws TuvrenPersistenceError `postgres_backend_nested_transaction` when
+   *   called from inside a transaction on this instance.
+   */
   async reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
@@ -429,6 +488,17 @@ class PostgresBackend implements KrakenBackend {
     }
   }
 
+  /**
+   * Drops this Scope's snapshot row for full tenant offboarding (kernel spec
+   * §9.4). Every other Scope's row in the shared schema is untouched. Per
+   * the `RuntimeBackend.purgeScope` contract this instance is unusable
+   * afterward and must be discarded; a later `transact`/`health`/`reclaim`
+   * call raises `postgres_backend_missing_snapshot_row`. Must not run inside
+   * a `transact` call on this instance.
+   *
+   * @throws TuvrenPersistenceError `postgres_backend_nested_transaction` when
+   *   called from inside a transaction on this instance.
+   */
   async purgeScope(): Promise<void> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
@@ -461,6 +531,12 @@ class PostgresBackend implements KrakenBackend {
     }
   }
 
+  /**
+   * Resolves the single authoritative clock reading for a transaction: the
+   * injected clock when one was supplied at construction, otherwise the
+   * live PostgreSQL server clock (ADR-050 shared-rendezvous clock for a
+   * multi-worker deployment).
+   */
   private async resolveTransactionNow(reserved: Sql): Promise<number> {
     // An explicitly injected clock is treated as the authoritative backend clock
     // so tests/conformance can deterministically align or skew it against an
@@ -473,6 +549,13 @@ class PostgresBackend implements KrakenBackend {
     return await readBackendClockMs(reserved);
   }
 
+  /**
+   * Lazily provisions this Scope's schema/tables/snapshot row exactly once
+   * per instance, memoizing the in-flight promise so concurrent callers
+   * await the same initialization. A failed attempt clears the memoized
+   * promise so the next call retries instead of replaying the failure
+   * forever.
+   */
   private async ensureInitialized(): Promise<void> {
     if (this.initializationPromise === undefined) {
       const initialization = ensurePostgresSchemaInitialized(
@@ -495,11 +578,18 @@ class PostgresBackend implements KrakenBackend {
     await this.initializationPromise;
   }
 
+  /** Drops this backend's schema via {@link destroyPostgresBackend}, using a fresh connection. */
   private async dropSchema(): Promise<void> {
     await destroyPostgresBackend(this.connectionOptions);
   }
 }
 
+/**
+ * Builds a `RuntimeBackend` over a PostgreSQL snapshot row for the Scope
+ * named in `options.scope` (or the default Scope). Schema/table
+ * provisioning is deferred to the first call that needs it, not performed
+ * eagerly here.
+ */
 export function createPostgresBackend(
   options?: PostgresBackendOptions
 ): KrakenBackend {
@@ -525,6 +615,14 @@ export async function destroyPostgresBackend(
   }
 }
 
+/**
+ * Builds the full `RuntimeBackendTx` repository surface over an in-memory
+ * draft `BackendState`, mirroring the memory backend's own repositories:
+ * every `get`/`list` clones records out of `state` before returning them,
+ * every `set`/`put` validates referenced records and per-family invariants
+ * before mutating `state` in place, and every method call first asserts the
+ * owning transaction is still active via `isTransactionActive`.
+ */
 function createRepositories(
   state: BackendState,
   now: () => number,
@@ -1265,6 +1363,15 @@ function createRepositories(
   };
 }
 
+/**
+ * Reads the PostgreSQL server's current wall-clock time (`clock_timestamp()`)
+ * as epoch milliseconds, once per transaction, for the ADR-050 shared
+ * rendezvous clock.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_clock_unavailable` when
+ *   the query returns no row, or `postgres_backend_clock_unsafe_integer`
+ *   when the value falls outside the safe-integer range.
+ */
 async function readBackendClockMs(reserved: Sql): Promise<number> {
   // clock_timestamp() is the actual wall-clock time at call, captured once per
   // transaction so the whole transaction shares a single authoritative instant.
@@ -1295,6 +1402,7 @@ async function readBackendClockMs(reserved: Sql): Promise<number> {
   return nowMs;
 }
 
+/** Extracts a human-readable message from any thrown value. */
 function readErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -1303,6 +1411,7 @@ function readErrorMessage(error: unknown): string {
   return String(error);
 }
 
+/** Double-quotes and escapes a PostgreSQL identifier for safe interpolation. */
 function quoteIdentifier(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
 }

@@ -14,6 +14,16 @@
  * limitations under the License.
  */
 
+/**
+ * @packageDocumentation
+ *
+ * `@tuvren/telemetry-otel` adapts `@tuvren/core`'s `TuvrenTelemetrySink`
+ * seam onto the OpenTelemetry JS API: {@link createOtelTelemetrySink} builds
+ * a sink that projects Tuvren telemetry spans and events onto OTel spans,
+ * stamping run/thread/turn/branch lineage as `tuvren.runtime.*` span
+ * attributes on every span and event so they can be correlated across a
+ * distributed trace.
+ */
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public export surface.
 
 export type { CreateOtelTelemetrySinkOptions } from "./lib/otel-telemetry-sink.js";

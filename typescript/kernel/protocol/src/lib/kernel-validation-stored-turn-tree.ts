@@ -53,8 +53,16 @@ import {
   validationError,
 } from "./kernel-validation-shared.js";
 
+/**
+ * Physical encodings for stored ordered-path values: inline (`"flat"`) or
+ * content-addressed chunk list (`"chunked"`).
+ */
 const ORDERED_ENCODINGS = ["flat", "chunked"] as const;
 
+/**
+ * Loosely-typed working shape used while discriminating a stored path row into
+ * one of the {@link StoredTurnTreePath} variants.
+ */
 interface StoredTurnTreePathCandidate {
   collectionKind: PathCollectionKind;
   orderedChunkListCbor?: Uint8Array;
@@ -66,10 +74,22 @@ interface StoredTurnTreePathCandidate {
   turnTreeHash: string;
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredObject}.
+ */
 export function isStoredObject(value: unknown): value is StoredObject {
   return tryAssert(value, assertStoredObject);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredObject} (kernel spec §2.1),
+ * including that the denormalized `byteLength` matches `bytes.byteLength`. Does
+ * not recompute the content hash; use {@link assertStoredObjectIdentity} for
+ * that.
+ *
+ * @throws TuvrenValidationError With code `invalid_stored_object_byte_length`
+ *   on a byte-length mismatch.
+ */
 export function assertStoredObject(
   value: unknown,
   label = "value"
@@ -99,6 +119,13 @@ export function assertStoredObject(
   }
 }
 
+/**
+ * Asserts a structurally valid {@link StoredObject} whose `hash` also equals
+ * the SHA-256 digest of `bytes` (`hashOpaqueObjectBytes`, kernel spec §2.3).
+ *
+ * @throws TuvrenValidationError With code `invalid_stored_object_hash` when the
+ *   stored hash does not match the recomputed digest.
+ */
 export async function assertStoredObjectIdentity(
   value: unknown,
   label = "value"
@@ -119,10 +146,21 @@ export async function assertStoredObjectIdentity(
   }
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredSchema}.
+ */
 export function isStoredSchema(value: unknown): value is StoredSchema {
   return tryAssert(value, assertStoredSchema);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredSchema} (kernel spec §3.1):
+ * `schemaCbor` must decode as canonical deterministic CBOR into a valid
+ * TurnTreeSchema whose `schemaId` matches the record's key column.
+ *
+ * @throws TuvrenValidationError With code `invalid_stored_schema_id` when the
+ *   key column and the decoded schema id disagree.
+ */
 export function assertStoredSchema(
   value: unknown,
   label = "value"
@@ -157,6 +195,11 @@ export function assertStoredSchema(
   }
 }
 
+/**
+ * True when `value` has the shape of a {@link StoredTurnTree}. Shape-only —
+ * without a schema, the manifest cannot be checked against path definitions;
+ * use {@link assertStoredTurnTree} with a schema for that.
+ */
 export function isStoredTurnTree(value: unknown): value is StoredTurnTree {
   return tryAssert(
     value,
@@ -166,6 +209,13 @@ export function isStoredTurnTree(value: unknown): value is StoredTurnTree {
   );
 }
 
+/**
+ * Asserts a structurally valid {@link StoredTurnTree} against its schema
+ * (kernel spec §3.2): `schemaId` must match `schema.schemaId` and
+ * `manifestCbor` must decode as canonical deterministic CBOR into a full
+ * manifest for that schema. Does not recompute the tree hash; use
+ * {@link assertStoredTurnTreeIdentity} for that.
+ */
 export function assertStoredTurnTree(
   value: unknown,
   schema: TurnTreeSchema,
@@ -209,6 +259,14 @@ export function assertStoredTurnTree(
   );
 }
 
+/**
+ * Asserts a structurally valid {@link StoredTurnTree} whose `hash` also equals
+ * the recomputed canonical identity digest of `{ schemaId, manifest }`
+ * (`hashTurnTreeIdentity`, kernel spec §3.2).
+ *
+ * @throws TuvrenValidationError With code `invalid_stored_turn_tree_hash` when
+ *   the stored hash does not match the recomputed digest.
+ */
 export async function assertStoredTurnTreeIdentity(
   value: unknown,
   schema: TurnTreeSchema,
@@ -247,12 +305,28 @@ export async function assertStoredTurnTreeIdentity(
   }
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredTurnTreePath}.
+ */
 export function isStoredTurnTreePath(
   value: unknown
 ): value is StoredTurnTreePath {
   return tryAssert(value, assertStoredTurnTreePath);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredTurnTreePath} (kernel spec §3.2),
+ * discriminating on `collectionKind` / `orderedEncoding`:
+ *
+ * - `"single"`: `singleHash` required (may be `null`), no ordered fields.
+ * - `"ordered"` + `"flat"`: inline CBOR hash list whose decoded length matches
+ *   `orderedCount`.
+ * - `"ordered"` + `"chunked"`: non-empty chunk-hash list; a zero-item ordered
+ *   path must use flat storage instead.
+ *
+ * With the schema overload, the row's `path` must be schema-defined and its
+ * `collectionKind` must match the schema's collection for that path.
+ */
 export function assertStoredTurnTreePath(
   value: unknown,
   label?: string
@@ -387,12 +461,21 @@ export function assertStoredTurnTreePath(
   }
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredOrderedPathChunk}.
+ */
 export function isStoredOrderedPathChunk(
   value: unknown
 ): value is StoredOrderedPathChunk {
   return tryAssert(value, assertStoredOrderedPathChunk);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredOrderedPathChunk}: `itemsCbor` must
+ * decode as a canonical CBOR HashString array whose length matches the
+ * denormalized `itemCount`. Does not recompute the chunk hash; use
+ * {@link assertStoredOrderedPathChunkIdentity} for that.
+ */
 export function assertStoredOrderedPathChunk(
   value: unknown,
   label = "value"
@@ -416,6 +499,15 @@ export function assertStoredOrderedPathChunk(
   );
 }
 
+/**
+ * Asserts a structurally valid {@link StoredOrderedPathChunk} whose `chunkHash`
+ * also equals the canonical record digest of the decoded item list
+ * (`hashKernelRecord`).
+ *
+ * @throws TuvrenValidationError With code
+ *   `invalid_stored_ordered_path_chunk_hash` when the stored hash does not
+ *   match the recomputed digest.
+ */
 export async function assertStoredOrderedPathChunkIdentity(
   value: unknown,
   label = "value"
@@ -440,6 +532,9 @@ export async function assertStoredOrderedPathChunkIdentity(
   }
 }
 
+/**
+ * Dispatches shape validation by `collectionKind`.
+ */
 function assertStoredTurnTreePathShape(
   value: StoredTurnTreePathCandidate,
   label: string
@@ -452,6 +547,9 @@ function assertStoredTurnTreePathShape(
   assertStoredOrderedTurnTreePathShape(value, label);
 }
 
+/**
+ * A `"single"` path row must carry `singleHash` and no ordered fields.
+ */
 function assertStoredSingleTurnTreePathShape(
   value: StoredTurnTreePathCandidate,
   label: string
@@ -478,6 +576,10 @@ function assertStoredSingleTurnTreePathShape(
   }
 }
 
+/**
+ * An `"ordered"` path row must carry `orderedEncoding` and `orderedCount`, no
+ * `singleHash`, and satisfy the per-encoding shape rules.
+ */
 function assertStoredOrderedTurnTreePathShape(
   value: StoredTurnTreePathCandidate,
   label: string
@@ -514,6 +616,10 @@ function assertStoredOrderedTurnTreePathShape(
   assertStoredChunkedTurnTreePathShape(value, label);
 }
 
+/**
+ * A flat ordered row inlines its hash list: `orderedInlineCbor` required, chunk
+ * list forbidden, and the decoded item count must equal `orderedCount`.
+ */
 function assertStoredFlatTurnTreePathShape(
   value: StoredTurnTreePathCandidate,
   label: string
@@ -552,6 +658,11 @@ function assertStoredFlatTurnTreePathShape(
   );
 }
 
+/**
+ * A chunked ordered row references its hash list through chunks:
+ * `orderedChunkListCbor` required, inline CBOR forbidden, at least one chunk,
+ * and zero-item paths must use flat storage instead.
+ */
 function assertStoredChunkedTurnTreePathShape(
   value: StoredTurnTreePathCandidate,
   label: string
@@ -611,6 +722,10 @@ function assertStoredChunkedTurnTreePathShape(
   }
 }
 
+/**
+ * The row's `path` must be schema-defined and its `collectionKind` must match
+ * the schema's collection kind for that path.
+ */
 function assertStoredTurnTreePathMatchesSchema(
   value: StoredTurnTreePathCandidate,
   schema: TurnTreeSchema,
@@ -641,6 +756,10 @@ function assertStoredTurnTreePathMatchesSchema(
   }
 }
 
+/**
+ * Untangles the `assertStoredTurnTreePath` overloads: the second argument may
+ * be a diagnostic label or a schema to validate against.
+ */
 function resolveSchemaAndLabel(
   schemaOrLabel: string | TurnTreeSchema | undefined,
   label: string,
@@ -664,6 +783,11 @@ function resolveSchemaAndLabel(
   };
 }
 
+/**
+ * Schema-independent shape check shared by `isStoredTurnTree` and
+ * `assertStoredTurnTree`: contract keys, valid hash, non-empty schema id, CBOR
+ * payload, and timestamp.
+ */
 function assertStoredTurnTreeShape(
   value: unknown,
   label: string

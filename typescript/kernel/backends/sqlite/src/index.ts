@@ -14,6 +14,20 @@
  * limitations under the License.
  */
 
+/**
+ * SQLite-backed persistent backend for the Tuvren kernel.
+ *
+ * {@link createSqliteBackend} builds a `RuntimeBackend` that persists all
+ * durable state in a WAL-mode SQLite database file, one file per Scope
+ * (ADR-049 file-per-scope isolation). It is the embedded single-writer
+ * persistence baseline: transactions serialize on a single connection under
+ * `BEGIN IMMEDIATE`, checked-in migrations govern the schema, write-time
+ * invariants run inside the repositories, and each transaction's write set is
+ * re-validated against the database before commit.
+ *
+ * @packageDocumentation
+ */
+
 export type { SqliteBackendOptions } from "./lib/sqlite-backend.js";
 // biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export { createSqliteBackend } from "./lib/sqlite-backend.js";

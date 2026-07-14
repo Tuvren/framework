@@ -22,6 +22,16 @@ import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Host seam for the durable state-commit operations in this module.
+ *
+ * Provides the kernel-run lifecycle (create/begin/complete tracked runs and
+ * steps), record staging (messages, manifests, turn lineage, runtime
+ * status), branch-head advancement, lease synchronization, and
+ * observability/event publication used by {@link incorporateInput},
+ * {@link incorporateSteering}, and
+ * {@link commitPendingExtensionStateUpdates}.
+ */
 export interface RuntimeCoreStateCommitHost {
   advanceTurnAndBranchHead(
     handle: RuntimeExecutionHandle,
@@ -104,6 +114,23 @@ export interface RuntimeCoreStateCommitHost {
   ): void;
 }
 
+/**
+ * Durably incorporate the turn's input signal as a user message.
+ *
+ * Runs a single-step tracked kernel run (`incorporate_input`) that stages
+ * the user message, an updated context manifest seeded with initial
+ * extension state, the turn lineage record, and a `running` runtime status,
+ * then completes the step with an `input_received` event. When the step
+ * yields a new turn node, the turn and branch head advance and state
+ * observability is emitted for iteration 0.
+ *
+ * @param host - Capability seam for kernel runs, staging, and observability.
+ * @param handle - Execution handle; its request supplies the branch and
+ *   input signal.
+ * @param schemaId - Kernel tree schema identifier for the tracked run.
+ * @param loopState - Active loop state; supplies the agent name and
+ *   extensions.
+ */
 export async function incorporateInput(
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
@@ -179,6 +206,19 @@ export async function incorporateInput(
   }
 }
 
+/**
+ * Durably incorporate a queued steering signal as a user message mid-turn.
+ *
+ * Runs a single-step tracked kernel run (`incorporate_steering`) staging the
+ * steering message and updated manifest, completes it with a
+ * `steering_incorporated` event, and advances the turn and branch head when
+ * a new turn node is produced. Afterwards the handle's status manifest is
+ * updated and a `steering.incorporated` stream event carrying the staged
+ * message hash is published.
+ *
+ * @param signal - The steering input signal whose parts become the user
+ *   message.
+ */
 export async function incorporateSteering(
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,
@@ -261,6 +301,22 @@ export async function incorporateSteering(
   );
 }
 
+/**
+ * Durably fold pending extension state updates into the context manifest.
+ *
+ * No-op when `updates` is empty. Otherwise runs a single-step tracked kernel
+ * run (`commit_extension_state`) staging the manifest updated with the given
+ * extension state, completes it with an `extension_state_committed` event,
+ * advances the turn and branch head when a new turn node is produced, and
+ * updates the handle's status manifest.
+ *
+ * The caller owns resetting {@link LoopState.carriedStateUpdates}; this
+ * function does not mutate the array it receives.
+ *
+ * @param updates - Extension state updates to commit; may be empty.
+ * @param iterationCount - Iteration attributed in the emitted state
+ *   observability.
+ */
 export async function commitPendingExtensionStateUpdates(
   host: RuntimeCoreStateCommitHost,
   handle: RuntimeExecutionHandle,

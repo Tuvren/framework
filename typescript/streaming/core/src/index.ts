@@ -14,6 +14,22 @@
  * limitations under the License.
  */
 
+/**
+ * @packageDocumentation
+ *
+ * `@tuvren/stream-core` provides the shared building blocks that protocol
+ * adapters and hosts build on for `TuvrenStreamEvent` consumption
+ * (KrakenFrameworkSpecification §6 "Streaming"): the {@link StreamProtocolAdapter}
+ * shape adapters implement, {@link teeTuvrenStreamEvents} for host-owned
+ * multi-consumer fanout of a single-consumer `ExecutionHandle.events()`
+ * stream, event cloning/serialization helpers, and canonical fixtures for
+ * adapter conformance and tests.
+ *
+ * `teeTuvrenStreamEvents` enforces a claim-before-first-pull rule: every
+ * branch must subscribe (call `[Symbol.asyncIterator]()`) before the source
+ * stream is first pulled, or it fails with `event_stream_subscription_too_late`;
+ * a branch that is iterated twice fails with `event_stream_already_consumed`.
+ */
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export type {
   StreamAdapterOptions,

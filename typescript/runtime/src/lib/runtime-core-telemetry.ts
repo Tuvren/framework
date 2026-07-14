@@ -41,11 +41,24 @@ import {
   sanitizeTelemetryErrorSummary,
 } from "./telemetry-secret-screening.js";
 
+/**
+ * Start timestamp and captured lineage for a span opened by a `*.start`
+ * stream event, held until the matching end event closes the span.
+ */
 interface TimedSpanStart {
   atMs: EpochMs;
   lineage: TelemetryLineage;
 }
 
+/**
+ * Emitter that projects runtime execution activity onto the telemetry funnel
+ * as events and spans.
+ *
+ * All emission paths are throw-proof toward the caller: sink or destination
+ * failures are converted into operational signals (or a single last-resort
+ * console warning) and never propagate back into the execution path
+ * (ADR-058 §3).
+ */
 export interface RuntimeTelemetryEmitter {
   /**
    * Emit the bounded-execution telemetry event when a hard-stop execution bound
@@ -58,17 +71,36 @@ export interface RuntimeTelemetryEmitter {
     handle: RuntimeExecutionHandle;
     loopState: LoopState;
   }): void;
+  /**
+   * Derive telemetry from a runtime stream event. Turn, iteration, and tool
+   * start events open timed spans keyed by the execution handle (and call id
+   * for tools); the matching end/result events close them. Checkpoint,
+   * approval, and error events emit point-in-time telemetry events (and, for
+   * checkpoints and errors, zero-duration spans). Unrecognized event types
+   * are ignored.
+   */
   eventFromStream(
     handle: RuntimeExecutionHandle,
     event: TuvrenStreamEvent,
     loopState: LoopState
   ): void;
+  /**
+   * Emit the recovery outcome for an expired execution: a
+   * `recovery.resumed` or `recovery.failed` event plus a zero-duration
+   * `recovery` span whose status mirrors `input.status`.
+   */
   recovery(input: {
     error?: unknown;
     handle: RuntimeExecutionHandle;
     loopState: LoopState;
     status: "error" | "ok";
   }): void;
+  /**
+   * Emit an explicit span with a caller-supplied start time; the end time is
+   * taken from the emitter's clock at call time. When `attributes` is
+   * omitted, the standard branch/runner/run/turn attribute set is used, and
+   * the span error (if any) is secret-screened before emission.
+   */
   span(input: {
     attributes?: Record<string, TelemetryAttributeValue>;
     error?: unknown;
@@ -83,6 +115,22 @@ export interface RuntimeTelemetryEmitter {
   }): void;
 }
 
+/**
+ * Creates the {@link RuntimeTelemetryEmitter} for one runtime instance.
+ *
+ * The `telemetry` routing union (bare sink, bare destination, or route
+ * object) is normalized once at construction (ADR-058 §2); a missing sink
+ * falls back to `NoopTelemetrySink`. Every record fans out to both the sink
+ * and, when routed, the durable destination. Failures on either channel are
+ * reported through the destination's operational-signal callback, degrading
+ * to a single last-resort `console.warn` when that channel is absent or
+ * itself throws — telemetry can never fail or delay execution (ADR-058
+ * §1/§3). Attributes are secret-screened before emission.
+ *
+ * @param input.now - Clock used for span end times and event timestamps not
+ *   carried by a stream event.
+ * @param input.scope - Scope identifier stamped into every record's lineage.
+ */
 export function createRuntimeTelemetryEmitter(input: {
   now(): EpochMs;
   scope: string;
@@ -500,6 +548,10 @@ export function createRuntimeTelemetryEmitter(input: {
   };
 }
 
+/**
+ * Builds the {@link TelemetryLineage} for a record from the execution
+ * handle's identifiers, defaulting `runId` to the handle's active run.
+ */
 function createLineage(
   scope: string,
   handle: RuntimeExecutionHandle,
@@ -516,6 +568,10 @@ function createLineage(
   };
 }
 
+/**
+ * Standard attribute set stamped on runtime telemetry records: branch id,
+ * active runner id, turn id, and the active run id when one exists.
+ */
 function baseAttributes(
   handle: RuntimeExecutionHandle,
   loopState: LoopState
@@ -530,6 +586,10 @@ function baseAttributes(
   };
 }
 
+/**
+ * Projects an arbitrary thrown value into the span error shape, defaulting
+ * the code to `runtime_error`; returns `undefined` when there is no error.
+ */
 function createSpanError(error: unknown): TelemetrySpanError | undefined {
   if (error === undefined) {
     return undefined;

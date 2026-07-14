@@ -15,6 +15,21 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional testkit surface.
+
+/**
+ * `@tuvren/provider-testkit` — shared test fixtures and a mock MCP server for
+ * `TuvrenProvider` implementations and provider-mediated MCP integrations.
+ *
+ * A private (unpublished) implementation testkit: {@link createStaticTuvrenProvider}
+ * and the `verifyProvider*`/`assertProvider*`/`collectProviderStream` helpers
+ * exercise a `TuvrenProvider`'s `generate`/`stream` contract against the
+ * schema-validated {@link providerTestkitFixtures}; `startMockMcpHttpServer`,
+ * `createMockMcpStdioCommand`, and their official-server counterparts spin up
+ * MCP servers (mock or the official `@modelcontextprotocol/server-everything`)
+ * over stdio or Streamable HTTP for MCP-client conformance tests.
+ *
+ * @packageDocumentation
+ */
 export type {
   MockMcpServerOptions,
   RunningMockMcpHttpServer,

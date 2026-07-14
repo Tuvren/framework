@@ -35,12 +35,26 @@ import {
 import { cloneValue, projectError } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Capability surface the event-publication helpers require from the runtime
+ * core.
+ */
 export interface RuntimeCoreEventsHost {
+  /** Generate a unique id (used for synthesized message ids). */
   createId(): string;
+  /**
+   * Whether `state.checkpoint`/`state.snapshot` observability events should
+   * be emitted at all.
+   */
   enableStateObservability(): boolean;
+  /** Current time used to stamp event timestamps. */
   now(): EpochMs;
 }
 
+/**
+ * Publish a named `custom` stream event (as emitted by extensions and
+ * handoffs), stamped with the current time and the active source identity.
+ */
 export function publishCustomEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -60,6 +74,10 @@ export function publishCustomEvent(
   );
 }
 
+/**
+ * Publish a stream event on the handle after decorating and validating it via
+ * {@link createPublishedEvent}.
+ */
 export function publishEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -69,6 +87,13 @@ export function publishEvent(
   handle.publish(createPublishedEvent(host, handle, event, loopState));
 }
 
+/**
+ * Decorates a stream event with default `source` attribution (active agent,
+ * runner, and thread) when it carries none, then shape-validates it.
+ *
+ * @returns The publishable event.
+ * @throws When the decorated event fails `assertTuvrenStreamEvent`.
+ */
 export function createPublishedEvent(
   _host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -87,6 +112,13 @@ export function createPublishedEvent(
   return publishedEvent;
 }
 
+/**
+ * Prepares a runner-emitted event for publication: validates that the event
+ * type is one a runner may emit (`assertRunnerRuntimeEvent`), then *replaces*
+ * its `source` with the runtime-owned attribution — unlike
+ * {@link createPublishedEvent}, a runner cannot supply its own source
+ * identity.
+ */
 export function createRunnerPublishedEvent(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -109,6 +141,8 @@ export function createRunnerPublishedEvent(
   );
 }
 
+/** Publishes already-validated buffered runner events on the handle, in
+ * order. */
 export function flushBufferedRunnerEvents(
   handle: RuntimeExecutionHandle,
   events: TuvrenStreamEvent[]
@@ -118,6 +152,12 @@ export function flushBufferedRunnerEvents(
   }
 }
 
+/**
+ * Flushes buffered runner events unless the iteration's resolution suppresses
+ * them (see `shouldSuppressBufferedRunnerEvents`).
+ *
+ * @returns The events that were published, or `[]` when suppressed.
+ */
 export function flushBufferedRunnerEventsIfNeeded(
   handle: RuntimeExecutionHandle,
   resolution: RuntimeResolution,
@@ -131,6 +171,15 @@ export function flushBufferedRunnerEventsIfNeeded(
   return events;
 }
 
+/**
+ * Guarantees the event stream reflects the assistant message: when the runner
+ * produced an assistant message but emitted no assistant-content events,
+ * synthesizes the canonical event sequence (`message.start`, per-part deltas
+ * and dones, `message.done`) from the message parts.
+ *
+ * @returns The synthesized publishable events, or `[]` when the runner
+ *   already streamed assistant content (or produced no assistant message).
+ */
 export function ensureRunnerAssistantEvents(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -155,6 +204,11 @@ export function ensureRunnerAssistantEvents(
   );
 }
 
+/**
+ * Projects an error to its stream shape, remembers the projection on the
+ * handle (for result reporting), and publishes it as an `error` event with
+ * the given fatality.
+ */
 export function publishProjectedError(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -177,6 +231,11 @@ export function publishProjectedError(
   );
 }
 
+/**
+ * Publishes the `state.checkpoint` event for an advanced turn node (plus a
+ * `state.snapshot` carrying the manifest when one is provided). A no-op when
+ * the host disables state observability.
+ */
 export function emitStateObservability(
   host: RuntimeCoreEventsHost,
   handle: RuntimeExecutionHandle,
@@ -215,6 +274,12 @@ export function emitStateObservability(
   }
 }
 
+/**
+ * Expands an assistant message into the canonical event sequence a streaming
+ * runner would have emitted: `message.start`, then per part its delta/done
+ * pair (text, reasoning — deltas skipped when redacted, structured, file,
+ * tool_call), and a closing `message.done` with an inferred finish reason.
+ */
 function synthesizeAssistantMessageEvents(
   host: RuntimeCoreEventsHost,
   message: Extract<TuvrenMessage, { role: "assistant" }>

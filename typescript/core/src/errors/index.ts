@@ -15,6 +15,17 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+
+/**
+ * `@tuvren/core/errors` — the Tuvren error surface: the abstract
+ * `TuvrenError` base and its concrete family (validation, persistence,
+ * lineage, recovery, runtime, provider), the `TuvrenErrorCode` helpers,
+ * and the stable capability/tool error-code constants shared across the
+ * runtime, policy, and attribution surfaces.
+ *
+ * @packageDocumentation
+ */
+
 export {
   CAPABILITY_BINDING_UNAVAILABLE,
   CAPABILITY_RESULT_STALE,

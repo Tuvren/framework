@@ -40,6 +40,13 @@ import {
   type ToolBatchOutcome,
 } from "./tool-execution.js";
 
+/**
+ * Host capabilities needed to resume a paused tool batch: run tracking and
+ * completion, head-state loading, artifact staging (messages, manifests,
+ * runtime status, iteration trees), event and error publication,
+ * fencing-token access, and checkpointed-pause resolution. Implemented by
+ * the runtime-core orchestration layer.
+ */
 export interface RuntimeCoreToolResumeHost {
   beginIterationStep(runId: string, stepId: string): Promise<void>;
   completeIterationRun(
@@ -136,6 +143,25 @@ export interface RuntimeCoreToolResumeHost {
   ): Promise<HashString>;
 }
 
+/**
+ * Resumes a paused tool batch with the caller-supplied approval response and
+ * commits the resulting iteration artifacts.
+ *
+ * A fresh tracked run is created against the reloaded branch head, the
+ * paused batch is resumed via `resumeToolBatch`, and the resulting tool-role
+ * messages, manifest, optional paused runtime status, and iteration tree are
+ * staged and committed. The after-iteration hooks then run against the
+ * latest head state and may compose a stronger resolution.
+ *
+ * When the resumed batch (or a hook) requires another approval, the returned
+ * outcome carries a refreshed {@link PauseContext} anchored to the committed
+ * pause checkpoint, with the new tool results appended to the paused
+ * iteration's results; a pause resolution without a committed checkpoint is
+ * a hard `missing_pause_checkpoint` error. Terminal non-continue resolutions
+ * resolve the checkpointed paused run, surfacing soft failures as non-fatal
+ * projected errors. A batch resume that throws fails the tracked run without
+ * advancing the branch and returns a hard-fail outcome.
+ */
 export async function resumePausedToolExecution(
   host: RuntimeCoreToolResumeHost,
   handle: RuntimeExecutionHandle,
@@ -326,6 +352,16 @@ export async function resumePausedToolExecution(
   };
 }
 
+/**
+ * Finalizes a paused tool batch whose approval is being rejected wholesale
+ * (for example when the pause is cancelled instead of resumed).
+ *
+ * The paused batch is resumed with a synthesized approval response that
+ * rejects every pending call so each records a rejection result, and the
+ * rejection results, manifest, and iteration tree are committed under a
+ * fresh tracked run. The outcome always carries the shared
+ * approval-rejection resolution (end_turn with reason "approval_rejected").
+ */
 export async function finalizeRejectedPausedToolCancellation(
   host: RuntimeCoreToolResumeHost,
   handle: RuntimeExecutionHandle,
@@ -432,6 +468,13 @@ export async function finalizeRejectedPausedToolCancellation(
   };
 }
 
+/**
+ * Assembles the tool-batch environment for the resume path. Mirrors the
+ * iteration-time environment but stages each result as a tool-role message
+ * keyed by {@link formatToolResultTaskId}, and includes the capability
+ * policy engine and context so resume-path invocation checks can
+ * re-evaluate policy (BB005, see inline note).
+ */
 function createToolBatchEnvironment(
   host: RuntimeCoreToolResumeHost,
   handle: RuntimeExecutionHandle,

@@ -15,6 +15,17 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+
+/**
+ * `@tuvren/core/execution` — execution handles, the runtime interface,
+ * orchestration types, context/loop policy contracts, and durable-read
+ * cursor types, plus the execution-status/manifest/message guards.
+ * Extension lifecycle types are also exported here for backward
+ * compatibility with `@tuvren/runtime-api/execution` consumers.
+ *
+ * @packageDocumentation
+ */
+
 export {
   assertContextManifest,
   assertExecutionStatus,
@@ -22,9 +33,6 @@ export {
   isExecutionStatus,
   isTuvrenMessage,
 } from "../lib/runtime-contract-guards.js";
-// Execution handles, runtime interface, orchestration types, context/policy, and
-// durable-read cursor types. Extension lifecycle types are also here for
-// backward compat with @tuvren/runtime-api/execution consumers.
 export type {
   AfterIterationContext,
   AfterIterationHandler,

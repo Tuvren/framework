@@ -32,6 +32,16 @@ import type { HelperBundle } from "./runtime-core-context.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 
+/**
+ * Capability surface the context-operation helpers ({@link
+ * applyContextEngineeringPlan}, {@link applyHandoff}) require from the
+ * runtime core.
+ *
+ * All kernel persistence (record/tree/run tracking), head-state loading,
+ * event publication, and config/tool resolution flow through this host so
+ * the context-mutation sequencing in this module stays free of direct
+ * kernel or facade dependencies.
+ */
 export interface RuntimeCoreContextOpsHost {
   advanceTurnAndBranchHead(
     handle: RuntimeExecutionHandle,
@@ -127,6 +137,23 @@ export interface RuntimeCoreContextOpsHost {
   ): Promise<HashString>;
 }
 
+/**
+ * Apply a context-engineering plan to the branch head as a tracked kernel
+ * run.
+ *
+ * Executes the plan against the current head messages/manifest, flushes any
+ * provisionally stored messages so their hashes become canonical, rebuilds
+ * the context manifest from the resulting messages plus the supplied
+ * extension-state updates, and commits the new `messages` and
+ * `context.manifest` paths in a single tree under a one-step
+ * `context_engineering` run. When the run advances the turn node, the branch
+ * head is moved forward and state observability is emitted; the handle's
+ * status manifest is always updated to the new manifest.
+ *
+ * @param plan - The plan whose `execute` callback returns the next ordered
+ *   message hashes.
+ * @param updates - Extension-state updates to fold into the rebuilt manifest.
+ */
 export async function applyContextEngineeringPlan(
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
@@ -216,6 +243,29 @@ export async function applyContextEngineeringPlan(
   });
 }
 
+/**
+ * Apply an agent handoff, rebuilding the context for the target agent as a
+ * tracked kernel run.
+ *
+ * Resolves the target agent config, builds the handoff source context, and
+ * publishes `handoff.start` before running the plan's `builder` to produce
+ * the target's message list. The rebuilt manifest seeds initial state for any
+ * target extensions that have none yet, then the new `messages`,
+ * `context.manifest`, and `runtime.status` (active agent, `running`) paths
+ * are committed in one tree under a one-step `handoff_context` run. On
+ * success the branch head advances, the handle's active agent/manifest are
+ * updated, and `agent.start` is published for the target agent.
+ *
+ * @param plan - Handoff plan naming the target agent and carrying the
+ *   context builder.
+ * @param updates - Extension-state updates folded into the rebuilt manifest
+ *   after the target extensions' initial state.
+ * @returns The target agent's config plus the tool registry and client
+ *   endpoint boundary rebuilt for it, for the caller to install as the new
+ *   active loop state.
+ * @throws TuvrenRuntimeError with code `unknown_handoff_target` when
+ *   `plan.targetAgent` cannot be resolved to a configured agent.
+ */
 export async function applyHandoff(
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,
@@ -393,6 +443,10 @@ export async function applyHandoff(
   };
 }
 
+/**
+ * Produce initial-state updates for target-agent extensions that have no
+ * entry in the manifest yet, copying each extension's declared default state.
+ */
 function collectInitialExtensionStateUpdates(
   extensions: AgentConfig["extensions"],
   manifest: HeadState["manifest"]
@@ -416,6 +470,10 @@ function collectInitialExtensionStateUpdates(
   return updates;
 }
 
+/**
+ * Complete a run step (storing its event record first) and sync any lease
+ * renewal carried on the step result back onto the handle's active lease.
+ */
 async function completeRunStep(
   host: RuntimeCoreContextOpsHost,
   handle: RuntimeExecutionHandle,

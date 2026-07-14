@@ -15,6 +15,16 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
+
+/**
+ * `@tuvren/core/messages` — the message contract surface
+ * (KrakenFrameworkSpecification §1.1–1.2): `TuvrenMessage` and its content
+ * part types, the JSON value/schema primitives, model config/prompt/
+ * response types, and the message and model-response guards.
+ *
+ * @packageDocumentation
+ */
+
 export {
   assertTuvrenMessage,
   assertTuvrenModelResponse,

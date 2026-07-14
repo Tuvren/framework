@@ -56,12 +56,31 @@ import {
  * duck-types this shape (via `isMcpToolSource`), never a nominal import.
  */
 export interface McpToolSource {
+  /**
+   * Closes the underlying MCP connection. Called automatically for every
+   * source passed to {@link createTuvren} when the returned
+   * {@link TuvrenInstance} is disposed via `Symbol.asyncDispose`.
+   */
   close(): Promise<void>;
+  /** Re-lists the server's tools, returning the refreshed definitions. */
   refresh(): Promise<{ tools: TuvrenToolDefinition[] }>;
+  /** Human-readable identifier of the MCP server backing this source. */
   readonly serverName: string;
+  /**
+   * The tool definitions currently exposed by the server. `createTuvren`
+   * flattens these into the default agent's tool list at construction time.
+   */
   readonly tools: TuvrenToolDefinition[];
 }
 
+/**
+ * Options for {@link createTuvren}, the batteries-included composition
+ * entrypoint (ADR-040, ADR-057).
+ *
+ * Per ADR-057 §2 the options are instances-only: the host constructs the
+ * backend, runner, and provider from the leaf packages it chose and passes
+ * the instances in — there are no kind-tagged string shorthands.
+ */
 export interface CreateTuvrenOptions {
   /**
    * Pre-built durable backend instance (ADR-057: instances only — no
@@ -79,8 +98,14 @@ export interface CreateTuvrenOptions {
    * take the §3.11 safe defaults; a runner cannot raise or disable a bound.
    */
   bounds?: ExecutionBounds;
+  /** Extensions attached to the default agent configuration. */
   extensions?: TuvrenExtension[];
-  /** Pre-built kernel — when supplied the factory skips kernel construction. */
+  /**
+   * Pre-built kernel — when supplied the factory skips kernel construction
+   * entirely and ignores backend ownership: the kernel already owns its
+   * substrate, so `createTuvren` neither closes a backend on dispose nor
+   * exposes `maintenance.purgeScope` on the resulting runtime.
+   */
   kernel?: RuntimeKernel;
   /**
    * Opt-in crypto-shredding codec (ADR-051, KRT-BF005). Supply at the top level
@@ -91,6 +116,12 @@ export interface CreateTuvrenOptions {
    * KMS/HSM.
    */
   payloadCodec?: PayloadCodec;
+  /**
+   * Default model provider wired into the default agent configuration and
+   * surfaced on {@link TuvrenInstance.provider}. When omitted, the default
+   * agent has no model; execution paths that need one must receive it another
+   * way (for example per-agent configuration on the orchestration surface).
+   */
   provider?: TuvrenProvider;
   /**
    * Pre-built runner factory instance (ADR-057: instances only — no `"react"`
@@ -99,6 +130,14 @@ export interface CreateTuvrenOptions {
    * and pass the instance.
    */
   runner: RuntimeRunnerFactory;
+  /**
+   * Pass-through engine options forwarded to the internal
+   * `createTuvrenRuntime` factory. The composition-owned fields
+   * (`defaultRunnerId`, `runnerRegistry`, `kernel`) are excluded because
+   * `createTuvren` derives them from `runner`, `backend`, and `kernel`.
+   * `telemetry`, `bounds`, and `payloadCodec` may be supplied here or at the
+   * top level, but not both places at once.
+   */
   runtimeOptions?: Omit<
     RuntimeCoreOptions,
     "defaultRunnerId" | "runnerRegistry" | "kernel"
@@ -111,19 +150,78 @@ export interface CreateTuvrenOptions {
    * changing session behavior.
    */
   telemetry?: TelemetryRouting;
+  /**
+   * Global tools for the default agent: plain {@link TuvrenToolDefinition}
+   * values (for example from `defineTool`) and/or {@link McpToolSource}
+   * instances, freely mixed. MCP sources are duck-typed by shape, their tools
+   * are flattened into the agent's tool list at construction time, and every
+   * source is closed when the instance is disposed.
+   */
   tools?: Array<McpToolSource | TuvrenToolDefinition>;
 }
 
+/**
+ * The composed framework instance returned by {@link createTuvren}.
+ *
+ * Dispose it with `await using` (or by calling `[Symbol.asyncDispose]()`
+ * directly) when done: disposal closes every MCP tool source and, unless a
+ * pre-built kernel was supplied, the owned backend. Disposal errors are
+ * aggregated — every resource is attempted before a combined error is thrown.
+ */
 export interface TuvrenInstance {
+  /** The kernel in use — either the host-supplied one or the one constructed
+   * over `options.backend`. */
   kernel: RuntimeKernel;
+  /**
+   * The orchestration surface, pre-configured with a single default agent
+   * named `"agent"` that carries the supplied provider, extensions, and
+   * global tools.
+   */
   orchestration: OrchestrationRuntime;
+  /** The provider passed in `options.provider`, when one was supplied. */
   provider?: TuvrenProvider;
+  /** The underlying framework runtime composed over the kernel. */
   runtime: TuvrenRuntime;
+  /** Closes MCP tool sources and the owned backend; aggregates errors. */
   [Symbol.asyncDispose](): Promise<void>;
 }
 
 // ── Factory ─────────────────────────────────────────────────────────────────
 
+/**
+ * Composes a ready-to-use Tuvren framework instance from host-constructed
+ * leaf instances (ADR-040, retargeted by ADR-057).
+ *
+ * Builds a kernel over the supplied backend (unless a pre-built `kernel` is
+ * given), registers the supplied runner as the default, flattens plain tools
+ * and MCP tool sources into a single default agent named `"agent"`, and wires
+ * the runtime plus orchestration surfaces on top. The returned instance owns
+ * the backend and MCP sources: dispose it to release them.
+ *
+ * @param options - Instances-only composition options; `backend` and `runner`
+ *   are required, everything else is optional.
+ * @returns A promise of the composed {@link TuvrenInstance}. The factory is
+ *   currently synchronous internally; the promise shape leaves room for async
+ *   composition steps without a signature break.
+ * @throws TuvrenValidationError (code `invalid_createtuvren_options`) when
+ *   `telemetry`, `bounds`, or `payloadCodec` is supplied both at the top
+ *   level and inside `runtimeOptions`.
+ *
+ * @example
+ * ```ts
+ * import { createTuvren } from "@tuvren/sdk";
+ * import { createMemoryBackend } from "@tuvren/backend-memory";
+ * import { createReActRunner } from "@tuvren/runner-react";
+ *
+ * await using tuvren = await createTuvren({
+ *   backend: createMemoryBackend(),
+ *   runner: createReActRunner(),
+ *   provider: myProvider, // a TuvrenProvider instance
+ * });
+ *
+ * const { threadId } = await tuvren.runtime.createThread({});
+ * ```
+ */
 export function createTuvren(
   options: CreateTuvrenOptions
 ): Promise<TuvrenInstance> {

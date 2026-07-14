@@ -56,10 +56,20 @@ import {
   validationError,
 } from "./kernel-validation-shared.js";
 
+/**
+ * True when `value` is a structurally valid {@link TurnNode}.
+ */
 export function isTurnNode(value: unknown): value is TurnNode {
   return tryAssert(value, assertTurnNode);
 }
 
+/**
+ * Asserts a structurally valid {@link TurnNode} (kernel spec §3.3): contract
+ * keys only, valid hash fields (`previousTurnNodeHash` and `eventHash` may be
+ * `null`), a staged-result array with unique `taskId`s, and a non-empty
+ * `schemaId`. Structural only — does not recompute the identity hash; use
+ * {@link assertTurnNodeIdentity} for that.
+ */
 export function assertTurnNode(
   value: unknown,
   label = "value"
@@ -92,6 +102,14 @@ export function assertTurnNode(
   assertNullableHashString(objectValue.eventHash, `${label}.eventHash`);
 }
 
+/**
+ * Asserts a structurally valid {@link TurnNode} whose `hash` also equals the
+ * recomputed canonical identity digest (`hashTurnNodeIdentity`,
+ * docs/KrakenKernelSpecification.md §3.3).
+ *
+ * @throws TuvrenValidationError With code `invalid_turn_node_hash` when the
+ *   stored hash does not match the canonical identity hash.
+ */
 export async function assertTurnNodeIdentity(
   value: unknown,
   label = "value"
@@ -112,10 +130,16 @@ export async function assertTurnNodeIdentity(
   }
 }
 
+/**
+ * True when `value` is a structurally valid {@link ThreadRecord}.
+ */
 export function isThreadRecord(value: unknown): value is ThreadRecord {
   return tryAssert(value, assertThreadRecord);
 }
 
+/**
+ * Asserts a structurally valid {@link ThreadRecord} (kernel spec §4.1).
+ */
 export function assertThreadRecord(
   value: unknown,
   label = "value"
@@ -132,10 +156,16 @@ export function assertThreadRecord(
   assertHashString(objectValue.rootTurnNodeHash, `${label}.rootTurnNodeHash`);
 }
 
+/**
+ * True when `value` is a structurally valid {@link BranchRecord}.
+ */
 export function isBranchRecord(value: unknown): value is BranchRecord {
   return tryAssert(value, assertBranchRecord);
 }
 
+/**
+ * Asserts a structurally valid {@link BranchRecord} (kernel spec §4.2).
+ */
 export function assertBranchRecord(
   value: unknown,
   label = "value"
@@ -152,12 +182,22 @@ export function assertBranchRecord(
   assertHashString(objectValue.headTurnNodeHash, `${label}.headTurnNodeHash`);
 }
 
+/**
+ * True when `value` is a valid {@link BranchHeadListEntry} tuple.
+ */
 export function isBranchHeadListEntry(
   value: unknown
 ): value is BranchHeadListEntry {
   return tryAssert(value, assertBranchHeadListEntry);
 }
 
+/**
+ * Asserts a `[branchId, headTurnNodeHash]` tuple as returned by `branch.list`
+ * (kernel spec §4.2).
+ *
+ * @throws TuvrenValidationError With code `invalid_branch_head_list_entry` when
+ *   the tuple arity is wrong.
+ */
 export function assertBranchHeadListEntry(
   value: unknown,
   label = "value"
@@ -176,10 +216,17 @@ export function assertBranchHeadListEntry(
   assertHashString(tupleValue[1], `${label}[1]`);
 }
 
+/**
+ * True when `value` is a structurally valid {@link TurnRecord}.
+ */
 export function isTurnRecord(value: unknown): value is TurnRecord {
   return tryAssert(value, assertTurnRecord);
 }
 
+/**
+ * Asserts a structurally valid {@link TurnRecord} (kernel spec §5.3).
+ * `parentTurnId` may be `null` for the first semantic Turn.
+ */
 export function assertTurnRecord(
   value: unknown,
   label = "value"
@@ -206,10 +253,25 @@ export function assertTurnRecord(
   assertHashString(objectValue.headTurnNodeHash, `${label}.headTurnNodeHash`);
 }
 
+/**
+ * True when `value` is a structurally valid {@link RunRecord}.
+ */
 export function isRunRecord(value: unknown): value is RunRecord {
   return tryAssert(value, assertRunRecord);
 }
 
+/**
+ * Asserts a structurally valid {@link RunRecord} (kernel spec §5.2), including
+ * cross-field invariants:
+ *
+ * - `currentStepIndex` never exceeds `stepSequence.length`; a `"running"` run
+ *   needs a non-empty step sequence, and a `"completed"` run must have exhausted
+ *   every declared step.
+ * - Lease fields (`executionOwnerId`, `fencingToken`, `leaseExpiresAtMs`) are
+ *   all-or-nothing and only legal while the run is `"running"` (§5.2, "Run
+ *   Execution Leases").
+ * - `preemptionReason` is only legal on `"failed"` runs.
+ */
 export function assertRunRecord(
   value: unknown,
   label = "value"
@@ -303,6 +365,11 @@ export function assertRunRecord(
   );
 }
 
+/**
+ * Enforces the run-liveness field invariants of kernel spec §5.2: the three
+ * lease fields travel together, only on `"running"` runs, and
+ * `preemptionReason` only on `"failed"` runs.
+ */
 function assertOptionalRunLivenessFields(
   status: RunStatus,
   executionOwnerId: unknown,
@@ -360,10 +427,18 @@ function assertOptionalRunLivenessFields(
   }
 }
 
+/**
+ * True when `value` is a structurally valid {@link StagedResult}.
+ */
 export function isStagedResult(value: unknown): value is StagedResult {
   return tryAssert(value, assertStagedResult);
 }
 
+/**
+ * Asserts a structurally valid {@link StagedResult} (kernel spec §3.4),
+ * including the interrupt-payload rule: `interruptPayload` is required when
+ * `status` is `"interrupted"` and must be omitted otherwise.
+ */
 export function assertStagedResult(
   value: unknown,
   label = "value"
@@ -407,10 +482,17 @@ export function assertStagedResult(
   );
 }
 
+/**
+ * True when `value` is a structurally valid {@link StepContext}.
+ */
 export function isStepContext(value: unknown): value is StepContext {
   return tryAssert(value, assertStepContext);
 }
 
+/**
+ * Asserts a structurally valid {@link StepContext} as returned by
+ * `run.beginStep` (kernel spec §5.8).
+ */
 export function assertStepContext(
   value: unknown,
   label = "value"
@@ -431,10 +513,19 @@ export function assertStepContext(
   assertKernelRecordArray(objectValue.signals, `${label}.signals`);
 }
 
+/**
+ * True when `value` is a structurally valid {@link RecoveryState}.
+ */
 export function isRecoveryState(value: unknown): value is RecoveryState {
   return tryAssert(value, assertRecoveryState);
 }
 
+/**
+ * Asserts a structurally valid {@link RecoveryState} (kernel spec §5.8),
+ * including coherence invariants: consumed and uncommitted staged results must
+ * not share `taskId`s, a non-null `lastCompletedStepId` must reference a
+ * declared step, and consumed results require a named completed step.
+ */
 export function assertRecoveryState(
   value: unknown,
   label = "value"
@@ -491,12 +582,19 @@ export function assertRecoveryState(
   }
 }
 
+/**
+ * True when `value` is a structurally valid {@link ThreadCreateResult}.
+ */
 export function isThreadCreateResult(
   value: unknown
 ): value is ThreadCreateResult {
   return tryAssert(value, assertThreadCreateResult);
 }
 
+/**
+ * Asserts a structurally valid {@link ThreadCreateResult} as returned by the
+ * atomic thread bootstrap (kernel spec §4.1).
+ */
 export function assertThreadCreateResult(
   value: unknown,
   label = "value"
@@ -514,10 +612,19 @@ export function assertThreadCreateResult(
   assertHashString(objectValue.rootTurnTreeHash, `${label}.rootTurnTreeHash`);
 }
 
+/**
+ * True when `value` is a structurally valid {@link SetHeadResult}.
+ */
 export function isSetHeadResult(value: unknown): value is SetHeadResult {
   return tryAssert(value, assertSetHeadResult);
 }
 
+/**
+ * Asserts a structurally valid {@link SetHeadResult} (kernel spec §4.2). When
+ * `archiveBranch` is present (backward head movement), it must share the
+ * branch's `threadId` while differing in both `branchId` and
+ * `headTurnNodeHash`.
+ */
 export function assertSetHeadResult(
   value: unknown,
   label = "value"
@@ -543,6 +650,12 @@ export function assertSetHeadResult(
   }
 }
 
+/**
+ * Asserts a dense array of valid {@link StagedResult}s with unique `taskId`s.
+ *
+ * @throws TuvrenValidationError With code `duplicate_staged_result_task_id` on
+ *   repeated `taskId`s.
+ */
 export function assertStagedResultArray(
   value: unknown,
   label: string
@@ -565,6 +678,12 @@ export function assertStagedResultArray(
   }
 }
 
+/**
+ * Asserts `updatedAtMs >= createdAtMs` for stored records that carry both
+ * timestamps.
+ *
+ * @throws TuvrenValidationError With code `invalid_timestamp_order`.
+ */
 export function assertMonotonicTimestamps(
   createdAtMs: number,
   updatedAtMs: number,
@@ -580,6 +699,10 @@ export function assertMonotonicTimestamps(
   }
 }
 
+/**
+ * Asserts a dense array of valid step declarations with unique step ids
+ * (kernel spec §5.1).
+ */
 function assertStepDeclarationArray(
   value: unknown,
   label: string
@@ -602,6 +725,10 @@ function assertStepDeclarationArray(
   }
 }
 
+/**
+ * A `"running"` run must have a non-empty step sequence and an in-range
+ * `currentStepIndex` (kernel spec §5.2).
+ */
 function assertRunningRunHasNextStep(
   status: RunStatus,
   currentStepIndex: number,
@@ -631,6 +758,10 @@ function assertRunningRunHasNextStep(
   }
 }
 
+/**
+ * A `"completed"` run must have executed every declared step:
+ * `currentStepIndex === stepSequence.length`.
+ */
 function assertCompletedRunExhaustsSteps(
   status: RunStatus,
   currentStepIndex: number,
@@ -652,6 +783,11 @@ function assertCompletedRunExhaustsSteps(
   }
 }
 
+/**
+ * Consumed and uncommitted staged results must not share `taskId`s — a task is
+ * either anchored by the last checkpoint or still pending, never both (kernel
+ * spec §5.7).
+ */
 function assertDisjointStagedResultTaskIds(
   leftResults: StagedResult[],
   leftLabel: string,
@@ -671,6 +807,10 @@ function assertDisjointStagedResultTaskIds(
   }
 }
 
+/**
+ * Non-empty consumed staged results imply at least one completed step, so
+ * `lastCompletedStepId` must not be `null` in that case.
+ */
 function assertRecoveryStateCoherence(
   consumedStagedResults: StagedResult[],
   lastCompletedStepId: string | null,
@@ -686,6 +826,11 @@ function assertRecoveryStateCoherence(
   }
 }
 
+/**
+ * Archive branches produced by backward head movement must stay in the same
+ * thread, use a distinct branch id, and preserve a head different from the
+ * rolled-back branch's new head (kernel spec §4.2).
+ */
 function assertSetHeadArchiveCoherence(
   branch: BranchRecord,
   archiveBranch: BranchRecord,
@@ -723,6 +868,10 @@ function assertSetHeadArchiveCoherence(
   }
 }
 
+/**
+ * Enforces that `interruptPayload` is present exactly when `status` is
+ * `"interrupted"`.
+ */
 function assertInterruptPayloadConsistency(
   status: StagedResultStatus,
   interruptPayload: KernelRecord | undefined,

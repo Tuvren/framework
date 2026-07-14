@@ -40,8 +40,32 @@ export {
 
 import { hashKernelRecord } from "./kernel-record-identity.js";
 
+/**
+ * Allowed {@link StagedResult} statuses, mirrored locally for identity-input
+ * validation.
+ */
 const STAGED_RESULT_STATUSES = ["completed", "failed", "interrupted"] as const;
 
+/**
+ * Computes a TurnTree's content-address from its identity tuple
+ * `{ schemaId, manifest }` (docs/KrakenKernelSpecification.md §3.2).
+ *
+ * The manifest is validated as a full manifest against the supplied schema
+ * before hashing: every schema path must be present, every manifest path must be
+ * schema-defined, and each value must match its path's collection kind
+ * (`HashString[]` for `"ordered"`, `HashString | null` for `"single"`). The hash
+ * is the SHA-256 digest of the canonical deterministic CBOR encoding of the
+ * identity record (see {@link hashKernelRecord}).
+ *
+ * @param schemaId - Schema identity; must equal `schema.schemaId`.
+ * @param manifest - Full path-to-value manifest of the tree.
+ * @param schema - Registered schema the manifest must conform to; itself
+ *   validated against the registration rules of kernel spec §3.1.
+ * @returns The TurnTree hash.
+ * @throws TuvrenValidationError With code `invalid_turn_tree_hash` when the
+ *   manifest, schema, or schemaId pairing is invalid; a non-string or empty
+ *   `schemaId` currently surfaces as `invalid_turn_node_hash` instead.
+ */
 export function hashTurnTreeIdentity(
   schemaId: string,
   manifest: TurnTreeManifest,
@@ -58,6 +82,25 @@ export function hashTurnTreeIdentity(
   return hashKernelRecord({ manifest, schemaId });
 }
 
+/**
+ * Computes a TurnNode's content-address from all identity fields except `hash`
+ * itself (docs/KrakenKernelSpecification.md §3.3).
+ *
+ * The input is strictly validated as a contract-shaped TurnNode identity:
+ * unknown keys are rejected, hash fields must be valid `HashString`s,
+ * `consumedStagedResults` must be a dense data-only array with unique `taskId`s,
+ * and `interruptPayload` must be present exactly when a staged result's status
+ * is `"interrupted"`. Staged results are projected onto their contract fields
+ * before hashing so extra runtime state can never leak into identity. Committed
+ * cross-language vectors for this digest live in
+ * spec/conformance/kernel/fixtures/kernel-protocol-deterministic.json.
+ *
+ * @param value - TurnNode identity fields; an existing `hash` field is accepted
+ *   but excluded from the digest.
+ * @returns The TurnNode hash.
+ * @throws TuvrenValidationError With code `invalid_turn_node_hash` when the
+ *   input is not a valid TurnNode identity payload.
+ */
 export async function hashTurnNodeIdentity(
   value: Omit<TurnNode, "hash"> | TurnNode
 ): Promise<HashString> {
@@ -65,6 +108,11 @@ export async function hashTurnNodeIdentity(
   return await hashKernelRecord(toTurnNodeIdentityRecord(turnNodeValue));
 }
 
+/**
+ * Projects a TurnNode onto its identity record: every contract field except
+ * `hash`, with each consumed staged result reduced to contract fields only
+ * (`interruptPayload` included only when present).
+ */
 function toTurnNodeIdentityRecord(
   value: Omit<TurnNode, "hash"> | TurnNode
 ): KernelRecord {
@@ -107,6 +155,11 @@ function toTurnNodeIdentityRecord(
   return identityRecord;
 }
 
+/**
+ * Validates and normalizes a TurnNode identity input: contract keys only, valid
+ * hash fields, and a dense staged-result array with unique `taskId`s. Returns a
+ * null-prototype copy with normalized staged results.
+ */
 function assertTurnNodeIdentityInput(
   value: Omit<TurnNode, "hash"> | TurnNode
 ): Omit<TurnNode, "hash"> | TurnNode {
@@ -178,6 +231,11 @@ function assertTurnNodeIdentityInput(
   }) as Omit<TurnNode, "hash"> | TurnNode;
 }
 
+/**
+ * Validates one staged result and returns a fresh object containing only
+ * contract fields, with `interruptPayload` present exactly when `status` is
+ * `"interrupted"`.
+ */
 function assertStagedResultIdentityInput(
   value: unknown,
   label: string
@@ -252,6 +310,10 @@ function assertStagedResultIdentityInput(
   };
 }
 
+/**
+ * Rejects arrays with holes, symbol keys, accessors, or non-index own
+ * properties, so identity hashing only ever sees pure data.
+ */
 function assertDenseDataArray(
   value: unknown,
   label: string
@@ -303,6 +365,10 @@ function assertDenseDataArray(
   }
 }
 
+/**
+ * Rejects duplicate staged-result `taskId`s: identity is `taskId` within the
+ * owning Run (kernel spec §3.4).
+ */
 function assertUniqueStagedResultTaskIds(
   stagedResults: StagedResult[],
   label: string
@@ -321,6 +387,10 @@ function assertUniqueStagedResultTaskIds(
   }
 }
 
+/**
+ * Enforces that `interruptPayload` is present when `status` is `"interrupted"`
+ * and omitted otherwise.
+ */
 function assertInterruptPayloadConsistency(
   status: StagedResult["status"],
   interruptPayload: KernelRecord | undefined,
@@ -345,6 +415,9 @@ function assertInterruptPayloadConsistency(
   }
 }
 
+/**
+ * Rejects any own key outside the declared contract shape.
+ */
 function assertAllowedKeys(
   value: Record<string, unknown>,
   allowedKeys: readonly string[],
@@ -365,6 +438,11 @@ function assertAllowedKeys(
   }
 }
 
+/**
+ * Validates a full TurnTree manifest against its schema: every schema path must
+ * be present, no unknown paths, and each value must match its path's collection
+ * kind (kernel spec §3.2).
+ */
 function assertTurnTreeManifestIdentityInput(
   value: TurnTreeManifest,
   schema: TurnTreeSchema,
@@ -403,6 +481,10 @@ function assertTurnTreeManifestIdentityInput(
   }
 }
 
+/**
+ * Validates one manifest value against its collection kind: `HashString | null`
+ * for `"single"` paths, an array of `HashString`s for `"ordered"` paths.
+ */
 function assertTurnTreePathValue(
   value: unknown,
   collectionKind: "ordered" | "single",
@@ -429,6 +511,11 @@ function assertTurnTreePathValue(
   }
 }
 
+/**
+ * Validates a TurnTreeSchema against the registration rules of kernel spec §3.1
+ * / Appendix B: contract keys only, non-empty `schemaId`, valid path
+ * definitions, and consistent incorporation rules.
+ */
 function assertTurnTreeSchemaIdentityInput(
   value: TurnTreeSchema,
   label: string
@@ -451,6 +538,11 @@ function assertTurnTreeSchemaIdentityInput(
   );
 }
 
+/**
+ * Validates schema path definitions: dot-separated non-empty paths, collection
+ * kinds limited to `"ordered"` / `"single"`, optional `metadata` as a
+ * KernelRecord, and no duplicate paths (kernel spec §3.1).
+ */
 function assertTurnTreeSchemaPathDefinitions(
   value: unknown,
   label: string
@@ -513,6 +605,10 @@ function assertTurnTreeSchemaPathDefinitions(
   return validatedDefinitions;
 }
 
+/**
+ * Validates incorporation rules: every `targetPath` must reference a defined
+ * schema path and `objectType` mappings must be unique (kernel spec §3.1).
+ */
 function assertTurnTreeSchemaIncorporationRules(
   value: unknown,
   pathDefinitions: Array<{ collection: "ordered" | "single"; path: string }>,
@@ -559,6 +655,10 @@ function assertTurnTreeSchemaIncorporationRules(
   }
 }
 
+/**
+ * Array-shape guard mirroring `assertDenseDataArray`, but throwing the
+ * TurnTree-identity error code.
+ */
 function assertTurnTreeDenseDataArray(
   value: unknown,
   label: string
@@ -614,6 +714,10 @@ function assertTurnTreeDenseDataArray(
   return value;
 }
 
+/**
+ * Plain-object guard mirroring `assertPlainObjectRecord`, but throwing the
+ * TurnTree-identity error code. Returns a null-prototype copy of the record.
+ */
 function assertTurnTreePlainObjectRecord(
   value: unknown,
   label: string
@@ -646,6 +750,9 @@ function assertTurnTreePlainObjectRecord(
   ) as Record<string, unknown>;
 }
 
+/**
+ * Non-empty-string guard throwing the TurnTree-identity error code.
+ */
 function assertTurnTreeNonEmptyString(
   value: unknown,
   label: string
@@ -657,6 +764,10 @@ function assertTurnTreeNonEmptyString(
   }
 }
 
+/**
+ * Validates a schema path: a non-empty, dot-separated string with non-empty
+ * segments.
+ */
 function assertTurnTreeSchemaPath(
   value: unknown,
   label: string
@@ -673,6 +784,10 @@ function assertTurnTreeSchemaPath(
   }
 }
 
+/**
+ * HashString guard that rethrows core validation failures with the
+ * TurnTree-identity error code.
+ */
 function assertTurnTreeHashStringOrThrow(value: unknown, label: string): void {
   try {
     assertHashString(value, label);
@@ -684,6 +799,10 @@ function assertTurnTreeHashStringOrThrow(value: unknown, label: string): void {
   }
 }
 
+/**
+ * Rejects non-plain objects (class instances, symbol keys, accessors) and
+ * returns a null-prototype copy, so identity input is prototype-free data.
+ */
 function assertPlainObjectRecord(
   value: unknown,
   label: string
@@ -716,6 +835,10 @@ function assertPlainObjectRecord(
   ) as Record<string, unknown>;
 }
 
+/**
+ * Optional contract fields must be omitted rather than set to `undefined`, so
+ * field presence stays unambiguous across encodings.
+ */
 function assertOptionalFieldIsOmittedWhenUndefined(
   value: Record<string, unknown>,
   key: string,
@@ -729,6 +852,10 @@ function assertOptionalFieldIsOmittedWhenUndefined(
   }
 }
 
+/**
+ * HashString guard that rethrows core validation failures with the
+ * TurnNode-identity error code.
+ */
 function assertHashStringOrThrow(
   value: unknown,
   label: string
@@ -743,6 +870,10 @@ function assertHashStringOrThrow(
   }
 }
 
+/**
+ * Accepts `null` or a valid HashString; rejects everything else with the
+ * TurnNode-identity error code.
+ */
 function assertNullableHashStringOrThrow(
   value: unknown,
   label: string
@@ -754,6 +885,9 @@ function assertNullableHashStringOrThrow(
   assertHashStringOrThrow(value, label);
 }
 
+/**
+ * Non-empty-string guard throwing the TurnNode-identity error code.
+ */
 function assertNonEmptyString(
   value: unknown,
   label: string
@@ -765,6 +899,9 @@ function assertNonEmptyString(
   }
 }
 
+/**
+ * Guards that a value is one of the allowed StagedResult statuses.
+ */
 function assertStagedResultStatusOrThrow(
   value: unknown,
   label: string
@@ -782,11 +919,17 @@ function assertStagedResultStatusOrThrow(
   }
 }
 
+/**
+ * True for objects whose prototype is `Object.prototype` or `null`.
+ */
 function isPlainObject(value: object): value is Record<string, unknown> {
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
 
+/**
+ * Builds a TuvrenValidationError with code `invalid_turn_node_hash`.
+ */
 function turnNodeIdentityError(
   message: string,
   details: unknown
@@ -797,6 +940,9 @@ function turnNodeIdentityError(
   });
 }
 
+/**
+ * Builds a TuvrenValidationError with code `invalid_turn_tree_hash`.
+ */
 function turnTreeIdentityError(
   message: string,
   details: unknown

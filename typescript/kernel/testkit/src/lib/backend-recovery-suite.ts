@@ -36,6 +36,14 @@ import {
 
 const CHECKPOINT_FAILURE_PATTERN = /checkpoint failed/u;
 
+/**
+ * Registers the shared backend-recovery test suite — pause/resume
+ * checkpoint flows, crash-safe rollback of a failed checkpoint, and related
+ * durability scenarios — against `options.testApi`, using a fresh
+ * `options.createBackend()` instance per case. Any `RuntimeBackend`
+ * implementation that passes this suite recovers cleanly from interrupted
+ * or failed transactions without leaving partially committed state.
+ */
 export function registerBackendRecoverySuite(
   options: BackendConformanceSuiteOptions
 ): void {

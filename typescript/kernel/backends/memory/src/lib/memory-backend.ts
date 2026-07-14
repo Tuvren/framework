@@ -116,22 +116,46 @@ import {
 } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
 
+/**
+ * The transaction handle {@link createRepositories} builds: the protocol
+ * repository surface plus the backend clock, so repository internals (e.g.
+ * turn-tree path normalization) can stamp `createdAtMs` consistently.
+ */
 interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
 }
 
+/**
+ * Commit-boundary hooks installed by the kernel testkit's fault-injecting
+ * wrapper. Each hook maps to a `FaultPoint`: `beforeCommit` runs after draft
+ * validation but before any state is published, `midCommit` receives the
+ * commit thunk and must invoke it exactly once, and `afterCommitBeforeAck`
+ * runs after publication but before the transaction resolves.
+ */
 interface BackendFaultHooks {
   afterCommitBeforeAck?(): Promise<void>;
   beforeCommit?(): Promise<void>;
   midCommit?(commit: () => Promise<void>): Promise<void>;
 }
 
+/**
+ * The control surface exposed under {@link FAULT_INJECTION_CONTROL} so the
+ * testkit can install {@link BackendFaultHooks} without the hooks becoming
+ * part of the public backend contract.
+ */
 interface BackendFaultInjectionControl {
   setFaultHooks(hooks: BackendFaultHooks | null): void;
   supportsFaultPoint(point: string): boolean;
 }
 
+/** Construction options for {@link createMemoryBackend}. */
 export interface MemoryBackendOptions {
+  /**
+   * Clock used to stamp backend-generated timestamps and evaluate lease
+   * expiry.
+   *
+   * @defaultValue `Date.now`
+   */
   now?: () => EpochMs;
   /**
    * Host-bound partition identity for this backend (ADR-048). All of this
@@ -149,6 +173,11 @@ export interface MemoryBackendOptions {
   store?: MemoryScopeStore;
 }
 
+/**
+ * The static capability set advertised by every memory backend instance.
+ * Values are fixed at module scope because the memory backend's capabilities
+ * do not vary by construction options.
+ */
 const MEMORY_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
   // Single-writer in-process reference backend: no cross-owner contention, so it
@@ -157,10 +186,31 @@ const MEMORY_BACKEND_CAPABILITIES: BackendCapability = {
   "shared-lease-clock": false,
   "thread.enumeration": true,
 };
+/**
+ * Well-known symbol under which the backend exposes its
+ * {@link BackendFaultInjectionControl}. The kernel testkit constructs the
+ * same symbol description to discover the control surface at runtime; the
+ * symbol is deliberately not exported so ordinary consumers never see it.
+ */
 const FAULT_INJECTION_CONTROL = Symbol(
   "tuvren.kernel.testkit.fault-injection-control"
 );
 
+/**
+ * In-memory reference implementation of the kernel `RuntimeBackend` contract.
+ *
+ * Concurrency model: all work for the bound Scope — transactions, reclamation,
+ * and scope purges — is serialized through the scope store's per-Scope
+ * exclusive lock, across every backend instance sharing the same store
+ * (ADR-049). Distinct Scopes never contend.
+ *
+ * Transaction model: each transaction runs against a deep clone of the
+ * committed state (copy-on-write). The draft is validated against the full
+ * committed-state invariant suite before being swapped in atomically, so a
+ * failed or aborted transaction leaves the committed state untouched and
+ * partial writes are never observable. Nested transactions are rejected, and
+ * repository handles are invalidated once their transaction settles.
+ */
 class MemoryBackend implements KrakenBackend {
   readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
     setFaultHooks: (hooks) => {
@@ -191,14 +241,25 @@ class MemoryBackend implements KrakenBackend {
     this.store = options?.store ?? createMemoryScopeStore();
   }
 
+  /** Reports the memory backend's static capability set. */
   capabilities(): BackendCapability {
     return MEMORY_BACKEND_CAPABILITIES;
   }
 
+  /** Always healthy: the backend has no external dependency to probe. */
   health(): Promise<{ ok: true }> {
     return Promise.resolve({ ok: true });
   }
 
+  /**
+   * Runs the §9.4 reachability reclamation sweep over this Scope's committed
+   * state, releasing durable records that are unreachable from live roots and
+   * older than the in-flight grace horizon.
+   *
+   * @param options - `nowMs` overrides the backend clock for leaseless-run
+   *   expiry evaluation; omitted fields fall back to the constructor clock.
+   * @returns Counts of released and retained records.
+   */
   reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
     // Reclamation serializes against this Scope exactly like a transaction:
     // clone the committed state, sweep the unreachable remainder, validate the
@@ -216,6 +277,10 @@ class MemoryBackend implements KrakenBackend {
     });
   }
 
+  /**
+   * Drops the bound Scope's entire partition (full tenant offboarding,
+   * kernel spec §9.4). Other Scopes sharing the same store are unaffected.
+   */
   purgeScope(): Promise<void> {
     // Full tenant offboarding (§9.4): drop the bound Scope's entire partition.
     // Serialize against this Scope exactly like a transaction so the drop never
@@ -227,6 +292,20 @@ class MemoryBackend implements KrakenBackend {
     });
   }
 
+  /**
+   * Runs `work` inside a serialized, copy-on-write transaction against this
+   * Scope's state.
+   *
+   * The draft state is only published if `work` resolves AND the resulting
+   * state passes committed-state validation; any rejection discards the draft
+   * entirely. Repository handles passed to `work` are invalidated when the
+   * transaction settles — retaining and using one afterwards raises
+   * `memory_backend_inactive_transaction_handle`.
+   *
+   * @throws TuvrenPersistenceError with code
+   *   `memory_backend_nested_transaction` when called from inside another
+   *   transaction on this backend.
+   */
   transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
@@ -289,12 +368,36 @@ class MemoryBackend implements KrakenBackend {
   }
 }
 
+/**
+ * Creates the in-memory reference backend.
+ *
+ * State lives entirely in process memory (inside the scope store), so it is
+ * lost when the process exits; use the SQLite or PostgreSQL backends for
+ * durability. Pass a shared {@link MemoryBackendOptions.store | store} to let
+ * several backends share per-Scope state, and a
+ * {@link MemoryBackendOptions.scope | scope} to bind the backend to a
+ * partition other than `DEFAULT_SCOPE`.
+ *
+ * @param options - Optional clock, Scope binding, and shared scope store.
+ * @returns A `RuntimeBackend` bound to the resolved Scope.
+ * @throws TypeError when `options.scope` is not a valid Scope.
+ */
 export function createMemoryBackend(
   options?: MemoryBackendOptions
 ): KrakenBackend {
   return new MemoryBackend(options);
 }
 
+/**
+ * Builds the per-transaction repository surface over a draft state.
+ *
+ * Every repository method first checks `isTransactionActive` so a handle
+ * cannot outlive its transaction, then enforces the write-time invariants for
+ * its record family (schema shape, referential existence, immutability,
+ * monotonic timestamps, lineage legality) before mutating the draft. All
+ * records are cloned on the way in and out, so callers can never alias the
+ * draft state.
+ */
 function createRepositories(
   state: BackendState,
   now: () => number,

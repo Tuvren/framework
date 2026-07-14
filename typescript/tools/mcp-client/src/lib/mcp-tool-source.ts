@@ -35,12 +35,26 @@ import {
   type McpSdkToolResult,
 } from "./mcp-sdk-client.js";
 
+/** The MCP transport kind: a spawned stdio child process, or an HTTP-based server (Streamable HTTP under the hood). */
 export type McpTransport = "stdio" | "http-sse";
 
+/**
+ * Credential material for an `http-sse` transport connection. Confined to
+ * this package's transport edge — never copied onto a runtime surface that
+ * can be observed, persisted, or replayed (README "Secret Isolation — Edge
+ * Confinement", ADR-044).
+ */
 export type McpAuth =
   | { kind: "bearer"; token: string }
   | { kind: "header"; name: string; value: string };
 
+/**
+ * Transport-specific connection settings for {@link createMcpToolSource}.
+ * `stdio` spawns a child process; `http-sse` connects to a URL over
+ * Streamable HTTP. Any `env`/`headers`/`auth` values here are secret-bearing
+ * transport material and are subject to the same edge-confinement guarantee
+ * as {@link McpAuth}.
+ */
 export type McpTransportConfig =
   | {
       transport: "stdio";
@@ -56,23 +70,43 @@ export type McpTransportConfig =
       auth?: McpAuth;
     };
 
+/**
+ * A live connection to one MCP server, exposing its tools as Tuvren tool
+ * definitions. Returned by {@link createMcpToolSource}.
+ */
 export interface McpToolSource {
+  /** Closes the underlying MCP transport/connection. */
   close(): Promise<void>;
+  /** Re-lists the server's tools and replaces {@link tools} with the refreshed set. */
   refresh(): Promise<{ tools: TuvrenToolDefinition[] }>;
+  /** The connected server's advertised name, or the `name` option override. */
   readonly serverName: string;
+  /** The current set of translated Tuvren tool definitions (a defensive copy). */
   readonly tools: TuvrenToolDefinition[];
 }
 
+/**
+ * Options for {@link createMcpToolSource}.
+ */
 export type CreateMcpToolSourceOptions = McpTransportConfig & {
+  /**
+   * Prefixes every tool name as `{name}{toolNameSeparator}{originalName}`
+   * (e.g. `"docs.search"`), and overrides {@link McpToolSource.serverName}.
+   * Without a `name`, tools keep the server's advertised names unprefixed.
+   */
   name?: string;
+  /** Called with the normalized provider error whenever a tool invocation fails after listing succeeds. */
   onError?: (error: TuvrenProviderError) => void;
+  /** Separator used between `name` and the original tool name; defaults to `"."`. */
   toolNameSeparator?: string;
 };
 
+/** {@link CreateMcpToolSourceOptions} plus a test-only client injection point used by {@link createMcpToolSourceInternal}. */
 type McpToolSourcePrivateOptions = CreateMcpToolSourceOptions & {
   client?: MCPClient;
 };
 
+/** Any JSON-serializable value: primitive, `null`, array, or object thereof. */
 type JsonValue =
   | null
   | boolean
@@ -81,6 +115,7 @@ type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
+/** The public/advertised name pairing and compiled output validator produced for one translated MCP tool. */
 interface TranslatedToolBinding {
   advertisedName: string;
   outputValidator?: ValidateFunction;
@@ -88,6 +123,7 @@ interface TranslatedToolBinding {
   tool: TuvrenToolDefinition;
 }
 
+/** The JSON-safe shape a `TuvrenProviderError` is serialized to inside a `tool_result` error output. */
 interface SerializedProviderError {
   code: string;
   details?: unknown;
@@ -95,14 +131,32 @@ interface SerializedProviderError {
   name: "TuvrenProviderError";
 }
 
+/** Default separator between a source's `name` and a tool's original name. */
 const DEFAULT_TOOL_NAME_SEPARATOR = ".";
 
+/**
+ * Connects to an MCP server (§ README) and lists its tools as an
+ * {@link McpToolSource}: the entry point host code uses to add MCP tools to a
+ * Tuvren agent.
+ *
+ * @throws TuvrenProviderError with code `mcp_initialize_failed` or
+ *   `mcp_tool_list_failed` when connecting or the initial tool listing fails.
+ */
 export function createMcpToolSource(
   options: CreateMcpToolSourceOptions
 ): Promise<McpToolSource> {
   return createMcpToolSourceInternal(options);
 }
 
+/**
+ * Implementation behind {@link createMcpToolSource}, extended with a
+ * test-only `client` injection point so tests can substitute a fake
+ * `MCPClient` without a real MCP server.
+ *
+ * @throws TuvrenProviderError with code `mcp_initialize_failed` or
+ *   `mcp_tool_list_failed` when connecting or the initial tool listing fails;
+ *   the client is closed before the error propagates.
+ */
 export async function createMcpToolSourceInternal(
   options: McpToolSourcePrivateOptions
 ): Promise<McpToolSource> {
@@ -119,6 +173,12 @@ export async function createMcpToolSourceInternal(
   return source;
 }
 
+/**
+ * Default {@link McpToolSource} implementation: lists an MCP server's tools,
+ * translates each into a Tuvren tool definition with Ajv-validated
+ * input/output schemas, and dispatches invocations through the underlying
+ * {@link MCPClient}.
+ */
 class DefaultMcpToolSource implements McpToolSource {
   private readonly ajv = new Ajv({
     allErrors: true,
@@ -145,6 +205,13 @@ class DefaultMcpToolSource implements McpToolSource {
     return this.currentTools.map((tool) => ({ ...tool }));
   }
 
+  /**
+   * Re-lists the server's tools, replaces the translated tool set, and
+   * returns a defensive copy.
+   *
+   * @throws TuvrenProviderError with code `mcp_tool_list_failed` when
+   *   listing fails.
+   */
   async refresh(): Promise<{ tools: TuvrenToolDefinition[] }> {
     try {
       const advertisedTools = await this.client.listTools();
@@ -162,10 +229,18 @@ class DefaultMcpToolSource implements McpToolSource {
     }
   }
 
+  /** Closes the underlying MCP transport/connection. */
   async close(): Promise<void> {
     await this.client.close();
   }
 
+  /**
+   * Translates one MCP-advertised tool into a Tuvren tool definition:
+   * compiles Ajv validators for its input/output JSON schemas, computes its
+   * public name via {@link createPublicToolName}, and wires `execute` to
+   * {@link executeTool}. The original name and server name are preserved
+   * under `metadata.mcp` for host introspection.
+   */
   private translateTool(advertisedTool: McpSdkTool): TranslatedToolBinding {
     const inputSchema = toTuvrenJsonSchema(
       advertisedTool.inputSchema,
@@ -217,6 +292,17 @@ class DefaultMcpToolSource implements McpToolSource {
     };
   }
 
+  /**
+   * Executes one MCP tool call: validates the input against the tool's
+   * advertised input schema, invokes it through the underlying
+   * {@link MCPClient}, and on success validates the output against the
+   * advertised output schema (when declared). Every failure path (input
+   * validation, transport, server-reported tool error, output validation)
+   * is normalized into a `tool_result` with `isError: true` rather than
+   * thrown, so a single bad tool call cannot fail the whole agent turn;
+   * transport and output-validation failures are also reported through
+   * `onError` before being returned.
+   */
   private async executeTool(params: {
     advertisedName: string;
     context: ToolExecutionContext;
@@ -298,6 +384,11 @@ class DefaultMcpToolSource implements McpToolSource {
     return output;
   }
 
+  /**
+   * Builds the tool's public-facing name: the advertised name unprefixed
+   * when no `name` option was given, or `{name}{separator}{advertisedName}`
+   * otherwise.
+   */
   private createPublicToolName(advertisedName: string): string {
     if (this.options.name === undefined) {
       return advertisedName;
@@ -308,11 +399,13 @@ class DefaultMcpToolSource implements McpToolSource {
     }${advertisedName}`;
   }
 
+  /** Compiles an Ajv validator for one JSON Schema. */
   private compileValidator(schema: TuvrenJsonSchema): ValidateFunction {
     return this.ajv.compile(schema);
   }
 }
 
+/** Builds a human-readable message for a server-reported tool error, including its first text content part if present. */
 function createMcpToolErrorMessage(
   toolName: string,
   result: McpSdkToolResult
@@ -324,6 +417,7 @@ function createMcpToolErrorMessage(
     : `MCP tool "${toolName}" returned an error result: ${text}`;
 }
 
+/** Returns the first `text`-type content part's text from a tool result, if any. */
 function readFirstTextContent(result: McpSdkToolResult): string | undefined {
   if (!("content" in result && Array.isArray(result.content))) {
     return undefined;
@@ -342,6 +436,7 @@ function readFirstTextContent(result: McpSdkToolResult): string | undefined {
   return textContent?.text;
 }
 
+/** Extracts the error details attached to a server-reported tool failure, for the thrown provider error's `details`. */
 function normalizeMcpToolFailure(
   result: McpSdkToolResult
 ): Record<string, unknown> {
@@ -355,6 +450,7 @@ function normalizeMcpToolFailure(
   };
 }
 
+/** Runs a compiled Ajv validator against a value, returning a success/failure result instead of throwing. */
 function validateSchemaValue(
   validator: ValidateFunction,
   value: unknown
@@ -374,6 +470,11 @@ function validateSchemaValue(
   };
 }
 
+/**
+ * Picks a tool result's output value in priority order: `structuredContent`
+ * (schema-validated output) when present, then the legacy `toolResult`
+ * field, else the raw `content`/`isError` shape.
+ */
 function normalizeToolOutput(result: McpSdkToolResult): unknown {
   if ("structuredContent" in result && result.structuredContent !== undefined) {
     return result.structuredContent;
@@ -389,6 +490,7 @@ function normalizeToolOutput(result: McpSdkToolResult): unknown {
   };
 }
 
+/** Builds an `isError: true` `tool_result` part carrying a serialized provider error, in place of throwing. */
 function createErrorResult(
   context: ToolExecutionContext,
   toolName: string,
@@ -405,6 +507,7 @@ function createErrorResult(
   };
 }
 
+/** Passes an existing `TuvrenProviderError` through unchanged; wraps anything else as `mcp_transport_failure`. */
 function normalizeProviderError(error: unknown): TuvrenProviderError {
   if (error instanceof TuvrenProviderError) {
     return error;
@@ -417,6 +520,7 @@ function normalizeProviderError(error: unknown): TuvrenProviderError {
   );
 }
 
+/** Reduces a `TuvrenProviderError` to the JSON-safe shape stored in a `tool_result` error output. */
 function serializeProviderError(
   error: TuvrenProviderError
 ): SerializedProviderError {
@@ -428,6 +532,7 @@ function serializeProviderError(
   };
 }
 
+/** Formats Ajv validation errors as `"{instancePath or '/'} {message}"` strings. */
 function formatAjvErrors(errors: readonly ErrorObject[]): string[] {
   return errors.map((error) => {
     const path = error.instancePath.length === 0 ? "/" : error.instancePath;
@@ -435,6 +540,12 @@ function formatAjvErrors(errors: readonly ErrorObject[]): string[] {
   });
 }
 
+/**
+ * Narrows an MCP-advertised schema to a `TuvrenJsonSchema`.
+ *
+ * @throws TuvrenProviderError with code `mcp_tool_list_failed` when the
+ *   value is not a boolean or JSON-serializable object.
+ */
 function toTuvrenJsonSchema(value: unknown, label: string): TuvrenJsonSchema {
   if (isTuvrenJsonSchema(value)) {
     return value;
@@ -446,10 +557,12 @@ function toTuvrenJsonSchema(value: unknown, label: string): TuvrenJsonSchema {
   );
 }
 
+/** True for a boolean JSON Schema or a JSON-serializable object schema. */
 function isTuvrenJsonSchema(value: unknown): value is TuvrenJsonSchema {
   return typeof value === "boolean" || isJsonRecord(value);
 }
 
+/** Recursive JSON-value predicate. */
 function isJsonValue(value: unknown): value is JsonValue {
   if (
     value === null ||
@@ -467,6 +580,7 @@ function isJsonValue(value: unknown): value is JsonValue {
   return isJsonRecord(value);
 }
 
+/** True for a non-array object whose own values are all JSON values. */
 function isJsonRecord(value: unknown): value is { [key: string]: JsonValue } {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;

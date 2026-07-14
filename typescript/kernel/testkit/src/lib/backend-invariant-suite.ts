@@ -19,6 +19,13 @@ import { registerBackendInvariantRunStateCases } from "./backend-invariant-suite
 import { registerBackendInvariantTurnCases } from "./backend-invariant-suite-turns.js";
 import type { BackendConformanceSuiteOptions } from "./backend-test-suite-types.js";
 
+/**
+ * Registers the shared backend-invariant test suite — run-state, turn, and
+ * archive-branch invariant cases — against `options.testApi`, using a fresh
+ * `options.createBackend()` instance per case. Any `RuntimeBackend`
+ * implementation that passes this suite enforces the same referential and
+ * lineage invariants as the reference (memory) backend.
+ */
 export function registerBackendInvariantSuite(
   options: BackendConformanceSuiteOptions
 ): void {

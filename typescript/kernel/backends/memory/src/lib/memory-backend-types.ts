@@ -29,6 +29,18 @@ import type {
   StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 
+/**
+ * The complete durable state of one Scope partition in the memory backend.
+ *
+ * Maps are keyed by each record family's identity: hash-addressed content
+ * (objects, turn nodes, turn trees, ordered path chunks) by content hash, and
+ * identity records (threads, branches, turns, runs, schemas) by their ID.
+ * `stagedResults` nests by run ID then task ID; `turnTreePaths` nests by turn
+ * tree hash then path; `observeAnnotations` keeps an append-only list per run.
+ *
+ * Structurally identical to `@tuvren/backend-shared`'s `BackendState` — keep
+ * the two (and the SQLite/PostgreSQL equivalents) in lockstep.
+ */
 export interface BackendState {
   branches: Map<string, StoredBranch>;
   objects: Map<string, StoredObject>;

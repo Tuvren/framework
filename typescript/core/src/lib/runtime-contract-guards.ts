@@ -219,6 +219,13 @@ const TUVREN_MODEL_RESPONSE_KEYS = new Set([
   "usage",
 ]);
 
+/**
+ * True when `parent.attribution` is absent or is a valid capability
+ * attribution record: non-empty `capabilityId`, a known `executionClass`
+ * (`provider-native` | `provider-mediated` | `tuvren-server` |
+ * `tuvren-client`), a known `owner` (`provider` | `tuvren`), and a plain
+ * `observation` object. Additive optional field per ADR-046 AW006.
+ */
 function isOptionalCapabilityAttribution(
   parent: Record<string, unknown>
 ): boolean {
@@ -240,6 +247,13 @@ function isOptionalCapabilityAttribution(
   );
 }
 
+/**
+ * True when `value` is a valid `ProviderNativeInvocationRecord`: exact key
+ * allowlist, non-empty `callId`/`name`/`providerCallId`, an
+ * `executionClass` of `provider-native` or `provider-mediated`, a present
+ * `result` field, optional boolean `isError`, and optional serializable
+ * `providerMetadata`.
+ */
 function isProviderNativeInvocationRecord(value: unknown): boolean {
   return safePredicate(
     () =>
@@ -256,6 +270,20 @@ function isProviderNativeInvocationRecord(value: unknown): boolean {
   );
 }
 
+/**
+ * Returns `true` when `value` is a structurally valid
+ * {@link TuvrenModelResponse} (KrakenFrameworkSpecification §1.4).
+ *
+ * Requires an exact key allowlist (`finishReason`, `parts`,
+ * `providerToolResults`, `usage`, `providerMetadata`), a `finishReason` from
+ * the canonical set (`stop` | `tool_call` | `length` | `error` |
+ * `content_filter`), `parts` composed entirely of valid content parts,
+ * optional `providerToolResults` as provider-native invocation records,
+ * optional token `usage`, and optional serializable `providerMetadata`.
+ * Never throws; probe failures collapse to `false`.
+ *
+ * @see {@link assertTuvrenModelResponse} for the throwing variant.
+ */
 export function isTuvrenModelResponse(
   value: unknown
 ): value is TuvrenModelResponse {
@@ -275,6 +303,14 @@ export function isTuvrenModelResponse(
   );
 }
 
+/**
+ * Asserts that `value` is a valid {@link TuvrenModelResponse}.
+ *
+ * @param value - Untrusted candidate model response.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_model_response` when
+ *   {@link isTuvrenModelResponse} rejects the value.
+ */
 export function assertTuvrenModelResponse(
   value: unknown,
   label = "value"
@@ -287,6 +323,23 @@ export function assertTuvrenModelResponse(
   }
 }
 
+/**
+ * Returns `true` when `value` is a structurally valid {@link TuvrenMessage}
+ * (KrakenFrameworkSpecification §1.2).
+ *
+ * Validates per-role, each against its exact key set:
+ * - `system`: a non-empty `content` string; `parts` and `providerMetadata`
+ *   are forbidden.
+ * - `user`: a non-empty `parts` array of valid content parts.
+ * - `assistant`: a non-empty `parts` array of valid content parts, plus an
+ *   optional serializable `providerMetadata` record.
+ * - `tool`: a non-empty `parts` array in which every part is a
+ *   `tool_result` part.
+ *
+ * Never throws; probe failures collapse to `false`.
+ *
+ * @see {@link assertTuvrenMessage} for the throwing variant.
+ */
 export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
   return safePredicate(() => {
     if (!isPlainObject(value)) {
@@ -330,6 +383,14 @@ export function isTuvrenMessage(value: unknown): value is TuvrenMessage {
   });
 }
 
+/**
+ * Asserts that `value` is a valid {@link TuvrenMessage}.
+ *
+ * @param value - Untrusted candidate message.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_tuvren_message` when
+ *   {@link isTuvrenMessage} rejects the value.
+ */
 export function assertTuvrenMessage(
   value: unknown,
   label = "value"
@@ -342,6 +403,19 @@ export function assertTuvrenMessage(
   }
 }
 
+/**
+ * Returns `true` when `value` is a structurally valid {@link ApprovalRequest}
+ * (KrakenFrameworkSpecification §1.7).
+ *
+ * Requires exactly the keys `toolCalls` and `completedResults`, with
+ * `toolCalls` a non-empty array of valid pending tool calls and
+ * `completedResults` an array (possibly empty) of valid `tool_result`
+ * parts. Every `callId` must be distinct across `toolCalls` and
+ * `completedResults` combined, so each decision can be linked to exactly
+ * one call. Never throws; probe failures collapse to `false`.
+ *
+ * @see {@link assertApprovalRequest} for the throwing variant.
+ */
 export function isApprovalRequest(value: unknown): value is ApprovalRequest {
   return safePredicate(() => {
     if (
@@ -365,6 +439,14 @@ export function isApprovalRequest(value: unknown): value is ApprovalRequest {
   });
 }
 
+/**
+ * Asserts that `value` is a valid {@link ApprovalRequest}.
+ *
+ * @param value - Untrusted candidate approval request.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_approval_request` when
+ *   {@link isApprovalRequest} rejects the value.
+ */
 export function assertApprovalRequest(
   value: unknown,
   label = "value"
@@ -377,6 +459,23 @@ export function assertApprovalRequest(
   }
 }
 
+/**
+ * Returns `true` when `value` is a structurally valid
+ * {@link ProviderStreamChunk} (KrakenFrameworkSpecification §3.2).
+ *
+ * The chunk must carry a known `type` discriminant (`text_delta`,
+ * `reasoning_delta`, `reasoning_done`, `structured_delta`,
+ * `structured_done`, `tool_call_start`, `tool_call_args_delta`,
+ * `tool_call_done`, `provider_tool_result`, `finish`, or `error`) and its
+ * variant payload is checked against that variant's exact key allowlist:
+ * identifiers (`providerCallId`, `name`) must be non-empty strings, deltas
+ * must be strings, `input`/`result`/`data` must be present and
+ * JSON-serializable, `finishReason` must come from the canonical set, and
+ * `usage`/`providerMetadata` are optional. Never throws; probe failures
+ * collapse to `false`.
+ *
+ * @see {@link assertProviderStreamChunk} for the throwing variant.
+ */
 export function isProviderStreamChunk(
   value: unknown
 ): value is ProviderStreamChunk {
@@ -466,6 +565,14 @@ export function isProviderStreamChunk(
   });
 }
 
+/**
+ * Asserts that `value` is a valid {@link ProviderStreamChunk}.
+ *
+ * @param value - Untrusted candidate chunk from a provider adapter.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_provider_stream_chunk`
+ *   when {@link isProviderStreamChunk} rejects the value.
+ */
 export function assertProviderStreamChunk(
   value: unknown,
   label = "value"
@@ -478,6 +585,28 @@ export function assertProviderStreamChunk(
   }
 }
 
+/**
+ * Returns `true` when `value` is a structurally valid
+ * {@link TuvrenStreamEvent} (KrakenFrameworkSpecification §1.8).
+ *
+ * Three layers are checked:
+ * 1. The `type` discriminant must belong to the canonical event vocabulary
+ *    (`turn.*`, `iteration.*`, `message.*`, `text.*`, `reasoning.*`,
+ *    `file.done`, `structured.*`, `tool_call.*`, `tool.*`, `approval.*`,
+ *    `steering.incorporated`, `state.*`, `error`, `custom`).
+ * 2. The envelope must carry a canonical `EpochMs` `timestamp` and, when
+ *    present, a valid `source` attribution record.
+ * 3. The variant payload must match that event type's exact key set and
+ *    field predicates (non-empty identifiers, canonical `finishReason` and
+ *    status enums, serializable `input`/`output`/`data`, valid nested
+ *    approval request/response, manifest, or error projection, and the
+ *    additive optional `attribution` on `tool.start`/`tool.result` per
+ *    ADR-046 AW006).
+ *
+ * Never throws; probe failures collapse to `false`.
+ *
+ * @see {@link assertTuvrenStreamEvent} for the throwing variant.
+ */
 export function isTuvrenStreamEvent(
   value: unknown
 ): value is TuvrenStreamEvent {
@@ -500,6 +629,11 @@ export function isTuvrenStreamEvent(
   });
 }
 
+/**
+ * Dispatches on the event `type` and validates the variant payload against
+ * its exact key set (plus the shared `type`/`timestamp`/`source` envelope
+ * keys) and per-field predicates.
+ */
 function hasValidStreamEventPayload(
   value: Record<string, unknown> & { timestamp: EpochMs; type: string }
 ): boolean {
@@ -727,6 +861,14 @@ function hasValidStreamEventPayload(
   }
 }
 
+/**
+ * Asserts that `value` is a valid {@link TuvrenStreamEvent}.
+ *
+ * @param value - Untrusted candidate stream event.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_stream_event` when
+ *   {@link isTuvrenStreamEvent} rejects the value.
+ */
 export function assertTuvrenStreamEvent(
   value: unknown,
   label = "value"
@@ -739,6 +881,23 @@ export function assertTuvrenStreamEvent(
   }
 }
 
+/**
+ * Returns `true` when `value` is a structurally valid
+ * {@link TuvrenToolDefinition} (KrakenFrameworkSpecification §8.1).
+ *
+ * Requires an exact key allowlist, a non-empty `name`, a string
+ * `description`, an `execute` function, and an `inputSchema` that is either
+ * a structurally valid JSON Schema or an executable `CustomSchema`
+ * (`toJSONSchema`/`validate`). Optional policy fields are shape-checked
+ * when present: `approval` (boolean or function), `idempotent`,
+ * `nonRetryable`, `requiresUserPresence` (booleans), `maxRetries` (number),
+ * `metadata` (serializable record), `outputSchema` (schema),
+ * `requiredCredentialScopes` (string array), `requiredResidency` (string),
+ * `riskClass` (`low` | `medium` | `high`), and `timeout` (non-negative
+ * finite milliseconds). Never throws; probe failures collapse to `false`.
+ *
+ * @see {@link assertTuvrenToolDefinition} for the throwing variant.
+ */
 export function isTuvrenToolDefinition(
   value: unknown
 ): value is TuvrenToolDefinition {
@@ -777,6 +936,14 @@ export function isTuvrenToolDefinition(
   );
 }
 
+/**
+ * Asserts that `value` is a valid {@link TuvrenToolDefinition}.
+ *
+ * @param value - Untrusted candidate tool definition.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_tool_definition` when
+ *   {@link isTuvrenToolDefinition} rejects the value.
+ */
 export function assertTuvrenToolDefinition(
   value: unknown,
   label = "value"
@@ -789,6 +956,20 @@ export function assertTuvrenToolDefinition(
   }
 }
 
+/**
+ * Returns `true` when `value` is a structurally valid {@link ExecutionStatus}
+ * (KrakenFrameworkSpecification §7.1).
+ *
+ * Beyond the exact key allowlist (`phase`, `iterationCount`, `activeAgent`,
+ * `approval`, `manifest`, `pauseReason`), a canonical `phase`
+ * (`running` | `paused` | `completed` | `failed`), a non-negative safe
+ * integer `iterationCount`, and shape checks on the optional fields, it
+ * enforces the pause coupling invariant: `approval` and `pauseReason` may
+ * only be present when `phase === "paused"`, and a paused status must carry
+ * both. Never throws; probe failures collapse to `false`.
+ *
+ * @see {@link assertExecutionStatus} for the throwing variant.
+ */
 export function isExecutionStatus(value: unknown): value is ExecutionStatus {
   return safePredicate(() => {
     if (
@@ -826,6 +1007,14 @@ export function isExecutionStatus(value: unknown): value is ExecutionStatus {
   });
 }
 
+/**
+ * Asserts that `value` is a valid {@link ExecutionStatus}.
+ *
+ * @param value - Untrusted candidate execution status.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_execution_status` when
+ *   {@link isExecutionStatus} rejects the value.
+ */
 export function assertExecutionStatus(
   value: unknown,
   label = "value"
@@ -838,6 +1027,16 @@ export function assertExecutionStatus(
   }
 }
 
+/**
+ * Returns `true` when `value` is a structurally valid
+ * {@link ApprovalResponse} (KrakenFrameworkSpecification §1.7).
+ *
+ * Requires exactly the key `decisions`, holding a non-empty array of valid
+ * approval decisions with unique `callId`s. This check is
+ * request-independent; use {@link isApprovalResponseForRequest} to also
+ * verify coverage against the pending {@link ApprovalRequest}. Never
+ * throws; probe failures collapse to `false`.
+ */
 export function isApprovalResponse(value: unknown): value is ApprovalResponse {
   return safePredicate(
     () =>
@@ -850,6 +1049,18 @@ export function isApprovalResponse(value: unknown): value is ApprovalResponse {
   );
 }
 
+/**
+ * Returns `true` when `value` is a valid {@link ApprovalResponse} that fully
+ * answers `request` (KrakenFrameworkSpecification §1.7).
+ *
+ * In addition to {@link isApprovalResponse}, it enforces decision coverage:
+ * there must be exactly one decision per pending tool call, every decision
+ * `callId` must match a pending call in the request, and each decision
+ * `type` must be one of the decision options that pending call offered.
+ *
+ * @param value - Untrusted candidate response.
+ * @param request - The active approval request the response must cover.
+ */
 export function isApprovalResponseForRequest(
   value: unknown,
   request: ApprovalRequest
@@ -861,6 +1072,14 @@ export function isApprovalResponseForRequest(
   );
 }
 
+/**
+ * Asserts that `value` is a valid {@link ApprovalResponse}.
+ *
+ * @param value - Untrusted candidate approval response.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_approval_response` when
+ *   {@link isApprovalResponse} rejects the value.
+ */
 export function assertApprovalResponse(
   value: unknown,
   label = "value"
@@ -873,6 +1092,16 @@ export function assertApprovalResponse(
   }
 }
 
+/**
+ * Asserts that `value` is a valid {@link ApprovalResponse} that fully covers
+ * the pending tool calls of `request`.
+ *
+ * @param value - Untrusted candidate approval response.
+ * @param request - The active approval request the response must cover.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_approval_response` when
+ *   {@link isApprovalResponseForRequest} rejects the value.
+ */
 export function assertApprovalResponseForRequest(
   value: unknown,
   request: ApprovalRequest,
@@ -886,6 +1115,7 @@ export function assertApprovalResponseForRequest(
   }
 }
 
+/** True when `value[key]` is `undefined` or a valid {@link ApprovalRequest}. */
 function isOptionalApprovalRequest<
   TKey extends string,
   TObject extends Record<string, unknown>,
@@ -893,6 +1123,19 @@ function isOptionalApprovalRequest<
   return value[key] === undefined || isApprovalRequest(value[key]);
 }
 
+/**
+ * Asserts that `value` is a valid {@link ContextManifest}
+ * (KrakenFrameworkSpecification §1.6).
+ *
+ * Delegates to `isContextManifest`, which checks the exact key set, the
+ * role/name counters, and the internal consistency invariants between
+ * counters, last-role indexes, and turn boundaries.
+ *
+ * @param value - Untrusted candidate manifest.
+ * @param label - Name used in the error message (defaults to `"value"`).
+ * @throws TuvrenValidationError with code `invalid_context_manifest` when
+ *   the value is not a valid manifest.
+ */
 export function assertContextManifest(
   value: unknown,
   label = "value"

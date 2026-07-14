@@ -30,12 +30,40 @@ import type {
 
 const DEFAULT_INSTRUMENTATION_NAME = "@tuvren/telemetry-otel";
 
+/** Construction options for {@link createOtelTelemetrySink}. */
 export interface CreateOtelTelemetrySinkOptions {
+  /**
+   * Instrumentation scope name used to resolve a tracer via
+   * `trace.getTracer` when `tracer` is not supplied.
+   *
+   * @defaultValue `"@tuvren/telemetry-otel"`
+   */
   instrumentationName?: string;
+  /** Instrumentation scope version passed to `trace.getTracer`, when resolving a tracer by name. */
   instrumentationVersion?: string;
+  /**
+   * A pre-built OTel `Tracer` to use directly, bypassing
+   * `trace.getTracer(instrumentationName, instrumentationVersion)`.
+   */
   tracer?: Tracer;
 }
 
+/**
+ * Builds a `TuvrenTelemetrySink` backed by the OpenTelemetry JS API.
+ *
+ * `span` entries become OTel spans with explicit `startTime`/`endTime`
+ * (`SpanKind.INTERNAL`) and a status derived from `telemetrySpan.status` (see
+ * {@link applyStatus}). `event` entries attach to the currently active OTel
+ * span (`trace.getActiveSpan()`) as a span event when one exists; otherwise a
+ * short-lived wrapper span is created and immediately ended so the event is
+ * never silently dropped for lack of an active span. Every span and event
+ * carries the Tuvren lineage (`branchId`, `runId`, `scope`, `threadId`,
+ * `turnId`, `turnNodeHash`) as `tuvren.runtime.*` attributes alongside any
+ * caller-supplied attributes.
+ *
+ * @param options.tracer - Takes precedence over
+ *   `instrumentationName`/`instrumentationVersion` when supplied.
+ */
 export function createOtelTelemetrySink(
   options: CreateOtelTelemetrySinkOptions = {}
 ): TuvrenTelemetrySink {
@@ -52,6 +80,7 @@ export function createOtelTelemetrySink(
   };
 }
 
+/** Projects one `TelemetrySpan` onto an OTel span with explicit start/end times and lineage attributes. */
 function emitTelemetrySpan(tracer: Tracer, telemetrySpan: TelemetrySpan): void {
   const span = tracer.startSpan(telemetrySpan.name, {
     attributes: toOtelAttributes({
@@ -71,6 +100,11 @@ function emitTelemetrySpan(tracer: Tracer, telemetrySpan: TelemetrySpan): void {
   span.end(telemetrySpan.endMs);
 }
 
+/**
+ * Projects one `TelemetryEvent` onto OTel: added to the active span if one
+ * exists, otherwise emitted on a short-lived wrapper span created and ended
+ * at `event.atMs` so the event is never dropped for lack of an active span.
+ */
 function emitTelemetryEvent(tracer: Tracer, event: TelemetryEvent): void {
   const activeSpan = trace.getActiveSpan();
   const attributes = toOtelAttributes({
@@ -97,6 +131,11 @@ function emitTelemetryEvent(tracer: Tracer, event: TelemetryEvent): void {
   span.end(event.atMs);
 }
 
+/**
+ * Sets the OTel span status from `telemetrySpan.status`: `"ok"` maps to
+ * `SpanStatusCode.OK`; anything else maps to `SpanStatusCode.ERROR`, with an
+ * `exception` span event added when `telemetrySpan.error` is present.
+ */
 function applyStatus(span: Span, telemetrySpan: TelemetrySpan): void {
   if (telemetrySpan.status === "ok") {
     span.setStatus({ code: SpanStatusCode.OK });
@@ -116,6 +155,7 @@ function applyStatus(span: Span, telemetrySpan: TelemetrySpan): void {
   }
 }
 
+/** Drops `undefined`-valued entries, since `SpanAttributes` does not accept them. */
 function toOtelAttributes(
   attributes: Record<string, boolean | number | string | undefined>
 ): SpanAttributes {

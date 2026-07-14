@@ -15,8 +15,17 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package subpath is the intentional focused contract surface.
-// Extension lifecycle handler types. These are also exported from @tuvren/core/execution
-// for backward compat with @tuvren/runtime-api/execution consumers.
+
+/**
+ * `@tuvren/core/extensions` — extension lifecycle handler types:
+ * `TuvrenExtension` and its before/after-iteration, around-model,
+ * around-tool, intercept, and system-prompt hook contracts. These are also
+ * exported from `@tuvren/core/execution` for backward compatibility with
+ * `@tuvren/runtime-api/execution` consumers.
+ *
+ * @packageDocumentation
+ */
+
 export type {
   AfterIterationContext,
   AfterIterationHandler,

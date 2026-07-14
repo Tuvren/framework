@@ -81,12 +81,19 @@ const RUN_STATUSES = ["running", "paused", "completed", "failed"] as const;
 const RUN_COMPLETION_STATUSES = ["paused", "completed", "failed"] as const;
 const VERDICT_DISPOSITIONS = ["HardFail", "SoftFail", "EndTurn"] as const;
 
+/**
+ * True when `value` is a valid {@link PathCollectionKind}.
+ */
 export function isPathCollectionKind(
   value: unknown
 ): value is PathCollectionKind {
   return isStringLiteral(value, PATH_COLLECTION_KINDS);
 }
 
+/**
+ * Asserts a valid {@link PathCollectionKind} (`"ordered"` or `"single"`,
+ * kernel spec §3.1).
+ */
 export function assertPathCollectionKind(
   value: unknown,
   label = "value"
@@ -100,6 +107,11 @@ export function assertPathCollectionKind(
   }
 }
 
+/**
+ * True when `value` is a valid {@link PathValue}: a HashString, a dense
+ * HashString array, or `null`. Kind-agnostic — use
+ * {@link assertPathValueForCollectionKind} to also check the collection kind.
+ */
 export function isPathValue(value: unknown): value is PathValue {
   return (
     typeof value === "string" ||
@@ -110,6 +122,9 @@ export function isPathValue(value: unknown): value is PathValue {
   );
 }
 
+/**
+ * Asserts a valid {@link PathValue} without checking collection-kind pairing.
+ */
 export function assertPathValue(
   value: unknown,
   label = "value"
@@ -123,6 +138,13 @@ export function assertPathValue(
   }
 }
 
+/**
+ * Asserts that a path value matches its collection kind (kernel spec §3.2):
+ * `HashString[]` for `"ordered"` paths, `HashString | null` for `"single"`
+ * paths.
+ *
+ * @throws TuvrenValidationError With code `invalid_path_value_kind`.
+ */
 export function assertPathValueForCollectionKind(
   value: unknown,
   collectionKind: PathCollectionKind,
@@ -161,10 +183,19 @@ export function assertPathValueForCollectionKind(
   }
 }
 
+/**
+ * True when `value` is a valid {@link TurnTreeSchema}.
+ */
 export function isTurnTreeSchema(value: unknown): value is TurnTreeSchema {
   return tryAssert(value, assertTurnTreeSchema);
 }
 
+/**
+ * Asserts a valid {@link TurnTreeSchema} against the registration rules of
+ * kernel spec §3.1 / Appendix B: non-empty `schemaId`, well-formed path
+ * definitions without duplicates, and incorporation rules whose target paths
+ * exist and whose `objectType` mappings are unique.
+ */
 export function assertTurnTreeSchema(
   value: unknown,
   label = "value"
@@ -185,6 +216,14 @@ export function assertTurnTreeSchema(
   );
 }
 
+/**
+ * Asserts a valid {@link TurnTreeManifest} (kernel spec §3.2).
+ *
+ * Without a schema, only path-map shape is validated (dot-separated paths and
+ * valid {@link PathValue}s). With a schema, the manifest must be full: every
+ * schema path present, no unknown paths, and each value matching its collection
+ * kind.
+ */
 export function assertTurnTreeManifest(
   value: unknown,
   label?: string
@@ -211,6 +250,12 @@ export function assertTurnTreeManifest(
   }
 }
 
+/**
+ * Asserts a valid {@link TurnTreeChangeSet} against a schema (kernel spec
+ * §3.2). Unlike a manifest, a change set may be partial: schema paths may be
+ * omitted, but every present path must be schema-defined and match its
+ * collection kind.
+ */
 export function assertTurnTreeChangeSet(
   value: unknown,
   schema: TurnTreeSchema,
@@ -221,10 +266,17 @@ export function assertTurnTreeChangeSet(
   assertTurnTreePathMapMatchesSchema(changeSet, schema, label, false);
 }
 
+/**
+ * True when `value` is a valid {@link StepDeclaration}.
+ */
 export function isStepDeclaration(value: unknown): value is StepDeclaration {
   return tryAssert(value, assertStepDeclaration);
 }
 
+/**
+ * Asserts a valid {@link StepDeclaration} (kernel spec §5.1). Optional
+ * `metadata` must be a KernelRecord and omitted rather than `undefined`.
+ */
 export function assertStepDeclaration(
   value: unknown,
   label = "value"
@@ -246,10 +298,17 @@ export function assertStepDeclaration(
   }
 }
 
+/**
+ * True when `value` is a valid {@link ObserveResult}.
+ */
 export function isObserveResult(value: unknown): value is ObserveResult {
   return tryAssert(value, assertObserveResult);
 }
 
+/**
+ * Asserts a valid {@link ObserveResult} (kernel spec §6.4): `annotations` as
+ * plain-object kernel records, `signals` as kernel records.
+ */
 export function assertObserveResult(
   value: unknown,
   label = "value"
@@ -261,12 +320,18 @@ export function assertObserveResult(
   assertKernelRecordArray(objectValue.signals, `${label}.signals`);
 }
 
+/**
+ * True when `value` is a valid {@link VerdictDisposition}.
+ */
 export function isVerdictDisposition(
   value: unknown
 ): value is VerdictDisposition {
   return isStringLiteral(value, VERDICT_DISPOSITIONS);
 }
 
+/**
+ * Asserts a valid {@link VerdictDisposition} (kernel spec §6.1).
+ */
 export function assertVerdictDisposition(
   value: unknown,
   label = "value"
@@ -280,10 +345,21 @@ export function assertVerdictDisposition(
   }
 }
 
+/**
+ * True when `value` is a valid {@link Verdict}.
+ */
 export function isVerdict(value: unknown): value is Verdict {
   return tryAssert(value, assertVerdict);
 }
 
+/**
+ * Asserts a valid {@link Verdict} (kernel spec §6.1), dispatching on `kind` to
+ * the per-variant shape guard (`proceed`, `abort`, `modify`, `pause`,
+ * `retry`).
+ *
+ * @throws TuvrenValidationError With code `invalid_verdict_kind` for unknown
+ *   kinds, or the variant guard's error for malformed payloads.
+ */
 export function assertVerdict(
   value: unknown,
   label = "value"
@@ -323,10 +399,18 @@ export function assertVerdict(
   );
 }
 
+/**
+ * True when `value` is a valid {@link ComposedVerdict}.
+ */
 export function isComposedVerdict(value: unknown): value is ComposedVerdict {
   return tryAssert(value, assertComposedVerdict);
 }
 
+/**
+ * Asserts a valid {@link ComposedVerdict}. Structurally identical to
+ * {@link assertVerdict}; composition (kernel spec §6.2) does not change the
+ * shape.
+ */
 export function assertComposedVerdict(
   value: unknown,
   label = "value"
@@ -334,12 +418,18 @@ export function assertComposedVerdict(
   assertVerdict(value, label);
 }
 
+/**
+ * True when `value` is a valid {@link StagedResultStatus}.
+ */
 export function isStagedResultStatus(
   value: unknown
 ): value is StagedResultStatus {
   return isStringLiteral(value, STAGED_RESULT_STATUSES);
 }
 
+/**
+ * Asserts a valid {@link StagedResultStatus} (kernel spec §3.4).
+ */
 export function assertStagedResultStatus(
   value: unknown,
   label = "value"
@@ -353,10 +443,16 @@ export function assertStagedResultStatus(
   }
 }
 
+/**
+ * True when `value` is a valid {@link RunStatus}.
+ */
 export function isRunStatus(value: unknown): value is RunStatus {
   return isStringLiteral(value, RUN_STATUSES);
 }
 
+/**
+ * Asserts a valid {@link RunStatus} (kernel spec §5.2).
+ */
 export function assertRunStatus(
   value: unknown,
   label = "value"
@@ -370,12 +466,19 @@ export function assertRunStatus(
   }
 }
 
+/**
+ * True when `value` is a valid {@link RunCompletionStatus}.
+ */
 export function isRunCompletionStatus(
   value: unknown
 ): value is RunCompletionStatus {
   return isStringLiteral(value, RUN_COMPLETION_STATUSES);
 }
 
+/**
+ * Asserts a valid {@link RunCompletionStatus} — the statuses `run.complete`
+ * accepts (kernel spec §5.8).
+ */
 export function assertRunCompletionStatus(
   value: unknown,
   label = "value"
@@ -389,6 +492,12 @@ export function assertRunCompletionStatus(
   }
 }
 
+/**
+ * Asserts a valid schema path: a non-empty, dot-separated string with non-empty
+ * segments (kernel spec §3.1).
+ *
+ * @throws TuvrenValidationError With code `invalid_schema_path`.
+ */
 export function assertSchemaPath(
   value: unknown,
   label: string
@@ -406,6 +515,11 @@ export function assertSchemaPath(
   }
 }
 
+/**
+ * Validates path-map shape (schema paths mapped to {@link PathValue}s) and
+ * returns a null-prototype copy. Schema pairing is checked separately by
+ * `assertTurnTreePathMapMatchesSchema`.
+ */
 function assertTurnTreePathMap(
   value: unknown,
   label: string
@@ -422,6 +536,11 @@ function assertTurnTreePathMap(
   return validatedPathMap;
 }
 
+/**
+ * Validates a path map against a schema: every present path must be
+ * schema-defined and match its collection kind; when `requireFullManifest` is
+ * set, every schema path must also be present (kernel spec §3.2).
+ */
 function assertTurnTreePathMapMatchesSchema(
   value: Record<string, PathValue>,
   schema: TurnTreeSchema,
@@ -463,6 +582,9 @@ function assertTurnTreePathMapMatchesSchema(
   }
 }
 
+/**
+ * Shape guard for the `proceed` verdict variant: `kind` only.
+ */
 function assertProceedVerdict(
   value: Record<string, unknown>,
   label: string
@@ -478,6 +600,10 @@ function assertProceedVerdict(
   }
 }
 
+/**
+ * Shape guard for the `abort` verdict variant: disposition and non-empty
+ * reason.
+ */
 function assertAbortVerdict(
   value: Record<string, unknown>,
   label: string
@@ -496,6 +622,10 @@ function assertAbortVerdict(
   assertNonEmptyString(value.reason, `${label}.reason`);
 }
 
+/**
+ * Shape guard for the `modify` verdict variant: an opaque KernelRecord
+ * transform.
+ */
 function assertModifyVerdict(
   value: Record<string, unknown>,
   label: string
@@ -513,6 +643,10 @@ function assertModifyVerdict(
   assertKernelRecord(value.transform, `${label}.transform`);
 }
 
+/**
+ * Shape guard for the `pause` verdict variant: non-empty reason and an opaque
+ * resumption schema.
+ */
 function assertPauseVerdict(
   value: Record<string, unknown>,
   label: string
@@ -531,6 +665,10 @@ function assertPauseVerdict(
   assertKernelRecord(value.resumptionSchema, `${label}.resumptionSchema`);
 }
 
+/**
+ * Shape guard for the `retry` verdict variant: an opaque KernelRecord
+ * adjustment.
+ */
 function assertRetryVerdict(
   value: Record<string, unknown>,
   label: string
@@ -548,6 +686,11 @@ function assertRetryVerdict(
   assertKernelRecord(value.adjustment, `${label}.adjustment`);
 }
 
+/**
+ * Validates schema path definitions: dot-separated paths, valid collection
+ * kinds, optional KernelRecord `metadata`, and no duplicate paths (kernel spec
+ * §3.1).
+ */
 function assertPathDefinitions(
   value: unknown,
   label: string
@@ -591,6 +734,10 @@ function assertPathDefinitions(
   }
 }
 
+/**
+ * Validates incorporation rules: every `targetPath` must reference a defined
+ * schema path and `objectType` mappings must be unique (kernel spec §3.1).
+ */
 function assertIncorporationRules(
   value: unknown,
   pathDefinitions: PathDefinition[],
@@ -632,6 +779,10 @@ function assertIncorporationRules(
   }
 }
 
+/**
+ * Untangles the `assertTurnTreeManifest` overloads: the second argument may be
+ * a diagnostic label or a schema to validate against.
+ */
 function resolveSchemaAndLabel(
   schemaOrLabel: string | TurnTreeSchema | undefined,
   label: string,

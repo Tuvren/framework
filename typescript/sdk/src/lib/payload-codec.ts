@@ -55,6 +55,15 @@ import {
  * keyring lifecycle entirely (in-memory map, KMS/HSM callback, etc.).
  */
 export interface PayloadKeyring {
+  /**
+   * Resolves an opaque key reference to raw key bytes.
+   *
+   * @param keyRef - The opaque reference recorded in the payload envelope (or
+   *   chosen by `resolveKeyRef` on encrypt).
+   * @returns The raw key bytes (32 bytes for the AES-256-GCM codec), or
+   *   `undefined` when the key has been destroyed or rotated away —
+   *   synchronously or as a promise.
+   */
   resolve(
     keyRef: string
   ): Promise<Uint8Array | undefined> | Uint8Array | undefined;
@@ -240,6 +249,7 @@ async function importAesKey(key: Uint8Array): Promise<CryptoKey> {
 
 // ── AES-256-GCM codec ────────────────────────────────────────────────────────
 
+/** Options for {@link createAesGcmPayloadCodec}. */
 export interface AesGcmPayloadCodecOptions {
   /** Host-owned key custody resolving `keyRef → key bytes | undefined`. */
   keyring: PayloadKeyring;
@@ -261,6 +271,21 @@ export interface AesGcmPayloadCodecOptions {
  *   payload without a key).
  * - `decrypt` returns `{ status: "erased" }` when the key is gone (shredded),
  *   and throws only on a present-key integrity failure (tampering / wrong key).
+ *
+ * @param options - The keyring (required) and an optional `resolveKeyRef`
+ *   override; the default keys per Scope.
+ * @returns A `PayloadCodec` with id `"aes-256-gcm"` suitable for
+ *   `createTuvren`'s `payloadCodec` option.
+ *
+ * @example
+ * ```ts
+ * const keys = new Map<string, Uint8Array>();
+ * const codec = createAesGcmPayloadCodec({
+ *   keyring: { resolve: (keyRef) => keys.get(keyRef) },
+ * });
+ * // Crypto-shred a Scope by destroying its key:
+ * keys.delete(scope);
+ * ```
  */
 export function createAesGcmPayloadCodec(
   options: AesGcmPayloadCodecOptions

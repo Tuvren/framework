@@ -38,10 +38,26 @@ import {
   waitForAbortable,
 } from "./react-runner-stream-support.js";
 
+/**
+ * One complete assistant message-start-through-message-done event sequence
+ * produced by a single provider call, paired with the durable response it
+ * reconciles to.
+ *
+ * `published` tracks whether {@link flushBufferedAssistantSequences} has
+ * already emitted `events` on `context.runtime`; a sequence created by
+ * {@link createBufferedAssistantSequence} for a short-circuited or replaced
+ * response starts unpublished, while one produced by
+ * {@link executeStreamCall} is published immediately as it streams and is
+ * recorded here only for later reconciliation bookkeeping.
+ */
 export interface BufferedAssistantSequence {
+  /** True when the provider call this sequence represents was cancelled. */
   cancelled?: boolean;
+  /** The assistant stream events for this sequence, in emission order. */
   events: TuvrenStreamEvent[];
+  /** True once `events` have been emitted on the runtime (or were emitted live). */
   published: boolean;
+  /** The durable response this sequence reconciles to. */
   response: TuvrenModelResponse;
 }
 
@@ -63,6 +79,15 @@ function cloneProviderPrompt(
   return cloned;
 }
 
+/**
+ * Non-streaming provider call path (framework spec §6.3): calls
+ * `provider.generate` and wraps the complete response into a
+ * {@link BufferedAssistantSequence} whose synthesized events are not yet
+ * published (published by the caller once the iteration result is finalized).
+ *
+ * @throws A cancellation error (see {@link throwIfAborted}) if `signal` is
+ *   already aborted before or after the call, or aborts during it.
+ */
 export async function executeGenerateCall(input: {
   now: () => EpochMs;
   prompt: TuvrenPrompt;
@@ -79,6 +104,25 @@ export async function executeGenerateCall(input: {
   return createBufferedAssistantSequence(cloneValue(response), input.now);
 }
 
+/**
+ * Streaming provider call path (framework spec §6.2): calls `provider.stream`
+ * and emits each translated event on `input.runtime` live, as chunks arrive,
+ * while a {@link StreamAccumulator} absorbs the same chunks into a complete
+ * `TuvrenModelResponse` for the durable path.
+ *
+ * On cooperative cancellation mid-stream (ADR-043, KRT-BD006), the provider
+ * iterator is closed, the accumulator is finalized with `finishReason:
+ * "error"` and `partial: true`, and any still-missing terminal events are
+ * emitted before returning a `cancelled: true` sequence with whatever
+ * content had accumulated. Any other stream error propagates after closing
+ * the iterator.
+ *
+ * @returns A sequence whose `published` is always `true` — its events were
+ *   already emitted live during the call, unlike
+ *   {@link createBufferedAssistantSequence}'s synthesized sequences.
+ * @throws Any error the provider stream raises, other than cooperative
+ *   cancellation (which is handled and returned instead of thrown).
+ */
 export async function executeStreamCall(input: {
   now: () => EpochMs;
   prompt: TuvrenPrompt;
@@ -163,6 +207,13 @@ export async function executeStreamCall(input: {
   };
 }
 
+/**
+ * Synthesizes a complete `message.start` → content-done → `message.done`
+ * event sequence from an already-complete response, for the non-streaming
+ * fallback and `aroundModel` short-circuit/replacement paths (framework spec
+ * §6.3/§6.5). The sequence is returned unpublished; the caller flushes it
+ * via {@link flushBufferedAssistantSequences} once ready.
+ */
 export function createBufferedAssistantSequence(
   response: TuvrenModelResponse,
   now: () => EpochMs
@@ -184,6 +235,12 @@ export function createBufferedAssistantSequence(
   };
 }
 
+/**
+ * Publishes every not-yet-published sequence's events on `runtime`, in
+ * order, and marks each as published. Already-published sequences (from a
+ * live `executeStreamCall`) are skipped, so this is safe to call with a mix
+ * of live and synthesized sequences without double-emitting.
+ */
 export async function flushBufferedAssistantSequences(
   sequences: readonly BufferedAssistantSequence[],
   runtime: RunnerRuntimePort
@@ -193,6 +250,10 @@ export async function flushBufferedAssistantSequences(
   }
 }
 
+/**
+ * Infers a `finishReason` from an assistant message's parts alone:
+ * `"tool_call"` when it requests any tool call, otherwise `"stop"`.
+ */
 export function inferAssistantFinishReason(
   message: Extract<TuvrenMessage, { role: "assistant" }>
 ): TuvrenModelResponse["finishReason"] {
@@ -201,6 +262,17 @@ export function inferAssistantFinishReason(
     : "stop";
 }
 
+/**
+ * Synthesizes one delta+done event pair per content part of a complete
+ * response (framework spec §6.3), followed by a trailing `message.done`.
+ * `tool_call` parts additionally get a synthesized `tool_call.start` before
+ * their delta+done pair, matching the shape a live stream would have
+ * produced.
+ *
+ * @throws TuvrenRuntimeError with code `react_runner_invalid_model_response`
+ *   if `response.parts` contains a `tool_result` part — provider responses
+ *   must never contain one.
+ */
 function synthesizeAssistantEvents(
   response: TuvrenModelResponse,
   messageId: string,
@@ -317,6 +389,7 @@ function synthesizeAssistantEvents(
   return events;
 }
 
+/** Emits one sequence's events on `runtime` if not already published; a no-op otherwise. */
 async function publishBufferedAssistantSequence(
   sequence: BufferedAssistantSequence,
   runtime: RunnerRuntimePort
@@ -332,6 +405,7 @@ async function publishBufferedAssistantSequence(
   sequence.published = true;
 }
 
+/** Records `event` in the live sequence buffer and emits it on `runtime` immediately. */
 async function appendAndEmit(
   events: TuvrenStreamEvent[],
   event: TuvrenStreamEvent,
@@ -341,6 +415,7 @@ async function appendAndEmit(
   await runtime.emit(event);
 }
 
+/** Applies {@link appendAndEmit} to each event in order. */
 async function appendAllAndEmit(
   events: TuvrenStreamEvent[],
   emittedEvents: readonly TuvrenStreamEvent[],

@@ -76,6 +76,17 @@ import {
 import { validateTurnTreePathInvariants } from "./sqlite-state-validation.js";
 import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 
+/**
+ * Pre-commit gate: re-validates every record family the transaction's write
+ * tracker recorded, directly against the database (targeted SQL lookups and
+ * lineage-index checks rather than a full state reload). Covers threads,
+ * turn-tree paths, turn nodes, turns and their dependents, branches
+ * (including backward-move archiving), runs, staged results, and the
+ * one-active-run-per-branch rule.
+ *
+ * @throws TuvrenPersistenceError with a `sqlite_backend_*` code on the first
+ *   violated invariant; the caller must roll the transaction back.
+ */
 export function validateTransactionWriteSet(
   db: Database.Database,
   writeTracker: TransactionWriteTracker
@@ -117,6 +128,15 @@ export function validateTransactionWriteSet(
   }
 }
 
+/**
+ * Verifies the derived `turn_node_lineage_roots` index agrees exactly with
+ * the loaded turn nodes: every entry references an existing node, every node
+ * has an entry, and each entry's root hash and depth match a recomputed
+ * ancestry walk.
+ *
+ * @throws TuvrenPersistenceError with a `sqlite_backend_*` code describing
+ *   the first index/lineage divergence.
+ */
 export function validateTurnNodeLineageRootIndex(
   db: Database.Database,
   state: BackendState
@@ -195,6 +215,10 @@ export function validateTurnNodeLineageRootIndex(
   }
 }
 
+/**
+ * Re-checks one written thread's schema/genesis/uniqueness invariants
+ * directly against the database.
+ */
 function validateThreadInDatabase(
   db: Database.Database,
   threadId: string
@@ -263,6 +287,10 @@ function validateThreadInDatabase(
   }
 }
 
+/**
+ * Re-checks one written branch's thread-lineage, archive, and backward-move
+ * invariants directly against the database.
+ */
 function validateBranchInDatabase(
   db: Database.Database,
   writeTracker: TransactionWriteTracker,
@@ -312,6 +340,11 @@ function validateBranchInDatabase(
   }
 }
 
+/**
+ * Re-checks one written archive branch's source-thread match, pre-transaction
+ * source existence, preserved head, and paired backward move directly
+ * against the database.
+ */
 function validateArchiveBranchInDatabase(
   db: Database.Database,
   writeTracker: TransactionWriteTracker,
@@ -399,6 +432,10 @@ function validateArchiveBranchInDatabase(
   }
 }
 
+/**
+ * Re-checks one written turn node's schema match, lineage metadata, and
+ * consumed-staged-result references directly against the database.
+ */
 function validateTurnNodeInDatabase(
   db: Database.Database,
   turnNodeHash: string
@@ -441,6 +478,10 @@ function validateTurnNodeInDatabase(
   }
 }
 
+/**
+ * Re-checks one written turn's branch/thread consistency, lineage
+ * membership, descent, and parent link directly against the database.
+ */
 function validateTurnInDatabase(db: Database.Database, turnId: string): void {
   const turn = selectTurn(db, turnId);
 
@@ -493,6 +534,11 @@ function validateTurnInDatabase(db: Database.Database, turnId: string): void {
   assertTurnParentLinkInDatabase(db, turn, "turn.parentTurnId");
 }
 
+/**
+ * Re-validates every turn and run whose lineage position depends on a turn
+ * whose head hash just changed — the child turns branching from it and the
+ * runs it hosts.
+ */
 function validateTurnDependentsInDatabase(
   db: Database.Database,
   turnId: string
@@ -506,6 +552,11 @@ function validateTurnDependentsInDatabase(
   }
 }
 
+/**
+ * Re-checks one written run's referential and schema consistency, turn-span
+ * containment of its start and created turn nodes, canonical lineage, and
+ * (when active) head alignment, directly against the database.
+ */
 function validateRunInDatabase(db: Database.Database, runId: string): void {
   const run = selectRun(db, runId);
 
@@ -593,6 +644,7 @@ function validateRunInDatabase(db: Database.Database, runId: string): void {
   }
 }
 
+/** Asserts a non-`running` run retains no staged results. */
 function validateStagedResultsForRunInDatabase(
   db: Database.Database,
   runId: string
@@ -613,6 +665,10 @@ function validateStagedResultsForRunInDatabase(
   }
 }
 
+/**
+ * Asserts a branch has at most one active run and that every active run on
+ * it is head-aligned.
+ */
 function validateActiveRunsForBranchInDatabase(
   db: Database.Database,
   branchId: string
@@ -642,6 +698,14 @@ function validateActiveRunsForBranchInDatabase(
   }
 }
 
+/**
+ * Re-validates a written turn tree's path collection by projecting just the
+ * relevant rows (schema, turn tree, its stored paths, and any referenced
+ * chunks) into a minimal `BackendState` and delegating to
+ * `validateTurnTreePathInvariants`. The lineage/run-related helpers in that
+ * shared validator are stubbed to throw, since this code path never
+ * exercises them (turn trees do not reference turns or runs).
+ */
 function validateTurnTreePathsInDatabase(
   db: Database.Database,
   turnTreeHash: string
@@ -726,6 +790,16 @@ function validateTurnTreePathsInDatabase(
   });
 }
 
+/**
+ * Recomputes a turn node's expected lineage metadata (root hash, depth) by
+ * walking `previousTurnNodeHash` ancestry over an already-loaded
+ * `BackendState`, the ground truth {@link validateTurnNodeLineageRootIndex}
+ * checks the persisted `turn_node_lineage_roots` index against.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_turn_node_lineage_cycle` on a lineage cycle, or
+ *   `sqlite_backend_missing_turn_node_reference` on a broken parent link.
+ */
 function computeExpectedTurnNodeLineageMetadata(
   state: BackendState,
   turnNode: StoredTurnNode
@@ -770,6 +844,12 @@ function computeExpectedTurnNodeLineageMetadata(
   };
 }
 
+/**
+ * Inserts a keyed record into a loaded-record map, throwing
+ * `sqlite_backend_duplicate_loaded_record` if the key is already present —
+ * used to catch a corrupted database with duplicate rows a primary key
+ * should have prevented.
+ */
 function setUniqueLoadedRecord<T>(
   records: Map<string, T>,
   key: string,

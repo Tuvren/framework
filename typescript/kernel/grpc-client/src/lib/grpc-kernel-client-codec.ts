@@ -103,6 +103,13 @@ import {
   VerdictSchema,
 } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
 
+/**
+ * Decodes a required protobuf `BranchRecord` field into its protocol
+ * {@link BranchRecord} shape, validating the result.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   when `value` is `undefined` (from {@link createInvalidTransportResponseError}).
+ */
 export function requireBranchRecord(
   value: ProtoBranchRecord | undefined,
   label: string
@@ -120,6 +127,10 @@ export function requireBranchRecord(
   return record;
 }
 
+/**
+ * Decodes a protobuf branch head list entry into the tuple-shaped protocol
+ * {@link BranchHeadListEntry}, validating the result.
+ */
 export function requireBranchHeadListEntry(
   value: ProtoBranchHeadListEntry,
   label: string
@@ -129,6 +140,11 @@ export function requireBranchHeadListEntry(
   return entry;
 }
 
+/**
+ * Decodes a required protobuf `Verdict` field and asserts it is a valid
+ * {@link ComposedVerdict} — the shape `verdicts.compose` returns
+ * (structurally identical to `Verdict`; composition does not narrow it).
+ */
 export function requireComposedVerdict(
   value: ProtoVerdict | undefined,
   label: string
@@ -138,6 +154,10 @@ export function requireComposedVerdict(
   return verdict;
 }
 
+/**
+ * Decodes a required protobuf `PathValue` field into a protocol
+ * {@link PathValue}, validating the result.
+ */
 export function requirePathValue(
   value: ProtoPathValue | undefined,
   label: string
@@ -151,6 +171,11 @@ export function requirePathValue(
   return decoded;
 }
 
+/**
+ * Decodes a required protobuf `RecoveryState` field into a protocol
+ * {@link RecoveryState}, recursively decoding its staged results and step
+ * sequence.
+ */
 export function requireRecoveryState(
   value: ProtoRecoveryState | undefined,
   label: string
@@ -180,6 +205,11 @@ export function requireRecoveryState(
   return decoded;
 }
 
+/**
+ * Decodes a required protobuf `RunRecord` field into a protocol
+ * {@link RunRecord}, validating hash fields, `status`, and each declared
+ * step.
+ */
 export function requireRunRecord(
   value: ProtoRunRecord | undefined,
   label: string
@@ -208,6 +238,11 @@ export function requireRunRecord(
   return record;
 }
 
+/**
+ * Decodes a required protobuf `SetHeadResult` field into a protocol
+ * {@link SetHeadResult}, including the optional `archiveBranch` produced by
+ * a backward head movement.
+ */
 export function requireSetHeadResult(
   value: ProtoSetHeadResult | undefined,
   label: string
@@ -231,6 +266,11 @@ export function requireSetHeadResult(
   return result;
 }
 
+/**
+ * Decodes a required protobuf `StagedResult` field into a protocol
+ * {@link StagedResult} ({@link fromProtoStagedResult}), validating the
+ * result.
+ */
 export function requireStagedResult(
   value: ProtoStagedResult | undefined,
   label: string
@@ -244,6 +284,11 @@ export function requireStagedResult(
   return result;
 }
 
+/**
+ * Decodes a required protobuf `StepContext` field into a protocol
+ * {@link StepContext}, decoding its schema, pending signals, and step
+ * declaration.
+ */
 export function requireStepContext(
   value: ProtoStepContext | undefined,
   label: string
@@ -264,6 +309,10 @@ export function requireStepContext(
   return context;
 }
 
+/**
+ * Decodes a required protobuf `ThreadCreateResult` field into a protocol
+ * {@link ThreadCreateResult}, validating the result.
+ */
 export function requireThreadCreateResult(
   value: ProtoThreadCreateResult | undefined,
   label: string
@@ -282,6 +331,10 @@ export function requireThreadCreateResult(
   return result;
 }
 
+/**
+ * Decodes a required protobuf `ThreadRecord` field into a protocol
+ * {@link ThreadRecord}, validating the result.
+ */
 export function requireThreadRecord(
   value: ProtoThreadRecord | undefined,
   label: string
@@ -299,6 +352,12 @@ export function requireThreadRecord(
   return record;
 }
 
+/**
+ * Decodes a protobuf stored-thread list entry (from a `thread.list` page)
+ * into a protocol {@link StoredThread}. Unlike the `require*` decoders in
+ * this file, does not assert the result — the stream/list transport shape
+ * carries required fields non-optionally.
+ */
 export function fromStoredThreadEntry(
   value: ProtoStoredThreadEntry,
   label: string
@@ -316,6 +375,10 @@ export function fromStoredThreadEntry(
   return thread;
 }
 
+/**
+ * Decodes a required protobuf `TurnNode` field into a protocol
+ * {@link TurnNode}, decoding its consumed staged results.
+ */
 export function requireTurnNode(
   value: ProtoTurnNode | undefined,
   label: string
@@ -338,6 +401,10 @@ export function requireTurnNode(
   return node;
 }
 
+/**
+ * Decodes a required protobuf `TurnRecord` field into a protocol
+ * {@link TurnRecord}, validating the result.
+ */
 export function requireTurnRecord(
   value: ProtoTurnRecord | undefined,
   label: string
@@ -358,6 +425,11 @@ export function requireTurnRecord(
   return record;
 }
 
+/**
+ * Decodes a required protobuf `TurnTreeSchema` field into a protocol
+ * {@link TurnTreeSchema} ({@link fromProtoTurnTreeSchema}), validating the
+ * result.
+ */
 export function requireTurnTreeSchema(
   value: ProtoTurnTreeSchema | undefined,
   label: string
@@ -371,6 +443,10 @@ export function requireTurnTreeSchema(
   return schema;
 }
 
+/**
+ * Decodes a required protobuf `Verdict` field into a protocol
+ * {@link Verdict} ({@link fromProtoVerdict}), validating the result.
+ */
 export function requireVerdict(
   value: ProtoVerdict | undefined,
   label: string
@@ -384,6 +460,10 @@ export function requireVerdict(
   return verdict;
 }
 
+/**
+ * Decodes a `branch.list` gRPC response into the protocol's
+ * {@link BranchHeadListEntry} array.
+ */
 export function fromBranchHeadListEntries(
   response: BranchListResponse,
   label: string
@@ -393,6 +473,13 @@ export function fromBranchHeadListEntries(
   );
 }
 
+/**
+ * Decodes a `tree.manifest` gRPC response's path/value entries into a
+ * protocol {@link TurnTreeManifest}.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   when the response repeats the same manifest path.
+ */
 export function fromProtoManifestEntries(
   response: TreeManifestResponse,
   label: string
@@ -419,6 +506,13 @@ export function fromProtoManifestEntries(
   return manifest;
 }
 
+/**
+ * Decodes the protobuf `PathValue` oneof into a protocol {@link PathValue}:
+ * `null`, a single hash string, or an ordered array of hash strings.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized oneof case.
+ */
 function fromProtoPathValue(value: ProtoPathValue, label: string): PathValue {
   switch (value.value.case) {
     case "nullValue":
@@ -441,6 +535,13 @@ function fromProtoPathValue(value: ProtoPathValue, label: string): PathValue {
   }
 }
 
+/**
+ * Maps a protobuf `RunStatus` enum value to the protocol's string
+ * `RunRecord["status"]` union.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized enum value.
+ */
 function fromProtoRunStatus(
   value: ProtoRunStatus,
   label: string
@@ -459,6 +560,13 @@ function fromProtoRunStatus(
   }
 }
 
+/**
+ * Decodes a protobuf `StagedResult`, discriminating on its `outcome` oneof
+ * into the protocol's interrupted or settled {@link StagedResult} variant.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized `outcome` case.
+ */
 function fromProtoStagedResult(
   value: ProtoStagedResult,
   label: string
@@ -501,6 +609,13 @@ function fromProtoStagedResult(
   }
 }
 
+/**
+ * Maps a protobuf `StagedResultStatus` enum value to the non-`"interrupted"`
+ * subset of the protocol's `StagedResultStatus` union.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized enum value.
+ */
 function fromProtoStagedResultStatus(
   value: ProtoStagedResultStatus,
   label: string
@@ -515,6 +630,13 @@ function fromProtoStagedResultStatus(
   }
 }
 
+/**
+ * Decodes a required protobuf `StepDeclaration` field into a protocol
+ * {@link StepDeclaration}, decoding optional CBOR-encoded metadata.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   when `value` is `undefined`.
+ */
 function fromProtoStepDeclaration(
   value: ProtoStepDeclaration | undefined,
   label: string
@@ -540,6 +662,11 @@ function fromProtoStepDeclaration(
   return step;
 }
 
+/**
+ * Decodes a protobuf `TurnTreeSchema` message into a protocol
+ * {@link TurnTreeSchema}, decoding each path's optional CBOR-encoded
+ * metadata.
+ */
 function fromProtoTurnTreeSchema(
   value: ProtoTurnTreeSchema,
   label: string
@@ -570,6 +697,14 @@ function fromProtoTurnTreeSchema(
   return schema;
 }
 
+/**
+ * Decodes a protobuf `Verdict`, discriminating on its `verdict` oneof into
+ * the matching protocol {@link Verdict} variant (`abort`, `modify`, `pause`,
+ * `proceed`, or `retry`).
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized `verdict` case.
+ */
 function fromProtoVerdict(value: ProtoVerdict, label: string): Verdict {
   switch (value.verdict.case) {
     case "abort":
@@ -615,6 +750,13 @@ function fromProtoVerdict(value: ProtoVerdict, label: string): Verdict {
   }
 }
 
+/**
+ * Maps a protobuf `VerdictDisposition` enum value to the protocol's
+ * `VerdictDisposition` string union.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized enum value.
+ */
 function fromProtoVerdictDisposition(
   value: ProtoVerdictDisposition,
   label: string
@@ -631,6 +773,10 @@ function fromProtoVerdictDisposition(
   }
 }
 
+/**
+ * Encodes a protocol {@link ObserveResult} into its protobuf `ObserveResult`
+ * message, CBOR-encoding annotations and signals.
+ */
 export function toProtoObserveResult(value: ObserveResult, label: string) {
   return create(ObserveResultSchema, {
     annotationsCbor: value.annotations.map((annotation, index) =>
@@ -642,6 +788,13 @@ export function toProtoObserveResult(value: ObserveResult, label: string) {
   });
 }
 
+/**
+ * Maps a protocol {@link PathCollectionKind} to its protobuf
+ * `PathCollectionKind` enum value.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized value.
+ */
 function toProtoPathCollectionKind(
   value: PathCollectionKind
 ): ProtoPathCollectionKind {
@@ -655,6 +808,10 @@ function toProtoPathCollectionKind(
   }
 }
 
+/**
+ * Encodes a protocol {@link PathValue} into its protobuf `PathValue` oneof
+ * message (`nullValue`, `singleHash`, or `orderedHashes`).
+ */
 export function toProtoPathValue(value: PathValue, label: string) {
   if (value === null) {
     return create(PathValueSchema, {
@@ -690,6 +847,10 @@ export function toProtoPathValue(value: PathValue, label: string) {
   });
 }
 
+/**
+ * Encodes a protocol {@link TurnTreeChangeSet} into the protobuf path/value
+ * entry list `tree.create`/`tree.incorporate` transmit over the wire.
+ */
 export function toProtoPathValueEntries(
   changes: TurnTreeChangeSet,
   label: string
@@ -702,6 +863,13 @@ export function toProtoPathValueEntries(
   );
 }
 
+/**
+ * Maps a protocol {@link RunCompletionStatus} to its protobuf
+ * `RunCompletionStatus` enum value.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized value.
+ */
 export function toProtoRunCompletionStatus(
   value: RunCompletionStatus
 ): ProtoRunCompletionStatus {
@@ -717,6 +885,11 @@ export function toProtoRunCompletionStatus(
   }
 }
 
+/**
+ * Encodes a protocol {@link StagedResult} into its protobuf `StagedResult`
+ * message, discriminating on `status` into the `interrupted` or `settled`
+ * outcome oneof.
+ */
 export function toProtoStagedResult(value: StagedResult, label: string) {
   const base = {
     objectHash: value.objectHash,
@@ -751,6 +924,14 @@ export function toProtoStagedResult(value: StagedResult, label: string) {
   });
 }
 
+/**
+ * Maps the non-`"interrupted"` subset of the protocol's
+ * `StagedResultStatus` union to its protobuf `StagedResultStatus` enum
+ * value.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized value.
+ */
 function toProtoStagedResultStatus(
   value: Exclude<StagedResultStatus, "interrupted">
 ): ProtoStagedResultStatus {
@@ -764,6 +945,12 @@ function toProtoStagedResultStatus(
   }
 }
 
+/**
+ * Encodes a `staging.stage` call's status and optional interrupt payload
+ * into the protobuf staging outcome oneof, without a full
+ * {@link StagedResult} to encode from ({@link toProtoStagedResult} is used
+ * once the kernel has assigned the rest of the result's fields).
+ */
 export function toProtoStagingOutcome(
   status: StagedResultStatus,
   interruptPayload: KernelRecord | undefined,
@@ -789,6 +976,10 @@ export function toProtoStagingOutcome(
   };
 }
 
+/**
+ * Validates and encodes a protocol {@link StepDeclaration} into its
+ * protobuf `StepDeclaration` message, CBOR-encoding optional metadata.
+ */
 export function toProtoStepDeclaration(value: StepDeclaration, label: string) {
   assertStepDeclaration(value, label);
   return create(StepDeclarationSchema, {
@@ -802,6 +993,10 @@ export function toProtoStepDeclaration(value: StepDeclaration, label: string) {
   });
 }
 
+/**
+ * Validates and encodes a protocol {@link TurnTreeSchema} into its protobuf
+ * `TurnTreeSchema` message, CBOR-encoding each path's optional metadata.
+ */
 export function toProtoTurnTreeSchema(value: TurnTreeSchema, label: string) {
   assertTurnTreeSchema(value, label);
   return create(TurnTreeSchemaSchema, {
@@ -824,6 +1019,10 @@ export function toProtoTurnTreeSchema(value: TurnTreeSchema, label: string) {
   });
 }
 
+/**
+ * Validates and encodes a protocol {@link Verdict} into its protobuf
+ * `Verdict` message, discriminating on `kind` into the matching oneof case.
+ */
 export function toProtoVerdict(value: Verdict, label: string) {
   assertVerdict(value, label);
 
@@ -887,6 +1086,13 @@ export function toProtoVerdict(value: Verdict, label: string) {
   }
 }
 
+/**
+ * Maps a protocol {@link VerdictDisposition} to its protobuf
+ * `VerdictDisposition` enum value.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized value.
+ */
 function toProtoVerdictDisposition(
   value: VerdictDisposition
 ): ProtoVerdictDisposition {
@@ -902,6 +1108,13 @@ function toProtoVerdictDisposition(
   }
 }
 
+/**
+ * Decodes deterministic CBOR `bytes` from a transport response into a
+ * validated {@link KernelRecord}.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   when `bytes` do not decode.
+ */
 export function decodeKernelRecordBytes(
   bytes: Uint8Array,
   label: string
@@ -918,6 +1131,14 @@ export function decodeKernelRecordBytes(
   return decoded;
 }
 
+/**
+ * Encodes an observe annotation as deterministic CBOR, additionally
+ * asserting it is a {@link KernelObject} — an annotation's outer shape must
+ * be a plain object/record, unlike an arbitrary {@link KernelRecord}.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_runtime_options` when
+ *   `value` is an array, `Uint8Array`, or `null`.
+ */
 function encodeKernelObjectBytes(
   value: KernelObject,
   label: string
@@ -933,6 +1154,10 @@ function encodeKernelObjectBytes(
   return record;
 }
 
+/**
+ * Validates `value` as a {@link KernelRecord} and encodes it as
+ * deterministic CBOR for transmission.
+ */
 export function encodeKernelRecordBytes(
   value: KernelRecord,
   label: string
@@ -941,6 +1166,13 @@ export function encodeKernelRecordBytes(
   return encodeDeterministicKernelRecord(value);
 }
 
+/**
+ * Converts a protobuf `int64`/`uint64` millisecond timestamp (transmitted as
+ * `bigint`) into an {@link EpochMs}.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   when `value` does not fit in a non-negative safe integer.
+ */
 function fromProtoEpochMs(value: bigint, label: string): EpochMs {
   const numberValue = Number(value);
 
@@ -957,6 +1189,13 @@ function fromProtoEpochMs(value: bigint, label: string): EpochMs {
   return numberValue;
 }
 
+/**
+ * Maps a protobuf `PathCollectionKind` enum value to the protocol's
+ * `PathCollectionKind` string union.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized enum value.
+ */
 function fromProtoPathCollectionKind(
   value: ProtoPathCollectionKind,
   label: string
@@ -971,6 +1210,12 @@ function fromProtoPathCollectionKind(
   }
 }
 
+/**
+ * Builds the standard error this codec throws for any missing, unrecognized,
+ * or malformed field in a kernel transport response, with code
+ * `invalid_kernel_transport_response` and `label` identifying the offending
+ * field.
+ */
 export function createInvalidTransportResponseError(
   label: string
 ): TuvrenRuntimeError {

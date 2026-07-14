@@ -24,8 +24,23 @@ import type { BackendState } from "./sqlite-records.js";
 import { getRunActiveTurnNodeHash } from "./sqlite-run-invariants.js";
 import { compareStoredTurn, ensureTurnExists } from "./sqlite-state-utils.js";
 
+/** Fixed item capacity of every non-final ordered path chunk. */
 export const ORDERED_PATH_CHUNK_SIZE = 32;
 
+/**
+ * Asserts a turn's semantic-parent link is canonical: a turn whose start node
+ * is another turn's head must name a parent (`null` is only legal for a turn
+ * with no predecessor at its start node); the parent must live on the same
+ * thread and chain contiguously (parent head === child start); and when the
+ * parent shares the branch it must be the immediately previous semantic turn,
+ * not an earlier one.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_turn_parent_required`,
+ *   `sqlite_backend_turn_parent_thread_mismatch`,
+ *   `sqlite_backend_turn_parent_start_turn_node_mismatch`, or
+ *   `sqlite_backend_turn_parent_not_immediate_predecessor`.
+ */
 export function assertTurnParentLink(
   state: BackendState,
   turn: StoredTurn,
@@ -111,6 +126,11 @@ export function assertTurnParentLink(
   }
 }
 
+/**
+ * Lists a thread's turns in deterministic order (`createdAtMs`, then
+ * `turnId`), optionally excluding one turn — used when validating a turn's
+ * parent link against its predecessors.
+ */
 export function listTurnsByThread(
   state: BackendState,
   threadId: string,
@@ -130,6 +150,20 @@ export function listTurnsByThread(
   return turns;
 }
 
+/**
+ * Asserts a backward branch-head move (rewind) preserved history: the same
+ * transaction must have created an archive branch pointing at the abandoned
+ * head (`archivedFromBranchId` = the moved branch, head = the old head), and
+ * every still-active run on the branch must sit at the new head — active runs
+ * stranded on the abandoned segment must have been failed.
+ *
+ * @param state - The loaded (post-transaction) state projection to validate.
+ * @param baseState - The state projection loaded before the transaction,
+ *   used to recognize which archive branches this transaction created.
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_backward_branch_move_missing_archive` or
+ *   `sqlite_backend_backward_branch_move_active_run_not_failed`.
+ */
 export function assertBackwardBranchMoveIsArchived(
   state: BackendState,
   baseState: BackendState,
@@ -196,6 +230,15 @@ export function assertBackwardBranchMoveIsArchived(
   }
 }
 
+/**
+ * Asserts the canonical chunk layout of a chunked ordered path: every chunk
+ * holds 1..{@link ORDERED_PATH_CHUNK_SIZE} items, and every chunk except the
+ * final one is exactly full.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_ordered_path_chunk_size_invalid` or
+ *   `sqlite_backend_ordered_path_chunk_not_fixed_size`.
+ */
 export function assertChunkedTurnTreePathChunkLayout(
   chunk: StoredOrderedPathChunk,
   index: number,
@@ -228,6 +271,14 @@ export function assertChunkedTurnTreePathChunkLayout(
   }
 }
 
+/**
+ * Asserts that an incoming write to an immutable, content-addressed record
+ * matches the existing stored value exactly, so a colliding write is only
+ * ever an idempotent no-op rewrite rather than a silent mutation.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_immutable_record_conflict` when the values differ.
+ */
 export function ensureImmutableRecordMatch<T>(
   existing: T,
   incoming: T,

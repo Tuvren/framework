@@ -15,6 +15,25 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional MCP client surface.
+
+/**
+ * `@tuvren/mcp-client` — a Model Context Protocol (MCP) tool source for the
+ * Tuvren runtime.
+ *
+ * {@link createMcpToolSource} connects to an MCP server over `stdio` or
+ * `http-sse` (Streamable HTTP), lists the server's tools, and exposes them as
+ * Tuvren tool definitions an agent can invoke. Every tool invocation validates
+ * input/output against the server's advertised JSON schemas and normalizes
+ * failures into `tool_result` error outputs rather than throwing.
+ *
+ * MCP credentials (`McpAuth`, transport `headers`/`env`) are confined to the
+ * transport edge and never reach any observable, persisted, or replayed
+ * runtime surface — see this package's README ("Secret Isolation — Edge
+ * Confinement", ADR-044) and the `secret-isolation` conformance check set
+ * (KRT-BD004).
+ *
+ * @packageDocumentation
+ */
 export type {
   CreateMcpToolSourceOptions,
   McpAuth,

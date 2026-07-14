@@ -31,19 +31,39 @@ import type {
 } from "@tuvren/core/provider";
 import type { RenderedToolDefinition } from "@tuvren/core/tools";
 
+/** Result of {@link preparePromptState}: everything needed to build the first `AroundModelContext`. */
 export interface PreparedPromptState {
+  /** Provider-facing model config derived from `AgentConfig.model`. */
   config: TuvrenModelConfig;
+  /** System messages contributed by extensions/config, followed by conversation history. */
   messages: TuvrenMessage[];
+  /** Complete provider prompt (config, messages, tools, response format, continuity). */
   prompt: TuvrenPrompt;
+  /** Per-extension state visible to other extensions via declared `exports`. */
   sharedExports: Record<string, Record<string, unknown>>;
+  /** Rendered tool definitions available to the model this iteration. */
   tools: RenderedToolDefinition[];
 }
 
+/**
+ * Normalized shape of an `aroundModel` handler's return value: either a bare
+ * `TuvrenModelResponse` or a `{ response, state }` pair. Produced by
+ * {@link normalizeAroundModelResult} so downstream code only handles one
+ * shape.
+ */
 export interface NormalizedAroundModelResult {
   response: TuvrenModelResponse;
+  /** Extension state to merge into the iteration's pending updates, if returned. */
   state?: Record<string, unknown>;
 }
 
+/**
+ * Builds an `AroundModelContext` by deep-cloning every field, so extension
+ * handlers cannot mutate the runner's own state through the context they
+ * receive. `emit` and `sharedExports`/`tools` inputs are already
+ * caller-prepared and are cloned again here for isolation between wrapper
+ * invocations.
+ */
 export function createAroundModelContextSnapshot(input: {
   config: TuvrenModelConfig;
   emit: AroundModelContext["emit"];
@@ -81,6 +101,12 @@ export function createAroundModelContextSnapshot(input: {
   };
 }
 
+/**
+ * Assembles the {@link PreparedPromptState} for one iteration: collects
+ * extension/config system messages ahead of conversation history, resolves
+ * the provider-facing model config, and admits provider-native/mediated
+ * tools through invocation-time capability policy (ADR-046 §4.21).
+ */
 export function preparePromptState(input: {
   config: Readonly<AgentConfig>;
   iterationCount: number;
@@ -138,6 +164,18 @@ export function preparePromptState(input: {
   };
 }
 
+/**
+ * Reconciles the context a wrapper passes to `next()` with the context it
+ * received, for the `config`, `messages`, and `tools` surfaces.
+ *
+ * Each surface may be edited either directly on the context object
+ * (`nextContext.config`, etc.) or through the nested `prompt` snapshot
+ * (`nextContext.prompt.config`, etc.); {@link resolveAroundModelSurface}
+ * decides which edit — if either — to honor when the two disagree. The
+ * result is passed through {@link createAroundModelContextSnapshot} again so
+ * the reconciled context stays fully cloned and internally consistent
+ * (`prompt` rebuilt from the resolved `config`/`messages`/`tools`).
+ */
 export function normalizeNextAroundModelContext(
   currentContext: AroundModelContext,
   nextContext: AroundModelContext
@@ -187,6 +225,12 @@ export function normalizeNextAroundModelContext(
   });
 }
 
+/**
+ * Normalizes an `aroundModel` handler's return value into
+ * {@link NormalizedAroundModelResult}: a `{ response, state }` object is
+ * unwrapped (with `state` cloned when present); a bare response is wrapped
+ * with no `state`.
+ */
 export function normalizeAroundModelResult(
   result: AroundModelResult
 ): NormalizedAroundModelResult {
@@ -202,6 +246,10 @@ export function normalizeAroundModelResult(
   };
 }
 
+/**
+ * Clones the named extension's private state slice from the manifest, for
+ * exposing as `AroundModelContext.extensionState`.
+ */
 export function createExtensionStateSnapshot(
   manifest: Readonly<ContextManifest>,
   extensionName: string
@@ -209,6 +257,15 @@ export function createExtensionStateSnapshot(
   return cloneRecord(manifest.extensions[extensionName]);
 }
 
+/**
+ * Builds the leading system messages for the prompt: one per extension whose
+ * `systemPrompt` contribution resolves to a defined string (string literals
+ * pass through as-is; functions are called with the extension's state
+ * snapshot, iteration count, manifest, and shared exports), followed by
+ * `AgentConfig.systemPrompt` last. A throwing or `undefined`-returning
+ * contribution is silently skipped — system-prompt contributions are
+ * best-effort and must never abort the turn.
+ */
 function collectSystemMessages(
   extensions: readonly TuvrenExtension[],
   basePrompt: string | undefined,
@@ -260,6 +317,12 @@ function collectSystemMessages(
   return messages;
 }
 
+/**
+ * Builds the cross-extension visible-state view: for every extension that
+ * declares `exports`, copies only the named keys from its manifest state
+ * slice. Extensions without `exports` (or with an empty list) contribute
+ * nothing, keeping their state private.
+ */
 function buildSharedExports(
   extensions: readonly TuvrenExtension[],
   manifest: Readonly<ContextManifest>
@@ -286,6 +349,11 @@ function buildSharedExports(
   return sharedExports;
 }
 
+/**
+ * Derives the provider-facing `TuvrenModelConfig` from `AgentConfig.model`:
+ * a string model id becomes `{ model }`, a concrete provider becomes
+ * `{ provider: model.id }`, and an unset model yields an empty config.
+ */
 function toPromptConfig(model: AgentConfig["model"]): TuvrenModelConfig {
   if (typeof model === "string") {
     return {
@@ -318,6 +386,11 @@ function cloneValue<T>(value: T): T {
   return structuredClone(value);
 }
 
+/**
+ * Assembles a `TuvrenPrompt` snapshot, omitting `tools` and the optional
+ * provider-tool/continuity fields entirely when they are empty/unset rather
+ * than serializing them as empty arrays or `undefined` properties.
+ */
 function createPromptSnapshot(input: {
   config: TuvrenModelConfig;
   messages: TuvrenMessage[];
@@ -346,6 +419,17 @@ function createPromptSnapshot(input: {
   };
 }
 
+/**
+ * Picks which of a wrapper's two possible edits to one surface (direct
+ * context field vs. nested `prompt` field) to honor for `next()`, given the
+ * surface's value before and after the wrapper ran on both paths.
+ *
+ * Only the `prompt` value changed: use it. Only the direct value changed:
+ * use it. Both changed and agree: use either (the direct value). Both
+ * changed and disagree: prefer the `prompt` edit — it is the surface
+ * `callProvider` actually reads. Neither changed: use the (unchanged) direct
+ * value.
+ */
 function resolveAroundModelSurface<T>(input: {
   basePromptValue: T;
   baseValue: T;
@@ -383,6 +467,16 @@ function surfacesMatch(left: unknown, right: unknown): boolean {
 // Provider-native / provider-mediated binding registration + policy (AY002/AY004)
 // ---------------------------------------------------------------------------
 
+/**
+ * Filters `AgentConfig.providerNativeTools`/`providerMediatedTools` through
+ * the invocation-time capability policy engine, when one is configured
+ * (ADR-046 §4.21). A tool is admitted when there is no policy engine, or
+ * when the engine's `evaluateInvocation` decision for its binding admits it;
+ * denied tools are dropped from the prompt entirely rather than surfaced to
+ * the model. Bindings are constructed inline (rather than via the shared
+ * resolver factory in `@tuvren/runtime`) to avoid a circular package
+ * dependency from this runner into the runtime host.
+ */
 function admitProviderTools<
   T extends ProviderNativeToolDeclaration | ProviderMediatedToolConfig,
 >(

@@ -74,10 +74,19 @@ export {
   isStoredTurnTreePath,
 } from "./kernel-validation-stored-turn-tree.js";
 
+/**
+ * True when `value` is a structurally valid {@link StoredTurnNode}.
+ */
 export function isStoredTurnNode(value: unknown): value is StoredTurnNode {
   return tryAssert(value, assertStoredTurnNode);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredTurnNode} (kernel spec §3.3),
+ * including that `consumedStagedResultsCbor` decodes as canonical deterministic
+ * CBOR into a staged-result array with unique `taskId`s. Does not recompute the
+ * identity hash; use {@link assertStoredTurnNodeIdentity} for that.
+ */
 export function assertStoredTurnNode(
   value: unknown,
   label = "value"
@@ -118,6 +127,14 @@ export function assertStoredTurnNode(
   );
 }
 
+/**
+ * Asserts a structurally valid {@link StoredTurnNode} whose `hash` also equals
+ * the recomputed canonical TurnNode identity digest over the decoded record
+ * fields (`hashTurnNodeIdentity`, kernel spec §3.3).
+ *
+ * @throws TuvrenValidationError With code `invalid_stored_turn_node_hash` when
+ *   the stored hash does not match the canonical identity hash.
+ */
 export async function assertStoredTurnNodeIdentity(
   value: unknown,
   label = "value"
@@ -149,12 +166,20 @@ export async function assertStoredTurnNodeIdentity(
   }
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredObserveAnnotation}.
+ */
 export function isStoredObserveAnnotation(
   value: unknown
 ): value is StoredObserveAnnotation {
   return tryAssert(value, assertStoredObserveAnnotation);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredObserveAnnotation} (kernel spec
+ * §6.4): `annotationCbor` must decode as canonical deterministic CBOR into a
+ * plain-object kernel record, and `turnNodeHash` may be `null`.
+ */
 export function assertStoredObserveAnnotation(
   value: unknown,
   label = "value"
@@ -184,10 +209,16 @@ export function assertStoredObserveAnnotation(
   );
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredThread}.
+ */
 export function isStoredThread(value: unknown): value is StoredThread {
   return tryAssert(value, assertStoredThread);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredThread} (kernel spec §4.1).
+ */
 export function assertStoredThread(
   value: unknown,
   label = "value"
@@ -205,10 +236,21 @@ export function assertStoredThread(
   assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredBranch}.
+ */
 export function isStoredBranch(value: unknown): value is StoredBranch {
   return tryAssert(value, assertStoredBranch);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredBranch} (kernel spec §4.2):
+ * `archivedFromBranchId`, when present, must differ from the branch's own id,
+ * and `updatedAtMs` must not precede `createdAtMs`.
+ *
+ * @throws TuvrenValidationError With code `invalid_branch_archive_source` when
+ *   an archive branch names itself as its source.
+ */
 export function assertStoredBranch(
   value: unknown,
   label = "value"
@@ -264,10 +306,17 @@ export function assertStoredBranch(
   );
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredTurn}.
+ */
 export function isStoredTurn(value: unknown): value is StoredTurn {
   return tryAssert(value, assertStoredTurn);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredTurn} (kernel spec §5.3), including
+ * monotonic `createdAtMs` / `updatedAtMs` timestamps.
+ */
 export function assertStoredTurn(
   value: unknown,
   label = "value"
@@ -304,10 +353,27 @@ export function assertStoredTurn(
   );
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredRun}.
+ */
 export function isStoredRun(value: unknown): value is StoredRun {
   return tryAssert(value, assertStoredRun);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredRun} (kernel spec §5.2), the stored
+ * counterpart of `assertRunRecord` in kernel-validation-records.ts:
+ *
+ * - `stepSequenceCbor` and `createdTurnNodesCbor` (and `pendingSignalsCbor`
+ *   when present) must decode as canonical deterministic CBOR into their
+ *   declared shapes.
+ * - `currentStepIndex` never exceeds the decoded step count; a `"running"` run
+ *   needs a non-empty step sequence, and a `"completed"` run must have
+ *   exhausted every declared step.
+ * - Lease fields are all-or-nothing and only legal while `"running"`;
+ *   `preemptionReason` only on `"failed"` runs (§5.2, "Run Execution Leases").
+ * - Timestamps must be monotonic (`updatedAtMs >= createdAtMs`).
+ */
 export function assertStoredRun(
   value: unknown,
   label = "value"
@@ -432,12 +498,20 @@ export function assertStoredRun(
   );
 }
 
+/**
+ * True when `value` is a structurally valid {@link StoredStagedResult}.
+ */
 export function isStoredStagedResult(
   value: unknown
 ): value is StoredStagedResult {
   return tryAssert(value, assertStoredStagedResult);
 }
 
+/**
+ * Asserts a structurally valid {@link StoredStagedResult} (kernel spec §3.4):
+ * `interruptPayloadCbor` must be canonical deterministic CBOR and present
+ * exactly when `status` is `"interrupted"`.
+ */
 export function assertStoredStagedResult(
   value: unknown,
   label = "value"
@@ -487,6 +561,10 @@ export function assertStoredStagedResult(
   assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
 }
 
+/**
+ * Enforces that the interrupt payload is present exactly when `status` is
+ * `"interrupted"`.
+ */
 function assertInterruptPayloadConsistency(
   status: StagedResultStatus,
   interruptPayload: KernelRecord | Uint8Array | undefined,
@@ -513,6 +591,12 @@ function assertInterruptPayloadConsistency(
   }
 }
 
+/**
+ * Enforces the run-liveness field invariants of kernel spec §5.2 on stored
+ * runs: the three lease fields travel together, only on `"running"` runs, and
+ * `preemptionReason` only on `"failed"` runs. Mirrors the RunRecord validator
+ * in kernel-validation-records.ts.
+ */
 function assertOptionalRunLivenessFields(
   status: RunStatus,
   executionOwnerId: unknown,
@@ -570,6 +654,10 @@ function assertOptionalRunLivenessFields(
   }
 }
 
+/**
+ * Validates a decoded step-sequence payload: plain step objects with contract
+ * keys and unique, non-empty ids.
+ */
 function assertStepDeclarationArray(
   value: unknown,
   label: string
@@ -603,6 +691,10 @@ function assertStepDeclarationArray(
   }
 }
 
+/**
+ * A `"running"` stored run must have a non-empty step sequence and an in-range
+ * `currentStepIndex` (kernel spec §5.2).
+ */
 function assertRunningRunHasNextStep(
   status: RunStatus,
   currentStepIndex: number,
@@ -632,6 +724,10 @@ function assertRunningRunHasNextStep(
   }
 }
 
+/**
+ * A `"completed"` stored run must have executed every declared step:
+ * `currentStepIndex` equals the decoded step count.
+ */
 function assertCompletedRunExhaustsSteps(
   status: RunStatus,
   currentStepIndex: number,

@@ -83,22 +83,54 @@ import type { RuntimeCoreTurnProgressHost } from "./runtime-core-turn-progress.j
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import type { PauseContext, ResumeContext } from "./runtime-execution-types.js";
 
+/**
+ * The full set of per-concern host slices the runtime-core facade functions
+ * operate through.
+ *
+ * Each slice is a narrow capability surface for one phase or concern of the
+ * shared execution core (startup, runner iteration, finalization, recovery,
+ * and so on). {@link createRuntimeCoreFacadeHosts} builds all slices from a
+ * single flat dependency bag so every slice observes the same kernel, clock,
+ * id source, and event publishers.
+ */
 export interface RuntimeCoreFacadeHosts {
+  /** Context-engineering operations: applying plans and agent handoffs. */
   contextOps: RuntimeCoreContextOpsHost;
+  /** Stream-event publishing helpers and state-observability emission. */
   events: RuntimeCoreEventsHost;
+  /** Recovery of executions whose run lease expired. */
   expiredRecovery: RuntimeCoreExpiredRecoveryHost;
+  /** Execution completion, failure handling, and pause/approval publishing. */
   finalization: RuntimeCoreFinalizationHost;
+  /** Active-run lease acquisition and renewal. */
   liveness: RuntimeCoreLivenessHost;
+  /** Kernel staging of manifests, messages, lineage, and runtime status. */
   persistence: RuntimeCorePersistenceHost;
+  /** Runner-iteration orchestration: staging, tool batches, artifacts. */
   runner: RuntimeCoreRunnerHost;
+  /** Runner-adjacent support: tool batch environments and handoff plans. */
   runnerSupport: RuntimeCoreRunnerSupportHost;
+  /** Execution startup: turn creation, loop-state seeding, preludes. */
   startup: RuntimeCoreStartupHost;
+  /** Durable commits of input, steering, and extension-state updates. */
   stateCommit: RuntimeCoreStateCommitHost;
+  /** Run status transitions, including failing the active run. */
   status: RuntimeCoreStatusHost;
+  /** Resumption of tool executions paused for approval. */
   toolResume: RuntimeCoreToolResumeHost;
+  /** Turn/branch head advancement and iteration-run completion. */
   turnProgress: RuntimeCoreTurnProgressHost;
 }
 
+/**
+ * Flat dependency bag from which every host slice in
+ * {@link RuntimeCoreFacadeHosts} is derived.
+ *
+ * The runtime core supplies one implementation of each capability here
+ * (kernel access, clock, id generation, event publishing, staging, tracked
+ * runs, lease bookkeeping, ...); {@link createRuntimeCoreFacadeHosts} then
+ * re-exposes the relevant subset to each slice.
+ */
 interface RuntimeCoreFacadeHostDependencies {
   activeRunLeaseControllers: WeakMap<RuntimeExecutionHandle, ActiveRunLease>;
   advanceTurnAndBranchHead(
@@ -313,6 +345,15 @@ interface RuntimeCoreFacadeHostDependencies {
   ): Promise<HashString>;
 }
 
+/**
+ * Builds every runtime-core host slice from a single dependency bag.
+ *
+ * Each `buildRuntimeCore*Host` call receives only the capabilities its slice
+ * needs, with late-bound wrappers (`(...args) => dependencies.fn(...args)`)
+ * so the slices always observe the current dependency implementations. All
+ * slices share the same kernel, clock, and id source, which keeps event
+ * timestamps and identifiers consistent across execution phases.
+ */
 export function createRuntimeCoreFacadeHosts(
   dependencies: RuntimeCoreFacadeHostDependencies
 ): RuntimeCoreFacadeHosts {
