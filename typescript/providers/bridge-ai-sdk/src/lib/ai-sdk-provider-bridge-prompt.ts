@@ -38,13 +38,16 @@ import {
   sanitizeRecord,
 } from "./ai-sdk-provider-bridge-utils.js";
 
+/** A single Tuvren prompt message (KrakenFrameworkSpecification §1.2). */
 type TuvrenMessage = TuvrenPrompt["messages"][number];
+/** A single content part of any Tuvren message that carries a `parts` array. */
 type TuvrenPromptPart = Extract<
   TuvrenMessage,
   {
     parts: unknown[];
   }
 >["parts"][number];
+/** A single Tuvren client function tool definition (KrakenFrameworkSpecification §8.1). */
 type TuvrenToolDefinition = NonNullable<TuvrenPrompt["tools"]>[number];
 
 /**
@@ -169,6 +172,15 @@ export function resolveProviderToolExecutionClass(
   return undefined;
 }
 
+/**
+ * Maps one Tuvren message to its AI SDK equivalent by role: `system` content
+ * passes through verbatim, `user`/`tool` parts map part-by-part, and
+ * `assistant` parts route through {@link mapAssistantParts} for replay
+ * handling.
+ *
+ * @throws TuvrenProviderError with code `unsupported_ai_sdk_prompt_part` for
+ *   an unrecognized message role.
+ */
 function mapPromptMessage(
   activeProvider: string,
   message: TuvrenMessage
@@ -205,6 +217,12 @@ function mapPromptMessage(
   }
 }
 
+/**
+ * Maps an assistant message's parts to AI SDK content, first threading
+ * Gemini parallel tool-call thought signatures via
+ * {@link propagateParallelToolCallThoughtSignatures} and then mapping each
+ * part with {@link mapAssistantPart}.
+ */
 function mapAssistantParts(
   activeProvider: string,
   parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"]
@@ -217,6 +235,13 @@ function mapAssistantParts(
   return propagatedParts.map((part) => mapAssistantPart(activeProvider, part));
 }
 
+/**
+ * For Google/Vertex-active providers, copies the first `tool_call` part's
+ * Gemini `thoughtSignature` onto any sibling `tool_call` part in the same
+ * assistant turn that lacks one, so replaying a parallel tool-call turn does
+ * not drop the signature Gemini requires on every call in the batch.
+ * Non-Google providers and turns with no signature are returned unchanged.
+ */
 function propagateParallelToolCallThoughtSignatures(
   activeProvider: string,
   parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"]
@@ -266,6 +291,11 @@ function propagateParallelToolCallThoughtSignatures(
   }) as Extract<TuvrenMessage, { role: "assistant" }>["parts"];
 }
 
+/**
+ * Finds the first `tool_call` part in an assistant turn that carries a
+ * Gemini `thoughtSignature` (checking `google` then `vertex` provider
+ * metadata namespaces), or `undefined` if none does.
+ */
 function readFirstGoogleToolCallThoughtSignature(
   parts: Extract<TuvrenMessage, { role: "assistant" }>["parts"]
 ): string | undefined {
@@ -296,6 +326,14 @@ function readFirstGoogleToolCallThoughtSignature(
   return undefined;
 }
 
+/**
+ * Maps a user-message part to AI SDK content: `text` and `file` parts pass
+ * through with replay `providerOptions`, and `structured` parts are
+ * serialized to a `text` content entry.
+ *
+ * @throws TuvrenProviderError with code `unsupported_ai_sdk_prompt_part` for
+ *   any other part type.
+ */
 function mapUserPart(part: TuvrenPromptPart) {
   switch (part.type) {
     case "text": {
@@ -364,6 +402,17 @@ function mapUserPart(part: TuvrenPromptPart) {
   }
 }
 
+/**
+ * Maps an assistant-message part to AI SDK content: `text`, `reasoning`, and
+ * `file` parts pass through with replay `providerOptions` filtered by
+ * {@link mapAssistantReplayProviderOptions}; `tool_call` becomes a
+ * `tool-call` content entry; `tool_result` delegates to
+ * {@link mapToolResultPart}; and `structured` is serialized to a `text`
+ * entry.
+ *
+ * @throws TuvrenProviderError with code `unsupported_ai_sdk_prompt_part` for
+ *   any other part type.
+ */
 function mapAssistantPart(activeProvider: string, part: TuvrenPromptPart) {
   switch (part.type) {
     case "text": {
@@ -482,6 +531,11 @@ function mapAssistantPart(activeProvider: string, part: TuvrenPromptPart) {
   }
 }
 
+/**
+ * Maps a `tool_result` part to an AI SDK `tool-result` content entry, mapping
+ * its output via {@link mapToolResultOutput} and threading replay
+ * `providerOptions`.
+ */
 function mapToolResultPart(
   part: Extract<TuvrenPromptPart, { type: "tool_result" }>
 ) {
@@ -503,6 +557,15 @@ function mapToolResultPart(
   >;
 }
 
+/**
+ * Classifies a tool result's output for the AI SDK's tagged `tool-result`
+ * output union: string outputs become `text`/`error-text`, JSON-serializable
+ * outputs become `json`/`error-json` (cloned defensively), tagged by
+ * `part.isError`.
+ *
+ * @throws TuvrenProviderError with code `invalid_ai_sdk_tool_result_output`
+ *   when the output is neither a string nor JSON-serializable.
+ */
 function mapToolResultOutput(
   part: Extract<TuvrenPromptPart, { type: "tool_result" }>
 ) {

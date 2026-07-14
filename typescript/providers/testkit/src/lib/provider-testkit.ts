@@ -26,34 +26,55 @@ import {
 } from "@tuvren/provider-api";
 import { providerTestkitFixtures as loadedProviderTestkitFixtures } from "./provider-conformance-fixtures.js";
 
+/** Inputs for {@link verifyProviderGenerate}: the provider/prompt to call, plus an optional response assertion. */
 export interface ProviderGenerateVerification {
+  /** Optional additional assertion run against the validated response. */
   check?: (response: TuvrenModelResponse) => Promise<void> | void;
+  /** Label used in assertion failure messages; defaults to `provider.id`. */
   label?: string;
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
 }
 
+/** Inputs for {@link verifyProviderStream}: the provider/prompt to call, plus an optional chunk-list assertion. */
 export interface ProviderStreamVerification {
+  /** Optional additional assertion run against the collected, validated chunk list. */
   check?: (chunks: readonly ProviderStreamChunk[]) => Promise<void> | void;
+  /** Label used in assertion failure messages; defaults to `provider.id`. */
   label?: string;
   prompt: TuvrenPrompt;
   provider: TuvrenProvider;
 }
 
+/** Inputs for {@link verifyProviderRejects}: the operation to run and how its rejection should be checked. */
 export interface ProviderRejectionVerification {
+  /** When set, the rejection's `message` must include this substring or match this pattern. */
   expectedMessage?: RegExp | string;
+  /** Label used in assertion failure messages. */
   label?: string;
+  /** The operation expected to reject. */
   run: () => Promise<unknown> | unknown;
 }
 
+/** Canned behavior for {@link createStaticTuvrenProvider}'s `generate`/`stream` methods. */
 export interface StaticProviderOptions {
+  /** When set, `generate()` rejects with this error instead of resolving. */
   generateError?: Error;
+  /** Provider id; defaults to `"static-provider"`. */
   id?: string;
+  /** Response `generate()` resolves with; defaults to {@link providerTestkitFixtures}`.response`. */
   response?: TuvrenModelResponse;
+  /** Chunks `stream()` yields; defaults to a minimal text-then-finish sequence. */
   streamChunks?: readonly ProviderStreamChunk[];
+  /** When set, the stream's first `next()` call rejects with this error instead of yielding. */
   streamError?: Error;
 }
 
+/**
+ * Shared fixture prompts/response used across provider conformance tests
+ * (mirrors {@link providerTestkitFixtures} from the schema-validated loader in
+ * `provider-conformance-fixtures.ts`).
+ */
 export interface ProviderTestkitFixtureSet {
   prompt: TuvrenPrompt;
   response: TuvrenModelResponse;
@@ -61,9 +82,20 @@ export interface ProviderTestkitFixtureSet {
   toolPrompt: TuvrenPrompt;
 }
 
+/**
+ * The schema-validated fixture set (prompts, response) shared by provider
+ * conformance tests, loaded once at module init via
+ * `provider-conformance-fixtures.ts`.
+ */
 export const providerTestkitFixtures: ProviderTestkitFixtureSet =
   loadedProviderTestkitFixtures;
 
+/**
+ * Calls `provider.generate(prompt)`, asserts the result is a well-formed
+ * `TuvrenModelResponse`, then runs the optional `check` callback.
+ *
+ * @throws Error (from the assertion helper) when the response is malformed.
+ */
 export async function verifyProviderGenerate(
   verification: ProviderGenerateVerification
 ): Promise<TuvrenModelResponse> {
@@ -76,6 +108,10 @@ export async function verifyProviderGenerate(
   return response;
 }
 
+/**
+ * Calls `provider.stream(prompt)`, collects and validates every chunk via
+ * {@link collectProviderStream}, then runs the optional `check` callback.
+ */
 export async function verifyProviderStream(
   verification: ProviderStreamVerification
 ): Promise<ProviderStreamChunk[]> {
@@ -87,6 +123,13 @@ export async function verifyProviderStream(
   return chunks;
 }
 
+/**
+ * Runs `verification.run()` and asserts it rejects, optionally checking the
+ * rejection message against `expectedMessage`.
+ *
+ * @throws Error when `run()` resolves instead of rejecting, or when the
+ *   rejection message does not match `expectedMessage`.
+ */
 export async function verifyProviderRejects(
   verification: ProviderRejectionVerification
 ): Promise<Error> {
@@ -110,6 +153,13 @@ export async function verifyProviderRejects(
   throw new Error(`${verification.label ?? "provider operation"} did not fail`);
 }
 
+/**
+ * Drains an async chunk stream into an array, asserting each chunk is a
+ * well-formed `ProviderStreamChunk` (§3.2) as it arrives and defensively
+ * cloning it.
+ *
+ * @throws Error (from the assertion helper) when a chunk is malformed.
+ */
 export async function collectProviderStream(
   stream: AsyncIterable<ProviderStreamChunk>,
   label = "provider stream"
@@ -126,6 +176,12 @@ export async function collectProviderStream(
   return chunks;
 }
 
+/**
+ * Asserts a chunk list's `type` sequence exactly matches `expectedTypes`, in
+ * order and length.
+ *
+ * @throws Error when the sequences differ.
+ */
 export function assertProviderChunkTypes(
   chunks: readonly ProviderStreamChunk[],
   expectedTypes: readonly ProviderStreamChunk["type"][],
@@ -142,6 +198,12 @@ export function assertProviderChunkTypes(
   }
 }
 
+/**
+ * Finds the stream's `finish` chunk and asserts its `finishReason` matches
+ * `expected`.
+ *
+ * @throws Error when no `finish` chunk was emitted, or its reason differs.
+ */
 export function assertProviderFinishChunk(
   chunks: readonly ProviderStreamChunk[],
   expected: Extract<ProviderStreamChunk, { type: "finish" }>["finishReason"],
@@ -165,6 +227,12 @@ export function assertProviderFinishChunk(
   return finishChunk;
 }
 
+/**
+ * Finds the stream's `structured_done` chunk and asserts its `name` matches
+ * `expectedName`.
+ *
+ * @throws Error when no `structured_done` chunk was emitted, or its name differs.
+ */
 export function assertProviderStructuredDoneChunk(
   chunks: readonly ProviderStreamChunk[],
   expectedName: string,
@@ -192,6 +260,12 @@ export function assertProviderStructuredDoneChunk(
   return structuredDoneChunk;
 }
 
+/**
+ * Builds a minimal in-memory `TuvrenProvider` for tests: `generate()`
+ * resolves a cloned canned response (or rejects `generateError`), and
+ * `stream()` replays a cloned canned chunk sequence (or rejects
+ * `streamError` on its first pull).
+ */
 export function createStaticTuvrenProvider(
   options: StaticProviderOptions = {}
 ): TuvrenProvider {
@@ -223,6 +297,7 @@ export function createStaticTuvrenProvider(
   };
 }
 
+/** Builds a one-shot async iterable that replays cloned `streamChunks`, or rejects `streamError` immediately if set. */
 function createStaticProviderStream(
   streamChunks: readonly ProviderStreamChunk[],
   streamError: Error | undefined
@@ -251,6 +326,12 @@ function createStaticProviderStream(
   };
 }
 
+/**
+ * Asserts a message includes a substring (string `expectedMessage`) or
+ * matches a pattern (`RegExp`).
+ *
+ * @throws Error when the message does not satisfy `expectedMessage`.
+ */
 function assertMessageMatches(
   actualMessage: string,
   expectedMessage: RegExp | string,
@@ -277,6 +358,7 @@ function assertMessageMatches(
   }
 }
 
+/** True when two string arrays have the same length and elements in the same order. */
 function arraysAreEqual(
   left: readonly string[],
   right: readonly string[]
@@ -288,6 +370,7 @@ function arraysAreEqual(
   return left.every((value, index) => value === right[index]);
 }
 
+/** Structurally clones and re-validates a `TuvrenModelResponse` so callers cannot mutate the shared fixture/canned value. */
 function cloneModelResponse(
   response: TuvrenModelResponse
 ): TuvrenModelResponse {
@@ -296,6 +379,7 @@ function cloneModelResponse(
   return cloned;
 }
 
+/** Structurally clones and re-validates a `ProviderStreamChunk` so callers cannot mutate the shared canned value. */
 function cloneProviderStreamChunk(
   chunk: ProviderStreamChunk
 ): ProviderStreamChunk {

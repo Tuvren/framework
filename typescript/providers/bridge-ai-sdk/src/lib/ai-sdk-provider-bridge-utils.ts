@@ -28,6 +28,7 @@ import type {
   TuvrenPrompt,
 } from "@tuvren/provider-api";
 
+/** A single content part of any Tuvren message that carries a `parts` array. */
 type TuvrenPromptPart = Extract<
   TuvrenPrompt["messages"][number],
   {
@@ -35,10 +36,12 @@ type TuvrenPromptPart = Extract<
   }
 >["parts"][number];
 
+/** A plain JSON object, as accepted by {@link cloneJsonObject} and {@link isJsonValue}. */
 interface JsonObject {
   [key: string]: JsonValue | undefined;
 }
 
+/** Any JSON-serializable value: primitive, `null`, plain object, or array thereof. */
 type JsonValue = null | boolean | JsonObject | JsonValue[] | number | string;
 
 /**
@@ -963,6 +966,7 @@ export function cloneJsonObject(value: Record<string, unknown>): JsonObject {
   return cloned;
 }
 
+/** Recursively clones one already-validated {@link JsonValue}. */
 function cloneJsonValue(value: JsonValue): JsonValue {
   if (
     value === null ||
