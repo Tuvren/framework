@@ -124,7 +124,7 @@ type TransactionOutcome<T> =
  *
  * Requires the wrapped backend to expose a hidden fault-injection control
  * surface (found by shape via `Object.getOwnPropertySymbols`, not a public
- * API) for `mid-commit` and `before-commit` points; backends that do not
+ * API) for `mid-commit` and `after-commit-before-ack` points; backends that do not
  * expose it can still use `before-commit` by throwing before the real
  * commit is attempted, but `mid-commit` and `after-commit-before-ack`
  * always require the control surface.

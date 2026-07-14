@@ -56,7 +56,7 @@ The plan schema is `tools/schemas/conformance-plan.schema.json`; `tools/conforma
 Things to notice:
 
 - The second check adds `capabilities: ["kernel.logical"]` on top of the plan-level `["kernel.protocol"]` — check-level capabilities are additive requirements, which is how one plan can carry checks for optional sub-surfaces.
-- `fixture` references the plan's `fixtures` map by id; the harness resolves the file relative to the plan and hands the parsed JSON to the adapter as `input.fixture` (narrowable with `input.fixturePath`). `scenario`/`input.scenarioPath` work the same way for richer recorded-interaction data under `scenarios/`. Fixture and scenario files are shape-validated by separate schemas (e.g. `tools/schemas/fixture-set.schema.json`) — authority fixture validation is deliberately separate from implementation conformance.
+- `fixture` references the plan's `fixtures` map by id; the harness resolves the file relative to the plan and hands the parsed JSON to the adapter as `input.fixture` (narrowable with `input.fixturePath`). `scenario`/`input.scenarioPath` work the same way for richer recorded-interaction data under `scenarios/`. Fixture and scenario files are shape-validated by separate schemas (e.g. `spec/conformance/schemas/fixture-set.schema.json`) — authority fixture validation is deliberately separate from implementation conformance.
 - `evidence` entries are **required evidence**: paths that must actually be present in the observed context, or the check fails. The plan compiler (`tools/conformance/plan-compiler/index.ts`) additionally derives required-evidence paths from every decisive assertion, and a guardrail rejects "evidence-only" plans that declare evidence no assertion actually reads.
 
 ### Assertion kinds

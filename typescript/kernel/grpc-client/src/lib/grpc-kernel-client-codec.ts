@@ -141,9 +141,9 @@ export function requireBranchHeadListEntry(
 }
 
 /**
- * Decodes a required protobuf `Verdict` field and asserts it narrows to a
- * {@link ComposedVerdict} (a `Verdict` other than `"retry"`) — the shape
- * `verdicts.compose` returns.
+ * Decodes a required protobuf `Verdict` field and asserts it is a valid
+ * {@link ComposedVerdict} — the shape `verdicts.compose` returns
+ * (structurally identical to `Verdict`; composition does not narrow it).
  */
 export function requireComposedVerdict(
   value: ProtoVerdict | undefined,

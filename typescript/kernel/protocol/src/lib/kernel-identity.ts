@@ -63,7 +63,8 @@ const STAGED_RESULT_STATUSES = ["completed", "failed", "interrupted"] as const;
  *   validated against the registration rules of kernel spec §3.1.
  * @returns The TurnTree hash.
  * @throws TuvrenValidationError With code `invalid_turn_tree_hash` when the
- *   manifest, schema, or schemaId pairing is invalid.
+ *   manifest, schema, or schemaId pairing is invalid; a non-string or empty
+ *   `schemaId` currently surfaces as `invalid_turn_node_hash` instead.
  */
 export function hashTurnTreeIdentity(
   schemaId: string,

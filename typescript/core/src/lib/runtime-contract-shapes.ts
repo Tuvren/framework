@@ -81,7 +81,7 @@ export interface TextPart {
 
 /**
  * Model reasoning/thinking content (KrakenFrameworkSpecification §1.1).
- * `text` is the empty string when `redacted` is `true`; a non-redacted
+ * `text` may be empty when `redacted` is `true`; a non-redacted
  * reasoning part must carry non-empty text. Provider-native continuity
  * tokens (e.g. Anthropic's `signature`) live in `providerMetadata`.
  */

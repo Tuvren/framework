@@ -344,9 +344,9 @@ export async function turnNodeDescendsFrom(
 
 /**
  * Validates a new turn's `parentTurnId` against `turn.create`'s legality
- * rules (kernel spec §5.3, Appendix A): the first turn to start at
- * `startTurnNodeHash` on the thread needs no parent, while a later turn at
- * the same start node must name the immediately preceding turn on the same
+ * rules (kernel spec §5.3, Appendix A): a turn starting at a node no earlier
+ * turn's head reaches needs no parent, while a turn starting where a previous
+ * turn's head landed must name the immediately preceding turn on the same
  * branch as its parent.
  *
  * @throws TuvrenLineageError With code `kernel_runtime_turn_parent_required`,
