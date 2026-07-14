@@ -35,6 +35,15 @@ import {
   createStoredTurnTreeRecord,
 } from "./kernel-test-fixtures.js";
 
+/**
+ * Registers run-state invariant cases — invalid run creation (stale branch
+ * heads, schema mismatches, duplicate active runs, invalid initial
+ * statuses), active-run head-alignment enforcement, and staged-result
+ * immutability/run-status rules — against `options.testApi`, plus the
+ * shared foundational cases from `registerBackendInvariantFoundationCases`.
+ * Called by `registerBackendInvariantSuite` in backend-invariant-suite.js;
+ * not intended to be called standalone.
+ */
 export function registerBackendInvariantRunStateCases(
   options: BackendConformanceSuiteOptions
 ): void {

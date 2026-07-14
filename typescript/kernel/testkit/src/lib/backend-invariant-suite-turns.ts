@@ -34,6 +34,14 @@ import {
   createStoredTurnTreeRecord,
 } from "./kernel-test-fixtures.js";
 
+/**
+ * Registers turn/thread/turn-tree invariant cases — semantic-parent-link
+ * legality, `updatedAtMs` monotonicity, genesis-root enforcement, staged
+ * -result reference validity, and turn-tree manifest/path-row consistency
+ * (including chunked path cardinality) — against `options.testApi`. Called
+ * by `registerBackendInvariantSuite` in backend-invariant-suite.js; not
+ * intended to be called standalone.
+ */
 export function registerBackendInvariantTurnCases(
   options: BackendConformanceSuiteOptions
 ): void {
