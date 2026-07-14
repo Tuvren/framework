@@ -134,8 +134,8 @@ interface BackendFaultHooks {
 
 /**
  * Internal fault-injection control surface exposed on the backend instance
- * under the `FAULT_INJECTION_CONTROL` symbol, for the shared testkit fault
- * harness (`@tuvren/kernel-testkit`) to install {@link BackendFaultHooks} and
+ * under the `FAULT_INJECTION_CONTROL` symbol, for the shared kernel testkit
+ * fault harness to install {@link BackendFaultHooks} and
  * discover which named fault points this backend supports.
  */
 interface BackendFaultInjectionControl {
