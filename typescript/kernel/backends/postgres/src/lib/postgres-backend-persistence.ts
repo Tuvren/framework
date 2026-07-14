@@ -616,6 +616,13 @@ function decodeSnapshot(value: Uint8Array): BackendState {
   return state;
 }
 
+// Snapshot-decoding helpers below validate the raw decoded CBOR value's
+// shape before `decodeSnapshot` hands it to the kernel-protocol `assertStored*`
+// guards, so a malformed snapshot payload fails with a clear
+// `postgres_backend_snapshot_payload_invalid` error instead of a confusing
+// downstream type error.
+
+/** Asserts the decoded snapshot root is a plain object. */
 function readSnapshotRecord(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw persistenceError(
@@ -627,6 +634,7 @@ function readSnapshotRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+/** Asserts a snapshot field is an array and validates every element with `assertRecord`. */
 function readSnapshotArray<T>(
   value: unknown,
   assertRecord: (value: unknown, label: string) => asserts value is T,
@@ -646,6 +654,11 @@ function readSnapshotArray<T>(
   });
 }
 
+/**
+ * Asserts a snapshot field is an array without validating element shape —
+ * used where the element type still needs its schema resolved (turn trees,
+ * turn tree paths) before it can be asserted.
+ */
 function readUntypedSnapshotArray(value: unknown, label: string): unknown[] {
   if (!Array.isArray(value)) {
     throw persistenceError(
@@ -658,6 +671,7 @@ function readUntypedSnapshotArray(value: unknown, label: string): unknown[] {
   return value;
 }
 
+/** Asserts the decoded snapshot's `version` field is a safe integer. */
 function readSnapshotVersion(value: unknown): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value)) {
     throw persistenceError(
@@ -670,17 +684,23 @@ function readSnapshotVersion(value: unknown): number {
   return value;
 }
 
+/** Double-quotes and escapes a PostgreSQL identifier for safe interpolation. */
 function quoteIdentifier(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
 }
 
+/** Builds a `"schema"."table"` qualified, quoted identifier. */
 function qualifyIdentifier(schemaName: string, tableName: string): string {
   return `${quoteIdentifier(schemaName)}.${quoteIdentifier(tableName)}`;
 }
 
+/** Copies a possibly-driver-specific byte buffer into a plain `Uint8Array`. */
 function toUint8Array(value: Uint8Array): Uint8Array {
   return new Uint8Array(value);
 }
+
+// Comparators below give the encoded snapshot a deterministic element order
+// per record family, by identity key, independent of `Map` iteration order.
 
 function compareStoredObject(left: StoredObject, right: StoredObject): number {
   return left.hash.localeCompare(right.hash);

@@ -207,6 +207,13 @@ export async function executeStreamCall(input: {
   };
 }
 
+/**
+ * Synthesizes a complete `message.start` → content-done → `message.done`
+ * event sequence from an already-complete response, for the non-streaming
+ * fallback and `aroundModel` short-circuit/replacement paths (framework spec
+ * §6.3/§6.5). The sequence is returned unpublished; the caller flushes it
+ * via {@link flushBufferedAssistantSequences} once ready.
+ */
 export function createBufferedAssistantSequence(
   response: TuvrenModelResponse,
   now: () => EpochMs
@@ -228,6 +235,12 @@ export function createBufferedAssistantSequence(
   };
 }
 
+/**
+ * Publishes every not-yet-published sequence's events on `runtime`, in
+ * order, and marks each as published. Already-published sequences (from a
+ * live `executeStreamCall`) are skipped, so this is safe to call with a mix
+ * of live and synthesized sequences without double-emitting.
+ */
 export async function flushBufferedAssistantSequences(
   sequences: readonly BufferedAssistantSequence[],
   runtime: RunnerRuntimePort
@@ -237,6 +250,10 @@ export async function flushBufferedAssistantSequences(
   }
 }
 
+/**
+ * Infers a `finishReason` from an assistant message's parts alone:
+ * `"tool_call"` when it requests any tool call, otherwise `"stop"`.
+ */
 export function inferAssistantFinishReason(
   message: Extract<TuvrenMessage, { role: "assistant" }>
 ): TuvrenModelResponse["finishReason"] {
@@ -245,6 +262,17 @@ export function inferAssistantFinishReason(
     : "stop";
 }
 
+/**
+ * Synthesizes one delta+done event pair per content part of a complete
+ * response (framework spec §6.3), followed by a trailing `message.done`.
+ * `tool_call` parts additionally get a synthesized `tool_call.start` before
+ * their delta+done pair, matching the shape a live stream would have
+ * produced.
+ *
+ * @throws TuvrenRuntimeError with code `react_runner_invalid_model_response`
+ *   if `response.parts` contains a `tool_result` part — provider responses
+ *   must never contain one.
+ */
 function synthesizeAssistantEvents(
   response: TuvrenModelResponse,
   messageId: string,
@@ -361,6 +389,7 @@ function synthesizeAssistantEvents(
   return events;
 }
 
+/** Emits one sequence's events on `runtime` if not already published; a no-op otherwise. */
 async function publishBufferedAssistantSequence(
   sequence: BufferedAssistantSequence,
   runtime: RunnerRuntimePort
@@ -376,6 +405,7 @@ async function publishBufferedAssistantSequence(
   sequence.published = true;
 }
 
+/** Records `event` in the live sequence buffer and emits it on `runtime` immediately. */
 async function appendAndEmit(
   events: TuvrenStreamEvent[],
   event: TuvrenStreamEvent,
@@ -385,6 +415,7 @@ async function appendAndEmit(
   await runtime.emit(event);
 }
 
+/** Applies {@link appendAndEmit} to each event in order. */
 async function appendAllAndEmit(
   events: TuvrenStreamEvent[],
   emittedEvents: readonly TuvrenStreamEvent[],

@@ -46,6 +46,27 @@ type AccumulatedPart =
     }
   | { kind: "tool_call"; state: PendingToolCall };
 
+/**
+ * Absorbs `ProviderStreamChunk`s from a provider stream and does two jobs at
+ * once (framework spec §6.2 "Two Parallel Outputs"):
+ *
+ * - Translates each chunk into the `TuvrenStreamEvent`(s) it should produce
+ *   on the live path, returned from {@link absorb} for immediate emission.
+ * - Accumulates content parts (text, reasoning, structured output, tool
+ *   calls, provider tool results) into a complete `TuvrenModelResponse` for
+ *   the durable path, produced by {@link finalize}.
+ *
+ * Text and reasoning deltas coalesce onto an open part of the same kind;
+ * structured-output and tool-call parts track raw JSON deltas alongside a
+ * `done` flag and are only parsed once complete (or, for partial/cancelled
+ * finalization, best-effort parsed from whatever was accumulated so far). A
+ * `tool_call_start` chunk implicitly closes any still-open text/reasoning
+ * part, since providers do not explicitly terminate those before a tool call
+ * begins.
+ *
+ * One `StreamAccumulator` is scoped to exactly one `messageId` / one
+ * provider call.
+ */
 export class StreamAccumulator {
   private readonly parts: AccumulatedPart[] = [];
   private readonly toolCalls = new Map<string, PendingToolCall>();
@@ -57,11 +78,32 @@ export class StreamAccumulator {
   private readonly messageId: string;
   private readonly now: () => EpochMs;
 
+  /**
+   * @param messageId - Stamped on every event this accumulator produces.
+   * @param now - Clock used to timestamp produced events.
+   */
   constructor(messageId: string, now: () => EpochMs) {
     this.messageId = messageId;
     this.now = now;
   }
 
+  /**
+   * Absorbs one provider stream chunk, updating internal accumulation state
+   * and returning the `TuvrenStreamEvent`(s) it produces for immediate live
+   * emission (zero, one, or — for a `tool_call_start` that also closes a
+   * still-open text/reasoning part — more than one).
+   *
+   * A `"finish"` chunk marks the message as done (see
+   * {@link StreamAccumulator.messageDoneEmitted | messageDoneEmitted}) and
+   * asserts every structured/tool-call part completed before it.
+   *
+   * @throws TuvrenProviderError when the chunk is an `"error"` chunk, or (via
+   *   {@link assertCompletedProviderParts}) when `"finish"` arrives with an
+   *   incomplete structured or tool-call part.
+   * @throws TuvrenRuntimeError with code
+   *   `react_runner_invalid_provider_stream` when an args-delta or done chunk
+   *   references a `providerCallId` that was never started.
+   */
   absorb(chunk: ProviderStreamChunk): TuvrenStreamEvent[] {
     switch (chunk.type) {
       case "text_delta":
@@ -162,10 +204,29 @@ export class StreamAccumulator {
     }
   }
 
+  /** Provider-native/mediated invocation results absorbed so far (AY002/AY004). */
   get providerToolResults(): ProviderNativeInvocationRecord[] {
     return this._providerToolResults;
   }
 
+  /**
+   * Builds the complete `TuvrenModelResponse` from everything absorbed so
+   * far.
+   *
+   * Non-partial finalization (the default) requires every structured/tool-call
+   * part to be complete first. Partial finalization (`options.partial: true`,
+   * used on cooperative cancellation) instead best-effort-parses whatever
+   * content accumulated, dropping parts that never produced usable content
+   * (see {@link finalizeAccumulatedPart}).
+   *
+   * @param options.finishReason - Overrides the inferred finish reason (used
+   *   to force `"error"` on cancellation); defaults to the finish chunk's
+   *   reason, or `"tool_call"`/`"stop"` inferred from the finalized parts.
+   * @param options.partial - Finalizes best-effort from incomplete state
+   *   instead of requiring completion.
+   * @throws TuvrenProviderError (via {@link assertCompletedProviderParts})
+   *   when called non-partial with an incomplete structured or tool-call part.
+   */
   finalize(options?: {
     finishReason?: TuvrenModelResponse["finishReason"];
     partial?: boolean;
@@ -208,10 +269,19 @@ export class StreamAccumulator {
     };
   }
 
+  /** True once a `"finish"` chunk has been absorbed (its `message.done` already emitted). */
   get messageDoneEmitted(): boolean {
     return this.messageDonePublished;
   }
 
+  /**
+   * Builds the trailing events needed to close out the message when the
+   * provider stream ended without a `"finish"` chunk: completion events for
+   * any still-open parts, plus a final `message.done` — unless
+   * `options.partial` is set and content is still incomplete (see
+   * {@link hasOpenPartialContent}), in which case only the completable
+   * content events are returned and `message.done` is withheld.
+   */
   createTerminalEvents(
     response: TuvrenModelResponse,
     options?: { partial?: boolean }
