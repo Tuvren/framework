@@ -25,30 +25,50 @@ import type {
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 
+/** Minimal shape {@link assertStreamEventTypes}/{@link assertAgUiEventTypes} need from a protocol event. */
 export interface EventLike {
   type: string;
 }
 
+/** Minimal shape {@link assertSseFrameEvents} needs from an SSE frame. */
 export interface SseFrameLike {
   data: string;
   event?: string;
 }
 
+/**
+ * Result of {@link startAsyncCapture}: `events` accumulates live as the
+ * source stream is consumed in the background; `done` resolves once the
+ * stream is fully drained (or rejects if it throws).
+ */
 export interface AsyncCapture<T> {
   readonly done: Promise<void>;
   readonly events: T[];
 }
 
+/** Canonical named `TuvrenStreamEvent` sequences loaded by {@link readFrameworkStreamFixtures}. */
 export interface FrameworkStreamFixtureSet {
+  /** A turn that streams assistant content, executes a tool, and completes normally. */
   completedTurn: readonly TuvrenStreamEvent[];
+  /** A turn that fails with a fatal error. */
   failedTurn: readonly TuvrenStreamEvent[];
+  /** A turn that pauses on a tool approval request. */
   pausedTurn: readonly TuvrenStreamEvent[];
 }
 
+/**
+ * In-memory `TuvrenTelemetrySink` capture built by
+ * {@link createTelemetryCaptureSink}, for asserting on telemetry a test
+ * subject emits without a real OpenTelemetry backend.
+ */
 export interface TelemetryCapture {
+  /** Empties `events` and `spans` in place, for reuse across test cases. */
   clear(): void;
+  /** Every event emitted through `sink.event`, deep-cloned at capture time. */
   readonly events: TelemetryEvent[];
+  /** The sink to pass to the code under test. */
   readonly sink: TuvrenTelemetrySink;
+  /** Every span emitted through `sink.span`, deep-cloned at capture time. */
   readonly spans: TelemetrySpan[];
 }
 
@@ -64,6 +84,11 @@ const STREAM_FIXTURE_PATHS = [
   ),
 ];
 
+/**
+ * Wraps a fixed event list as a fresh, one-pass `AsyncIterable`, cloning each
+ * event on yield so repeated iterations (or fixtures shared across tests)
+ * never alias mutable state.
+ */
 export function createFixtureEventStream(
   events: readonly TuvrenStreamEvent[]
 ): AsyncIterable<TuvrenStreamEvent> {
@@ -75,6 +100,7 @@ export function createFixtureEventStream(
   })();
 }
 
+/** Drains `stream` fully and returns every value in emission order. */
 export async function collectStreamValues<T>(
   stream: AsyncIterable<T>
 ): Promise<T[]> {
@@ -87,6 +113,12 @@ export async function collectStreamValues<T>(
   return values;
 }
 
+/**
+ * Drains `stream` fully, validating and cloning each event.
+ *
+ * @throws If any yielded value fails `assertTuvrenStreamEvent`, with `label`
+ *   and the event's index in the message.
+ */
 export async function collectTuvrenStreamEvents(
   stream: AsyncIterable<TuvrenStreamEvent>,
   label = "event stream"
@@ -103,6 +135,19 @@ export async function collectTuvrenStreamEvents(
   return events;
 }
 
+/**
+ * Loads and validates the canonical `stream-events.json` conformance fixture
+ * (`spec/conformance/streaming/fixtures/stream-events.json`) as a
+ * {@link FrameworkStreamFixtureSet}.
+ *
+ * Tries a short list of relative paths from this package's own location so
+ * the helper works whether it's consumed from a package one or two levels
+ * under `typescript/`.
+ *
+ * @throws If the fixture file is not found at any candidate path, or its
+ *   contents do not validate as a {@link FrameworkStreamFixtureSet} (via
+ *   `assertTuvrenStreamEvent` on every entry).
+ */
 export async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixtureSet> {
   const fixture = (await readFirstJsonFile(
     STREAM_FIXTURE_PATHS,
@@ -113,6 +158,13 @@ export async function readFrameworkStreamFixtures(): Promise<FrameworkStreamFixt
   return fixture;
 }
 
+/**
+ * Asserts that `events`' `type` values, in order, exactly equal
+ * `expectedTypes`.
+ *
+ * @throws An `Error` (with both actual and expected sequences serialized)
+ *   when the lengths or any positional value differ.
+ */
 export function assertStreamEventTypes(
   events: readonly EventLike[],
   expectedTypes: readonly string[],
@@ -121,6 +173,13 @@ export function assertStreamEventTypes(
   assertEventTypes(events, expectedTypes, label);
 }
 
+/**
+ * Asserts that `frames`' SSE `event` fields, in order, exactly equal
+ * `expectedEvents` — a frame with no `event` field is treated as the SSE
+ * default event name `"message"`.
+ *
+ * @throws An `Error` when the lengths or any positional value differ.
+ */
 export function assertSseFrameEvents(
   frames: readonly SseFrameLike[],
   expectedEvents: readonly string[],
@@ -130,6 +189,12 @@ export function assertSseFrameEvents(
   assertStringArrays(actualEvents, expectedEvents, label);
 }
 
+/**
+ * Asserts that `events`' `type` values, in order, exactly equal
+ * `expectedTypes` (AG-UI event `type` values, e.g. `RUN_STARTED`).
+ *
+ * @throws An `Error` when the lengths or any positional value differ.
+ */
 export function assertAgUiEventTypes(
   events: readonly EventLike[],
   expectedTypes: readonly string[],
@@ -138,6 +203,12 @@ export function assertAgUiEventTypes(
   assertEventTypes(events, expectedTypes, label);
 }
 
+/**
+ * Starts draining `stream` in the background immediately, returning a
+ * live-accumulating {@link AsyncCapture}. Useful for asserting on events
+ * produced concurrently with other test actions (e.g. driving a handle while
+ * observing its emitted stream).
+ */
 export function startAsyncCapture<T>(
   stream: AsyncIterable<T>
 ): AsyncCapture<T> {
@@ -154,6 +225,11 @@ export function startAsyncCapture<T>(
   };
 }
 
+/**
+ * Builds an in-memory {@link TelemetryCapture}: its `sink` deep-clones every
+ * event/span it receives into `events`/`spans`, so a test can assert on
+ * emitted telemetry without a real OpenTelemetry (or other) backend.
+ */
 export function createTelemetryCaptureSink(): TelemetryCapture {
   const events: TelemetryEvent[] = [];
   const spans: TelemetrySpan[] = [];
@@ -176,6 +252,13 @@ export function createTelemetryCaptureSink(): TelemetryCapture {
   };
 }
 
+/**
+ * Polls `condition` at `options.intervalMs` (default `1`ms) until it returns
+ * `true` or `options.timeoutMs` (default `1000`ms) elapses.
+ *
+ * @throws An `Error` if `condition` has not returned `true` before the
+ *   timeout elapses.
+ */
 export async function waitForCondition(
   condition: () => boolean,
   options: { intervalMs?: number; timeoutMs?: number } = {}
@@ -195,6 +278,7 @@ export async function waitForCondition(
   }
 }
 
+/** Yields one macrotask (a zero-delay `setTimeout`), for letting pending microtasks/timers in the system under test settle. */
 export async function waitForAsyncTurn(): Promise<void> {
   await new Promise<void>((resolve) => {
     setTimeout(resolve, 0);
@@ -240,6 +324,13 @@ function cloneTuvrenStreamEvent(event: TuvrenStreamEvent): TuvrenStreamEvent {
   return cloned;
 }
 
+/**
+ * Reads and JSON-parses the first path in `paths` that exists, trying each
+ * in order and skipping past `ENOENT` failures.
+ *
+ * @throws The first non-`ENOENT` read/parse error encountered, or an `Error`
+ *   naming every attempted path if none exist.
+ */
 async function readFirstJsonFile(
   paths: readonly string[],
   label: string
@@ -262,6 +353,11 @@ async function readFirstJsonFile(
   throw new Error(`${label} was not found at ${errors.join(", ")}`);
 }
 
+/**
+ * @throws An `Error` when `value` is not an object, or (via
+ *   {@link assertTuvrenStreamEvents}) when any of its three named turn
+ *   sequences is missing, not an array, or contains an invalid stream event.
+ */
 function assertFrameworkStreamFixtureSet(
   value: unknown,
   label: string

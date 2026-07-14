@@ -14,6 +14,16 @@
  * limitations under the License.
  */
 
+/**
+ * @packageDocumentation
+ *
+ * `@tuvren/telemetry-semconv` re-exports the Weaver-generated Tuvren
+ * runtime telemetry semantic-convention attribute registry
+ * (`tuvren.runtime.*` attribute keys, their definitions, and the owning
+ * schema URL) as this package's public surface. The registry itself lives
+ * under `src/lib/generated/` and is generated tooling output — this
+ * entrypoint is the only hand-authored file in the package.
+ */
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public generated-sink surface.
 export type {
   TuvrenRuntimeTelemetryAttributeDefinition,
