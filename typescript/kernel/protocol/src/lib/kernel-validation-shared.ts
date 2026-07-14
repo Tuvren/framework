@@ -25,6 +25,9 @@ import {
 } from "@tuvren/core";
 import { decodeDeterministicKernelRecord } from "./kernel-identity.js";
 
+/**
+ * True when `value` is one of the given string literals.
+ */
 export function isStringLiteral<const T extends readonly string[]>(
   value: unknown,
   literals: T
@@ -32,6 +35,10 @@ export function isStringLiteral<const T extends readonly string[]>(
   return typeof value === "string" && literals.includes(value);
 }
 
+/**
+ * Adapts an `assert*` guard into a boolean `is*` predicate by swallowing its
+ * validation error.
+ */
 export function tryAssert<T>(
   value: unknown,
   assertion: (value: unknown, label?: string) => asserts value is T
@@ -44,6 +51,10 @@ export function tryAssert<T>(
   }
 }
 
+/**
+ * Builds a TuvrenValidationError with the given machine-readable code and
+ * optional diagnostic details.
+ */
 export function validationError(
   message: string,
   code: string,
@@ -55,6 +66,13 @@ export function validationError(
   });
 }
 
+/**
+ * Asserts a dense, data-only array: no holes, no symbol keys, no accessors, no
+ * non-index own properties. Protocol arrays must be pure data so validation and
+ * canonical encoding cannot be bypassed via exotic array shapes.
+ *
+ * @throws TuvrenValidationError With code `invalid_array`.
+ */
 export function assertArray(value: unknown, label: string): unknown[] {
   if (!Array.isArray(value)) {
     throw validationError(`${label} must be an array`, "invalid_array", {
@@ -115,6 +133,13 @@ export function assertArray(value: unknown, label: string): unknown[] {
   return value;
 }
 
+/**
+ * Asserts a plain, data-only object (prototype `Object.prototype` or `null`, no
+ * symbol keys, no accessors) and returns a null-prototype shallow copy so later
+ * property reads cannot hit inherited or getter-backed state.
+ *
+ * @throws TuvrenValidationError With code `invalid_object`.
+ */
 export function assertPlainObject(
   value: unknown,
   label: string
@@ -166,6 +191,11 @@ export function assertPlainObject(
   return normalizedObject;
 }
 
+/**
+ * Rejects any own key outside the declared contract shape.
+ *
+ * @throws TuvrenValidationError With code `invalid_object_key`.
+ */
 export function assertAllowedObjectKeys(
   value: Record<string, unknown>,
   allowedKeys: readonly string[],
@@ -184,6 +214,12 @@ export function assertAllowedObjectKeys(
   }
 }
 
+/**
+ * Optional contract fields must be omitted rather than set to `undefined`, so
+ * field presence stays unambiguous across languages and encodings.
+ *
+ * @throws TuvrenValidationError With code `invalid_optional_field`.
+ */
 export function assertOptionalFieldIsOmittedWhenUndefined(
   value: Record<string, unknown>,
   key: string,
@@ -198,6 +234,11 @@ export function assertOptionalFieldIsOmittedWhenUndefined(
   }
 }
 
+/**
+ * Asserts a non-empty string.
+ *
+ * @throws TuvrenValidationError With code `invalid_string`.
+ */
 export function assertNonEmptyString(
   value: unknown,
   label: string
@@ -211,6 +252,11 @@ export function assertNonEmptyString(
   }
 }
 
+/**
+ * Asserts a boolean.
+ *
+ * @throws TuvrenValidationError With code `invalid_boolean`.
+ */
 export function assertBoolean(
   value: unknown,
   label: string
@@ -222,6 +268,9 @@ export function assertBoolean(
   }
 }
 
+/**
+ * Asserts `null` or a valid HashString.
+ */
 export function assertNullableHashString(
   value: unknown,
   label: string
@@ -231,6 +280,9 @@ export function assertNullableHashString(
   }
 }
 
+/**
+ * Asserts `null` or a non-empty string.
+ */
 export function assertNullableString(
   value: unknown,
   label: string
@@ -240,6 +292,11 @@ export function assertNullableString(
   }
 }
 
+/**
+ * Asserts a `Uint8Array` payload.
+ *
+ * @throws TuvrenValidationError With code `invalid_uint8_array`.
+ */
 export function assertUint8Array(
   value: unknown,
   label: string
@@ -253,6 +310,11 @@ export function assertUint8Array(
   }
 }
 
+/**
+ * Asserts a non-negative safe integer.
+ *
+ * @throws TuvrenValidationError With code `invalid_integer`.
+ */
 export function assertNonNegativeInteger(
   value: unknown,
   label: string
@@ -276,6 +338,10 @@ export function assertNonNegativeInteger(
   }
 }
 
+/**
+ * Asserts a lowercase 64-character SHA-256 hex digest, rethrowing the core
+ * guard's failure with protocol code `invalid_hash_string`.
+ */
 export function assertHashString(
   value: unknown,
   label: string
@@ -293,6 +359,10 @@ export function assertHashString(
   }
 }
 
+/**
+ * Asserts an epoch-milliseconds timestamp, rethrowing the core guard's failure
+ * with protocol code `invalid_epoch_ms`.
+ */
 export function assertEpochMs(
   value: unknown,
   label: string
@@ -310,6 +380,10 @@ export function assertEpochMs(
   }
 }
 
+/**
+ * Asserts the restricted kernel record profile (see `@tuvren/core`), rethrowing
+ * the core guard's failure with protocol code `invalid_kernel_record`.
+ */
 export function assertKernelRecord(
   value: unknown,
   label = "value"
@@ -327,6 +401,9 @@ export function assertKernelRecord(
   }
 }
 
+/**
+ * Asserts a dense array of kernel records.
+ */
 export function assertKernelRecordArray(
   value: unknown,
   label: string
@@ -338,6 +415,9 @@ export function assertKernelRecordArray(
   }
 }
 
+/**
+ * Asserts a plain-object kernel record (a `KernelObject`).
+ */
 export function assertKernelObject(
   value: unknown,
   label: string
@@ -346,6 +426,9 @@ export function assertKernelObject(
   assertKernelRecord(value, label);
 }
 
+/**
+ * Asserts a dense array of plain-object kernel records.
+ */
 export function assertKernelObjectArray(
   value: unknown,
   label: string
@@ -357,6 +440,9 @@ export function assertKernelObjectArray(
   }
 }
 
+/**
+ * True when `value` is a dense, data-only array of valid HashStrings.
+ */
 export function isHashStringArray(value: unknown): value is string[] {
   if (!Array.isArray(value)) {
     return false;
@@ -401,6 +487,9 @@ export function isHashStringArray(value: unknown): value is string[] {
   return true;
 }
 
+/**
+ * Asserts a dense array of valid HashStrings.
+ */
 export function assertHashStringArray(
   value: unknown,
   label: string
@@ -412,6 +501,18 @@ export function assertHashStringArray(
   }
 }
 
+/**
+ * Decodes canonical deterministic CBOR bytes and validates the decoded value
+ * with the supplied guard. Non-canonical or malformed CBOR is rejected before
+ * the guard runs.
+ *
+ * @param value - Canonical deterministic CBOR bytes.
+ * @param assertion - Shape guard applied to the decoded record.
+ * @param label - Diagnostic label for error messages.
+ * @returns The decoded, validated value.
+ * @throws TuvrenValidationError With code `invalid_cbor_payload` when the bytes
+ *   are not canonical deterministic CBOR, or the guard's own error otherwise.
+ */
 export function assertDecodedKernelRecord<T>(
   value: Uint8Array,
   assertion: (value: unknown, label: string) => asserts value is T,
@@ -439,6 +540,9 @@ export function assertDecodedKernelRecord<T>(
   return decodedValue;
 }
 
+/**
+ * Decodes canonical deterministic CBOR bytes into a HashString array.
+ */
 export function assertDecodedHashStringArray(
   value: Uint8Array,
   label: string
@@ -446,6 +550,13 @@ export function assertDecodedHashStringArray(
   return assertDecodedKernelRecord(value, assertHashStringArray, label);
 }
 
+/**
+ * Decodes a CBOR HashString array and asserts its length matches a separately
+ * stored count column, keeping denormalized counts honest.
+ *
+ * @throws TuvrenValidationError With code `invalid_cbor_item_count` when the
+ *   decoded length differs from `expectedCount`.
+ */
 export function assertDecodedHashStringArrayCardinality(
   value: Uint8Array,
   expectedCount: number,

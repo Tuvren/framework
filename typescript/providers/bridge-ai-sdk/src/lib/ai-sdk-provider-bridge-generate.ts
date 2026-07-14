@@ -41,6 +41,11 @@ export type ProviderToolClassLookup = (
   toolName: string
 ) => "provider-native" | "provider-mediated" | undefined;
 
+/**
+ * Mapping callbacks injected by the bridge so the generate mapper shares the
+ * exact finish-reason, usage, and structured-output semantics of the stream
+ * path (defined once in `ai-sdk-provider-bridge.ts`).
+ */
 export interface GenerateResultHelpers {
   mapFinishReason(
     reason: Pick<
@@ -66,6 +71,7 @@ export interface GenerateResultHelpers {
   ): unknown;
 }
 
+/** Accumulator threaded through the content-part loop of {@link mapGenerateResult}. */
 interface GenerateResultState {
   parts: TuvrenModelResponse["parts"];
   providerToolResults: NonNullable<TuvrenModelResponse["providerToolResults"]>;
@@ -75,6 +81,20 @@ interface GenerateResultState {
   structuredProviderMetadata?: Record<string, unknown>;
 }
 
+/**
+ * Maps a complete `doGenerate` result into a `TuvrenModelResponse`
+ * (KrakenFrameworkSpecification §3.1): content parts become response parts,
+ * declared provider-executed tool results become `providerToolResults`
+ * entries, structured output is parsed and validated when requested (§3.5),
+ * and usage plus finish reason are normalized via the shared helpers.
+ *
+ * @param providerToolClassLookup - Resolves a tool name to its declared
+ *   provider execution class; `undefined` keeps the baseline rejection of
+ *   all provider-owned execution in force.
+ * @throws TuvrenProviderError with code `unsupported_ai_sdk_content`,
+ *   `structured_output_validation`, or `invalid_ai_sdk_tool_call_input` when
+ *   the result cannot be mapped.
+ */
 export function mapGenerateResult(
   result: LanguageModelV3GenerateResult,
   responseFormat: StructuredOutputRequest | undefined,
@@ -130,6 +150,12 @@ export function mapGenerateResult(
   };
 }
 
+/**
+ * Routes one AI SDK content part into the accumulator: text (or structured
+ * buffer), reasoning, file, tool-call, declared provider tool-result, or
+ * source. Undeclared provider tool results and tool-approval requests are
+ * rejected as out of baseline scope.
+ */
 function appendGenerateContentPart(
   contentPart: LanguageModelV3GenerateResult["content"][number],
   state: GenerateResultState,
@@ -198,6 +224,11 @@ function appendGenerateContentPart(
   }
 }
 
+/**
+ * Maps a declared provider-executed tool result into a
+ * `providerToolResults` record tagged with its execution class (AY002/AY004),
+ * minting a fresh `callId` while preserving the provider's own call id.
+ */
 function mapProviderNativeGenerateResult(
   contentPart: Extract<
     LanguageModelV3GenerateResult["content"][number],
@@ -218,6 +249,10 @@ function mapProviderNativeGenerateResult(
   };
 }
 
+/**
+ * Appends a text part, or in structured-output mode buffers the text (and
+ * merges its provider metadata) for the final `structured` part.
+ */
 function appendGenerateTextPart(
   contentPart: Extract<
     LanguageModelV3GenerateResult["content"][number],
@@ -237,6 +272,13 @@ function appendGenerateTextPart(
   );
 }
 
+/**
+ * Maps a tool-call content part to a client `tool_call` response part with a
+ * fresh `callId`, parsing the call input as JSON. Declared provider-owned
+ * calls are skipped (their attribution flows through the matching
+ * tool-result — see the inline KRT-BH005 / ADR-055 note); undeclared
+ * provider-owned calls are rejected.
+ */
 function mapGeneratedToolCallPart(
   contentPart: Extract<
     LanguageModelV3GenerateResult["content"][number],
@@ -281,6 +323,12 @@ function mapGeneratedToolCallPart(
   };
 }
 
+/**
+ * Emits the final `structured` part from the buffered structured-output
+ * text. A missing structured document is tolerated only when the turn ended
+ * in client tool calls (the model finishes the document on a later
+ * iteration); otherwise it is a `structured_output_validation` failure.
+ */
 function finalizeGenerateStructuredOutput(
   state: GenerateResultState,
   finishReason: LanguageModelV3GenerateResult["finishReason"]["unified"],
@@ -320,6 +368,10 @@ function finalizeGenerateStructuredOutput(
   });
 }
 
+/**
+ * Structured output may be omitted only for a `tool-calls` finish that
+ * actually emitted client `tool_call` parts.
+ */
 function canOmitStructuredOutputForToolCallTurn(
   parts: TuvrenModelResponse["parts"],
   finishReason: LanguageModelV3GenerateResult["finishReason"]["unified"]
@@ -330,6 +382,7 @@ function canOmitStructuredOutputForToolCallTurn(
   );
 }
 
+/** Maps a text content part to a `text` response part with sanitized metadata. */
 function mapGeneratedTextPart(
   contentPart: Extract<
     LanguageModelV3GenerateResult["content"][number],
@@ -347,6 +400,10 @@ function mapGeneratedTextPart(
   };
 }
 
+/**
+ * Maps a reasoning content part to a `reasoning` response part, flagging
+ * Anthropic redacted reasoning (`anthropic.redactedData`) as `redacted`.
+ */
 function mapGeneratedReasoningPart(
   contentPart: Extract<
     LanguageModelV3GenerateResult["content"][number],
@@ -367,6 +424,7 @@ function mapGeneratedReasoningPart(
   };
 }
 
+/** True when provider metadata marks the reasoning as Anthropic redacted content. */
 function isAnthropicRedactedReasoningPart(
   providerMetadata: Record<string, unknown> | undefined
 ): boolean {
@@ -382,6 +440,11 @@ function isAnthropicRedactedReasoningPart(
   );
 }
 
+/**
+ * Aggregates the generate call's raw usage, request body, response metadata,
+ * sources, and warnings into the response's provider metadata. Bridge extras
+ * are secret-screened inside {@link buildProviderMetadata} (ADR-044).
+ */
 function buildGenerateProviderMetadata(
   result: LanguageModelV3GenerateResult,
   sources: unknown[],
@@ -402,6 +465,7 @@ function buildGenerateProviderMetadata(
   });
 }
 
+/** Maps a generated file to a `file` response part, cloning binary data. */
 function mapGeneratedFilePart(file: LanguageModelV3File) {
   return {
     data: cloneFileData(file.data),

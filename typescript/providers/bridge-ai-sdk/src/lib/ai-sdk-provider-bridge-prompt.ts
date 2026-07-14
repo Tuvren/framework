@@ -47,6 +47,12 @@ type TuvrenPromptPart = Extract<
 >["parts"][number];
 type TuvrenToolDefinition = NonNullable<TuvrenPrompt["tools"]>[number];
 
+/**
+ * Maps the full Tuvren message list (KrakenFrameworkSpecification §1.2) into
+ * an AI SDK `LanguageModelV3Prompt`. `activeProvider` drives
+ * provider-specific replay behavior such as Gemini thought-signature
+ * propagation.
+ */
 export function mapPromptMessages(
   activeProvider: string,
   messages: TuvrenPrompt["messages"]
@@ -54,6 +60,10 @@ export function mapPromptMessages(
   return messages.map((message) => mapPromptMessage(activeProvider, message));
 }
 
+/**
+ * Maps a `TuvrenToolDefinition` (KrakenFrameworkSpecification §8.1) to an AI
+ * SDK function tool, cloning the input schema defensively.
+ */
 export function mapToolDefinition(
   tool: TuvrenToolDefinition
 ): LanguageModelV3FunctionTool {
@@ -65,7 +75,12 @@ export function mapToolDefinition(
   };
 }
 
-/** Maps provider-native declarations to LanguageModelV3ProviderTool entries. (AY002) */
+/**
+ * Maps provider-native declarations to `LanguageModelV3ProviderTool` entries
+ * (AY002).
+ *
+ * @throws Error when a declaration id is not in `{provider}.{tool}` format.
+ */
 export function mapProviderNativeToolDeclarations(
   declarations: ProviderNativeToolDeclaration[]
 ): LanguageModelV3ProviderTool[] {
@@ -84,7 +99,13 @@ export function mapProviderNativeToolDeclarations(
   });
 }
 
-/** Maps provider-mediated MCP configs to LanguageModelV3ProviderTool entries. (AY004) */
+/**
+ * Maps provider-mediated MCP configs to the OpenAI `openai.mcp` provider
+ * tool (AY004), threading the endpoint as `server_url` plus any
+ * provider-specific options.
+ *
+ * @throws Error when a config's `mediationType` is not `"mcp"`.
+ */
 export function mapProviderMediatedToolConfigs(
   configs: ProviderMediatedToolConfig[]
 ): LanguageModelV3ProviderTool[] {
@@ -125,8 +146,10 @@ export function buildDeclaredProviderToolNames(
 }
 
 /**
- * Returns the execution class for a given declared provider tool name.
- * Used to tag provider-owned results with the correct class for attribution.
+ * Returns the execution class for a given declared provider tool name
+ * (`"provider-native"` before `"provider-mediated"` when both lists are
+ * searched), or `undefined` when the name was never declared. Used to tag
+ * provider-owned results with the correct class for attribution.
  */
 export function resolveProviderToolExecutionClass(
   toolName: string,

@@ -156,8 +156,14 @@ import {
 } from "./sqlite-validation.js";
 import { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 
+/**
+ * Ordered paths with at most this many items stay inline (`flat` encoding);
+ * crossing it promotes the path to `chunked` encoding.
+ */
 const ORDERED_PATH_CHUNK_THRESHOLD = 32;
+/** Fixed item capacity of every non-final ordered path chunk. */
 const ORDERED_PATH_CHUNK_SIZE = 32;
+/** How long SQLite waits on a locked database before failing with SQLITE_BUSY. */
 const SQLITE_BUSY_TIMEOUT_MS = 5000;
 /**
  * The on-disk artifacts a WAL-mode SQLite database leaves behind: the database
@@ -165,25 +171,49 @@ const SQLITE_BUSY_TIMEOUT_MS = 5000;
  * removes all three so dropping a Scope partition leaves nothing on disk.
  */
 const SQLITE_PARTITION_FILE_SUFFIXES = ["", "-wal", "-shm"] as const;
+/**
+ * Well-known symbol under which the backend exposes its
+ * {@link BackendFaultInjectionControl}. The kernel testkit constructs the
+ * same symbol description to discover the control surface at runtime; the
+ * symbol is deliberately not exported so ordinary consumers never see it.
+ */
 const FAULT_INJECTION_CONTROL = Symbol(
   "tuvren.kernel.testkit.fault-injection-control"
 );
 
+/**
+ * The transaction handle {@link createRepositories} builds: the protocol
+ * repository surface plus the backend clock, so repository internals (e.g.
+ * turn-tree path normalization) can stamp `createdAtMs` consistently.
+ */
 interface MutableRepositories extends KrakenBackendTx {
   readonly now: () => number;
 }
 
+/**
+ * Commit-boundary hooks installed by the kernel testkit's fault-injecting
+ * wrapper. Each hook maps to a `FaultPoint`: `beforeCommit` runs after
+ * write-set validation but before `COMMIT`, `midCommit` receives the commit
+ * thunk and must invoke it exactly once, and `afterCommitBeforeAck` runs
+ * after `COMMIT` but before the transaction resolves.
+ */
 interface BackendFaultHooks {
   afterCommitBeforeAck?(): Promise<void>;
   beforeCommit?(): Promise<void>;
   midCommit?(commit: () => Promise<void>): Promise<void>;
 }
 
+/**
+ * The control surface exposed under {@link FAULT_INJECTION_CONTROL} so the
+ * testkit can install {@link BackendFaultHooks} without the hooks becoming
+ * part of the public backend contract.
+ */
 interface BackendFaultInjectionControl {
   setFaultHooks(hooks: BackendFaultHooks | null): void;
   supportsFaultPoint(point: string): boolean;
 }
 
+/** Construction options for {@link createSqliteBackend}. */
 export interface SqliteBackendOptions {
   /**
    * Filesystem-backed SQLite database path.
@@ -213,6 +243,11 @@ export interface SqliteBackendOptions {
   scope?: Scope;
 }
 
+/**
+ * The static capability set advertised by every SQLite backend instance.
+ * Values are fixed at module scope because the SQLite backend's capabilities
+ * do not vary by construction options.
+ */
 const SQLITE_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
   // Single-file embedded backend: a single writer with no cross-owner
@@ -222,8 +257,31 @@ const SQLITE_BACKEND_CAPABILITIES: BackendCapability = {
   "thread.enumeration": true,
 };
 
+/**
+ * Keys per reclamation `DELETE ... IN (...)` statement, kept comfortably
+ * under SQLite's bound-parameter ceiling.
+ */
 const RECLAMATION_DELETE_BATCH_SIZE = 500;
 
+/**
+ * SQLite-backed persistent implementation of the kernel `RuntimeBackend`
+ * contract (the Epic F persistence baseline).
+ *
+ * Concurrency model: one `better-sqlite3` connection per backend, with all
+ * connection work (transactions, health probes, reclamation, purges)
+ * serialized through an in-process promise queue; each transaction runs under
+ * `BEGIN IMMEDIATE` in WAL mode. Nested transactions are rejected and
+ * repository handles are invalidated once their transaction settles.
+ *
+ * Isolation model: file-per-scope (ADR-049). The constructor resolves the
+ * bound Scope to its own database file, so backends sharing a base path but
+ * bound to different Scopes never observe each other's rows.
+ *
+ * Integrity model: write-time invariants run inside the repositories, and
+ * each transaction's write set is re-validated against the database before
+ * `COMMIT`; any failure rolls the transaction back and surfaces a normalized
+ * backend error.
+ */
 class SqliteBackend implements KrakenBackend {
   readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
     setFaultHooks: (hooks) => {
@@ -261,10 +319,16 @@ class SqliteBackend implements KrakenBackend {
     runMigrations(this.db, this.now);
   }
 
+  /** Reports the SQLite backend's static capability set. */
   capabilities(): BackendCapability {
     return SQLITE_BACKEND_CAPABILITIES;
   }
 
+  /**
+   * Serializes `work` behind every previously queued unit of connection work.
+   * All database access flows through here, so the single connection never
+   * sees interleaved transactions.
+   */
   private async queueConnectionWork<T>(work: () => Promise<T>): Promise<T> {
     const priorTransaction = this.transactionQueue;
     let releaseQueue: (() => void) | undefined;
@@ -282,6 +346,11 @@ class SqliteBackend implements KrakenBackend {
     }
   }
 
+  /**
+   * Deep health probe: loads and fully validates the persisted state inside
+   * a read-only (rolled-back) transaction. Returns `{ ok: false, reason }`
+   * instead of throwing, so hosts can poll it safely.
+   */
   health(): Promise<{ ok: true } | { ok: false; reason: string }> {
     return this.queueConnectionWork(async () => {
       try {
@@ -302,6 +371,7 @@ class SqliteBackend implements KrakenBackend {
     });
   }
 
+  /** Closes the database handle; safe to call more than once. */
   close(): Promise<void> {
     // Idempotent: `purgeScope` already closes the handle when it drops the
     // partition file, and host disposal may still call `close` afterward.
@@ -311,6 +381,15 @@ class SqliteBackend implements KrakenBackend {
     return Promise.resolve();
   }
 
+  /**
+   * Drops the bound Scope's entire partition (full tenant offboarding,
+   * kernel spec §9.4) by closing the handle and deleting the Scope's database
+   * file plus its WAL/SHM sidecars. The backend is unusable afterward,
+   * exactly like {@link close}; other Scopes' sibling files are untouched.
+   *
+   * @throws TuvrenPersistenceError `sqlite_backend_nested_transaction` when
+   *   called from inside a transaction.
+   */
   purgeScope(): Promise<void> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
@@ -335,6 +414,19 @@ class SqliteBackend implements KrakenBackend {
     });
   }
 
+  /**
+   * Runs `work` inside a serialized `BEGIN IMMEDIATE` transaction.
+   *
+   * A write tracker records every row the transaction touches; after `work`
+   * resolves, the tracked write set is re-validated against the database
+   * before `COMMIT`. Any failure — from `work`, validation, or the engine —
+   * rolls the transaction back and surfaces as a normalized backend error.
+   * Repository handles are invalidated once the transaction settles;
+   * retaining one raises `sqlite_backend_inactive_transaction_handle`.
+   *
+   * @throws TuvrenPersistenceError `sqlite_backend_nested_transaction` when
+   *   called from inside another transaction on this backend.
+   */
   transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
@@ -408,6 +500,18 @@ class SqliteBackend implements KrakenBackend {
     });
   }
 
+  /**
+   * Runs the §9.4 reachability reclamation sweep in one serialized
+   * transaction: load and validate the persisted state, sweep the in-memory
+   * projection, mirror the removed keys as batched row deletions (with
+   * deferred foreign keys), then re-validate before `COMMIT`.
+   *
+   * @param options - `nowMs` overrides the backend clock for leaseless-run
+   *   expiry evaluation.
+   * @returns Counts of released and retained records.
+   * @throws TuvrenPersistenceError `sqlite_backend_nested_transaction` when
+   *   called from inside a transaction.
+   */
   reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
     if (this.transactionContext.getStore() === true) {
       throw persistenceError(
@@ -465,6 +569,14 @@ export function createSqliteBackend(
   return new SqliteBackend(options);
 }
 
+/**
+ * Builds the per-transaction repository surface over the open connection by
+ * composing the core (threads/branches/turns/runs/turn-tree) and support
+ * (objects/schemas/staging/annotations/chunks) repository factories with
+ * their SQLite-specific helper dependencies. Every repository method first
+ * checks `isTransactionActive` so a handle cannot outlive its transaction,
+ * and records its writes in `writeTracker` for pre-commit validation.
+ */
 function createRepositories(
   db: Database.Database,
   now: () => number,
@@ -575,10 +687,20 @@ function createRepositories(
   };
 }
 
+/** Creates the database file's parent directory when it does not exist yet. */
 function ensureDatabaseDirectory(databasePath: string): void {
   mkdirSync(dirname(databasePath), { recursive: true });
 }
 
+/**
+ * Rejects database paths that would not persist: the empty string,
+ * `:memory:`, and `file:` URIs with `mode=memory`. This package is the
+ * persistent backend baseline, so transient databases are a construction
+ * error, not a supported mode.
+ *
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_requires_persistent_database_path`.
+ */
 function assertPersistentDatabasePath(databasePath: string): void {
   if (databasePath.length === 0) {
     throw persistenceError(
@@ -612,11 +734,19 @@ function assertPersistentDatabasePath(databasePath: string): void {
   );
 }
 
+/**
+ * Validates that the path is persistent and resolves any `file:` URI form to
+ * a plain filesystem path.
+ */
 function normalizePersistentDatabasePath(databasePath: string): string {
   assertPersistentDatabasePath(databasePath);
   return resolveFilesystemDatabasePath(databasePath);
 }
 
+/**
+ * Converts a `file:` URI (authority or authority-less form) to a filesystem
+ * path, dropping query parameters; plain paths pass through unchanged.
+ */
 function resolveFilesystemDatabasePath(databasePath: string): string {
   if (!databasePath.startsWith("file:")) {
     return databasePath;
@@ -631,6 +761,11 @@ function resolveFilesystemDatabasePath(databasePath: string): string {
   return decodeURIComponent(pathComponent);
 }
 
+/**
+ * Validates, normalizes, and inserts (or immutably re-verifies) a single
+ * turn-tree path row. Currently unreferenced (underscore-prefixed): the live
+ * batch insert path lives in the core repositories factory.
+ */
 async function _insertTurnTreePathBatchEntry(
   db: Database.Database,
   record: StoredTurnTreePath,
@@ -702,6 +837,13 @@ async function _insertTurnTreePathBatchEntry(
   );
 }
 
+/**
+ * Applies the connection posture every backend connection requires:
+ * foreign keys on, busy timeout set, and WAL journal mode (required — the
+ * open fails if WAL cannot be enabled).
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_requires_wal_mode`.
+ */
 function configureDatabase(db: Database.Database): void {
   db.pragma("foreign_keys = ON");
   db.pragma(`busy_timeout = ${SQLITE_BUSY_TIMEOUT_MS}`);
@@ -718,6 +860,10 @@ function configureDatabase(db: Database.Database): void {
   }
 }
 
+/**
+ * Opens (creating parent directories as needed) and configures the per-Scope
+ * database file, normalizing any engine error into a backend error.
+ */
 function openConfiguredDatabase(scopedDatabasePath: string): Database.Database {
   try {
     ensureDatabaseDirectory(scopedDatabasePath);
@@ -770,6 +916,12 @@ function scopeFileSlug(scope: Scope): string {
   return createHash("sha256").update(scope, "utf8").digest("hex").slice(0, 32);
 }
 
+/**
+ * Applies any not-yet-applied checked-in migration files in name order, each
+ * inside its own transaction, recording every application in
+ * `backend_sqlite_migrations`. Validates the migration ledger against the
+ * checked-in files both before and after applying.
+ */
 function runMigrations(db: Database.Database, now: () => number): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS backend_sqlite_migrations (
@@ -807,6 +959,15 @@ function runMigrations(db: Database.Database, now: () => number): void {
   validateMigrationState(db, persistenceError);
 }
 
+/**
+ * Loads the full persisted state and runs every layer of validation over it:
+ * migration posture, per-record shape/identity, the derived lineage-root
+ * index, and the committed-state invariant suite. Used by `health` and as
+ * the pre/post gate around reclamation.
+ *
+ * @param priorState - Baseline for cross-transaction invariants; defaults to
+ *   the loaded state itself (no-change baseline).
+ */
 async function loadValidatedState(
   db: Database.Database,
   priorState?: BackendState
@@ -831,6 +992,10 @@ async function loadValidatedState(
   return state;
 }
 
+/**
+ * Snapshot of every reclaimable record family's keys taken before the
+ * in-memory sweep, so the swept projection can be diffed into row deletions.
+ */
 interface ReclamationSurvivorKeys {
   branches: Set<string>;
   objects: Set<string>;
@@ -841,6 +1006,7 @@ interface ReclamationSurvivorKeys {
   turnTrees: Set<string>;
 }
 
+/** Captures the pre-sweep key sets for {@link applyReclamationDeletions}. */
 function captureReclamationKeys(state: BackendState): ReclamationSurvivorKeys {
   return {
     branches: new Set(state.branches.keys()),
@@ -942,6 +1108,22 @@ function deleteByColumn(
   }
 }
 
+/**
+ * Normalizes an incoming turn-tree path record to its canonical stored
+ * encoding, mirroring the memory backend's normalization but resolving chunk
+ * references against the database: `single` and small ordered paths pass
+ * through; a flat ordered path above the promotion threshold is rewritten to
+ * `chunked` encoding, inserting (or immutably reusing) content-addressed
+ * chunk rows; an already-chunked path has its chunk layout and cardinality
+ * verified against the stored chunk rows.
+ *
+ * @param now - Clock used to stamp `createdAtMs` on newly materialized
+ *   chunks; an existing chunk keeps its original timestamp.
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_chunked_turn_tree_path_below_threshold`,
+ *   `sqlite_backend_missing_ordered_path_chunk_reference`, or
+ *   `sqlite_backend_chunked_turn_tree_path_count_mismatch`.
+ */
 async function normalizeStoredTurnTreePathInDatabase(
   db: Database.Database,
   record: StoredTurnTreePath,
@@ -1037,6 +1219,10 @@ async function normalizeStoredTurnTreePathInDatabase(
   };
 }
 
+/**
+ * Inserts a content-addressed ordered-path chunk row, or verifies byte-level
+ * equality against the existing row for the same hash (immutable put).
+ */
 function insertOrderedPathChunk(
   db: Database.Database,
   record: StoredOrderedPathChunk
@@ -1070,10 +1256,15 @@ function insertOrderedPathChunk(
   );
 }
 
+/** Copies a `Uint8Array` into the `Buffer` form better-sqlite3 binds. */
 function bufferFromBytes(bytes: Uint8Array): Buffer {
   return Buffer.from(bytes);
 }
 
+/**
+ * Encodes a hash array as deterministic CBOR, validating every element first
+ * so only well-formed hash strings are ever persisted.
+ */
 function encodeHashStringArray(hashes: string[]): Uint8Array {
   return encodeDeterministicKernelRecord(
     hashes.map((hash) => validateHashString(hash))

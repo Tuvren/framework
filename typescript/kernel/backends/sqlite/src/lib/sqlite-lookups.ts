@@ -63,6 +63,13 @@ import {
   type TurnNodeLineageMetadata,
 } from "./sqlite-records.js";
 
+// Row-level lookup helpers over the open connection. `select*` functions
+// return the decoded Stored* record or null (lists in deterministic
+// created-at/key order); `ensure*InDatabase` variants raise a
+// `sqlite_backend_missing_*_reference` persistence error instead of
+// returning null, for referential-integrity checks at write time.
+
+/** Fetches one object by content hash, or `null`. */
 export function selectObject(
   db: Database.Database,
   hash: string
@@ -73,6 +80,7 @@ export function selectObject(
   return row === undefined ? null : decodeObjectRow(row);
 }
 
+/** Fetches one schema by ID, or `null`. */
 export function selectSchema(
   db: Database.Database,
   schemaId: string
@@ -83,6 +91,7 @@ export function selectSchema(
   return row === undefined ? null : decodeSchemaRow(row);
 }
 
+/** Fetches one turn tree by content hash, or `null`. */
 export function selectTurnTree(
   db: Database.Database,
   hash: string
@@ -93,6 +102,7 @@ export function selectTurnTree(
   return row === undefined ? null : decodeTurnTreeRow(row);
 }
 
+/** Fetches one turn-tree path by (tree hash, path), or `null`. */
 export function selectTurnTreePath(
   db: Database.Database,
   turnTreeHash: string,
@@ -106,6 +116,7 @@ export function selectTurnTreePath(
   return row === undefined ? null : decodeTurnTreePathRow(row);
 }
 
+/** Lists a turn tree's stored paths in path order. */
 export function selectTurnTreePathsByTurnTree(
   db: Database.Database,
   turnTreeHash: string
@@ -118,6 +129,7 @@ export function selectTurnTreePathsByTurnTree(
   return rows.map(decodeTurnTreePathRow);
 }
 
+/** Fetches one ordered-path chunk by content hash, or `null`. */
 export function selectOrderedPathChunk(
   db: Database.Database,
   chunkHash: string
@@ -128,6 +140,7 @@ export function selectOrderedPathChunk(
   return row === undefined ? null : decodeOrderedPathChunkRow(row);
 }
 
+/** Fetches one turn node by content hash, or `null`. */
 export function selectTurnNode(
   db: Database.Database,
   hash: string
@@ -138,6 +151,7 @@ export function selectTurnNode(
   return row === undefined ? null : decodeTurnNodeRow(row);
 }
 
+/** Fetches a turn node's derived lineage-root metadata, or `null`. */
 export function selectTurnNodeLineageMetadata(
   db: Database.Database,
   turnNodeHash: string
@@ -148,6 +162,7 @@ export function selectTurnNodeLineageMetadata(
   return row === undefined ? null : decodeTurnNodeLineageMetadataRow(row);
 }
 
+/** Fetches one thread by ID, or `null`. */
 export function selectThread(
   db: Database.Database,
   threadId: string
@@ -158,6 +173,7 @@ export function selectThread(
   return row === undefined ? null : decodeThreadRow(row);
 }
 
+/** Fetches one branch by ID, or `null`. */
 export function selectBranch(
   db: Database.Database,
   branchId: string
@@ -168,6 +184,7 @@ export function selectBranch(
   return row === undefined ? null : decodeBranchRow(row);
 }
 
+/** Lists a thread's branches in deterministic order. */
 export function selectBranchesByThread(
   db: Database.Database,
   threadId: string
@@ -180,6 +197,7 @@ export function selectBranchesByThread(
   return rows.map(decodeBranchRow);
 }
 
+/** Fetches one turn by ID, or `null`. */
 export function selectTurn(
   db: Database.Database,
   turnId: string
@@ -190,6 +208,7 @@ export function selectTurn(
   return row === undefined ? null : decodeTurnRow(row);
 }
 
+/** Lists a thread's turns ordered by `created_at_ms`, then `turn_id`. */
 export function selectTurnsByThread(
   db: Database.Database,
   threadId: string
@@ -202,6 +221,7 @@ export function selectTurnsByThread(
   return rows.map(decodeTurnRow);
 }
 
+/** Fetches one run by ID, or `null`. */
 export function selectRun(
   db: Database.Database,
   runId: string
@@ -212,6 +232,7 @@ export function selectRun(
   return row === undefined ? null : decodeRunRow(row);
 }
 
+/** Lists a run's observe annotations in insertion (created-at/key) order. */
 export function selectObserveAnnotationsByRun(
   db: Database.Database,
   runId: string
@@ -229,6 +250,7 @@ export function selectObserveAnnotationsByRun(
   return rows.map(decodeObserveAnnotationRow);
 }
 
+/** Lists a turn's runs in deterministic order. */
 export function selectRunsByTurn(
   db: Database.Database,
   turnId: string
@@ -241,6 +263,7 @@ export function selectRunsByTurn(
   return rows.map(decodeRunRow);
 }
 
+/** Lists a branch's runs in deterministic order. */
 export function selectRunsByBranch(
   db: Database.Database,
   branchId: string
@@ -253,6 +276,11 @@ export function selectRunsByBranch(
   return rows.map(decodeRunRow);
 }
 
+/**
+ * Lists running leased runs whose lease expired at or before `nowMs` — the
+ * fully leased (owner + fencing token + expiry) subset only; leaseless runs
+ * never appear here.
+ */
 export function selectExpiredRuns(
   db: Database.Database,
   nowMs: EpochMs
@@ -274,6 +302,7 @@ export function selectExpiredRuns(
   return rows.map(decodeRunRow);
 }
 
+/** Lists the turns naming `parentTurnId` as their semantic parent. */
 export function selectTurnsByParentTurnId(
   db: Database.Database,
   parentTurnId: string
@@ -291,6 +320,7 @@ export function selectTurnsByParentTurnId(
   return rows.map(decodeTurnRow);
 }
 
+/** Lists a branch's running or paused runs in deterministic order. */
 export function selectActiveRunsByBranch(
   db: Database.Database,
   branchId: string
@@ -308,6 +338,7 @@ export function selectActiveRunsByBranch(
   return rows.map(decodeRunRow);
 }
 
+/** Fetches one staged result by (run, task), or `null`. */
 export function selectStagedResult(
   db: Database.Database,
   runId: string,
@@ -319,6 +350,7 @@ export function selectStagedResult(
   return row === undefined ? null : decodeStagedResultRow(row);
 }
 
+/** Lists a run's staged results in deterministic order. */
 export function selectStagedResultsByRun(
   db: Database.Database,
   runId: string
@@ -331,6 +363,7 @@ export function selectStagedResultsByRun(
   return rows.map(decodeStagedResultRow);
 }
 
+/** Counts a run's staged-result rows without decoding them. */
 export function countStagedResultsByRun(
   db: Database.Database,
   runId: string
@@ -341,6 +374,7 @@ export function countStagedResultsByRun(
   return row?.count ?? 0;
 }
 
+/** Like `selectObject`, but raises `sqlite_backend_missing_object_reference`. */
 export function ensureObjectExistsInDatabase(
   db: Database.Database,
   hash: string,
@@ -357,6 +391,7 @@ export function ensureObjectExistsInDatabase(
   return record;
 }
 
+/** Like `selectOrderedPathChunk`, but raises on a missing chunk. */
 export function ensureOrderedPathChunkExistsInDatabase(
   db: Database.Database,
   chunkHash: string,
@@ -373,6 +408,7 @@ export function ensureOrderedPathChunkExistsInDatabase(
   return record;
 }
 
+/** Like `selectSchema`, but raises `sqlite_backend_missing_schema_reference`. */
 export function ensureSchemaExistsInDatabase(
   db: Database.Database,
   schemaId: string,
@@ -389,6 +425,7 @@ export function ensureSchemaExistsInDatabase(
   return record;
 }
 
+/** Like `selectTurnTree`, but raises on a missing turn tree. */
 export function ensureTurnTreeExistsInDatabase(
   db: Database.Database,
   hash: string,
@@ -405,6 +442,7 @@ export function ensureTurnTreeExistsInDatabase(
   return record;
 }
 
+/** Like `selectTurnNode`, but raises on a missing turn node. */
 export function ensureTurnNodeExistsInDatabase(
   db: Database.Database,
   hash: string,
@@ -421,6 +459,7 @@ export function ensureTurnNodeExistsInDatabase(
   return record;
 }
 
+/** Like `selectTurnNodeLineageMetadata`, but raises on missing metadata. */
 export function ensureTurnNodeLineageMetadataInDatabase(
   db: Database.Database,
   turnNodeHash: string,
@@ -437,6 +476,7 @@ export function ensureTurnNodeLineageMetadataInDatabase(
   return metadata;
 }
 
+/** Like `selectThread`, but raises `sqlite_backend_missing_thread_reference`. */
 export function ensureThreadExistsInDatabase(
   db: Database.Database,
   threadId: string,
@@ -453,6 +493,7 @@ export function ensureThreadExistsInDatabase(
   return record;
 }
 
+/** Like `selectBranch`, but raises `sqlite_backend_missing_branch_reference`. */
 export function ensureBranchExistsInDatabase(
   db: Database.Database,
   branchId: string,
@@ -469,6 +510,7 @@ export function ensureBranchExistsInDatabase(
   return record;
 }
 
+/** Like `selectTurn`, but raises `sqlite_backend_missing_turn_reference`. */
 export function ensureTurnExistsInDatabase(
   db: Database.Database,
   turnId: string,
@@ -485,6 +527,7 @@ export function ensureTurnExistsInDatabase(
   return record;
 }
 
+/** Like `selectRun`, but raises `sqlite_backend_missing_run_reference`. */
 export function ensureRunExistsInDatabase(
   db: Database.Database,
   runId: string,
@@ -501,6 +544,7 @@ export function ensureRunExistsInDatabase(
   return record;
 }
 
+/** Loads and decodes the turn-tree schema stored under `schemaId`. */
 export function getSchemaForSchemaIdInDatabase(
   db: Database.Database,
   schemaId: string,
@@ -510,6 +554,7 @@ export function getSchemaForSchemaIdInDatabase(
   return decodeTurnTreeSchema(schemaRecord.schemaCbor, `${label} schema`);
 }
 
+/** Loads and decodes the turn-tree schema a stored turn tree references. */
 export function getSchemaForTurnTreeInDatabase(
   db: Database.Database,
   turnTree: StoredTurnTree

@@ -44,6 +44,13 @@ import {
 import type Database from "better-sqlite3";
 import { persistenceError } from "./sqlite-errors.js";
 
+/**
+ * In-memory projection of the complete persisted state, keyed by each record
+ * family's identity. Built by {@link loadState} for validation, health
+ * probes, and the reclamation sweep; structurally identical to the memory
+ * backend's `BackendState` so the shared invariant/reclamation logic applies
+ * unchanged.
+ */
 export interface BackendState {
   branches: Map<string, StoredBranch>;
   objects: Map<string, StoredObject>;
@@ -59,12 +66,23 @@ export interface BackendState {
   turnTrees: Map<string, StoredTurnTree>;
 }
 
+/**
+ * Decoded `turn_node_lineage_roots` entry: a turn node's thread-root hash and
+ * its depth from that root, maintained on insert so lineage-membership checks
+ * avoid per-query ancestry walks.
+ */
 export interface TurnNodeLineageMetadata {
   depth: number;
   rootTurnNodeHash: string;
   turnNodeHash: string;
 }
 
+// Raw table-row shapes exactly as better-sqlite3 returns them (snake_case
+// columns, BLOBs as byte arrays, NULLable columns as `| null`). Each row type
+// pairs with a `decode<Family>Row` function below that converts it to the
+// validated Stored* protocol record.
+
+/** Raw `objects` table row. */
 export interface SqliteObjectRow {
   byte_length: number;
   bytes: Uint8Array;
@@ -73,12 +91,14 @@ export interface SqliteObjectRow {
   media_type: string;
 }
 
+/** Raw `schemas` table row. */
 export interface SqliteSchemaRow {
   created_at_ms: number;
   schema_cbor: Uint8Array;
   schema_id: string;
 }
 
+/** Raw `turn_trees` table row. */
 export interface SqliteTurnTreeRow {
   created_at_ms: number;
   hash: string;
@@ -86,6 +106,7 @@ export interface SqliteTurnTreeRow {
   schema_id: string;
 }
 
+/** Raw `turn_tree_paths` table row (single/ordered variant columns). */
 export interface SqliteTurnTreePathRow {
   collection_kind: "ordered" | "single";
   ordered_chunk_list_cbor: Uint8Array | null;
@@ -97,6 +118,7 @@ export interface SqliteTurnTreePathRow {
   turn_tree_hash: string;
 }
 
+/** Raw `ordered_path_chunks` table row. */
 export interface SqliteOrderedPathChunkRow {
   chunk_hash: string;
   created_at_ms: number;
@@ -104,6 +126,7 @@ export interface SqliteOrderedPathChunkRow {
   items_cbor: Uint8Array;
 }
 
+/** Raw `turn_nodes` table row. */
 export interface SqliteTurnNodeRow {
   consumed_staged_results_cbor: Uint8Array;
   created_at_ms: number;
@@ -114,18 +137,21 @@ export interface SqliteTurnNodeRow {
   turn_tree_hash: string;
 }
 
+/** Raw `turn_node_lineage_roots` table row. */
 export interface SqliteTurnNodeLineageRootRow {
   depth: number;
   root_turn_node_hash: string;
   turn_node_hash: string;
 }
 
+/** Row shape of the recursive lineage-proof CTE used by targeted validation. */
 export interface SqliteTurnNodeLineageProofRow {
   depth: number;
   hash: string;
   previous_turn_node_hash: string | null;
 }
 
+/** Raw `threads` table row. */
 export interface SqliteThreadRow {
   created_at_ms: number;
   root_turn_node_hash: string;
@@ -133,6 +159,7 @@ export interface SqliteThreadRow {
   thread_id: string;
 }
 
+/** Raw `branches` table row. */
 export interface SqliteBranchRow {
   archived_from_branch_id: string | null;
   branch_id: string;
@@ -142,6 +169,7 @@ export interface SqliteBranchRow {
   updated_at_ms: number;
 }
 
+/** Raw `turns` table row. */
 export interface SqliteTurnRow {
   branch_id: string;
   created_at_ms: number;
@@ -153,6 +181,7 @@ export interface SqliteTurnRow {
   updated_at_ms: number;
 }
 
+/** Raw `runs` table row, including nullable lease and signal columns. */
 export interface SqliteRunRow {
   branch_id: string;
   created_at_ms: number;
@@ -173,6 +202,7 @@ export interface SqliteRunRow {
   updated_at_ms: number;
 }
 
+/** Raw `observe_annotations` table row. */
 export interface SqliteObserveAnnotationRow {
   annotation_cbor: Uint8Array;
   annotation_hash: string;
@@ -182,6 +212,7 @@ export interface SqliteObserveAnnotationRow {
   turn_node_hash: string | null;
 }
 
+/** Raw `staged_results` table row. */
 export interface SqliteStagedResultRow {
   created_at_ms: number;
   interrupt_payload_cbor: Uint8Array | null;
@@ -192,6 +223,7 @@ export interface SqliteStagedResultRow {
   task_id: string;
 }
 
+/** Creates an empty state projection with every record family initialized. */
 export function createEmptyState(): BackendState {
   return {
     branches: new Map(),
@@ -209,6 +241,12 @@ export function createEmptyState(): BackendState {
   };
 }
 
+/**
+ * Loads every persisted table into a fully decoded {@link BackendState}
+ * projection. Each row passes through its family's decode function (shape
+ * assertions included), and duplicate primary keys are rejected with
+ * `sqlite_backend_duplicate_loaded_record`.
+ */
 export function loadState(db: Database.Database): BackendState {
   const state = createEmptyState();
 
@@ -338,6 +376,7 @@ export function loadState(db: Database.Database): BackendState {
   return state;
 }
 
+/** Decodes and shape-asserts an `objects` row into a `StoredObject`. */
 export function decodeObjectRow(row: SqliteObjectRow): StoredObject {
   const record: StoredObject = {
     byteLength: row.byte_length,
@@ -350,6 +389,7 @@ export function decodeObjectRow(row: SqliteObjectRow): StoredObject {
   return record;
 }
 
+/** Decodes and shape-asserts a `schemas` row into a `StoredSchema`. */
 export function decodeSchemaRow(row: SqliteSchemaRow): StoredSchema {
   const record: StoredSchema = {
     createdAtMs: row.created_at_ms,
@@ -360,6 +400,7 @@ export function decodeSchemaRow(row: SqliteSchemaRow): StoredSchema {
   return record;
 }
 
+/** Decodes a `turn_trees` row into a `StoredTurnTree`. */
 export function decodeTurnTreeRow(row: SqliteTurnTreeRow): StoredTurnTree {
   return {
     createdAtMs: row.created_at_ms,
@@ -369,6 +410,13 @@ export function decodeTurnTreeRow(row: SqliteTurnTreeRow): StoredTurnTree {
   };
 }
 
+/**
+ * Decodes a `turn_tree_paths` row into the correct `StoredTurnTreePath`
+ * variant (`single`, ordered `flat`, or ordered `chunked`), rejecting rows
+ * whose variant columns are inconsistent.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_invalid_turn_tree_path_row`.
+ */
 export function decodeTurnTreePathRow(
   row: SqliteTurnTreePathRow
 ): StoredTurnTreePath {
@@ -432,6 +480,14 @@ export function decodeTurnTreePathRow(
   );
 }
 
+/**
+ * Decodes an `ordered_path_chunks` row, verifying `item_count` matches the
+ * decoded `items_cbor` cardinality.
+ *
+ * @throws TuvrenPersistenceError
+ *   `sqlite_backend_ordered_path_chunk_item_count_mismatch` or
+ *   `sqlite_backend_invalid_ordered_path_chunk_row`.
+ */
 export function decodeOrderedPathChunkRow(
   row: SqliteOrderedPathChunkRow
 ): StoredOrderedPathChunk {
@@ -464,6 +520,7 @@ export function decodeOrderedPathChunkRow(
   };
 }
 
+/** Decodes and shape-asserts a `turn_nodes` row into a `StoredTurnNode`. */
 export function decodeTurnNodeRow(row: SqliteTurnNodeRow): StoredTurnNode {
   const record: StoredTurnNode = {
     consumedStagedResultsCbor: cloneEncodedBytes(
@@ -480,6 +537,10 @@ export function decodeTurnNodeRow(row: SqliteTurnNodeRow): StoredTurnNode {
   return record;
 }
 
+/**
+ * Decodes a `turn_node_lineage_roots` row, validating both hashes and the
+ * non-negative depth.
+ */
 export function decodeTurnNodeLineageMetadataRow(
   row: SqliteTurnNodeLineageRootRow
 ): TurnNodeLineageMetadata {
@@ -502,6 +563,7 @@ export function decodeTurnNodeLineageMetadataRow(
   };
 }
 
+/** Decodes and shape-asserts a `threads` row into a `StoredThread`. */
 export function decodeThreadRow(row: SqliteThreadRow): StoredThread {
   const record: StoredThread = {
     createdAtMs: row.created_at_ms,
@@ -513,6 +575,7 @@ export function decodeThreadRow(row: SqliteThreadRow): StoredThread {
   return record;
 }
 
+/** Decodes and shape-asserts a `branches` row into a `StoredBranch`. */
 export function decodeBranchRow(row: SqliteBranchRow): StoredBranch {
   const record: StoredBranch = {
     ...(row.archived_from_branch_id === null
@@ -528,6 +591,7 @@ export function decodeBranchRow(row: SqliteBranchRow): StoredBranch {
   return record;
 }
 
+/** Decodes and shape-asserts a `turns` row into a `StoredTurn`. */
 export function decodeTurnRow(row: SqliteTurnRow): StoredTurn {
   const record: StoredTurn = {
     branchId: row.branch_id,
@@ -543,6 +607,7 @@ export function decodeTurnRow(row: SqliteTurnRow): StoredTurn {
   return record;
 }
 
+/** Decodes and shape-asserts an `observe_annotations` row. */
 export function decodeObserveAnnotationRow(
   row: SqliteObserveAnnotationRow
 ): StoredObserveAnnotation {
@@ -557,6 +622,12 @@ export function decodeObserveAnnotationRow(
   return record;
 }
 
+/**
+ * Decodes a `turns` row arriving as `unknown` (e.g. from a dynamic query),
+ * validating each column's type before delegating to {@link decodeTurnRow}.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_invalid_turn_row`.
+ */
 export function decodeUnknownTurnRow(row: unknown): StoredTurn {
   const label = "stored turn query row";
 
@@ -592,6 +663,13 @@ export function decodeUnknownTurnRow(row: unknown): StoredTurn {
   });
 }
 
+/**
+ * Decodes and shape-asserts a `runs` row into a `StoredRun`, mapping NULL
+ * optional columns (lease fields, pending signals, preemption reason) to
+ * absent properties.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_invalid_run_status`.
+ */
 export function decodeRunRow(row: SqliteRunRow): StoredRun {
   const status = decodeStoredRunStatus(row.status, row.run_id);
 
@@ -641,6 +719,12 @@ export function decodeRunRow(row: SqliteRunRow): StoredRun {
   return record;
 }
 
+/**
+ * Decodes and shape-asserts a `staged_results` row, enforcing that
+ * `interrupt_payload_cbor` is present exactly when status is `interrupted`.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_invalid_staged_result_row`.
+ */
 export function decodeStagedResultRow(
   row: SqliteStagedResultRow
 ): StoredStagedResult {
@@ -696,6 +780,7 @@ export function decodeStagedResultRow(
   return record;
 }
 
+/** Decodes deterministic-CBOR bytes into a validated `TurnTreeSchema`. */
 export function decodeTurnTreeSchema(
   bytes: Uint8Array,
   label: string
@@ -705,6 +790,12 @@ export function decodeTurnTreeSchema(
   return decodedValue;
 }
 
+/**
+ * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
+ * element.
+ *
+ * @throws TuvrenPersistenceError `sqlite_backend_invalid_hash_array_payload`.
+ */
 export function decodeHashStringArray(
   bytes: Uint8Array,
   label: string
@@ -729,10 +820,15 @@ export function decodeHashStringArray(
   return hashes;
 }
 
+/** Copies raw bytes so callers never alias a row buffer. */
 export function cloneBytes(bytes: Uint8Array): Uint8Array {
   return Uint8Array.from(bytes);
 }
 
+/**
+ * Copies CBOR bytes and re-attaches the `dataView` property the deterministic
+ * decoder expects on encoded payloads.
+ */
 export function cloneEncodedBytes(bytes: Uint8Array): Uint8Array {
   const cloned = Uint8Array.from(bytes);
   Reflect.set(

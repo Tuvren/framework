@@ -31,6 +31,14 @@ interface TrackedRecord<T> {
   before: T | null;
 }
 
+/**
+ * Records which rows a transaction touched so pre-commit validation
+ * (`validateTransactionWriteSet` in sqlite-transaction-validation) can
+ * re-check exactly the affected records instead of reloading the whole
+ * database. Repositories call the `record*` methods on every write; the key
+ * sets then drive targeted per-family validation, and `branchWrites` keeps
+ * before/after branch snapshots for backward-move (rewind) checks.
+ */
 export class TransactionWriteTracker {
   readonly branchIdsForActiveRunValidation = new Set<string>();
   readonly branchWrites = new Map<string, TrackedRecord<StoredBranch>>();

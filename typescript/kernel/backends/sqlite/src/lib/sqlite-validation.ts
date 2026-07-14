@@ -85,6 +85,7 @@ interface SqliteTableInfoPragmaRow {
   type: string;
 }
 
+/** Reads the applied-migration ledger (`backend_sqlite_migrations`), name-ordered. */
 export function loadAppliedMigrationNames(db: Database.Database): string[] {
   return (
     db
@@ -93,6 +94,17 @@ export function loadAppliedMigrationNames(db: Database.Database): string[] {
   ).map((row) => row.name);
 }
 
+/**
+ * Validates the database's migration posture against the checked-in
+ * migration files: rejects applied migrations this package version does not
+ * recognize, then — for each recognized applied migration — verifies the
+ * tables, columns, foreign keys, and indexes it should have produced,
+ * matching the expected shape for that migration generation (older ledgers
+ * are checked against the pre-migration table definitions, not the newest).
+ *
+ * @throws The injected persistence error with a `sqlite_backend_*` code on
+ *   the first posture mismatch (e.g. `sqlite_backend_unknown_applied_migration`).
+ */
 export function validateMigrationState(
   db: Database.Database,
   persistenceError: SqlitePersistenceErrorFactory

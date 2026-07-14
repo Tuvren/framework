@@ -21,74 +21,201 @@ import type {
   KernelRecord,
 } from "@tuvren/core";
 
+/**
+ * Collection kind of a TurnTree schema path (docs/KrakenKernelSpecification.md
+ * §3.1).
+ *
+ * - `"ordered"` — the path holds an ordered list of Object hashes; incorporation
+ *   appends, and semantic/execution order is preserved (never sorted by hash).
+ * - `"single"` — the path holds at most one Object hash; incorporation replaces.
+ */
 export type PathCollectionKind = "ordered" | "single";
+/**
+ * Value stored at a TurnTree path (kernel spec §3.2): `HashString[]` for
+ * `"ordered"` paths, `HashString | null` for `"single"` paths. An empty list or
+ * `null` means the path is valid but currently holds no refs.
+ */
 export type PathValue = HashString[] | HashString | null;
+/**
+ * Complete dump of a TurnTree: every schema path mapped to its typed
+ * {@link PathValue}. Returned by `tree.manifest` (kernel spec §3.2) and used for
+ * serialization, debugging, and context assembly.
+ */
 export type TurnTreeManifest = Record<string, PathValue>;
+/**
+ * Set of path updates passed to `tree.create` (kernel spec §3.2). Without a base
+ * tree every schema path must be present; with a base tree only changed paths
+ * appear and unchanged paths inherit from the base by structural sharing.
+ */
 export type TurnTreeChangeSet = Record<string, PathValue>;
+/**
+ * Status of a {@link StagedResult} (kernel spec §3.4). `"interrupted"` results
+ * carry an `interruptPayload` describing what is needed to resume the task.
+ */
 export type StagedResultStatus = "completed" | "failed" | "interrupted";
+/**
+ * Lifecycle status of a Run (kernel spec §5.2, Appendix A). Runs start
+ * `"running"` via `run.create`; `"completed"` and `"failed"` are terminal;
+ * `"paused"` blocks the Branch and may only be resolved to `"failed"` (resumption
+ * creates a new Run from the pause point).
+ */
 export type RunStatus = "running" | "paused" | "completed" | "failed";
+/**
+ * Statuses accepted by `run.complete` (kernel spec §5.8): every
+ * {@link RunStatus} except `"running"`, which is only entered through
+ * `run.create`.
+ */
 export type RunCompletionStatus = Extract<
   RunStatus,
   "paused" | "completed" | "failed"
 >;
+/**
+ * Ephemeral, run-scoped signal emitted by observe hooks (kernel spec §6.4).
+ * Opaque to the kernel; carried forward and delivered to the framework in the
+ * next {@link StepContext}.
+ */
 export type KernelSignal = KernelRecord;
+/**
+ * Severity of an {@link AbortVerdict} (kernel spec §6.1): `"HardFail"` propagates
+ * as an error and stops the Run, `"SoftFail"` persists as an error event while
+ * the Run continues, `"EndTurn"` terminates the Turn gracefully.
+ */
 export type VerdictDisposition = "HardFail" | "SoftFail" | "EndTurn";
 
+/**
+ * One path declared by a {@link TurnTreeSchema} (kernel spec §3.1).
+ */
 export interface PathDefinition {
+  /**
+   * Whether incorporation appends (`"ordered"`) or replaces (`"single"`).
+   */
   collection: PathCollectionKind;
+  /**
+   * Opaque framework-attached metadata; the kernel ignores it.
+   */
   metadata?: KernelRecord;
+  /**
+   * Dot-separated path name, e.g. `"tools.results"`. Unique within a schema.
+   */
   path: string;
 }
 
+/**
+ * Maps a StagedResult `objectType` to the schema path that receives it during
+ * `tree.incorporate` (kernel spec §3.1). A StagedResult whose `objectType` has no
+ * matching rule is an incorporation error; duplicate `objectType` mappings are
+ * rejected at schema registration.
+ */
 export interface IncorporationRule {
   objectType: string;
   targetPath: string;
 }
 
+/**
+ * Registered definition of what TurnTree state looks like (kernel spec §3.1).
+ *
+ * Registered write-once via `schema.register` and never modified; a new version
+ * is a new schema with a new `schemaId` (schema evolution is a framework
+ * concern). Registration validates: no duplicate paths, valid collection kinds,
+ * every incorporation-rule `targetPath` exists in `paths`, and no duplicate
+ * `objectType` mappings. `schemaId` is an opaque string — two schemas with
+ * different ids are unrelated from the kernel's perspective.
+ */
 export interface TurnTreeSchema {
   incorporationRules: IncorporationRule[];
   paths: PathDefinition[];
   schemaId: string;
 }
 
+/**
+ * Declaration of one step in a Run's step sequence (kernel spec §5.1).
+ *
+ * The kernel checkpoints after any step where `!deterministic || sideEffects`.
+ * Steps are atomic from the kernel's perspective: a "sometimes deterministic"
+ * step must either be declared non-deterministic (over-checkpoint) or be
+ * decomposed. The sequence is immutable for the Run's lifetime.
+ */
 export interface StepDeclaration {
+  /**
+   * Whether the step's output can be re-derived from the same inputs.
+   */
   deterministic: boolean;
+  /**
+   * Step identity, e.g. `"model_call"`; unique within the step sequence.
+   */
   id: string;
+  /**
+   * Opaque framework-specific metadata; the kernel ignores it.
+   */
   metadata?: KernelRecord;
+  /**
+   * Whether the step causes external state changes.
+   */
   sideEffects: boolean;
 }
 
+/**
+ * Output of a framework observe hook (kernel spec §6.4): `annotations` are
+ * persisted durably by the kernel at `run.completeStep`, while `signals` remain
+ * ephemeral within the Run and surface in the next {@link StepContext}.
+ */
 export interface ObserveResult {
   annotations: KernelObject[];
   signals: KernelSignal[];
 }
 
+/**
+ * Verdict raising no objection; execution continues (kernel spec §6.1).
+ */
 export interface ProceedVerdict {
   kind: "proceed";
 }
 
+/**
+ * Verdict stopping the Run with a {@link VerdictDisposition} and a
+ * human-readable reason (kernel spec §6.1).
+ */
 export interface AbortVerdict {
   disposition: VerdictDisposition;
   kind: "abort";
   reason: string;
 }
 
+/**
+ * Verdict carrying a declarative transform. The framework interprets the
+ * transform; the kernel treats it as opaque data and composes multiple
+ * transforms in registration order (kernel spec §6.1).
+ */
 export interface ModifyVerdict {
   kind: "modify";
   transform: KernelRecord;
 }
 
+/**
+ * Verdict suspending the Run for out-of-band resolution (kernel spec §6.1).
+ * `resumptionSchema` is an opaque description of what is needed to resume;
+ * resumption starts a new Run from the pause-point TurnNode.
+ */
 export interface PauseVerdict {
   kind: "pause";
   reason: string;
   resumptionSchema: KernelRecord;
 }
 
+/**
+ * Verdict requesting re-execution with an opaque adjustment the framework
+ * interprets (kernel spec §6.1).
+ */
 export interface RetryVerdict {
   adjustment: KernelRecord;
   kind: "retry";
 }
 
+/**
+ * Union of all hook verdicts (kernel spec §6.1), composed by `verdicts.compose`
+ * under the fixed first-objection-wins priority
+ * `Abort > Pause > Modify > Retry > Proceed` (§6.2).
+ */
 export type Verdict =
   | AbortVerdict
   | ModifyVerdict
@@ -96,8 +223,16 @@ export type Verdict =
   | ProceedVerdict
   | RetryVerdict;
 
+/**
+ * Result of `verdicts.compose` (kernel spec §6.5). Structurally a
+ * {@link Verdict}; the alias marks values that already went through
+ * first-objection-wins composition.
+ */
 export type ComposedVerdict = Verdict;
 
+/**
+ * Fields shared by every {@link StagedResult} variant (kernel spec §3.4).
+ */
 interface BaseStagedResult {
   objectHash: HashString;
   objectType: string;
@@ -105,39 +240,100 @@ interface BaseStagedResult {
   timestamp: EpochMs;
 }
 
+/**
+ * StagedResult for interrupted work: carries the opaque payload needed to resume
+ * the task (kernel spec §3.4).
+ */
 export interface InterruptedStagedResult extends BaseStagedResult {
   interruptPayload: KernelRecord;
   status: "interrupted";
 }
 
+/**
+ * StagedResult for work that reached a settled status (`"completed"` or
+ * `"failed"`); never carries an interrupt payload.
+ */
 export interface SettledStagedResult extends BaseStagedResult {
   interruptPayload?: never;
   status: "completed" | "failed";
 }
 
+/**
+ * Durable, run-scoped record of work performed between TurnNodes (kernel spec
+ * §3.4).
+ *
+ * Staged results survive process crashes (essential for parallel work within a
+ * step) and are consumed — and recorded on the TurnNode — when a checkpoint
+ * transaction commits. Identity is `taskId` within the owning Run; concurrent
+ * Runs on different Branches have isolated staging.
+ */
 export type StagedResult = InterruptedStagedResult | SettledStagedResult;
 
+/**
+ * One durable point in the history DAG: links a transition to the state root it
+ * produced (kernel spec §3.3).
+ *
+ * Identity is `hash`, computed from the canonical serialization of all fields
+ * except `hash` itself (see `hashTurnNodeIdentity` in kernel-identity.ts).
+ * TurnNodes are created only by the kernel during checkpoint transactions or
+ * reactive checkpointing, and are never modified.
+ */
 export interface TurnNode {
+  /**
+   * StagedResults incorporated by the checkpoint that created this node.
+   */
   consumedStagedResults: StagedResult[];
+  /**
+   * Optional opaque framework event Object recording what triggered this
+   * checkpoint; `null` when none was provided (kernel spec §5.4).
+   */
   eventHash: HashString | null;
+  /**
+   * Content-address identity of this node.
+   */
   hash: HashString;
+  /**
+   * DAG parent link; `null` only for a Thread's genesis node.
+   */
   previousTurnNodeHash: HashString | null;
+  /**
+   * Schema active when the node was created, so future reads can interpret the
+   * TurnTree correctly after schema evolution.
+   */
   schemaId: string;
+  /**
+   * Immutable state root produced by the transition.
+   */
   turnTreeHash: HashString;
 }
 
+/**
+ * Protocol view of a Thread (kernel spec §4.1): a write-once, long-lived
+ * container whose `rootTurnNodeHash` anchors all lineage/membership proofs.
+ */
 export interface ThreadRecord {
   rootTurnNodeHash: HashString;
   schemaId: string;
   threadId: string;
 }
 
+/**
+ * Protocol view of a Branch (kernel spec §4.2): a named, movable pointer to a
+ * TurnNode within a Thread. Each Branch has exactly one head — a kernel-enforced
+ * invariant.
+ */
 export interface BranchRecord {
   branchId: string;
   headTurnNodeHash: HashString;
   threadId: string;
 }
 
+/**
+ * Protocol view of a Turn (kernel spec §5.3): one user-visible interaction unit
+ * spanning the contiguous TurnNode segment from `startTurnNodeHash` to
+ * `headTurnNodeHash`. A Turn may be served by multiple Runs when execution
+ * pauses and resumes.
+ */
 export interface TurnRecord {
   branchId: string;
   headTurnNodeHash: HashString;
@@ -147,6 +343,16 @@ export interface TurnRecord {
   turnId: string;
 }
 
+/**
+ * Protocol view of a Run (kernel spec §5.2): the concrete execution instance
+ * that handles a Turn by executing a declared step sequence on a Branch.
+ *
+ * The optional lease fields (`executionOwnerId`, `fencingToken`,
+ * `leaseExpiresAtMs`) are populated only for leased runs created through the
+ * {@link RuntimeKernelRunLiveness} surface; they realize the stale-`running`
+ * recovery mechanism of kernel spec §5.2 ("Run Execution Leases").
+ * `preemptionReason` is recorded durably when an expired run is preempted.
+ */
 export interface RunRecord {
   branchId: string;
   createdTurnNodes: HashString[];
@@ -163,6 +369,11 @@ export interface RunRecord {
   turnId: string;
 }
 
+/**
+ * Context returned by `run.beginStep` (kernel spec §5.8): the current TurnNode
+ * hash, the active schema, the step declaration, and signals emitted by observe
+ * hooks on earlier steps of the Run.
+ */
 export interface StepContext {
   currentTurnNodeHash: HashString;
   schema: TurnTreeSchema;
@@ -170,25 +381,61 @@ export interface StepContext {
   step: StepDeclaration;
 }
 
+/**
+ * State returned by `run.recover` and by stale-run preemption (kernel spec
+ * §5.8): everything a replacement execution needs to skip completed work and
+ * resume only the unfinished remainder.
+ */
 export interface RecoveryState {
+  /**
+   * StagedResults already anchored by the last committed TurnNode.
+   */
   consumedStagedResults: StagedResult[];
+  /**
+   * Identity of the last completed step, or `null` when no step finished.
+   */
   lastCompletedStepId: string | null;
+  /**
+   * Last durably committed TurnNode.
+   */
   lastTurnNodeHash: HashString;
+  /**
+   * The Run's declared step sequence.
+   */
   stepSequence: StepDeclaration[];
+  /**
+   * Durable staged work not yet consumed by a checkpoint transaction.
+   */
   uncommittedStagedResults: StagedResult[];
 }
 
+/**
+ * Proof of current lease possession for a leased `running` Run: the fencing
+ * token and the lease expiry timestamp (kernel spec §5.2, "Run Execution
+ * Leases").
+ */
 export interface RunLeaseState {
   fencingToken: string;
   leaseExpiresAtMs: EpochMs;
 }
 
+/**
+ * Result of `run.completeStep` (kernel spec §5.8). `checkpointed` reports
+ * whether a checkpoint transaction ran (required when the step declared
+ * `!deterministic || sideEffects`); `turnNodeHash` is the TurnNode it created
+ * when it did. `lease` carries refreshed lease state for leased runs.
+ */
 export interface RunStepCompletion {
   checkpointed: boolean;
   lease?: RunLeaseState;
   turnNodeHash?: HashString;
 }
 
+/**
+ * Result of the atomic Thread bootstrap (kernel spec §4.1): the new Thread, its
+ * initial Branch, and the genesis TurnNode / root TurnTree hashes. There are no
+ * intermediate invalid moments — the whole structure commits together.
+ */
 export interface ThreadCreateResult {
   branchId: string;
   rootTurnNodeHash: HashString;
@@ -196,16 +443,30 @@ export interface ThreadCreateResult {
   threadId: string;
 }
 
+/**
+ * Result of `branch.setHead` (kernel spec §4.2). `archiveBranch` is present only
+ * for backward moves, where the kernel atomically archives the abandoned segment
+ * under a new Branch so no TurnNodes are ever orphaned.
+ */
 export interface SetHeadResult {
   archiveBranch?: BranchRecord;
   branch: BranchRecord;
 }
 
+/**
+ * One `branch.list` entry: a `[branchId, headTurnNodeHash]` pair (kernel spec
+ * §4.2).
+ */
 export type BranchHeadListEntry = [
   branchId: string,
   headTurnNodeHash: HashString,
 ];
 
+/**
+ * Durable representation of a content-addressed Object (kernel spec §2.1).
+ * Write-once: `hash` is computed from the canonical blob representation and the
+ * record is never modified after creation.
+ */
 export interface StoredObject {
   byteLength: number;
   bytes: Uint8Array;
@@ -214,12 +475,21 @@ export interface StoredObject {
   mediaType: string;
 }
 
+/**
+ * Durable representation of a registered {@link TurnTreeSchema} (kernel spec
+ * §3.1). `schemaCbor` holds the canonical CBOR encoding of the schema body.
+ */
 export interface StoredSchema {
   createdAtMs: EpochMs;
   schemaCbor: Uint8Array;
   schemaId: string;
 }
 
+/**
+ * Durable TurnTree root (kernel spec §3.2). `hash` is computed from the
+ * canonical `{ schemaId, manifest }` identity tuple (see `hashTurnTreeIdentity`);
+ * `manifestCbor` is the canonical CBOR encoding of the manifest.
+ */
 export interface StoredTurnTree {
   createdAtMs: EpochMs;
   hash: HashString;
@@ -227,11 +497,18 @@ export interface StoredTurnTree {
   schemaId: string;
 }
 
+/**
+ * Fields shared by every stored TurnTree path row.
+ */
 interface BaseStoredTurnTreePath {
   path: string;
   turnTreeHash: HashString;
 }
 
+/**
+ * Stored value of a `"single"` collection path: at most one Object hash, `null`
+ * when the path is empty.
+ */
 export interface StoredSingleTurnTreePath extends BaseStoredTurnTreePath {
   collectionKind: "single";
   orderedChunkListCbor?: never;
@@ -241,6 +518,10 @@ export interface StoredSingleTurnTreePath extends BaseStoredTurnTreePath {
   singleHash: HashString | null;
 }
 
+/**
+ * Stored value of an `"ordered"` path whose hash list is inlined as a single
+ * canonical CBOR array (`orderedEncoding: "flat"`).
+ */
 export interface StoredFlatOrderedTurnTreePath extends BaseStoredTurnTreePath {
   collectionKind: "ordered";
   orderedChunkListCbor?: never;
@@ -250,6 +531,12 @@ export interface StoredFlatOrderedTurnTreePath extends BaseStoredTurnTreePath {
   singleHash?: never;
 }
 
+/**
+ * Stored value of an `"ordered"` path whose hash list is split into
+ * content-addressed chunks (`orderedEncoding: "chunked"`).
+ * `orderedChunkListCbor` records the ordered chunk hashes; each chunk row is a
+ * {@link StoredOrderedPathChunk}.
+ */
 export interface StoredChunkedOrderedTurnTreePath
   extends BaseStoredTurnTreePath {
   collectionKind: "ordered";
@@ -260,11 +547,20 @@ export interface StoredChunkedOrderedTurnTreePath
   singleHash?: never;
 }
 
+/**
+ * Discriminated union of stored TurnTree path encodings, keyed by
+ * `collectionKind` and `orderedEncoding`.
+ */
 export type StoredTurnTreePath =
   | StoredChunkedOrderedTurnTreePath
   | StoredFlatOrderedTurnTreePath
   | StoredSingleTurnTreePath;
 
+/**
+ * Content-addressed chunk holding a contiguous slice of an ordered path's hash
+ * list; `itemsCbor` is the canonical CBOR array of the slice and `chunkHash` its
+ * content address, enabling structural sharing of unchanged prefixes.
+ */
 export interface StoredOrderedPathChunk {
   chunkHash: HashString;
   createdAtMs: EpochMs;
@@ -272,6 +568,11 @@ export interface StoredOrderedPathChunk {
   itemsCbor: Uint8Array;
 }
 
+/**
+ * Durable representation of a {@link TurnNode} (kernel spec §3.3).
+ * `consumedStagedResultsCbor` holds the canonical CBOR encoding of the consumed
+ * StagedResults.
+ */
 export interface StoredTurnNode {
   consumedStagedResultsCbor: Uint8Array;
   createdAtMs: EpochMs;
@@ -282,6 +583,12 @@ export interface StoredTurnNode {
   turnTreeHash: HashString;
 }
 
+/**
+ * Durable observe-hook annotation persisted at `run.completeStep` (kernel spec
+ * §6.4), identified by the annotation Object's content hash within its Run.
+ * `turnNodeHash` links the annotation to the checkpoint TurnNode it was anchored
+ * to, or is `null` when no checkpoint accompanied the step.
+ */
 export interface StoredObserveAnnotation {
   annotationCbor: Uint8Array;
   annotationHash: HashString;
@@ -290,6 +597,9 @@ export interface StoredObserveAnnotation {
   turnNodeHash: HashString | null;
 }
 
+/**
+ * Durable representation of a Thread (kernel spec §4.1). Write-once.
+ */
 export interface StoredThread {
   createdAtMs: EpochMs;
   rootTurnNodeHash: HashString;
@@ -297,6 +607,11 @@ export interface StoredThread {
   threadId: string;
 }
 
+/**
+ * Durable representation of a Branch (kernel spec §4.2).
+ * `archivedFromBranchId` is set only on archive Branches created by a backward
+ * `branch.setHead`, naming the Branch whose abandoned segment they preserve.
+ */
 export interface StoredBranch {
   archivedFromBranchId?: string;
   branchId: string;
@@ -306,6 +621,10 @@ export interface StoredBranch {
   updatedAtMs: EpochMs;
 }
 
+/**
+ * Durable representation of a Turn (kernel spec §5.3). `headTurnNodeHash`
+ * advances via `turn.updateHead` as TurnNodes are created.
+ */
 export interface StoredTurn {
   branchId: string;
   createdAtMs: EpochMs;
@@ -317,6 +636,12 @@ export interface StoredTurn {
   updatedAtMs: EpochMs;
 }
 
+/**
+ * Durable representation of a Run (kernel spec §5.2). `stepSequenceCbor`,
+ * `createdTurnNodesCbor`, and `pendingSignalsCbor` hold canonical CBOR encodings
+ * of the step sequence, created TurnNode hashes, and observe signals pending
+ * delivery to the next step. Lease fields mirror {@link RunRecord}.
+ */
 export interface StoredRun {
   branchId: string;
   createdAtMs: EpochMs;
@@ -336,6 +661,9 @@ export interface StoredRun {
   updatedAtMs: EpochMs;
 }
 
+/**
+ * Fields shared by every stored StagedResult variant (kernel spec §3.4).
+ */
 interface BaseStoredStagedResult {
   createdAtMs: EpochMs;
   objectHash: HashString;
@@ -344,36 +672,66 @@ interface BaseStoredStagedResult {
   taskId: string;
 }
 
+/**
+ * Stored StagedResult for interrupted work; `interruptPayloadCbor` is the
+ * canonical CBOR encoding of the resume payload.
+ */
 export interface InterruptedStoredStagedResult extends BaseStoredStagedResult {
   interruptPayloadCbor: Uint8Array;
   status: "interrupted";
 }
 
+/**
+ * Stored StagedResult for settled work (`"completed"` or `"failed"`); never
+ * carries an interrupt payload.
+ */
 export interface SettledStoredStagedResult extends BaseStoredStagedResult {
   interruptPayloadCbor?: never;
   status: "completed" | "failed";
 }
 
+/**
+ * Durable representation of a {@link StagedResult}, keyed by `(runId, taskId)`
+ * (kernel spec §3.4).
+ */
 export type StoredStagedResult =
   | InterruptedStoredStagedResult
   | SettledStoredStagedResult;
 
+/**
+ * Content-addressed Object storage (kernel spec §2.4, §8.1). `put` is write-once
+ * and idempotent: storing identical content twice yields the same hash with no
+ * conflict — load-bearing for crash recovery, where re-executing a step that
+ * produces identical output is harmless.
+ */
 export interface ObjectRepository {
   get(hash: HashString): Promise<StoredObject | null>;
   has(hash: HashString): Promise<boolean>;
   put(record: StoredObject): Promise<void>;
 }
 
+/**
+ * Durable storage for registered schemas, keyed by `schemaId` (kernel spec
+ * §3.1). Schema records are write-once.
+ */
 export interface SchemaRepository {
   get(schemaId: string): Promise<StoredSchema | null>;
   put(record: StoredSchema): Promise<void>;
 }
 
+/**
+ * Durable storage for TurnTree roots, keyed by content hash (kernel spec §3.2).
+ */
 export interface TurnTreeRepository {
   get(hash: HashString): Promise<StoredTurnTree | null>;
   put(record: StoredTurnTree): Promise<void>;
 }
 
+/**
+ * Durable storage for per-tree path rows (kernel spec §3.2). `putMany` persists
+ * all path rows of a TurnTree together; `listByTurnTree` returns every path row
+ * of one tree.
+ */
 export interface TurnTreePathRepository {
   get(
     turnTreeHash: HashString,
@@ -383,16 +741,27 @@ export interface TurnTreePathRepository {
   putMany(records: StoredTurnTreePath[]): Promise<void>;
 }
 
+/**
+ * Durable storage for ordered-path chunks, keyed by content hash.
+ */
 export interface OrderedPathChunkRepository {
   get(chunkHash: HashString): Promise<StoredOrderedPathChunk | null>;
   put(record: StoredOrderedPathChunk): Promise<void>;
 }
 
+/**
+ * Durable storage for history-DAG nodes, keyed by content hash (kernel spec
+ * §3.3).
+ */
 export interface TurnNodeRepository {
   get(hash: HashString): Promise<StoredTurnNode | null>;
   put(record: StoredTurnNode): Promise<void>;
 }
 
+/**
+ * Durable storage for observe-hook annotations (kernel spec §6.4), listed per
+ * Run.
+ */
 export interface ObserveAnnotationRepository {
   listByRun(runId: string): Promise<StoredObserveAnnotation[]>;
   set(record: StoredObserveAnnotation): Promise<void>;
@@ -412,6 +781,11 @@ export interface ListThreadsCursorPayload {
   v: 1;
 }
 
+/**
+ * Durable storage for Threads (kernel spec §4.1). Thread records are
+ * write-once. `list` is optional and capability-gated — see its own
+ * documentation.
+ */
 export interface ThreadRepository {
   get(threadId: string): Promise<StoredThread | null>;
   /**
@@ -432,18 +806,32 @@ export interface ThreadRepository {
   put(record: StoredThread): Promise<void>;
 }
 
+/**
+ * Durable storage for Branches (kernel spec §4.2). `set` both creates Branch
+ * records and moves heads; head movement legality is enforced by the kernel
+ * above this repository.
+ */
 export interface BranchRepository {
   get(branchId: string): Promise<StoredBranch | null>;
   listByThread(threadId: string): Promise<StoredBranch[]>;
   set(record: StoredBranch): Promise<void>;
 }
 
+/**
+ * Durable storage for Turns (kernel spec §5.3). `set` both creates Turn records
+ * and advances `headTurnNodeHash`.
+ */
 export interface TurnRepository {
   get(turnId: string): Promise<StoredTurn | null>;
   listByThread(threadId: string): Promise<StoredTurn[]>;
   set(record: StoredTurn): Promise<void>;
 }
 
+/**
+ * Durable storage for Runs (kernel spec §5.2). `listExpired` returns leased
+ * `running` runs whose lease has expired as of `nowMs`, supporting
+ * stale-running preemption.
+ */
 export interface RunRepository {
   get(runId: string): Promise<StoredRun | null>;
   listByBranch(branchId: string): Promise<StoredRun[]>;
@@ -451,6 +839,11 @@ export interface RunRepository {
   set(record: StoredRun): Promise<void>;
 }
 
+/**
+ * Durable run-scoped staging state (kernel spec §3.4), keyed by
+ * `(runId, taskId)`. `clearRun` empties a Run's staging after a checkpoint
+ * transaction consumes it.
+ */
 export interface StagedResultRepository {
   clearRun(runId: string): Promise<void>;
   get(runId: string, taskId: string): Promise<StoredStagedResult | null>;
@@ -458,6 +851,15 @@ export interface StagedResultRepository {
   set(record: StoredStagedResult): Promise<void>;
 }
 
+/**
+ * Repository bundle visible inside one backend transaction (kernel spec §8.1).
+ *
+ * The kernel performs every durable mutation through
+ * {@link RuntimeBackend.transact}, which supplies this bundle; all writes made
+ * through it become visible together on commit or not at all. That atomicity is
+ * what realizes `staging.stage` and the checkpoint transaction of kernel spec
+ * §5.5.
+ */
 export interface RuntimeBackendTx {
   branches: BranchRepository;
   /**
@@ -563,8 +965,29 @@ export interface ReclamationSummary {
   retainedObjectCount: number;
 }
 
+/**
+ * Durable storage backend contract the kernel drives (kernel spec §8.1).
+ *
+ * A backend supplies transactional access to the kernel's repositories plus a
+ * capability descriptor for the optional, capability-gated syscalls (§9). The
+ * contract is behavioral, not technological: any substrate qualifies if atomic
+ * single- and multi-entity writes, durable visibility, and read-after-write
+ * consistency hold at this surface. Hash resolution is confined to the Scope the
+ * backend was constructed against (§2.3) — the kernel can never observe content
+ * outside the constructing Scope.
+ */
 export interface RuntimeBackend {
+  /**
+   * Returns the backend's capability descriptor, computed at construction and
+   * consulted by the kernel on the dispatch path of every capability-gated
+   * syscall (kernel spec §9.1). Must be honest: advertising a capability without
+   * implementing its backing method correctly is a backend bug.
+   */
   capabilities(): BackendCapability;
+  /**
+   * Probes the durable substrate. Returns `{ ok: true }` when the backend can
+   * serve traffic, otherwise `{ ok: false }` with a human-readable reason.
+   */
   health(): Promise<{ ok: true } | { ok: false; reason: string }>;
   /**
    * Optional substrate partition drop for full tenant offboarding (§9.4: "full
@@ -593,6 +1016,11 @@ export interface RuntimeBackend {
    * committed lineage or alters a reachable Object.
    */
   reclaim?(options?: ReclamationOptions): Promise<ReclamationSummary>;
+  /**
+   * Runs `work` inside one atomic transaction. Every repository write performed
+   * through the supplied {@link RuntimeBackendTx} becomes visible together on
+   * commit, or not at all when `work` rejects (kernel spec §8.1).
+   */
   transact<T>(work: (tx: RuntimeBackendTx) => Promise<T>): Promise<T>;
 }
 
@@ -603,7 +1031,24 @@ export interface RuntimeBackend {
  */
 export type KernelThreadListCursor = string;
 
+/**
+ * The kernel syscall surface: 30 operations across 10 groups
+ * (docs/KrakenKernelSpecification.md §7), plus the capability-gated
+ * `maintenance` group (§9.4).
+ *
+ * This is the cross-language kernel boundary contract (§1.1): everything that
+ * crosses it is data — serializable, schema-driven, inspectable. The kernel
+ * never calls back into the framework, and every run-scoped operation carries an
+ * explicit `runId`; there is no ambient execution state. Per-operation
+ * preconditions and rejection rules are enumerated in kernel spec Appendix B.
+ */
 export interface RuntimeKernel {
+  /**
+   * Branch operations (kernel spec §4.2): creation from a lineage-validated
+   * TurnNode, lookup, head movement with forward/backward/lateral direction rules
+   * (lateral is rejected; backward archives the abandoned segment), and per-thread
+   * head listing.
+   */
   branch: {
     create(
       branchId: string,
@@ -614,6 +1059,9 @@ export interface RuntimeKernel {
     setHead(branchId: string, turnNodeHash: HashString): Promise<SetHeadResult>;
     list(threadId: string): Promise<BranchHeadListEntry[]>;
   };
+  /**
+   * Capability-gated maintenance operations (kernel spec §9.4).
+   */
   maintenance: {
     /**
      * §9.4: capability-gated reachability reclamation. Rejects with
@@ -626,10 +1074,21 @@ export interface RuntimeKernel {
      */
     reclaim(options?: ReclamationOptions): Promise<ReclamationSummary>;
   };
+  /**
+   * Read-only history-DAG access (kernel spec §3.3). `walkBack` follows
+   * `previousTurnNodeHash` links linearly toward the Thread root; TurnNode
+   * creation is kernel-internal via `run.completeStep` / `run.complete`.
+   */
   node: {
     get(hash: HashString): Promise<TurnNode | null>;
     walkBack(fromHash: HashString): AsyncIterable<TurnNode>;
   };
+  /**
+   * Run lifecycle (kernel spec §5.8): creation with full legality validation
+   * (Appendix A), step begin/complete with declarative checkpointing, terminal
+   * completion with reactive checkpointing of un-anchored staged work, and crash
+   * recovery via {@link RecoveryState}.
+   */
   run: {
     create(
       runId: string,
@@ -654,10 +1113,20 @@ export interface RuntimeKernel {
     ): Promise<{ turnNodeHash?: HashString }>;
     recover(runId: string): Promise<RecoveryState>;
   };
+  /**
+   * TurnTreeSchema registration and lookup (kernel spec §3.1). Registration is
+   * write-once and validated; schema evolution means a new `schemaId`.
+   */
   schema: {
     register(schema: TurnTreeSchema): Promise<string>;
     get(schemaId: string): Promise<TurnTreeSchema | null>;
   };
+  /**
+   * Durable run-scoped staging (kernel spec §3.4). `stage` atomically writes the
+   * Object to the content-addressed store AND appends the StagedResult to the
+   * Run's durable staging state; `current` lists un-anchored results (empty after
+   * a checkpoint or at Run start).
+   */
   staging: {
     stage(
       runId: string,
@@ -669,11 +1138,21 @@ export interface RuntimeKernel {
     ): Promise<{ objectHash: HashString; stagedResult: StagedResult }>;
     current(runId: string): Promise<StagedResult[]>;
   };
+  /**
+   * Content-addressed Object store (kernel spec §2.4). `put` is write-once and
+   * idempotent; `get`/`has` resolve only within the constructing Scope (§2.3).
+   */
   store: {
     put(blob: Uint8Array, mediaType?: string): Promise<HashString>;
     get(hash: HashString): Promise<Uint8Array | null>;
     has(hash: HashString): Promise<boolean>;
   };
+  /**
+   * Thread bootstrap and lookup (kernel spec §4.1), plus capability-gated
+   * enumeration (ADR-034, §9.2). `create` atomically registers the Thread, builds
+   * the empty root TurnTree, creates the genesis TurnNode, and creates the initial
+   * Branch pointing at it.
+   */
   thread: {
     create(
       threadId: string,
@@ -695,6 +1174,12 @@ export interface RuntimeKernel {
       nextCursor?: KernelThreadListCursor;
     }>;
   };
+  /**
+   * TurnTree construction and inspection (kernel spec §3.2): schema-driven
+   * `create` with base-tree inheritance and structural sharing, rule-driven
+   * `incorporate` of staged results, structural `diff` (same-schema trees only),
+   * per-path `resolve`, and full `manifest` dumps.
+   */
   tree: {
     create(
       schemaId: string,
@@ -709,6 +1194,10 @@ export interface RuntimeKernel {
     resolve(treeHash: HashString, path: string): Promise<PathValue>;
     manifest(treeHash: HashString): Promise<TurnTreeManifest>;
   };
+  /**
+   * Turn lifecycle (kernel spec §5.3). `updateHead` validates that the new head is
+   * a descendant of the Turn's `startTurnNodeHash` by lineage walk.
+   */
   turn: {
     create(
       turnId: string,
@@ -720,11 +1209,34 @@ export interface RuntimeKernel {
     get(turnId: string): Promise<TurnRecord | null>;
     updateHead(turnId: string, headTurnNodeHash: HashString): Promise<void>;
   };
+  /**
+   * Pure verdict composition under the fixed priority
+   * `Abort > Pause > Modify > Retry > Proceed` (kernel spec §6). Hook
+   * registration, execution, and timeouts are framework concerns; the kernel only
+   * composes.
+   */
   verdicts: {
     compose(verdicts: Verdict[]): Promise<ComposedVerdict>;
   };
 }
 
+/**
+ * Optional run-liveness extension of the kernel surface implementing execution
+ * leases and stale-`running` preemption (kernel spec §5.2, "Run Execution
+ * Leases" / "Stale Running Preemption").
+ *
+ * - `createLeasedRun` creates a `running` Run bound to an execution owner with a
+ *   lease expiry and fencing token.
+ * - `renewLease` extends possession only for the current owner/token pair and
+ *   only while the Run remains `running`.
+ * - `listExpired` enumerates `running` Runs whose lease has expired as of
+ *   `nowMs`.
+ * - `preemptExpired` atomically verifies expiry, fences the stale owner,
+ *   preserves verifiably complete staged work via the reactive-checkpoint rule,
+ *   marks the superseded Run `failed` with a durable reason, and returns
+ *   {@link RecoveryState} for creating a replacement Run — reopening the stale
+ *   Run is illegal.
+ */
 export interface RuntimeKernelRunLiveness {
   runLiveness: {
     createLeasedRun(input: {

@@ -655,11 +655,25 @@ export function decodeRunCreatedTurnNodeHashes(run: StoredRun): string[] {
   );
 }
 
+/**
+ * A run's active turn node: the most recently created node in its
+ * `createdTurnNodesCbor` lineage, or its start turn node when the run has
+ * not created any nodes yet.
+ */
 export function getRunActiveTurnNodeHash(run: StoredRun): string {
   const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
   return createdTurnNodeHashes.at(-1) ?? run.startTurnNodeHash;
 }
 
+/**
+ * Decodes a turn node's `consumedStagedResultsCbor` and extracts the
+ * validated `objectHash` of every staged result the node consumed.
+ *
+ * @throws TuvrenPersistenceError
+ *   `memory_backend_invalid_consumed_staged_results_cbor` when the payload is
+ *   not an array, or `memory_backend_invalid_consumed_staged_result_entry`
+ *   when an entry is not an object carrying a string `objectHash`.
+ */
 export function decodeTurnNodeConsumedStagedResultObjectHashes(
   turnNode: StoredTurnNode
 ): string[] {

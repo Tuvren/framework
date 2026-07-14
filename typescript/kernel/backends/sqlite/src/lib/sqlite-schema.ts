@@ -17,12 +17,20 @@
 import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+/**
+ * Constructor for the backend's persistence errors, injected so this module
+ * (and the validators that consume its definitions) stays free of a direct
+ * error-module dependency.
+ */
 export type SqlitePersistenceErrorFactory = (
   message: string,
   code: string,
   context?: Record<string, unknown>
 ) => Error;
 
+// Checked-in migration file names, in application order. Migration-state
+// validation keys its expectations off which of these appear in the
+// `backend_sqlite_migrations` ledger.
 export const INITIAL_SCHEMA_MIGRATION_NAME = "0001_initial_schema.sql";
 export const TARGETED_VALIDATION_MIGRATION_NAME =
   "0002_targeted_validation_indexes.sql";
@@ -31,6 +39,7 @@ export const PENDING_SIGNALS_AND_ANNOTATIONS_MIGRATION_NAME =
 export const OBSERVE_ANNOTATIONS_MIGRATION_NAME =
   "0004_observe_annotations.sql";
 export const RUN_LIVENESS_MIGRATION_NAME = "0005_run_liveness.sql";
+/** Tables the initial-schema migration must have created. */
 export const INITIAL_SCHEMA_REQUIRED_TABLES = [
   "objects",
   "schemas",
@@ -44,6 +53,7 @@ export const INITIAL_SCHEMA_REQUIRED_TABLES = [
   "runs",
   "staged_results",
 ] as const;
+/** Indexes the initial-schema migration must have created. */
 export const INITIAL_SCHEMA_REQUIRED_INDEXES = [
   "idx_turn_trees_schema_id",
   "idx_turn_tree_paths_path_turn_tree_hash",
@@ -78,8 +88,17 @@ export const OBSERVE_ANNOTATIONS_REQUIRED_INDEXES = [
 export const RUN_LIVENESS_REQUIRED_INDEXES = [
   "idx_runs_status_lease_expires_at_ms",
 ] as const;
+/**
+ * The in-memory database path this persistent backend rejects at
+ * construction.
+ */
 export const SQLITE_TRANSIENT_MEMORY_PATH = ":memory:";
 
+/**
+ * Expected column shape, matched against `PRAGMA table_info` output:
+ * `primaryKeyOrder` is the 1-based position in the primary key (0 = not part
+ * of it), and `notNull` mirrors the column's NOT NULL constraint.
+ */
 export interface ExpectedSqliteColumnSchema {
   name: string;
   notNull: boolean;
@@ -87,23 +106,35 @@ export interface ExpectedSqliteColumnSchema {
   type: string;
 }
 
+/**
+ * Expected foreign-key shape, matched against `PRAGMA foreign_key_list`
+ * output.
+ */
 export interface ExpectedSqliteForeignKeySchema {
   columns: readonly string[];
   referencedColumns: readonly string[];
   referencedTable: string;
 }
 
+/** Expected index shape, matched against `PRAGMA index_list`/`index_info`. */
 export interface ExpectedSqliteIndexSchema {
   columns: readonly string[];
   tableName: string;
   unique: boolean;
 }
 
+/** Expected shape of one table: its columns plus its foreign keys. */
 export interface ExpectedSqliteTableSchema {
   columns: readonly ExpectedSqliteColumnSchema[];
   foreignKeys: readonly ExpectedSqliteForeignKeySchema[];
 }
 
+/**
+ * The authoritative expected shape of every initial-schema table after all
+ * migrations have applied. Migration-state validation compares the live
+ * database against these definitions, so a schema drift (missing column,
+ * wrong type, dropped foreign key) fails fast instead of corrupting state.
+ */
 export const INITIAL_SCHEMA_TABLE_DEFINITIONS = {
   branches: {
     columns: [
@@ -600,16 +631,24 @@ export const INITIAL_SCHEMA_TABLE_DEFINITIONS = {
   (typeof INITIAL_SCHEMA_REQUIRED_TABLES)[number],
   ExpectedSqliteTableSchema
 >;
+/** `runs` columns added by the pending-signals-and-annotations migration. */
 export const PRE_PENDING_RUN_COLUMN_NAMES = new Set([
   "last_step_annotations_cbor",
   "pending_signals_cbor",
 ]);
+/** `runs` columns added by the run-liveness (lease) migration. */
 export const RUN_LIVENESS_RUN_COLUMN_NAMES = new Set([
   "execution_owner_id",
   "lease_expires_at_ms",
   "fencing_token",
   "preemption_reason",
 ]);
+/**
+ * Expected table shapes for a database whose ledger predates the
+ * pending-signals migration: the full definitions minus the columns later
+ * migrations add. Lets validation accept every legitimate migration
+ * generation instead of only the newest.
+ */
 export const PRE_PENDING_SIGNALS_SCHEMA_TABLE_DEFINITIONS: Record<
   (typeof INITIAL_SCHEMA_REQUIRED_TABLES)[number],
   ExpectedSqliteTableSchema
@@ -626,6 +665,10 @@ export const PRE_PENDING_SIGNALS_SCHEMA_TABLE_DEFINITIONS: Record<
     ),
   },
 };
+/**
+ * Expected table shapes for a database whose ledger predates the run-liveness
+ * migration: the full definitions minus the lease columns.
+ */
 export const PRE_RUN_LIVENESS_SCHEMA_TABLE_DEFINITIONS: Record<
   (typeof INITIAL_SCHEMA_REQUIRED_TABLES)[number],
   ExpectedSqliteTableSchema
@@ -638,6 +681,7 @@ export const PRE_RUN_LIVENESS_SCHEMA_TABLE_DEFINITIONS: Record<
     ),
   },
 };
+/** Expected shape of every index the initial-schema migration creates. */
 export const INITIAL_SCHEMA_INDEX_DEFINITIONS = {
   idx_branches_head_turn_node_hash: {
     columns: ["head_turn_node_hash"],
@@ -713,6 +757,11 @@ export const INITIAL_SCHEMA_INDEX_DEFINITIONS = {
   (typeof INITIAL_SCHEMA_REQUIRED_INDEXES)[number],
   ExpectedSqliteIndexSchema
 >;
+/**
+ * Expected shape of the derived `turn_node_lineage_roots` index table the
+ * targeted-validation migration adds (each node's thread-root hash and depth,
+ * maintained on insert for O(1) lineage-root checks).
+ */
 export const TARGETED_VALIDATION_TABLE_DEFINITIONS = {
   turn_node_lineage_roots: {
     columns: [
@@ -752,6 +801,7 @@ export const TARGETED_VALIDATION_TABLE_DEFINITIONS = {
   (typeof TARGETED_VALIDATION_REQUIRED_TABLES)[number],
   ExpectedSqliteTableSchema
 >;
+/** Expected shape of the indexes the targeted-validation migration adds. */
 export const TARGETED_VALIDATION_INDEX_DEFINITIONS = {
   idx_branches_archived_from_branch_id: {
     columns: ["archived_from_branch_id"],
@@ -777,6 +827,7 @@ export const TARGETED_VALIDATION_INDEX_DEFINITIONS = {
   (typeof TARGETED_VALIDATION_REQUIRED_INDEXES)[number],
   ExpectedSqliteIndexSchema
 >;
+/** Expected shape of the observe-annotations migration's table. */
 export const OBSERVE_ANNOTATIONS_TABLE_DEFINITIONS = {
   observe_annotations: {
     columns: [
@@ -834,6 +885,7 @@ export const OBSERVE_ANNOTATIONS_TABLE_DEFINITIONS = {
   (typeof OBSERVE_ANNOTATIONS_REQUIRED_TABLES)[number],
   ExpectedSqliteTableSchema
 >;
+/** Expected shape of the observe-annotations migration's index. */
 export const OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS = {
   idx_observe_annotations_run_id_created_at_ms: {
     columns: ["run_id", "created_at_ms"],
@@ -844,6 +896,7 @@ export const OBSERVE_ANNOTATIONS_INDEX_DEFINITIONS = {
   (typeof OBSERVE_ANNOTATIONS_REQUIRED_INDEXES)[number],
   ExpectedSqliteIndexSchema
 >;
+/** Expected shape of the run-liveness migration's lease-expiry index. */
 export const RUN_LIVENESS_INDEX_DEFINITIONS = {
   idx_runs_status_lease_expires_at_ms: {
     columns: ["status", "lease_expires_at_ms"],
@@ -855,12 +908,22 @@ export const RUN_LIVENESS_INDEX_DEFINITIONS = {
   ExpectedSqliteIndexSchema
 >;
 
+/** Lists the directory's `.sql` migration files in application (name) order. */
 export function listMigrationFiles(migrationDirectory: string): string[] {
   return readdirSync(migrationDirectory)
     .filter((fileName) => fileName.endsWith(".sql"))
     .sort((left, right) => left.localeCompare(right));
 }
 
+/**
+ * Locates the package's migrations directory across layouts (built `dist/`,
+ * source checkout, and test execution), accepting only a candidate that
+ * actually contains SQL files.
+ *
+ * @throws The injected persistence error with code
+ *   `sqlite_backend_missing_migrations_directory` when no candidate
+ *   qualifies.
+ */
 export function resolveMigrationDirectory(
   persistenceError: SqlitePersistenceErrorFactory
 ): string {

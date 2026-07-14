@@ -14,6 +14,32 @@
  * limitations under the License.
  */
 
+/**
+ * Kernel protocol contract for Tuvren's Kraken execution engine.
+ *
+ * This package expresses the language-neutral kernel boundary as TypeScript
+ * types and guards: the {@link RuntimeKernel} syscall surface (30 operations
+ * across 10 groups, docs/KrakenKernelSpecification.md §7), the
+ * {@link RuntimeBackend} storage contract with its repositories and
+ * capability descriptor (§8.1, §9), live and stored record shapes, the
+ * canonical identity helpers used for content addressing (deterministic CBOR
+ * plus SHA-256, §2.3), and runtime validation guards (`is*` / `assert*`) for
+ * every protocol shape.
+ *
+ * Everything crossing this boundary is data — serializable, schema-driven,
+ * inspectable (§1.1). The machine authority for this surface is the kernel
+ * authority packet (spec/kernel/authority-packet.json) with its CDDL,
+ * conformance plans, and committed fixtures; this package is the TypeScript
+ * binding projection of that packet.
+ *
+ * `@tuvren/kernel-protocol` is published-internal: it exists on the registry
+ * so host-facing packages' dependency graphs resolve (ADR-057), is not
+ * semver-guaranteed for hosts, and should not be imported directly by
+ * applications (see docs/guides/publishing-and-adopter-onboarding.md).
+ *
+ * @packageDocumentation
+ */
+
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export {
   canonicalizeKernelRecord,

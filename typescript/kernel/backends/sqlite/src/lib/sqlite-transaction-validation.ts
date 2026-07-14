@@ -76,6 +76,17 @@ import {
 import { validateTurnTreePathInvariants } from "./sqlite-state-validation.js";
 import type { TransactionWriteTracker } from "./sqlite-write-tracker.js";
 
+/**
+ * Pre-commit gate: re-validates every record family the transaction's write
+ * tracker recorded, directly against the database (targeted SQL lookups and
+ * lineage-index checks rather than a full state reload). Covers threads,
+ * turn-tree paths, turn nodes, turns and their dependents, branches
+ * (including backward-move archiving), runs, staged results, and the
+ * one-active-run-per-branch rule.
+ *
+ * @throws TuvrenPersistenceError with a `sqlite_backend_*` code on the first
+ *   violated invariant; the caller must roll the transaction back.
+ */
 export function validateTransactionWriteSet(
   db: Database.Database,
   writeTracker: TransactionWriteTracker
@@ -117,6 +128,15 @@ export function validateTransactionWriteSet(
   }
 }
 
+/**
+ * Verifies the derived `turn_node_lineage_roots` index agrees exactly with
+ * the loaded turn nodes: every entry references an existing node, every node
+ * has an entry, and each entry's root hash and depth match a recomputed
+ * ancestry walk.
+ *
+ * @throws TuvrenPersistenceError with a `sqlite_backend_*` code describing
+ *   the first index/lineage divergence.
+ */
 export function validateTurnNodeLineageRootIndex(
   db: Database.Database,
   state: BackendState

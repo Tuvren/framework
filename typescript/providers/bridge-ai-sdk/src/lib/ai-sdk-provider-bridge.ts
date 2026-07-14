@@ -43,6 +43,12 @@ import {
   sanitizeMetadataValue,
 } from "./ai-sdk-provider-bridge-utils.js";
 
+/**
+ * Allow-list of `TuvrenPrompt.config.settings` keys the bridge forwards to the
+ * AI SDK call options. Any other key is rejected with
+ * `invalid_ai_sdk_bridge_config` so unsupported knobs fail loudly instead of
+ * being silently dropped.
+ */
 const SUPPORTED_BRIDGE_SETTINGS = new Set([
   "frequencyPenalty",
   "headers",
@@ -56,6 +62,11 @@ const SUPPORTED_BRIDGE_SETTINGS = new Set([
   "topK",
   "topP",
 ]);
+/**
+ * Shared Ajv options for structured-output validation. `addUsedSchema: false`
+ * keeps per-request schemas out of the instance cache; `strict: false` accepts
+ * provider-authored schemas that use vocabulary Ajv's strict mode would flag.
+ */
 const STRUCTURED_OUTPUT_AJV_OPTIONS = {
   addUsedSchema: false,
   allErrors: true,
@@ -80,21 +91,58 @@ const JSON_SCHEMA_DRAFT_2020_12_URIS = new Set([
   "https://json-schema.org/draft/2020-12/schema#",
 ]);
 
+/** Resolved result of `LanguageModelV3.doStream` (stream plus request/response metadata). */
 type AiSdkStreamResult = Awaited<ReturnType<LanguageModelV3["doStream"]>>;
 
+/**
+ * Options for {@link createAiSdkProviderBridge}, binding one AI SDK
+ * `LanguageModelV3` instance as a `TuvrenProvider`.
+ */
 export interface AiSdkProviderBridgeOptions {
+  /**
+   * Headers applied to every model call. Per-prompt
+   * `config.settings.headers` entries override same-named keys.
+   */
   defaultHeaders?: Record<string, string | undefined>;
+  /**
+   * Provider-namespaced options applied to every model call. Merged (per
+   * provider namespace, shallow) under per-prompt `providerContinuity`
+   * artifacts and `config.settings.providerOptions`, with the per-prompt
+   * values winning on key collisions.
+   */
   defaultProviderOptions?: SharedV3ProviderOptions;
+  /**
+   * Stable identifier reported as `TuvrenProvider.id`.
+   *
+   * @defaultValue `"ai-sdk:{model.provider}:{model.modelId}"`
+   */
   id?: string;
+  /** The already-constructed AI SDK language model to bridge. */
   model: LanguageModelV3;
 }
 
+/**
+ * Options for {@link createAiSdkProviderBridgeFromProvider}, which resolves
+ * the model from an AI SDK `ProviderV3` registry instead of receiving it
+ * pre-constructed.
+ */
 export interface AiSdkProviderBridgeFromProviderOptions
   extends Omit<AiSdkProviderBridgeOptions, "model"> {
+  /** Model identifier passed to `provider.languageModel(modelId)`. */
   modelId: string;
+  /** AI SDK provider used to look up the language model. */
   provider: ProviderV3;
 }
 
+/**
+ * `TuvrenProvider` adapter over a single AI SDK `LanguageModelV3`.
+ *
+ * The bridge is the baseline provider adapter of the framework's adapter
+ * strategy (KrakenFrameworkSpecification §3.4; ADR-055 defers native provider
+ * clients behind this seam). It translates the Tuvren prompt/response
+ * vocabulary to `doGenerate`/`doStream` calls and normalizes every failure
+ * into a `TuvrenProviderError` with a stable machine-readable `code`.
+ */
 class AiSdkProviderBridge implements TuvrenProvider {
   readonly id: string;
   private readonly defaultHeaders?: Record<string, string | undefined>;
@@ -111,6 +159,19 @@ class AiSdkProviderBridge implements TuvrenProvider {
       options.id ?? `ai-sdk:${this.model.provider}:${this.model.modelId}`;
   }
 
+  /**
+   * Executes one non-streaming model call via `doGenerate` and maps the
+   * result into a `TuvrenModelResponse`.
+   *
+   * When `prompt.responseFormat` is set, the model's text output is parsed as
+   * JSON and validated against the requested schema before it is surfaced as
+   * a `structured` part (KrakenFrameworkSpecification §3.5).
+   *
+   * @throws TuvrenProviderError with code `ai_sdk_generate_failed` when the
+   *   underlying call fails, or a more specific bridge code
+   *   (`invalid_ai_sdk_bridge_config`, `structured_output_validation`,
+   *   `unsupported_ai_sdk_content`, ...) when mapping fails.
+   */
   async generate(prompt: TuvrenPrompt): Promise<TuvrenModelResponse> {
     try {
       const result = await this.model.doGenerate(
@@ -142,6 +203,19 @@ class AiSdkProviderBridge implements TuvrenProvider {
     }
   }
 
+  /**
+   * Executes one streaming model call via `doStream` and yields canonical
+   * `ProviderStreamChunk` values (KrakenFrameworkSpecification §3.2).
+   *
+   * Stream parts are mapped incrementally through a per-call
+   * `StreamMappingState`; the reader is cancelled and its lock released when
+   * the consumer stops early or a mapping error is thrown, so the underlying
+   * HTTP stream is never leaked.
+   *
+   * @throws TuvrenProviderError with code `ai_sdk_stream_failed` when the
+   *   underlying stream fails, or a mapping-specific bridge code (for example
+   *   `unsupported_ai_sdk_stream_part`).
+   */
   async *stream(prompt: TuvrenPrompt): AsyncIterable<ProviderStreamChunk> {
     const callOptions = createCallOptions({
       bridgeId: this.id,
@@ -198,12 +272,45 @@ class AiSdkProviderBridge implements TuvrenProvider {
   }
 }
 
+/**
+ * Creates a `TuvrenProvider` backed by a Vercel AI SDK `LanguageModelV3`.
+ *
+ * This is the primary entrypoint of `@tuvren/provider-bridge-ai-sdk`: pass
+ * the resulting provider to `createTuvren` (or any host composition) to run
+ * Tuvren Turns against any model the AI SDK can reach. Semantics of the
+ * mapped surface are governed by the providers authority packet
+ * (spec/providers/authority-packet.json) and its conformance plans.
+ *
+ * @param options - The model binding plus optional default headers,
+ *   provider options, and provider id.
+ * @returns A `TuvrenProvider` whose `generate` and `stream` calls are
+ *   delegated to the bound model.
+ *
+ * @example
+ * ```ts
+ * import { openai } from "@ai-sdk/openai";
+ * import { createAiSdkProviderBridge } from "@tuvren/provider-bridge-ai-sdk";
+ *
+ * const provider = createAiSdkProviderBridge({
+ *   model: openai("gpt-4o-mini"),
+ * });
+ * ```
+ */
 export function createAiSdkProviderBridge(
   options: AiSdkProviderBridgeOptions
 ): TuvrenProvider {
   return new AiSdkProviderBridge(options);
 }
 
+/**
+ * Creates a `TuvrenProvider` by resolving `modelId` from an AI SDK
+ * `ProviderV3` registry, then delegating to {@link createAiSdkProviderBridge}.
+ *
+ * @param options - The provider registry, model id, and the same defaults
+ *   accepted by {@link createAiSdkProviderBridge}.
+ * @throws TuvrenProviderError with code `ai_sdk_provider_lookup_failed` when
+ *   the registry cannot resolve the requested model.
+ */
 export function createAiSdkProviderBridgeFromProvider(
   options: AiSdkProviderBridgeFromProviderOptions
 ): TuvrenProvider {
@@ -221,6 +328,10 @@ export function createAiSdkProviderBridgeFromProvider(
   }
 }
 
+/**
+ * Awaits `doStream` and normalizes any pre-stream failure into a
+ * `TuvrenProviderError` with code `ai_sdk_stream_failed`.
+ */
 async function loadStreamResult(
   model: LanguageModelV3,
   callOptions: LanguageModelV3CallOptions
@@ -235,6 +346,14 @@ async function loadStreamResult(
   }
 }
 
+/**
+ * Rejects provider-mediated tool configs on non-OpenAI models. The mediated
+ * (MCP) execution class currently maps only to the OpenAI `openai.mcp`
+ * provider tool (AY004), so binding any other provider is a configuration
+ * error rather than a silent no-op.
+ *
+ * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config`.
+ */
 function assertProviderMediatedToolsSupported(
   prompt: TuvrenPrompt,
   activeProvider: string
@@ -255,6 +374,19 @@ function assertProviderMediatedToolsSupported(
   }
 }
 
+/**
+ * Builds the `LanguageModelV3CallOptions` for one `doGenerate`/`doStream`
+ * call from a `TuvrenPrompt` and the bridge defaults.
+ *
+ * Cross-checks the prompt's requested `config.model` / `config.provider`
+ * against the bound model, rejects `responseFormat.strict` (native strict
+ * structured output is unsupported by the bridge baseline), forwards the
+ * cooperative cancellation signal (ADR-043), and merges headers and
+ * provider options (defaults < providerContinuity < per-prompt settings).
+ *
+ * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
+ *   the prompt conflicts with the bound model or uses unsupported settings.
+ */
 function createCallOptions(input: {
   bridgeId: string;
   defaultHeaders?: Record<string, string | undefined>;
@@ -415,6 +547,12 @@ function createCallOptions(input: {
   };
 }
 
+/**
+ * Validates `TuvrenPrompt.config.settings` against
+ * {@link SUPPORTED_BRIDGE_SETTINGS} and coerces each supported key to its
+ * expected shape. Unknown keys and malformed values are rejected with
+ * `invalid_ai_sdk_bridge_config`.
+ */
 function normalizeBridgeSettings(prompt: TuvrenPrompt) {
   const settings = prompt.config?.settings;
 
@@ -483,6 +621,14 @@ function normalizeBridgeSettings(prompt: TuvrenPrompt) {
   };
 }
 
+/**
+ * Normalizes the host-facing `toolChoice` setting into the AI SDK tool-choice
+ * object. Accepts `"auto" | "none" | "required"`, a bare tool name string,
+ * or an already-shaped `{ type }` / `{ type: "tool", toolName }` object.
+ *
+ * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` for
+ *   any other shape.
+ */
 function normalizeToolChoice(
   value: unknown
 ): LanguageModelV3CallOptions["toolChoice"] | undefined {
@@ -536,6 +682,7 @@ function normalizeToolChoice(
   );
 }
 
+/** Reads an optional finite-number setting; rejects any other defined value. */
 function readOptionalNumberSetting(
   value: unknown,
   key: string
@@ -558,6 +705,7 @@ function readOptionalNumberSetting(
   );
 }
 
+/** Reads an optional array of non-empty strings; rejects any other defined value. */
 function readOptionalStringArray(
   value: unknown,
   key: string
@@ -583,6 +731,10 @@ function readOptionalStringArray(
   );
 }
 
+/**
+ * Reads the optional `headers` setting: a plain object whose values are
+ * strings or `undefined` (an `undefined` value unsets a default header).
+ */
 function readOptionalHeaders(
   value: unknown
 ): Record<string, string | undefined> | undefined {
@@ -621,6 +773,7 @@ function readOptionalHeaders(
   return headers;
 }
 
+/** Reads the optional `providerOptions` setting and defensively clones it. */
 function readOptionalProviderOptions(
   value: unknown
 ): SharedV3ProviderOptions | undefined {
@@ -641,6 +794,7 @@ function readOptionalProviderOptions(
   return cloneProviderOptions(value);
 }
 
+/** Merges default and per-prompt headers; per-prompt keys win. */
 function mergeHeaders(
   defaults?: Record<string, string | undefined>,
   overrides?: Record<string, string | undefined>
@@ -655,6 +809,11 @@ function mergeHeaders(
   };
 }
 
+/**
+ * Merges two provider-option records. Provider namespaces present in both are
+ * shallow-merged key-by-key with `overrides` winning; namespaces unique to
+ * either side are cloned through unchanged.
+ */
 function mergeProviderOptions(
   defaults?: SharedV3ProviderOptions,
   overrides?: SharedV3ProviderOptions
@@ -695,6 +854,13 @@ function mergeProviderOptions(
   return merged;
 }
 
+/**
+ * Maps AI SDK usage into the canonical `ProviderUsage` pair plus a sanitized
+ * raw-usage record. `canonical` is only populated when both input and output
+ * totals are numeric; the full breakdown (cache reads/writes, reasoning vs
+ * text tokens, provider raw usage) always survives in `rawUsage` for
+ * provider-metadata attribution.
+ */
 function mapUsage(usage: LanguageModelV3GenerateResult["usage"]) {
   const inputTotal = usage.inputTokens.total;
   const outputTotal = usage.outputTokens.total;
@@ -724,6 +890,13 @@ function mapUsage(usage: LanguageModelV3GenerateResult["usage"]) {
   };
 }
 
+/**
+ * Maps the AI SDK unified finish reason onto the Tuvren finish-reason
+ * vocabulary (`stop`, `length`, `content_filter`, `tool_call`, `error`).
+ * When the turn actually produced tool calls, `stop` and certain raw
+ * provider fallbacks are normalized to `tool_call` (see
+ * {@link shouldNormalizeToolCallFinishReason}).
+ */
 function mapFinishReason(
   reason: Pick<
     LanguageModelV3GenerateResult["finishReason"],
@@ -752,6 +925,12 @@ function mapFinishReason(
   }
 }
 
+/**
+ * Decides whether a finish reason should be reported as `tool_call`. Without
+ * emitted tool calls only a unified `tool-calls` qualifies; with tool calls,
+ * `stop` also qualifies (some providers report `stop` for tool turns), as
+ * does the historical Gemini raw `FUNCTION_CALL` + `other`/`error` fallback.
+ */
 function shouldNormalizeToolCallFinishReason(
   reason: Pick<
     LanguageModelV3GenerateResult["finishReason"],
@@ -780,6 +959,13 @@ function shouldNormalizeToolCallFinishReason(
   );
 }
 
+/**
+ * Parses structured-output text as JSON and validates it against the
+ * requested schema (KrakenFrameworkSpecification §3.5).
+ *
+ * @throws TuvrenProviderError with code `structured_output_validation` when
+ *   the text is not valid JSON or does not satisfy the schema.
+ */
 function parseStructuredOutput(
   text: string,
   request: StructuredOutputRequest
@@ -796,6 +982,11 @@ function parseStructuredOutput(
   return parsed;
 }
 
+/**
+ * Validates a parsed structured-output value against the request schema,
+ * surfacing each Ajv error (instance path, keyword, message) in the thrown
+ * error's details.
+ */
 function validateStructuredOutput(
   request: StructuredOutputRequest,
   value: unknown
@@ -824,6 +1015,11 @@ function validateStructuredOutput(
   );
 }
 
+/**
+ * Compiles a structured-output validator with the Ajv build matching the
+ * schema's declared `$schema` dialect (draft-07 by default, 2019-09 and
+ * 2020-12 when declared).
+ */
 function createStructuredOutputValidator(
   schema: StructuredOutputRequest["schema"]
 ) {
@@ -846,6 +1042,11 @@ function createStructuredOutputValidator(
   );
 }
 
+/**
+ * Reads the JSON Schema dialect from `$schema`. Schemas without a `$schema`
+ * default to draft-07; an unrecognized dialect URI is rejected with
+ * `structured_output_validation`.
+ */
 function readSchemaDialect(
   schema: StructuredOutputRequest["schema"]
 ): "draft7" | "draft2019-09" | "draft2020-12" {
@@ -883,6 +1084,11 @@ import type {
   LanguageModelV3ProviderTool,
 } from "@ai-sdk/provider";
 
+/**
+ * Assembles the AI SDK `tools` array from the prompt's three tool families:
+ * client function tools (`prompt.tools`), provider-native declarations
+ * (AY002), and provider-mediated MCP configs (AY004), in that order.
+ */
 function buildAllTools(
   prompt: TuvrenPrompt
 ): Array<LanguageModelV3FunctionTool | LanguageModelV3ProviderTool> {
@@ -903,6 +1109,11 @@ function buildAllTools(
   return [...functionTools, ...nativeTools, ...mediatedTools];
 }
 
+/**
+ * Converts `prompt.providerContinuity` artifacts into provider options so a
+ * provider receives its own namespace continuity data on the next turn
+ * (AY005). Returns `undefined` when there is nothing to thread through.
+ */
 function continuityToProviderOptions(
   providerContinuity: Record<string, unknown> | undefined
 ): SharedV3ProviderOptions | undefined {
@@ -915,6 +1126,13 @@ function continuityToProviderOptions(
   return cloneProviderOptions(providerContinuity);
 }
 
+/**
+ * Builds the tool-name → execution-class lookup used by the generate and
+ * stream mappers to accept provider-owned results only for tools the host
+ * actually declared. Returns `undefined` when the prompt declares no
+ * provider-native or provider-mediated tools, which keeps the baseline
+ * rejection of provider-owned execution in force.
+ */
 function buildProviderToolClassLookup(
   prompt: TuvrenPrompt
 ): ProviderToolClassLookup | undefined {

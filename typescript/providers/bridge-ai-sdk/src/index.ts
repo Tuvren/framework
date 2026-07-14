@@ -15,6 +15,27 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
+
+/**
+ * `@tuvren/provider-bridge-ai-sdk` — the Vercel AI SDK provider bridge.
+ *
+ * The host-facing leaf adapter that turns any AI SDK `LanguageModelV3` (or a
+ * `ProviderV3` registry plus model id) into a `TuvrenProvider`. It implements
+ * the framework's baseline adapter strategy
+ * (KrakenFrameworkSpecification §3.4; ADR-055): prompt/response mapping,
+ * canonical `ProviderStreamChunk` streaming (§3.2), structured-output
+ * validation (§3.5), and provider-native / provider-mediated tool
+ * declaration mapping. The mapped semantics are governed by the providers
+ * authority packet (spec/providers/authority-packet.json) and its
+ * conformance plans.
+ *
+ * Entry points: {@link createAiSdkProviderBridge} binds a constructed model;
+ * {@link createAiSdkProviderBridgeFromProvider} resolves the model from an
+ * AI SDK provider registry.
+ *
+ * @packageDocumentation
+ */
+
 export type {
   AiSdkProviderBridgeFromProviderOptions,
   AiSdkProviderBridgeOptions,
