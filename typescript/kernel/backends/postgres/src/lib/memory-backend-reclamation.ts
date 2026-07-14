@@ -33,6 +33,16 @@ import {
 } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
 
+/**
+ * Runs the shared §9.4 reachability reclamation sweep over a draft state,
+ * mutating it in place, with the PostgreSQL backend's own CBOR lineage
+ * decoders injected. `nowMs` only affects whether an expired leaseless
+ * running run stops pinning the grace horizon; reachability is
+ * clock-independent.
+ *
+ * @returns Counts of released and retained records.
+ * @see `reclaimBackendState` in `@tuvren/backend-shared` for the algorithm.
+ */
 export function reclaimBackendState(
   state: BackendState,
   nowMs: EpochMs

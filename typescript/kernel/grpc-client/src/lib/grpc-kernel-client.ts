@@ -85,12 +85,44 @@ import {
   toProtoVerdict,
 } from "./grpc-kernel-client-codec.js";
 
+/**
+ * Construction options for {@link createGrpcRuntimeKernel}.
+ */
 export interface GrpcRuntimeKernelOptions {
+  /** Base URL of the remote kernel gRPC service. */
   baseUrl: string;
+  /**
+   * Default per-call timeout in milliseconds, passed through to
+   * `@connectrpc/connect-node`'s transport.
+   */
   defaultTimeoutMs?: number;
+  /**
+   * Connect RPC interceptors (auth, logging, retries) applied to every
+   * outgoing call.
+   */
   interceptors?: Interceptor[];
 }
 
+/**
+ * Builds a {@link RuntimeKernel} that projects every syscall onto a remote
+ * kernel service over gRPC (via Connect RPC), one client per kernel service
+ * group (`store`, `schema`, `tree`, `node`, `thread`, `branch`, `staging`,
+ * `run`, `turn`, `verdicts`).
+ *
+ * Each method encodes its arguments to protobuf ({@link toProtoVerdict} and
+ * siblings in `grpc-kernel-client-codec.ts`), decodes and validates the
+ * response back into protocol types ({@link requireBranchRecord} and
+ * siblings), and normalizes any transport failure into a
+ * {@link TuvrenRuntimeError} via {@link toTransportError}. `maintenance`
+ * always rejects with `kernel_capability_unsupported`: reachability
+ * reclamation (kernel spec §9.4) is an in-process kernel primitive with no
+ * gRPC projection.
+ *
+ * This is the one kernel-named package meant for direct host use — it is
+ * the leaf adapter that points a `@tuvren/sdk` instance at a remote kernel
+ * service instead of an in-process one (see
+ * docs/guides/publishing-and-adopter-onboarding.md §4).
+ */
 export function createGrpcRuntimeKernel(
   options: GrpcRuntimeKernelOptions
 ): RuntimeKernel {
@@ -557,6 +589,12 @@ export function createGrpcRuntimeKernel(
   };
 }
 
+/**
+ * Trims `value` and asserts it is non-empty.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_runtime_options` when the
+ *   trimmed value is empty.
+ */
 function normalizeBaseUrl(value: string): string {
   const normalized = value.trim();
 
@@ -569,6 +607,15 @@ function normalizeBaseUrl(value: string): string {
   return normalized;
 }
 
+/**
+ * Normalizes any error raised by a gRPC call into a {@link TuvrenRuntimeError}:
+ * decodes the kernel's structured error detail (`KernelErrorPayloadSchema`)
+ * when the server attached one, preserving its `code` and CBOR-encoded
+ * `details`, and otherwise falls back to a generic
+ * `kernel_transport_error` code built from the raw Connect error. `operation`
+ * identifies the failing kernel call (e.g. `"branch.create"`) in the
+ * resulting error's details.
+ */
 function toTransportError(
   error: unknown,
   operation: string

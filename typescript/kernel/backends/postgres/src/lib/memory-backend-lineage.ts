@@ -491,6 +491,20 @@ export function assertTurnParentLink(
   }
 }
 
+/**
+ * Asserts a backward branch-head move (rewind) preserved history: the same
+ * transaction must have created an archive branch pointing at the abandoned
+ * head (`archivedFromBranchId` = the moved branch, head = the old head), and
+ * every still-active run on the branch must sit at the new head — active runs
+ * stranded on the abandoned segment must have been failed.
+ *
+ * @param state - The draft (post-transaction) state being validated.
+ * @param baseState - The committed state before the transaction, used to
+ *   recognize which archive branches this transaction created.
+ * @throws TuvrenPersistenceError
+ *   `postgres_backend_backward_branch_move_missing_archive` or
+ *   `postgres_backend_backward_branch_move_active_run_not_failed`.
+ */
 export function assertBackwardBranchMoveIsArchived(
   state: BackendState,
   baseState: BackendState,
@@ -557,8 +571,20 @@ export function assertBackwardBranchMoveIsArchived(
   }
 }
 
+/**
+ * How two turn nodes relate along `previousTurnNodeHash` ancestry: `same`
+ * (identical), `forward` (target descends from source), `backward` (source
+ * descends from target), or `lateral` (neither lineage contains the other).
+ */
 export type TurnNodeRelationship = "backward" | "forward" | "lateral" | "same";
 
+/**
+ * Classifies the lineage relationship from `sourceTurnNodeHash` to
+ * `targetTurnNodeHash`.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_cyclic_turn_node_lineage`
+ *   when either ancestry walk encounters a cycle.
+ */
 export function classifyTurnNodeRelationship(
   state: BackendState,
   sourceTurnNodeHash: string,
@@ -579,6 +605,14 @@ export function classifyTurnNodeRelationship(
   return "lateral";
 }
 
+/**
+ * Walks `previousTurnNodeHash` ancestry from the candidate descendant and
+ * reports whether it reaches the candidate ancestor. A node is considered a
+ * descendant of itself.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_cyclic_turn_node_lineage`
+ *   when the walk revisits a node.
+ */
 export function isTurnNodeDescendantOf(
   state: BackendState,
   descendantTurnNodeHash: string,
@@ -614,6 +648,10 @@ export function isTurnNodeDescendantOf(
   return false;
 }
 
+/**
+ * Decodes a run's `createdTurnNodesCbor` into its ordered, append-only list
+ * of created turn node hashes.
+ */
 export function decodeRunCreatedTurnNodeHashes(run: StoredRun): string[] {
   return decodeHashStringArray(
     run.createdTurnNodesCbor,
@@ -621,11 +659,25 @@ export function decodeRunCreatedTurnNodeHashes(run: StoredRun): string[] {
   );
 }
 
+/**
+ * A run's active turn node: the most recently created node in its
+ * `createdTurnNodesCbor` lineage, or its start turn node when the run has
+ * not created any nodes yet.
+ */
 export function getRunActiveTurnNodeHash(run: StoredRun): string {
   const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
   return createdTurnNodeHashes.at(-1) ?? run.startTurnNodeHash;
 }
 
+/**
+ * Decodes a turn node's `consumedStagedResultsCbor` and extracts the
+ * validated `objectHash` of every staged result the node consumed.
+ *
+ * @throws TuvrenPersistenceError
+ *   `postgres_backend_invalid_consumed_staged_results_cbor` when the payload
+ *   is not an array, or `postgres_backend_invalid_consumed_staged_result_entry`
+ *   when an entry is not an object carrying a string `objectHash`.
+ */
 export function decodeTurnNodeConsumedStagedResultObjectHashes(
   turnNode: StoredTurnNode
 ): string[] {

@@ -207,6 +207,13 @@ export async function executeStreamCall(input: {
   };
 }
 
+/**
+ * Synthesizes a complete `message.start` → content-done → `message.done`
+ * event sequence from an already-complete response, for the non-streaming
+ * fallback and `aroundModel` short-circuit/replacement paths (framework spec
+ * §6.3/§6.5). The sequence is returned unpublished; the caller flushes it
+ * via {@link flushBufferedAssistantSequences} once ready.
+ */
 export function createBufferedAssistantSequence(
   response: TuvrenModelResponse,
   now: () => EpochMs

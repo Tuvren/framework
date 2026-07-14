@@ -14,6 +14,22 @@
  * limitations under the License.
  */
 
+/**
+ * PostgreSQL-backed persistent backend for the Tuvren kernel.
+ *
+ * {@link createPostgresBackend} builds a `RuntimeBackend` that persists all
+ * durable state in a PostgreSQL database, one row-level-isolated snapshot
+ * per Scope (ADR-049). Unlike the SQLite backend's relational schema, the
+ * whole `BackendState` for a Scope is kept as a single deterministic-CBOR
+ * blob in `backend_postgres_snapshots`; a transaction loads that snapshot
+ * under `SELECT ... FOR UPDATE`, mutates an in-memory copy-on-write draft
+ * using the same invariant logic as the memory backend, then re-encodes and
+ * writes the whole snapshot back. {@link destroyPostgresBackend} drops a
+ * throwaway schema entirely, for test/conformance teardown.
+ *
+ * @packageDocumentation
+ */
+
 export type { PostgresBackendOptions } from "./lib/postgres-backend.js";
 // biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export {
