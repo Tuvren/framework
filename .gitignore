@@ -22,3 +22,9 @@ typescript/kernel/grpc-client/src/lib/generated/kernel-interop/
 devenv.local.nix
 devenv.local.yaml
 .pre-commit-config.yaml
+__pycache__
+*.pyc
+.venv
+.ruff_cache
+.pytest_cache
+*.egg-info
