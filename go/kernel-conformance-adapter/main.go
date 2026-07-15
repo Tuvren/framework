@@ -18,11 +18,12 @@
 // response framing over line-delimited stdio, see
 // tools/conformance/adapter-protocol/protocol.md) so the shared conformance
 // engine (tools/conformance/harness/run.ts) can drive the Go kernel port the
-// same way it drives the TypeScript and Rust ports. This milestone (M0) ships
-// a protocol-complete skeleton only: every method responds, but no operation
-// has kernel semantics yet, so dispatch always reports
-// adapter_operation_not_implemented. Real operation handlers arrive in later
-// milestones through the dispatch table in dispatch.go.
+// same way it drives the TypeScript and Rust ports. This milestone (M1)
+// wires the kernel.protocol canonical-record core (deterministic hashing,
+// schema round-trip, and verdict modify composition) through the dispatch
+// table in dispatch.go and operations.go; operations outside that
+// capability still report adapter_operation_not_implemented until later
+// milestones add their handlers.
 package main
 
 import (
@@ -33,11 +34,6 @@ import (
 	"io"
 	"os"
 	"strings"
-
-	// Establishes the module dependency edge onto the Go kernel package ahead
-	// of the real operation handlers that later milestones add to
-	// dispatch.go. No kernel semantics are used yet.
-	_ "github.com/tuvren/framework/go/kernel"
 )
 
 const adapterID = "go-kernel"

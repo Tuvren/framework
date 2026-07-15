@@ -18,7 +18,7 @@
     "-m",
     "tuvren_kernel_adapter"
   ],
-  "capabilities": [],
+  "capabilities": ["kernel.protocol"],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "suiteId": "tuvren.kernel.protocol",
   "suiteVersion": "0.1.0"

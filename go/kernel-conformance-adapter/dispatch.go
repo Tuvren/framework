@@ -30,15 +30,21 @@ type operationHandler func(input json.RawMessage) operationOutcome
 // entries keyed by promoted conformance-plan operation name, mirroring the
 // match arms in rust/kernel-conformance-adapter/src/main.rs's
 // dispatch_operation.
-var operationHandlers = map[string]operationHandler{}
+var operationHandlers = map[string]operationHandler{
+	"kernel.protocol.deterministic-hashing": runDeterministicHashing,
+	"kernel.protocol.schema-roundtrip":      runSchemaRoundtrip,
+	"kernel.protocol.modify-composition":    runModifyComposition,
+}
 
 // capabilities lists the capability tags this adapter reports during
 // initialize. It must byte-match adapter.json's "capabilities" array (see
-// tools/conformance/harness/run.ts's validateAdapterHandshake). M0 ships no
-// kernel semantics, so this is empty until later milestones populate both
-// this slice and adapter.json together.
+// tools/conformance/harness/run.ts's validateAdapterHandshake). This
+// milestone (M1) implements the kernel.protocol canonical-record core
+// (deterministic hashing, schema round-trip, and verdict modify
+// composition); later milestones add further capabilities alongside their
+// handlers.
 func capabilities() []string {
-	return []string{}
+	return []string{"kernel.protocol"}
 }
 
 // dispatchOperation runs the named operation's handler, or reports

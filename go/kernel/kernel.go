@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package kernel is the placeholder for the Go kernel implementation.
-//
-// This package intentionally has no kernel semantics yet. Milestone M0 only
-// scaffolds the Go module, its Nx wiring, and a protocol-complete conformance
-// adapter skeleton. Real kernel behavior (schema registration, turn tree
-// construction, run liveness, reclamation, and so on) lands in later
-// milestones and must stay aligned with docs/KrakenKernelSpecification.md and
-// spec/kernel/authority-packet.json.
+// Package kernel is the Go port of the Tuvren/Kraken kernel's canonical
+// record core: deterministic CBOR encoding, SHA-256 record identity, and the
+// verdict composition algebra described by spec/kernel/cddl/kernel-records.cddl
+// and docs/KrakenKernelSpecification.md. Structural syscalls (schema
+// registration, turn tree construction, run liveness, reclamation, and so on)
+// are out of scope for this milestone and land later, matching the staged
+// rollout tracked for the Go kernel port.
 package kernel

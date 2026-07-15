@@ -17,10 +17,11 @@
 Reads JSON-RPC 2.0 requests one per line from stdin and writes one JSON-RPC
 2.0 response per line to stdout, per
 `tools/conformance/adapter-protocol/protocol.md`. Stdout carries protocol
-frames only; all diagnostics go to stderr. This module is a protocol-complete
-skeleton for milestone M0 — it implements the seven adapter-protocol methods
-and a per-operation dispatch registry seam, but no kernel operation has
-semantics yet.
+frames only; all diagnostics go to stderr. Milestone M1 wires the three
+`kernel.protocol` operations (see `tuvren_kernel_adapter.operations`) into
+the per-operation dispatch registry seam this module has carried since
+milestone M0; the remaining `kernel.logical` / `kernel.lineage` / ... surface
+from `docs/KrakenKernelSpecification.md` Section 7 lands in later milestones.
 """
 
 from __future__ import annotations
@@ -30,13 +31,15 @@ import sys
 from collections.abc import Callable
 from typing import Any
 
+from tuvren_kernel_adapter import operations
+
 ADAPTER_ID = "python-kernel"
 
 # Byte-for-byte identical to the "capabilities" list in adapter.json. The
 # conformance harness rejects a handshake whose reported capabilities do not
 # match the manifest exactly (see validateAdapterHandshake in
 # tools/conformance/harness/run.ts).
-CAPABILITIES: list[str] = []
+CAPABILITIES: list[str] = ["kernel.protocol"]
 
 
 class AdapterError(Exception):
@@ -87,7 +90,11 @@ class AdapterOperationError(Exception):
 
 OperationHandler = Callable[[dict[str, Any]], dict[str, Any]]
 
-OPERATION_HANDLERS: dict[str, OperationHandler] = {}
+# The dispatch table itself -- the mapping from promoted operation name to
+# handler -- lives in `tuvren_kernel_adapter.operations.OPERATIONS`; this is
+# a plain copy so this module never needs its own literal operation-name
+# strings outside this generic routing seam.
+OPERATION_HANDLERS: dict[str, OperationHandler] = dict(operations.OPERATIONS)
 
 
 def handle_initialize(params: dict[str, Any]) -> dict[str, Any]:
@@ -124,6 +131,16 @@ def handle_dispatch(params: dict[str, Any]) -> dict[str, Any]:
         if operation_error.details is not None:
             error["details"] = operation_error.details
         return {"kind": "error", "error": error}
+    except operations.OperationInputError as input_error:
+        # Bad/missing operation input (malformed fixture shape, wrong type,
+        # etc.) is an error-kind OperationOutcome, not a JSON-RPC failure --
+        # the JSON-RPC call itself succeeded, the *operation* rejected its
+        # input. See the module docstring on `AdapterOperationError` above
+        # for the distinction this dispatch seam preserves.
+        return {
+            "kind": "error",
+            "error": {"code": input_error.code, "message": input_error.message},
+        }
 
     return {"kind": "result", "value": value}
 

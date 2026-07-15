@@ -12,11 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Placeholder for the Tuvren kernel runtime authority, Python port.
+"""Tuvren kernel runtime authority, Python port.
 
-This module intentionally contains no kernel semantics yet. It exists to
-establish the `tuvren_kernel` package shape for milestone M0 of the Python
-kernel port. Real kernel record, schema, and turn-tree behavior lands in
-later milestones and must stay aligned with `docs/KrakenKernelSpecification.md`
-and the authority packet at `spec/kernel/authority-packet.json`.
+Milestone M1 lands the canonical-record core described in
+`docs/KrakenKernelSpecification.md` Section 2.3 (record identity hashing)
+and Section 6 (verdict algebra): canonical CBOR encode/decode
+(`tuvren_kernel.cbor`), SHA-256 record identity (`tuvren_kernel.identity`),
+turn-tree-schema / turn-node-identity record validation
+(`tuvren_kernel.records`), and verdict composition (`tuvren_kernel.verdict`).
+Storage, TurnTree/Run/Branch operations, and the rest of the syscall surface
+in `docs/KrakenKernelSpecification.md` Section 7 land in later milestones and
+must stay aligned with that specification and the authority packet at
+`spec/kernel/authority-packet.json`.
 """
+
+from tuvren_kernel import cbor, identity, records, verdict
+
+__all__ = ["cbor", "identity", "records", "verdict"]
