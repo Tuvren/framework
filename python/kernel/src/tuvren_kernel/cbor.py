@@ -60,6 +60,20 @@ _SIMPLE_FALSE = 20
 _SIMPLE_TRUE = 21
 _SIMPLE_NULL = 22
 
+# Explicit recursion depth cap for both encode and decode. Without this,
+# a sufficiently deeply nested kernel-array/kernel-map (e.g. 2000 nested
+# 0x81 single-element arrays on decode, or an equivalently deep Python
+# structure on encode) blows the CPython recursion limit and raises a bare
+# `RecursionError`, which is not a `CborDecodeError`/`CborEncodeError` and
+# so escapes any caller that only expects this module's own exception
+# types -- in the conformance adapter that meant it could escape the
+# per-request `dispatch` handler entirely and crash the process. 512 is
+# far beyond any depth a real kernel-record tree needs (turn-tree schema
+# paths and change-sets are shallow, bounded structures) while staying
+# comfortably under Python's default recursion ceiling once this module's
+# own call overhead is added on top.
+MAX_NESTING_DEPTH = 512
+
 
 class CborEncodeError(ValueError):
     """Raised when a Python value is outside the kernel-record subset."""
@@ -73,11 +87,11 @@ def encode(value: Any) -> bytes:
     """Encode `value` as canonical (deterministic) kernel-record CBOR."""
 
     out = bytearray()
-    _encode_into(value, out)
+    _encode_into(value, out, 0)
     return bytes(out)
 
 
-def _encode_into(value: Any, out: bytearray) -> None:
+def _encode_into(value: Any, out: bytearray, depth: int) -> None:
     # bool is a subclass of int in Python, so it must be checked first or
     # every boolean would be encoded as an integer 0/1 instead of a CBOR
     # simple value.
@@ -100,17 +114,25 @@ def _encode_into(value: Any, out: bytearray) -> None:
         out.extend(value)
         return
     if isinstance(value, list):
+        if depth >= MAX_NESTING_DEPTH:
+            raise CborEncodeError(
+                f"kernel record nesting exceeds the maximum supported depth ({MAX_NESTING_DEPTH})"
+            )
         _encode_head(_MAJOR_ARRAY, len(value), out)
         for item in value:
-            _encode_into(item, out)
+            _encode_into(item, out, depth + 1)
         return
     if isinstance(value, dict):
-        _encode_map(value, out)
+        if depth >= MAX_NESTING_DEPTH:
+            raise CborEncodeError(
+                f"kernel record nesting exceeds the maximum supported depth ({MAX_NESTING_DEPTH})"
+            )
+        _encode_map(value, out, depth)
         return
     raise CborEncodeError(f"value of type {type(value).__name__} is not a kernel record")
 
 
-def _encode_map(value: dict[Any, Any], out: bytearray) -> None:
+def _encode_map(value: dict[Any, Any], out: bytearray, depth: int) -> None:
     for key in value:
         if not isinstance(key, str):
             raise CborEncodeError("kernel-map keys must be text strings")
@@ -118,8 +140,8 @@ def _encode_map(value: dict[Any, Any], out: bytearray) -> None:
     entries = sorted(value.items(), key=lambda pair: _map_key_sort_key(pair[0]))
     _encode_head(_MAJOR_MAP, len(entries), out)
     for key, item in entries:
-        _encode_into(key, out)
-        _encode_into(item, out)
+        _encode_into(key, out, depth + 1)
+        _encode_into(item, out, depth + 1)
 
 
 def _map_key_sort_key(key: str) -> tuple[int, bytes]:
@@ -190,13 +212,13 @@ def decode(data: bytes) -> Any:
     `kernel.protocol.schema-roundtrip` conformance check exercises.
     """
 
-    value, offset = _decode_from(data, 0)
+    value, offset = _decode_from(data, 0, 0)
     if offset != len(data):
         raise CborDecodeError("trailing bytes after top-level kernel record")
     return value
 
 
-def _decode_from(data: bytes, offset: int) -> tuple[Any, int]:
+def _decode_from(data: bytes, offset: int, depth: int) -> tuple[Any, int]:
     if offset >= len(data):
         raise CborDecodeError("unexpected end of input")
 
@@ -233,13 +255,21 @@ def _decode_from(data: bytes, offset: int) -> tuple[Any, int]:
         except UnicodeDecodeError as exc:
             raise CborDecodeError("text string is not valid UTF-8") from exc
     if major == _MAJOR_ARRAY:
+        if depth >= MAX_NESTING_DEPTH:
+            raise CborDecodeError(
+                f"kernel record nesting exceeds the maximum supported depth ({MAX_NESTING_DEPTH})"
+            )
         items: list[Any] = []
         for _ in range(length):
-            item, offset = _decode_from(data, offset)
+            item, offset = _decode_from(data, offset, depth + 1)
             items.append(item)
         return items, offset
     if major == _MAJOR_MAP:
-        return _decode_map(length, data, offset)
+        if depth >= MAX_NESTING_DEPTH:
+            raise CborDecodeError(
+                f"kernel record nesting exceeds the maximum supported depth ({MAX_NESTING_DEPTH})"
+            )
+        return _decode_map(length, data, offset, depth)
 
     raise CborDecodeError(f"unsupported major type {major}")
 
@@ -294,17 +324,17 @@ def _read_uint(data: bytes, offset: int, size: int) -> int:
     return int.from_bytes(data[offset:end], "big")
 
 
-def _decode_map(length: int, data: bytes, offset: int) -> tuple[dict[str, Any], int]:
+def _decode_map(length: int, data: bytes, offset: int, depth: int) -> tuple[dict[str, Any], int]:
     result: dict[str, Any] = {}
     previous_sort_key: tuple[int, bytes] | None = None
     for _ in range(length):
-        key, offset = _decode_from(data, offset)
+        key, offset = _decode_from(data, offset, depth + 1)
         if not isinstance(key, str):
             raise CborDecodeError("kernel-map keys must decode to text strings")
         sort_key = _map_key_sort_key(key)
         if previous_sort_key is not None and sort_key <= previous_sort_key:
             raise CborDecodeError("kernel-map keys are not in strict canonical ascending order")
         previous_sort_key = sort_key
-        item, offset = _decode_from(data, offset)
+        item, offset = _decode_from(data, offset, depth + 1)
         result[key] = item
     return result, offset

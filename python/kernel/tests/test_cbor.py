@@ -22,6 +22,8 @@ that the fixtures don't necessarily exercise directly.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from tuvren_kernel.cbor import CborDecodeError, CborEncodeError, decode, encode
@@ -174,3 +176,24 @@ def test_decode_rejects_duplicate_map_keys() -> None:
 def test_encode_rejects_non_string_map_key() -> None:
     with pytest.raises(CborEncodeError):
         encode({1: "value"})
+
+
+def test_decode_rejects_deeply_nested_arrays_as_cbor_decode_error() -> None:
+    # 2000 nested single-element arrays (0x81 = array(1)) followed by a
+    # single integer 0 (0x00). Without an explicit depth cap this recurses
+    # past CPython's recursion limit and raises a bare `RecursionError`
+    # instead of `CborDecodeError`, which would escape any caller that only
+    # catches this module's own exception types (see the adapter's
+    # `handle_dispatch`, which must never let malformed operation input
+    # crash the process).
+    encoded = bytes([0x81]) * 2000 + bytes([0x00])
+    with pytest.raises(CborDecodeError):
+        decode(encoded)
+
+
+def test_encode_rejects_deeply_nested_arrays_as_cbor_encode_error() -> None:
+    value: Any = 0
+    for _ in range(2000):
+        value = [value]
+    with pytest.raises(CborEncodeError):
+        encode(value)

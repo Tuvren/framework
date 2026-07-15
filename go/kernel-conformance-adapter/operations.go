@@ -159,9 +159,25 @@ func runDeterministicHashing(rawInput json.RawMessage) operationOutcome {
 		return operationOutcome{Kind: "error", Error: rpcErr}
 	}
 
-	schemaRecord, rpcErr := decodeCanonicalHexField(fixture, "turnTreeSchemaRecordCborHex")
-	if rpcErr != nil {
-		return operationOutcome{Kind: "error", Error: rpcErr}
+	// The schema hash must be derived by walking the JSON→Record path
+	// (RecordFromJSON), matching how the node/TypeScript reference computes
+	// it. Decoding turnTreeSchemaRecordCborHex and re-hashing that would be
+	// circular — it never exercises JSON ingestion for the schema at all,
+	// so it can't catch a JSON→Record bug even though the hash happens to
+	// come out identical when both paths are correct.
+	turnTreeSchemaRecordJSON, ok := fixture["turnTreeSchemaRecord"]
+	if !ok {
+		return operationOutcome{Kind: "error", Error: &adapterErrorEnvelope{
+			Code:    "invalid_operation_input",
+			Message: "fixture.turnTreeSchemaRecord must be present",
+		}}
+	}
+	schemaRecord, err := kernel.RecordFromJSON(turnTreeSchemaRecordJSON)
+	if err != nil {
+		return operationOutcome{Kind: "error", Error: &adapterErrorEnvelope{
+			Code:    "invalid_kernel_record",
+			Message: err.Error(),
+		}}
 	}
 	schemaHash, err := kernel.HashRecord(schemaRecord)
 	if err != nil {
@@ -260,11 +276,17 @@ func modifyTransformRecord(extension, mutation string) kernel.RecordMap {
 // contributes nothing) and asserts the kernel composes their transforms, in
 // registration order, into a single Modify verdict.
 func runModifyComposition(json.RawMessage) operationOutcome {
-	composed := kernel.ComposeVerdicts([]kernel.Verdict{
+	composed, err := kernel.ComposeVerdicts([]kernel.Verdict{
 		{Kind: kernel.VerdictKindModify, Transform: modifyTransformRecord("first", "append-prefix")},
 		{Kind: kernel.VerdictKindProceed},
 		{Kind: kernel.VerdictKindModify, Transform: modifyTransformRecord("second", "append-suffix")},
 	})
+	if err != nil {
+		return operationOutcome{Kind: "error", Error: &adapterErrorEnvelope{
+			Code:    "verdict_compose_failed",
+			Message: err.Error(),
+		}}
+	}
 
 	if composed.Kind != kernel.VerdictKindModify {
 		return operationOutcome{Kind: "error", Error: &adapterErrorEnvelope{

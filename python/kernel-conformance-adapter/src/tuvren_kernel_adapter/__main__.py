@@ -17,11 +17,14 @@
 Reads JSON-RPC 2.0 requests one per line from stdin and writes one JSON-RPC
 2.0 response per line to stdout, per
 `tools/conformance/adapter-protocol/protocol.md`. Stdout carries protocol
-frames only; all diagnostics go to stderr. Milestone M1 wires the three
-`kernel.protocol` operations (see `tuvren_kernel_adapter.operations`) into
-the per-operation dispatch registry seam this module has carried since
-milestone M0; the remaining `kernel.logical` / `kernel.lineage` / ... surface
-from `docs/KrakenKernelSpecification.md` Section 7 lands in later milestones.
+frames only; all diagnostics go to stderr. Milestone M1 wired the three
+`kernel.protocol` record/verdict operations; milestone M2 adds the
+`kernel.logical` / `kernel.lineage` / `kernel.protocol.edge-validation`
+surface built on `tuvren_kernel.runtime.RuntimeKernel` (see
+`tuvren_kernel_adapter.operations`) into the per-operation dispatch registry
+seam this module has carried since milestone M0. The remaining
+`docs/KrakenKernelSpecification.md` Section 7 surface (run liveness/leases,
+restart recovery, Scope isolation, reclamation) lands in later milestones.
 """
 
 from __future__ import annotations
@@ -39,7 +42,12 @@ ADAPTER_ID = "python-kernel"
 # conformance harness rejects a handshake whose reported capabilities do not
 # match the manifest exactly (see validateAdapterHandshake in
 # tools/conformance/harness/run.ts).
-CAPABILITIES: list[str] = ["kernel.protocol"]
+CAPABILITIES: list[str] = [
+    "kernel.protocol",
+    "kernel.edge-validation",
+    "kernel.logical",
+    "kernel-protocol.thread.enumeration",
+]
 
 
 class AdapterError(Exception):
@@ -140,6 +148,38 @@ def handle_dispatch(params: dict[str, Any]) -> dict[str, Any]:
         return {
             "kind": "error",
             "error": {"code": input_error.code, "message": input_error.message},
+        }
+    except Exception as unexpected_error:  # noqa: BLE001 - see rationale below
+        # Any other failure a handler can raise (RecursionError on adversarial
+        # nesting, ValueError from a stdlib call, an unanticipated bug in a
+        # new operation) must still come back as an error-kind
+        # OperationOutcome rather than propagate out of `handle_dispatch`:
+        # this is a long-lived stdio process serving one request after
+        # another, and letting a single malformed operation input kill the
+        # process would fail every subsequent request in the same run. This
+        # is deliberately the *only* bare `except Exception` in the adapter:
+        # it exists strictly to keep one bad *operation* from taking down
+        # the *process*, not to swallow bugs quietly, so full diagnostics
+        # (exception type, message, and operation name) go to stderr while
+        # stdout keeps carrying protocol frames only. JSON-RPC framing
+        # failures (malformed JSON, missing method) are unaffected -- those
+        # are handled entirely by `handle_line`/`dispatch_request` before
+        # this handler ever runs, and continue to fail the JSON-RPC call
+        # itself rather than becoming an error-kind result.
+        print(
+            f"unexpected error in operation {operation!r}: "
+            f"{type(unexpected_error).__name__}: {unexpected_error}",
+            file=sys.stderr,
+        )
+        return {
+            "kind": "error",
+            "error": {
+                "code": "adapter_operation_failed",
+                "message": (
+                    f"operation {operation!r} raised an unexpected "
+                    f"{type(unexpected_error).__name__}: {unexpected_error}"
+                ),
+            },
         }
 
     return {"kind": "result", "value": value}

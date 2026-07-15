@@ -173,7 +173,21 @@ func appendHead(buf []byte, majorType byte, val uint64) []byte {
 // the decoded value -1-n stays within MinSafeInteger.
 const maxSafeNegOffset = uint64(-(MinSafeInteger + 1))
 
+// maxDecodeDepth caps the recursion depth decodeRecord will follow through
+// nested arrays and maps. Kernel records never need anything close to this
+// deep a nesting; the cap exists purely to turn adversarial deeply-nested
+// input into a normal decode error instead of a stack-exhaustion crash.
+const maxDecodeDepth = 512
+
 func decodeRecord(data []byte, i int) (Record, int, error) {
+	return decodeRecordAtDepth(data, i, 0)
+}
+
+func decodeRecordAtDepth(data []byte, i int, depth int) (Record, int, error) {
+	if depth > maxDecodeDepth {
+		return nil, i, fmt.Errorf("kernel record decode: nesting depth exceeds the maximum of %d", maxDecodeDepth)
+	}
+
 	majorType, additionalInfo, val, next, err := decodeHead(data, i)
 	if err != nil {
 		return nil, i, err
@@ -209,12 +223,21 @@ func decodeRecord(data []byte, i int) (Record, int, error) {
 		}
 		return RecordText(string(text)), end, nil
 	case 4: // array
+		// val is an untrusted length header: a 9-byte input can claim
+		// 2^64-1 elements. Every element needs at least one input byte, so
+		// clamp the pre-allocation hint to the remaining input length; this
+		// turns a malicious length claim into a normal decode error (the
+		// loop below runs out of input long before val iterations) instead
+		// of an out-of-memory panic from over-eager allocation.
+		if val > uint64(len(data)-next) {
+			return nil, i, fmt.Errorf("kernel record decode: array length %d exceeds remaining input", val)
+		}
 		elements := make(RecordArray, 0, val)
 		cursor := next
 		for count := uint64(0); count < val; count++ {
 			var element Record
 			var err error
-			element, cursor, err = decodeRecord(data, cursor)
+			element, cursor, err = decodeRecordAtDepth(data, cursor, depth+1)
 			if err != nil {
 				return nil, i, err
 			}
@@ -222,6 +245,12 @@ func decodeRecord(data []byte, i int) (Record, int, error) {
 		}
 		return elements, cursor, nil
 	case 5: // map
+		// Same untrusted-length guard as the array case above: each map
+		// entry needs at least a 1-byte key head and a 1-byte value, so two
+		// bytes is the minimum remaining-input cost per claimed entry.
+		if val > uint64(len(data)-next)/2 {
+			return nil, i, fmt.Errorf("kernel record decode: map length %d exceeds remaining input", val)
+		}
 		result := make(RecordMap, val)
 		cursor := next
 		for count := uint64(0); count < val; count++ {
@@ -243,7 +272,7 @@ func decodeRecord(data []byte, i int) (Record, int, error) {
 
 			var value Record
 			cursor, err = keyEnd, nil
-			value, cursor, err = decodeRecord(data, cursor)
+			value, cursor, err = decodeRecordAtDepth(data, cursor, depth+1)
 			if err != nil {
 				return nil, i, err
 			}

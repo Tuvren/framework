@@ -1,0 +1,92 @@
+// Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package kernel
+
+// Backend is the runtime kernel's storage seam: pure content-addressed and
+// keyed storage, with no structural, lineage, or execution semantics of its
+// own. Kernel (kernel_runtime.go) is the only caller; it is the layer that
+// enforces schema/tree/thread/branch/run semantics and raises the
+// kernel_runtime_* errors. This mirrors the TypeScript kernel port's
+// RuntimeBackend/RuntimeKernel split, scoped down to exactly what M2 needs.
+//
+// A Backend is constructed already bound to one scope; nothing in this
+// interface takes a scope parameter. InMemoryBackend (memory_backend.go) is
+// the only implementation this milestone ships, but the seam exists so a
+// persistent backend can be added later without changing Kernel.
+type Backend interface {
+	// --- object store ---
+
+	PutObject(mediaType string, data []byte) StoredObject
+	GetObject(hash string) (StoredObject, bool)
+	HasObject(hash string) bool
+
+	// --- schema registry ---
+
+	PutSchema(schema TurnTreeSchema) bool // false if schemaId already registered
+	GetSchema(schemaID string) (TurnTreeSchema, bool)
+
+	// --- turn trees ---
+
+	PutTurnTree(tree TurnTree)
+	GetTurnTree(hash string) (TurnTree, bool)
+
+	// --- turn nodes ---
+
+	PutTurnNode(node TurnNode)
+	GetTurnNode(hash string) (TurnNode, bool)
+
+	// MarkTurnNodeThread records that threadID has minted or otherwise
+	// legitimately produced the turn node at hash. A node's hash is purely
+	// content-addressed and carries no threadId of its own, so two threads
+	// that reach byte-identical state (most notably two freshly created
+	// threads on the same schema) legitimately mint the same hash; the
+	// association is many-to-many, not a single owning thread.
+	MarkTurnNodeThread(hash, threadID string)
+	// TurnNodeBelongsToThread reports whether threadID has been recorded
+	// (via MarkTurnNodeThread) as an owner of the turn node at hash.
+	TurnNodeBelongsToThread(hash, threadID string) bool
+
+	// --- threads ---
+
+	PutThread(thread Thread) bool // false if threadId already exists
+	GetThread(threadID string) (Thread, bool)
+	ListThreads() []Thread // unsorted; Kernel imposes deterministic order and paging
+
+	// --- branches ---
+
+	PutBranch(branch Branch) bool // false if branchId already exists
+	GetBranch(branchID string) (Branch, bool)
+	ListBranchesByThread(threadID string) []Branch
+	UpdateBranchHead(branchID, headTurnNodeHash string, updatedAtMs int64) bool
+
+	// --- runs ---
+
+	PutRun(run Run) bool // false if runId already exists
+	GetRun(runID string) (Run, bool)
+	UpdateRun(run Run) bool
+	ListRunsByBranch(branchID string) []Run
+
+	// --- staged results ---
+
+	// StageResult appends result to runID's uncommitted staging pool.
+	StageResult(runID string, result StagedResult)
+	// DrainStagedResults atomically returns and empties runID's uncommitted
+	// staging pool: the runtime kernel calls this exactly once per step
+	// completion, so "consumed at this checkpoint" is always "everything
+	// staged since the previous checkpoint."
+	DrainStagedResults(runID string) []StagedResult
+
+	Clock() Clock
+}

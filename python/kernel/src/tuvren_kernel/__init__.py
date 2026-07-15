@@ -14,18 +14,25 @@
 
 """Tuvren kernel runtime authority, Python port.
 
-Milestone M1 lands the canonical-record core described in
+Milestone M1 landed the canonical-record core described in
 `docs/KrakenKernelSpecification.md` Section 2.3 (record identity hashing)
 and Section 6 (verdict algebra): canonical CBOR encode/decode
 (`tuvren_kernel.cbor`), SHA-256 record identity (`tuvren_kernel.identity`),
 turn-tree-schema / turn-node-identity record validation
 (`tuvren_kernel.records`), and verdict composition (`tuvren_kernel.verdict`).
-Storage, TurnTree/Run/Branch operations, and the rest of the syscall surface
-in `docs/KrakenKernelSpecification.md` Section 7 land in later milestones and
-must stay aligned with that specification and the authority packet at
+
+Milestone M2 adds the runtime kernel itself: a storage seam
+(`tuvren_kernel.backend`, `RuntimeBackend` protocol + `InMemoryBackend`), the
+`KernelRuntimeError` every rejection raises (`tuvren_kernel.errors`), and
+`tuvren_kernel.runtime.RuntimeKernel`, implementing the object store, schema
+registry, TurnTree, Thread/Branch containment, and a minimal Run lifecycle
+slice of `docs/KrakenKernelSpecification.md` Section 7's syscall surface. The
+rest of that syscall surface (full Run liveness/leases, restart recovery,
+Scope isolation, reclamation) lands in later milestones and must stay
+aligned with that specification and the authority packet at
 `spec/kernel/authority-packet.json`.
 """
 
-from tuvren_kernel import cbor, identity, records, verdict
+from tuvren_kernel import backend, cbor, errors, identity, records, runtime, verdict
 
-__all__ = ["cbor", "identity", "records", "verdict"]
+__all__ = ["backend", "cbor", "errors", "identity", "records", "runtime", "verdict"]

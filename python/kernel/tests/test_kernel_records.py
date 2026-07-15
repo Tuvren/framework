@@ -125,3 +125,137 @@ def test_turn_node_identity_json_normalization_deep_equals_fixture(
 ) -> None:
     normalized = records.normalize_turn_node_identity(fixture["turnNodeIdentityRecord"])
     assert normalized == fixture["turnNodeIdentityRecord"]
+
+
+# --- Part A carry-forward: closed-map ingestion policy ---------------------
+#
+# CDDL maps in `kernel-records.cddl` are closed (they enumerate every field
+# explicitly, never `{* tstr => kernel-record}`), so per the pinned
+# cross-language ingestion policy an unrecognized field must be REJECTED,
+# not silently dropped. These fixtures are all valid records from
+# `PROTOCOL_FIXTURES` with one extra, unknown field spliced in.
+
+
+def test_normalize_path_definition_rejects_unknown_field() -> None:
+    with pytest.raises(records.RecordValidationError):
+        records.normalize_path_definition(
+            {"path": "messages", "collection": "ordered", "unexpectedField": True}
+        )
+
+
+def test_normalize_incorporation_rule_rejects_unknown_field() -> None:
+    with pytest.raises(records.RecordValidationError):
+        records.normalize_incorporation_rule(
+            {"objectType": "message", "targetPath": "messages", "extra": 1}
+        )
+
+
+def test_normalize_turn_tree_schema_rejects_unknown_field() -> None:
+    with pytest.raises(records.RecordValidationError):
+        records.normalize_turn_tree_schema(
+            {
+                "schemaId": "schema-a",
+                "paths": [],
+                "incorporationRules": [],
+                "unexpectedField": "x",
+            }
+        )
+
+
+def test_normalize_staged_result_rejects_unknown_field() -> None:
+    with pytest.raises(records.RecordValidationError):
+        records.normalize_staged_result(
+            {
+                "taskId": "task-1",
+                "objectHash": "a" * 64,
+                "objectType": "tool-result",
+                "timestamp": 0,
+                "status": "completed",
+                "unexpectedField": "x",
+            }
+        )
+
+
+def test_normalize_staged_result_rejects_interrupt_payload_on_settled_status() -> None:
+    with pytest.raises(records.RecordValidationError):
+        records.normalize_staged_result(
+            {
+                "taskId": "task-1",
+                "objectHash": "a" * 64,
+                "objectType": "tool-result",
+                "timestamp": 0,
+                "status": "completed",
+                "interruptPayload": {"reason": "should not be here"},
+            }
+        )
+
+
+def test_normalize_turn_node_identity_rejects_unknown_field() -> None:
+    with pytest.raises(records.RecordValidationError):
+        records.normalize_turn_node_identity(
+            {
+                "schemaId": "schema-a",
+                "turnTreeHash": "a" * 64,
+                "previousTurnNodeHash": None,
+                "eventHash": None,
+                "consumedStagedResults": [],
+                "unexpectedField": "x",
+            }
+        )
+
+
+# --- Part A carry-forward: absent-vs-null policy ----------------------------
+#
+# `previousTurnNodeHash` / `eventHash` are typed `hash-string / null` in the
+# CDDL, so explicit null is legal there. Required non-nullable fields (e.g.
+# `schemaId`, `turnTreeHash`) must reject explicit null exactly like any
+# other wrong-typed value, since the CDDL type does not include null; a
+# *missing* required field is a separate (and separately covered) failure
+# mode already exercised by the `turn-node-identity.<field> is required`
+# checks below.
+
+
+def test_normalize_turn_node_identity_allows_explicit_null_for_nullable_fields() -> None:
+    normalized = records.normalize_turn_node_identity(
+        {
+            "schemaId": "schema-a",
+            "turnTreeHash": "a" * 64,
+            "previousTurnNodeHash": None,
+            "eventHash": None,
+            "consumedStagedResults": [],
+        }
+    )
+    assert normalized["previousTurnNodeHash"] is None
+    assert normalized["eventHash"] is None
+
+
+def test_normalize_turn_node_identity_rejects_null_for_non_nullable_required_field() -> None:
+    with pytest.raises(records.RecordValidationError):
+        records.normalize_turn_node_identity(
+            {
+                "schemaId": None,
+                "turnTreeHash": "a" * 64,
+                "previousTurnNodeHash": None,
+                "eventHash": None,
+                "consumedStagedResults": [],
+            }
+        )
+
+
+def test_normalize_turn_tree_schema_rejects_null_for_required_schema_id() -> None:
+    with pytest.raises(records.RecordValidationError):
+        records.normalize_turn_tree_schema(
+            {"schemaId": None, "paths": [], "incorporationRules": []}
+        )
+
+
+def test_normalize_path_definition_allows_explicit_null_metadata() -> None:
+    # `metadata` is typed `kernel-record`, and `null` is itself a valid
+    # `kernel-record` value, so an explicit null metadata is legal (distinct
+    # from *absent* metadata, which normalizes with no `metadata` key at
+    # all -- see the module docstring's "normalization does not mean filling
+    # in defaults" note).
+    normalized = records.normalize_path_definition(
+        {"path": "messages", "collection": "ordered", "metadata": None}
+    )
+    assert normalized["metadata"] is None

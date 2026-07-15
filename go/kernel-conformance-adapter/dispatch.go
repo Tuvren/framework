@@ -17,39 +17,57 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 )
 
 // operationHandler runs one conformance-plan operation against the Go
-// kernel and returns its OperationOutcome. Later milestones register real
-// handlers here as the Go kernel gains semantics; this milestone (M0) keeps
-// the table empty so every operation falls through to
-// adapter_operation_not_implemented.
+// kernel and returns its OperationOutcome. Every promoted operation this
+// adapter's capability set covers has an entry below; operations outside
+// that set still fall through to adapter_operation_not_implemented.
 type operationHandler func(input json.RawMessage) operationOutcome
 
 // operationHandlers is the seam later milestones extend with per-operation
 // entries keyed by promoted conformance-plan operation name, mirroring the
 // match arms in rust/kernel-conformance-adapter/src/main.rs's
-// dispatch_operation.
+// dispatch_operation. Only operation literals belong in this routing
+// table (see tools/scripts/authority-guardrails/authority-guardrails.ts).
 var operationHandlers = map[string]operationHandler{
 	"kernel.protocol.deterministic-hashing": runDeterministicHashing,
 	"kernel.protocol.schema-roundtrip":      runSchemaRoundtrip,
 	"kernel.protocol.modify-composition":    runModifyComposition,
+	"kernel.protocol.edge-validation":       runProtocolEdgeValidation,
+	"kernel.logical.diff-paths":             runLogicalDiffPaths,
+	"kernel.logical.branch-list":            runLogicalBranchList,
+	"kernel.logical.recovery-state":         runLogicalRecoveryState,
+	"kernel.logical.thread-list":            runLogicalThreadList,
+	"kernel.lineage.cross-thread-rejection": runLineageCrossThreadRejection,
 }
 
 // capabilities lists the capability tags this adapter reports during
 // initialize. It must byte-match adapter.json's "capabilities" array (see
 // tools/conformance/harness/run.ts's validateAdapterHandshake). This
-// milestone (M1) implements the kernel.protocol canonical-record core
-// (deterministic hashing, schema round-trip, and verdict modify
-// composition); later milestones add further capabilities alongside their
-// handlers.
+// milestone (M2) adds the runtime kernel surface (schema registry, turn
+// trees, threads/branches, run lifecycle, thread enumeration) alongside the
+// M1 canonical-record core.
 func capabilities() []string {
-	return []string{"kernel.protocol"}
+	return []string{
+		"kernel.protocol",
+		"kernel.edge-validation",
+		"kernel.logical",
+		"kernel-protocol.thread.enumeration",
+	}
 }
 
 // dispatchOperation runs the named operation's handler, or reports
-// adapter_operation_not_implemented when no handler is registered yet.
-func dispatchOperation(operation string, input json.RawMessage) operationOutcome {
+// adapter_operation_not_implemented when no handler is registered yet. It
+// recovers any panic raised while running the handler and reports it as a
+// normal error-kind OperationOutcome instead of letting it propagate and
+// crash the adapter process: adversarial dispatch input (deeply recursive
+// fixtures, unexpected shapes) must degrade into a protocol-visible error,
+// not a process exit that takes down the rest of the conformance run.
+// Diagnostics for a recovered panic go to stderr only; stdout stays
+// frames-only per the adapter protocol.
+func dispatchOperation(operation string, input json.RawMessage) (outcome operationOutcome) {
 	handler, ok := operationHandlers[operation]
 	if !ok {
 		return operationOutcome{
@@ -60,6 +78,19 @@ func dispatchOperation(operation string, input json.RawMessage) operationOutcome
 			},
 		}
 	}
+
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			fmt.Fprintf(os.Stderr, "kernel-conformance-adapter: recovered panic dispatching %s: %v\n", operation, recovered)
+			outcome = operationOutcome{
+				Kind: "error",
+				Error: &adapterErrorEnvelope{
+					Code:    "adapter_operation_panicked",
+					Message: fmt.Sprintf("operation %s panicked: %v", operation, recovered),
+				},
+			}
+		}
+	}()
 
 	return handler(input)
 }

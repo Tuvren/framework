@@ -14,6 +14,8 @@
 
 package kernel
 
+import "fmt"
+
 // Verdict kinds, per docs/KrakenKernelSpecification.md §6.1 and the CDDL
 // verdict union in spec/kernel/cddl/kernel-records.cddl.
 const (
@@ -56,7 +58,13 @@ type Verdict struct {
 // verdict is present (and no Abort or Pause outranks it), every Modify
 // transform is collected in input order into a single composed Modify
 // verdict whose transform is that ordered array.
-func ComposeVerdicts(verdicts []Verdict) Verdict {
+//
+// A Verdict whose Kind is not one of the five known kinds is a composition
+// error, not a silently-ignored input: the cross-language policy (pinned
+// alongside the M1 review) is that record ingestion rejects unknown shapes
+// rather than degrading unnoticed, and a verdict of an unrecognized kind is
+// exactly that kind of malformed input.
+func ComposeVerdicts(verdicts []Verdict) (Verdict, error) {
 	var abort, pause, retry *Verdict
 	var modifyTransforms []Record
 
@@ -79,6 +87,10 @@ func ComposeVerdicts(verdicts []Verdict) Verdict {
 				captured := verdict
 				retry = &captured
 			}
+		case VerdictKindProceed:
+			// Proceed contributes nothing to composition.
+		default:
+			return Verdict{}, fmt.Errorf("kernel verdict compose: unknown verdict kind %q", verdict.Kind)
 		}
 	}
 
@@ -94,9 +106,9 @@ func ComposeVerdicts(verdicts []Verdict) Verdict {
 
 	for _, candidate := range []*Verdict{abort, pause, modify, retry} {
 		if candidate != nil {
-			return *candidate
+			return *candidate, nil
 		}
 	}
 
-	return Verdict{Kind: VerdictKindProceed}
+	return Verdict{Kind: VerdictKindProceed}, nil
 }

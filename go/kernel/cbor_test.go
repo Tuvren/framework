@@ -95,6 +95,47 @@ func TestEncodeCanonical_RejectsIntegerOutsideSafeRange(t *testing.T) {
 	}
 }
 
+func TestDecodeCanonical_RejectsArrayLengthClaimExceedingInput(t *testing.T) {
+	// 0x1b + 8 bytes of 0xff is the 8-byte-argument form of major type 4
+	// (array), claiming 2^64-1 elements from a 9-byte input. Pre-allocating
+	// a RecordArray with that claimed length as capacity would panic
+	// ("makeslice: len out of range") or attempt a multi-exabyte
+	// allocation before the per-element loop ever notices the input is
+	// exhausted.
+	adversarial := []byte{0x9b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	if _, err := kernel.DecodeCanonical(adversarial); err == nil {
+		t.Fatal("expected an array length claim exceeding the input to be rejected")
+	}
+}
+
+func TestDecodeCanonical_RejectsMapLengthClaimExceedingInput(t *testing.T) {
+	// 0xbb + 8 bytes of 0xff is the 8-byte-argument form of major type 5
+	// (map), claiming 2^64-1 entries from a 9-byte input. Pre-allocating a
+	// RecordMap with that claimed length would attempt to reserve an
+	// enormous bucket table (an effective OOM) before ever reading an
+	// entry.
+	adversarial := []byte{0xbb, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	if _, err := kernel.DecodeCanonical(adversarial); err == nil {
+		t.Fatal("expected a map length claim exceeding the input to be rejected")
+	}
+}
+
+func TestDecodeCanonical_RejectsExcessiveNestingDepth(t *testing.T) {
+	// 2000 nested single-element arrays, each encoded as 0x81 (array(1))
+	// followed eventually by a single null. Without a recursion depth cap
+	// this recurses 2000 stack frames deep purely from adversarial input
+	// shape.
+	const depth = 2000
+	encoded := make([]byte, 0, depth+1)
+	for i := 0; i < depth; i++ {
+		encoded = append(encoded, 0x81) // array(1)
+	}
+	encoded = append(encoded, 0xf6) // null
+	if _, err := kernel.DecodeCanonical(encoded); err == nil {
+		t.Fatal("expected excessive nesting depth to be rejected")
+	}
+}
+
 func TestEncodeDecodeCanonical_RoundTripsAcrossKinds(t *testing.T) {
 	record := kernel.RecordMap{
 		"z": kernel.RecordNull{},

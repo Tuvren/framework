@@ -31,11 +31,14 @@ func TestComposeVerdicts_MultipleModifiesComposeInOrder(t *testing.T) {
 		"mutation":  kernel.RecordText("append-suffix"),
 	}
 
-	composed := kernel.ComposeVerdicts([]kernel.Verdict{
+	composed, err := kernel.ComposeVerdicts([]kernel.Verdict{
 		{Kind: kernel.VerdictKindModify, Transform: first},
 		{Kind: kernel.VerdictKindProceed},
 		{Kind: kernel.VerdictKindModify, Transform: second},
 	})
+	if err != nil {
+		t.Fatalf("compose: %v", err)
+	}
 
 	if composed.Kind != kernel.VerdictKindModify {
 		t.Fatalf("expected modify verdict, got %s", composed.Kind)
@@ -58,11 +61,14 @@ func TestComposeVerdicts_MultipleModifiesComposeInOrder(t *testing.T) {
 
 func TestComposeVerdicts_AbortOutranksEverything(t *testing.T) {
 	abort := kernel.Verdict{Kind: kernel.VerdictKindAbort, Disposition: "HardFail", Reason: "boom"}
-	composed := kernel.ComposeVerdicts([]kernel.Verdict{
+	composed, err := kernel.ComposeVerdicts([]kernel.Verdict{
 		{Kind: kernel.VerdictKindModify, Transform: kernel.RecordText("ignored")},
 		abort,
 		{Kind: kernel.VerdictKindPause, Reason: "also ignored", ResumptionSchema: kernel.RecordNull{}},
 	})
+	if err != nil {
+		t.Fatalf("compose: %v", err)
+	}
 
 	if composed.Kind != kernel.VerdictKindAbort || composed.Reason != "boom" {
 		t.Fatalf("expected the abort verdict to win, got %+v", composed)
@@ -71,10 +77,13 @@ func TestComposeVerdicts_AbortOutranksEverything(t *testing.T) {
 
 func TestComposeVerdicts_SingleModifyStaysUnwrapped(t *testing.T) {
 	only := kernel.RecordText("solo")
-	composed := kernel.ComposeVerdicts([]kernel.Verdict{
+	composed, err := kernel.ComposeVerdicts([]kernel.Verdict{
 		{Kind: kernel.VerdictKindProceed},
 		{Kind: kernel.VerdictKindModify, Transform: only},
 	})
+	if err != nil {
+		t.Fatalf("compose: %v", err)
+	}
 
 	if composed.Kind != kernel.VerdictKindModify {
 		t.Fatalf("expected modify verdict, got %s", composed.Kind)
@@ -85,14 +94,26 @@ func TestComposeVerdicts_SingleModifyStaysUnwrapped(t *testing.T) {
 }
 
 func TestComposeVerdicts_EmptyOrAllProceedYieldsProceed(t *testing.T) {
-	if composed := kernel.ComposeVerdicts(nil); composed.Kind != kernel.VerdictKindProceed {
-		t.Fatalf("expected proceed for empty input, got %s", composed.Kind)
+	if composed, err := kernel.ComposeVerdicts(nil); err != nil || composed.Kind != kernel.VerdictKindProceed {
+		t.Fatalf("expected proceed for empty input, got %+v, err=%v", composed, err)
 	}
-	composed := kernel.ComposeVerdicts([]kernel.Verdict{
+	composed, err := kernel.ComposeVerdicts([]kernel.Verdict{
 		{Kind: kernel.VerdictKindProceed},
 		{Kind: kernel.VerdictKindProceed},
 	})
+	if err != nil {
+		t.Fatalf("compose: %v", err)
+	}
 	if composed.Kind != kernel.VerdictKindProceed {
 		t.Fatalf("expected proceed, got %s", composed.Kind)
+	}
+}
+
+func TestComposeVerdicts_RejectsUnknownVerdictKind(t *testing.T) {
+	_, err := kernel.ComposeVerdicts([]kernel.Verdict{
+		{Kind: "not-a-real-verdict-kind"},
+	})
+	if err == nil {
+		t.Fatal("expected an unknown verdict kind to be rejected as an error, not silently ignored")
 	}
 }

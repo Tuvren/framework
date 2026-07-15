@@ -84,10 +84,29 @@ def _require_list(value: Any, label: str) -> list[Any]:
     return value
 
 
+def _reject_unknown_fields(source: dict[str, Any], known_fields: set[str], label: str) -> None:
+    """Reject any field not in `known_fields`.
+
+    The CDDL maps this module validates against (`turn-tree-schema`,
+    `path-definition`, `turn-node`, ...) are all *closed* maps: they never
+    use the `{* tstr => kernel-record}` "any extra field" shape, they list
+    every field explicitly. So per the pinned cross-language ingestion
+    policy an unrecognized field is a rejected record, not silently dropped
+    data -- this mirrors CDDL's own closed-map semantics rather than the
+    permissive "ignore what I don't understand" default many JSON decoders
+    use.
+    """
+
+    unknown = sorted(set(source) - known_fields)
+    if unknown:
+        raise RecordValidationError(f"{label} has unknown field(s): {', '.join(unknown)}")
+
+
 def normalize_path_definition(value: Any) -> dict[str, Any]:
     """Validate and normalize a `path-definition` record."""
 
     source = _require_dict(value, "path-definition")
+    _reject_unknown_fields(source, {"path", "collection", "metadata"}, "path-definition")
     collection = source.get("collection")
     if collection not in _COLLECTION_KINDS:
         raise RecordValidationError(
@@ -107,6 +126,7 @@ def normalize_incorporation_rule(value: Any) -> dict[str, Any]:
     """Validate and normalize an `incorporation-rule` record."""
 
     source = _require_dict(value, "incorporation-rule")
+    _reject_unknown_fields(source, {"objectType", "targetPath"}, "incorporation-rule")
     return {
         "objectType": _require_non_empty_str(
             source.get("objectType"), "incorporation-rule.objectType"
@@ -121,6 +141,7 @@ def normalize_turn_tree_schema(value: Any) -> dict[str, Any]:
     """Validate and normalize a `turn-tree-schema` record."""
 
     source = _require_dict(value, "turn-tree-schema")
+    _reject_unknown_fields(source, {"schemaId", "paths", "incorporationRules"}, "turn-tree-schema")
     paths = _require_list(source.get("paths"), "turn-tree-schema.paths")
     incorporation_rules = _require_list(
         source.get("incorporationRules"), "turn-tree-schema.incorporationRules"
@@ -137,6 +158,11 @@ def normalize_staged_result(value: Any) -> dict[str, Any]:
     `settled-staged-result` record (the `staged-result` CDDL choice)."""
 
     source = _require_dict(value, "staged-result")
+    _reject_unknown_fields(
+        source,
+        {"taskId", "objectHash", "objectType", "timestamp", "status", "interruptPayload"},
+        "staged-result",
+    )
     status = source.get("status")
     result: dict[str, Any] = {
         "taskId": _require_non_empty_str(source.get("taskId"), "staged-result.taskId"),
@@ -153,6 +179,10 @@ def normalize_staged_result(value: Any) -> dict[str, Any]:
         return result
 
     if status in _SETTLED_STATUSES:
+        if "interruptPayload" in source:
+            raise RecordValidationError(
+                "settled-staged-result must not have an interruptPayload field"
+            )
         result["status"] = status
         return result
 
@@ -171,6 +201,17 @@ def normalize_turn_node_identity(value: Any) -> dict[str, Any]:
     """
 
     source = _require_dict(value, "turn-node-identity")
+    _reject_unknown_fields(
+        source,
+        {
+            "schemaId",
+            "turnTreeHash",
+            "previousTurnNodeHash",
+            "eventHash",
+            "consumedStagedResults",
+        },
+        "turn-node-identity",
+    )
     for required_field in (
         "schemaId",
         "turnTreeHash",
