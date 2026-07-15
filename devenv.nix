@@ -5,6 +5,13 @@
     toolchainFile = ./rust-toolchain.toml;
   };
 
+  languages.go.enable = true;
+
+  languages.python = {
+    enable = true;
+    uv.enable = true;
+  };
+
   services.postgres = {
     enable = true;
     initialDatabases = [

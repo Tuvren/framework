@@ -87,8 +87,8 @@ const manifestSchema = readProtocolSchema(
 );
 const validateManifest = ajv.compile(manifestSchema);
 
-const ADAPTER_MANIFEST_ROOTS = ["typescript", "rust"].map((root) =>
-  resolve(REPO_ROOT, root)
+const ADAPTER_MANIFEST_ROOTS = ["typescript", "rust", "go", "python"].map(
+  (root) => resolve(REPO_ROOT, root)
 );
 
 for (const manifestRoot of ADAPTER_MANIFEST_ROOTS) {
