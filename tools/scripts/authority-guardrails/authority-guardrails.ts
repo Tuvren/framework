@@ -56,6 +56,8 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
 const RUST_ROOT = resolve(REPO_ROOT, "rust");
+const GO_ROOT = resolve(REPO_ROOT, "go");
+const PYTHON_ROOT = resolve(REPO_ROOT, "python");
 const COMPATIBILITY_EVIDENCE_ROOT = resolve(
   REPO_ROOT,
   "reports/compatibility/evidence"
@@ -1536,16 +1538,18 @@ async function findSourceFiles(directory: string): Promise<string[]> {
     ...(await findFiles(directory, ".rs")),
     ...(await findFiles(directory, ".ts")),
     ...(await findFiles(directory, ".tsx")),
+    ...(await findFiles(directory, ".go")),
+    ...(await findFiles(directory, ".py")),
   ];
   return paths.filter((path) => !path.endsWith(".d.ts"));
 }
 
 async function findConformanceSourceRoots(): Promise<string[]> {
-  // Both language roots always exist post-cutover; a missing one is a
+  // Every language root always exists post-cutover; a missing one is a
   // broken checkout and must throw, not silently narrow the scan.
   const roots = (
     await Promise.all(
-      [TYPESCRIPT_ROOT, RUST_ROOT].map((root) =>
+      [TYPESCRIPT_ROOT, RUST_ROOT, GO_ROOT, PYTHON_ROOT].map((root) =>
         collectConformanceSourceRoots(root)
       )
     )
@@ -1553,6 +1557,33 @@ async function findConformanceSourceRoots(): Promise<string[]> {
   return roots
     .map((root) => relative(REPO_ROOT, root))
     .sort((left, right) => left.localeCompare(right));
+}
+
+// Repository structure allows two certification-wrapper naming styles (see
+// CLAUDE.md's Structure section): a bare `certification` directory nested
+// under `<lang>/` or `<lang>/<area>/` (typescript/kernel/certification), a
+// suffixed `certification*` variant for multiple backends nested the same
+// way (typescript/kernel/certification-postgres), and a hyphen-prefixed flat
+// variant used by Rust/Go/Python crates and modules that cannot nest an
+// `<area>/` directory under a single package root (rust/kernel-certification,
+// go/kernel-certification, python/kernel-certification).
+function isCertificationDirName(name: string): boolean {
+  return (
+    name === "certification" ||
+    name.startsWith("certification-") ||
+    name.endsWith("-certification")
+  );
+}
+
+// Same two naming styles apply to conformance-adapter hosts: a bare
+// `conformance-adapter` directory nested under `<lang>/` or `<lang>/<area>/`
+// (typescript/kernel/conformance-adapter), or a hyphen-prefixed flat variant
+// (rust/kernel-conformance-adapter, go/kernel-conformance-adapter,
+// python/kernel-conformance-adapter).
+function isConformanceAdapterDirName(name: string): boolean {
+  return (
+    name === "conformance-adapter" || name.endsWith("-conformance-adapter")
+  );
 }
 
 async function collectConformanceSourceRoots(
@@ -1573,12 +1604,23 @@ async function collectConformanceSourceRoots(
     }
 
     if (
-      (entry.name === "certification" ||
-        entry.name === "conformance-adapter") &&
-      existsSync(resolve(entryPath, "src"))
+      isCertificationDirName(entry.name) ||
+      isConformanceAdapterDirName(entry.name)
     ) {
-      roots.push(resolve(entryPath, "src"));
-      continue;
+      if (existsSync(resolve(entryPath, "src"))) {
+        // TypeScript, Rust, and Python adapters/certification wrappers keep
+        // their sources under a `src/` subdirectory.
+        roots.push(resolve(entryPath, "src"));
+        continue;
+      }
+
+      if (existsSync(resolve(entryPath, "go.mod"))) {
+        // Go adapters/certification wrappers use a flat layout: *.go files
+        // live directly at the module root, marked by go.mod, with no
+        // `src/` subdirectory.
+        roots.push(entryPath);
+        continue;
+      }
     }
 
     roots.push(...(await collectConformanceSourceRoots(entryPath)));

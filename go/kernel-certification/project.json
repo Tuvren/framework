@@ -4,10 +4,17 @@
   "root": "go/kernel-certification",
   "projectType": "library",
   "tags": ["boundary:kernel", "language:go"],
+  "implicitDependencies": ["kernel-go-kernel", "kernel-go-conformance-adapter"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
       "outputs": [],
+      "inputs": [
+        "default",
+        "{workspaceRoot}/go/kernel/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go.work"
+      ],
       "options": {
         "cwd": ".",
         "command": "go build github.com/tuvren/framework/go/kernel/... github.com/tuvren/framework/go/kernel-conformance-adapter/... github.com/tuvren/framework/go/kernel-certification/..."
@@ -15,6 +22,12 @@
     },
     "lint": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/go/kernel/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go.work"
+      ],
       "options": {
         "cwd": ".",
         "command": "test -z \"$(gofmt -l go/kernel go/kernel-conformance-adapter go/kernel-certification)\" && go vet github.com/tuvren/framework/go/kernel/... github.com/tuvren/framework/go/kernel-conformance-adapter/... github.com/tuvren/framework/go/kernel-certification/..."
@@ -22,9 +35,15 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/go/kernel/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go.work"
+      ],
       "options": {
         "cwd": ".",
-        "command": "go test github.com/tuvren/framework/go/kernel/... github.com/tuvren/framework/go/kernel-conformance-adapter/... github.com/tuvren/framework/go/kernel-certification/..."
+        "command": "go test github.com/tuvren/framework/go/kernel-certification/..."
       }
     }
   }

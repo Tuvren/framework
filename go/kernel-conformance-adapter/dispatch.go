@@ -27,8 +27,8 @@ import (
 type operationHandler func(input json.RawMessage) operationOutcome
 
 // operationHandlers is the seam later milestones extend with per-operation
-// entries (for example "kernel.protocol.deterministic-hashing"), mirroring
-// the match arms in rust/kernel-conformance-adapter/src/main.rs's
+// entries keyed by promoted conformance-plan operation name, mirroring the
+// match arms in rust/kernel-conformance-adapter/src/main.rs's
 // dispatch_operation.
 var operationHandlers = map[string]operationHandler{}
 

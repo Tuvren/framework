@@ -21,14 +21,15 @@ engine driving the adapter process directly.
 
 import sys
 
+STUB_MESSAGE = (
+    "kernel Python conformance is executed by "
+    "tools/conformance/harness/run.ts through "
+    "python/kernel-conformance-adapter/adapter.json"
+)
+
 
 def main() -> None:
-    print(
-        "kernel Python conformance is executed by "
-        "tools/conformance/harness/run.ts through "
-        "python/kernel-conformance-adapter/adapter.json",
-        file=sys.stderr,
-    )
+    print(STUB_MESSAGE, file=sys.stderr)
     sys.exit(1)
 
 

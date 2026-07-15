@@ -8,6 +8,11 @@
     "build": {
       "executor": "nx:run-commands",
       "outputs": [],
+      "inputs": [
+        "default",
+        "{workspaceRoot}/pyproject.toml",
+        "{workspaceRoot}/uv.lock"
+      ],
       "options": {
         "cwd": ".",
         "command": "uv run --project python/kernel python -c \"import tuvren_kernel\""
@@ -15,6 +20,11 @@
     },
     "lint": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/pyproject.toml",
+        "{workspaceRoot}/uv.lock"
+      ],
       "options": {
         "cwd": ".",
         "command": "uv run --project python/kernel ruff check python/kernel/src python/kernel/tests && uv run --project python/kernel ruff format --check python/kernel/src python/kernel/tests"
@@ -22,6 +32,11 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/pyproject.toml",
+        "{workspaceRoot}/uv.lock"
+      ],
       "options": {
         "cwd": ".",
         "command": "uv run --project python/kernel pytest python/kernel/tests"

@@ -1,0 +1,24 @@
+{
+  "name": "kernel-go-conformance-adapter",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "go/kernel-conformance-adapter",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "language:go", "layer:conformance-adapter"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "options": {
+        "cwd": "go/kernel-conformance-adapter",
+        "command": "go build ./..."
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "go/kernel-conformance-adapter",
+        "command": "test -z \"$(gofmt -l .)\" && go vet ./..."
+      }
+    }
+  }
+}

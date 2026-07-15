@@ -14,19 +14,16 @@
 
 package main
 
-import (
-	"fmt"
-	"os"
-)
+import "testing"
 
-// stubMessage is the diagnostic printed by this non-functional stub binary.
-// It is extracted from main so a trivial smoke test can assert its content
-// without invoking os.Exit.
-func stubMessage() string {
-	return "kernel Go conformance is executed by tools/conformance/harness/run.ts through go/kernel-conformance-adapter/adapter.json"
-}
-
-func main() {
-	fmt.Fprintln(os.Stderr, stubMessage())
-	os.Exit(1)
+// TestStubMessage is a trivial smoke test scoped to this certification
+// module only. It intentionally does not re-run go/kernel or
+// go/kernel-conformance-adapter tests; certification conformance runs
+// through the shared conformance engine driving the adapter process
+// directly, per this package's stub message.
+func TestStubMessage(t *testing.T) {
+	want := "kernel Go conformance is executed by tools/conformance/harness/run.ts through go/kernel-conformance-adapter/adapter.json"
+	if got := stubMessage(); got != want {
+		t.Fatalf("stubMessage() = %q, want %q", got, want)
+	}
 }

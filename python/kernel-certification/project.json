@@ -4,10 +4,21 @@
   "root": "python/kernel-certification",
   "projectType": "library",
   "tags": ["boundary:kernel", "language:python"],
+  "implicitDependencies": [
+    "kernel-python-kernel",
+    "kernel-python-conformance-adapter"
+  ],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
       "outputs": [],
+      "inputs": [
+        "default",
+        "{workspaceRoot}/python/kernel/**/*",
+        "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/pyproject.toml",
+        "{workspaceRoot}/uv.lock"
+      ],
       "options": {
         "cwd": ".",
         "command": "uv run --project python/kernel python -c \"import tuvren_kernel\" && uv run --project python/kernel-conformance-adapter python -c \"import tuvren_kernel_adapter\" && uv run --project python/kernel-certification python -c \"import tuvren_kernel_certification\""
@@ -15,16 +26,30 @@
     },
     "lint": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/python/kernel/**/*",
+        "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/pyproject.toml",
+        "{workspaceRoot}/uv.lock"
+      ],
       "options": {
         "cwd": ".",
-        "command": "uv run --project python/kernel-conformance-adapter ruff check python/kernel-conformance-adapter/src && uv run --project python/kernel-conformance-adapter ruff format --check python/kernel-conformance-adapter/src && uv run --project python/kernel-certification ruff check python/kernel-certification/src && uv run --project python/kernel-certification ruff format --check python/kernel-certification/src"
+        "command": "uv run --project python/kernel-conformance-adapter ruff check python/kernel-conformance-adapter/src && uv run --project python/kernel-conformance-adapter ruff format --check python/kernel-conformance-adapter/src && uv run --project python/kernel-certification ruff check python/kernel-certification/src python/kernel-certification/tests && uv run --project python/kernel-certification ruff format --check python/kernel-certification/src python/kernel-certification/tests"
       }
     },
     "test": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/python/kernel/**/*",
+        "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/pyproject.toml",
+        "{workspaceRoot}/uv.lock"
+      ],
       "options": {
         "cwd": ".",
-        "command": "uv run --project python/kernel pytest python/kernel/tests"
+        "command": "uv run --project python/kernel-certification pytest python/kernel-certification/tests"
       }
     }
   }

@@ -115,7 +115,7 @@ def handle_dispatch(params: dict[str, Any]) -> dict[str, Any]:
         }
 
     try:
-        value = handler(params.get("input") or {})
+        value = handler(params.get("input"))
     except AdapterOperationError as operation_error:
         error: dict[str, Any] = {
             "code": operation_error.code,
@@ -162,7 +162,7 @@ METHOD_HANDLERS: dict[str, Callable[[dict[str, Any]], Any]] = {
 def _require_str(params: dict[str, Any], key: str) -> str:
     value = params.get(key)
     if not isinstance(value, str):
-        raise AdapterError("invalid_json_rpc_request", f"params.{key} must be a string")
+        raise AdapterError("invalid_adapter_request", f"params.{key} must be a string")
     return value
 
 
@@ -176,7 +176,7 @@ def dispatch_request(request: dict[str, Any]) -> Any:
 
     handler = METHOD_HANDLERS.get(method)
     if handler is None:
-        raise AdapterError("adapter_method_not_supported", f"unsupported adapter method {method}")
+        raise AdapterError("adapter_method_not_implemented", f"unsupported adapter method {method}")
 
     params = request.get("params")
     if params is None:
@@ -195,10 +195,19 @@ def handle_line(line: str) -> dict[str, Any] | None:
     try:
         request = json.loads(stripped)
     except json.JSONDecodeError as decode_error:
-        # Malformed frames are runner-owned adapter failures per protocol.md;
-        # there is no request id to reply to, so this is logged, not framed.
+        # Malformed frames still get one JSON-RPC error response with a null
+        # id (there is no request id to reply to), matching the Go and Rust
+        # adapters. The decode error is also logged to stderr for local
+        # diagnostics; stdout carries protocol frames only.
         print(f"malformed JSON-RPC request: {decode_error}", file=sys.stderr)
-        return None
+        return {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": AdapterError(
+                "invalid_adapter_request",
+                f"failed to parse JSON-RPC request: {decode_error}",
+            ).to_envelope(),
+        }
 
     request_id = request.get("id") if isinstance(request, dict) else None
 
@@ -217,7 +226,11 @@ def handle_line(line: str) -> dict[str, Any] | None:
 
 
 def main() -> None:
-    for line in sys.stdin:
+    while True:
+        line = sys.stdin.readline()
+        if line == "":
+            break
+
         response = handle_line(line)
         if response is None:
             continue

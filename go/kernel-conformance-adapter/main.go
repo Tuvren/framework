@@ -118,7 +118,7 @@ func handleLine(writer *bufio.Writer, line string) {
 }
 
 // dispatchMethod routes one JSON-RPC request to its protocol method handler.
-// Unknown methods return an adapter_method_not_supported error envelope
+// Unknown methods return an adapter_method_not_implemented error envelope
 // rather than a numeric JSON-RPC error code.
 func dispatchMethod(request jsonRPCRequest) (any, *adapterErrorEnvelope) {
 	switch request.Method {
@@ -132,7 +132,7 @@ func dispatchMethod(request jsonRPCRequest) (any, *adapterErrorEnvelope) {
 		return nil, nil
 	default:
 		return nil, &adapterErrorEnvelope{
-			Code:    "adapter_method_not_supported",
+			Code:    "adapter_method_not_implemented",
 			Message: fmt.Sprintf("unsupported adapter method %s", request.Method),
 		}
 	}
@@ -151,6 +151,19 @@ func handleInitialize(rawParams json.RawMessage) (any, *adapterErrorEnvelope) {
 				Code:    "invalid_adapter_request",
 				Message: fmt.Sprintf("failed to parse initialize params: %v", err),
 			}
+		}
+	}
+
+	if params.PacketID == "" {
+		return nil, &adapterErrorEnvelope{
+			Code:    "invalid_adapter_request",
+			Message: "params.packetId must be a non-empty string",
+		}
+	}
+	if params.PlanVersion == "" {
+		return nil, &adapterErrorEnvelope{
+			Code:    "invalid_adapter_request",
+			Message: "params.planVersion must be a non-empty string",
 		}
 	}
 
