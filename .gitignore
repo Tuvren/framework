@@ -28,3 +28,6 @@ __pycache__
 .ruff_cache
 .pytest_cache
 *.egg-info
+# Go build artifacts (module binaries built ad hoc in module dirs)
+go/kernel-conformance-adapter/kernel-conformance-adapter
+go/kernel-certification/kernel-certification

@@ -138,6 +138,13 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-runtime",
   "runner-react",
   "host-repl",
+  // Go and Python kernel-port projects run their language-native test
+  // runners (go test / pytest) through these Nx targets; certification
+  // wrappers join the conformance lanes separately once registered.
+  "kernel-go-kernel",
+  "kernel-go-certification",
+  "kernel-python-kernel",
+  "kernel-python-certification",
 ];
 
 export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
