@@ -15,6 +15,7 @@
 package kernel_test
 
 import (
+	"reflect"
 	"testing"
 
 	kernel "github.com/tuvren/framework/go/kernel"
@@ -155,6 +156,88 @@ func TestLease_ExpiredListingExcludesPausedRuns(t *testing.T) {
 	}
 	if pausedRun.Status != kernel.RunStatusPaused {
 		t.Fatalf("expected run_paused status paused, got %q", pausedRun.Status)
+	}
+}
+
+// TestPauseRun_CompletedRunRejectedAndDoesNotResurrect is a regression for
+// the gap where PauseRun unconditionally set status "paused" regardless of
+// the run's current status: pausing an already-"completed" run must be
+// rejected, and — critically — must not resurrect the run into the active
+// set (activeRunOnBranch treats "running"/"paused" as active), which would
+// otherwise block all future CreateRun/forward SetBranchHead calls on the
+// branch and pin the reclamation grace horizon on a run nothing will ever
+// resume.
+func TestPauseRun_CompletedRunRejectedAndDoesNotResurrect(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_pause_completed", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if err := k.CompleteRun("run_1", ""); err != nil {
+		t.Fatalf("complete run: %v", err)
+	}
+
+	err = k.PauseRun("run_1")
+	requireErrCode(t, err, kernel.ErrRunNotActive)
+
+	run, ok := k.Backend.GetRun("run_1")
+	if !ok {
+		t.Fatalf("run_1 not found")
+	}
+	if run.Status != kernel.RunStatusCompleted {
+		t.Fatalf("expected run_1 to remain completed after a rejected pause, got %q", run.Status)
+	}
+
+	// The branch must not appear occupied by a resurrected run_1: a new run
+	// on the same branch (from its current head) must succeed.
+	branch, ok := k.Backend.GetBranch("branch_main")
+	if !ok {
+		t.Fatalf("branch_main not found")
+	}
+	if err := k.CreateRun("run_2", "turn_2", "branch_main", "schema_main", branch.HeadTurnNodeHash, steps); err != nil {
+		t.Fatalf("expected branch_main to remain free for a new run after the rejected pause, got: %v", err)
+	}
+}
+
+// TestPauseRun_FailedRunRejectedAndDoesNotResurrect is the same regression
+// as TestPauseRun_CompletedRunRejectedAndDoesNotResurrect but for a
+// preemption-failed run instead of a normally-completed one.
+func TestPauseRun_FailedRunRejectedAndDoesNotResurrect(t *testing.T) {
+	k, clock := newManualClockKernel(0)
+	createSingleStepRun(t, k, "thread_pause_failed", "branch_pause_failed", "run_failed")
+	if _, _, err := k.AcquireLease("run_failed", "owner_a", 5); err != nil {
+		t.Fatalf("acquire: %v", err)
+	}
+	clock.SetMs(100)
+	if err := k.PreemptStaleRun("run_failed", clock.NowMs()); err != nil {
+		t.Fatalf("preempt: %v", err)
+	}
+
+	err := k.PauseRun("run_failed")
+	requireErrCode(t, err, kernel.ErrRunNotActive)
+
+	run, ok := k.Backend.GetRun("run_failed")
+	if !ok {
+		t.Fatalf("run_failed not found")
+	}
+	if run.Status != kernel.RunStatusFailed {
+		t.Fatalf("expected run_failed to remain failed after a rejected pause, got %q", run.Status)
+	}
+
+	branch, ok := k.Backend.GetBranch("branch_pause_failed")
+	if !ok {
+		t.Fatalf("branch_pause_failed not found")
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+	if err := k.CreateRun("run_after", "turn_after", "branch_pause_failed", "schema_main", branch.HeadTurnNodeHash, steps); err != nil {
+		t.Fatalf("expected branch_pause_failed to remain free for a new run after the rejected pause, got: %v", err)
 	}
 }
 
@@ -559,6 +642,100 @@ func TestFaultInjectingBackend_MidCommitTornCheckpoint(t *testing.T) {
 	}
 	if len(postState.UncommittedStagedResults) != 0 {
 		t.Fatalf("expected no uncommitted staged results after reconcile, got %d", len(postState.UncommittedStagedResults))
+	}
+}
+
+// TestReconcileRun_TerminalRunFallbackGuard is a regression for the
+// misattribution gap in ReconcileRun's fallback backward walk: when the
+// branch head has legitimately advanced past a *terminal* run's active turn
+// node because a later run on the same branch checkpointed, reconciling the
+// older, already-"completed" run must be a no-op — it must not walk the
+// head-to-active chain and append the newer run's own nodes to the older
+// run's CreatedTurnNodes / CurrentStepIndex.
+func TestReconcileRun_TerminalRunFallbackGuard(t *testing.T) {
+	k, _ := newManualClockKernel(0)
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register schema: %v", err)
+	}
+	created, err := k.CreateThread("thread_reconcile_terminal", "schema_main", "branch_reconcile_terminal")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+
+	// Run A: create, checkpoint its one step (minting a real turn node), and
+	// complete it normally — nothing left staged, so CompleteRun mints no
+	// further node.
+	if err := k.CreateRun("run_a", "turn_a", "branch_reconcile_terminal", "schema_main", created.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run a: %v", err)
+	}
+	message1 := k.PutObject("application/json", []byte("message-a"))
+	if err := k.StageResult("run_a", kernel.StagedResult{
+		TaskID: "task_a", ObjectHash: message1, ObjectType: "message", Status: kernel.StagedResultCompleted,
+	}); err != nil {
+		t.Fatalf("stage for run a: %v", err)
+	}
+	if _, err := k.CompleteStep("run_a", "only_step", "", ""); err != nil {
+		t.Fatalf("complete step for run a: %v", err)
+	}
+	if err := k.CompleteRun("run_a", ""); err != nil {
+		t.Fatalf("complete run a: %v", err)
+	}
+
+	runABefore, ok := k.Backend.GetRun("run_a")
+	if !ok {
+		t.Fatalf("run_a not found")
+	}
+	if runABefore.Status != kernel.RunStatusCompleted {
+		t.Fatalf("expected run_a completed, got %q", runABefore.Status)
+	}
+	createdBefore := append([]string(nil), runABefore.CreatedTurnNodes...)
+	stepIndexBefore := runABefore.CurrentStepIndex
+
+	branchAfterA, ok := k.Backend.GetBranch("branch_reconcile_terminal")
+	if !ok {
+		t.Fatalf("branch not found after run a")
+	}
+
+	// Run B: starts from run A's completed head and checkpoints its own
+	// step, advancing the branch head further past run A's (now stale)
+	// active turn node.
+	if err := k.CreateRun("run_b", "turn_b", "branch_reconcile_terminal", "schema_main", branchAfterA.HeadTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run b: %v", err)
+	}
+	message2 := k.PutObject("application/json", []byte("message-b"))
+	if err := k.StageResult("run_b", kernel.StagedResult{
+		TaskID: "task_b", ObjectHash: message2, ObjectType: "message", Status: kernel.StagedResultCompleted,
+	}); err != nil {
+		t.Fatalf("stage for run b: %v", err)
+	}
+	if _, err := k.CompleteStep("run_b", "only_step", "", ""); err != nil {
+		t.Fatalf("complete step for run b: %v", err)
+	}
+
+	branchAfterB, ok := k.Backend.GetBranch("branch_reconcile_terminal")
+	if !ok {
+		t.Fatalf("branch not found after run b")
+	}
+	if branchAfterB.HeadTurnNodeHash == branchAfterA.HeadTurnNodeHash {
+		t.Fatalf("expected run b's checkpoint to advance the branch head past run a's")
+	}
+
+	// Reconciling the older, terminal run_a must be a no-op: it must not
+	// adopt run_b's freshly-minted node into its own CreatedTurnNodes.
+	if err := k.ReconcileRun("run_a"); err != nil {
+		t.Fatalf("reconcile run a: %v", err)
+	}
+
+	runAAfter, ok := k.Backend.GetRun("run_a")
+	if !ok {
+		t.Fatalf("run_a not found after reconcile")
+	}
+	if runAAfter.CurrentStepIndex != stepIndexBefore {
+		t.Fatalf("expected run_a's CurrentStepIndex unchanged by reconciling a terminal run, was %d, now %d", stepIndexBefore, runAAfter.CurrentStepIndex)
+	}
+	if !reflect.DeepEqual(runAAfter.CreatedTurnNodes, createdBefore) {
+		t.Fatalf("expected run_a's CreatedTurnNodes unchanged by reconciling a terminal run, was %v, now %v", createdBefore, runAAfter.CreatedTurnNodes)
 	}
 }
 

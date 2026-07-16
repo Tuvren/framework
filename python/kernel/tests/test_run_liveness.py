@@ -474,6 +474,161 @@ def test_reconcile_is_a_no_op_without_a_pending_checkpoint() -> None:
     assert reconciled["headTurnNodeHash"] == thread["rootTurnNodeHash"]
 
 
+# --- Torn preemption checkpoints (P2 fix) ------------------------------------
+
+
+def _seed_and_fault_preempt(fault_point: str) -> dict[str, Any]:
+    """`_seed_and_fault`'s counterpart for `RunOps.preempt_stale`.
+
+    Seeds a run with an already-expired lease and one uncommitted staged
+    result, then injects `fault_point` into the reactive checkpoint
+    `preempt_stale` performs -- the same three-write `commit_checkpoint`
+    sequence `complete_step` uses -- so a caller can inspect exactly how
+    far the torn preemption got and exercise `reconcile`/retry against it.
+    """
+
+    clock = _Clock(0)
+    base_backend = InMemoryBackend(now=clock)
+    kernel = RuntimeKernel(base_backend)
+    kernel.schema.register(dict(CANONICAL_SCHEMA))
+
+    thread = kernel.thread.create(
+        f"thread_preempt_fault_{fault_point}",
+        "schema_main",
+        f"branch_preempt_fault_{fault_point}",
+    )
+    turn = kernel.turn.create(
+        f"turn_preempt_fault_{fault_point}",
+        thread["threadId"],
+        thread["branchId"],
+        None,
+        thread["rootTurnNodeHash"],
+    )
+    run_id = f"run_preempt_fault_{fault_point}"
+    kernel.run.create(
+        run_id,
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+        owner_id="owner_a",
+        lease_duration_ms=5,
+    )
+    kernel.staging.stage(run_id, b"uncommitted", "task_1", "message", "completed")
+    pre_fault_head = kernel.branch.get(thread["branchId"])["headTurnNodeHash"]
+
+    clock.value = 100  # past the run's 5ms lease -- eligible for preemption
+    kernel.backend = FaultInjectingBackend(base_backend, fault_point, policy="once")  # type: ignore[assignment]
+    raised_code = None
+    try:
+        kernel.run.preempt_stale(run_id)
+    except KernelRuntimeError as runtime_error:
+        raised_code = runtime_error.code
+    kernel.backend = base_backend
+
+    return {
+        "kernel": kernel,
+        "thread": thread,
+        "run_id": run_id,
+        "pre_fault_head": pre_fault_head,
+        "raised_code": raised_code,
+    }
+
+
+def test_preempt_stale_mid_commit_tear_refuses_a_naive_retry_and_reconciles_cleanly() -> None:
+    """The torn-preemption consequence this fix closes: without a durable
+    `pendingCheckpoint` marker, a process death between the head CAS and
+    `clear_staged` would leave the run `"running"` with an expired lease
+    and an intact staged pool, so a retry would re-incorporate the same
+    staged results a second time onto the already-advanced head. Proves
+    both halves of the fix: a naive retry refuses
+    (`kernel_runtime_run_pending_checkpoint`) instead of double-
+    incorporating, and `run.reconcile` repairs the torn attempt to the
+    exact terminal state an untorn preemption reaches.
+    """
+
+    scenario = _seed_and_fault_preempt("midCommit")
+    kernel: RuntimeKernel = scenario["kernel"]
+    run_id = scenario["run_id"]
+    thread = scenario["thread"]
+
+    assert scenario["raised_code"] == "kernel_persistence_fault_injected"
+
+    torn_run = kernel.backend.get_run(run_id)
+    assert torn_run["status"] == "running"
+    assert torn_run["lease"] is not None
+    pending = torn_run["pendingCheckpoint"]
+    assert pending is not None
+    assert pending["kind"] == "preempt"
+    # Genuine partial state: the TurnNode is durable, but the branch head
+    # has not advanced to it and staging has not cleared.
+    assert kernel.backend.get_node(pending["nodeHash"]) is not None
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == scenario["pre_fault_head"]
+    assert kernel.staging.current(run_id) != []
+
+    # A naive retry must refuse rather than re-run the reactive checkpoint
+    # over the same still-staged results.
+    code = error_code(lambda: kernel.run.preempt_stale(run_id))
+    assert code == "kernel_runtime_run_pending_checkpoint"
+    assert kernel.backend.get_run(run_id)["status"] == "running"
+
+    reconciled = kernel.run.reconcile(run_id)
+    assert reconciled["pendingMessageCommitted"] is True
+    assert reconciled["headTurnNodeHash"] == pending["nodeHash"]
+
+    repaired = kernel.backend.get_run(run_id)
+    assert repaired["status"] == "failed"
+    assert repaired["preemptionReason"] == "stale_running_recovery"
+    assert repaired["lease"] is None
+    assert repaired["pendingCheckpoint"] is None
+    # Exactly one checkpoint node was ever minted for the staged work --
+    # reconcile finished the torn attempt, it did not mint a second one.
+    assert repaired["createdTurnNodes"] == [pending["nodeHash"]]
+    assert kernel.staging.current(run_id) == []
+
+    head_node = kernel.backend.get_node(kernel.branch.get(thread["branchId"])["headTurnNodeHash"])
+    assert head_node is not None
+    assert [staged["taskId"] for staged in head_node["consumedStagedResults"]] == ["task_1"]
+
+
+def test_preempt_stale_before_commit_tear_reconciles_and_then_retries_cleanly() -> None:
+    """A `beforeCommit` tear never durably wrote the checkpoint's TurnNode
+    at all, so `reconcile` just discards the stale marker (the run stays
+    `"running"` with its staged pool untouched -- nothing was ever
+    incorporated) and a subsequent `preempt_stale` retry proceeds exactly
+    as if the first attempt never happened, incorporating the staged work
+    exactly once.
+    """
+
+    scenario = _seed_and_fault_preempt("beforeCommit")
+    kernel: RuntimeKernel = scenario["kernel"]
+    run_id = scenario["run_id"]
+
+    assert scenario["raised_code"] == "kernel_persistence_fault_injected"
+
+    torn_run = kernel.backend.get_run(run_id)
+    assert torn_run["status"] == "running"
+    pending = torn_run["pendingCheckpoint"]
+    assert pending is not None
+    assert kernel.backend.get_node(pending["nodeHash"]) is None
+    assert kernel.staging.current(run_id) != []
+
+    reconciled = kernel.run.reconcile(run_id)
+    assert reconciled["pendingMessageCommitted"] is False
+
+    after_reconcile = kernel.backend.get_run(run_id)
+    assert after_reconcile["status"] == "running"
+    assert after_reconcile["pendingCheckpoint"] is None
+    assert kernel.staging.current(run_id) != []  # untouched: nothing was incorporated
+
+    preempted = kernel.run.preempt_stale(run_id)
+    assert preempted["status"] == "failed"
+    assert preempted["lease"] is None
+    assert len(preempted["createdTurnNodes"]) == 1
+    assert kernel.staging.current(run_id) == []
+
+
 # --- Concurrent-writer optimistic-concurrency guard ---------------------------
 
 

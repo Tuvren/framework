@@ -478,6 +478,101 @@ def test_branch_set_head_backward_archives_and_fails_active_runs() -> None:
     assert stored_run["status"] == "failed"
 
 
+def test_branch_set_head_backward_fails_touching_run_and_clears_its_staging() -> None:
+    # M4 fix: a backward branch.setHead rollback must fail only active runs
+    # whose lineage actually touches the abandoned segment (TS reference:
+    # `runTouchesSegment` in `runtime-kernel-lineage.ts`) and must clear
+    # each failed run's staged pool in the same pass (TS:
+    # `tx.stagedResults.clearRun`), not merely flip its status and leave
+    # uncommitted staged work stranded behind a terminal run.
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_seg_touch", "schema_main", "branch_seg_touch")
+    root = thread["rootTurnNodeHash"]
+    turn = kernel.turn.create("turn_seg_touch", thread["threadId"], thread["branchId"], None, root)
+    kernel.run.create(
+        "run_seg_touch",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        root,
+        [
+            {"id": "step_one", "deterministic": False, "sideEffects": False},
+            {"id": "step_two", "deterministic": False, "sideEffects": False},
+        ],
+    )
+    kernel.run.begin_step("run_seg_touch", "step_one")
+    checkpoint = kernel.run.complete_step("run_seg_touch", "step_one")
+    kernel.run.begin_step("run_seg_touch", "step_two")
+    # Uncommitted staged work left behind on the run's own checkpointed
+    # segment -- this is exactly the pool that must be emptied once the
+    # rollback fails the run, not stranded forever.
+    kernel.staging.stage("run_seg_touch", b"pending", "task_1", "message", "completed")
+    assert kernel.staging.current("run_seg_touch") != []
+
+    result = kernel.branch.set_head(thread["branchId"], root)
+    assert result["archiveBranch"]["headTurnNodeHash"] == checkpoint["turnNodeHash"]
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == root
+
+    stored_run = kernel.backend.get_run("run_seg_touch")
+    assert stored_run["status"] == "failed"
+    assert kernel.staging.current("run_seg_touch") == []
+    recovery = kernel.run.recover("run_seg_touch")
+    assert recovery["uncommittedStagedResults"] == []
+
+
+def test_branch_set_head_backward_spares_active_run_that_does_not_touch_segment() -> None:
+    # M4 fix: `runTouchesSegment` only fails an active run whose own
+    # lineage (startTurnNodeHash or one of its own createdTurnNodes)
+    # intersects the abandoned segment. Given this port's (and the TS
+    # reference's) at-most-one-active-run-per-branch invariant, an
+    # organically-created active run's own start or last checkpoint is
+    # always the branch's current head, so it always overlaps whatever a
+    # genuine rollback on that same branch abandons -- there is no
+    # API-only path to an active run that legitimately doesn't touch its
+    # own branch's abandoned segment. Construct that "doesn't touch" case
+    # directly via store manipulation instead, the same defensive-guard
+    # pattern `test_run_preempt_stale_rejects_a_run_without_a_lease` uses
+    # (in `test_run_liveness.py`) to reach `preempt_stale`'s leaseless
+    # guard.
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_seg_spare", "schema_main", "branch_seg_spare")
+    root = thread["rootTurnNodeHash"]
+    turn = kernel.turn.create("turn_seg_spare", thread["threadId"], thread["branchId"], None, root)
+    kernel.run.create(
+        "run_seg_early",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        root,
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+    )
+    kernel.run.begin_step("run_seg_early", "step")
+    checkpoint = kernel.run.complete_step("run_seg_early", "step")
+    kernel.run.complete("run_seg_early", "completed")
+
+    kernel.run.create(
+        "run_seg_active",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        checkpoint["turnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+    )
+    # Defensive: pretend this active run's own lineage predates the
+    # single-node segment the rollback below abandons.
+    stored_active_run = kernel.backend.get_run("run_seg_active")
+    stored_active_run["startTurnNodeHash"] = root
+    kernel.backend.put_run("run_seg_active", stored_active_run)
+
+    result = kernel.branch.set_head(thread["branchId"], root)
+    assert result["archiveBranch"]["headTurnNodeHash"] == checkpoint["turnNodeHash"]
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == root
+
+    survivor = kernel.backend.get_run("run_seg_active")
+    assert survivor["status"] == "running"
+    assert survivor["lease"] is not None
+
+
 # --- Run lifecycle -------------------------------------------------------------
 
 
@@ -754,6 +849,114 @@ def test_run_complete_reactive_checkpoint_on_uncommitted_staging() -> None:
     assert "turnNodeHash" in result
     assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == result["turnNodeHash"]
     assert kernel.staging.current("run_reactive") == []
+
+
+def test_run_complete_checkpoints_on_event_hash_alone_with_zero_staged_results() -> None:
+    # M4 fix: TS `maybeCheckpoint` (`runtime-kernel-lineage.ts`) only skips
+    # the reactive checkpoint when *both* stagedResults is empty and
+    # eventHash is null. An eventHash-only completion (zero staged
+    # results, an explicit terminal event) must still mint a checkpoint
+    # that pins the event, not silently drop it.
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_event_only", "schema_main", "branch_event_only")
+    turn = kernel.turn.create(
+        "turn_event_only", thread["threadId"], thread["branchId"], None, thread["rootTurnNodeHash"]
+    )
+    kernel.run.create(
+        "run_event_only",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+    )
+    event_hash = kernel.store.put(b"terminal-event")
+    assert kernel.staging.current("run_event_only") == []
+
+    result = kernel.run.complete("run_event_only", "completed", event_hash)
+    assert "turnNodeHash" in result
+    branch = kernel.branch.get(thread["branchId"])
+    assert branch["headTurnNodeHash"] == result["turnNodeHash"]
+    node = kernel.backend.get_node(result["turnNodeHash"])
+    assert node["eventHash"] == event_hash
+    assert node["consumedStagedResults"] == []
+    assert kernel.backend.get_run("run_event_only")["createdTurnNodes"] == [result["turnNodeHash"]]
+
+
+def test_run_complete_paused_performs_the_same_reactive_checkpoint_as_completed() -> None:
+    # M4 fix: TS `complete` never special-cases `status` inside
+    # `maybeCheckpoint` -- completing to "paused" performs exactly the
+    # same reactive checkpoint of un-anchored staged work that completing
+    # to "completed"/"failed" does, advancing the branch head and clearing
+    # the staged pool, before the status write.
+    kernel = new_kernel()
+    thread = kernel.thread.create(
+        "thread_paused_checkpoint", "schema_main", "branch_paused_checkpoint"
+    )
+    turn = kernel.turn.create(
+        "turn_paused_checkpoint",
+        thread["threadId"],
+        thread["branchId"],
+        None,
+        thread["rootTurnNodeHash"],
+    )
+    kernel.run.create(
+        "run_paused_checkpoint",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+    )
+    kernel.staging.stage("run_paused_checkpoint", b"payload", "task_1", "message", "completed")
+
+    result = kernel.run.complete("run_paused_checkpoint", "paused")
+    assert "turnNodeHash" in result
+    branch = kernel.branch.get(thread["branchId"])
+    assert branch["headTurnNodeHash"] == result["turnNodeHash"]
+    assert kernel.staging.current("run_paused_checkpoint") == []
+    stored_run = kernel.backend.get_run("run_paused_checkpoint")
+    assert stored_run["status"] == "paused"
+    assert stored_run["createdTurnNodes"] == [result["turnNodeHash"]]
+
+
+def test_run_complete_clears_the_lease_on_every_terminal_status() -> None:
+    # M4 fix: TS `clearStoredRunLease` is applied unconditionally by
+    # `complete` (`runtime-kernel-runs.ts`) regardless of the target
+    # status -- including "paused" -- so mirror that here: every
+    # `complete` call clears the run's lease and preemption reason, not
+    # just terminal-and-not-paused ones.
+    kernel = new_kernel()
+    for status in ("completed", "failed", "paused"):
+        thread = kernel.thread.create(
+            f"thread_lease_clear_{status}", "schema_main", f"branch_lease_clear_{status}"
+        )
+        turn = kernel.turn.create(
+            f"turn_lease_clear_{status}",
+            thread["threadId"],
+            thread["branchId"],
+            None,
+            thread["rootTurnNodeHash"],
+        )
+        run_id = f"run_lease_clear_{status}"
+        kernel.run.create(
+            run_id,
+            turn["turnId"],
+            thread["branchId"],
+            "schema_main",
+            thread["rootTurnNodeHash"],
+            [{"id": "step", "deterministic": False, "sideEffects": False}],
+            owner_id="owner",
+            lease_duration_ms=60_000,
+        )
+        assert kernel.backend.get_run(run_id)["lease"] is not None
+
+        kernel.run.complete(run_id, status)
+
+        stored_run = kernel.backend.get_run(run_id)
+        assert stored_run["status"] == status
+        assert stored_run["lease"] is None
+        assert stored_run["preemptionReason"] is None
 
 
 def test_staging_stage_rejects_when_run_not_running() -> None:

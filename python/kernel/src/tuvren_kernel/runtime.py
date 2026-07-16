@@ -494,6 +494,9 @@ class BranchOps:
             return {"branch": branch, "archiveBranch": None}
 
         # Backward: atomic archival rollback (Section 4.2).
+        abandoned_segment_hashes = self._kernel.collect_abandoned_segment_hashes(
+            current_head, turn_node_hash
+        )
         archive_branch_id = self._kernel.next_archive_branch_id(branch_id)
         archive_branch = {
             "branchId": archive_branch_id,
@@ -508,8 +511,20 @@ class BranchOps:
         }
         self._kernel.backend.put_branch(archive_branch_id, archive_branch)
 
+        # Only fail active runs whose lineage actually touches the
+        # abandoned segment (TS reference: `runTouchesSegment` in
+        # `runtime-kernel-lineage.ts`) -- an active run rooted or
+        # checkpointed entirely on lineage that survives the rewind must
+        # not be collaterally failed. Each failed run's staged pool is
+        # cleared in the same pass (TS: `tx.stagedResults.clearRun`) so
+        # `run.recover` reports zero uncommitted staged results for it,
+        # rather than leaving a dangling staged pool for a run that can
+        # never checkpoint again.
         for run in self._kernel.backend.list_runs_for_branch(branch_id):
-            if run["status"] in _ACTIVE_RUN_STATUSES:
+            if run["status"] in _ACTIVE_RUN_STATUSES and self._kernel.run_touches_segment(
+                run, abandoned_segment_hashes
+            ):
+                self._kernel.backend.clear_staged(run["runId"])
                 self._kernel.backend.put_run(run["runId"], {**run, "status": "failed"})
 
         branch = {**branch, "headTurnNodeHash": turn_node_hash}
@@ -765,10 +780,7 @@ class RunOps:
         checkpoint path `RunOps.complete` takes on ordinary terminal
         completion (Section 5.6): any uncommitted staged results are
         incorporated onto the branch's current head TurnTree and checked in
-        as one last TurnNode via `RuntimeKernel.checkpoint`
-        (`begin_checkpoint`/`commit_checkpoint`, the same CAS-guarded
-        write/advance-head/clear-staging transaction `run.completeStep`
-        uses), advancing the branch head and this run's own
+        as one last TurnNode, advancing the branch head and this run's own
         `createdTurnNodes` -- exactly per Section 5.2 step 4's requirement
         that preemption reactively checkpoint verifiably-uncommitted staged
         work onto the run's active lineage rather than discard it. Unlike
@@ -777,6 +789,24 @@ class RunOps:
         `eventHash` pins a preemption event object, so the lineage durably
         records the preemption (matching the TypeScript reference and the
         Go port).
+
+        Unlike `RunOps.complete`, this routes the checkpoint through the
+        exact same durable `pendingCheckpoint` discipline `complete_step`
+        uses (`begin_checkpoint` computes and durably records the
+        checkpoint's identity *before* `commit_checkpoint`'s three
+        sequential writes run), not the bare `RuntimeKernel.checkpoint`
+        convenience wrapper: a preemption's checkpoint sequence is exactly
+        as tearable as a step's (the process can die between the head CAS
+        and `clear_staged`), and without a durable marker a retried
+        preemption would re-incorporate the same still-staged results a
+        second time onto the already-advanced head with no way for
+        `run.reconcile` to detect or repair the tear. This method refuses a
+        retry outright (`kernel_runtime_run_pending_checkpoint`) while a
+        prior attempt's `pendingCheckpoint` marker is still unreconciled;
+        `run.reconcile` recognizes a `pendingCheckpoint` of
+        `kind: "preempt"` and finishes the interrupted preemption (failing
+        the run, clearing its lease) rather than treating it as an
+        interrupted step completion.
 
         Event bytes are intentionally port-local (a simple
         `tuvren.kernel.preemption:...` marker blob rather than the
@@ -808,6 +838,23 @@ class RunOps:
                 f"run {run_id} lease has not expired",
             )
 
+        if run.get("pendingCheckpoint") is not None:
+            # A previous `preempt_stale` (or `complete_step`) attempt tore
+            # mid-checkpoint and was never reconciled: its `pendingCheckpoint`
+            # marker is still durable. Re-running the reactive checkpoint now
+            # would re-incorporate the same still-staged results a second
+            # time onto whatever head the torn attempt already advanced to
+            # (or re-derive a colliding one). Refuse until `run.reconcile`
+            # has resolved the pending marker, mirroring how this port
+            # requires `complete_step`'s own pending checkpoints to be
+            # reconciled before any other checkpointing operation trusts the
+            # run's staged pool again.
+            raise KernelRuntimeError(
+                "kernel_runtime_run_pending_checkpoint",
+                f"run {run_id} has an unreconciled pending checkpoint; call "
+                "run.reconcile before retrying preemption",
+            )
+
         staged = self._kernel.backend.list_staged(run_id)
         # Reactive checkpoint (Section 5.2 step 4 / 5.6): uncommitted staged
         # work is committed onto the run's active lineage before the run
@@ -818,6 +865,15 @@ class RunOps:
         # TypeScript reference (preemptExpired's maybeCheckpoint fires on
         # eventHash alone) and the Go port (PreemptStaleRun unconditionally
         # mints an event and checkpoints).
+        #
+        # This routes through the exact same durable pendingCheckpoint
+        # discipline `complete_step` uses (`begin_checkpoint` computes the
+        # identity and records it as `pendingCheckpoint` *before* any of
+        # `commit_checkpoint`'s three sequential writes run, so a crash
+        # between the head CAS and `clear_staged` -- or anywhere else in the
+        # sequence -- leaves a durable marker `run.reconcile` can inspect and
+        # finish deterministically instead of a retry blindly re-
+        # incorporating the same staged pool a second time).
         event_hash = self._kernel.backend.put_object(
             f"tuvren.kernel.preemption:{run_id}:stale_running_recovery".encode("utf-8")
         )
@@ -829,12 +885,26 @@ class RunOps:
             if staged
             else head_node["turnTreeHash"]
         )
-        node_hash = self._kernel.checkpoint(run, branch, new_tree_hash, event_hash, staged)
-        run["createdTurnNodes"].append(node_hash)
 
+        node_identity, node_hash = self._kernel.begin_checkpoint(
+            run, branch, new_tree_hash, event_hash, staged
+        )
+        run["pendingCheckpoint"] = {
+            "kind": "preempt",
+            "stepId": None,
+            "nodeHash": node_hash,
+            "nodeIdentity": node_identity,
+        }
+        self._kernel.touch_run(run)
+        self._kernel.backend.put_run(run_id, run)
+
+        self._kernel.commit_checkpoint(run, branch, node_hash, node_identity)
+
+        run["createdTurnNodes"].append(node_hash)
         run["status"] = "failed"
         run["preemptionReason"] = "stale_running_recovery"
         run["lease"] = None
+        run["pendingCheckpoint"] = None
         self._kernel.touch_run(run)
         self._kernel.backend.put_run(run_id, run)
         return dict(run)
@@ -1024,13 +1094,28 @@ class RunOps:
         # through here once it has finished rolling forward.
         if node_hash not in run["createdTurnNodes"]:
             run["createdTurnNodes"].append(node_hash)
-        run["lastCompletedStepId"] = pending["stepId"]
-        steps = run["stepSequence"]
-        pending_index = next(
-            (index for index, step in enumerate(steps) if step["id"] == pending["stepId"]), None
-        )
-        if pending_index is not None and run["currentStepIndex"] <= pending_index:
-            run["currentStepIndex"] = pending_index + 1
+
+        if pending.get("kind") == "preempt":
+            # `preempt_stale`'s own final bookkeeping never ran (the tear
+            # happened somewhere inside `commit_checkpoint`, before the run
+            # record was flipped to "failed"): finish exactly what
+            # `preempt_stale` would have finished, so a torn preemption
+            # reconciles to the same terminal state an untorn one reaches --
+            # never a `lastCompletedStepId`/`currentStepIndex` mutation,
+            # which only applies to a torn `complete_step`.
+            run["status"] = "failed"
+            run["preemptionReason"] = "stale_running_recovery"
+            run["lease"] = None
+        else:
+            run["lastCompletedStepId"] = pending["stepId"]
+            steps = run["stepSequence"]
+            pending_index = next(
+                (index for index, step in enumerate(steps) if step["id"] == pending["stepId"]),
+                None,
+            )
+            if pending_index is not None and run["currentStepIndex"] <= pending_index:
+                run["currentStepIndex"] = pending_index + 1
+
         run["pendingCheckpoint"] = None
         self._kernel.backend.put_run(run_id, run)
         return {
@@ -1067,9 +1152,15 @@ class RunOps:
 
         result: dict[str, Any] = {}
         staged = self._kernel.backend.list_staged(run_id)
-        if staged and status != "paused":
-            # Reactive checkpoint (Section 5.6): un-anchored staged work is
-            # committed before the Run halts.
+        # Reactive checkpoint (Section 5.6 / TS `maybeCheckpoint` in
+        # `runtime-kernel-lineage.ts`): mints a checkpoint unless there is
+        # truly nothing to anchor -- zero staged results *and* no event to
+        # record. In particular this fires for an eventHash-only completion
+        # (staged empty, eventHash present) and for a completion to
+        # "paused" exactly like any other terminal status: TS's
+        # `maybeCheckpoint` never special-cases `status`, it only special-
+        # cases "both empty".
+        if staged or event_hash is not None:
             branch = self._kernel.require_branch(run["branchId"])
             head_node = self._kernel.backend.get_node(branch["headTurnNodeHash"])
             assert head_node is not None
@@ -1079,6 +1170,14 @@ class RunOps:
             result["turnNodeHash"] = node_hash
 
         run["status"] = status
+        # TS `clearStoredRunLease` (`runtime-kernel-storage.ts`) is applied
+        # unconditionally by `complete` regardless of the target status --
+        # it strips `executionOwnerId`/`fencingToken`/`leaseExpiresAtMs`/
+        # `preemptionReason` every time a run completes, including to
+        # "paused". Mirror that here: the lease and preemption-reason
+        # fields clear on every `complete` call, "paused" included.
+        run["lease"] = None
+        run["preemptionReason"] = None
         self._kernel.touch_run(run)
         self._kernel.backend.put_run(run_id, run)
         return result
@@ -1457,6 +1556,55 @@ class RuntimeKernel:
         if self.reaches(current_head, target):
             return "backward"
         return "lateral"
+
+    def collect_abandoned_segment_hashes(self, current_head: str, target_hash: str) -> set[str]:
+        """The TurnNode hashes a backward `branch.setHead` move abandons.
+
+        Walks `previousTurnNodeHash` back from `current_head` until it
+        reaches `target_hash`, collecting every hash strictly between them
+        (`target_hash` itself is excluded). Mirrors the TypeScript
+        reference's `collectAbandonedSegmentHashes` in
+        `runtime-kernel-lineage.ts`.
+        """
+
+        hashes: set[str] = set()
+        current = current_head
+        depth = 0
+        while current != target_hash:
+            depth += 1
+            if depth > _MAX_LINEAGE_WALK_DEPTH:
+                raise KernelRuntimeError(
+                    "kernel_runtime_lineage_walk_depth_exceeded",
+                    f"turn node lineage walk from {current_head} exceeded "
+                    f"{_MAX_LINEAGE_WALK_DEPTH} hops without reaching {target_hash}",
+                )
+            node = self.backend.get_node(current)
+            if node is None:
+                raise KernelRuntimeError(
+                    "kernel_runtime_missing_turn_node", f"unknown turn node: {current}"
+                )
+            hashes.add(current)
+            previous = node["previousTurnNodeHash"]
+            if previous is None:
+                raise KernelRuntimeError(
+                    "kernel_runtime_backward_lineage_mismatch",
+                    f'target "{target_hash}" is not an ancestor of current head "{current_head}"',
+                )
+            current = previous
+        return hashes
+
+    def run_touches_segment(self, run: dict[str, Any], segment_hashes: set[str]) -> bool:
+        """Whether `run`'s lineage touches any hash in `segment_hashes`.
+
+        Mirrors the TypeScript reference's `runTouchesSegment` in
+        `runtime-kernel-lineage.ts`: checks the run's `startTurnNodeHash`
+        and every one of its `createdTurnNodes` (its own checkpoint
+        history), not the branch's current head.
+        """
+
+        if run["startTurnNodeHash"] in segment_hashes:
+            return True
+        return any(node_hash in segment_hashes for node_hash in run.get("createdTurnNodes", []))
 
     def next_archive_branch_id(self, branch_id: str) -> str:
         ordinal = 1

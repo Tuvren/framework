@@ -88,11 +88,20 @@ func (k *Kernel) RenewLease(runID, ownerID, token string, ttlMs int64) (renewedE
 // ListExpiredRuns and from stale preemption regardless of their lease
 // state (kernel spec §5.2: only a "running" run can go stale — a paused
 // run's owner deliberately relinquished active execution, which is not a
-// crash).
+// crash). Only a "running" run can be paused (ErrRunNotActive otherwise):
+// a run that already reached a terminal status ("completed" or "failed")
+// must not be resurrected into the active set by pausing it — doing so
+// would make activeRunOnBranch (kernel_runtime.go) treat the branch as
+// still occupied, blocking CreateRun/forward SetBranchHead on it, and
+// would pin the reclamation grace horizon on a run nothing will ever
+// resume.
 func (k *Kernel) PauseRun(runID string) error {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
 		return newKernelError("kernel_runtime_run_not_found", "run %q not found", runID)
+	}
+	if run.Status != RunStatusRunning {
+		return newKernelError(ErrRunNotActive, "run %q cannot be paused (status: %s)", runID, run.Status)
 	}
 	run.Status = RunStatusPaused
 	k.Backend.UpdateRun(run)

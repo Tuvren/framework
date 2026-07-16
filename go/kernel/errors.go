@@ -146,6 +146,30 @@ const (
 	// ErrFaultPointUnsupported: a FaultPlan named a FaultPoint the target
 	// FaultInjectingBackend cannot honor.
 	ErrFaultPointUnsupported = "kernel_fault_point_unsupported"
+
+	// ErrRunNotActive: a run-completion call targeted a run whose status is
+	// neither "running" nor "paused" (already "completed" or "failed").
+	// Mirrors the TypeScript reference's kernel_runtime_run_not_active
+	// (typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts's complete
+	// path) byte-for-byte.
+	ErrRunNotActive = "kernel_runtime_run_not_active"
+
+	// ErrInvalidPausedRunCompletion: a run-completion call targeted a
+	// "paused" run but would complete it to a status other than "failed" —
+	// a paused run's owner deliberately relinquished active execution, so
+	// resuming it only ever ends in an explicit failure, never a normal
+	// completion. Mirrors the TypeScript reference's
+	// kernel_runtime_invalid_paused_run_completion (runtime-kernel-runs.ts's
+	// complete path) byte-for-byte.
+	ErrInvalidPausedRunCompletion = "kernel_runtime_invalid_paused_run_completion"
+
+	// ErrInvalidDurableReadCursor: a durable-read enumeration call (for
+	// example thread.list) was given a cursor that fails to decode as a
+	// well-formed opaque cursor payload. Matches the TypeScript reference
+	// (typescript/runtime/src/lib/durable-reads.ts,
+	// typescript/kernel/runtime/src/lib/runtime-kernel.ts) and the other
+	// ports' invalid_durable_read_cursor byte-for-byte.
+	ErrInvalidDurableReadCursor = "invalid_durable_read_cursor"
 )
 
 // KernelError is the typed error every kernel-runtime operation returns for

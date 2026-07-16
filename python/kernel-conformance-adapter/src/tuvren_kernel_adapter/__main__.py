@@ -18,13 +18,17 @@ Reads JSON-RPC 2.0 requests one per line from stdin and writes one JSON-RPC
 2.0 response per line to stdout, per
 `tools/conformance/adapter-protocol/protocol.md`. Stdout carries protocol
 frames only; all diagnostics go to stderr. Milestone M1 wired the three
-`kernel.protocol` record/verdict operations; milestone M2 adds the
+`kernel.protocol` record/verdict operations; milestone M2 added the
 `kernel.logical` / `kernel.lineage` / `kernel.protocol.edge-validation`
 surface built on `tuvren_kernel.runtime.RuntimeKernel` (see
-`tuvren_kernel_adapter.operations`) into the per-operation dispatch registry
-seam this module has carried since milestone M0. The remaining
-`docs/KrakenKernelSpecification.md` Section 7 surface (run liveness/leases,
-restart recovery, Scope isolation, reclamation) lands in later milestones.
+`tuvren_kernel_adapter.operations`); milestone M3 completed the rest of
+`docs/KrakenKernelSpecification.md` Section 7 -- run liveness/leases
+(`kernel.run-liveness`), checkpoint restart recovery
+(`kernel.restart-recovery`), Scope isolation (`kernel.scope-isolation`),
+and reclamation (`kernel.reclamation`) -- each dispatched through the same
+per-operation registry seam this module has carried since milestone M0.
+`CAPABILITIES` below declares all eight capabilities the manifest advertises;
+none remain deferred.
 """
 
 from __future__ import annotations

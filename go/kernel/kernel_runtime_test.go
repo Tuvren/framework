@@ -632,6 +632,76 @@ func TestCompleteRun_MissingEventObjectRejected(t *testing.T) {
 	requireErrCode(t, err, kernel.ErrMissingEventObject)
 }
 
+// TestCompleteRun_AlreadyCompletedRejected is a regression for the gap where
+// CompleteRun never checked run.Status: calling it a second time on an
+// already-"completed" run must not silently succeed again (mirrors the
+// TypeScript reference's run.complete transition matrix,
+// typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts).
+func TestCompleteRun_AlreadyCompletedRejected(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_a", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if err := k.CompleteRun("run_1", ""); err != nil {
+		t.Fatalf("complete run: %v", err)
+	}
+
+	err = k.CompleteRun("run_1", "")
+	requireErrCode(t, err, kernel.ErrRunNotActive)
+}
+
+// TestCompleteRun_FailedRunRejected proves a preempted ("failed") run
+// cannot be completed a second time via CompleteRun.
+func TestCompleteRun_FailedRunRejected(t *testing.T) {
+	k, clock := newManualClockKernel(0)
+	createSingleStepRun(t, k, "thread_failed", "branch_failed", "run_failed")
+	if _, _, err := k.AcquireLease("run_failed", "owner_a", 5); err != nil {
+		t.Fatalf("acquire: %v", err)
+	}
+	clock.SetMs(100)
+	if err := k.PreemptStaleRun("run_failed", clock.NowMs()); err != nil {
+		t.Fatalf("preempt: %v", err)
+	}
+
+	err := k.CompleteRun("run_failed", "")
+	requireErrCode(t, err, kernel.ErrRunNotActive)
+}
+
+// TestCompleteRun_PausedRunRejected proves a paused run cannot be completed
+// via CompleteRun: the TypeScript reference only ever lets a paused run
+// complete to "failed", never to "completed", and the Go port's CompleteRun
+// only ever completes to "completed" — so a paused run is always rejected
+// here, with the more specific kernel_runtime_invalid_paused_run_completion
+// code (not the generic kernel_runtime_run_not_active).
+func TestCompleteRun_PausedRunRejected(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_paused_complete", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if err := k.PauseRun("run_1"); err != nil {
+		t.Fatalf("pause: %v", err)
+	}
+
+	err = k.CompleteRun("run_1", "")
+	requireErrCode(t, err, kernel.ErrInvalidPausedRunCompletion)
+}
+
 // TestCreateRun_BranchHeadMismatchRejected is the P1-4 regression: a run's
 // declared startTurnNodeHash must equal its target branch's *current* head.
 func TestCreateRun_BranchHeadMismatchRejected(t *testing.T) {
@@ -1042,6 +1112,24 @@ func TestListThreads_DeterministicOrderAndCursorPaging(t *testing.T) {
 	if restCursor != "" {
 		t.Fatalf("expected no further cursor, got %q", restCursor)
 	}
+}
+
+// TestListThreads_MalformedCursorUsesInvalidDurableReadCursorCode is a
+// regression for the error-code drift where a malformed thread.list cursor
+// used a Go-only kernel_runtime_invalid_cursor code instead of matching the
+// TypeScript reference (typescript/kernel/runtime/src/lib/runtime-kernel.ts)
+// and the other ports' invalid_durable_read_cursor.
+func TestListThreads_MalformedCursorUsesInvalidDurableReadCursorCode(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	if _, err := k.CreateThread("thread_bad_cursor", "schema_main", "branch_bad_cursor"); err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+
+	_, _, err := k.ListThreads(0, "not-valid-base64-json!!!")
+	requireErrCode(t, err, kernel.ErrInvalidDurableReadCursor)
 }
 
 // recordFromSchema builds a kernel.Record for a TurnTreeSchema so

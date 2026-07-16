@@ -102,6 +102,23 @@ func (k *Kernel) ReconcileRun(runID string) error {
 		return nil
 	}
 
+	// Invariant: the head-to-active backward walk below only ever
+	// reconstructs *this* run's own missed checkpoint nodes when run is
+	// still "running". The single-active-run-per-branch invariant
+	// (activeRunOnBranch, kernel_runtime.go) guarantees that whenever a
+	// run is "running" it is the only run on its branch that could have
+	// checkpointed since its active turn node, so every node between the
+	// branch head and that active node is provably this run's own. A
+	// "completed" or "failed" run's active turn node, by contrast, is a
+	// fixed point in that branch's history: the head is free to move past
+	// it once a later run starts and checkpoints on the same branch, and
+	// reconciling the older, terminal run must never misattribute that
+	// later run's nodes to it. So a terminal run here means the branch
+	// simply moved on without it — leave it untouched.
+	if run.Status != RunStatusRunning {
+		return nil
+	}
+
 	var chain []string
 	cursor := branch.HeadTurnNodeHash
 	for depth := 0; depth < maxLineageWalkDepth; depth++ {

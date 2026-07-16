@@ -925,6 +925,22 @@ func (k *Kernel) CompleteRun(runID, eventHash string) error {
 	if !ok {
 		return newKernelError("kernel_runtime_run_not_found", "run %q not found", runID)
 	}
+	// Mirror the TypeScript reference's run.complete transition matrix
+	// (typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts): only a
+	// "running" or "paused" run can be completed at all (ErrRunNotActive
+	// otherwise — an already-"completed" or "failed" run must not be
+	// silently flipped again). CompleteRun always completes to
+	// "completed" (the Go port has no separate complete-to-failed entry
+	// point), and TS additionally only ever lets a "paused" run complete
+	// to "failed", never to "completed" — so a paused run is rejected
+	// here unconditionally (ErrInvalidPausedRunCompletion) rather than
+	// being allowed to resume and complete normally.
+	if run.Status != RunStatusRunning && run.Status != RunStatusPaused {
+		return newKernelError(ErrRunNotActive, "run %q cannot be completed (status: %s)", runID, run.Status)
+	}
+	if run.Status == RunStatusPaused {
+		return newKernelError(ErrInvalidPausedRunCompletion, "paused run %q can only be completed as failed", runID)
+	}
 	if eventHash != "" && !k.Backend.HasObject(eventHash) {
 		return newKernelError(ErrMissingEventObject, "event object %q is not present in the object store", eventHash)
 	}
@@ -1030,11 +1046,11 @@ func encodeThreadListCursor(c threadListCursor) (string, error) {
 func decodeThreadListCursor(cursor string) (threadListCursor, error) {
 	data, err := base64.RawURLEncoding.DecodeString(cursor)
 	if err != nil {
-		return threadListCursor{}, newKernelError("kernel_runtime_invalid_cursor", "malformed thread list cursor: %v", err)
+		return threadListCursor{}, newKernelError(ErrInvalidDurableReadCursor, "malformed thread list cursor: %v", err)
 	}
 	var decoded threadListCursor
 	if err := json.Unmarshal(data, &decoded); err != nil {
-		return threadListCursor{}, newKernelError("kernel_runtime_invalid_cursor", "malformed thread list cursor: %v", err)
+		return threadListCursor{}, newKernelError(ErrInvalidDurableReadCursor, "malformed thread list cursor: %v", err)
 	}
 	return decoded, nil
 }
