@@ -1238,6 +1238,30 @@
       "version": "unreleased-workspace"
     },
     {
+      "implementationId": "dart-kernel",
+      "language": "dart",
+      "results": [
+        {
+          "checkIds": [],
+          "checkSummary": {
+            "failedChecks": 0,
+            "passedChecks": 0,
+            "totalChecks": 72,
+            "applicableChecks": 0,
+            "nonApplicableChecks": 72
+          },
+          "declaredCapabilities": [],
+          "evidencePath": "reports/compatibility/evidence/certification-harness.kernel-dart-certification.json",
+          "reportLabel": "Dart process-local kernel baseline",
+          "reportStatus": "unsupported",
+          "status": "unsupported",
+          "suiteId": "tuvren.kernel.protocol",
+          "suiteVersion": "0.1.0"
+        }
+      ],
+      "version": "unreleased-workspace"
+    },
+    {
       "implementationId": "rust-framework",
       "language": "rust",
       "results": [
