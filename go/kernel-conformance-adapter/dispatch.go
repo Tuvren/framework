@@ -56,10 +56,7 @@ var operationHandlers = map[string]operationHandler{
 
 // capabilities lists the capability tags this adapter reports during
 // initialize. It must byte-match adapter.json's "capabilities" array (see
-// tools/conformance/harness/run.ts's validateAdapterHandshake). This
-// milestone (M2) adds the runtime kernel surface (schema registry, turn
-// trees, threads/branches, run lifecycle, thread enumeration) alongside the
-// M1 canonical-record core.
+// tools/conformance/harness/run.ts's validateAdapterHandshake).
 func capabilities() []string {
 	return []string{
 		"kernel.protocol",

@@ -256,6 +256,38 @@ def test_run_preempt_stale_rejects_a_run_that_is_not_running() -> None:
     assert code == "kernel_runtime_run_not_running"
 
 
+def test_run_preempt_stale_rejects_a_live_unexpired_lease() -> None:
+    """Section 5.2's preemption guard: a running run whose lease is still
+    live as of the backend-authoritative clock must not be preemptable --
+    otherwise a healthy owner could be forced to `failed` by any peer.
+    """
+
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    make_run(kernel, "preempt_live", owner_id="owner_a", lease_duration_ms=60_000)
+    code = error_code(lambda: kernel.run.preempt_stale("run_preempt_live"))
+    assert code == "kernel_runtime_run_lease_not_expired"
+    assert kernel.backend.get_run("run_preempt_live")["status"] == "running"
+
+
+def test_run_preempt_stale_rejects_a_run_without_a_lease() -> None:
+    """Section 5.2's preemption guard: preemption is defined over an
+    expired *lease*; a running run with no lease on record has nothing to
+    go stale and must be rejected rather than failed. This port stamps a
+    lease on every `run.create`, so the leaseless-running shape is only
+    reachable by direct store manipulation -- the guard is defensive.
+    """
+
+    kernel = new_kernel()
+    make_run(kernel, "preempt_leaseless")
+    stored = kernel.backend.get_run("run_preempt_leaseless")
+    stored["lease"] = None
+    kernel.backend.put_run("run_preempt_leaseless", stored)
+    code = error_code(lambda: kernel.run.preempt_stale("run_preempt_leaseless"))
+    assert code == "kernel_runtime_run_no_active_lease"
+    assert kernel.backend.get_run("run_preempt_leaseless")["status"] == "running"
+
+
 # --- Checkpoint fault points / crash recovery --------------------------------
 
 

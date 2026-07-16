@@ -41,7 +41,8 @@ func (k *Kernel) AcquireLease(runID, ownerID string, ttlMs int64) (token string,
 	}
 
 	now := k.Clock.NowMs()
-	token = fmt.Sprintf("lease_%s_%d", runID, now)
+	k.leaseTokenOrdinal++
+	token = fmt.Sprintf("lease_%s_%d", runID, k.leaseTokenOrdinal)
 	expiresAtMs = now + ttlMs
 
 	run.HasLease = true

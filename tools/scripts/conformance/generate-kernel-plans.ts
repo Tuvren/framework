@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatGeneratedJson } from "./format-generated-json.ts";
@@ -123,6 +123,24 @@ async function main(): Promise<void> {
   const extendedPlan = buildExtendedProtocolPlan();
 
   const filePath = resolve(PLANS_DIR, "kernel-protocol-extended.json");
+  // The checked-in plan is authority; this generator only knows the
+  // hashing/roundtrip check families it was written for. Later plan versions
+  // added hand-promoted checks (edge-validation, thread enumeration,
+  // canonical rejection, verdict composition) this script would silently
+  // destroy, so refuse to overwrite a plan whose version has moved past the
+  // one this generator produces.
+  const existing = JSON.parse(await readFile(filePath, "utf8")) as {
+    planVersion?: string;
+  };
+  if (existing.planVersion !== extendedPlan.planVersion) {
+    throw new Error(
+      `refusing to overwrite ${filePath}: checked-in planVersion ` +
+        `${existing.planVersion} differs from this generator's ` +
+        `${extendedPlan.planVersion}. The committed plan carries promoted ` +
+        `checks this generator does not know about; extend the generator ` +
+        `before regenerating.`
+    );
+  }
   await writeFile(filePath, `${JSON.stringify(extendedPlan, null, 2)}\n`);
   await formatGeneratedJson([filePath]);
 

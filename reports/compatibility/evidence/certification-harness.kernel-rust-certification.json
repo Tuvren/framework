@@ -344,6 +344,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.canonical_rejection.13.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.duplicate-map-key.rejected",
           "status": "pass"
         },
@@ -361,6 +365,10 @@
         },
         {
           "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.indefinite-length-text-string.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.negative-int-beyond-safe-integer-range.rejected",
           "status": "pass"
         },
         {
@@ -409,6 +417,10 @@
         },
         {
           "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.indefinite-length-text-string.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.negative-int-beyond-safe-integer-range.rejected",
           "status": "pass"
         },
         {

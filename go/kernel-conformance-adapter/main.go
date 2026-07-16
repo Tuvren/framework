@@ -18,12 +18,10 @@
 // response framing over line-delimited stdio, see
 // tools/conformance/adapter-protocol/protocol.md) so the shared conformance
 // engine (tools/conformance/harness/run.ts) can drive the Go kernel port the
-// same way it drives the TypeScript and Rust ports. This milestone (M1)
-// wires the kernel.protocol canonical-record core (deterministic hashing,
-// schema round-trip, and verdict modify composition) through the dispatch
-// table in dispatch.go and operations.go; operations outside that
-// capability still report adapter_operation_not_implemented until later
-// milestones add their handlers.
+// same way it drives the TypeScript and Rust ports. Operation handlers are
+// wired through the dispatch table in dispatch.go, split by concern across
+// the operations*.go files; an operation name outside that table reports
+// adapter_operation_not_implemented.
 package main
 
 import (

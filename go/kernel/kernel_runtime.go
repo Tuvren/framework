@@ -44,6 +44,14 @@ type Kernel struct {
 	ScopeID string
 	Clock   Clock
 	Backend Backend
+
+	// leaseTokenOrdinal makes every minted lease token unique within this
+	// Kernel regardless of clock granularity: spec §5.2 requires a
+	// monotonically changing fencing token, and a purely clock-derived
+	// token would repeat when two acquisitions land on the same
+	// backend-clock millisecond (the norm under the deterministic
+	// ManualClock this port's scenarios pin time with).
+	leaseTokenOrdinal int64
 }
 
 // NewKernel constructs a Kernel bound to one scope, clock, and backend.

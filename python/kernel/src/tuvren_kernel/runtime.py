@@ -791,6 +791,21 @@ class RunOps:
                 "kernel_runtime_run_not_running",
                 f"run {run_id} is not running (status={run['status']!r})",
             )
+        # Section 5.2 makes preemption explicitly guarded: the run must still
+        # hold a lease and that lease must have expired as of the
+        # backend-authoritative clock (ADR-050) -- a live, healthy owner must
+        # never be preemptable by a peer.
+        lease = run.get("lease")
+        if lease is None:
+            raise KernelRuntimeError(
+                "kernel_runtime_run_no_active_lease",
+                f"run {run_id} has no active lease to preempt",
+            )
+        if lease["expiresAtMs"] > self._kernel.backend.now():
+            raise KernelRuntimeError(
+                "kernel_runtime_run_lease_not_expired",
+                f"run {run_id} lease has not expired",
+            )
 
         staged = self._kernel.backend.list_staged(run_id)
         if staged:

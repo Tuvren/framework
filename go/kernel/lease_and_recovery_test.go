@@ -87,6 +87,29 @@ func TestLease_RenewStaleToken(t *testing.T) {
 	requireErrCode(t, err, kernel.ErrRunLeaseTokenMismatch)
 }
 
+func TestLease_TokensAreUniquePerAcquisitionUnderAFrozenClock(t *testing.T) {
+	// Spec §5.2 requires a monotonically changing fencing token. A
+	// clock-derived token repeats when two acquisitions land on the same
+	// backend-clock millisecond — the norm under ManualClock — letting a
+	// stale owner's old token stay valid after a re-acquisition.
+	k, _ := newManualClockKernel(10)
+	createSingleStepRun(t, k, "thread_lease_uniq", "branch_lease_uniq", "run_lease_uniq")
+	first, _, err := k.AcquireLease("run_lease_uniq", "owner_a", 20)
+	if err != nil {
+		t.Fatalf("first acquire: %v", err)
+	}
+	second, _, err := k.AcquireLease("run_lease_uniq", "owner_b", 20)
+	if err != nil {
+		t.Fatalf("second acquire: %v", err)
+	}
+	if first == second {
+		t.Fatalf("expected distinct lease tokens for same-instant acquisitions, both were %q", first)
+	}
+	if _, err := k.RenewLease("run_lease_uniq", "owner_a", first, 20); err == nil {
+		t.Fatalf("expected the pre-reacquisition token to be rejected")
+	}
+}
+
 func TestLease_ExpiredListingExcludesPausedRuns(t *testing.T) {
 	k, clock := newManualClockKernel(0)
 	if err := k.RegisterSchema(canonicalSchema()); err != nil {

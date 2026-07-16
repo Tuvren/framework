@@ -48,6 +48,10 @@
     "uint-beyond-safe-integer-range": {
       "description": "Encodes the maximum unsigned 64-bit integer (2^64 - 1) via an 8-byte-argument major-type-0 head; this exceeds Number.MAX_SAFE_INTEGER and the KernelRecord number domain requires every integer to be a JS-safe integer.",
       "cborBytes": [27, 255, 255, 255, 255, 255, 255, 255, 255]
+    },
+    "negative-int-beyond-safe-integer-range": {
+      "description": "Encodes the minimum negative 64-bit CBOR integer (-2^64, i.e. -1 - (2^64 - 1)) via an 8-byte-argument major-type-1 head; this exceeds Number.MIN_SAFE_INTEGER's magnitude and the KernelRecord number domain requires every integer to be a JS-safe integer.",
+      "cborBytes": [59, 255, 255, 255, 255, 255, 255, 255, 255]
     }
   }
 }
