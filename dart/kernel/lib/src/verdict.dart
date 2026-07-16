@@ -47,9 +47,10 @@ class Verdict {
   /// Abort's failure reason, or Pause's reason for pausing.
   final String? reason;
 
-  /// Modify. The CDDL's `modify-verdict` requires this field, so
-  /// [composeVerdicts] assumes every [kind] == [verdictKindModify] verdict
-  /// carries a non-null transform.
+  /// Modify. The CDDL's `modify-verdict` requires this field, but
+  /// [composeVerdicts] tolerates a null transform on a [verdictKindModify]
+  /// verdict, composing it as [RecordNull], mirroring `go/kernel/verdict.go`
+  /// where `Transform` is a plain `Record` interface value that can be nil.
   final Record? transform;
 
   /// Pause.
@@ -92,7 +93,9 @@ Verdict composeVerdicts(List<Verdict> verdicts) {
       case verdictKindPause:
         pause ??= verdict;
       case verdictKindModify:
-        modifyTransforms.add(verdict.transform!);
+        // A transform-less modify verdict composes as RecordNull(), the
+        // closest Dart analogue of Go's nil Record slot (go/kernel/verdict.go:84).
+        modifyTransforms.add(verdict.transform ?? const RecordNull());
       case verdictKindRetry:
         retry ??= verdict;
       case verdictKindProceed:

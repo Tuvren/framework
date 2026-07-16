@@ -102,6 +102,28 @@ void main() {
     });
 
     test(
+        'mutating a returned ordered PathValue list in place does not '
+        'corrupt stored state', () {
+      // Regression for the P2-2 bug: TurnTree.clone() used to do a shallow
+      // Map.of(manifest), so an ordered PathValue's backing List<String>
+      // was shared between the backend's stored state and every value
+      // returned by getTurnTree -- mutating the returned list in place
+      // (rather than replacing the map entry) corrupted the stored tree.
+      final kernel = newTestKernel();
+      kernel.registerSchema(canonicalSchema());
+      final hash = kernel.createTurnTree('schema_main', {
+        'messages': const PathValue.ordered(['a', 'b']),
+        'context.manifest': const PathValue.nullValue(),
+      });
+
+      final first = kernel.backend.getTurnTree(hash)!;
+      first.manifest['messages']!.ordered!.add('injected');
+
+      final second = kernel.backend.getTurnTree(hash)!;
+      expect(second.manifest['messages']!.ordered, equals(['a', 'b']));
+    });
+
+    test(
         'getTurnNode returns a copy whose consumedStagedResults is independent storage',
         () {
       final kernel = newTestKernel();

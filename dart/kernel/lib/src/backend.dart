@@ -89,12 +89,18 @@ final class TurnTree {
   int createdAtMs;
 
   /// A copy whose [manifest] is independent storage: mutating the clone's
-  /// map never affects this instance's, mirroring `go/kernel/memory_backend.go`'s
+  /// map, or any ordered [PathValue]'s backing list within it, never
+  /// affects this instance's, mirroring `go/kernel/memory_backend.go`'s
   /// `cloneTurnTree`.
   TurnTree clone() => TurnTree(
         hash: hash,
         schemaId: schemaId,
-        manifest: manifest,
+        manifest: {
+          for (final entry in manifest.entries)
+            entry.key: entry.value.kind == PathValueKind.ordered
+                ? PathValue.ordered(List.of(entry.value.ordered!))
+                : entry.value,
+        },
         createdAtMs: createdAtMs,
       );
 }
