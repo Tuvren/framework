@@ -173,8 +173,8 @@ const String errUnknownTreePath = 'kernel_runtime_unknown_tree_path';
 /// A turn tree create call's changes map supplied a value whose shape does
 /// not match its path's declared collection kind (an ordered path given a
 /// non-array value, or a single path given an array value). Intentionally
-/// unprefixed to byte-match the Go/TypeScript reference; the Python port
-/// diverges here with `kernel_runtime_invalid_tree_path_value`.
+/// unprefixed to byte-match the TypeScript reference; Go and Python emit
+/// this same unprefixed string.
 const String errInvalidPathValueKind = 'invalid_path_value_kind';
 
 /// A durable-read enumeration call (for example thread.list) was given a

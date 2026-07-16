@@ -1,6 +1,6 @@
 # Adding a new implementation language
 
-This guide walks through bringing a new language implementation into the framework end to end, using the Rust kernel line — the framework's second language, after the TypeScript reference implementation — as the running example. The Go (`go/`) and Python (`python/`) kernel lines followed this same path and are referenced below where their experience refined it.
+This guide walks through bringing a new language implementation into the framework end to end, using the Rust kernel line — the framework's second language, after the TypeScript reference implementation — as the running example. The Go (`go/`), Python (`python/`), and Dart (`dart/`) kernel lines followed this same path and are referenced below where their experience refined it.
 
 This document is a pointer, not an oracle: it describes a path through machine-readable authority and repo tooling. Where it disagrees with `spec/<port>/authority-packet.json`, a conformance plan, `CLAUDE.md`/`AGENTS.md`, or the actual gate scripts, those sources win.
 
@@ -27,7 +27,8 @@ Put language-specific code under `<lang>/<port-or-area>/`, never at a boundary o
 - `rust/kernel` (`tuvren-kernel-rust`) — the reference-shape kernel implementation. Its `src/cbor.rs`, `types.rs`, `memory.rs`, `identity.rs` encode the CDDL grammar's deterministic CBOR encoding and hashing rules; `src/generated/` holds telemetry helpers derived from the shared telemetry registry (see `tools/generators/telemetry/`), not hand-authored kernel semantics.
 - Register the new crate under `[workspace.members]` in the root `Cargo.toml` and reuse `[workspace.dependencies]` pins rather than re-declaring versions per crate.
 - Go and Python mirror the same flat per-unit layout: `go/kernel`, `go/kernel-conformance-adapter`, `go/kernel-certification` are separate Go modules registered in the root `go.work`; `python/kernel`, `python/kernel-conformance-adapter`, `python/kernel-certification` are uv workspace members of the root `pyproject.toml` (with `uv.lock` as the pin authority). Native workspace files at the repo root own dependency truth for their language, exactly as `Cargo.toml` does for Rust. One Go-specific gotcha: `go mod tidy` ignores `go.work` and tries the network — validate with `go build`/`go vet`/`go test` (which honor the workspace) instead.
-- Toolchain provisioning belongs in `devenv.nix` (`languages.go.enable`, `languages.python` + `uv`), so CI and local shells share one pinned environment.
+- Dart mirrors the same flat per-unit layout: `dart/kernel`, `dart/kernel-conformance-adapter`, `dart/kernel-certification` are members of the root `pubspec.yaml` Dart 3.6+ pub workspace (a `workspace:` list of member paths), with each member's own `pubspec.yaml` declaring `resolution: workspace` so it resolves against the workspace's shared dependency graph, and the root `pubspec.lock` (committed, resolved up front) as the pin authority — never resolved lazily inside a guarded verify phase.
+- Toolchain provisioning belongs in `devenv.nix` (`languages.go.enable`, `languages.python` + `uv`, `languages.dart.enable`), so CI and local shells share one pinned environment.
 
 Derive from owned neutral sources; do not hand-roll a second, divergent encoding of the CDDL/TypeSpec shape by eyeballing the reference implementation's TypeScript.
 
@@ -80,7 +81,7 @@ bun tools/conformance/certification/validate-certification-discovery.ts
 
 ## 4.5 Extend every gate that enumerates language roots
 
-This is the step the Go/Python onboarding proved is easiest to miss: several gate scripts carry their own list of language roots, and a new language that skips any of them passes green while silently escaping enforcement. Audit all of these when adding a language:
+This is the step the Go/Python/Dart onboarding proved is easiest to miss: several gate scripts carry their own list of language roots, and a new language that skips any of them passes green while silently escaping enforcement. Audit all of these when adding a language:
 
 - `tools/conformance/adapter-protocol/validate-adapter-protocol.ts` — `ADAPTER_MANIFEST_ROOTS` (manifest schema validation).
 - `tools/scripts/portability-gate.ts` — `adapterRoots` in `loadAllAdapterManifests` (adapter coverage + capability-plan mapping).
@@ -89,6 +90,8 @@ This is the step the Go/Python onboarding proved is easiest to miss: several gat
 - `tools/scripts/verify-kernel.ts` — `KERNEL_CONFORMANCE_PROJECTS` if you're on the kernel boundary.
 
 These lists are graph-validated where possible, but the language-root enumerations are not self-discovering — extending them is a deliberate onboarding step.
+
+Registering the adapter in `tools/scripts/compatibility-report.ts`'s `CONFORMANCE_RUNNERS` is a separate, easy-to-miss step and it is atomically coupled to two other things, not independently deferrable: `assertConformanceRunnerParity` hard-fails unless the runner's project name also appears in `tools/conformance/certification/certified-projects.json`, and `bun run compatibility:check` (part of `bun run verify`) hard-fails if a registered `CONFORMANCE_RUNNERS` entry has no corresponding row in the checked-in `reports/compatibility/compatibility-matrix.json` — a registered runner without a matrix row, or a matrix row without a registered runner, is a fleet-parity failure, not a warning. Land the `CONFORMANCE_RUNNERS` registration, the `certified-projects.json` entry, and a `bun run compatibility:evidence` refresh (which regenerates the matrix and per-runner evidence together) in the same change; registering the runner without refreshing evidence in the same commit leaves `verify` red for anyone who checks out that commit.
 
 ## 5. Wire Nx, and optionally a Bazel shim
 

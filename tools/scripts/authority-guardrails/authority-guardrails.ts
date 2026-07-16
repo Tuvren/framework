@@ -1549,11 +1549,25 @@ async function findSourceFiles(directory: string): Promise<string[]> {
 async function findConformanceSourceRoots(): Promise<string[]> {
   // Every language root always exists post-cutover; a missing one is a
   // broken checkout and must throw, not silently narrow the scan.
+  const fixedLanguageRoots = [
+    TYPESCRIPT_ROOT,
+    RUST_ROOT,
+    GO_ROOT,
+    PYTHON_ROOT,
+    DART_ROOT,
+  ];
+
+  for (const root of fixedLanguageRoots) {
+    if (!existsSync(root)) {
+      throw new Error(
+        `authority-guardrails conformance-source scan expected language root ${relative(REPO_ROOT, root)} to exist — a missing root is a broken checkout, not a signal to silently narrow the scan`
+      );
+    }
+  }
+
   const roots = (
     await Promise.all(
-      [TYPESCRIPT_ROOT, RUST_ROOT, GO_ROOT, PYTHON_ROOT, DART_ROOT].map(
-        (root) => collectConformanceSourceRoots(root)
-      )
+      fixedLanguageRoots.map((root) => collectConformanceSourceRoots(root))
     )
   ).flat();
   return roots
