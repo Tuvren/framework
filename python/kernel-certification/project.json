@@ -46,14 +46,13 @@
       "executor": "nx:run-commands",
       "inputs": [
         "default",
-        "{workspaceRoot}/python/kernel/**/*",
-        "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/python/kernel-certification/**/*",
         "{workspaceRoot}/pyproject.toml",
         "{workspaceRoot}/uv.lock"
       ],
       "options": {
         "cwd": ".",
-        "command": "uv run --project python/kernel-conformance-adapter ruff check python/kernel-conformance-adapter/src && uv run --project python/kernel-conformance-adapter ruff format --check python/kernel-conformance-adapter/src && uv run --project python/kernel-certification ruff check python/kernel-certification/src python/kernel-certification/tests && uv run --project python/kernel-certification ruff format --check python/kernel-certification/src python/kernel-certification/tests"
+        "command": "uv run --project python/kernel-certification ruff check python/kernel-certification/src python/kernel-certification/tests && uv run --project python/kernel-certification ruff format --check python/kernel-certification/src python/kernel-certification/tests"
       }
     },
     "test": {

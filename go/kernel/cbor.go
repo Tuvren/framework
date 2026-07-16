@@ -275,8 +275,7 @@ func decodeRecordAtDepth(data []byte, i int, depth int) (Record, int, error) {
 			}
 
 			var value Record
-			cursor, err = keyEnd, nil
-			value, cursor, err = decodeRecordAtDepth(data, cursor, depth+1)
+			value, cursor, err = decodeRecordAtDepth(data, keyEnd, depth+1)
 			if err != nil {
 				return nil, i, err
 			}
@@ -294,7 +293,7 @@ func decodeRecordAtDepth(data []byte, i int, depth int) (Record, int, error) {
 		case 22:
 			return RecordNull{}, next, nil
 		case 25, 26, 27:
-			return nil, i, fmt.Errorf("kernel records must not use CBOR floats")
+			return nil, i, fmt.Errorf("kernel record decode: kernel records must not use CBOR floats")
 		default:
 			return nil, i, fmt.Errorf("kernel record decode: unsupported simple value (additional info %d)", additionalInfo)
 		}

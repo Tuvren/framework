@@ -42,13 +42,15 @@ from tuvren_kernel_adapter.operations_common import (
 def run_lease_renewal(_operation_input: Any) -> dict[str, Any]:
     """Handle `kernel.run-liveness.lease-renewal`.
 
-    Creates a run with a 10ms lease at clock=0 (`expiresAtMs = 10`), then
-    renews it at clock=10 with a 30ms duration, landing the renewed expiry
-    on the plan's literal `40`. Also captures the two distinct renewal
-    rejection codes: a different owner id is rejected before the token is
-    even inspected (`run_lease_owner_mismatch`), a correct owner presenting
-    a token that does not match the run's actual lease token is rejected
-    with `run_lease_token_mismatch`.
+    Creates a run with a 15ms lease at clock=0 (`expiresAtMs = 15`), then
+    renews it at clock=10 -- strictly before that expiry, since
+    `renew_lease`'s expiry guard is inclusive (`run_lease_expired` fires at
+    `expiresAtMs <= now`) -- with a 30ms duration, landing the renewed
+    expiry on the plan's literal `40`. Also captures the two distinct
+    renewal rejection codes: a different owner id is rejected before the
+    token is even inspected (`run_lease_owner_mismatch`), a correct owner
+    presenting a token that does not match the run's actual lease token is
+    rejected with `run_lease_token_mismatch`.
     """
 
     clock = _InjectedClock(0)
@@ -71,7 +73,7 @@ def run_lease_renewal(_operation_input: Any) -> dict[str, Any]:
         thread["rootTurnNodeHash"],
         [{"id": "step", "deterministic": False, "sideEffects": False}],
         owner_id="owner_primary",
-        lease_duration_ms=10,
+        lease_duration_ms=15,
     )
     actual_token = kernel.backend.get_run("run_lease_renewal")["lease"]["token"]
 

@@ -920,6 +920,15 @@ func (k *Kernel) CompleteStep(runID, stepID, eventHash, treeHash string) (string
 // step boundary (kernel spec §5.6) exactly like CompleteStep's checkpoint,
 // and marks the run completed. A run with nothing staged and no eventHash
 // completes without minting an extra turn node.
+//
+// Surface note: the TypeScript reference exposes one generic
+// complete(runId, status, eventHash) accepting completed/failed/paused,
+// while this port splits the surface into CompleteRun (always → completed)
+// and PauseRun / PreemptStaleRun for the other transitions. That split is
+// port-local API design; the underlying semantics (reactive checkpoint,
+// unconditional lease clear, terminal-status guards) are the shared
+// cross-port authority, so any future promoted check over the run-status
+// transition matrix must be scenario-shaped, not surface-shaped.
 func (k *Kernel) CompleteRun(runID, eventHash string) error {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
@@ -971,6 +980,11 @@ func (k *Kernel) CompleteRun(runID, eventHash string) error {
 	}
 
 	run.Status = RunStatusCompleted
+	run.CurrentStepIndex = len(run.StepSequence)
+	run.HasLease = false
+	run.LeaseOwnerID = ""
+	run.LeaseToken = ""
+	run.LeaseExpiresAtMs = 0
 	k.Backend.UpdateRun(run)
 	return nil
 }

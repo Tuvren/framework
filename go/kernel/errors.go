@@ -122,6 +122,14 @@ const (
 	// already preempted/released).
 	ErrRunLeaseNotHeld = "kernel_runtime_run_lease_not_held"
 
+	// ErrRunLeaseExpired: a lease renewal call targeted a run whose lease is
+	// already expired as of the backend-authoritative clock reading (kernel
+	// spec §5.2 Run Execution Leases). Unprefixed to match the run_lease_*
+	// code family alongside ErrRunLeaseOwnerMismatch/ErrRunLeaseTokenMismatch
+	// (mirrors the TypeScript reference's renewLease expiry rejection,
+	// runtime-kernel-runs.ts).
+	ErrRunLeaseExpired = "run_lease_expired"
+
 	// ErrRunNotPreemptable: a stale-preemption call targeted a run that is
 	// not both status "running" and lease-expired as of the supplied clock
 	// reading.

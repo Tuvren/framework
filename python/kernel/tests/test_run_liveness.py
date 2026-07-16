@@ -109,12 +109,15 @@ def test_run_create_stamps_a_backend_authoritative_lease() -> None:
 def test_run_lease_renewal_extends_expiry_from_backend_clock() -> None:
     clock = _Clock(0)
     kernel = new_kernel(clock)
+    # `lease_duration_ms=10` -> expiresAtMs=10; expiry is inclusive
+    # (`run_lease_expired` fires at `expiresAtMs <= now`), so renewing must
+    # happen strictly before the boundary to observe a live renewal.
     _, _, run = make_run(kernel, "lease_renew", owner_id="owner_a", lease_duration_ms=10)
     token = run["lease"]["token"]
 
-    clock.value = 10
+    clock.value = 9
     renewed = kernel.run.renew_lease("run_lease_renew", "owner_a", token, lease_duration_ms=30)
-    assert renewed["expiresAtMs"] == 40
+    assert renewed["expiresAtMs"] == 39
 
 
 def test_run_lease_renewal_rejects_owner_mismatch() -> None:
@@ -136,6 +139,72 @@ def test_run_lease_renewal_rejects_stale_token() -> None:
         )
     )
     assert code == "run_lease_token_mismatch"
+
+
+def test_run_lease_renewal_rejects_an_already_expired_lease() -> None:
+    """Section 5.2/ADR-050 fencing hazard: a stale owner whose lease has
+    already expired must not be able to silently renew and resurrect
+    itself. The expiry guard fires before the owner/token checks -- even
+    the *correct* owner presenting the *correct* token cannot renew past
+    expiry, since by definition the lease is no longer theirs to renew.
+    """
+
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    _, _, run = make_run(kernel, "lease_expired", owner_id="owner_a", lease_duration_ms=5)
+    token = run["lease"]["token"]
+
+    clock.value = 5  # exactly at expiry: inclusive per `run_lease_expired`
+    code = error_code(
+        lambda: kernel.run.renew_lease("run_lease_expired", "owner_a", token, lease_duration_ms=10)
+    )
+    assert code == "run_lease_expired"
+    # The stale owner's renewal attempt must not have mutated the lease.
+    stored = kernel.backend.get_run("run_lease_expired")
+    assert stored["lease"]["expiresAtMs"] == 5
+
+
+def test_run_lease_renewal_rejects_a_non_running_run() -> None:
+    """`complete` always clears the lease (mirroring TS's unconditional
+    `clearStoredRunLease`), so an ordinarily-terminated run never has both a
+    non-"running" status *and* a live lease at once -- the guard is
+    defensive, reachable only by direct store manipulation, exactly like
+    `test_run_preempt_stale_rejects_a_run_without_a_lease` above. The lease
+    ladder's *presence* check comes first, so a non-running run whose lease
+    was already cleared surfaces `kernel_runtime_run_no_active_lease`
+    instead; this test pins the *second* rung of the ladder by keeping the
+    lease intact on a run manually flipped to "paused".
+    """
+
+    kernel = new_kernel()
+    _, _, run = make_run(kernel, "lease_not_running", owner_id="owner_a")
+    token = run["lease"]["token"]
+    stored = kernel.backend.get_run("run_lease_not_running")
+    kernel.backend.put_run("run_lease_not_running", {**stored, "status": "paused"})
+
+    code = error_code(
+        lambda: kernel.run.renew_lease(
+            "run_lease_not_running", "owner_a", token, lease_duration_ms=10
+        )
+    )
+    assert code == "kernel_runtime_run_not_running"
+    assert kernel.backend.get_run("run_lease_not_running")["lease"] is not None
+
+
+def test_run_lease_renewal_still_live_at_t20_for_a_lease_expiring_at_t30() -> None:
+    """The M3 conformance scenario shape this fix must not regress: a lease
+    created at t=0 with a 30ms duration (expiresAtMs=30) is renewed at
+    t=20 -- strictly before expiry -- and must still succeed.
+    """
+
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    _, _, run = make_run(kernel, "lease_still_live", owner_id="owner_a", lease_duration_ms=30)
+    token = run["lease"]["token"]
+
+    clock.value = 20
+    renewed = kernel.run.renew_lease("run_lease_still_live", "owner_a", token, lease_duration_ms=30)
+    assert renewed["expiresAtMs"] == 50
 
 
 def test_run_list_expired_running_excludes_paused_runs() -> None:
@@ -660,3 +729,160 @@ def test_commit_checkpoint_rejects_a_concurrent_lateral_writer() -> None:
     retried_hash = kernel.checkpoint(writer_two, fresh_branch, tree_hash, event_two, [])
     assert kernel.branch.get(branch_id)["headTurnNodeHash"] == retried_hash
     assert retried_hash != winner_hash
+
+
+# --- Torn completion checkpoints (round-4 fix) --------------------------------
+
+
+def _seed_and_fault_complete(fault_point: str, status: str = "completed") -> dict[str, Any]:
+    """`_seed_and_fault_preempt`'s counterpart for `RunOps.complete`.
+
+    Seeds a running run with one uncommitted staged result, then injects
+    `fault_point` into the reactive checkpoint `complete` performs -- the
+    same three-write `commit_checkpoint` sequence `complete_step` and
+    `preempt_stale` use -- so a caller can inspect exactly how far the torn
+    completion got and exercise `reconcile`/retry against it.
+    """
+
+    base_backend = InMemoryBackend()
+    kernel = RuntimeKernel(base_backend)
+    kernel.schema.register(dict(CANONICAL_SCHEMA))
+
+    thread = kernel.thread.create(
+        f"thread_complete_fault_{fault_point}",
+        "schema_main",
+        f"branch_complete_fault_{fault_point}",
+    )
+    turn = kernel.turn.create(
+        f"turn_complete_fault_{fault_point}",
+        thread["threadId"],
+        thread["branchId"],
+        None,
+        thread["rootTurnNodeHash"],
+    )
+    run_id = f"run_complete_fault_{fault_point}"
+    kernel.run.create(
+        run_id,
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+        owner_id="owner_a",
+    )
+    kernel.staging.stage(run_id, b"uncommitted", "task_1", "message", "completed")
+    pre_fault_head = kernel.branch.get(thread["branchId"])["headTurnNodeHash"]
+
+    kernel.backend = FaultInjectingBackend(base_backend, fault_point, policy="once")  # type: ignore[assignment]
+    raised_code = None
+    try:
+        kernel.run.complete(run_id, status)
+    except KernelRuntimeError as runtime_error:
+        raised_code = runtime_error.code
+    kernel.backend = base_backend
+
+    return {
+        "kernel": kernel,
+        "thread": thread,
+        "run_id": run_id,
+        "pre_fault_head": pre_fault_head,
+        "raised_code": raised_code,
+    }
+
+
+def test_complete_mid_commit_tear_leaves_a_durable_marker_and_retry_refuses() -> None:
+    """The torn-completion consequence this fix closes: without a durable
+    `pendingCheckpoint` marker, a process death between the head CAS and
+    `clear_staged` would leave the head advanced and staging cleared but
+    the run record still `"running"` with its lease intact -- and
+    `run.reconcile` would have no marker to repair it from. Proves both
+    halves of the fix: a naive retry refuses
+    (`kernel_runtime_run_pending_checkpoint`) instead of double-
+    incorporating, and `run.reconcile` finishes the completion to the exact
+    terminal state (status/lease) a clean `complete` reaches.
+    """
+
+    scenario = _seed_and_fault_complete("midCommit", status="completed")
+    kernel: RuntimeKernel = scenario["kernel"]
+    run_id = scenario["run_id"]
+    thread = scenario["thread"]
+
+    assert scenario["raised_code"] == "kernel_persistence_fault_injected"
+
+    torn_run = kernel.backend.get_run(run_id)
+    assert torn_run["status"] == "running"
+    assert torn_run["lease"] is not None
+    pending = torn_run["pendingCheckpoint"]
+    assert pending is not None
+    assert pending["kind"] == "complete"
+    assert pending["targetStatus"] == "completed"
+    # Genuine partial state: the TurnNode is durable, but the branch head
+    # has not advanced to it and staging has not cleared.
+    assert kernel.backend.get_node(pending["nodeHash"]) is not None
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == scenario["pre_fault_head"]
+    assert kernel.staging.current(run_id) != []
+
+    # A naive retry must refuse rather than re-run the reactive checkpoint
+    # over the same still-staged results.
+    code = error_code(lambda: kernel.run.complete(run_id, "completed"))
+    assert code == "kernel_runtime_run_pending_checkpoint"
+    assert kernel.backend.get_run(run_id)["status"] == "running"
+
+    reconciled = kernel.run.reconcile(run_id)
+    assert reconciled["pendingMessageCommitted"] is True
+    assert reconciled["headTurnNodeHash"] == pending["nodeHash"]
+
+    repaired = kernel.backend.get_run(run_id)
+    # Exactly as a clean `complete("completed")` would leave the run.
+    assert repaired["status"] == "completed"
+    assert repaired["lease"] is None
+    assert repaired["preemptionReason"] is None
+    assert repaired["pendingCheckpoint"] is None
+    # Exactly one checkpoint node was ever minted -- reconcile finished the
+    # torn attempt, it did not mint a second one.
+    assert repaired["createdTurnNodes"] == [pending["nodeHash"]]
+    assert kernel.staging.current(run_id) == []
+
+    head_node = kernel.backend.get_node(kernel.branch.get(thread["branchId"])["headTurnNodeHash"])
+    assert head_node is not None
+    assert [staged["taskId"] for staged in head_node["consumedStagedResults"]] == ["task_1"]
+
+
+def test_complete_before_commit_tear_reconciles_back_to_a_retryable_state() -> None:
+    """A `beforeCommit` tear never durably wrote the checkpoint's TurnNode
+    at all, so `reconcile` just discards the stale marker (the run stays
+    `"running"` with its staged pool untouched -- nothing was ever
+    incorporated) and a subsequent `complete` retry proceeds exactly as if
+    the first attempt never happened, incorporating the staged work exactly
+    once.
+    """
+
+    scenario = _seed_and_fault_complete("beforeCommit", status="completed")
+    kernel: RuntimeKernel = scenario["kernel"]
+    run_id = scenario["run_id"]
+
+    assert scenario["raised_code"] == "kernel_persistence_fault_injected"
+
+    torn_run = kernel.backend.get_run(run_id)
+    assert torn_run["status"] == "running"
+    pending = torn_run["pendingCheckpoint"]
+    assert pending is not None
+    assert pending["kind"] == "complete"
+    assert kernel.backend.get_node(pending["nodeHash"]) is None
+    assert kernel.staging.current(run_id) != []
+
+    reconciled = kernel.run.reconcile(run_id)
+    assert reconciled["pendingMessageCommitted"] is False
+
+    after_reconcile = kernel.backend.get_run(run_id)
+    assert after_reconcile["status"] == "running"
+    assert after_reconcile["pendingCheckpoint"] is None
+    assert kernel.staging.current(run_id) != []  # untouched: nothing was incorporated
+
+    completed = kernel.run.complete(run_id, "completed")
+    assert completed["turnNodeHash"] is not None
+    repaired = kernel.backend.get_run(run_id)
+    assert repaired["status"] == "completed"
+    assert repaired["lease"] is None
+    assert len(repaired["createdTurnNodes"]) == 1
+    assert kernel.staging.current(run_id) == []

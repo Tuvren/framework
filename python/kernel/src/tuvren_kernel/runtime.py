@@ -716,12 +716,30 @@ class RunOps:
     ) -> dict[str, Any]:
         """Section 5.2 / ADR-050 lease renewal.
 
+        Mirrors the TS reference's guard ladder (`runtime-kernel-runs.ts`
+        `renewLease`) in order: lease present
+        (`kernel_runtime_run_no_active_lease`) -> run status must be
+        `"running"` (`kernel_runtime_run_not_running`) -> the lease must NOT
+        already be expired as of `RuntimeBackend.now()`
+        (`run_lease_expired`) -> owner mismatch (`run_lease_owner_mismatch`)
+        -> token mismatch (`run_lease_token_mismatch`). The expiry check
+        comes before the owner/token checks so a stale owner whose lease has
+        already expired can never silently renew and resurrect itself --
+        the exact Section 5.2/ADR-050 fencing hazard leases exist to
+        prevent; a caller that is still within the lease window is rejected
+        on ownership/token grounds, never on expiry.
+
         Backend-authoritative: the new `expiresAtMs` is always computed from
         `RuntimeBackend.now()`, never from a caller-supplied clock. Rejects a
         non-owner caller with `run_lease_owner_mismatch` before ever
         inspecting the token (an impostor should not learn whether *any*
         token would have worked), then rejects a correct-owner but
         wrong/stale token with `run_lease_token_mismatch`.
+
+        Deliberate scope cut: unlike the TS reference, this does not rotate
+        the lease's token on renewal (`createFencingToken()`) -- an
+        acknowledged unpinned cross-port divergence, out of scope for this
+        milestone.
         """
 
         run = self._kernel.require_run(run_id)
@@ -730,6 +748,14 @@ class RunOps:
             raise KernelRuntimeError(
                 "kernel_runtime_run_no_active_lease", f"run {run_id} has no active lease"
             )
+        if run["status"] != "running":
+            raise KernelRuntimeError(
+                "kernel_runtime_run_not_running",
+                f"run {run_id} lease cannot be renewed (status={run['status']!r})",
+            )
+        now = self._kernel.backend.now()
+        if lease["expiresAtMs"] <= now:
+            raise KernelRuntimeError("run_lease_expired", f"run {run_id} lease has already expired")
         if lease["ownerId"] != owner_id:
             raise KernelRuntimeError(
                 "run_lease_owner_mismatch",
@@ -740,7 +766,7 @@ class RunOps:
                 "run_lease_token_mismatch", f"run {run_id} lease renewal token is stale"
             )
 
-        new_expires_at_ms = self._kernel.backend.now() + lease_duration_ms
+        new_expires_at_ms = now + lease_duration_ms
         run["lease"] = {**lease, "expiresAtMs": new_expires_at_ms}
         self._kernel.touch_run(run)
         self._kernel.backend.put_run(run_id, run)
@@ -1016,11 +1042,14 @@ class RunOps:
         return {"checkpointed": True, "turnNodeHash": node_hash}
 
     def reconcile(self, run_id: str) -> dict[str, Any]:
-        """Section 5.7-style recovery reconciliation for `complete_step`'s
-        pending checkpoint.
+        """Section 5.7-style recovery reconciliation for a torn checkpoint.
 
-        Inspects backend state directly to determine exactly how far an
-        interrupted `complete_step` attempt got, and finishes it
+        Shared across every `RunOps` method that routes its checkpoint
+        through the `begin_checkpoint` -> `pendingCheckpoint` marker ->
+        `commit_checkpoint` discipline -- `complete_step` (`kind` absent),
+        `preempt_stale` (`kind: "preempt"`), and `complete`
+        (`kind: "complete"`). Inspects backend state directly to determine
+        exactly how far an interrupted attempt got, and finishes it
         deterministically:
 
         - The checkpoint's TurnNode was never written (`beforeCommit`): the
@@ -1106,6 +1135,20 @@ class RunOps:
             run["status"] = "failed"
             run["preemptionReason"] = "stale_running_recovery"
             run["lease"] = None
+        elif pending.get("kind") == "complete":
+            # `RunOps.complete`'s own final bookkeeping never ran (the tear
+            # happened somewhere inside `commit_checkpoint`, before the run
+            # record was flipped to its target status): finish exactly what
+            # `complete` would have finished -- write the recorded target
+            # status and clear the lease/preemption reason exactly as a
+            # non-torn `complete` would, unconditionally and regardless of
+            # target status (mirrors `complete`'s own unconditional
+            # `clearStoredRunLease` semantics) -- never a
+            # `lastCompletedStepId`/`currentStepIndex` mutation, which only
+            # applies to a torn `complete_step`.
+            run["status"] = pending["targetStatus"]
+            run["lease"] = None
+            run["preemptionReason"] = None
         else:
             run["lastCompletedStepId"] = pending["stepId"]
             steps = run["stepSequence"]
@@ -1125,6 +1168,30 @@ class RunOps:
         }
 
     def complete(self, run_id: str, status: str, event_hash: str | None = None) -> dict[str, Any]:
+        """Section 5.6 terminal-status completion.
+
+        Like `preempt_stale` and `complete_step`, this routes its reactive
+        checkpoint (when one is needed) through the durable
+        `begin_checkpoint` -> `pendingCheckpoint` marker (`kind: "complete"`,
+        carrying the target `status`) -> `commit_checkpoint` -> final
+        run-record bookkeeping discipline, rather than the bare
+        `RuntimeKernel.checkpoint` convenience wrapper: a completion's
+        checkpoint sequence is exactly as tearable as a step's or a
+        preemption's (a crash between the head CAS and `clear_staged` --
+        or anywhere else in `commit_checkpoint`'s three sequential writes --
+        leaves the head advanced and staging cleared but the run record
+        still `"running"` with its lease intact, and without a durable
+        marker `run.reconcile` would have no way to detect or repair the
+        tear). Refuses a retry outright
+        (`kernel_runtime_run_pending_checkpoint`) while a prior attempt's
+        `pendingCheckpoint` marker is still unreconciled, exactly like
+        `preempt_stale`; `run.reconcile` recognizes a `pendingCheckpoint` of
+        `kind: "complete"` and finishes the interrupted completion (writing
+        the recorded target status, clearing the lease and preemption
+        reason exactly as a non-torn `complete` would) rather than treating
+        it as an interrupted step or preemption.
+        """
+
         run = self._kernel.require_run(run_id)
 
         if run["status"] == "running":
@@ -1150,6 +1217,19 @@ class RunOps:
                 "kernel_runtime_missing_event_object", f"unknown event object: {event_hash}"
             )
 
+        if run.get("pendingCheckpoint") is not None:
+            # A previous `complete` (or `complete_step`/`preempt_stale`)
+            # attempt tore mid-checkpoint and was never reconciled: its
+            # `pendingCheckpoint` marker is still durable. Re-running the
+            # reactive checkpoint now would re-incorporate the same
+            # still-staged results a second time. Refuse until
+            # `run.reconcile` has resolved the pending marker.
+            raise KernelRuntimeError(
+                "kernel_runtime_run_pending_checkpoint",
+                f"run {run_id} has an unreconciled pending checkpoint; call "
+                "run.reconcile before retrying completion",
+            )
+
         result: dict[str, Any] = {}
         staged = self._kernel.backend.list_staged(run_id)
         # Reactive checkpoint (Section 5.6 / TS `maybeCheckpoint` in
@@ -1165,8 +1245,24 @@ class RunOps:
             head_node = self._kernel.backend.get_node(branch["headTurnNodeHash"])
             assert head_node is not None
             new_tree_hash = self._kernel.tree.incorporate(head_node["turnTreeHash"], staged)
-            node_hash = self._kernel.checkpoint(run, branch, new_tree_hash, event_hash, staged)
+
+            node_identity, node_hash = self._kernel.begin_checkpoint(
+                run, branch, new_tree_hash, event_hash, staged
+            )
+            run["pendingCheckpoint"] = {
+                "kind": "complete",
+                "stepId": None,
+                "nodeHash": node_hash,
+                "nodeIdentity": node_identity,
+                "targetStatus": status,
+            }
+            self._kernel.touch_run(run)
+            self._kernel.backend.put_run(run_id, run)
+
+            self._kernel.commit_checkpoint(run, branch, node_hash, node_identity)
+
             run["createdTurnNodes"].append(node_hash)
+            run["pendingCheckpoint"] = None
             result["turnNodeHash"] = node_hash
 
         run["status"] = status

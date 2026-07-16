@@ -127,19 +127,32 @@ async function main(): Promise<void> {
   // hashing/roundtrip check families it was written for. Later plan versions
   // added hand-promoted checks (edge-validation, thread enumeration,
   // canonical rejection, verdict composition) this script would silently
-  // destroy, so refuse to overwrite a plan whose version has moved past the
-  // one this generator produces.
-  const existing = JSON.parse(await readFile(filePath, "utf8")) as {
-    planVersion?: string;
-  };
-  if (existing.planVersion !== extendedPlan.planVersion) {
-    throw new Error(
-      `refusing to overwrite ${filePath}: checked-in planVersion ` +
-        `${existing.planVersion} differs from this generator's ` +
-        `${extendedPlan.planVersion}. The committed plan carries promoted ` +
-        "checks this generator does not know about; extend the generator " +
-        "before regenerating."
-    );
+  // destroy. Guard the actual invariant: every check in the committed plan
+  // must be one this generator would re-emit — a bare planVersion comparison
+  // would sail through if someone bumped the generator's version constant
+  // without teaching it the promoted checks. A missing file is a fresh
+  // bootstrap and is allowed through.
+  let existing: { checks?: { checkId?: string }[] } | undefined;
+  try {
+    existing = JSON.parse(await readFile(filePath, "utf8"));
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+  if (existing !== undefined) {
+    const emitted = new Set(extendedPlan.checks.map((check) => check.checkId));
+    const orphaned = (existing.checks ?? [])
+      .map((check) => check.checkId)
+      .filter((checkId) => checkId !== undefined && !emitted.has(checkId));
+    if (orphaned.length > 0) {
+      throw new Error(
+        `refusing to overwrite ${filePath}: the committed plan carries ` +
+          `${orphaned.length} promoted check(s) this generator does not ` +
+          `emit (${orphaned.join(", ")}). Extend the generator before ` +
+          "regenerating."
+      );
+    }
   }
   await writeFile(filePath, `${JSON.stringify(extendedPlan, null, 2)}\n`);
   await formatGeneratedJson([filePath]);

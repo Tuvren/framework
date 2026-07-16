@@ -55,12 +55,17 @@ func (k *Kernel) AcquireLease(runID, ownerID string, ttlMs int64) (token string,
 }
 
 // RenewLease extends runID's execution lease by ttlMs milliseconds from the
-// current backend-authoritative clock reading, provided ownerID and token
-// both match the lease currently on record. A caller presenting the wrong
-// owner gets ErrRunLeaseOwnerMismatch (checked first: not owning the run at
-// all is the more fundamental rejection); the right owner with a stale or
-// otherwise wrong token gets ErrRunLeaseTokenMismatch. Returns the lease's
-// new absolute expiry (epoch ms).
+// current backend-authoritative clock reading, provided the run is still
+// "running", its lease has not already expired, and ownerID and token both
+// match the lease currently on record. This mirrors the TypeScript
+// reference's renewLease guard ladder (runtime-kernel-runs.ts) in order:
+// lease presence (ErrRunLeaseNotHeld), run status (ErrRunNotActive — the Go
+// port reuses the general not-active code rather than TS's distinct
+// not-running one), lease expiry (ErrRunLeaseExpired), owner
+// (ErrRunLeaseOwnerMismatch), then token (ErrRunLeaseTokenMismatch). The Go
+// port does not implement TS's renewal token rotation (an acknowledged,
+// unpinned cross-port divergence); the caller-supplied token stays valid for
+// the next renewal. Returns the lease's new absolute expiry (epoch ms).
 func (k *Kernel) RenewLease(runID, ownerID, token string, ttlMs int64) (renewedExpiresAtMs int64, err error) {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
@@ -69,6 +74,14 @@ func (k *Kernel) RenewLease(runID, ownerID, token string, ttlMs int64) (renewedE
 	if !run.HasLease {
 		return 0, newKernelError(ErrRunLeaseNotHeld, "run %q does not currently hold a lease", runID)
 	}
+	if run.Status != RunStatusRunning {
+		return 0, newKernelError(ErrRunNotActive, "run %q's lease cannot be renewed (status: %s)", runID, run.Status)
+	}
+
+	now := k.Clock.NowMs()
+	if run.LeaseExpiresAtMs <= now {
+		return 0, newKernelError(ErrRunLeaseExpired, "run %q's lease expired at %d (now %d)", runID, run.LeaseExpiresAtMs, now)
+	}
 	if run.LeaseOwnerID != ownerID {
 		return 0, newKernelError(ErrRunLeaseOwnerMismatch, "run %q's lease is owned by %q, not %q", runID, run.LeaseOwnerID, ownerID)
 	}
@@ -76,7 +89,6 @@ func (k *Kernel) RenewLease(runID, ownerID, token string, ttlMs int64) (renewedE
 		return 0, newKernelError(ErrRunLeaseTokenMismatch, "run %q's lease token does not match", runID)
 	}
 
-	now := k.Clock.NowMs()
 	renewedExpiresAtMs = now + ttlMs
 	run.LeaseExpiresAtMs = renewedExpiresAtMs
 	k.Backend.UpdateRun(run)

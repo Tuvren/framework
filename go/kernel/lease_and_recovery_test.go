@@ -88,6 +88,53 @@ func TestLease_RenewStaleToken(t *testing.T) {
 	requireErrCode(t, err, kernel.ErrRunLeaseTokenMismatch)
 }
 
+// TestLease_RenewExpiredRejected is a regression for the gap where
+// RenewLease had no expiry guard at all: mirroring the TypeScript
+// reference's renewLease (runtime-kernel-runs.ts), a lease that has already
+// expired as of the backend-authoritative clock must be rejected with
+// ErrRunLeaseExpired rather than silently renewed.
+func TestLease_RenewExpiredRejected(t *testing.T) {
+	k, clock := newManualClockKernel(0)
+	createSingleStepRun(t, k, "thread_lease_expired", "branch_lease_expired", "run_lease_expired")
+	token, expiresAt, err := k.AcquireLease("run_lease_expired", "owner_a", 10)
+	if err != nil {
+		t.Fatalf("acquire: %v", err)
+	}
+	clock.SetMs(expiresAt) // expiry is inclusive (isLeaseExpired: leaseExpiresAtMs <= nowMs)
+
+	_, err = k.RenewLease("run_lease_expired", "owner_a", token, 10)
+	requireErrCode(t, err, kernel.ErrRunLeaseExpired)
+}
+
+// TestLease_RenewNonRunningStatusRejected proves the RenewLease status guard
+// itself fires (ErrRunNotActive) for a non-"running" run, distinct from the
+// lease-presence guard: PauseRun (unlike CompleteRun) leaves the lease
+// fields untouched, so a paused run still holds its lease when RenewLease is
+// called and the rejection must come from the status check, not
+// ErrRunLeaseNotHeld. (A completed run is covered separately by
+// TestCompleteRun_ClearsLeaseAndAdvancesStepIndex in
+// kernel_runtime_test.go, where CompleteRun's own lease-clearing effect
+// means a *subsequent* renewal is rejected earlier, by ErrRunLeaseNotHeld.)
+func TestLease_RenewNonRunningStatusRejected(t *testing.T) {
+	k, _ := newManualClockKernel(0)
+	createSingleStepRun(t, k, "thread_lease_paused", "branch_lease_paused", "run_lease_paused")
+	token, _, err := k.AcquireLease("run_lease_paused", "owner_a", 1000)
+	if err != nil {
+		t.Fatalf("acquire: %v", err)
+	}
+	if err := k.PauseRun("run_lease_paused"); err != nil {
+		t.Fatalf("pause: %v", err)
+	}
+
+	run, ok := k.Backend.GetRun("run_lease_paused")
+	if !ok || !run.HasLease {
+		t.Fatalf("expected paused run to still hold its lease before renewal is attempted")
+	}
+
+	_, err = k.RenewLease("run_lease_paused", "owner_a", token, 10)
+	requireErrCode(t, err, kernel.ErrRunNotActive)
+}
+
 func TestLease_TokensAreUniquePerAcquisitionUnderAFrozenClock(t *testing.T) {
 	// Spec §5.2 requires a monotonically changing fencing token. A
 	// clock-derived token repeats when two acquisitions land on the same

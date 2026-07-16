@@ -702,6 +702,47 @@ func TestCompleteRun_PausedRunRejected(t *testing.T) {
 	requireErrCode(t, err, kernel.ErrInvalidPausedRunCompletion)
 }
 
+// TestCompleteRun_ClearsLeaseAndAdvancesStepIndex is a regression for the
+// gap where CompleteRun left a completed run's lease live and its
+// CurrentStepIndex wherever it happened to be, instead of mirroring the
+// TypeScript reference's completion effects (clearStoredRunLease applied
+// unconditionally, and currentStepIndex forced to stepSequence.length on
+// completion — typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts).
+func TestCompleteRun_ClearsLeaseAndAdvancesStepIndex(t *testing.T) {
+	k, _ := newManualClockKernel(0)
+	createSingleStepRun(t, k, "thread_complete_lease", "branch_complete_lease", "run_complete_lease")
+	if _, _, err := k.AcquireLease("run_complete_lease", "owner_a", 1000); err != nil {
+		t.Fatalf("acquire: %v", err)
+	}
+	if _, err := k.CompleteStep("run_complete_lease", "only_step", "", ""); err != nil {
+		t.Fatalf("complete step: %v", err)
+	}
+
+	if err := k.CompleteRun("run_complete_lease", ""); err != nil {
+		t.Fatalf("complete run: %v", err)
+	}
+
+	run, ok := k.Backend.GetRun("run_complete_lease")
+	if !ok {
+		t.Fatalf("run not found after completion")
+	}
+	if run.HasLease {
+		t.Fatalf("expected lease cleared on completion, HasLease still true")
+	}
+	if run.LeaseOwnerID != "" || run.LeaseToken != "" || run.LeaseExpiresAtMs != 0 {
+		t.Fatalf("expected lease fields zeroed on completion, got owner=%q token=%q expiresAt=%d", run.LeaseOwnerID, run.LeaseToken, run.LeaseExpiresAtMs)
+	}
+	if run.CurrentStepIndex != len(run.StepSequence) {
+		t.Fatalf("expected CurrentStepIndex forced to step count %d, got %d", len(run.StepSequence), run.CurrentStepIndex)
+	}
+
+	// A completed run's cleared lease must also stop renewing (mirrors the
+	// RenewLease status guard exercised directly in lease_and_recovery_test.go).
+	if _, err := k.RenewLease("run_complete_lease", "owner_a", "does-not-matter", 10); err == nil {
+		t.Fatalf("expected renew on a completed run to be rejected")
+	}
+}
+
 // TestCreateRun_BranchHeadMismatchRejected is the P1-4 regression: a run's
 // declared startTurnNodeHash must equal its target branch's *current* head.
 func TestCreateRun_BranchHeadMismatchRejected(t *testing.T) {
