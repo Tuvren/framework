@@ -59,11 +59,15 @@ type Backend interface {
 	PutTurnNode(node TurnNode) error
 	GetTurnNode(hash string) (TurnNode, bool)
 	// ListChildTurnNodes returns every stored turn node whose
-	// PreviousTurnNodeHash equals previousHash, unsorted. Recovery
-	// (ReconcileRun, recovery.go) uses this to discover a durable turn
-	// node that a torn checkpoint (FaultPointMidCommit) wrote but whose
-	// branch head move never happened, since such a node is otherwise
-	// unreachable from the branch head it was meant to become.
+	// PreviousTurnNodeHash equals previousHash, unsorted. Kept as a raw
+	// inspection seam for tests that want to observe a durable-but-
+	// unreferenced turn node directly (for example a torn checkpoint's
+	// pending node before recovery folds it in); Recovery (ReconcileRun,
+	// recovery.go) does not use it — it reconciles from the owning run's
+	// own durably-recorded PendingCheckpointHash instead, since a
+	// structural children lookup cannot tell this run's own pending
+	// commit apart from an unrelated sibling node another run or branch
+	// wrote against the same base head.
 	ListChildTurnNodes(previousHash string) []TurnNode
 
 	// --- threads ---

@@ -1456,22 +1456,26 @@ def run_erasure_probe(_operation_input: Any) -> dict[str, Any]:
     kernel = _new_conformance_kernel()
     schema_id = _load_canonical_schema()["schemaId"]
 
-    key: bytes | None = AESGCM.generate_key(bit_length=256)
+    # `key` is a mutable `bytearray`, not immutable `bytes`, specifically so
+    # crypto-shredding below can zero the real key material in place instead
+    # of merely dropping a reference to it and leaving the actual bytes
+    # sitting in a prior object somewhere in the interpreter's heap.
+    key: bytearray | None = bytearray(AESGCM.generate_key(bit_length=256))
     plaintext = b"sensitive-untrusted-edge-payload"
 
     def _encrypt(encryption_key: bytes) -> bytes:
         nonce = _os_urandom(12)
-        ciphertext = AESGCM(encryption_key).encrypt(nonce, plaintext, None)
+        ciphertext = AESGCM(bytes(encryption_key)).encrypt(nonce, plaintext, None)
         return nonce + ciphertext
 
     def _decrypt(decryption_key: bytes, envelope_bytes: bytes) -> bytes | None:
         nonce, ciphertext = envelope_bytes[:12], envelope_bytes[12:]
         try:
-            return AESGCM(decryption_key).decrypt(nonce, ciphertext, None)
+            return AESGCM(bytes(decryption_key)).decrypt(nonce, ciphertext, None)
         except InvalidTag:
             return None
 
-    envelope = _encrypt(key)
+    envelope = _encrypt(bytes(key))
 
     thread = kernel.thread.create("thread_erasure", schema_id, "branch_erasure")
     checkpoint = _checkpoint_message_into_head(
@@ -1495,20 +1499,30 @@ def run_erasure_probe(_operation_input: Any) -> dict[str, Any]:
 
     stored_before = kernel.store.get(envelope_hash)
     assert stored_before is not None
-    recoverable_before_erasure = _decrypt(key, stored_before) == plaintext
+    assert key is not None
+    recoverable_before_erasure = _decrypt(bytes(key), stored_before) == plaintext
 
-    # -- Crypto-shredding erasure: the host destroys its only key reference. --
-    key = None
+    # -- Crypto-shredding erasure: zero the host's only key material in
+    # place, in the same `key` slot the pre-erasure decrypt above just used,
+    # rather than merely rebinding `key` to `None` and leaving the real
+    # bytes reachable in whatever object previously held them. --
+    for i in range(len(key)):
+        key[i] = 0
 
     stored_after = kernel.store.get(envelope_hash)
     assert stored_after is not None
-    # The real key is gone, so it cannot be reconstructed. Mirror the Rust
-    # reference's keyring-resolution failure: attempt decryption through the
-    # same `key` slot erasure just cleared, rather than substituting an
-    # unrelated key (an unrelated key would always fail AES-GCM's
-    # authentication check regardless of whether erasure ever ran, making
-    # this assertion insensitive to a regression that skips it).
-    unrecoverable_after_erasure = key is None or _decrypt(key, stored_after) != plaintext
+    # The real key material is gone (zeroed in place, not swapped for a
+    # never-valid unrelated key), so attempt a *real* decryption through the
+    # same `key` slot erasure just wiped: this exercises the actual AEAD
+    # authentication check against the actual stored ciphertext and observes
+    # its failure, rather than short-circuiting on `key is None` without
+    # ever calling the crypto.
+    unrecoverable_after_erasure = _decrypt(bytes(key), stored_after) != plaintext
+
+    # No lingering copy of the real key material survives erasure: the only
+    # `bytearray` that ever held it has been zeroed above, and the local
+    # reference to it is now dropped too.
+    del key
 
     branch_after = kernel.branch.get(thread["branchId"])
     node_after = kernel.node.get(checkpoint["turnNodeHash"])

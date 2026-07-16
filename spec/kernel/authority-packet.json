@@ -1,6 +1,6 @@
 {
   "packetId": "tuvren.kernel.protocol",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "boundary": "kernel",
   "surface": "protocol",
   "humanAuthorityRefs": [
@@ -81,7 +81,9 @@
   ],
   "bindingProjections": {
     "typescript": "typescript/kernel/protocol",
-    "rust": "rust/kernel"
+    "rust": "rust/kernel",
+    "go": "go/kernel",
+    "python": "python/kernel"
   },
   "bindingSections": {
     "scope-isolation": {
@@ -101,6 +103,12 @@
     "rust/kernel",
     "rust/kernel-certification",
     "rust/kernel-conformance-adapter",
+    "go/kernel",
+    "go/kernel-certification",
+    "go/kernel-conformance-adapter",
+    "python/kernel",
+    "python/kernel-certification",
+    "python/kernel-conformance-adapter",
     "docs",
     ".constitution"
   ],

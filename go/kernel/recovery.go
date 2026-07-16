@@ -24,14 +24,20 @@ package kernel
 // persist the run record's own advance — the observable aftermath of a
 // FaultPointMidCommit or FaultPointAfterCommitBeforeAck fault (see
 // fault_injecting_backend.go and Kernel.CompleteStep's error-handling
-// comment). It walks runID's branch head backward until it reaches the
-// run's currently-recorded active turn node, appends every hash discovered
-// along the way to CreatedTurnNodes (in commit order), advances
-// CurrentStepIndex by that many steps (capped at len(StepSequence)), and
-// persists the result. A no-op (returns nil without writing) when the
-// branch head already matches the run's active turn node — the common
-// case, since only a fault-interrupted checkpoint ever leaves them
-// disagreeing in the first place.
+// comment). It reconciles from the run's own durably-recorded
+// PendingCheckpointHash (Kernel.checkpointRun, kernel_runtime.go) — the
+// exact node hash that checkpoint attempt was committing — rather than
+// rediscovering a pending node by structure, since structural discovery
+// (for example listing every child of the run's previously-active turn
+// node) cannot distinguish this run's own pending commit from an unrelated
+// sibling node a different run or branch wrote against the same base head.
+// When a pending checkpoint is found, it appends the pending node hash to
+// CreatedTurnNodes, advances CurrentStepIndex by one (capped at
+// len(StepSequence)), clears PendingCheckpointHash, and persists the
+// result. A no-op (returns nil without writing) when the run has no
+// pending checkpoint and the branch head already matches the run's active
+// turn node — the common case, since only a fault-interrupted checkpoint
+// ever leaves them disagreeing in the first place.
 func (k *Kernel) ReconcileRun(runID string) error {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
@@ -44,43 +50,52 @@ func (k *Kernel) ReconcileRun(runID string) error {
 
 	activeHash := k.activeTurnNodeHash(run)
 
-	// A torn checkpoint (FaultPointMidCommit) leaves a turn node durably
-	// written but the branch head never moved to it, so the branch head
-	// still equals the run's active turn node even though a pending
-	// commit exists past it. Roll forward through any such pending
-	// children (by construction there is at most one per run, since
-	// nothing else observes success until the head itself moves) before
-	// falling back to the ordinary "nothing to reconcile" no-op.
-	pendingCursor := activeHash
-	var pendingChain []string
-	for depth := 0; depth < maxLineageWalkDepth; depth++ {
-		children := k.Backend.ListChildTurnNodes(pendingCursor)
-		if len(children) != 1 {
-			break
+	if run.PendingCheckpointHash != "" {
+		pendingHash := run.PendingCheckpointHash
+		pendingNode, ok := k.Backend.GetTurnNode(pendingHash)
+		if !ok {
+			return newKernelError("kernel_runtime_turn_node_not_found", "run %q's pending checkpoint turn node %q not found", runID, pendingHash)
 		}
-		pendingChain = append(pendingChain, children[0].Hash)
-		pendingCursor = children[0].Hash
-	}
-	if len(pendingChain) > 0 {
-		swapped, err := k.Backend.CompareAndSwapBranchHead(run.BranchID, branch.HeadTurnNodeHash, pendingCursor, k.Clock.NowMs())
-		if err != nil {
-			return err
+
+		if branch.HeadTurnNodeHash != pendingHash {
+			// Genuine torn checkpoint (FaultPointMidCommit): the pending
+			// node is durable, but the head move never happened. Move it
+			// now, CAS'd from exactly the head the pending node was
+			// minted against — never a blind unconditional write — so a
+			// concurrent reconcile/retry racing this one is still safe.
+			swapped, err := k.Backend.CompareAndSwapBranchHead(run.BranchID, pendingNode.PreviousTurnNodeHash, pendingHash, k.Clock.NowMs())
+			if err != nil {
+				return err
+			}
+			if swapped {
+				branch.HeadTurnNodeHash = pendingHash
+			} else {
+				branch, ok = k.Backend.GetBranch(run.BranchID)
+				if !ok {
+					return newKernelError("kernel_runtime_branch_not_found", "branch %q not found", run.BranchID)
+				}
+			}
 		}
-		if swapped {
-			run.CreatedTurnNodes = append(run.CreatedTurnNodes, pendingChain...)
-			run.CurrentStepIndex += len(pendingChain)
+
+		// Either the head move above just succeeded, or
+		// FaultPointAfterCommitBeforeAck already advanced it before this
+		// call ever ran (both durable writes had already succeeded when
+		// that fault fired) — in both cases the head is now genuinely at
+		// the pending node, and the run's own bookkeeping can fold it in.
+		if branch.HeadTurnNodeHash == pendingHash {
+			run.CreatedTurnNodes = append(run.CreatedTurnNodes, pendingHash)
+			run.CurrentStepIndex++
 			if run.CurrentStepIndex > len(run.StepSequence) {
 				run.CurrentStepIndex = len(run.StepSequence)
 			}
+			run.PendingCheckpointHash = ""
 			k.Backend.UpdateRun(run)
 			return nil
 		}
-		// Lost the CAS to a concurrent reconcile/retry: fall through and
-		// re-read branch state below via the ordinary backward walk.
-		branch, ok = k.Backend.GetBranch(run.BranchID)
-		if !ok {
-			return newKernelError("kernel_runtime_branch_not_found", "branch %q not found", run.BranchID)
-		}
+		// The branch head is neither the run's active node nor its
+		// pending node (some other reconciliation path already moved it
+		// past the pending node): fall through to the ordinary backward
+		// walk below, which repairs from wherever the head actually is.
 	}
 
 	if branch.HeadTurnNodeHash == activeHash {

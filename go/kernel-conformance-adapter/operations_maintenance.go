@@ -405,9 +405,24 @@ func runErasureProbe(json.RawMessage) operationOutcome {
 
 	// ── Crypto-shredding erasure: the host destroys the key. ──
 	delete(keyring, keyRef)
+	// Shred the key material itself, not just the keyring entry
+	// referencing it: keyring[keyRef] and key share the same backing
+	// array, so deleting the map entry alone would still leave a live,
+	// unzeroed copy of the real key bytes sitting in key. Overwrite that
+	// backing array with zeros so no copy of the actual key survives
+	// anywhere this probe holds a reference to it.
+	for i := range key {
+		key[i] = 0
+	}
 
 	storedAfter, _ := k.Backend.GetObject(envelopeHash)
-	_, decryptErrAfter := aesGcmOpen(keyring[keyRef], storedAfter.Bytes)
+	// Attempt a genuine AES-GCM open against the stored ciphertext bytes
+	// using whatever key material remains (the now-zeroed key slice, still
+	// the correct AES-256 length). This reaches real GCM tag verification
+	// and fails there — a wrong-key authentication failure against actual
+	// ciphertext — rather than short-circuiting early on an absent/wrong-
+	// length key the way opening against a nil or empty slice would.
+	_, decryptErrAfter := aesGcmOpen(key, storedAfter.Bytes)
 	unrecoverableAfterErasure := decryptErrAfter != nil
 
 	branchAfter, ok := k.Backend.GetBranch("branch_erasure")

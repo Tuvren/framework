@@ -344,34 +344,52 @@ func observeFaultPoint(point kernel.FaultPoint) (map[string]any, error) {
 	_, stepErr := k.CompleteStep(fixture.runID, "step_2", "", "")
 	k.Backend = baseBackend
 
+	// expectedHead is captured independently of whatever the backend
+	// reports afterward, so the comparison below is a genuine check
+	// (headMatchesExpectedCheckpoint can actually be false if recovery
+	// misbehaves) rather than comparing a value against itself.
 	var expectedHead string
 	if point == kernel.FaultPointBeforeCommit {
 		// Nothing durable changed: the branch head must still be exactly
-		// where message_1's checkpoint left it.
-		branch, ok := k.Backend.GetBranch(fixture.branchID)
-		if !ok {
-			return nil, fmt.Errorf("branch %q not found after fault-point %q attempt", fixture.branchID, point)
-		}
-		expectedHead = branch.HeadTurnNodeHash
+		// where message_1's checkpoint left it — fixture.baseHead, captured
+		// when the fixture was built, before this fault-point attempt ever
+		// ran.
+		expectedHead = fixture.baseHead
 	} else {
 		// mid-commit leaves a durable turn node whose branch head move
 		// never happened (a genuine torn checkpoint); after-commit-before-ack
 		// fully commits including the head move despite reporting failure.
-		// Either way, recovery must repair the run record — and, for
-		// mid-commit, the branch head itself — forward before the state is
-		// self-consistent again. Read the branch head only after
-		// reconciling, so what this operation reports as "actual" is the
-		// fully-recovered state, not a stale pre-recovery snapshot.
+		// Either way, the durable turn node the torn checkpoint wrote is
+		// the true expected outcome (kernel spec §5.5: "TurnNode exists →
+		// checkpoint succeeded"). Read the run's own durably-recorded
+		// PendingCheckpointHash (kernel_runtime.go's checkpointRun,
+		// persisted before the branch-head move is even attempted) as
+		// expectedHead *before* reconciling — that is the pending sibling
+		// node hash the torn checkpoint durably wrote, independent of
+		// whatever ReconcileRun does next.
+		run, ok := k.Backend.GetRun(fixture.runID)
+		if !ok {
+			return nil, fmt.Errorf("run %q not found after fault-point %q attempt", fixture.runID, point)
+		}
+		if run.PendingCheckpointHash == "" {
+			return nil, fmt.Errorf("run %q has no durably-recorded pending checkpoint after fault-point %q attempt", fixture.runID, point)
+		}
+		expectedHead = run.PendingCheckpointHash
+
 		if err := k.ReconcileRun(fixture.runID); err != nil {
 			return nil, err
 		}
-		branch, ok := k.Backend.GetBranch(fixture.branchID)
-		if !ok {
-			return nil, fmt.Errorf("branch %q not found after fault-point %q attempt", fixture.branchID, point)
-		}
-		expectedHead = branch.HeadTurnNodeHash
 	}
-	actualHead := expectedHead
+
+	// actualHead is re-read from the backend after the fault attempt (and,
+	// for mid-commit/after-commit-before-ack, after reconciliation) — the
+	// genuinely-recovered state, not a value derived from expectedHead
+	// itself.
+	branch, ok := k.Backend.GetBranch(fixture.branchID)
+	if !ok {
+		return nil, fmt.Errorf("branch %q not found after fault-point %q attempt", fixture.branchID, point)
+	}
+	actualHead := branch.HeadTurnNodeHash
 
 	state, stateErr := k.RecoveryState(fixture.runID)
 	recoveryStateConsistent := stateErr == nil && state.LastTurnNodeHash == actualHead

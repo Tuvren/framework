@@ -3,12 +3,30 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "root": "python/kernel-certification",
   "projectType": "library",
-  "tags": ["boundary:kernel", "language:python"],
+  "tags": ["boundary:kernel", "language:python", "layer:certification"],
   "implicitDependencies": [
     "kernel-python-kernel",
     "kernel-python-conformance-adapter"
   ],
   "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/spec/kernel/**/*",
+        "{workspaceRoot}/python/kernel/**/*",
+        "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/python/kernel-certification/**/*",
+        "{workspaceRoot}/pyproject.toml",
+        "{workspaceRoot}/uv.lock"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter python/kernel-conformance-adapter/adapter.json --summary-only"
+      }
+    },
     "build": {
       "executor": "nx:run-commands",
       "outputs": [],

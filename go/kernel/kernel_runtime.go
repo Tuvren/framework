@@ -763,6 +763,18 @@ func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []S
 		return "", run, err
 	}
 
+	// Durably record the pending checkpoint's node hash on the run itself,
+	// now that the node is durable but before either the branch-head move
+	// below or the after-commit-before-ack hook is attempted. This is the
+	// run record's own commit-in-progress marker: a FaultPointMidCommit or
+	// FaultPointAfterCommitBeforeAck interruption after this point leaves
+	// it durably set to hash, and ReconcileRun (recovery.go) reconciles
+	// from exactly this field rather than rediscovering the pending node
+	// by listing children of the run's previously-active turn node.
+	pendingMarker := run
+	pendingMarker.PendingCheckpointHash = hash
+	k.Backend.UpdateRun(pendingMarker)
+
 	run.CreatedTurnNodes = append(run.CreatedTurnNodes, hash)
 
 	// A run's checkpoints advance its branch's turn head directly: the
@@ -783,8 +795,9 @@ func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []S
 	// caller without persisting the in-memory run record's
 	// CreatedTurnNodes/CurrentStepIndex advance, so ReconcileRun
 	// (recovery.go) is what later discovers the durable-but-unreferenced
-	// node (via Backend.ListChildTurnNodes) and rolls both the branch head
-	// and the run record forward to it.
+	// node — via the run's own durably-recorded PendingCheckpointHash,
+	// written just above — and rolls both the branch head and the run
+	// record forward to it.
 	if _, err := k.Backend.UpdateBranchHead(run.BranchID, hash, k.Clock.NowMs()); err != nil {
 		return hash, run, err
 	}
@@ -802,6 +815,14 @@ func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []S
 			return hash, run, err
 		}
 	}
+
+	// The checkpoint fully committed and was acknowledged: clear the
+	// pending marker on the run this function returns. The caller
+	// (CompleteStep / CompleteRun) persists this cleared value as part of
+	// its own subsequent UpdateRun, so the durable run record only ever
+	// shows a non-empty PendingCheckpointHash while a commit is genuinely
+	// in flight or was interrupted mid-flight.
+	run.PendingCheckpointHash = ""
 
 	return hash, run, nil
 }

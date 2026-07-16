@@ -3,9 +3,26 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "root": "go/kernel-certification",
   "projectType": "library",
-  "tags": ["boundary:kernel", "language:go"],
+  "tags": ["boundary:kernel", "language:go", "layer:certification"],
   "implicitDependencies": ["kernel-go-kernel", "kernel-go-conformance-adapter"],
   "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/spec/kernel/**/*",
+        "{workspaceRoot}/go/kernel/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go/kernel-certification/**/*",
+        "{workspaceRoot}/go.work"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter go/kernel-conformance-adapter/adapter.json --summary-only"
+      }
+    },
     "build": {
       "executor": "nx:run-commands",
       "outputs": [],

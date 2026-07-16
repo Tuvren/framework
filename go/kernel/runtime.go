@@ -173,6 +173,23 @@ type Run struct {
 	CreatedTurnNodes  []string
 	ThreadID          string
 
+	// PendingCheckpointHash is the durable turn node hash a checkpoint
+	// commit in progress is about to (or already did) move the branch
+	// head to. Kernel.checkpointRun writes this to the run record
+	// immediately after the checkpoint's turn node itself becomes durable
+	// (PutTurnNode succeeds) but before attempting the branch-head move,
+	// so a torn checkpoint (FaultPointMidCommit) or an
+	// after-commit-before-ack interruption both leave a durable pointer
+	// straight at the pending node on the run that owns it. ReconcileRun
+	// (recovery.go) reconciles from this field rather than rediscovering
+	// the pending node by listing a shared turn node's children, which
+	// cannot distinguish this run's own pending commit from an unrelated
+	// sibling node written by a different run or branch sharing the same
+	// base head. Cleared back to "" once the checkpoint's own commit (or
+	// a later ReconcileRun) has folded the pending node into
+	// CreatedTurnNodes.
+	PendingCheckpointHash string
+
 	// --- run execution lease (kernel spec §5.2 Run Execution Leases,
 	// ADR-050: backend-authoritative clock, lease tokens, renewal, expiry,
 	// preemption; capability kernel.run-liveness) ---

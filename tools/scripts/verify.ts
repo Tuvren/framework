@@ -356,6 +356,38 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
     ],
   },
   {
+    // Go and Python kernel certifications drive the shared stdio harness
+    // against their native-toolchain adapters (`go run` / `uv run`); the two
+    // lanes are independent processes, so they may run in parallel with each
+    // other but stay in their own phase to avoid competing with the large
+    // serial Rust builds above.
+    id: "Go and Python kernel certification",
+    steps: [
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run",
+          "kernel-go-certification:conformance",
+          "--skipNxCache",
+        ],
+        id: "Go kernel certification",
+      },
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run",
+          "kernel-python-certification:conformance",
+          "--skipNxCache",
+        ],
+        id: "Python kernel certification",
+      },
+    ],
+  },
+  {
     // Evidence-freshness codegen must run before typecheck because telemetry
     // codegen writes a checked-in TypeScript consumer that the transition line
     // imports. `--skipNxCache` is intentional: these are freshness checks that

@@ -322,6 +322,75 @@ def test_reclaim_leaseless_run_within_admin_expiry_still_pins() -> None:
     assert kernel.store.has(orphan) is True
 
 
+def test_reclaim_via_one_scope_does_not_touch_co_tenant_scope_state() -> None:
+    """Section 2.3 / 9.4 confinement: reclamation is a per-Scope sweep.
+
+    Two `InMemoryBackend` handles share one physical `_SharedTables`
+    substrate (`create_scoped_backend_pair`). Running
+    `kernel.maintenance.reclaim()` through scope A's handle must only ever
+    enumerate, timestamp-filter, and release scope A's own durable state --
+    it must never observe, let alone release, scope B's co-tenant objects,
+    nodes, or threads, even though both scopes' records live in the exact
+    same underlying dicts. Assertions read scope B's state directly off its
+    raw `InMemoryBackend` (`get_object`/`list_*_hashes`/`get_thread`), not
+    through `RuntimeKernel`, so a regression that only breaks Scope-keying
+    in the read path (rather than the reclamation sweep itself) would still
+    be caught here.
+    """
+
+    backend_a, backend_b = create_scoped_backend_pair("scope-reclaim-a", "scope-reclaim-b")
+    kernel_a = RuntimeKernel(backend_a)
+    kernel_a.schema.register(dict(CANONICAL_SCHEMA))
+    kernel_b = RuntimeKernel(backend_b)
+    kernel_b.schema.register(dict(CANONICAL_SCHEMA))
+
+    # Scope B: durable state that would be reclaimable-shaped if it were
+    # ever exposed to scope A's sweep -- an orphan object plus a live thread
+    # with a checkpointed message reachable from its branch head.
+    co_tenant_orphan = kernel_b.store.put(b"co-tenant-orphan-object")
+    thread_b = kernel_b.thread.create("thread_co_tenant", "schema_main", "branch_co_tenant")
+    checkpoint_b = checkpoint_message(
+        kernel_b,
+        thread_id=thread_b["threadId"],
+        branch_id=thread_b["branchId"],
+        run_id="run_co_tenant",
+        turn_id="turn_co_tenant",
+        parent_turn_id=None,
+        start_turn_node_hash=thread_b["rootTurnNodeHash"],
+        task_id="msg_co_tenant",
+        message_bytes=b"co-tenant-live-message",
+    )
+
+    # Snapshot scope B's raw substrate footprint before scope A ever runs
+    # reclamation, so the post-reclaim assertions compare against it exactly
+    # (not merely "still present").
+    object_hashes_before = sorted(backend_b.list_object_hashes())
+    node_hashes_before = sorted(backend_b.list_node_hashes())
+    tree_hashes_before = sorted(backend_b.list_tree_hashes())
+    thread_before = backend_b.get_thread(thread_b["threadId"])
+    branch_before = backend_b.get_branch(thread_b["branchId"])
+
+    # Scope A: an orphan object with nothing anchoring it -- genuinely
+    # reclaimable within scope A's own sweep.
+    kernel_a.store.put(b"scope-a-orphan-object")
+
+    kernel_a.maintenance.reclaim()
+
+    # Sanity: scope A's own sweep actually did something (otherwise this
+    # test would pass vacuously even with no isolation at all).
+    assert backend_a.list_object_hashes() == []
+
+    # Scope B's raw substrate is byte-for-byte untouched by scope A's sweep.
+    assert backend_b.get_object(co_tenant_orphan) == b"co-tenant-orphan-object"
+    assert sorted(backend_b.list_object_hashes()) == object_hashes_before
+    assert sorted(backend_b.list_node_hashes()) == node_hashes_before
+    assert sorted(backend_b.list_tree_hashes()) == tree_hashes_before
+    assert backend_b.get_thread(thread_b["threadId"]) == thread_before
+    assert backend_b.get_branch(thread_b["branchId"]) == branch_before
+    assert backend_b.get_object(checkpoint_b["objectHash"]) is not None
+    assert backend_b.get_node(checkpoint_b["turnNodeHash"]) is not None
+
+
 def test_reclaim_rejects_when_backend_does_not_advertise_capability() -> None:
     class _NoReclamationBackend(InMemoryBackend):
         def capabilities(self) -> dict[str, bool]:

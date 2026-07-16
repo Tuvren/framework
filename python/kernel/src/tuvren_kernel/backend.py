@@ -262,7 +262,7 @@ class InMemoryBackend:
 
     # --- Schemas -------------------------------------------------------------
     def put_schema(self, schema_id: str, schema: dict[str, Any]) -> None:
-        self._shared.schemas[self._key(schema_id)] = schema
+        self._shared.schemas[self._key(schema_id)] = copy.deepcopy(schema)
 
     def get_schema(self, schema_id: str) -> dict[str, Any] | None:
         return copy.deepcopy(self._shared.schemas.get(self._key(schema_id)))
@@ -271,7 +271,7 @@ class InMemoryBackend:
     def put_tree(self, tree_hash: str, record: dict[str, Any]) -> None:
         key = self._key(tree_hash)
         if key not in self._shared.trees:
-            self._shared.trees[key] = record
+            self._shared.trees[key] = copy.deepcopy(record)
             self._shared.trees_created_at[key] = self.now()
 
     def get_tree(self, tree_hash: str) -> dict[str, Any] | None:
@@ -293,7 +293,7 @@ class InMemoryBackend:
     def put_node(self, node_hash: str, record: dict[str, Any]) -> None:
         key = self._key(node_hash)
         if key not in self._shared.nodes:
-            self._shared.nodes[key] = record
+            self._shared.nodes[key] = copy.deepcopy(record)
             self._shared.nodes_created_at[key] = self.now()
 
     def get_node(self, node_hash: str) -> dict[str, Any] | None:
@@ -313,7 +313,7 @@ class InMemoryBackend:
 
     # --- Threads -------------------------------------------------------------
     def put_thread(self, thread_id: str, record: dict[str, Any]) -> None:
-        self._shared.threads[self._key(thread_id)] = record
+        self._shared.threads[self._key(thread_id)] = copy.deepcopy(record)
 
     def get_thread(self, thread_id: str) -> dict[str, Any] | None:
         return copy.deepcopy(self._shared.threads.get(self._key(thread_id)))
@@ -323,7 +323,7 @@ class InMemoryBackend:
 
     # --- Branches ------------------------------------------------------------
     def put_branch(self, branch_id: str, record: dict[str, Any]) -> None:
-        self._shared.branches[self._key(branch_id)] = record
+        self._shared.branches[self._key(branch_id)] = copy.deepcopy(record)
 
     def get_branch(self, branch_id: str) -> dict[str, Any] | None:
         return copy.deepcopy(self._shared.branches.get(self._key(branch_id)))
@@ -365,14 +365,14 @@ class InMemoryBackend:
 
     # --- Turns -----------------------------------------------------------------
     def put_turn(self, turn_id: str, record: dict[str, Any]) -> None:
-        self._shared.turns[self._key(turn_id)] = record
+        self._shared.turns[self._key(turn_id)] = copy.deepcopy(record)
 
     def get_turn(self, turn_id: str) -> dict[str, Any] | None:
         return copy.deepcopy(self._shared.turns.get(self._key(turn_id)))
 
     # --- Runs --------------------------------------------------------------------
     def put_run(self, run_id: str, record: dict[str, Any]) -> None:
-        self._shared.runs[self._key(run_id)] = record
+        self._shared.runs[self._key(run_id)] = copy.deepcopy(record)
 
     def get_run(self, run_id: str) -> dict[str, Any] | None:
         return copy.deepcopy(self._shared.runs.get(self._key(run_id)))
@@ -397,7 +397,7 @@ class InMemoryBackend:
 
     # --- Staging -------------------------------------------------------------------
     def append_staged(self, run_id: str, staged_result: dict[str, Any]) -> None:
-        self._shared.staged.setdefault(self._key(run_id), []).append(staged_result)
+        self._shared.staged.setdefault(self._key(run_id), []).append(copy.deepcopy(staged_result))
 
     def list_staged(self, run_id: str) -> list[dict[str, Any]]:
         return copy.deepcopy(self._shared.staged.get(self._key(run_id), []))

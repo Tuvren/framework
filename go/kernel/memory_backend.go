@@ -44,7 +44,9 @@ type scopeState struct {
 	// childrenByPrevious indexes a turn node's PreviousTurnNodeHash -> the
 	// hashes of every node stored with that previous hash, so
 	// ListChildTurnNodes can find a durable node forward from its parent
-	// even when no branch head references it yet (see ReconcileRun).
+	// even when no branch head references it yet. A raw inspection seam
+	// for tests only — Kernel.ReconcileRun (recovery.go) reconciles from
+	// the owning run's own PendingCheckpointHash instead.
 	childrenByPrevious map[string][]string
 
 	stagedByRun map[string][]StagedResult

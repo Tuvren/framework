@@ -369,6 +369,32 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     reportLabel: "Rust process-local kernel baseline",
   },
   {
+    adapterManifestPath: "go/kernel-conformance-adapter/adapter.json",
+    command: [
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      "go/kernel-conformance-adapter/adapter.json",
+    ],
+    implementationId: "go-kernel",
+    language: "go",
+    project: "kernel-go-certification",
+    reportLabel: "Go process-local kernel baseline",
+  },
+  {
+    adapterManifestPath: "python/kernel-conformance-adapter/adapter.json",
+    command: [
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      "python/kernel-conformance-adapter/adapter.json",
+    ],
+    implementationId: "python-kernel",
+    language: "python",
+    project: "kernel-python-certification",
+    reportLabel: "Python process-local kernel baseline",
+  },
+  {
     adapterManifestPath: "rust/conformance-adapter/adapter.json",
     command: [
       "bun",
