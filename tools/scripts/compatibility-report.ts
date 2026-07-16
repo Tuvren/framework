@@ -677,8 +677,10 @@ async function runAllRunners(
 // absent, satisfying POSIX rename's "directory target must be empty"
 // requirement), the scratch directory takes EVIDENCE_DIRECTORY's name, and
 // the moved-aside original is deleted only after that second rename
-// succeeds. If the second rename fails, the original is restored so
-// EVIDENCE_DIRECTORY is never left missing.
+// succeeds. If the second rename fails, the original is restored on a
+// best-effort basis; only a double fault (the restore rename itself also
+// failing) can leave EVIDENCE_DIRECTORY missing, with the moved-aside
+// .bak-* sibling still holding the original contents for manual recovery.
 async function swapEvidenceDirectoryIntoPlace(
   sourceDirectory: string
 ): Promise<void> {
