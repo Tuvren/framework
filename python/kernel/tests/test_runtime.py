@@ -141,7 +141,7 @@ def test_tree_create_rejects_invalid_path_value_shape() -> None:
             "schema_main", {"messages": "not-a-list", "context.manifest": None}
         )
     )
-    assert code == "kernel_runtime_invalid_tree_path_value"
+    assert code == "invalid_path_value_kind"
 
 
 def test_tree_create_with_base_inherits_unchanged_paths() -> None:
@@ -372,6 +372,42 @@ def test_branch_set_head_rejects_lateral_movement() -> None:
     assert code == "kernel_runtime_lateral_head_movement"
 
 
+def test_branch_set_head_same_node_is_a_no_op_even_with_an_active_run() -> None:
+    # Round-6 finding #2: TS returns success immediately when the target
+    # equals the current head (runtime-kernel.ts:236-238); this must never
+    # fall through to "forward" classification, which would wrongly raise
+    # kernel_runtime_branch_has_active_run against an active run whose
+    # lineage the no-op move doesn't touch at all.
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_same_head", "schema_main", "branch_same_head")
+    turn = kernel.turn.create(
+        "turn_same_head",
+        thread["threadId"],
+        thread["branchId"],
+        None,
+        thread["rootTurnNodeHash"],
+    )
+    kernel.run.create(
+        "run_same_head",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+    )
+
+    branch_before = kernel.branch.get(thread["branchId"])
+    result = kernel.branch.set_head(thread["branchId"], thread["rootTurnNodeHash"])
+
+    assert result["archiveBranch"] is None
+    assert result["branch"]["headTurnNodeHash"] == thread["rootTurnNodeHash"]
+    branch_after = kernel.branch.get(thread["branchId"])
+    assert branch_after == branch_before
+    # The active run survives untouched -- a same-node move is a genuine
+    # no-op, not a (rejected) forward move.
+    assert kernel.backend.get_run("run_same_head")["status"] == "running"
+
+
 def test_branch_set_head_forward_is_a_pointer_update() -> None:
     kernel = new_kernel()
     thread = kernel.thread.create("thread_fwd", "schema_main", "branch_fwd")
@@ -403,31 +439,56 @@ def test_branch_set_head_forward_rejects_when_branch_has_active_run() -> None:
     # branch has a `running`/`paused` Run -- matching the TypeScript
     # reference's `assertNoActiveBranchRunForForwardHeadMove`, error code
     # `kernel_runtime_branch_has_active_run`.
+    #
+    # `complete_step` always advances the *checkpointing* branch's own head
+    # to the node it just committed, so a move-target genuinely ahead of --
+    # and distinct from -- `branch_fwd_active`'s current head has to come
+    # from elsewhere: a sibling branch forked at the same root that
+    # independently advances past it (round-6 finding #2 fixed
+    # `branch.setHead` to treat "target already equals current head" as a
+    # no-op, which is a different, non-error path from this genuine forward
+    # move).
     kernel = new_kernel()
     thread = kernel.thread.create("thread_fwd_active", "schema_main", "branch_fwd_active")
-    turn = kernel.turn.create(
-        "turn_fwd_active", thread["threadId"], thread["branchId"], None, thread["rootTurnNodeHash"]
+    root = thread["rootTurnNodeHash"]
+
+    donor_branch = kernel.branch.create("branch_fwd_active_donor", thread["threadId"], root)
+    donor_turn = kernel.turn.create(
+        "turn_fwd_active_donor", thread["threadId"], donor_branch["branchId"], None, root
     )
+    kernel.run.create(
+        "run_fwd_active_donor",
+        donor_turn["turnId"],
+        donor_branch["branchId"],
+        "schema_main",
+        root,
+        [{"id": "donor_step", "deterministic": False, "sideEffects": False}],
+    )
+    kernel.run.begin_step("run_fwd_active_donor", "donor_step")
+    donor_checkpoint = kernel.run.complete_step("run_fwd_active_donor", "donor_step")
+    kernel.run.complete("run_fwd_active_donor", "completed")
+    # The donor's committed node is a genuine descendant of root, so it
+    # classifies as "forward" for any other branch still sitting at root.
+    forward_target = donor_checkpoint["turnNodeHash"]
+    assert forward_target != root
+
+    turn = kernel.turn.create("turn_fwd_active", thread["threadId"], thread["branchId"], None, root)
     kernel.run.create(
         "run_fwd_active_first",
         turn["turnId"],
         thread["branchId"],
         "schema_main",
-        thread["rootTurnNodeHash"],
-        [
-            {"id": "step_one", "deterministic": False, "sideEffects": False},
-            {"id": "step_two", "deterministic": False, "sideEffects": False},
-        ],
+        root,
+        [{"id": "step_one", "deterministic": False, "sideEffects": False}],
     )
     kernel.run.begin_step("run_fwd_active_first", "step_one")
-    checkpoint = kernel.run.complete_step("run_fwd_active_first", "step_one")
-    # run_fwd_active_first is still "running" (mid-sequence) -- its branch
-    # has an active run, so moving the head forward must be rejected even
-    # though the target is a legitimate descendant of the current head.
-    code = error_code(
-        lambda: kernel.branch.set_head(thread["branchId"], checkpoint["turnNodeHash"])
-    )
+    # run_fwd_active_first is still "running" (mid-step) -- its own branch
+    # is still sitting at root, so moving its head forward to the donor's
+    # descendant must be rejected even though the target is a legitimate
+    # descendant of the current head.
+    code = error_code(lambda: kernel.branch.set_head(thread["branchId"], forward_target))
     assert code == "kernel_runtime_branch_has_active_run"
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == root
 
 
 def test_branch_set_head_forward_succeeds_once_run_completes() -> None:

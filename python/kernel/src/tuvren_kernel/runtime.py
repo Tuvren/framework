@@ -106,13 +106,13 @@ def _validate_path_value(paths_by_name: dict[str, dict[str, Any]], path: str, va
     if definition["collection"] == "ordered":
         if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
             raise KernelRuntimeError(
-                "kernel_runtime_invalid_tree_path_value",
+                "invalid_path_value_kind",
                 f"path {path!r} is 'ordered' and requires a Hash[] value",
             )
     else:
         if value is not None and not isinstance(value, str):
             raise KernelRuntimeError(
-                "kernel_runtime_invalid_tree_path_value",
+                "invalid_path_value_kind",
                 f"path {path!r} is 'single' and requires a Hash or null value",
             )
 
@@ -466,6 +466,10 @@ class BranchOps:
         self._kernel.verify_thread_membership(thread, turn_node_hash)
 
         current_head = branch["headTurnNodeHash"]
+
+        if current_head == turn_node_hash:
+            return {"branch": branch, "archiveBranch": None}
+
         direction = self._kernel.classify_head_movement(current_head, turn_node_hash)
 
         if direction == "lateral":
@@ -1343,11 +1347,23 @@ class MaintenanceOps:
     head TurnNode fell out of the keep closure are released outright (a
     live, named Branch is never released regardless of reachability);
     TurnNodes, TurnTrees, and Objects outside the keep closure *and* older
-    than the grace horizon are released. Turns and Runs are left alone by
-    this milestone's sweep -- no promoted M4 check reads a post-reclamation
-    Turn/Run count, only Object/TurnNode/Branch survival, so sweeping them
-    would grow the surface past what this milestone's conformance plan
-    exercises.
+    than the grace horizon are released. A Run is released (its record and
+    staged pool both dropped) unless it is *retained*: retained means its
+    Turn is retained (the Turn's `headTurnNodeHash` is in the kept-node
+    closure) AND every one of the Run's own TurnNode hashes
+    (`startTurnNodeHash` + `createdTurnNodes`) is in the kept-node closure
+    -- mirroring the TS reference's `sweepRuns` in
+    `backend-invariant-reclamation.ts`. An active (`"running"`/`"paused"`)
+    Run is always retained by this rule: its own `startTurnNodeHash` and
+    `createdTurnNodes` are unconditionally seeded as live roots above, so
+    they are always in the kept-node closure regardless of a torn
+    mid-commit checkpoint's `pendingCheckpoint.nodeHash` (which is *also*
+    seeded above, but only ever adds a node to the closure -- it never
+    needs to be, and is not, part of the retention check itself). Turns
+    themselves are still left alone by this milestone's sweep -- no
+    promoted M4 check reads a post-reclamation Turn count, only
+    Object/TurnNode/Branch/Run survival, so sweeping Turn records too would
+    grow the surface past what this milestone's conformance plan exercises.
     """
 
     def __init__(self, kernel: RuntimeKernel) -> None:
@@ -1367,12 +1383,14 @@ class MaintenanceOps:
         keep_nodes, keep_trees, keep_objects = self._compute_keep_closure(grace_horizon_ms)
 
         released_archived_branches = self._sweep_archived_branches(keep_nodes)
+        released_runs = self._sweep_runs(keep_nodes)
         released_nodes = self._sweep_nodes(keep_nodes, grace_horizon_ms)
         released_trees = self._sweep_trees(keep_trees, grace_horizon_ms)
         released_objects = self._sweep_objects(keep_objects, grace_horizon_ms)
 
         return {
             "releasedArchivedBranchCount": released_archived_branches,
+            "releasedRunCount": released_runs,
             "releasedTurnNodeCount": released_nodes,
             "releasedTurnTreeCount": released_trees,
             "releasedObjectCount": released_objects,
@@ -1420,6 +1438,24 @@ class MaintenanceOps:
                 continue
             node_stack.append(run["startTurnNodeHash"])
             node_stack.extend(run.get("createdTurnNodes", []))
+            # A torn mid-commit checkpoint's TurnNode is durable
+            # (`put_node` already committed) before it becomes the
+            # branch's head or joins `createdTurnNodes` -- its only
+            # reference is the run's own `pendingCheckpoint.nodeHash`
+            # marker. The TS backend has no durable pending marker
+            # (`transact()` makes its checkpoint write atomic), so this
+            # seed is a port-local obligation of this port's marker
+            # discipline: without it, a reclaim sweep that lands between
+            # `begin_checkpoint`'s `put_node` and the CAS/`clear_staged`
+            # that follow it could delete the pending node, and
+            # `run.reconcile` would then misclassify the tear as
+            # `beforeCommit` (node missing) instead of `midCommit` (node
+            # present, branch/staging not yet advanced), silently
+            # rewriting history and losing the staged results the node
+            # embedded.
+            pending_checkpoint = run.get("pendingCheckpoint")
+            if pending_checkpoint is not None:
+                node_stack.append(pending_checkpoint["nodeHash"])
             for staged in backend.list_staged(run["runId"]):
                 keep_objects.add(staged["objectHash"])
 
@@ -1485,6 +1521,36 @@ class MaintenanceOps:
                 continue
             if branch["headTurnNodeHash"] not in keep_nodes:
                 backend.delete_branch(branch["branchId"])
+                released += 1
+        return released
+
+    def _sweep_runs(self, keep_nodes: set[str]) -> int:
+        """Release every Run outside the retention rule (mirrors the TS
+        reference's `sweepRuns`): a Run is retained iff its Turn's
+        `headTurnNodeHash` is in `keep_nodes` AND every one of the Run's own
+        TurnNode hashes (`startTurnNodeHash` + `createdTurnNodes`) is in
+        `keep_nodes` too. Releasing a Run drops its record and its staged
+        pool together (`RuntimeBackend.delete_run`). Unlike `_sweep_nodes`/
+        `_sweep_trees`/`_sweep_objects`, there is no separate age check
+        against the grace horizon: an active Run's own TurnNode hashes are
+        always members of `keep_nodes` (unconditionally seeded as live
+        roots in `_compute_keep_closure`), so this rule alone is already
+        enough to always retain an active Run, including one sitting on a
+        still-unreconciled `pendingCheckpoint` (Round-6 finding #1).
+        """
+
+        backend = self._kernel.backend
+        released = 0
+        for run in backend.list_all_runs():
+            turn = backend.get_turn(run["turnId"])
+            run_node_hashes = [run["startTurnNodeHash"], *run.get("createdTurnNodes", [])]
+            retained = (
+                turn is not None
+                and turn["headTurnNodeHash"] in keep_nodes
+                and all(node_hash in keep_nodes for node_hash in run_node_hashes)
+            )
+            if not retained:
+                backend.delete_run(run["runId"])
                 released += 1
         return released
 

@@ -232,6 +232,97 @@ def test_reclaim_releases_archived_branch_exclusive_lineage() -> None:
     assert kernel.node.get(shared["turnNodeHash"]) is not None
 
 
+def test_reclaim_releases_unretained_terminal_run_record_and_staged_pool() -> None:
+    # Round-6 finding #3: a terminal Run whose entire lineage fell out of
+    # the keep closure must itself be released (record + staged pool),
+    # mirroring the TS reference's `sweepRuns` -- previously this port left
+    # every Run record alone regardless of reachability.
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_run_sweep", "schema_main", "branch_run_sweep")
+    shared = checkpoint_message(
+        kernel,
+        thread_id=thread["threadId"],
+        branch_id=thread["branchId"],
+        run_id="run_sweep_shared",
+        turn_id="turn_sweep_shared",
+        parent_turn_id=None,
+        start_turn_node_hash=thread["rootTurnNodeHash"],
+        task_id="msg_sweep_shared",
+        message_bytes=b"sweep-shared",
+    )
+    checkpoint_message(
+        kernel,
+        thread_id=thread["threadId"],
+        branch_id=thread["branchId"],
+        run_id="run_sweep_archived",
+        turn_id="turn_sweep_archived",
+        parent_turn_id=shared["turnId"],
+        start_turn_node_hash=shared["turnNodeHash"],
+        task_id="msg_sweep_archived",
+        message_bytes=b"sweep-archived-exclusive",
+    )
+
+    rollback = kernel.branch.set_head(thread["branchId"], shared["turnNodeHash"])
+    assert rollback["archiveBranch"] is not None
+
+    summary = kernel.maintenance.reclaim()
+
+    # The archived run's entire lineage fell out of the keep closure, so
+    # its record and staged pool are both released...
+    assert kernel.backend.get_run("run_sweep_archived") is None
+    assert kernel.backend.list_staged("run_sweep_archived") == []
+    assert summary["releasedRunCount"] >= 1
+    # ...but the shared/retained run (reachable via the live rolled-back-to
+    # head) survives.
+    assert kernel.backend.get_run("run_sweep_shared") is not None
+
+
+def test_reclaim_retains_active_run_and_retained_terminal_run() -> None:
+    kernel = new_kernel()
+
+    # A retained terminal run: its checkpointed lineage is the live branch head.
+    thread = kernel.thread.create("thread_run_retain", "schema_main", "branch_run_retain")
+    retained_terminal = checkpoint_message(
+        kernel,
+        thread_id=thread["threadId"],
+        branch_id=thread["branchId"],
+        run_id="run_retain_terminal",
+        turn_id="turn_retain_terminal",
+        parent_turn_id=None,
+        start_turn_node_hash=thread["rootTurnNodeHash"],
+        task_id="msg_retain_terminal",
+        message_bytes=b"retain-terminal",
+    )
+
+    # An active run on a separate branch -- always retained regardless of
+    # reachability (its own start/created nodes are unconditionally seeded
+    # as live roots).
+    active_thread = kernel.thread.create("thread_run_active", "schema_main", "branch_run_active")
+    active_turn = kernel.turn.create(
+        "turn_run_active",
+        active_thread["threadId"],
+        active_thread["branchId"],
+        None,
+        active_thread["rootTurnNodeHash"],
+    )
+    kernel.run.create(
+        "run_active",
+        active_turn["turnId"],
+        active_thread["branchId"],
+        "schema_main",
+        active_thread["rootTurnNodeHash"],
+        [{"id": "work", "deterministic": False, "sideEffects": False}],
+    )
+
+    kernel.maintenance.reclaim()
+
+    assert kernel.backend.get_run("run_retain_terminal") is not None
+    assert kernel.node.get(retained_terminal["turnNodeHash"]) is not None
+    active_run_after = kernel.backend.get_run("run_active")
+    assert active_run_after is not None
+    assert active_run_after["status"] == "running"
+
+
 def test_reclaim_grace_window_holds_recent_writes_under_active_lease() -> None:
     clock = _Clock(0)
     kernel = new_kernel(clock)

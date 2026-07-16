@@ -155,6 +155,7 @@ class RuntimeBackend(Protocol):
     def get_run(self, run_id: str) -> dict[str, Any] | None: ...
     def list_runs_for_branch(self, branch_id: str) -> list[dict[str, Any]]: ...
     def list_all_runs(self) -> list[dict[str, Any]]: ...
+    def delete_run(self, run_id: str) -> None: ...
 
     # --- Staging (Section 3.4) ---------------------------------------------
     def append_staged(self, run_id: str, staged_result: dict[str, Any]) -> None: ...
@@ -394,6 +395,17 @@ class InMemoryBackend:
         # can never coexist on the same branch, and this milestone's
         # conformance scenarios deliberately spread them across branches.
         return copy.deepcopy([value for _, value in self._own_scope_items(self._shared.runs)])
+
+    def delete_run(self, run_id: str) -> None:
+        """Section 9.4 reclamation-only primitive: drop a Run record and its
+        staged pool together (mirrors the TS reference's `sweepRuns`, which
+        deletes `state.runs` and `state.stagedResults` for the same runId in
+        the same pass -- see `MaintenanceOps._sweep_runs` in `runtime.py`).
+        """
+
+        key = self._key(run_id)
+        self._shared.runs.pop(key, None)
+        self._shared.staged.pop(key, None)
 
     # --- Staging -------------------------------------------------------------------
     def append_staged(self, run_id: str, staged_result: dict[str, Any]) -> None:

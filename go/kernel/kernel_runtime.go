@@ -111,6 +111,10 @@ func (k *Kernel) CreateTurnTree(schemaID string, changes map[string]PathValue, b
 		return "", err
 	}
 
+	if err := validateTurnTreeChangeSet(schema, changes); err != nil {
+		return "", err
+	}
+
 	var manifest map[string]PathValue
 	if base == nil {
 		for _, path := range schema.Paths {
@@ -145,6 +149,44 @@ func (k *Kernel) CreateTurnTree(schemaID string, changes map[string]PathValue, b
 	}
 	k.Backend.PutTurnTree(TurnTree{Hash: hash, SchemaID: schemaID, Manifest: manifest})
 	return hash, nil
+}
+
+// validateTurnTreeChangeSet validates a caller-supplied changes map against
+// schema before CreateTurnTree applies it (on both the base and no-base
+// paths): every path key in changes must be declared by schema
+// (ErrUnknownTreePath otherwise), and each value's shape must match its
+// path's declared collection kind — a HashString[] for an "ordered" path, a
+// HashString-or-null for a "single" path (ErrInvalidPathValueKind
+// otherwise). Mirrors the TypeScript reference's validateTurnTreeChangeSet
+// (typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts), invoked on
+// every tree.create at runtime-kernel.ts:548. Internal tree construction
+// (incorporateStagedResults) builds manifests directly from the schema and
+// never calls this.
+func validateTurnTreeChangeSet(schema TurnTreeSchema, changes map[string]PathValue) error {
+	pathsByName := make(map[string]PathDefinition, len(schema.Paths))
+	for _, path := range schema.Paths {
+		pathsByName[path.Path] = path
+	}
+
+	for path, value := range changes {
+		pathDefinition, ok := pathsByName[path]
+		if !ok {
+			return newKernelError(ErrUnknownTreePath, "unknown path %q in schema %q", path, schema.SchemaID)
+		}
+
+		switch pathDefinition.Collection {
+		case PathCollectionOrdered:
+			if value.Kind != PathValueOrderedKind {
+				return newKernelError(ErrInvalidPathValueKind, "changes.%s must be a HashString[] for an ordered path", path)
+			}
+		case PathCollectionSingle:
+			if value.Kind == PathValueOrderedKind {
+				return newKernelError(ErrInvalidPathValueKind, "changes.%s must be a HashString or null for a single path", path)
+			}
+		}
+	}
+
+	return nil
 }
 
 // DiffTurnTrees returns the sorted list of manifest path names whose value

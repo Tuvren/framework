@@ -138,6 +138,21 @@ func computeGraceHorizonMs(runs map[string]Run, nowMs int64) int64 {
 // and every active run's start node plus created-turn-node lineage onto
 // turnNodeStack, and keeps every active run's currently-staged (drained-
 // but-not-yet-checkpointed) result object directly.
+//
+// An active run's PendingCheckpointHash is also pushed when present: a
+// torn mid-commit checkpoint's turn node is durably written (checkpointRun
+// already succeeded at the storage layer) but is not yet reflected in
+// CreatedTurnNodes and has not yet become the branch head, so without this
+// seed it would be reachable from nothing once the run stops pinning the
+// grace horizon (an expired leaseless running run past
+// LeaselessRunExpiryMs). Losing that node bricks the run permanently:
+// ReconcileRun needs it to fold the torn checkpoint onto the lineage, and
+// checkpointRun's ErrRunPendingCheckpoint guard refuses any further
+// checkpoint attempt on the run until ReconcileRun succeeds. This is a
+// port-local obligation of the durable pending-checkpoint marker
+// discipline (memory-backend-checkpoint.go) — the TypeScript backend has
+// no equivalent marker because its transact() makes checkpoint commits
+// atomic, so it never observes a torn state to begin with.
 func seedLiveRoots(st *scopeState, turnNodeStack *[]string, keepObjects map[string]bool) {
 	for _, branch := range st.branches {
 		if branch.ArchivedFromBranchID == "" {
@@ -153,6 +168,9 @@ func seedLiveRoots(st *scopeState, turnNodeStack *[]string, keepObjects map[stri
 		}
 		*turnNodeStack = append(*turnNodeStack, run.StartTurnNodeHash)
 		*turnNodeStack = append(*turnNodeStack, run.CreatedTurnNodes...)
+		if run.PendingCheckpointHash != "" {
+			*turnNodeStack = append(*turnNodeStack, run.PendingCheckpointHash)
+		}
 		for _, staged := range st.stagedByRun[run.RunID] {
 			keepObjects[staged.ObjectHash] = true
 		}

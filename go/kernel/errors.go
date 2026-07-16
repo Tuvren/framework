@@ -185,6 +185,24 @@ const (
 	// pending-checkpoint refusal.
 	ErrRunPendingCheckpoint = "kernel_runtime_run_pending_checkpoint"
 
+	// ErrUnknownTreePath: a turn tree create call's changes map declared a
+	// path that the target schema does not define. Mirrors the TypeScript
+	// reference's kernel_runtime_unknown_tree_path
+	// (typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts's
+	// validateTurnTreeChangeSet) byte-for-byte.
+	ErrUnknownTreePath = "kernel_runtime_unknown_tree_path"
+
+	// ErrInvalidPathValueKind: a turn tree create call's changes map
+	// supplied a value whose shape does not match its path's declared
+	// collection kind (an ordered path given a non-array value, or a
+	// single path given an array value). Mirrors the TypeScript
+	// reference's invalid_path_value_kind
+	// (typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts's
+	// assertPathValueForCollectionKind) byte-for-byte; this is
+	// intentionally unprefixed to match that code, and the Python port
+	// diverges here with kernel_runtime_invalid_tree_path_value.
+	ErrInvalidPathValueKind = "invalid_path_value_kind"
+
 	// ErrInvalidDurableReadCursor: a durable-read enumeration call (for
 	// example thread.list) was given a cursor that fails to decode as a
 	// well-formed opaque cursor payload. Matches the TypeScript reference

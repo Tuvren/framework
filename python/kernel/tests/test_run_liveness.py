@@ -543,6 +543,86 @@ def test_reconcile_is_a_no_op_without_a_pending_checkpoint() -> None:
     assert reconciled["headTurnNodeHash"] == thread["rootTurnNodeHash"]
 
 
+def test_reclaim_seeds_pending_checkpoint_node_for_a_leaseless_running_run_past_admin_expiry() -> (
+    None
+):
+    """Round-6 finding #1: a torn mid-commit checkpoint's TurnNode is
+    durable (`put_node` already committed) but referenced only by the run's
+    own `pendingCheckpoint.nodeHash` -- not yet `createdTurnNodes`, not yet
+    the branch head. A leaseless running run that has gone quiet past the
+    24h admin-expiry horizon deliberately does not pin the grace horizon
+    (Section 9.4), so absent seeding the pending node explicitly onto the
+    keep closure, a reclaim sweep landing in that window would delete it,
+    and `run.reconcile` would then misclassify the tear as `beforeCommit`
+    (node missing) instead of `midCommit`, silently rewriting history and
+    losing the staged results the node embedded.
+    """
+
+    clock = _Clock(0)
+    base_backend = InMemoryBackend(now=clock)
+    kernel = RuntimeKernel(base_backend)
+    kernel.schema.register(dict(CANONICAL_SCHEMA))
+
+    thread = kernel.thread.create("thread_pending_seed", "schema_main", "branch_pending_seed")
+    turn = kernel.turn.create(
+        "turn_pending_seed",
+        thread["threadId"],
+        thread["branchId"],
+        None,
+        thread["rootTurnNodeHash"],
+    )
+    run_id = "run_pending_seed"
+    kernel.run.create(
+        run_id,
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "faulted", "deterministic": False, "sideEffects": False}],
+        lease_duration_ms=None,
+    )
+    assert kernel.backend.get_run(run_id)["lease"] is None
+
+    kernel.run.begin_step(run_id, "faulted")
+    kernel.backend = FaultInjectingBackend(base_backend, "midCommit", policy="once")  # type: ignore[assignment]
+    raised_code = None
+    try:
+        kernel.run.complete_step(run_id, "faulted")
+    except KernelRuntimeError as runtime_error:
+        raised_code = runtime_error.code
+    kernel.backend = base_backend
+    assert raised_code == "kernel_persistence_fault_injected"
+
+    run_record = kernel.backend.get_run(run_id)
+    pending = run_record["pendingCheckpoint"]
+    assert pending is not None
+    pending_node_hash = pending["nodeHash"]
+    # Genuinely torn mid-commit: the node is durable but not yet acked.
+    assert kernel.backend.get_node(pending_node_hash) is not None
+    assert pending_node_hash not in run_record["createdTurnNodes"]
+
+    # Advance the clock well past the 24h leaseless-run admin-expiry
+    # horizon, so this run stops pinning the grace horizon (Section 9.4)
+    # even though its record and pending checkpoint are still live.
+    clock.value = 86_400_000 + 5_000
+
+    kernel.maintenance.reclaim()
+
+    # The pending checkpoint's node must survive reclaim regardless.
+    assert kernel.backend.get_node(pending_node_hash) is not None
+
+    reconciled = kernel.run.reconcile(run_id)
+    assert reconciled["reconciled"] is True
+    # If the pending node had been wrongly reclaimed, reconcile would see a
+    # missing node and misclassify this as `beforeCommit`
+    # (pendingMessageCommitted: False) instead of correctly rolling the
+    # torn midCommit checkpoint forward.
+    assert reconciled["pendingMessageCommitted"] is True
+    assert reconciled["headTurnNodeHash"] == pending_node_hash
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == pending_node_hash
+    assert pending_node_hash in kernel.backend.get_run(run_id)["createdTurnNodes"]
+
+
 # --- Torn preemption checkpoints (P2 fix) ------------------------------------
 
 

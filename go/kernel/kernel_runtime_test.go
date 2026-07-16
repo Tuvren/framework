@@ -109,6 +109,73 @@ func TestCreateTurnTree_MissingSingleCollectionPathExplicitCase(t *testing.T) {
 	requireErrCode(t, err, kernel.ErrMissingRequiredTreePath)
 }
 
+func TestCreateTurnTree_UndeclaredPathRejected(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	_, err := k.CreateTurnTree("schema_main", map[string]kernel.PathValue{
+		"messages":         {Kind: kernel.PathValueOrderedKind, Ordered: []string{}},
+		"context.manifest": {Kind: kernel.PathValueNull},
+		"not_a_real_path":  {Kind: kernel.PathValueNull},
+	}, nil)
+	requireErrCode(t, err, kernel.ErrUnknownTreePath)
+}
+
+func TestCreateTurnTree_UndeclaredPathRejectedOnBasePath(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	baseHash, err := k.CreateTurnTree("schema_main", map[string]kernel.PathValue{
+		"messages":         {Kind: kernel.PathValueOrderedKind, Ordered: []string{}},
+		"context.manifest": {Kind: kernel.PathValueNull},
+	}, nil)
+	if err != nil {
+		t.Fatalf("create base: %v", err)
+	}
+
+	_, err = k.CreateTurnTree("schema_main", map[string]kernel.PathValue{
+		"not_a_real_path": {Kind: kernel.PathValueNull},
+	}, &baseHash)
+	requireErrCode(t, err, kernel.ErrUnknownTreePath)
+}
+
+func TestCreateTurnTree_OrderedPathGivenSingleValueRejected(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	_, err := k.CreateTurnTree("schema_main", map[string]kernel.PathValue{
+		"messages":         {Kind: kernel.PathValueSingleKind, Single: kernel.HashBytesToHex([]byte("msg"))},
+		"context.manifest": {Kind: kernel.PathValueNull},
+	}, nil)
+	requireErrCode(t, err, kernel.ErrInvalidPathValueKind)
+}
+
+func TestCreateTurnTree_SinglePathGivenOrderedValueRejectedOnBasePath(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	baseHash, err := k.CreateTurnTree("schema_main", map[string]kernel.PathValue{
+		"messages":         {Kind: kernel.PathValueOrderedKind, Ordered: []string{}},
+		"context.manifest": {Kind: kernel.PathValueNull},
+	}, nil)
+	if err != nil {
+		t.Fatalf("create base: %v", err)
+	}
+
+	_, err = k.CreateTurnTree("schema_main", map[string]kernel.PathValue{
+		"context.manifest": {Kind: kernel.PathValueOrderedKind, Ordered: []string{kernel.HashBytesToHex([]byte("x"))}},
+	}, &baseHash)
+	requireErrCode(t, err, kernel.ErrInvalidPathValueKind)
+}
+
 func TestCreateTurnTree_ModifyProducesNewHashWithStructuralSharing(t *testing.T) {
 	k := newTestKernel()
 	if err := k.RegisterSchema(canonicalSchema()); err != nil {

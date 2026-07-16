@@ -213,6 +213,9 @@ class FaultInjectingBackend:
     def list_all_runs(self) -> list[dict[str, Any]]:
         return self._inner.list_all_runs()
 
+    def delete_run(self, run_id: str) -> None:
+        self._inner.delete_run(run_id)
+
     # --- Staging: the afterCommitBeforeAck fault point ---------------------------
     def append_staged(self, run_id: str, staged_result: dict[str, Any]) -> None:
         self._inner.append_staged(run_id, staged_result)

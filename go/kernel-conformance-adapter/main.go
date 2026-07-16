@@ -216,18 +216,27 @@ func writeResponse(writer *bufio.Writer, id json.RawMessage, result any, rpcErr 
 		// error frame with fmt (not encoding/json) so the fallback itself
 		// cannot fail the same way — id is re-emitted as raw JSON (it was
 		// already validated as well-formed JSON by the request decode that
-		// produced it, or is the literal "null" when absent), and the
-		// message is embedded via %q, whose Go-syntax backslash escaping is
-		// also valid JSON string escaping for the characters %q can
-		// produce.
+		// produced it, or is the literal "null" when absent). The message
+		// is NOT embedded via fmt's %q: Go-syntax backslash escaping is not
+		// always valid JSON string escaping (%q emits \xNN / \uNNNN forms
+		// for some non-printable bytes that JSON does not accept in that
+		// form), so it is marshalled on its own with encoding/json instead
+		// — marshalling a plain string cannot itself fail — and the
+		// resulting JSON string literal is spliced into the hand-built
+		// frame. The error code matches the Python adapter's
+		// adapter_response_serialization_failed byte-for-byte.
 		fmt.Fprintf(os.Stderr, "kernel-conformance-adapter: failed to encode response: %v\n", err)
 		idLiteral := "null"
 		if raw := rawOrNull(id); raw != nil {
 			idLiteral = string(raw.(json.RawMessage))
 		}
+		messageJSON, msgErr := json.Marshal(fmt.Sprintf("failed to encode response frame: %v", err))
+		if msgErr != nil {
+			messageJSON = []byte(`"failed to encode response frame"`)
+		}
 		fallback := fmt.Sprintf(
-			`{"jsonrpc":"2.0","id":%s,"error":{"code":"serialization_failed","message":%q}}`,
-			idLiteral, fmt.Sprintf("failed to encode response frame: %v", err),
+			`{"jsonrpc":"2.0","id":%s,"error":{"code":"adapter_response_serialization_failed","message":%s}}`,
+			idLiteral, messageJSON,
 		)
 		writer.WriteString(fallback)
 		writer.WriteByte('\n')

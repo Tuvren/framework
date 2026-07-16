@@ -52,6 +52,13 @@ or in `AdapterObservation.diagnostics`. JSON-RPC failures, malformed frames,
 process exits, timeouts, and adapter protocol errors are runner-owned adapter
 failures; adapters must not map those failures into `$.result.error`.
 
+A long-lived adapter must emit exactly one response frame per request even
+when its own response value fails to serialize (a non-JSON-encodable
+projection, NaN, and similar): rather than writing no frame — which would
+hang the runner on that request id — the adapter falls back to a minimal
+JSON-RPC error frame whose ErrorEnvelope code is
+`adapter_response_serialization_failed`, and logs details to stderr.
+
 Adapters bridge to language-native functions, promises, async iterables,
 tokens, byte buffers, and errors internally. Those binding shapes belong only in
 binding appendices or adapter-local source. Adapters do not receive `checkId`,

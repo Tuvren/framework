@@ -28,16 +28,25 @@ import (
 
 // AcquireLease grants runID's execution lease to ownerID for ttlMs
 // milliseconds from the current backend-authoritative clock reading. runID
-// must exist; any prior lease state on the run is overwritten — the memory
-// baseline is single-writer embedded (spec §5.2), so acquire-time cross-owner
-// conflict rejection is not mandated here. CreateRun does not acquire a lease
-// implicitly (a caller opts in), so the common sequence is CreateRun then
-// AcquireLease. Returns the minted lease token and its absolute expiry
-// (epoch ms).
+// must exist and be status "running" (ErrRunNotActive otherwise, reusing
+// the same code RenewLease/PauseRun use for the equivalent guard) — a
+// completed, failed, or paused run must never end up with HasLease=true,
+// since that would bypass RenewLease's entire guard ladder (lease
+// presence, run status, expiry, owner, token) for a run nothing will ever
+// resume, and would incorrectly make the run look actively leased to any
+// caller inspecting RecoveryState afterward. Any prior lease state on a
+// running run is overwritten — the memory baseline is single-writer
+// embedded (spec §5.2), so acquire-time cross-owner conflict rejection is
+// not mandated here. CreateRun does not acquire a lease implicitly (a
+// caller opts in), so the common sequence is CreateRun then AcquireLease.
+// Returns the minted lease token and its absolute expiry (epoch ms).
 func (k *Kernel) AcquireLease(runID, ownerID string, ttlMs int64) (token string, expiresAtMs int64, err error) {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
 		return "", 0, newKernelError("kernel_runtime_run_not_found", "run %q not found", runID)
+	}
+	if run.Status != RunStatusRunning {
+		return "", 0, newKernelError(ErrRunNotActive, "run %q's lease cannot be acquired (status: %s)", runID, run.Status)
 	}
 
 	now := k.Clock.NowMs()

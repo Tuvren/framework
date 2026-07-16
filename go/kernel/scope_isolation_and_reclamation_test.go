@@ -438,3 +438,118 @@ func TestReclamation_UnsupportedBackendRejectsWithCapabilityError(t *testing.T) 
 	_, err := k.Reclaim()
 	requireErrCode(t, err, kernel.ErrCapabilityUnsupported)
 }
+
+// TestReclamation_LeaselessRunTornCheckpointSurvivesPastAdminExpiry is a
+// regression for the gap where seedLiveRoots never pushed an active run's
+// PendingCheckpointHash onto the live-root turn-node stack: a torn
+// mid-commit checkpoint's turn node is durably written (checkpointRun's
+// storage-layer write already succeeded) but is not yet reflected in
+// CreatedTurnNodes and has not yet become the branch head, so it hung off
+// nothing but the run's PendingCheckpointHash marker. A leaseless running
+// run is deliberately excluded from pinning the grace horizon once it has
+// gone quiet past LeaselessRunExpiryMs (ADR-050/ADR-051) — so before the
+// fix, once that admin-expiry window passed, Reclaim swept the pending
+// node out from under a run that still needed it, and ReconcileRun could
+// never fold the torn checkpoint back onto the lineage again
+// (kernel_runtime_turn_node_not_found forever, with checkpointRun's
+// ErrRunPendingCheckpoint guard permanently refusing any new checkpoint
+// attempt on the run). With the fix, seedLiveRoots also seeds
+// PendingCheckpointHash whenever it is set, so the pending node's full
+// reference closure (including the staged results it already consumed)
+// survives reclamation regardless of the grace horizon, and ReconcileRun
+// can still finish the job.
+func TestReclamation_LeaselessRunTornCheckpointSurvivesPastAdminExpiry(t *testing.T) {
+	k, clock := newManualClockKernel(0)
+	// setUpFirstCheckpoint never calls AcquireLease: run_crash is a
+	// leaseless running run for its entire lifetime here.
+	runID, message2Hash := setUpFirstCheckpoint(t, k)
+
+	beforeHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found")
+	}
+
+	baseBackend := k.Backend
+	k.Backend = kernel.NewFaultInjectingBackend(baseBackend, kernel.FaultPlan{
+		Point: kernel.FaultPointMidCommit, Policy: kernel.FaultPolicyOnce,
+	})
+	_, err := k.CompleteStep(runID, "step_2", "", "")
+	requireErrCode(t, err, kernel.ErrPersistenceFaultInjected)
+	k.Backend = baseBackend
+
+	// Confirm the torn shape: branch head unmoved, but a durable pending
+	// child node already carries message 2.
+	afterFaultHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found")
+	}
+	if afterFaultHead.HeadTurnNodeHash != beforeHead.HeadTurnNodeHash {
+		t.Fatalf("expected branch head unchanged immediately after a mid-commit fault, got %q (was %q)", afterFaultHead.HeadTurnNodeHash, beforeHead.HeadTurnNodeHash)
+	}
+	pending := k.Backend.ListChildTurnNodes(beforeHead.HeadTurnNodeHash)
+	if len(pending) != 1 {
+		t.Fatalf("expected exactly one durable pending child turn node past the un-advanced head, got %d", len(pending))
+	}
+	pendingNode := pending[0]
+
+	staleRun, ok := k.Backend.GetRun(runID)
+	if !ok {
+		t.Fatalf("run not found")
+	}
+	if staleRun.PendingCheckpointHash != pendingNode.Hash {
+		t.Fatalf("expected run's PendingCheckpointHash to be the durable pending node %q, got %q", pendingNode.Hash, staleRun.PendingCheckpointHash)
+	}
+	if staleRun.HasLease {
+		t.Fatalf("expected run_crash to remain leaseless (never acquired a lease)")
+	}
+	if staleRun.Status != kernel.RunStatusRunning {
+		t.Fatalf("expected run_crash to still be running, got %q", staleRun.Status)
+	}
+
+	// Advance the clock well past the 24h leaseless admin-expiry horizon
+	// relative to the run's last UpdatedAtMs: the run stops pinning the
+	// reclamation grace horizon.
+	clock.SetMs(staleRun.UpdatedAtMs + kernel.LeaselessRunExpiryMs + 5000)
+
+	if _, err := k.Reclaim(); err != nil {
+		t.Fatalf("reclaim: %v", err)
+	}
+
+	// The pending node (and its lineage back to the live branch head, and
+	// the staged result it already consumed) must have survived
+	// reclamation even though nothing else pins the grace horizon.
+	if _, ok := k.Backend.GetTurnNode(pendingNode.Hash); !ok {
+		t.Fatalf("expected the torn checkpoint's pending node to survive reclamation")
+	}
+	if !k.HasObject(message2Hash) {
+		t.Fatalf("expected the pending node's consumed staged-result object to survive reclamation")
+	}
+
+	// ReconcileRun must still be able to fold the surviving pending node
+	// onto the lineage: this is the real proof the run was not bricked.
+	if err := k.ReconcileRun(runID); err != nil {
+		t.Fatalf("reconcile after reclaim: %v", err)
+	}
+
+	afterReconcileHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found after reconcile")
+	}
+	if afterReconcileHead.HeadTurnNodeHash != pendingNode.Hash {
+		t.Fatalf("expected reconcile to advance the branch head to the surviving pending node %q, got %q", pendingNode.Hash, afterReconcileHead.HeadTurnNodeHash)
+	}
+	if got := messageCount(t, k, "branch_crash"); got != 2 {
+		t.Fatalf("expected visible committed message count 2 after reconcile, got %d", got)
+	}
+
+	reconciled, ok := k.Backend.GetRun(runID)
+	if !ok {
+		t.Fatalf("run not found after reconcile")
+	}
+	if reconciled.PendingCheckpointHash != "" {
+		t.Fatalf("expected reconcile to clear PendingCheckpointHash, got %q", reconciled.PendingCheckpointHash)
+	}
+	if len(reconciled.CreatedTurnNodes) == 0 || reconciled.CreatedTurnNodes[len(reconciled.CreatedTurnNodes)-1] != pendingNode.Hash {
+		t.Fatalf("expected reconciled run's CreatedTurnNodes to end with the pending node %q, got %v", pendingNode.Hash, reconciled.CreatedTurnNodes)
+	}
+}

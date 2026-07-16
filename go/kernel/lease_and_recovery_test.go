@@ -135,6 +135,110 @@ func TestLease_RenewNonRunningStatusRejected(t *testing.T) {
 	requireErrCode(t, err, kernel.ErrRunNotActive)
 }
 
+// TestAcquireLease_CompletedRunRejectedAndDoesNotMutateLeaseState is a
+// regression for the gap where AcquireLease had no status guard at all: a
+// completed run must not end up with HasLease=true, which would bypass
+// RenewLease's entire guard ladder for a run nothing will ever resume.
+func TestAcquireLease_CompletedRunRejectedAndDoesNotMutateLeaseState(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_acquire_completed", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if err := k.CompleteRun("run_1", ""); err != nil {
+		t.Fatalf("complete run: %v", err)
+	}
+
+	_, _, err = k.AcquireLease("run_1", "owner_a", 1000)
+	requireErrCode(t, err, kernel.ErrRunNotActive)
+
+	run, ok := k.Backend.GetRun("run_1")
+	if !ok {
+		t.Fatalf("run_1 not found")
+	}
+	if run.HasLease {
+		t.Fatalf("expected a rejected acquire against a completed run to leave HasLease false, got true")
+	}
+	if run.Status != kernel.RunStatusCompleted {
+		t.Fatalf("expected run_1 to remain completed, got %q", run.Status)
+	}
+}
+
+// TestAcquireLease_FailedRunRejectedAndDoesNotMutateLeaseState is the same
+// regression as TestAcquireLease_CompletedRunRejectedAndDoesNotMutateLeaseState
+// but for a preemption-failed run instead of a normally-completed one.
+func TestAcquireLease_FailedRunRejectedAndDoesNotMutateLeaseState(t *testing.T) {
+	k, clock := newManualClockKernel(0)
+	createSingleStepRun(t, k, "thread_acquire_failed", "branch_acquire_failed", "run_failed")
+	if _, _, err := k.AcquireLease("run_failed", "owner_a", 5); err != nil {
+		t.Fatalf("acquire: %v", err)
+	}
+	clock.SetMs(100)
+	if err := k.PreemptStaleRun("run_failed", clock.NowMs()); err != nil {
+		t.Fatalf("preempt: %v", err)
+	}
+
+	_, _, err := k.AcquireLease("run_failed", "owner_b", 1000)
+	requireErrCode(t, err, kernel.ErrRunNotActive)
+
+	run, ok := k.Backend.GetRun("run_failed")
+	if !ok {
+		t.Fatalf("run_failed not found")
+	}
+	if run.HasLease {
+		t.Fatalf("expected a rejected acquire against a failed run to leave HasLease false, got true")
+	}
+	if run.LeaseOwnerID != "" {
+		t.Fatalf("expected a rejected acquire to leave LeaseOwnerID empty, got %q", run.LeaseOwnerID)
+	}
+	if run.Status != kernel.RunStatusFailed {
+		t.Fatalf("expected run_failed to remain failed, got %q", run.Status)
+	}
+}
+
+// TestAcquireLease_PausedRunRejectedAndDoesNotMutateLeaseState is the same
+// regression again for a paused run: PauseRun leaves the lease fields
+// untouched, so this proves the AcquireLease status guard itself fires
+// rather than some other side effect of pausing clearing the lease first.
+func TestAcquireLease_PausedRunRejectedAndDoesNotMutateLeaseState(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_acquire_paused", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if err := k.PauseRun("run_1"); err != nil {
+		t.Fatalf("pause: %v", err)
+	}
+
+	_, _, err = k.AcquireLease("run_1", "owner_a", 1000)
+	requireErrCode(t, err, kernel.ErrRunNotActive)
+
+	run, ok := k.Backend.GetRun("run_1")
+	if !ok {
+		t.Fatalf("run_1 not found")
+	}
+	if run.HasLease {
+		t.Fatalf("expected a rejected acquire against a paused run to leave HasLease false, got true")
+	}
+	if run.Status != kernel.RunStatusPaused {
+		t.Fatalf("expected run_1 to remain paused, got %q", run.Status)
+	}
+}
+
 func TestLease_TokensAreUniquePerAcquisitionUnderAFrozenClock(t *testing.T) {
 	// Spec §5.2 requires a monotonically changing fencing token. A
 	// clock-derived token repeats when two acquisitions land on the same
