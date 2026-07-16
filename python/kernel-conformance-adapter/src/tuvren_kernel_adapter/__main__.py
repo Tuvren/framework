@@ -265,7 +265,7 @@ def handle_line(line: str) -> dict[str, Any] | None:
             "jsonrpc": "2.0",
             "id": None,
             "error": AdapterError(
-                "invalid_adapter_request",
+                "invalid_json_rpc_request",
                 f"failed to parse JSON-RPC request: {decode_error}",
             ).to_envelope(),
         }

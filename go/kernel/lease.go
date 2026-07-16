@@ -28,10 +28,12 @@ import (
 
 // AcquireLease grants runID's execution lease to ownerID for ttlMs
 // milliseconds from the current backend-authoritative clock reading. runID
-// must exist and must not already hold a lease from a different, still-live
-// acquisition — CreateRun does not acquire a lease implicitly (a caller
-// opts in), so the common sequence is CreateRun then AcquireLease. Returns
-// the minted lease token and its absolute expiry (epoch ms).
+// must exist; any prior lease state on the run is overwritten — the memory
+// baseline is single-writer embedded (spec §5.2), so acquire-time cross-owner
+// conflict rejection is not mandated here. CreateRun does not acquire a lease
+// implicitly (a caller opts in), so the common sequence is CreateRun then
+// AcquireLease. Returns the minted lease token and its absolute expiry
+// (epoch ms).
 func (k *Kernel) AcquireLease(runID, ownerID string, ttlMs int64) (token string, expiresAtMs int64, err error) {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
