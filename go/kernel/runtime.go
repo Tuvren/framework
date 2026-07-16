@@ -157,6 +157,39 @@ type Branch struct {
 	ArchivedFromBranchID string
 }
 
+// PendingCheckpointKind identifies which checkpoint-minting entry point a
+// run's PendingCheckpointHash marker belongs to, so ReconcileRun
+// (recovery.go) knows what "folding the pending node in" must finish as
+// once a torn checkpoint is repaired: a plain step advance, or a terminal
+// transition (completed / failed-by-preemption) that must not be
+// misattributed as an ordinary completed step. Mirrors the Python port's
+// equivalent pending-checkpoint kind discriminator.
+type PendingCheckpointKind string
+
+const (
+	// PendingCheckpointKindStep: the pending checkpoint is an ordinary
+	// CompleteStep advance. ReconcileRun's fold-in behavior for this kind
+	// is unchanged from before this discriminator existed: append the
+	// pending node, advance CurrentStepIndex by one (capped at
+	// len(StepSequence)).
+	PendingCheckpointKindStep PendingCheckpointKind = "step"
+
+	// PendingCheckpointKindComplete: the pending checkpoint is CompleteRun's
+	// reactive checkpoint. ReconcileRun's fold-in finishes the run to
+	// "completed" with CurrentStepIndex set to len(StepSequence) (not
+	// incremented) and the lease cleared — the same end state a non-torn
+	// CompleteRun call would have produced.
+	PendingCheckpointKindComplete PendingCheckpointKind = "complete"
+
+	// PendingCheckpointKindPreempt: the pending checkpoint is
+	// PreemptStaleRun's reactive checkpoint. ReconcileRun's fold-in
+	// finishes the run to "failed" with PreemptionReason
+	// "stale_running_recovery", CurrentStepIndex left untouched (a
+	// preemption is never a completed step), and the lease cleared — the
+	// same end state a non-torn PreemptStaleRun call would have produced.
+	PendingCheckpointKindPreempt PendingCheckpointKind = "preempt"
+)
+
 // Run is the runtime kernel's in-memory run record. ThreadID is Kernel
 // bookkeeping (resolved from the run's branch at creation time), not a
 // CDDL run-record field; it is kept for diagnostic/debugging convenience so
@@ -189,6 +222,12 @@ type Run struct {
 	// a later ReconcileRun) has folded the pending node into
 	// CreatedTurnNodes.
 	PendingCheckpointHash string
+
+	// PendingCheckpointKind identifies which checkpoint-minting entry
+	// point PendingCheckpointHash belongs to (see PendingCheckpointKind).
+	// "" whenever PendingCheckpointHash is "" — the two fields are always
+	// set and cleared together.
+	PendingCheckpointKind PendingCheckpointKind
 
 	// --- run execution lease (kernel spec §5.2 Run Execution Leases,
 	// ADR-050: backend-authoritative clock, lease tokens, renewal, expiry,

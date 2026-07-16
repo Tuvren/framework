@@ -728,8 +728,32 @@ func (k *Kernel) incorporateStagedResults(schema TurnTreeSchema, baseTreeHash st
 // CurrentStepIndex/Status in the same write). When treeHash is "", the new
 // node's turn tree is derived from the active node's tree by incorporating
 // consumed per the run's schema (see incorporateStagedResults); otherwise
-// treeHash is used as-is (the caller must have already validated it).
-func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []StagedResult) (string, Run, error) {
+// treeHash is used as-is (the caller must have already validated it). kind
+// records which checkpoint-minting entry point this call belongs to (see
+// PendingCheckpointKind) so ReconcileRun (recovery.go) can fold a torn
+// commit's pending node back in as the right kind of transition.
+//
+// Refuses with ErrRunPendingCheckpoint before doing anything else when run
+// already has a durably-recorded PendingCheckpointHash: a prior checkpoint
+// attempt on this run is torn (its turn node and/or branch head may already
+// be durable, but the run record was never advanced to acknowledge it), and
+// minting a second checkpoint on top of it — rather than requiring
+// ReconcileRun first — would silently overwrite the pending marker and
+// orphan the first checkpoint's durable node (and whatever staged results it
+// already consumed) with nothing left pointing at it. This makes the
+// durable marker discipline enforced rather than advisory: every caller
+// that naively retries a checkpoint-minting call after a torn commit,
+// without reconciling first, gets a typed rejection instead of silent data
+// loss. Because this check runs before any write, refusing here leaves the
+// run's marker, branch head, and staging pool completely untouched — the
+// caller's own restaging behavior on a "" hash return (CompleteStep /
+// CompleteRun / PreemptStaleRun) puts back whatever the caller had already
+// drained from staging before calling in.
+func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []StagedResult, kind PendingCheckpointKind) (string, Run, error) {
+	if run.PendingCheckpointHash != "" {
+		return "", run, newKernelError(ErrRunPendingCheckpoint, "run %q has an unreconciled pending checkpoint %q (kind %q); call ReconcileRun before attempting a new checkpoint", run.RunID, run.PendingCheckpointHash, run.PendingCheckpointKind)
+	}
+
 	schema, err := k.getSchema(run.SchemaID)
 	if err != nil {
 		return "", run, err
@@ -781,6 +805,7 @@ func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []S
 	// by listing children of the run's previously-active turn node.
 	pendingMarker := run
 	pendingMarker.PendingCheckpointHash = hash
+	pendingMarker.PendingCheckpointKind = kind
 	k.Backend.UpdateRun(pendingMarker)
 
 	run.CreatedTurnNodes = append(run.CreatedTurnNodes, hash)
@@ -843,6 +868,7 @@ func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []S
 	// shows a non-empty PendingCheckpointHash while a commit is genuinely
 	// in flight or was interrupted mid-flight.
 	run.PendingCheckpointHash = ""
+	run.PendingCheckpointKind = ""
 
 	return hash, run, nil
 }
@@ -888,7 +914,7 @@ func (k *Kernel) CompleteStep(runID, stepID, eventHash, treeHash string) (string
 	}
 
 	consumed := k.Backend.DrainStagedResults(runID)
-	hash, run, err := k.checkpointRun(run, eventHash, treeHash, consumed)
+	hash, run, err := k.checkpointRun(run, eventHash, treeHash, consumed, PendingCheckpointKindStep)
 	if err != nil {
 		if hash == "" {
 			// The checkpoint never became durable (a "before-commit" fault
@@ -953,10 +979,26 @@ func (k *Kernel) CompleteRun(runID, eventHash string) error {
 	if eventHash != "" && !k.Backend.HasObject(eventHash) {
 		return newKernelError(ErrMissingEventObject, "event object %q is not present in the object store", eventHash)
 	}
+	// Unlike CompleteStep and PreemptStaleRun (which always route through
+	// checkpointRun and therefore always hit its pending-checkpoint guard),
+	// CompleteRun only calls checkpointRun when there is something to
+	// reactively checkpoint (len(staged) > 0 || eventHash != ""). A run
+	// left with an unreconciled torn checkpoint from a prior attempt, but
+	// nothing newly staged and no new eventHash on this retry, would
+	// otherwise skip checkpointRun entirely and fall straight through to
+	// marking the run "completed" — finalizing the run's status while the
+	// torn node from the prior attempt (and whatever it already consumed)
+	// stays durably orphaned off the branch head with nothing to ever
+	// reconcile it. Guard explicitly here so this call also refuses with
+	// ErrRunPendingCheckpoint until ReconcileRun has folded the torn
+	// checkpoint in.
+	if run.PendingCheckpointHash != "" {
+		return newKernelError(ErrRunPendingCheckpoint, "run %q has an unreconciled pending checkpoint %q (kind %q); call ReconcileRun before attempting a new checkpoint", run.RunID, run.PendingCheckpointHash, run.PendingCheckpointKind)
+	}
 
 	staged := k.Backend.DrainStagedResults(runID)
 	if len(staged) > 0 || eventHash != "" {
-		hash, updatedRun, err := k.checkpointRun(run, eventHash, "", staged)
+		hash, updatedRun, err := k.checkpointRun(run, eventHash, "", staged, PendingCheckpointKindComplete)
 		if err != nil {
 			if hash == "" {
 				// The checkpoint never became durable (a "before-commit"

@@ -209,7 +209,28 @@ func writeResponse(writer *bufio.Writer, id json.RawMessage, result any, rpcErr 
 
 	encoded, err := json.Marshal(frame)
 	if err != nil {
+		// A response frame that fails to marshal must still produce exactly
+		// one line on stdout: the harness matches responses to requests by
+		// id, and writing nothing at all here would hang that request id
+		// forever instead of failing it. Hand-build a minimal JSON-RPC
+		// error frame with fmt (not encoding/json) so the fallback itself
+		// cannot fail the same way — id is re-emitted as raw JSON (it was
+		// already validated as well-formed JSON by the request decode that
+		// produced it, or is the literal "null" when absent), and the
+		// message is embedded via %q, whose Go-syntax backslash escaping is
+		// also valid JSON string escaping for the characters %q can
+		// produce.
 		fmt.Fprintf(os.Stderr, "kernel-conformance-adapter: failed to encode response: %v\n", err)
+		idLiteral := "null"
+		if raw := rawOrNull(id); raw != nil {
+			idLiteral = string(raw.(json.RawMessage))
+		}
+		fallback := fmt.Sprintf(
+			`{"jsonrpc":"2.0","id":%s,"error":{"code":"serialization_failed","message":%q}}`,
+			idLiteral, fmt.Sprintf("failed to encode response frame: %v", err),
+		)
+		writer.WriteString(fallback)
+		writer.WriteByte('\n')
 		return
 	}
 

@@ -171,6 +171,20 @@ const (
 	// complete path) byte-for-byte.
 	ErrInvalidPausedRunCompletion = "kernel_runtime_invalid_paused_run_completion"
 
+	// ErrRunPendingCheckpoint: a checkpoint-minting call (CompleteStep,
+	// CompleteRun, PreemptStaleRun) targeted a run that already has a
+	// durably-recorded PendingCheckpointHash — a prior checkpoint attempt
+	// on this run committed its turn node and/or moved the branch head but
+	// was never acknowledged back to the run record (a torn checkpoint;
+	// see Kernel.checkpointRun and ReconcileRun). Minting a second
+	// checkpoint on top of an unreconciled torn one would silently orphan
+	// the first one's durable node (and any staged results it already
+	// consumed): the caller must call ReconcileRun for this run first, so
+	// the torn checkpoint is folded onto the live lineage before any new
+	// checkpoint is attempted. Mirrors the Python port's equivalent
+	// pending-checkpoint refusal.
+	ErrRunPendingCheckpoint = "kernel_runtime_run_pending_checkpoint"
+
 	// ErrInvalidDurableReadCursor: a durable-read enumeration call (for
 	// example thread.list) was given a cursor that fails to decode as a
 	// well-formed opaque cursor payload. Matches the TypeScript reference

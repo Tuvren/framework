@@ -300,7 +300,32 @@ def main() -> None:
         if response is None:
             continue
 
-        sys.stdout.write(json.dumps(response, allow_nan=False, separators=(",", ":")))
+        try:
+            frame = json.dumps(response, allow_nan=False, separators=(",", ":"))
+        except (TypeError, ValueError) as serialization_error:
+            # A handler projected a value json cannot frame (NaN, a stray
+            # non-JSON type). The harness would hang on this request id if
+            # no frame ever arrived, so fall back to a minimal hand-built
+            # error frame whose own serialization cannot fail, and keep the
+            # long-lived stdio loop alive. Diagnostics go to stderr; stdout
+            # carries protocol frames only.
+            print(
+                f"failed to serialize response frame: {serialization_error}",
+                file=sys.stderr,
+            )
+            request_id = response.get("id") if isinstance(response, dict) else None
+            frame = json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": request_id if isinstance(request_id, (str, int)) else None,
+                    "error": {
+                        "code": "adapter_response_serialization_failed",
+                        "message": "adapter produced a non-serializable response value",
+                    },
+                },
+                separators=(",", ":"),
+            )
+        sys.stdout.write(frame)
         sys.stdout.write("\n")
         sys.stdout.flush()
 

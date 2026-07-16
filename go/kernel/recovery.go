@@ -32,12 +32,23 @@ package kernel
 // node) cannot distinguish this run's own pending commit from an unrelated
 // sibling node a different run or branch wrote against the same base head.
 // When a pending checkpoint is found, it appends the pending node hash to
-// CreatedTurnNodes, advances CurrentStepIndex by one (capped at
-// len(StepSequence)), clears PendingCheckpointHash, and persists the
-// result. A no-op (returns nil without writing) when the run has no
-// pending checkpoint and the branch head already matches the run's active
-// turn node — the common case, since only a fault-interrupted checkpoint
-// ever leaves them disagreeing in the first place.
+// CreatedTurnNodes and finishes the transition per the marker's
+// PendingCheckpointKind (Kernel.checkpointRun, kernel_runtime.go /
+// runtime.go): PendingCheckpointKindStep advances CurrentStepIndex by one
+// (capped at len(StepSequence), the historical behavior);
+// PendingCheckpointKindComplete finishes the run to "completed" with
+// CurrentStepIndex set to len(StepSequence) and the lease cleared;
+// PendingCheckpointKindPreempt finishes the run to "failed" with
+// preemptionReason "stale_running_recovery" and the lease cleared, without
+// bumping CurrentStepIndex. Either way PendingCheckpointHash/Kind are
+// cleared and the result persisted. This is also what makes
+// Kernel.checkpointRun's own ErrRunPendingCheckpoint refusal meaningful
+// rather than a permanent dead end: a caller that hits it must call
+// ReconcileRun exactly once to fold the torn commit in, and can then retry
+// (or move on) normally. A no-op (returns nil without writing) when the run
+// has no pending checkpoint and the branch head already matches the run's
+// active turn node — the common case, since only a fault-interrupted
+// checkpoint ever leaves them disagreeing in the first place.
 func (k *Kernel) ReconcileRun(runID string) error {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
@@ -82,13 +93,52 @@ func (k *Kernel) ReconcileRun(runID string) error {
 		// call ever ran (both durable writes had already succeeded when
 		// that fault fired) — in both cases the head is now genuinely at
 		// the pending node, and the run's own bookkeeping can fold it in.
+		// What "folding it in" finishes as depends on which
+		// checkpoint-minting entry point the pending marker came from
+		// (run.PendingCheckpointKind): a torn-then-reconciled transition
+		// must end in exactly the state a non-torn one would have produced,
+		// with exactly one event node on the lineage — never a second
+		// checkpoint minted by a later retry of the same call, and never a
+		// terminal (preempt/complete) node misattributed as a completed
+		// step.
 		if branch.HeadTurnNodeHash == pendingHash {
 			run.CreatedTurnNodes = append(run.CreatedTurnNodes, pendingHash)
-			run.CurrentStepIndex++
-			if run.CurrentStepIndex > len(run.StepSequence) {
+			switch run.PendingCheckpointKind {
+			case PendingCheckpointKindComplete:
+				// Mirrors CompleteRun's own non-torn success path: finish to
+				// "completed" with CurrentStepIndex set (not incremented) to
+				// len(StepSequence) and the lease cleared. No step-attribution
+				// bookkeeping — a reactive completion checkpoint is not a
+				// declared step.
+				run.Status = RunStatusCompleted
 				run.CurrentStepIndex = len(run.StepSequence)
+				run.HasLease = false
+				run.LeaseOwnerID = ""
+				run.LeaseToken = ""
+				run.LeaseExpiresAtMs = 0
+			case PendingCheckpointKindPreempt:
+				// Mirrors PreemptStaleRun's own non-torn success path:
+				// finish to "failed" with the stale-preemption reason and
+				// the lease cleared, WITHOUT bumping CurrentStepIndex — a
+				// preemption's reactive checkpoint is not a completed step
+				// either.
+				run.Status = RunStatusFailed
+				run.PreemptionReason = "stale_running_recovery"
+				run.HasLease = false
+				run.LeaseOwnerID = ""
+				run.LeaseToken = ""
+				run.LeaseExpiresAtMs = 0
+			default:
+				// PendingCheckpointKindStep (or, defensively, an unset/
+				// unrecognized kind): today's ordinary step-advance
+				// behavior.
+				run.CurrentStepIndex++
+				if run.CurrentStepIndex > len(run.StepSequence) {
+					run.CurrentStepIndex = len(run.StepSequence)
+				}
 			}
 			run.PendingCheckpointHash = ""
+			run.PendingCheckpointKind = ""
 			k.Backend.UpdateRun(run)
 			return nil
 		}

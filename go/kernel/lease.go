@@ -201,7 +201,7 @@ func (k *Kernel) PreemptStaleRun(runID string, nowMs int64) error {
 	}
 	eventHash := k.Backend.PutObject(preemptionEventMediaType, eventBytes).Hash
 
-	hash, updatedRun, err := k.checkpointRun(run, eventHash, "", staged)
+	hash, updatedRun, err := k.checkpointRun(run, eventHash, "", staged, PendingCheckpointKindPreempt)
 	if err != nil {
 		if hash == "" {
 			// The checkpoint never became durable: nothing consumed
@@ -217,9 +217,15 @@ func (k *Kernel) PreemptStaleRun(runID string, nowMs int64) error {
 		// hash != "" means the checkpoint's durable writes already
 		// succeeded (a torn mid-commit checkpoint): the turn node and
 		// branch head are real, but this run record is deliberately left
-		// un-advanced here. ReconcileRun (recovery.go) repairs it forward
-		// to match the branch head that already moved; a subsequent
-		// PreemptStaleRun retry then completes the failure transition.
+		// un-advanced here, with PendingCheckpointHash/Kind
+		// (PendingCheckpointKindPreempt) durably marking it torn.
+		// ReconcileRun (recovery.go) is what finishes the failure
+		// transition — folding the pending node in, flipping status to
+		// "failed" with preemptionReason "stale_running_recovery", and
+		// clearing the lease. A naive retry of PreemptStaleRun on this run
+		// before ReconcileRun runs is refused with ErrRunPendingCheckpoint
+		// (checkpointRun's guard) rather than minting a second preemption
+		// event node.
 		return err
 	}
 	run = updatedRun

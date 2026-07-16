@@ -819,3 +819,408 @@ func TestCommitSiblingCheckpoint_FirstWriterWinsSecondLoses(t *testing.T) {
 		t.Fatalf("expected final head to be the committed sibling %q, got %q", winnerHash, branch.HeadTurnNodeHash)
 	}
 }
+
+// --- pending-checkpoint refusal (P1: silent staged-result loss on naive
+// retry after a torn checkpoint) ---
+
+// TestCompleteStep_NaiveRetryAfterTornCheckpointRejectedUntilReconciled is a
+// regression for a P1 where a naive CompleteStep retry after a torn
+// mid-commit checkpoint — without calling ReconcileRun first — silently
+// overwrote the durable PendingCheckpointHash marker, minted a *second*
+// checkpoint node consuming nothing (the staging pool was already drained
+// and embedded in the first, orphaned node), and advanced the branch head
+// to it: the first torn node's consumed staged results became permanently
+// unreachable with no error ever surfacing. checkpointRun must instead
+// refuse every checkpoint-minting call with ErrRunPendingCheckpoint while a
+// prior checkpoint on this run is still unreconciled, leaving the marker,
+// branch head, and staging pool exactly as the torn commit left them, and
+// ReconcileRun must be the only way to fold the torn node onto the live
+// lineage before any new checkpoint is attempted.
+func TestCompleteStep_NaiveRetryAfterTornCheckpointRejectedUntilReconciled(t *testing.T) {
+	k, _ := newManualClockKernel(0)
+	runID, message2Hash := setUpFirstCheckpoint(t, k)
+
+	beforeTornHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found")
+	}
+
+	// Tear the checkpoint mid-commit: the pending node becomes durable
+	// (with message 2 embedded as its ConsumedStagedResults, draining the
+	// staging pool), but the branch head is never moved to it.
+	baseBackend := k.Backend
+	k.Backend = kernel.NewFaultInjectingBackend(baseBackend, kernel.FaultPlan{
+		Point: kernel.FaultPointMidCommit, Policy: kernel.FaultPolicyOnce,
+	})
+	_, err := k.CompleteStep(runID, "step_2", "", "")
+	requireErrCode(t, err, kernel.ErrPersistenceFaultInjected)
+	k.Backend = baseBackend
+
+	tornRun, ok := k.Backend.GetRun(runID)
+	if !ok {
+		t.Fatalf("run not found")
+	}
+	if tornRun.PendingCheckpointHash == "" {
+		t.Fatalf("expected a durable pending checkpoint marker after the torn mid-commit fault")
+	}
+	if tornRun.PendingCheckpointKind != kernel.PendingCheckpointKindStep {
+		t.Fatalf("expected pending checkpoint kind %q, got %q", kernel.PendingCheckpointKindStep, tornRun.PendingCheckpointKind)
+	}
+
+	pendingChildrenBeforeRetry := k.Backend.ListChildTurnNodes(beforeTornHead.HeadTurnNodeHash)
+	if len(pendingChildrenBeforeRetry) != 1 {
+		t.Fatalf("expected exactly one durable pending child turn node after the torn commit, got %d", len(pendingChildrenBeforeRetry))
+	}
+	pendingHash := pendingChildrenBeforeRetry[0].Hash
+
+	// The caller retries the same step WITHOUT reconciling first —
+	// requireExpectedStep alone would accept this (CurrentStepIndex never
+	// advanced), so only checkpointRun's own pending-checkpoint guard can
+	// catch it.
+	_, err = k.CompleteStep(runID, "step_2", "", "")
+	requireErrCode(t, err, kernel.ErrRunPendingCheckpoint)
+
+	// The marker, branch head, and staging pool must be exactly as the
+	// torn commit left them: the naive retry must not have overwritten the
+	// marker or minted a second checkpoint node.
+	afterRetryRun, ok := k.Backend.GetRun(runID)
+	if !ok {
+		t.Fatalf("run not found after rejected retry")
+	}
+	if afterRetryRun.PendingCheckpointHash != tornRun.PendingCheckpointHash {
+		t.Fatalf("expected pending checkpoint marker unchanged by the rejected retry, was %q, now %q", tornRun.PendingCheckpointHash, afterRetryRun.PendingCheckpointHash)
+	}
+	if afterRetryRun.CurrentStepIndex != tornRun.CurrentStepIndex {
+		t.Fatalf("expected CurrentStepIndex unchanged by the rejected retry, was %d, now %d", tornRun.CurrentStepIndex, afterRetryRun.CurrentStepIndex)
+	}
+	afterRetryHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found after rejected retry")
+	}
+	if afterRetryHead.HeadTurnNodeHash != beforeTornHead.HeadTurnNodeHash {
+		t.Fatalf("expected branch head unchanged by the rejected retry, was %q, now %q", beforeTornHead.HeadTurnNodeHash, afterRetryHead.HeadTurnNodeHash)
+	}
+	pendingChildrenAfterRetry := k.Backend.ListChildTurnNodes(beforeTornHead.HeadTurnNodeHash)
+	if len(pendingChildrenAfterRetry) != 1 {
+		t.Fatalf("expected the rejected retry to mint no second checkpoint node, still exactly 1 pending child, got %d", len(pendingChildrenAfterRetry))
+	}
+	state, err := k.RecoveryState(runID)
+	if err != nil {
+		t.Fatalf("recovery state: %v", err)
+	}
+	if len(state.UncommittedStagedResults) != 0 {
+		t.Fatalf("expected no uncommitted staged results after the rejected retry (message 2 stays embedded in the torn node, not restaged), got %d", len(state.UncommittedStagedResults))
+	}
+
+	// ReconcileRun folds the torn node onto the live lineage: the staged
+	// results it already consumed become reachable via the new head.
+	if err := k.ReconcileRun(runID); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	reconciledHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found after reconcile")
+	}
+	if reconciledHead.HeadTurnNodeHash != pendingHash {
+		t.Fatalf("expected reconcile to advance the branch head to the pending node %q, got %q", pendingHash, reconciledHead.HeadTurnNodeHash)
+	}
+	headNode, ok := k.Backend.GetTurnNode(reconciledHead.HeadTurnNodeHash)
+	if !ok {
+		t.Fatalf("head turn node not found after reconcile")
+	}
+	foundMessage2 := false
+	for _, result := range headNode.ConsumedStagedResults {
+		if result.ObjectHash == message2Hash {
+			foundMessage2 = true
+		}
+	}
+	if !foundMessage2 {
+		t.Fatalf("expected the reconciled head node's ConsumedStagedResults to carry message 2 (%q)", message2Hash)
+	}
+
+	reconciledRun, ok := k.Backend.GetRun(runID)
+	if !ok {
+		t.Fatalf("run not found after reconcile")
+	}
+	if reconciledRun.CurrentStepIndex != 2 {
+		t.Fatalf("expected reconciled run to show step 2 completed, got index %d", reconciledRun.CurrentStepIndex)
+	}
+	if reconciledRun.PendingCheckpointHash != "" {
+		t.Fatalf("expected pending checkpoint marker cleared after reconcile")
+	}
+
+	// The step retry path behaves per the reconcile contract: the run's
+	// declared steps are now exhausted, so retrying step_2 again is a
+	// distinct, ordinary ErrUnexpectedStep — not a second silent
+	// checkpoint and not another pending-checkpoint refusal.
+	_, err = k.CompleteStep(runID, "step_2", "", "")
+	requireErrCode(t, err, kernel.ErrUnexpectedStep)
+}
+
+// --- torn TERMINAL transitions reconcile to their terminal status (P2) ---
+
+// TestPreemptStaleRun_TornCheckpointReconcilesToFailedWithSingleEventNode is
+// a regression for the P2 where a torn PreemptStaleRun checkpoint, once
+// reconciled, left the run "running" with its lease intact instead of
+// finishing the preemption's failed/lease-cleared terminal transition, and
+// where a naive retry would have minted a *second* preemption event node
+// before the status ever flipped. It also guards against ReconcileRun's
+// unconditional CurrentStepIndex++ misattributing the preemption's reactive
+// checkpoint node as a completed step.
+func TestPreemptStaleRun_TornCheckpointReconcilesToFailedWithSingleEventNode(t *testing.T) {
+	k, clock := newManualClockKernel(0)
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register schema: %v", err)
+	}
+	created, err := k.CreateThread("thread_preempt_torn", "schema_main", "branch_preempt_torn")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{
+		{ID: "step_1", Deterministic: true, SideEffects: false},
+		{ID: "step_2", Deterministic: true, SideEffects: false},
+	}
+	if err := k.CreateRun("run_preempt_torn", "turn_preempt_torn", "branch_preempt_torn", "schema_main", created.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	message1 := k.PutObject("application/json", []byte("preempt-message-1"))
+	if err := k.StageResult("run_preempt_torn", kernel.StagedResult{
+		TaskID: "task_1", ObjectHash: message1, ObjectType: "message", Status: kernel.StagedResultCompleted,
+	}); err != nil {
+		t.Fatalf("stage message 1: %v", err)
+	}
+	if _, err := k.CompleteStep("run_preempt_torn", "step_1", "", ""); err != nil {
+		t.Fatalf("complete step 1: %v", err)
+	}
+
+	if _, _, err := k.AcquireLease("run_preempt_torn", "owner_a", 5); err != nil {
+		t.Fatalf("acquire lease: %v", err)
+	}
+	message2 := k.PutObject("application/json", []byte("preempt-message-2"))
+	if err := k.StageResult("run_preempt_torn", kernel.StagedResult{
+		TaskID: "task_2", ObjectHash: message2, ObjectType: "message", Status: kernel.StagedResultCompleted,
+	}); err != nil {
+		t.Fatalf("stage message 2: %v", err)
+	}
+	clock.SetMs(100) // expire the lease
+
+	beforeTornHead, ok := k.Backend.GetBranch("branch_preempt_torn")
+	if !ok {
+		t.Fatalf("branch not found")
+	}
+
+	baseBackend := k.Backend
+	k.Backend = kernel.NewFaultInjectingBackend(baseBackend, kernel.FaultPlan{
+		Point: kernel.FaultPointMidCommit, Policy: kernel.FaultPolicyOnce,
+	})
+	err = k.PreemptStaleRun("run_preempt_torn", clock.NowMs())
+	requireErrCode(t, err, kernel.ErrPersistenceFaultInjected)
+	k.Backend = baseBackend
+
+	tornRun, ok := k.Backend.GetRun("run_preempt_torn")
+	if !ok {
+		t.Fatalf("run not found")
+	}
+	if tornRun.Status != kernel.RunStatusRunning {
+		t.Fatalf("expected run still running immediately after a torn preemption checkpoint, got %q", tornRun.Status)
+	}
+	if tornRun.PendingCheckpointHash == "" {
+		t.Fatalf("expected a durable pending checkpoint marker after the torn mid-commit fault")
+	}
+	if tornRun.PendingCheckpointKind != kernel.PendingCheckpointKindPreempt {
+		t.Fatalf("expected pending checkpoint kind %q, got %q", kernel.PendingCheckpointKindPreempt, tornRun.PendingCheckpointKind)
+	}
+	if tornRun.CurrentStepIndex != 1 {
+		t.Fatalf("expected CurrentStepIndex still 1 (only step_1) immediately after the torn preemption, got %d", tornRun.CurrentStepIndex)
+	}
+
+	// A naive retry before reconciling must be rejected, not mint a second
+	// preemption event node.
+	err = k.PreemptStaleRun("run_preempt_torn", clock.NowMs())
+	requireErrCode(t, err, kernel.ErrRunPendingCheckpoint)
+
+	pendingChildren := k.Backend.ListChildTurnNodes(beforeTornHead.HeadTurnNodeHash)
+	if len(pendingChildren) != 1 {
+		t.Fatalf("expected exactly one durable pending child turn node after the torn commit and rejected retry, got %d", len(pendingChildren))
+	}
+	pendingHash := pendingChildren[0].Hash
+
+	if err := k.ReconcileRun("run_preempt_torn"); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	reconciledRun, ok := k.Backend.GetRun("run_preempt_torn")
+	if !ok {
+		t.Fatalf("run not found after reconcile")
+	}
+	if reconciledRun.Status != kernel.RunStatusFailed {
+		t.Fatalf("expected reconciled run status failed, got %q", reconciledRun.Status)
+	}
+	if reconciledRun.PreemptionReason != "stale_running_recovery" {
+		t.Fatalf("expected reconciled preemption reason stale_running_recovery, got %q", reconciledRun.PreemptionReason)
+	}
+	if reconciledRun.HasLease {
+		t.Fatalf("expected reconciled run's lease cleared")
+	}
+	if reconciledRun.LeaseOwnerID != "" || reconciledRun.LeaseToken != "" || reconciledRun.LeaseExpiresAtMs != 0 {
+		t.Fatalf("expected reconciled run's lease fields fully cleared, got %+v", reconciledRun)
+	}
+	if reconciledRun.CurrentStepIndex != 1 {
+		t.Fatalf("expected reconciled run's CurrentStepIndex to remain 1 (the preemption checkpoint is not a completed step), got %d", reconciledRun.CurrentStepIndex)
+	}
+	if reconciledRun.PendingCheckpointHash != "" || reconciledRun.PendingCheckpointKind != "" {
+		t.Fatalf("expected pending checkpoint marker/kind cleared after reconcile")
+	}
+
+	reconciledBranch, ok := k.Backend.GetBranch("branch_preempt_torn")
+	if !ok {
+		t.Fatalf("branch not found after reconcile")
+	}
+	if reconciledBranch.HeadTurnNodeHash != pendingHash {
+		t.Fatalf("expected reconcile to advance the branch head to the pending node %q, got %q", pendingHash, reconciledBranch.HeadTurnNodeHash)
+	}
+
+	// Exactly one event node landed on the lineage past the pre-torn head:
+	// the torn commit's own node, never a second one from the rejected
+	// retry.
+	finalChildren := k.Backend.ListChildTurnNodes(beforeTornHead.HeadTurnNodeHash)
+	if len(finalChildren) != 1 {
+		t.Fatalf("expected exactly one event node on the lineage after reconcile, got %d", len(finalChildren))
+	}
+
+	headNode, ok := k.Backend.GetTurnNode(reconciledBranch.HeadTurnNodeHash)
+	if !ok {
+		t.Fatalf("head turn node not found")
+	}
+	if len(headNode.ConsumedStagedResults) != 1 || headNode.ConsumedStagedResults[0].TaskID != "task_2" {
+		t.Fatalf("expected the preemption's reactive checkpoint to preserve staged task_2, got %+v", headNode.ConsumedStagedResults)
+	}
+}
+
+// TestCompleteRun_TornCheckpointReconcilesToCompletedWithSingleEventNode is
+// a regression for the P2's CompleteRun-shaped counterpart: a torn
+// CompleteRun checkpoint, once reconciled, must finish the run to
+// "completed" with CurrentStepIndex == len(StepSequence) — never the
+// step-attribution CurrentStepIndex++ bookkeeping ReconcileRun's "step" kind
+// uses, which would misattribute the reactive completion checkpoint as an
+// ordinary completed step and leave CurrentStepIndex short of the run's
+// full declared step count.
+func TestCompleteRun_TornCheckpointReconcilesToCompletedWithSingleEventNode(t *testing.T) {
+	k, _ := newManualClockKernel(0)
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register schema: %v", err)
+	}
+	created, err := k.CreateThread("thread_complete_torn", "schema_main", "branch_complete_torn")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{
+		{ID: "step_1", Deterministic: true, SideEffects: false},
+		{ID: "step_2", Deterministic: true, SideEffects: false},
+		{ID: "step_3", Deterministic: true, SideEffects: false},
+	}
+	if err := k.CreateRun("run_complete_torn", "turn_complete_torn", "branch_complete_torn", "schema_main", created.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	message1 := k.PutObject("application/json", []byte("complete-message-1"))
+	if err := k.StageResult("run_complete_torn", kernel.StagedResult{
+		TaskID: "task_1", ObjectHash: message1, ObjectType: "message", Status: kernel.StagedResultCompleted,
+	}); err != nil {
+		t.Fatalf("stage message 1: %v", err)
+	}
+	if _, err := k.CompleteStep("run_complete_torn", "step_1", "", ""); err != nil {
+		t.Fatalf("complete step 1: %v", err)
+	}
+
+	// Only step_1 of 3 is complete when the caller reactively completes the
+	// run early with a second, uncommitted staged result.
+	message2 := k.PutObject("application/json", []byte("complete-message-2"))
+	if err := k.StageResult("run_complete_torn", kernel.StagedResult{
+		TaskID: "task_2", ObjectHash: message2, ObjectType: "message", Status: kernel.StagedResultCompleted,
+	}); err != nil {
+		t.Fatalf("stage message 2: %v", err)
+	}
+
+	beforeTornHead, ok := k.Backend.GetBranch("branch_complete_torn")
+	if !ok {
+		t.Fatalf("branch not found")
+	}
+
+	baseBackend := k.Backend
+	k.Backend = kernel.NewFaultInjectingBackend(baseBackend, kernel.FaultPlan{
+		Point: kernel.FaultPointMidCommit, Policy: kernel.FaultPolicyOnce,
+	})
+	err = k.CompleteRun("run_complete_torn", "")
+	requireErrCode(t, err, kernel.ErrPersistenceFaultInjected)
+	k.Backend = baseBackend
+
+	tornRun, ok := k.Backend.GetRun("run_complete_torn")
+	if !ok {
+		t.Fatalf("run not found")
+	}
+	if tornRun.Status != kernel.RunStatusRunning {
+		t.Fatalf("expected run still running immediately after a torn completion checkpoint, got %q", tornRun.Status)
+	}
+	if tornRun.PendingCheckpointKind != kernel.PendingCheckpointKindComplete {
+		t.Fatalf("expected pending checkpoint kind %q, got %q", kernel.PendingCheckpointKindComplete, tornRun.PendingCheckpointKind)
+	}
+	if tornRun.CurrentStepIndex != 1 {
+		t.Fatalf("expected CurrentStepIndex still 1 immediately after the torn completion, got %d", tornRun.CurrentStepIndex)
+	}
+
+	// A naive retry before reconciling must be rejected, not mint a second
+	// completion event node.
+	err = k.CompleteRun("run_complete_torn", "")
+	requireErrCode(t, err, kernel.ErrRunPendingCheckpoint)
+
+	pendingChildren := k.Backend.ListChildTurnNodes(beforeTornHead.HeadTurnNodeHash)
+	if len(pendingChildren) != 1 {
+		t.Fatalf("expected exactly one durable pending child turn node after the torn commit and rejected retry, got %d", len(pendingChildren))
+	}
+	pendingHash := pendingChildren[0].Hash
+
+	if err := k.ReconcileRun("run_complete_torn"); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	reconciledRun, ok := k.Backend.GetRun("run_complete_torn")
+	if !ok {
+		t.Fatalf("run not found after reconcile")
+	}
+	if reconciledRun.Status != kernel.RunStatusCompleted {
+		t.Fatalf("expected reconciled run status completed, got %q", reconciledRun.Status)
+	}
+	if reconciledRun.CurrentStepIndex != len(steps) {
+		t.Fatalf("expected reconciled run's CurrentStepIndex set to len(StepSequence)=%d, got %d (step-attribution bookkeeping would have produced 2)", len(steps), reconciledRun.CurrentStepIndex)
+	}
+	if reconciledRun.HasLease {
+		t.Fatalf("expected reconciled run's lease cleared")
+	}
+	if reconciledRun.PendingCheckpointHash != "" || reconciledRun.PendingCheckpointKind != "" {
+		t.Fatalf("expected pending checkpoint marker/kind cleared after reconcile")
+	}
+
+	reconciledBranch, ok := k.Backend.GetBranch("branch_complete_torn")
+	if !ok {
+		t.Fatalf("branch not found after reconcile")
+	}
+	if reconciledBranch.HeadTurnNodeHash != pendingHash {
+		t.Fatalf("expected reconcile to advance the branch head to the pending node %q, got %q", pendingHash, reconciledBranch.HeadTurnNodeHash)
+	}
+
+	finalChildren := k.Backend.ListChildTurnNodes(beforeTornHead.HeadTurnNodeHash)
+	if len(finalChildren) != 1 {
+		t.Fatalf("expected exactly one event node on the lineage after reconcile, got %d", len(finalChildren))
+	}
+
+	headNode, ok := k.Backend.GetTurnNode(reconciledBranch.HeadTurnNodeHash)
+	if !ok {
+		t.Fatalf("head turn node not found")
+	}
+	if len(headNode.ConsumedStagedResults) != 1 || headNode.ConsumedStagedResults[0].TaskID != "task_2" {
+		t.Fatalf("expected the completion's reactive checkpoint to preserve staged task_2, got %+v", headNode.ConsumedStagedResults)
+	}
+}

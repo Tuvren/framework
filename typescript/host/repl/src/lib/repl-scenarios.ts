@@ -47,12 +47,19 @@ import {
 } from "./repl-scenarios-support.js";
 import type { ReplConfig, ReplScenarioReport } from "./repl-types.js";
 
-const CONTINUE_ONCE_POLICY: LoopPolicy = {
-  evaluate(_response, _manifest, iterationCount) {
+// The cancel scenario needs a run that outlives the moment it is observed
+// mid-flight: with CONTINUE_ONCE_POLICY the loop ends right at iteration 2,
+// so waiting for `iterationCount >= 2` and then cancelling races the run's
+// own completion under load (a real CI flake — cancel landed after the run
+// finished and the scenario saw phase "completed"). Keeping the loop going
+// leaves the cancellation whole iterations of margin; the run only ever
+// terminates through the cancel.
+const CONTINUE_UNTIL_CANCELLED_POLICY: LoopPolicy = {
+  evaluate(_response, _manifest, _iterationCount) {
     return {
-      continue: iterationCount < 2,
+      continue: true,
       executeTools: true,
-      reason: "repl_continue_once",
+      reason: "repl_continue_until_cancelled",
     };
   },
 };
@@ -500,7 +507,7 @@ async function runCancelScenario(
   const handle = host.executeTurn({
     branchId: thread.branchId,
     config: {
-      loopPolicy: CONTINUE_ONCE_POLICY,
+      loopPolicy: CONTINUE_UNTIL_CANCELLED_POLICY,
       name: "primary",
     },
     signal: textSignal("Run cancellation"),
