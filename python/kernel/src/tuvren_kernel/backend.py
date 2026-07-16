@@ -40,6 +40,7 @@ attach to without a `RuntimeBackend` constructor signature change.
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol
@@ -57,6 +58,15 @@ class RuntimeBackend(Protocol):
     Every method is a direct, unvalidated durable-storage primitive --
     `RuntimeKernel` in `runtime.py` owns all Appendix-B validation and
     Section 5/6 semantics; this protocol only owns durability and lookup.
+
+    Every getter (`get_*`, `list_*`) returns a copy of the stored record(s),
+    never a live reference into backend-internal state: a caller (including
+    `runtime.py`, which routinely mutates a fetched record in place before
+    writing it back through the matching `put_*`) must not be able to
+    corrupt durable state just by holding onto and mutating a returned
+    value. `InMemoryBackend` upholds this with `copy.deepcopy` on every read
+    path; a future `backend-sqlite`/`backend-postgres` port must uphold the
+    same guarantee, deserializing a fresh value per call.
     """
 
     scope: str
@@ -152,65 +162,65 @@ class InMemoryBackend:
         self._schemas[schema_id] = schema
 
     def get_schema(self, schema_id: str) -> dict[str, Any] | None:
-        return self._schemas.get(schema_id)
+        return copy.deepcopy(self._schemas.get(schema_id))
 
     # --- TurnTrees -----------------------------------------------------------
     def put_tree(self, tree_hash: str, record: dict[str, Any]) -> None:
         self._trees.setdefault(tree_hash, record)
 
     def get_tree(self, tree_hash: str) -> dict[str, Any] | None:
-        return self._trees.get(tree_hash)
+        return copy.deepcopy(self._trees.get(tree_hash))
 
     # --- TurnNodes -----------------------------------------------------------
     def put_node(self, node_hash: str, record: dict[str, Any]) -> None:
         self._nodes.setdefault(node_hash, record)
 
     def get_node(self, node_hash: str) -> dict[str, Any] | None:
-        return self._nodes.get(node_hash)
+        return copy.deepcopy(self._nodes.get(node_hash))
 
     # --- Threads -------------------------------------------------------------
     def put_thread(self, thread_id: str, record: dict[str, Any]) -> None:
         self._threads[thread_id] = record
 
     def get_thread(self, thread_id: str) -> dict[str, Any] | None:
-        return self._threads.get(thread_id)
+        return copy.deepcopy(self._threads.get(thread_id))
 
     def list_threads(self) -> list[dict[str, Any]]:
-        return list(self._threads.values())
+        return copy.deepcopy(list(self._threads.values()))
 
     # --- Branches ------------------------------------------------------------
     def put_branch(self, branch_id: str, record: dict[str, Any]) -> None:
         self._branches[branch_id] = record
 
     def get_branch(self, branch_id: str) -> dict[str, Any] | None:
-        return self._branches.get(branch_id)
+        return copy.deepcopy(self._branches.get(branch_id))
 
     def list_branches(self, thread_id: str) -> list[dict[str, Any]]:
-        return [b for b in self._branches.values() if b["threadId"] == thread_id]
+        return copy.deepcopy([b for b in self._branches.values() if b["threadId"] == thread_id])
 
     # --- Turns -----------------------------------------------------------------
     def put_turn(self, turn_id: str, record: dict[str, Any]) -> None:
         self._turns[turn_id] = record
 
     def get_turn(self, turn_id: str) -> dict[str, Any] | None:
-        return self._turns.get(turn_id)
+        return copy.deepcopy(self._turns.get(turn_id))
 
     # --- Runs --------------------------------------------------------------------
     def put_run(self, run_id: str, record: dict[str, Any]) -> None:
         self._runs[run_id] = record
 
     def get_run(self, run_id: str) -> dict[str, Any] | None:
-        return self._runs.get(run_id)
+        return copy.deepcopy(self._runs.get(run_id))
 
     def list_runs_for_branch(self, branch_id: str) -> list[dict[str, Any]]:
-        return [r for r in self._runs.values() if r["branchId"] == branch_id]
+        return copy.deepcopy([r for r in self._runs.values() if r["branchId"] == branch_id])
 
     # --- Staging -------------------------------------------------------------------
     def append_staged(self, run_id: str, staged_result: dict[str, Any]) -> None:
         self._staged.setdefault(run_id, []).append(staged_result)
 
     def list_staged(self, run_id: str) -> list[dict[str, Any]]:
-        return list(self._staged.get(run_id, []))
+        return copy.deepcopy(self._staged.get(run_id, []))
 
     def clear_staged(self, run_id: str) -> None:
         self._staged[run_id] = []

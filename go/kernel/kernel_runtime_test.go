@@ -236,23 +236,85 @@ func TestCreateBranch_CrossThreadRejected(t *testing.T) {
 		t.Fatalf("create thread b: %v", err)
 	}
 
-	// A node minted purely from schema/tree defaults (like a fresh root
-	// node) can legitimately collide in hash across two threads that share
-	// a schema, so it wouldn't exercise the ownership guard at all.
-	// Advancing thread_a's branch with a step tagged to a distinct event
-	// object guarantees a node hash no other thread could have minted.
+	// Genesis (root) turn nodes are already thread-unique (CreateThread
+	// pins a thread-scoped bootstrap object as the root's eventHash — see
+	// TestCreateThread_GenesisHashesAreThreadUnique), but this test exists
+	// to prove the membership guard also holds for a *non-root* node deep
+	// in a thread's lineage: advancing thread_a's branch with a step
+	// tagged to a distinct event object mints a node no other thread could
+	// legitimately have produced, and CreateBranch must still reject
+	// attaching it to thread_b.
 	distinguishingEventHash := k.PutObject("application/json", []byte("thread-a-only-event"))
 	if err := k.CreateRun("run_a", "turn_a", "branch_a_main", "schema_main", resultA.RootTurnNodeHash, []kernel.StepDeclaration{
 		{ID: "only_step", Deterministic: true, SideEffects: false},
 	}); err != nil {
 		t.Fatalf("create run a: %v", err)
 	}
-	nodeA, err := k.CompleteStep("run_a", "only_step", distinguishingEventHash)
+	nodeA, err := k.CompleteStep("run_a", "only_step", distinguishingEventHash, "")
 	if err != nil {
 		t.Fatalf("complete step a: %v", err)
 	}
 
 	err = k.CreateBranch("branch_cross_thread", "thread_b", nodeA)
+	requireErrCode(t, err, kernel.ErrTurnNodeThreadMismatch)
+}
+
+// TestCreateThread_GenesisHashesAreThreadUnique is the P0-1 regression: two
+// threads created back to back on the *same* schema (so their default root
+// turn tree manifests are byte-identical) must still mint different root
+// turn node hashes, because CreateThread pins a thread-scoped bootstrap
+// object as the root node's eventHash. Before this fix, two such threads'
+// genesis nodes were byte-identical and therefore hash-identical.
+func TestCreateThread_GenesisHashesAreThreadUnique(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	resultA, err := k.CreateThread("thread_genesis_a", "schema_main", "branch_genesis_a")
+	if err != nil {
+		t.Fatalf("create thread a: %v", err)
+	}
+	resultB, err := k.CreateThread("thread_genesis_b", "schema_main", "branch_genesis_b")
+	if err != nil {
+		t.Fatalf("create thread b: %v", err)
+	}
+
+	if resultA.RootTurnNodeHash == "" || resultB.RootTurnNodeHash == "" {
+		t.Fatalf("expected non-empty root turn node hashes: a=%q b=%q", resultA.RootTurnNodeHash, resultB.RootTurnNodeHash)
+	}
+	if resultA.RootTurnNodeHash == resultB.RootTurnNodeHash {
+		t.Fatalf("expected thread_genesis_a and thread_genesis_b to mint different genesis turn node hashes sharing schema %q, both got %q", "schema_main", resultA.RootTurnNodeHash)
+	}
+	// The two threads' root turn *trees* are still byte-identical (same
+	// schema, same defaulted manifest) — only the turn node identity (which
+	// folds in the thread-scoped bootstrap eventHash) diverges.
+	if resultA.RootTurnTreeHash != resultB.RootTurnTreeHash {
+		t.Fatalf("expected both threads' default root turn trees to share a hash, got %q and %q", resultA.RootTurnTreeHash, resultB.RootTurnTreeHash)
+	}
+}
+
+// TestCreateBranch_CrossThreadGenesisRejected is the P0-1 headline
+// regression the reviewer identified: forking a branch on thread_b directly
+// from thread_a's *genesis* (root) turn node must be rejected exactly like
+// any other cross-thread node consumption. Before this fix, two threads
+// sharing a schema minted byte-identical (and therefore hash-identical)
+// root nodes, so this exact call was incorrectly accepted.
+func TestCreateBranch_CrossThreadGenesisRejected(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	resultA, err := k.CreateThread("thread_genesis_x", "schema_main", "branch_genesis_x")
+	if err != nil {
+		t.Fatalf("create thread a: %v", err)
+	}
+	if _, err := k.CreateThread("thread_genesis_y", "schema_main", "branch_genesis_y"); err != nil {
+		t.Fatalf("create thread b: %v", err)
+	}
+
+	err = k.CreateBranch("branch_cross_thread_genesis", "thread_genesis_y", resultA.RootTurnNodeHash)
 	requireErrCode(t, err, kernel.ErrTurnNodeThreadMismatch)
 }
 
@@ -274,7 +336,7 @@ func TestSetBranchHead_LateralMovementRejected(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("create main run: %v", err)
 	}
-	if _, err := k.CompleteStep("run_main", "only_step", mainEventHash); err != nil {
+	if _, err := k.CompleteStep("run_main", "only_step", mainEventHash, ""); err != nil {
 		t.Fatalf("complete main step: %v", err)
 	}
 
@@ -291,7 +353,7 @@ func TestSetBranchHead_LateralMovementRejected(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("create fork run: %v", err)
 	}
-	forkNodeHash, err := k.CompleteStep("run_fork", "only_step", forkEventHash)
+	forkNodeHash, err := k.CompleteStep("run_fork", "only_step", forkEventHash, "")
 	if err != nil {
 		t.Fatalf("complete fork step: %v", err)
 	}
@@ -314,7 +376,7 @@ func TestSetBranchHead_ForwardMovementAccepted(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	nodeHash, err := k.CompleteStep("run_main", "only_step", "")
+	nodeHash, err := k.CompleteStep("run_main", "only_step", "", "")
 	if err != nil {
 		t.Fatalf("complete step: %v", err)
 	}
@@ -342,13 +404,133 @@ func TestSetBranchHead_CrossThreadNodeRejected(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("create run a: %v", err)
 	}
-	nodeA, err := k.CompleteStep("run_a", "only_step", distinguishingEventHash)
+	nodeA, err := k.CompleteStep("run_a", "only_step", distinguishingEventHash, "")
 	if err != nil {
 		t.Fatalf("complete step a: %v", err)
 	}
 
 	err = k.SetBranchHead("branch_b_main", nodeA)
 	requireErrCode(t, err, kernel.ErrTurnNodeThreadMismatch)
+}
+
+// TestSetBranchHead_BackwardMovementArchivesLineage is the P1-3 regression:
+// a backward SetBranchHead move (moving to a strict ancestor of the
+// branch's current head) must be treated as a distinct movement kind from
+// lateral — an atomic archival rollback — rather than being rejected the
+// same way a genuinely unrelated lateral move is. It must mint an archive
+// branch preserving the abandoned head's lineage tip, fail any
+// running/paused run on the branch that touches the abandoned segment, and
+// only then move the branch head backward.
+func TestSetBranchHead_BackwardMovementArchivesLineage(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_backward", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+
+	steps := []kernel.StepDeclaration{
+		{ID: "first", Deterministic: true, SideEffects: false},
+		{ID: "second", Deterministic: true, SideEffects: false},
+	}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	nodeN1, err := k.CompleteStep("run_1", "first", "", "")
+	if err != nil {
+		t.Fatalf("complete first: %v", err)
+	}
+	nodeN2, err := k.CompleteStep("run_1", "second", "", "")
+	if err != nil {
+		t.Fatalf("complete second: %v", err)
+	}
+
+	// run_1 is still "running" (CompleteRun was never called) and its
+	// CreatedTurnNodes [N1, N2] both fall inside the segment a rollback to
+	// the root abandons.
+	if err := k.SetBranchHead("branch_main", result.RootTurnNodeHash); err != nil {
+		t.Fatalf("backward move: %v", err)
+	}
+
+	branch, ok := k.Backend.GetBranch("branch_main")
+	if !ok || branch.HeadTurnNodeHash != result.RootTurnNodeHash {
+		t.Fatalf("expected branch_main head to move back to the root, got %+v (ok=%v)", branch, ok)
+	}
+
+	var archive *kernel.Branch
+	for _, candidate := range k.Backend.ListBranchesByThread("thread_backward") {
+		candidate := candidate
+		if candidate.ArchivedFromBranchID == "branch_main" {
+			archive = &candidate
+		}
+	}
+	if archive == nil {
+		t.Fatal("expected a branch archived from branch_main")
+	}
+	if archive.HeadTurnNodeHash != nodeN2 {
+		t.Fatalf("expected the archive branch to preserve the abandoned head %q, got %q", nodeN2, archive.HeadTurnNodeHash)
+	}
+
+	run, ok := k.Backend.GetRun("run_1")
+	if !ok || run.Status != kernel.RunStatusFailed {
+		t.Fatalf("expected run_1 to be failed after its lineage was rolled back, got %+v (ok=%v)", run, ok)
+	}
+
+	_ = nodeN1 // referenced only to document the abandoned segment's shape
+}
+
+// TestSetBranchHead_ForwardMovementWithActiveRunRejected is the P1-5
+// regression: an explicit external forward head movement (not the implicit
+// advance CompleteStep performs for its own run) must be rejected with
+// ErrBranchHasActiveRun when the target branch has a running or paused run,
+// even though the destination node is a legitimate descendant reachable
+// through the thread's own lineage.
+func TestSetBranchHead_ForwardMovementWithActiveRunRejected(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_forward_active", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+
+	steps := []kernel.StepDeclaration{
+		{ID: "first", Deterministic: true, SideEffects: false},
+		{ID: "second", Deterministic: true, SideEffects: false},
+	}
+	if err := k.CreateRun("run_main", "turn_main", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create main run: %v", err)
+	}
+	nodeN1, err := k.CompleteStep("run_main", "first", "", "")
+	if err != nil {
+		t.Fatalf("complete first: %v", err)
+	}
+	// run_main is still active (step "second" pending), and branch_main's
+	// head is now N1.
+
+	// Fork a sibling branch from N1 and advance it independently, minting
+	// N2 as a legitimate child of N1 that branch_main's own head has not
+	// yet reached.
+	if err := k.CreateBranch("branch_side", "thread_forward_active", nodeN1); err != nil {
+		t.Fatalf("fork: %v", err)
+	}
+	if err := k.CreateRun("run_side", "turn_side", "branch_side", "schema_main", nodeN1, []kernel.StepDeclaration{
+		{ID: "only_step", Deterministic: true, SideEffects: false},
+	}); err != nil {
+		t.Fatalf("create side run: %v", err)
+	}
+	nodeN2, err := k.CompleteStep("run_side", "only_step", "", "")
+	if err != nil {
+		t.Fatalf("complete side step: %v", err)
+	}
+
+	// N2 is a strict descendant of branch_main's current head (N1), so this
+	// is a genuine forward move — but branch_main still has run_main active.
+	err = k.SetBranchHead("branch_main", nodeN2)
+	requireErrCode(t, err, kernel.ErrBranchHasActiveRun)
 }
 
 // --- run lifecycle ---
@@ -405,7 +587,7 @@ func TestCompleteStep_MissingEventObjectRejected(t *testing.T) {
 	}
 
 	missingEventHash := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	_, err = k.CompleteStep("run_1", "only_step", missingEventHash)
+	_, err = k.CompleteStep("run_1", "only_step", missingEventHash, "")
 	requireErrCode(t, err, kernel.ErrMissingEventObject)
 }
 
@@ -424,7 +606,7 @@ func TestCompleteStep_ExistingEventObjectAccepted(t *testing.T) {
 	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := k.CompleteStep("run_1", "only_step", eventHash); err != nil {
+	if _, err := k.CompleteStep("run_1", "only_step", eventHash, ""); err != nil {
 		t.Fatalf("complete step: %v", err)
 	}
 }
@@ -442,12 +624,304 @@ func TestCompleteRun_MissingEventObjectRejected(t *testing.T) {
 	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
 		t.Fatalf("create run: %v", err)
 	}
-	if _, err := k.CompleteStep("run_1", "only_step", ""); err != nil {
+	if _, err := k.CompleteStep("run_1", "only_step", "", ""); err != nil {
 		t.Fatalf("complete step: %v", err)
 	}
 
 	err = k.CompleteRun("run_1", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 	requireErrCode(t, err, kernel.ErrMissingEventObject)
+}
+
+// TestCreateRun_BranchHeadMismatchRejected is the P1-4 regression: a run's
+// declared startTurnNodeHash must equal its target branch's *current* head.
+func TestCreateRun_BranchHeadMismatchRejected(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	if _, err := k.CreateThread("thread_a", "schema_main", "branch_main"); err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+
+	staleHash := kernel.HashBytesToHex([]byte("stale-turn-node"))
+	err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", staleHash, []kernel.StepDeclaration{
+		{ID: "only_step", Deterministic: true, SideEffects: false},
+	})
+	requireErrCode(t, err, kernel.ErrRunBranchHeadMismatch)
+}
+
+// TestCreateRun_DuplicateStepIDRejected is the P1-4 regression: a run's
+// declared step sequence must not repeat a step id.
+func TestCreateRun_DuplicateStepIDRejected(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_a", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+
+	err = k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, []kernel.StepDeclaration{
+		{ID: "dup", Deterministic: true, SideEffects: false},
+		{ID: "dup", Deterministic: true, SideEffects: false},
+	})
+	requireErrCode(t, err, kernel.ErrDuplicateStepID)
+}
+
+// TestCompleteStep_EvolvesTurnTreeAcrossCheckpoints is the P1-1 regression:
+// CompleteStep must incorporate staged results into the turn tree per the
+// schema's incorporation rules when no explicit treeHash is supplied, and
+// each checkpoint that stages new results must produce a distinct turn
+// tree hash reflecting the accumulated state.
+func TestCompleteStep_EvolvesTurnTreeAcrossCheckpoints(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_evolve", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{
+		{ID: "first", Deterministic: true, SideEffects: false},
+		{ID: "second", Deterministic: true, SideEffects: false},
+	}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	message1 := kernel.StagedResult{
+		TaskID: "m1", ObjectHash: kernel.HashBytesToHex([]byte("message-1")),
+		ObjectType: "message", Status: kernel.StagedResultCompleted, Timestamp: 1,
+	}
+	if err := k.StageResult("run_1", message1); err != nil {
+		t.Fatalf("stage message1: %v", err)
+	}
+	nodeN1, err := k.CompleteStep("run_1", "first", "", "")
+	if err != nil {
+		t.Fatalf("complete first: %v", err)
+	}
+
+	nodeAfterFirst, ok := k.Backend.GetTurnNode(nodeN1)
+	if !ok {
+		t.Fatalf("expected turn node %q to exist", nodeN1)
+	}
+	if nodeAfterFirst.TurnTreeHash == result.RootTurnTreeHash {
+		t.Fatalf("expected the first checkpoint's tree to differ from the root tree once a message was incorporated")
+	}
+	treeAfterFirst, ok := k.Backend.GetTurnTree(nodeAfterFirst.TurnTreeHash)
+	if !ok {
+		t.Fatalf("expected turn tree %q to exist", nodeAfterFirst.TurnTreeHash)
+	}
+	if treeAfterFirst.Manifest["messages"].Kind != kernel.PathValueOrderedKind || len(treeAfterFirst.Manifest["messages"].Ordered) != 1 || treeAfterFirst.Manifest["messages"].Ordered[0] != message1.ObjectHash {
+		t.Fatalf("expected messages to contain exactly [%q], got %+v", message1.ObjectHash, treeAfterFirst.Manifest["messages"])
+	}
+
+	message2 := kernel.StagedResult{
+		TaskID: "m2", ObjectHash: kernel.HashBytesToHex([]byte("message-2")),
+		ObjectType: "message", Status: kernel.StagedResultCompleted, Timestamp: 2,
+	}
+	if err := k.StageResult("run_1", message2); err != nil {
+		t.Fatalf("stage message2: %v", err)
+	}
+	nodeN2, err := k.CompleteStep("run_1", "second", "", "")
+	if err != nil {
+		t.Fatalf("complete second: %v", err)
+	}
+
+	nodeAfterSecond, ok := k.Backend.GetTurnNode(nodeN2)
+	if !ok {
+		t.Fatalf("expected turn node %q to exist", nodeN2)
+	}
+	if nodeAfterSecond.TurnTreeHash == nodeAfterFirst.TurnTreeHash {
+		t.Fatalf("expected the second checkpoint's tree to differ from the first once a second message was incorporated")
+	}
+	treeAfterSecond, ok := k.Backend.GetTurnTree(nodeAfterSecond.TurnTreeHash)
+	if !ok {
+		t.Fatalf("expected turn tree %q to exist", nodeAfterSecond.TurnTreeHash)
+	}
+	got := treeAfterSecond.Manifest["messages"].Ordered
+	if len(got) != 2 || got[0] != message1.ObjectHash || got[1] != message2.ObjectHash {
+		t.Fatalf("expected messages to accumulate to [%q, %q], got %+v", message1.ObjectHash, message2.ObjectHash, got)
+	}
+}
+
+// TestCompleteStep_ExplicitTreeHashHonored is the P1-1 regression covering
+// the explicit-treeHash path: when a caller supplies treeHash, CompleteStep
+// must check the run into that tree instead of deriving one from staged
+// results, and must reject a treeHash from a foreign schema.
+func TestCompleteStep_ExplicitTreeHashHonored(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_explicit_tree", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	precomputedHash := kernel.HashBytesToHex([]byte("precomputed-manifest-value"))
+	explicitTreeHash, err := k.CreateTurnTree("schema_main", map[string]kernel.PathValue{
+		"context.manifest": {Kind: kernel.PathValueSingleKind, Single: precomputedHash},
+	}, &result.RootTurnTreeHash)
+	if err != nil {
+		t.Fatalf("create explicit tree: %v", err)
+	}
+
+	nodeHash, err := k.CompleteStep("run_1", "only_step", "", explicitTreeHash)
+	if err != nil {
+		t.Fatalf("complete step with explicit tree: %v", err)
+	}
+	node, ok := k.Backend.GetTurnNode(nodeHash)
+	if !ok || node.TurnTreeHash != explicitTreeHash {
+		t.Fatalf("expected the checkpoint to use the explicit tree %q, got %+v (ok=%v)", explicitTreeHash, node, ok)
+	}
+	if err := k.CompleteRun("run_1", ""); err != nil {
+		t.Fatalf("complete run 1: %v", err)
+	}
+
+	// A treeHash built against a different schema must be rejected.
+	otherSchema := kernel.TurnTreeSchema{SchemaID: "schema_explicit_other", Paths: []kernel.PathDefinition{
+		{Path: "solo", Collection: kernel.PathCollectionSingle},
+	}}
+	if err := k.RegisterSchema(otherSchema); err != nil {
+		t.Fatalf("register other schema: %v", err)
+	}
+	foreignTreeHash, err := k.CreateTurnTree("schema_explicit_other", map[string]kernel.PathValue{"solo": {Kind: kernel.PathValueNull}}, nil)
+	if err != nil {
+		t.Fatalf("create foreign tree: %v", err)
+	}
+
+	if err := k.CreateRun("run_2", "turn_2", "branch_main", "schema_main", nodeHash, []kernel.StepDeclaration{
+		{ID: "only_step_2", Deterministic: true, SideEffects: false},
+	}); err != nil {
+		t.Fatalf("create run 2: %v", err)
+	}
+	_, err = k.CompleteStep("run_2", "only_step_2", "", foreignTreeHash)
+	requireErrCode(t, err, kernel.ErrTreeSchemaMismatch)
+}
+
+// TestCompleteRun_ReactiveCheckpointAnchorsUncommittedWork is the P1-2
+// regression: CompleteRun must reactively checkpoint (and incorporate) any
+// staged results left un-anchored since the run's last step boundary,
+// rather than silently abandoning them.
+func TestCompleteRun_ReactiveCheckpointAnchorsUncommittedWork(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_reactive", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if _, err := k.CompleteStep("run_1", "only_step", "", ""); err != nil {
+		t.Fatalf("complete step: %v", err)
+	}
+
+	// Stage work *after* the last declared step's checkpoint — this is
+	// exactly the "un-anchored since the last step boundary" work §5.6
+	// requires CompleteRun to reactively checkpoint before completing.
+	trailingMessage := kernel.StagedResult{
+		TaskID: "trailing", ObjectHash: kernel.HashBytesToHex([]byte("trailing-message")),
+		ObjectType: "message", Status: kernel.StagedResultCompleted, Timestamp: 1,
+	}
+	if err := k.StageResult("run_1", trailingMessage); err != nil {
+		t.Fatalf("stage trailing: %v", err)
+	}
+
+	branchBefore, ok := k.Backend.GetBranch("branch_main")
+	if !ok {
+		t.Fatal("expected branch_main to exist")
+	}
+
+	if err := k.CompleteRun("run_1", ""); err != nil {
+		t.Fatalf("complete run: %v", err)
+	}
+
+	run, ok := k.Backend.GetRun("run_1")
+	if !ok || run.Status != kernel.RunStatusCompleted {
+		t.Fatalf("expected run_1 to be completed, got %+v (ok=%v)", run, ok)
+	}
+	if len(run.CreatedTurnNodes) != 2 {
+		t.Fatalf("expected CompleteRun to have minted a reactive checkpoint turn node, got %d created turn nodes", len(run.CreatedTurnNodes))
+	}
+
+	branchAfter, ok := k.Backend.GetBranch("branch_main")
+	if !ok {
+		t.Fatal("expected branch_main to exist")
+	}
+	if branchAfter.HeadTurnNodeHash == branchBefore.HeadTurnNodeHash {
+		t.Fatal("expected the reactive checkpoint to advance branch_main's head")
+	}
+
+	finalNode, ok := k.Backend.GetTurnNode(branchAfter.HeadTurnNodeHash)
+	if !ok {
+		t.Fatalf("expected turn node %q to exist", branchAfter.HeadTurnNodeHash)
+	}
+	tree, ok := k.Backend.GetTurnTree(finalNode.TurnTreeHash)
+	if !ok {
+		t.Fatalf("expected turn tree %q to exist", finalNode.TurnTreeHash)
+	}
+	got := tree.Manifest["messages"].Ordered
+	if len(got) != 1 || got[0] != trailingMessage.ObjectHash {
+		t.Fatalf("expected messages to contain the reactively checkpointed trailing message [%q], got %+v", trailingMessage.ObjectHash, got)
+	}
+	if len(finalNode.ConsumedStagedResults) != 1 || finalNode.ConsumedStagedResults[0].TaskID != "trailing" {
+		t.Fatalf("expected the reactive checkpoint's node to record the trailing staged result as consumed, got %+v", finalNode.ConsumedStagedResults)
+	}
+}
+
+// TestCompleteRun_NoOpWhenNothingStaged proves CompleteRun's reactive
+// checkpoint is conditional: a run with nothing staged and no eventHash
+// since its last step boundary completes without minting an extra turn
+// node.
+func TestCompleteRun_NoOpWhenNothingStaged(t *testing.T) {
+	k := newTestKernel()
+	if err := k.RegisterSchema(canonicalSchema()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	result, err := k.CreateThread("thread_reactive_noop", "schema_main", "branch_main")
+	if err != nil {
+		t.Fatalf("create thread: %v", err)
+	}
+	steps := []kernel.StepDeclaration{{ID: "only_step", Deterministic: true, SideEffects: false}}
+	if err := k.CreateRun("run_1", "turn_1", "branch_main", "schema_main", result.RootTurnNodeHash, steps); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if _, err := k.CompleteStep("run_1", "only_step", "", ""); err != nil {
+		t.Fatalf("complete step: %v", err)
+	}
+
+	branchBefore, ok := k.Backend.GetBranch("branch_main")
+	if !ok {
+		t.Fatal("expected branch_main to exist")
+	}
+
+	if err := k.CompleteRun("run_1", ""); err != nil {
+		t.Fatalf("complete run: %v", err)
+	}
+
+	branchAfter, ok := k.Backend.GetBranch("branch_main")
+	if !ok {
+		t.Fatal("expected branch_main to exist")
+	}
+	if branchAfter.HeadTurnNodeHash != branchBefore.HeadTurnNodeHash {
+		t.Fatal("expected branch_main's head to stay put when CompleteRun had nothing to reactively checkpoint")
+	}
+
+	run, ok := k.Backend.GetRun("run_1")
+	if !ok || len(run.CreatedTurnNodes) != 1 {
+		t.Fatalf("expected exactly the one turn node CompleteStep created, got %+v (ok=%v)", run, ok)
+	}
 }
 
 // --- staged results / recovery state ---
@@ -476,18 +950,25 @@ func TestRecoveryState_MatchesRustReferenceScenario(t *testing.T) {
 	if err := k.StageResult("run_recovery", preFixture); err != nil {
 		t.Fatalf("stage pre-fixture: %v", err)
 	}
-	if _, err := k.CompleteStep("run_recovery", "model_call", ""); err != nil {
+	if _, err := k.CompleteStep("run_recovery", "model_call", "", ""); err != nil {
 		t.Fatalf("complete model_call: %v", err)
 	}
 
+	// objectType "message" (not "tool_result"): CompleteStep now evolves the
+	// turn tree by incorporating consumed staged results per the schema's
+	// incorporation rules (P1-1), and canonicalSchema only declares rules
+	// for "message" and "context_manifest" — matching how the shared
+	// kernel-protocol-logical fixture only ever completes a step with
+	// "message"-typed staged results, leaving "tool_result" data
+	// permanently uncommitted.
 	consumed := kernel.StagedResult{
 		TaskID: "consumed", ObjectHash: kernel.HashBytesToHex([]byte("consumed")),
-		ObjectType: "tool_result", Status: kernel.StagedResultCompleted, Timestamp: 2,
+		ObjectType: "message", Status: kernel.StagedResultCompleted, Timestamp: 2,
 	}
 	if err := k.StageResult("run_recovery", consumed); err != nil {
 		t.Fatalf("stage consumed: %v", err)
 	}
-	if _, err := k.CompleteStep("run_recovery", "tool_execution", ""); err != nil {
+	if _, err := k.CompleteStep("run_recovery", "tool_execution", "", ""); err != nil {
 		t.Fatalf("complete tool_execution: %v", err)
 	}
 

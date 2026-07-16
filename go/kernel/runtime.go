@@ -85,17 +85,18 @@ type TurnTree struct {
 
 // TurnNode is the runtime kernel's in-memory turn node. Because a turn
 // node's hash is purely content-addressed (spec/kernel/cddl/kernel-records.cddl's
-// turn-node carries no threadId field), two different threads that reach an
-// identical state — most notably two freshly created threads on the same
-// schema, whose root nodes both project to
-// {consumedStagedResults: [], eventHash: null, previousTurnNodeHash: null,
-// schemaId, turnTreeHash} — legitimately mint the *same* hash. Thread
-// ownership therefore cannot live as a single field on the stored node
-// (the second thread to create that hash would silently overwrite the
-// first thread's ownership); it is tracked separately as a many-to-many
-// hash -> owning-threads association (see Backend.MarkTurnNodeThread /
-// TurnNodeBelongsToThread), which is exactly the "which node came from
-// which thread" answer the turn_node_thread_mismatch guard needs.
+// turn-node carries no threadId field), a genesis (root) turn node must
+// carry something thread-unique in its own identity fields, or two threads
+// created on the same schema would mint byte-identical root nodes.
+// CreateThread satisfies this by minting a backend-owned bootstrap object
+// encoding the thread id and pinning it as the root node's EventHash (kernel
+// spec §3.3), so every thread's genesis node hash is unique by
+// construction. Thread ownership of a turn node is therefore never tracked
+// as separate backend state: it is answered by walking a node's
+// PreviousTurnNodeHash chain back to a thread's (now provably unique) root
+// hash — see Kernel.turnNodeBelongsToThread — exactly the "which thread
+// does this node belong to" answer the turn_node_thread_mismatch guard
+// needs.
 type TurnNode struct {
 	Hash                  string
 	SchemaID              string
@@ -120,12 +121,17 @@ type Branch struct {
 	HeadTurnNodeHash string
 	CreatedAtMs      int64
 	UpdatedAtMs      int64
+	// ArchivedFromBranchID is non-empty when this branch is an archive
+	// branch a backward SetBranchHead rollback minted to preserve an
+	// abandoned head lineage (kernel spec §4.2). "" means this is an
+	// ordinary, non-archive branch.
+	ArchivedFromBranchID string
 }
 
 // Run is the runtime kernel's in-memory run record. ThreadID is Kernel
 // bookkeeping (resolved from the run's branch at creation time), not a
-// CDDL run-record field: it lets CompleteStep mark each newly minted turn
-// node's thread ownership without an extra branch lookup per step.
+// CDDL run-record field; it is kept for diagnostic/debugging convenience so
+// a run's thread is visible without an extra branch lookup.
 type Run struct {
 	RunID             string
 	TurnID            string

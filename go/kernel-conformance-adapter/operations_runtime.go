@@ -292,14 +292,14 @@ func runLogicalRecoveryState(rawInput json.RawMessage) operationOutcome {
 	if err := k.StageResult("run_recovery", preFixture); err != nil {
 		return errorOutcomeFor(err)
 	}
-	if _, err := k.CompleteStep("run_recovery", stepSequence[0].ID, ""); err != nil {
+	if _, err := k.CompleteStep("run_recovery", stepSequence[0].ID, "", ""); err != nil {
 		return errorOutcomeFor(err)
 	}
 
 	if err := k.StageResult("run_recovery", consumedFixture); err != nil {
 		return errorOutcomeFor(err)
 	}
-	if _, err := k.CompleteStep("run_recovery", stepSequence[1].ID, ""); err != nil {
+	if _, err := k.CompleteStep("run_recovery", stepSequence[1].ID, "", ""); err != nil {
 		return errorOutcomeFor(err)
 	}
 
@@ -339,7 +339,7 @@ func runLineageCrossThreadRejection(json.RawMessage) operationOutcome {
 	}); err != nil {
 		return errorOutcomeFor(err)
 	}
-	nodeA, err := k.CompleteStep("run_lineage_a", "step_a", eventHash)
+	nodeA, err := k.CompleteStep("run_lineage_a", "step_a", eventHash, "")
 	if err != nil {
 		return errorOutcomeFor(err)
 	}
@@ -484,7 +484,7 @@ func runProtocolEdgeValidation(json.RawMessage) operationOutcome {
 			return err
 		}
 		neverStoredEventHash := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-		_, err = k.CompleteStep("run_edge_event", "only_step", neverStoredEventHash)
+		_, err = k.CompleteStep("run_edge_event", "only_step", neverStoredEventHash, "")
 		return err
 	})
 
@@ -502,7 +502,7 @@ func runProtocolEdgeValidation(json.RawMessage) operationOutcome {
 		if err := k.CreateRun("run_edge_lateral_main", "turn_edge_lateral_main", "branch_edge_lateral_main", "schema_main", created.RootTurnNodeHash, steps); err != nil {
 			return err
 		}
-		if _, err := k.CompleteStep("run_edge_lateral_main", "only_step", mainEventHash); err != nil {
+		if _, err := k.CompleteStep("run_edge_lateral_main", "only_step", mainEventHash, ""); err != nil {
 			return err
 		}
 
@@ -513,7 +513,7 @@ func runProtocolEdgeValidation(json.RawMessage) operationOutcome {
 		if err := k.CreateRun("run_edge_lateral_fork", "turn_edge_lateral_fork", "branch_edge_lateral_fork", "schema_main", created.RootTurnNodeHash, steps); err != nil {
 			return err
 		}
-		forkNodeHash, err := k.CompleteStep("run_edge_lateral_fork", "only_step", forkEventHash)
+		forkNodeHash, err := k.CompleteStep("run_edge_lateral_fork", "only_step", forkEventHash, "")
 		if err != nil {
 			return err
 		}

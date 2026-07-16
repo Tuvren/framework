@@ -24,6 +24,7 @@ package kernel
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"sort"
 )
 
@@ -219,9 +220,42 @@ func defaultManifestChanges(schema TurnTreeSchema) map[string]PathValue {
 	return changes
 }
 
+// bootstrapThreadEventMediaType is the media type CreateThread's minted
+// bootstrap object is stored under.
+const bootstrapThreadEventMediaType = "application/cbor"
+
+// threadBootstrapRecord builds the canonical-record encoding of a thread's
+// genesis bootstrap event: {threadId, type: "kernel_runtime_thread_bootstrap"}.
+// This mirrors the TypeScript runtime kernel's thread.create
+// (typescript/kernel/runtime/src/lib/runtime-kernel.ts), which mints and
+// stores the exact same shape as the object it pins to the root turn node's
+// eventHash. The Go port does not need byte-identical encoding with any
+// other port — only that the encoding is thread-unique and deterministic —
+// but this shape is kept 1:1 with the TypeScript reference anyway since
+// nothing about it is Go-specific.
+func threadBootstrapRecord(threadID string) RecordMap {
+	return RecordMap{
+		"threadId": RecordText(threadID),
+		"type":     RecordText("kernel_runtime_thread_bootstrap"),
+	}
+}
+
 // CreateThread creates a new thread on schemaID: a root turn tree (every
 // schema path defaulted), a root turn node, and a main branch (branchID)
 // whose head is that root turn node.
+//
+// The root turn node's identity is not purely schema-derived: CreateThread
+// mints a backend-owned bootstrap object encoding threadID (see
+// threadBootstrapRecord) and pins its hash as the root node's EventHash
+// before hashing the node. Because a turn node's content-addressed hash
+// covers eventHash, this guarantees every thread's genesis node hash is
+// unique to that thread even when two threads share a schema and would
+// otherwise both default to an identical empty manifest (kernel spec §3.3).
+// That uniqueness is what makes walking a node's PreviousTurnNodeHash chain
+// back to a thread's root turn node hash (see turnNodeBelongsToThread) a
+// sound thread-membership test: without it, two threads' root nodes could
+// collide and either thread's descendants would appear to "belong" to the
+// other.
 func (k *Kernel) CreateThread(threadID, schemaID, branchID string) (ThreadCreateResult, error) {
 	schema, err := k.getSchema(schemaID)
 	if err != nil {
@@ -233,17 +267,34 @@ func (k *Kernel) CreateThread(threadID, schemaID, branchID string) (ThreadCreate
 		return ThreadCreateResult{}, err
 	}
 
+	bootstrapBytes, err := EncodeCanonical(threadBootstrapRecord(threadID))
+	if err != nil {
+		return ThreadCreateResult{}, err
+	}
+	bootstrapEventHash := k.Backend.PutObject(bootstrapThreadEventMediaType, bootstrapBytes).Hash
+
 	rootNode := TurnNode{
 		SchemaID:     schemaID,
 		TurnTreeHash: rootTreeHash,
+		EventHash:    bootstrapEventHash,
 	}
 	rootNodeHash, err := HashRecord(turnNodeIdentityRecord(rootNode))
 	if err != nil {
 		return ThreadCreateResult{}, err
 	}
 	rootNode.Hash = rootNodeHash
+
+	// Defense in depth: with a thread-unique bootstrap eventHash this
+	// should be structurally unreachable, but a corrupted or adversarial
+	// backend state must still be rejected rather than silently letting a
+	// second thread adopt another thread's genesis node as its own root
+	// (mirrors the TypeScript memory backend's
+	// memory_backend_thread_root_not_unique invariant).
+	if existingThreadID, ok := k.Backend.GetThreadByRootTurnNode(rootNodeHash); ok {
+		return ThreadCreateResult{}, newKernelError(ErrThreadRootNotUnique, "turn node %q is already the root of thread %q", rootNodeHash, existingThreadID)
+	}
+
 	k.Backend.PutTurnNode(rootNode)
-	k.Backend.MarkTurnNodeThread(rootNodeHash, threadID)
 
 	now := k.Clock.NowMs()
 	if !k.Backend.PutThread(Thread{ThreadID: threadID, SchemaID: schemaID, RootTurnNodeHash: rootNodeHash, CreatedAtMs: now}) {
@@ -261,19 +312,45 @@ func (k *Kernel) CreateThread(threadID, schemaID, branchID string) (ThreadCreate
 	}, nil
 }
 
+// turnNodeBelongsToThread reports whether the turn node at hash belongs to
+// the thread whose (now provably unique, see CreateThread) root turn node
+// hash is threadRootHash: it walks hash's PreviousTurnNodeHash chain
+// backward looking for threadRootHash, capped at maxLineageWalkDepth for
+// the same reason the head-movement walks below are capped — an
+// adversarial or accidentally cyclic chain must degrade into "does not
+// belong" rather than an unbounded loop.
+func (k *Kernel) turnNodeBelongsToThread(hash, threadRootHash string) bool {
+	cursor := hash
+	for depth := 0; depth < maxLineageWalkDepth; depth++ {
+		if cursor == threadRootHash {
+			return true
+		}
+		node, ok := k.Backend.GetTurnNode(cursor)
+		if !ok || node.PreviousTurnNodeHash == "" {
+			return false
+		}
+		cursor = node.PreviousTurnNodeHash
+	}
+	return false
+}
+
 // CreateBranch forks a new branch on threadID whose head is fromTurnNodeHash.
 // fromTurnNodeHash must be a turn node that belongs to threadID
 // (ErrTurnNodeThreadMismatch otherwise) — this is the cross-thread
 // consumption guard: a caller must not attach a turn node minted on one
-// thread to a branch on another thread.
+// thread to a branch on another thread. Membership is decided by walking
+// fromTurnNodeHash's ancestor chain back to threadID's root turn node hash
+// (see turnNodeBelongsToThread), so this rejects a genesis (root) node from
+// a foreign thread exactly the same way it rejects any other foreign node.
 func (k *Kernel) CreateBranch(branchID, threadID, fromTurnNodeHash string) error {
-	if _, ok := k.Backend.GetThread(threadID); !ok {
+	thread, ok := k.Backend.GetThread(threadID)
+	if !ok {
 		return newKernelError("kernel_runtime_thread_not_found", "thread %q not found", threadID)
 	}
 	if _, ok := k.Backend.GetTurnNode(fromTurnNodeHash); !ok {
 		return newKernelError("kernel_runtime_turn_node_not_found", "turn node %q not found", fromTurnNodeHash)
 	}
-	if !k.Backend.TurnNodeBelongsToThread(fromTurnNodeHash, threadID) {
+	if !k.turnNodeBelongsToThread(fromTurnNodeHash, thread.RootTurnNodeHash) {
 		return newKernelError(ErrTurnNodeThreadMismatch, "turn node %q does not belong to thread %q", fromTurnNodeHash, threadID)
 	}
 
@@ -299,83 +376,244 @@ func (k *Kernel) ListBranchHeads(threadID string) ([][2]string, error) {
 	return out, nil
 }
 
-// headMovement classifies how newHead relates to a branch's currentHead by
-// walking newHead's previousTurnNodeHash chain looking for currentHead.
+// headMovement classifies how newHead relates to a branch's currentHead
+// (kernel spec §4.2). SetBranchHead handles the "same node" case itself
+// before ever calling classifyHeadMovement, so only three kinds remain
+// here: forward (newHead is a strict descendant of currentHead), backward
+// (newHead is a strict ancestor of currentHead — an archival rollback), and
+// lateral (neither: no ancestor/descendant relationship exists between
+// them).
 type headMovement int
 
 const (
-	headMovementLateral headMovement = iota
-	headMovementSame
-	headMovementForward
+	headMovementForward headMovement = iota
+	headMovementBackward
+	headMovementLateral
 )
 
-func (k *Kernel) classifyHeadMovement(currentHead, newHead string) (headMovement, error) {
-	if newHead == currentHead {
-		return headMovementSame, nil
-	}
-
-	cursor := newHead
+// isStrictAncestor reports whether targetHash appears in fromHash's
+// PreviousTurnNodeHash chain, not counting fromHash itself, capped at
+// maxLineageWalkDepth.
+func (k *Kernel) isStrictAncestor(fromHash, targetHash string) bool {
+	cursor := fromHash
 	for depth := 0; depth < maxLineageWalkDepth; depth++ {
 		node, ok := k.Backend.GetTurnNode(cursor)
-		if !ok {
-			return headMovementLateral, nil
+		if !ok || node.PreviousTurnNodeHash == "" {
+			return false
 		}
-		if node.PreviousTurnNodeHash == "" {
-			return headMovementLateral, nil
-		}
-		if node.PreviousTurnNodeHash == currentHead {
-			return headMovementForward, nil
+		if node.PreviousTurnNodeHash == targetHash {
+			return true
 		}
 		cursor = node.PreviousTurnNodeHash
 	}
-	return headMovementLateral, nil
+	return false
+}
+
+func (k *Kernel) classifyHeadMovement(currentHead, newHead string) headMovement {
+	if k.isStrictAncestor(newHead, currentHead) {
+		return headMovementForward
+	}
+	if k.isStrictAncestor(currentHead, newHead) {
+		return headMovementBackward
+	}
+	return headMovementLateral
+}
+
+// activeRunOnBranch returns the branch's running-or-paused run, if any.
+func (k *Kernel) activeRunOnBranch(branchID string) (Run, bool) {
+	for _, run := range k.Backend.ListRunsByBranch(branchID) {
+		if run.Status == RunStatusRunning || run.Status == RunStatusPaused {
+			return run, true
+		}
+	}
+	return Run{}, false
+}
+
+// collectAbandonedSegmentHashes walks currentHead's PreviousTurnNodeHash
+// chain backward until it reaches targetHash, returning the set of hashes
+// strictly between them (inclusive of currentHead, exclusive of
+// targetHash) — the segment a backward SetBranchHead move abandons and
+// archives. Returns ErrBackwardLineageMismatch if targetHash is never
+// reached within maxLineageWalkDepth (should not happen: SetBranchHead only
+// calls this after classifyHeadMovement has already confirmed targetHash is
+// a strict ancestor of currentHead, but the walk still guards against a
+// race or a corrupted chain).
+func (k *Kernel) collectAbandonedSegmentHashes(currentHead, targetHash string) (map[string]bool, error) {
+	hashes := make(map[string]bool)
+	cursor := currentHead
+	for depth := 0; depth < maxLineageWalkDepth; depth++ {
+		if cursor == targetHash {
+			return hashes, nil
+		}
+		hashes[cursor] = true
+		node, ok := k.Backend.GetTurnNode(cursor)
+		if !ok || node.PreviousTurnNodeHash == "" {
+			return nil, newKernelError(ErrBackwardLineageMismatch, "target %q is not an ancestor of current head %q", targetHash, currentHead)
+		}
+		cursor = node.PreviousTurnNodeHash
+	}
+	return nil, newKernelError(ErrBackwardLineageMismatch, "target %q is not an ancestor of current head %q", targetHash, currentHead)
+}
+
+// allocateArchiveBranchID probes "{branchID}-archive-{ordinal}-{currentHead
+// prefix}" starting at initialOrdinal and incrementing past any collision,
+// mirroring the TypeScript runtime kernel's allocateArchiveBranchId.
+func (k *Kernel) allocateArchiveBranchID(branchID, currentHead string, initialOrdinal int) string {
+	prefixLen := 16
+	if len(currentHead) < prefixLen {
+		prefixLen = len(currentHead)
+	}
+	for ordinal := initialOrdinal; ; ordinal++ {
+		candidate := fmt.Sprintf("%s-archive-%d-%s", branchID, ordinal, currentHead[:prefixLen])
+		if _, ok := k.Backend.GetBranch(candidate); !ok {
+			return candidate
+		}
+	}
+}
+
+// runTouchesSegment reports whether run's start node or any turn node it
+// created falls within segmentHashes.
+func runTouchesSegment(run Run, segmentHashes map[string]bool) bool {
+	if segmentHashes[run.StartTurnNodeHash] {
+		return true
+	}
+	for _, hash := range run.CreatedTurnNodes {
+		if segmentHashes[hash] {
+			return true
+		}
+	}
+	return false
+}
+
+// rollbackBranchHead performs a backward SetBranchHead move (kernel spec
+// §4.2): an atomic archival rollback. It mints a fresh archive branch
+// (ArchivedFromBranchID == branchID) whose head preserves the abandoned
+// lineage's tip (branch's current head), fails every running-or-paused run
+// on branchID that touches the abandoned segment (clearing its staged
+// results, mirroring the TypeScript reference's tx.stagedResults.clearRun),
+// and only then moves branchID's own head to newHead.
+func (k *Kernel) rollbackBranchHead(branchID string, branch Branch, newHead string) error {
+	abandoned, err := k.collectAbandonedSegmentHashes(branch.HeadTurnNodeHash, newHead)
+	if err != nil {
+		return err
+	}
+
+	archiveOrdinal := 1
+	for _, candidate := range k.Backend.ListBranchesByThread(branch.ThreadID) {
+		if candidate.ArchivedFromBranchID == branchID {
+			archiveOrdinal++
+		}
+	}
+	archiveBranchID := k.allocateArchiveBranchID(branchID, branch.HeadTurnNodeHash, archiveOrdinal)
+
+	now := k.Clock.NowMs()
+	if !k.Backend.PutBranch(Branch{
+		BranchID:             archiveBranchID,
+		ThreadID:             branch.ThreadID,
+		HeadTurnNodeHash:     branch.HeadTurnNodeHash,
+		ArchivedFromBranchID: branchID,
+		CreatedAtMs:          now,
+		UpdatedAtMs:          now,
+	}) {
+		return newKernelError("kernel_runtime_branch_already_exists", "archive branch %q already exists", archiveBranchID)
+	}
+
+	for _, run := range k.Backend.ListRunsByBranch(branchID) {
+		if (run.Status == RunStatusRunning || run.Status == RunStatusPaused) && runTouchesSegment(run, abandoned) {
+			k.Backend.DrainStagedResults(run.RunID)
+			run.Status = RunStatusFailed
+			k.Backend.UpdateRun(run)
+		}
+	}
+
+	k.Backend.UpdateBranchHead(branchID, newHead, now)
+	return nil
 }
 
 // SetBranchHead moves branchID's head to newHead. newHead must belong to
-// the branch's thread (ErrTurnNodeThreadMismatch otherwise) and must be a
-// descendant of the branch's current head, reached by following
-// previousTurnNodeHash links backward from newHead (ErrLateralHeadMovement
-// otherwise — this also covers the backward-rewind case, which M2 does not
-// support as a distinct movement kind: an ancestor of the current head is,
-// by this same-or-descendant rule, "not a descendant of the current head").
+// the branch's thread (ErrTurnNodeThreadMismatch otherwise). Moving to the
+// branch's own current head is a no-op success. Otherwise the move is
+// classified as forward, backward, or lateral (kernel spec §4.2):
+//
+//   - forward: newHead is a strict descendant of the current head. Rejected
+//     with ErrBranchHasActiveRun if branchID has a running or paused run
+//     (an external caller must not alias a live run's head), otherwise the
+//     branch head simply advances.
+//   - backward: newHead is a strict ancestor of the current head. Handled
+//     as an atomic archival rollback by rollbackBranchHead: unlike forward,
+//     this is allowed even with an active run, but any run touching the
+//     abandoned segment is failed as part of the same move.
+//   - lateral: neither. Always rejected (ErrLateralHeadMovement) — M2 has
+//     no notion of moving a branch head sideways onto unrelated history.
 func (k *Kernel) SetBranchHead(branchID, newHead string) error {
 	branch, ok := k.Backend.GetBranch(branchID)
 	if !ok {
 		return newKernelError("kernel_runtime_branch_not_found", "branch %q not found", branchID)
 	}
+	thread, ok := k.Backend.GetThread(branch.ThreadID)
+	if !ok {
+		return newKernelError("kernel_runtime_thread_not_found", "thread %q not found", branch.ThreadID)
+	}
 	if _, ok := k.Backend.GetTurnNode(newHead); !ok {
 		return newKernelError("kernel_runtime_turn_node_not_found", "turn node %q not found", newHead)
 	}
-	if !k.Backend.TurnNodeBelongsToThread(newHead, branch.ThreadID) {
+	if !k.turnNodeBelongsToThread(newHead, thread.RootTurnNodeHash) {
 		return newKernelError(ErrTurnNodeThreadMismatch, "turn node %q does not belong to thread %q", newHead, branch.ThreadID)
 	}
 
-	movement, err := k.classifyHeadMovement(branch.HeadTurnNodeHash, newHead)
-	if err != nil {
-		return err
-	}
-	if movement == headMovementLateral {
-		return newKernelError(ErrLateralHeadMovement, "turn node %q is not a descendant of branch %q's current head %q", newHead, branchID, branch.HeadTurnNodeHash)
+	if newHead == branch.HeadTurnNodeHash {
+		return nil
 	}
 
-	k.Backend.UpdateBranchHead(branchID, newHead, k.Clock.NowMs())
-	return nil
+	switch k.classifyHeadMovement(branch.HeadTurnNodeHash, newHead) {
+	case headMovementLateral:
+		return newKernelError(ErrLateralHeadMovement, "turn node %q is not a descendant of branch %q's current head %q", newHead, branchID, branch.HeadTurnNodeHash)
+	case headMovementBackward:
+		return k.rollbackBranchHead(branchID, branch, newHead)
+	default: // headMovementForward
+		if active, ok := k.activeRunOnBranch(branchID); ok {
+			return newKernelError(ErrBranchHasActiveRun, "branch %q cannot move head while run %q is active", branchID, active.RunID)
+		}
+		k.Backend.UpdateBranchHead(branchID, newHead, k.Clock.NowMs())
+		return nil
+	}
 }
 
 // --- run lifecycle ---
 
-// CreateRun creates a run on branchID. A branch may have at most one
+// requireUniqueStepIDs rejects a declared step sequence that repeats the
+// same step id more than once (ErrDuplicateStepID).
+func requireUniqueStepIDs(steps []StepDeclaration) error {
+	seen := make(map[string]bool, len(steps))
+	for _, step := range steps {
+		if seen[step.ID] {
+			return newKernelError(ErrDuplicateStepID, "duplicate step id %q in run step sequence", step.ID)
+		}
+		seen[step.ID] = true
+	}
+	return nil
+}
+
+// CreateRun creates a run on branchID. startTurnNodeHash must match
+// branchID's current head (ErrRunBranchHeadMismatch otherwise) — a run
+// always starts from wherever its branch currently is, never from a stale
+// or foreign turn node. stepSequence's step ids must be unique
+// (ErrDuplicateStepID otherwise). A branch may have at most one
 // running-or-paused run at a time (ErrBranchAlreadyActive otherwise).
 func (k *Kernel) CreateRun(runID, turnID, branchID, schemaID, startTurnNodeHash string, stepSequence []StepDeclaration) error {
 	branch, ok := k.Backend.GetBranch(branchID)
 	if !ok {
 		return newKernelError("kernel_runtime_branch_not_found", "branch %q not found", branchID)
 	}
+	if branch.HeadTurnNodeHash != startTurnNodeHash {
+		return newKernelError(ErrRunBranchHeadMismatch, "run start turn node %q does not match branch %q's current head %q", startTurnNodeHash, branchID, branch.HeadTurnNodeHash)
+	}
+	if err := requireUniqueStepIDs(stepSequence); err != nil {
+		return err
+	}
 
-	for _, existing := range k.Backend.ListRunsByBranch(branchID) {
-		if existing.Status == RunStatusRunning || existing.Status == RunStatusPaused {
-			return newKernelError(ErrBranchAlreadyActive, "branch %q already has an active run (%q)", branchID, existing.RunID)
-		}
+	if active, ok := k.activeRunOnBranch(branchID); ok {
+		return newKernelError(ErrBranchAlreadyActive, "branch %q already has an active run (%q)", branchID, active.RunID)
 	}
 
 	run := Run{
@@ -418,12 +656,123 @@ func (k *Kernel) activeTurnNodeHash(run Run) string {
 	return run.StartTurnNodeHash
 }
 
+// incorporateStagedResults derives a new turn tree from baseTreeHash by
+// applying consumed onto it per schema's incorporation rules (kernel spec
+// §5.5): an ordered target path appends the staged result's object hash, a
+// single target path replaces the value outright. Returns baseTreeHash
+// unchanged when consumed is empty. Mirrors the TypeScript runtime kernel's
+// applyStagedResultsToManifest + createIncorporatedTree.
+func (k *Kernel) incorporateStagedResults(schema TurnTreeSchema, baseTreeHash string, consumed []StagedResult) (string, error) {
+	if len(consumed) == 0 {
+		return baseTreeHash, nil
+	}
+
+	baseTree, ok := k.Backend.GetTurnTree(baseTreeHash)
+	if !ok {
+		return "", newKernelError("kernel_runtime_tree_not_found", "turn tree %q not found", baseTreeHash)
+	}
+
+	rulesByObjectType := make(map[string]IncorporationRule, len(schema.IncorporationRules))
+	for _, rule := range schema.IncorporationRules {
+		rulesByObjectType[rule.ObjectType] = rule
+	}
+	pathsByName := make(map[string]PathDefinition, len(schema.Paths))
+	for _, path := range schema.Paths {
+		pathsByName[path.Path] = path
+	}
+
+	changes := make(map[string]PathValue, len(consumed))
+	for _, result := range consumed {
+		rule, ok := rulesByObjectType[result.ObjectType]
+		if !ok {
+			return "", newKernelError(ErrUnmatchedIncorporationRule, "no incorporation rule for objectType %q in schema %q", result.ObjectType, schema.SchemaID)
+		}
+
+		if pathsByName[rule.TargetPath].Collection == PathCollectionOrdered {
+			current, alreadyChanged := changes[rule.TargetPath]
+			if !alreadyChanged {
+				current = baseTree.Manifest[rule.TargetPath]
+			}
+			ordered := make([]string, 0, len(current.Ordered)+1)
+			if current.Kind == PathValueOrderedKind {
+				ordered = append(ordered, current.Ordered...)
+			}
+			ordered = append(ordered, result.ObjectHash)
+			changes[rule.TargetPath] = PathValue{Kind: PathValueOrderedKind, Ordered: ordered}
+		} else {
+			changes[rule.TargetPath] = PathValue{Kind: PathValueSingleKind, Single: result.ObjectHash}
+		}
+	}
+
+	return k.CreateTurnTree(schema.SchemaID, changes, &baseTreeHash)
+}
+
+// checkpointRun mints a new turn node chained onto run's active turn node,
+// advances run's branch head to it, and appends it to run's
+// CreatedTurnNodes (returned, not yet persisted via UpdateRun — callers
+// finish and persist run themselves so they can also update
+// CurrentStepIndex/Status in the same write). When treeHash is "", the new
+// node's turn tree is derived from the active node's tree by incorporating
+// consumed per the run's schema (see incorporateStagedResults); otherwise
+// treeHash is used as-is (the caller must have already validated it).
+func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []StagedResult) (string, Run, error) {
+	schema, err := k.getSchema(run.SchemaID)
+	if err != nil {
+		return "", run, err
+	}
+
+	activeHash := k.activeTurnNodeHash(run)
+	activeNode, ok := k.Backend.GetTurnNode(activeHash)
+	if !ok {
+		return "", run, newKernelError("kernel_runtime_turn_node_not_found", "run %q's active turn node %q not found", run.RunID, activeHash)
+	}
+
+	newTreeHash := treeHash
+	if newTreeHash == "" {
+		newTreeHash, err = k.incorporateStagedResults(schema, activeNode.TurnTreeHash, consumed)
+		if err != nil {
+			return "", run, err
+		}
+	}
+
+	newNode := TurnNode{
+		SchemaID:              run.SchemaID,
+		TurnTreeHash:          newTreeHash,
+		PreviousTurnNodeHash:  activeNode.Hash,
+		EventHash:             eventHash,
+		ConsumedStagedResults: consumed,
+	}
+	hash, err := HashRecord(turnNodeIdentityRecord(newNode))
+	if err != nil {
+		return "", run, err
+	}
+	newNode.Hash = hash
+	k.Backend.PutTurnNode(newNode)
+
+	run.CreatedTurnNodes = append(run.CreatedTurnNodes, hash)
+
+	// A run's checkpoints advance its branch's turn head directly: the
+	// branch that hosts a live run always tracks that run's most recent
+	// turn node. This is always a same-or-forward movement by
+	// construction (the new node's previousTurnNodeHash is the branch's
+	// current head), so it can never fail the lineage check SetBranchHead
+	// itself enforces for externally requested head movements.
+	k.Backend.UpdateBranchHead(run.BranchID, hash, k.Clock.NowMs())
+
+	return hash, run, nil
+}
+
 // CompleteStep validates that stepID is the run's next declared step,
 // checks eventHash (if non-empty) exists in the object store
-// (ErrMissingEventObject otherwise), mints a new turn node whose
-// consumedStagedResults is everything staged since the previous checkpoint,
-// advances the run's step index, and returns the new turn node's hash.
-func (k *Kernel) CompleteStep(runID, stepID, eventHash string) (string, error) {
+// (ErrMissingEventObject otherwise), and checkpoints: it mints a new turn
+// node whose consumedStagedResults is everything staged since the previous
+// checkpoint, evolves the turn tree by incorporating those staged results
+// per the run's schema (kernel spec §5.5), advances the run's step index,
+// and returns the new turn node's hash. When treeHash is non-empty, it is
+// used as the checkpoint's turn tree instead of one derived from staged
+// results — it must already exist and share the run's schemaId
+// (ErrMissingTree / ErrTreeSchemaMismatch otherwise).
+func (k *Kernel) CompleteStep(runID, stepID, eventHash, treeHash string) (string, error) {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
 		return "", newKernelError("kernel_runtime_run_not_found", "run %q not found", runID)
@@ -434,45 +783,34 @@ func (k *Kernel) CompleteStep(runID, stepID, eventHash string) (string, error) {
 	if eventHash != "" && !k.Backend.HasObject(eventHash) {
 		return "", newKernelError(ErrMissingEventObject, "event object %q is not present in the object store", eventHash)
 	}
-
-	activeNode, ok := k.Backend.GetTurnNode(k.activeTurnNodeHash(run))
-	if !ok {
-		return "", newKernelError("kernel_runtime_turn_node_not_found", "run %q's active turn node %q not found", runID, k.activeTurnNodeHash(run))
+	if treeHash != "" {
+		tree, ok := k.Backend.GetTurnTree(treeHash)
+		if !ok {
+			return "", newKernelError(ErrMissingTree, "tree hash %q does not exist", treeHash)
+		}
+		if tree.SchemaID != run.SchemaID {
+			return "", newKernelError(ErrTreeSchemaMismatch, "tree hash %q uses schema %q but run uses schema %q", treeHash, tree.SchemaID, run.SchemaID)
+		}
 	}
 
 	consumed := k.Backend.DrainStagedResults(runID)
-	newNode := TurnNode{
-		SchemaID:              run.SchemaID,
-		TurnTreeHash:          activeNode.TurnTreeHash,
-		PreviousTurnNodeHash:  activeNode.Hash,
-		EventHash:             eventHash,
-		ConsumedStagedResults: consumed,
-	}
-	hash, err := HashRecord(turnNodeIdentityRecord(newNode))
+	hash, run, err := k.checkpointRun(run, eventHash, treeHash, consumed)
 	if err != nil {
 		return "", err
 	}
-	newNode.Hash = hash
-	k.Backend.PutTurnNode(newNode)
-	k.Backend.MarkTurnNodeThread(hash, run.ThreadID)
 
-	run.CreatedTurnNodes = append(run.CreatedTurnNodes, hash)
 	run.CurrentStepIndex++
 	k.Backend.UpdateRun(run)
-
-	// A run's steps advance its branch's turn head as they complete: the
-	// branch that hosts a live run always tracks that run's most recent
-	// turn node. This is always a same-or-forward movement by
-	// construction (the new node's previousTurnNodeHash is the branch's
-	// current head), so it can never fail the lineage check SetBranchHead
-	// itself enforces for externally requested head movements.
-	k.Backend.UpdateBranchHead(run.BranchID, hash, k.Clock.NowMs())
 
 	return hash, nil
 }
 
 // CompleteRun validates eventHash (if non-empty) exists in the object store
-// (ErrMissingEventObject otherwise) and marks the run completed.
+// (ErrMissingEventObject otherwise), reactively checkpoints any staged
+// results (or a non-empty eventHash) left un-anchored since the run's last
+// step boundary (kernel spec §5.6) exactly like CompleteStep's checkpoint,
+// and marks the run completed. A run with nothing staged and no eventHash
+// completes without minting an extra turn node.
 func (k *Kernel) CompleteRun(runID, eventHash string) error {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
@@ -481,6 +819,16 @@ func (k *Kernel) CompleteRun(runID, eventHash string) error {
 	if eventHash != "" && !k.Backend.HasObject(eventHash) {
 		return newKernelError(ErrMissingEventObject, "event object %q is not present in the object store", eventHash)
 	}
+
+	staged := k.Backend.DrainStagedResults(runID)
+	if len(staged) > 0 || eventHash != "" {
+		_, updatedRun, err := k.checkpointRun(run, eventHash, "", staged)
+		if err != nil {
+			return err
+		}
+		run = updatedRun
+	}
+
 	run.Status = RunStatusCompleted
 	k.Backend.UpdateRun(run)
 	return nil

@@ -388,6 +388,65 @@ def test_branch_set_head_forward_is_a_pointer_update() -> None:
     )
     kernel.run.begin_step("run_fwd", "step")
     checkpoint = kernel.run.complete_step("run_fwd", "step")
+    # branch.setHead forward movement rejects while the branch has an
+    # active run (kernel_runtime_branch_has_active_run) -- complete it
+    # first so this test exercises the plain pointer-update path.
+    kernel.run.complete("run_fwd", "completed")
+
+    result = kernel.branch.set_head(thread["branchId"], checkpoint["turnNodeHash"])
+    assert result["archiveBranch"] is None
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == checkpoint["turnNodeHash"]
+
+
+def test_branch_set_head_forward_rejects_when_branch_has_active_run() -> None:
+    # P1 fix: a forward `branch.setHead` move must not proceed while the
+    # branch has a `running`/`paused` Run -- matching the TypeScript
+    # reference's `assertNoActiveBranchRunForForwardHeadMove`, error code
+    # `kernel_runtime_branch_has_active_run`.
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_fwd_active", "schema_main", "branch_fwd_active")
+    turn = kernel.turn.create(
+        "turn_fwd_active", thread["threadId"], thread["branchId"], None, thread["rootTurnNodeHash"]
+    )
+    kernel.run.create(
+        "run_fwd_active_first",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [
+            {"id": "step_one", "deterministic": False, "sideEffects": False},
+            {"id": "step_two", "deterministic": False, "sideEffects": False},
+        ],
+    )
+    kernel.run.begin_step("run_fwd_active_first", "step_one")
+    checkpoint = kernel.run.complete_step("run_fwd_active_first", "step_one")
+    # run_fwd_active_first is still "running" (mid-sequence) -- its branch
+    # has an active run, so moving the head forward must be rejected even
+    # though the target is a legitimate descendant of the current head.
+    code = error_code(
+        lambda: kernel.branch.set_head(thread["branchId"], checkpoint["turnNodeHash"])
+    )
+    assert code == "kernel_runtime_branch_has_active_run"
+
+
+def test_branch_set_head_forward_succeeds_once_run_completes() -> None:
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_fwd_done", "schema_main", "branch_fwd_done")
+    turn = kernel.turn.create(
+        "turn_fwd_done", thread["threadId"], thread["branchId"], None, thread["rootTurnNodeHash"]
+    )
+    kernel.run.create(
+        "run_fwd_done",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+    )
+    kernel.run.begin_step("run_fwd_done", "step")
+    checkpoint = kernel.run.complete_step("run_fwd_done", "step")
+    kernel.run.complete("run_fwd_done", "completed")
 
     result = kernel.branch.set_head(thread["branchId"], checkpoint["turnNodeHash"])
     assert result["archiveBranch"] is None
@@ -757,9 +816,167 @@ def test_run_recover_matches_recovery_state_conformance_scenario() -> None:
     assert len(recovery["uncommittedStagedResults"]) == 1
 
 
+def test_run_recover_returns_only_last_turn_nodes_consumed_staged_results() -> None:
+    # P0 regression: `run.recover` must expose ONLY the last checkpoint's
+    # `consumedStagedResults` (Section 5.7 / recovery-state CDDL: "from last
+    # TurnNode"), never the Run's full checkpoint history. A result staged
+    # and consumed at an EARLIER checkpoint must not resurface in recovery
+    # once a LATER checkpoint has consumed something else -- the bug this
+    # guards against returned the concatenation of every checkpoint's
+    # consumed results instead of just the last one's.
+    kernel = new_kernel()
+    thread = kernel.thread.create(
+        "thread_recover_last_node", "schema_main", "branch_recover_last_node"
+    )
+    turn = kernel.turn.create(
+        "turn_recover_last_node",
+        thread["threadId"],
+        thread["branchId"],
+        None,
+        thread["rootTurnNodeHash"],
+    )
+    steps = [
+        {"id": "first", "deterministic": False, "sideEffects": False},
+        {"id": "second", "deterministic": False, "sideEffects": False},
+    ]
+    kernel.run.create(
+        "run_recover_last_node",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        steps,
+    )
+
+    # Stage and consume a result at the FIRST checkpoint.
+    kernel.run.begin_step("run_recover_last_node", "first")
+    kernel.staging.stage(
+        "run_recover_last_node",
+        b"pre-checkpoint-one",
+        "task_pre_checkpoint_one",
+        "message",
+        "completed",
+    )
+    kernel.run.complete_step("run_recover_last_node", "first")
+
+    # Stage and consume a DIFFERENT result at the SECOND checkpoint.
+    kernel.run.begin_step("run_recover_last_node", "second")
+    kernel.staging.stage(
+        "run_recover_last_node",
+        b"pre-checkpoint-two",
+        "task_pre_checkpoint_two",
+        "message",
+        "completed",
+    )
+    kernel.run.complete_step("run_recover_last_node", "second")
+
+    recovery = kernel.run.recover("run_recover_last_node")
+    consumed_task_ids = [item["taskId"] for item in recovery["consumedStagedResults"]]
+    # Only the second checkpoint's result may appear -- the first
+    # checkpoint's result is excluded, matching the Go/TS-verified
+    # last-TurnNode semantics.
+    assert consumed_task_ids == ["task_pre_checkpoint_two"]
+    assert (
+        recovery["lastTurnNodeHash"]
+        == kernel.backend.get_run("run_recover_last_node")["createdTurnNodes"][-1]
+    )
+
+
+def test_run_recover_falls_back_to_start_node_before_any_checkpoint() -> None:
+    # A fresh run that has not checkpointed yet has no `createdTurnNodes`
+    # entry: `recover` must fall back to the run's `startTurnNodeHash` node
+    # (matching the TypeScript reference's `getLastRunTurnNodeHash`), not an
+    # unconditional empty array.
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_recover_fresh", "schema_main", "branch_recover_fresh")
+    turn = kernel.turn.create(
+        "turn_recover_fresh",
+        thread["threadId"],
+        thread["branchId"],
+        None,
+        thread["rootTurnNodeHash"],
+    )
+    kernel.run.create(
+        "run_recover_fresh",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+    )
+
+    recovery = kernel.run.recover("run_recover_fresh")
+    root_node = kernel.backend.get_node(thread["rootTurnNodeHash"])
+    assert recovery["lastTurnNodeHash"] == thread["rootTurnNodeHash"]
+    assert recovery["consumedStagedResults"] == root_node["consumedStagedResults"]
+
+
 def test_run_recover_rejects_unknown_run() -> None:
     kernel = new_kernel()
     assert error_code(lambda: kernel.run.recover("run_unknown")) == "kernel_runtime_missing_run"
+
+
+# --- Backend aliasing (P2) --------------------------------------------------------
+
+
+def test_backend_get_run_returns_a_copy_callers_cannot_corrupt() -> None:
+    # P2 fix: `RuntimeBackend` getters must return copies, not live
+    # references into backend-internal state -- otherwise a caller (or
+    # `runtime.py` itself, which mutates a fetched run in place before
+    # `put_run`) could corrupt durable state just by holding onto and
+    # mutating a returned value, without ever calling a `put_*`.
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_alias", "schema_main", "branch_alias")
+    turn = kernel.turn.create(
+        "turn_alias", thread["threadId"], thread["branchId"], None, thread["rootTurnNodeHash"]
+    )
+    kernel.run.create(
+        "run_alias",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+    )
+
+    fetched = kernel.backend.get_run("run_alias")
+    fetched["status"] = "corrupted"
+    fetched["stepSequence"].append({"id": "ghost", "deterministic": False, "sideEffects": False})
+    fetched["createdTurnNodes"].append("not-a-real-hash")
+
+    refetched = kernel.backend.get_run("run_alias")
+    assert refetched["status"] == "running"
+    assert [step["id"] for step in refetched["stepSequence"]] == ["step"]
+    assert refetched["createdTurnNodes"] == []
+
+
+def test_backend_list_staged_returns_copies_callers_cannot_corrupt() -> None:
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_alias_staged", "schema_main", "branch_alias_staged")
+    turn = kernel.turn.create(
+        "turn_alias_staged",
+        thread["threadId"],
+        thread["branchId"],
+        None,
+        thread["rootTurnNodeHash"],
+    )
+    kernel.run.create(
+        "run_alias_staged",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [{"id": "step", "deterministic": False, "sideEffects": False}],
+    )
+    kernel.staging.stage("run_alias_staged", b"hello", "task_1", "message", "completed")
+
+    fetched = kernel.backend.list_staged("run_alias_staged")
+    fetched[0]["taskId"] = "corrupted"
+    fetched.append({"taskId": "ghost"})
+
+    refetched = kernel.backend.list_staged("run_alias_staged")
+    assert len(refetched) == 1
+    assert refetched[0]["taskId"] == "task_1"
 
 
 # --- Object store --------------------------------------------------------------
@@ -845,6 +1062,79 @@ def test_thread_list_rejects_malformed_cursor() -> None:
     assert error_code(lambda: kernel.thread.list(cursor="not-a-valid-cursor")) == (
         "invalid_durable_read_cursor"
     )
+
+
+# --- Lineage depth cap (P2) -------------------------------------------------------
+
+
+def _seed_linear_lineage_chain(kernel: RuntimeKernel, length: int) -> str:
+    """Hand-write `length` TurnNode records chained by `previousTurnNodeHash`.
+
+    Bypasses `RuntimeKernel.checkpoint`'s content-addressed hashing (which
+    would be far too slow to invoke `length` times here) by writing directly
+    through the backend with synthetic, sequential hashes. Returns the hash
+    of the chain's tip (furthest from any root).
+    """
+
+    previous_hash: str | None = None
+    node_hash = "0" * 64
+    for index in range(length):
+        node_hash = f"{index:064d}"
+        kernel.backend.put_node(
+            node_hash,
+            {
+                "schemaId": "schema_main",
+                "turnTreeHash": "f" * 64,
+                "previousTurnNodeHash": previous_hash,
+                "eventHash": None,
+                "consumedStagedResults": [],
+                "hash": node_hash,
+            },
+        )
+        previous_hash = node_hash
+    return node_hash
+
+
+def test_verify_thread_membership_rejects_lineage_walk_exceeding_depth_cap() -> None:
+    # P2 fix: `verify_thread_membership`'s `previousTurnNodeHash` walk must
+    # not loop unboundedly over an adversarial/pathologically long chain --
+    # it must degrade into a normal kernel error once the walk exceeds
+    # `_MAX_LINEAGE_WALK_DEPTH` (100_000, matching the Go port's
+    # `maxLineageWalkDepth`) hops without reaching a thread root.
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_depth_cap", "schema_main", "branch_depth_cap")
+    tip_hash = _seed_linear_lineage_chain(kernel, 100_002)
+
+    code = error_code(lambda: kernel.verify_thread_membership(thread, tip_hash))
+    assert code == "kernel_runtime_lineage_walk_depth_exceeded"
+
+
+def test_reaches_rejects_lineage_walk_exceeding_depth_cap() -> None:
+    kernel = new_kernel()
+    tip_hash = _seed_linear_lineage_chain(kernel, 100_002)
+
+    code = error_code(lambda: kernel.reaches(tip_hash, "unreachable_target"))
+    assert code == "kernel_runtime_lineage_walk_depth_exceeded"
+
+
+def test_verify_thread_membership_accepts_chain_within_depth_cap() -> None:
+    kernel = new_kernel()
+    thread = kernel.thread.create("thread_within_cap", "schema_main", "branch_within_cap")
+    # Re-root the synthetic chain onto the thread's real root so the walk
+    # both stays under the cap and legitimately resolves.
+    tip_hash = "chain_tip_within_cap"
+    kernel.backend.put_node(
+        tip_hash,
+        {
+            "schemaId": "schema_main",
+            "turnTreeHash": "f" * 64,
+            "previousTurnNodeHash": thread["rootTurnNodeHash"],
+            "eventHash": None,
+            "consumedStagedResults": [],
+            "hash": tip_hash,
+        },
+    )
+    kernel.verify_thread_membership(thread, tip_hash)  # must not raise
 
 
 # --- Turn ------------------------------------------------------------------------

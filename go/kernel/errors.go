@@ -14,7 +14,10 @@
 
 package kernel
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Runtime error codes. These are normative strings pinned by the M2
 // conformance plan assertions (and, for kernel_runtime_tree_schema_mismatch,
@@ -63,6 +66,44 @@ const (
 	// ErrCapabilityUnsupported: an operation was invoked against a backend
 	// that does not declare the required capability.
 	ErrCapabilityUnsupported = "kernel_capability_unsupported"
+
+	// ErrThreadRootNotUnique: a thread create call minted a genesis turn
+	// node hash that already belongs to another thread as its root. This
+	// should be structurally unreachable once genesis turn nodes carry a
+	// thread-unique bootstrap eventHash (see CreateThread), but the backend
+	// still enforces it defensively, mirroring the TypeScript memory
+	// backend's memory_backend_thread_root_not_unique invariant.
+	ErrThreadRootNotUnique = "kernel_runtime_thread_root_not_unique"
+
+	// ErrBranchHasActiveRun: a forward branch set-head call targeted a
+	// branch that has a running or paused run on it. Unlike
+	// ErrBranchAlreadyActive (run.create's guard), this fires on an
+	// explicit external head movement, not run creation.
+	ErrBranchHasActiveRun = "kernel_runtime_branch_has_active_run"
+
+	// ErrRunBranchHeadMismatch: a run create call's startTurnNodeHash does
+	// not match its target branch's current head.
+	ErrRunBranchHeadMismatch = "kernel_runtime_run_branch_head_mismatch"
+
+	// ErrDuplicateStepID: a run create call's declared step sequence
+	// repeats the same step id more than once.
+	ErrDuplicateStepID = "kernel_runtime_duplicate_step_id"
+
+	// ErrMissingTree: a step-completion call supplied an explicit treeHash
+	// that does not exist in the turn tree store.
+	ErrMissingTree = "kernel_runtime_missing_tree"
+
+	// ErrUnmatchedIncorporationRule: a checkpoint tried to incorporate a
+	// staged result whose objectType has no incorporation rule in the run's
+	// schema.
+	ErrUnmatchedIncorporationRule = "kernel_runtime_unmatched_incorporation_rule"
+
+	// ErrBackwardLineageMismatch: a backward branch set-head call's target
+	// turn node is not actually an ancestor of the branch's current head
+	// (should not occur given SetBranchHead classifies direction first, but
+	// the archival-segment walk still guards against a race or a corrupted
+	// chain).
+	ErrBackwardLineageMismatch = "kernel_runtime_backward_lineage_mismatch"
 )
 
 // KernelError is the typed error every kernel-runtime operation returns for
@@ -84,6 +125,9 @@ func newKernelError(code, format string, args ...any) *KernelError {
 
 // AsKernelError extracts a *KernelError from err, if err is (or wraps) one.
 func AsKernelError(err error) (*KernelError, bool) {
-	kerr, ok := err.(*KernelError)
-	return kerr, ok
+	var kerr *KernelError
+	if errors.As(err, &kerr) {
+		return kerr, true
+	}
+	return nil, false
 }

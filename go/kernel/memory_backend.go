@@ -26,14 +26,19 @@ type InMemoryBackend struct {
 
 	clock Clock
 
-	objects     map[string]StoredObject
-	schemas     map[string]TurnTreeSchema
-	trees       map[string]TurnTree
-	nodes       map[string]TurnNode
-	nodeThreads map[string]map[string]bool
-	threads     map[string]Thread
-	branches    map[string]Branch
-	runs        map[string]Run
+	objects  map[string]StoredObject
+	schemas  map[string]TurnTreeSchema
+	trees    map[string]TurnTree
+	nodes    map[string]TurnNode
+	threads  map[string]Thread
+	branches map[string]Branch
+	runs     map[string]Run
+
+	// rootOwners indexes thread-root turn node hash -> owning threadId, so
+	// PutThread can populate it and Kernel.CreateThread can consult
+	// GetThreadByRootTurnNode before publishing a thread whose genesis node
+	// hash was already claimed.
+	rootOwners map[string]string
 
 	stagedByRun map[string][]StagedResult
 }
@@ -50,10 +55,10 @@ func NewInMemoryBackend(clock Clock) *InMemoryBackend {
 		schemas:     make(map[string]TurnTreeSchema),
 		trees:       make(map[string]TurnTree),
 		nodes:       make(map[string]TurnNode),
-		nodeThreads: make(map[string]map[string]bool),
 		threads:     make(map[string]Thread),
 		branches:    make(map[string]Branch),
 		runs:        make(map[string]Run),
+		rootOwners:  make(map[string]string),
 		stagedByRun: make(map[string][]StagedResult),
 	}
 }
@@ -119,37 +124,55 @@ func (b *InMemoryBackend) GetTurnTree(hash string) (TurnTree, bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	tree, ok := b.trees[hash]
-	return tree, ok
+	if !ok {
+		return TurnTree{}, false
+	}
+	return cloneTurnTree(tree), true
+}
+
+// cloneTurnTree returns a deep-enough copy of tree that a caller mutating
+// the returned Manifest map (or any ordered PathValue's backing slice
+// within it) cannot corrupt the backend's stored state.
+func cloneTurnTree(tree TurnTree) TurnTree {
+	manifest := make(map[string]PathValue, len(tree.Manifest))
+	for path, value := range tree.Manifest {
+		if value.Kind == PathValueOrderedKind {
+			ordered := make([]string, len(value.Ordered))
+			copy(ordered, value.Ordered)
+			value.Ordered = ordered
+		}
+		manifest[path] = value
+	}
+	tree.Manifest = manifest
+	return tree
 }
 
 func (b *InMemoryBackend) PutTurnNode(node TurnNode) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	b.nodes[node.Hash] = node
+	b.nodes[node.Hash] = cloneTurnNode(node)
 }
 
 func (b *InMemoryBackend) GetTurnNode(hash string) (TurnNode, bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	node, ok := b.nodes[hash]
-	return node, ok
-}
-
-func (b *InMemoryBackend) MarkTurnNodeThread(hash, threadID string) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	set, ok := b.nodeThreads[hash]
 	if !ok {
-		set = make(map[string]bool, 1)
-		b.nodeThreads[hash] = set
+		return TurnNode{}, false
 	}
-	set[threadID] = true
+	return cloneTurnNode(node), true
 }
 
-func (b *InMemoryBackend) TurnNodeBelongsToThread(hash, threadID string) bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return b.nodeThreads[hash][threadID]
+// cloneTurnNode returns a copy of node whose ConsumedStagedResults slice is
+// independent storage: a caller mutating a returned node's slice (append,
+// index-assign) cannot corrupt the backend's stored state, and mutating a
+// node passed into PutTurnNode after the call cannot retroactively corrupt
+// it either.
+func cloneTurnNode(node TurnNode) TurnNode {
+	consumed := make([]StagedResult, len(node.ConsumedStagedResults))
+	copy(consumed, node.ConsumedStagedResults)
+	node.ConsumedStagedResults = consumed
+	return node
 }
 
 func (b *InMemoryBackend) PutThread(thread Thread) bool {
@@ -159,6 +182,7 @@ func (b *InMemoryBackend) PutThread(thread Thread) bool {
 		return false
 	}
 	b.threads[thread.ThreadID] = thread
+	b.rootOwners[thread.RootTurnNodeHash] = thread.ThreadID
 	return true
 }
 
@@ -167,6 +191,13 @@ func (b *InMemoryBackend) GetThread(threadID string) (Thread, bool) {
 	defer b.mu.Unlock()
 	thread, ok := b.threads[threadID]
 	return thread, ok
+}
+
+func (b *InMemoryBackend) GetThreadByRootTurnNode(rootTurnNodeHash string) (string, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	threadID, ok := b.rootOwners[rootTurnNodeHash]
+	return threadID, ok
 }
 
 func (b *InMemoryBackend) ListThreads() []Thread {

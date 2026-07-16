@@ -39,29 +39,36 @@ type Backend interface {
 
 	// --- turn trees ---
 
+	// PutTurnTree stores tree, keyed by its own content-addressed Hash.
+	// GetTurnTree returns a defensive copy: mutating the returned value's
+	// Manifest (or any ordered PathValue within it) never affects the
+	// stored state.
 	PutTurnTree(tree TurnTree)
 	GetTurnTree(hash string) (TurnTree, bool)
 
 	// --- turn nodes ---
 
+	// PutTurnNode stores node, keyed by its own content-addressed Hash.
+	// GetTurnNode returns a defensive copy: mutating the returned value
+	// (including its ConsumedStagedResults slice) never affects the stored
+	// state.
 	PutTurnNode(node TurnNode)
 	GetTurnNode(hash string) (TurnNode, bool)
 
-	// MarkTurnNodeThread records that threadID has minted or otherwise
-	// legitimately produced the turn node at hash. A node's hash is purely
-	// content-addressed and carries no threadId of its own, so two threads
-	// that reach byte-identical state (most notably two freshly created
-	// threads on the same schema) legitimately mint the same hash; the
-	// association is many-to-many, not a single owning thread.
-	MarkTurnNodeThread(hash, threadID string)
-	// TurnNodeBelongsToThread reports whether threadID has been recorded
-	// (via MarkTurnNodeThread) as an owner of the turn node at hash.
-	TurnNodeBelongsToThread(hash, threadID string) bool
-
 	// --- threads ---
 
-	PutThread(thread Thread) bool // false if threadId already exists
+	// PutThread stores thread, keyed by its ThreadID; false if threadId
+	// already exists. Also records thread.RootTurnNodeHash as owned by
+	// thread.ThreadID in the root-ownership index GetThreadByRootTurnNode
+	// reads, so a later thread create that would mint a genesis node
+	// already claimed by another thread can be rejected before it is ever
+	// published (see Kernel.CreateThread's ErrThreadRootNotUnique guard).
+	PutThread(thread Thread) bool
 	GetThread(threadID string) (Thread, bool)
+	// GetThreadByRootTurnNode returns the threadId that owns
+	// rootTurnNodeHash as its thread root, if any thread has claimed it via
+	// PutThread.
+	GetThreadByRootTurnNode(rootTurnNodeHash string) (threadID string, ok bool)
 	ListThreads() []Thread // unsorted; Kernel imposes deterministic order and paging
 
 	// --- branches ---

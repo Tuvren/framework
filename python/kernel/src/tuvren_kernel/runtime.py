@@ -42,13 +42,6 @@ mistake these for bugs):
   (mirroring the TypeScript host's) declares its steps `deterministic:
   false`, so unconditional checkpointing is observationally identical for
   every check this milestone promotes.
-- `branch.setHead` forward movement never checks for an active Run on the
-  branch (the TypeScript runtime does, guarding with
-  `kernel_runtime_branch_has_active_run`); the M2 checks this port promotes
-  never exercise that guard, and Section 4.2 does not spell out the
-  restriction explicitly the way it does for lateral rejection, so this
-  port leaves it as a documented gap rather than inventing unverified
-  behavior.
 - `tree.resolve` and `tree.manifest` (Section 3.2) are not implemented:
   no M2 check reads them, and adding them speculatively would grow the
   surface past what this milestone's conformance plan exercises.
@@ -66,6 +59,12 @@ from tuvren_kernel.errors import KernelRuntimeError
 from tuvren_kernel.verdict import compose_verdicts
 
 _ACTIVE_RUN_STATUSES = {"running", "paused"}
+
+# Bounds `verify_thread_membership`/`reaches`'s `previousTurnNodeHash` walk
+# (Section 4.3), matching the Go port's `maxLineageWalkDepth`: adversarial or
+# accidentally cyclic lineage chains must degrade into a normal kernel error
+# instead of an unbounded loop.
+_MAX_LINEAGE_WALK_DEPTH = 100_000
 
 
 def _tree_identity_hash(schema_id: str, manifest: dict[str, Any]) -> str:
@@ -441,6 +440,20 @@ class BranchOps:
             )
 
         if direction == "forward":
+            active_run = next(
+                (
+                    run
+                    for run in self._kernel.backend.list_runs_for_branch(branch_id)
+                    if run["status"] in _ACTIVE_RUN_STATUSES
+                ),
+                None,
+            )
+            if active_run is not None:
+                raise KernelRuntimeError(
+                    "kernel_runtime_branch_has_active_run",
+                    f"branch {branch_id} cannot move head forward while run "
+                    f"{active_run['runId']} is active",
+                )
             branch = {**branch, "headTurnNodeHash": turn_node_hash}
             self._kernel.backend.put_branch(branch_id, branch)
             return {"branch": branch, "archiveBranch": None}
@@ -609,7 +622,6 @@ class RunOps:
             "currentStepIndex": 0,
             "createdTurnNodes": [],
             "lastCompletedStepId": None,
-            "consumedStagedResultsHistory": [],
         }
         self._kernel.backend.put_run(run_id, record)
         return dict(record)
@@ -688,7 +700,6 @@ class RunOps:
 
         run["createdTurnNodes"].append(node_hash)
         run["lastCompletedStepId"] = step_id
-        run["consumedStagedResultsHistory"] = [*run["consumedStagedResultsHistory"], *staged]
         run["currentStepIndex"] = index + 1
         self._kernel.backend.put_run(run_id, run)
 
@@ -731,7 +742,6 @@ class RunOps:
             new_tree_hash = self._kernel.tree.incorporate(head_node["turnTreeHash"], staged)
             node_hash = self._kernel.checkpoint(run, branch, new_tree_hash, event_hash, staged)
             run["createdTurnNodes"].append(node_hash)
-            run["consumedStagedResultsHistory"] = [*run["consumedStagedResultsHistory"], *staged]
             result["turnNodeHash"] = node_hash
 
         run["status"] = status
@@ -739,13 +749,22 @@ class RunOps:
         return result
 
     def recover(self, run_id: str) -> dict[str, Any]:
+        # Section 5.7 / recovery-state CDDL: `consumedStagedResults` comes
+        # from the run's own *last* TurnNode -- its most recent
+        # `createdTurnNodes` entry, or its `startTurnNodeHash` when it has
+        # not checkpointed yet -- never from the run's full checkpoint
+        # history and never from the branch head (which can diverge from
+        # this run's own last checkpoint once a later run moves on).
         run = self._kernel.require_run(run_id)
-        branch = self._kernel.require_branch(run["branchId"])
+        created_nodes = run["createdTurnNodes"]
+        last_turn_node_hash = created_nodes[-1] if created_nodes else run["startTurnNodeHash"]
+        last_turn_node = self._kernel.backend.get_node(last_turn_node_hash)
+        assert last_turn_node is not None  # every run-produced hash references a stored node
         return {
-            "lastTurnNodeHash": branch["headTurnNodeHash"],
+            "lastTurnNodeHash": last_turn_node_hash,
             "lastCompletedStepId": run["lastCompletedStepId"],
             "stepSequence": run["stepSequence"],
-            "consumedStagedResults": list(run["consumedStagedResultsHistory"]),
+            "consumedStagedResults": list(last_turn_node["consumedStagedResults"]),
             "uncommittedStagedResults": self._kernel.backend.list_staged(run_id),
         }
 
@@ -811,9 +830,11 @@ class RuntimeKernel:
         """Walk `previousTurnNodeHash` back from `node_hash` to a root.
 
         Raises `kernel_runtime_missing_turn_node` if the chain is broken,
-        or `turn_node_thread_mismatch` if it reaches a root other than
+        `turn_node_thread_mismatch` if it reaches a root other than
         `thread`'s own `rootTurnNodeHash` (Section 4.3's cross-thread
-        rejection).
+        rejection), or `kernel_runtime_lineage_walk_depth_exceeded` if the
+        walk exceeds `_MAX_LINEAGE_WALK_DEPTH` hops without reaching a root
+        (an adversarial or accidentally cyclic chain).
         """
 
         current = node_hash
@@ -823,7 +844,15 @@ class RuntimeKernel:
                 "kernel_runtime_missing_turn_node", f"unknown turn node: {current}"
             )
 
+        depth = 0
         while node["previousTurnNodeHash"] is not None:
+            depth += 1
+            if depth > _MAX_LINEAGE_WALK_DEPTH:
+                raise KernelRuntimeError(
+                    "kernel_runtime_lineage_walk_depth_exceeded",
+                    f"turn node lineage walk from {node_hash} exceeded "
+                    f"{_MAX_LINEAGE_WALK_DEPTH} hops without reaching a root",
+                )
             current = node["previousTurnNodeHash"]
             node = self.backend.get_node(current)
             if node is None:
@@ -838,12 +867,26 @@ class RuntimeKernel:
             )
 
     def reaches(self, from_hash: str, to_hash: str) -> bool:
-        """Whether walking `previousTurnNodeHash` back from `from_hash` reaches `to_hash`."""
+        """Whether walking `previousTurnNodeHash` back from `from_hash` reaches `to_hash`.
+
+        Raises `kernel_runtime_lineage_walk_depth_exceeded` if the walk
+        exceeds `_MAX_LINEAGE_WALK_DEPTH` hops without resolving (Section
+        4.2's head-movement classification must not loop unboundedly over
+        an adversarial or accidentally cyclic chain).
+        """
 
         current: str | None = from_hash
+        depth = 0
         while current is not None:
             if current == to_hash:
                 return True
+            depth += 1
+            if depth > _MAX_LINEAGE_WALK_DEPTH:
+                raise KernelRuntimeError(
+                    "kernel_runtime_lineage_walk_depth_exceeded",
+                    f"turn node lineage walk from {from_hash} exceeded "
+                    f"{_MAX_LINEAGE_WALK_DEPTH} hops without resolving",
+                )
             node = self.backend.get_node(current)
             if node is None:
                 return False
