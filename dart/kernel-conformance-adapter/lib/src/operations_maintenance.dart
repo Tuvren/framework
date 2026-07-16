@@ -44,10 +44,16 @@ import 'support.dart';
 (Kernel, Kernel) _newScopedRuntimeKernelPair() {
   final clock = IncrementingClock();
   final store = MemoryScopeStore();
-  final backendA =
-      InMemoryBackend.scoped(clock, store, 'tuvren.scope.conformance-a');
-  final backendB =
-      InMemoryBackend.scoped(clock, store, 'tuvren.scope.conformance-b');
+  final backendA = InMemoryBackend.scoped(
+    clock,
+    store,
+    'tuvren.scope.conformance-a',
+  );
+  final backendB = InMemoryBackend.scoped(
+    clock,
+    store,
+    'tuvren.scope.conformance-b',
+  );
   return (
     Kernel('kernel-conformance-adapter-a', clock, backendA),
     Kernel('kernel-conformance-adapter-b', clock, backendB),
@@ -106,11 +112,12 @@ Object? runReclaimProbe(Object? input) {
   final leaselessExpired = _observeLeaselessRunPastAdminExpiry();
   final leaselessActive = _observeLeaselessRunWithinAdminExpiry();
 
-  final reclaim = <String, Object?>{}
-    ..addAll(reachability)
-    ..addAll(grace)
-    ..addAll(leaselessExpired)
-    ..addAll(leaselessActive);
+  final reclaim =
+      <String, Object?>{}
+        ..addAll(reachability)
+        ..addAll(grace)
+        ..addAll(leaselessExpired)
+        ..addAll(leaselessActive);
 
   return projection({'reclaim': reclaim});
 }
@@ -126,18 +133,19 @@ Object? runReclaimProbe(Object? input) {
 Map<String, Object?> _observeReclaimReachability() {
   final (k, _) = newManualClockRuntimeKernel(0);
   k.registerSchema(canonicalTurnTreeSchema());
-  final created =
-      k.createThread('thread_reclamation', 'schema_main', 'branch_reclamation');
+  final created = k.createThread(
+    'thread_reclamation',
+    'schema_main',
+    'branch_reclamation',
+  );
 
   final sharedMessage = k.putObject(
-      'application/json', utf8.encode('shared-across-live-and-archived'));
-  final sharedTree = k.createTurnTree(
-    'schema_main',
-    {
-      'messages': PathValue.ordered([sharedMessage])
-    },
-    base: created.rootTurnTreeHash,
+    'application/json',
+    utf8.encode('shared-across-live-and-archived'),
   );
+  final sharedTree = k.createTurnTree('schema_main', {
+    'messages': PathValue.ordered([sharedMessage]),
+  }, base: created.rootTurnTreeHash);
   final sharedNode = k.commitSiblingCheckpoint(
     'branch_reclamation',
     created.rootTurnNodeHash,
@@ -145,14 +153,12 @@ Map<String, Object?> _observeReclaimReachability() {
   );
 
   final archivedOnlyMessage = k.putObject(
-      'application/json', utf8.encode('archived-exclusive-payload'));
-  final archivedTree = k.createTurnTree(
-    'schema_main',
-    {
-      'messages': PathValue.ordered([sharedMessage, archivedOnlyMessage])
-    },
-    base: sharedTree,
+    'application/json',
+    utf8.encode('archived-exclusive-payload'),
   );
+  final archivedTree = k.createTurnTree('schema_main', {
+    'messages': PathValue.ordered([sharedMessage, archivedOnlyMessage]),
+  }, base: sharedTree);
   final archivedNode = k.commitSiblingCheckpoint(
     'branch_reclamation',
     sharedNode,
@@ -162,7 +168,9 @@ Map<String, Object?> _observeReclaimReachability() {
   k.setBranchHead('branch_reclamation', sharedNode);
 
   final orphanObjectHash = k.putObject(
-      'application/octet-stream', utf8.encode('unreachable-orphan'));
+    'application/octet-stream',
+    utf8.encode('unreachable-orphan'),
+  );
 
   k.reclaim();
 
@@ -175,7 +183,8 @@ Map<String, Object?> _observeReclaimReachability() {
         !k.hasObject(archivedOnlyMessage) && archivedNodeReleased,
     'reachableFromLiveRootRetained':
         k.hasObject(sharedMessage) && sharedNodeRetained,
-    'sharedObjectRetainedViaLiveRoot': k.hasObject(sharedMessage) &&
+    'sharedObjectRetainedViaLiveRoot':
+        k.hasObject(sharedMessage) &&
         !k.hasObject(archivedOnlyMessage) &&
         archivedNodeReleased,
   };
@@ -222,7 +231,10 @@ Map<String, Object?> _observeLeaselessRunPastAdminExpiry() {
   final (k, clock) = newManualClockRuntimeKernel(0);
   k.registerSchema(canonicalTurnTreeSchema());
   final created = k.createThread(
-      'thread_leaseless_expired', 'schema_main', 'branch_leaseless_expired');
+    'thread_leaseless_expired',
+    'schema_main',
+    'branch_leaseless_expired',
+  );
   k.createRun(
     'run_leaseless_expired',
     'turn_leaseless_expired',
@@ -234,7 +246,9 @@ Map<String, Object?> _observeLeaselessRunPastAdminExpiry() {
 
   clock.setMs(10);
   final orphan = k.putObject(
-      'application/octet-stream', utf8.encode('leaseless-expiry-orphan'));
+    'application/octet-stream',
+    utf8.encode('leaseless-expiry-orphan'),
+  );
 
   clock.setMs(leaselessRunExpiryMs + 5000);
   k.reclaim();
@@ -251,7 +265,10 @@ Map<String, Object?> _observeLeaselessRunWithinAdminExpiry() {
   final (k, clock) = newManualClockRuntimeKernel(0);
   k.registerSchema(canonicalTurnTreeSchema());
   final created = k.createThread(
-      'thread_leaseless_active', 'schema_main', 'branch_leaseless_active');
+    'thread_leaseless_active',
+    'schema_main',
+    'branch_leaseless_active',
+  );
   k.createRun(
     'run_leaseless_active',
     'turn_leaseless_active',
@@ -263,7 +280,9 @@ Map<String, Object?> _observeLeaselessRunWithinAdminExpiry() {
 
   clock.setMs(10);
   final orphan = k.putObject(
-      'application/octet-stream', utf8.encode('leaseless-active-orphan'));
+    'application/octet-stream',
+    utf8.encode('leaseless-active-orphan'),
+  );
 
   clock.setMs(1000);
   k.reclaim();
@@ -295,7 +314,8 @@ Future<List<int>> _aesGcmOpen(List<int> key, List<int> envelope) async {
   final macLength = _aesGcm.macAlgorithm.macLength;
   if (envelope.length < nonceLength + macLength) {
     throw const FormatException(
-        'erasure probe: envelope shorter than nonce+mac');
+      'erasure probe: envelope shorter than nonce+mac',
+    );
   }
   final nonce = envelope.sublist(0, nonceLength);
   final cipherText = envelope.sublist(nonceLength, envelope.length - macLength);
@@ -329,16 +349,15 @@ Future<Object?> runErasureProbe(Object? input) async {
   final plaintext = utf8.encode('sensitive-untrusted-edge-payload');
   final envelope = await _aesGcmEnvelope(keyring[keyRef]!, plaintext);
 
-  final created =
-      k.createThread('thread_erasure', 'schema_main', 'branch_erasure');
-  final envelopeHash = k.putObject('application/octet-stream', envelope);
-  final tree = k.createTurnTree(
+  final created = k.createThread(
+    'thread_erasure',
     'schema_main',
-    {
-      'messages': PathValue.ordered([envelopeHash])
-    },
-    base: created.rootTurnTreeHash,
+    'branch_erasure',
   );
+  final envelopeHash = k.putObject('application/octet-stream', envelope);
+  final tree = k.createTurnTree('schema_main', {
+    'messages': PathValue.ordered([envelopeHash]),
+  }, base: created.rootTurnTreeHash);
   final nodeHash = k.commitSiblingCheckpoint(
     'branch_erasure',
     created.rootTurnNodeHash,
@@ -357,8 +376,10 @@ Future<Object?> runErasureProbe(Object? input) async {
   final storedBefore = k.backend.getObject(envelopeHash);
   bool recoverableBeforeErasure;
   try {
-    final decryptedBefore =
-        await _aesGcmOpen(keyring[keyRef]!, storedBefore!.bytes);
+    final decryptedBefore = await _aesGcmOpen(
+      keyring[keyRef]!,
+      storedBefore!.bytes,
+    );
     recoverableBeforeErasure = bytesEqual(decryptedBefore, plaintext);
   } catch (_) {
     recoverableBeforeErasure = false;
@@ -406,9 +427,9 @@ Future<Object?> runErasureProbe(Object? input) async {
 
   final lineageStructurallyIntactAfterErasure =
       branchAfter.headTurnNodeHash == branchBefore.headTurnNodeHash &&
-          nodeAfter.turnTreeHash == nodeBefore.turnTreeHash &&
-          manifestReferencesEnvelope &&
-          bytesEqual(storedAfter!.bytes, envelope);
+      nodeAfter.turnTreeHash == nodeBefore.turnTreeHash &&
+      manifestReferencesEnvelope &&
+      bytesEqual(storedAfter!.bytes, envelope);
 
   return projection({
     'erasure': {

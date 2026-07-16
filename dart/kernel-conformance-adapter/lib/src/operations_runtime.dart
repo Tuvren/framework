@@ -36,23 +36,22 @@ import 'support.dart';
 /// authority fixtures it can just as well express as a Dart value once and
 /// reuse.
 TurnTreeSchema canonicalTurnTreeSchema() => const TurnTreeSchema(
-      schemaId: 'schema_main',
-      paths: [
-        PathDefinition(
-            path: 'messages', collection: PathCollectionKind.ordered),
-        PathDefinition(
-          path: 'context.manifest',
-          collection: PathCollectionKind.single,
-        ),
-      ],
-      incorporationRules: [
-        IncorporationRule(objectType: 'message', targetPath: 'messages'),
-        IncorporationRule(
-          objectType: 'context_manifest',
-          targetPath: 'context.manifest',
-        ),
-      ],
-    );
+  schemaId: 'schema_main',
+  paths: [
+    PathDefinition(path: 'messages', collection: PathCollectionKind.ordered),
+    PathDefinition(
+      path: 'context.manifest',
+      collection: PathCollectionKind.single,
+    ),
+  ],
+  incorporationRules: [
+    IncorporationRule(objectType: 'message', targetPath: 'messages'),
+    IncorporationRule(
+      objectType: 'context_manifest',
+      targetPath: 'context.manifest',
+    ),
+  ],
+);
 
 Kernel newRuntimeKernel() {
   final clock = IncrementingClock();
@@ -86,7 +85,8 @@ PathValue _parsePathValueJson(Object? value) {
 Map<String, PathValue> _parseChangeSetJson(Object? raw) {
   if (raw is! Map<String, Object?>) {
     throw FormatException(
-        'change set must be a JSON object, got ${raw.runtimeType}');
+      'change set must be a JSON object, got ${raw.runtimeType}',
+    );
   }
   return {
     for (final entry in raw.entries)
@@ -99,7 +99,8 @@ Map<String, PathValue> _parseChangeSetJson(Object? raw) {
 List<StepDeclaration> _parseStepSequenceJson(Object? raw) {
   if (raw is! List) {
     throw FormatException(
-        'step sequence must be a JSON array, got ${raw.runtimeType}');
+      'step sequence must be a JSON array, got ${raw.runtimeType}',
+    );
   }
   final out = <StepDeclaration>[];
   for (final element in raw) {
@@ -108,11 +109,13 @@ List<StepDeclaration> _parseStepSequenceJson(Object? raw) {
         'step declaration must be a JSON object, got ${element.runtimeType}',
       );
     }
-    out.add(StepDeclaration(
-      id: element['id'] as String? ?? '',
-      deterministic: element['deterministic'] as bool? ?? false,
-      sideEffects: element['sideEffects'] as bool? ?? false,
-    ));
+    out.add(
+      StepDeclaration(
+        id: element['id'] as String? ?? '',
+        deterministic: element['deterministic'] as bool? ?? false,
+        sideEffects: element['sideEffects'] as bool? ?? false,
+      ),
+    );
   }
   return out;
 }
@@ -122,7 +125,8 @@ List<StepDeclaration> _parseStepSequenceJson(Object? raw) {
 StagedResult _parseStagedResultJson(Object? raw) {
   if (raw is! Map<String, Object?>) {
     throw FormatException(
-        'staged result must be a JSON object, got ${raw.runtimeType}');
+      'staged result must be a JSON object, got ${raw.runtimeType}',
+    );
   }
   final taskId = raw['taskId'] as String? ?? '';
   final objectHash = raw['objectHash'] as String? ?? '';
@@ -138,7 +142,8 @@ StagedResult _parseStagedResultJson(Object? raw) {
     'completed' => StagedResultStatus.completed,
     'failed' => StagedResultStatus.failed,
     'interrupted' => StagedResultStatus.interrupted,
-    _ => throw FormatException(
+    _ =>
+      throw FormatException(
         'staged result status must be "completed", "failed", or '
         '"interrupted", got "$statusText"',
       ),
@@ -167,8 +172,11 @@ Object? runLogicalDiffPaths(Object? input) {
 
   final k = newRuntimeKernel();
   k.registerSchema(canonicalTurnTreeSchema());
-  final created =
-      k.createThread('thread_conformance', 'schema_main', 'branch_main');
+  final created = k.createThread(
+    'thread_conformance',
+    'schema_main',
+    'branch_main',
+  );
 
   final changedTreeHash = k.createTurnTree(
     'schema_main',
@@ -231,8 +239,11 @@ Object? runLogicalRecoveryState(Object? input) {
 
   final k = newRuntimeKernel();
   k.registerSchema(canonicalTurnTreeSchema());
-  final created =
-      k.createThread('thread_recovery', 'schema_main', 'branch_recovery');
+  final created = k.createThread(
+    'thread_recovery',
+    'schema_main',
+    'branch_recovery',
+  );
   k.createRun(
     'run_recovery',
     'turn_recovery',
@@ -278,10 +289,15 @@ Object? runLineageCrossThreadRejection(Object? input) {
   final k = newRuntimeKernel();
   k.registerSchema(canonicalTurnTreeSchema());
 
-  final resultA =
-      k.createThread('thread_lineage_a', 'schema_main', 'branch_lineage_a');
+  final resultA = k.createThread(
+    'thread_lineage_a',
+    'schema_main',
+    'branch_lineage_a',
+  );
   final eventHash = k.putObject(
-      'application/json', utf8.encode('lineage-cross-thread-event'));
+    'application/json',
+    utf8.encode('lineage-cross-thread-event'),
+  );
   k.createRun(
     'run_lineage_a',
     'turn_lineage_a',
@@ -289,7 +305,7 @@ Object? runLineageCrossThreadRejection(Object? input) {
     'schema_main',
     resultA.rootTurnNodeHash,
     const [
-      StepDeclaration(id: 'step_a', deterministic: true, sideEffects: false)
+      StepDeclaration(id: 'step_a', deterministic: true, sideEffects: false),
     ],
   );
   final nodeA = k.completeStep('run_lineage_a', 'step_a', eventHash, '');
@@ -337,25 +353,29 @@ Object? runProtocolEdgeValidation(Object? input) {
   final schema = canonicalTurnTreeSchema();
 
   final duplicatePathCode = captureCode(() {
-    final record = _recordFromTurnTreeSchema(const TurnTreeSchema(
-      schemaId: 'schema_edge_duplicate',
-      paths: [
-        PathDefinition(
-            path: 'firstPath', collection: PathCollectionKind.single),
-        PathDefinition(
-            path: 'firstPath', collection: PathCollectionKind.single),
-      ],
-      incorporationRules: [],
-    ));
+    final record = _recordFromTurnTreeSchema(
+      const TurnTreeSchema(
+        schemaId: 'schema_edge_duplicate',
+        paths: [
+          PathDefinition(
+            path: 'firstPath',
+            collection: PathCollectionKind.single,
+          ),
+          PathDefinition(
+            path: 'firstPath',
+            collection: PathCollectionKind.single,
+          ),
+        ],
+        incorporationRules: [],
+      ),
+    );
     validateTurnTreeSchema(record);
   });
 
   final missingRequiredPathCode = captureCode(() {
     final k = newRuntimeKernel();
     k.registerSchema(schema);
-    k.createTurnTree('schema_main', {
-      'messages': const PathValue.ordered([]),
-    });
+    k.createTurnTree('schema_main', {'messages': const PathValue.ordered([])});
   });
 
   final schemaMismatchCode = captureCode(() {
@@ -364,7 +384,7 @@ Object? runProtocolEdgeValidation(Object? input) {
     const otherSchema = TurnTreeSchema(
       schemaId: 'schema_edge_other',
       paths: [
-        PathDefinition(path: 'solo', collection: PathCollectionKind.single)
+        PathDefinition(path: 'solo', collection: PathCollectionKind.single),
       ],
       incorporationRules: [],
     );
@@ -382,8 +402,11 @@ Object? runProtocolEdgeValidation(Object? input) {
   final busyBranchCode = captureCode(() {
     final k = newRuntimeKernel();
     k.registerSchema(schema);
-    final created =
-        k.createThread('thread_edge_busy', 'schema_main', 'branch_edge_busy');
+    final created = k.createThread(
+      'thread_edge_busy',
+      'schema_main',
+      'branch_edge_busy',
+    );
     const steps = [
       StepDeclaration(id: 'only_step', deterministic: true, sideEffects: false),
     ];
@@ -409,7 +432,10 @@ Object? runProtocolEdgeValidation(Object? input) {
     final k = newRuntimeKernel();
     k.registerSchema(schema);
     final created = k.createThread(
-        'thread_edge_step_order', 'schema_main', 'branch_edge_step_order');
+      'thread_edge_step_order',
+      'schema_main',
+      'branch_edge_step_order',
+    );
     const steps = [
       StepDeclaration(id: 'first', deterministic: true, sideEffects: false),
       StepDeclaration(id: 'second', deterministic: true, sideEffects: false),
@@ -428,8 +454,11 @@ Object? runProtocolEdgeValidation(Object? input) {
   final missingEventObjectCode = captureCode(() {
     final k = newRuntimeKernel();
     k.registerSchema(schema);
-    final created =
-        k.createThread('thread_edge_event', 'schema_main', 'branch_edge_event');
+    final created = k.createThread(
+      'thread_edge_event',
+      'schema_main',
+      'branch_edge_event',
+    );
     const steps = [
       StepDeclaration(id: 'only_step', deterministic: true, sideEffects: false),
     ];
@@ -450,9 +479,14 @@ Object? runProtocolEdgeValidation(Object? input) {
     final k = newRuntimeKernel();
     k.registerSchema(schema);
     final created = k.createThread(
-        'thread_edge_lateral', 'schema_main', 'branch_edge_lateral_main');
-    final mainEventHash =
-        k.putObject('application/json', utf8.encode('edge-lateral-main-event'));
+      'thread_edge_lateral',
+      'schema_main',
+      'branch_edge_lateral_main',
+    );
+    final mainEventHash = k.putObject(
+      'application/json',
+      utf8.encode('edge-lateral-main-event'),
+    );
     const steps = [
       StepDeclaration(id: 'only_step', deterministic: true, sideEffects: false),
     ];
@@ -466,10 +500,15 @@ Object? runProtocolEdgeValidation(Object? input) {
     );
     k.completeStep('run_edge_lateral_main', 'only_step', mainEventHash, '');
 
-    k.createBranch('branch_edge_lateral_fork', 'thread_edge_lateral',
-        created.rootTurnNodeHash);
-    final forkEventHash =
-        k.putObject('application/json', utf8.encode('edge-lateral-fork-event'));
+    k.createBranch(
+      'branch_edge_lateral_fork',
+      'thread_edge_lateral',
+      created.rootTurnNodeHash,
+    );
+    final forkEventHash = k.putObject(
+      'application/json',
+      utf8.encode('edge-lateral-fork-event'),
+    );
     k.createRun(
       'run_edge_lateral_fork',
       'turn_edge_lateral_fork',
@@ -478,8 +517,12 @@ Object? runProtocolEdgeValidation(Object? input) {
       created.rootTurnNodeHash,
       steps,
     );
-    final forkNodeHash =
-        k.completeStep('run_edge_lateral_fork', 'only_step', forkEventHash, '');
+    final forkNodeHash = k.completeStep(
+      'run_edge_lateral_fork',
+      'only_step',
+      forkEventHash,
+      '',
+    );
 
     k.setBranchHead('branch_edge_lateral_main', forkNodeHash);
   });

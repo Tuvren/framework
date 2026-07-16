@@ -59,12 +59,16 @@ Object? runDeterministicHashing(Object? input) {
 Object? runSchemaRoundtrip(Object? input) {
   final fixture = readInputFixture(input);
 
-  final schemaRecord =
-      decodeCanonicalHexField(fixture, 'turnTreeSchemaRecordCborHex');
+  final schemaRecord = decodeCanonicalHexField(
+    fixture,
+    'turnTreeSchemaRecordCborHex',
+  );
   final schemaJson = recordToJson(schemaRecord);
 
-  final nodeRecord =
-      decodeCanonicalHexField(fixture, 'turnNodeIdentityRecordCborHex');
+  final nodeRecord = decodeCanonicalHexField(
+    fixture,
+    'turnNodeIdentityRecordCborHex',
+  );
   final nodeJson = recordToJson(nodeRecord);
 
   return projection({
@@ -125,10 +129,7 @@ Object? runModifyComposition(Object? input) {
   final transformJson = recordToJson(composed.transform!);
 
   return projection({
-    'verdict': {
-      'kind': 'modify',
-      'transform': transformJson,
-    },
+    'verdict': {'kind': 'modify', 'transform': transformJson},
   });
 }
 

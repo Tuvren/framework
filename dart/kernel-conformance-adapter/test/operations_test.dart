@@ -42,27 +42,26 @@ void main() {
       expect(code, 'kernel_runtime_run_not_found');
     });
 
-    test('a probe that throws a non-KernelException reports internal_error',
-        () {
-      final code = captureCode(() {
-        throw StateError('not a kernel exception');
-      });
-      expect(code, 'internal_error');
-    });
-
     test(
-      'a real kernel operation error surfaces through captureCode exactly '
-      'like an edge-validation probe',
+      'a probe that throws a non-KernelException reports internal_error',
       () {
         final code = captureCode(() {
-          final clock = IncrementingClock();
-          final backend = InMemoryBackend(clock);
-          final k = Kernel('capture-code-test', clock, backend);
-          k.createTurnTree('schema_never_registered', const {});
+          throw StateError('not a kernel exception');
         });
-        expect(code, 'kernel_runtime_schema_not_found');
+        expect(code, 'internal_error');
       },
     );
+
+    test('a real kernel operation error surfaces through captureCode exactly '
+        'like an edge-validation probe', () {
+      final code = captureCode(() {
+        final clock = IncrementingClock();
+        final backend = InMemoryBackend(clock);
+        final k = Kernel('capture-code-test', clock, backend);
+        k.createTurnTree('schema_never_registered', const {});
+      });
+      expect(code, 'kernel_runtime_schema_not_found');
+    });
   });
 
   group('canonicalTurnTreeSchema', () {
@@ -72,8 +71,7 @@ void main() {
       expect(schema.schemaId, 'schema_main');
     });
 
-    test(
-        'declares exactly the messages (ordered) and context.manifest '
+    test('declares exactly the messages (ordered) and context.manifest '
         '(single) paths, in that order', () {
       expect(schema.paths, hasLength(2));
       expect(schema.paths[0].path, 'messages');
@@ -82,8 +80,7 @@ void main() {
       expect(schema.paths[1].collection, PathCollectionKind.single);
     });
 
-    test(
-        'declares exactly the message->messages and '
+    test('declares exactly the message->messages and '
         'context_manifest->context.manifest incorporation rules, in that '
         'order', () {
       expect(schema.incorporationRules, hasLength(2));
@@ -99,44 +96,48 @@ void main() {
       final k = Kernel('canonical-schema-test', clock, backend);
       k.registerSchema(schema);
       final created = k.createThread(
-          'thread_schema_shape', 'schema_main', 'branch_schema_shape');
+        'thread_schema_shape',
+        'schema_main',
+        'branch_schema_shape',
+      );
       expect(created.rootTurnNodeHash, isNotEmpty);
     });
   });
 
   group('runErasureProbe', () {
-    test(
-      'reports the payload recoverable before, unrecoverable after key '
-      'destruction, with kernel lineage left byte-identical',
-      () async {
-        final outcome = await runErasureProbe(null) as Map<String, Object?>;
-        final result = outcome['result'] as Map<String, Object?>;
-        final evidence = outcome['evidence'] as Map<String, Object?>;
-        // projection() mirrors the same observation under both result and
-        // evidence.
-        expect(identical(result, evidence), isTrue);
+    test('reports the payload recoverable before, unrecoverable after key '
+        'destruction, with kernel lineage left byte-identical', () async {
+      final outcome = await runErasureProbe(null) as Map<String, Object?>;
+      final result = outcome['result'] as Map<String, Object?>;
+      final evidence = outcome['evidence'] as Map<String, Object?>;
+      // projection() mirrors the same observation under both result and
+      // evidence.
+      expect(identical(result, evidence), isTrue);
 
-        final erasure = result['erasure'] as Map<String, Object?>;
-        expect(erasure['recoverableBeforeErasure'], isTrue);
-        expect(erasure['unrecoverableAfterErasure'], isTrue);
-        expect(erasure['lineageStructurallyIntactAfterErasure'], isTrue);
+      final erasure = result['erasure'] as Map<String, Object?>;
+      expect(erasure['recoverableBeforeErasure'], isTrue);
+      expect(erasure['unrecoverableAfterErasure'], isTrue);
+      expect(erasure['lineageStructurallyIntactAfterErasure'], isTrue);
+    });
+
+    test(
+      'two independent runs use independent random keys and envelopes',
+      () async {
+        final first = await runErasureProbe(null) as Map<String, Object?>;
+        final second = await runErasureProbe(null) as Map<String, Object?>;
+        final firstErasure =
+            (first['result'] as Map<String, Object?>)['erasure']
+                as Map<String, Object?>;
+        final secondErasure =
+            (second['result'] as Map<String, Object?>)['erasure']
+                as Map<String, Object?>;
+        // Both runs are independently self-consistent; this is mainly a
+        // smoke check that repeated invocations do not share mutable state
+        // (each dispatch builds a fresh Kernel, fresh key, and fresh
+        // envelope).
+        expect(firstErasure['recoverableBeforeErasure'], isTrue);
+        expect(secondErasure['recoverableBeforeErasure'], isTrue);
       },
     );
-
-    test('two independent runs use independent random keys and envelopes',
-        () async {
-      final first = await runErasureProbe(null) as Map<String, Object?>;
-      final second = await runErasureProbe(null) as Map<String, Object?>;
-      final firstErasure = (first['result'] as Map<String, Object?>)['erasure']
-          as Map<String, Object?>;
-      final secondErasure = (second['result']
-          as Map<String, Object?>)['erasure'] as Map<String, Object?>;
-      // Both runs are independently self-consistent; this is mainly a
-      // smoke check that repeated invocations do not share mutable state
-      // (each dispatch builds a fresh Kernel, fresh key, and fresh
-      // envelope).
-      expect(firstErasure['recoverableBeforeErasure'], isTrue);
-      expect(secondErasure['recoverableBeforeErasure'], isTrue);
-    });
   });
 }

@@ -41,8 +41,8 @@ import 'support.dart';
 const String onlyStepId = 'only_step';
 
 List<StepDeclaration> singleStepSequence() => const [
-      StepDeclaration(id: onlyStepId, deterministic: true, sideEffects: false),
-    ];
+  StepDeclaration(id: onlyStepId, deterministic: true, sideEffects: false),
+];
 
 // --- kernel.run-liveness.lease-renewal ---
 
@@ -50,7 +50,10 @@ Object? runLeaseRenewal(Object? input) {
   final (k, clock) = newManualClockRuntimeKernel(10);
   k.registerSchema(canonicalTurnTreeSchema());
   final created = k.createThread(
-      'thread_lease_renewal', 'schema_main', 'branch_lease_renewal');
+    'thread_lease_renewal',
+    'schema_main',
+    'branch_lease_renewal',
+  );
   k.createRun(
     'run_lease_renewal',
     'turn_lease_renewal',
@@ -65,8 +68,12 @@ Object? runLeaseRenewal(Object? input) {
 
   // Renew at t=20, ttl=20 -> renewed expiry 40.
   clock.setMs(20);
-  final renewedExpiresAtMs =
-      k.renewLease('run_lease_renewal', 'owner_a', token, 20);
+  final renewedExpiresAtMs = k.renewLease(
+    'run_lease_renewal',
+    'owner_a',
+    token,
+    20,
+  );
 
   final ownerMismatchCode = captureCode(() {
     k.renewLease('run_lease_renewal', 'owner_b', token, 20);
@@ -91,8 +98,11 @@ Object? runExpiredListing(Object? input) {
   final (k, clock) = newManualClockRuntimeKernel(0);
   k.registerSchema(canonicalTurnTreeSchema());
 
-  final createdExpired =
-      k.createThread('thread_run_expired', 'schema_main', 'branch_run_expired');
+  final createdExpired = k.createThread(
+    'thread_run_expired',
+    'schema_main',
+    'branch_run_expired',
+  );
   k.createRun(
     'run_expired',
     'turn_run_expired',
@@ -103,8 +113,11 @@ Object? runExpiredListing(Object? input) {
   );
   k.acquireLease('run_expired', 'owner_a', 5);
 
-  final createdPaused =
-      k.createThread('thread_run_paused', 'schema_main', 'branch_run_paused');
+  final createdPaused = k.createThread(
+    'thread_run_paused',
+    'schema_main',
+    'branch_run_paused',
+  );
   k.createRun(
     'run_paused',
     'turn_run_paused',
@@ -140,8 +153,11 @@ Object? runExpiredListing(Object? input) {
 Object? runStalePreemption(Object? input) {
   final (k, clock) = newManualClockRuntimeKernel(0);
   k.registerSchema(canonicalTurnTreeSchema());
-  final created =
-      k.createThread('thread_run_stale', 'schema_main', 'branch_run_stale');
+  final created = k.createThread(
+    'thread_run_stale',
+    'schema_main',
+    'branch_run_stale',
+  );
   k.createRun(
     'run_stale',
     'turn_run_stale',
@@ -154,8 +170,10 @@ Object? runStalePreemption(Object? input) {
 
   // Store the staged blob for real so the reactive checkpoint's tree
   // references an object that actually exists.
-  final stagedObject =
-      k.backend.putObject('message', utf8.encode('staged-before-preemption'));
+  final stagedObject = k.backend.putObject(
+    'message',
+    utf8.encode('staged-before-preemption'),
+  );
   k.stageResult(
     'run_stale',
     StagedResult(
@@ -228,7 +246,10 @@ _CrashRecoveryFixture _buildCrashRecoveryFixture() {
   final (k, _) = newManualClockRuntimeKernel(0);
   k.registerSchema(canonicalTurnTreeSchema());
   final created = k.createThread(
-      'thread_crash_recovery', 'schema_main', 'branch_crash_recovery');
+    'thread_crash_recovery',
+    'schema_main',
+    'branch_crash_recovery',
+  );
   const steps = [
     StepDeclaration(id: 'step_1', deterministic: true, sideEffects: false),
     StepDeclaration(id: 'step_2', deterministic: true, sideEffects: false),
@@ -242,8 +263,10 @@ _CrashRecoveryFixture _buildCrashRecoveryFixture() {
     steps,
   );
 
-  final message1Hash =
-      k.putObject('application/json', utf8.encode('message-1'));
+  final message1Hash = k.putObject(
+    'application/json',
+    utf8.encode('message-1'),
+  );
   k.stageResult(
     'run_crash_recovery',
     StagedResult(
@@ -261,8 +284,10 @@ _CrashRecoveryFixture _buildCrashRecoveryFixture() {
     throw StateError('branch_crash_recovery not found after checkpoint');
   }
 
-  final message2Hash =
-      k.putObject('application/json', utf8.encode('message-2'));
+  final message2Hash = k.putObject(
+    'application/json',
+    utf8.encode('message-2'),
+  );
   k.stageResult(
     'run_crash_recovery',
     StagedResult(
@@ -329,7 +354,9 @@ Map<String, Object?> _observeFaultPoint(FaultPoint point) {
 
   final baseBackend = k.backend;
   k.backend = FaultInjectingBackend(
-      baseBackend, FaultPlan(point: point, policy: FaultPolicy.once));
+    baseBackend,
+    FaultPlan(point: point, policy: FaultPolicy.once),
+  );
   Object? stepError;
   try {
     k.completeStep(fixture.runId, 'step_2', '', '');
@@ -382,7 +409,8 @@ Map<String, Object?> _observeFaultPoint(FaultPoint point) {
   final branch = k.backend.getBranch(fixture.branchId);
   if (branch == null) {
     throw StateError(
-        'branch "${fixture.branchId}" not found after fault-point "$point" attempt');
+      'branch "${fixture.branchId}" not found after fault-point "$point" attempt',
+    );
   }
   final actualHead = branch.headTurnNodeHash;
 
@@ -398,8 +426,11 @@ Map<String, Object?> _observeFaultPoint(FaultPoint point) {
     'injectedErrorCode': codeOf(stepError),
     'headMatchesExpectedCheckpoint': actualHead == expectedHead,
     'lineageConsistent': _lineageIsConsistent(k, actualHead),
-    'pendingMessageCommitted':
-        _messageIsCommittedAt(k, actualHead, fixture.message2Hash),
+    'pendingMessageCommitted': _messageIsCommittedAt(
+      k,
+      actualHead,
+      fixture.message2Hash,
+    ),
     'recoveryStateConsistent': recoveryStateConsistent,
     'visibleCommittedMessageCount': _messageCountAt(k, actualHead),
   };
@@ -410,8 +441,9 @@ Map<String, Object?> _observeFaultPoint(FaultPoint point) {
 Object? runCrashRecoveryInProcess(Object? input) {
   final beforeCommit = _observeFaultPoint(FaultPoint.beforeCommit);
   final midCommit = _observeFaultPoint(FaultPoint.midCommit);
-  final afterCommitBeforeAck =
-      _observeFaultPoint(FaultPoint.afterCommitBeforeAck);
+  final afterCommitBeforeAck = _observeFaultPoint(
+    FaultPoint.afterCommitBeforeAck,
+  );
 
   return projection({
     'crashRecovery': {
@@ -443,7 +475,10 @@ Map<String, Object?> _observeConcurrentWriterCAS() {
   final (k, _) = newManualClockRuntimeKernel(0);
   k.registerSchema(canonicalTurnTreeSchema());
   final created = k.createThread(
-      'thread_concurrent_writer', 'schema_main', 'branch_concurrent_writer');
+    'thread_concurrent_writer',
+    'schema_main',
+    'branch_concurrent_writer',
+  );
   final base = created.rootTurnNodeHash;
 
   final eventA = k.putObject('application/json', utf8.encode('writer-a'));
@@ -453,8 +488,11 @@ Map<String, Object?> _observeConcurrentWriterCAS() {
     turnTreeHash: created.rootTurnTreeHash,
     eventHash: eventA,
   );
-  final winnerHash =
-      k.commitSiblingCheckpoint('branch_concurrent_writer', base, nodeA);
+  final winnerHash = k.commitSiblingCheckpoint(
+    'branch_concurrent_writer',
+    base,
+    nodeA,
+  );
 
   final eventB = k.putObject('application/json', utf8.encode('writer-b'));
   final nodeB = TurnNode(
@@ -481,7 +519,8 @@ Map<String, Object?> _observeConcurrentWriterCAS() {
   final winnerNode = k.backend.getTurnNode(winnerHash);
   if (winnerNode == null) {
     throw StateError(
-        'winner turn node "$winnerHash" not found after CAS scenario');
+      'winner turn node "$winnerHash" not found after CAS scenario',
+    );
   }
   final finalHeadMatchesWinner = branchAfterRace.headTurnNodeHash == winnerHash;
   final finalHeadIsCommittedSibling = winnerNode.previousTurnNodeHash == base;
@@ -498,7 +537,10 @@ Map<String, Object?> _observeConcurrentWriterCAS() {
   Object? retryError;
   try {
     k.commitSiblingCheckpoint(
-        'branch_concurrent_writer', winnerHash, nodeBRetry);
+      'branch_concurrent_writer',
+      winnerHash,
+      nodeBRetry,
+    );
   } catch (e) {
     retryError = e;
   }
@@ -549,7 +591,8 @@ Map<String, Object?> _observeConcurrentWriterFaultPlan() {
   final branch = k.backend.getBranch(fixture.branchId);
   if (branch == null) {
     throw StateError(
-        'branch_crash_recovery not found after fault-plan concurrent-writer attempt');
+      'branch_crash_recovery not found after fault-plan concurrent-writer attempt',
+    );
   }
   final writerAdvancedHead = branch.headTurnNodeHash != baseHeadBeforeAttempt;
 

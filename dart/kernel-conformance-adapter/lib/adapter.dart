@@ -44,15 +44,15 @@ const String adapterId = 'dart-kernel';
 /// durable-storage and shared-lease-clock checks those capabilities gate
 /// stay non-applicable rather than dishonestly attempted.
 List<String> capabilities() => const <String>[
-      'kernel.protocol',
-      'kernel.edge-validation',
-      'kernel.logical',
-      'kernel-protocol.thread.enumeration',
-      'kernel.run-liveness',
-      'kernel.restart-recovery',
-      'kernel.scope-isolation',
-      'kernel.reclamation',
-    ];
+  'kernel.protocol',
+  'kernel.edge-validation',
+  'kernel.logical',
+  'kernel-protocol.thread.enumeration',
+  'kernel.run-liveness',
+  'kernel.restart-recovery',
+  'kernel.scope-isolation',
+  'kernel.reclamation',
+];
 
 /// One conformance operation: raw dispatch `input` in, observation out.
 ///
@@ -69,8 +69,8 @@ typedef OperationHandler = FutureOr<Object?> Function(Object? input);
 /// conformance plans to their handlers, mirroring the match arms in
 /// `go/kernel-conformance-adapter/dispatch.go`'s `operationHandlers`. Only
 /// operation literals belong in this routing table.
-final Map<String, OperationHandler> operationHandlers =
-    <String, OperationHandler>{
+final Map<String, OperationHandler>
+operationHandlers = <String, OperationHandler>{
   'kernel.protocol.deterministic-hashing': protocol_ops.runDeterministicHashing,
   'kernel.protocol.schema-roundtrip': protocol_ops.runSchemaRoundtrip,
   'kernel.protocol.modify-composition': protocol_ops.runModifyComposition,
@@ -99,9 +99,9 @@ final Map<String, OperationHandler> operationHandlers =
 /// plans read, mirroring the Go adapter's projection helper: `result` and
 /// `evidence` carry the same observation object.
 Map<String, Object?> projection(Object? observation) => <String, Object?>{
-      'result': observation,
-      'evidence': observation,
-    };
+  'result': observation,
+  'evidence': observation,
+};
 
 Map<String, Object?> _errorEnvelope(String code, String message) =>
     <String, Object?>{'code': code, 'message': message};
@@ -148,7 +148,9 @@ void _rejectNonFiniteDoubles(Object? value) {
 /// `kernel.reclamation.erasure-probe`); either way the same `try`/`catch`
 /// here catches the failure.
 Future<Map<String, Object?>> dispatchOperation(
-    String operation, Object? input) async {
+  String operation,
+  Object? input,
+) async {
   final handler = operationHandlers[operation];
   if (handler == null) {
     return <String, Object?>{
@@ -266,13 +268,12 @@ Future<String> handleLine(String line) async {
             'createInstance' ||
             'inspectState' ||
             'destroyInstance' ||
-            'shutdown' =>
-              _resultResponse(id, null),
+            'shutdown' => _resultResponse(id, null),
             final method => _errorResponse(
-                id,
-                'adapter_method_not_implemented',
-                'unsupported adapter method $method',
-              ),
+              id,
+              'adapter_method_not_implemented',
+              'unsupported adapter method $method',
+            ),
           };
         }
       }

@@ -37,9 +37,7 @@ import 'package:tuvren_kernel/tuvren_kernel.dart';
 Map<String, Object?> readInputFixture(Object? input) {
   final fixture = tryReadInputFixture(input);
   if (fixture == null) {
-    throw const FormatException(
-      'dispatch input.fixture must be a JSON object',
-    );
+    throw const FormatException('dispatch input.fixture must be a JSON object');
   }
   return fixture;
 }
@@ -54,9 +52,7 @@ Map<String, Object?>? tryReadInputFixture(Object? input) {
   if (!input.containsKey('fixture')) return null;
   final fixture = input['fixture'];
   if (fixture is! Map<String, Object?>) {
-    throw const FormatException(
-      'dispatch input.fixture must be a JSON object',
-    );
+    throw const FormatException('dispatch input.fixture must be a JSON object');
   }
   return fixture;
 }
@@ -80,9 +76,7 @@ List<int> readFixtureByteArray(Map<String, Object?> fixture, String field) {
   for (var i = 0; i < rawArray.length; i++) {
     final element = rawArray[i];
     if (element is! int || element < 0 || element > 255) {
-      throw FormatException(
-        'fixture.$field[$i] must be a byte value (0-255)',
-      );
+      throw FormatException('fixture.$field[$i] must be a byte value (0-255)');
     }
     out.add(element);
   }
