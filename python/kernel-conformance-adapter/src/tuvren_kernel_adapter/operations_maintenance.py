@@ -28,7 +28,7 @@ from typing import Any
 from tuvren_kernel.backend import create_scoped_backend_pair
 from tuvren_kernel.runtime import RuntimeKernel
 
-from tuvren_kernel_adapter.operations import (
+from tuvren_kernel_adapter.operations_common import (
     _InjectedClock,
     _load_canonical_schema,
     _new_conformance_kernel,

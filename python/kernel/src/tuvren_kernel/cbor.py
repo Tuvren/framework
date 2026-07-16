@@ -146,12 +146,12 @@ def _encode_map(value: dict[Any, Any], out: bytearray, depth: int) -> None:
 
 def _map_key_sort_key(key: str) -> tuple[int, bytes]:
     # Deterministic CBOR map-key ordering compares the *encoded* key bytes.
-    # For a tstr key that encoded form is (length-prefix, utf8-bytes); since
-    # every key here uses the short-form length prefix that is monotonic in
-    # length (encoded head does not need extra bytes below 24 chars, and
-    # kernel record field names never approach that boundary in the
-    # authority fixtures), comparing (byte-length, utf8-bytes) reproduces the
-    # bytewise comparison of the encoded key exactly.
+    # For a tstr key that encoded form is (head, utf8-bytes) where the head
+    # encodes the byte length with a minimal-width argument, so head bytes are
+    # strictly monotonic in key length at every width tier (0x60..0x77, then
+    # 0x78 <len>, 0x79 <len16>, ...). Comparing (byte-length, utf8-bytes)
+    # therefore reproduces the RFC 8949 bytewise comparison of the encoded
+    # keys exactly, for all key lengths.
     encoded = key.encode("utf-8")
     return (len(encoded), encoded)
 

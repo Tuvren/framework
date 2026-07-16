@@ -29,7 +29,7 @@ from typing import Any
 from tuvren_kernel.errors import KernelRuntimeError
 from tuvren_kernel.runtime import RuntimeKernel
 
-from tuvren_kernel_adapter.operations import (
+from tuvren_kernel_adapter.operations_common import (
     OperationInputError,
     _capture_semantic_error_code,
     _load_canonical_schema,

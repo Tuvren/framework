@@ -27,7 +27,7 @@ from typing import Any
 from tuvren_kernel import identity, records
 from tuvren_kernel.verdict import compose_verdicts
 
-from tuvren_kernel_adapter.operations import (
+from tuvren_kernel_adapter.operations_common import (
     OperationInputError,
     _projection,
     _read_fixture,

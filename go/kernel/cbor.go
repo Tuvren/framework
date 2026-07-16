@@ -41,6 +41,10 @@ func EncodeCanonical(record Record) ([]byte, error) {
 // second bespoke validation pass. Floats, tags, and indefinite-length items
 // are rejected directly during decoding because this record family has no
 // representation for them at all.
+//
+// This is the only sanctioned decode entrypoint: calling the internal
+// decodeRecord directly would accept non-canonical input, because the
+// re-encode equality check lives here, not in the recursive decoder.
 func DecodeCanonical(data []byte) (Record, error) {
 	record, next, err := decodeRecord(data, 0)
 	if err != nil {
