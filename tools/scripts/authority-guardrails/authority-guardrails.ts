@@ -1606,6 +1606,37 @@ function isConformanceAdapterDirName(name: string): boolean {
   );
 }
 
+// Resolves a certification/conformance-adapter package directory to its
+// language-convention scan roots, or null when the directory matches no
+// known package layout (letting the caller keep recursing).
+function packageSourceRootsFor(entryPath: string): string[] | null {
+  if (existsSync(resolve(entryPath, "src"))) {
+    // TypeScript, Rust, and Python adapters/certification wrappers keep
+    // their sources under a `src/` subdirectory.
+    return [resolve(entryPath, "src")];
+  }
+
+  if (existsSync(resolve(entryPath, "go.mod"))) {
+    // Go adapters/certification wrappers use a flat layout: *.go files
+    // live directly at the module root, marked by go.mod, with no
+    // `src/` subdirectory.
+    return [entryPath];
+  }
+
+  if (existsSync(resolve(entryPath, "pubspec.yaml"))) {
+    // Dart adapters/certification wrappers keep sources under lib/,
+    // bin/, test/, example/, and tool/ (Dart's own package convention),
+    // marked by pubspec.yaml. Scan those subdirectories explicitly
+    // instead of the package root so the generated .dart_tool/ cache can
+    // never leak generated sources into the guardrail scan.
+    return ["lib", "bin", "test", "example", "tool"]
+      .map((sourceDir) => resolve(entryPath, sourceDir))
+      .filter((sourcePath) => existsSync(sourcePath));
+  }
+
+  return null;
+}
+
 async function collectConformanceSourceRoots(
   directory: string
 ): Promise<string[]> {
@@ -1627,33 +1658,10 @@ async function collectConformanceSourceRoots(
       isCertificationDirName(entry.name) ||
       isConformanceAdapterDirName(entry.name)
     ) {
-      if (existsSync(resolve(entryPath, "src"))) {
-        // TypeScript, Rust, and Python adapters/certification wrappers keep
-        // their sources under a `src/` subdirectory.
-        roots.push(resolve(entryPath, "src"));
-        continue;
-      }
+      const packageRoots = packageSourceRootsFor(entryPath);
 
-      if (existsSync(resolve(entryPath, "go.mod"))) {
-        // Go adapters/certification wrappers use a flat layout: *.go files
-        // live directly at the module root, marked by go.mod, with no
-        // `src/` subdirectory.
-        roots.push(entryPath);
-        continue;
-      }
-
-      if (existsSync(resolve(entryPath, "pubspec.yaml"))) {
-        // Dart adapters/certification wrappers keep sources under lib/,
-        // bin/, test/, example/, and tool/ (Dart's own package convention),
-        // marked by pubspec.yaml. Scan those subdirectories explicitly
-        // instead of the package root so the generated .dart_tool/ cache can
-        // never leak generated sources into the guardrail scan.
-        for (const sourceDir of ["lib", "bin", "test", "example", "tool"]) {
-          const sourcePath = resolve(entryPath, sourceDir);
-          if (existsSync(sourcePath)) {
-            roots.push(sourcePath);
-          }
-        }
+      if (packageRoots !== null) {
+        roots.push(...packageRoots);
         continue;
       }
     }
