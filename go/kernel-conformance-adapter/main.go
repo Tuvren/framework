@@ -193,6 +193,19 @@ func handleDispatch(rawParams json.RawMessage) (any, *adapterErrorEnvelope) {
 		}
 	}
 
+	// A dispatch frame without a string operation is a malformed request,
+	// not an unimplemented operation: fail the JSON-RPC call itself with
+	// invalid_adapter_request, matching the Rust adapter's read_param_string
+	// and the Python adapter's _require_str. Letting the empty string fall
+	// through the handler table would misclassify the malformed frame as a
+	// successful call carrying adapter_operation_not_implemented.
+	if params.Operation == "" {
+		return nil, &adapterErrorEnvelope{
+			Code:    "invalid_adapter_request",
+			Message: "params.operation must be a non-empty string",
+		}
+	}
+
 	return dispatchOperation(params.Operation, params.Input), nil
 }
 

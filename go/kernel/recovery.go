@@ -143,9 +143,22 @@ func (k *Kernel) ReconcileRun(runID string) error {
 			return nil
 		}
 		// The branch head is neither the run's active node nor its
-		// pending node (some other reconciliation path already moved it
-		// past the pending node): fall through to the ordinary backward
-		// walk below, which repairs from wherever the head actually is.
+		// pending node: the head legitimately advanced elsewhere while
+		// this checkpoint was torn (e.g. a CommitSiblingCheckpoint winner
+		// raced it — a failed CAS from the pending node's own predecessor,
+		// which IS the run's active node, means the head cannot still be
+		// that active node). The durable pending node stays off-lineage
+		// (content-addressed, write-once; reclamation collects it). Retire
+		// the stale marker and stop — never fall through to the backward
+		// walk, which would misattribute the foreign winner's nodes to
+		// this run, and never leave the marker set, which would make every
+		// future checkpoint refuse with ErrRunPendingCheckpoint with no
+		// reconciliation path left. Mirrors the Python port's lost-CAS
+		// marker-retire branch.
+		run.PendingCheckpointHash = ""
+		run.PendingCheckpointKind = ""
+		k.Backend.UpdateRun(run)
+		return nil
 	}
 
 	if branch.HeadTurnNodeHash == activeHash {

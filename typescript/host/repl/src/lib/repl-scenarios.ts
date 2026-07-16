@@ -54,10 +54,15 @@ import type { ReplConfig, ReplScenarioReport } from "./repl-types.js";
 // finished and the scenario saw phase "completed"). Keeping the loop going
 // leaves the cancellation whole iterations of margin; the run only ever
 // terminates through the cancel.
+// The 1000-iteration bound is an escape hatch, not part of the scenario: if
+// cancellation ever regresses, the run still terminates on its own and the
+// scenario fails with a diagnosable `cancelled: false` instead of hanging
+// until the outer test-runner timeout. Cancel lands within the first few
+// iterations, so the bound never fires in a healthy run.
 const CONTINUE_UNTIL_CANCELLED_POLICY: LoopPolicy = {
-  evaluate(_response, _manifest, _iterationCount) {
+  evaluate(_response, _manifest, iterationCount) {
     return {
-      continue: true,
+      continue: iterationCount < 1000,
       executeTools: true,
       reason: "repl_continue_until_cancelled",
     };

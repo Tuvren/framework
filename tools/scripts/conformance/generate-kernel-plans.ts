@@ -131,7 +131,10 @@ async function main(): Promise<void> {
   // must be one this generator would re-emit — a bare planVersion comparison
   // would sail through if someone bumped the generator's version constant
   // without teaching it the promoted checks. A missing file is a fresh
-  // bootstrap and is allowed through.
+  // bootstrap and is allowed through. Known limit: hand-edits INSIDE a check
+  // this generator does emit (an added assertion, changed evidence) are not
+  // guarded — the checkId still matches — so assertion-level promotions must
+  // be taught to the generator, not just committed.
   let existing: { checks?: { checkId?: string }[] } | undefined;
   try {
     existing = JSON.parse(await readFile(filePath, "utf8"));

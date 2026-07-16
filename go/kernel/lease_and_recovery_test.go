@@ -685,6 +685,82 @@ func TestFaultInjectingBackend_AfterCommitBeforeAckCommitsDespiteError(t *testin
 // durable-but-unreferenced node and roll the branch head, run bookkeeping,
 // and staging forward to it without losing the staged results the
 // torn commit consumed.
+func TestReconcileRun_LostCASRetiresStaleMarkerWithoutMisattribution(t *testing.T) {
+	// A torn mid-commit checkpoint leaves a durable pending node and marker,
+	// with the head still at the pre-tear position. If the head then
+	// legitimately advances somewhere ELSE (a foreign winner — modeled here
+	// with a direct head write, the state a CommitSiblingCheckpoint victory
+	// leaves behind), ReconcileRun's CAS from the pending node's predecessor
+	// must lose, and reconcile must retire the stale marker WITHOUT adopting
+	// the foreign lineage into the run and WITHOUT leaving the marker set
+	// (which would refuse every future checkpoint forever). Mirrors the
+	// Python port's lost-CAS marker-retire regression test.
+	k, _ := newManualClockKernel(0)
+	runID, _ := setUpFirstCheckpoint(t, k)
+
+	beforeHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found")
+	}
+	headNode, ok := k.Backend.GetTurnNode(beforeHead.HeadTurnNodeHash)
+	if !ok {
+		t.Fatalf("pre-tear head node not found")
+	}
+
+	baseBackend := k.Backend
+	k.Backend = kernel.NewFaultInjectingBackend(baseBackend, kernel.FaultPlan{
+		Point: kernel.FaultPointMidCommit, Policy: kernel.FaultPolicyOnce,
+	})
+	_, err := k.CompleteStep(runID, "step_2", "", "")
+	requireErrCode(t, err, kernel.ErrPersistenceFaultInjected)
+	k.Backend = baseBackend
+
+	tornRun, ok := k.Backend.GetRun(runID)
+	if !ok {
+		t.Fatalf("run not found")
+	}
+	if tornRun.PendingCheckpointHash == "" {
+		t.Fatalf("expected a durable pending checkpoint marker after the tear")
+	}
+	createdBefore := len(tornRun.CreatedTurnNodes)
+	stepIndexBefore := tornRun.CurrentStepIndex
+
+	// Move the head to a foreign sibling minted off the same pre-tear head —
+	// exactly the durable state a CommitSiblingCheckpoint winner produces.
+	foreignEvent := k.PutObject("application/json", []byte("foreign-winner"))
+	foreignNode, err := k.CommitSiblingCheckpoint("branch_crash", beforeHead.HeadTurnNodeHash, kernel.TurnNode{
+		SchemaID: headNode.SchemaID, TurnTreeHash: headNode.TurnTreeHash, EventHash: foreignEvent,
+	})
+	if err != nil {
+		t.Fatalf("commit foreign sibling: %v", err)
+	}
+
+	if err := k.ReconcileRun(runID); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	branch, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found")
+	}
+	if branch.HeadTurnNodeHash != foreignNode {
+		t.Fatalf("expected the foreign head to be left alone, got %q", branch.HeadTurnNodeHash)
+	}
+	reconciled, ok := k.Backend.GetRun(runID)
+	if !ok {
+		t.Fatalf("run not found")
+	}
+	if reconciled.PendingCheckpointHash != "" || reconciled.PendingCheckpointKind != "" {
+		t.Fatalf("expected the stale pending marker to be retired, got hash=%q kind=%q", reconciled.PendingCheckpointHash, reconciled.PendingCheckpointKind)
+	}
+	if len(reconciled.CreatedTurnNodes) != createdBefore {
+		t.Fatalf("expected no foreign nodes adopted into CreatedTurnNodes, got %d (was %d)", len(reconciled.CreatedTurnNodes), createdBefore)
+	}
+	if reconciled.CurrentStepIndex != stepIndexBefore {
+		t.Fatalf("expected CurrentStepIndex unchanged, got %d (was %d)", reconciled.CurrentStepIndex, stepIndexBefore)
+	}
+}
+
 func TestFaultInjectingBackend_MidCommitTornCheckpoint(t *testing.T) {
 	k, _ := newManualClockKernel(0)
 	runID, message2Hash := setUpFirstCheckpoint(t, k)
