@@ -19,12 +19,20 @@
 /// `spec/kernel/cddl/kernel-records.cddl`, and the kernel conformance plans
 /// under `spec/conformance/kernel/plans/`; this tree is a binding
 /// projection, never an authority source.
+///
+/// This library re-exports the protocol layer under `src/`: the
+/// [maxSafeInteger]/[minSafeInteger] bounds and closed [Record] sum type
+/// (`src/record.dart`), the [KernelException] error surface (`src/errors.dart`),
+/// canonical CBOR codec (`src/cbor.dart`), content-addressing hashes
+/// (`src/identity.dart`), CDDL record validation (`src/validate.dart`), and
+/// verdict composition (`src/verdict.dart`). Every one of those files
+/// mirrors its `go/kernel/*.go` counterpart byte-for-byte where the two
+/// languages' semantics allow it.
 library;
 
-/// Maximum JavaScript-safe integer accepted by kernel records
-/// (`js-safe-int` in `spec/kernel/cddl/kernel-records.cddl`).
-const int maxSafeInteger = 9007199254740991;
-
-/// Minimum JavaScript-safe integer accepted by kernel records
-/// (`js-safe-int` in `spec/kernel/cddl/kernel-records.cddl`).
-const int minSafeInteger = -9007199254740991;
+export 'src/cbor.dart';
+export 'src/errors.dart';
+export 'src/identity.dart';
+export 'src/record.dart';
+export 'src/validate.dart';
+export 'src/verdict.dart';
