@@ -24,7 +24,7 @@ import 'package:tuvren_kernel_adapter/adapter.dart';
 Future<void> main() async {
   final lines = stdin.transform(utf8.decoder).transform(const LineSplitter());
   await for (final line in lines) {
-    stdout.writeln(handleLine(line));
+    stdout.writeln(await handleLine(line));
     await stdout.flush();
   }
 }

@@ -23,28 +23,77 @@
 /// name outside that table reports adapter_operation_not_implemented.
 library;
 
+import 'dart:async';
 import 'dart:convert';
+
+import 'src/operations.dart' as protocol_ops;
+import 'src/operations_canonical_rejection.dart' as canonical_rejection_ops;
+import 'src/operations_liveness.dart' as liveness_ops;
+import 'src/operations_maintenance.dart' as maintenance_ops;
+import 'src/operations_runtime.dart' as runtime_ops;
 
 /// Adapter identity echoed by `initialize`; must match `adapter.json`.
 const String adapterId = 'dart-kernel';
 
 /// Capabilities advertised by `initialize`; must stay set-equal to the
-/// `capabilities` array in `adapter.json`. Empty until the Dart kernel
-/// implementation lands: an honest empty set makes every kernel plan check
-/// non-applicable instead of dishonestly failing.
-List<String> capabilities() => const <String>[];
+/// `capabilities` array in `adapter.json` (and byte-identical to
+/// `go/kernel-conformance-adapter/adapter.json`'s array): every capability
+/// the Dart kernel port's M2/M3/M4 operations below actually implement.
+/// `kernel.persistence.durable` and `kernel.shared-lease-clock` are
+/// intentionally absent -- this is a memory-only port, so the
+/// durable-storage and shared-lease-clock checks those capabilities gate
+/// stay non-applicable rather than dishonestly attempted.
+List<String> capabilities() => const <String>[
+      'kernel.protocol',
+      'kernel.edge-validation',
+      'kernel.logical',
+      'kernel-protocol.thread.enumeration',
+      'kernel.run-liveness',
+      'kernel.restart-recovery',
+      'kernel.scope-isolation',
+      'kernel.reclamation',
+    ];
 
 /// One conformance operation: raw dispatch `input` in, observation out.
 ///
 /// The returned observation is wrapped by [projection] so the plan can read
-/// the same value under both `$.result` and `$.evidence`.
-typedef OperationHandler = Object? Function(Object? input);
+/// the same value under both `$.result` and `$.evidence`. A handler may
+/// return its observation synchronously or via a `Future` -- only the
+/// `kernel.reclamation.erasure-probe` handler actually needs the latter
+/// (its AES-256-GCM crypto-shredding runs through `package:cryptography`,
+/// whose cipher API is `Future`-based), but the typedef stays uniform
+/// across every handler rather than special-casing one operation's shape.
+typedef OperationHandler = FutureOr<Object?> Function(Object? input);
 
 /// Dispatch table mapping `params.operation` names from the kernel
-/// conformance plans to their handlers. Populated by the kernel
-/// implementation milestone; empty while the adapter is a protocol stub.
+/// conformance plans to their handlers, mirroring the match arms in
+/// `go/kernel-conformance-adapter/dispatch.go`'s `operationHandlers`. Only
+/// operation literals belong in this routing table.
 final Map<String, OperationHandler> operationHandlers =
-    <String, OperationHandler>{};
+    <String, OperationHandler>{
+  'kernel.protocol.deterministic-hashing': protocol_ops.runDeterministicHashing,
+  'kernel.protocol.schema-roundtrip': protocol_ops.runSchemaRoundtrip,
+  'kernel.protocol.modify-composition': protocol_ops.runModifyComposition,
+  'kernel.protocol.canonical-rejection':
+      canonical_rejection_ops.runCanonicalRejection,
+  'kernel.protocol.edge-validation': runtime_ops.runProtocolEdgeValidation,
+  'kernel.logical.diff-paths': runtime_ops.runLogicalDiffPaths,
+  'kernel.logical.branch-list': runtime_ops.runLogicalBranchList,
+  'kernel.logical.recovery-state': runtime_ops.runLogicalRecoveryState,
+  'kernel.logical.thread-list': runtime_ops.runLogicalThreadList,
+  'kernel.lineage.cross-thread-rejection':
+      runtime_ops.runLineageCrossThreadRejection,
+  'kernel.run-liveness.lease-renewal': liveness_ops.runLeaseRenewal,
+  'kernel.run-liveness.expired-listing': liveness_ops.runExpiredListing,
+  'kernel.run-liveness.stale-preemption': liveness_ops.runStalePreemption,
+  'kernel.restart-recovery.crash-recovery-in-process':
+      liveness_ops.runCrashRecoveryInProcess,
+  'kernel.restart-recovery.concurrent-writer': liveness_ops.runConcurrentWriter,
+  'kernel.scope-isolation.cross-scope-probe':
+      maintenance_ops.runCrossScopeProbe,
+  'kernel.reclamation.reclaim-probe': maintenance_ops.runReclaimProbe,
+  'kernel.reclamation.erasure-probe': maintenance_ops.runErasureProbe,
+};
 
 /// Wraps a raw observation as the `{result, evidence}` shape the kernel
 /// plans read, mirroring the Go adapter's projection helper: `result` and
@@ -91,9 +140,15 @@ void _rejectNonFiniteDoubles(Object? value) {
 }
 
 /// Routes one operation dispatch to its handler, converting an uncaught
-/// throw into an adapter_operation_panicked error outcome so a broken
-/// handler fails only its own check instead of crashing the process.
-Map<String, Object?> dispatchOperation(String operation, Object? input) {
+/// throw (synchronous or from a rejected `Future`) into an
+/// adapter_operation_panicked error outcome so a broken handler fails only
+/// its own check instead of crashing the process. `await handler(input)`
+/// resolves a synchronously-returned value immediately and only genuinely
+/// suspends for a handler that returns a `Future` (today, only
+/// `kernel.reclamation.erasure-probe`); either way the same `try`/`catch`
+/// here catches the failure.
+Future<Map<String, Object?>> dispatchOperation(
+    String operation, Object? input) async {
   final handler = operationHandlers[operation];
   if (handler == null) {
     return <String, Object?>{
@@ -105,7 +160,8 @@ Map<String, Object?> dispatchOperation(String operation, Object? input) {
     };
   }
   try {
-    return <String, Object?>{'kind': 'result', 'value': handler(input)};
+    final value = await handler(input);
+    return <String, Object?>{'kind': 'result', 'value': value};
   } catch (error) {
     return <String, Object?>{
       'kind': 'error',
@@ -143,7 +199,7 @@ Map<String, Object?> _handleInitialize(Object? id, Object? params) {
   });
 }
 
-Map<String, Object?> _handleDispatch(Object? id, Object? params) {
+Future<Map<String, Object?>> _handleDispatch(Object? id, Object? params) async {
   final map = params is Map<String, Object?> ? params : const {};
   final operation = map['operation'];
   // A dispatch frame without a string operation is a malformed request,
@@ -156,19 +212,28 @@ Map<String, Object?> _handleDispatch(Object? id, Object? params) {
       'params.operation must be a non-empty string',
     );
   }
-  return _resultResponse(id, dispatchOperation(operation, map['input']));
+  return _resultResponse(id, await dispatchOperation(operation, map['input']));
 }
 
 /// Parses and dispatches a single JSON-RPC request line, returning exactly
 /// one JSON-RPC response line (without the trailing newline). Diagnostics
 /// never go to stdout; stdout carries protocol frames only.
-String handleLine(String line) {
+///
+/// This is `Future`-returning (rather than the synchronous function it was
+/// before the kernel operations landed) solely because `_handleDispatch`
+/// may need to `await` an operation handler such as
+/// `kernel.reclamation.erasure-probe`'s `Future`-based AES-256-GCM
+/// crypto-shredding; every other branch below still resolves synchronously,
+/// and `responseFuture`'s declared `FutureOr` type lets both kinds sit in
+/// the same `switch` without forcing every branch to wrap its result in a
+/// `Future`.
+Future<String> handleLine(String line) async {
   Object? id;
-  Map<String, Object?> response;
+  FutureOr<Map<String, Object?>> responseFuture;
   try {
     final decoded = jsonDecode(line);
     if (decoded is! Map<String, Object?>) {
-      response = _errorResponse(
+      responseFuture = _errorResponse(
         null,
         'invalid_json_rpc_request',
         'request frame must be a JSON object',
@@ -176,7 +241,7 @@ String handleLine(String line) {
     } else {
       id = decoded['id'];
       if (decoded['jsonrpc'] != '2.0') {
-        response = _errorResponse(
+        responseFuture = _errorResponse(
           id,
           'invalid_json_rpc_request',
           'request jsonrpc must be 2.0',
@@ -187,14 +252,14 @@ String handleLine(String line) {
         // unimplemented method: fail with invalid_json_rpc_request, matching
         // the Go adapter's method-type check.
         if (method is! String) {
-          response = _errorResponse(
+          responseFuture = _errorResponse(
             id,
             'invalid_json_rpc_request',
             'request method must be a string',
           );
         } else {
           final params = decoded['params'];
-          response = switch (method) {
+          responseFuture = switch (method) {
             'initialize' => _handleInitialize(id, params),
             'dispatch' => _handleDispatch(id, params),
             'events' => _resultResponse(id, const <Object?>[]),
@@ -213,12 +278,14 @@ String handleLine(String line) {
       }
     }
   } on FormatException catch (error) {
-    response = _errorResponse(
+    responseFuture = _errorResponse(
       null,
       'invalid_json_rpc_request',
       'failed to parse JSON-RPC request: ${error.message}',
     );
   }
+
+  final response = await responseFuture;
 
   try {
     // dart:convert's jsonEncode does not throw on double.nan or

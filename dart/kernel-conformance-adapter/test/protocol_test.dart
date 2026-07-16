@@ -18,12 +18,13 @@ import 'dart:io';
 import 'package:test/test.dart';
 import 'package:tuvren_kernel_adapter/adapter.dart';
 
-Map<String, Object?> roundTrip(Map<String, Object?> request) =>
-    jsonDecode(handleLine(jsonEncode(request))) as Map<String, Object?>;
+Future<Map<String, Object?>> roundTrip(Map<String, Object?> request) async =>
+    jsonDecode(await handleLine(jsonEncode(request))) as Map<String, Object?>;
 
 void main() {
-  test('initialize echoes adapterId, packetId, planVersion, capabilities', () {
-    final response = roundTrip({
+  test('initialize echoes adapterId, packetId, planVersion, capabilities',
+      () async {
+    final response = await roundTrip({
       'jsonrpc': '2.0',
       'id': 1,
       'method': 'initialize',
@@ -38,8 +39,9 @@ void main() {
     expect(result['capabilities'], capabilities());
   });
 
-  test('initialize without packetId fails with invalid_adapter_request', () {
-    final response = roundTrip({
+  test('initialize without packetId fails with invalid_adapter_request',
+      () async {
+    final response = await roundTrip({
       'jsonrpc': '2.0',
       'id': 2,
       'method': 'initialize',
@@ -49,12 +51,13 @@ void main() {
     expect(error['code'], 'invalid_adapter_request');
   });
 
-  test('dispatch of an unwired operation reports not-implemented outcome', () {
-    final response = roundTrip({
+  test('dispatch of an unwired operation reports not-implemented outcome',
+      () async {
+    final response = await roundTrip({
       'jsonrpc': '2.0',
       'id': 3,
       'method': 'dispatch',
-      'params': {'operation': 'kernel.protocol.deterministic-hashing'},
+      'params': {'operation': 'kernel.protocol.__unwired-operation__'},
     });
     expect(response['error'], isNull);
     final outcome = response['result'] as Map<String, Object?>;
@@ -63,8 +66,9 @@ void main() {
     expect(error['code'], 'adapter_operation_not_implemented');
   });
 
-  test('dispatch without operation is a malformed request, not an outcome', () {
-    final response = roundTrip({
+  test('dispatch without operation is a malformed request, not an outcome',
+      () async {
+    final response = await roundTrip({
       'jsonrpc': '2.0',
       'id': 4,
       'method': 'dispatch',
@@ -74,8 +78,9 @@ void main() {
     expect(error['code'], 'invalid_adapter_request');
   });
 
-  test('events returns an empty array; lifecycle methods return null', () {
-    final events = roundTrip({
+  test('events returns an empty array; lifecycle methods return null',
+      () async {
+    final events = await roundTrip({
       'jsonrpc': '2.0',
       'id': 5,
       'method': 'events',
@@ -88,7 +93,7 @@ void main() {
       'destroyInstance',
       'shutdown',
     ]) {
-      final response = roundTrip({
+      final response = await roundTrip({
         'jsonrpc': '2.0',
         'id': 6,
         'method': method,
@@ -100,8 +105,8 @@ void main() {
     }
   });
 
-  test('unknown method fails with adapter_method_not_implemented', () {
-    final response = roundTrip({
+  test('unknown method fails with adapter_method_not_implemented', () async {
+    final response = await roundTrip({
       'jsonrpc': '2.0',
       'id': 7,
       'method': 'grade',
@@ -113,14 +118,14 @@ void main() {
 
   test(
     'malformed JSON and non-2.0 frames fail with invalid_json_rpc_request',
-    () {
-      final malformed =
-          jsonDecode(handleLine('this is not json')) as Map<String, Object?>;
+    () async {
+      final malformed = jsonDecode(await handleLine('this is not json'))
+          as Map<String, Object?>;
       expect(
         (malformed['error'] as Map<String, Object?>)['code'],
         'invalid_json_rpc_request',
       );
-      final wrongVersion = roundTrip({
+      final wrongVersion = await roundTrip({
         'jsonrpc': '1.0',
         'id': 8,
         'method': 'events',
@@ -130,7 +135,7 @@ void main() {
         'invalid_json_rpc_request',
       );
       final nonObject =
-          jsonDecode(handleLine('[1,2,3]')) as Map<String, Object?>;
+          jsonDecode(await handleLine('[1,2,3]')) as Map<String, Object?>;
       expect(
         (nonObject['error'] as Map<String, Object?>)['code'],
         'invalid_json_rpc_request',
@@ -138,9 +143,9 @@ void main() {
     },
   );
 
-  test('a non-string method fails with invalid_json_rpc_request', () {
+  test('a non-string method fails with invalid_json_rpc_request', () async {
     for (final method in [7, null]) {
-      final response = roundTrip({
+      final response = await roundTrip({
         'jsonrpc': '2.0',
         'id': 9,
         'method': method,
@@ -154,7 +159,7 @@ void main() {
     // A frame missing `method` entirely decodes it as null, exercising the
     // same non-string check.
     final missing = jsonDecode(
-      handleLine(jsonEncode({'jsonrpc': '2.0', 'id': 10, 'params': {}})),
+      await handleLine(jsonEncode({'jsonrpc': '2.0', 'id': 10, 'params': {}})),
     ) as Map<String, Object?>;
     expect(
       (missing['error'] as Map<String, Object?>)['code'],
@@ -162,8 +167,8 @@ void main() {
     );
   });
 
-  test('response id echoes null id and numeric id', () {
-    final nullId = roundTrip({
+  test('response id echoes null id and numeric id', () async {
+    final nullId = await roundTrip({
       'jsonrpc': '2.0',
       'id': null,
       'method': 'events',
@@ -172,7 +177,7 @@ void main() {
     expect(nullId.containsKey('id'), isTrue);
     expect(nullId['id'], isNull);
 
-    final numericId = roundTrip({
+    final numericId = await roundTrip({
       'jsonrpc': '2.0',
       'id': 42,
       'method': 'events',
@@ -184,11 +189,11 @@ void main() {
   test(
     'a response containing a non-finite double falls back to '
     'adapter_response_serialization_failed',
-    () {
+    () async {
       const operation = 'kernel.protocol.__non_finite_double_fallback__';
       operationHandlers[operation] = (input) => {'x': double.nan};
       try {
-        final line = handleLine(
+        final line = await handleLine(
           jsonEncode({
             'jsonrpc': '2.0',
             'id': 11,
@@ -202,6 +207,53 @@ void main() {
         expect(decoded['id'], 11);
         final error = decoded['error'] as Map<String, Object?>;
         expect(error['code'], 'adapter_response_serialization_failed');
+      } finally {
+        operationHandlers.remove(operation);
+      }
+    },
+  );
+
+  test(
+    'an async handler that returns a Future is awaited before responding',
+    () async {
+      const operation = 'kernel.protocol.__async_fallback__';
+      operationHandlers[operation] =
+          (input) async => Future.value({'value': 'async-ok'});
+      try {
+        final response = await roundTrip({
+          'jsonrpc': '2.0',
+          'id': 12,
+          'method': 'dispatch',
+          'params': {'operation': operation},
+        });
+        final outcome = response['result'] as Map<String, Object?>;
+        expect(outcome['kind'], 'result');
+        final value = outcome['value'] as Map<String, Object?>;
+        expect(value['value'], 'async-ok');
+      } finally {
+        operationHandlers.remove(operation);
+      }
+    },
+  );
+
+  test(
+    'an async handler that throws is reported as adapter_operation_panicked',
+    () async {
+      const operation = 'kernel.protocol.__async_throw__';
+      operationHandlers[operation] = (input) async {
+        throw StateError('async handler failure');
+      };
+      try {
+        final response = await roundTrip({
+          'jsonrpc': '2.0',
+          'id': 13,
+          'method': 'dispatch',
+          'params': {'operation': operation},
+        });
+        final outcome = response['result'] as Map<String, Object?>;
+        expect(outcome['kind'], 'error');
+        final error = outcome['error'] as Map<String, Object?>;
+        expect(error['code'], 'adapter_operation_panicked');
       } finally {
         operationHandlers.remove(operation);
       }
