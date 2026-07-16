@@ -28,11 +28,27 @@
 /// verdict composition (`src/verdict.dart`). Every one of those files
 /// mirrors its `go/kernel/*.go` counterpart byte-for-byte where the two
 /// languages' semantics allow it.
+///
+/// It also re-exports the M2/M3/M4 runtime layer: the [Clock] family
+/// (`src/clock.dart`), the storage vocabulary and [Backend] seam
+/// (`src/backend.dart`), the in-memory [Backend] implementation
+/// (`src/memory_backend.dart`), the capability-gated reclamation sweep
+/// (`src/reclamation.dart`), the fault-injection decorator
+/// (`src/fault_injecting_backend.dart`), and the runtime kernel host
+/// itself, including run-liveness leases (`src/kernel_runtime.dart`, whose
+/// `part` `src/lease.dart` is not exported separately since Dart `part`
+/// files share their library's export surface automatically).
 library;
 
+export 'src/backend.dart';
 export 'src/cbor.dart';
+export 'src/clock.dart';
 export 'src/errors.dart';
+export 'src/fault_injecting_backend.dart';
 export 'src/identity.dart';
+export 'src/kernel_runtime.dart';
+export 'src/memory_backend.dart';
+export 'src/reclamation.dart';
 export 'src/record.dart';
 export 'src/validate.dart';
 export 'src/verdict.dart';
