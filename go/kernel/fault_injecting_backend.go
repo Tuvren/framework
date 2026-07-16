@@ -39,11 +39,16 @@ const (
 	// FaultPointBeforeCommit fires before the checkpoint's turn node is
 	// ever written: PutTurnNode fails outright and nothing durable changes.
 	FaultPointBeforeCommit FaultPoint = "before-commit"
-	// FaultPointMidCommit fires after the turn node write and the branch
-	// head move have both already happened durably, but is reported as a
-	// failure from the UpdateBranchHead call itself — modeling a crash
-	// that lands mid-commit, after the durable write but before the caller
-	// would have moved on.
+	// FaultPointMidCommit fires from the UpdateBranchHead call itself
+	// without performing the head move: the turn node write already
+	// happened durably (PutTurnNode succeeded), but the branch head is
+	// left pointing at its pre-commit value, modeling a genuine torn
+	// checkpoint — a crash after the node is durable but before the head
+	// advance that would have made it live. This is the state kernel spec
+	// §5.5 describes ("TurnNode exists → checkpoint succeeded") and is
+	// what ReconcileRun (recovery.go) rolls forward: it discovers the
+	// durable-but-unreferenced pending node and advances the head to it
+	// itself, rather than finding a head that already silently moved.
 	FaultPointMidCommit FaultPoint = "mid-commit"
 	// FaultPointAfterCommitBeforeAck fires after both durable writes above
 	// have succeeded and Kernel.checkpointRun would otherwise report
@@ -134,20 +139,29 @@ func (f *FaultInjectingBackend) PutTurnNode(node TurnNode) error {
 }
 
 // UpdateBranchHead is the checkpoint-commit sequence's second durable
-// write: a FaultPointMidCommit plan performs the real write via inner first
-// (the head really does move) and only then reports the injected error,
-// modeling a crash that lands after the durable write but before the
-// caller observes success.
+// write. A FaultPointMidCommit plan fires here without ever calling
+// through to inner: the head is left exactly where it was (the turn node
+// this head move would have pointed to is already durable via the prior
+// PutTurnNode call, but nothing yet references it as live), modeling a
+// genuine torn checkpoint rather than a head move the caller merely failed
+// to be acknowledged for.
 func (f *FaultInjectingBackend) UpdateBranchHead(branchID, headTurnNodeHash string, updatedAtMs int64) (bool, error) {
-	ok, err := f.Backend.UpdateBranchHead(branchID, headTurnNodeHash, updatedAtMs)
-	if err != nil {
-		return ok, err
-	}
 	if f.plan.Point == FaultPointMidCommit && f.shouldFire() {
 		f.markConsumed()
-		return ok, injectedFaultError(FaultPointMidCommit)
+		return false, injectedFaultError(FaultPointMidCommit)
 	}
-	return ok, nil
+	return f.Backend.UpdateBranchHead(branchID, headTurnNodeHash, updatedAtMs)
+}
+
+// CompareAndSwapBranchHead mirrors UpdateBranchHead's FaultPointMidCommit
+// handling for the atomic head-CAS path: the fault fires without ever
+// attempting the swap, leaving the head at expectedHead.
+func (f *FaultInjectingBackend) CompareAndSwapBranchHead(branchID, expectedHead, newHead string, updatedAtMs int64) (bool, error) {
+	if f.plan.Point == FaultPointMidCommit && f.shouldFire() {
+		f.markConsumed()
+		return false, injectedFaultError(FaultPointMidCommit)
+	}
+	return f.Backend.CompareAndSwapBranchHead(branchID, expectedHead, newHead, updatedAtMs)
 }
 
 // AfterCommitBeforeAck implements afterCommitBeforeAckHook

@@ -355,12 +355,129 @@ func testFaultPointCommitsDespiteError(t *testing.T, point kernel.FaultPoint) {
 	}
 }
 
-func TestFaultInjectingBackend_MidCommitCommitsDespiteError(t *testing.T) {
-	testFaultPointCommitsDespiteError(t, kernel.FaultPointMidCommit)
-}
-
 func TestFaultInjectingBackend_AfterCommitBeforeAckCommitsDespiteError(t *testing.T) {
 	testFaultPointCommitsDespiteError(t, kernel.FaultPointAfterCommitBeforeAck)
+}
+
+// TestFaultInjectingBackend_MidCommitTornCheckpoint proves the genuine
+// torn-checkpoint state a FaultPointMidCommit plan now models
+// (fault_injecting_backend.go): the checkpoint's turn node is durably
+// written (PutTurnNode succeeded) but the branch head is left exactly
+// where it was — unlike FaultPointAfterCommitBeforeAck, where the head
+// really does move. This is kernel spec §5.5's "TurnNode exists →
+// checkpoint succeeded" case: recovery must discover the
+// durable-but-unreferenced node and roll the branch head, run bookkeeping,
+// and staging forward to it without losing the staged results the
+// torn commit consumed.
+func TestFaultInjectingBackend_MidCommitTornCheckpoint(t *testing.T) {
+	k, _ := newManualClockKernel(0)
+	runID, message2Hash := setUpFirstCheckpoint(t, k)
+
+	beforeHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found")
+	}
+
+	baseBackend := k.Backend
+	k.Backend = kernel.NewFaultInjectingBackend(baseBackend, kernel.FaultPlan{
+		Point: kernel.FaultPointMidCommit, Policy: kernel.FaultPolicyOnce,
+	})
+	_, err := k.CompleteStep(runID, "step_2", "", "")
+	requireErrCode(t, err, kernel.ErrPersistenceFaultInjected)
+	k.Backend = baseBackend
+
+	// --- raw backend state immediately after the torn commit ---
+
+	afterFaultHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found")
+	}
+	if afterFaultHead.HeadTurnNodeHash != beforeHead.HeadTurnNodeHash {
+		t.Fatalf("expected branch head unchanged immediately after a mid-commit fault, got %q (was %q)", afterFaultHead.HeadTurnNodeHash, beforeHead.HeadTurnNodeHash)
+	}
+	if got := messageCount(t, k, "branch_crash"); got != 1 {
+		t.Fatalf("expected visible committed message count 1 before recovery, got %d", got)
+	}
+
+	pending := k.Backend.ListChildTurnNodes(beforeHead.HeadTurnNodeHash)
+	if len(pending) != 1 {
+		t.Fatalf("expected exactly one durable pending child turn node past the un-advanced head, got %d", len(pending))
+	}
+	pendingNode := pending[0]
+	pendingTree, ok := k.Backend.GetTurnTree(pendingNode.TurnTreeHash)
+	if !ok {
+		t.Fatalf("pending node's turn tree %q not found", pendingNode.TurnTreeHash)
+	}
+	pendingHasMessage2 := false
+	for _, hash := range pendingTree.Manifest["messages"].Ordered {
+		if hash == message2Hash {
+			pendingHasMessage2 = true
+		}
+	}
+	if !pendingHasMessage2 {
+		t.Fatalf("expected the durable pending node to already have consumed message 2 (%q)", message2Hash)
+	}
+	if len(pendingNode.ConsumedStagedResults) != 1 {
+		t.Fatalf("expected the pending node to have embedded exactly 1 consumed staged result, got %d", len(pendingNode.ConsumedStagedResults))
+	}
+
+	// The staged message must not be lost: it is durably embedded in the
+	// pending node's ConsumedStagedResults (proven above), so it must not
+	// also still sit in the uncommitted staging pool.
+	state, err := k.RecoveryState(runID)
+	if err != nil {
+		t.Fatalf("recovery state: %v", err)
+	}
+	if len(state.UncommittedStagedResults) != 0 {
+		t.Fatalf("expected no uncommitted staged results after a mid-commit fault (embedded in the pending node instead), got %d", len(state.UncommittedStagedResults))
+	}
+
+	staleRun, ok := k.Backend.GetRun(runID)
+	if !ok {
+		t.Fatalf("run not found")
+	}
+	if staleRun.CurrentStepIndex != 1 {
+		t.Fatalf("expected run record to still show only step 1 completed before reconciliation, got index %d", staleRun.CurrentStepIndex)
+	}
+
+	// --- reconcile rolls the pending node forward ---
+
+	if err := k.ReconcileRun(runID); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	afterReconcileHead, ok := k.Backend.GetBranch("branch_crash")
+	if !ok {
+		t.Fatalf("branch not found after reconcile")
+	}
+	if afterReconcileHead.HeadTurnNodeHash != pendingNode.Hash {
+		t.Fatalf("expected reconcile to advance the branch head to the pending node %q, got %q", pendingNode.Hash, afterReconcileHead.HeadTurnNodeHash)
+	}
+	if got := messageCount(t, k, "branch_crash"); got != 2 {
+		t.Fatalf("expected visible committed message count 2 after reconcile, got %d", got)
+	}
+
+	reconciled, ok := k.Backend.GetRun(runID)
+	if !ok {
+		t.Fatalf("run not found after reconcile")
+	}
+	if reconciled.CurrentStepIndex != 2 {
+		t.Fatalf("expected reconciled run to show step 2 completed, got index %d", reconciled.CurrentStepIndex)
+	}
+	if len(reconciled.CreatedTurnNodes) == 0 || reconciled.CreatedTurnNodes[len(reconciled.CreatedTurnNodes)-1] != pendingNode.Hash {
+		t.Fatalf("expected reconciled run's CreatedTurnNodes to end with the pending node %q, got %v", pendingNode.Hash, reconciled.CreatedTurnNodes)
+	}
+
+	postState, err := k.RecoveryState(runID)
+	if err != nil {
+		t.Fatalf("recovery state: %v", err)
+	}
+	if postState.LastTurnNodeHash != pendingNode.Hash {
+		t.Fatalf("expected reconciled recovery state head to match the pending node")
+	}
+	if len(postState.UncommittedStagedResults) != 0 {
+		t.Fatalf("expected no uncommitted staged results after reconcile, got %d", len(postState.UncommittedStagedResults))
+	}
 }
 
 // --- single-writer checkpoint commit (concurrent writer) ---

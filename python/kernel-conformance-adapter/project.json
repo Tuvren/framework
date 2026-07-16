@@ -17,7 +17,14 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": ".",
-        "command": "uv run --project python/kernel-conformance-adapter ruff check python/kernel-conformance-adapter/src && uv run --project python/kernel-conformance-adapter ruff format --check python/kernel-conformance-adapter/src"
+        "command": "uv run --project python/kernel-conformance-adapter ruff check python/kernel-conformance-adapter/src python/kernel-conformance-adapter/tests && uv run --project python/kernel-conformance-adapter ruff format --check python/kernel-conformance-adapter/src python/kernel-conformance-adapter/tests"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "uv run --project python/kernel-conformance-adapter pytest python/kernel-conformance-adapter/tests"
       }
     }
   }

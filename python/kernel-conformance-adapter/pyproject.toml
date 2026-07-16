@@ -3,13 +3,19 @@ name = "tuvren-kernel-conformance-adapter"
 version = "0.1.0"
 description = "JSON-RPC 2.0 stdio conformance adapter for the Python kernel port."
 requires-python = ">=3.12"
-dependencies = ["tuvren-kernel"]
+dependencies = [
+    "cryptography>=49.0.0",
+    "tuvren-kernel",
+]
 
 [tool.uv.sources]
 tuvren-kernel = { workspace = true }
 
 [dependency-groups]
-dev = ["ruff>=0.6.0"]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.6.0",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -19,5 +25,5 @@ build-backend = "hatchling.build"
 packages = ["src/tuvren_kernel_adapter"]
 
 [tool.ruff]
-src = ["src"]
+src = ["src", "tests"]
 line-length = 100

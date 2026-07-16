@@ -49,6 +49,8 @@ CAPABILITIES: list[str] = [
     "kernel-protocol.thread.enumeration",
     "kernel.run-liveness",
     "kernel.restart-recovery",
+    "kernel.scope-isolation",
+    "kernel.reclamation",
 ]
 
 

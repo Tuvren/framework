@@ -16,15 +16,16 @@ package kernel
 
 import "sync"
 
-// InMemoryBackend is the M2 in-memory Backend implementation: everything
-// lives in Go maps guarded by a single mutex. There is no persistence and
-// no cross-process sharing; it exists to give Kernel a concrete storage
-// implementation to run the M2 syscall surface against, matching the scope
-// of typescript/kernel's in-memory backend and rust/kernel's memory module.
-type InMemoryBackend struct {
+// scopeState is everything InMemoryBackend used to hold directly: one
+// Scope's independent, mutex-guarded partition of durable storage. Moving
+// this into its own type is what lets MemoryScopeStore hold many
+// partitions (one per Scope) behind one shared substrate, so two backend
+// handles bound to different Scopes but the same store are structurally
+// unable to observe each other's content (kernel spec §2.3 / M4
+// kernel.scope-isolation), while two handles bound to the *same* Scope and
+// store share that Scope's committed state.
+type scopeState struct {
 	mu sync.Mutex
-
-	clock Clock
 
 	objects  map[string]StoredObject
 	schemas  map[string]TurnTreeSchema
@@ -40,37 +41,116 @@ type InMemoryBackend struct {
 	// hash was already claimed.
 	rootOwners map[string]string
 
+	// childrenByPrevious indexes a turn node's PreviousTurnNodeHash -> the
+	// hashes of every node stored with that previous hash, so
+	// ListChildTurnNodes can find a durable node forward from its parent
+	// even when no branch head references it yet (see ReconcileRun).
+	childrenByPrevious map[string][]string
+
 	stagedByRun map[string][]StagedResult
 }
 
-// NewInMemoryBackend constructs an empty in-memory backend using clock for
-// every timestamp it records.
+func newScopeState() *scopeState {
+	return &scopeState{
+		objects:            make(map[string]StoredObject),
+		schemas:            make(map[string]TurnTreeSchema),
+		trees:              make(map[string]TurnTree),
+		nodes:              make(map[string]TurnNode),
+		threads:            make(map[string]Thread),
+		branches:           make(map[string]Branch),
+		runs:               make(map[string]Run),
+		rootOwners:         make(map[string]string),
+		childrenByPrevious: make(map[string][]string),
+		stagedByRun:        make(map[string][]StagedResult),
+	}
+}
+
+// MemoryScopeStore is a shared in-memory substrate keyed by Scope: each
+// Scope owns an independent scopeState, created lazily on first use.
+// Constructing several InMemoryBackend handles against one shared
+// MemoryScopeStore with different scope strings gives each handle a
+// structurally isolated partition (mirroring
+// typescript/kernel/backends/memory's MemoryScopeStore, scoped down to
+// this Go port's synchronous, single-process API — there is no
+// per-Scope transaction queue to serialize here, since InMemoryBackend has
+// no multi-call transaction boundary of its own).
+type MemoryScopeStore struct {
+	mu     sync.Mutex
+	states map[string]*scopeState
+}
+
+// NewMemoryScopeStore constructs an empty shared substrate with no Scopes
+// yet materialized.
+func NewMemoryScopeStore() *MemoryScopeStore {
+	return &MemoryScopeStore{states: make(map[string]*scopeState)}
+}
+
+// state returns scope's partition, creating an empty one on first use.
+func (s *MemoryScopeStore) state(scope string) *scopeState {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	st, ok := s.states[scope]
+	if !ok {
+		st = newScopeState()
+		s.states[scope] = st
+	}
+	return st
+}
+
+// InMemoryBackend is the M2 in-memory Backend implementation: a handle
+// bound to one Scope's partition of a MemoryScopeStore. There is no
+// persistence and no cross-process sharing; it exists to give Kernel a
+// concrete storage implementation to run the M2 syscall surface against,
+// matching the scope of typescript/kernel's in-memory backend and
+// rust/kernel's memory module.
+type InMemoryBackend struct {
+	clock Clock
+	store *MemoryScopeStore
+	scope string
+}
+
+// defaultScope is the Scope an InMemoryBackend constructed via
+// NewInMemoryBackend binds to: single-Scope callers (every M2/M3 caller,
+// and every M4 caller that does not need cross-scope isolation) never see
+// or reason about Scope identity at all.
+const defaultScope = "tuvren.scope.default"
+
+// NewInMemoryBackend constructs an empty in-memory backend, bound to its
+// own private single-Scope store, using clock for every timestamp it
+// records.
 func NewInMemoryBackend(clock Clock) *InMemoryBackend {
 	if clock == nil {
 		clock = SystemClock{}
 	}
-	return &InMemoryBackend{
-		clock:       clock,
-		objects:     make(map[string]StoredObject),
-		schemas:     make(map[string]TurnTreeSchema),
-		trees:       make(map[string]TurnTree),
-		nodes:       make(map[string]TurnNode),
-		threads:     make(map[string]Thread),
-		branches:    make(map[string]Branch),
-		runs:        make(map[string]Run),
-		rootOwners:  make(map[string]string),
-		stagedByRun: make(map[string][]StagedResult),
-	}
+	return &InMemoryBackend{clock: clock, store: NewMemoryScopeStore(), scope: defaultScope}
 }
+
+// NewScopedInMemoryBackend binds a backend handle to scope within store, a
+// MemoryScopeStore possibly shared with other handles bound to other
+// scopes. Two handles constructed this way against the same store but
+// different scope strings are isolated by construction (kernel spec §2.3):
+// neither can observe the other's objects, trees, nodes, schemas, threads,
+// branches, runs, or staged results. Two handles bound to the same store
+// and the same scope share that Scope's committed state.
+func NewScopedInMemoryBackend(clock Clock, store *MemoryScopeStore, scope string) *InMemoryBackend {
+	if clock == nil {
+		clock = SystemClock{}
+	}
+	return &InMemoryBackend{clock: clock, store: store, scope: scope}
+}
+
+// state returns this backend's own Scope partition.
+func (b *InMemoryBackend) state() *scopeState { return b.store.state(b.scope) }
 
 func (b *InMemoryBackend) Clock() Clock { return b.clock }
 
 func (b *InMemoryBackend) PutObject(mediaType string, data []byte) StoredObject {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
 
 	hash := HashBytesToHex(data)
-	if existing, ok := b.objects[hash]; ok {
+	if existing, ok := st.objects[hash]; ok {
 		return existing
 	}
 	stored := StoredObject{
@@ -79,51 +159,58 @@ func (b *InMemoryBackend) PutObject(mediaType string, data []byte) StoredObject 
 		Bytes:       append([]byte(nil), data...),
 		CreatedAtMs: b.clock.NowMs(),
 	}
-	b.objects[hash] = stored
+	st.objects[hash] = stored
 	return stored
 }
 
 func (b *InMemoryBackend) GetObject(hash string) (StoredObject, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	obj, ok := b.objects[hash]
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	obj, ok := st.objects[hash]
 	return obj, ok
 }
 
 func (b *InMemoryBackend) HasObject(hash string) bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	_, ok := b.objects[hash]
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	_, ok := st.objects[hash]
 	return ok
 }
 
 func (b *InMemoryBackend) PutSchema(schema TurnTreeSchema) bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if _, exists := b.schemas[schema.SchemaID]; exists {
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if _, exists := st.schemas[schema.SchemaID]; exists {
 		return false
 	}
-	b.schemas[schema.SchemaID] = schema
+	st.schemas[schema.SchemaID] = schema
 	return true
 }
 
 func (b *InMemoryBackend) GetSchema(schemaID string) (TurnTreeSchema, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	schema, ok := b.schemas[schemaID]
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	schema, ok := st.schemas[schemaID]
 	return schema, ok
 }
 
 func (b *InMemoryBackend) PutTurnTree(tree TurnTree) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.trees[tree.Hash] = tree
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	tree.CreatedAtMs = b.clock.NowMs()
+	st.trees[tree.Hash] = tree
 }
 
 func (b *InMemoryBackend) GetTurnTree(hash string) (TurnTree, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	tree, ok := b.trees[hash]
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	tree, ok := st.trees[hash]
 	if !ok {
 		return TurnTree{}, false
 	}
@@ -148,16 +235,34 @@ func cloneTurnTree(tree TurnTree) TurnTree {
 }
 
 func (b *InMemoryBackend) PutTurnNode(node TurnNode) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.nodes[node.Hash] = cloneTurnNode(node)
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	node.CreatedAtMs = b.clock.NowMs()
+	st.nodes[node.Hash] = cloneTurnNode(node)
+	st.childrenByPrevious[node.PreviousTurnNodeHash] = append(st.childrenByPrevious[node.PreviousTurnNodeHash], node.Hash)
 	return nil
 }
 
+func (b *InMemoryBackend) ListChildTurnNodes(previousHash string) []TurnNode {
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	hashes := st.childrenByPrevious[previousHash]
+	out := make([]TurnNode, 0, len(hashes))
+	for _, hash := range hashes {
+		if node, ok := st.nodes[hash]; ok {
+			out = append(out, cloneTurnNode(node))
+		}
+	}
+	return out
+}
+
 func (b *InMemoryBackend) GetTurnNode(hash string) (TurnNode, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	node, ok := b.nodes[hash]
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	node, ok := st.nodes[hash]
 	if !ok {
 		return TurnNode{}, false
 	}
@@ -177,62 +282,69 @@ func cloneTurnNode(node TurnNode) TurnNode {
 }
 
 func (b *InMemoryBackend) PutThread(thread Thread) bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if _, exists := b.threads[thread.ThreadID]; exists {
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if _, exists := st.threads[thread.ThreadID]; exists {
 		return false
 	}
-	b.threads[thread.ThreadID] = thread
-	b.rootOwners[thread.RootTurnNodeHash] = thread.ThreadID
+	st.threads[thread.ThreadID] = thread
+	st.rootOwners[thread.RootTurnNodeHash] = thread.ThreadID
 	return true
 }
 
 func (b *InMemoryBackend) GetThread(threadID string) (Thread, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	thread, ok := b.threads[threadID]
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	thread, ok := st.threads[threadID]
 	return thread, ok
 }
 
 func (b *InMemoryBackend) GetThreadByRootTurnNode(rootTurnNodeHash string) (string, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	threadID, ok := b.rootOwners[rootTurnNodeHash]
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	threadID, ok := st.rootOwners[rootTurnNodeHash]
 	return threadID, ok
 }
 
 func (b *InMemoryBackend) ListThreads() []Thread {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	out := make([]Thread, 0, len(b.threads))
-	for _, thread := range b.threads {
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	out := make([]Thread, 0, len(st.threads))
+	for _, thread := range st.threads {
 		out = append(out, thread)
 	}
 	return out
 }
 
 func (b *InMemoryBackend) PutBranch(branch Branch) bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if _, exists := b.branches[branch.BranchID]; exists {
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if _, exists := st.branches[branch.BranchID]; exists {
 		return false
 	}
-	b.branches[branch.BranchID] = branch
+	st.branches[branch.BranchID] = branch
 	return true
 }
 
 func (b *InMemoryBackend) GetBranch(branchID string) (Branch, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	branch, ok := b.branches[branchID]
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	branch, ok := st.branches[branchID]
 	return branch, ok
 }
 
 func (b *InMemoryBackend) ListBranchesByThread(threadID string) []Branch {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
 	var out []Branch
-	for _, branch := range b.branches {
+	for _, branch := range st.branches {
 		if branch.ThreadID == threadID {
 			out = append(out, branch)
 		}
@@ -241,78 +353,127 @@ func (b *InMemoryBackend) ListBranchesByThread(threadID string) []Branch {
 }
 
 func (b *InMemoryBackend) UpdateBranchHead(branchID, headTurnNodeHash string, updatedAtMs int64) (bool, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	branch, ok := b.branches[branchID]
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	branch, ok := st.branches[branchID]
 	if !ok {
 		return false, nil
 	}
 	branch.HeadTurnNodeHash = headTurnNodeHash
 	branch.UpdatedAtMs = updatedAtMs
-	b.branches[branchID] = branch
+	st.branches[branchID] = branch
+	return true, nil
+}
+
+func (b *InMemoryBackend) CompareAndSwapBranchHead(branchID, expectedHead, newHead string, updatedAtMs int64) (bool, error) {
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	branch, ok := st.branches[branchID]
+	if !ok {
+		return false, nil
+	}
+	if branch.HeadTurnNodeHash != expectedHead {
+		return false, nil
+	}
+	branch.HeadTurnNodeHash = newHead
+	branch.UpdatedAtMs = updatedAtMs
+	st.branches[branchID] = branch
 	return true, nil
 }
 
 func (b *InMemoryBackend) PutRun(run Run) bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if _, exists := b.runs[run.RunID]; exists {
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if _, exists := st.runs[run.RunID]; exists {
 		return false
 	}
-	b.runs[run.RunID] = run
+	now := b.clock.NowMs()
+	run.CreatedAtMs = now
+	run.UpdatedAtMs = now
+	st.runs[run.RunID] = run
 	return true
 }
 
+// cloneRun returns a copy of run whose StepSequence and CreatedTurnNodes
+// slices are independent storage: a caller mutating a returned run's
+// slices cannot corrupt the backend's stored state.
+func cloneRun(run Run) Run {
+	steps := make([]StepDeclaration, len(run.StepSequence))
+	copy(steps, run.StepSequence)
+	run.StepSequence = steps
+
+	created := make([]string, len(run.CreatedTurnNodes))
+	copy(created, run.CreatedTurnNodes)
+	run.CreatedTurnNodes = created
+
+	return run
+}
+
 func (b *InMemoryBackend) GetRun(runID string) (Run, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	run, ok := b.runs[runID]
-	return run, ok
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	run, ok := st.runs[runID]
+	if !ok {
+		return Run{}, false
+	}
+	return cloneRun(run), true
 }
 
 func (b *InMemoryBackend) UpdateRun(run Run) bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if _, exists := b.runs[run.RunID]; !exists {
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	existing, exists := st.runs[run.RunID]
+	if !exists {
 		return false
 	}
-	b.runs[run.RunID] = run
+	run.CreatedAtMs = existing.CreatedAtMs
+	run.UpdatedAtMs = b.clock.NowMs()
+	st.runs[run.RunID] = run
 	return true
 }
 
 func (b *InMemoryBackend) ListRunsByBranch(branchID string) []Run {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
 	var out []Run
-	for _, run := range b.runs {
+	for _, run := range st.runs {
 		if run.BranchID == branchID {
-			out = append(out, run)
+			out = append(out, cloneRun(run))
 		}
 	}
 	return out
 }
 
 func (b *InMemoryBackend) ListRuns() []Run {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	out := make([]Run, 0, len(b.runs))
-	for _, run := range b.runs {
-		out = append(out, run)
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	out := make([]Run, 0, len(st.runs))
+	for _, run := range st.runs {
+		out = append(out, cloneRun(run))
 	}
 	return out
 }
 
 func (b *InMemoryBackend) StageResult(runID string, result StagedResult) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.stagedByRun[runID] = append(b.stagedByRun[runID], result)
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	st.stagedByRun[runID] = append(st.stagedByRun[runID], result)
 }
 
 func (b *InMemoryBackend) DrainStagedResults(runID string) []StagedResult {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	drained := b.stagedByRun[runID]
-	delete(b.stagedByRun, runID)
+	st := b.state()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	drained := st.stagedByRun[runID]
+	delete(st.stagedByRun, runID)
 	return drained
 }
 

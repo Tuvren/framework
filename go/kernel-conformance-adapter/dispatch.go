@@ -47,6 +47,10 @@ var operationHandlers = map[string]operationHandler{
 	"kernel.run-liveness.stale-preemption":              runStalePreemption,
 	"kernel.restart-recovery.crash-recovery-in-process": runCrashRecoveryInProcess,
 	"kernel.restart-recovery.concurrent-writer":         runConcurrentWriter,
+
+	"kernel.scope-isolation.cross-scope-probe": runCrossScopeProbe,
+	"kernel.reclamation.reclaim-probe":         runReclaimProbe,
+	"kernel.reclamation.erasure-probe":         runErasureProbe,
 }
 
 // capabilities lists the capability tags this adapter reports during
@@ -63,6 +67,8 @@ func capabilities() []string {
 		"kernel-protocol.thread.enumeration",
 		"kernel.run-liveness",
 		"kernel.restart-recovery",
+		"kernel.scope-isolation",
+		"kernel.reclamation",
 	}
 }
 

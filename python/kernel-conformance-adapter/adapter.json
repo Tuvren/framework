@@ -24,7 +24,9 @@
     "kernel.logical",
     "kernel-protocol.thread.enumeration",
     "kernel.run-liveness",
-    "kernel.restart-recovery"
+    "kernel.restart-recovery",
+    "kernel.scope-isolation",
+    "kernel.reclamation"
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "suiteId": "tuvren.kernel.protocol",

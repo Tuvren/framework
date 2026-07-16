@@ -43,6 +43,46 @@ func (k *Kernel) ReconcileRun(runID string) error {
 	}
 
 	activeHash := k.activeTurnNodeHash(run)
+
+	// A torn checkpoint (FaultPointMidCommit) leaves a turn node durably
+	// written but the branch head never moved to it, so the branch head
+	// still equals the run's active turn node even though a pending
+	// commit exists past it. Roll forward through any such pending
+	// children (by construction there is at most one per run, since
+	// nothing else observes success until the head itself moves) before
+	// falling back to the ordinary "nothing to reconcile" no-op.
+	pendingCursor := activeHash
+	var pendingChain []string
+	for depth := 0; depth < maxLineageWalkDepth; depth++ {
+		children := k.Backend.ListChildTurnNodes(pendingCursor)
+		if len(children) != 1 {
+			break
+		}
+		pendingChain = append(pendingChain, children[0].Hash)
+		pendingCursor = children[0].Hash
+	}
+	if len(pendingChain) > 0 {
+		swapped, err := k.Backend.CompareAndSwapBranchHead(run.BranchID, branch.HeadTurnNodeHash, pendingCursor, k.Clock.NowMs())
+		if err != nil {
+			return err
+		}
+		if swapped {
+			run.CreatedTurnNodes = append(run.CreatedTurnNodes, pendingChain...)
+			run.CurrentStepIndex += len(pendingChain)
+			if run.CurrentStepIndex > len(run.StepSequence) {
+				run.CurrentStepIndex = len(run.StepSequence)
+			}
+			k.Backend.UpdateRun(run)
+			return nil
+		}
+		// Lost the CAS to a concurrent reconcile/retry: fall through and
+		// re-read branch state below via the ordinary backward walk.
+		branch, ok = k.Backend.GetBranch(run.BranchID)
+		if !ok {
+			return newKernelError("kernel_runtime_branch_not_found", "branch %q not found", run.BranchID)
+		}
+	}
+
 	if branch.HeadTurnNodeHash == activeHash {
 		return nil
 	}
@@ -109,22 +149,17 @@ func (k *Kernel) CommitSiblingCheckpoint(branchID, expectedHead string, node Tur
 		return "", err
 	}
 
-	// Re-check immediately before the head move: this narrows, but does not
-	// eliminate, the race window between the read above and this write. A
-	// production backend closes it with a real compare-and-swap primitive
-	// (or a serializable transaction); this in-memory Go port's Backend
-	// interface has no such primitive yet, so this is the best available
-	// approximation for now — see the M3 report's friction notes.
-	branch, ok = k.Backend.GetBranch(branchID)
-	if !ok {
-		return "", newKernelError("kernel_runtime_branch_not_found", "branch %q not found", branchID)
-	}
-	if branch.HeadTurnNodeHash != expectedHead {
-		return "", newKernelError(ErrCheckpointLateralConflict, "branch %q's head is %q, not the expected base %q: a concurrent checkpoint already committed", branchID, branch.HeadTurnNodeHash, expectedHead)
-	}
-
-	if _, err := k.Backend.UpdateBranchHead(branchID, hash, k.Clock.NowMs()); err != nil {
+	// Move the head atomically: CompareAndSwapBranchHead only succeeds if
+	// branchID's head still equals expectedHead at the moment of the
+	// write, closing the read/write race window a
+	// GetBranch-then-UpdateBranchHead pair would otherwise leave open
+	// between this call's initial read above and its own write.
+	swapped, err := k.Backend.CompareAndSwapBranchHead(branchID, expectedHead, hash, k.Clock.NowMs())
+	if err != nil {
 		return hash, err
+	}
+	if !swapped {
+		return "", newKernelError(ErrCheckpointLateralConflict, "branch %q's head is no longer %q: a concurrent checkpoint already committed", branchID, expectedHead)
 	}
 	return hash, nil
 }

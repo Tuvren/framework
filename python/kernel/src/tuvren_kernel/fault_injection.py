@@ -106,6 +106,15 @@ class FaultInjectingBackend:
     def has_object(self, object_hash: str) -> bool:
         return self._inner.has_object(object_hash)
 
+    def get_object_created_at(self, object_hash: str) -> int | None:
+        return self._inner.get_object_created_at(object_hash)
+
+    def list_object_hashes(self) -> list[str]:
+        return self._inner.list_object_hashes()
+
+    def delete_object(self, object_hash: str) -> None:
+        self._inner.delete_object(object_hash)
+
     # --- Schemas ---------------------------------------------------------------
     def put_schema(self, schema_id: str, schema: dict[str, Any]) -> None:
         self._inner.put_schema(schema_id, schema)
@@ -120,6 +129,15 @@ class FaultInjectingBackend:
     def get_tree(self, tree_hash: str) -> dict[str, Any] | None:
         return self._inner.get_tree(tree_hash)
 
+    def get_tree_created_at(self, tree_hash: str) -> int | None:
+        return self._inner.get_tree_created_at(tree_hash)
+
+    def list_tree_hashes(self) -> list[str]:
+        return self._inner.list_tree_hashes()
+
+    def delete_tree(self, tree_hash: str) -> None:
+        self._inner.delete_tree(tree_hash)
+
     # --- TurnNodes: the beforeCommit / midCommit fault points -------------------
     def put_node(self, node_hash: str, record: dict[str, Any]) -> None:
         self._maybe_fire("beforeCommit")
@@ -128,6 +146,15 @@ class FaultInjectingBackend:
 
     def get_node(self, node_hash: str) -> dict[str, Any] | None:
         return self._inner.get_node(node_hash)
+
+    def get_node_created_at(self, node_hash: str) -> int | None:
+        return self._inner.get_node_created_at(node_hash)
+
+    def list_node_hashes(self) -> list[str]:
+        return self._inner.list_node_hashes()
+
+    def delete_node(self, node_hash: str) -> None:
+        self._inner.delete_node(node_hash)
 
     # --- Threads ---------------------------------------------------------------
     def put_thread(self, thread_id: str, record: dict[str, Any]) -> None:
@@ -148,6 +175,23 @@ class FaultInjectingBackend:
 
     def list_branches(self, thread_id: str) -> list[dict[str, Any]]:
         return self._inner.list_branches(thread_id)
+
+    def list_all_branches(self) -> list[dict[str, Any]]:
+        return self._inner.list_all_branches()
+
+    def delete_branch(self, branch_id: str) -> None:
+        self._inner.delete_branch(branch_id)
+
+    # `commit_checkpoint`'s atomic head-CAS is the direct replacement for the
+    # old `put_branch`-based checkpoint write this decorator never hooked a
+    # fault point to; it stays a plain pass-through here too. `midCommit`
+    # continues to fire from `put_node` above -- strictly before this call
+    # ever runs in `commit_checkpoint` -- so the fault-injection timeline
+    # this decorator models is unchanged by the CAS refactor.
+    def compare_and_swap_branch_head(
+        self, branch_id: str, expected_head: str, new_head: str
+    ) -> bool:
+        return self._inner.compare_and_swap_branch_head(branch_id, expected_head, new_head)
 
     # --- Turns -----------------------------------------------------------------
     def put_turn(self, turn_id: str, record: dict[str, Any]) -> None:

@@ -145,6 +145,7 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "kernel-go-certification",
   "kernel-python-kernel",
   "kernel-python-certification",
+  "kernel-python-conformance-adapter",
 ];
 
 export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [

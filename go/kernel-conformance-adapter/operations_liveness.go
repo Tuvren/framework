@@ -344,27 +344,34 @@ func observeFaultPoint(point kernel.FaultPoint) (map[string]any, error) {
 	_, stepErr := k.CompleteStep(fixture.runID, "step_2", "", "")
 	k.Backend = baseBackend
 
-	branch, ok := k.Backend.GetBranch(fixture.branchID)
-	if !ok {
-		return nil, fmt.Errorf("branch %q not found after fault-point %q attempt", fixture.branchID, point)
-	}
-	actualHead := branch.HeadTurnNodeHash
-
 	var expectedHead string
 	if point == kernel.FaultPointBeforeCommit {
 		// Nothing durable changed: the branch head must still be exactly
 		// where message_1's checkpoint left it.
-		expectedHead = fixture.baseHead
+		branch, ok := k.Backend.GetBranch(fixture.branchID)
+		if !ok {
+			return nil, fmt.Errorf("branch %q not found after fault-point %q attempt", fixture.branchID, point)
+		}
+		expectedHead = branch.HeadTurnNodeHash
 	} else {
-		// mid-commit / after-commit-before-ack both fully commit despite
-		// reporting failure: recovery must repair the run record forward to
-		// match the branch head that already moved before it can be
-		// self-consistent again.
+		// mid-commit leaves a durable turn node whose branch head move
+		// never happened (a genuine torn checkpoint); after-commit-before-ack
+		// fully commits including the head move despite reporting failure.
+		// Either way, recovery must repair the run record — and, for
+		// mid-commit, the branch head itself — forward before the state is
+		// self-consistent again. Read the branch head only after
+		// reconciling, so what this operation reports as "actual" is the
+		// fully-recovered state, not a stale pre-recovery snapshot.
 		if err := k.ReconcileRun(fixture.runID); err != nil {
 			return nil, err
 		}
-		expectedHead = actualHead
+		branch, ok := k.Backend.GetBranch(fixture.branchID)
+		if !ok {
+			return nil, fmt.Errorf("branch %q not found after fault-point %q attempt", fixture.branchID, point)
+		}
+		expectedHead = branch.HeadTurnNodeHash
 	}
+	actualHead := expectedHead
 
 	state, stateErr := k.RecoveryState(fixture.runID)
 	recoveryStateConsistent := stateErr == nil && state.LastTurnNodeHash == actualHead
@@ -450,20 +457,34 @@ func observeConcurrentWriterCAS() (map[string]any, error) {
 	_, lossErr := k.CommitSiblingCheckpoint("branch_concurrent_writer", base, nodeB)
 	losingErrorCode := codeOf(lossErr)
 
-	// The loser retries rebased onto the winner's head, and succeeds.
+	// Read the final state produced by the race itself — winner committed,
+	// loser rejected — before the loser's rebased retry does anything
+	// further to the branch head. This is what "final head matches winner"
+	// and "final head is a committed sibling of base" actually mean: the
+	// outcome of the CAS race, not whatever the head happens to be after a
+	// later, unrelated retry commit.
+	branchAfterRace, ok := k.Backend.GetBranch("branch_concurrent_writer")
+	if !ok {
+		return nil, fmt.Errorf("branch_concurrent_writer not found after CAS scenario")
+	}
+	winnerNode, ok := k.Backend.GetTurnNode(winnerHash)
+	if !ok {
+		return nil, fmt.Errorf("winner turn node %q not found after CAS scenario", winnerHash)
+	}
+	finalHeadMatchesWinner := branchAfterRace.HeadTurnNodeHash == winnerHash
+	finalHeadIsCommittedSibling := winnerNode.PreviousTurnNodeHash == base
+
+	// The loser retries rebased onto the winner's head, and succeeds. This
+	// exercises the rebase path but must not be read back into the
+	// race-outcome fields above.
 	nodeBRetry := kernel.TurnNode{SchemaID: "schema_main", TurnTreeHash: created.RootTurnTreeHash, EventHash: eventB}
 	_, retryErr := k.CommitSiblingCheckpoint("branch_concurrent_writer", winnerHash, nodeBRetry)
 	retryAfterLossErrorCode := codeOf(retryErr)
 
-	branch, ok := k.Backend.GetBranch("branch_concurrent_writer")
-	if !ok {
-		return nil, fmt.Errorf("branch_concurrent_writer not found after CAS scenario")
-	}
-
 	return map[string]any{
 		"singleWriterRejected":         lossErr != nil,
-		"finalHeadIsCommittedSibling":  branch.HeadTurnNodeHash == winnerHash || retryErr == nil,
-		"finalHeadMatchesWinner":       true,
+		"finalHeadIsCommittedSibling":  finalHeadIsCommittedSibling,
+		"finalHeadMatchesWinner":       finalHeadMatchesWinner,
 		"losingErrorCode":              losingErrorCode,
 		"retryAfterLossErrorCode":      retryAfterLossErrorCode,
 		"typedLateralConflictObserved": losingErrorCode == kernel.ErrCheckpointLateralConflict,
@@ -471,11 +492,16 @@ func observeConcurrentWriterCAS() (map[string]any, error) {
 }
 
 // observeConcurrentWriterFaultPlan runs a single writer's checkpoint
-// through a "mid-commit" FaultInjectingBackend: the writer's durable write
-// still lands (the branch head still advances) even though the writer
-// itself observes kernel_persistence_fault_injected, and the node it
-// produced is a sibling candidate off the same base a genuinely concurrent
-// second writer would have raced from.
+// through a "mid-commit" FaultInjectingBackend: the writer's durable turn
+// node write lands, but the branch head is deliberately left un-advanced
+// (a genuine torn checkpoint — see fault_injecting_backend.go), even
+// though the writer itself observes kernel_persistence_fault_injected.
+// Recovery (Kernel.ReconcileRun) then rolls that pending node forward: per
+// kernel spec §5.5 ("TurnNode exists → checkpoint succeeded"), the durable
+// write is the true outcome, so this operation reconciles before reading
+// back state — the branch head does end up advanced to a sibling of the
+// pre-attempt head, just via an explicit recovery step rather than
+// silently within the faulted call itself.
 func observeConcurrentWriterFaultPlan() (map[string]any, error) {
 	fixture, err := buildCrashRecoveryFixture()
 	if err != nil {
@@ -488,6 +514,10 @@ func observeConcurrentWriterFaultPlan() (map[string]any, error) {
 	k.Backend = kernel.NewFaultInjectingBackend(baseBackend, kernel.FaultPlan{Point: kernel.FaultPointMidCommit, Policy: kernel.FaultPolicyOnce})
 	_, stepErr := k.CompleteStep(fixture.runID, "step_2", "", "")
 	k.Backend = baseBackend
+
+	if err := k.ReconcileRun(fixture.runID); err != nil {
+		return nil, err
+	}
 
 	branch, ok := k.Backend.GetBranch(fixture.branchID)
 	if !ok {

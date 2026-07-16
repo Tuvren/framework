@@ -773,17 +773,18 @@ func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []S
 	// itself enforces for externally requested head movements.
 	//
 	// UpdateBranchHead is the checkpoint commit sequence's second durable
-	// write. A FaultInjectingBackend's "mid-commit" fault point fires here:
-	// unlike "before-commit", the write itself still happens (the head
-	// really does move) before the error is returned, modeling a crash
-	// that lands after the durable write completes but before the caller
-	// observes success — the turn node and the new head are both already
-	// durable even though this call reports failure. Kernel.CompleteStep /
-	// Kernel.CompleteRun return this error to their caller without
-	// persisting the in-memory run record's CreatedTurnNodes/
-	// CurrentStepIndex advance, so ReconcileRun (recovery.go) is what later
-	// repairs the run record forward to match the branch head that already
-	// moved.
+	// write. A FaultInjectingBackend's "mid-commit" fault point fires here
+	// without performing the move at all: the turn node written just above
+	// is already durable (with consumed embedded as its
+	// ConsumedStagedResults), but the branch head is left exactly where it
+	// was, modeling a genuine torn checkpoint — a crash after the node
+	// lands but before the head advance that would have made it live.
+	// Kernel.CompleteStep / Kernel.CompleteRun return this error to their
+	// caller without persisting the in-memory run record's
+	// CreatedTurnNodes/CurrentStepIndex advance, so ReconcileRun
+	// (recovery.go) is what later discovers the durable-but-unreferenced
+	// node (via Backend.ListChildTurnNodes) and rolls both the branch head
+	// and the run record forward to it.
 	if _, err := k.Backend.UpdateBranchHead(run.BranchID, hash, k.Clock.NowMs()); err != nil {
 		return hash, run, err
 	}
@@ -889,8 +890,24 @@ func (k *Kernel) CompleteRun(runID, eventHash string) error {
 
 	staged := k.Backend.DrainStagedResults(runID)
 	if len(staged) > 0 || eventHash != "" {
-		_, updatedRun, err := k.checkpointRun(run, eventHash, "", staged)
+		hash, updatedRun, err := k.checkpointRun(run, eventHash, "", staged)
 		if err != nil {
+			if hash == "" {
+				// The checkpoint never became durable (a "before-commit"
+				// fault or equivalent failure before the turn node was
+				// written): nothing consumed committed anywhere, so
+				// restage it rather than silently losing it, mirroring
+				// CompleteStep's identical restaging on this path.
+				for _, result := range staged {
+					k.Backend.StageResult(runID, result)
+				}
+			}
+			// hash != "" means the checkpoint's durable writes already
+			// succeeded (a "mid-commit" fault): the turn node is real
+			// (with staged embedded as its ConsumedStagedResults) even
+			// though the branch head was never moved to it and this run
+			// record is deliberately left un-advanced here. ReconcileRun
+			// (recovery.go) repairs it forward.
 			return err
 		}
 		run = updatedRun

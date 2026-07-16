@@ -66,6 +66,22 @@ _ACTIVE_RUN_STATUSES = {"running", "paused"}
 # never mention leases at all.
 _DEFAULT_LEASE_DURATION_MS = 60_000
 
+# Section 9.4 / ADR-050 / ADR-051 leaseless-run admin-expiry horizon: a
+# `"running"` run with no lease at all (`run.create(...,
+# lease_duration_ms=None)`) is presumed abandoned by a crashed/disconnected
+# creator once it has gone quiet for at least this long, and stops pinning
+# `MaintenanceOps.reclaim`'s grace horizon -- see that class's docstring.
+# Matches the Rust/TypeScript ports' `LEASELESS_RUN_EXPIRY_MS` (24h).
+_LEASELESS_RUN_EXPIRY_MS = 86_400_000
+
+# `MaintenanceOps.reclaim`'s "no active run pins anything" sentinel --
+# mirrors the Rust port's `EpochMs::MAX`. Deliberately far larger than any
+# realistic clock value a conformance scenario or production clock will ever
+# reach, so "no run pins the grace horizon" behaves identically to "every
+# grace-window candidate is judged against an unreachably-large horizon"
+# (i.e. the grace window protects nothing beyond plain reachability).
+_EPOCH_MS_MAX = 2**63 - 1
+
 # Bounds `verify_thread_membership`/`reaches`'s `previousTurnNodeHash` walk
 # (Section 4.3), matching the Go port's `maxLineageWalkDepth`: adversarial or
 # accidentally cyclic lineage chains must degrade into a normal kernel error
@@ -345,7 +361,12 @@ class ThreadOps:
         )
         self._kernel.backend.put_branch(
             initial_branch_id,
-            {"branchId": initial_branch_id, "threadId": thread_id, "headTurnNodeHash": node_hash},
+            {
+                "branchId": initial_branch_id,
+                "threadId": thread_id,
+                "headTurnNodeHash": node_hash,
+                "archivedFromBranchId": None,
+            },
         )
 
         return {
@@ -417,6 +438,14 @@ class BranchOps:
             "branchId": branch_id,
             "threadId": thread_id,
             "headTurnNodeHash": from_turn_node_hash,
+            # `None` for every ordinarily-created Branch; only the archive
+            # Branch `branch.setHead` fabricates on a backward move (below)
+            # ever sets this to the Branch it was rolled back from. Section
+            # 9.4's reclamation sweep reads this to distinguish a live,
+            # named Branch (never swept, regardless of reachability) from an
+            # archived one (swept once its exclusive lineage falls out of
+            # the keep closure).
+            "archivedFromBranchId": None,
         }
         self._kernel.backend.put_branch(branch_id, record)
         return record
@@ -470,6 +499,12 @@ class BranchOps:
             "branchId": archive_branch_id,
             "threadId": branch["threadId"],
             "headTurnNodeHash": current_head,
+            # Section 9.4: marks this Branch as reclamation-eligible -- its
+            # exclusive lineage (whatever isn't also reachable from some
+            # other live root) is released once it falls out of the keep
+            # closure, unlike the live, named Branch it was rolled back
+            # from.
+            "archivedFromBranchId": branch_id,
         }
         self._kernel.backend.put_branch(archive_branch_id, archive_branch)
 
@@ -591,7 +626,7 @@ class RunOps:
         steps: list[dict[str, Any]],
         *,
         owner_id: str | None = None,
-        lease_duration_ms: int = _DEFAULT_LEASE_DURATION_MS,
+        lease_duration_ms: int | None = _DEFAULT_LEASE_DURATION_MS,
     ) -> dict[str, Any]:
         if self._kernel.backend.get_run(run_id) is not None:
             raise KernelRuntimeError("kernel_runtime_run_exists", f"runId exists: {run_id}")
@@ -621,11 +656,20 @@ class RunOps:
             )
 
         now = self._kernel.backend.now()
-        lease = {
-            "ownerId": owner_id if owner_id is not None else f"owner:{run_id}",
-            "token": self._kernel.next_lease_token(run_id),
-            "expiresAtMs": now + lease_duration_ms,
-        }
+        # Section 9.4 / ADR-050/051: a caller that omits a lease altogether
+        # (`lease_duration_ms=None`) gets a genuinely leaseless run -- not a
+        # run with an immediately-expired lease -- so
+        # `MaintenanceOps._is_expired_leaseless_running_run` can tell "no
+        # lease was ever requested" apart from "the lease expired".
+        lease = (
+            None
+            if lease_duration_ms is None
+            else {
+                "ownerId": owner_id if owner_id is not None else f"owner:{run_id}",
+                "token": self._kernel.next_lease_token(run_id),
+                "expiresAtMs": now + lease_duration_ms,
+            }
+        )
         record = {
             "runId": run_id,
             "turnId": turn_id,
@@ -640,6 +684,14 @@ class RunOps:
             "lease": lease,
             "pendingCheckpoint": None,
             "preemptionReason": None,
+            # Section 9.4 reclamation-only bookkeeping: `createdAtMs` seeds
+            # the grace horizon (the oldest active run's creation instant);
+            # `updatedAtMs` is this run's own last-activity instant, used
+            # only to judge whether a *leaseless* running run has gone quiet
+            # past `_LEASELESS_RUN_EXPIRY_MS` (a leased run's liveness is
+            # judged by its lease instead, per Section 5.2).
+            "createdAtMs": now,
+            "updatedAtMs": now,
         }
         self._kernel.backend.put_run(run_id, record)
         return dict(record)
@@ -675,6 +727,7 @@ class RunOps:
 
         new_expires_at_ms = self._kernel.backend.now() + lease_duration_ms
         run["lease"] = {**lease, "expiresAtMs": new_expires_at_ms}
+        self._kernel.touch_run(run)
         self._kernel.backend.put_run(run_id, run)
         return dict(run["lease"])
 
@@ -714,6 +767,25 @@ class RunOps:
         run by definition made no further checkpoint after the crash that
         stranded it), so the branch head is untouched here -- it is already
         the "recovery head" a caller compares against.
+
+        **Known scope cut** (Section 5.2 step 4 / M3 review carry-forward):
+        the spec's preemption step describes *reactively checkpointing*
+        verifiably-complete staged work rather than discarding it outright
+        -- i.e. a staged result whose producing step is known to have fully
+        settled before the crash could, in principle, still be folded into
+        one last checkpoint instead of being thrown away. This method does
+        not attempt that: distinguishing "verifiably complete" staged work
+        from merely "present" staged work needs a settlement signal this
+        port's `StagedResult` shape does not yet carry a trustworthy source
+        for, and every M3/M4 conformance check this port promotes --
+        including `kernel.run-liveness.stale-preemption` -- asserts
+        `uncommittedStagedResults == 0` after preemption, i.e. unconditional
+        discard. Implementing partial preservation speculatively would risk
+        landing on a *different* uncommitted count than what the promoted
+        checks expect without a concrete "verifiably complete" signal to
+        drive it correctly. Left as unconditional discard until a later
+        milestone's plan exercises the reactive-checkpoint branch and gives
+        this port a concrete acceptance shape to implement against.
         """
 
         run = self._kernel.require_run(run_id)
@@ -727,6 +799,7 @@ class RunOps:
         run["status"] = "failed"
         run["preemptionReason"] = "stale_running_recovery"
         run["lease"] = None
+        self._kernel.touch_run(run)
         self._kernel.backend.put_run(run_id, run)
         return dict(run)
 
@@ -822,6 +895,7 @@ class RunOps:
             "nodeHash": node_hash,
             "nodeIdentity": node_identity,
         }
+        self._kernel.touch_run(run)
         self._kernel.backend.put_run(run_id, run)
 
         self._kernel.commit_checkpoint(run, branch, node_hash, node_identity)
@@ -830,6 +904,7 @@ class RunOps:
         run["lastCompletedStepId"] = step_id
         run["currentStepIndex"] = index + 1
         run["pendingCheckpoint"] = None
+        self._kernel.touch_run(run)
         self._kernel.backend.put_run(run_id, run)
 
         return {"checkpointed": True, "turnNodeHash": node_hash}
@@ -947,6 +1022,7 @@ class RunOps:
             result["turnNodeHash"] = node_hash
 
         run["status"] = status
+        self._kernel.touch_run(run)
         self._kernel.backend.put_run(run_id, run)
         return result
 
@@ -978,6 +1054,225 @@ class VerdictOps:
         return compose_verdicts(verdicts)
 
 
+class MaintenanceOps:
+    """Section 9.4 `maintenance.reclamation` capability: reachability sweep.
+
+    Ports the shared TypeScript/Rust reclamation algorithm
+    (`reclaimBackendState` / `reclaim_state`) onto this port's `RuntimeBackend`
+    seam: a mark-and-sweep pass that never edits committed lineage and never
+    alters a reachable Object, only ever releasing durable state that is
+    both (a) outside the *keep closure* -- unreachable from every live root
+    -- and (b) older than the *grace horizon*.
+
+    **Live roots**: every non-archived Branch's head TurnNode, every
+    Thread's root TurnNode, and every active (`"running"`/`"paused"`) Run's
+    `startTurnNodeHash` + `createdTurnNodes` + currently-staged results.
+    Reachability closes transitively over `previousTurnNodeHash` (TurnNode
+    ancestry), each TurnNode's `turnTreeHash` (TurnTree), each TurnTree's
+    manifest path values (Objects), each TurnNode's `eventHash`, and each
+    TurnNode's `consumedStagedResults` -- so an Object shared between a live
+    lineage and an otherwise-dead one stays retained via the live root
+    (cross-branch structural sharing, per Section 9.4).
+
+    **Grace horizon**: the `createdAtMs` of the oldest active Run that is
+    still pinning the horizon (see `_is_expired_leaseless_running_run`
+    below); durable state created at or after that instant is retained
+    regardless of reachability, so a sweep can never race an in-flight
+    checkpoint or recovery. Absent any pinning active Run, the horizon is
+    `_EPOCH_MS_MAX` (protects nothing beyond reachability). A *leaseless*
+    `"running"` Run (`lease is None`) that has gone quiet
+    (`now - updatedAtMs >= _LEASELESS_RUN_EXPIRY_MS`, Section 9.4's 24h
+    admin-expiry horizon) is excluded from pinning the grace horizon --
+    treated as abandoned by a crashed/disconnected creator -- though its own
+    reachable lineage stays fully protected regardless, via the
+    unconditional live-root seeding above.
+
+    **Sweep**: archived Branches (`archivedFromBranchId is not None`) whose
+    head TurnNode fell out of the keep closure are released outright (a
+    live, named Branch is never released regardless of reachability);
+    TurnNodes, TurnTrees, and Objects outside the keep closure *and* older
+    than the grace horizon are released. Turns and Runs are left alone by
+    this milestone's sweep -- no promoted M4 check reads a post-reclamation
+    Turn/Run count, only Object/TurnNode/Branch survival, so sweeping them
+    would grow the surface past what this milestone's conformance plan
+    exercises.
+    """
+
+    def __init__(self, kernel: RuntimeKernel) -> None:
+        self._kernel = kernel
+
+    def reclaim(self) -> dict[str, Any]:
+        backend = self._kernel.backend
+        capabilities = backend.capabilities()  # type: ignore[attr-defined]
+        if not capabilities.get("maintenance.reclamation", False):
+            raise KernelRuntimeError(
+                "kernel_capability_unsupported",
+                "backend does not advertise the maintenance.reclamation capability",
+            )
+
+        now = backend.now()
+        grace_horizon_ms = self._compute_grace_horizon_ms(now)
+        keep_nodes, keep_trees, keep_objects = self._compute_keep_closure(grace_horizon_ms)
+
+        released_archived_branches = self._sweep_archived_branches(keep_nodes)
+        released_nodes = self._sweep_nodes(keep_nodes, grace_horizon_ms)
+        released_trees = self._sweep_trees(keep_trees, grace_horizon_ms)
+        released_objects = self._sweep_objects(keep_objects, grace_horizon_ms)
+
+        return {
+            "releasedArchivedBranchCount": released_archived_branches,
+            "releasedTurnNodeCount": released_nodes,
+            "releasedTurnTreeCount": released_trees,
+            "releasedObjectCount": released_objects,
+        }
+
+    # --- Grace horizon ---------------------------------------------------------
+
+    def _is_expired_leaseless_running_run(self, run: dict[str, Any], now: int) -> bool:
+        if run["status"] != "running" or run.get("lease") is not None:
+            return False
+        updated_at_ms = run.get("updatedAtMs", run.get("createdAtMs", now))
+        return (now - updated_at_ms) >= _LEASELESS_RUN_EXPIRY_MS
+
+    def _compute_grace_horizon_ms(self, now: int) -> int:
+        horizon = _EPOCH_MS_MAX
+        for run in self._kernel.backend.list_all_runs():
+            if run["status"] not in _ACTIVE_RUN_STATUSES:
+                continue
+            if self._is_expired_leaseless_running_run(run, now):
+                continue
+            created_at_ms = run.get("createdAtMs", now)
+            if created_at_ms < horizon:
+                horizon = created_at_ms
+        return horizon
+
+    # --- Keep closure ------------------------------------------------------------
+
+    def _compute_keep_closure(self, grace_horizon_ms: int) -> tuple[set[str], set[str], set[str]]:
+        backend = self._kernel.backend
+        keep_nodes: set[str] = set()
+        keep_trees: set[str] = set()
+        keep_objects: set[str] = set()
+        node_stack: list[str] = []
+        tree_stack: list[str] = []
+
+        # Live roots: non-archived branch heads, thread roots, active-run
+        # staged work/created nodes (Section 9.4).
+        for branch in backend.list_all_branches():
+            if branch.get("archivedFromBranchId") is None:
+                node_stack.append(branch["headTurnNodeHash"])
+        for thread in backend.list_threads():
+            node_stack.append(thread["rootTurnNodeHash"])
+        for run in backend.list_all_runs():
+            if run["status"] not in _ACTIVE_RUN_STATUSES:
+                continue
+            node_stack.append(run["startTurnNodeHash"])
+            node_stack.extend(run.get("createdTurnNodes", []))
+            for staged in backend.list_staged(run["runId"]):
+                keep_objects.add(staged["objectHash"])
+
+        # Grace-window roots: any durable state newer than the grace horizon
+        # is retained outright, and its reference closure retained with it.
+        for node_hash in backend.list_node_hashes():
+            created_at = backend.get_node_created_at(node_hash)
+            if created_at is not None and created_at >= grace_horizon_ms:
+                node_stack.append(node_hash)
+        for tree_hash in backend.list_tree_hashes():
+            created_at = backend.get_tree_created_at(tree_hash)
+            if created_at is not None and created_at >= grace_horizon_ms:
+                tree_stack.append(tree_hash)
+        for object_hash in backend.list_object_hashes():
+            created_at = backend.get_object_created_at(object_hash)
+            if created_at is not None and created_at >= grace_horizon_ms:
+                keep_objects.add(object_hash)
+
+        # Close over TurnNode ancestry (`previousTurnNodeHash`), each node's
+        # TurnTree, eventHash Object, and consumed staged-result Objects.
+        while node_stack:
+            node_hash = node_stack.pop()
+            if node_hash in keep_nodes:
+                continue
+            node = backend.get_node(node_hash)
+            if node is None:
+                continue
+            keep_nodes.add(node_hash)
+            if node["previousTurnNodeHash"] is not None:
+                node_stack.append(node["previousTurnNodeHash"])
+            tree_stack.append(node["turnTreeHash"])
+            if node.get("eventHash") is not None:
+                keep_objects.add(node["eventHash"])
+            for staged in node.get("consumedStagedResults", []):
+                keep_objects.add(staged["objectHash"])
+
+        # Close over TurnTree manifests (path values -> Objects). No chunk
+        # handling: this port's `StoredTurnTree.manifest` has no separate
+        # ordered-path-chunk records.
+        while tree_stack:
+            tree_hash = tree_stack.pop()
+            if tree_hash in keep_trees:
+                continue
+            tree = backend.get_tree(tree_hash)
+            if tree is None:
+                continue
+            keep_trees.add(tree_hash)
+            for value in tree["manifest"].values():
+                if isinstance(value, list):
+                    keep_objects.update(value)
+                elif isinstance(value, str):
+                    keep_objects.add(value)
+
+        return keep_nodes, keep_trees, keep_objects
+
+    # --- Sweep -------------------------------------------------------------------
+
+    def _sweep_archived_branches(self, keep_nodes: set[str]) -> int:
+        backend = self._kernel.backend
+        released = 0
+        for branch in backend.list_all_branches():
+            if branch.get("archivedFromBranchId") is None:
+                continue
+            if branch["headTurnNodeHash"] not in keep_nodes:
+                backend.delete_branch(branch["branchId"])
+                released += 1
+        return released
+
+    def _sweep_nodes(self, keep_nodes: set[str], grace_horizon_ms: int) -> int:
+        backend = self._kernel.backend
+        released = 0
+        for node_hash in backend.list_node_hashes():
+            if node_hash in keep_nodes:
+                continue
+            created_at = backend.get_node_created_at(node_hash)
+            if created_at is not None and created_at < grace_horizon_ms:
+                backend.delete_node(node_hash)
+                released += 1
+        return released
+
+    def _sweep_trees(self, keep_trees: set[str], grace_horizon_ms: int) -> int:
+        backend = self._kernel.backend
+        released = 0
+        for tree_hash in backend.list_tree_hashes():
+            if tree_hash in keep_trees:
+                continue
+            created_at = backend.get_tree_created_at(tree_hash)
+            if created_at is not None and created_at < grace_horizon_ms:
+                backend.delete_tree(tree_hash)
+                released += 1
+        return released
+
+    def _sweep_objects(self, keep_objects: set[str], grace_horizon_ms: int) -> int:
+        backend = self._kernel.backend
+        released = 0
+        for object_hash in backend.list_object_hashes():
+            if object_hash in keep_objects:
+                continue
+            created_at = backend.get_object_created_at(object_hash)
+            if created_at is not None and created_at < grace_horizon_ms:
+                backend.delete_object(object_hash)
+                released += 1
+        return released
+
+
 class RuntimeKernel:
     """The M2 runtime kernel, decomposed into per-entity namespaces."""
 
@@ -994,6 +1289,7 @@ class RuntimeKernel:
         self.staging = StagingOps(self)
         self.run = RunOps(self)
         self.verdicts = VerdictOps()
+        self.maintenance = MaintenanceOps(self)
 
     # --- Shared lookups (raise, never return None to a namespace) ----------
 
@@ -1150,6 +1446,17 @@ class RuntimeKernel:
         node_hash = identity.hash_kernel_record(node_identity)
         return node_identity, node_hash
 
+    def touch_run(self, run: dict[str, Any]) -> None:
+        """Stamp `run["updatedAtMs"]` with the backend-authoritative clock.
+
+        Section 9.4 reclamation-only bookkeeping (see `MaintenanceOps`):
+        every `RunOps` method that durably mutates a run record calls this
+        immediately before its `backend.put_run`, so a leaseless running
+        run's last-activity instant is always current.
+        """
+
+        run["updatedAtMs"] = self.backend.now()
+
     def commit_checkpoint(
         self,
         run: dict[str, Any],
@@ -1160,27 +1467,30 @@ class RuntimeKernel:
         """Section 5.5 checkpoint transaction: write TurnNode, advance Head, clear staging.
 
         Guards against a concurrent writer that already moved `branch`'s
-        head since this checkpoint's base was read: re-reads the branch
-        from the backend and rejects with a typed
-        `kernel_runtime_checkpoint_lateral_conflict` (distinct from a
+        head since this checkpoint's base was read by attempting an atomic
+        `RuntimeBackend.compare_and_swap_branch_head` instead of the old
+        read-then-compare-then-`put_branch` sequence (M3 review
+        carry-forward, P2): that old sequence had a genuine read-compare-
+        write race window between the re-read and the write it would then
+        perform; `compare_and_swap_branch_head` closes it by making the
+        compare-and-conditionally-write one backend-owned atomic operation.
+        A failed swap raises the same typed `kernel_runtime_checkpoint_
+        lateral_conflict` this method has always raised (distinct from a
         generic exception, so a caller can positively identify "someone
         else committed first" rather than a storage failure) instead of
         silently overwriting a sibling checkpoint the losing writer never
         saw.
         """
 
-        current_branch = self.backend.get_branch(branch["branchId"])
-        if (
-            current_branch is None
-            or current_branch["headTurnNodeHash"] != branch["headTurnNodeHash"]
-        ):
+        self.backend.put_node(node_hash, {**node_identity, "hash": node_hash})
+        swapped = self.backend.compare_and_swap_branch_head(
+            branch["branchId"], branch["headTurnNodeHash"], node_hash
+        )
+        if not swapped:
             raise KernelRuntimeError(
                 "kernel_runtime_checkpoint_lateral_conflict",
                 f"branch {branch['branchId']} head moved before this checkpoint committed",
             )
-
-        self.backend.put_node(node_hash, {**node_identity, "hash": node_hash})
-        self.backend.put_branch(branch["branchId"], {**branch, "headTurnNodeHash": node_hash})
         self.backend.clear_staged(run["runId"])
 
     def checkpoint(

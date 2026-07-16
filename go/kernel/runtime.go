@@ -96,6 +96,13 @@ type TurnTree struct {
 	Hash     string
 	SchemaID string
 	Manifest map[string]PathValue
+
+	// CreatedAtMs is backend bookkeeping only (not part of the CDDL
+	// turn-tree identity shape, and excluded from turnTreeIdentityRecord):
+	// reclamation's grace window (kernel spec §9.4) needs it to decide
+	// whether a turn tree is new enough to be held regardless of
+	// reachability.
+	CreatedAtMs int64
 }
 
 // TurnNode is the runtime kernel's in-memory turn node. Because a turn
@@ -119,6 +126,13 @@ type TurnNode struct {
 	PreviousTurnNodeHash  string // "" means null (root node)
 	EventHash             string // "" means null
 	ConsumedStagedResults []StagedResult
+
+	// CreatedAtMs is backend bookkeeping only (not part of the CDDL
+	// turn-node identity shape, and excluded from turnNodeIdentityRecord):
+	// reclamation's grace window (kernel spec §9.4) needs it to decide
+	// whether a turn node is new enough to be held regardless of
+	// reachability.
+	CreatedAtMs int64
 }
 
 // Thread is the runtime kernel's in-memory thread record.
@@ -171,6 +185,14 @@ type Run struct {
 	// PreemptionReason is set when a stale-preemption call fails this run
 	// (kernel.run-liveness.stale-preemption); "" otherwise.
 	PreemptionReason string
+
+	// CreatedAtMs / UpdatedAtMs are backend bookkeeping: reclamation's
+	// grace horizon (kernel spec §9.4) is the oldest active (running or
+	// paused) run's CreatedAtMs, and a leaseless running run stops pinning
+	// that horizon once nowMs - UpdatedAtMs crosses the 24h admin-expiry
+	// window (ADR-050/ADR-051).
+	CreatedAtMs int64
+	UpdatedAtMs int64
 }
 
 // ThreadCreateResult mirrors the CDDL thread-create-result record.

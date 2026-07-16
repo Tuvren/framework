@@ -58,6 +58,13 @@ type Backend interface {
 	// state.
 	PutTurnNode(node TurnNode) error
 	GetTurnNode(hash string) (TurnNode, bool)
+	// ListChildTurnNodes returns every stored turn node whose
+	// PreviousTurnNodeHash equals previousHash, unsorted. Recovery
+	// (ReconcileRun, recovery.go) uses this to discover a durable turn
+	// node that a torn checkpoint (FaultPointMidCommit) wrote but whose
+	// branch head move never happened, since such a node is otherwise
+	// unreachable from the branch head it was meant to become.
+	ListChildTurnNodes(previousHash string) []TurnNode
 
 	// --- threads ---
 
@@ -89,6 +96,18 @@ type Backend interface {
 	// error, modeling a crash that lands after the durable write completes
 	// but before the caller is acknowledged success.
 	UpdateBranchHead(branchID, headTurnNodeHash string, updatedAtMs int64) (bool, error)
+
+	// CompareAndSwapBranchHead atomically moves branchID's head to
+	// newHead, but only if its current head still equals expectedHead at
+	// the moment of the write. The first bool result reports whether the
+	// swap actually happened (false if branchID does not exist, or if its
+	// head no longer equals expectedHead — a lost race, not an error); the
+	// error result reports a durable-write failure distinct from a lost
+	// race. Callers that need single-writer-per-checkpoint semantics (see
+	// CommitSiblingCheckpoint) use this instead of a
+	// GetBranch-then-UpdateBranchHead pair, which leaves a read/write race
+	// window an atomic backend implementation must close.
+	CompareAndSwapBranchHead(branchID, expectedHead, newHead string, updatedAtMs int64) (bool, error)
 
 	// --- runs ---
 
