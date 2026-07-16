@@ -760,32 +760,29 @@ class RunOps:
         """Section 5.2 stale-run preemption/recovery.
 
         Transitions an expired `"running"` run to `"failed"` with
-        `preemptionReason: "stale_running_recovery"`, discards its
-        uncommitted staged results (Section 3.4 -- nothing consumed them
-        into a checkpoint), and clears its lease. This run never advanced
-        the branch head past its own `startTurnNodeHash` (a stale-running
-        run by definition made no further checkpoint after the crash that
-        stranded it), so the branch head is untouched here -- it is already
-        the "recovery head" a caller compares against.
+        `preemptionReason: "stale_running_recovery"` and clears its lease.
+        Before marking the run failed, this reuses the exact reactive-
+        checkpoint path `RunOps.complete` takes on ordinary terminal
+        completion (Section 5.6): any uncommitted staged results are
+        incorporated onto the branch's current head TurnTree and checked in
+        as one last TurnNode via `RuntimeKernel.checkpoint`
+        (`begin_checkpoint`/`commit_checkpoint`, the same CAS-guarded
+        write/advance-head/clear-staging transaction `run.completeStep`
+        uses), advancing the branch head and this run's own
+        `createdTurnNodes` -- exactly per Section 5.2 step 4's requirement
+        that preemption reactively checkpoint verifiably-uncommitted staged
+        work onto the run's active lineage rather than discard it. A run
+        with no staged results at preemption time performs no checkpoint at
+        all (mirroring `complete`'s `if staged` guard), so the branch head
+        stays at whatever this run's last checkpoint (or its own
+        `startTurnNodeHash`, if it never checkpointed) already left it at.
 
-        **Known scope cut** (Section 5.2 step 4 / M3 review carry-forward):
-        the spec's preemption step describes *reactively checkpointing*
-        verifiably-complete staged work rather than discarding it outright
-        -- i.e. a staged result whose producing step is known to have fully
-        settled before the crash could, in principle, still be folded into
-        one last checkpoint instead of being thrown away. This method does
-        not attempt that: distinguishing "verifiably complete" staged work
-        from merely "present" staged work needs a settlement signal this
-        port's `StagedResult` shape does not yet carry a trustworthy source
-        for, and every M3/M4 conformance check this port promotes --
-        including `kernel.run-liveness.stale-preemption` -- asserts
-        `uncommittedStagedResults == 0` after preemption, i.e. unconditional
-        discard. Implementing partial preservation speculatively would risk
-        landing on a *different* uncommitted count than what the promoted
-        checks expect without a concrete "verifiably complete" signal to
-        drive it correctly. Left as unconditional discard until a later
-        milestone's plan exercises the reactive-checkpoint branch and gives
-        this port a concrete acceptance shape to implement against.
+        Event bytes are intentionally port-local (unlike the TypeScript and
+        Rust ports, this method does not mint a `stale_running_preempted`
+        event object for the checkpoint's `eventHash`) -- only the
+        structural behavior (staged results become the new head node's
+        `consumedStagedResults`, the branch head advances, staging empties)
+        is cross-port authority.
         """
 
         run = self._kernel.require_run(run_id)
@@ -795,7 +792,19 @@ class RunOps:
                 f"run {run_id} is not running (status={run['status']!r})",
             )
 
-        self._kernel.backend.clear_staged(run_id)
+        staged = self._kernel.backend.list_staged(run_id)
+        if staged:
+            # Reactive checkpoint (Section 5.2 step 4 / 5.6): uncommitted
+            # staged work is committed onto the run's active lineage before
+            # the run halts, exactly like `RunOps.complete`'s reactive
+            # checkpoint on ordinary terminal completion.
+            branch = self._kernel.require_branch(run["branchId"])
+            head_node = self._kernel.backend.get_node(branch["headTurnNodeHash"])
+            assert head_node is not None  # every stored branch head references a stored node
+            new_tree_hash = self._kernel.tree.incorporate(head_node["turnTreeHash"], staged)
+            node_hash = self._kernel.checkpoint(run, branch, new_tree_hash, None, staged)
+            run["createdTurnNodes"].append(node_hash)
+
         run["status"] = "failed"
         run["preemptionReason"] = "stale_running_recovery"
         run["lease"] = None

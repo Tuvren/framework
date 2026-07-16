@@ -35,6 +35,7 @@ var operationHandlers = map[string]operationHandler{
 	"kernel.protocol.deterministic-hashing": runDeterministicHashing,
 	"kernel.protocol.schema-roundtrip":      runSchemaRoundtrip,
 	"kernel.protocol.modify-composition":    runModifyComposition,
+	"kernel.protocol.canonical-rejection":   runCanonicalRejection,
 	"kernel.protocol.edge-validation":       runProtocolEdgeValidation,
 	"kernel.logical.diff-paths":             runLogicalDiffPaths,
 	"kernel.logical.branch-list":            runLogicalBranchList,

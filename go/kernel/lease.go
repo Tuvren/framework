@@ -121,16 +121,47 @@ func (k *Kernel) ListExpiredRuns(nowMs int64) []string {
 	return expired
 }
 
+// preemptionEventMediaType is the media type PreemptStaleRun's minted
+// preemption event object is stored under.
+const preemptionEventMediaType = "application/cbor"
+
+// preemptionEventRecord builds the canonical-record encoding of a stale-run
+// preemption's reactive-checkpoint event: {runId, type}. This mirrors the
+// shape threadBootstrapRecord (kernel_runtime.go) uses for a thread's
+// genesis event — a small, backend-owned, content-addressed marker object
+// pinned as the minted turn node's EventHash. The Go port does not need
+// byte-identical encoding with the TypeScript or Rust ports' own
+// stale-preemption event objects (see TypeScript's preemptExpired in
+// typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts and Rust's
+// run_liveness_preempt_expired in rust/kernel/src/memory.rs); only that the
+// encoding is deterministic and preemption-shaped.
+func preemptionEventRecord(runID string) RecordMap {
+	return RecordMap{
+		"runId": RecordText(runID),
+		"type":  RecordText("kernel_runtime_run_preempted"),
+	}
+}
+
 // PreemptStaleRun fails runID as a stale-recovery preemption (kernel spec
-// §5.2): runID must be status "running" with a lease that has expired at or
-// before nowMs (ErrRunNotPreemptable otherwise — this guards against
-// preempting a live, non-expired, or already-inactive run). On success:
-// status becomes "failed", preemptionReason becomes
-// "stale_running_recovery", any uncommitted staged results are cleared (a
-// preempted run's dead owner never gets to have its unflushed work silently
-// promoted), and the lease is cleared entirely (HasLease=false). The run's
-// branch head is left untouched — the run's last durable checkpoint is
-// exactly the state recovery resumes from.
+// §5.2 Preemption step 4): runID must be status "running" with a lease that
+// has expired at or before nowMs (ErrRunNotPreemptable otherwise — this
+// guards against preempting a live, non-expired, or already-inactive run).
+//
+// On success: any staged-but-uncommitted results are reactively
+// checkpointed onto the run's active lineage exactly as a normal terminal
+// completion (CompleteRun) would — a fresh preemption event object is
+// minted and pinned as the checkpoint's EventHash, the staged results are
+// incorporated into a new turn tree per the run's schema, a new turn node
+// consuming them is chained onto the run's active turn node, and the
+// run's branch head advances to it (via checkpointRun, the same primitive
+// CompleteStep/CompleteRun use). Only once that checkpoint has durably
+// committed does status become "failed", preemptionReason become
+// "stale_running_recovery", the run's CreatedTurnNodes/staging bookkeeping
+// reflect the new head, and the lease clear entirely (HasLease=false). A
+// preempted run's dead owner does not lose unflushed work; it is preserved
+// exactly where a live owner's own terminal completion would have placed
+// it, and RecoveryState afterward reports zero uncommitted staged results
+// and a last turn node that matches the branch head.
 func (k *Kernel) PreemptStaleRun(runID string, nowMs int64) error {
 	run, ok := k.Backend.GetRun(runID)
 	if !ok {
@@ -140,7 +171,36 @@ func (k *Kernel) PreemptStaleRun(runID string, nowMs int64) error {
 		return newKernelError(ErrRunNotPreemptable, "run %q is not a stale running run as of %d", runID, nowMs)
 	}
 
-	k.Backend.DrainStagedResults(runID)
+	staged := k.Backend.DrainStagedResults(runID)
+
+	eventBytes, err := EncodeCanonical(preemptionEventRecord(runID))
+	if err != nil {
+		return err
+	}
+	eventHash := k.Backend.PutObject(preemptionEventMediaType, eventBytes).Hash
+
+	hash, updatedRun, err := k.checkpointRun(run, eventHash, "", staged)
+	if err != nil {
+		if hash == "" {
+			// The checkpoint never became durable: nothing consumed
+			// committed anywhere, so restage it rather than silently
+			// losing it, mirroring CompleteStep/CompleteRun's identical
+			// restaging on this path — a later successful preemption
+			// attempt (or a recovery replay) must still see it as
+			// uncommitted work.
+			for _, result := range staged {
+				k.Backend.StageResult(runID, result)
+			}
+		}
+		// hash != "" means the checkpoint's durable writes already
+		// succeeded (a torn mid-commit checkpoint): the turn node and
+		// branch head are real, but this run record is deliberately left
+		// un-advanced here. ReconcileRun (recovery.go) repairs it forward
+		// to match the branch head that already moved; a subsequent
+		// PreemptStaleRun retry then completes the failure transition.
+		return err
+	}
+	run = updatedRun
 
 	run.Status = RunStatusFailed
 	run.PreemptionReason = "stale_running_recovery"

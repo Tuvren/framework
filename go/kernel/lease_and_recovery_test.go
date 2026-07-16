@@ -186,6 +186,65 @@ func TestLease_StalePreemption(t *testing.T) {
 	if state.LastTurnNodeHash != branch.HeadTurnNodeHash {
 		t.Fatalf("expected recovery head to match branch head: %q vs %q", state.LastTurnNodeHash, branch.HeadTurnNodeHash)
 	}
+
+	// Preemption step 4 (kernel spec §5.2) requires that staged-but-
+	// uncommitted work survive preemption via a reactive checkpoint, not be
+	// discarded: the staged task must appear as the new head turn node's
+	// own consumed staged results.
+	if len(state.ConsumedStagedResults) != 1 || state.ConsumedStagedResults[0].TaskID != "task_1" {
+		t.Fatalf("expected preemption to preserve staged task_1 as consumed staged results, got %+v", state.ConsumedStagedResults)
+	}
+}
+
+// TestLease_StalePreemptionPreservesStagedWork proves staged-but-uncommitted
+// work survives a stale preemption instead of being silently discarded
+// (kernel spec §5.2 Preemption step 4): the staged result's task id must
+// appear in the preempted run's new head turn node's own
+// ConsumedStagedResults, the branch head must have advanced to that new
+// node, and the run's staging pool must be empty afterward.
+func TestLease_StalePreemptionPreservesStagedWork(t *testing.T) {
+	k, clock := newManualClockKernel(0)
+	rootHash := createSingleStepRun(t, k, "thread_stale_preserve", "branch_stale_preserve", "run_stale_preserve")
+	if _, _, err := k.AcquireLease("run_stale_preserve", "owner_a", 5); err != nil {
+		t.Fatalf("acquire: %v", err)
+	}
+	if err := k.StageResult("run_stale_preserve", kernel.StagedResult{
+		TaskID: "assistant_message", ObjectHash: kernel.HashBytesToHex([]byte("staged-before-preemption")),
+		ObjectType: "message", Status: kernel.StagedResultCompleted,
+	}); err != nil {
+		t.Fatalf("stage: %v", err)
+	}
+
+	clock.SetMs(100)
+	if err := k.PreemptStaleRun("run_stale_preserve", clock.NowMs()); err != nil {
+		t.Fatalf("preempt: %v", err)
+	}
+
+	branch, ok := k.Backend.GetBranch("branch_stale_preserve")
+	if !ok {
+		t.Fatalf("branch_stale_preserve not found")
+	}
+	if branch.HeadTurnNodeHash == rootHash {
+		t.Fatalf("expected branch head to advance past root on preemption checkpoint")
+	}
+	headNode, ok := k.Backend.GetTurnNode(branch.HeadTurnNodeHash)
+	if !ok {
+		t.Fatalf("preempted head turn node %q not found", branch.HeadTurnNodeHash)
+	}
+	if len(headNode.ConsumedStagedResults) != 1 || headNode.ConsumedStagedResults[0].TaskID != "assistant_message" {
+		t.Fatalf("expected head turn node to consume staged task assistant_message, got %+v", headNode.ConsumedStagedResults)
+	}
+
+	state, err := k.RecoveryState("run_stale_preserve")
+	if err != nil {
+		t.Fatalf("recovery state: %v", err)
+	}
+	if len(state.UncommittedStagedResults) != 0 {
+		t.Fatalf("expected staging pool empty after preemption checkpoint, got %d", len(state.UncommittedStagedResults))
+	}
+	if state.LastTurnNodeHash != branch.HeadTurnNodeHash {
+		t.Fatalf("expected recovery head to match advanced branch head: %q vs %q", state.LastTurnNodeHash, branch.HeadTurnNodeHash)
+	}
 }
 
 // --- fault-injecting backend / crash recovery (kernel.restart-recovery) ---

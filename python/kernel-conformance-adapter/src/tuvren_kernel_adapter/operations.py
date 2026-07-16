@@ -38,7 +38,8 @@ surface into `operations.go` / `operations_runtime.go` /
 `operations_liveness.go` / `operations_maintenance.go`:
 
 - `operations_protocol.py` -- `kernel.protocol.deterministic-hashing`,
-  `kernel.protocol.schema-roundtrip`, `kernel.protocol.modify-composition`.
+  `kernel.protocol.schema-roundtrip`, `kernel.protocol.modify-composition`,
+  `kernel.protocol.canonical-rejection`.
 - `operations_runtime.py` -- `kernel.logical.*`, `kernel.lineage.*`, and
   `kernel.protocol.edge-validation` (edge-validation exercises the same
   logical/schema/run runtime surface as the other operations in this file,
@@ -73,6 +74,7 @@ from tuvren_kernel_adapter.operations_maintenance import (
     run_reclamation_probe,
 )
 from tuvren_kernel_adapter.operations_protocol import (
+    run_canonical_rejection,
     run_deterministic_hashing,
     run_modify_composition,
     run_schema_roundtrip,
@@ -90,6 +92,7 @@ OPERATIONS: dict[str, Any] = {
     "kernel.protocol.deterministic-hashing": run_deterministic_hashing,
     "kernel.protocol.schema-roundtrip": run_schema_roundtrip,
     "kernel.protocol.modify-composition": run_modify_composition,
+    "kernel.protocol.canonical-rejection": run_canonical_rejection,
     "kernel.protocol.edge-validation": run_protocol_edge_validation,
     "kernel.logical.diff-paths": run_logical_diff,
     "kernel.logical.branch-list": run_branch_list,

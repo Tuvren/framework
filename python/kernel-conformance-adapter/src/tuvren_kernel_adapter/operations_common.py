@@ -75,6 +75,28 @@ def _read_fixture(operation_input: Any) -> dict[str, Any]:
     return fixture
 
 
+def _read_fixture_optional(operation_input: Any) -> dict[str, Any] | None:
+    """Like `_read_fixture`, but tolerant of a missing/absent fixture.
+
+    `kernel.protocol.modify-composition` runs a fixed-scenario core-plan
+    check with no fixture at all, and a fixture-driven extended-plan check
+    with one -- this reads the adapter input's `fixture` key back as
+    `None` in the former case instead of raising, mirroring the TypeScript
+    adapter's `readFixtureOptional`.
+    """
+
+    if not isinstance(operation_input, dict):
+        raise OperationInputError("missing_value", "adapter input is required for this operation")
+    fixture = operation_input.get("fixture")
+    if fixture is None:
+        return None
+    if not isinstance(fixture, dict):
+        raise OperationInputError(
+            "invalid_object_fixture", "adapter input fixture must be an object"
+        )
+    return fixture
+
+
 def _read_u8_array(value: Any, label: str) -> bytes:
     if not isinstance(value, list):
         raise OperationInputError("invalid_array_fixture", f"{label} must be an array")

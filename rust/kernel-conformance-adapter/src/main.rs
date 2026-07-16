@@ -27,8 +27,9 @@ use tuvren_kernel_rust::{
     HashString, InMemoryKernel, InMemoryKernelOptions, KernelError, KernelRecord,
     LeasedRunCreateInput, PathCollectionKind, PathDefinition, PathValue, RecoveryState,
     RunCompletionStatus, RunStatus, StagedResult, StagedResultStatus, StepDeclaration,
-    ThreadListOptions, TurnNode, TurnTreeSchema, decode_deterministic_kernel_record,
-    hash_bytes_to_hex, hash_kernel_record, hash_turn_node_identity, kernel_record_from_json,
+    ThreadListOptions, TurnNode, TurnTreeSchema, Verdict, VerdictDisposition,
+    decode_deterministic_kernel_record, hash_bytes_to_hex, hash_kernel_record,
+    hash_turn_node_identity, kernel_record_from_json,
 };
 
 const CANONICAL_SCHEMA_PATH: &str =
@@ -143,7 +144,8 @@ fn dispatch_operation(operation: &str, input: &Value) -> OperationOutcome {
     let result = match operation {
         "kernel.protocol.deterministic-hashing" => run_deterministic_hashing(input),
         "kernel.protocol.schema-roundtrip" => run_schema_roundtrip(input),
-        "kernel.protocol.modify-composition" => run_modify_composition(),
+        "kernel.protocol.modify-composition" => run_modify_composition(input),
+        "kernel.protocol.canonical-rejection" => run_canonical_rejection(input),
         "kernel.logical.diff-paths" => run_logical_diff(input),
         "kernel.logical.branch-list" => run_branch_list(input),
         "kernel.logical.thread-list" => run_thread_list(),
@@ -213,10 +215,17 @@ fn run_schema_roundtrip(input: &Value) -> Result<Value, KernelError> {
     })))
 }
 
-fn run_modify_composition() -> Result<Value, KernelError> {
+fn run_modify_composition(input: &Value) -> Result<Value, KernelError> {
+    if let Some(fixture_value) = input.get("fixture") {
+        return run_modify_composition_fixture(read_object(
+            Some(fixture_value),
+            "adapter input fixture",
+        )?);
+    }
+
     let kernel = InMemoryKernel::new();
     let verdict = kernel.verdicts_compose(vec![
-        tuvren_kernel_rust::Verdict::Modify {
+        Verdict::Modify {
             transform: KernelRecord::Map(BTreeMap::from([
                 (
                     "extension".to_string(),
@@ -228,8 +237,8 @@ fn run_modify_composition() -> Result<Value, KernelError> {
                 ),
             ])),
         },
-        tuvren_kernel_rust::Verdict::Proceed,
-        tuvren_kernel_rust::Verdict::Modify {
+        Verdict::Proceed,
+        Verdict::Modify {
             transform: KernelRecord::Map(BTreeMap::from([
                 (
                     "extension".to_string(),
@@ -243,7 +252,7 @@ fn run_modify_composition() -> Result<Value, KernelError> {
         },
     ])?;
 
-    let tuvren_kernel_rust::Verdict::Modify { transform } = verdict else {
+    let Verdict::Modify { transform } = verdict else {
         return Err(error(
             "unexpected_verdict_kind",
             "expected modify verdict after composing ordered modify transforms",
@@ -256,6 +265,139 @@ fn run_modify_composition() -> Result<Value, KernelError> {
             "transform": kernel_record_to_json(&transform),
         }
     })))
+}
+
+// KRT-BK010 (`kernel.protocol`): fixture-aware extension of
+// `kernel.protocol.modify-composition` that composes each named case's
+// verdict list through `InMemoryKernel::verdicts_compose` and projects the
+// resulting verdict, mirroring the TypeScript conformance host's handling of
+// `f-verdict-composition`. Kernel spec §6.1/§6.2 fix the dominance order
+// Abort > Pause > Modify > Retry > Proceed, first-objection-wins, with
+// multiple Modify transforms composing into an ordered array.
+fn run_modify_composition_fixture(fixture: &Map<String, Value>) -> Result<Value, KernelError> {
+    let cases = read_object(fixture.get("cases"), "cases")?;
+    let kernel = InMemoryKernel::new();
+    let mut composition = Map::new();
+
+    for (name, case) in cases {
+        let case_object = read_object(Some(case), "verdict composition case")?;
+        let verdicts = read_array(case_object.get("verdicts"), "verdicts")?
+            .iter()
+            .map(parse_verdict)
+            .collect::<Result<Vec<_>, _>>()?;
+        let composed = kernel.verdicts_compose(verdicts)?;
+        composition.insert(name.clone(), verdict_to_json(&composed));
+    }
+
+    Ok(projection(
+        json!({ "composition": Value::Object(composition) }),
+    ))
+}
+
+fn parse_verdict(value: &Value) -> Result<Verdict, KernelError> {
+    let object = read_object(Some(value), "verdict")?;
+    match read_string(object.get("kind"), "verdict.kind")?.as_str() {
+        "proceed" => Ok(Verdict::Proceed),
+        "abort" => Ok(Verdict::Abort {
+            disposition: parse_verdict_disposition(&read_string(
+                object.get("disposition"),
+                "verdict.disposition",
+            )?)?,
+            reason: read_string(object.get("reason"), "verdict.reason")?,
+        }),
+        "modify" => Ok(Verdict::Modify {
+            transform: kernel_record_from_json(read_value(
+                object.get("transform"),
+                "verdict.transform",
+            )?)?,
+        }),
+        "pause" => Ok(Verdict::Pause {
+            reason: read_string(object.get("reason"), "verdict.reason")?,
+            resumption_schema: kernel_record_from_json(read_value(
+                object.get("resumptionSchema"),
+                "verdict.resumptionSchema",
+            )?)?,
+        }),
+        "retry" => Ok(Verdict::Retry {
+            adjustment: kernel_record_from_json(read_value(
+                object.get("adjustment"),
+                "verdict.adjustment",
+            )?)?,
+        }),
+        other => Err(error(
+            "invalid_verdict_kind",
+            &format!("unsupported verdict kind {other}"),
+        )),
+    }
+}
+
+fn parse_verdict_disposition(value: &str) -> Result<VerdictDisposition, KernelError> {
+    match value {
+        "HardFail" => Ok(VerdictDisposition::HardFail),
+        "SoftFail" => Ok(VerdictDisposition::SoftFail),
+        "EndTurn" => Ok(VerdictDisposition::EndTurn),
+        other => Err(error(
+            "invalid_verdict_disposition",
+            &format!("unsupported verdict disposition {other}"),
+        )),
+    }
+}
+
+fn verdict_disposition_to_str(disposition: &VerdictDisposition) -> &'static str {
+    match disposition {
+        VerdictDisposition::HardFail => "HardFail",
+        VerdictDisposition::SoftFail => "SoftFail",
+        VerdictDisposition::EndTurn => "EndTurn",
+    }
+}
+
+fn verdict_to_json(verdict: &Verdict) -> Value {
+    match verdict {
+        Verdict::Proceed => json!({ "kind": "proceed" }),
+        Verdict::Abort {
+            disposition,
+            reason,
+        } => json!({
+            "kind": "abort",
+            "disposition": verdict_disposition_to_str(disposition),
+            "reason": reason,
+        }),
+        Verdict::Modify { transform } => json!({
+            "kind": "modify",
+            "transform": kernel_record_to_json(transform),
+        }),
+        Verdict::Pause {
+            reason,
+            resumption_schema,
+        } => json!({
+            "kind": "pause",
+            "reason": reason,
+            "resumptionSchema": kernel_record_to_json(resumption_schema),
+        }),
+        Verdict::Retry { adjustment } => json!({
+            "kind": "retry",
+            "adjustment": kernel_record_to_json(adjustment),
+        }),
+    }
+}
+
+// KRT-BK010 (`kernel.protocol`): mirrors the TypeScript conformance host's
+// canonical-rejection check. Each named adversarial byte sequence from
+// `f-adversarial-cbor` (docs/KrakenKernelSpecification.md §2.3) must be
+// refused identity by the strict deterministic CBOR decoder.
+fn run_canonical_rejection(input: &Value) -> Result<Value, KernelError> {
+    let fixture = read_input_fixture(input)?;
+    let cases = read_object(fixture.get("cases"), "cases")?;
+    let mut rejection = Map::new();
+
+    for (name, case) in cases {
+        let case_object = read_object(Some(case), "adversarial cbor case")?;
+        let bytes = read_u8_array(case_object.get("cborBytes"), "cborBytes")?;
+        let rejected = decode_deterministic_kernel_record(&bytes).is_err();
+        rejection.insert(name.clone(), json!({ "rejected": rejected }));
+    }
+
+    Ok(projection(json!({ "rejection": Value::Object(rejection) })))
 }
 
 fn run_logical_diff(input: &Value) -> Result<Value, KernelError> {
@@ -699,12 +841,18 @@ fn run_stale_preemption() -> Result<Value, KernelError> {
     let lease_cleared = stored_run.execution_owner_id.is_none()
         && stored_run.fencing_token.is_none()
         && stored_run.lease_expires_at_ms.is_none();
+    let preserved_staged_result_task_ids = recovery
+        .consumed_staged_results
+        .iter()
+        .map(|staged| staged.task_id.as_str())
+        .collect::<Vec<_>>();
 
     Ok(projection(json!({
         "preemption": {
             "branchHeadTurnNodeHash": updated_branch.head_turn_node_hash,
             "leaseCleared": lease_cleared,
             "preemptionReason": stored_run.preemption_reason,
+            "preservedStagedResultTaskIds": preserved_staged_result_task_ids,
             "recoveryHeadMatchesBranchHead": recovery.last_turn_node_hash == updated_branch.head_turn_node_hash,
             "recoveryLastTurnNodeHash": recovery.last_turn_node_hash,
             "runStatus": run_status_to_str(&stored_run.status),

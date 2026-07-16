@@ -176,7 +176,7 @@ func runStalePreemption(json.RawMessage) operationOutcome {
 		return errorOutcomeFor(err)
 	}
 	if err := k.StageResult("run_stale", kernel.StagedResult{
-		TaskID: "task_uncommitted", ObjectHash: kernel.HashBytesToHex([]byte("staged-before-preemption")),
+		TaskID: "assistant_message", ObjectHash: kernel.HashBytesToHex([]byte("staged-before-preemption")),
 		ObjectType: "message", Status: kernel.StagedResultCompleted,
 	}); err != nil {
 		return errorOutcomeFor(err)
@@ -200,6 +200,11 @@ func runStalePreemption(json.RawMessage) operationOutcome {
 		return errorOutcomeFor(err)
 	}
 
+	preservedStagedResultTaskIDs := make([]string, 0, len(state.ConsumedStagedResults))
+	for _, result := range state.ConsumedStagedResults {
+		preservedStagedResultTaskIDs = append(preservedStagedResultTaskIDs, result.TaskID)
+	}
+
 	return operationOutcome{Kind: "result", Value: projection(map[string]any{
 		"preemption": map[string]any{
 			"branchHeadTurnNodeHash":        branch.HeadTurnNodeHash,
@@ -209,6 +214,7 @@ func runStalePreemption(json.RawMessage) operationOutcome {
 			"recoveryHeadMatchesBranchHead": state.LastTurnNodeHash == branch.HeadTurnNodeHash,
 			"uncommittedStagedResults":      len(state.UncommittedStagedResults),
 			"leaseCleared":                  !run.HasLease,
+			"preservedStagedResultTaskIds":  preservedStagedResultTaskIDs,
 		},
 	})}
 }

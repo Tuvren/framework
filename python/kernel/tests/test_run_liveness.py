@@ -182,6 +182,71 @@ def test_run_preempt_stale_transitions_run_and_clears_lease_and_staging() -> Non
     assert recovery["lastTurnNodeHash"] == branch["headTurnNodeHash"]
 
 
+def test_run_preempt_stale_reactively_checkpoints_uncommitted_staged_work() -> None:
+    """Section 5.2 step 4: preemption must fold verifiably-uncommitted
+    staged work into one last checkpoint on the run's active lineage
+    instead of discarding it -- the branch head advances to a new
+    TurnNode whose `consumedStagedResults` carries the staged task, and
+    `run.recover`'s `uncommittedStagedResults` reports zero because the
+    work was checkpointed, not thrown away.
+    """
+
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    thread, _, run = make_run(kernel, "preempt_preserve", owner_id="owner_a", lease_duration_ms=5)
+    root_head = thread["rootTurnNodeHash"]
+    kernel.staging.stage(
+        "run_preempt_preserve", b"assistant reply", "assistant_message", "message", "completed"
+    )
+
+    clock.value = 100
+    preempted = kernel.run.preempt_stale("run_preempt_preserve")
+
+    assert preempted["status"] == "failed"
+    assert preempted["preemptionReason"] == "stale_running_recovery"
+    assert preempted["lease"] is None
+    assert kernel.staging.current("run_preempt_preserve") == []
+
+    branch = kernel.branch.get(thread["branchId"])
+    # The branch head must have advanced past the run's start node onto a
+    # freshly minted reactive-checkpoint TurnNode.
+    assert branch["headTurnNodeHash"] != root_head
+    assert preempted["createdTurnNodes"] == [branch["headTurnNodeHash"]]
+
+    head_node = kernel.node.get(branch["headTurnNodeHash"])
+    assert head_node is not None
+    assert [staged["taskId"] for staged in head_node["consumedStagedResults"]] == [
+        "assistant_message"
+    ]
+
+    recovery = kernel.run.recover("run_preempt_preserve")
+    assert recovery["lastTurnNodeHash"] == branch["headTurnNodeHash"]
+    assert recovery["uncommittedStagedResults"] == []
+    assert [staged["taskId"] for staged in recovery["consumedStagedResults"]] == [
+        "assistant_message"
+    ]
+
+
+def test_run_preempt_stale_with_no_staged_work_leaves_branch_head_untouched() -> None:
+    """When a stale-running run has no uncommitted staged work at
+    preemption time, there is nothing to reactively checkpoint, so the
+    branch head stays exactly where the run's own lineage last left it
+    (its `startTurnNodeHash`, since this run never checkpointed)."""
+
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    thread, _, run = make_run(kernel, "preempt_empty", owner_id="owner_a", lease_duration_ms=5)
+
+    clock.value = 100
+    preempted = kernel.run.preempt_stale("run_preempt_empty")
+
+    assert preempted["status"] == "failed"
+    assert preempted["createdTurnNodes"] == []
+
+    branch = kernel.branch.get(thread["branchId"])
+    assert branch["headTurnNodeHash"] == thread["rootTurnNodeHash"]
+
+
 def test_run_preempt_stale_rejects_a_run_that_is_not_running() -> None:
     kernel = new_kernel()
     make_run(kernel, "preempt_terminal", owner_id="owner_a")

@@ -31,6 +31,7 @@ from tuvren_kernel_adapter.operations_common import (
     OperationInputError,
     _projection,
     _read_fixture,
+    _read_fixture_optional,
     _read_u8_array,
 )
 
@@ -129,15 +130,76 @@ def run_schema_roundtrip(operation_input: Any) -> dict[str, Any]:
     )
 
 
-def run_modify_composition(_operation_input: Any) -> dict[str, Any]:
+def run_modify_composition(operation_input: Any) -> dict[str, Any]:
     """Handle `kernel.protocol.modify-composition`.
 
-    Composes the fixed ordered verdict scenario (modify "first", proceed,
-    modify "second") through `tuvren_kernel.verdict.compose_verdicts` and
-    reports the resulting verdict, which the associated conformance plan's
-    assertions expect to be a single Modify verdict whose transform is the
-    ordered concatenation of the two Modify transforms.
+    Without a fixture (the core-plan check), composes the fixed ordered
+    verdict scenario (modify "first", proceed, modify "second") through
+    `tuvren_kernel.verdict.compose_verdicts` and reports the resulting
+    verdict -- unchanged from this operation's original behavior.
+
+    With a fixture (the extended-plan `kernel-protocol-verdict-composition`
+    check), composes each fixture case's `verdicts` list independently and
+    reports the composed verdict per case under `$.composition.<name>`,
+    which the associated conformance plan's assertions deep-equal against
+    that case's fixture-authored `expected` value (spec §6.1/§6.2
+    dominance and multi-Modify transform-ordering semantics).
     """
 
-    composed = compose_verdicts(_MODIFY_COMPOSITION_VERDICTS)
-    return _projection({"verdict": composed})
+    fixture = _read_fixture_optional(operation_input)
+    if fixture is None:
+        composed = compose_verdicts(_MODIFY_COMPOSITION_VERDICTS)
+        return _projection({"verdict": composed})
+
+    cases = fixture.get("cases")
+    if not isinstance(cases, dict):
+        raise OperationInputError("invalid_object_fixture", "fixture cases must be an object")
+
+    composition: dict[str, Any] = {}
+    for case_name, case_value in cases.items():
+        if not isinstance(case_value, dict):
+            raise OperationInputError(
+                "invalid_object_fixture", f"cases.{case_name} must be an object"
+            )
+        verdicts = case_value.get("verdicts")
+        if not isinstance(verdicts, list):
+            raise OperationInputError(
+                "invalid_array_fixture", f"cases.{case_name}.verdicts must be an array"
+            )
+        composition[case_name] = compose_verdicts(verdicts)
+
+    return _projection({"composition": composition})
+
+
+def run_canonical_rejection(operation_input: Any) -> dict[str, Any]:
+    """Handle `kernel.protocol.canonical-rejection`.
+
+    Attempts the strict canonical `tuvren_kernel.cbor.decode` on each
+    adversarial fixture case's raw byte sequence and reports whether the
+    decode raised `CborDecodeError` (`rejected: true`) or succeeded
+    (`rejected: false`) -- no error-code projection, per the adapter hard
+    rules. The associated conformance plan expects every case rejected.
+    """
+
+    fixture = _read_fixture(operation_input)
+    cases = fixture.get("cases")
+    if not isinstance(cases, dict):
+        raise OperationInputError("invalid_object_fixture", "fixture cases must be an object")
+
+    from tuvren_kernel import cbor
+
+    rejection: dict[str, Any] = {}
+    for case_name, case_value in cases.items():
+        if not isinstance(case_value, dict):
+            raise OperationInputError(
+                "invalid_object_fixture", f"cases.{case_name} must be an object"
+            )
+        cbor_bytes = _read_u8_array(case_value.get("cborBytes"), f"cases.{case_name}.cborBytes")
+        try:
+            cbor.decode(cbor_bytes)
+            rejected = False
+        except cbor.CborDecodeError:
+            rejected = True
+        rejection[case_name] = {"rejected": rejected}
+
+    return _projection({"rejection": rejection})

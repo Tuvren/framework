@@ -183,13 +183,18 @@ def run_expired_listing(_operation_input: Any) -> dict[str, Any]:
 def run_stale_preemption(_operation_input: Any) -> dict[str, Any]:
     """Handle `kernel.run-liveness.stale-preemption`.
 
-    Builds a run with one uncommitted staged result and an expired lease,
-    then preempts it. The plan's assertions expect the run to land on
-    `status: "failed"` / `preemptionReason: "stale_running_recovery"`, its
-    uncommitted staged result discarded, its lease cleared, and its
-    recovery-state's last TurnNode hash matching the branch head (this run
-    never checkpointed past its own start, so the branch head it started at
-    is still the branch's current head).
+    Builds a run with one uncommitted staged result (task id
+    `assistant_message`) and an expired lease, then preempts it. The plan's
+    assertions expect the run to land on `status: "failed"` /
+    `preemptionReason: "stale_running_recovery"`, its lease cleared, and
+    (Section 5.2 step 4) its staged result *preserved* via a reactive
+    checkpoint rather than discarded: the branch head advances onto that
+    checkpoint's TurnNode, `uncommittedStagedResults` reports zero because
+    the work was consumed into the checkpoint rather than thrown away, and
+    `preservedStagedResultTaskIds` reports the checkpoint node's
+    `consumedStagedResults` task ids in order -- proving preservation
+    positively rather than merely asserting the uncommitted count alone
+    (which a discard implementation could also satisfy).
     """
 
     clock = _InjectedClock(0)
@@ -215,7 +220,11 @@ def run_stale_preemption(_operation_input: Any) -> dict[str, Any]:
         lease_duration_ms=5,
     )
     kernel.staging.stage(
-        "run_stale_preemption", b"uncommitted staged work", "task_stale", "message", "completed"
+        "run_stale_preemption",
+        b"uncommitted staged work",
+        "assistant_message",
+        "message",
+        "completed",
     )
 
     clock.value = 100
@@ -235,6 +244,9 @@ def run_stale_preemption(_operation_input: Any) -> dict[str, Any]:
                 "recoveryLastTurnNodeHash": recovery["lastTurnNodeHash"],
                 "recoveryHeadMatchesBranchHead": recovery["lastTurnNodeHash"]
                 == branch["headTurnNodeHash"],
+                "preservedStagedResultTaskIds": [
+                    staged["taskId"] for staged in recovery["consumedStagedResults"]
+                ],
             }
         }
     )

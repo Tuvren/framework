@@ -45,9 +45,34 @@ func parseJSONInput(raw json.RawMessage) (any, error) {
 // tools/conformance/harness/run.ts's createAdapterInput), mirroring
 // rust/kernel-conformance-adapter/src/main.rs's read_input_fixture.
 func readInputFixture(rawInput json.RawMessage) (map[string]any, *adapterErrorEnvelope) {
+	fixture, present, rpcErr := tryReadInputFixture(rawInput)
+	if rpcErr != nil {
+		return nil, rpcErr
+	}
+	if !present {
+		return nil, &adapterErrorEnvelope{
+			Code:    "missing_operation_fixture",
+			Message: "dispatch input.fixture must be a JSON object",
+		}
+	}
+	return fixture, nil
+}
+
+// tryReadInputFixture is readInputFixture's non-required counterpart: it
+// reports (fixture, true, nil) when params.input.fixture is present and is
+// a JSON object, (nil, false, nil) when input has no "fixture" key at all
+// (or no input object was given), and (nil, false, err) only for a genuine
+// parse failure or a present-but-malformed "fixture" value. This is what
+// lets an operation like kernel.protocol.modify-composition stay
+// fixture-optional: a plan invoking it without a fixture (the original
+// core-plan check) gets its unchanged fixture-less behavior, while a plan
+// that does supply one (the extended-plan verdict-composition check) gets
+// fixture-driven behavior, without either plan having to agree in advance
+// on which shape this operation is.
+func tryReadInputFixture(rawInput json.RawMessage) (map[string]any, bool, *adapterErrorEnvelope) {
 	parsed, err := parseJSONInput(rawInput)
 	if err != nil {
-		return nil, &adapterErrorEnvelope{
+		return nil, false, &adapterErrorEnvelope{
 			Code:    "invalid_operation_input",
 			Message: fmt.Sprintf("failed to parse dispatch input: %v", err),
 		}
@@ -55,21 +80,23 @@ func readInputFixture(rawInput json.RawMessage) (map[string]any, *adapterErrorEn
 
 	input, ok := parsed.(map[string]any)
 	if !ok {
-		return nil, &adapterErrorEnvelope{
-			Code:    "invalid_operation_input",
-			Message: "dispatch input must be a JSON object",
-		}
+		return nil, false, nil
 	}
 
-	fixture, ok := input["fixture"].(map[string]any)
+	rawFixture, present := input["fixture"]
+	if !present {
+		return nil, false, nil
+	}
+
+	fixture, ok := rawFixture.(map[string]any)
 	if !ok {
-		return nil, &adapterErrorEnvelope{
-			Code:    "missing_operation_fixture",
+		return nil, false, &adapterErrorEnvelope{
+			Code:    "invalid_operation_input",
 			Message: "dispatch input.fixture must be a JSON object",
 		}
 	}
 
-	return fixture, nil
+	return fixture, true, nil
 }
 
 func readFixtureString(fixture map[string]any, field string) (string, *adapterErrorEnvelope) {
@@ -271,11 +298,31 @@ func modifyTransformRecord(extension, mutation string) kernel.RecordMap {
 	}
 }
 
-// runModifyComposition exercises the kernel spec's §6.2 composition rule
-// with two Modify verdicts (registered around an intervening Proceed, which
-// contributes nothing) and asserts the kernel composes their transforms, in
-// registration order, into a single Modify verdict.
-func runModifyComposition(json.RawMessage) operationOutcome {
+// runModifyComposition exercises the kernel spec's §6.2 composition rule.
+//
+// Without a fixture (params.input carries no "fixture" key at all — the
+// original kernel-protocol-core.json check), it runs its original
+// fixture-less scenario: two Modify verdicts registered around an
+// intervening Proceed (which contributes nothing), asserting the kernel
+// composes their transforms, in registration order, into a single Modify
+// verdict.
+//
+// With a fixture present (kernel-protocol-extended.json's
+// f-verdict-composition, spec/conformance/kernel/fixtures/
+// kernel-protocol-verdict-composition.json), it instead composes every
+// fixture case's own verdicts through kernel.ComposeVerdicts and projects
+// each case's composed result under $.composition.<name>, so the plan can
+// deep-equal it against that same case's committed $.fixture.cases.<name>.
+// expected value.
+func runModifyComposition(rawInput json.RawMessage) operationOutcome {
+	fixture, hasFixture, rpcErr := tryReadInputFixture(rawInput)
+	if rpcErr != nil {
+		return operationOutcome{Kind: "error", Error: rpcErr}
+	}
+	if hasFixture {
+		return runModifyCompositionFromFixture(fixture)
+	}
+
 	composed, err := kernel.ComposeVerdicts([]kernel.Verdict{
 		{Kind: kernel.VerdictKindModify, Transform: modifyTransformRecord("first", "append-prefix")},
 		{Kind: kernel.VerdictKindProceed},
@@ -311,5 +358,161 @@ func runModifyComposition(json.RawMessage) operationOutcome {
 				"transform": transformJSON,
 			},
 		}),
+	}
+}
+
+// verdictFromJSON converts one fixture verdict object (as decoded by
+// parseJSONInput, so numbers arrive as json.Number) into a kernel.Verdict.
+// Only the fields kernel.ComposeVerdicts actually reads for that verdict's
+// Kind are populated; an unrecognized "kind" is rejected up front rather
+// than silently composing as Proceed.
+func verdictFromJSON(raw any) (kernel.Verdict, *adapterErrorEnvelope) {
+	object, ok := raw.(map[string]any)
+	if !ok {
+		return kernel.Verdict{}, &adapterErrorEnvelope{
+			Code:    "invalid_operation_input",
+			Message: "fixture verdict must be a JSON object",
+		}
+	}
+	kind, ok := object["kind"].(string)
+	if !ok {
+		return kernel.Verdict{}, &adapterErrorEnvelope{
+			Code:    "invalid_operation_input",
+			Message: "fixture verdict.kind must be a string",
+		}
+	}
+
+	verdict := kernel.Verdict{Kind: kind}
+	switch kind {
+	case kernel.VerdictKindProceed:
+		// No further fields.
+	case kernel.VerdictKindAbort:
+		verdict.Disposition, _ = object["disposition"].(string)
+		verdict.Reason, _ = object["reason"].(string)
+	case kernel.VerdictKindModify:
+		transform, err := kernel.RecordFromJSON(object["transform"])
+		if err != nil {
+			return kernel.Verdict{}, &adapterErrorEnvelope{Code: "invalid_kernel_record", Message: err.Error()}
+		}
+		verdict.Transform = transform
+	case kernel.VerdictKindPause:
+		verdict.Reason, _ = object["reason"].(string)
+		resumptionSchema, err := kernel.RecordFromJSON(object["resumptionSchema"])
+		if err != nil {
+			return kernel.Verdict{}, &adapterErrorEnvelope{Code: "invalid_kernel_record", Message: err.Error()}
+		}
+		verdict.ResumptionSchema = resumptionSchema
+	case kernel.VerdictKindRetry:
+		adjustment, err := kernel.RecordFromJSON(object["adjustment"])
+		if err != nil {
+			return kernel.Verdict{}, &adapterErrorEnvelope{Code: "invalid_kernel_record", Message: err.Error()}
+		}
+		verdict.Adjustment = adjustment
+	default:
+		return kernel.Verdict{}, &adapterErrorEnvelope{
+			Code:    "invalid_operation_input",
+			Message: fmt.Sprintf("fixture verdict has unknown kind %q", kind),
+		}
+	}
+	return verdict, nil
+}
+
+// composedVerdictJSON converts a composed kernel.Verdict back into the same
+// bare-field JSON object shape the verdict-composition fixture's own
+// "expected" values use: only the fields meaningful to Kind are present, so
+// a deep-equal comparison against the fixture's committed expectation
+// (rather than a superset with extra null fields) succeeds.
+func composedVerdictJSON(verdict kernel.Verdict) (map[string]any, error) {
+	out := map[string]any{"kind": verdict.Kind}
+	switch verdict.Kind {
+	case kernel.VerdictKindProceed:
+		// No further fields.
+	case kernel.VerdictKindAbort:
+		out["disposition"] = verdict.Disposition
+		out["reason"] = verdict.Reason
+	case kernel.VerdictKindModify:
+		transformJSON, err := kernel.RecordToJSON(verdict.Transform)
+		if err != nil {
+			return nil, err
+		}
+		out["transform"] = transformJSON
+	case kernel.VerdictKindPause:
+		out["reason"] = verdict.Reason
+		resumptionSchemaJSON, err := kernel.RecordToJSON(verdict.ResumptionSchema)
+		if err != nil {
+			return nil, err
+		}
+		out["resumptionSchema"] = resumptionSchemaJSON
+	case kernel.VerdictKindRetry:
+		adjustmentJSON, err := kernel.RecordToJSON(verdict.Adjustment)
+		if err != nil {
+			return nil, err
+		}
+		out["adjustment"] = adjustmentJSON
+	}
+	return out, nil
+}
+
+// runModifyCompositionFromFixture composes every case in a
+// kernel-protocol-verdict-composition.json-shaped fixture's "cases" map
+// through kernel.ComposeVerdicts and projects each case's composed verdict
+// under $.composition.<name>, keyed by the same case name the fixture (and
+// the plan's $.fixture.cases.<name>.expected assertions) use.
+func runModifyCompositionFromFixture(fixture map[string]any) operationOutcome {
+	rawCases, ok := fixture["cases"].(map[string]any)
+	if !ok {
+		return operationOutcome{Kind: "error", Error: &adapterErrorEnvelope{
+			Code:    "invalid_operation_input",
+			Message: "fixture.cases must be a JSON object",
+		}}
+	}
+
+	composition := make(map[string]any, len(rawCases))
+	for name, rawCase := range rawCases {
+		caseObject, ok := rawCase.(map[string]any)
+		if !ok {
+			return operationOutcome{Kind: "error", Error: &adapterErrorEnvelope{
+				Code:    "invalid_operation_input",
+				Message: fmt.Sprintf("fixture.cases.%s must be a JSON object", name),
+			}}
+		}
+		rawVerdicts, ok := caseObject["verdicts"].([]any)
+		if !ok {
+			return operationOutcome{Kind: "error", Error: &adapterErrorEnvelope{
+				Code:    "invalid_operation_input",
+				Message: fmt.Sprintf("fixture.cases.%s.verdicts must be a JSON array", name),
+			}}
+		}
+
+		verdicts := make([]kernel.Verdict, 0, len(rawVerdicts))
+		for _, rawVerdict := range rawVerdicts {
+			verdict, rpcErr := verdictFromJSON(rawVerdict)
+			if rpcErr != nil {
+				return operationOutcome{Kind: "error", Error: rpcErr}
+			}
+			verdicts = append(verdicts, verdict)
+		}
+
+		composed, err := kernel.ComposeVerdicts(verdicts)
+		if err != nil {
+			return operationOutcome{Kind: "error", Error: &adapterErrorEnvelope{
+				Code:    "verdict_compose_failed",
+				Message: fmt.Sprintf("fixture.cases.%s: %v", name, err),
+			}}
+		}
+
+		composedJSON, err := composedVerdictJSON(composed)
+		if err != nil {
+			return operationOutcome{Kind: "error", Error: &adapterErrorEnvelope{
+				Code:    "kernel_record_to_json_failed",
+				Message: fmt.Sprintf("fixture.cases.%s: %v", name, err),
+			}}
+		}
+		composition[name] = composedJSON
+	}
+
+	return operationOutcome{
+		Kind:  "result",
+		Value: projection(map[string]any{"composition": composition}),
 	}
 }
