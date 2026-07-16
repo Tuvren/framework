@@ -26,11 +26,13 @@ import type {
 } from "@tuvren/kernel-protocol";
 import {
   assertStagedResult,
+  assertVerdict,
   decodeDeterministicKernelRecord,
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
   type StagedResult,
+  type Verdict,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import {
@@ -57,6 +59,7 @@ import {
   normalizeLogicalErrorCode,
   readErrorCode,
   readFixture,
+  readFixtureOptional,
   readLogicalFixture,
   readRecord,
   readString,
@@ -117,7 +120,9 @@ class TypeScriptKernelAdapter {
         case "kernel.protocol.schema-roundtrip":
           return result(schemaRoundtrip(readFixture(input)));
         case "kernel.protocol.modify-composition":
-          return result(await runModifyComposition());
+          return result(await runModifyComposition(input));
+        case "kernel.protocol.canonical-rejection":
+          return result(runCanonicalRejection(readFixture(input)));
         case "kernel.protocol.edge-validation":
           return result(await runProtocolEdgeValidation());
         case "kernel.logical.diff-paths":
@@ -337,34 +342,96 @@ function schemaRoundtrip(
   });
 }
 
-async function runModifyComposition(): Promise<Record<string, unknown>> {
+async function runModifyComposition(
+  input: unknown
+): Promise<Record<string, unknown>> {
+  const fixture = readFixtureOptional(input);
+
+  if (fixture === undefined) {
+    const schema = await loadCanonicalSchema();
+    return await withConformanceKernel(
+      schema,
+      ADAPTER_CONFIG,
+      async (kernel) => {
+        const verdict = await kernel.verdicts.compose([
+          {
+            kind: "modify",
+            transform: { extension: "first", mutation: "append-prefix" },
+          },
+          { kind: "proceed" },
+          {
+            kind: "modify",
+            transform: { extension: "second", mutation: "append-suffix" },
+          },
+        ]);
+
+        if (verdict.kind !== "modify") {
+          throw new Error(
+            `expected composed modify verdict, received ${verdict.kind}`
+          );
+        }
+
+        return createProjection({
+          verdict: {
+            kind: verdict.kind,
+            transform: verdict.transform,
+          },
+        });
+      }
+    );
+  }
+
+  const cases = readRecord(fixture.cases, "cases");
   const schema = await loadCanonicalSchema();
   return await withConformanceKernel(schema, ADAPTER_CONFIG, async (kernel) => {
-    const verdict = await kernel.verdicts.compose([
-      {
-        kind: "modify",
-        transform: { extension: "first", mutation: "append-prefix" },
-      },
-      { kind: "proceed" },
-      {
-        kind: "modify",
-        transform: { extension: "second", mutation: "append-suffix" },
-      },
-    ]);
+    const composition: Record<string, unknown> = {};
 
-    if (verdict.kind !== "modify") {
-      throw new Error(
-        `expected composed modify verdict, received ${verdict.kind}`
-      );
+    for (const [caseName, caseValue] of Object.entries(cases)) {
+      const caseRecord = readRecord(caseValue, `cases.${caseName}`);
+      const verdicts = readVerdicts(caseRecord.verdicts, caseName);
+      composition[caseName] = await kernel.verdicts.compose(verdicts);
     }
 
-    return createProjection({
-      verdict: {
-        kind: verdict.kind,
-        transform: verdict.transform,
-      },
-    });
+    return createProjection({ composition });
   });
+}
+
+function readVerdicts(value: unknown, caseName: string): Verdict[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`cases.${caseName}.verdicts must be an array`);
+  }
+
+  return value.map((entry, index) => {
+    assertVerdict(entry, `cases.${caseName}.verdicts[${index}]`);
+    return entry;
+  });
+}
+
+function runCanonicalRejection(
+  fixture: Record<string, unknown>
+): Record<string, unknown> {
+  const cases = readRecord(fixture.cases, "cases");
+  const rejection: Record<string, unknown> = {};
+
+  for (const [caseName, caseValue] of Object.entries(cases)) {
+    const caseRecord = readRecord(caseValue, `cases.${caseName}`);
+    const cborBytes = readNumberArray(
+      caseRecord.cborBytes,
+      `cases.${caseName}.cborBytes`
+    );
+
+    let rejected: boolean;
+    try {
+      decodeDeterministicKernelRecord(Uint8Array.from(cborBytes));
+      rejected = false;
+    } catch {
+      rejected = true;
+    }
+
+    rejection[caseName] = { rejected };
+  }
+
+  return createProjection({ rejection });
 }
 
 async function runLogicalDiff(
@@ -1576,6 +1643,9 @@ async function runStalePreemption(): Promise<Record<string, unknown>> {
             storedRun.fencingToken === undefined &&
             storedRun.leaseExpiresAtMs === undefined,
           preemptionReason: storedRun.preemptionReason ?? null,
+          preservedStagedResultTaskIds: recovery.consumedStagedResults.map(
+            (stagedResult) => stagedResult.taskId
+          ),
           recoveryHeadMatchesBranchHead:
             recovery.lastTurnNodeHash === updatedBranch.headTurnNodeHash,
           recoveryLastTurnNodeHash: recovery.lastTurnNodeHash,

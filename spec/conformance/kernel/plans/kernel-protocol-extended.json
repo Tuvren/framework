@@ -942,6 +942,144 @@
         "threadEnumeration.pagedCount",
         "threadEnumeration.hasCursor"
       ]
+    },
+    {
+      "assertions": [
+        {
+          "equals": true,
+          "field": "$.rejection.non-minimal-uint-head.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.non-minimal-length-head.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.unsorted-map-keys.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.duplicate-map-key.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.float64-value.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.tagged-value.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.indefinite-length-array.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.indefinite-length-map.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.indefinite-length-text-string.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.trailing-bytes-after-top-level-value.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.truncated-input.rejected",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.rejection.uint-beyond-safe-integer-range.rejected",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "kernel.protocol.canonical_rejection",
+      "evidence": [
+        "rejection.non-minimal-uint-head.rejected",
+        "rejection.non-minimal-length-head.rejected",
+        "rejection.unsorted-map-keys.rejected",
+        "rejection.duplicate-map-key.rejected",
+        "rejection.float64-value.rejected",
+        "rejection.tagged-value.rejected",
+        "rejection.indefinite-length-array.rejected",
+        "rejection.indefinite-length-map.rejected",
+        "rejection.indefinite-length-text-string.rejected",
+        "rejection.trailing-bytes-after-top-level-value.rejected",
+        "rejection.truncated-input.rejected",
+        "rejection.uint-beyond-safe-integer-range.rejected"
+      ],
+      "fixture": "f-adversarial-cbor",
+      "operation": "kernel.protocol.canonical-rejection"
+    },
+    {
+      "assertions": [
+        {
+          "equalsPath": "$.fixture.cases.single-proceed.expected",
+          "field": "$.composition.single-proceed",
+          "kind": "resultField"
+        },
+        {
+          "equalsPath": "$.fixture.cases.all-proceed.expected",
+          "field": "$.composition.all-proceed",
+          "kind": "resultField"
+        },
+        {
+          "equalsPath": "$.fixture.cases.single-modify.expected",
+          "field": "$.composition.single-modify",
+          "kind": "resultField"
+        },
+        {
+          "equalsPath": "$.fixture.cases.multi-modify-preserves-registration-order.expected",
+          "field": "$.composition.multi-modify-preserves-registration-order",
+          "kind": "resultField"
+        },
+        {
+          "equalsPath": "$.fixture.cases.abort-dominates-pause-modify-retry.expected",
+          "field": "$.composition.abort-dominates-pause-modify-retry",
+          "kind": "resultField"
+        },
+        {
+          "equalsPath": "$.fixture.cases.pause-dominates-modify-retry-proceed.expected",
+          "field": "$.composition.pause-dominates-modify-retry-proceed",
+          "kind": "resultField"
+        },
+        {
+          "equalsPath": "$.fixture.cases.modify-dominates-retry-proceed.expected",
+          "field": "$.composition.modify-dominates-retry-proceed",
+          "kind": "resultField"
+        },
+        {
+          "equalsPath": "$.fixture.cases.retry-dominates-proceed.expected",
+          "field": "$.composition.retry-dominates-proceed",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "kernel.protocol.modify_composition.f-verdict-composition",
+      "evidence": [
+        "composition.single-proceed",
+        "composition.all-proceed",
+        "composition.single-modify",
+        "composition.multi-modify-preserves-registration-order",
+        "composition.abort-dominates-pause-modify-retry",
+        "composition.pause-dominates-modify-retry-proceed",
+        "composition.modify-dominates-retry-proceed",
+        "composition.retry-dominates-proceed"
+      ],
+      "fixture": "f-verdict-composition",
+      "operation": "kernel.protocol.modify-composition"
     }
   ],
   "fixtures": {
@@ -961,9 +1099,11 @@
     "f-deep-path-schema": "../fixtures/kernel-protocol-deep-path-schema.json",
     "f-non-utf8-bytes": "../fixtures/kernel-protocol-non-utf8-bytes.json",
     "f-zero-turn-tree-hash": "../fixtures/kernel-protocol-zero-turn-tree-hash.json",
-    "f-mixed-status-staged": "../fixtures/kernel-protocol-mixed-status-staged-results.json"
+    "f-mixed-status-staged": "../fixtures/kernel-protocol-mixed-status-staged-results.json",
+    "f-adversarial-cbor": "../fixtures/kernel-protocol-adversarial-cbor.json",
+    "f-verdict-composition": "../fixtures/kernel-protocol-verdict-composition.json"
   },
   "packetId": "tuvren.kernel.protocol",
   "planId": "tuvren.kernel.protocol.extended",
-  "planVersion": "0.2.0"
+  "planVersion": "0.3.0"
 }

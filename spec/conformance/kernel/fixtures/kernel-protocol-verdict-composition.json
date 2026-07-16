@@ -1,0 +1,100 @@
+{
+  "description": "Verdict-composition cases whose expected output is defined by kernel spec §6.2 (Abort > Pause > Modify > Retry > Proceed, first-objection-wins) and §6.1 (Modify composes multiple transforms in registration order). Each `expected` value was computed by invoking kernel.verdicts.compose against the TypeScript reference implementation (typescript/kernel/runtime/src/lib/runtime-kernel.ts) and is committed verbatim as cross-language authority; the generator script is tooling, not the oracle.",
+  "cases": {
+    "single-proceed": {
+      "description": "A single Proceed verdict composes to Proceed: no objection is raised at any priority level.",
+      "verdicts": [{ "kind": "proceed" }],
+      "expected": { "kind": "proceed" }
+    },
+    "all-proceed": {
+      "description": "Multiple Proceed verdicts and no objection of any kind still compose to Proceed.",
+      "verdicts": [
+        { "kind": "proceed" },
+        { "kind": "proceed" },
+        { "kind": "proceed" }
+      ],
+      "expected": { "kind": "proceed" }
+    },
+    "single-modify": {
+      "description": "A single Modify verdict composes to Modify carrying that verdict's transform unchanged (not wrapped in an array) per §6.1.",
+      "verdicts": [
+        { "kind": "modify", "transform": { "op": "set", "path": "a" } }
+      ],
+      "expected": {
+        "kind": "modify",
+        "transform": { "op": "set", "path": "a" }
+      }
+    },
+    "multi-modify-preserves-registration-order": {
+      "description": "Two Modify verdicts, with an interleaved Proceed, compose to a single Modify whose transform is the array of the individual transforms in registration order (§6.1: 'the kernel composes multiple transforms in registration order').",
+      "verdicts": [
+        { "kind": "modify", "transform": { "op": "first" } },
+        { "kind": "proceed" },
+        { "kind": "modify", "transform": { "op": "second" } }
+      ],
+      "expected": {
+        "kind": "modify",
+        "transform": [{ "op": "first" }, { "op": "second" }]
+      }
+    },
+    "abort-dominates-pause-modify-retry": {
+      "description": "Abort outranks every other verdict kind under the fixed priority order Abort > Pause > Modify > Retry > Proceed (§6.2), regardless of the verdicts' position in the input array.",
+      "verdicts": [
+        { "kind": "modify", "transform": { "op": "x" } },
+        {
+          "kind": "pause",
+          "reason": "need input",
+          "resumptionSchema": { "field": "y" }
+        },
+        { "kind": "retry", "adjustment": { "tries": 1 } },
+        { "kind": "abort", "disposition": "HardFail", "reason": "fatal" }
+      ],
+      "expected": {
+        "kind": "abort",
+        "disposition": "HardFail",
+        "reason": "fatal"
+      }
+    },
+    "pause-dominates-modify-retry-proceed": {
+      "description": "Pause outranks Modify, Retry, and Proceed under §6.2's priority order when no Abort is present.",
+      "verdicts": [
+        { "kind": "retry", "adjustment": { "tries": 1 } },
+        { "kind": "modify", "transform": { "op": "x" } },
+        { "kind": "proceed" },
+        {
+          "kind": "pause",
+          "reason": "need approval",
+          "resumptionSchema": { "field": "z" }
+        }
+      ],
+      "expected": {
+        "kind": "pause",
+        "reason": "need approval",
+        "resumptionSchema": { "field": "z" }
+      }
+    },
+    "modify-dominates-retry-proceed": {
+      "description": "Modify outranks Retry and Proceed under §6.2's priority order when no Abort or Pause is present.",
+      "verdicts": [
+        { "kind": "retry", "adjustment": { "tries": 2 } },
+        { "kind": "proceed" },
+        { "kind": "modify", "transform": { "op": "solo" } }
+      ],
+      "expected": {
+        "kind": "modify",
+        "transform": { "op": "solo" }
+      }
+    },
+    "retry-dominates-proceed": {
+      "description": "Retry outranks Proceed under §6.2's priority order when no Abort, Pause, or Modify is present.",
+      "verdicts": [
+        { "kind": "proceed" },
+        { "kind": "retry", "adjustment": { "attempt": 3 } }
+      ],
+      "expected": {
+        "kind": "retry",
+        "adjustment": { "attempt": 3 }
+      }
+    }
+  }
+}
