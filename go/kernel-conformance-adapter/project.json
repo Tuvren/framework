@@ -19,6 +19,14 @@
         "cwd": "go/kernel-conformance-adapter",
         "command": "test -z \"$(gofmt -l .)\" && go vet ./..."
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "options": {
+        "cwd": "go/kernel-conformance-adapter",
+        "command": "go test github.com/tuvren/framework/go/kernel-conformance-adapter/..."
+      }
     }
   }
 }

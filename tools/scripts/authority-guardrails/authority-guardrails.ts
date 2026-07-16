@@ -1566,7 +1566,11 @@ async function findConformanceSourceRoots(): Promise<string[]> {
 // way (typescript/kernel/certification-postgres), and a hyphen-prefixed flat
 // variant used by Rust/Go/Python crates and modules that cannot nest an
 // `<area>/` directory under a single package root (rust/kernel-certification,
-// go/kernel-certification, python/kernel-certification).
+// go/kernel-certification, python/kernel-certification). The suffix matches
+// are deliberately permissive-toward-scanning: a false positive only adds a
+// scan root (stricter, never looser), so an unrelated future directory that
+// happens to end in `-certification` costs a harmless extra scan rather than
+// an enforcement gap.
 function isCertificationDirName(name: string): boolean {
   return (
     name === "certification" ||

@@ -143,6 +143,7 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   // wrappers join the conformance lanes separately once registered.
   "kernel-go-kernel",
   "kernel-go-certification",
+  "kernel-go-conformance-adapter",
   "kernel-python-kernel",
   "kernel-python-certification",
   "kernel-python-conformance-adapter",
