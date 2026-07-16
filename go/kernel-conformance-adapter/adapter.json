@@ -1,0 +1,25 @@
+{
+  "adapterId": "go-kernel",
+  "implementationId": "go-kernel",
+  "language": "go",
+  "boundary": "kernel",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": ["go", "-C", "go/kernel-conformance-adapter", "run", "."],
+  "capabilities": [
+    "kernel.protocol",
+    "kernel.edge-validation",
+    "kernel.logical",
+    "kernel-protocol.thread.enumeration",
+    "kernel.run-liveness",
+    "kernel.restart-recovery",
+    "kernel.scope-isolation",
+    "kernel.reclamation"
+  ],
+  "authorityPackets": ["spec/kernel/authority-packet.json"],
+  "suiteId": "tuvren.kernel.protocol",
+  "suiteVersion": "0.1.0"
+}

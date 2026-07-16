@@ -138,6 +138,15 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-runtime",
   "runner-react",
   "host-repl",
+  // Go and Python kernel-port projects run their language-native test
+  // runners (go test / pytest) through these Nx targets; certification
+  // wrappers join the conformance lanes separately once registered.
+  "kernel-go-kernel",
+  "kernel-go-certification",
+  "kernel-go-conformance-adapter",
+  "kernel-python-kernel",
+  "kernel-python-certification",
+  "kernel-python-conformance-adapter",
 ];
 
 export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
@@ -344,6 +353,38 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
           "--skipNxCache",
         ],
         id: "Rust kernel gRPC interop smoke",
+      },
+    ],
+  },
+  {
+    // Go and Python kernel certifications drive the shared stdio harness
+    // against their native-toolchain adapters (`go run` / `uv run`); the two
+    // lanes are independent processes, so they may run in parallel with each
+    // other but stay in their own phase to avoid competing with the large
+    // serial Rust builds above.
+    id: "Go and Python kernel certification",
+    steps: [
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run",
+          "kernel-go-certification:conformance",
+          "--skipNxCache",
+        ],
+        id: "Go kernel certification",
+      },
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run",
+          "kernel-python-certification:conformance",
+          "--skipNxCache",
+        ],
+        id: "Python kernel certification",
       },
     ],
   },

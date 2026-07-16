@@ -1,0 +1,34 @@
+{
+  "adapterId": "python-kernel",
+  "implementationId": "python-kernel",
+  "language": "python",
+  "boundary": "kernel",
+  "protocol": {
+    "name": "tuvren.conformance-adapter",
+    "version": "0.1.0",
+    "transport": "json-rpc-2.0-stdio"
+  },
+  "command": [
+    "uv",
+    "run",
+    "--project",
+    "python/kernel-conformance-adapter",
+    "python",
+    "-u",
+    "-m",
+    "tuvren_kernel_adapter"
+  ],
+  "capabilities": [
+    "kernel.protocol",
+    "kernel.edge-validation",
+    "kernel.logical",
+    "kernel-protocol.thread.enumeration",
+    "kernel.run-liveness",
+    "kernel.restart-recovery",
+    "kernel.scope-isolation",
+    "kernel.reclamation"
+  ],
+  "authorityPackets": ["spec/kernel/authority-packet.json"],
+  "suiteId": "tuvren.kernel.protocol",
+  "suiteVersion": "0.1.0"
+}

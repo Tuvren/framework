@@ -455,6 +455,184 @@
     {
       "assertionResults": [
         {
+          "assertionId": "kernel.protocol.canonical_rejection.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.control-canonical-map.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.duplicate-map-key.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.float64-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.indefinite-length-array.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.indefinite-length-map.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.indefinite-length-text-string.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.negative-int-beyond-safe-integer-range.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.non-minimal-length-head.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.non-minimal-uint-head.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.tagged-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.trailing-bytes-after-top-level-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.truncated-input.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.uint-beyond-safe-integer-range.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.unsorted-map-keys.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.control-canonical-map.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.duplicate-map-key.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.float64-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.indefinite-length-array.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.indefinite-length-map.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.indefinite-length-text-string.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.negative-int-beyond-safe-integer-range.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.non-minimal-length-head.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.non-minimal-uint-head.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.tagged-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.trailing-bytes-after-top-level-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.truncated-input.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.uint-beyond-safe-integer-range.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.unsorted-map-keys.rejected",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.canonical_rejection",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.1.resultField",
           "status": "pass"
         },
@@ -1228,6 +1406,112 @@
         }
       ],
       "checkId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+      "details": {
+        "adapterId": "typescript-kernel-postgres",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.abort-dominates-pause-modify-retry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.all-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.modify-dominates-retry-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.multi-modify-preserves-registration-order",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.pause-dominates-modify-retry-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.retry-dominates-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.single-modify",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.single-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.abort-dominates-pause-modify-retry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.all-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.modify-dominates-retry-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.multi-modify-preserves-registration-order",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.pause-dominates-modify-retry-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.retry-dominates-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.single-modify",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.single-proceed",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.modify_composition.f-verdict-composition",
       "details": {
         "adapterId": "typescript-kernel-postgres",
         "planId": "tuvren.kernel.protocol.extended"
@@ -3013,6 +3297,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.run-liveness.stale_preemption.6.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.branchHeadTurnNodeHash",
           "status": "pass"
         },
@@ -3022,6 +3310,10 @@
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.preservedStagedResultTaskIds",
           "status": "pass"
         },
         {
@@ -3046,6 +3338,10 @@
         },
         {
           "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.preservedStagedResultTaskIds",
           "status": "pass"
         },
         {
@@ -3188,9 +3484,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 70,
-    "totalChecks": 70,
-    "applicableChecks": 70,
+    "passedChecks": 72,
+    "totalChecks": 72,
+    "applicableChecks": 72,
     "nonApplicableChecks": 0
   },
   "suiteId": "tuvren.kernel.protocol",

@@ -1,0 +1,34 @@
+{
+  "name": "kernel-go-kernel",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "go/kernel",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "language:go", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "inputs": ["default", "{workspaceRoot}/go.work"],
+      "options": {
+        "cwd": "go/kernel",
+        "command": "go build ./..."
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": ["default", "{workspaceRoot}/go.work"],
+      "options": {
+        "cwd": "go/kernel",
+        "command": "test -z \"$(gofmt -l .)\" && go vet ./..."
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "inputs": ["default", "{workspaceRoot}/go.work"],
+      "options": {
+        "cwd": "go/kernel",
+        "command": "go test ./..."
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.kernel.run-liveness",
-  "planVersion": "0.2.0",
+  "planVersion": "0.3.0",
   "packetId": "tuvren.kernel.protocol",
   "applicability": {
     "capabilities": ["kernel.run-liveness"]
@@ -86,6 +86,11 @@
           "kind": "resultField",
           "field": "$.preemption.recoveryHeadMatchesBranchHead",
           "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.preemption.preservedStagedResultTaskIds",
+          "equals": ["assistant_message"]
         }
       ],
       "evidence": [
@@ -95,7 +100,8 @@
         "preemption.recoveryLastTurnNodeHash",
         "preemption.recoveryHeadMatchesBranchHead",
         "preemption.uncommittedStagedResults",
-        "preemption.leaseCleared"
+        "preemption.leaseCleared",
+        "preemption.preservedStagedResultTaskIds"
       ]
     },
     {

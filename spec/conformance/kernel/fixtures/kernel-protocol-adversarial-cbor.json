@@ -1,0 +1,61 @@
+{
+  "description": "Adversarial CBOR byte sequences that are structurally valid CBOR (or valid-looking prefixes) but must be rejected by the strict canonical KernelRecord decoder (docs/KrakenKernelSpecification.md §2.3): non-minimal integer/length encodings, unsorted or duplicate map keys, float64 values, tagged values, indefinite-length collections, trailing bytes, truncated input, and integers outside the JS safe-integer range. Every case is a byte-for-byte deviation from the canonical deterministic CBOR encoding kernel spec §2.3 requires; each implementation's strict decoder must refuse to assign these bytes a durable record identity.",
+  "cases": {
+    "non-minimal-uint-head": {
+      "description": "Encodes the small unsigned integer 5 using a 1-byte-argument major-type-0 head (0x18 0x05) instead of the canonical minimal single-byte head (0x05); canonical CBOR requires the shortest-possible integer encoding.",
+      "cborBytes": [24, 5]
+    },
+    "non-minimal-length-head": {
+      "description": "Encodes a 1-element array using a 1-byte-argument length head (0x98 0x01) instead of the canonical minimal short-form length head (0x81); canonical CBOR requires the shortest-possible length encoding.",
+      "cborBytes": [152, 1, 0]
+    },
+    "unsorted-map-keys": {
+      "description": "Encodes the map {\"b\": 1, \"a\": 2} with keys in insertion order rather than the canonical bytewise-lexicographic key order (\"a\" before \"b\") that deterministic CBOR requires.",
+      "cborBytes": [162, 97, 98, 1, 97, 97, 2]
+    },
+    "duplicate-map-key": {
+      "description": "Encodes a 2-entry map that repeats the same key (\"a\") twice; canonical KernelRecord maps must have unique string keys.",
+      "cborBytes": [162, 97, 97, 1, 97, 97, 2]
+    },
+    "float64-value": {
+      "description": "Encodes the value 1.0 as an 8-byte IEEE-754 float64 (major type 7, additional info 27); the canonical KernelRecord number domain excludes floating-point representations entirely.",
+      "cborBytes": [251, 63, 240, 0, 0, 0, 0, 0, 0]
+    },
+    "tagged-value": {
+      "description": "Wraps the text string \"a\" in CBOR tag 0 (major type 6); KernelRecord values must decode to one of the supported primitive/array/map kinds with no tag wrapper.",
+      "cborBytes": [192, 97, 97]
+    },
+    "indefinite-length-array": {
+      "description": "Encodes a 2-element array [1, 2] using the indefinite-length array head (0x9f) terminated by the break byte (0xff) instead of the canonical definite-length head; deterministic CBOR forbids indefinite-length collections.",
+      "cborBytes": [159, 1, 2, 255]
+    },
+    "indefinite-length-map": {
+      "description": "Encodes the single-entry map {\"a\": 1} using the indefinite-length map head (0xbf) terminated by the break byte (0xff) instead of the canonical definite-length head; deterministic CBOR forbids indefinite-length collections.",
+      "cborBytes": [191, 97, 97, 1, 255]
+    },
+    "indefinite-length-text-string": {
+      "description": "Encodes the text string \"a\" as an indefinite-length text-string chunk stream (0x7f ... 0xff) instead of a single definite-length text string; deterministic CBOR forbids indefinite-length text.",
+      "cborBytes": [127, 97, 97, 255]
+    },
+    "trailing-bytes-after-top-level-value": {
+      "description": "A complete, canonical encoding of the integer 1 (0x01) followed by one extra trailing byte (0x02); a canonical KernelRecord byte string must contain exactly one top-level value with no trailing data.",
+      "cborBytes": [1, 2]
+    },
+    "truncated-input": {
+      "description": "A 1-entry map head declaring a text-string key \"a\" but with the corresponding value byte missing entirely; the byte stream ends before the value the map header promises.",
+      "cborBytes": [161, 97, 97]
+    },
+    "uint-beyond-safe-integer-range": {
+      "description": "Encodes the maximum unsigned 64-bit integer (2^64 - 1) via an 8-byte-argument major-type-0 head; this exceeds Number.MAX_SAFE_INTEGER and the KernelRecord number domain requires every integer to be a JS-safe integer.",
+      "cborBytes": [27, 255, 255, 255, 255, 255, 255, 255, 255]
+    },
+    "negative-int-beyond-safe-integer-range": {
+      "description": "Encodes the minimum negative 64-bit CBOR integer (-2^64, i.e. -1 - (2^64 - 1)) via an 8-byte-argument major-type-1 head; this exceeds Number.MIN_SAFE_INTEGER's magnitude and the KernelRecord number domain requires every integer to be a JS-safe integer.",
+      "cborBytes": [59, 255, 255, 255, 255, 255, 255, 255, 255]
+    },
+    "control-canonical-map": {
+      "description": "Control case: the canonical deterministic encoding of the single-entry map {\"a\": 1} (sorted keys, minimal heads). A conforming strict decoder must ACCEPT this -- it anchors the check against a decoder that rejects everything, keeping the rejection assertions meaningful on their own.",
+      "cborBytes": [161, 97, 97, 1]
+    }
+  }
+}

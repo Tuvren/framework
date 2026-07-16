@@ -247,6 +247,23 @@ export function readFixture(input: unknown): Record<string, unknown> {
   return readRecord(object.fixture, "adapter input fixture");
 }
 
+/**
+ * Like {@link readFixture}, but returns `undefined` instead of throwing when
+ * the dispatch input carries no `fixture` field at all. Operations that must
+ * stay backward-compatible with an input-less legacy check (e.g.
+ * `kernel.protocol.modify-composition`'s original fixed-verdict scenario) use
+ * this to detect fixture-driven invocations without breaking the fixture-less
+ * ones.
+ */
+export function readFixtureOptional(
+  input: unknown
+): Record<string, unknown> | undefined {
+  const object = readRecord(input, "adapter input") as AdapterInput;
+  return object.fixture === undefined
+    ? undefined
+    : readRecord(object.fixture, "adapter input fixture");
+}
+
 export function readLogicalFixture(
   fixture: Record<string, unknown>,
   schema: TurnTreeSchema

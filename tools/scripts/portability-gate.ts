@@ -105,6 +105,8 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
 const RUST_ROOT = resolve(REPO_ROOT, "rust");
+const GO_ROOT = resolve(REPO_ROOT, "go");
+const PYTHON_ROOT = resolve(REPO_ROOT, "python");
 const INVENTORY_PATH = resolve(
   REPO_ROOT,
   ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
@@ -632,9 +634,12 @@ async function loadAllAdapterManifests(): Promise<
   Map<string, AdapterManifest>
 > {
   const manifests = new Map<string, AdapterManifest>();
-  const adapterRoots = [TYPESCRIPT_ROOT, RUST_ROOT].filter((root) =>
-    existsSync(root)
-  );
+  const adapterRoots = [
+    TYPESCRIPT_ROOT,
+    RUST_ROOT,
+    GO_ROOT,
+    PYTHON_ROOT,
+  ].filter((root) => existsSync(root));
   const paths = (
     await Promise.all(
       adapterRoots.map((root) =>

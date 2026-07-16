@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatGeneratedJson } from "./format-generated-json.ts";
@@ -123,6 +123,40 @@ async function main(): Promise<void> {
   const extendedPlan = buildExtendedProtocolPlan();
 
   const filePath = resolve(PLANS_DIR, "kernel-protocol-extended.json");
+  // The checked-in plan is authority; this generator only knows the
+  // hashing/roundtrip check families it was written for. Later plan versions
+  // added hand-promoted checks (edge-validation, thread enumeration,
+  // canonical rejection, verdict composition) this script would silently
+  // destroy. Guard the actual invariant: every check in the committed plan
+  // must be one this generator would re-emit — a bare planVersion comparison
+  // would sail through if someone bumped the generator's version constant
+  // without teaching it the promoted checks. A missing file is a fresh
+  // bootstrap and is allowed through. Known limit: hand-edits INSIDE a check
+  // this generator does emit (an added assertion, changed evidence) are not
+  // guarded — the checkId still matches — so assertion-level promotions must
+  // be taught to the generator, not just committed.
+  let existing: { checks?: { checkId?: string }[] } | undefined;
+  try {
+    existing = JSON.parse(await readFile(filePath, "utf8"));
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+  if (existing !== undefined) {
+    const emitted = new Set(extendedPlan.checks.map((check) => check.checkId));
+    const orphaned = (existing.checks ?? [])
+      .map((check) => check.checkId)
+      .filter((checkId) => checkId !== undefined && !emitted.has(checkId));
+    if (orphaned.length > 0) {
+      throw new Error(
+        `refusing to overwrite ${filePath}: the committed plan carries ` +
+          `${orphaned.length} promoted check(s) this generator does not ` +
+          `emit (${orphaned.join(", ")}). Extend the generator before ` +
+          "regenerating."
+      );
+    }
+  }
   await writeFile(filePath, `${JSON.stringify(extendedPlan, null, 2)}\n`);
   await formatGeneratedJson([filePath]);
 

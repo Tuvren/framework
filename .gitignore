@@ -22,3 +22,12 @@ typescript/kernel/grpc-client/src/lib/generated/kernel-interop/
 devenv.local.nix
 devenv.local.yaml
 .pre-commit-config.yaml
+__pycache__
+*.pyc
+.venv
+.ruff_cache
+.pytest_cache
+*.egg-info
+# Go build artifacts (module binaries built ad hoc in module dirs)
+go/kernel-conformance-adapter/kernel-conformance-adapter
+go/kernel-certification/kernel-certification

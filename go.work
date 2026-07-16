@@ -1,0 +1,7 @@
+go 1.24.7
+
+use (
+	./go/kernel
+	./go/kernel-certification
+	./go/kernel-conformance-adapter
+)

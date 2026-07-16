@@ -5,6 +5,19 @@
     toolchainFile = ./rust-toolchain.toml;
   };
 
+  # Go and Python ride nixpkgs' current default toolchains, reproducible via
+  # devenv.lock rather than an in-file version pin (unlike Rust, whose
+  # rust-toolchain.toml is authoritative). If a future nixpkgs bump moves the
+  # provided Go below the root go.work's `go` directive (or shifts Python in a
+  # way uv.lock resolution rejects), pin explicitly via languages.go.package /
+  # languages.python.version at that point.
+  languages.go.enable = true;
+
+  languages.python = {
+    enable = true;
+    uv.enable = true;
+  };
+
   services.postgres = {
     enable = true;
     initialDatabases = [

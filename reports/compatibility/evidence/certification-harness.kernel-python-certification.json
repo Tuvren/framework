@@ -1,0 +1,3007 @@
+{
+  "adapterId": "python-kernel",
+  "boundary": "kernel",
+  "capabilities": [
+    "kernel-protocol.thread.enumeration",
+    "kernel.edge-validation",
+    "kernel.logical",
+    "kernel.protocol",
+    "kernel.reclamation",
+    "kernel.restart-recovery",
+    "kernel.run-liveness",
+    "kernel.scope-isolation"
+  ],
+  "checkResults": [
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.lineage.cross_thread_rejection.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.errorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.lineage.cross_thread_rejection.requiredEvidence.result.errorCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.lineage.cross_thread_rejection",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.branch_list.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.branch_list.requiredEvidence.branchEntries",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.branch_list.requiredEvidence.result.branchEntries.0.0",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.branch_list",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.diff_paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.diff_paths.requiredEvidence.diffPaths",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.diff_paths.requiredEvidence.result.diffPaths",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.diff_paths",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.recovery_state.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.recovery.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.consumedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.lastCompletedStepId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.recovery_state.requiredEvidence.result.recovery.uncommittedStagedResults",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.recovery_state",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.modify_composition.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.result.verdict.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.result.verdict.transform",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.verdict.kind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.requiredEvidence.verdict.transform",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.modify_composition",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.result.roundtrip.turnNodeIdentityRecord.schemaId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.result.roundtrip.turnTreeSchemaRecord.schemaId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.roundtrip.turnNodeIdentityRecord.schemaId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.requiredEvidence.roundtrip.turnTreeSchemaRecord.schemaId",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.protocolEdgeValidation.branch.lateralHeadCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage.requiredEvidence.result.protocolEdgeValidation.branch.lateralHeadCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.branch-set-head-rejects-lateral-lineage",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.protocolEdgeValidation.run.outOfOrderStepCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step.requiredEvidence.result.protocolEdgeValidation.run.outOfOrderStepCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.run-begin-step-rejects-out-of-order-step",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.protocolEdgeValidation.run.missingEventObjectCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-complete-rejects-missing-event-object.requiredEvidence.result.protocolEdgeValidation.run.missingEventObjectCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.run-complete-rejects-missing-event-object",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.protocolEdgeValidation.run.busyBranchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.run-create-rejects-busy-branch.requiredEvidence.result.protocolEdgeValidation.run.busyBranchCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.run-create-rejects-busy-branch",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.protocolEdgeValidation.schema.duplicatePathCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.schema-register-rejects-duplicate-path.requiredEvidence.result.protocolEdgeValidation.schema.duplicatePathCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.schema-register-rejects-duplicate-path",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.protocolEdgeValidation.tree.missingRequiredPathCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-create-rejects-missing-required-path.requiredEvidence.result.protocolEdgeValidation.tree.missingRequiredPathCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.tree-create-rejects-missing-required-path",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.protocolEdgeValidation.tree.schemaMismatchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch.requiredEvidence.result.protocolEdgeValidation.tree.schemaMismatchCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-protocol-af.tree-diff-rejects-schema-mismatch",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.logical.thread_list.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.count",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.firstThreadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.hasCursor",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.result.threadEnumeration.pagedCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.count",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.firstThreadId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.hasCursor",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.logical.thread_list.requiredEvidence.threadEnumeration.pagedCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.logical.thread_list",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.control-canonical-map.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.duplicate-map-key.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.float64-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.indefinite-length-array.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.indefinite-length-map.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.indefinite-length-text-string.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.negative-int-beyond-safe-integer-range.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.non-minimal-length-head.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.non-minimal-uint-head.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.tagged-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.trailing-bytes-after-top-level-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.truncated-input.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.uint-beyond-safe-integer-range.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.unsorted-map-keys.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.control-canonical-map.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.duplicate-map-key.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.float64-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.indefinite-length-array.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.indefinite-length-map.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.indefinite-length-text-string.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.negative-int-beyond-safe-integer-range.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.non-minimal-length-head.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.non-minimal-uint-head.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.tagged-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.trailing-bytes-after-top-level-value.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.truncated-input.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.uint-beyond-safe-integer-range.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.unsorted-map-keys.rejected",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.canonical_rejection",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-all-ones-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-all-ordered-paths",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-single-paths.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-all-single-paths",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-all-zero-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-deep-path-schema.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-deep-path-schema",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-empty-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-empty-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-large-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-large-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-many-staged-results.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-many-staged-results",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-mixed-status-staged",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-multi-path-schema.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-multi-path-schema",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-non-utf8-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-single-byte.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-single-byte",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-failed.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-staged-failed",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-staged-interrupted.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-staged-interrupted",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-event-hash.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-with-event-hash",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-with-prev-turn.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-with-prev-turn",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.hashes.turnTreeSchema",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.hashes.rawOpaqueBytes",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.hashes.turnNodeIdentity",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash.requiredEvidence.result.hashes.turnTreeSchema",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.deterministic_hashing.f-zero-turn-tree-hash",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.abort-dominates-pause-modify-retry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.all-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.modify-dominates-retry-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.multi-modify-preserves-registration-order",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.pause-dominates-modify-retry-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.retry-dominates-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.single-modify",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.composition.single-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.abort-dominates-pause-modify-retry",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.all-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.modify-dominates-retry-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.multi-modify-preserves-registration-order",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.pause-dominates-modify-retry-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.retry-dominates-proceed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.single-modify",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.modify_composition.f-verdict-composition.requiredEvidence.result.composition.single-proceed",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.modify_composition.f-verdict-composition",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-all-ones-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-all-ordered-paths",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-single-paths.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-all-single-paths",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-all-zero-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-deep-path-schema.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-deep-path-schema",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-empty-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-empty-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-large-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-large-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-many-staged-results.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-many-staged-results",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-mixed-status-staged",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-multi-path-schema.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-multi-path-schema",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-non-utf8-bytes",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-single-byte.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-single-byte",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-failed.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-staged-failed",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-staged-interrupted.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-staged-interrupted",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-event-hash.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-with-event-hash",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-with-prev-turn.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-with-prev-turn",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.result.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.result.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.roundtrip.turnNodeIdentityRecord",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash.requiredEvidence.roundtrip.turnTreeSchemaRecord",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.protocol.schema_roundtrip.f-zero-turn-tree-hash",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.protocol.extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.requiredEvidence.erasure.recoverableBeforeErasure",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.requiredEvidence.erasure.unrecoverableAfterErasure",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.requiredEvidence.result.erasure.recoverableBeforeErasure",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction.requiredEvidence.result.erasure.unrecoverableAfterErasure",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.erasure_payload_unrecoverable_after_key_destruction",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.erasure_preserves_referencing_lineage.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_preserves_referencing_lineage.requiredEvidence.erasure.lineageStructurallyIntactAfterErasure",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.erasure_preserves_referencing_lineage.requiredEvidence.result.erasure.lineageStructurallyIntactAfterErasure",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.erasure_preserves_referencing_lineage",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.grace_window_holds_under_active_lease.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.grace_window_holds_under_active_lease.requiredEvidence.reclaim.graceWindowHeldUnderActiveLease",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.grace_window_holds_under_active_lease.requiredEvidence.result.reclaim.graceWindowHeldUnderActiveLease",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.grace_window_holds_under_active_lease",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.reclaim.leaselessRunPastAdminExpiryDoesNotPinReclamation",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation.requiredEvidence.result.reclaim.leaselessRunPastAdminExpiryDoesNotPinReclamation",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.leaseless_run_past_admin_expiry_does_not_pin_reclamation",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.reclaim.leaselessRunWithinAdminExpiryStillPinsReclamation",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation.requiredEvidence.result.reclaim.leaselessRunWithinAdminExpiryStillPinsReclamation",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.leaseless_run_within_admin_expiry_still_pins_reclamation",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.requiredEvidence.reclaim.reachableFromLiveRootRetained",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.requiredEvidence.reclaim.sharedObjectRetainedViaLiveRoot",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.requiredEvidence.result.reclaim.reachableFromLiveRootRetained",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.reachable_from_live_root_is_retained.requiredEvidence.result.reclaim.sharedObjectRetainedViaLiveRoot",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.reachable_from_live_root_is_retained",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.requiredEvidence.reclaim.archivedBranchReleased",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.requiredEvidence.reclaim.unreachablePastGraceReleased",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.requiredEvidence.result.reclaim.archivedBranchReleased",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.reclamation.unreachable_past_grace_is_released.requiredEvidence.result.reclaim.unreachablePastGraceReleased",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.reclamation.unreachable_past_grace_is_released",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.reclamation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.finalHeadIsCommittedSibling",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.finalHeadMatchesWinner",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.losingErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.retryAfterLossErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.singleWriterRejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.crashRecoveryConcurrency.typedLateralConflictObserved",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.writerAdvancedHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.faultPlanConcurrentWriter.writerProducedSiblingHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.finalHeadIsCommittedSibling",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.finalHeadMatchesWinner",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.singleWriterRejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.crashRecoveryConcurrency.typedLateralConflictObserved",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.writerAdvancedHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.concurrent_writer.requiredEvidence.result.faultPlanConcurrentWriter.writerProducedSiblingHead",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.crash-recovery.concurrent_writer",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.restart-recovery"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.9.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.10.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.11.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.12.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.13.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.15.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.16.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.17.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.18.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.afterCommitBeforeAck.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.beforeCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.headMatchesExpectedCheckpoint",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.injectedErrorCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.lineageConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.pendingMessageCommitted",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.recoveryStateConsistent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.crash-recovery.in_process_fault_points.requiredEvidence.result.crashRecovery.midCommit.visibleCommittedMessageCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.crash-recovery.in_process_fault_points",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.restart-recovery"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.preemption.runStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.expired-running-requires-preemption.requiredEvidence.result.preemption.runStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-restart-af.expired-running-requires-preemption",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.listing.pausedRunStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.result.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel-restart-af.paused-run-excluded-from-stale-preemption.requiredEvidence.result.listing.pausedRunStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel-restart-af.paused-run-excluded-from-stale-preemption",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.expiredRunIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.listing.pausedRunStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.expiredRunIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.pausedRunListed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.expired_listing.requiredEvidence.result.listing.pausedRunStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.expired_listing",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.ownerMismatchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.renewedLeaseExpiresAtMs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.renewal.staleTokenCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.ownerMismatchCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.renewedLeaseExpiresAtMs",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.lease_renewal.requiredEvidence.result.renewal.staleTokenCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.lease_renewal",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.branchHeadTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.preservedStagedResultTaskIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.recoveryHeadMatchesBranchHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.recoveryLastTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.runStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.preemption.uncommittedStagedResults",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.leaseCleared",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.preemptionReason",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.preservedStagedResultTaskIds",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.recoveryHeadMatchesBranchHead",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.runStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.run-liveness.stale_preemption.requiredEvidence.result.preemption.uncommittedStagedResults",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.run-liveness.stale_preemption",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.run-liveness"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.enumeration.crossScopeThreadVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.enumeration.sameScopeThreadVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.result.enumeration.crossScopeThreadVisible",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.enumeration_is_scope_confined.requiredEvidence.result.enumeration.sameScopeThreadVisible",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.scope-isolation.enumeration_is_scope_confined",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.scope-isolation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.result.storeGet.crossScopeReturnsNull",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.result.storeGet.sameScopeReturnsObject",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.storeGet.crossScopeReturnsNull",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_get_is_scope_confined.requiredEvidence.storeGet.sameScopeReturnsObject",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.scope-isolation.store_get_is_scope_confined",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.scope-isolation"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.result.storeHas.crossScopeObservesOtherContent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.result.storeHas.sameScopeObservesOwnContent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.storeHas.crossScopeObservesOtherContent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.scope-isolation.store_has_is_scope_confined.requiredEvidence.storeHas.sameScopeObservesOwnContent",
+          "status": "pass"
+        }
+      ],
+      "checkId": "kernel.scope-isolation.store_has_is_scope_confined",
+      "details": {
+        "adapterId": "python-kernel",
+        "planId": "tuvren.kernel.scope-isolation"
+      },
+      "status": "pass"
+    }
+  ],
+  "command": [
+    "bun",
+    "tools/conformance/harness/run.ts",
+    "--adapter",
+    "[adapter-manifest]"
+  ],
+  "exitCode": 0,
+  "implementationId": "python-kernel",
+  "nonApplicableCheckIds": [
+    "kernel-restart-af.invalid-staged-result-reexecutes",
+    "kernel.crash-recovery.durable_fault_points",
+    "kernel.restart-recovery.close_reopen_checkpoint",
+    "kernel.run-liveness.clock_skew_preemption"
+  ],
+  "project": "kernel-python-certification",
+  "reportLabel": "Python process-local kernel baseline",
+  "reportStatus": "capability_subset_pass",
+  "status": "pass",
+  "summary": {
+    "failedChecks": 0,
+    "passedChecks": 68,
+    "totalChecks": 72,
+    "applicableChecks": 68,
+    "nonApplicableChecks": 4
+  },
+  "suiteId": "tuvren.kernel.protocol",
+  "suiteVersion": "0.1.0"
+}

@@ -1,0 +1,62 @@
+{
+  "name": "kernel-go-certification",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "go/kernel-certification",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "language:go", "layer:certification"],
+  "implicitDependencies": ["kernel-go-kernel", "kernel-go-conformance-adapter"],
+  "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/spec/kernel/**/*",
+        "{workspaceRoot}/go/kernel/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go/kernel-certification/**/*",
+        "{workspaceRoot}/go.work"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter go/kernel-conformance-adapter/adapter.json --summary-only"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "inputs": [
+        "default",
+        "{workspaceRoot}/go/kernel/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go.work"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "go build github.com/tuvren/framework/go/kernel/... github.com/tuvren/framework/go/kernel-conformance-adapter/... github.com/tuvren/framework/go/kernel-certification/..."
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": ["default", "{workspaceRoot}/go.work"],
+      "options": {
+        "cwd": "go/kernel-certification",
+        "command": "test -z \"$(gofmt -l .)\" && go vet ./..."
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/go/kernel/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go.work"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "go test github.com/tuvren/framework/go/kernel-certification/..."
+      }
+    }
+  }
+}
