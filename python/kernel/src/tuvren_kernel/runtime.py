@@ -60,6 +60,12 @@ from tuvren_kernel.verdict import compose_verdicts
 
 _ACTIVE_RUN_STATUSES = {"running", "paused"}
 
+# A caller-tunable default (every M3 lease scenario overrides this
+# explicitly via `run.create(..., lease_duration_ms=...)` to land on a
+# specific expiry value); this default only matters for M2-era callers that
+# never mention leases at all.
+_DEFAULT_LEASE_DURATION_MS = 60_000
+
 # Bounds `verify_thread_membership`/`reaches`'s `previousTurnNodeHash` walk
 # (Section 4.3), matching the Go port's `maxLineageWalkDepth`: adversarial or
 # accidentally cyclic lineage chains must degrade into a normal kernel error
@@ -583,6 +589,9 @@ class RunOps:
         schema_id: str,
         start_turn_node_hash: str,
         steps: list[dict[str, Any]],
+        *,
+        owner_id: str | None = None,
+        lease_duration_ms: int = _DEFAULT_LEASE_DURATION_MS,
     ) -> dict[str, Any]:
         if self._kernel.backend.get_run(run_id) is not None:
             raise KernelRuntimeError("kernel_runtime_run_exists", f"runId exists: {run_id}")
@@ -611,6 +620,12 @@ class RunOps:
                 "kernel_runtime_duplicate_step_id", "run.create steps has a duplicate step id"
             )
 
+        now = self._kernel.backend.now()
+        lease = {
+            "ownerId": owner_id if owner_id is not None else f"owner:{run_id}",
+            "token": self._kernel.next_lease_token(run_id),
+            "expiresAtMs": now + lease_duration_ms,
+        }
         record = {
             "runId": run_id,
             "turnId": turn_id,
@@ -622,9 +637,98 @@ class RunOps:
             "currentStepIndex": 0,
             "createdTurnNodes": [],
             "lastCompletedStepId": None,
+            "lease": lease,
+            "pendingCheckpoint": None,
+            "preemptionReason": None,
         }
         self._kernel.backend.put_run(run_id, record)
         return dict(record)
+
+    def renew_lease(
+        self, run_id: str, owner_id: str, token: str, lease_duration_ms: int
+    ) -> dict[str, Any]:
+        """Section 5.2 / ADR-050 lease renewal.
+
+        Backend-authoritative: the new `expiresAtMs` is always computed from
+        `RuntimeBackend.now()`, never from a caller-supplied clock. Rejects a
+        non-owner caller with `run_lease_owner_mismatch` before ever
+        inspecting the token (an impostor should not learn whether *any*
+        token would have worked), then rejects a correct-owner but
+        wrong/stale token with `run_lease_token_mismatch`.
+        """
+
+        run = self._kernel.require_run(run_id)
+        lease = run.get("lease")
+        if lease is None:
+            raise KernelRuntimeError(
+                "kernel_runtime_run_no_active_lease", f"run {run_id} has no active lease"
+            )
+        if lease["ownerId"] != owner_id:
+            raise KernelRuntimeError(
+                "run_lease_owner_mismatch",
+                f"run {run_id} lease is owned by a different owner",
+            )
+        if lease["token"] != token:
+            raise KernelRuntimeError(
+                "run_lease_token_mismatch", f"run {run_id} lease renewal token is stale"
+            )
+
+        new_expires_at_ms = self._kernel.backend.now() + lease_duration_ms
+        run["lease"] = {**lease, "expiresAtMs": new_expires_at_ms}
+        self._kernel.backend.put_run(run_id, run)
+        return dict(run["lease"])
+
+    def list_expired_running(self, now: int | None = None) -> list[dict[str, Any]]:
+        """Section 5.2 lease-expiry listing.
+
+        Scans every run this backend knows about (across every branch: two
+        simultaneously-active runs can never share one branch per Appendix
+        B, so a run-liveness scenario that needs both an expired-running run
+        and an excluded paused run necessarily spreads them across
+        branches), keeping only `status == "running"` runs whose lease has
+        expired. `"paused"` runs are *never* lease-expired-listed, even if
+        their stored `expiresAtMs` looks stale -- a paused run has
+        deliberately yielded its lease-liveness obligation, not lost it.
+        """
+
+        as_of = self._kernel.backend.now() if now is None else now
+        expired = []
+        for run in self._kernel.backend.list_all_runs():
+            if run["status"] != "running":
+                continue
+            lease = run.get("lease")
+            if lease is None:
+                continue
+            if lease["expiresAtMs"] <= as_of:
+                expired.append(run)
+        return expired
+
+    def preempt_stale(self, run_id: str) -> dict[str, Any]:
+        """Section 5.2 stale-run preemption/recovery.
+
+        Transitions an expired `"running"` run to `"failed"` with
+        `preemptionReason: "stale_running_recovery"`, discards its
+        uncommitted staged results (Section 3.4 -- nothing consumed them
+        into a checkpoint), and clears its lease. This run never advanced
+        the branch head past its own `startTurnNodeHash` (a stale-running
+        run by definition made no further checkpoint after the crash that
+        stranded it), so the branch head is untouched here -- it is already
+        the "recovery head" a caller compares against.
+        """
+
+        run = self._kernel.require_run(run_id)
+        if run["status"] != "running":
+            raise KernelRuntimeError(
+                "kernel_runtime_run_not_running",
+                f"run {run_id} is not running (status={run['status']!r})",
+            )
+
+        self._kernel.backend.clear_staged(run_id)
+        run["status"] = "failed"
+        run["preemptionReason"] = "stale_running_recovery"
+        run["lease"] = None
+        self._kernel.backend.put_run(run_id, run)
+        return dict(run)
 
     def begin_step(self, run_id: str, step_id: str) -> dict[str, Any]:
         run = self._kernel.require_run(run_id)
@@ -696,14 +800,112 @@ class RunOps:
             assert head_node is not None  # every stored branch head references a stored node
             new_tree_hash = self._kernel.tree.incorporate(head_node["turnTreeHash"], staged)
 
-        node_hash = self._kernel.checkpoint(run, branch, new_tree_hash, event_hash, staged)
+        # Section 5.5's checkpoint transaction is three sequential backend
+        # writes (`put_node`, `put_branch`, `clear_staged` -- see
+        # `RuntimeKernel.commit_checkpoint` below), not one backend-owned
+        # atomic transaction: a crash between any two of those writes is
+        # observable. So the checkpoint's *identity* is computed and
+        # durably recorded on the run record as `pendingCheckpoint`
+        # *before* attempting any of those writes, and only cleared once
+        # every write plus this method's own run-record bookkeeping has
+        # completed. If the process is interrupted anywhere in between
+        # (including by an injected fault -- see `tuvren_kernel.
+        # fault_injection`), `RunOps.reconcile` can inspect exactly how far
+        # the interrupted attempt got and finish it deterministically,
+        # rather than replaying `complete_step` from scratch (which would
+        # try to consume the same staged results twice).
+        node_identity, node_hash = self._kernel.begin_checkpoint(
+            run, branch, new_tree_hash, event_hash, staged
+        )
+        run["pendingCheckpoint"] = {
+            "stepId": step_id,
+            "nodeHash": node_hash,
+            "nodeIdentity": node_identity,
+        }
+        self._kernel.backend.put_run(run_id, run)
+
+        self._kernel.commit_checkpoint(run, branch, node_hash, node_identity)
 
         run["createdTurnNodes"].append(node_hash)
         run["lastCompletedStepId"] = step_id
         run["currentStepIndex"] = index + 1
+        run["pendingCheckpoint"] = None
         self._kernel.backend.put_run(run_id, run)
 
         return {"checkpointed": True, "turnNodeHash": node_hash}
+
+    def reconcile(self, run_id: str) -> dict[str, Any]:
+        """Section 5.7-style recovery reconciliation for `complete_step`'s
+        pending checkpoint.
+
+        Inspects backend state directly to determine exactly how far an
+        interrupted `complete_step` attempt got, and finishes it
+        deterministically:
+
+        - The checkpoint's TurnNode was never written (`beforeCommit`): the
+          attempt is discarded outright, nothing to roll forward.
+        - The TurnNode was written but the branch head has not advanced yet
+          (`midCommit`): rolls the write forward by advancing the head and
+          clearing staging, then finishes the run-record bookkeeping.
+        - The TurnNode was written *and* the branch head already advanced to
+          it (`afterCommitBeforeAck`, or a `midCommit` this method has
+          already rolled forward once): only the run-record bookkeeping is
+          missing, so this method finishes just that.
+
+        A no-op (`reconciled: False`) when the run has no pending
+        checkpoint to reconcile.
+        """
+
+        run = self._kernel.require_run(run_id)
+        branch = self._kernel.require_branch(run["branchId"])
+        pending = run.get("pendingCheckpoint")
+        if pending is None:
+            return {
+                "reconciled": False,
+                "pendingMessageCommitted": None,
+                "headTurnNodeHash": branch["headTurnNodeHash"],
+            }
+
+        node_hash = pending["nodeHash"]
+        node = self._kernel.backend.get_node(node_hash)
+        if node is None:
+            # beforeCommit: the checkpoint never durably existed.
+            run["pendingCheckpoint"] = None
+            self._kernel.backend.put_run(run_id, run)
+            return {
+                "reconciled": True,
+                "pendingMessageCommitted": False,
+                "headTurnNodeHash": branch["headTurnNodeHash"],
+            }
+
+        if branch["headTurnNodeHash"] != node_hash:
+            # midCommit: the TurnNode is durable but the head/staging half
+            # of the write never ran. Roll it forward.
+            self._kernel.backend.put_branch(
+                run["branchId"], {**branch, "headTurnNodeHash": node_hash}
+            )
+            self._kernel.backend.clear_staged(run_id)
+            branch = self._kernel.require_branch(run["branchId"])
+
+        # afterCommitBeforeAck lands here directly (the backend write was
+        # already fully durable); the midCommit branch above also falls
+        # through here once it has finished rolling forward.
+        if node_hash not in run["createdTurnNodes"]:
+            run["createdTurnNodes"].append(node_hash)
+        run["lastCompletedStepId"] = pending["stepId"]
+        steps = run["stepSequence"]
+        pending_index = next(
+            (index for index, step in enumerate(steps) if step["id"] == pending["stepId"]), None
+        )
+        if pending_index is not None and run["currentStepIndex"] <= pending_index:
+            run["currentStepIndex"] = pending_index + 1
+        run["pendingCheckpoint"] = None
+        self._kernel.backend.put_run(run_id, run)
+        return {
+            "reconciled": True,
+            "pendingMessageCommitted": True,
+            "headTurnNodeHash": branch["headTurnNodeHash"],
+        }
 
     def complete(self, run_id: str, status: str, event_hash: str | None = None) -> dict[str, Any]:
         run = self._kernel.require_run(run_id)
@@ -781,6 +983,7 @@ class RuntimeKernel:
 
     def __init__(self, backend: RuntimeBackend) -> None:
         self.backend = backend
+        self._lease_token_ordinal = 0
         self.store = StoreOps(self)
         self.schema = SchemaOps(self)
         self.tree = TreeOps(self)
@@ -908,6 +1111,78 @@ class RuntimeKernel:
             ordinal += 1
         return f"{branch_id}__archive_{ordinal}"
 
+    def next_lease_token(self, run_id: str) -> str:
+        """A fresh, run-scoped Section 5.2 lease token.
+
+        Ordinal-based rather than random, so the same backend/clock
+        deterministically reproduces the same token sequence across runs --
+        useful for conformance scenarios that need to construct a
+        deliberately *stale* token to exercise `run_lease_token_mismatch`.
+        """
+
+        self._lease_token_ordinal += 1
+        return f"lease:{run_id}:{self._lease_token_ordinal}"
+
+    def begin_checkpoint(
+        self,
+        run: dict[str, Any],
+        branch: dict[str, Any],
+        tree_hash: str,
+        event_hash: str | None,
+        staged: list[dict[str, Any]],
+    ) -> tuple[dict[str, Any], str]:
+        """Compute a Section 5.5 checkpoint's TurnNode identity and hash.
+
+        Pure: performs no backend writes. Split out from `commit_checkpoint`
+        so a caller (`RunOps.complete_step`) can durably record the
+        checkpoint's identity as a `pendingCheckpoint` *before* attempting
+        any of the writes `commit_checkpoint` performs -- see that method's
+        docstring for why.
+        """
+
+        node_identity = {
+            "schemaId": run["schemaId"],
+            "turnTreeHash": tree_hash,
+            "previousTurnNodeHash": branch["headTurnNodeHash"],
+            "eventHash": event_hash,
+            "consumedStagedResults": staged,
+        }
+        node_hash = identity.hash_kernel_record(node_identity)
+        return node_identity, node_hash
+
+    def commit_checkpoint(
+        self,
+        run: dict[str, Any],
+        branch: dict[str, Any],
+        node_hash: str,
+        node_identity: dict[str, Any],
+    ) -> None:
+        """Section 5.5 checkpoint transaction: write TurnNode, advance Head, clear staging.
+
+        Guards against a concurrent writer that already moved `branch`'s
+        head since this checkpoint's base was read: re-reads the branch
+        from the backend and rejects with a typed
+        `kernel_runtime_checkpoint_lateral_conflict` (distinct from a
+        generic exception, so a caller can positively identify "someone
+        else committed first" rather than a storage failure) instead of
+        silently overwriting a sibling checkpoint the losing writer never
+        saw.
+        """
+
+        current_branch = self.backend.get_branch(branch["branchId"])
+        if (
+            current_branch is None
+            or current_branch["headTurnNodeHash"] != branch["headTurnNodeHash"]
+        ):
+            raise KernelRuntimeError(
+                "kernel_runtime_checkpoint_lateral_conflict",
+                f"branch {branch['branchId']} head moved before this checkpoint committed",
+            )
+
+        self.backend.put_node(node_hash, {**node_identity, "hash": node_hash})
+        self.backend.put_branch(branch["branchId"], {**branch, "headTurnNodeHash": node_hash})
+        self.backend.clear_staged(run["runId"])
+
     def checkpoint(
         self,
         run: dict[str, Any],
@@ -918,15 +1193,6 @@ class RuntimeKernel:
     ) -> str:
         """Section 5.5 checkpoint transaction: write TurnNode, advance Head, clear staging."""
 
-        node_identity = {
-            "schemaId": run["schemaId"],
-            "turnTreeHash": tree_hash,
-            "previousTurnNodeHash": branch["headTurnNodeHash"],
-            "eventHash": event_hash,
-            "consumedStagedResults": staged,
-        }
-        node_hash = identity.hash_kernel_record(node_identity)
-        self.backend.put_node(node_hash, {**node_identity, "hash": node_hash})
-        self.backend.put_branch(run["branchId"], {**branch, "headTurnNodeHash": node_hash})
-        self.backend.clear_staged(run["runId"])
+        node_identity, node_hash = self.begin_checkpoint(run, branch, tree_hash, event_hash, staged)
+        self.commit_checkpoint(run, branch, node_hash, node_identity)
         return node_hash

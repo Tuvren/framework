@@ -48,11 +48,15 @@ type Backend interface {
 
 	// --- turn nodes ---
 
-	// PutTurnNode stores node, keyed by its own content-addressed Hash.
+	// PutTurnNode stores node, keyed by its own content-addressed Hash, and
+	// reports an error if the durable write could not be performed. A
+	// returned error means the write did not happen — nothing about node is
+	// visible to a later GetTurnNode call (this is the "before-commit" fault
+	// point a FaultInjectingBackend targets: see fault_injecting_backend.go).
 	// GetTurnNode returns a defensive copy: mutating the returned value
 	// (including its ConsumedStagedResults slice) never affects the stored
 	// state.
-	PutTurnNode(node TurnNode)
+	PutTurnNode(node TurnNode) error
 	GetTurnNode(hash string) (TurnNode, bool)
 
 	// --- threads ---
@@ -76,7 +80,15 @@ type Backend interface {
 	PutBranch(branch Branch) bool // false if branchId already exists
 	GetBranch(branchID string) (Branch, bool)
 	ListBranchesByThread(threadID string) []Branch
-	UpdateBranchHead(branchID, headTurnNodeHash string, updatedAtMs int64) bool
+	// UpdateBranchHead moves branchID's head to headTurnNodeHash. The bool
+	// result reports whether branchID exists (false otherwise, with no
+	// error); the error result reports a durable-write failure on an
+	// existing branch — the point a FaultInjectingBackend's "mid-commit"
+	// fault point targets. Implementations that inject a "mid-commit" fault
+	// still perform the write (the head does move) before returning the
+	// error, modeling a crash that lands after the durable write completes
+	// but before the caller is acknowledged success.
+	UpdateBranchHead(branchID, headTurnNodeHash string, updatedAtMs int64) (bool, error)
 
 	// --- runs ---
 
@@ -84,6 +96,10 @@ type Backend interface {
 	GetRun(runID string) (Run, bool)
 	UpdateRun(run Run) bool
 	ListRunsByBranch(branchID string) []Run
+	// ListRuns returns every run this backend holds, unsorted; Kernel
+	// imposes deterministic order where it matters (run-liveness expiry
+	// listing).
+	ListRuns() []Run
 
 	// --- staged results ---
 

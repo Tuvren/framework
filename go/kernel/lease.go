@@ -1,0 +1,152 @@
+// Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This file implements the M3 run-liveness capability (kernel.run-liveness):
+// run execution leases as described by docs/KrakenKernelSpecification.md
+// §5.2 Run Execution Leases (ADR-050). The backend-authoritative clock
+// requirement means every timestamp here comes from k.Clock (the same clock
+// the Backend was constructed with), never from wall-clock time read
+// directly — this is what lets a deterministic test clock (ManualClock,
+// runtime.go) drive exact expiry arithmetic.
+package kernel
+
+import (
+	"fmt"
+	"sort"
+)
+
+// AcquireLease grants runID's execution lease to ownerID for ttlMs
+// milliseconds from the current backend-authoritative clock reading. runID
+// must exist and must not already hold a lease from a different, still-live
+// acquisition — CreateRun does not acquire a lease implicitly (a caller
+// opts in), so the common sequence is CreateRun then AcquireLease. Returns
+// the minted lease token and its absolute expiry (epoch ms).
+func (k *Kernel) AcquireLease(runID, ownerID string, ttlMs int64) (token string, expiresAtMs int64, err error) {
+	run, ok := k.Backend.GetRun(runID)
+	if !ok {
+		return "", 0, newKernelError("kernel_runtime_run_not_found", "run %q not found", runID)
+	}
+
+	now := k.Clock.NowMs()
+	token = fmt.Sprintf("lease_%s_%d", runID, now)
+	expiresAtMs = now + ttlMs
+
+	run.HasLease = true
+	run.LeaseOwnerID = ownerID
+	run.LeaseToken = token
+	run.LeaseExpiresAtMs = expiresAtMs
+	k.Backend.UpdateRun(run)
+
+	return token, expiresAtMs, nil
+}
+
+// RenewLease extends runID's execution lease by ttlMs milliseconds from the
+// current backend-authoritative clock reading, provided ownerID and token
+// both match the lease currently on record. A caller presenting the wrong
+// owner gets ErrRunLeaseOwnerMismatch (checked first: not owning the run at
+// all is the more fundamental rejection); the right owner with a stale or
+// otherwise wrong token gets ErrRunLeaseTokenMismatch. Returns the lease's
+// new absolute expiry (epoch ms).
+func (k *Kernel) RenewLease(runID, ownerID, token string, ttlMs int64) (renewedExpiresAtMs int64, err error) {
+	run, ok := k.Backend.GetRun(runID)
+	if !ok {
+		return 0, newKernelError("kernel_runtime_run_not_found", "run %q not found", runID)
+	}
+	if !run.HasLease {
+		return 0, newKernelError(ErrRunLeaseNotHeld, "run %q does not currently hold a lease", runID)
+	}
+	if run.LeaseOwnerID != ownerID {
+		return 0, newKernelError(ErrRunLeaseOwnerMismatch, "run %q's lease is owned by %q, not %q", runID, run.LeaseOwnerID, ownerID)
+	}
+	if run.LeaseToken != token {
+		return 0, newKernelError(ErrRunLeaseTokenMismatch, "run %q's lease token does not match", runID)
+	}
+
+	now := k.Clock.NowMs()
+	renewedExpiresAtMs = now + ttlMs
+	run.LeaseExpiresAtMs = renewedExpiresAtMs
+	k.Backend.UpdateRun(run)
+
+	return renewedExpiresAtMs, nil
+}
+
+// PauseRun marks runID paused. Paused runs are excluded from
+// ListExpiredRuns and from stale preemption regardless of their lease
+// state (kernel spec §5.2: only a "running" run can go stale — a paused
+// run's owner deliberately relinquished active execution, which is not a
+// crash).
+func (k *Kernel) PauseRun(runID string) error {
+	run, ok := k.Backend.GetRun(runID)
+	if !ok {
+		return newKernelError("kernel_runtime_run_not_found", "run %q not found", runID)
+	}
+	run.Status = RunStatusPaused
+	k.Backend.UpdateRun(run)
+	return nil
+}
+
+// ListExpiredRuns returns the sorted run ids of every run whose status is
+// "running", that holds a lease, and whose lease expiresAtMs is at or
+// before nowMs. A "paused" run is never listed here even if its lease (if
+// it still has one on record) has expired — kernel spec §5.2's stale
+// window only ever applies to a run actively believed to be executing.
+func (k *Kernel) ListExpiredRuns(nowMs int64) []string {
+	var expired []string
+	for _, run := range k.Backend.ListRuns() {
+		if run.Status != RunStatusRunning {
+			continue
+		}
+		if !run.HasLease {
+			continue
+		}
+		if run.LeaseExpiresAtMs > nowMs {
+			continue
+		}
+		expired = append(expired, run.RunID)
+	}
+	sort.Strings(expired)
+	return expired
+}
+
+// PreemptStaleRun fails runID as a stale-recovery preemption (kernel spec
+// §5.2): runID must be status "running" with a lease that has expired at or
+// before nowMs (ErrRunNotPreemptable otherwise — this guards against
+// preempting a live, non-expired, or already-inactive run). On success:
+// status becomes "failed", preemptionReason becomes
+// "stale_running_recovery", any uncommitted staged results are cleared (a
+// preempted run's dead owner never gets to have its unflushed work silently
+// promoted), and the lease is cleared entirely (HasLease=false). The run's
+// branch head is left untouched — the run's last durable checkpoint is
+// exactly the state recovery resumes from.
+func (k *Kernel) PreemptStaleRun(runID string, nowMs int64) error {
+	run, ok := k.Backend.GetRun(runID)
+	if !ok {
+		return newKernelError("kernel_runtime_run_not_found", "run %q not found", runID)
+	}
+	if run.Status != RunStatusRunning || !run.HasLease || run.LeaseExpiresAtMs > nowMs {
+		return newKernelError(ErrRunNotPreemptable, "run %q is not a stale running run as of %d", runID, nowMs)
+	}
+
+	k.Backend.DrainStagedResults(runID)
+
+	run.Status = RunStatusFailed
+	run.PreemptionReason = "stale_running_recovery"
+	run.HasLease = false
+	run.LeaseOwnerID = ""
+	run.LeaseToken = ""
+	run.LeaseExpiresAtMs = 0
+	k.Backend.UpdateRun(run)
+
+	return nil
+}

@@ -41,6 +41,12 @@ var operationHandlers = map[string]operationHandler{
 	"kernel.logical.recovery-state":         runLogicalRecoveryState,
 	"kernel.logical.thread-list":            runLogicalThreadList,
 	"kernel.lineage.cross-thread-rejection": runLineageCrossThreadRejection,
+
+	"kernel.run-liveness.lease-renewal":                 runLeaseRenewal,
+	"kernel.run-liveness.expired-listing":               runExpiredListing,
+	"kernel.run-liveness.stale-preemption":              runStalePreemption,
+	"kernel.restart-recovery.crash-recovery-in-process": runCrashRecoveryInProcess,
+	"kernel.restart-recovery.concurrent-writer":         runConcurrentWriter,
 }
 
 // capabilities lists the capability tags this adapter reports during
@@ -55,6 +61,8 @@ func capabilities() []string {
 		"kernel.edge-validation",
 		"kernel.logical",
 		"kernel-protocol.thread.enumeration",
+		"kernel.run-liveness",
+		"kernel.restart-recovery",
 	}
 }
 

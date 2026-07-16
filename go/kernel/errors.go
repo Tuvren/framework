@@ -104,6 +104,48 @@ const (
 	// the archival-segment walk still guards against a race or a corrupted
 	// chain).
 	ErrBackwardLineageMismatch = "kernel_runtime_backward_lineage_mismatch"
+
+	// ErrRunLeaseOwnerMismatch: a lease renewal call named an ownerId that
+	// does not match the run's current lease owner (kernel spec §5.2 Run
+	// Execution Leases). Unprefixed to byte-match the run-liveness
+	// conformance plan's expected error code literal.
+	ErrRunLeaseOwnerMismatch = "run_lease_owner_mismatch"
+
+	// ErrRunLeaseTokenMismatch: a lease renewal call named the correct
+	// ownerId but a stale or otherwise mismatched lease token. Unprefixed to
+	// byte-match the run-liveness conformance plan's expected error code
+	// literal.
+	ErrRunLeaseTokenMismatch = "run_lease_token_mismatch"
+
+	// ErrRunLeaseNotHeld: a lease renewal or preemption call targeted a run
+	// that does not currently hold a lease at all (never acquired one, or
+	// already preempted/released).
+	ErrRunLeaseNotHeld = "kernel_runtime_run_lease_not_held"
+
+	// ErrRunNotPreemptable: a stale-preemption call targeted a run that is
+	// not both status "running" and lease-expired as of the supplied clock
+	// reading.
+	ErrRunNotPreemptable = "kernel_runtime_run_not_preemptable"
+
+	// ErrCheckpointLateralConflict: a checkpoint commit's expected base
+	// (the turn node its writer believed was the branch's current head) no
+	// longer matches the branch's actual current head at commit time — a
+	// second writer already committed a sibling checkpoint from the same
+	// base first. This is the kernel's single-writer-per-checkpoint
+	// enforcement (kernel spec §5 recovery protocol): the loser must get a
+	// typed, distinguishable rejection rather than a generic failure.
+	ErrCheckpointLateralConflict = "kernel_runtime_checkpoint_lateral_conflict"
+
+	// ErrPersistenceFaultInjected: a FaultInjectingBackend fired its
+	// configured fault, interrupting an otherwise-successful backend
+	// operation to exercise crash-recovery behavior (docs/
+	// KrakenKernelSpecification.md §5). Mirrors the TypeScript kernel
+	// testkit's kernel_persistence_fault_injected code byte-for-byte.
+	ErrPersistenceFaultInjected = "kernel_persistence_fault_injected"
+
+	// ErrFaultPointUnsupported: a FaultPlan named a FaultPoint the target
+	// FaultInjectingBackend cannot honor.
+	ErrFaultPointUnsupported = "kernel_fault_point_unsupported"
 )
 
 // KernelError is the typed error every kernel-runtime operation returns for

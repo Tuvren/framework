@@ -294,7 +294,9 @@ func (k *Kernel) CreateThread(threadID, schemaID, branchID string) (ThreadCreate
 		return ThreadCreateResult{}, newKernelError(ErrThreadRootNotUnique, "turn node %q is already the root of thread %q", rootNodeHash, existingThreadID)
 	}
 
-	k.Backend.PutTurnNode(rootNode)
+	if err := k.Backend.PutTurnNode(rootNode); err != nil {
+		return ThreadCreateResult{}, err
+	}
 
 	now := k.Clock.NowMs()
 	if !k.Backend.PutThread(Thread{ThreadID: threadID, SchemaID: schemaID, RootTurnNodeHash: rootNodeHash, CreatedAtMs: now}) {
@@ -526,7 +528,9 @@ func (k *Kernel) rollbackBranchHead(branchID string, branch Branch, newHead stri
 		}
 	}
 
-	k.Backend.UpdateBranchHead(branchID, newHead, now)
+	if _, err := k.Backend.UpdateBranchHead(branchID, newHead, now); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -574,7 +578,9 @@ func (k *Kernel) SetBranchHead(branchID, newHead string) error {
 		if active, ok := k.activeRunOnBranch(branchID); ok {
 			return newKernelError(ErrBranchHasActiveRun, "branch %q cannot move head while run %q is active", branchID, active.RunID)
 		}
-		k.Backend.UpdateBranchHead(branchID, newHead, k.Clock.NowMs())
+		if _, err := k.Backend.UpdateBranchHead(branchID, newHead, k.Clock.NowMs()); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -747,7 +753,15 @@ func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []S
 		return "", run, err
 	}
 	newNode.Hash = hash
-	k.Backend.PutTurnNode(newNode)
+
+	// PutTurnNode is the checkpoint commit sequence's first durable write.
+	// A FaultInjectingBackend's "before-commit" fault point fires here: the
+	// write never happens, run.CreatedTurnNodes is never extended, and the
+	// branch head never moves — CompleteStep re-stages consumed on this
+	// path so nothing consumed is lost (see CompleteStep).
+	if err := k.Backend.PutTurnNode(newNode); err != nil {
+		return "", run, err
+	}
 
 	run.CreatedTurnNodes = append(run.CreatedTurnNodes, hash)
 
@@ -757,9 +771,47 @@ func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []S
 	// construction (the new node's previousTurnNodeHash is the branch's
 	// current head), so it can never fail the lineage check SetBranchHead
 	// itself enforces for externally requested head movements.
-	k.Backend.UpdateBranchHead(run.BranchID, hash, k.Clock.NowMs())
+	//
+	// UpdateBranchHead is the checkpoint commit sequence's second durable
+	// write. A FaultInjectingBackend's "mid-commit" fault point fires here:
+	// unlike "before-commit", the write itself still happens (the head
+	// really does move) before the error is returned, modeling a crash
+	// that lands after the durable write completes but before the caller
+	// observes success — the turn node and the new head are both already
+	// durable even though this call reports failure. Kernel.CompleteStep /
+	// Kernel.CompleteRun return this error to their caller without
+	// persisting the in-memory run record's CreatedTurnNodes/
+	// CurrentStepIndex advance, so ReconcileRun (recovery.go) is what later
+	// repairs the run record forward to match the branch head that already
+	// moved.
+	if _, err := k.Backend.UpdateBranchHead(run.BranchID, hash, k.Clock.NowMs()); err != nil {
+		return hash, run, err
+	}
+
+	// afterCommitBeforeAckHook, if the backend exposes one (see
+	// fault_injecting_backend.go), fires after both durable writes above
+	// have fully succeeded but before this call returns success to its
+	// caller — the "after-commit-before-ack" fault point. Observably
+	// identical to "mid-commit" (both writes are already durable), it exists
+	// as a distinct hook only so a fault plan can target "the ack, not the
+	// write" precisely, matching the TypeScript fault-injecting backend's
+	// three-point vocabulary.
+	if hook, ok := k.Backend.(afterCommitBeforeAckHook); ok {
+		if err := hook.AfterCommitBeforeAck(); err != nil {
+			return hash, run, err
+		}
+	}
 
 	return hash, run, nil
+}
+
+// afterCommitBeforeAckHook is the optional seam a Backend can implement to
+// have Kernel.checkpointRun call it after both checkpoint-commit durable
+// writes (PutTurnNode, UpdateBranchHead) have succeeded but before
+// checkpointRun reports success to its own caller. InMemoryBackend does not
+// implement it; FaultInjectingBackend does (fault_injecting_backend.go).
+type afterCommitBeforeAckHook interface {
+	AfterCommitBeforeAck() error
 }
 
 // CompleteStep validates that stepID is the run's next declared step,
@@ -796,6 +848,21 @@ func (k *Kernel) CompleteStep(runID, stepID, eventHash, treeHash string) (string
 	consumed := k.Backend.DrainStagedResults(runID)
 	hash, run, err := k.checkpointRun(run, eventHash, treeHash, consumed)
 	if err != nil {
+		if hash == "" {
+			// The checkpoint never became durable (a "before-commit" fault
+			// or an equivalent failure before the turn node was written):
+			// nothing consumed committed anywhere, so restage it rather than
+			// silently losing it — the next successful checkpoint attempt
+			// (or a recovery replay) must still see it as uncommitted work.
+			for _, result := range consumed {
+				k.Backend.StageResult(runID, result)
+			}
+		}
+		// hash != "" means the checkpoint's durable writes already
+		// succeeded (a "mid-commit" or "after-commit-before-ack" fault):
+		// the turn node and branch head are real, but this run record is
+		// deliberately left un-advanced here. ReconcileRun (recovery.go)
+		// repairs it forward to match the branch head that already moved.
 		return "", err
 	}
 

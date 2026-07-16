@@ -47,6 +47,8 @@ CAPABILITIES: list[str] = [
     "kernel.edge-validation",
     "kernel.logical",
     "kernel-protocol.thread.enumeration",
+    "kernel.run-liveness",
+    "kernel.restart-recovery",
 ]
 
 

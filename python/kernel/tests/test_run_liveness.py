@@ -1,0 +1,366 @@
+# Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Milestone M3 coverage: run execution leases (Section 5.2 / ADR-050) and
+Section 5.5 checkpoint crash-recovery (`tuvren_kernel.fault_injection`).
+
+Mirrors the exact scenario shapes the Python conformance adapter's
+`kernel.run-liveness.*` / `kernel.restart-recovery.*` operations build (see
+`tuvren_kernel_adapter.operations`), plus direct unit coverage of the
+lease-lifecycle and fault-point edge cases those operations don't each
+individually exercise.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from tuvren_kernel.backend import InMemoryBackend
+from tuvren_kernel.errors import KernelRuntimeError
+from tuvren_kernel.fault_injection import FaultInjectingBackend
+from tuvren_kernel.runtime import RuntimeKernel
+
+CANONICAL_SCHEMA: dict[str, Any] = {
+    "schemaId": "schema_main",
+    "paths": [
+        {"path": "messages", "collection": "ordered"},
+        {"path": "context.manifest", "collection": "single"},
+    ],
+    "incorporationRules": [
+        {"objectType": "message", "targetPath": "messages"},
+        {"objectType": "context_manifest", "targetPath": "context.manifest"},
+    ],
+}
+
+
+class _Clock:
+    def __init__(self, value: int = 0) -> None:
+        self.value = value
+
+    def __call__(self) -> int:
+        return self.value
+
+
+def new_kernel(clock: _Clock | None = None) -> RuntimeKernel:
+    backend = InMemoryBackend(now=clock) if clock is not None else InMemoryBackend()
+    kernel = RuntimeKernel(backend)
+    kernel.schema.register(dict(CANONICAL_SCHEMA))
+    return kernel
+
+
+def error_code(callable_: Any) -> str:
+    try:
+        callable_()
+    except KernelRuntimeError as error:
+        return error.code
+    raise AssertionError("expected a KernelRuntimeError")
+
+
+def make_run(
+    kernel: RuntimeKernel,
+    prefix: str,
+    *,
+    owner_id: str | None = None,
+    lease_duration_ms: int = 60_000,
+    step_ids: list[str] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    thread = kernel.thread.create(f"thread_{prefix}", "schema_main", f"branch_{prefix}")
+    turn = kernel.turn.create(
+        f"turn_{prefix}", thread["threadId"], thread["branchId"], None, thread["rootTurnNodeHash"]
+    )
+    steps = [
+        {"id": step_id, "deterministic": False, "sideEffects": False}
+        for step_id in (step_ids or ["step"])
+    ]
+    run = kernel.run.create(
+        f"run_{prefix}",
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        steps,
+        owner_id=owner_id,
+        lease_duration_ms=lease_duration_ms,
+    )
+    return thread, turn, run
+
+
+# --- Lease lifecycle ---------------------------------------------------------
+
+
+def test_run_create_stamps_a_backend_authoritative_lease() -> None:
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    _, _, run = make_run(kernel, "lease_create", owner_id="owner_a", lease_duration_ms=25)
+    assert run["lease"] == {"ownerId": "owner_a", "token": run["lease"]["token"], "expiresAtMs": 25}
+
+
+def test_run_lease_renewal_extends_expiry_from_backend_clock() -> None:
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    _, _, run = make_run(kernel, "lease_renew", owner_id="owner_a", lease_duration_ms=10)
+    token = run["lease"]["token"]
+
+    clock.value = 10
+    renewed = kernel.run.renew_lease("run_lease_renew", "owner_a", token, lease_duration_ms=30)
+    assert renewed["expiresAtMs"] == 40
+
+
+def test_run_lease_renewal_rejects_owner_mismatch() -> None:
+    kernel = new_kernel()
+    _, _, run = make_run(kernel, "lease_owner", owner_id="owner_a")
+    token = run["lease"]["token"]
+    code = error_code(
+        lambda: kernel.run.renew_lease("run_lease_owner", "owner_b", token, lease_duration_ms=10)
+    )
+    assert code == "run_lease_owner_mismatch"
+
+
+def test_run_lease_renewal_rejects_stale_token() -> None:
+    kernel = new_kernel()
+    make_run(kernel, "lease_token", owner_id="owner_a")
+    code = error_code(
+        lambda: kernel.run.renew_lease(
+            "run_lease_token", "owner_a", "not-the-real-token", lease_duration_ms=10
+        )
+    )
+    assert code == "run_lease_token_mismatch"
+
+
+def test_run_list_expired_running_excludes_paused_runs() -> None:
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    make_run(kernel, "expiry_running", owner_id="owner_running", lease_duration_ms=5)
+    make_run(kernel, "expiry_paused", owner_id="owner_paused", lease_duration_ms=5)
+    kernel.run.begin_step("run_expiry_paused", "step")
+    kernel.run.complete("run_expiry_paused", "paused")
+
+    clock.value = 100
+    expired_ids = sorted(run["runId"] for run in kernel.run.list_expired_running())
+    assert expired_ids == ["run_expiry_running"]
+
+    paused_run = kernel.backend.get_run("run_expiry_paused")
+    assert paused_run["status"] == "paused"
+
+
+def test_run_list_expired_running_excludes_unexpired_runs() -> None:
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    make_run(kernel, "expiry_fresh", owner_id="owner_a", lease_duration_ms=1_000)
+
+    clock.value = 10
+    assert kernel.run.list_expired_running() == []
+
+
+def test_run_preempt_stale_transitions_run_and_clears_lease_and_staging() -> None:
+    clock = _Clock(0)
+    kernel = new_kernel(clock)
+    thread, _, run = make_run(kernel, "preempt", owner_id="owner_a", lease_duration_ms=5)
+    kernel.staging.stage("run_preempt", b"uncommitted", "task_1", "message", "completed")
+
+    clock.value = 100
+    preempted = kernel.run.preempt_stale("run_preempt")
+
+    assert preempted["status"] == "failed"
+    assert preempted["preemptionReason"] == "stale_running_recovery"
+    assert preempted["lease"] is None
+    assert kernel.staging.current("run_preempt") == []
+
+    branch = kernel.branch.get(thread["branchId"])
+    recovery = kernel.run.recover("run_preempt")
+    assert recovery["lastTurnNodeHash"] == branch["headTurnNodeHash"]
+
+
+def test_run_preempt_stale_rejects_a_run_that_is_not_running() -> None:
+    kernel = new_kernel()
+    make_run(kernel, "preempt_terminal", owner_id="owner_a")
+    kernel.run.begin_step("run_preempt_terminal", "step")
+    kernel.run.complete("run_preempt_terminal", "completed")
+    code = error_code(lambda: kernel.run.preempt_stale("run_preempt_terminal"))
+    assert code == "kernel_runtime_run_not_running"
+
+
+# --- Checkpoint fault points / crash recovery --------------------------------
+
+
+def _seed_and_fault(fault_point: str) -> dict[str, Any]:
+    base_backend = InMemoryBackend()
+    kernel = RuntimeKernel(base_backend)
+    kernel.schema.register(dict(CANONICAL_SCHEMA))
+
+    thread = kernel.thread.create(
+        f"thread_fault_{fault_point}", "schema_main", f"branch_fault_{fault_point}"
+    )
+    turn = kernel.turn.create(
+        f"turn_fault_{fault_point}",
+        thread["threadId"],
+        thread["branchId"],
+        None,
+        thread["rootTurnNodeHash"],
+    )
+    run_id = f"run_fault_{fault_point}"
+    kernel.run.create(
+        run_id,
+        turn["turnId"],
+        thread["branchId"],
+        "schema_main",
+        thread["rootTurnNodeHash"],
+        [
+            {"id": "seed", "deterministic": False, "sideEffects": False},
+            {"id": "faulted", "deterministic": False, "sideEffects": False},
+        ],
+    )
+
+    kernel.run.begin_step(run_id, "seed")
+    kernel.run.complete_step(run_id, "seed")
+    pre_fault_head = kernel.branch.get(thread["branchId"])["headTurnNodeHash"]
+
+    kernel.run.begin_step(run_id, "faulted")
+    kernel.backend = FaultInjectingBackend(base_backend, fault_point, policy="once")  # type: ignore[assignment]
+    raised_code = None
+    try:
+        kernel.run.complete_step(run_id, "faulted")
+    except KernelRuntimeError as runtime_error:
+        raised_code = runtime_error.code
+    kernel.backend = base_backend
+
+    return {
+        "kernel": kernel,
+        "thread": thread,
+        "run_id": run_id,
+        "pre_fault_head": pre_fault_head,
+        "raised_code": raised_code,
+    }
+
+
+def test_fault_injecting_backend_fires_exactly_once_under_once_policy() -> None:
+    base_backend = InMemoryBackend()
+    faulty = FaultInjectingBackend(base_backend, "beforeCommit", policy="once")
+    assert base_backend.get_node("deadbeef") is None
+    for attempt in range(3):
+        try:
+            faulty.put_node(f"node-{attempt}", {"marker": attempt})
+        except KernelRuntimeError as runtime_error:
+            assert attempt == 0
+            assert runtime_error.code == "kernel_persistence_fault_injected"
+        else:
+            assert attempt != 0
+
+
+def test_before_commit_fault_leaves_no_partial_checkpoint() -> None:
+    scenario = _seed_and_fault("beforeCommit")
+    kernel: RuntimeKernel = scenario["kernel"]
+    run_id = scenario["run_id"]
+
+    assert scenario["raised_code"] == "kernel_persistence_fault_injected"
+
+    run_record = kernel.backend.get_run(run_id)
+    pending = run_record["pendingCheckpoint"]
+    assert pending is not None
+    assert kernel.backend.get_node(pending["nodeHash"]) is None
+
+    reconciled = kernel.run.reconcile(run_id)
+    assert reconciled == {
+        "reconciled": True,
+        "pendingMessageCommitted": False,
+        "headTurnNodeHash": scenario["pre_fault_head"],
+    }
+    assert len(kernel.backend.get_run(run_id)["createdTurnNodes"]) == 1
+
+
+def test_mid_commit_fault_leaves_genuine_partial_state_and_rolls_forward() -> None:
+    scenario = _seed_and_fault("midCommit")
+    kernel: RuntimeKernel = scenario["kernel"]
+    run_id = scenario["run_id"]
+    thread = scenario["thread"]
+
+    assert scenario["raised_code"] == "kernel_persistence_fault_injected"
+
+    run_record = kernel.backend.get_run(run_id)
+    pending = run_record["pendingCheckpoint"]
+    assert pending is not None
+    # Genuine partial state: the TurnNode is durably written...
+    assert kernel.backend.get_node(pending["nodeHash"]) is not None
+    # ...but the branch head has not advanced to it yet.
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == scenario["pre_fault_head"]
+
+    reconciled = kernel.run.reconcile(run_id)
+    assert reconciled["pendingMessageCommitted"] is True
+    assert reconciled["headTurnNodeHash"] == pending["nodeHash"]
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == pending["nodeHash"]
+    assert len(kernel.backend.get_run(run_id)["createdTurnNodes"]) == 2
+
+
+def test_after_commit_before_ack_fault_is_already_fully_durable() -> None:
+    scenario = _seed_and_fault("afterCommitBeforeAck")
+    kernel: RuntimeKernel = scenario["kernel"]
+    run_id = scenario["run_id"]
+    thread = scenario["thread"]
+
+    assert scenario["raised_code"] == "kernel_persistence_fault_injected"
+
+    run_record = kernel.backend.get_run(run_id)
+    pending = run_record["pendingCheckpoint"]
+    assert pending is not None
+    # The backend write already fully committed before the fault fired.
+    assert kernel.backend.get_node(pending["nodeHash"]) is not None
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == pending["nodeHash"]
+    # Only the run-record bookkeeping ("ack") is missing.
+    assert pending["nodeHash"] not in run_record["createdTurnNodes"]
+
+    reconciled = kernel.run.reconcile(run_id)
+    assert reconciled["pendingMessageCommitted"] is True
+    assert len(kernel.backend.get_run(run_id)["createdTurnNodes"]) == 2
+
+
+def test_reconcile_is_a_no_op_without_a_pending_checkpoint() -> None:
+    kernel = new_kernel()
+    thread, _, _ = make_run(kernel, "reconcile_noop")
+    reconciled = kernel.run.reconcile("run_reconcile_noop")
+    assert reconciled["reconciled"] is False
+    assert reconciled["pendingMessageCommitted"] is None
+    assert reconciled["headTurnNodeHash"] == thread["rootTurnNodeHash"]
+
+
+# --- Concurrent-writer optimistic-concurrency guard ---------------------------
+
+
+def test_commit_checkpoint_rejects_a_concurrent_lateral_writer() -> None:
+    base_backend = InMemoryBackend()
+    kernel = RuntimeKernel(base_backend)
+    kernel.schema.register(dict(CANONICAL_SCHEMA))
+    thread = kernel.thread.create("thread_lateral", "schema_main", "branch_lateral")
+    branch_id = thread["branchId"]
+    base_branch = kernel.branch.get(branch_id)
+    tree_hash = thread["rootTurnTreeHash"]
+
+    event_one = kernel.store.put(b"writer-one")
+    event_two = kernel.store.put(b"writer-two")
+
+    writer_one = {"runId": "writer_one", "schemaId": "schema_main", "branchId": branch_id}
+    writer_two = {"runId": "writer_two", "schemaId": "schema_main", "branchId": branch_id}
+
+    winner_hash = kernel.checkpoint(writer_one, base_branch, tree_hash, event_one, [])
+    assert kernel.branch.get(branch_id)["headTurnNodeHash"] == winner_hash
+
+    code = error_code(lambda: kernel.checkpoint(writer_two, base_branch, tree_hash, event_two, []))
+    assert code == "kernel_runtime_checkpoint_lateral_conflict"
+    # The loser did not clobber the winner's head.
+    assert kernel.branch.get(branch_id)["headTurnNodeHash"] == winner_hash
+
+    # A retry from the now-current head succeeds.
+    fresh_branch = kernel.branch.get(branch_id)
+    retried_hash = kernel.checkpoint(writer_two, fresh_branch, tree_hash, event_two, [])
+    assert kernel.branch.get(branch_id)["headTurnNodeHash"] == retried_hash
+    assert retried_hash != winner_hash

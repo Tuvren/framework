@@ -147,10 +147,11 @@ func cloneTurnTree(tree TurnTree) TurnTree {
 	return tree
 }
 
-func (b *InMemoryBackend) PutTurnNode(node TurnNode) {
+func (b *InMemoryBackend) PutTurnNode(node TurnNode) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.nodes[node.Hash] = cloneTurnNode(node)
+	return nil
 }
 
 func (b *InMemoryBackend) GetTurnNode(hash string) (TurnNode, bool) {
@@ -239,17 +240,17 @@ func (b *InMemoryBackend) ListBranchesByThread(threadID string) []Branch {
 	return out
 }
 
-func (b *InMemoryBackend) UpdateBranchHead(branchID, headTurnNodeHash string, updatedAtMs int64) bool {
+func (b *InMemoryBackend) UpdateBranchHead(branchID, headTurnNodeHash string, updatedAtMs int64) (bool, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	branch, ok := b.branches[branchID]
 	if !ok {
-		return false
+		return false, nil
 	}
 	branch.HeadTurnNodeHash = headTurnNodeHash
 	branch.UpdatedAtMs = updatedAtMs
 	b.branches[branchID] = branch
-	return true
+	return true, nil
 }
 
 func (b *InMemoryBackend) PutRun(run Run) bool {
@@ -287,6 +288,16 @@ func (b *InMemoryBackend) ListRunsByBranch(branchID string) []Run {
 		if run.BranchID == branchID {
 			out = append(out, run)
 		}
+	}
+	return out
+}
+
+func (b *InMemoryBackend) ListRuns() []Run {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	out := make([]Run, 0, len(b.runs))
+	for _, run := range b.runs {
+		out = append(out, run)
 	}
 	return out
 }

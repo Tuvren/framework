@@ -108,6 +108,7 @@ class RuntimeBackend(Protocol):
     def put_run(self, run_id: str, record: dict[str, Any]) -> None: ...
     def get_run(self, run_id: str) -> dict[str, Any] | None: ...
     def list_runs_for_branch(self, branch_id: str) -> list[dict[str, Any]]: ...
+    def list_all_runs(self) -> list[dict[str, Any]]: ...
 
     # --- Staging (Section 3.4) ---------------------------------------------
     def append_staged(self, run_id: str, staged_result: dict[str, Any]) -> None: ...
@@ -214,6 +215,15 @@ class InMemoryBackend:
 
     def list_runs_for_branch(self, branch_id: str) -> list[dict[str, Any]]:
         return copy.deepcopy([r for r in self._runs.values() if r["branchId"] == branch_id])
+
+    def list_all_runs(self) -> list[dict[str, Any]]:
+        # Milestone M3's run-liveness expiry listing (Section 5.2 / ADR-050)
+        # scans across every branch a run may live on -- `run.create`
+        # already forbids two simultaneously-active runs sharing one branch
+        # (Appendix B), so an expired-running run and an excluded paused run
+        # can never coexist on the same branch, and this milestone's
+        # conformance scenarios deliberately spread them across branches.
+        return copy.deepcopy(list(self._runs.values()))
 
     # --- Staging -------------------------------------------------------------------
     def append_staged(self, run_id: str, staged_result: dict[str, Any]) -> None:

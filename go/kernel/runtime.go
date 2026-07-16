@@ -55,6 +55,21 @@ func (c *IncrementingClock) NowMs() int64 {
 	return c.Ms
 }
 
+// ManualClock is a test Clock a caller advances explicitly via SetMs,
+// letting a scenario pin exact timestamps (for example a lease's acquire and
+// renew instants) instead of relying on wall-clock or auto-increment
+// behavior. Not safe for concurrent use — conformance operations that need
+// it build a fresh one per dispatch call like every other test seam here.
+type ManualClock struct{ ms int64 }
+
+// NewManualClock constructs a ManualClock starting at startMs.
+func NewManualClock(startMs int64) *ManualClock { return &ManualClock{ms: startMs} }
+
+func (c *ManualClock) NowMs() int64 { return c.ms }
+
+// SetMs advances (or otherwise sets) the clock's current reading.
+func (c *ManualClock) SetMs(ms int64) { c.ms = ms }
+
 // RunStatus mirrors the CDDL run-status enum.
 type RunStatus string
 
@@ -143,6 +158,19 @@ type Run struct {
 	StepSequence      []StepDeclaration
 	CreatedTurnNodes  []string
 	ThreadID          string
+
+	// --- run execution lease (kernel spec §5.2 Run Execution Leases,
+	// ADR-050: backend-authoritative clock, lease tokens, renewal, expiry,
+	// preemption; capability kernel.run-liveness) ---
+
+	HasLease         bool
+	LeaseOwnerID     string
+	LeaseToken       string
+	LeaseExpiresAtMs int64
+
+	// PreemptionReason is set when a stale-preemption call fails this run
+	// (kernel.run-liveness.stale-preemption); "" otherwise.
+	PreemptionReason string
 }
 
 // ThreadCreateResult mirrors the CDDL thread-create-result record.

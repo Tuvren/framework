@@ -13,7 +13,9 @@
     "kernel.protocol",
     "kernel.edge-validation",
     "kernel.logical",
-    "kernel-protocol.thread.enumeration"
+    "kernel-protocol.thread.enumeration",
+    "kernel.run-liveness",
+    "kernel.restart-recovery"
   ],
   "authorityPackets": ["spec/kernel/authority-packet.json"],
   "suiteId": "tuvren.kernel.protocol",
