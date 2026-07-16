@@ -5,8 +5,11 @@
 name: tuvren_framework_dart_workspace
 publish_to: none
 environment:
-  sdk: ^3.12.0
+  sdk: ^3.6.0
 workspace:
   - dart/kernel
   - dart/kernel-conformance-adapter
   - dart/kernel-certification
+dependency_overrides:
+  analyzer: ">=7.0.0 <8.0.0"
+  js: ">=0.7.0 <0.7.2"

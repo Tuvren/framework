@@ -138,14 +138,86 @@ void main() {
     },
   );
 
+  test('a non-string method fails with invalid_json_rpc_request', () {
+    for (final method in [7, null]) {
+      final response = roundTrip({
+        'jsonrpc': '2.0',
+        'id': 9,
+        'method': method,
+        'params': {},
+      });
+      expect(
+        (response['error'] as Map<String, Object?>)['code'],
+        'invalid_json_rpc_request',
+      );
+    }
+    // A frame missing `method` entirely decodes it as null, exercising the
+    // same non-string check.
+    final missing = jsonDecode(
+      handleLine(jsonEncode({'jsonrpc': '2.0', 'id': 10, 'params': {}})),
+    ) as Map<String, Object?>;
+    expect(
+      (missing['error'] as Map<String, Object?>)['code'],
+      'invalid_json_rpc_request',
+    );
+  });
+
+  test('response id echoes null id and numeric id', () {
+    final nullId = roundTrip({
+      'jsonrpc': '2.0',
+      'id': null,
+      'method': 'events',
+      'params': {},
+    });
+    expect(nullId.containsKey('id'), isTrue);
+    expect(nullId['id'], isNull);
+
+    final numericId = roundTrip({
+      'jsonrpc': '2.0',
+      'id': 42,
+      'method': 'events',
+      'params': {},
+    });
+    expect(numericId['id'], 42);
+  });
+
+  test(
+    'a response containing a non-finite double falls back to '
+    'adapter_response_serialization_failed',
+    () {
+      const operation = 'kernel.protocol.__non_finite_double_fallback__';
+      operationHandlers[operation] = (input) => {'x': double.nan};
+      try {
+        final line = handleLine(
+          jsonEncode({
+            'jsonrpc': '2.0',
+            'id': 11,
+            'method': 'dispatch',
+            'params': {'operation': operation},
+          }),
+        );
+        // The fallback frame is hand-built from plain strings, so it must
+        // still be valid, decodable JSON.
+        final decoded = jsonDecode(line) as Map<String, Object?>;
+        expect(decoded['id'], 11);
+        final error = decoded['error'] as Map<String, Object?>;
+        expect(error['code'], 'adapter_response_serialization_failed');
+      } finally {
+        operationHandlers.remove(operation);
+      }
+    },
+  );
+
   test('adapter process round-trips frames over real stdio', () async {
-    final process = await Process.start('dart', [
-      'run',
-      'bin/main.dart',
-    ], workingDirectory: Directory.current.path);
-    final responses = process.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter());
+    final process = await Process.start(
+        'dart',
+        [
+          'run',
+          'bin/main.dart',
+        ],
+        workingDirectory: Directory.current.path);
+    final responses =
+        process.stdout.transform(utf8.decoder).transform(const LineSplitter());
     final stderrDrain = process.stderr.drain<void>();
     process.stdin.writeln(
       jsonEncode({

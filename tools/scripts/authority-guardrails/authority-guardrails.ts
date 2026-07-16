@@ -1630,11 +1630,11 @@ async function collectConformanceSourceRoots(
 
       if (existsSync(resolve(entryPath, "pubspec.yaml"))) {
         // Dart adapters/certification wrappers keep sources under lib/,
-        // bin/, and test/ (Dart's own package convention), marked by
-        // pubspec.yaml. Scan those subdirectories explicitly instead of the
-        // package root so the generated .dart_tool/ cache can never leak
-        // generated sources into the guardrail scan.
-        for (const sourceDir of ["lib", "bin", "test"]) {
+        // bin/, test/, example/, and tool/ (Dart's own package convention),
+        // marked by pubspec.yaml. Scan those subdirectories explicitly
+        // instead of the package root so the generated .dart_tool/ cache can
+        // never leak generated sources into the guardrail scan.
+        for (const sourceDir of ["lib", "bin", "test", "example", "tool"]) {
           const sourcePath = resolve(entryPath, sourceDir);
           if (existsSync(sourcePath)) {
             roots.push(sourcePath);

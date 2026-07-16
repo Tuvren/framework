@@ -50,9 +50,9 @@ final Map<String, OperationHandler> operationHandlers =
 /// plans read, mirroring the Go adapter's projection helper: `result` and
 /// `evidence` carry the same observation object.
 Map<String, Object?> projection(Object? observation) => <String, Object?>{
-  'result': observation,
-  'evidence': observation,
-};
+      'result': observation,
+      'evidence': observation,
+    };
 
 Map<String, Object?> _errorEnvelope(String code, String message) =>
     <String, Object?>{'code': code, 'message': message};
@@ -66,6 +66,29 @@ Map<String, Object?> _errorResponse(Object? id, String code, String message) =>
 
 Map<String, Object?> _resultResponse(Object? id, Object? result) =>
     <String, Object?>{'jsonrpc': '2.0', 'id': id, 'result': result};
+
+/// Recursively walks a value that is about to be handed to [jsonEncode],
+/// throwing a [FormatException] on the first `double` that is not
+/// [double.isFinite] (NaN, +Infinity, or -Infinity). `jsonEncode` encodes
+/// these as invalid, non-JSON tokens instead of throwing, so this check must
+/// run before encoding to route non-encodable responses into the
+/// hand-built adapter_response_serialization_failed fallback.
+void _rejectNonFiniteDoubles(Object? value) {
+  switch (value) {
+    case double d when !d.isFinite:
+      throw FormatException('non-finite double $d is not valid JSON');
+    case Map<Object?, Object?> map:
+      for (final entry in map.values) {
+        _rejectNonFiniteDoubles(entry);
+      }
+    case Iterable<Object?> iterable:
+      for (final element in iterable) {
+        _rejectNonFiniteDoubles(element);
+      }
+    default:
+      return;
+  }
+}
 
 /// Routes one operation dispatch to its handler, converting an uncaught
 /// throw into an adapter_operation_panicked error outcome so a broken
@@ -159,21 +182,34 @@ String handleLine(String line) {
           'request jsonrpc must be 2.0',
         );
       } else {
-        final params = decoded['params'];
-        response = switch (decoded['method']) {
-          'initialize' => _handleInitialize(id, params),
-          'dispatch' => _handleDispatch(id, params),
-          'events' => _resultResponse(id, const <Object?>[]),
-          'createInstance' ||
-          'inspectState' ||
-          'destroyInstance' ||
-          'shutdown' => _resultResponse(id, null),
-          final method => _errorResponse(
+        final method = decoded['method'];
+        // A frame whose method isn't a string is a malformed request, not an
+        // unimplemented method: fail with invalid_json_rpc_request, matching
+        // the Go adapter's method-type check.
+        if (method is! String) {
+          response = _errorResponse(
             id,
-            'adapter_method_not_implemented',
-            'unsupported adapter method $method',
-          ),
-        };
+            'invalid_json_rpc_request',
+            'request method must be a string',
+          );
+        } else {
+          final params = decoded['params'];
+          response = switch (method) {
+            'initialize' => _handleInitialize(id, params),
+            'dispatch' => _handleDispatch(id, params),
+            'events' => _resultResponse(id, const <Object?>[]),
+            'createInstance' ||
+            'inspectState' ||
+            'destroyInstance' ||
+            'shutdown' =>
+              _resultResponse(id, null),
+            final method => _errorResponse(
+                id,
+                'adapter_method_not_implemented',
+                'unsupported adapter method $method',
+              ),
+          };
+        }
       }
     }
   } on FormatException catch (error) {
@@ -185,6 +221,14 @@ String handleLine(String line) {
   }
 
   try {
+    // dart:convert's jsonEncode does not throw on double.nan or
+    // double.infinity: it silently emits the invalid (non-JSON) tokens NaN,
+    // Infinity, and -Infinity, so the adapter_response_serialization_failed
+    // fallback below would never fire for a handler that returns a
+    // non-finite double. Walk the response first and throw on any such
+    // value so it routes into the same fallback as a genuine encode
+    // failure, matching the Go and Python adapters' behavior.
+    _rejectNonFiniteDoubles(response);
     return jsonEncode(response);
   } catch (error) {
     // A response frame that fails to encode must still produce exactly one
