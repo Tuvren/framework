@@ -42,9 +42,17 @@ void main() {
 
     test('float', () {
       // 0xfb + 8 bytes is a double-precision float (1.0).
-      final floatBytes = Uint8List.fromList(
-        [0xfb, 0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-      );
+      final floatBytes = Uint8List.fromList([
+        0xfb,
+        0x3f,
+        0xf0,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+      ]);
       expect(() => decodeCanonical(floatBytes), throwsFormatException);
     });
 
@@ -69,27 +77,51 @@ void main() {
     test('integer outside safe range', () {
       // 2^63-1, encoded minimally as an 8-byte unsigned integer, is far
       // outside the js-safe-int range.
-      final tooLarge = Uint8List.fromList(
-        [0x1b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
-      );
+      final tooLarge = Uint8List.fromList([
+        0x1b,
+        0x7f,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+      ]);
       expect(() => decodeCanonical(tooLarge), throwsFormatException);
     });
 
     test('array length claim exceeding input', () {
       // 0x9b + 8 bytes of 0xff is the 8-byte-argument form of major type 4
       // (array), claiming 2^64-1 elements from a 9-byte input.
-      final adversarial = Uint8List.fromList(
-        [0x9b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
-      );
+      final adversarial = Uint8List.fromList([
+        0x9b,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+      ]);
       expect(() => decodeCanonical(adversarial), throwsFormatException);
     });
 
     test('map length claim exceeding input', () {
       // 0xbb + 8 bytes of 0xff is the 8-byte-argument form of major type 5
       // (map), claiming 2^64-1 entries from a 9-byte input.
-      final adversarial = Uint8List.fromList(
-        [0xbb, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
-      );
+      final adversarial = Uint8List.fromList([
+        0xbb,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+      ]);
       expect(() => decodeCanonical(adversarial), throwsFormatException);
     });
 

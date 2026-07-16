@@ -71,9 +71,10 @@ void main() {
       final file = File('${fixturesDir.path}/$name');
       final top = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
 
-      final rawOpaqueBytes = (top['rawOpaqueBytes'] as List<dynamic>)
-          .map((e) => e as int)
-          .toList();
+      final rawOpaqueBytes =
+          (top['rawOpaqueBytes'] as List<dynamic>)
+              .map((e) => e as int)
+              .toList();
       final rawOpaqueBytesSha256Hex = top['rawOpaqueBytesSha256Hex'] as String;
       final turnNodeIdentityRecord = top['turnNodeIdentityRecord'];
       final turnNodeIdentityRecordCborHex =

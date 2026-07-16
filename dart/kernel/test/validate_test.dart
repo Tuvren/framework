@@ -19,7 +19,8 @@ void _expectCode(void Function() body, String code) {
   try {
     body();
     fail(
-        'expected a KernelException with code "$code", but nothing was thrown');
+      'expected a KernelException with code "$code", but nothing was thrown',
+    );
   } on KernelException catch (e) {
     expect(e.code, code);
   }
@@ -34,10 +35,7 @@ void main() {
         'incorporationRules': const RecordArray([]),
         'unexpectedField': const RecordText('nope'),
       });
-      _expectCode(
-        () => validateTurnTreeSchema(record),
-        errUnknownRecordField,
-      );
+      _expectCode(() => validateTurnTreeSchema(record), errUnknownRecordField);
     });
 
     test('rejects duplicate path', () {
@@ -50,10 +48,7 @@ void main() {
         'paths': RecordArray([pathDef, pathDef]),
         'incorporationRules': const RecordArray([]),
       });
-      _expectCode(
-        () => validateTurnTreeSchema(record),
-        errDuplicateSchemaPath,
-      );
+      _expectCode(() => validateTurnTreeSchema(record), errDuplicateSchemaPath);
     });
 
     test('accepts a well-formed schema', () {
@@ -94,10 +89,7 @@ void main() {
         ]),
         'incorporationRules': const RecordArray([]),
       });
-      _expectCode(
-        () => validateTurnTreeSchema(record),
-        errInvalidRecordField,
-      );
+      _expectCode(() => validateTurnTreeSchema(record), errInvalidRecordField);
     });
   });
 
@@ -108,10 +100,7 @@ void main() {
         'deterministic': const RecordBool(true),
         // sideEffects intentionally omitted
       });
-      _expectCode(
-        () => validateStepDeclaration(record),
-        errMissingRecordField,
-      );
+      _expectCode(() => validateStepDeclaration(record), errMissingRecordField);
     });
 
     test('accepts absent optional metadata', () {
@@ -150,10 +139,7 @@ void main() {
         'status': const RecordText('interrupted'),
         // interruptPayload intentionally omitted
       });
-      _expectCode(
-        () => validateStagedResult(record),
-        errMissingRecordField,
-      );
+      _expectCode(() => validateStagedResult(record), errMissingRecordField);
     });
 
     test('settled status rejects interruptPayload field', () {
@@ -168,10 +154,7 @@ void main() {
         'status': const RecordText('completed'),
         'interruptPayload': const RecordText('nope'),
       });
-      _expectCode(
-        () => validateStagedResult(record),
-        errUnknownRecordField,
-      );
+      _expectCode(() => validateStagedResult(record), errUnknownRecordField);
     });
 
     test('rejects an unknown status', () {
@@ -182,10 +165,7 @@ void main() {
         'timestamp': const RecordInt(1),
         'status': const RecordText('not-a-real-status'),
       });
-      _expectCode(
-        () => validateStagedResult(record),
-        errInvalidRecordField,
-      );
+      _expectCode(() => validateStagedResult(record), errInvalidRecordField);
     });
   });
 
@@ -200,8 +180,10 @@ void main() {
         'messages': RecordArray([RecordText(hashA), RecordText(hashB)]),
       });
 
-      final manifest =
-          validateTurnTreeManifestLike(record, 'turn-tree-manifest');
+      final manifest = validateTurnTreeManifestLike(
+        record,
+        'turn-tree-manifest',
+      );
 
       expect(manifest['context.manifest']!.kind, PathValueKind.nullValue);
       expect(manifest['single.path']!.kind, PathValueKind.single);

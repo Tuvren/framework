@@ -1629,9 +1629,22 @@ function packageSourceRootsFor(entryPath: string): string[] | null {
     // marked by pubspec.yaml. Scan those subdirectories explicitly
     // instead of the package root so the generated .dart_tool/ cache can
     // never leak generated sources into the guardrail scan.
-    return ["lib", "bin", "test", "example", "tool"]
+    const sourceRoots = ["lib", "bin", "test", "example", "tool"]
       .map((sourceDir) => resolve(entryPath, sourceDir))
       .filter((sourcePath) => existsSync(sourcePath));
+
+    if (sourceRoots.length === 0) {
+      // A pubspec.yaml package with none of the conventional source
+      // subdirectories is a broken/unexpected layout, not a signal to
+      // silently exclude it from the forbidden-token scan: throw here
+      // for the same reason findConformanceSourceRoots throws on a
+      // missing language root above.
+      throw new Error(
+        `authority-guardrails conformance-source scan found a pubspec.yaml package at ${relative(REPO_ROOT, entryPath)} with none of lib/, bin/, test/, example/, or tool/ — a package with no recognized source directory is a broken layout, not a signal to silently narrow the scan`
+      );
+    }
+
+    return sourceRoots;
   }
 
   return null;

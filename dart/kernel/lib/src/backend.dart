@@ -93,16 +93,17 @@ final class TurnTree {
   /// affects this instance's, mirroring `go/kernel/memory_backend.go`'s
   /// `cloneTurnTree`.
   TurnTree clone() => TurnTree(
-        hash: hash,
-        schemaId: schemaId,
-        manifest: {
-          for (final entry in manifest.entries)
-            entry.key: entry.value.kind == PathValueKind.ordered
+    hash: hash,
+    schemaId: schemaId,
+    manifest: {
+      for (final entry in manifest.entries)
+        entry.key:
+            entry.value.kind == PathValueKind.ordered
                 ? PathValue.ordered(List.of(entry.value.ordered!))
                 : entry.value,
-        },
-        createdAtMs: createdAtMs,
-      );
+    },
+    createdAtMs: createdAtMs,
+  );
 }
 
 /// The runtime kernel's in-memory turn node. Because a turn node's hash is
@@ -141,14 +142,14 @@ final class TurnNode {
   /// A copy whose [consumedStagedResults] is independent storage, mirroring
   /// `go/kernel/memory_backend.go`'s `cloneTurnNode`.
   TurnNode clone() => TurnNode(
-        hash: hash,
-        schemaId: schemaId,
-        turnTreeHash: turnTreeHash,
-        previousTurnNodeHash: previousTurnNodeHash,
-        eventHash: eventHash,
-        consumedStagedResults: consumedStagedResults,
-        createdAtMs: createdAtMs,
-      );
+    hash: hash,
+    schemaId: schemaId,
+    turnTreeHash: turnTreeHash,
+    previousTurnNodeHash: previousTurnNodeHash,
+    eventHash: eventHash,
+    consumedStagedResults: consumedStagedResults,
+    createdAtMs: createdAtMs,
+  );
 }
 
 /// The runtime kernel's in-memory thread record.
@@ -190,13 +191,13 @@ final class Branch {
   final String archivedFromBranchId;
 
   Branch clone() => Branch(
-        branchId: branchId,
-        threadId: threadId,
-        headTurnNodeHash: headTurnNodeHash,
-        createdAtMs: createdAtMs,
-        updatedAtMs: updatedAtMs,
-        archivedFromBranchId: archivedFromBranchId,
-      );
+    branchId: branchId,
+    threadId: threadId,
+    headTurnNodeHash: headTurnNodeHash,
+    createdAtMs: createdAtMs,
+    updatedAtMs: updatedAtMs,
+    archivedFromBranchId: archivedFromBranchId,
+  );
 }
 
 /// The runtime kernel's in-memory run record. [threadId] is bookkeeping
@@ -223,8 +224,8 @@ final class Run {
     this.preemptionReason = '',
     this.createdAtMs = 0,
     this.updatedAtMs = 0,
-  })  : stepSequence = List.of(stepSequence),
-        createdTurnNodes = List.of(createdTurnNodes);
+  }) : stepSequence = List.of(stepSequence),
+       createdTurnNodes = List.of(createdTurnNodes);
 
   final String runId;
   final String turnId;
@@ -270,26 +271,26 @@ final class Run {
   /// A copy whose [stepSequence] and [createdTurnNodes] are independent
   /// storage, mirroring `go/kernel/memory_backend.go`'s `cloneRun`.
   Run clone() => Run(
-        runId: runId,
-        turnId: turnId,
-        branchId: branchId,
-        schemaId: schemaId,
-        startTurnNodeHash: startTurnNodeHash,
-        status: status,
-        currentStepIndex: currentStepIndex,
-        stepSequence: stepSequence,
-        createdTurnNodes: createdTurnNodes,
-        threadId: threadId,
-        pendingCheckpointHash: pendingCheckpointHash,
-        pendingCheckpointKind: pendingCheckpointKind,
-        hasLease: hasLease,
-        leaseOwnerId: leaseOwnerId,
-        leaseToken: leaseToken,
-        leaseExpiresAtMs: leaseExpiresAtMs,
-        preemptionReason: preemptionReason,
-        createdAtMs: createdAtMs,
-        updatedAtMs: updatedAtMs,
-      );
+    runId: runId,
+    turnId: turnId,
+    branchId: branchId,
+    schemaId: schemaId,
+    startTurnNodeHash: startTurnNodeHash,
+    status: status,
+    currentStepIndex: currentStepIndex,
+    stepSequence: stepSequence,
+    createdTurnNodes: createdTurnNodes,
+    threadId: threadId,
+    pendingCheckpointHash: pendingCheckpointHash,
+    pendingCheckpointKind: pendingCheckpointKind,
+    hasLease: hasLease,
+    leaseOwnerId: leaseOwnerId,
+    leaseToken: leaseToken,
+    leaseExpiresAtMs: leaseExpiresAtMs,
+    preemptionReason: preemptionReason,
+    createdAtMs: createdAtMs,
+    updatedAtMs: updatedAtMs,
+  );
 }
 
 /// Mirrors the CDDL `thread-create-result` record.
@@ -351,7 +352,9 @@ RecordMap _manifestToRecord(Map<String, PathValue> manifest) {
 /// (kernel spec §2.3 / §3.2 identity rule). `createdAtMs` is intentionally
 /// excluded. Mirrors `go/kernel/runtime.go`'s `turnTreeIdentityRecord`.
 RecordMap turnTreeIdentityRecord(
-    String schemaId, Map<String, PathValue> manifest) {
+  String schemaId,
+  Map<String, PathValue> manifest,
+) {
   return RecordMap({
     'manifest': _manifestToRecord(manifest),
     'schemaId': RecordText(schemaId),
@@ -486,12 +489,17 @@ abstract class Backend {
   /// [branchId] exists (`false` otherwise, with no exception thrown).
   /// Throws a [KernelException] for a durable-write failure on an
   /// existing branch -- the point a [FaultInjectingBackend]'s
-  /// "mid-commit" fault point targets. Implementations that inject a
-  /// "mid-commit" fault still perform the write (the head does move)
-  /// before throwing, modeling a crash that lands after the durable write
-  /// completes but before the caller is acknowledged success.
+  /// "mid-commit" fault point targets. [FaultInjectingBackend]'s
+  /// "mid-commit" fault fires without ever calling through to the inner
+  /// backend, so the head does NOT move before throwing -- modeling a
+  /// torn checkpoint where the durable write never completed, rather
+  /// than a completed write the caller merely failed to be acknowledged
+  /// for.
   bool updateBranchHead(
-      String branchId, String headTurnNodeHash, int updatedAtMs);
+    String branchId,
+    String headTurnNodeHash,
+    int updatedAtMs,
+  );
 
   /// Atomically moves [branchId]'s head to [newHead], but only if its
   /// current head still equals [expectedHead] at the moment of the

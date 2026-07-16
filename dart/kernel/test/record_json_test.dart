@@ -25,11 +25,13 @@ void main() {
       expect(recordFromJson('hi'), equals(const RecordText('hi')));
       expect(
         recordFromJson([1, 'a', null]),
-        equals(RecordArray([
-          const RecordInt(1),
-          const RecordText('a'),
-          const RecordNull(),
-        ])),
+        equals(
+          RecordArray([
+            const RecordInt(1),
+            const RecordText('a'),
+            const RecordNull(),
+          ]),
+        ),
       );
       expect(
         recordFromJson({'a': 1, 'b': null}),
@@ -41,21 +43,14 @@ void main() {
       expect(() => recordFromJson(1.5), throwsFormatException);
     });
 
-    test(
-        'rejects an integral-valued double (still not a base-10 integer '
+    test('rejects an integral-valued double (still not a base-10 integer '
         'literal, mirroring json.Number.Int64 rejecting "2.0")', () {
       expect(() => recordFromJson(2.0), throwsFormatException);
     });
 
     test('rejects an integer outside the js-safe-int range', () {
-      expect(
-        () => recordFromJson(maxSafeInteger + 1),
-        throwsFormatException,
-      );
-      expect(
-        () => recordFromJson(minSafeInteger - 1),
-        throwsFormatException,
-      );
+      expect(() => recordFromJson(maxSafeInteger + 1), throwsFormatException);
+      expect(() => recordFromJson(minSafeInteger - 1), throwsFormatException);
     });
 
     test('accepts the js-safe-int boundary values', () {
@@ -81,10 +76,7 @@ void main() {
         recordToJson(RecordArray([const RecordInt(1), const RecordText('a')])),
         [1, 'a'],
       );
-      expect(
-        recordToJson(RecordMap({'x': const RecordInt(1)})),
-        {'x': 1},
-      );
+      expect(recordToJson(RecordMap({'x': const RecordInt(1)})), {'x': 1});
     });
 
     test('round trips through recordFromJson for a nested structure', () {

@@ -113,21 +113,22 @@ void main() {
     expect(composed.adjustment, equals(const RecordInt(3)));
   });
 
-  test('a single transform-less modify composes as RecordNull, not a throw',
-      () {
-    // Regression: go/kernel/verdict.go's Transform field is a plain Record
-    // interface value, so a nil transform composes without error there;
-    // this pins the same tolerance for Dart's nullable transform field.
-    final composed = composeVerdicts(const [
-      Verdict(kind: verdictKindModify),
-    ]);
-
-    expect(composed.kind, verdictKindModify);
-    expect(composed.transform, equals(const RecordNull()));
-  });
-
   test(
-      'a transform-less modify composes alongside other modifies without '
+    'a single transform-less modify composes as RecordNull, not a throw',
+    () {
+      // Regression: go/kernel/verdict.go's Transform field is a plain Record
+      // interface value, so a nil transform composes without error there;
+      // this pins the same tolerance for Dart's nullable transform field.
+      final composed = composeVerdicts(const [
+        Verdict(kind: verdictKindModify),
+      ]);
+
+      expect(composed.kind, verdictKindModify);
+      expect(composed.transform, equals(const RecordNull()));
+    },
+  );
+
+  test('a transform-less modify composes alongside other modifies without '
       'throwing', () {
     const withTransform = RecordText('has-transform');
     final composed = composeVerdicts(const [

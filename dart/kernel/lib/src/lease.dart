@@ -79,7 +79,9 @@ extension KernelLeaseOps on Kernel {
     }
     if (!run.hasLease) {
       throw KernelException(
-          errRunLeaseNotHeld, 'run "$runId" does not currently hold a lease');
+        errRunLeaseNotHeld,
+        'run "$runId" does not currently hold a lease',
+      );
     }
     if (run.status != RunStatus.running) {
       throw KernelException(
@@ -102,8 +104,10 @@ extension KernelLeaseOps on Kernel {
       );
     }
     if (run.leaseToken != token) {
-      throw KernelException(errRunLeaseTokenMismatch,
-          'run "$runId"\'s lease token does not match');
+      throw KernelException(
+        errRunLeaseTokenMismatch,
+        'run "$runId"\'s lease token does not match',
+      );
     }
 
     final renewedExpiresAtMs = now + ttlMs;
@@ -192,7 +196,12 @@ extension KernelLeaseOps on Kernel {
       // extended type's private members exactly as a class method could,
       // as long as both live in the same library.
       final (_, updatedRun) = _checkpointRun(
-          current, eventHash, '', staged, PendingCheckpointKind.preempt);
+        current,
+        eventHash,
+        '',
+        staged,
+        PendingCheckpointKind.preempt,
+      );
       current = updatedRun;
     } on _CheckpointFault catch (fault) {
       if (fault.hash.isEmpty) {
@@ -218,6 +227,6 @@ const String _preemptionEventMediaType = 'application/cbor';
 /// Builds the canonical-record encoding of a stale-run preemption's
 /// reactive-checkpoint event: `{runId, type}`.
 RecordMap _preemptionEventRecord(String runId) => RecordMap({
-      'runId': RecordText(runId),
-      'type': const RecordText('kernel_runtime_run_preempted'),
-    });
+  'runId': RecordText(runId),
+  'type': const RecordText('kernel_runtime_run_preempted'),
+});

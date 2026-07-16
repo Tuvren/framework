@@ -81,9 +81,9 @@ class InMemoryBackend implements Backend, Reclaimer {
   /// Constructs an empty in-memory backend, bound to its own private
   /// single-scope store, using [clock] for every timestamp it records.
   InMemoryBackend([Clock? clock])
-      : clock = clock ?? const SystemClock(),
-        _store = MemoryScopeStore(),
-        _scope = defaultScope;
+    : clock = clock ?? const SystemClock(),
+      _store = MemoryScopeStore(),
+      _scope = defaultScope;
 
   /// Binds a backend handle to [scope] within [store], a
   /// [MemoryScopeStore] possibly shared with other handles bound to other
@@ -94,9 +94,9 @@ class InMemoryBackend implements Backend, Reclaimer {
   /// bound to the same store and the same scope share that scope's
   /// committed state.
   InMemoryBackend.scoped(Clock? clock, MemoryScopeStore store, String scope)
-      : clock = clock ?? const SystemClock(),
-        _store = store,
-        _scope = scope;
+    : clock = clock ?? const SystemClock(),
+      _store = store,
+      _scope = scope;
 
   @override
   final Clock clock;
@@ -217,13 +217,16 @@ class InMemoryBackend implements Backend, Reclaimer {
 
   @override
   List<Branch> listBranchesByThread(String threadId) => [
-        for (final branch in _state.branches.values)
-          if (branch.threadId == threadId) branch.clone(),
-      ];
+    for (final branch in _state.branches.values)
+      if (branch.threadId == threadId) branch.clone(),
+  ];
 
   @override
   bool updateBranchHead(
-      String branchId, String headTurnNodeHash, int updatedAtMs) {
+    String branchId,
+    String headTurnNodeHash,
+    int updatedAtMs,
+  ) {
     final st = _state;
     final branch = st.branches[branchId];
     if (branch == null) return false;
@@ -277,35 +280,37 @@ class InMemoryBackend implements Backend, Reclaimer {
   /// authoritatively set by the backend, mirroring how
   /// `go/kernel/memory_backend.go`'s `PutRun`/`UpdateRun` stamp those two
   /// bookkeeping fields themselves rather than trusting the caller's copy.
-  Run _stampRun(Run run,
-          {required int createdAtMs, required int updatedAtMs}) =>
-      Run(
-        runId: run.runId,
-        turnId: run.turnId,
-        branchId: run.branchId,
-        schemaId: run.schemaId,
-        startTurnNodeHash: run.startTurnNodeHash,
-        status: run.status,
-        currentStepIndex: run.currentStepIndex,
-        stepSequence: run.stepSequence,
-        createdTurnNodes: run.createdTurnNodes,
-        threadId: run.threadId,
-        pendingCheckpointHash: run.pendingCheckpointHash,
-        pendingCheckpointKind: run.pendingCheckpointKind,
-        hasLease: run.hasLease,
-        leaseOwnerId: run.leaseOwnerId,
-        leaseToken: run.leaseToken,
-        leaseExpiresAtMs: run.leaseExpiresAtMs,
-        preemptionReason: run.preemptionReason,
-        createdAtMs: createdAtMs,
-        updatedAtMs: updatedAtMs,
-      );
+  Run _stampRun(
+    Run run, {
+    required int createdAtMs,
+    required int updatedAtMs,
+  }) => Run(
+    runId: run.runId,
+    turnId: run.turnId,
+    branchId: run.branchId,
+    schemaId: run.schemaId,
+    startTurnNodeHash: run.startTurnNodeHash,
+    status: run.status,
+    currentStepIndex: run.currentStepIndex,
+    stepSequence: run.stepSequence,
+    createdTurnNodes: run.createdTurnNodes,
+    threadId: run.threadId,
+    pendingCheckpointHash: run.pendingCheckpointHash,
+    pendingCheckpointKind: run.pendingCheckpointKind,
+    hasLease: run.hasLease,
+    leaseOwnerId: run.leaseOwnerId,
+    leaseToken: run.leaseToken,
+    leaseExpiresAtMs: run.leaseExpiresAtMs,
+    preemptionReason: run.preemptionReason,
+    createdAtMs: createdAtMs,
+    updatedAtMs: updatedAtMs,
+  );
 
   @override
   List<Run> listRunsByBranch(String branchId) => [
-        for (final run in _state.runs.values)
-          if (run.branchId == branchId) run.clone(),
-      ];
+    for (final run in _state.runs.values)
+      if (run.branchId == branchId) run.clone(),
+  ];
 
   @override
   List<Run> listRuns() => [for (final run in _state.runs.values) run.clone()];

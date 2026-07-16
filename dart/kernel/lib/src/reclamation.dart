@@ -333,7 +333,13 @@ ReclamationSummary reclaimScope({
   final turnTreeStack = <String>[];
 
   _seedLiveRoots(
-      branches, threads, runs, stagedByRun, turnNodeStack, keepObjects);
+    branches,
+    threads,
+    runs,
+    stagedByRun,
+    turnNodeStack,
+    keepObjects,
+  );
   _seedGraceRoots(
     nodes,
     trees,
@@ -344,7 +350,12 @@ ReclamationSummary reclaimScope({
     keepObjects,
   );
   _closeTurnNodeReachability(
-      nodes, keepTurnNodes, keepObjects, turnNodeStack, turnTreeStack);
+    nodes,
+    keepTurnNodes,
+    keepObjects,
+    turnNodeStack,
+    turnTreeStack,
+  );
   _closeTurnTreeReachability(trees, keepTurnTrees, keepObjects, turnTreeStack);
 
   return _sweep(

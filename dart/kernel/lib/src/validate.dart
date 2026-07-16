@@ -204,7 +204,8 @@ PathDefinition _validatePathDefinition(Record value) {
   final collection = switch (collectionText) {
     'ordered' => PathCollectionKind.ordered,
     'single' => PathCollectionKind.single,
-    _ => throw KernelException(
+    _ =>
+      throw KernelException(
         errInvalidRecordField,
         '$context: field "collection" must be "ordered" or "single", got '
         '"$collectionText"',
@@ -437,19 +438,19 @@ enum PathValueKind { nullValue, single, ordered }
 /// Mirrors the CDDL `path-value` union.
 class PathValue {
   const PathValue.nullValue()
-      : kind = PathValueKind.nullValue,
-        single = null,
-        ordered = null;
+    : kind = PathValueKind.nullValue,
+      single = null,
+      ordered = null;
 
   const PathValue.single(String value)
-      : kind = PathValueKind.single,
-        single = value,
-        ordered = null;
+    : kind = PathValueKind.single,
+      single = value,
+      ordered = null;
 
   const PathValue.ordered(List<String> values)
-      : kind = PathValueKind.ordered,
-        single = null,
-        ordered = values;
+    : kind = PathValueKind.ordered,
+      single = null,
+      ordered = values;
 
   final PathValueKind kind;
 
@@ -500,7 +501,9 @@ PathValue _validatePathValue(Record value, String context) {
 /// above), so one validator serves both. Mirrors `go/kernel/validate.go`'s
 /// `ValidateTurnTreeManifestLike`.
 Map<String, PathValue> validateTurnTreeManifestLike(
-    Record value, String context) {
+  Record value,
+  String context,
+) {
   final m = _expectMap(value, context);
   final result = <String, PathValue>{};
   for (final entry in m.value.entries) {
@@ -510,8 +513,10 @@ Map<String, PathValue> validateTurnTreeManifestLike(
         '$context: keys must be non-empty strings',
       );
     }
-    result[entry.key] =
-        _validatePathValue(entry.value, '$context["${entry.key}"]');
+    result[entry.key] = _validatePathValue(
+      entry.value,
+      '$context["${entry.key}"]',
+    );
   }
   return result;
 }

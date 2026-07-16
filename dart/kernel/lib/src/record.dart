@@ -256,10 +256,10 @@ Object? recordToJson(Record record) {
     RecordText(:final value) => value,
     RecordBytes(:final value) => List<int>.of(value),
     RecordArray(:final value) => [
-        for (final element in value) recordToJson(element),
-      ],
+      for (final element in value) recordToJson(element),
+    ],
     RecordMap(:final value) => {
-        for (final entry in value.entries) entry.key: recordToJson(entry.value),
-      },
+      for (final entry in value.entries) entry.key: recordToJson(entry.value),
+    },
   };
 }

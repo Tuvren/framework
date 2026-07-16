@@ -179,10 +179,21 @@ void _appendHead(BytesBuilder out, int majorType, int val) {
     out.addByte((val >> 8) & 0xff);
     out.addByte(val & 0xff);
   } else {
+    // dart2js compiles `int` bitwise/shift operators as JS 32-bit
+    // operations, so a shift above 31 bits (as an 8-byte argument needs)
+    // silently truncates on web. Derive each byte by integer division
+    // instead: every divisor here is a compile-time power of two, and
+    // integer division composes exactly for any int representable in
+    // Dart, unlike a >31-bit shift.
     out.addByte(prefix | 27);
-    for (var shift = 56; shift >= 0; shift -= 8) {
-      out.addByte((val >> shift) & 0xff);
-    }
+    out.addByte((val ~/ 0x100000000000000) & 0xff);
+    out.addByte((val ~/ 0x1000000000000) & 0xff);
+    out.addByte((val ~/ 0x10000000000) & 0xff);
+    out.addByte((val ~/ 0x100000000) & 0xff);
+    out.addByte((val ~/ 0x1000000) & 0xff);
+    out.addByte((val ~/ 0x10000) & 0xff);
+    out.addByte((val ~/ 0x100) & 0xff);
+    out.addByte(val & 0xff);
   }
 }
 
@@ -427,7 +438,8 @@ _Head _decodeHead(Uint8List data, int i) {
         'kernel record decode: truncated 4-byte length argument',
       );
     }
-    val = (data[cursor] << 24) |
+    val =
+        (data[cursor] << 24) |
         (data[cursor + 1] << 16) |
         (data[cursor + 2] << 8) |
         data[cursor + 3];
@@ -438,13 +450,20 @@ _Head _decodeHead(Uint8List data, int i) {
         'kernel record decode: truncated 8-byte length argument',
       );
     }
-    final hi = (data[cursor] << 24) |
-        (data[cursor + 1] << 16) |
-        (data[cursor + 2] << 8) |
+    // dart2js compiles `int` bitwise/shift operators as JS 32-bit
+    // operations, so composing a 64-bit argument via `<<`/`|` across the
+    // 32-bit boundary would silently truncate on web. Compose hi/lo with
+    // multiplication/addition instead (exact for any int Dart can
+    // represent), then combine them arithmetically rather than shifting.
+    final hi =
+        data[cursor] * 0x1000000 +
+        data[cursor + 1] * 0x10000 +
+        data[cursor + 2] * 0x100 +
         data[cursor + 3];
-    final lo = (data[cursor + 4] << 24) |
-        (data[cursor + 5] << 16) |
-        (data[cursor + 6] << 8) |
+    final lo =
+        data[cursor + 4] * 0x1000000 +
+        data[cursor + 5] * 0x10000 +
+        data[cursor + 6] * 0x100 +
         data[cursor + 7];
     if (hi >= 0x80000000) {
       // The unsigned 64-bit argument is >= 2^63: it has no non-negative
@@ -453,7 +472,14 @@ _Head _decodeHead(Uint8List data, int i) {
       // attempting a wraparound value.
       overflow = true;
     } else {
-      val = (hi << 32) | lo;
+      // hi * 2^32 + lo is exact for the values that reach here: hi < 2^31
+      // and lo < 2^32, so the product and sum stay within the 2^53
+      // js-safe-double mantissa up to hi ~= 2^21, and any larger hi (up
+      // to the 2^53 adversarial cases the fixtures pin) rounds to the
+      // nearest representable double while remaining well above
+      // maxSafeInteger -- so the existing `head.val > maxSafeInteger`
+      // rejection at the call site still fires correctly either way.
+      val = hi * 0x100000000 + lo;
     }
     cursor += 8;
   } else if (additionalInfo == 31) {

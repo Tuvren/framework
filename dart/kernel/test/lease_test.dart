@@ -25,19 +25,29 @@ import 'support/kernel_fixtures.dart';
 
 void main() {
   group('acquire and renew', () {
-    test('acquire then renew extends expiry from the current clock reading',
-        () {
-      final (kernel, clock) = newManualClockKernel(10);
-      createSingleStepRun(kernel, 'thread_lease', 'branch_lease', 'run_lease');
+    test(
+      'acquire then renew extends expiry from the current clock reading',
+      () {
+        final (kernel, clock) = newManualClockKernel(10);
+        createSingleStepRun(
+          kernel,
+          'thread_lease',
+          'branch_lease',
+          'run_lease',
+        );
 
-      final (token, expiresAt) =
-          kernel.acquireLease('run_lease', 'owner_a', 20);
-      expect(expiresAt, 30);
+        final (token, expiresAt) = kernel.acquireLease(
+          'run_lease',
+          'owner_a',
+          20,
+        );
+        expect(expiresAt, 30);
 
-      clock.setMs(20);
-      final renewed = kernel.renewLease('run_lease', 'owner_a', token, 20);
-      expect(renewed, 40);
-    });
+        clock.setMs(20);
+        final renewed = kernel.renewLease('run_lease', 'owner_a', token, 20);
+        expect(renewed, 40);
+      },
+    );
 
     test('renew with the wrong owner is rejected', () {
       final (kernel, _) = newManualClockKernel(10);
@@ -59,35 +69,41 @@ void main() {
       );
     });
 
-    test('renew of an already-expired lease is rejected (expiry inclusive)',
-        () {
-      final (kernel, clock) = newManualClockKernel(0);
-      createSingleStepRun(kernel, 'thread_le', 'branch_le', 'run_le');
-      final (token, expiresAt) = kernel.acquireLease('run_le', 'owner_a', 10);
-      clock.setMs(expiresAt);
-      expectKernelError(
-        () => kernel.renewLease('run_le', 'owner_a', token, 10),
-        errRunLeaseExpired,
-      );
-    });
+    test(
+      'renew of an already-expired lease is rejected (expiry inclusive)',
+      () {
+        final (kernel, clock) = newManualClockKernel(0);
+        createSingleStepRun(kernel, 'thread_le', 'branch_le', 'run_le');
+        final (token, expiresAt) = kernel.acquireLease('run_le', 'owner_a', 10);
+        clock.setMs(expiresAt);
+        expectKernelError(
+          () => kernel.renewLease('run_le', 'owner_a', token, 10),
+          errRunLeaseExpired,
+        );
+      },
+    );
 
     test(
-        'renew of a paused run is rejected by the status guard, not lease-not-held',
-        () {
-      final (kernel, _) = newManualClockKernel(0);
-      createSingleStepRun(kernel, 'thread_lp', 'branch_lp', 'run_lp');
-      final (token, _) = kernel.acquireLease('run_lp', 'owner_a', 1000);
-      kernel.pauseRun('run_lp');
+      'renew of a paused run is rejected by the status guard, not lease-not-held',
+      () {
+        final (kernel, _) = newManualClockKernel(0);
+        createSingleStepRun(kernel, 'thread_lp', 'branch_lp', 'run_lp');
+        final (token, _) = kernel.acquireLease('run_lp', 'owner_a', 1000);
+        kernel.pauseRun('run_lp');
 
-      final run = kernel.backend.getRun('run_lp')!;
-      expect(run.hasLease, isTrue,
-          reason: 'pauseRun must not touch lease state');
+        final run = kernel.backend.getRun('run_lp')!;
+        expect(
+          run.hasLease,
+          isTrue,
+          reason: 'pauseRun must not touch lease state',
+        );
 
-      expectKernelError(
-        () => kernel.renewLease('run_lp', 'owner_a', token, 10),
-        errRunNotActive,
-      );
-    });
+        expectKernelError(
+          () => kernel.renewLease('run_lp', 'owner_a', token, 10),
+          errRunNotActive,
+        );
+      },
+    );
 
     test('renew without ever acquiring is rejected with leaseNotHeld', () {
       final kernel = newTestKernel();
@@ -99,29 +115,32 @@ void main() {
     });
 
     test(
-        'acquire on a completed run is rejected and leaves lease state untouched',
-        () {
-      final kernel = newTestKernel();
-      createSingleStepRun(kernel, 'thread_lc', 'branch_lc', 'run_lc');
-      kernel.completeStep('run_lc', 'only_step', '', '');
-      kernel.completeRun('run_lc', '');
+      'acquire on a completed run is rejected and leaves lease state untouched',
+      () {
+        final kernel = newTestKernel();
+        createSingleStepRun(kernel, 'thread_lc', 'branch_lc', 'run_lc');
+        kernel.completeStep('run_lc', 'only_step', '', '');
+        kernel.completeRun('run_lc', '');
 
-      expectKernelError(
-        () => kernel.acquireLease('run_lc', 'owner_a', 1000),
-        errRunNotActive,
-      );
-      final run = kernel.backend.getRun('run_lc')!;
-      expect(run.hasLease, isFalse);
-    });
+        expectKernelError(
+          () => kernel.acquireLease('run_lc', 'owner_a', 1000),
+          errRunNotActive,
+        );
+        final run = kernel.backend.getRun('run_lc')!;
+        expect(run.hasLease, isFalse);
+      },
+    );
 
-    test('lease tokens are unique per acquisition even under a frozen clock',
-        () {
-      final (kernel, _) = newManualClockKernel(10);
-      createSingleStepRun(kernel, 'thread_tu', 'branch_tu', 'run_tu');
-      final (tokenA, _) = kernel.acquireLease('run_tu', 'owner_a', 20);
-      final (tokenB, _) = kernel.acquireLease('run_tu', 'owner_b', 20);
-      expect(tokenA, isNot(equals(tokenB)));
-    });
+    test(
+      'lease tokens are unique per acquisition even under a frozen clock',
+      () {
+        final (kernel, _) = newManualClockKernel(10);
+        createSingleStepRun(kernel, 'thread_tu', 'branch_tu', 'run_tu');
+        final (tokenA, _) = kernel.acquireLease('run_tu', 'owner_a', 20);
+        final (tokenB, _) = kernel.acquireLease('run_tu', 'owner_b', 20);
+        expect(tokenA, isNot(equals(tokenB)));
+      },
+    );
   });
 
   group('pause', () {
@@ -169,61 +188,65 @@ void main() {
   });
 
   group('stale preemption', () {
-    test('fails the run, mints a preemption checkpoint, and clears the lease',
-        () {
-      final (kernel, clock) = newManualClockKernel(0);
-      createSingleStepRun(kernel, 'thread_sp', 'branch_sp', 'run_sp');
-      final (_, expiresAt) = kernel.acquireLease('run_sp', 'owner_a', 10);
+    test(
+      'fails the run, mints a preemption checkpoint, and clears the lease',
+      () {
+        final (kernel, clock) = newManualClockKernel(0);
+        createSingleStepRun(kernel, 'thread_sp', 'branch_sp', 'run_sp');
+        final (_, expiresAt) = kernel.acquireLease('run_sp', 'owner_a', 10);
 
-      clock.setMs(expiresAt);
-      kernel.preemptStaleRun('run_sp', expiresAt);
+        clock.setMs(expiresAt);
+        kernel.preemptStaleRun('run_sp', expiresAt);
 
-      final run = kernel.backend.getRun('run_sp')!;
-      expect(run.status, RunStatus.failed);
-      expect(run.preemptionReason, 'stale_running_recovery');
-      expect(run.hasLease, isFalse);
-      expect(run.leaseToken, isEmpty);
+        final run = kernel.backend.getRun('run_sp')!;
+        expect(run.status, RunStatus.failed);
+        expect(run.preemptionReason, 'stale_running_recovery');
+        expect(run.hasLease, isFalse);
+        expect(run.leaseToken, isEmpty);
 
-      final branch = kernel.backend.getBranch('branch_sp')!;
-      expect(branch.headTurnNodeHash, run.createdTurnNodes.last);
+        final branch = kernel.backend.getBranch('branch_sp')!;
+        expect(branch.headTurnNodeHash, run.createdTurnNodes.last);
 
-      final headNode = kernel.backend.getTurnNode(branch.headTurnNodeHash)!;
-      expect(headNode.eventHash, isNotEmpty);
-    });
+        final headNode = kernel.backend.getTurnNode(branch.headTurnNodeHash)!;
+        expect(headNode.eventHash, isNotEmpty);
+      },
+    );
 
-    test('preserves staged-but-uncommitted work in the preemption checkpoint',
-        () {
-      final (kernel, clock) = newManualClockKernel(0);
-      createSingleStepRun(kernel, 'thread_sw', 'branch_sw', 'run_sw');
-      final (_, expiresAt) = kernel.acquireLease('run_sw', 'owner_a', 10);
+    test(
+      'preserves staged-but-uncommitted work in the preemption checkpoint',
+      () {
+        final (kernel, clock) = newManualClockKernel(0);
+        createSingleStepRun(kernel, 'thread_sw', 'branch_sw', 'run_sw');
+        final (_, expiresAt) = kernel.acquireLease('run_sw', 'owner_a', 10);
 
-      final objectHash = kernel.putObject('application/octet-stream', [4, 2]);
-      kernel.stageResult(
-        'run_sw',
-        StagedResult(
-          taskId: 'task_1',
-          objectHash: objectHash,
-          objectType: 'message',
-          timestamp: 1,
-          status: StagedResultStatus.completed,
-        ),
-      );
+        final objectHash = kernel.putObject('application/octet-stream', [4, 2]);
+        kernel.stageResult(
+          'run_sw',
+          StagedResult(
+            taskId: 'task_1',
+            objectHash: objectHash,
+            objectType: 'message',
+            timestamp: 1,
+            status: StagedResultStatus.completed,
+          ),
+        );
 
-      clock.setMs(expiresAt);
-      kernel.preemptStaleRun('run_sw', expiresAt);
+        clock.setMs(expiresAt);
+        kernel.preemptStaleRun('run_sw', expiresAt);
 
-      final run = kernel.backend.getRun('run_sw')!;
-      final headNode = kernel.backend.getTurnNode(run.createdTurnNodes.last)!;
-      expect(headNode.consumedStagedResults, hasLength(1));
-      expect(headNode.consumedStagedResults.single.taskId, 'task_1');
+        final run = kernel.backend.getRun('run_sw')!;
+        final headNode = kernel.backend.getTurnNode(run.createdTurnNodes.last)!;
+        expect(headNode.consumedStagedResults, hasLength(1));
+        expect(headNode.consumedStagedResults.single.taskId, 'task_1');
 
-      final tree = kernel.backend.getTurnTree(headNode.turnTreeHash)!;
-      expect(tree.manifest['messages']!.ordered, [objectHash]);
+        final tree = kernel.backend.getTurnTree(headNode.turnTreeHash)!;
+        expect(tree.manifest['messages']!.ordered, [objectHash]);
 
-      // Nothing left uncommitted after a successful preemption checkpoint.
-      final recovery = kernel.recoveryState('run_sw');
-      expect(recovery.uncommittedStagedResults, isEmpty);
-    });
+        // Nothing left uncommitted after a successful preemption checkpoint.
+        final recovery = kernel.recoveryState('run_sw');
+        expect(recovery.uncommittedStagedResults, isEmpty);
+      },
+    );
 
     test('a non-expired lease is not preemptable', () {
       final (kernel, _) = newManualClockKernel(0);

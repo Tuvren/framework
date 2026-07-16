@@ -67,9 +67,9 @@ final class FaultPlan {
 }
 
 KernelException _injectedFaultError(FaultPoint point) => KernelException(
-      errPersistenceFaultInjected,
-      'injected ${point.name} persistence fault interrupted checkpoint commit',
-    );
+  errPersistenceFaultInjected,
+  'injected ${point.name} persistence fault interrupted checkpoint commit',
+);
 
 /// Wraps a [Backend] so its checkpoint-commit path (`putTurnNode`,
 /// `updateBranchHead`/`compareAndSwapBranchHead`, and the
@@ -115,7 +115,10 @@ final class FaultInjectingBackend implements Backend, AfterCommitBeforeAckHook {
   /// failed to be acknowledged for.
   @override
   bool updateBranchHead(
-      String branchId, String headTurnNodeHash, int updatedAtMs) {
+    String branchId,
+    String headTurnNodeHash,
+    int updatedAtMs,
+  ) {
     if (plan.point == FaultPoint.midCommit && _shouldFire()) {
       _markConsumed();
       throw _injectedFaultError(FaultPoint.midCommit);
@@ -138,7 +141,11 @@ final class FaultInjectingBackend implements Backend, AfterCommitBeforeAckHook {
       throw _injectedFaultError(FaultPoint.midCommit);
     }
     return inner.compareAndSwapBranchHead(
-        branchId, expectedHead, newHead, updatedAtMs);
+      branchId,
+      expectedHead,
+      newHead,
+      updatedAtMs,
+    );
   }
 
   /// Implements [AfterCommitBeforeAckHook]: `Kernel.checkpointRun` calls

@@ -32,8 +32,11 @@ import 'support/kernel_fixtures.dart';
 /// `setUpFirstCheckpoint` builds.
 (String, String) setUpFirstCheckpoint(Kernel kernel) {
   kernel.registerSchema(canonicalSchema());
-  final created =
-      kernel.createThread('thread_crash', 'schema_main', 'branch_crash');
+  final created = kernel.createThread(
+    'thread_crash',
+    'schema_main',
+    'branch_crash',
+  );
   const steps = [
     StepDeclaration(id: 'step_1', deterministic: true, sideEffects: false),
     StepDeclaration(id: 'step_2', deterministic: true, sideEffects: false),
@@ -47,8 +50,10 @@ import 'support/kernel_fixtures.dart';
     steps,
   );
 
-  final message1Hash =
-      kernel.putObject('application/json', 'message-1'.codeUnits);
+  final message1Hash = kernel.putObject(
+    'application/json',
+    'message-1'.codeUnits,
+  );
   kernel.stageResult(
     'run_crash',
     StagedResult(
@@ -61,8 +66,10 @@ import 'support/kernel_fixtures.dart';
   );
   kernel.completeStep('run_crash', 'step_1', '', '');
 
-  final message2Hash =
-      kernel.putObject('application/json', 'message-2'.codeUnits);
+  final message2Hash = kernel.putObject(
+    'application/json',
+    'message-2'.codeUnits,
+  );
   kernel.stageResult(
     'run_crash',
     StagedResult(
@@ -96,7 +103,9 @@ void main() {
       kernel.backend = FaultInjectingBackend(
         baseBackend,
         const FaultPlan(
-            point: FaultPoint.beforeCommit, policy: FaultPolicy.once),
+          point: FaultPoint.beforeCommit,
+          policy: FaultPolicy.once,
+        ),
       );
       expectKernelError(
         () => kernel.completeStep(runId, 'step_2', '', ''),
@@ -137,8 +146,11 @@ void main() {
     expect(tree.manifest['messages']!.ordered, contains(message2Hash));
 
     final staleRun = kernel.backend.getRun(runId)!;
-    expect(staleRun.currentStepIndex, 1,
-        reason: 'run record is stale before reconciliation');
+    expect(
+      staleRun.currentStepIndex,
+      1,
+      reason: 'run record is stale before reconciliation',
+    );
 
     kernel.reconcileRun(runId);
 
@@ -178,8 +190,9 @@ void main() {
       expect(afterFaultHead.headTurnNodeHash, beforeHead.headTurnNodeHash);
       expect(messageCount(kernel, 'branch_crash'), 1);
 
-      final pendingChildren =
-          kernel.backend.listChildTurnNodes(beforeHead.headTurnNodeHash);
+      final pendingChildren = kernel.backend.listChildTurnNodes(
+        beforeHead.headTurnNodeHash,
+      );
       expect(pendingChildren, hasLength(1));
       final pendingNode = pendingChildren.single;
       final pendingTree = kernel.backend.getTurnTree(pendingNode.turnTreeHash)!;
@@ -187,8 +200,11 @@ void main() {
       expect(pendingNode.consumedStagedResults, hasLength(1));
 
       final state = kernel.recoveryState(runId);
-      expect(state.uncommittedStagedResults, isEmpty,
-          reason: 'message 2 is embedded in the pending node, not restaged');
+      expect(
+        state.uncommittedStagedResults,
+        isEmpty,
+        reason: 'message 2 is embedded in the pending node, not restaged',
+      );
 
       final staleRun = kernel.backend.getRun(runId)!;
       expect(staleRun.currentStepIndex, 1);
@@ -208,72 +224,89 @@ void main() {
       expect(postState.uncommittedStagedResults, isEmpty);
     });
 
-    test('naive retry without reconciling is rejected, marker/head untouched',
-        () {
-      final (kernel, _) = newManualClockKernel(0);
-      final (runId, message2Hash) = setUpFirstCheckpoint(kernel);
+    test(
+      'naive retry without reconciling is rejected, marker/head untouched',
+      () {
+        final (kernel, _) = newManualClockKernel(0);
+        final (runId, message2Hash) = setUpFirstCheckpoint(kernel);
 
-      final beforeTornHead = kernel.backend.getBranch('branch_crash')!;
+        final beforeTornHead = kernel.backend.getBranch('branch_crash')!;
 
-      final baseBackend = kernel.backend;
-      kernel.backend = FaultInjectingBackend(
-        baseBackend,
-        const FaultPlan(point: FaultPoint.midCommit, policy: FaultPolicy.once),
-      );
-      expectKernelError(
-        () => kernel.completeStep(runId, 'step_2', '', ''),
-        errPersistenceFaultInjected,
-      );
-      kernel.backend = baseBackend;
+        final baseBackend = kernel.backend;
+        kernel.backend = FaultInjectingBackend(
+          baseBackend,
+          const FaultPlan(
+            point: FaultPoint.midCommit,
+            policy: FaultPolicy.once,
+          ),
+        );
+        expectKernelError(
+          () => kernel.completeStep(runId, 'step_2', '', ''),
+          errPersistenceFaultInjected,
+        );
+        kernel.backend = baseBackend;
 
-      final tornRun = kernel.backend.getRun(runId)!;
-      expect(tornRun.pendingCheckpointHash, isNotEmpty);
-      expect(tornRun.pendingCheckpointKind, PendingCheckpointKind.step);
+        final tornRun = kernel.backend.getRun(runId)!;
+        expect(tornRun.pendingCheckpointHash, isNotEmpty);
+        expect(tornRun.pendingCheckpointKind, PendingCheckpointKind.step);
 
-      final pendingBefore =
-          kernel.backend.listChildTurnNodes(beforeTornHead.headTurnNodeHash);
-      expect(pendingBefore, hasLength(1));
-      final pendingHash = pendingBefore.single.hash;
+        final pendingBefore = kernel.backend.listChildTurnNodes(
+          beforeTornHead.headTurnNodeHash,
+        );
+        expect(pendingBefore, hasLength(1));
+        final pendingHash = pendingBefore.single.hash;
 
-      expectKernelError(
-        () => kernel.completeStep(runId, 'step_2', '', ''),
-        errRunPendingCheckpoint,
-      );
+        expectKernelError(
+          () => kernel.completeStep(runId, 'step_2', '', ''),
+          errRunPendingCheckpoint,
+        );
 
-      final afterRetryRun = kernel.backend.getRun(runId)!;
-      expect(
-          afterRetryRun.pendingCheckpointHash, tornRun.pendingCheckpointHash);
-      expect(afterRetryRun.currentStepIndex, tornRun.currentStepIndex);
-      final afterRetryHead = kernel.backend.getBranch('branch_crash')!;
-      expect(afterRetryHead.headTurnNodeHash, beforeTornHead.headTurnNodeHash);
-      final pendingAfter =
-          kernel.backend.listChildTurnNodes(beforeTornHead.headTurnNodeHash);
-      expect(pendingAfter, hasLength(1),
-          reason: 'the rejected retry must not mint a second node');
+        final afterRetryRun = kernel.backend.getRun(runId)!;
+        expect(
+          afterRetryRun.pendingCheckpointHash,
+          tornRun.pendingCheckpointHash,
+        );
+        expect(afterRetryRun.currentStepIndex, tornRun.currentStepIndex);
+        final afterRetryHead = kernel.backend.getBranch('branch_crash')!;
+        expect(
+          afterRetryHead.headTurnNodeHash,
+          beforeTornHead.headTurnNodeHash,
+        );
+        final pendingAfter = kernel.backend.listChildTurnNodes(
+          beforeTornHead.headTurnNodeHash,
+        );
+        expect(
+          pendingAfter,
+          hasLength(1),
+          reason: 'the rejected retry must not mint a second node',
+        );
 
-      final state = kernel.recoveryState(runId);
-      expect(state.uncommittedStagedResults, isEmpty);
+        final state = kernel.recoveryState(runId);
+        expect(state.uncommittedStagedResults, isEmpty);
 
-      kernel.reconcileRun(runId);
+        kernel.reconcileRun(runId);
 
-      final reconciledHead = kernel.backend.getBranch('branch_crash')!;
-      expect(reconciledHead.headTurnNodeHash, pendingHash);
-      final headNode =
-          kernel.backend.getTurnNode(reconciledHead.headTurnNodeHash)!;
-      expect(headNode.consumedStagedResults.map((r) => r.objectHash),
-          contains(message2Hash));
+        final reconciledHead = kernel.backend.getBranch('branch_crash')!;
+        expect(reconciledHead.headTurnNodeHash, pendingHash);
+        final headNode =
+            kernel.backend.getTurnNode(reconciledHead.headTurnNodeHash)!;
+        expect(
+          headNode.consumedStagedResults.map((r) => r.objectHash),
+          contains(message2Hash),
+        );
 
-      final reconciledRun = kernel.backend.getRun(runId)!;
-      expect(reconciledRun.currentStepIndex, 2);
-      expect(reconciledRun.pendingCheckpointHash, isEmpty);
+        final reconciledRun = kernel.backend.getRun(runId)!;
+        expect(reconciledRun.currentStepIndex, 2);
+        expect(reconciledRun.pendingCheckpointHash, isEmpty);
 
-      // Steps are now exhausted: retrying step_2 again is an ordinary
-      // unexpected-step rejection, not another pending-checkpoint refusal.
-      expectKernelError(
-        () => kernel.completeStep(runId, 'step_2', '', ''),
-        errUnexpectedStep,
-      );
-    });
+        // Steps are now exhausted: retrying step_2 again is an ordinary
+        // unexpected-step rejection, not another pending-checkpoint refusal.
+        expectKernelError(
+          () => kernel.completeStep(runId, 'step_2', '', ''),
+          errUnexpectedStep,
+        );
+      },
+    );
   });
 
   group('reconcileRun guards', () {
@@ -300,8 +333,10 @@ void main() {
       final createdBefore = tornRun.createdTurnNodes.length;
       final stepIndexBefore = tornRun.currentStepIndex;
 
-      final foreignEvent =
-          kernel.putObject('application/json', 'foreign-winner'.codeUnits);
+      final foreignEvent = kernel.putObject(
+        'application/json',
+        'foreign-winner'.codeUnits,
+      );
       final foreignNode = kernel.commitSiblingCheckpoint(
         'branch_crash',
         beforeHead.headTurnNodeHash,
@@ -326,69 +361,94 @@ void main() {
     });
 
     test(
-        'reconciling an older terminal run after a later run advanced is a no-op',
-        () {
-      final (kernel, _) = newManualClockKernel(0);
-      kernel.registerSchema(canonicalSchema());
-      final created = kernel.createThread('thread_reconcile_terminal',
-          'schema_main', 'branch_reconcile_terminal');
-      const steps = [
-        StepDeclaration(
-            id: 'only_step', deterministic: true, sideEffects: false),
-      ];
+      'reconciling an older terminal run after a later run advanced is a no-op',
+      () {
+        final (kernel, _) = newManualClockKernel(0);
+        kernel.registerSchema(canonicalSchema());
+        final created = kernel.createThread(
+          'thread_reconcile_terminal',
+          'schema_main',
+          'branch_reconcile_terminal',
+        );
+        const steps = [
+          StepDeclaration(
+            id: 'only_step',
+            deterministic: true,
+            sideEffects: false,
+          ),
+        ];
 
-      kernel.createRun('run_a', 'turn_a', 'branch_reconcile_terminal',
-          'schema_main', created.rootTurnNodeHash, steps);
-      final message1 =
-          kernel.putObject('application/json', 'message-a'.codeUnits);
-      kernel.stageResult(
-        'run_a',
-        StagedResult(
-          taskId: 'task_a',
-          objectHash: message1,
-          objectType: 'message',
-          timestamp: 0,
-          status: StagedResultStatus.completed,
-        ),
-      );
-      kernel.completeStep('run_a', 'only_step', '', '');
-      kernel.completeRun('run_a', '');
+        kernel.createRun(
+          'run_a',
+          'turn_a',
+          'branch_reconcile_terminal',
+          'schema_main',
+          created.rootTurnNodeHash,
+          steps,
+        );
+        final message1 = kernel.putObject(
+          'application/json',
+          'message-a'.codeUnits,
+        );
+        kernel.stageResult(
+          'run_a',
+          StagedResult(
+            taskId: 'task_a',
+            objectHash: message1,
+            objectType: 'message',
+            timestamp: 0,
+            status: StagedResultStatus.completed,
+          ),
+        );
+        kernel.completeStep('run_a', 'only_step', '', '');
+        kernel.completeRun('run_a', '');
 
-      final runABefore = kernel.backend.getRun('run_a')!;
-      expect(runABefore.status, RunStatus.completed);
-      final createdBefore = List.of(runABefore.createdTurnNodes);
-      final stepIndexBefore = runABefore.currentStepIndex;
+        final runABefore = kernel.backend.getRun('run_a')!;
+        expect(runABefore.status, RunStatus.completed);
+        final createdBefore = List.of(runABefore.createdTurnNodes);
+        final stepIndexBefore = runABefore.currentStepIndex;
 
-      final branchAfterA =
-          kernel.backend.getBranch('branch_reconcile_terminal')!;
+        final branchAfterA =
+            kernel.backend.getBranch('branch_reconcile_terminal')!;
 
-      kernel.createRun('run_b', 'turn_b', 'branch_reconcile_terminal',
-          'schema_main', branchAfterA.headTurnNodeHash, steps);
-      final message2 =
-          kernel.putObject('application/json', 'message-b'.codeUnits);
-      kernel.stageResult(
-        'run_b',
-        StagedResult(
-          taskId: 'task_b',
-          objectHash: message2,
-          objectType: 'message',
-          timestamp: 0,
-          status: StagedResultStatus.completed,
-        ),
-      );
-      kernel.completeStep('run_b', 'only_step', '', '');
+        kernel.createRun(
+          'run_b',
+          'turn_b',
+          'branch_reconcile_terminal',
+          'schema_main',
+          branchAfterA.headTurnNodeHash,
+          steps,
+        );
+        final message2 = kernel.putObject(
+          'application/json',
+          'message-b'.codeUnits,
+        );
+        kernel.stageResult(
+          'run_b',
+          StagedResult(
+            taskId: 'task_b',
+            objectHash: message2,
+            objectType: 'message',
+            timestamp: 0,
+            status: StagedResultStatus.completed,
+          ),
+        );
+        kernel.completeStep('run_b', 'only_step', '', '');
 
-      final branchAfterB =
-          kernel.backend.getBranch('branch_reconcile_terminal')!;
-      expect(branchAfterB.headTurnNodeHash,
-          isNot(equals(branchAfterA.headTurnNodeHash)));
+        final branchAfterB =
+            kernel.backend.getBranch('branch_reconcile_terminal')!;
+        expect(
+          branchAfterB.headTurnNodeHash,
+          isNot(equals(branchAfterA.headTurnNodeHash)),
+        );
 
-      kernel.reconcileRun('run_a');
+        kernel.reconcileRun('run_a');
 
-      final runAAfter = kernel.backend.getRun('run_a')!;
-      expect(runAAfter.currentStepIndex, stepIndexBefore);
-      expect(runAAfter.createdTurnNodes, createdBefore);
-    });
+        final runAAfter = kernel.backend.getRun('run_a')!;
+        expect(runAAfter.currentStepIndex, stepIndexBefore);
+        expect(runAAfter.createdTurnNodes, createdBefore);
+      },
+    );
   });
 
   group('commitSiblingCheckpoint', () {
@@ -396,7 +456,10 @@ void main() {
       final (kernel, _) = newManualClockKernel(0);
       kernel.registerSchema(canonicalSchema());
       final created = kernel.createThread(
-          'thread_concurrent', 'schema_main', 'branch_concurrent');
+        'thread_concurrent',
+        'schema_main',
+        'branch_concurrent',
+      );
       final base = created.rootTurnNodeHash;
 
       final eventA = kernel.putObject('application/json', 'writer-a'.codeUnits);
@@ -430,4 +493,167 @@ void main() {
       expect(branch.headTurnNodeHash, winnerHash);
     });
   });
+
+  group('non-KernelException checkpoint failure', () {
+    test('a plain StateError thrown mid-checkpoint still restages drained '
+        'staged results and propagates the original error', () {
+      final (kernel, _) = newManualClockKernel(0);
+      final (runId, message2Hash) = setUpFirstCheckpoint(kernel);
+
+      final baseBackend = kernel.backend;
+      final beforeHead = kernel.backend.getBranch('branch_crash')!;
+
+      // Go's checkpointRun restages the drained staged results on ANY
+      // error the checkpoint sequence produces, not only its own typed
+      // kernel errors. This decorator throws a plain, non-KernelException
+      // StateError from putTurnNode (the checkpoint's first durable
+      // write, mirroring the before-commit fault point) so nothing
+      // durable changes and the drained staged result must be restaged
+      // for the retry (or a recovery replay) to still see it.
+      kernel.backend = _StateErrorBeforeCommitBackend(baseBackend);
+      Object? caught;
+      try {
+        kernel.completeStep(runId, 'step_2', '', '');
+      } catch (e) {
+        caught = e;
+      }
+      kernel.backend = baseBackend;
+
+      expect(caught, isA<StateError>());
+      expect((caught as StateError).message, contains('non-KernelException'));
+
+      // Nothing durable changed: the branch head never moved.
+      final afterHead = kernel.backend.getBranch('branch_crash')!;
+      expect(afterHead.headTurnNodeHash, beforeHead.headTurnNodeHash);
+      expect(messageCount(kernel, 'branch_crash'), 1);
+
+      // The drained staged result must have been restaged rather than
+      // lost: recoveryState reports it as uncommitted again.
+      final state = kernel.recoveryState(runId);
+      expect(state.uncommittedStagedResults, hasLength(1));
+      expect(state.uncommittedStagedResults.single.objectHash, message2Hash);
+    });
+  });
+}
+
+/// A minimal [Backend] decorator (not a [FaultInjectingBackend], which
+/// only ever throws [KernelException]) proving `_checkpointRun` restages
+/// on ANY thrown object, not only kernel-typed ones. Fires a plain
+/// [StateError] from [putTurnNode] on the first call only; every other
+/// member forwards straight through to [inner] unmodified.
+final class _StateErrorBeforeCommitBackend implements Backend {
+  _StateErrorBeforeCommitBackend(this.inner);
+
+  final Backend inner;
+  bool _fired = false;
+
+  @override
+  void putTurnNode(TurnNode node) {
+    if (!_fired) {
+      _fired = true;
+      throw StateError(
+        'injected non-KernelException failure interrupted checkpoint commit',
+      );
+    }
+    inner.putTurnNode(node);
+  }
+
+  @override
+  StoredObject putObject(String mediaType, List<int> data) =>
+      inner.putObject(mediaType, data);
+
+  @override
+  StoredObject? getObject(String hash) => inner.getObject(hash);
+
+  @override
+  bool hasObject(String hash) => inner.hasObject(hash);
+
+  @override
+  bool putSchema(TurnTreeSchema schema) => inner.putSchema(schema);
+
+  @override
+  TurnTreeSchema? getSchema(String schemaId) => inner.getSchema(schemaId);
+
+  @override
+  void putTurnTree(TurnTree tree) => inner.putTurnTree(tree);
+
+  @override
+  TurnTree? getTurnTree(String hash) => inner.getTurnTree(hash);
+
+  @override
+  TurnNode? getTurnNode(String hash) => inner.getTurnNode(hash);
+
+  @override
+  List<TurnNode> listChildTurnNodes(String previousHash) =>
+      inner.listChildTurnNodes(previousHash);
+
+  @override
+  bool putThread(Thread thread) => inner.putThread(thread);
+
+  @override
+  Thread? getThread(String threadId) => inner.getThread(threadId);
+
+  @override
+  String? getThreadByRootTurnNode(String rootTurnNodeHash) =>
+      inner.getThreadByRootTurnNode(rootTurnNodeHash);
+
+  @override
+  List<Thread> listThreads() => inner.listThreads();
+
+  @override
+  bool putBranch(Branch branch) => inner.putBranch(branch);
+
+  @override
+  Branch? getBranch(String branchId) => inner.getBranch(branchId);
+
+  @override
+  List<Branch> listBranchesByThread(String threadId) =>
+      inner.listBranchesByThread(threadId);
+
+  @override
+  bool updateBranchHead(
+    String branchId,
+    String headTurnNodeHash,
+    int updatedAtMs,
+  ) => inner.updateBranchHead(branchId, headTurnNodeHash, updatedAtMs);
+
+  @override
+  bool compareAndSwapBranchHead(
+    String branchId,
+    String expectedHead,
+    String newHead,
+    int updatedAtMs,
+  ) => inner.compareAndSwapBranchHead(
+    branchId,
+    expectedHead,
+    newHead,
+    updatedAtMs,
+  );
+
+  @override
+  bool putRun(Run run) => inner.putRun(run);
+
+  @override
+  Run? getRun(String runId) => inner.getRun(runId);
+
+  @override
+  bool updateRun(Run run) => inner.updateRun(run);
+
+  @override
+  List<Run> listRunsByBranch(String branchId) =>
+      inner.listRunsByBranch(branchId);
+
+  @override
+  List<Run> listRuns() => inner.listRuns();
+
+  @override
+  void stageResult(String runId, StagedResult result) =>
+      inner.stageResult(runId, result);
+
+  @override
+  List<StagedResult> drainStagedResults(String runId) =>
+      inner.drainStagedResults(runId);
+
+  @override
+  Clock get clock => inner.clock;
 }

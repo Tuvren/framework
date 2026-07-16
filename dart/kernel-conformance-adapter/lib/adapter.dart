@@ -69,8 +69,14 @@ typedef OperationHandler = FutureOr<Object?> Function(Object? input);
 /// conformance plans to their handlers, mirroring the match arms in
 /// `go/kernel-conformance-adapter/dispatch.go`'s `operationHandlers`. Only
 /// operation literals belong in this routing table.
+///
+/// Built once as a plain mutable map and exposed below via
+/// [operationHandlers] as an unmodifiable view: the routing table backing
+/// the real adapter process must not be mutable from outside this library,
+/// but tests that need a custom or partial table build their own and drive
+/// it through [handleLineWith] rather than mutating this one.
 final Map<String, OperationHandler>
-operationHandlers = <String, OperationHandler>{
+_operationHandlers = <String, OperationHandler>{
   'kernel.protocol.deterministic-hashing': protocol_ops.runDeterministicHashing,
   'kernel.protocol.schema-roundtrip': protocol_ops.runSchemaRoundtrip,
   'kernel.protocol.modify-composition': protocol_ops.runModifyComposition,
@@ -95,6 +101,14 @@ operationHandlers = <String, OperationHandler>{
   'kernel.reclamation.erasure-probe': maintenance_ops.runErasureProbe,
 };
 
+/// The real adapter process's fixed operation routing table, as an
+/// unmodifiable view over [_operationHandlers]. Tests that need a
+/// different table (e.g. to register a fake operation) must not mutate
+/// this map -- build a separate `Map<String, OperationHandler>` and drive
+/// it through [handleLineWith] instead.
+final Map<String, OperationHandler> operationHandlers =
+    Map<String, OperationHandler>.unmodifiable(_operationHandlers);
+
 /// Wraps a raw observation as the `{result, evidence}` shape the kernel
 /// plans read, mirroring the Go adapter's projection helper: `result` and
 /// `evidence` carry the same observation object.
@@ -116,29 +130,6 @@ Map<String, Object?> _errorResponse(Object? id, String code, String message) =>
 Map<String, Object?> _resultResponse(Object? id, Object? result) =>
     <String, Object?>{'jsonrpc': '2.0', 'id': id, 'result': result};
 
-/// Recursively walks a value that is about to be handed to [jsonEncode],
-/// throwing a [FormatException] on the first `double` that is not
-/// [double.isFinite] (NaN, +Infinity, or -Infinity). `jsonEncode` encodes
-/// these as invalid, non-JSON tokens instead of throwing, so this check must
-/// run before encoding to route non-encodable responses into the
-/// hand-built adapter_response_serialization_failed fallback.
-void _rejectNonFiniteDoubles(Object? value) {
-  switch (value) {
-    case double d when !d.isFinite:
-      throw FormatException('non-finite double $d is not valid JSON');
-    case Map<Object?, Object?> map:
-      for (final entry in map.values) {
-        _rejectNonFiniteDoubles(entry);
-      }
-    case Iterable<Object?> iterable:
-      for (final element in iterable) {
-        _rejectNonFiniteDoubles(element);
-      }
-    default:
-      return;
-  }
-}
-
 /// Routes one operation dispatch to its handler, converting an uncaught
 /// throw (synchronous or from a rejected `Future`) into an
 /// adapter_operation_panicked error outcome so a broken handler fails only
@@ -147,11 +138,17 @@ void _rejectNonFiniteDoubles(Object? value) {
 /// suspends for a handler that returns a `Future` (today, only
 /// `kernel.reclamation.erasure-probe`); either way the same `try`/`catch`
 /// here catches the failure.
+///
+/// [handlers] is threaded through explicitly (rather than reading the
+/// module-level [operationHandlers] directly) so [handleLineWith] can
+/// drive a caller-supplied table without mutating the real adapter's fixed
+/// one.
 Future<Map<String, Object?>> dispatchOperation(
   String operation,
-  Object? input,
-) async {
-  final handler = operationHandlers[operation];
+  Object? input, {
+  Map<String, OperationHandler>? handlers,
+}) async {
+  final handler = (handlers ?? operationHandlers)[operation];
   if (handler == null) {
     return <String, Object?>{
       'kind': 'error',
@@ -201,7 +198,11 @@ Map<String, Object?> _handleInitialize(Object? id, Object? params) {
   });
 }
 
-Future<Map<String, Object?>> _handleDispatch(Object? id, Object? params) async {
+Future<Map<String, Object?>> _handleDispatch(
+  Object? id,
+  Object? params,
+  Map<String, OperationHandler> handlers,
+) async {
   final map = params is Map<String, Object?> ? params : const {};
   final operation = map['operation'];
   // A dispatch frame without a string operation is a malformed request,
@@ -214,7 +215,10 @@ Future<Map<String, Object?>> _handleDispatch(Object? id, Object? params) async {
       'params.operation must be a non-empty string',
     );
   }
-  return _resultResponse(id, await dispatchOperation(operation, map['input']));
+  return _resultResponse(
+    id,
+    await dispatchOperation(operation, map['input'], handlers: handlers),
+  );
 }
 
 /// Parses and dispatches a single JSON-RPC request line, returning exactly
@@ -229,7 +233,19 @@ Future<Map<String, Object?>> _handleDispatch(Object? id, Object? params) async {
 /// and `responseFuture`'s declared `FutureOr` type lets both kinds sit in
 /// the same `switch` without forcing every branch to wrap its result in a
 /// `Future`.
-Future<String> handleLine(String line) async {
+Future<String> handleLine(String line) =>
+    handleLineWith(operationHandlers, line);
+
+/// The internal seam [handleLine] delegates to with the real adapter's
+/// fixed, unmodifiable [operationHandlers] table. Tests that need a
+/// different or partial routing table (for example, to register a fake
+/// operation for a serialization-fallback scenario) build their own
+/// `Map<String, OperationHandler>` and call this directly instead of
+/// mutating the shared [operationHandlers] map, which is unmodifiable.
+Future<String> handleLineWith(
+  Map<String, OperationHandler> handlers,
+  String line,
+) async {
   Object? id;
   FutureOr<Map<String, Object?>> responseFuture;
   try {
@@ -263,7 +279,7 @@ Future<String> handleLine(String line) async {
           final params = decoded['params'];
           responseFuture = switch (method) {
             'initialize' => _handleInitialize(id, params),
-            'dispatch' => _handleDispatch(id, params),
+            'dispatch' => _handleDispatch(id, params, handlers),
             'events' => _resultResponse(id, const <Object?>[]),
             'createInstance' ||
             'inspectState' ||
@@ -289,14 +305,12 @@ Future<String> handleLine(String line) async {
   final response = await responseFuture;
 
   try {
-    // dart:convert's jsonEncode does not throw on double.nan or
-    // double.infinity: it silently emits the invalid (non-JSON) tokens NaN,
-    // Infinity, and -Infinity, so the adapter_response_serialization_failed
-    // fallback below would never fire for a handler that returns a
-    // non-finite double. Walk the response first and throw on any such
-    // value so it routes into the same fallback as a genuine encode
-    // failure, matching the Go and Python adapters' behavior.
-    _rejectNonFiniteDoubles(response);
+    // dart:convert's jsonEncode throws JsonUnsupportedObjectError when a
+    // double.nan, double.infinity, or double.negativeInfinity appears
+    // anywhere in the value tree (verified against this SDK), which is
+    // exactly the failure this catch block routes into the hand-built
+    // adapter_response_serialization_failed frame below, matching the Go
+    // and Python adapters' behavior for the same non-finite-double case.
     return jsonEncode(response);
   } catch (error) {
     // A response frame that fails to encode must still produce exactly one

@@ -74,11 +74,18 @@ const int _maxLineageWalkDepth = 100000;
 /// restage -- `reconcileRun` owns recovering that state). Mirrors the
 /// `(hash string, run Run, err error)` triple `go/kernel/kernel_runtime.go`'s
 /// `checkpointRun` returns.
+///
+/// [cause] is `Object`, not `KernelException`: Go's `checkpointRun`
+/// restages on ANY error the checkpoint sequence produces, not only its
+/// own typed kernel errors, so the Dart port must wrap and rethrow
+/// whatever a backend (or an `AfterCommitBeforeAckHook`) actually throws
+/// -- including a plain `StateError` from a misbehaving decorator --
+/// rather than only catching `KernelException`.
 class _CheckpointFault implements Exception {
   _CheckpointFault(this.hash, this.cause);
 
   final String hash;
-  final KernelException cause;
+  final Object cause;
 
   @override
   String toString() => 'checkpoint fault (hash=$hash): $cause';
@@ -92,7 +99,7 @@ class _CheckpointFault implements Exception {
 /// `go/kernel/fault_injecting_backend.go`'s documented usage pattern.
 class Kernel {
   Kernel(this.scopeId, Clock? clock, this.backend)
-      : clock = clock ?? backend.clock;
+    : clock = clock ?? backend.clock;
 
   final String scopeId;
   final Clock clock;
@@ -134,7 +141,9 @@ class Kernel {
     final schema = backend.getSchema(schemaId);
     if (schema == null) {
       throw KernelException(
-          _errSchemaNotFound, 'schema "$schemaId" is not registered');
+        _errSchemaNotFound,
+        'schema "$schemaId" is not registered',
+      );
     }
     return schema;
   }
@@ -149,8 +158,11 @@ class Kernel {
   /// result is the base manifest with [changes] applied on top -- a new
   /// map with only the changed path keys replaced, giving the two trees
   /// structural sharing at the value level.
-  String createTurnTree(String schemaId, Map<String, PathValue> changes,
-      {String? base}) {
+  String createTurnTree(
+    String schemaId,
+    Map<String, PathValue> changes, {
+    String? base,
+  }) {
     final schema = _getSchema(schemaId);
     _validateTurnTreeChangeSet(schema, changes);
 
@@ -169,7 +181,9 @@ class Kernel {
       final baseTree = backend.getTurnTree(base);
       if (baseTree == null) {
         throw KernelException(
-            _errTreeNotFound, 'base turn tree "$base" not found');
+          _errTreeNotFound,
+          'base turn tree "$base" not found',
+        );
       }
       if (baseTree.schemaId != schemaId) {
         throw KernelException(
@@ -182,7 +196,8 @@ class Kernel {
 
     final hash = hashRecord(turnTreeIdentityRecord(schemaId, manifest));
     backend.putTurnTree(
-        TurnTree(hash: hash, schemaId: schemaId, manifest: manifest));
+      TurnTree(hash: hash, schemaId: schemaId, manifest: manifest),
+    );
     return hash;
   }
 
@@ -196,7 +211,9 @@ class Kernel {
   /// (`_incorporateStagedResults`) builds manifests directly from the
   /// schema and never calls this.
   void _validateTurnTreeChangeSet(
-      TurnTreeSchema schema, Map<String, PathValue> changes) {
+    TurnTreeSchema schema,
+    Map<String, PathValue> changes,
+  ) {
     final pathsByName = {for (final path in schema.paths) path.path: path};
 
     for (final entry in changes.entries) {
@@ -286,9 +303,10 @@ class Kernel {
   Map<String, PathValue> _defaultManifestChanges(TurnTreeSchema schema) {
     return {
       for (final path in schema.paths)
-        path.path: path.collection == PathCollectionKind.ordered
-            ? const PathValue.ordered([])
-            : const PathValue.nullValue(),
+        path.path:
+            path.collection == PathCollectionKind.ordered
+                ? const PathValue.ordered([])
+                : const PathValue.nullValue(),
     };
   }
 
@@ -297,9 +315,9 @@ class Kernel {
   /// Builds the canonical-record encoding of a thread's genesis bootstrap
   /// event: `{threadId, type: "kernel_runtime_thread_bootstrap"}`.
   RecordMap _threadBootstrapRecord(String threadId) => RecordMap({
-        'threadId': RecordText(threadId),
-        'type': const RecordText('kernel_runtime_thread_bootstrap'),
-      });
+    'threadId': RecordText(threadId),
+    'type': const RecordText('kernel_runtime_thread_bootstrap'),
+  });
 
   /// Creates a new thread on [schemaId]: a root turn tree (every schema
   /// path defaulted), a root turn node, and a main branch ([branchId])
@@ -314,11 +332,16 @@ class Kernel {
   /// two threads share a schema and would otherwise both default to an
   /// identical empty manifest (kernel spec §3.3).
   ThreadCreateResult createThread(
-      String threadId, String schemaId, String branchId) {
+    String threadId,
+    String schemaId,
+    String branchId,
+  ) {
     final schema = _getSchema(schemaId);
 
-    final rootTreeHash =
-        createTurnTree(schemaId, _defaultManifestChanges(schema));
+    final rootTreeHash = createTurnTree(
+      schemaId,
+      _defaultManifestChanges(schema),
+    );
 
     final bootstrapBytes = encodeCanonical(_threadBootstrapRecord(threadId));
     final bootstrapEventHash =
@@ -344,32 +367,42 @@ class Kernel {
       );
     }
 
-    backend.putTurnNode(TurnNode(
-      hash: rootNodeHash,
-      schemaId: schemaId,
-      turnTreeHash: rootTreeHash,
-      eventHash: bootstrapEventHash,
-    ));
+    backend.putTurnNode(
+      TurnNode(
+        hash: rootNodeHash,
+        schemaId: schemaId,
+        turnTreeHash: rootTreeHash,
+        eventHash: bootstrapEventHash,
+      ),
+    );
 
     final now = clock.nowMs();
-    if (!backend.putThread(Thread(
-      threadId: threadId,
-      schemaId: schemaId,
-      rootTurnNodeHash: rootNodeHash,
-      createdAtMs: now,
-    ))) {
+    if (!backend.putThread(
+      Thread(
+        threadId: threadId,
+        schemaId: schemaId,
+        rootTurnNodeHash: rootNodeHash,
+        createdAtMs: now,
+      ),
+    )) {
       throw KernelException(
-          _errThreadAlreadyExists, 'thread "$threadId" already exists');
+        _errThreadAlreadyExists,
+        'thread "$threadId" already exists',
+      );
     }
-    if (!backend.putBranch(Branch(
-      branchId: branchId,
-      threadId: threadId,
-      headTurnNodeHash: rootNodeHash,
-      createdAtMs: now,
-      updatedAtMs: now,
-    ))) {
+    if (!backend.putBranch(
+      Branch(
+        branchId: branchId,
+        threadId: threadId,
+        headTurnNodeHash: rootNodeHash,
+        createdAtMs: now,
+        updatedAtMs: now,
+      ),
+    )) {
       throw KernelException(
-          _errBranchAlreadyExists, 'branch "$branchId" already exists');
+        _errBranchAlreadyExists,
+        'branch "$branchId" already exists',
+      );
     }
 
     return ThreadCreateResult(
@@ -408,7 +441,9 @@ class Kernel {
     }
     if (backend.getTurnNode(fromTurnNodeHash) == null) {
       throw KernelException(
-          _errTurnNodeNotFound, 'turn node "$fromTurnNodeHash" not found');
+        _errTurnNodeNotFound,
+        'turn node "$fromTurnNodeHash" not found',
+      );
     }
     if (!_turnNodeBelongsToThread(fromTurnNodeHash, thread.rootTurnNodeHash)) {
       throw KernelException(
@@ -418,15 +453,19 @@ class Kernel {
     }
 
     final now = clock.nowMs();
-    if (!backend.putBranch(Branch(
-      branchId: branchId,
-      threadId: threadId,
-      headTurnNodeHash: fromTurnNodeHash,
-      createdAtMs: now,
-      updatedAtMs: now,
-    ))) {
+    if (!backend.putBranch(
+      Branch(
+        branchId: branchId,
+        threadId: threadId,
+        headTurnNodeHash: fromTurnNodeHash,
+        createdAtMs: now,
+        updatedAtMs: now,
+      ),
+    )) {
       throw KernelException(
-          _errBranchAlreadyExists, 'branch "$branchId" already exists');
+        _errBranchAlreadyExists,
+        'branch "$branchId" already exists',
+      );
     }
   }
 
@@ -439,7 +478,7 @@ class Kernel {
     final branches = backend.listBranchesByThread(threadId)
       ..sort((a, b) => a.branchId.compareTo(b.branchId));
     return [
-      for (final branch in branches) (branch.branchId, branch.headTurnNodeHash)
+      for (final branch in branches) (branch.branchId, branch.headTurnNodeHash),
     ];
   }
 
@@ -483,7 +522,9 @@ class Kernel {
   /// Throws [errBackwardLineageMismatch] if [targetHash] is never reached
   /// within [_maxLineageWalkDepth].
   Set<String> _collectAbandonedSegmentHashes(
-      String currentHead, String targetHash) {
+    String currentHead,
+    String targetHash,
+  ) {
     final hashes = <String>{};
     var cursor = currentHead;
     for (var depth = 0; depth < _maxLineageWalkDepth; depth++) {
@@ -507,7 +548,10 @@ class Kernel {
   /// Probes `"{branchId}-archive-{ordinal}-{currentHead prefix}"` starting
   /// at [initialOrdinal] and incrementing past any collision.
   String _allocateArchiveBranchId(
-      String branchId, String currentHead, int initialOrdinal) {
+    String branchId,
+    String currentHead,
+    int initialOrdinal,
+  ) {
     final prefixLen = currentHead.length < 16 ? currentHead.length : 16;
     var ordinal = initialOrdinal;
     while (true) {
@@ -536,25 +580,32 @@ class Kernel {
   /// segment (clearing its staged results), and only then moves
   /// [branchId]'s own head to [newHead].
   void _rollbackBranchHead(String branchId, Branch branch, String newHead) {
-    final abandoned =
-        _collectAbandonedSegmentHashes(branch.headTurnNodeHash, newHead);
+    final abandoned = _collectAbandonedSegmentHashes(
+      branch.headTurnNodeHash,
+      newHead,
+    );
 
     var archiveOrdinal = 1;
     for (final candidate in backend.listBranchesByThread(branch.threadId)) {
       if (candidate.archivedFromBranchId == branchId) archiveOrdinal++;
     }
     final archiveBranchId = _allocateArchiveBranchId(
-        branchId, branch.headTurnNodeHash, archiveOrdinal);
+      branchId,
+      branch.headTurnNodeHash,
+      archiveOrdinal,
+    );
 
     final now = clock.nowMs();
-    if (!backend.putBranch(Branch(
-      branchId: archiveBranchId,
-      threadId: branch.threadId,
-      headTurnNodeHash: branch.headTurnNodeHash,
-      archivedFromBranchId: branchId,
-      createdAtMs: now,
-      updatedAtMs: now,
-    ))) {
+    if (!backend.putBranch(
+      Branch(
+        branchId: archiveBranchId,
+        threadId: branch.threadId,
+        headTurnNodeHash: branch.headTurnNodeHash,
+        archivedFromBranchId: branchId,
+        createdAtMs: now,
+        updatedAtMs: now,
+      ),
+    )) {
       throw KernelException(
         _errBranchAlreadyExists,
         'archive branch "$archiveBranchId" already exists',
@@ -595,11 +646,15 @@ class Kernel {
     final thread = backend.getThread(branch.threadId);
     if (thread == null) {
       throw KernelException(
-          _errThreadNotFound, 'thread "${branch.threadId}" not found');
+        _errThreadNotFound,
+        'thread "${branch.threadId}" not found',
+      );
     }
     if (backend.getTurnNode(newHead) == null) {
       throw KernelException(
-          _errTurnNodeNotFound, 'turn node "$newHead" not found');
+        _errTurnNodeNotFound,
+        'turn node "$newHead" not found',
+      );
     }
     if (!_turnNodeBelongsToThread(newHead, thread.rootTurnNodeHash)) {
       throw KernelException(
@@ -696,7 +751,9 @@ class Kernel {
     );
     if (!backend.putRun(run)) {
       throw KernelException(
-          _errRunAlreadyExists, 'run "$runId" already exists');
+        _errRunAlreadyExists,
+        'run "$runId" already exists',
+      );
     }
   }
 
@@ -720,9 +777,10 @@ class Kernel {
     _requireExpectedStep(run, stepId);
   }
 
-  String _activeTurnNodeHash(Run run) => run.createdTurnNodes.isNotEmpty
-      ? run.createdTurnNodes.last
-      : run.startTurnNodeHash;
+  String _activeTurnNodeHash(Run run) =>
+      run.createdTurnNodes.isNotEmpty
+          ? run.createdTurnNodes.last
+          : run.startTurnNodeHash;
 
   /// Derives a new turn tree from [baseTreeHash] by applying [consumed]
   /// onto it per [schema]'s incorporation rules (kernel spec §5.5): an
@@ -739,7 +797,9 @@ class Kernel {
     final baseTree = backend.getTurnTree(baseTreeHash);
     if (baseTree == null) {
       throw KernelException(
-          _errTreeNotFound, 'turn tree "$baseTreeHash" not found');
+        _errTreeNotFound,
+        'turn tree "$baseTreeHash" not found',
+      );
     }
 
     final rulesByObjectType = {
@@ -833,9 +893,14 @@ class Kernel {
         );
       }
 
-      final newTreeHash = treeHash.isEmpty
-          ? _incorporateStagedResults(schema, activeNode.turnTreeHash, consumed)
-          : treeHash;
+      final newTreeHash =
+          treeHash.isEmpty
+              ? _incorporateStagedResults(
+                schema,
+                activeNode.turnTreeHash,
+                consumed,
+              )
+              : treeHash;
 
       final unhashed = TurnNode(
         hash: '',
@@ -860,7 +925,7 @@ class Kernel {
       // the write never happens, run.createdTurnNodes is never extended,
       // and the branch head never moves.
       backend.putTurnNode(newNode);
-    } on KernelException catch (e) {
+    } catch (e) {
       throw _CheckpointFault('', e);
     }
 
@@ -868,9 +933,10 @@ class Kernel {
     // itself, now that the node is durable but before either the
     // branch-head move below or the after-commit-before-ack hook is
     // attempted. reconcileRun reconciles from exactly this field.
-    final pendingMarker = run.clone()
-      ..pendingCheckpointHash = hash
-      ..pendingCheckpointKind = kind;
+    final pendingMarker =
+        run.clone()
+          ..pendingCheckpointHash = hash
+          ..pendingCheckpointKind = kind;
     backend.updateRun(pendingMarker);
 
     final updatedRun = run.clone();
@@ -883,7 +949,7 @@ class Kernel {
     // modeling a genuine torn checkpoint.
     try {
       backend.updateBranchHead(run.branchId, hash, clock.nowMs());
-    } on KernelException catch (e) {
+    } catch (e) {
       throw _CheckpointFault(hash, e);
     }
 
@@ -894,7 +960,7 @@ class Kernel {
     if (backend case AfterCommitBeforeAckHook hook) {
       try {
         hook.afterCommitBeforeAck();
-      } on KernelException catch (e) {
+      } catch (e) {
         throw _CheckpointFault(hash, e);
       }
     }
@@ -917,7 +983,11 @@ class Kernel {
   /// run's schemaId ([errMissingTree] / [errTreeSchemaMismatch]
   /// otherwise).
   String completeStep(
-      String runId, String stepId, String eventHash, String treeHash) {
+    String runId,
+    String stepId,
+    String eventHash,
+    String treeHash,
+  ) {
     final run = backend.getRun(runId);
     if (run == null) {
       throw KernelException(_errRunNotFound, 'run "$runId" not found');
@@ -933,7 +1003,9 @@ class Kernel {
       final tree = backend.getTurnTree(treeHash);
       if (tree == null) {
         throw KernelException(
-            errMissingTree, 'tree hash "$treeHash" does not exist');
+          errMissingTree,
+          'tree hash "$treeHash" does not exist',
+        );
       }
       if (tree.schemaId != run.schemaId) {
         throw KernelException(
@@ -947,7 +1019,12 @@ class Kernel {
     final consumed = backend.drainStagedResults(runId);
     try {
       final (hash, updatedRun) = _checkpointRun(
-          run, eventHash, treeHash, consumed, PendingCheckpointKind.step);
+        run,
+        eventHash,
+        treeHash,
+        consumed,
+        PendingCheckpointKind.step,
+      );
       updatedRun.currentStepIndex++;
       backend.updateRun(updatedRun);
       return hash;
@@ -1005,7 +1082,12 @@ class Kernel {
     if (staged.isNotEmpty || eventHash.isNotEmpty) {
       try {
         final (_, updatedRun) = _checkpointRun(
-            current, eventHash, '', staged, PendingCheckpointKind.complete);
+          current,
+          eventHash,
+          '',
+          staged,
+          PendingCheckpointKind.complete,
+        );
         current = updatedRun;
       } on _CheckpointFault catch (fault) {
         if (fault.hash.isEmpty) {
@@ -1085,13 +1167,13 @@ class Kernel {
   /// (as the [cursor] argument to a later [listThreads] call) continues
   /// strictly after the last returned thread.
   (List<Thread>, String) listThreads(int limit, String cursor) {
-    final all = backend.listThreads()
-      ..sort((a, b) {
-        if (a.createdAtMs != b.createdAtMs) {
-          return a.createdAtMs.compareTo(b.createdAtMs);
-        }
-        return a.threadId.compareTo(b.threadId);
-      });
+    final all =
+        backend.listThreads()..sort((a, b) {
+          if (a.createdAtMs != b.createdAtMs) {
+            return a.createdAtMs.compareTo(b.createdAtMs);
+          }
+          return a.threadId.compareTo(b.threadId);
+        });
 
     var start = 0;
     if (cursor.isNotEmpty) {
@@ -1107,7 +1189,8 @@ class Kernel {
     final page = remaining.sublist(0, limit);
     final last = page.last;
     final next = _encodeThreadListCursor(
-        _ThreadListCursor(last.createdAtMs, last.threadId));
+      _ThreadListCursor(last.createdAtMs, last.threadId),
+    );
     return (page, next);
   }
 
@@ -1120,9 +1203,10 @@ class Kernel {
     while (lo < hi) {
       final mid = (lo + hi) ~/ 2;
       final thread = all[mid];
-      final after = thread.createdAtMs != decoded.lastCreatedAtMs
-          ? thread.createdAtMs > decoded.lastCreatedAtMs
-          : thread.threadId.compareTo(decoded.lastThreadId) > 0;
+      final after =
+          thread.createdAtMs != decoded.lastCreatedAtMs
+              ? thread.createdAtMs > decoded.lastCreatedAtMs
+              : thread.threadId.compareTo(decoded.lastThreadId) > 0;
       if (after) {
         hi = mid;
       } else {
@@ -1151,7 +1235,9 @@ class Kernel {
     var branch = backend.getBranch(run.branchId);
     if (branch == null) {
       throw KernelException(
-          _errBranchNotFound, 'branch "${run.branchId}" not found');
+        _errBranchNotFound,
+        'branch "${run.branchId}" not found',
+      );
     }
 
     final activeHash = _activeTurnNodeHash(run);
@@ -1183,7 +1269,9 @@ class Kernel {
           final refreshed = backend.getBranch(run.branchId);
           if (refreshed == null) {
             throw KernelException(
-                _errBranchNotFound, 'branch "${run.branchId}" not found');
+              _errBranchNotFound,
+              'branch "${run.branchId}" not found',
+            );
           }
           branch = refreshed;
         }
@@ -1290,7 +1378,10 @@ class Kernel {
   /// [errCheckpointLateralConflict] rather than silently overwriting or
   /// stacking behind the winner.
   String commitSiblingCheckpoint(
-      String branchId, String expectedHead, TurnNode node) {
+    String branchId,
+    String expectedHead,
+    TurnNode node,
+  ) {
     final branch = backend.getBranch(branchId);
     if (branch == null) {
       throw KernelException(_errBranchNotFound, 'branch "$branchId" not found');
@@ -1328,7 +1419,11 @@ class Kernel {
     // write, closing the read/write race window a get-then-update pair
     // would otherwise leave open.
     final swapped = backend.compareAndSwapBranchHead(
-        branchId, expectedHead, hash, clock.nowMs());
+      branchId,
+      expectedHead,
+      hash,
+      clock.nowMs(),
+    );
     if (!swapped) {
       throw KernelException(
         errCheckpointLateralConflict,
@@ -1375,15 +1470,27 @@ class _ThreadListCursor {
 }
 
 String _encodeThreadListCursor(_ThreadListCursor cursor) {
-  final jsonBytes = utf8.encode(jsonEncode({
-    'lastCreatedAtMs': cursor.lastCreatedAtMs,
-    'lastThreadId': cursor.lastThreadId,
-  }));
+  final jsonBytes = utf8.encode(
+    jsonEncode({
+      'lastCreatedAtMs': cursor.lastCreatedAtMs,
+      'lastThreadId': cursor.lastThreadId,
+    }),
+  );
   return base64Url.encode(jsonBytes).replaceAll('=', '');
 }
 
 _ThreadListCursor _decodeThreadListCursor(String cursor) {
   try {
+    // Go decodes with base64.RawURLEncoding, which both accepts unpadded
+    // input directly AND rejects any input containing padding ('=')
+    // outright. Dart's base64Url.decode, unlike Go's decoder, requires
+    // its input length to be a multiple of four, so unpadded input still
+    // needs padding added back on before it can be decoded -- but a
+    // cursor that already carries its own '=' padding must be rejected
+    // first, exactly like Go, instead of being silently accepted.
+    if (cursor.contains('=')) {
+      throw const FormatException('cursor is not unpadded base64url');
+    }
     var padded = cursor;
     final remainder = padded.length % 4;
     if (remainder != 0) {
@@ -1391,18 +1498,33 @@ _ThreadListCursor _decodeThreadListCursor(String cursor) {
     }
     final bytes = base64Url.decode(padded);
     final decoded = jsonDecode(utf8.decode(bytes));
+    // Go decodes into a struct via json.Unmarshal, which leaves fields at
+    // their zero value when the payload is `null` or `{}` (or simply
+    // omits a field). Mirror that: a null payload, an empty object, or an
+    // object missing a field all resume from the zero default rather
+    // than being rejected.
+    if (decoded == null) {
+      return const _ThreadListCursor(0, '');
+    }
     if (decoded is! Map) {
       throw const FormatException('cursor payload is not a JSON object');
     }
-    final lastCreatedAtMs = decoded['lastCreatedAtMs'];
-    final lastThreadId = decoded['lastThreadId'];
-    if (lastCreatedAtMs is! int || lastThreadId is! String) {
+    final lastCreatedAtMsRaw = decoded['lastCreatedAtMs'];
+    final lastThreadIdRaw = decoded['lastThreadId'];
+    if (lastCreatedAtMsRaw != null && lastCreatedAtMsRaw is! int) {
       throw const FormatException('cursor payload has unexpected field types');
     }
+    if (lastThreadIdRaw != null && lastThreadIdRaw is! String) {
+      throw const FormatException('cursor payload has unexpected field types');
+    }
+    final lastCreatedAtMs = (lastCreatedAtMsRaw as int?) ?? 0;
+    final lastThreadId = (lastThreadIdRaw as String?) ?? '';
     return _ThreadListCursor(lastCreatedAtMs, lastThreadId);
   } catch (e) {
     if (e is KernelException) rethrow;
     throw KernelException(
-        errInvalidDurableReadCursor, 'malformed thread list cursor: $e');
+      errInvalidDurableReadCursor,
+      'malformed thread list cursor: $e',
+    );
   }
 }

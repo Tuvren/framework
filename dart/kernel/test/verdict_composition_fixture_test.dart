@@ -48,7 +48,9 @@ Verdict _verdictFromJson(Map<String, dynamic> object) {
       );
     case verdictKindModify:
       return Verdict(
-          kind: kind, transform: recordFromJson(object['transform']));
+        kind: kind,
+        transform: recordFromJson(object['transform']),
+      );
     case verdictKindPause:
       return Verdict(
         kind: kind,
@@ -57,7 +59,9 @@ Verdict _verdictFromJson(Map<String, dynamic> object) {
       );
     case verdictKindRetry:
       return Verdict(
-          kind: kind, adjustment: recordFromJson(object['adjustment']));
+        kind: kind,
+        adjustment: recordFromJson(object['adjustment']),
+      );
     default:
       throw FormatException('fixture verdict has unknown kind "$kind"');
   }
@@ -94,9 +98,10 @@ void main() {
     final caseObject = entry.value as Map<String, dynamic>;
 
     test(name, () {
-      final verdicts = (caseObject['verdicts'] as List<dynamic>)
-          .map((v) => _verdictFromJson(v as Map<String, dynamic>))
-          .toList();
+      final verdicts =
+          (caseObject['verdicts'] as List<dynamic>)
+              .map((v) => _verdictFromJson(v as Map<String, dynamic>))
+              .toList();
       final composed = composeVerdicts(verdicts);
       final composedJson = _composedVerdictJson(composed);
       expect(composedJson, equals(caseObject['expected']));
@@ -105,15 +110,16 @@ void main() {
 
   test('the fixture exercised every priority tier', () {
     expect(
-        cases.keys,
-        containsAll(<String>[
-          'single-proceed',
-          'single-modify',
-          'multi-modify-preserves-registration-order',
-          'abort-dominates-pause-modify-retry',
-          'pause-dominates-modify-retry-proceed',
-          'modify-dominates-retry-proceed',
-          'retry-dominates-proceed',
-        ]));
+      cases.keys,
+      containsAll(<String>[
+        'single-proceed',
+        'single-modify',
+        'multi-modify-preserves-registration-order',
+        'abort-dominates-pause-modify-retry',
+        'pause-dominates-modify-retry-proceed',
+        'modify-dominates-retry-proceed',
+        'retry-dominates-proceed',
+      ]),
+    );
   });
 }

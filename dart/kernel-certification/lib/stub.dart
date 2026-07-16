@@ -18,6 +18,7 @@ library;
 /// The diagnostic printed by this non-functional stub binary. It is
 /// extracted from the entry point so a trivial smoke test can assert its
 /// content without invoking the process exit.
-String stubMessage() => 'kernel Dart conformance is executed by '
+String stubMessage() =>
+    'kernel Dart conformance is executed by '
     'tools/conformance/harness/run.ts through '
     'dart/kernel-conformance-adapter/adapter.json';

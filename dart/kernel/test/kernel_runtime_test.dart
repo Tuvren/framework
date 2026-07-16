@@ -18,6 +18,8 @@
 /// lifecycle basics.
 library;
 
+import 'dart:convert';
+
 import 'package:test/test.dart';
 import 'package:tuvren_kernel/tuvren_kernel.dart';
 
@@ -30,23 +32,34 @@ void main() {
         schemaId: 'schema_dup',
         paths: [
           PathDefinition(
-              path: 'messages', collection: PathCollectionKind.ordered),
+            path: 'messages',
+            collection: PathCollectionKind.ordered,
+          ),
           PathDefinition(
-              path: 'messages', collection: PathCollectionKind.ordered),
+            path: 'messages',
+            collection: PathCollectionKind.ordered,
+          ),
         ],
         incorporationRules: [],
       );
       expect(
-        () => validateTurnTreeSchema(recordFromJson({
-          'schemaId': schema.schemaId,
-          'paths': [
-            {'path': 'messages', 'collection': 'ordered'},
-            {'path': 'messages', 'collection': 'ordered'},
-          ],
-          'incorporationRules': <Object?>[],
-        })),
-        throwsA(isA<KernelException>()
-            .having((e) => e.code, 'code', errDuplicateSchemaPath)),
+        () => validateTurnTreeSchema(
+          recordFromJson({
+            'schemaId': schema.schemaId,
+            'paths': [
+              {'path': 'messages', 'collection': 'ordered'},
+              {'path': 'messages', 'collection': 'ordered'},
+            ],
+            'incorporationRules': <Object?>[],
+          }),
+        ),
+        throwsA(
+          isA<KernelException>().having(
+            (e) => e.code,
+            'code',
+            errDuplicateSchemaPath,
+          ),
+        ),
       );
     });
 
@@ -117,11 +130,9 @@ void main() {
         'context.manifest': const PathValue.nullValue(),
       });
       final aHash = 'a' * 64;
-      final modified = kernel.createTurnTree(
-        'schema_main',
-        {'context.manifest': PathValue.single(aHash)},
-        base: base,
-      );
+      final modified = kernel.createTurnTree('schema_main', {
+        'context.manifest': PathValue.single(aHash),
+      }, base: base);
       expect(modified, isNot(equals(base)));
 
       final baseTree = kernel.backend.getTurnTree(base)!;
@@ -134,21 +145,23 @@ void main() {
     test('modify with a mismatched schema is rejected', () {
       final kernel = newTestKernel();
       kernel.registerSchema(canonicalSchema());
-      kernel.registerSchema(const TurnTreeSchema(
-        schemaId: 'schema_other',
-        paths: [
-          PathDefinition(path: 'x', collection: PathCollectionKind.single)
-        ],
-        incorporationRules: [],
-      ));
+      kernel.registerSchema(
+        const TurnTreeSchema(
+          schemaId: 'schema_other',
+          paths: [
+            PathDefinition(path: 'x', collection: PathCollectionKind.single),
+          ],
+          incorporationRules: [],
+        ),
+      );
       final base = kernel.createTurnTree('schema_main', {
         'messages': const PathValue.ordered([]),
         'context.manifest': const PathValue.nullValue(),
       });
       expectKernelError(
-        () => kernel.createTurnTree(
-            'schema_other', {'x': const PathValue.nullValue()},
-            base: base),
+        () => kernel.createTurnTree('schema_other', {
+          'x': const PathValue.nullValue(),
+        }, base: base),
         errTreeSchemaMismatch,
       );
     });
@@ -158,19 +171,22 @@ void main() {
     test('mismatched schemas are rejected', () {
       final kernel = newTestKernel();
       kernel.registerSchema(canonicalSchema());
-      kernel.registerSchema(const TurnTreeSchema(
-        schemaId: 'schema_other',
-        paths: [
-          PathDefinition(path: 'x', collection: PathCollectionKind.single)
-        ],
-        incorporationRules: [],
-      ));
+      kernel.registerSchema(
+        const TurnTreeSchema(
+          schemaId: 'schema_other',
+          paths: [
+            PathDefinition(path: 'x', collection: PathCollectionKind.single),
+          ],
+          incorporationRules: [],
+        ),
+      );
       final treeA = kernel.createTurnTree('schema_main', {
         'messages': const PathValue.ordered([]),
         'context.manifest': const PathValue.nullValue(),
       });
-      final treeB = kernel
-          .createTurnTree('schema_other', {'x': const PathValue.nullValue()});
+      final treeB = kernel.createTurnTree('schema_other', {
+        'x': const PathValue.nullValue(),
+      });
       expectKernelError(
         () => kernel.diffTurnTrees(treeA, treeB),
         errTreeSchemaMismatchDiff,
@@ -185,14 +201,10 @@ void main() {
         'context.manifest': const PathValue.nullValue(),
       });
       final aHash = 'a' * 64;
-      final modified = kernel.createTurnTree(
-        'schema_main',
-        {
-          'messages': PathValue.ordered([aHash]),
-          'context.manifest': PathValue.single(aHash)
-        },
-        base: base,
-      );
+      final modified = kernel.createTurnTree('schema_main', {
+        'messages': PathValue.ordered([aHash]),
+        'context.manifest': PathValue.single(aHash),
+      }, base: base);
       final diff = kernel.diffTurnTrees(base, modified);
       expect(diff, ['context.manifest', 'messages']);
     });
@@ -202,8 +214,11 @@ void main() {
     test('createThread mints a root node and main branch', () {
       final kernel = newTestKernel();
       kernel.registerSchema(canonicalSchema());
-      final created =
-          kernel.createThread('thread_a', 'schema_main', 'branch_main');
+      final created = kernel.createThread(
+        'thread_a',
+        'schema_main',
+        'branch_main',
+      );
       expect(created.threadId, 'thread_a');
       expect(created.branchId, 'branch_main');
       final branch = kernel.backend.getBranch('branch_main')!;
@@ -243,8 +258,11 @@ void main() {
       // lateral.
       final kernel = newTestKernel();
       kernel.registerSchema(canonicalSchema());
-      final created =
-          kernel.createThread('thread_a', 'schema_main', 'branch_main');
+      final created = kernel.createThread(
+        'thread_a',
+        'schema_main',
+        'branch_main',
+      );
       kernel.createBranch('branch_side', 'thread_a', created.rootTurnNodeHash);
 
       kernel.createRun(
@@ -254,7 +272,7 @@ void main() {
         'schema_main',
         created.rootTurnNodeHash,
         const [
-          StepDeclaration(id: 's1', deterministic: true, sideEffects: false)
+          StepDeclaration(id: 's1', deterministic: true, sideEffects: false),
         ],
       );
       kernel.completeStep('run_a', 's1', '', '');
@@ -286,8 +304,11 @@ void main() {
       // reject.
       final kernel = newTestKernel();
       kernel.registerSchema(canonicalSchema());
-      final created =
-          kernel.createThread('thread_a', 'schema_main', 'branch_main');
+      final created = kernel.createThread(
+        'thread_a',
+        'schema_main',
+        'branch_main',
+      );
       kernel.createRun(
         'run_a',
         'turn_a',
@@ -315,8 +336,11 @@ void main() {
         ),
       );
 
-      expect(kernel.backend.getBranch('branch_main')!.headTurnNodeHash, node1,
-          reason: 'branch_main must be untouched by branch_probe\'s commit');
+      expect(
+        kernel.backend.getBranch('branch_main')!.headTurnNodeHash,
+        node1,
+        reason: 'branch_main must be untouched by branch_probe\'s commit',
+      );
 
       expectKernelError(
         () => kernel.setBranchHead('branch_main', node2),
@@ -325,41 +349,46 @@ void main() {
     });
 
     test(
-        'backward movement archives the abandoned lineage and fails the active run',
-        () {
-      final kernel = newTestKernel();
-      kernel.registerSchema(canonicalSchema());
-      final created =
-          kernel.createThread('thread_a', 'schema_main', 'branch_main');
-      kernel.createRun(
-        'run_a',
-        'turn_a',
-        'branch_main',
-        'schema_main',
-        created.rootTurnNodeHash,
-        const [
-          StepDeclaration(id: 's1', deterministic: true, sideEffects: false),
-          StepDeclaration(id: 's2', deterministic: true, sideEffects: false),
-        ],
-      );
-      // Only step 1 completes; run_a is still "running" (step 2 pending)
-      // when the rollback below touches its lineage.
-      kernel.completeStep('run_a', 's1', '', '');
+      'backward movement archives the abandoned lineage and fails the active run',
+      () {
+        final kernel = newTestKernel();
+        kernel.registerSchema(canonicalSchema());
+        final created = kernel.createThread(
+          'thread_a',
+          'schema_main',
+          'branch_main',
+        );
+        kernel.createRun(
+          'run_a',
+          'turn_a',
+          'branch_main',
+          'schema_main',
+          created.rootTurnNodeHash,
+          const [
+            StepDeclaration(id: 's1', deterministic: true, sideEffects: false),
+            StepDeclaration(id: 's2', deterministic: true, sideEffects: false),
+          ],
+        );
+        // Only step 1 completes; run_a is still "running" (step 2 pending)
+        // when the rollback below touches its lineage.
+        kernel.completeStep('run_a', 's1', '', '');
 
-      kernel.setBranchHead('branch_main', created.rootTurnNodeHash);
+        kernel.setBranchHead('branch_main', created.rootTurnNodeHash);
 
-      final branch = kernel.backend.getBranch('branch_main')!;
-      expect(branch.headTurnNodeHash, created.rootTurnNodeHash);
+        final branch = kernel.backend.getBranch('branch_main')!;
+        expect(branch.headTurnNodeHash, created.rootTurnNodeHash);
 
-      final archived = kernel.backend
-          .listBranchesByThread('thread_a')
-          .where((b) => b.archivedFromBranchId == 'branch_main')
-          .toList();
-      expect(archived, hasLength(1));
+        final archived =
+            kernel.backend
+                .listBranchesByThread('thread_a')
+                .where((b) => b.archivedFromBranchId == 'branch_main')
+                .toList();
+        expect(archived, hasLength(1));
 
-      final run = kernel.backend.getRun('run_a')!;
-      expect(run.status, RunStatus.failed);
-    });
+        final run = kernel.backend.getRun('run_a')!;
+        expect(run.status, RunStatus.failed);
+      },
+    );
   });
 
   group('run lifecycle', () {
@@ -375,7 +404,10 @@ void main() {
           root,
           const [
             StepDeclaration(
-                id: 'only_step', deterministic: true, sideEffects: false)
+              id: 'only_step',
+              deterministic: true,
+              sideEffects: false,
+            ),
           ],
         ),
         errBranchAlreadyActive,
@@ -395,7 +427,10 @@ void main() {
           'f' * 64,
           const [
             StepDeclaration(
-                id: 'only_step', deterministic: true, sideEffects: false)
+              id: 'only_step',
+              deterministic: true,
+              sideEffects: false,
+            ),
           ],
         ),
         errRunBranchHeadMismatch,
@@ -405,8 +440,11 @@ void main() {
     test('duplicate step ids in the sequence are rejected', () {
       final kernel = newTestKernel();
       kernel.registerSchema(canonicalSchema());
-      final created =
-          kernel.createThread('thread_a', 'schema_main', 'branch_a');
+      final created = kernel.createThread(
+        'thread_a',
+        'schema_main',
+        'branch_a',
+      );
       expectKernelError(
         () => kernel.createRun(
           'run_a',
@@ -483,8 +521,11 @@ void main() {
     test('turn tree evolves across checkpoints via incorporation rules', () {
       final kernel = newTestKernel();
       kernel.registerSchema(canonicalSchema());
-      final created =
-          kernel.createThread('thread_a', 'schema_main', 'branch_a');
+      final created = kernel.createThread(
+        'thread_a',
+        'schema_main',
+        'branch_a',
+      );
       kernel.createRun(
         'run_a',
         'turn_a',
@@ -493,7 +534,10 @@ void main() {
         created.rootTurnNodeHash,
         const [
           StepDeclaration(
-              id: 'only_step', deterministic: true, sideEffects: false)
+            id: 'only_step',
+            deterministic: true,
+            sideEffects: false,
+          ),
         ],
       );
 
@@ -558,6 +602,66 @@ void main() {
         () => kernel.listThreads(10, 'not-a-valid-cursor!!'),
         errInvalidDurableReadCursor,
       );
+    });
+
+    test('a padded cursor is rejected, matching RawURLEncoding parity', () {
+      final kernel = newTestKernel();
+      final unpadded = base64Url.encode(
+        utf8.encode(
+          jsonEncode({'lastCreatedAtMs': 0, 'lastThreadId': 'thread_a'}),
+        ),
+      );
+      // Force padding back onto an otherwise well-formed cursor: Go's
+      // base64.RawURLEncoding rejects any '=' outright, so the Dart
+      // decoder must reject it too instead of re-padding and accepting
+      // it.
+      var padded = unpadded;
+      final remainder = padded.length % 4;
+      if (remainder != 0) {
+        padded += '=' * (4 - remainder);
+      } else {
+        padded += '=';
+      }
+      expectKernelError(
+        () => kernel.listThreads(10, padded),
+        errInvalidDurableReadCursor,
+      );
+    });
+
+    test('a null cursor payload resumes from the zero default', () {
+      final kernel = newTestKernel();
+      kernel.registerSchema(canonicalSchema());
+      for (final id in ['thread_c', 'thread_a', 'thread_b']) {
+        kernel.createThread(id, 'schema_main', 'branch_$id');
+      }
+
+      final nullCursor = base64Url
+          .encode(utf8.encode(jsonEncode(null)))
+          .replaceAll('=', '');
+      final (page, _) = kernel.listThreads(10, nullCursor);
+      expect(page.map((t) => t.threadId).toList(), [
+        'thread_c',
+        'thread_a',
+        'thread_b',
+      ]);
+    });
+
+    test('an empty-object cursor payload resumes from the zero default', () {
+      final kernel = newTestKernel();
+      kernel.registerSchema(canonicalSchema());
+      for (final id in ['thread_c', 'thread_a', 'thread_b']) {
+        kernel.createThread(id, 'schema_main', 'branch_$id');
+      }
+
+      final emptyObjectCursor = base64Url
+          .encode(utf8.encode(jsonEncode(<String, Object?>{})))
+          .replaceAll('=', '');
+      final (page, _) = kernel.listThreads(10, emptyObjectCursor);
+      expect(page.map((t) => t.threadId).toList(), [
+        'thread_c',
+        'thread_a',
+        'thread_b',
+      ]);
     });
   });
 }

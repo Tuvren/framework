@@ -32,7 +32,7 @@ import 'support/kernel_fixtures.dart';
   final backendB = InMemoryBackend.scoped(clock, store, 'tuvren.scope.test-b');
   return (
     Kernel('scope-a', clock, backendA),
-    Kernel('scope-b', clock, backendB)
+    Kernel('scope-b', clock, backendB),
   );
 }
 
@@ -40,16 +40,20 @@ void main() {
   group('scope isolation', () {
     test('hasObject is scope-confined', () {
       final (kernelA, kernelB) = newScopedKernelPair();
-      final hash =
-          kernelA.putObject('application/json', 'scope-a content'.codeUnits);
+      final hash = kernelA.putObject(
+        'application/json',
+        'scope-a content'.codeUnits,
+      );
       expect(kernelA.hasObject(hash), isTrue);
       expect(kernelB.hasObject(hash), isFalse);
     });
 
     test('getObject is scope-confined', () {
       final (kernelA, kernelB) = newScopedKernelPair();
-      final hash =
-          kernelA.putObject('application/json', 'scope-a content'.codeUnits);
+      final hash = kernelA.putObject(
+        'application/json',
+        'scope-a content'.codeUnits,
+      );
       expect(kernelA.backend.getObject(hash), isNotNull);
       expect(kernelB.backend.getObject(hash), isNull);
     });
@@ -58,31 +62,46 @@ void main() {
       final (kernelA, kernelB) = newScopedKernelPair();
       kernelA.registerSchema(canonicalSchema());
       kernelA.createThread(
-          'thread_scope_probe', 'schema_main', 'branch_scope_probe');
+        'thread_scope_probe',
+        'schema_main',
+        'branch_scope_probe',
+      );
 
       final (threadsA, _) = kernelA.listThreads(0, '');
       expect(threadsA.map((t) => t.threadId), contains('thread_scope_probe'));
 
       final (threadsB, _) = kernelB.listThreads(0, '');
-      expect(threadsB.map((t) => t.threadId),
-          isNot(contains('thread_scope_probe')));
+      expect(
+        threadsB.map((t) => t.threadId),
+        isNot(contains('thread_scope_probe')),
+      );
     });
 
-    test('two handles bound to the same store and scope share committed state',
-        () {
-      final store = MemoryScopeStore();
-      final clock = IncrementingClock();
-      final backend1 =
-          InMemoryBackend.scoped(clock, store, 'tuvren.scope.shared');
-      final backend2 =
-          InMemoryBackend.scoped(clock, store, 'tuvren.scope.shared');
-      final kernel1 = Kernel('shared', clock, backend1);
-      final kernel2 = Kernel('shared', clock, backend2);
+    test(
+      'two handles bound to the same store and scope share committed state',
+      () {
+        final store = MemoryScopeStore();
+        final clock = IncrementingClock();
+        final backend1 = InMemoryBackend.scoped(
+          clock,
+          store,
+          'tuvren.scope.shared',
+        );
+        final backend2 = InMemoryBackend.scoped(
+          clock,
+          store,
+          'tuvren.scope.shared',
+        );
+        final kernel1 = Kernel('shared', clock, backend1);
+        final kernel2 = Kernel('shared', clock, backend2);
 
-      final hash =
-          kernel1.putObject('application/json', 'shared content'.codeUnits);
-      expect(kernel2.hasObject(hash), isTrue);
-    });
+        final hash = kernel1.putObject(
+          'application/json',
+          'shared content'.codeUnits,
+        );
+        expect(kernel2.hasObject(hash), isTrue);
+      },
+    );
   });
 
   group('defensive copies', () {
@@ -101,8 +120,7 @@ void main() {
       expect(second.manifest['messages']!.ordered, isEmpty);
     });
 
-    test(
-        'mutating a returned ordered PathValue list in place does not '
+    test('mutating a returned ordered PathValue list in place does not '
         'corrupt stored state', () {
       // Regression for the P2-2 bug: TurnTree.clone() used to do a shallow
       // Map.of(manifest), so an ordered PathValue's backing List<String>
@@ -124,27 +142,28 @@ void main() {
     });
 
     test(
-        'getTurnNode returns a copy whose consumedStagedResults is independent storage',
-        () {
-      final kernel = newTestKernel();
-      createSingleStepRun(kernel, 'thread_a', 'branch_a', 'run_a');
-      final hash = kernel.completeStep('run_a', 'only_step', '', '');
+      'getTurnNode returns a copy whose consumedStagedResults is independent storage',
+      () {
+        final kernel = newTestKernel();
+        createSingleStepRun(kernel, 'thread_a', 'branch_a', 'run_a');
+        final hash = kernel.completeStep('run_a', 'only_step', '', '');
 
-      final first = kernel.backend.getTurnNode(hash)!;
-      first.consumedStagedResults.add(
-        const StagedResult(
-          taskId: 'injected',
-          objectHash:
-              '0000000000000000000000000000000000000000000000000000000000000000',
-          objectType: 'message',
-          timestamp: 0,
-          status: StagedResultStatus.completed,
-        ),
-      );
+        final first = kernel.backend.getTurnNode(hash)!;
+        first.consumedStagedResults.add(
+          const StagedResult(
+            taskId: 'injected',
+            objectHash:
+                '0000000000000000000000000000000000000000000000000000000000000000',
+            objectType: 'message',
+            timestamp: 0,
+            status: StagedResultStatus.completed,
+          ),
+        );
 
-      final second = kernel.backend.getTurnNode(hash)!;
-      expect(second.consumedStagedResults, isEmpty);
-    });
+        final second = kernel.backend.getTurnNode(hash)!;
+        expect(second.consumedStagedResults, isEmpty);
+      },
+    );
   });
 
   group('thread root uniqueness', () {
@@ -165,10 +184,14 @@ void main() {
       final a = kernel.createThread('thread_a', 'schema_main', 'branch_a');
       final b = kernel.createThread('thread_b', 'schema_main', 'branch_b');
 
-      expect(kernel.backend.getThreadByRootTurnNode(a.rootTurnNodeHash),
-          'thread_a');
-      expect(kernel.backend.getThreadByRootTurnNode(b.rootTurnNodeHash),
-          'thread_b');
+      expect(
+        kernel.backend.getThreadByRootTurnNode(a.rootTurnNodeHash),
+        'thread_a',
+      );
+      expect(
+        kernel.backend.getThreadByRootTurnNode(b.rootTurnNodeHash),
+        'thread_b',
+      );
       expect(a.rootTurnNodeHash, isNot(equals(b.rootTurnNodeHash)));
     });
   });

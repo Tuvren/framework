@@ -10,7 +10,7 @@ packages:
     source: hosted
     version: "85.0.0"
   analyzer:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: analyzer
       sha256: "974859dc0ff5f37bc4313244b3218c791810d03ab3470a579580279ba971a48d"
@@ -146,7 +146,7 @@ packages:
     source: hosted
     version: "1.0.5"
   js:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: js
       sha256: c1b2e9b5ea78c45e1a0788d29606ba27dc5f71f019f32ca5140f61ef071838cf

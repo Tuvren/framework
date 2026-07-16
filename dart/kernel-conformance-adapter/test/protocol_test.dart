@@ -207,47 +207,53 @@ void main() {
   test('a response containing a non-finite double falls back to '
       'adapter_response_serialization_failed', () async {
     const operation = 'kernel.protocol.__non_finite_double_fallback__';
-    operationHandlers[operation] = (input) => {'x': double.nan};
-    try {
-      final line = await handleLine(
-        jsonEncode({
-          'jsonrpc': '2.0',
-          'id': 11,
-          'method': 'dispatch',
-          'params': {'operation': operation},
-        }),
-      );
-      // The fallback frame is hand-built from plain strings, so it must
-      // still be valid, decodable JSON.
-      final decoded = jsonDecode(line) as Map<String, Object?>;
-      expect(decoded['id'], 11);
-      final error = decoded['error'] as Map<String, Object?>;
-      expect(error['code'], 'adapter_response_serialization_failed');
-    } finally {
-      operationHandlers.remove(operation);
-    }
+    // operationHandlers is the real adapter's fixed, unmodifiable routing
+    // table; a test that needs a fake operation builds its own table and
+    // drives it through the handleLineWith seam instead of mutating the
+    // shared one.
+    final handlers = <String, OperationHandler>{
+      ...operationHandlers,
+      operation: (input) => {'x': double.nan},
+    };
+    final line = await handleLineWith(
+      handlers,
+      jsonEncode({
+        'jsonrpc': '2.0',
+        'id': 11,
+        'method': 'dispatch',
+        'params': {'operation': operation},
+      }),
+    );
+    // The fallback frame is hand-built from plain strings, so it must
+    // still be valid, decodable JSON.
+    final decoded = jsonDecode(line) as Map<String, Object?>;
+    expect(decoded['id'], 11);
+    final error = decoded['error'] as Map<String, Object?>;
+    expect(error['code'], 'adapter_response_serialization_failed');
   });
 
   test(
     'an async handler that returns a Future is awaited before responding',
     () async {
       const operation = 'kernel.protocol.__async_fallback__';
-      operationHandlers[operation] =
-          (input) async => Future.value({'value': 'async-ok'});
-      try {
-        final response = await roundTrip({
+      final handlers = <String, OperationHandler>{
+        ...operationHandlers,
+        operation: (input) async => Future.value({'value': 'async-ok'}),
+      };
+      final line = await handleLineWith(
+        handlers,
+        jsonEncode({
           'jsonrpc': '2.0',
           'id': 12,
           'method': 'dispatch',
           'params': {'operation': operation},
-        });
-        final outcome = response['result'] as Map<String, Object?>;
-        expect(outcome['kind'], 'result');
-        final value = outcome['value'] as Map<String, Object?>;
-        expect(value['value'], 'async-ok');
-      } finally {
-        operationHandlers.remove(operation);
-      }
+        }),
+      );
+      final response = jsonDecode(line) as Map<String, Object?>;
+      final outcome = response['result'] as Map<String, Object?>;
+      expect(outcome['kind'], 'result');
+      final value = outcome['value'] as Map<String, Object?>;
+      expect(value['value'], 'async-ok');
     },
   );
 
@@ -255,23 +261,26 @@ void main() {
     'an async handler that throws is reported as adapter_operation_panicked',
     () async {
       const operation = 'kernel.protocol.__async_throw__';
-      operationHandlers[operation] = (input) async {
-        throw StateError('async handler failure');
+      final handlers = <String, OperationHandler>{
+        ...operationHandlers,
+        operation: (input) async {
+          throw StateError('async handler failure');
+        },
       };
-      try {
-        final response = await roundTrip({
+      final line = await handleLineWith(
+        handlers,
+        jsonEncode({
           'jsonrpc': '2.0',
           'id': 13,
           'method': 'dispatch',
           'params': {'operation': operation},
-        });
-        final outcome = response['result'] as Map<String, Object?>;
-        expect(outcome['kind'], 'error');
-        final error = outcome['error'] as Map<String, Object?>;
-        expect(error['code'], 'adapter_operation_panicked');
-      } finally {
-        operationHandlers.remove(operation);
-      }
+        }),
+      );
+      final response = jsonDecode(line) as Map<String, Object?>;
+      final outcome = response['result'] as Map<String, Object?>;
+      expect(outcome['kind'], 'error');
+      final error = outcome['error'] as Map<String, Object?>;
+      expect(error['code'], 'adapter_operation_panicked');
     },
   );
 

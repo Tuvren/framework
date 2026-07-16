@@ -27,19 +27,22 @@ import 'package:tuvren_kernel/tuvren_kernel.dart';
 /// `spec/conformance/kernel/fixtures/canonical-turn-tree-schema.json` and
 /// `go/kernel/kernel_runtime_test.go`'s `canonicalSchema`.
 TurnTreeSchema canonicalSchema() => const TurnTreeSchema(
-      schemaId: 'schema_main',
-      paths: [
-        PathDefinition(
-            path: 'messages', collection: PathCollectionKind.ordered),
-        PathDefinition(
-            path: 'context.manifest', collection: PathCollectionKind.single),
-      ],
-      incorporationRules: [
-        IncorporationRule(objectType: 'message', targetPath: 'messages'),
-        IncorporationRule(
-            objectType: 'context_manifest', targetPath: 'context.manifest'),
-      ],
-    );
+  schemaId: 'schema_main',
+  paths: [
+    PathDefinition(path: 'messages', collection: PathCollectionKind.ordered),
+    PathDefinition(
+      path: 'context.manifest',
+      collection: PathCollectionKind.single,
+    ),
+  ],
+  incorporationRules: [
+    IncorporationRule(objectType: 'message', targetPath: 'messages'),
+    IncorporationRule(
+      objectType: 'context_manifest',
+      targetPath: 'context.manifest',
+    ),
+  ],
+);
 
 /// A [Kernel] over a fresh [InMemoryBackend] driven by an
 /// [IncrementingClock], mirroring `newTestKernel`.
@@ -63,17 +66,30 @@ Kernel newTestKernel() {
 /// thread/branch, and starts a single-step run on it, returning the root
 /// turn node hash. Mirrors `createSingleStepRun`.
 String createSingleStepRun(
-    Kernel kernel, String threadId, String branchId, String runId) {
+  Kernel kernel,
+  String threadId,
+  String branchId,
+  String runId,
+) {
   if (kernel.backend.getSchema('schema_main') == null) {
     kernel.registerSchema(canonicalSchema());
   }
   final created = kernel.createThread(threadId, 'schema_main', branchId);
   final steps = [
     const StepDeclaration(
-        id: 'only_step', deterministic: true, sideEffects: false),
+      id: 'only_step',
+      deterministic: true,
+      sideEffects: false,
+    ),
   ];
-  kernel.createRun(runId, 'turn_$runId', branchId, 'schema_main',
-      created.rootTurnNodeHash, steps);
+  kernel.createRun(
+    runId,
+    'turn_$runId',
+    branchId,
+    'schema_main',
+    created.rootTurnNodeHash,
+    steps,
+  );
   return created.rootTurnNodeHash;
 }
 
@@ -82,8 +98,6 @@ String createSingleStepRun(
 void expectKernelError(void Function() body, String code) {
   expect(
     body,
-    throwsA(
-      isA<KernelException>().having((e) => e.code, 'code', code),
-    ),
+    throwsA(isA<KernelException>().having((e) => e.code, 'code', code)),
   );
 }
