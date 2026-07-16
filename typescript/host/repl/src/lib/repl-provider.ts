@@ -162,10 +162,11 @@ async function* streamFixtureChunks(
 
   if (scenario === "orchestration" || scenario === "steering") {
     // Keep a deterministic steering window wide enough for the full Nx verify
-    // lane. A shorter delay was fast in isolation but too tight once the
-    // broader workspace load and stream fanout were active.
+    // lane. 100ms was tight enough to flake under full-workspace CI load
+    // (observed on run 29488509630); widened to give steerWhenRunning's
+    // polling loop more headroom before the fixture completes the turn.
     await new Promise<void>((resolve) => {
-      setTimeout(resolve, 100);
+      setTimeout(resolve, 300);
     });
   }
 

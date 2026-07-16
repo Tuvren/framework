@@ -6,7 +6,8 @@ Tuvren is a durable, stateful agent-execution framework, built polyglot by const
 
 - `spec/` — language-neutral authority: authority packets, CDDL/TypeSpec contracts, generated artifacts, and conformance plans/fixtures per port (`kernel`, `core`, `providers`, `tools`, `runners`, `streaming`, `host`, `telemetry`, `interop`, `extensions`).
 - `typescript/` — the TypeScript reference implementation: kernel, runtime, providers, runners, streaming, tools/drivers, telemetry, and the host REPL, plus each boundary's conformance adapters and certification wrappers.
-- `rust/` — the Rust implementation line, currently the framework's second language: the kernel (`rust/kernel`), its gRPC service (`rust/kernel-grpc-service`), and both the kernel-specific and generic framework conformance adapter/certification pairs (`rust/kernel-conformance-adapter` + `rust/kernel-certification`, `rust/conformance-adapter` + `rust/certification`).
+- `rust/` — the Rust kernel-port line: the kernel (`rust/kernel`), its gRPC service (`rust/kernel-grpc-service`), and both the kernel-specific and generic framework conformance adapter/certification pairs (`rust/kernel-conformance-adapter` + `rust/kernel-certification`, `rust/conformance-adapter` + `rust/certification`).
+- `go/` and `python/` — the Go and Python kernel-port lines, following the same flat-per-unit shape as Rust: `<lang>/kernel`, `<lang>/kernel-conformance-adapter`, `<lang>/kernel-certification`, registered in the root `go.work` and `pyproject.toml`/`uv.lock` respectively. Both are certified (all kernel conformance checks currently non-applicable — see `docs/guides/add-a-language.md`) rather than fully behavioral yet.
 - `tools/` — shared, language-neutral tooling: the semantic conformance engine (`tools/conformance/harness/run.ts`), the adapter protocol, certification discovery, codegen/validation scripts, and generators.
 - `docs/` — human-authored specifications (`KrakenKernelSpecification.md`, `KrakenFrameworkSpecification.md`) and contributor guides (`docs/guides/`).
 
@@ -21,7 +22,7 @@ curl -fsSL https://install.determinate.systems/nix | sh -s -- install
 # ... restart your shell so `nix` is on PATH, then:
 nix profile install nixpkgs#devenv nixpkgs#direnv   # then enable direnv's shell hook
 
-# 1. Load the repo toolchain (bun, cargo, bazel, buf, weaver, postgres — via Nix/devenv)
+# 1. Load the repo toolchain (bun, cargo, go, uv/python, bazel, buf, weaver, postgres — via Nix/devenv)
 direnv allow   # or: eval "$(devenv direnvrc)" && use devenv
 
 # 2. Install workspace dependencies
