@@ -18,7 +18,10 @@
         "{workspaceRoot}/typescript/kernel/conformance-adapter/**/*",
         "{workspaceRoot}/typescript/providers/conformance-adapter/**/*",
         "{workspaceRoot}/rust/conformance-adapter/**/*",
-        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*"
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*"
       ],
       "options": {
         "cwd": ".",
@@ -37,7 +40,10 @@
         "{workspaceRoot}/typescript/kernel/conformance-adapter/**/*",
         "{workspaceRoot}/typescript/providers/conformance-adapter/**/*",
         "{workspaceRoot}/rust/conformance-adapter/**/*",
-        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*"
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*"
       ],
       "options": {
         "cwd": ".",
@@ -56,7 +62,10 @@
         "{workspaceRoot}/typescript/kernel/conformance-adapter/**/*",
         "{workspaceRoot}/typescript/providers/conformance-adapter/**/*",
         "{workspaceRoot}/rust/conformance-adapter/**/*",
-        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*"
+        "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*"
       ],
       "outputs": [
         "{workspaceRoot}/reports/compatibility/compatibility-matrix.json",

@@ -31,3 +31,5 @@ __pycache__
 # Go build artifacts (module binaries built ad hoc in module dirs)
 go/kernel-conformance-adapter/kernel-conformance-adapter
 go/kernel-certification/kernel-certification
+# Dart pub tool cache (pubspec.lock itself stays committed)
+.dart_tool/

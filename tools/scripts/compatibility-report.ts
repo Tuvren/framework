@@ -395,6 +395,19 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     reportLabel: "Python process-local kernel baseline",
   },
   {
+    adapterManifestPath: "dart/kernel-conformance-adapter/adapter.json",
+    command: [
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      "dart/kernel-conformance-adapter/adapter.json",
+    ],
+    implementationId: "dart-kernel",
+    language: "dart",
+    project: "kernel-dart-certification",
+    reportLabel: "Dart process-local kernel baseline",
+  },
+  {
     adapterManifestPath: "rust/conformance-adapter/adapter.json",
     command: [
       "bun",

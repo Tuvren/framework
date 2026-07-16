@@ -1,0 +1,12 @@
+# Dart pub workspace root. Dart workspace truth for the dart/ implementation
+# line, exactly as go.work owns Go modules and pyproject.toml + uv.lock own
+# the Python workspace. Members resolve together against the committed
+# pubspec.lock; do not add language-agnostic tooling here.
+name: tuvren_framework_dart_workspace
+publish_to: none
+environment:
+  sdk: ^3.12.0
+workspace:
+  - dart/kernel
+  - dart/kernel-conformance-adapter
+  - dart/kernel-certification

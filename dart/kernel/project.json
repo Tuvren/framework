@@ -1,0 +1,47 @@
+{
+  "name": "kernel-dart-kernel",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "dart/kernel",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "language:dart", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "inputs": [
+        "default",
+        "{workspaceRoot}/pubspec.yaml",
+        "{workspaceRoot}/pubspec.lock"
+      ],
+      "options": {
+        "cwd": "dart/kernel",
+        "command": "dart analyze"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/pubspec.yaml",
+        "{workspaceRoot}/pubspec.lock"
+      ],
+      "options": {
+        "cwd": "dart/kernel",
+        "command": "dart format --output=none --set-exit-if-changed . && dart analyze --fatal-infos"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/pubspec.yaml",
+        "{workspaceRoot}/pubspec.lock",
+        "{workspaceRoot}/spec/conformance/kernel/fixtures/**/*"
+      ],
+      "options": {
+        "cwd": "dart/kernel",
+        "command": "dart test"
+      }
+    }
+  }
+}

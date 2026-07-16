@@ -107,6 +107,7 @@ const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
 const RUST_ROOT = resolve(REPO_ROOT, "rust");
 const GO_ROOT = resolve(REPO_ROOT, "go");
 const PYTHON_ROOT = resolve(REPO_ROOT, "python");
+const DART_ROOT = resolve(REPO_ROOT, "dart");
 const INVENTORY_PATH = resolve(
   REPO_ROOT,
   ".constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md"
@@ -639,6 +640,7 @@ async function loadAllAdapterManifests(): Promise<
     RUST_ROOT,
     GO_ROOT,
     PYTHON_ROOT,
+    DART_ROOT,
   ].filter((root) => existsSync(root));
   const paths = (
     await Promise.all(

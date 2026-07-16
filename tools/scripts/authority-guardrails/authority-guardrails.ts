@@ -58,6 +58,7 @@ const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
 const RUST_ROOT = resolve(REPO_ROOT, "rust");
 const GO_ROOT = resolve(REPO_ROOT, "go");
 const PYTHON_ROOT = resolve(REPO_ROOT, "python");
+const DART_ROOT = resolve(REPO_ROOT, "dart");
 const COMPATIBILITY_EVIDENCE_ROOT = resolve(
   REPO_ROOT,
   "reports/compatibility/evidence"
@@ -1540,6 +1541,7 @@ async function findSourceFiles(directory: string): Promise<string[]> {
     ...(await findFiles(directory, ".tsx")),
     ...(await findFiles(directory, ".go")),
     ...(await findFiles(directory, ".py")),
+    ...(await findFiles(directory, ".dart")),
   ];
   return paths.filter((path) => !path.endsWith(".d.ts"));
 }
@@ -1549,8 +1551,8 @@ async function findConformanceSourceRoots(): Promise<string[]> {
   // broken checkout and must throw, not silently narrow the scan.
   const roots = (
     await Promise.all(
-      [TYPESCRIPT_ROOT, RUST_ROOT, GO_ROOT, PYTHON_ROOT].map((root) =>
-        collectConformanceSourceRoots(root)
+      [TYPESCRIPT_ROOT, RUST_ROOT, GO_ROOT, PYTHON_ROOT, DART_ROOT].map(
+        (root) => collectConformanceSourceRoots(root)
       )
     )
   ).flat();
@@ -1623,6 +1625,21 @@ async function collectConformanceSourceRoots(
         // live directly at the module root, marked by go.mod, with no
         // `src/` subdirectory.
         roots.push(entryPath);
+        continue;
+      }
+
+      if (existsSync(resolve(entryPath, "pubspec.yaml"))) {
+        // Dart adapters/certification wrappers keep sources under lib/,
+        // bin/, and test/ (Dart's own package convention), marked by
+        // pubspec.yaml. Scan those subdirectories explicitly instead of the
+        // package root so the generated .dart_tool/ cache can never leak
+        // generated sources into the guardrail scan.
+        for (const sourceDir of ["lib", "bin", "test"]) {
+          const sourcePath = resolve(entryPath, sourceDir);
+          if (existsSync(sourcePath)) {
+            roots.push(sourcePath);
+          }
+        }
         continue;
       }
     }
