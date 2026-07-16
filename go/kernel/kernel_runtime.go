@@ -792,6 +792,18 @@ func (k *Kernel) checkpointRun(run Run, eventHash, treeHash string, consumed []S
 	// current head), so it can never fail the lineage check SetBranchHead
 	// itself enforces for externally requested head movements.
 	//
+	// INVARIANT this non-CAS write depends on: "the live run's active
+	// turn node == the branch head" between this function's initial read
+	// and this write. That holds because this kernel is single-writer
+	// within a process (one embedded caller, no concurrent goroutines
+	// mutating one branch), and the only paths that move a head outside a
+	// run's own checkpoints — SetBranchHead and CommitSiblingCheckpoint —
+	// respectively fail active runs first and CAS from an explicit
+	// expected head. If this port ever admits intra-process concurrency,
+	// this write must become CompareAndSwapBranchHead from
+	// activeNode.Hash (as CommitSiblingCheckpoint and ReconcileRun
+	// already do).
+	//
 	// UpdateBranchHead is the checkpoint commit sequence's second durable
 	// write. A FaultInjectingBackend's "mid-commit" fault point fires here
 	// without performing the move at all: the turn node written just above

@@ -137,8 +137,8 @@ async function main(): Promise<void> {
       `refusing to overwrite ${filePath}: checked-in planVersion ` +
         `${existing.planVersion} differs from this generator's ` +
         `${extendedPlan.planVersion}. The committed plan carries promoted ` +
-        `checks this generator does not know about; extend the generator ` +
-        `before regenerating.`
+        "checks this generator does not know about; extend the generator " +
+        "before regenerating."
     );
   }
   await writeFile(filePath, `${JSON.stringify(extendedPlan, null, 2)}\n`);

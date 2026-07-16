@@ -227,24 +227,36 @@ def test_run_preempt_stale_reactively_checkpoints_uncommitted_staged_work() -> N
     ]
 
 
-def test_run_preempt_stale_with_no_staged_work_leaves_branch_head_untouched() -> None:
-    """When a stale-running run has no uncommitted staged work at
-    preemption time, there is nothing to reactively checkpoint, so the
-    branch head stays exactly where the run's own lineage last left it
-    (its `startTurnNodeHash`, since this run never checkpointed)."""
+def test_run_preempt_stale_with_no_staged_work_still_records_a_preemption_node() -> None:
+    """Preemption checkpoints unconditionally (unlike `complete`'s
+    staged-only guard): even with zero uncommitted staged work the branch
+    head advances onto a fresh TurnNode with an empty
+    `consumedStagedResults` whose `eventHash` pins the preemption event
+    object, so the lineage durably records that a preemption happened
+    (matching the TypeScript reference and the Go port)."""
 
     clock = _Clock(0)
     kernel = new_kernel(clock)
     thread, _, run = make_run(kernel, "preempt_empty", owner_id="owner_a", lease_duration_ms=5)
+    root_head = thread["rootTurnNodeHash"]
 
     clock.value = 100
     preempted = kernel.run.preempt_stale("run_preempt_empty")
 
     assert preempted["status"] == "failed"
-    assert preempted["createdTurnNodes"] == []
 
     branch = kernel.branch.get(thread["branchId"])
-    assert branch["headTurnNodeHash"] == thread["rootTurnNodeHash"]
+    assert branch["headTurnNodeHash"] != root_head
+    assert preempted["createdTurnNodes"] == [branch["headTurnNodeHash"]]
+    head_node = kernel.backend.get_node(branch["headTurnNodeHash"])
+    assert head_node is not None
+    assert head_node["consumedStagedResults"] == []
+    assert head_node["eventHash"] is not None
+    assert head_node["previousTurnNodeHash"] == root_head
+    # The tree itself is unchanged: nothing was staged, so the event node
+    # re-anchors the same TurnTree the previous head carried.
+    root_node = kernel.backend.get_node(root_head)
+    assert head_node["turnTreeHash"] == root_node["turnTreeHash"]
 
 
 def test_run_preempt_stale_rejects_a_run_that_is_not_running() -> None:
@@ -397,6 +409,38 @@ def test_mid_commit_fault_leaves_genuine_partial_state_and_rolls_forward() -> No
     assert reconciled["headTurnNodeHash"] == pending["nodeHash"]
     assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == pending["nodeHash"]
     assert len(kernel.backend.get_run(run_id)["createdTurnNodes"]) == 2
+
+
+def test_mid_commit_reconcile_leaves_a_head_that_legitimately_moved_elsewhere() -> None:
+    """The midCommit roll-forward is CAS'd from the head the pending node
+    was minted against, never a blind write: if the branch head moved
+    somewhere else entirely while the checkpoint was torn, reconcile must
+    leave that head alone and just retire the stale pending marker
+    (mirroring go/kernel/recovery.go's ReconcileRun)."""
+
+    scenario = _seed_and_fault("midCommit")
+    kernel: RuntimeKernel = scenario["kernel"]
+    run_id = scenario["run_id"]
+    thread = scenario["thread"]
+
+    pending = kernel.backend.get_run(run_id)["pendingCheckpoint"]
+    assert pending is not None
+
+    # Simulate the head legitimately advancing elsewhere during the tear:
+    # move it onto a different durable node (the pre-fault head's own
+    # predecessor chain gives us none forward, so mint a sibling by
+    # re-anchoring the root -- direct store manipulation keeps this focused
+    # on reconcile's guard rather than on who moved the head).
+    branch = kernel.branch.get(thread["branchId"])
+    foreign_head = thread["rootTurnNodeHash"]
+    kernel.backend.put_branch(branch["branchId"], {**branch, "headTurnNodeHash": foreign_head})
+
+    reconciled = kernel.run.reconcile(run_id)
+    assert reconciled["reconciled"] is True
+    assert reconciled["pendingMessageCommitted"] is False
+    assert reconciled["headTurnNodeHash"] == foreign_head
+    assert kernel.branch.get(thread["branchId"])["headTurnNodeHash"] == foreign_head
+    assert kernel.backend.get_run(run_id)["pendingCheckpoint"] is None
 
 
 def test_after_commit_before_ack_fault_is_already_fully_durable() -> None:

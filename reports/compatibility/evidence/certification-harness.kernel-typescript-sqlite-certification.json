@@ -506,6 +506,14 @@
           "status": "pass"
         },
         {
+          "assertionId": "kernel.protocol.canonical_rejection.14.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.control-canonical-map.rejected",
+          "status": "pass"
+        },
+        {
           "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.duplicate-map-key.rejected",
           "status": "pass"
         },
@@ -555,6 +563,10 @@
         },
         {
           "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.rejection.unsorted-map-keys.rejected",
+          "status": "pass"
+        },
+        {
+          "assertionId": "kernel.protocol.canonical_rejection.requiredEvidence.result.rejection.control-canonical-map.rejected",
           "status": "pass"
         },
         {

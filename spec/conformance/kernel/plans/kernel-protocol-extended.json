@@ -1009,6 +1009,11 @@
           "equals": true,
           "field": "$.rejection.negative-int-beyond-safe-integer-range.rejected",
           "kind": "resultField"
+        },
+        {
+          "equals": false,
+          "field": "$.rejection.control-canonical-map.rejected",
+          "kind": "resultField"
         }
       ],
       "checkId": "kernel.protocol.canonical_rejection",
@@ -1025,7 +1030,8 @@
         "rejection.trailing-bytes-after-top-level-value.rejected",
         "rejection.truncated-input.rejected",
         "rejection.uint-beyond-safe-integer-range.rejected",
-        "rejection.negative-int-beyond-safe-integer-range.rejected"
+        "rejection.negative-int-beyond-safe-integer-range.rejected",
+        "rejection.control-canonical-map.rejected"
       ],
       "fixture": "f-adversarial-cbor",
       "operation": "kernel.protocol.canonical-rejection"

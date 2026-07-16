@@ -175,8 +175,12 @@ func runStalePreemption(json.RawMessage) operationOutcome {
 	if _, _, err := k.AcquireLease("run_stale", "owner_a", 5); err != nil {
 		return errorOutcomeFor(err)
 	}
+	// Store the staged blob for real so the reactive checkpoint's tree
+	// references an object that actually exists (the TS and Python
+	// scenarios stage through their store-backed staging seams too).
+	stagedObject := k.Backend.PutObject("message", []byte("staged-before-preemption"))
 	if err := k.StageResult("run_stale", kernel.StagedResult{
-		TaskID: "assistant_message", ObjectHash: kernel.HashBytesToHex([]byte("staged-before-preemption")),
+		TaskID: "assistant_message", ObjectHash: stagedObject.Hash,
 		ObjectType: "message", Status: kernel.StagedResultCompleted,
 	}); err != nil {
 		return errorOutcomeFor(err)

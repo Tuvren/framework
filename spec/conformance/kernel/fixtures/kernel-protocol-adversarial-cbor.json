@@ -52,6 +52,10 @@
     "negative-int-beyond-safe-integer-range": {
       "description": "Encodes the minimum negative 64-bit CBOR integer (-2^64, i.e. -1 - (2^64 - 1)) via an 8-byte-argument major-type-1 head; this exceeds Number.MIN_SAFE_INTEGER's magnitude and the KernelRecord number domain requires every integer to be a JS-safe integer.",
       "cborBytes": [59, 255, 255, 255, 255, 255, 255, 255, 255]
+    },
+    "control-canonical-map": {
+      "description": "Control case: the canonical deterministic encoding of the single-entry map {\"a\": 1} (sorted keys, minimal heads). A conforming strict decoder must ACCEPT this -- it anchors the check against a decoder that rejects everything, keeping the rejection assertions meaningful on their own.",
+      "cborBytes": [161, 97, 97, 1]
     }
   }
 }

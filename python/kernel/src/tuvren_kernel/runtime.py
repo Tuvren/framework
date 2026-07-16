@@ -771,18 +771,19 @@ class RunOps:
         uses), advancing the branch head and this run's own
         `createdTurnNodes` -- exactly per Section 5.2 step 4's requirement
         that preemption reactively checkpoint verifiably-uncommitted staged
-        work onto the run's active lineage rather than discard it. A run
-        with no staged results at preemption time performs no checkpoint at
-        all (mirroring `complete`'s `if staged` guard), so the branch head
-        stays at whatever this run's last checkpoint (or its own
-        `startTurnNodeHash`, if it never checkpointed) already left it at.
+        work onto the run's active lineage rather than discard it. Unlike
+        `complete`'s staged-only guard, preemption always checkpoints: a
+        zero-staged preemption still advances the head with a node whose
+        `eventHash` pins a preemption event object, so the lineage durably
+        records the preemption (matching the TypeScript reference and the
+        Go port).
 
-        Event bytes are intentionally port-local (unlike the TypeScript and
-        Rust ports, this method does not mint a `stale_running_preempted`
-        event object for the checkpoint's `eventHash`) -- only the
-        structural behavior (staged results become the new head node's
-        `consumedStagedResults`, the branch head advances, staging empties)
-        is cross-port authority.
+        Event bytes are intentionally port-local (a simple
+        `tuvren.kernel.preemption:...` marker blob rather than the
+        TypeScript/Rust ports' encoded `stale_running_preempted` record) --
+        only the structural behavior (staged results become the new head
+        node's `consumedStagedResults`, the branch head advances with a
+        preemption-event node, staging empties) is cross-port authority.
         """
 
         run = self._kernel.require_run(run_id)
@@ -808,17 +809,28 @@ class RunOps:
             )
 
         staged = self._kernel.backend.list_staged(run_id)
-        if staged:
-            # Reactive checkpoint (Section 5.2 step 4 / 5.6): uncommitted
-            # staged work is committed onto the run's active lineage before
-            # the run halts, exactly like `RunOps.complete`'s reactive
-            # checkpoint on ordinary terminal completion.
-            branch = self._kernel.require_branch(run["branchId"])
-            head_node = self._kernel.backend.get_node(branch["headTurnNodeHash"])
-            assert head_node is not None  # every stored branch head references a stored node
-            new_tree_hash = self._kernel.tree.incorporate(head_node["turnTreeHash"], staged)
-            node_hash = self._kernel.checkpoint(run, branch, new_tree_hash, None, staged)
-            run["createdTurnNodes"].append(node_hash)
+        # Reactive checkpoint (Section 5.2 step 4 / 5.6): uncommitted staged
+        # work is committed onto the run's active lineage before the run
+        # halts. Unlike `RunOps.complete`'s staged-only guard, preemption
+        # ALWAYS checkpoints — even with zero staged work — pinning a
+        # port-local preemption event object as the node's eventHash so the
+        # lineage durably records that a preemption happened, matching the
+        # TypeScript reference (preemptExpired's maybeCheckpoint fires on
+        # eventHash alone) and the Go port (PreemptStaleRun unconditionally
+        # mints an event and checkpoints).
+        event_hash = self._kernel.backend.put_object(
+            f"tuvren.kernel.preemption:{run_id}:stale_running_recovery".encode("utf-8")
+        )
+        branch = self._kernel.require_branch(run["branchId"])
+        head_node = self._kernel.backend.get_node(branch["headTurnNodeHash"])
+        assert head_node is not None  # every stored branch head references a stored node
+        new_tree_hash = (
+            self._kernel.tree.incorporate(head_node["turnTreeHash"], staged)
+            if staged
+            else head_node["turnTreeHash"]
+        )
+        node_hash = self._kernel.checkpoint(run, branch, new_tree_hash, event_hash, staged)
+        run["createdTurnNodes"].append(node_hash)
 
         run["status"] = "failed"
         run["preemptionReason"] = "stale_running_recovery"
@@ -979,12 +991,33 @@ class RunOps:
 
         if branch["headTurnNodeHash"] != node_hash:
             # midCommit: the TurnNode is durable but the head/staging half
-            # of the write never ran. Roll it forward.
-            self._kernel.backend.put_branch(
-                run["branchId"], {**branch, "headTurnNodeHash": node_hash}
+            # of the write never ran. Roll it forward -- CAS'd from exactly
+            # the head the pending node was minted against (its recorded
+            # previousTurnNodeHash), never a blind unconditional write, so
+            # a head that legitimately moved elsewhere after the tear is
+            # left alone (mirroring go/kernel/recovery.go's ReconcileRun).
+            previous_head = pending["nodeIdentity"]["previousTurnNodeHash"]
+            swapped = self._kernel.backend.compare_and_swap_branch_head(
+                run["branchId"], previous_head, node_hash
             )
-            self._kernel.backend.clear_staged(run_id)
             branch = self._kernel.require_branch(run["branchId"])
+            if swapped or branch["headTurnNodeHash"] == node_hash:
+                self._kernel.backend.clear_staged(run_id)
+            else:
+                # The head is neither the pre-tear head nor the pending
+                # node: it legitimately advanced elsewhere while this
+                # checkpoint was torn. The durable node stays off-lineage
+                # (content-addressed, write-once; reclamation collects it);
+                # drop the stale pending marker without rewriting the head
+                # or clearing staging.
+                run["pendingCheckpoint"] = None
+                self._kernel.touch_run(run)
+                self._kernel.backend.put_run(run_id, run)
+                return {
+                    "reconciled": True,
+                    "pendingMessageCommitted": False,
+                    "headTurnNodeHash": branch["headTurnNodeHash"],
+                }
 
         # afterCommitBeforeAck lands here directly (the backend write was
         # already fully durable); the midCommit branch above also falls
