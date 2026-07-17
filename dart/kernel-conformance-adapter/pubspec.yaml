@@ -1,0 +1,13 @@
+name: tuvren_kernel_adapter
+description: Dart kernel conformance adapter speaking the Tuvren adapter protocol.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.7.0
+dependencies:
+  cryptography: ^2.7.0
+  tuvren_kernel: ^0.1.0
+dev_dependencies:
+  lints: ^5.1.1
+  test: '>=1.26.0 <1.27.0'

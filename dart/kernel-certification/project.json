@@ -1,0 +1,72 @@
+{
+  "name": "kernel-dart-certification",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "dart/kernel-certification",
+  "projectType": "library",
+  "tags": ["boundary:kernel", "language:dart", "layer:certification"],
+  "implicitDependencies": [
+    "kernel-dart-kernel",
+    "kernel-dart-conformance-adapter"
+  ],
+  "targets": {
+    "conformance": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "conformanceEngine",
+        "{workspaceRoot}/spec/conformance/kernel/**/*",
+        "{workspaceRoot}/spec/kernel/**/*",
+        "{workspaceRoot}/dart/kernel/**/*",
+        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/dart/kernel-certification/**/*",
+        "{workspaceRoot}/pubspec.yaml",
+        "{workspaceRoot}/pubspec.lock"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/conformance/harness/run.ts --adapter dart/kernel-conformance-adapter/adapter.json --summary-only"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "inputs": [
+        "default",
+        "{workspaceRoot}/dart/kernel/**/*",
+        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/pubspec.yaml",
+        "{workspaceRoot}/pubspec.lock"
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "dart analyze dart/kernel dart/kernel-conformance-adapter dart/kernel-certification"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/pubspec.yaml",
+        "{workspaceRoot}/pubspec.lock"
+      ],
+      "options": {
+        "cwd": "dart/kernel-certification",
+        "command": "dart format --output=none --set-exit-if-changed . && dart analyze --fatal-infos"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/dart/kernel/**/*",
+        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/pubspec.yaml",
+        "{workspaceRoot}/pubspec.lock"
+      ],
+      "options": {
+        "cwd": "dart/kernel-certification",
+        "command": "dart test"
+      }
+    }
+  }
+}

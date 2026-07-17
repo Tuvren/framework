@@ -1,0 +1,12 @@
+name: tuvren_kernel
+description: Tuvren kernel runtime authority for the Dart port.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.7.0
+dependencies:
+  crypto: ^3.0.6
+dev_dependencies:
+  lints: ^5.1.1
+  test: '>=1.26.0 <1.27.0'

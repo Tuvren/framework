@@ -199,8 +199,8 @@ const (
 	// reference's invalid_path_value_kind
 	// (typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts's
 	// assertPathValueForCollectionKind) byte-for-byte; this is
-	// intentionally unprefixed to match that code, and the Python port
-	// diverges here with kernel_runtime_invalid_tree_path_value.
+	// intentionally unprefixed to match that code. Go, Python, and Dart all
+	// emit this same unprefixed string.
 	ErrInvalidPathValueKind = "invalid_path_value_kind"
 
 	// ErrInvalidDurableReadCursor: a durable-read enumeration call (for

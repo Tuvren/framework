@@ -209,6 +209,12 @@ the multi-language transition foundation:
 │   ├── kernel/
 │   ├── kernel-conformance-adapter/
 │   └── kernel-certification/
+├── pubspec.yaml             # Dart pub workspace root (kernel-port line)
+├── pubspec.lock
+├── dart/                                    # Dart pub workspace members
+│   ├── kernel/
+│   ├── kernel-conformance-adapter/
+│   └── kernel-certification/
 └── tests/                                    # transitional until normative assets are migrated
 ```
 
@@ -238,11 +244,11 @@ conformance-plan JSON Schemas live under `tools/schemas/`.
 
 - The repository is architecture-first and language-neutral at the top level.
 - `spec/` is the universal home for language-neutral authority: contract, conformance, and interop assets organized by port (`core`, `kernel`, `host`, `providers`, `tools`, `runners`, `streaming`, `telemetry`, `extensions`, `interop`, plus `spec/conformance/<port>/`).
-- Top-level directories outside `spec/`, `typescript/`, `rust/`, `go/`, and `python/` are reserved for global human authority (`docs/`, `.constitution/`), repo-global tooling (`tools/`), root workspace files, and generated reports (`reports/`).
+- Top-level directories outside `spec/`, `typescript/`, `rust/`, `go/`, `python/`, and `dart/` are reserved for global human authority (`docs/`, `.constitution/`), repo-global tooling (`tools/`), root workspace files, and generated reports (`reports/`).
 - The current repo-root `tests/` tree is a deliberate transitional exception to that top-level posture until its normative assets are migrated into port-owned `spec/conformance/<port>/` trees.
-- Each port owns its own neutral authority tree under `spec/<port>/` (and `spec/conformance/<port>/` for conformance plans, fixtures, and scenarios) when those concerns exist for that port; implementation code for the same port lives under `typescript/<area>/`, `rust/<area>/`, `go/<area>/`, and/or `python/<area>/`.
-- Language-specific code lives under `typescript/<area>/...`, `rust/<area>/...`, `go/<area>/...`, or `python/<area>/...`, and any checked-in generated language bindings belong under the consuming implementation tree rather than a shared root generated directory.
-- Per ADR-022, every directory is either language-neutral (under `spec/`) or language-specific (exclusively under `typescript/<area>/...`, `rust/<area>/...`, `go/<area>/...`, or `python/<area>/...`). The Go line uses flat per-module directories registered in the root `go.work`; the Python line uses uv workspace members of the root `pyproject.toml` (pinned by `uv.lock`) — native workspace files at the repo root own dependency truth for their language, exactly as `Cargo.toml` does for Rust. No language-specific build manifest, source directory, or generated binding may live at a `spec/<port>/` or `spec/conformance/<port>/` root. This rule covers `package.json`, `Cargo.toml`, `tsup.config.ts`, `tsconfig*.json`, `src/`, `dist/`, `test/`, `bench/`, `smoke/`, `node_modules/`, `target/`, and any other language-tooling output. Testkits live under `typescript/<area>/testkit/` (or the shared `typescript/testkit/`), never at a `spec/` root.
+- Each port owns its own neutral authority tree under `spec/<port>/` (and `spec/conformance/<port>/` for conformance plans, fixtures, and scenarios) when those concerns exist for that port; implementation code for the same port lives under `typescript/<area>/`, `rust/<area>/`, `go/<area>/`, `python/<area>/`, and/or `dart/<area>/`.
+- Language-specific code lives under `typescript/<area>/...`, `rust/<area>/...`, `go/<area>/...`, `python/<area>/...`, or `dart/<area>/...`, and any checked-in generated language bindings belong under the consuming implementation tree rather than a shared root generated directory.
+- Per ADR-022, every directory is either language-neutral (under `spec/`) or language-specific (exclusively under `typescript/<area>/...`, `rust/<area>/...`, `go/<area>/...`, `python/<area>/...`, or `dart/<area>/...`). The Go line uses flat per-module directories registered in the root `go.work`; the Python line uses uv workspace members of the root `pyproject.toml` (pinned by `uv.lock`); the Dart line uses pub workspace members of the root `pubspec.yaml` (pinned by the committed `pubspec.lock`) — native workspace files at the repo root own dependency truth for their language, exactly as `Cargo.toml` does for Rust. No language-specific build manifest, source directory, or generated binding may live at a `spec/<port>/` or `spec/conformance/<port>/` root. This rule covers `package.json`, `Cargo.toml`, `tsup.config.ts`, `tsconfig*.json`, `src/`, `dist/`, `test/`, `bench/`, `smoke/`, `node_modules/`, `target/`, and any other language-tooling output. Testkits live under `typescript/<area>/testkit/` (or the shared `typescript/testkit/`), never at a `spec/` root.
 - Nx manages orchestration and target naming. Nx does not define the repo ontology and must delegate actual work to the native toolchain for the language or artifact family involved.
 - The consolidated `@tuvren/core` package (`typescript/core/`, neutral authority at `spec/core/`) must remain the single home for truly cross-boundary primitives. It must not become a semantic dumping ground or a backdoor TypeScript convenience layer.
 - Contract-driven components such as backends, provider surfaces, runner contracts, tool contracts, event vocabulary, conformance suites, and interop seams must have an explicit port-owned home under `spec/<port>/` before any new implementation package is added.

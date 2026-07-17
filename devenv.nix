@@ -13,6 +13,11 @@
   # languages.python.version at that point.
   languages.go.enable = true;
 
+  # Dart rides the nixpkgs default SDK for the same reason as Go/Python
+  # above; the root pubspec.yaml workspace plus the committed pubspec.lock
+  # own dependency truth for the dart/ implementation line.
+  languages.dart.enable = true;
+
   languages.python = {
     enable = true;
     uv.enable = true;

@@ -58,6 +58,7 @@ const TYPESCRIPT_ROOT = resolve(REPO_ROOT, "typescript");
 const RUST_ROOT = resolve(REPO_ROOT, "rust");
 const GO_ROOT = resolve(REPO_ROOT, "go");
 const PYTHON_ROOT = resolve(REPO_ROOT, "python");
+const DART_ROOT = resolve(REPO_ROOT, "dart");
 const COMPATIBILITY_EVIDENCE_ROOT = resolve(
   REPO_ROOT,
   "reports/compatibility/evidence"
@@ -1540,6 +1541,7 @@ async function findSourceFiles(directory: string): Promise<string[]> {
     ...(await findFiles(directory, ".tsx")),
     ...(await findFiles(directory, ".go")),
     ...(await findFiles(directory, ".py")),
+    ...(await findFiles(directory, ".dart")),
   ];
   return paths.filter((path) => !path.endsWith(".d.ts"));
 }
@@ -1547,11 +1549,25 @@ async function findSourceFiles(directory: string): Promise<string[]> {
 async function findConformanceSourceRoots(): Promise<string[]> {
   // Every language root always exists post-cutover; a missing one is a
   // broken checkout and must throw, not silently narrow the scan.
+  const fixedLanguageRoots = [
+    TYPESCRIPT_ROOT,
+    RUST_ROOT,
+    GO_ROOT,
+    PYTHON_ROOT,
+    DART_ROOT,
+  ];
+
+  for (const root of fixedLanguageRoots) {
+    if (!existsSync(root)) {
+      throw new Error(
+        `authority-guardrails conformance-source scan expected language root ${relative(REPO_ROOT, root)} to exist — a missing root is a broken checkout, not a signal to silently narrow the scan`
+      );
+    }
+  }
+
   const roots = (
     await Promise.all(
-      [TYPESCRIPT_ROOT, RUST_ROOT, GO_ROOT, PYTHON_ROOT].map((root) =>
-        collectConformanceSourceRoots(root)
-      )
+      fixedLanguageRoots.map((root) => collectConformanceSourceRoots(root))
     )
   ).flat();
   return roots
@@ -1590,6 +1606,50 @@ function isConformanceAdapterDirName(name: string): boolean {
   );
 }
 
+// Resolves a certification/conformance-adapter package directory to its
+// language-convention scan roots, or null when the directory matches no
+// known package layout (letting the caller keep recursing).
+function packageSourceRootsFor(entryPath: string): string[] | null {
+  if (existsSync(resolve(entryPath, "src"))) {
+    // TypeScript, Rust, and Python adapters/certification wrappers keep
+    // their sources under a `src/` subdirectory.
+    return [resolve(entryPath, "src")];
+  }
+
+  if (existsSync(resolve(entryPath, "go.mod"))) {
+    // Go adapters/certification wrappers use a flat layout: *.go files
+    // live directly at the module root, marked by go.mod, with no
+    // `src/` subdirectory.
+    return [entryPath];
+  }
+
+  if (existsSync(resolve(entryPath, "pubspec.yaml"))) {
+    // Dart adapters/certification wrappers keep sources under lib/,
+    // bin/, test/, example/, and tool/ (Dart's own package convention),
+    // marked by pubspec.yaml. Scan those subdirectories explicitly
+    // instead of the package root so the generated .dart_tool/ cache can
+    // never leak generated sources into the guardrail scan.
+    const sourceRoots = ["lib", "bin", "test", "example", "tool"]
+      .map((sourceDir) => resolve(entryPath, sourceDir))
+      .filter((sourcePath) => existsSync(sourcePath));
+
+    if (sourceRoots.length === 0) {
+      // A pubspec.yaml package with none of the conventional source
+      // subdirectories is a broken/unexpected layout, not a signal to
+      // silently exclude it from the forbidden-token scan: throw here
+      // for the same reason findConformanceSourceRoots throws on a
+      // missing language root above.
+      throw new Error(
+        `authority-guardrails conformance-source scan found a pubspec.yaml package at ${relative(REPO_ROOT, entryPath)} with none of lib/, bin/, test/, example/, or tool/ — a package with no recognized source directory is a broken layout, not a signal to silently narrow the scan`
+      );
+    }
+
+    return sourceRoots;
+  }
+
+  return null;
+}
+
 async function collectConformanceSourceRoots(
   directory: string
 ): Promise<string[]> {
@@ -1611,18 +1671,10 @@ async function collectConformanceSourceRoots(
       isCertificationDirName(entry.name) ||
       isConformanceAdapterDirName(entry.name)
     ) {
-      if (existsSync(resolve(entryPath, "src"))) {
-        // TypeScript, Rust, and Python adapters/certification wrappers keep
-        // their sources under a `src/` subdirectory.
-        roots.push(resolve(entryPath, "src"));
-        continue;
-      }
+      const packageRoots = packageSourceRootsFor(entryPath);
 
-      if (existsSync(resolve(entryPath, "go.mod"))) {
-        // Go adapters/certification wrappers use a flat layout: *.go files
-        // live directly at the module root, marked by go.mod, with no
-        // `src/` subdirectory.
-        roots.push(entryPath);
+      if (packageRoots !== null) {
+        roots.push(...packageRoots);
         continue;
       }
     }

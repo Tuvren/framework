@@ -138,9 +138,13 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-runtime",
   "runner-react",
   "host-repl",
-  // Go and Python kernel-port projects run their language-native test
-  // runners (go test / pytest) through these Nx targets; certification
-  // wrappers join the conformance lanes separately once registered.
+  // Go, Python, and Dart kernel-port projects run their language-native
+  // test runners (go test / pytest / dart test) through these Nx targets;
+  // certification wrappers join the conformance lanes separately once
+  // registered.
+  "kernel-dart-kernel",
+  "kernel-dart-certification",
+  "kernel-dart-conformance-adapter",
   "kernel-go-kernel",
   "kernel-go-certification",
   "kernel-go-conformance-adapter",
@@ -357,12 +361,12 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
     ],
   },
   {
-    // Go and Python kernel certifications drive the shared stdio harness
-    // against their native-toolchain adapters (`go run` / `uv run`); the two
-    // lanes are independent processes, so they may run in parallel with each
-    // other but stay in their own phase to avoid competing with the large
-    // serial Rust builds above.
-    id: "Go and Python kernel certification",
+    // Go, Python, and Dart kernel certifications drive the shared stdio
+    // harness against their native-toolchain adapters (`go run` / `uv run` /
+    // `dart run`); the lanes are independent processes, so they may run in
+    // parallel with each other but stay in their own phase to avoid
+    // competing with the large serial Rust builds above.
+    id: "Go, Python, and Dart kernel certification",
     steps: [
       {
         command: [
@@ -385,6 +389,17 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
           "--skipNxCache",
         ],
         id: "Python kernel certification",
+      },
+      {
+        command: [
+          "bun",
+          "run",
+          "nx",
+          "run",
+          "kernel-dart-certification:conformance",
+          "--skipNxCache",
+        ],
+        id: "Dart kernel certification",
       },
     ],
   },

@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -180,6 +188,12 @@ const COMPATIBILITY_SCHEMA_PATH = resolve(
   "reports/compatibility/compatibility-matrix.schema.json"
 );
 const EVIDENCE_DIRECTORY = resolve(REPO_ROOT, "reports/compatibility/evidence");
+// The physical directory runner evidence is written to during a regeneration
+// pass. Defaults to EVIDENCE_DIRECTORY (matches --check's read path and any
+// direct invocation), but main() points it at a scratch directory for the
+// duration of the runner loops so a mid-run crash cannot delete checked-in
+// evidence; see swapEvidenceDirectoryIntoPlace.
+let evidenceWriteDirectory = EVIDENCE_DIRECTORY;
 const HERMETIC_BUILD_OUTPUT_DIRECTORIES = [
   "typescript/kernel/conformance-adapter/dist",
   "typescript/kernel/backends/memory/dist",
@@ -395,6 +409,19 @@ const CONFORMANCE_RUNNERS: readonly ConformanceRunner[] = [
     reportLabel: "Python process-local kernel baseline",
   },
   {
+    adapterManifestPath: "dart/kernel-conformance-adapter/adapter.json",
+    command: [
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      "dart/kernel-conformance-adapter/adapter.json",
+    ],
+    implementationId: "dart-kernel",
+    language: "dart",
+    project: "kernel-dart-certification",
+    reportLabel: "Dart process-local kernel baseline",
+  },
+  {
     adapterManifestPath: "rust/conformance-adapter/adapter.json",
     command: [
       "bun",
@@ -484,10 +511,17 @@ async function main(): Promise<void> {
   // checkout instead of inheriting prior local dist residue.
   await resetHermeticBuildBoundary();
   // Checked-in evidence must describe only the currently measured suite set,
-  // so codegen clears the directory before regenerating the authoritative
-  // suite-specific artifacts.
-  await rm(EVIDENCE_DIRECTORY, { force: true, recursive: true });
-  await mkdir(EVIDENCE_DIRECTORY, { recursive: true });
+  // so codegen regenerates the full authoritative suite-specific artifact
+  // set on every run. Regenerated evidence is written to a scratch directory
+  // first (evidenceWriteDirectory) and only swapped into EVIDENCE_DIRECTORY
+  // once every conformance and interop runner below has finished — wiping
+  // EVIDENCE_DIRECTORY up front would leave a mid-run crash (a hung runner
+  // process, an unhandled throw) with checked-in evidence deleted and no
+  // replacement written.
+  const temporaryEvidenceDirectory = `${EVIDENCE_DIRECTORY}.tmp-${process.pid}-${Date.now()}`;
+  await rm(temporaryEvidenceDirectory, { force: true, recursive: true });
+  await mkdir(temporaryEvidenceDirectory, { recursive: true });
+  evidenceWriteDirectory = temporaryEvidenceDirectory;
 
   // Derive the expected "full capability set" for each runner from the
   // adapter manifest topology (its `authorityPackets` → packets' plans →
@@ -504,6 +538,57 @@ async function main(): Promise<void> {
     );
   }
 
+  let runnerResults: RunnerResults;
+  try {
+    runnerResults = await runAllRunners(expectedCapabilitiesByRunner);
+    // Only swap the regenerated evidence into place once every conformance
+    // and interop runner above has finished successfully.
+    await swapEvidenceDirectoryIntoPlace(temporaryEvidenceDirectory);
+    evidenceWriteDirectory = EVIDENCE_DIRECTORY;
+  } finally {
+    await rm(temporaryEvidenceDirectory, { force: true, recursive: true });
+  }
+
+  const { hasFailure, implementations, interop, suites } = runnerResults;
+
+  const matrix: CompatibilityMatrix = {
+    // The compatibility ledger is checked in as deterministic evidence. Git
+    // history already records when and from which revision that evidence was
+    // committed, so the JSON payload keeps stable sentinel metadata instead of
+    // embedding wall-clock or HEAD-derived values that would churn on reruns.
+    generatedAtMs: COMPATIBILITY_METADATA.generatedAtMs,
+    implementations,
+    interop,
+    sourceRevision: COMPATIBILITY_METADATA.sourceRevision,
+    suites,
+  };
+
+  assertCompatibilityMatrix(matrix);
+  await assertCompatibilityMatrixSchema(matrix);
+  await writeFile(
+    COMPATIBILITY_MATRIX_PATH,
+    `${JSON.stringify(matrix, null, 2)}\n`
+  );
+  // These generated files are checked in as reviewable evidence, so codegen
+  // must leave them formatter-clean or the verify lane fails after a truthful
+  // regeneration.
+  await formatGeneratedOutputs();
+
+  if (hasFailure && !allowFailingEvidence) {
+    throw new Error("one or more conformance targets failed");
+  }
+}
+
+interface RunnerResults {
+  hasFailure: boolean;
+  implementations: CompatibilityImplementation[];
+  interop: CompatibilityInteropResult[];
+  suites: CompatibilitySuite[];
+}
+
+async function runAllRunners(
+  expectedCapabilitiesByRunner: ReadonlyMap<string, ReadonlySet<string>>
+): Promise<RunnerResults> {
   const seenSuiteKeys = new Set<string>();
   const suites: CompatibilitySuite[] = [];
   const implementations: CompatibilityImplementation[] = [];
@@ -581,31 +666,42 @@ async function main(): Promise<void> {
     }
   }
 
-  const matrix: CompatibilityMatrix = {
-    // The compatibility ledger is checked in as deterministic evidence. Git
-    // history already records when and from which revision that evidence was
-    // committed, so the JSON payload keeps stable sentinel metadata instead of
-    // embedding wall-clock or HEAD-derived values that would churn on reruns.
-    generatedAtMs: COMPATIBILITY_METADATA.generatedAtMs,
-    implementations,
-    interop,
-    sourceRevision: COMPATIBILITY_METADATA.sourceRevision,
-    suites,
-  };
+  return { hasFailure, implementations, interop, suites };
+}
 
-  assertCompatibilityMatrix(matrix);
-  await assertCompatibilityMatrixSchema(matrix);
-  await writeFile(
-    COMPATIBILITY_MATRIX_PATH,
-    `${JSON.stringify(matrix, null, 2)}\n`
-  );
-  // These generated files are checked in as reviewable evidence, so codegen
-  // must leave them formatter-clean or the verify lane fails after a truthful
-  // regeneration.
-  await formatGeneratedOutputs();
+// Regenerated evidence is built up in a scratch directory
+// (evidenceWriteDirectory) so a crash partway through the runner loop never
+// deletes previously checked-in evidence without replacing it. This swaps
+// that scratch directory into EVIDENCE_DIRECTORY's place: the previous
+// checked-in contents move aside first (so the destination is guaranteed
+// absent, satisfying POSIX rename's "directory target must be empty"
+// requirement), the scratch directory takes EVIDENCE_DIRECTORY's name, and
+// the moved-aside original is deleted only after that second rename
+// succeeds. If the second rename fails, the original is restored on a
+// best-effort basis; only a double fault (the restore rename itself also
+// failing) can leave EVIDENCE_DIRECTORY missing, with the moved-aside
+// .bak-* sibling still holding the original contents for manual recovery.
+async function swapEvidenceDirectoryIntoPlace(
+  sourceDirectory: string
+): Promise<void> {
+  const backupDirectory = `${EVIDENCE_DIRECTORY}.bak-${process.pid}-${Date.now()}`;
+  const hadExistingDirectory = existsSync(EVIDENCE_DIRECTORY);
 
-  if (hasFailure && !allowFailingEvidence) {
-    throw new Error("one or more conformance targets failed");
+  if (hadExistingDirectory) {
+    await rename(EVIDENCE_DIRECTORY, backupDirectory);
+  }
+
+  try {
+    await rename(sourceDirectory, EVIDENCE_DIRECTORY);
+  } catch (error) {
+    if (hadExistingDirectory) {
+      await rename(backupDirectory, EVIDENCE_DIRECTORY);
+    }
+    throw error;
+  }
+
+  if (hadExistingDirectory) {
+    await rm(backupDirectory, { force: true, recursive: true });
   }
 }
 
@@ -1493,11 +1589,17 @@ async function runConformanceTarget(
     captureOutput: true,
     cwd: REPO_ROOT,
   });
-  const evidenceFilePath = resolve(
-    EVIDENCE_DIRECTORY,
-    `certification-harness.${runner.project}.json`
+  const evidenceFileName = `certification-harness.${runner.project}.json`;
+  // Physically written under evidenceWriteDirectory (a scratch directory
+  // during regeneration, EVIDENCE_DIRECTORY otherwise), but the recorded
+  // path always reflects the final EVIDENCE_DIRECTORY location so the
+  // compatibility matrix references where the file will live once
+  // swapEvidenceDirectoryIntoPlace runs.
+  const evidenceFilePath = resolve(evidenceWriteDirectory, evidenceFileName);
+  const relativeEvidencePath = relative(
+    REPO_ROOT,
+    resolve(EVIDENCE_DIRECTORY, evidenceFileName)
   );
-  const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
   const fallbackCheckResults =
     suiteManifest === undefined
       ? []
@@ -1743,11 +1845,14 @@ async function runInteropTarget(
     captureOutput: true,
     cwd: REPO_ROOT,
   });
-  const evidenceFilePath = resolve(
-    EVIDENCE_DIRECTORY,
-    `${suiteManifest.suiteId}.${runner.pairId}.json`
+  const evidenceFileName = `${suiteManifest.suiteId}.${runner.pairId}.json`;
+  // See runConformanceTarget's evidenceFilePath comment: written under the
+  // scratch write directory, recorded against the final EVIDENCE_DIRECTORY.
+  const evidenceFilePath = resolve(evidenceWriteDirectory, evidenceFileName);
+  const relativeEvidencePath = relative(
+    REPO_ROOT,
+    resolve(EVIDENCE_DIRECTORY, evidenceFileName)
   );
-  const relativeEvidencePath = relative(REPO_ROOT, evidenceFilePath);
   const fallbackCheckResults = createFallbackCheckResults(
     suiteManifest,
     "interopPairs",

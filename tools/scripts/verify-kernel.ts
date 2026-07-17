@@ -38,11 +38,13 @@ const KERNEL_CONFORMANCE_PROJECTS = [
   "kernel-typescript-certification",
   "kernel-typescript-sqlite-certification",
   "kernel-typescript-postgres-certification",
-  // Go and Python kernel ports run the same shared harness against their
-  // stdio adapters; they join the kernel verify lane so kernel-boundary
-  // changes cannot silently regress a non-TypeScript implementation.
+  // Go, Python, and Dart kernel ports run the same shared harness against
+  // their stdio adapters; they join the kernel verify lane so
+  // kernel-boundary changes cannot silently regress a non-TypeScript
+  // implementation.
   "kernel-go-certification",
   "kernel-python-certification",
+  "kernel-dart-certification",
 ] as const;
 
 // Validate both literal lists against the live Nx project graph before any
