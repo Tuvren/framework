@@ -142,32 +142,118 @@ function createAimockProvider(
   }
 }
 
-function createFixtureProvider(scenario: ReplScenarioName): TuvrenProvider {
+// Attaches a per-provider steering handshake to fixture providers created for
+// the "steering" scenario. `steerWhenRunning` (repl-scenarios-support.ts)
+// calls `markSteeringObserved` the instant `host.steer(...)` is accepted by
+// the runtime, so `streamFixtureChunks` can stop polling as soon as the
+// steering signal has actually landed instead of guessing a fixed wall-clock
+// window. This is not part of the public `TuvrenProvider` contract, so it is
+// attached via a module-private symbol rather than a new interface field.
+const STEERING_GATE = Symbol("repl-fixture-steering-gate");
+
+interface SteeringGate {
+  markObserved(): void;
+  waitForObservedOrDeadline(deadlineMilliseconds: number): Promise<void>;
+}
+
+function createSteeringGate(): SteeringGate {
+  let observed = false;
+  let resolveObserved: (() => void) | undefined;
+  const observedPromise = new Promise<void>((resolve) => {
+    resolveObserved = resolve;
+  });
+
   return {
+    markObserved() {
+      if (observed) {
+        return;
+      }
+
+      observed = true;
+      resolveObserved?.();
+    },
+    waitForObservedOrDeadline(deadlineMilliseconds: number): Promise<void> {
+      if (observed) {
+        return Promise.resolve();
+      }
+
+      return Promise.race([
+        observedPromise,
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, deadlineMilliseconds);
+        }),
+      ]);
+    },
+  };
+}
+
+/**
+ * Marks the steering signal as observed for a fixture provider previously
+ * created for the "steering" scenario. No-op for any other provider (for
+ * example non-fixture provider modes, or scenarios that never steer), so
+ * callers can invoke it unconditionally right after a successful
+ * `host.steer(...)` call.
+ */
+export function markSteeringObserved(provider: TuvrenProvider): void {
+  const gate = (
+    provider as Partial<Record<typeof STEERING_GATE, SteeringGate>>
+  )[STEERING_GATE];
+
+  gate?.markObserved();
+}
+
+function createFixtureProvider(scenario: ReplScenarioName): TuvrenProvider {
+  const steeringGate =
+    scenario === "steering" ? createSteeringGate() : undefined;
+  const provider: TuvrenProvider = {
     generate(prompt) {
       return Promise.resolve(createFixtureResponse(prompt, scenario));
     },
     id: `repl:fixture:${scenario}`,
     stream(prompt) {
-      return streamFixtureChunks(prompt, scenario);
+      return streamFixtureChunks(prompt, scenario, steeringGate);
     },
   };
+
+  if (steeringGate !== undefined) {
+    Object.defineProperty(provider, STEERING_GATE, {
+      configurable: false,
+      enumerable: false,
+      value: steeringGate,
+      writable: false,
+    });
+  }
+
+  return provider;
 }
 
 async function* streamFixtureChunks(
   prompt: TuvrenPrompt,
-  scenario: ReplScenarioName
+  scenario: ReplScenarioName,
+  steeringGate?: SteeringGate
 ): AsyncIterable<ProviderStreamChunk> {
   await Promise.resolve();
 
-  if (scenario === "orchestration" || scenario === "steering") {
-    // Keep a deterministic steering window wide enough for the full Nx verify
-    // lane. 100ms was tight enough to flake under full-workspace CI load
-    // (observed on run 29488509630); widened to give steerWhenRunning's
-    // polling loop more headroom before the fixture completes the turn.
+  if (scenario === "orchestration") {
+    // The orchestration scenario never steers; it only needs the turn to stay
+    // "running" long enough for `waitFor(() => handle.status().phase ===
+    // "running")` to observe it before spawning the child turn. That phase
+    // flips essentially immediately, so a short fixed delay is sufficient and
+    // keeps every orchestration fixture run fast.
     await new Promise<void>((resolve) => {
-      setTimeout(resolve, 300);
+      setTimeout(resolve, 100);
     });
+  } else if (scenario === "steering" && steeringGate !== undefined) {
+    // Replace the old fixed-wall-clock race with a deterministic handshake:
+    // hold the turn open only until `steerWhenRunning` reports that
+    // `host.steer(...)` was actually accepted (see `markSteeringObserved`),
+    // falling back to a generous deadline so the turn still terminates if
+    // steering is somehow never observed (for example a future scenario
+    // change). Once steering has already been observed — as is the case for
+    // the follow-up turn that incorporates it — this resolves immediately,
+    // so replay/determinism-sensitive turns are not penalized with an
+    // artificial wait.
+    await steeringGate.waitForObservedOrDeadline(3000);
   }
 
   const response = createFixtureResponse(prompt, scenario);

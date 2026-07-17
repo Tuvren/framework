@@ -34,7 +34,7 @@ import {
   INVALID_REPL_CONFIG_CODE,
   isAimockProviderMode,
 } from "./repl-config.js";
-import { createReplProvider } from "./repl-provider.js";
+import { createReplProvider, markSteeringObserved } from "./repl-provider.js";
 import type {
   ReplConfig,
   ReplHost,
@@ -885,6 +885,11 @@ export async function steerWhenRunning(
   while (true) {
     try {
       host.steer(handle, signal);
+      // Unblock the fixture provider's deterministic steering handshake (see
+      // `markSteeringObserved` in repl-provider.ts) the instant the runtime
+      // accepts the steer, instead of letting the provider guess a fixed
+      // wall-clock window. No-op for non-fixture providers.
+      markSteeringObserved(host.provider);
       return;
     } catch (error: unknown) {
       if (
