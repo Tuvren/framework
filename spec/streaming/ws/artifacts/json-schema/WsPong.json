@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-ws/WsPong.json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "pong"
+    }
+  },
+  "required": ["kind"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Answer to {"
+}

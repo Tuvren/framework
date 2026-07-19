@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-ws/WsPing.json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "ping"
+    }
+  },
+  "required": ["kind"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Application-level heartbeat probe. The abstract socket seam has no opcode\nsurface, so liveness runs in-band: either side MAY send `ping`; the\nreceiver MUST answer with `pong`. A transport that misses a `pong` within\nits configured timeout MUST treat the connection as half-open and close\nwith code 4004 (`heartbeat_timeout`)."
+}

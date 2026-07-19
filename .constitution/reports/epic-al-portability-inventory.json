@@ -29,6 +29,12 @@
       "inventorySection": "§6.G3 / ADR-061 (issue #101)"
     },
     {
+      "packetId": "tuvren.framework.event-stream-ws",
+      "packetPath": "spec/streaming/ws/authority-packet.json",
+      "classification": "portable",
+      "inventorySection": "§6.G3 / ADR-062 (issue #100)"
+    },
+    {
       "packetId": "tuvren.framework.react-runner",
       "packetPath": "spec/runners/react/authority-packet.json",
       "classification": "portable",

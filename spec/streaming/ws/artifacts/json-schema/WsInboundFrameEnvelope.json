@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-ws/WsInboundFrameEnvelope.json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "frame"
+    },
+    "frame": {
+      "description": "The session frame, schema-owned by the host-session authority packet."
+    }
+  },
+  "required": ["kind", "frame"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Inbound envelope carrying one session frame from the remote peer to the\nhost. The wrapped frame is a `SessionInboundFrame` per the host-session\nauthority packet; validation and rejection semantics belong to the session\nbinding, not this transport — a schema-invalid or state-refused frame\nsurfaces as an outbound `session_rejection` frame, never as a socket\nclose."
+}

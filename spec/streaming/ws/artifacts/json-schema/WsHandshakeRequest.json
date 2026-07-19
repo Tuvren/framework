@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-ws/WsHandshakeRequest.json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "handshake"
+    },
+    "protocolVersion": {
+      "type": "string",
+      "const": "1",
+      "description": "Wire protocol version literal. Mirrors the per-frame `protocolVersion`\ndiscipline of the session frame vocabulary: a future incompatible\nhandshake ships as a new literal, never a negotiated value."
+    },
+    "sessionId": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-ws/NonEmptyString.json",
+      "description": "Session identity the client expects to attach to. Omitted on a first\nconnection; a server MUST close with code 4002 (`session_not_found`)\nwhen a presented `sessionId` does not match the bound session."
+    },
+    "cursor": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-ws/NonEmptyString.json",
+      "description": "Opaque resume cursor from a previous connection (semantics owned by the\nevent-stream-resume surface, packet `tuvren.framework.event-stream-resume`).\nThe transport passes it to the host's replay window verbatim and never\ndecodes it."
+    },
+    "authToken": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-ws/NonEmptyString.json",
+      "description": "Opaque authentication material. The transport carries it to the host\nunmodified and never inspects it; a host that rejects it closes with\ncode 4003 (`auth_rejected`)."
+    }
+  },
+  "required": ["kind", "protocolVersion"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Client-to-server handshake, the first message a client sends after the\nsocket opens. The transport carries the session protocol only after a\nsuccessful handshake exchange."
+}
