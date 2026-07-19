@@ -721,3 +721,144 @@ describe("createWsSessionTransport: post-handshake inbound routing", () => {
     expect(fake.dispatched).toEqual([]);
   });
 });
+
+describe("createWsSessionTransport: M6 review carry-overs", () => {
+  test("a second transport over the same replay buffer resumes with the pump-recorded tail (pins runOutboundPump's record() call)", async () => {
+    // Deliberately do NOT pre-record anything manually: the replay buffer is
+    // fed only by the first transport's own outbound pump, so deleting the
+    // pump's `options.replayBuffer?.record(envelope)` call must fail this
+    // test.
+    const replayBuffer = createReplayBuffer({ capacity: 100 });
+    const sourceEvents = streamAdapterFixtures.completedTurn;
+    const outboundFrames = sourceEvents.map((event) =>
+      eventOutboundFrame(event)
+    );
+
+    const fakeOne = createFakeBinding(
+      createFiniteOutboundIterable(outboundFrames)
+    );
+    const sinkOne = createFakeSink();
+    const transportOne = createWsSessionTransport({
+      binding: fakeOne.binding,
+      replayBuffer,
+      sink: sinkOne,
+    });
+
+    transportOne.start();
+    transportOne.ingest(handshakeMessage());
+    await flushMicrotasks();
+
+    const sentFrameMessages = sinkOne.sent.slice(1) as Array<{
+      cursor: string;
+      frame: SessionOutboundFrame;
+      kind: "frame";
+    }>;
+    expect(sentFrameMessages).toHaveLength(outboundFrames.length);
+
+    // Resume from partway through the first transport's own sent envelopes.
+    const resumeCursor = sentFrameMessages[1]?.cursor as string;
+    const expectedTail = sentFrameMessages.slice(2);
+
+    const fakeTwo = createFakeBinding(createFiniteOutboundIterable([]));
+    const sinkTwo = createFakeSink();
+    const transportTwo = createWsSessionTransport({
+      binding: fakeTwo.binding,
+      replayBuffer,
+      sink: sinkTwo,
+    });
+
+    transportTwo.start();
+    transportTwo.ingest(handshakeMessage({ cursor: resumeCursor }));
+    await flushMicrotasks();
+
+    expect(sinkTwo.sent[0]).toEqual({
+      kind: "handshake_ack",
+      protocolVersion: "1",
+      resumeStatus: "resumed",
+      sessionId: SESSION_ID,
+    });
+
+    const replayedMessages = sinkTwo.sent.slice(1) as Array<{
+      cursor: string;
+      frame: SessionOutboundFrame;
+      kind: "frame";
+    }>;
+
+    expect(replayedMessages).toHaveLength(expectedTail.length);
+    replayedMessages.forEach((message, index) => {
+      expect(message.cursor).toBe(expectedTail[index]?.cursor);
+      expect(message.frame).toEqual(expectedTail[index]?.frame);
+    });
+  });
+
+  test("an outbound iterable whose next() rejects reports ws_transport_outbound_pump_failed and closes with 1011", async () => {
+    const failure = new Error("outbound iterable exploded");
+    const rejectingIterable: AsyncIterable<SessionOutboundFrame> = {
+      [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
+        return {
+          next(): Promise<IteratorResult<SessionOutboundFrame>> {
+            return Promise.reject(failure);
+          },
+        };
+      },
+    };
+
+    const fake = createFakeBinding({
+      iterable: rejectingIterable,
+      returnCallCount: () => 0,
+    });
+    const sink = createFakeSink();
+    const warnings: string[] = [];
+    const transport = createWsSessionTransport({
+      binding: fake.binding,
+      onWarning: (warning) => warnings.push(warning.code),
+      sink,
+    });
+
+    transport.start();
+    transport.ingest(handshakeMessage());
+    await flushMicrotasks();
+
+    expect(warnings).toContain("ws_transport_outbound_pump_failed");
+    expect(sink.closes).toEqual([{ code: 1011, reason: "internal error" }]);
+  });
+
+  test("ingest() serializes a slow async authorize: dispatchInbound sees nothing until authorize resolves, the ack is sent[0], and the frame dispatches only after it", async () => {
+    const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const sink = createFakeSink();
+    let resolveAuthorize: (authorized: boolean) => void = () => undefined;
+    const transport = createWsSessionTransport({
+      authorize: () =>
+        new Promise<boolean>((resolve) => {
+          resolveAuthorize = resolve;
+        }),
+      binding: fake.binding,
+      sink,
+    });
+
+    transport.start();
+    transport.ingest(handshakeMessage());
+    transport.ingest(
+      JSON.stringify({
+        frame: { kind: "cancel" },
+        kind: "frame",
+      })
+    );
+
+    // authorize() is still pending: nothing may be sent or dispatched yet.
+    await flushMicrotasks();
+    expect(sink.sent).toEqual([]);
+    expect(fake.dispatched).toEqual([]);
+
+    resolveAuthorize(true);
+    await flushMicrotasks();
+
+    expect(sink.sent[0]).toEqual({
+      kind: "handshake_ack",
+      protocolVersion: "1",
+      resumeStatus: "none",
+      sessionId: SESSION_ID,
+    });
+    expect(fake.dispatched).toEqual([{ kind: "cancel" }]);
+  });
+});

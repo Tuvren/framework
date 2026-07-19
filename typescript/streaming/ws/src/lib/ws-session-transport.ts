@@ -31,7 +31,9 @@ import {
 
 import {
   WS_CLOSE_CODE_AUTH_REJECTED,
+  WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED,
   WS_CLOSE_CODE_HANDSHAKE_INVALID,
+  WS_CLOSE_CODE_HEARTBEAT_TIMEOUT,
   WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED,
   WS_CLOSE_CODE_SESSION_NOT_FOUND,
 } from "./ws-close-codes.js";
@@ -52,6 +54,15 @@ const SUPPORTED_PROTOCOL_VERSION = "1";
  * @experimental
  */
 export interface WsSocketSink {
+  /**
+   * Optional capability: bytes currently queued on the real socket,
+   * matching the WebSocket `bufferedAmount` concept. When present alongside
+   * {@link WsSessionTransportOptions.backpressure}, the transport reads this
+   * before each outbound send to enforce the configured byte budget. When
+   * absent, backpressure enforcement is disabled regardless of the
+   * `backpressure` option.
+   */
+  bufferedAmount?(): number;
   /** Closes the underlying socket with a WebSocket close code and optional reason. */
   close(code: number, reason?: string): void;
   /** Sends one text message over the underlying socket. */
@@ -71,8 +82,44 @@ export interface WsSessionTransportOptions {
    * Omit to accept every handshake unconditionally.
    */
   authorize?: (authToken: string | undefined) => boolean | Promise<boolean>;
+  /**
+   * Bounds the outbound socket buffer. Enforced only when both this option
+   * and the sink's optional {@link WsSocketSink.bufferedAmount} capability
+   * are present: before each outbound send — live event frames, live
+   * non-event frames, and frames replayed during handshake — the transport
+   * reads `sink.bufferedAmount()`; when it exceeds `maxBufferedBytes` the
+   * transport reports a `ws_transport_backpressure_exceeded` warning and
+   * closes with `WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED` instead of sending.
+   * ADR-062 forbids a silent drop here: a dropped frame would create a
+   * sequence gap the resume cursor could neither explain nor repair, while
+   * the close converts overflow into an honest reconnect-with-cursor. Hosts
+   * whose sink cannot report buffering run without transport-level
+   * backpressure enforcement even when this option is set. Throws
+   * `RangeError` at construction if `maxBufferedBytes` is not a positive
+   * finite number.
+   */
+  backpressure?: { maxBufferedBytes: number };
   /** The duplex session binding this transport carries (packet `tuvren.framework.host-session`). */
   binding: DuplexSessionBinding;
+  /**
+   * Enables application-level heartbeat / half-open detection. When
+   * present, once the handshake completes the transport sends
+   * `{kind: "ping"}` every `intervalMs` and arms a `timeoutMs` timer after
+   * each ping. ANY inbound message ingested before that timer fires counts
+   * as liveness — not only `pong` — because a peer that is actively sending
+   * frames is demonstrably alive. `pong` remains the answer a quiet peer
+   * produces: the transport always answers an inbound `{kind: "ping"}` with
+   * `{kind: "pong"}` (the M6 seam), so a peer with nothing else to say still
+   * keeps the connection alive by answering the transport's pings. A timer
+   * that fires with no inbound activity since its ping was sent is
+   * half-open detection: the transport reports a
+   * `ws_transport_heartbeat_timeout` warning and closes with
+   * `WS_CLOSE_CODE_HEARTBEAT_TIMEOUT`. Omit to disable heartbeat entirely —
+   * no timers run. Throws `RangeError` at construction if `intervalMs` or
+   * `timeoutMs` is not a positive finite number; `timeoutMs` may be less
+   * than, equal to, or greater than `intervalMs`.
+   */
+  heartbeat?: { intervalMs: number; timeoutMs: number };
   /** Receives non-fatal transport-level observations, deduplicated by warning code. */
   onWarning?: (warning: StreamAdapterWarning) => void;
   /**
@@ -124,6 +171,28 @@ export interface WsSessionTransport {
 export function createWsSessionTransport(
   options: WsSessionTransportOptions
 ): WsSessionTransport {
+  if (options.heartbeat !== undefined) {
+    if (!isPositiveFiniteNumber(options.heartbeat.intervalMs)) {
+      throw new RangeError(
+        "createWsSessionTransport: heartbeat.intervalMs must be a positive finite number"
+      );
+    }
+    if (!isPositiveFiniteNumber(options.heartbeat.timeoutMs)) {
+      throw new RangeError(
+        "createWsSessionTransport: heartbeat.timeoutMs must be a positive finite number"
+      );
+    }
+  }
+
+  if (
+    options.backpressure !== undefined &&
+    !isPositiveFiniteNumber(options.backpressure.maxBufferedBytes)
+  ) {
+    throw new RangeError(
+      "createWsSessionTransport: backpressure.maxBufferedBytes must be a positive finite number"
+    );
+  }
+
   const reportWarning = createStreamAdapterWarningReporter({
     onWarning: options.onWarning,
   } satisfies StreamAdapterOptions);
@@ -133,6 +202,26 @@ export function createWsSessionTransport(
   let closed = false;
   let outboundIterator: AsyncIterator<SessionOutboundFrame> | undefined;
   let ingestChain: Promise<void> = Promise.resolve();
+  let heartbeatIntervalTimer: ReturnType<typeof setInterval> | undefined;
+  const heartbeatTimeoutTimers = new Set<ReturnType<typeof setTimeout>>();
+  // Timestamp (ms, monotonic-enough via Date.now()) of the most recent
+  // inbound message since the handshake completed. A ping's timeout only
+  // half-open-closes when no liveness has been observed since that specific
+  // ping was sent — comparing timestamps (rather than cancelling a single
+  // shared timer) stays correct even when timeoutMs > intervalMs puts
+  // several pings' timeouts in flight at once.
+  let lastHeartbeatLivenessAt = 0;
+
+  function clearHeartbeatTimers(): void {
+    if (heartbeatIntervalTimer !== undefined) {
+      clearInterval(heartbeatIntervalTimer);
+      heartbeatIntervalTimer = undefined;
+    }
+    for (const timer of heartbeatTimeoutTimers) {
+      clearTimeout(timer);
+    }
+    heartbeatTimeoutTimers.clear();
+  }
 
   function doClose(code: number, reason?: string): void {
     if (closed) {
@@ -140,10 +229,102 @@ export function createWsSessionTransport(
     }
 
     closed = true;
+    clearHeartbeatTimers();
     // Always release the claimed outbound iterator on every close path, so
     // the binding's underlying handle/queue resources are never leaked.
     outboundIterator?.return?.().catch(() => undefined);
     options.sink.close(code, reason);
+  }
+
+  /**
+   * Records inbound liveness for the heartbeat's half-open detection: any
+   * inbound message ingested after the handshake — not only `pong` — marks
+   * the connection alive, since a peer actively sending frames is
+   * demonstrably alive.
+   */
+  function noteHeartbeatLiveness(): void {
+    lastHeartbeatLivenessAt = Date.now();
+  }
+
+  function sendHeartbeatPing(): void {
+    if (closed || options.heartbeat === undefined) {
+      return;
+    }
+
+    options.sink.send(JSON.stringify({ kind: "ping" }));
+    const pingSentAt = Date.now();
+    const timeoutMs = options.heartbeat.timeoutMs;
+
+    const timer = setTimeout(() => {
+      heartbeatTimeoutTimers.delete(timer);
+
+      if (closed || lastHeartbeatLivenessAt >= pingSentAt) {
+        // Either already closed by another path, or liveness was observed
+        // after this specific ping was sent — not half-open.
+        return;
+      }
+
+      reportWarning({
+        code: "ws_transport_heartbeat_timeout",
+        details: { timeoutMs },
+        message:
+          "no inbound activity within the configured heartbeat timeout; treating connection as half-open",
+      });
+      doClose(
+        WS_CLOSE_CODE_HEARTBEAT_TIMEOUT,
+        "no inbound activity within the configured heartbeat timeout"
+      );
+    }, timeoutMs);
+
+    heartbeatTimeoutTimers.add(timer);
+  }
+
+  function startHeartbeat(): void {
+    if (options.heartbeat === undefined || closed) {
+      return;
+    }
+
+    heartbeatIntervalTimer = setInterval(
+      sendHeartbeatPing,
+      options.heartbeat.intervalMs
+    );
+  }
+
+  /**
+   * Enforces the configured outbound backpressure budget: returns `true`
+   * (and closes with `WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED`) when both
+   * `options.backpressure` and the sink's optional `bufferedAmount()`
+   * capability are present and the buffered amount exceeds the configured
+   * budget. Callers must not send the pending frame when this returns
+   * `true` — ADR-062 forbids a silent drop.
+   */
+  function enforceBackpressure(): boolean {
+    if (options.backpressure === undefined) {
+      return false;
+    }
+
+    const bufferedAmount = options.sink.bufferedAmount?.();
+    if (
+      bufferedAmount === undefined ||
+      bufferedAmount <= options.backpressure.maxBufferedBytes
+    ) {
+      return false;
+    }
+
+    reportWarning({
+      code: "ws_transport_backpressure_exceeded",
+      details: {
+        bufferedAmount,
+        maxBufferedBytes: options.backpressure.maxBufferedBytes,
+      },
+      message:
+        "outbound socket buffer exceeded the configured backpressure budget",
+    });
+    doClose(
+      WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED,
+      "outbound socket buffer exceeded the configured backpressure budget"
+    );
+    return true;
   }
 
   function dispatchInboundSafely(value: unknown): void {
@@ -178,6 +359,43 @@ export function createWsSessionTransport(
     }
 
     return { events: [], status: result.status };
+  }
+
+  /**
+   * Sends the replay burst resolved for a resumed handshake, honoring the
+   * same closed/backpressure guards as the live pump (ADR-062: replay
+   * bursts are exactly when a slow socket saturates). Returns `false` if the
+   * connection was closed partway through and the caller must stop.
+   */
+  function sendReplayedFrames(
+    events: readonly SequencedTuvrenStreamEvent[]
+  ): boolean {
+    for (const sequenced of events) {
+      if (closed) {
+        return false;
+      }
+
+      if (enforceBackpressure()) {
+        return false;
+      }
+
+      const replayedFrame: SessionEventFrame = {
+        event: sequenced.event,
+        kind: "event",
+        protocolVersion: SUPPORTED_PROTOCOL_VERSION,
+        sessionId: options.binding.sessionId,
+      };
+
+      options.sink.send(
+        JSON.stringify({
+          cursor: sequenced.cursor,
+          frame: replayedFrame,
+          kind: "frame",
+        })
+      );
+    }
+
+    return true;
   }
 
   async function processHandshake(parsed: ParsedWsMessage): Promise<void> {
@@ -241,22 +459,17 @@ export function createWsSessionTransport(
       })
     );
 
-    for (const sequenced of resume.events) {
-      const replayedFrame: SessionEventFrame = {
-        event: sequenced.event,
-        kind: "event",
-        protocolVersion: SUPPORTED_PROTOCOL_VERSION,
-        sessionId: options.binding.sessionId,
-      };
-
-      options.sink.send(
-        JSON.stringify({
-          cursor: sequenced.cursor,
-          frame: replayedFrame,
-          kind: "frame",
-        })
-      );
+    if (!sendReplayedFrames(resume.events)) {
+      return;
     }
+
+    if (closed) {
+      return;
+    }
+
+    // Heartbeat pings start only once the handshake has fully completed
+    // (ack plus any replay burst sent), per ADR-062 §6.
+    startHeartbeat();
 
     // Detached: the pump's only observable effects are sink.send()/close()
     // above, so ingest() never needs to await it (mirrors
@@ -265,14 +478,20 @@ export function createWsSessionTransport(
   }
 
   function processPostHandshake(parsed: ParsedWsMessage): void {
+    // ANY inbound message counts as heartbeat liveness, not only pong — a
+    // peer actively sending frames is demonstrably alive.
+    noteHeartbeatLiveness();
+
     switch (parsed.kind) {
       case "ping": {
         options.sink.send(JSON.stringify({ kind: "pong" }));
         return;
       }
       case "pong": {
-        // Heartbeat liveness tracking lands in the next milestone; this is
-        // the seam a future noteLiveness() hook attaches to.
+        // pong is the answer a quiet peer produces (the transport always
+        // answers an inbound ping); liveness itself is already recorded
+        // above for every inbound message, wiring the M6 no-op seam into
+        // heartbeat tracking.
         return;
       }
       case "frame": {
@@ -305,6 +524,89 @@ export function createWsSessionTransport(
     }
   }
 
+  /**
+   * Sequences and sends one live `event` outbound frame: pushes it through
+   * the connection's one sequencer instance, records it into the replay
+   * buffer when configured, enforces backpressure, then sends. Returns
+   * `false` when the caller must stop the pump (closed mid-await, or a
+   * backpressure close just happened) and `true` otherwise.
+   */
+  async function pumpEventFrame(
+    frame: SessionOutboundFrame,
+    channel: SingleSlotPushChannel<TuvrenStreamEvent>,
+    sequencedIterator: AsyncIterator<SequencedTuvrenStreamEvent>
+  ): Promise<boolean> {
+    if (frame.kind !== "event") {
+      return true;
+    }
+
+    channel.push(frame.event);
+    const sequencedResult = await sequencedIterator.next();
+
+    if (closed) {
+      return false;
+    }
+
+    if (sequencedResult.done) {
+      return true;
+    }
+
+    const envelope = sequencedResult.value;
+    options.replayBuffer?.record(envelope);
+
+    if (enforceBackpressure()) {
+      return false;
+    }
+
+    options.sink.send(
+      JSON.stringify({
+        cursor: envelope.cursor,
+        frame,
+        kind: "frame",
+      })
+    );
+    return true;
+  }
+
+  /**
+   * Sends one live non-event outbound frame (`client_invocation` /
+   * `session_rejection`, ADR-062 §3: not replayable, carries no cursor)
+   * after enforcing backpressure. Returns `false` when the caller must stop
+   * the pump.
+   */
+  function pumpNonEventFrame(frame: SessionOutboundFrame): boolean {
+    if (enforceBackpressure()) {
+      return false;
+    }
+
+    options.sink.send(JSON.stringify({ frame, kind: "frame" }));
+    return true;
+  }
+
+  /**
+   * Dispatches one already-fetched `outboundIterator.next()` result: a
+   * `done` result ends the connection normally, an `event` frame is
+   * sequenced/recorded/sent via {@link pumpEventFrame}, and any other frame
+   * is sent as-is via {@link pumpNonEventFrame}. Returns `false` when the
+   * caller must stop the pump.
+   */
+  async function handleOutboundNext(
+    next: IteratorResult<SessionOutboundFrame>,
+    channel: SingleSlotPushChannel<TuvrenStreamEvent>,
+    sequencedIterator: AsyncIterator<SequencedTuvrenStreamEvent>
+  ): Promise<boolean> {
+    if (next.done) {
+      doClose(WS_CLOSE_CODE_NORMAL, "session ended");
+      return false;
+    }
+
+    const frame = next.value;
+
+    return frame.kind === "event"
+      ? await pumpEventFrame(frame, channel, sequencedIterator)
+      : pumpNonEventFrame(frame);
+  }
+
   async function runOutboundPump(): Promise<void> {
     if (outboundIterator === undefined) {
       return;
@@ -324,36 +626,22 @@ export function createWsSessionTransport(
       for (;;) {
         const next = await outboundIterator.next();
 
-        if (next.done) {
-          doClose(WS_CLOSE_CODE_NORMAL, "session ended");
+        // A next() call can latch a value in the very tick close() runs
+        // (e.g. an explicit transport.close() or a concurrent backpressure
+        // close); re-check after every await so nothing sends post-close.
+        if (closed) {
           return;
         }
 
-        const frame = next.value;
+        const shouldContinue = await handleOutboundNext(
+          next,
+          channel,
+          sequencedIterator
+        );
 
-        if (frame.kind === "event") {
-          channel.push(frame.event);
-          const sequencedResult = await sequencedIterator.next();
-
-          if (sequencedResult.done) {
-            continue;
-          }
-
-          const envelope = sequencedResult.value;
-          options.replayBuffer?.record(envelope);
-          options.sink.send(
-            JSON.stringify({
-              cursor: envelope.cursor,
-              frame,
-              kind: "frame",
-            })
-          );
-          continue;
+        if (!shouldContinue) {
+          return;
         }
-
-        // client_invocation and session_rejection frames are not
-        // replayable and carry no cursor (ADR-062 §3).
-        options.sink.send(JSON.stringify({ frame, kind: "frame" }));
       }
     } catch (error) {
       reportWarning({
@@ -454,4 +742,8 @@ class SingleSlotPushChannel<T> implements AsyncIterable<T> {
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function isPositiveFiniteNumber(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
 }

@@ -24,10 +24,10 @@
  * issue #100). It owns carriage only — handshake, heartbeat, close codes,
  * and bounded outbound queueing — never frame or cursor semantics.
  *
- * This milestone (M6) ships the handshake/frame/inbound-routing transport
- * core: `createWsSessionTransport`, `WsSocketSink`, the wire message types,
- * and `parseWsMessage`. Application-level heartbeat (`ping`/`pong` timeout
- * handling) and bounded outbound backpressure land in milestone M7.
+ * Ships the full carriage surface: `createWsSessionTransport`,
+ * `WsSocketSink`, the wire message types, and `parseWsMessage`, including
+ * application-level heartbeat/half-open detection (`ping`/`pong` timeout
+ * handling, close `4004`) and bounded outbound backpressure (close `4005`).
  */
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export type { WsCloseCode } from "./lib/ws-close-codes.js";
