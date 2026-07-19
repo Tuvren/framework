@@ -251,7 +251,17 @@ export function createWsSessionTransport(
       return;
     }
 
-    options.sink.send(JSON.stringify({ kind: "ping" }));
+    try {
+      options.sink.send(JSON.stringify({ kind: "ping" }));
+    } catch {
+      // A throwing send from a timer callback would otherwise surface as an
+      // uncaught exception; a sink that cannot send is exactly the half-open
+      // condition the heartbeat exists to detect, so close gracefully with
+      // the same internal-error discipline as the outbound pump.
+      doClose(WS_CLOSE_CODE_INTERNAL_ERROR, "internal error");
+      return;
+    }
+
     const pingSentAt = Date.now();
     const timeoutMs = options.heartbeat.timeoutMs;
 

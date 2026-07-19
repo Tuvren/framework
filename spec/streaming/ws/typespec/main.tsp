@@ -124,9 +124,11 @@ model WsInboundFrameEnvelope {
 /**
  * Application-level heartbeat probe. The abstract socket seam has no opcode
  * surface, so liveness runs in-band: either side MAY send `ping`; the
- * receiver MUST answer with `pong`. A transport that misses a `pong` within
- * its configured timeout MUST treat the connection as half-open and close
- * with code 4004 (`heartbeat_timeout`).
+ * receiver MUST answer with `pong`. Any inbound message counts as liveness —
+ * a peer actively sending frames is demonstrably alive; `pong` is the answer
+ * a quiet peer produces. A transport that observes no inbound activity
+ * within its configured timeout after sending a `ping` MUST treat the
+ * connection as half-open and close with code 4004 (`heartbeat_timeout`).
  */
 model WsPing {
   kind: "ping";
@@ -157,7 +159,10 @@ enum WsCloseCode {
   /** The host rejected the opaque `authToken`. */
   authRejected: 4003,
 
-  /** Half-open connection detected: no `pong` within the configured timeout. */
+  /**
+   * Half-open connection detected: no inbound activity within the
+   * configured timeout after a `ping` was sent.
+   */
   heartbeatTimeout: 4004,
 
   /**

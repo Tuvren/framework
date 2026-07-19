@@ -550,3 +550,80 @@ describe("createWsSessionTransport: bounded backpressure", () => {
     expect(frameMessage.frame).toEqual(invocationFrame);
   });
 });
+
+describe("createWsSessionTransport: overflow keeps the unsent event frame resumable", () => {
+  test("an event frame recorded before an overflow close replays on reconnect", async () => {
+    const sharedBuffer = createReplayBuffer({ capacity: 32 });
+    const eventFrames: SessionOutboundFrame[] =
+      streamAdapterFixtures.completedTurn.slice(0, 3).map((event) => ({
+        event,
+        kind: "event",
+        protocolVersion: "1",
+        sessionId: SESSION_ID,
+      }));
+    // The first two event sends stay under budget (the handshake ack is not
+    // budget-checked); the third event's pre-send check reports an
+    // over-budget socket.
+    const overflowSink = createScriptedBufferedAmountSink([0, 0, 999]);
+    const first = createFakeBinding(eventFrames);
+    const firstTransport = createWsSessionTransport({
+      backpressure: { maxBufferedBytes: 100 },
+      binding: first.binding,
+      replayBuffer: sharedBuffer,
+      sink: overflowSink,
+    });
+
+    firstTransport.start();
+    firstTransport.ingest(handshakeMessage());
+    await flushMicrotasks();
+
+    expect(overflowSink.closes).toEqual([
+      {
+        code: 4005,
+        reason:
+          "outbound socket buffer exceeded the configured backpressure budget",
+      },
+    ]);
+
+    // Two live event envelopes made it onto the wire; the third was
+    // sequenced and recorded but never sent.
+    const sentFrames = (
+      overflowSink.sent as Array<{ kind: string; cursor?: string }>
+    ).filter((message) => message.kind === "frame");
+
+    expect(sentFrames).toHaveLength(2);
+
+    const lastReceivedCursor = sentFrames.at(-1)?.cursor as string;
+    const second = createFakeBinding();
+    const secondSink = createFakeSink();
+    const secondTransport = createWsSessionTransport({
+      binding: second.binding,
+      replayBuffer: sharedBuffer,
+      sink: secondSink,
+    });
+
+    secondTransport.start();
+    secondTransport.ingest(handshakeMessage({ cursor: lastReceivedCursor }));
+    await flushMicrotasks();
+
+    const ack = secondSink.sent[0] as { kind: string; resumeStatus: string };
+
+    expect(ack.resumeStatus).toBe("resumed");
+
+    const replayed = (
+      secondSink.sent.slice(1) as Array<{
+        kind: string;
+        frame: { event: { type: string } };
+      }>
+    ).filter((message) => message.kind === "frame");
+
+    // Exactly the recorded-but-unsent third frame comes back.
+    expect(replayed).toHaveLength(1);
+    expect(replayed[0]?.frame.event.type).toBe(
+      streamAdapterFixtures.completedTurn[2]?.type as string
+    );
+
+    secondTransport.close();
+    firstTransport.close();
+  });
+});
