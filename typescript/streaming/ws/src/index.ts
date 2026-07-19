@@ -24,10 +24,10 @@
  * issue #100). It owns carriage only — handshake, heartbeat, close codes,
  * and bounded outbound queueing — never frame or cursor semantics.
  *
- * This milestone scaffolds the package and ships the close-code vocabulary
- * fixed by ADR-062 §5 as a real, tested surface. The transport state
- * machine itself (`createWsSessionTransport`, `WsSocketSink`) lands in
- * milestones M6/M7.
+ * This milestone (M6) ships the handshake/frame/inbound-routing transport
+ * core: `createWsSessionTransport`, `WsSocketSink`, the wire message types,
+ * and `parseWsMessage`. Application-level heartbeat (`ping`/`pong` timeout
+ * handling) and bounded outbound backpressure land in milestone M7.
  */
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
 export type { WsCloseCode } from "./lib/ws-close-codes.js";
@@ -39,3 +39,22 @@ export {
   WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED,
   WS_CLOSE_CODE_SESSION_NOT_FOUND,
 } from "./lib/ws-close-codes.js";
+export type {
+  ParsedWsMessage,
+  WsClientMessage,
+  WsHandshakeAck,
+  WsHandshakeRequest,
+  WsInboundFrameEnvelope,
+  WsOutboundFrameEnvelope,
+  WsPing,
+  WsPong,
+  WsResumeStatus,
+  WsServerMessage,
+} from "./lib/ws-messages.js";
+export { parseWsMessage } from "./lib/ws-messages.js";
+export type {
+  WsSessionTransport,
+  WsSessionTransportOptions,
+  WsSocketSink,
+} from "./lib/ws-session-transport.js";
+export { createWsSessionTransport } from "./lib/ws-session-transport.js";
