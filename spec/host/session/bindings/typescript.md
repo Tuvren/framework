@@ -62,7 +62,11 @@ way `ExecutionHandle` method signatures are binding-only per
   contract — constructing a binding does not commit the turn. Once claimed,
   the internal frame buffer is unbounded while the consumer lags;
   backpressure and connection-lifecycle policy belong to the transport
-  layer (issues #100/#102).
+  layer (issues #100/#102). A transport must claim `outbound()` before
+  feeding inbound frames: pre-claim inbound routing is undefined ordering —
+  rejection frames would buffer unseen and a pre-claim `cancel` can
+  terminate a never-started handle whose terminal then has no stream to
+  surface on.
 - `dispatchInbound(frame: unknown): void` is fire-and-forget. Every
   structural or state rejection surfaces as a `session_rejection` frame on
   `outbound()` instead of throwing, echoing the offending frame's
@@ -147,7 +151,12 @@ A host or test should not conflate the two: a session-level
 `capability_result_stale` rejection means "this binding never dispatched (or
 already settled) that `callId`"; a boundary-level lease mismatch means "the
 runtime is discarding an otherwise-routable result as a stale
-late-completion."
+late-completion." The two layers also surface differently on the wire, and
+a language port must reproduce that asymmetry: only the session-level case
+produces a `session_rejection` frame; a boundary-level lease mismatch
+surfaces as the runtime's own `tool.result` error
+(`capability_result_stale`) on the canonical event stream, never as a
+session frame.
 
 ### Structural validation vs. schema validation
 
