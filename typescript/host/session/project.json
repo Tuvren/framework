@@ -1,0 +1,48 @@
+{
+  "name": "host-session",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/host/session",
+  "sourceRoot": "typescript/host/session/src",
+  "projectType": "library",
+  "tags": ["boundary:hosts", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/host/session",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/host/session",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/host/session"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/host/session",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/host/session"
+      }
+    }
+  }
+}

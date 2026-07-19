@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionInboundRejection.json",
+  "type": "object",
+  "properties": {
+    "correlationId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Echoes the `correlationId` of the inbound frame that was rejected."
+    },
+    "code": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/SessionRejectionCode.json",
+      "description": "Machine-readable reason the frame was rejected."
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable explanation of the rejection."
+    },
+    "details": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/Metadata.json",
+      "description": "Additional structured detail. When `code` is `session_frame_wrong_state`,\nthis MUST include a `runtimeErrorCode` entry carrying the underlying\nruntime error code that caused the state refusal."
+    }
+  },
+  "required": ["correlationId", "code", "message"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "The rejection payload the runtime sends back for an inbound frame it\ncould not apply. Inbound frames are never silently dropped: every\ninvalid or refused inbound frame produces exactly one\n`SessionRejectionFrame` echoing the offending frame's `correlationId`."
+}

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/ApprovalDecision.json",
+  "type": "object",
+  "properties": {
+    "callId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "approve"
+        },
+        {
+          "type": "string",
+          "const": "edit"
+        },
+        {
+          "type": "string",
+          "const": "reject"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "editedInput": {},
+    "message": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json"
+    }
+  },
+  "required": ["callId", "type"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Mirrors `ApprovalDecision` in the runtime-api authority packet\n(`spec/host/typespec/main.tsp`). Must stay in sync with that declaration."
+}

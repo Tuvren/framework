@@ -60,6 +60,9 @@
       "path": "./typescript/host/repl"
     },
     {
+      "path": "./typescript/host/session"
+    },
+    {
       "path": "./typescript/telemetry/otel"
     },
     {

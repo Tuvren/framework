@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/InputSignal.json",
+  "type": "object",
+  "properties": {
+    "parts": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/host-session/ContentPart.json"
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["parts"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Mirrors `InputSignal` in the runtime-api authority packet\n(`spec/host/typespec/main.tsp`). Must stay in sync with that declaration."
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionApprovalResponseFrame.json",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "approval_response"
+    },
+    "sessionId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json"
+    },
+    "correlationId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Client-generated correlation identifier for this inbound frame. Echoed\nverbatim on the `SessionRejectionFrame` if the runtime rejects this\nframe."
+    },
+    "response": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/ApprovalResponse.json"
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "kind",
+    "sessionId",
+    "correlationId",
+    "response"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Client-to-runtime frame carrying an approval decision for a paused run."
+}

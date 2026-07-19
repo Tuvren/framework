@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionSteerFrame.json",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "steer"
+    },
+    "sessionId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json"
+    },
+    "correlationId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Client-generated correlation identifier for this inbound frame. Echoed\nverbatim on the `SessionRejectionFrame` if the runtime rejects this\nframe."
+    },
+    "signal": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/InputSignal.json"
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "kind",
+    "sessionId",
+    "correlationId",
+    "signal"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Client-to-runtime frame carrying mid-run steering input."
+}

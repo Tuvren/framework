@@ -123,6 +123,24 @@ The conformance mock endpoint used in the `tuvren-client-execution-class` confor
 
 These helpers show the minimal `dispatch` implementation that the runtime expects from a conforming client endpoint.
 
+## Wire-Level Counterpart: the Duplex Session Sub-Surface
+
+Everything above describes the **in-process** attachment contract: the host
+process holds the `AttachedClientEndpoint` object and the runtime calls its
+`dispatch` directly. When the client is a *remote* peer (browser extension,
+mobile client, any process reached over a wire), the framework-owned wire
+form of this same exchange is the duplex session sub-surface at
+`spec/host/session/` (packet `tuvren.framework.host-session`, ADR-060): the
+runtime's dispatch becomes an outbound `client_invocation` frame carrying
+the `ClientInvocationEnvelope`, and the client's report becomes an inbound
+`client_result` frame. The lease semantics documented here are unchanged —
+the session layer adds only frame schemas and a second, outer staleness
+check (a `client_result` matching no pending dispatch), while the
+per-dispatch `leaseToken` echo check remains the boundary's own. The
+TypeScript reference binding is `@tuvren/host-session`
+(`typescript/host/session`); network transport, timeout, and disconnect
+policy remain host concerns (issues #100/#102).
+
 ## Configuration Summary
 
 ```ts

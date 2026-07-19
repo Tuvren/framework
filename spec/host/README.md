@@ -31,6 +31,16 @@ implementations bind against.
   vocabulary (execution classes, exposure/invocation policy, observation
   limits) is documented and owned at `spec/tools/` — this file is the
   host-attachment half of that contract, not a second copy of it.
+- `session/` — the duplex session sub-surface (ADR-060, issue #99): the
+  transport-agnostic wire vocabulary a **remote** session peer uses in
+  place of the in-process `ExecutionHandle` for the client-to-agent
+  interactions (client results, approval responses, steering,
+  cancellation) plus the session-owned outbound frames (wrapped canonical
+  events, `client_invocation` dispatch, `session_rejection`). It carries
+  its own experimental authority packet, `tuvren.framework.host-session`
+  (`session/authority-packet.json`), nesting under this port the same way
+  `spec/streaming/sse/` nests under `spec/streaming/` — see the
+  standalone-packet note below for why this is the exception.
 
 **The runtime-api vocabulary has no standalone authority packet.** It was
 absorbed into `tuvren.shared.core` per ADR-037 (Epic AP): the `messages`,
@@ -41,7 +51,12 @@ authoritative sources. The old `boundaries/framework/contracts/runtime-api/spec/
 claimed a standalone `authority-packet.json` declaring
 `tuvren.framework.runtime-api` existed in this tree — that claim was
 stale-false (no such file was ever present after the ADR-037
-consolidation) and is not carried forward here.
+consolidation) and is not carried forward here. The `session/`
+sub-surface is the deliberate exception to this consolidation: its duplex
+frame vocabulary is a focused new protocol concern rather than part of the
+absorbed runtime-api surface, so it declares its own packet
+(`tuvren.framework.host-session`, experimental at `0.x` per ADR-060)
+instead of widening `tuvren.shared.core`.
 
 Conformance plans for this surface live at `spec/conformance/engine/`
 (the `runtime-api-{lifecycle,lifecycle-extended,callables,

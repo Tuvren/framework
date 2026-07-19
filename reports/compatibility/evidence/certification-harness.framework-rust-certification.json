@@ -193,6 +193,11 @@
     "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta",
     "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present",
     "event-stream-ext.sse.resumed-approval-turn-thread-id-present",
+    "host-session.approval-response-resumes-from-checkpoint",
+    "host-session.cancel-propagates-cooperatively",
+    "host-session.cancel-while-paused-terminates-stream",
+    "host-session.frame-schema-validation",
+    "host-session.stale-client-result-rejected",
     "ba.ba001.policy-denied-lifecycle-no-start-error-result",
     "ba.ba001.provider-mediated-lifecycle-start-emitted",
     "ba.ba001.provider-native-lifecycle-result-emitted",
@@ -499,9 +504,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 479,
+    "totalChecks": 484,
     "applicableChecks": 0,
-    "nonApplicableChecks": 479
+    "nonApplicableChecks": 484
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

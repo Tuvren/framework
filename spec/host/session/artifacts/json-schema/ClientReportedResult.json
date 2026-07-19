@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/ClientReportedResult.json",
+  "type": "object",
+  "properties": {
+    "callId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Identifier of the tool call this result answers. Must match a `callId`\nthe runtime previously dispatched via `ClientInvocationEnvelope`."
+    },
+    "content": {
+      "description": "Capability result payload, opaque to this packet. No secret material\n(credentials, environment tokens, internal state) should appear here —\nthis value enters durable lineage once accepted."
+    },
+    "isError": {
+      "type": "boolean",
+      "description": "True when the client endpoint reports the capability execution failed."
+    },
+    "leaseToken": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Must echo the corresponding invocation envelope's `leaseToken`. The\nruntime treats a mismatch as stale and ignores the result."
+    }
+  },
+  "required": ["callId", "content", "leaseToken"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "The result a client endpoint reports back after executing a tuvren-client\ncapability. The client owns environmental execution; this value is a\nproposal only — it enters durable run lineage exclusively when the\nruntime's active run authority accepts it (fencing/leasing per ADR-052).\n\nThe `leaseToken` MUST match the corresponding invocation envelope's\n`leaseToken`. A mismatch signals a stale late-completion that the runtime\nMUST ignore rather than accept into lineage."
+}

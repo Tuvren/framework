@@ -74,6 +74,13 @@
         "@copilotkit/aimock": "1.15.1",
       },
     },
+    "typescript/host/session": {
+      "name": "@tuvren/host-session",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@tuvren/core": "workspace:~",
+      },
+    },
     "typescript/kernel/backends/memory": {
       "name": "@tuvren/backend-memory",
       "version": "0.1.0",
@@ -977,6 +984,8 @@
     "@tuvren/framework-testkit": ["@tuvren/framework-testkit@workspace:typescript/testkit"],
 
     "@tuvren/framework-typescript-certification": ["@tuvren/framework-typescript-certification@workspace:typescript/certification"],
+
+    "@tuvren/host-session": ["@tuvren/host-session@workspace:typescript/host/session"],
 
     "@tuvren/kernel-grpc-client": ["@tuvren/kernel-grpc-client@workspace:typescript/kernel/grpc-client"],
 

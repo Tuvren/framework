@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/ApprovalResponse.json",
+  "type": "object",
+  "properties": {
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/host-session/ApprovalDecision.json"
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["decisions"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Mirrors `ApprovalResponse` in the runtime-api authority packet\n(`spec/host/typespec/main.tsp`). Must stay in sync with that declaration."
+}

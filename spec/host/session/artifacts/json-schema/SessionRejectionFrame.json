@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionRejectionFrame.json",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "session_rejection"
+    },
+    "sessionId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json"
+    },
+    "rejection": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/SessionInboundRejection.json"
+    }
+  },
+  "required": ["protocolVersion", "kind", "sessionId", "rejection"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Runtime-to-client frame carrying a rejection for an inbound frame the\nruntime could not apply. Inbound frames are never silently dropped: every\ninvalid or refused inbound frame produces exactly one frame of this kind,\nechoing the rejected frame's `correlationId`."
+}

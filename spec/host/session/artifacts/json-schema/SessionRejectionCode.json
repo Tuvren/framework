@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionRejectionCode.json",
+  "anyOf": [
+    {
+      "type": "string",
+      "const": "session_frame_invalid",
+      "description": "The inbound frame failed schema validation before it reached any\nexecution handle. The frame was rejected at the session boundary and no\nruntime state was touched."
+    },
+    {
+      "type": "string",
+      "const": "session_frame_wrong_state",
+      "description": "The held execution handle refused the operation for state reasons (for\nexample, an approval response arriving while the run is not paused, or\na cancel racing an already-applied approval). The underlying runtime\nerror code is carried in `SessionInboundRejection.details.runtimeErrorCode`."
+    },
+    {
+      "type": "string",
+      "const": "capability_result_stale",
+      "description": "A `client_result` frame whose `callId` matches no pending dispatch at\nthe session layer. This code reuses the existing capability error code\nvocabulary. It is deliberately independent from — and does not\nreplace — the per-dispatch `leaseToken`/`callId` echo staleness check\nthat still runs inside the Client Endpoint Boundary for every accepted\ndispatch."
+    }
+  ],
+  "description": "Enumerates every reason the session layer can refuse or fail to apply an\ninbound frame. This code space is session-layer specific: it is distinct\nfrom (and narrower than) the runtime's own error code vocabulary, though\n`session_frame_wrong_state` and `capability_result_stale` both carry or\nreuse runtime-owned identifiers as described below."
+}

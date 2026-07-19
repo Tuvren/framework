@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+  "type": "string",
+  "minLength": 1,
+  "pattern": ".*\\S.*",
+  "description": "Mirrors `NonEmptyString` in the runtime-api authority packet\n(`spec/host/typespec/main.tsp`). Must stay in sync with that declaration."
+}

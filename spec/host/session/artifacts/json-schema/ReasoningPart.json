@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/ReasoningPart.json",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "reasoning"
+    },
+    "text": {
+      "type": "string"
+    },
+    "redacted": {
+      "type": "boolean"
+    },
+    "providerMetadata": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/Metadata.json"
+    }
+  },
+  "required": ["type", "text", "redacted"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Mirrors `ReasoningPart` in the runtime-api authority packet\n(`spec/host/typespec/main.tsp`), including its unredacted-non-empty-text\nconditional. Must stay in sync with that declaration.",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "redacted": {
+            "const": false
+          }
+        },
+        "required": ["redacted"]
+      },
+      "then": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

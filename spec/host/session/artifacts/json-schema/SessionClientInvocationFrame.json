@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionClientInvocationFrame.json",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "client_invocation"
+    },
+    "sessionId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json"
+    },
+    "invocation": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/ClientInvocationEnvelope.json"
+    }
+  },
+  "required": ["protocolVersion", "kind", "sessionId", "invocation"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Runtime-to-client frame emitted when the runtime dispatches a\ntuvren-client capability. The `leaseToken` carried inside `invocation`\ntravels only on this session channel: it is deliberately absent from the\ncanonical broadcast event stream (`SessionEventFrame` / `TuvrenStreamEvent`)\nso lease material never leaks into observers that only consume the\nbroadcast stream."
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionEventFrame.json",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "event"
+    },
+    "sessionId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json"
+    },
+    "event": {
+      "description": "Opaque canonical `TuvrenStreamEvent` payload. See the `tuvren.shared.core`\nauthority packet for the event union this value MUST conform to."
+    }
+  },
+  "required": ["protocolVersion", "kind", "sessionId", "event"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Runtime-to-client frame carrying a canonical stream event. The `event`\npayload is a canonical `TuvrenStreamEvent` whose authority is the\n`tuvren.shared.core` packet (see `spec/streaming/typespec/main.tsp` and\n`spec/core`). This packet deliberately does not redeclare that 26-variant\nunion here — it wraps the canonical event opaquely so the session\nvocabulary does not fork from the shared event authority."
+}

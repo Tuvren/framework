@@ -13,6 +13,7 @@
     "framework.runner-api",
     "framework.event-stream",
     "framework.event-stream-sse",
+    "framework.host-session",
     "framework.orchestration",
     "framework.run-liveness",
     "framework.react-runner",
@@ -25,7 +26,8 @@
   "authorityPackets": [
     "spec/core/authority-packet.json",
     "spec/streaming/sse/authority-packet.json",
-    "spec/runners/react/authority-packet.json"
+    "spec/runners/react/authority-packet.json",
+    "spec/host/session/authority-packet.json"
   ],
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

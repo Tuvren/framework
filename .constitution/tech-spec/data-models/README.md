@@ -697,3 +697,111 @@ export interface CapabilityInvocationAttribution {
 }
 ```
 
+### 3.14 Duplex Session Frame Shapes
+
+- **Purpose:** Per ADR-060, a remote session peer that cannot hold an in-process `ExecutionHandle` needs a framework-owned wire vocabulary for the same four client-to-agent interactions the handle already exposes in-process (`resolveApproval`, `steer`, `cancel`) plus a Tuvren-client capability's dispatch/result exchange (§3.13, §4.21). These shapes are owned by `spec/host/session/` (packet `tuvren.framework.host-session`); `ClientInvocationEnvelope` and `ClientReportedResult` are owned by `@tuvren/core/capabilities` and are documented here because §3.13's prose references them without ever spelling out their fields.
+- **Storage Shape:** Not persisted. Frames are transport ephemera that exist only on the wire between a session binding and a remote session peer; durable meaning enters the system only through the existing handle/boundary paths a frame is routed to (a `client_result` frame becomes a canonical capability result through the Client Endpoint Boundary exactly as an in-process `AttachedClientEndpoint` result would; an `approval_response` frame becomes a `resolveApproval` call with the same kernel checkpoint/replacement-Run consequences as §4.2).
+- **Constraints / Invariants:**
+  - `sessionId` is stable across a `resolveApproval` handle replacement — it identifies the session, not the current internal `ExecutionHandle` instance, so a remote peer never needs to detect or react to handle churn.
+  - `correlationId` is always client-generated on an inbound frame and always echoed back on any resulting `session_rejection`, so a client can match a rejection to the frame that caused it without a server-assigned identity round trip.
+  - No inbound frame is ever silently dropped: every inbound frame produces either a routed effect on the held handle or exactly one `session_rejection` naming a `SessionRejectionCode`.
+  - `leaseToken` on `ClientInvocationEnvelope`/`ClientReportedResult` is confined to the session channel between the runtime and the executing client endpoint; it is never broadcast on the canonical event stream (§4.5), which is the rationale ADR-060 records for session-frame-only promotion rather than extending `TuvrenStreamEvent`.
+  - `idempotencyKey` and `leaseToken` are distinct on `ClientInvocationEnvelope`: `leaseToken` guards staleness of *this* dispatch and is echoed back by the client; `idempotencyKey` (ADR-052) dedupes the *external side effect* the client environment may re-issue after a preemption recovery and is not echoed.
+- **Shapes:**
+
+```ts
+export type SessionRejectionCode =
+  | "session_frame_invalid"
+  | "session_frame_wrong_state"
+  | "capability_result_stale";
+
+export interface SessionInboundRejection {
+  correlationId: string;
+  code: SessionRejectionCode;
+  message: string;
+  details?: { runtimeErrorCode?: string; [key: string]: unknown };
+}
+
+export type SessionOutboundFrame =
+  | { protocolVersion: "1"; sessionId: string; kind: "event"; event: TuvrenStreamEvent }
+  | {
+      protocolVersion: "1";
+      sessionId: string;
+      kind: "client_invocation";
+      invocation: ClientInvocationEnvelope;
+    }
+  | {
+      protocolVersion: "1";
+      sessionId: string;
+      kind: "session_rejection";
+      rejection: SessionInboundRejection;
+    };
+
+export type SessionInboundFrame =
+  | {
+      protocolVersion: "1";
+      sessionId: string;
+      kind: "client_result";
+      correlationId: string;
+      result: ClientReportedResult;
+    }
+  | {
+      protocolVersion: "1";
+      sessionId: string;
+      kind: "approval_response";
+      correlationId: string;
+      response: ApprovalResponse;
+    }
+  | {
+      protocolVersion: "1";
+      sessionId: string;
+      kind: "steer";
+      correlationId: string;
+      signal: InputSignal;
+    }
+  | { protocolVersion: "1"; sessionId: string; kind: "cancel"; correlationId: string };
+
+/**
+ * The invocation envelope the runtime dispatches to an attached client endpoint.
+ * Contains everything the client needs to execute the capability. Credentials
+ * and environment secrets are never included — they are owned by the client edge.
+ */
+export interface ClientInvocationEnvelope {
+  callId: string;
+  capabilityId: string;
+  /**
+   * Side-effect-once idempotency identity for this invocation (ADR-052).
+   *
+   * A deterministic identity derived from the run id, call id, and active run
+   * fencing token. The client environment can present it to the external system
+   * it drives so a dispatch retried or re-issued after a preemption recovery is
+   * deduplicated. Distinct from `leaseToken`: the lease token guards staleness
+   * of *this* dispatch (and is echoed back), while the idempotency key dedupes
+   * the *external effect* and is not echoed.
+   */
+  idempotencyKey?: string;
+  input: unknown;
+  /** Opaque non-secret lease token. The client must echo it in ClientReportedResult. Mismatches are stale. */
+  leaseToken: string;
+}
+
+/**
+ * The result a client endpoint reports back after executing a capability.
+ * The client owns environmental execution; Tuvren records this result as a
+ * canonical capability result with partial-observability limits.
+ *
+ * The leaseToken must match the envelope's leaseToken. A mismatch signals a
+ * stale late-completion that the runtime will ignore rather than accept.
+ *
+ * No secret material (credentials, environment tokens, internal state) should
+ * appear in content — this value enters durable lineage.
+ */
+export interface ClientReportedResult {
+  callId: string;
+  content: unknown;
+  isError?: boolean;
+  /** Must echo the envelope's leaseToken. Mismatches are treated as stale. */
+  leaseToken: string;
+}
+```
+

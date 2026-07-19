@@ -663,6 +663,7 @@ On normal stream completion, `finish` is only valid after any started structured
 - **Compatibility Strategy:** Existing event types and required fields are stable within a major version; minor releases may add event types or optional fields
 - **Validator note:** Current-version stream validators reject undeclared fields so adapter drift fails fast. When a minor release adds an optional field, the same release must widen the validator allowlists accordingly.
 - **Error model:** `error` events plus terminal `turn.end` where applicable
+- Inbound wire counterpart: §4.22.
 
 ```ts
 export interface EventSource {
@@ -1877,4 +1878,37 @@ export declare const NoopTelemetrySink: TuvrenTelemetrySink;
 - Execution-class dispatch: `tuvren-server` → Tool Execution Gateway (full lifecycle; today's `execute` path); `provider-native` → Provider Gateway enables/configures the provider tool and records provider-exposed events/results only; `provider-mediated` → Provider Gateway configures the mediated relationship (e.g. provider-invoked remote MCP) and records what the provider/tool protocol exposes; `tuvren-client` → Client Endpoint Boundary leases an attached endpoint, dispatches an invocation envelope, and records the client-reported result (lands in Epic AZ).
 - Observation honesty: the runtime emits a canonical invocation event tagged with the execution class and `owner` (`provider` | `tuvren`) plus a `CapabilityObservation`. It must not expose a cancel/retry/audit affordance for an invocation whose class does not grant it. Secret isolation (§5.6.3) applies to every class: no provider/MCP/client credential reaches durable state, events, telemetry, or transcripts.
 - Back-compatibility: `defineTool(...)` / `TuvrenToolDefinition` continue to produce a Tuvren-server capability; existing hosts require no change. New execution classes are opt-in via capability/binding configuration.
+
+### 4.22 Duplex Session Frame Contract (`spec/host/session/`)
+
+- **Style:** versioned wire message family, TypeSpec-to-JSON-Schema authority (ADR-060)
+- **Ownership:** `spec/host/session/` owns the frame schemas (packet `tuvren.framework.host-session`). `@tuvren/host-session` (`typescript/host/session/`) owns the TS reference binding (`createDuplexSessionBinding`). `@tuvren/core/capabilities` keeps owning the `ClientInvocationEnvelope`/`ClientReportedResult` payload shapes the frames carry; transports such as the WebSocket work in #100 own framing only, never frame semantics.
+- **Compatibility Strategy:** additive experimental surface per ADR-056 — the packet starts at `0.x`, and `@tuvren/host-session` plus every promoted schema carry `@experimental`. `protocolVersion` is a per-frame string literal (`"1"` today), not a session-wide handshake value, so a future incompatible frame shape ships as a new literal rather than a breaking change to the existing one.
+- **Error model:** three rejection codes, always returned as an outbound `session_rejection` frame with the offending `correlationId` echoed back. `session_frame_invalid` — the inbound frame failed schema validation. `session_frame_wrong_state` — the frame was schema-valid but the held execution handle refused it for its current state (for example an `approval_response` while not paused); the underlying `TuvrenRuntimeError` code is carried in `details.runtimeErrorCode`. `capability_result_stale` — a `client_result` whose `callId` matches no pending dispatch; this reuses the existing capability error code (`typescript/core/src/lib/capability-error-codes.ts:59`) rather than minting a session-local synonym. `capability_result_stale` composes with, and does not replace, the independent per-dispatch `leaseToken`/`callId` echo check already enforced at the Client Endpoint Boundary (KRT-AZ003) — a `client_result` can fail either layer independently.
+
+```ts
+export interface SessionOutboundFrame {
+  protocolVersion: "1";
+  sessionId: string;
+}
+// discriminated by `kind`:
+//   { kind: "event"; event: TuvrenStreamEvent }
+//   { kind: "client_invocation"; invocation: ClientInvocationEnvelope }
+//   { kind: "session_rejection"; rejection: SessionInboundRejection }
+
+export interface SessionInboundFrame {
+  protocolVersion: "1";
+  sessionId: string;
+  correlationId: string;
+}
+// discriminated by `kind`:
+//   { kind: "client_result"; result: ClientReportedResult }
+//   { kind: "approval_response"; response: ApprovalResponse }
+//   { kind: "steer"; signal: InputSignal }
+//   { kind: "cancel" }
+```
+
+- Inbound frames are never silently dropped: every inbound frame that is not routed to the held handle produces exactly one `session_rejection` echoing that frame's `correlationId`.
+- The reference binding tracks the replacement `ExecutionHandle` `resolveApproval` returns and re-bridges its `events()` into the same continuous `outbound()` stream, so a remote peer sees no discontinuity across an approval-driven handle replacement.
+- AG-UI stays a strictly read-only projection (`stack.md` §1.1); this control channel never tunnels through AG-UI `CUSTOM` frames.
 
