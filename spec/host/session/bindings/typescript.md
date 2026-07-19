@@ -58,11 +58,19 @@ way `ExecutionHandle` method signatures are binding-only per
 - `outbound(): AsyncIterable<SessionOutboundFrame>` mirrors
   `ExecutionHandle.events()` single-consumer semantics: it throws if called a
   second time on the same binding.
-- `dispatchInbound(frame: unknown): void` is fire-and-forget. It never
-  throws — every structural or state rejection surfaces as a
-  `session_rejection` frame on `outbound()` instead, echoing the offending
-  frame's `correlationId` (or `"unknown"` when the frame did not carry a
-  usable one).
+- `dispatchInbound(frame: unknown): void` is fire-and-forget. Every
+  structural or state rejection surfaces as a `session_rejection` frame on
+  `outbound()` instead of throwing, echoing the offending frame's
+  `correlationId` (or `"unknown"` when the frame did not carry a usable one).
+  Two narrow exceptions: an unexpected non-`TuvrenRuntimeError` failure from
+  the underlying handle propagates to the caller rather than being masked as
+  a rejection, and a frame arriving after the outbound stream has reached a
+  terminal state has no remaining consumer, so its rejection frame is
+  unobservable. Once the stream is terminal the binding also settles every
+  still-pending client dispatch by rejecting it (`duplex_session_closed`) —
+  a session that can no longer deliver a `client_result` must not leave the
+  runtime awaiting one. Connection-lifecycle policy beyond that (timeouts,
+  disconnect detach) is issue #102's scope.
 - `clientEndpoint: AttachedClientEndpoint` is what a host wires into
   `AgentConfig.clientEndpoints`.
 - `currentHandle(): ExecutionHandle` exposes the execution handle currently

@@ -116,10 +116,17 @@ class DuplexSessionOutboundQueue
     }
 
     this.closed = true;
+    this.onTerminal?.();
     while (this.waiters.length > 0) {
       this.waiters.shift()?.resolve({ done: true, value: undefined });
     }
   }
+
+  /**
+   * Invoked exactly once when the queue reaches any terminal state (close,
+   * failure, or consumer-side early return).
+   */
+  onTerminal: (() => void) | undefined;
 
   fail(error: unknown): void {
     if (this.closed || this.failure !== undefined) {
@@ -127,6 +134,7 @@ class DuplexSessionOutboundQueue
     }
 
     this.failure = { error };
+    this.onTerminal?.();
     while (this.waiters.length > 0) {
       this.waiters.shift()?.reject(error);
     }
@@ -155,7 +163,7 @@ class DuplexSessionOutboundQueue
         );
       },
       return: (): Promise<IteratorResult<SessionOutboundFrame>> => {
-        this.closed = true;
+        this.close();
         return Promise.resolve({ done: true, value: undefined });
       },
     };
@@ -352,6 +360,23 @@ export function createDuplexSessionBinding(
   const queue = new DuplexSessionOutboundQueue();
   const pendingClientCalls = new Map<string, PendingClientCall>();
 
+  // A terminal close (including a cooperative cancel) settles every
+  // outstanding client dispatch: the session can never deliver a
+  // client_result once the outbound stream is gone, so leaving the promise
+  // pending would leak it forever. The runtime's Client Endpoint Boundary
+  // converts the rejection into an isError tool result.
+  queue.onTerminal = () => {
+    for (const [callId, pending] of pendingClientCalls) {
+      pending.reject(
+        new TuvrenRuntimeError(
+          `duplex session closed with client dispatch "${callId}" still pending`,
+          { code: "duplex_session_closed" }
+        )
+      );
+    }
+    pendingClientCalls.clear();
+  };
+
   let current = handle;
   let outboundClaimed = false;
 
@@ -439,6 +464,18 @@ export function createDuplexSessionBinding(
     dispatch(
       envelope: ClientInvocationEnvelope
     ): Promise<ClientReportedResult> {
+      // callId uniqueness is a runtime invariant (each dispatch mints a fresh
+      // call); guard defensively so a violation surfaces instead of silently
+      // orphaning the first dispatch's promise.
+      if (pendingClientCalls.has(envelope.callId)) {
+        return Promise.reject(
+          new TuvrenRuntimeError(
+            `client dispatch for callId "${envelope.callId}" is already pending`,
+            { code: "duplex_session_duplicate_call" }
+          )
+        );
+      }
+
       queue.push({
         invocation: envelope,
         kind: "client_invocation",
@@ -476,6 +513,11 @@ export function createDuplexSessionBinding(
     frame: Extract<SessionInboundFrame, { kind: "approval_response" }>
   ): void {
     try {
+      // The superseded handle's events() iterable is already exhausted when
+      // resolveApproval succeeds (KrakenFrameworkSpecification §7.1: the old
+      // handle's stream ends at the paused turn.end; the replacement produces
+      // a fresh sequence), so re-bridging without .return() on the old
+      // iterator cannot leak or duplicate events.
       const replacement = current.resolveApproval(frame.response);
       current = replacement;
       bridgeCurrentHandle(replacement);

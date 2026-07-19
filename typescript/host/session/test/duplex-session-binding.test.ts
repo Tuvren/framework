@@ -504,4 +504,82 @@ describe("createDuplexSessionBinding", () => {
     const result = await iterator.next();
     expect(result.done).toBe(true);
   });
+
+  test("a non-TuvrenRuntimeError thrown by the handle propagates out of dispatchInbound", () => {
+    const fake = makeFakeHandle({
+      onCancel: () => {
+        throw new Error("unexpected infrastructure failure");
+      },
+    });
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "sess-12",
+    });
+
+    expect(() =>
+      binding.dispatchInbound({
+        correlationId: "corr-12",
+        kind: "cancel",
+        protocolVersion: "1",
+        sessionId: "sess-12",
+      })
+    ).toThrow("unexpected infrastructure failure");
+  });
+
+  test("terminal close rejects an outstanding client dispatch instead of leaking it", async () => {
+    const fake = makeFakeHandle({ phase: "running" });
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "sess-13",
+    });
+    binding.outbound();
+
+    const pending = binding.clientEndpoint.dispatch({
+      callId: "call-13",
+      capabilityId: "cap.demo",
+      input: {},
+      leaseToken: "lease-13",
+    });
+
+    fake.setPhase("completed");
+    fake.events.end();
+
+    await expect(pending).rejects.toMatchObject({
+      code: "duplex_session_closed",
+    });
+  });
+
+  test("a second dispatch reusing a pending callId is rejected, first dispatch unaffected", async () => {
+    const fake = makeFakeHandle({ phase: "running" });
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "sess-14",
+    });
+    binding.outbound();
+
+    const envelope = {
+      callId: "call-14",
+      capabilityId: "cap.demo",
+      input: {},
+      leaseToken: "lease-14",
+    };
+    const first = binding.clientEndpoint.dispatch(envelope);
+    await expect(
+      binding.clientEndpoint.dispatch(envelope)
+    ).rejects.toMatchObject({
+      code: "duplex_session_duplicate_call",
+    });
+
+    binding.dispatchInbound({
+      correlationId: "corr-14",
+      kind: "client_result",
+      protocolVersion: "1",
+      result: {
+        callId: "call-14",
+        content: { ok: true },
+        leaseToken: "lease-14",
+      },
+      sessionId: "sess-14",
+    });
+
+    const reported = await first;
+    expect(reported.content).toEqual({ ok: true });
+  });
 });

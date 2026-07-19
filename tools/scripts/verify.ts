@@ -175,6 +175,7 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "framework-telemetry-otel",
   "telemetry-semconv",
   "host-repl",
+  "host-session",
 ];
 
 export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
@@ -196,6 +197,7 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "framework-telemetry-otel",
   "telemetry-semconv",
   "host-repl",
+  "host-session",
 ];
 
 // The read-only constitutional gate: authority/conformance validators that must
