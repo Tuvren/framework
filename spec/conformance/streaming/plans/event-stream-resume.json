@@ -1,0 +1,133 @@
+{
+  "applicability": {
+    "capabilities": ["framework.event-stream-resume"]
+  },
+  "checks": [
+    {
+      "assertions": [
+        {
+          "equals": "resumed",
+          "field": "$.resume.status",
+          "kind": "resultField"
+        },
+        {
+          "equals": [3, 4, 5, 6, 7],
+          "field": "$.resume.replaySequences",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "event-stream-resume.replay-from-mid-turn",
+      "fixture": "event-stream-resume-scenarios",
+      "input": {
+        "fixturePath": "$.scenarios.replay-from-mid-turn"
+      },
+      "operation": "event-stream-resume.replay-scenario"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "out-of-window",
+          "field": "$.resume.status",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "event-stream-resume.cursor-out-of-window",
+      "fixture": "event-stream-resume-scenarios",
+      "input": {
+        "fixturePath": "$.scenarios.cursor-out-of-window"
+      },
+      "operation": "event-stream-resume.replay-scenario"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "resumed",
+          "field": "$.resume.status",
+          "kind": "resultField"
+        },
+        {
+          "equals": [4, 5, 6],
+          "field": "$.resume.replaySequences",
+          "kind": "resultField"
+        },
+        {
+          "equals": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "field": "$.resume.cursorTurnNodeHash",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "event-stream-resume.cross-checkpoint-resume",
+      "fixture": "event-stream-resume-scenarios",
+      "input": {
+        "fixturePath": "$.scenarios.cross-checkpoint-resume"
+      },
+      "operation": "event-stream-resume.replay-scenario"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "unknown-turn",
+          "field": "$.resume.status",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "event-stream-resume.unknown-turn-cursor",
+      "fixture": "event-stream-resume-scenarios",
+      "input": {
+        "fixturePath": "$.scenarios.unknown-turn-cursor"
+      },
+      "operation": "event-stream-resume.replay-scenario"
+    },
+    {
+      "assertions": [
+        {
+          "equals": "out-of-window",
+          "field": "$.resume.status",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "event-stream-resume.malformed-cursor-snapshot-fallback",
+      "fixture": "event-stream-resume-scenarios",
+      "input": {
+        "fixturePath": "$.scenarios.malformed-cursor"
+      },
+      "operation": "event-stream-resume.replay-scenario"
+    },
+    {
+      "assertions": [
+        {
+          "equals": [0, 1, 2, 3, 4, 5, 6],
+          "field": "$.resume.sse.frameIdSequences",
+          "kind": "resultField"
+        },
+        {
+          "equals": "turn-sse",
+          "field": "$.resume.sse.lastEventIdTurnId",
+          "kind": "resultField"
+        },
+        {
+          "equals": "resumed",
+          "field": "$.resume.sse.reconnectStatus",
+          "kind": "resultField"
+        },
+        {
+          "equals": [4, 5, 6],
+          "field": "$.resume.sse.reconnectReplaySequences",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect",
+      "fixture": "event-stream-resume-scenarios",
+      "input": {
+        "fixturePath": "$.scenarios.sse-reconnect"
+      },
+      "operation": "event-stream-resume.sse-reconnect"
+    }
+  ],
+  "fixtures": {
+    "event-stream-resume-scenarios": "../fixtures/event-stream-resume-scenarios.json"
+  },
+  "packetId": "tuvren.framework.event-stream-resume",
+  "planId": "tuvren.framework.event-stream-resume.core",
+  "planVersion": "0.1.0"
+}

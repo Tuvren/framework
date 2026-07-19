@@ -16,6 +16,7 @@
   "authorityPackets": [
     "spec/core/authority-packet.json",
     "spec/streaming/sse/authority-packet.json",
+    "spec/streaming/resume/authority-packet.json",
     "spec/runners/react/authority-packet.json",
     "spec/host/session/authority-packet.json"
   ],

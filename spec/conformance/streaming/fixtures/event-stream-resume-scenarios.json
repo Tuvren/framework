@@ -1,0 +1,229 @@
+{
+  "fixtureSetId": "tuvren.framework.event-stream-resume.scenarios",
+  "fixtureVersion": "0.1.0",
+  "sourceAuthority": "spec/streaming/resume/typespec/main.tsp",
+  "scenarios": {
+    "replay-from-mid-turn": {
+      "description": "A client that disconnected after observing sequence 2 replays the retained remainder of the turn.",
+      "capacity": 32,
+      "cursor": { "kind": "at-sequence", "sequence": 2 },
+      "events": [
+        {
+          "threadId": "thread-resume",
+          "timestamp": 1,
+          "turnId": "turn-resume",
+          "type": "turn.start"
+        },
+        {
+          "messageId": "message-resume",
+          "role": "assistant",
+          "timestamp": 2,
+          "type": "message.start"
+        },
+        {
+          "iterationCount": 1,
+          "timestamp": 3,
+          "turnNodeHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "type": "state.checkpoint"
+        },
+        {
+          "delta": "Hello",
+          "messageId": "message-resume",
+          "timestamp": 4,
+          "type": "text.delta"
+        },
+        {
+          "messageId": "message-resume",
+          "text": "Hello",
+          "timestamp": 5,
+          "type": "text.done"
+        },
+        {
+          "iterationCount": 2,
+          "timestamp": 6,
+          "turnNodeHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "type": "state.checkpoint"
+        },
+        {
+          "finishReason": "stop",
+          "messageId": "message-resume",
+          "timestamp": 7,
+          "type": "message.done"
+        },
+        {
+          "status": "completed",
+          "timestamp": 8,
+          "turnId": "turn-resume",
+          "type": "turn.end"
+        }
+      ]
+    },
+    "cursor-out-of-window": {
+      "description": "A capacity-2 window retains only the last two frames; a cursor at sequence 0 fell below the retention floor.",
+      "capacity": 2,
+      "cursor": { "kind": "at-sequence", "sequence": 0 },
+      "events": [
+        {
+          "threadId": "thread-resume",
+          "timestamp": 1,
+          "turnId": "turn-window",
+          "type": "turn.start"
+        },
+        {
+          "delta": "A",
+          "messageId": "message-window",
+          "timestamp": 2,
+          "type": "text.delta"
+        },
+        {
+          "delta": "B",
+          "messageId": "message-window",
+          "timestamp": 3,
+          "type": "text.delta"
+        },
+        {
+          "status": "completed",
+          "timestamp": 4,
+          "turnId": "turn-window",
+          "type": "turn.end"
+        }
+      ]
+    },
+    "cross-checkpoint-resume": {
+      "description": "A cursor anchored at the earlier of two retained checkpoints still replays; anchors advance within a turn without invalidating older retained positions.",
+      "capacity": 32,
+      "cursor": { "kind": "at-sequence", "sequence": 3 },
+      "events": [
+        {
+          "threadId": "thread-resume",
+          "timestamp": 1,
+          "turnId": "turn-cross",
+          "type": "turn.start"
+        },
+        {
+          "iterationCount": 1,
+          "timestamp": 2,
+          "turnNodeHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "type": "state.checkpoint"
+        },
+        {
+          "delta": "early",
+          "messageId": "message-cross",
+          "timestamp": 3,
+          "type": "text.delta"
+        },
+        {
+          "delta": "still-early",
+          "messageId": "message-cross",
+          "timestamp": 4,
+          "type": "text.delta"
+        },
+        {
+          "iterationCount": 2,
+          "timestamp": 5,
+          "turnNodeHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "type": "state.checkpoint"
+        },
+        {
+          "delta": "late",
+          "messageId": "message-cross",
+          "timestamp": 6,
+          "type": "text.delta"
+        },
+        {
+          "status": "completed",
+          "timestamp": 7,
+          "turnId": "turn-cross",
+          "type": "turn.end"
+        }
+      ]
+    },
+    "unknown-turn-cursor": {
+      "description": "A cursor naming a turn the window never observed reports unknown-turn.",
+      "capacity": 32,
+      "cursor": { "kind": "foreign-turn", "turnId": "turn-never-observed" },
+      "events": [
+        {
+          "threadId": "thread-resume",
+          "timestamp": 1,
+          "turnId": "turn-known",
+          "type": "turn.start"
+        },
+        {
+          "status": "completed",
+          "timestamp": 2,
+          "turnId": "turn-known",
+          "type": "turn.end"
+        }
+      ]
+    },
+    "malformed-cursor": {
+      "description": "A token that fails to decode maps to out-of-window snapshot fallback, never a thrown wire error.",
+      "capacity": 32,
+      "cursor": { "kind": "malformed", "token": "%%not-base64url%%" },
+      "events": [
+        {
+          "threadId": "thread-resume",
+          "timestamp": 1,
+          "turnId": "turn-malformed",
+          "type": "turn.start"
+        },
+        {
+          "status": "completed",
+          "timestamp": 2,
+          "turnId": "turn-malformed",
+          "type": "turn.end"
+        }
+      ]
+    },
+    "sse-reconnect": {
+      "description": "SSE projection populates frame ids with cursors; decoding a trace truncated after 4 frames yields a Last-Event-ID that resumes the remaining frames.",
+      "capacity": 32,
+      "truncateAfterFrames": 4,
+      "events": [
+        {
+          "threadId": "thread-resume",
+          "timestamp": 1,
+          "turnId": "turn-sse",
+          "type": "turn.start"
+        },
+        {
+          "messageId": "message-sse",
+          "role": "assistant",
+          "timestamp": 2,
+          "type": "message.start"
+        },
+        {
+          "iterationCount": 1,
+          "timestamp": 3,
+          "turnNodeHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "type": "state.checkpoint"
+        },
+        {
+          "delta": "Hi",
+          "messageId": "message-sse",
+          "timestamp": 4,
+          "type": "text.delta"
+        },
+        {
+          "messageId": "message-sse",
+          "text": "Hi",
+          "timestamp": 5,
+          "type": "text.done"
+        },
+        {
+          "finishReason": "stop",
+          "messageId": "message-sse",
+          "timestamp": 6,
+          "type": "message.done"
+        },
+        {
+          "status": "completed",
+          "timestamp": 7,
+          "turnId": "turn-sse",
+          "type": "turn.end"
+        }
+      ]
+    }
+  }
+}

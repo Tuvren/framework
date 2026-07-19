@@ -82,8 +82,8 @@ model SequencedStreamFrame {
 
   /**
    * The canonical `TuvrenStreamEvent`, serialized per the canonical stream
-   * contract (packet `tuvren.shared.core`; JSON with the `Uint8Array` marker
-   * convention). This schema does not constrain the event shape — the
+   * contract (packet `tuvren.shared.core`, including its binary-payload
+   * marker convention). This schema does not constrain the event shape — the
    * canonical stream authority does.
    */
   event: unknown;

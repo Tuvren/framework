@@ -8,6 +8,14 @@
     {
       "path": "spec/streaming/resume/typespec/main.tsp",
       "format": "typespec"
+    },
+    {
+      "path": "spec/conformance/streaming/fixtures/event-stream-resume-scenarios.json",
+      "format": "fixture-set"
+    },
+    {
+      "path": "spec/conformance/streaming/plans/event-stream-resume.json",
+      "format": "conformance-plan"
     }
   ],
   "generatedArtifacts": [
@@ -15,6 +23,13 @@
       "path": "spec/streaming/resume/artifacts/json-schema",
       "generatedFrom": "spec/streaming/resume/typespec",
       "generator": "@typespec/json-schema"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.framework.event-stream-resume.core",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/streaming/plans/event-stream-resume.json"
     }
   ],
   "bindingProjections": {
@@ -40,6 +55,10 @@
     {
       "kind": "schema-validation",
       "target": "spec/streaming/resume/artifacts/json-schema"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/streaming/plans/event-stream-resume.json"
     },
     {
       "kind": "freshness-check",

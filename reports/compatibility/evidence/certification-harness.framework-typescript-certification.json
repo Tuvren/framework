@@ -3,6 +3,7 @@
   "boundary": "framework",
   "capabilities": [
     "framework.event-stream",
+    "framework.event-stream-resume",
     "framework.event-stream-sse",
     "framework.host-session",
     "framework.orchestration",
@@ -947,6 +948,162 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.capability-policy"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.requiredEvidence.result.resume.cursorTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.requiredEvidence.result.resume.replaySequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.cross-checkpoint-resume",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.cursor-out-of-window.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cursor-out-of-window.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.cursor-out-of-window",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.malformed-cursor-snapshot-fallback.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.malformed-cursor-snapshot-fallback.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.malformed-cursor-snapshot-fallback",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.replay-from-mid-turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.replay-from-mid-turn.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.replay-from-mid-turn.requiredEvidence.result.resume.replaySequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.replay-from-mid-turn.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.replay-from-mid-turn",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.requiredEvidence.result.resume.sse.frameIdSequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.requiredEvidence.result.resume.sse.lastEventIdTurnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.requiredEvidence.result.resume.sse.reconnectReplaySequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.requiredEvidence.result.resume.sse.reconnectStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.unknown-turn-cursor.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.unknown-turn-cursor.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.unknown-turn-cursor",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
       },
       "status": "pass"
     },
@@ -10726,9 +10883,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 472,
-    "totalChecks": 484,
-    "applicableChecks": 472,
+    "passedChecks": 478,
+    "totalChecks": 490,
+    "applicableChecks": 478,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

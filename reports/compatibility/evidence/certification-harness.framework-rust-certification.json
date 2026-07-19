@@ -63,6 +63,12 @@
     "bb.bb005.composition-invocation-deterministic",
     "bb.bb005.composition-invocation-has-reason",
     "bb.bb005.composition-invocation-multi-dimension-reason",
+    "event-stream-resume.cross-checkpoint-resume",
+    "event-stream-resume.cursor-out-of-window",
+    "event-stream-resume.malformed-cursor-snapshot-fallback",
+    "event-stream-resume.replay-from-mid-turn",
+    "event-stream-resume.sse-id-population-and-last-event-id-reconnect",
+    "event-stream-resume.unknown-turn-cursor",
     "event-stream-sse.comment-line-ignored",
     "event-stream-sse.cr-line-terminator",
     "event-stream-sse.crlf-line-terminator",
@@ -504,9 +510,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 0,
-    "totalChecks": 484,
+    "totalChecks": 490,
     "applicableChecks": 0,
-    "nonApplicableChecks": 484
+    "nonApplicableChecks": 490
   },
   "suiteId": "tuvren.framework.promoted-authority",
   "suiteVersion": "0.1.0"

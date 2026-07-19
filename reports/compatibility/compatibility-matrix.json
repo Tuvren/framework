@@ -58,6 +58,12 @@
             "bb.bb005.composition-invocation-deterministic",
             "bb.bb005.composition-invocation-has-reason",
             "bb.bb005.composition-invocation-multi-dimension-reason",
+            "event-stream-resume.cross-checkpoint-resume",
+            "event-stream-resume.cursor-out-of-window",
+            "event-stream-resume.malformed-cursor-snapshot-fallback",
+            "event-stream-resume.replay-from-mid-turn",
+            "event-stream-resume.sse-id-population-and-last-event-id-reconnect",
+            "event-stream-resume.unknown-turn-cursor",
             "event-stream-sse.comment-line-ignored",
             "event-stream-sse.cr-line-terminator",
             "event-stream-sse.crlf-line-terminator",
@@ -482,13 +488,14 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 472,
-            "totalChecks": 484,
-            "applicableChecks": 472,
+            "passedChecks": 478,
+            "totalChecks": 490,
+            "applicableChecks": 478,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
             "framework.event-stream",
+            "framework.event-stream-resume",
             "framework.event-stream-sse",
             "framework.host-session",
             "framework.orchestration",
@@ -526,9 +533,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 484,
+            "totalChecks": 490,
             "applicableChecks": 12,
-            "nonApplicableChecks": 472
+            "nonApplicableChecks": 478
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json",
@@ -1354,9 +1361,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 484,
+            "totalChecks": 490,
             "applicableChecks": 0,
-            "nonApplicableChecks": 484
+            "nonApplicableChecks": 490
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-rust-certification.json",

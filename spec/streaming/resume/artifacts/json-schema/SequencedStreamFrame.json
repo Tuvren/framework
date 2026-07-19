@@ -16,7 +16,7 @@
       "description": "Opaque resume-cursor token positioned at this event (decoded shape:\n`ResumeCursorPayload`). A client that reconnects presents the last cursor\nit observed."
     },
     "event": {
-      "description": "The canonical `TuvrenStreamEvent`, serialized per the canonical stream\ncontract (packet `tuvren.shared.core`; JSON with the `Uint8Array` marker\nconvention). This schema does not constrain the event shape — the\ncanonical stream authority does."
+      "description": "The canonical `TuvrenStreamEvent`, serialized per the canonical stream\ncontract (packet `tuvren.shared.core`, including its binary-payload\nmarker convention). This schema does not constrain the event shape — the\ncanonical stream authority does."
     }
   },
   "required": ["turnId", "sequence", "cursor", "event"],
