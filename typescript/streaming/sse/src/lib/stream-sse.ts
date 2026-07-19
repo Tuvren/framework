@@ -218,14 +218,10 @@ function formatSseFrame(frame: TuvrenSseFrame): string {
     lines.push(`retry: ${frame.retry}`);
   }
 
-  const payloadLines = frame.data.split(SSE_NEWLINE_PATTERN);
-
-  if (payloadLines.length === 0) {
-    lines.push("data:");
-  } else {
-    for (const payloadLine of payloadLines) {
-      lines.push(`data: ${payloadLine}`);
-    }
+  // String.prototype.split never yields an empty array (an empty payload
+  // splits to [""]), so every frame emits at least one `data:` line.
+  for (const payloadLine of frame.data.split(SSE_NEWLINE_PATTERN)) {
+    lines.push(`data: ${payloadLine}`);
   }
 
   return `${lines.join("\n")}\n\n`;

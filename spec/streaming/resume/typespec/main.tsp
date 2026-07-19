@@ -94,8 +94,10 @@ model SequencedStreamFrame {
  */
 enum ReplayStatus {
   /**
-   * The cursor position is retained: the window replays every sequenced event
-   * after the cursor position, in order, then live tailing continues.
+   * The cursor position is retained: the window replays every retained
+   * sequenced event strictly after the cursor position in arrival order —
+   * including events of later turns retained after the cursor's turn — then
+   * live tailing continues.
    */
   resumed: "resumed",
 
@@ -122,7 +124,7 @@ enum ReplayStatus {
 /**
  * Result of a replay attempt. `events` is present exactly when `status` is
  * `resumed` and contains the retained sequenced frames strictly after the
- * cursor position, in sequence order.
+ * cursor position, in arrival order across turns.
  *
  * Modeling note: the generated JSON Schema leaves `events` unconditionally
  * optional because this model is not expressed as a per-status discriminated

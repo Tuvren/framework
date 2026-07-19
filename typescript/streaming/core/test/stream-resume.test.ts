@@ -391,28 +391,59 @@ describe("review-fix regressions", () => {
   });
 
   test("a fully evicted turn reports unknown-turn and prunes bookkeeping", async () => {
-    const firstTurn = await collect(
+    // One sequencer over both turns, per the binding appendix wiring rule.
+    const frames = await collect(
       createSequencedTuvrenStreamEvents(
-        createFixtureStream(turnEvents("turn-old"))
-      )
-    );
-    const secondTurn = await collect(
-      createSequencedTuvrenStreamEvents(
-        createFixtureStream(turnEvents("turn-new"))
+        createFixtureStream([
+          ...turnEvents("turn-old"),
+          ...turnEvents("turn-new"),
+        ])
       )
     );
     const buffer = createReplayBuffer({ capacity: 4 });
 
-    for (const frame of [...firstTurn, ...secondTurn]) {
+    for (const frame of frames) {
       buffer.record(frame);
     }
 
     // turn-new's 4 frames pushed every turn-old frame out.
-    expect(buffer.replayFrom(firstTurn[0]?.cursor as string).status).toBe(
-      "unknown-turn"
+    const firstTurnCursor = frames[0]?.cursor as string;
+    const secondTurnMidCursor = frames[5]?.cursor as string;
+
+    expect(buffer.replayFrom(firstTurnCursor).status).toBe("unknown-turn");
+    expect(buffer.replayFrom(secondTurnMidCursor).status).toBe("resumed");
+  });
+
+  test("resume across a turn boundary replays the cursor turn's tail and every later retained turn", async () => {
+    // A client that sleeps across a turn boundary must not be told
+    // "resumed" while whole retained turns are silently dropped.
+    const frames = await collect(
+      createSequencedTuvrenStreamEvents(
+        createFixtureStream([...turnEvents("turn-a"), ...turnEvents("turn-b")])
+      )
     );
-    expect(buffer.replayFrom(secondTurn[1]?.cursor as string).status).toBe(
-      "resumed"
-    );
+    const buffer = createReplayBuffer({ capacity: 100 });
+
+    for (const frame of frames) {
+      buffer.record(frame);
+    }
+
+    // Cursor mid-turn-a (sequence 1 of 0..3).
+    const result = buffer.replayFrom(frames[1]?.cursor as string);
+
+    expect(result.status).toBe("resumed");
+
+    if (result.status === "resumed") {
+      expect(
+        result.events.map((frame) => [frame.turnId, frame.sequence])
+      ).toEqual([
+        ["turn-a", 2],
+        ["turn-a", 3],
+        ["turn-b", 0],
+        ["turn-b", 1],
+        ["turn-b", 2],
+        ["turn-b", 3],
+      ]);
+    }
   });
 });

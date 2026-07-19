@@ -355,13 +355,14 @@ export function createReplayBuffer(options: {
         return { status: "unknown-turn" };
       }
 
-      const retainedForTurn = retained.filter(
-        (entry) => entry.frame.turnId === payload.turnId
-      );
-
       if (payload.turnNodeHash !== undefined) {
-        const anchorRetained = retainedForTurn.some(
-          (entry) => entry.anchor === payload.turnNodeHash
+        // Anchor-lineage validation is scoped to the cursor's own turn: a
+        // window that no longer retains the cursor's checkpoint anchor for
+        // that turn must never serve a different lineage.
+        const anchorRetained = retained.some(
+          (entry) =>
+            entry.frame.turnId === payload.turnId &&
+            entry.anchor === payload.turnNodeHash
         );
 
         if (!anchorRetained) {
@@ -369,18 +370,23 @@ export function createReplayBuffer(options: {
         }
       }
 
-      const cursorFrameRetained = retainedForTurn.some(
-        (entry) => entry.frame.sequence === payload.sequence
+      const cursorIndex = retained.findIndex(
+        (entry) =>
+          entry.frame.turnId === payload.turnId &&
+          entry.frame.sequence === payload.sequence
       );
 
-      if (!cursorFrameRetained) {
+      if (cursorIndex === -1) {
         return { status: "out-of-window" };
       }
 
+      // Replay is an arrival-order slice across turns, not a per-turn
+      // filter: a session that crossed a turn boundary while the client was
+      // disconnected must replay the cursor turn's tail AND every later
+      // retained turn — a per-turn tail under a positive `resumed` status
+      // would silently drop whole turns.
       return {
-        events: retainedForTurn
-          .filter((entry) => entry.frame.sequence > payload.sequence)
-          .map((entry) => entry.frame),
+        events: retained.slice(cursorIndex + 1).map((entry) => entry.frame),
         status: "resumed",
       };
     },

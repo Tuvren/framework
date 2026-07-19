@@ -29,7 +29,7 @@ Exports (all `@experimental`, ADR-056 posture):
   - Turn with no retained frames (never observed, or fully evicted) → `unknown-turn`. A very-late cursor for a long-evicted turn therefore reports `unknown-turn` rather than `out-of-window`; both mean the same snapshot fallback to the client.
   - Turn retained but the position has been evicted below the retention floor → `out-of-window`.
   - Cursor `turnNodeHash` present but not among the checkpoint anchors the buffer observed for that turn's retained history → `out-of-window` (never silently serve a different anchor lineage). A cursor anchored at an *older retained* checkpoint of the same turn replays normally (cross-checkpoint resume).
-  - Otherwise → `resumed`, returning every retained frame strictly after the cursor position in sequence order.
+  - Otherwise → `resumed`, returning every retained frame strictly after the cursor position **in arrival order across turns** — the cursor turn's tail and every later retained turn. A disconnect that spans a turn boundary must never report `resumed` while silently dropping retained later turns; per-turn scoping applies only to anchor-lineage validation, never to the replayed slice.
 - Malformed tokens and unknown payload versions map to `out-of-window`.
 
 ## Transport projections
