@@ -22,7 +22,7 @@ sequenceDiagram
     Binding->>Client: resolve pending dispatch with client-reported result
     Client-->>Events: canonical capability result event
   else callId matches no pending dispatch
-    Binding-->>Peer: outbound frame {kind: "session_rejection", correlationId, code: "capability_result_stale"}
+    Binding-->>Peer: outbound frame {kind: "session_rejection", rejection: {correlationId, code: "capability_result_stale"}}
   end
 
   Note over Peer,Kernel: Approval resolve with handle replacement
@@ -34,7 +34,7 @@ sequenceDiagram
     Binding->>Binding: hold replacement handle, re-bridge events() into one continuous outbound() stream
     Binding-->>Peer: outbound frame {kind: "event", event: approval.resolved}
   else held handle is not paused
-    Binding-->>Peer: outbound frame {kind: "session_rejection", correlationId, code: "session_frame_wrong_state", details}
+    Binding-->>Peer: outbound frame {kind: "session_rejection", rejection: {correlationId, code: "session_frame_wrong_state", details}}
   end
 
   Note over Peer,Framework: Steering and cancellation
@@ -44,10 +44,10 @@ sequenceDiagram
   alt held handle accepts cancel
     Binding->>Framework: cancel() on held handle
   else cancel races an already-applied approval
-    Binding-->>Peer: outbound frame {kind: "session_rejection", correlationId, code: "session_frame_wrong_state", details}
+    Binding-->>Peer: outbound frame {kind: "session_rejection", rejection: {correlationId, code: "session_frame_wrong_state", details}}
   end
 
   Note over Peer,Binding: A schema-invalid inbound frame is never silently dropped
   Peer->>Binding: inbound frame fails schema validation
-  Binding-->>Peer: outbound frame {kind: "session_rejection", correlationId, code: "session_frame_invalid"}
+  Binding-->>Peer: outbound frame {kind: "session_rejection", rejection: {correlationId, code: "session_frame_invalid"}}
 ```
