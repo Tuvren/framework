@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionCancelFrame.json",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "cancel"
+    },
+    "sessionId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json"
+    },
+    "correlationId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Client-generated correlation identifier for this inbound frame. Echoed\nverbatim on the `SessionRejectionFrame` if the runtime rejects this\nframe."
+    }
+  },
+  "required": ["protocolVersion", "kind", "sessionId", "correlationId"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Client-to-runtime frame requesting cancellation of the active run held by\nthis session."
+}

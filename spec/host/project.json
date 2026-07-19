@@ -12,12 +12,17 @@
         "^production",
         "{workspaceRoot}/spec/host/typespec/**/*",
         "{workspaceRoot}/spec/host/artifacts/**/*",
+        "{workspaceRoot}/spec/host/session/typespec/**/*",
+        "{workspaceRoot}/spec/host/session/artifacts/**/*",
         "{workspaceRoot}/bun.lock"
       ],
-      "outputs": ["{workspaceRoot}/spec/host/artifacts/json-schema"],
+      "outputs": [
+        "{workspaceRoot}/spec/host/artifacts/json-schema",
+        "{workspaceRoot}/spec/host/session/artifacts/json-schema"
+      ],
       "options": {
         "cwd": "spec/host",
-        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts"
+        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun tsp compile ./session/typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts ./session/artifacts"
       }
     },
     "lint": {

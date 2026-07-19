@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionClientResultFrame.json",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "client_result"
+    },
+    "sessionId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json"
+    },
+    "correlationId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Client-generated correlation identifier for this inbound frame. Echoed\nverbatim on the `SessionRejectionFrame` if the runtime rejects this\nframe."
+    },
+    "result": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/ClientReportedResult.json"
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "kind",
+    "sessionId",
+    "correlationId",
+    "result"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Client-to-runtime frame reporting the result of a previously dispatched\ntuvren-client capability invocation."
+}

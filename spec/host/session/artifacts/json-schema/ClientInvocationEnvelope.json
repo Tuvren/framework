@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/ClientInvocationEnvelope.json",
+  "type": "object",
+  "properties": {
+    "callId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Identifier of the specific tool call this envelope dispatches. Echoed\nback on the matching `ClientReportedResult`."
+    },
+    "capabilityId": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Identifier of the tuvren-client capability being invoked."
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "description": "Side-effect-once idempotency identity for this invocation (ADR-052).\n\nA deterministic identity derived from the run id, call id, and active\nrun fencing token. The client environment can present it to the\nexternal system it drives so a dispatch retried or re-issued after a\npreemption recovery is deduplicated. Distinct from `leaseToken`: the\nlease token guards staleness of *this* dispatch and is echoed back,\nwhile the idempotency key dedupes the *external effect* and is never\nechoed."
+    },
+    "input": {
+      "description": "Capability input payload, opaque to this packet."
+    },
+    "leaseToken": {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/NonEmptyString.json",
+      "description": "Opaque non-secret lease token. The client MUST echo it verbatim in the\ncorresponding `ClientReportedResult`. A mismatched or missing echo\nsignals a stale dispatch."
+    }
+  },
+  "required": ["callId", "capabilityId", "input", "leaseToken"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "The invocation envelope the runtime dispatches to an attached client\nendpoint when it executes a tuvren-client capability (ADR-052, §4.21 /\nKRT-AZ001). Contains everything the client needs to execute the\ncapability. Credentials and environment secrets are never included — they\nare owned by the client edge and MUST NOT appear on this envelope."
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/ContentPart.json",
+  "anyOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/TextPart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/ReasoningPart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/ToolCallPart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/ToolResultPart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/FilePart.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/StructuredPart.json"
+    }
+  ],
+  "description": "Mirrors `ContentPart` in the runtime-api authority packet\n(`spec/host/typespec/main.tsp`). Must stay in sync with that declaration."
+}

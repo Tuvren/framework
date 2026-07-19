@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/host-session/SessionInboundFrame.json",
+  "anyOf": [
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/SessionClientResultFrame.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/SessionApprovalResponseFrame.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/SessionSteerFrame.json"
+    },
+    {
+      "$ref": "https://tuvren.dev/schemas/framework/host-session/SessionCancelFrame.json"
+    }
+  ],
+  "description": "Every frame kind a client endpoint sends to the runtime over a duplex\nsession channel (client -> runtime direction). This family is\ntransport-agnostic: SSE, WebSocket, and stdio bindings each carry these\nframes over their own wire encoding as a separate transport-level concern."
+}
