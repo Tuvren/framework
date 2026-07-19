@@ -410,6 +410,10 @@
     "event-stream-ext.sse.resumed-approval-turn-source-events-include-text-delta",
     "event-stream-ext.sse.resumed-approval-turn-source-thread-id-present",
     "event-stream-ext.sse.resumed-approval-turn-thread-id-present",
+    "host-session.approval-response-resumes-from-checkpoint",
+    "host-session.cancel-propagates-cooperatively",
+    "host-session.frame-schema-validation",
+    "host-session.stale-client-result-rejected",
     "ba.ba001.policy-denied-lifecycle-no-start-error-result",
     "ba.ba001.provider-mediated-lifecycle-start-emitted",
     "ba.ba001.provider-native-lifecycle-result-emitted",
@@ -704,9 +708,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 12,
-    "totalChecks": 479,
+    "totalChecks": 483,
     "applicableChecks": 12,
-    "nonApplicableChecks": 467
+    "nonApplicableChecks": 471
   },
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"

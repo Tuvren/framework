@@ -267,6 +267,7 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         "framework.runner-api",
         "framework.event-stream",
         "framework.event-stream-sse",
+        "framework.host-session",
         "framework.orchestration",
         "framework.run-liveness",
         "framework.react-runner",

@@ -1,0 +1,77 @@
+{
+  "packetId": "tuvren.framework.host-session",
+  "version": "0.1.0",
+  "boundary": "framework",
+  "surface": "host-session",
+  "humanAuthorityRefs": [
+    "docs/KrakenFrameworkSpecification.md#7-host-contract",
+    ".constitution/tech-spec/adrs/ADR-060-duplex-session-protocol-frame-vocabulary.md",
+    ".constitution/architecture/flows/flow-duplex-session-inbound-routing.md"
+  ],
+  "authoritativeSources": [
+    {
+      "path": "spec/host/session/typespec/main.tsp",
+      "format": "typespec"
+    },
+    {
+      "path": "spec/conformance/engine/fixtures/host-session-fixtures.json",
+      "format": "fixture-set"
+    },
+    {
+      "path": "spec/conformance/engine/plans/host-session.json",
+      "format": "conformance-plan"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "spec/host/session/artifacts/json-schema",
+      "generatedFrom": "spec/host/session/typespec",
+      "generator": "@typespec/json-schema"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.framework.host-session.core",
+      "planVersion": "0.1.0",
+      "path": "spec/conformance/engine/plans/host-session.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "typescript/host/session"
+  },
+  "bindingAppendices": [
+    {
+      "language": "typescript",
+      "path": "spec/host/session/bindings/typescript.md"
+    }
+  ],
+  "forbiddenAuthoritySources": [
+    "typescript/host/session",
+    "typescript/certification",
+    "typescript/conformance-adapter",
+    "rust/certification",
+    "rust/conformance-adapter",
+    "docs",
+    ".constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "schema-validation",
+      "target": "spec/host/session/artifacts/json-schema"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/engine/plans/host-session.json"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "spec/host/session/artifacts/json-schema"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "spec/host/session/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run host-spec:codegen"
+    }
+  ]
+}

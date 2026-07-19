@@ -27,6 +27,7 @@ const FRAMEWORK_PACKET_PATHS: readonly string[] = [
   "spec/core/authority-packet.json",
   "spec/streaming/sse/authority-packet.json",
   "spec/runners/react/authority-packet.json",
+  "spec/host/session/authority-packet.json",
 ];
 
 interface AuthorityPacketManifest {
