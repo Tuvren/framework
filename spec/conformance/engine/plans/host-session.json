@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.framework.host-session.core",
-  "planVersion": "0.1.0",
+  "planVersion": "0.2.0",
   "packetId": "tuvren.framework.host-session",
   "applicability": {
     "capabilities": ["framework.host-session"]
@@ -97,6 +97,28 @@
         "awaitResultStatus",
         "awaitResultErrorCode"
       ]
+    },
+    {
+      "checkId": "host-session.cancel-while-paused-terminates-stream",
+      "operation": "host-session.cancel-while-paused",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.pausedBeforeCancel",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.outboundClosed",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.awaitResultStatus",
+          "equals": "completed"
+        }
+      ],
+      "evidence": ["pausedBeforeCancel", "outboundClosed", "awaitResultStatus"]
     },
     {
       "checkId": "host-session.frame-schema-validation",

@@ -542,6 +542,100 @@ interface HostSessionFrameFixture {
   name: string;
 }
 
+export async function runCancelWhilePaused(): Promise<AdapterProjection> {
+  const SESSION_ID = "sess-host-session-cancel-paused-1";
+  const TOOL_NAME = "session.cancel-paused.tool";
+  const CALL_ID = "cancel-paused-call-1";
+
+  const harness = createConformanceKernelHarness();
+  const runner = createSingleToolCallRunner(
+    TOOL_NAME,
+    CALL_ID,
+    "host-session cancel-while-paused conformance complete"
+  );
+  const tools: TuvrenToolDefinition[] = [
+    {
+      approval: true,
+      description: "host-session conformance approval-gated tool",
+      execute() {
+        return { ok: true };
+      },
+      inputSchema: { type: "object" },
+      name: TOOL_NAME,
+    },
+  ];
+  const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultRunnerId: RUNNER_ID,
+    kernel: harness.kernel,
+    runnerRegistry: createRunnerRegistry([runner]),
+  });
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: { name: AGENT_NAME, tools },
+    signal: textSignal("host-session cancel while paused conformance"),
+    threadId: thread.threadId,
+  });
+  const binding = createDuplexSessionBinding(handle, {
+    sessionId: SESSION_ID,
+  });
+
+  // Drain with an explicit closure marker: the behavior under test is that
+  // the outbound stream terminates even though a paused handle's cancel
+  // delivers its terminal outcome only through awaitResult().
+  const frames: SessionOutboundFrame[] = [];
+  let outboundClosed = false;
+  const iterator = binding.outbound()[Symbol.asyncIterator]();
+  const drainLoop = (async () => {
+    for (;;) {
+      const step = await iterator.next();
+      if (step.done) {
+        outboundClosed = true;
+        return;
+      }
+      frames.push(step.value);
+    }
+  })();
+  drainLoop.catch(() => undefined);
+
+  const resultPromise = handle.awaitResult();
+  await waitFor(() => handle.status().phase === "paused");
+
+  binding.dispatchInbound({
+    correlationId: "corr-cancel-paused-1",
+    kind: "cancel",
+    protocolVersion: "1",
+    sessionId: SESSION_ID,
+  });
+
+  // Cancel-while-paused is documented as rejecting the pending tool calls
+  // and completing the Turn without re-entering the model — explicitly not
+  // a Turn failure (KrakenFrameworkSpecification 6.10) — so the terminal
+  // result resolves with status "completed" rather than rejecting.
+  let awaitResultStatus: string | undefined;
+  try {
+    const result = await resultPromise;
+    awaitResultStatus = result.status;
+  } catch {
+    awaitResultStatus = "failed";
+  }
+
+  await waitFor(() => outboundClosed);
+
+  const observation = {
+    awaitResultStatus,
+    outboundClosed,
+    pausedBeforeCancel: true,
+  };
+
+  return {
+    events: eventFramePayloads(frames),
+    evidence: observation,
+    result: observation,
+  };
+}
+
 export async function runValidateFrameFixtures(
   input: unknown
 ): Promise<AdapterProjection> {

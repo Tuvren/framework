@@ -3589,6 +3589,52 @@
     {
       "assertionResults": [
         {
+          "assertionId": "host-session.cancel-while-paused-terminates-stream.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.cancel-while-paused-terminates-stream.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.cancel-while-paused-terminates-stream.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.cancel-while-paused-terminates-stream.requiredEvidence.awaitResultStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.cancel-while-paused-terminates-stream.requiredEvidence.outboundClosed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.cancel-while-paused-terminates-stream.requiredEvidence.pausedBeforeCancel",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.cancel-while-paused-terminates-stream.requiredEvidence.result.awaitResultStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.cancel-while-paused-terminates-stream.requiredEvidence.result.outboundClosed",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.cancel-while-paused-terminates-stream.requiredEvidence.result.pausedBeforeCancel",
+          "status": "pass"
+        }
+      ],
+      "checkId": "host-session.cancel-while-paused-terminates-stream",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.host-session.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "host-session.frame-schema-validation.1.resultField",
           "status": "pass"
         },
@@ -10680,9 +10726,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 471,
-    "totalChecks": 483,
-    "applicableChecks": 471,
+    "passedChecks": 472,
+    "totalChecks": 484,
+    "applicableChecks": 472,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

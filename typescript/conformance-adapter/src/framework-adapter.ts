@@ -77,6 +77,7 @@ import {
 import {
   runApprovalResponseResume,
   runCancelCooperative,
+  runCancelWhilePaused,
   runStaleClientResult,
   runValidateFrameFixtures,
 } from "./framework-adapter-session.ts";
@@ -474,6 +475,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runApprovalResponseResume();
       case "host-session.cancel-cooperative":
         return runCancelCooperative();
+      case "host-session.cancel-while-paused":
+        return runCancelWhilePaused();
       case "host-session.validate-frame-fixtures":
         return runValidateFrameFixtures(input);
       default:

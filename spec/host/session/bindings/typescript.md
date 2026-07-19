@@ -79,6 +79,14 @@ way `ExecutionHandle` method signatures are binding-only per
   a session that can no longer deliver a `client_result` must not leave the
   runtime awaiting one. Connection-lifecycle policy beyond that (timeouts,
   disconnect detach) is issue #102's scope.
+- Terminal detection is dual-channel: the binding closes the outbound stream
+  when the current handle's event stream ends in a non-paused phase **or**
+  when its `awaitResult()` settles, whichever comes first. The second
+  channel matters for `cancel` on a paused-for-approval handle: the runtime
+  delivers that terminal outcome only through `awaitResult()` (the paused
+  handle's event queue is already closed), so the peer's signal that the
+  cancel took effect is stream termination — no final `turn.end` event frame
+  is available to forward in that path.
 - `clientEndpoint: AttachedClientEndpoint` is what a host wires into
   `AgentConfig.clientEndpoints`.
 - `currentHandle(): ExecutionHandle` exposes the execution handle currently

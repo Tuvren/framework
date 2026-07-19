@@ -100,6 +100,8 @@ interface FakeHandle {
   events: FakeEventSource;
   handle: ExecutionHandle;
   setPhase(phase: ExecutionStatus["phase"]): void;
+  /** Settle the awaitResult() promise (reject when `error` is provided). */
+  settleResult(error?: unknown): void;
 }
 
 function makeFakeHandle(
@@ -114,9 +116,17 @@ function makeFakeHandle(
   const calls: FakeHandleCalls = { cancel: 0, resolveApproval: [], steer: [] };
   let phase: ExecutionStatus["phase"] = options.phase ?? "running";
 
+  let resultResolve: (result: ExecutionResult) => void = () => undefined;
+  let resultReject: (error: unknown) => void = () => undefined;
+  const resultPromise = new Promise<ExecutionResult>((resolve, reject) => {
+    resultResolve = resolve;
+    resultReject = reject;
+  });
+  resultPromise.catch(() => undefined);
+
   const handle: ExecutionHandle = {
     awaitResult(): Promise<ExecutionResult> {
-      throw new Error("not used in these tests");
+      return resultPromise;
     },
     cancel(): void {
       calls.cancel += 1;
@@ -151,6 +161,13 @@ function makeFakeHandle(
     handle,
     setPhase(nextPhase: ExecutionStatus["phase"]): void {
       phase = nextPhase;
+    },
+    settleResult(error?: unknown): void {
+      if (error === undefined) {
+        resultResolve({} as ExecutionResult);
+        return;
+      }
+      resultReject(error);
     },
   };
 }
@@ -564,6 +581,53 @@ describe("createDuplexSessionBinding", () => {
         leaseToken: "lease-18",
       })
     ).rejects.toMatchObject({ code: "duplex_session_closed" });
+  });
+
+  test("cancel while paused closes the outbound stream and sweeps pending dispatches", async () => {
+    const fake = makeFakeHandle({ phase: "paused" });
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "sess-19",
+    });
+    const outbound = binding.outbound();
+
+    const pending = binding.clientEndpoint.dispatch({
+      callId: "call-19",
+      capabilityId: "cap.demo",
+      input: {},
+      leaseToken: "lease-19",
+    });
+
+    // The runtime closes a paused handle's events stream at the pause; the
+    // binding deliberately keeps the outbound queue open awaiting a possible
+    // approval_response.
+    fake.events.end();
+
+    // A cancel on a paused handle does not throw and surfaces its terminal
+    // outcome only through awaitResult(); the binding must still terminate
+    // the outbound stream and settle the pending dispatch.
+    binding.dispatchInbound({
+      correlationId: "corr-19",
+      kind: "cancel",
+      protocolVersion: "1",
+      sessionId: "sess-19",
+    });
+    expect(fake.calls.cancel).toBe(1);
+    fake.settleResult(new Error("execution_cancelled"));
+
+    const iterator = outbound[Symbol.asyncIterator]();
+    const drained: unknown[] = [];
+    // Drain whatever buffered frames precede the close (the client_invocation
+    // frame from the dispatch above).
+    let step = await iterator.next();
+    while (!step.done) {
+      drained.push(step.value);
+      step = await iterator.next();
+    }
+    expect(step.done).toBe(true);
+
+    await expect(pending).rejects.toMatchObject({
+      code: "duplex_session_closed",
+    });
   });
 
   test("a non-TuvrenRuntimeError thrown by the handle propagates out of dispatchInbound", () => {
