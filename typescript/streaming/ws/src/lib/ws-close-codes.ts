@@ -39,7 +39,9 @@ export const WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED = 4005;
 export const WS_CLOSE_CODE_HANDSHAKE_INVALID = 4000;
 
 /**
- * Half-open connection detected: no `pong` within the configured timeout.
+ * Half-open connection detected: no inbound activity of any kind within the
+ * configured timeout window after a `ping` was sent. `pong` is the answer of
+ * last resort — any inbound message counts as liveness.
  *
  * @experimental ADR-056 posture: `0.x`, subject to change before graduation.
  */

@@ -105,8 +105,11 @@ export interface WsInboundFrameEnvelope {
 }
 
 /**
- * Application-level heartbeat probe. Either side MAY send `ping`; the
- * receiver MUST answer with `pong`.
+ * Application-level heartbeat probe. After a completed handshake, either side
+ * MAY send `ping` and the receiver MUST answer with `pong` (a pre-handshake
+ * `ping` is not a handshake and closes the connection like any other
+ * non-handshake first message). Any inbound message counts as liveness;
+ * `pong` is only the answer of last resort for an otherwise idle peer.
  *
  * @experimental
  */
