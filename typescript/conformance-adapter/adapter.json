@@ -13,7 +13,9 @@
     "framework.runner-api",
     "framework.event-stream",
     "framework.event-stream-sse",
+    "framework.event-stream-resume",
     "framework.host-session",
+    "framework.event-stream-ws",
     "framework.orchestration",
     "framework.run-liveness",
     "framework.react-runner",
@@ -26,6 +28,8 @@
   "authorityPackets": [
     "spec/core/authority-packet.json",
     "spec/streaming/sse/authority-packet.json",
+    "spec/streaming/resume/authority-packet.json",
+    "spec/streaming/ws/authority-packet.json",
     "spec/runners/react/authority-packet.json",
     "spec/host/session/authority-packet.json"
   ],

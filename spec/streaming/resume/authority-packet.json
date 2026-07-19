@@ -1,0 +1,74 @@
+{
+  "packetId": "tuvren.framework.event-stream-resume",
+  "version": "0.1.0",
+  "boundary": "framework",
+  "surface": "event-stream-resume",
+  "humanAuthorityRefs": ["docs/KrakenFrameworkSpecification.md#6-streaming"],
+  "authoritativeSources": [
+    {
+      "path": "spec/streaming/resume/typespec/main.tsp",
+      "format": "typespec"
+    },
+    {
+      "path": "spec/conformance/streaming/fixtures/event-stream-resume-scenarios.json",
+      "format": "fixture-set"
+    },
+    {
+      "path": "spec/conformance/streaming/plans/event-stream-resume.json",
+      "format": "conformance-plan"
+    }
+  ],
+  "generatedArtifacts": [
+    {
+      "path": "spec/streaming/resume/artifacts/json-schema",
+      "generatedFrom": "spec/streaming/resume/typespec",
+      "generator": "@typespec/json-schema"
+    }
+  ],
+  "conformancePlans": [
+    {
+      "planId": "tuvren.framework.event-stream-resume.core",
+      "planVersion": "0.2.0",
+      "path": "spec/conformance/streaming/plans/event-stream-resume.json"
+    }
+  ],
+  "bindingProjections": {
+    "typescript": "typescript/streaming/core"
+  },
+  "bindingAppendices": [
+    {
+      "language": "typescript",
+      "path": "spec/streaming/resume/bindings/typescript.md"
+    }
+  ],
+  "forbiddenAuthoritySources": [
+    "typescript/streaming/core",
+    "typescript/streaming/sse",
+    "typescript/certification",
+    "typescript/conformance-adapter",
+    "rust/certification",
+    "rust/conformance-adapter",
+    "docs",
+    ".constitution"
+  ],
+  "verificationPaths": [
+    {
+      "kind": "schema-validation",
+      "target": "spec/streaming/resume/artifacts/json-schema"
+    },
+    {
+      "kind": "conformance-plan",
+      "target": "spec/conformance/streaming/plans/event-stream-resume.json"
+    },
+    {
+      "kind": "freshness-check",
+      "target": "spec/streaming/resume/artifacts/json-schema"
+    }
+  ],
+  "freshnessChecks": [
+    {
+      "artifact": "spec/streaming/resume/artifacts/json-schema",
+      "regenerateCommand": "bun run nx run streaming-spec:codegen"
+    }
+  ]
+}

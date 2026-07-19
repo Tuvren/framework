@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-ws/WsPing.json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "ping"
+    }
+  },
+  "required": ["kind"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Application-level heartbeat probe. The abstract socket seam has no opcode\nsurface, so liveness runs in-band: either side MAY send `ping`; the\nreceiver MUST answer with `pong`. Any inbound message counts as liveness —\na peer actively sending frames is demonstrably alive; `pong` is the answer\na quiet peer produces. A transport that observes no inbound activity\nwithin its configured timeout after sending a `ping` MUST treat the\nconnection as half-open and close with code 4004 (`heartbeat_timeout`)."
+}

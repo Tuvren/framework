@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-ws/WsOutboundFrameEnvelope.json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "frame"
+    },
+    "cursor": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-ws/NonEmptyString.json",
+      "description": "Opaque resume cursor positioned at the wrapped frame. Present exactly\nwhen the wrapped session frame has `kind: \"event\"` — the canonical event\nstream is the only sequenced, replayable surface; `client_invocation`\nand `session_rejection` frames carry no cursor."
+    },
+    "frame": {
+      "description": "The session frame, schema-owned by the host-session authority packet.\nThis schema deliberately does not constrain it."
+    }
+  },
+  "required": ["kind", "frame"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Outbound envelope carrying one session frame from the host to the remote\npeer. The wrapped frame is a `SessionOutboundFrame` exactly as defined by\nthe host-session authority packet (`tuvren.framework.host-session`); this\nenvelope adds carriage fields only and never alters frame semantics."
+}

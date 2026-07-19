@@ -3,7 +3,9 @@
   "boundary": "framework",
   "capabilities": [
     "framework.event-stream",
+    "framework.event-stream-resume",
     "framework.event-stream-sse",
+    "framework.event-stream-ws",
     "framework.host-session",
     "framework.orchestration",
     "framework.react-runner",
@@ -953,6 +955,180 @@
     {
       "assertionResults": [
         {
+          "assertionId": "event-stream-resume.anchor-lineage-mismatch.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.anchor-lineage-mismatch.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.anchor-lineage-mismatch",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.requiredEvidence.result.resume.cursorTurnNodeHash",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.requiredEvidence.result.resume.replaySequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cross-checkpoint-resume.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.cross-checkpoint-resume",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.cursor-out-of-window.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.cursor-out-of-window.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.cursor-out-of-window",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.malformed-cursor-snapshot-fallback.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.malformed-cursor-snapshot-fallback.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.malformed-cursor-snapshot-fallback",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.replay-from-mid-turn.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.replay-from-mid-turn.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.replay-from-mid-turn.requiredEvidence.result.resume.replaySequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.replay-from-mid-turn.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.replay-from-mid-turn",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.requiredEvidence.result.resume.sse.frameIdSequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.requiredEvidence.result.resume.sse.lastEventIdTurnId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.requiredEvidence.result.resume.sse.reconnectReplaySequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect.requiredEvidence.result.resume.sse.reconnectStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.sse-id-population-and-last-event-id-reconnect",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-resume.unknown-turn-cursor.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-resume.unknown-turn-cursor.requiredEvidence.result.resume.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-resume.unknown-turn-cursor",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-resume.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "event-stream-sse.comment-line-ignored.1.resultField",
           "status": "pass"
         },
@@ -1409,6 +1585,432 @@
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.event-stream-sse.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.decode-trace.frame-envelope.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.frame-envelope.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.frame-envelope.requiredEvidence.result.ws.decode.frame.present",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.frame-envelope.requiredEvidence.result.ws.decode.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.decode-trace.frame-envelope",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.decode-trace.frame-with-garbage-inner.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.frame-with-garbage-inner.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.frame-with-garbage-inner.requiredEvidence.result.ws.decode.frame.present",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.frame-with-garbage-inner.requiredEvidence.result.ws.decode.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.decode-trace.frame-with-garbage-inner",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-ack.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-ack.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-ack.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-ack.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-ack.requiredEvidence.result.ws.decode.handshakeAck.protocolVersion",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-ack.requiredEvidence.result.ws.decode.handshakeAck.resumeStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-ack.requiredEvidence.result.ws.decode.handshakeAck.sessionId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-ack.requiredEvidence.result.ws.decode.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.decode-trace.handshake-ack",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.requiredEvidence.result.ws.decode.handshake.authToken",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.requiredEvidence.result.ws.decode.handshake.cursor",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.requiredEvidence.result.ws.decode.handshake.protocolVersion",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.requiredEvidence.result.ws.decode.handshake.sessionId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token.requiredEvidence.result.ws.decode.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.requiredEvidence.result.ws.decode.handshake.authToken",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.requiredEvidence.result.ws.decode.handshake.cursor",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.requiredEvidence.result.ws.decode.handshake.protocolVersion",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.requiredEvidence.result.ws.decode.handshake.sessionId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.handshake-without-cursor.requiredEvidence.result.ws.decode.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.decode-trace.handshake-without-cursor",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.decode-trace.malformed-json.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.malformed-json.requiredEvidence.result.ws.decode.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.decode-trace.malformed-json",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.decode-trace.ping.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.ping.requiredEvidence.result.ws.decode.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.decode-trace.ping",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.decode-trace.pong.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.pong.requiredEvidence.result.ws.decode.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.decode-trace.pong",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.decode-trace.unknown-kind.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.decode-trace.unknown-kind.requiredEvidence.result.ws.decode.kind",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.decode-trace.unknown-kind",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.handshake-rejection-close-codes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.handshake-rejection-close-codes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.handshake-rejection-close-codes.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.handshake-rejection-close-codes.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.handshake-rejection-close-codes.requiredEvidence.result.ws.handshakeRejections.authRejectedCloseCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.handshake-rejection-close-codes.requiredEvidence.result.ws.handshakeRejections.nonHandshakeFirstMessageCloseCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.handshake-rejection-close-codes.requiredEvidence.result.ws.handshakeRejections.protocolVersionMismatchCloseCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.handshake-rejection-close-codes.requiredEvidence.result.ws.handshakeRejections.sessionMismatchCloseCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.handshake-rejection-close-codes",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.policy-closure-codes.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.policy-closure-codes.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.policy-closure-codes.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.policy-closure-codes.requiredEvidence.result.ws.policyClosures.backpressureCloseCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.policy-closure-codes.requiredEvidence.result.ws.policyClosures.backpressureSentFrameCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.policy-closure-codes.requiredEvidence.result.ws.policyClosures.heartbeatCloseCode",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.policy-closure-codes",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.reconnect-replays-from-cursor.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.reconnect-replays-from-cursor.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.reconnect-replays-from-cursor.requiredEvidence.result.ws.reconnect.ackResumeStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.reconnect-replays-from-cursor.requiredEvidence.result.ws.reconnect.replayedSequences",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.reconnect-replays-from-cursor",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.requiredEvidence.result.ws.session.allMessagesSchemaValid",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.requiredEvidence.result.ws.session.allSubsequentAreFrame",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.requiredEvidence.result.ws.session.firstMessageKind",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.requiredEvidence.result.ws.session.firstMessageResumeStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.requiredEvidence.result.ws.session.firstMessageSessionId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "event-stream-ws.session-roundtrip-live-stream.requiredEvidence.result.ws.session.sequencesStrictlyIncreasingFromZero",
+          "status": "pass"
+        }
+      ],
+      "checkId": "event-stream-ws.session-roundtrip-live-stream",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.event-stream-ws.core"
       },
       "status": "pass"
     },
@@ -10726,9 +11328,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 472,
-    "totalChecks": 484,
-    "applicableChecks": 472,
+    "passedChecks": 492,
+    "totalChecks": 504,
+    "applicableChecks": 492,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

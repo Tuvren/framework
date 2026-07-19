@@ -17,6 +17,7 @@
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import {
   createStreamAdapterWarningReporter,
+  type SequencedTuvrenStreamEvent,
   type StreamAdapterOptions,
   serializeTuvrenStreamEvent,
 } from "@tuvren/stream-core";
@@ -64,6 +65,62 @@ export function toSseFrames(
     createIteratorIterable(events[Symbol.asyncIterator]()),
     options
   );
+}
+
+/**
+ * Maps a sequenced stream (ADR-061, `createSequencedTuvrenStreamEvents` from
+ * `@tuvren/stream-core`) to {@link TuvrenSseFrame}s exactly like
+ * {@link toSseFrames}, additionally populating each frame's `id` with the
+ * envelope's opaque resume cursor — so WHATWG `Last-Event-ID` reconnection
+ * carries the cursor natively and a host can resume the stream through a
+ * replay buffer.
+ *
+ * `toSseFrames` is unchanged: hosts that do not opt into resumability keep
+ * emitting id-less frames.
+ *
+ * The source iterator is claimed synchronously for the same
+ * claim-before-first-pull reason as {@link toSseFrames}.
+ *
+ * @experimental
+ */
+export function toResumableSseFrames(
+  sequencedEvents: AsyncIterable<SequencedTuvrenStreamEvent>,
+  options?: StreamAdapterOptions
+): AsyncIterable<TuvrenSseFrame> {
+  // Claim tee-backed sources immediately so sibling adapter branches can still
+  // subscribe before any one consumer starts pulling the shared source stream.
+  return toResumableSseFramesSubscribed(
+    createIteratorIterable(sequencedEvents[Symbol.asyncIterator]()),
+    options
+  );
+}
+
+async function* toResumableSseFramesSubscribed(
+  sequencedEvents: AsyncIterable<SequencedTuvrenStreamEvent>,
+  options?: StreamAdapterOptions
+): AsyncIterable<TuvrenSseFrame> {
+  const reportWarning = createStreamAdapterWarningReporter(options);
+
+  for await (const sequenced of sequencedEvents) {
+    const event = sequenced.event;
+
+    if (event.type === "file.done" && event.data instanceof Uint8Array) {
+      reportWarning({
+        code: "sse_binary_payload_json_encoded",
+        message:
+          "SSE file.done binary payloads were encoded into a JSON marker object.",
+        details: {
+          messageId: event.messageId,
+        },
+      });
+    }
+
+    yield {
+      data: serializeTuvrenStreamEvent(event),
+      event: event.type,
+      id: sequenced.cursor,
+    };
+  }
 }
 
 async function* toSseFramesSubscribed(
@@ -161,14 +218,10 @@ function formatSseFrame(frame: TuvrenSseFrame): string {
     lines.push(`retry: ${frame.retry}`);
   }
 
-  const payloadLines = frame.data.split(SSE_NEWLINE_PATTERN);
-
-  if (payloadLines.length === 0) {
-    lines.push("data:");
-  } else {
-    for (const payloadLine of payloadLines) {
-      lines.push(`data: ${payloadLine}`);
-    }
+  // String.prototype.split never yields an empty array (an empty payload
+  // splits to [""]), so every frame emits at least one `data:` line.
+  for (const payloadLine of frame.data.split(SSE_NEWLINE_PATTERN)) {
+    lines.push(`data: ${payloadLine}`);
   }
 
   return `${lines.join("\n")}\n\n`;

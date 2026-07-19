@@ -127,7 +127,7 @@ function waitForAbort(signal: AbortSignal | undefined): Promise<void> {
   });
 }
 
-async function waitFor(
+export async function waitFor(
   predicate: () => boolean,
   timeoutMs = 5000
 ): Promise<void> {
@@ -172,7 +172,7 @@ function eventFramePayloads(
     .map((frame) => frame.event);
 }
 
-function createSingleToolCallRunner(
+export function createSingleToolCallRunner(
   toolName: string,
   callId: string,
   finalText: string

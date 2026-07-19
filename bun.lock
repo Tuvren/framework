@@ -336,6 +336,20 @@
         "@tuvren/core": "workspace:~",
       },
     },
+    "typescript/streaming/ws": {
+      "name": "@tuvren/stream-ws",
+      "version": "0.1.0",
+      "dependencies": {
+        "@tuvren/host-session": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@tuvren/framework-testkit": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:~",
+      },
+    },
     "typescript/telemetry/otel": {
       "name": "@tuvren/telemetry-otel",
       "version": "0.1.0",
@@ -1020,6 +1034,8 @@
     "@tuvren/stream-core": ["@tuvren/stream-core@workspace:typescript/streaming/core"],
 
     "@tuvren/stream-sse": ["@tuvren/stream-sse@workspace:typescript/streaming/sse"],
+
+    "@tuvren/stream-ws": ["@tuvren/stream-ws@workspace:typescript/streaming/ws"],
 
     "@tuvren/telemetry-otel": ["@tuvren/telemetry-otel@workspace:typescript/telemetry/otel"],
 

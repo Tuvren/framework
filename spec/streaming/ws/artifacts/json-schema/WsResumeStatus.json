@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-ws/WsResumeStatus.json",
+  "type": "string",
+  "enum": ["resumed", "out-of-window", "unknown-turn", "none"],
+  "description": "Handshake resume outcomes."
+}

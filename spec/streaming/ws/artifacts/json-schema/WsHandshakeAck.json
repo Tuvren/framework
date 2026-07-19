@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-ws/WsHandshakeAck.json",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "handshake_ack"
+    },
+    "protocolVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "sessionId": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-ws/NonEmptyString.json",
+      "description": "Session identity the connection is bound to."
+    },
+    "resumeStatus": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-ws/WsResumeStatus.json",
+      "description": "Outcome of the client's resume request. Projects the\nevent-stream-resume `ReplayStatus` vocabulary; `none` means the client\npresented no cursor. Every non-`resumed` status means the client MUST\ntreat durable state as truth (snapshot fallback) — missed events are not\nreconstructable through this transport."
+    }
+  },
+  "required": ["kind", "protocolVersion", "sessionId", "resumeStatus"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Server-to-client handshake acknowledgement, the first message a server\nsends. After this message the server emits replayed frames (when\n`resumeStatus` is `resumed`) followed by live frames."
+}

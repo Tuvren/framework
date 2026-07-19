@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-ws/WsCloseCode.json",
+  "type": "number",
+  "enum": [4000, 4001, 4002, 4003, 4004, 4005],
+  "description": "Connection-level close codes in the WebSocket application range\n(4000-4999). Close codes are reserved for conditions the session frame\nvocabulary cannot express; frame-level problems surface as\n`session_rejection` frames on the open socket. `1000` (normal closure)\nends a completed session."
+}

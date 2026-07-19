@@ -81,6 +81,11 @@ const PORTABLE_PACKAGE_SURFACES: readonly PortablePackageSurface[] = [
   },
   {
     classification: "Bun-and-Node validated",
+    packageName: "@tuvren/stream-ws",
+    packageRoot: "typescript/streaming/ws",
+  },
+  {
+    classification: "Bun-and-Node validated",
     packageName: "@tuvren/stream-agui",
     packageRoot: "typescript/streaming/agui",
   },

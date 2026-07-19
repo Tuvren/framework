@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-resume/ReplayStatus.json",
+  "type": "string",
+  "enum": ["resumed", "out-of-window", "unknown-turn"],
+  "description": "Outcome vocabulary of a replay attempt against a bounded replay window."
+}
