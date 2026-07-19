@@ -121,6 +121,12 @@ enum ReplayStatus {
  * Result of a replay attempt. `events` is present exactly when `status` is
  * `resumed` and contains the retained sequenced frames strictly after the
  * cursor position, in sequence order.
+ *
+ * Modeling note: the generated JSON Schema leaves `events` unconditionally
+ * optional because this model is not expressed as a per-status discriminated
+ * union; the presence rule above is normative regardless, and conformance
+ * checks must assert it directly rather than relying on schema validation
+ * alone.
  */
 model ReplayResult {
   status: ReplayStatus;

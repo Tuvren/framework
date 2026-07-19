@@ -44,3 +44,15 @@ export {
   streamAdapterFixtures,
   teeTuvrenStreamEvents,
 } from "./lib/stream-core.js";
+export type {
+  ReplayBuffer,
+  ReplayResult,
+  ResumeCursorPayload,
+  SequencedTuvrenStreamEvent,
+} from "./lib/stream-resume.js";
+export {
+  createReplayBuffer,
+  createSequencedTuvrenStreamEvents,
+  decodeResumeCursor,
+  encodeResumeCursor,
+} from "./lib/stream-resume.js";
