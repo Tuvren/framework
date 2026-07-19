@@ -14,15 +14,18 @@
         "{workspaceRoot}/spec/streaming/artifacts/**/*",
         "{workspaceRoot}/spec/streaming/sse/typespec/**/*",
         "{workspaceRoot}/spec/streaming/sse/artifacts/**/*",
+        "{workspaceRoot}/spec/streaming/resume/typespec/**/*",
+        "{workspaceRoot}/spec/streaming/resume/artifacts/**/*",
         "{workspaceRoot}/bun.lock"
       ],
       "outputs": [
         "{workspaceRoot}/spec/streaming/artifacts/json-schema",
-        "{workspaceRoot}/spec/streaming/sse/artifacts/json-schema"
+        "{workspaceRoot}/spec/streaming/sse/artifacts/json-schema",
+        "{workspaceRoot}/spec/streaming/resume/artifacts/json-schema"
       ],
       "options": {
         "cwd": "spec/streaming",
-        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun tsp compile ./sse/typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts ./sse/artifacts"
+        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun tsp compile ./sse/typespec --pretty false && bunx --bun tsp compile ./resume/typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts ./sse/artifacts ./resume/artifacts"
       }
     },
     "lint": {

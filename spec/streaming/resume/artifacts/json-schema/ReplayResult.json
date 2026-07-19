@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-resume/ReplayResult.json",
+  "type": "object",
+  "properties": {
+    "status": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-resume/ReplayStatus.json"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "https://tuvren.dev/schemas/framework/event-stream-resume/SequencedStreamFrame.json"
+      }
+    }
+  },
+  "required": ["status"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Result of a replay attempt. `events` is present exactly when `status` is\n`resumed` and contains the retained sequenced frames strictly after the\ncursor position, in sequence order."
+}

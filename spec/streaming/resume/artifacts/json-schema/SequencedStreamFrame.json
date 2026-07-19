@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-resume/SequencedStreamFrame.json",
+  "type": "object",
+  "properties": {
+    "turnId": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-resume/NonEmptyString.json",
+      "description": "Identity of the Turn this event belongs to."
+    },
+    "sequence": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-resume/NonNegativeSafeInt.json",
+      "description": "Monotonic intra-turn sequence of this event, starting at 0 at each\n`turn.start`."
+    },
+    "cursor": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-resume/NonEmptyString.json",
+      "description": "Opaque resume-cursor token positioned at this event (decoded shape:\n`ResumeCursorPayload`). A client that reconnects presents the last cursor\nit observed."
+    },
+    "event": {
+      "description": "The canonical `TuvrenStreamEvent`, serialized per the canonical stream\ncontract (packet `tuvren.shared.core`; JSON with the `Uint8Array` marker\nconvention). This schema does not constrain the event shape — the\ncanonical stream authority does."
+    }
+  },
+  "required": ["turnId", "sequence", "cursor", "event"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "A canonical stream event wrapped with its wire-level sequencing envelope.\n\nSequencing is deliberately wire-level and additive: the canonical\n`TuvrenStreamEvent` union is not extended with a sequence field. Transports\ncarry the envelope (SSE places `cursor` in the frame `id`; the WebSocket\ntransport carries `cursor` on its own outer message envelope), and\nin-process consumers of the canonical stream never see it."
+}

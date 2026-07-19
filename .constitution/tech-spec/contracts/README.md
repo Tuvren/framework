@@ -1912,3 +1912,12 @@ export interface SessionInboundFrame {
 - The reference binding tracks the replacement `ExecutionHandle` `resolveApproval` returns and re-bridges its `events()` into the same continuous `outbound()` stream, so a remote peer sees no discontinuity across an approval-driven handle replacement.
 - AG-UI stays a strictly read-only projection (`stack.md` §1.1); this control channel never tunnels through AG-UI `CUSTOM` frames.
 
+### 4.23 Event-Stream Resume Contract (`spec/streaming/resume/`)
+
+- **Style:** wire-level sequencing envelope + opaque cursor token, TypeSpec-to-JSON-Schema authority (ADR-061)
+- **Ownership:** `spec/streaming/resume/` owns the cursor payload, sequenced-frame envelope, and replay-outcome vocabulary (packet `tuvren.framework.event-stream-resume`). `@tuvren/stream-core` (`typescript/streaming/core`) owns the TypeScript projection: `createSequencedTuvrenStreamEvents`, `encodeResumeCursor`/`decodeResumeCursor`, `createReplayBuffer`. The canonical event stream (`tuvren.shared.core`) and the duplex session frames (§4.22) are deliberately unchanged — sequencing wraps events at the wire, it never extends them.
+- **Compatibility Strategy:** additive experimental surface per ADR-056 (`0.x` packet, `@experimental` exports). Cursor payload carries `v: 1`; an unknown version decodes to out-of-window (snapshot fallback), never a wire error.
+- **Error model:** replay outcomes only — `resumed` | `out-of-window` | `unknown-turn`. Both non-resumed outcomes mean snapshot fallback: durable kernel state is truth; the stream layer never reconstructs evicted events. Malformed cursor tokens map to `out-of-window`.
+- Sequence is monotonic per turn (reset to 0 at `turn.start`); `turnNodeHash` anchoring is supplementary and absent when `enableStateObservability()` is off, degrading cross-restart resume to snapshot semantics while same-window resume keeps working.
+- Transport projections: SSE places the cursor in the frame `id` (WHATWG `Last-Event-ID` reconnection); the WebSocket transport (ADR-062, #100) carries it on its outer envelope and handshake.
+

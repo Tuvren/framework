@@ -805,3 +805,37 @@ export interface ClientReportedResult {
 }
 ```
 
+### 3.15 Event-Stream Resume Shapes
+
+- **Purpose:** Per ADR-061, a reconnecting stream client needs a position vocabulary the framework owns: a monotonic per-turn sequence and an opaque resume cursor anchored to kernel history. Owned by `spec/streaming/resume/` (packet `tuvren.framework.event-stream-resume`); projected by `@tuvren/stream-core`.
+- **Storage Shape:** Not persisted. Sequencing envelopes and cursors are wire ephemera; the bounded replay window is an in-memory host-owned ring buffer. Durable truth stays in kernel history — `turnNodeHash` in the cursor references it but the kernel never stores or re-projects fine-grained stream events.
+- **Constraints / Invariants:**
+  - `sequence` starts at 0 at each `turn.start` and increments by exactly 1 per sequenced event within the turn.
+  - The cursor token is opaque base64url JSON; only its minting side decodes it. Malformed tokens and unknown `v` decode to out-of-window.
+  - `turnNodeHash` is supplementary validation, present only when state observability emitted a `state.checkpoint`; a window that no longer retains the anchor lineage reports out-of-window rather than serving a different lineage.
+  - Record and live-forward share one sequencer instance (normative wiring rule — two sequencers double-count).
+- **Shapes:**
+
+```ts
+export interface SequencedTuvrenStreamEvent {
+  event: TuvrenStreamEvent; // canonical event, never mutated
+  turnId: string;
+  sequence: number;         // monotonic intra-turn, resets at turn.start
+  cursor: string;           // opaque token; decoded shape below
+}
+
+// Decoded cursor payload (implementation detail documented for
+// cross-implementation agreement, not a client-constructable surface):
+export interface ResumeCursorPayload {
+  v: 1;
+  turnId: string;
+  turnNodeHash?: string; // kernel checkpoint anchor when observability is on
+  sequence: number;
+}
+
+export type ReplayResult =
+  | { status: "resumed"; events: SequencedTuvrenStreamEvent[] }
+  | { status: "out-of-window" }
+  | { status: "unknown-turn" };
+```
+

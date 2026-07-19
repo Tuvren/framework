@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuvren.dev/schemas/framework/event-stream-resume/ResumeCursorPayload.json",
+  "type": "object",
+  "properties": {
+    "v": {
+      "type": "number",
+      "const": 1,
+      "description": "Cursor payload version. A future incompatible payload ships as a new\nliteral; decoders MUST treat an unknown version as out-of-window."
+    },
+    "turnId": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-resume/NonEmptyString.json",
+      "description": "Identity of the Turn the cursor position belongs to, as carried by the\ncanonical `turn.start` event. The replay window is keyed by this value."
+    },
+    "turnNodeHash": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-resume/NonEmptyString.json",
+      "description": "Most recent kernel checkpoint anchor (`state.checkpoint.turnNodeHash`)\nobserved at or before the cursor position. Present only when the host\nenabled state observability; `state.checkpoint` emission is optional, so\nanchoring MUST NOT be assumed. When present it is supplementary\nvalidation: a replay window that retains no record of this anchor for the\ncursor's Turn MUST report out-of-window rather than silently serve events\nfrom a different anchor lineage."
+    },
+    "sequence": {
+      "$ref": "https://tuvren.dev/schemas/framework/event-stream-resume/NonNegativeSafeInt.json",
+      "description": "Monotonic intra-turn offset of the last event the client observed.\nSequence numbers start at 0 at each `turn.start` and increase by exactly\n1 per sequenced event within the Turn."
+    }
+  },
+  "required": ["v", "turnId", "sequence"],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Decoded content of an opaque resume-cursor token.\n\nOn the wire a cursor is a single opaque string (base64url-encoded JSON of\nthis model). Consumers MUST treat the token as opaque: only the encoder that\nminted a cursor may decode it, and the encoding is an implementation detail\nthis schema documents for cross-implementation agreement, not a surface a\nclient may construct by hand. A token that fails to decode against this\nmodel MUST be treated exactly like an out-of-window cursor (snapshot\nfallback), never as an error surfaced to the remote peer."
+}
