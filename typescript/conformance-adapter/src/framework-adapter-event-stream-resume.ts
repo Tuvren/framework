@@ -28,10 +28,11 @@ import { decodeSseStream, toResumableSseFrames } from "@tuvren/stream-sse";
 import type { AdapterProjection } from "./framework-adapter-runtime.ts";
 
 interface ReplayScenarioCursor {
-  kind: "at-sequence" | "foreign-turn" | "malformed";
+  kind: "at-sequence" | "foreign-turn" | "forged-anchor" | "malformed";
   sequence?: number;
   token?: string;
   turnId?: string;
+  turnNodeHash?: string;
 }
 
 interface ReplayScenario {
@@ -190,6 +191,36 @@ function resolveProbeCursor(
     return encodeResumeCursor({ sequence: 0, turnId, v: 1 });
   }
 
+  if (cursor.kind === "forged-anchor") {
+    const turnId = cursor.turnId;
+    const sequence = cursor.sequence;
+    const turnNodeHash = cursor.turnNodeHash;
+
+    if (typeof turnId !== "string") {
+      throw new Error(
+        'event-stream-resume replay scenario cursor.kind "forged-anchor" requires a string cursor.turnId'
+      );
+    }
+
+    if (typeof sequence !== "number") {
+      throw new Error(
+        'event-stream-resume replay scenario cursor.kind "forged-anchor" requires a numeric cursor.sequence'
+      );
+    }
+
+    if (typeof turnNodeHash !== "string") {
+      throw new Error(
+        'event-stream-resume replay scenario cursor.kind "forged-anchor" requires a string cursor.turnNodeHash'
+      );
+    }
+
+    // Mints a cursor naming a retained sequence but a turnNodeHash anchor the
+    // buffer never recorded for that turn — a forged anchor lineage. The
+    // buffer must never silently serve a different anchor lineage, per
+    // createReplayBuffer's replayFrom contract.
+    return encodeResumeCursor({ sequence, turnId, turnNodeHash, v: 1 });
+  }
+
   if (cursor.kind === "malformed") {
     const token = cursor.token;
 
@@ -296,6 +327,7 @@ function readCursor(fixture: Record<string, unknown>): ReplayScenarioCursor {
   if (
     kind !== "at-sequence" &&
     kind !== "foreign-turn" &&
+    kind !== "forged-anchor" &&
     kind !== "malformed"
   ) {
     throw new Error(
@@ -308,5 +340,7 @@ function readCursor(fixture: Record<string, unknown>): ReplayScenarioCursor {
     sequence: typeof cursor.sequence === "number" ? cursor.sequence : undefined,
     token: typeof cursor.token === "string" ? cursor.token : undefined,
     turnId: typeof cursor.turnId === "string" ? cursor.turnId : undefined,
+    turnNodeHash:
+      typeof cursor.turnNodeHash === "string" ? cursor.turnNodeHash : undefined,
   };
 }

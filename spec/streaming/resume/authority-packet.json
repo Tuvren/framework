@@ -28,7 +28,7 @@
   "conformancePlans": [
     {
       "planId": "tuvren.framework.event-stream-resume.core",
-      "planVersion": "0.1.0",
+      "planVersion": "0.2.0",
       "path": "spec/conformance/streaming/plans/event-stream-resume.json"
     }
   ],

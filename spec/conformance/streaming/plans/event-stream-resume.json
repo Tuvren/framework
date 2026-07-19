@@ -96,6 +96,21 @@
     {
       "assertions": [
         {
+          "equals": "out-of-window",
+          "field": "$.resume.status",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "event-stream-resume.anchor-lineage-mismatch",
+      "fixture": "event-stream-resume-scenarios",
+      "input": {
+        "fixturePath": "$.scenarios.anchor-lineage-mismatch"
+      },
+      "operation": "event-stream-resume.replay-scenario"
+    },
+    {
+      "assertions": [
+        {
           "equals": [0, 1, 2, 3, 4, 5, 6],
           "field": "$.resume.sse.frameIdSequences",
           "kind": "resultField"
@@ -129,5 +144,5 @@
   },
   "packetId": "tuvren.framework.event-stream-resume",
   "planId": "tuvren.framework.event-stream-resume.core",
-  "planVersion": "0.1.0"
+  "planVersion": "0.2.0"
 }

@@ -1,0 +1,61 @@
+{
+  "fixtureSetId": "tuvren.framework.event-stream-ws.scenarios",
+  "fixtureVersion": "0.1.0",
+  "sourceAuthority": "spec/streaming/ws/typespec/main.tsp",
+  "decodeTraces": {
+    "handshake-with-cursor-and-token": {
+      "description": "A handshake presenting every optional field: sessionId, a resume cursor, and an opaque authToken.",
+      "wire": "{\"kind\":\"handshake\",\"protocolVersion\":\"1\",\"sessionId\":\"sess-decode-1\",\"cursor\":\"opaque-cursor-token\",\"authToken\":\"opaque-auth-token\"}"
+    },
+    "handshake-without-cursor": {
+      "description": "A minimal fresh-connection handshake carrying only the required protocolVersion.",
+      "wire": "{\"kind\":\"handshake\",\"protocolVersion\":\"1\"}"
+    },
+    "handshake-ack": {
+      "description": "A server-to-client handshake acknowledgement.",
+      "wire": "{\"kind\":\"handshake_ack\",\"protocolVersion\":\"1\",\"sessionId\":\"sess-decode-1\",\"resumeStatus\":\"none\"}"
+    },
+    "frame-envelope": {
+      "description": "An outbound envelope wrapping a well-formed inner session event frame.",
+      "wire": "{\"kind\":\"frame\",\"cursor\":\"opaque-cursor-token\",\"frame\":{\"kind\":\"event\",\"protocolVersion\":\"1\",\"sessionId\":\"sess-decode-1\",\"event\":{\"type\":\"turn.start\",\"turnId\":\"turn-decode\",\"threadId\":\"thread-decode\",\"timestamp\":1}}}"
+    },
+    "ping": {
+      "description": "An application-level heartbeat probe.",
+      "wire": "{\"kind\":\"ping\"}"
+    },
+    "pong": {
+      "description": "The answer to a heartbeat probe.",
+      "wire": "{\"kind\":\"pong\"}"
+    },
+    "malformed-json": {
+      "description": "Text that fails JSON.parse outright.",
+      "wire": "{not valid json at all"
+    },
+    "unknown-kind": {
+      "description": "A structurally valid JSON object whose kind discriminator is not part of the wire vocabulary.",
+      "wire": "{\"kind\":\"not-a-real-kind\"}"
+    },
+    "frame-with-garbage-inner": {
+      "description": "A frame envelope whose inner frame payload is garbage; the transport's parser never validates the inner frame (that is the host-session binding's responsibility), so this still parses as kind \"frame\".",
+      "wire": "{\"kind\":\"frame\",\"frame\":\"this is not a session frame\"}"
+    }
+  },
+  "sessionScenarios": {
+    "handshake-rejections": {
+      "description": "Parameters for the four handshake rejection paths: an unsupported protocolVersion literal and a sessionId that does not match the bound session.",
+      "wrongProtocolVersion": "2",
+      "wrongSessionId": "session-does-not-exist"
+    },
+    "policy-closures": {
+      "description": "Parameters for the liveness (heartbeat) and bounded-backpressure connection-level closures.",
+      "backpressure": {
+        "maxBufferedBytes": 100,
+        "overflowBufferedAmount": 500
+      },
+      "heartbeat": {
+        "intervalMs": 15,
+        "timeoutMs": 40
+      }
+    }
+  }
+}

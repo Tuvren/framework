@@ -176,6 +176,48 @@
         }
       ]
     },
+    "anchor-lineage-mismatch": {
+      "description": "A cursor names a retained sequence but presents a checkpoint anchor the window never recorded for that turn (a forged anchor lineage); the window must never silently serve a different anchor lineage, so this is out-of-window even though the sequence itself is retained.",
+      "capacity": 32,
+      "cursor": {
+        "kind": "forged-anchor",
+        "sequence": 1,
+        "turnId": "turn-anchor",
+        "turnNodeHash": "9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "events": [
+        {
+          "threadId": "thread-anchor",
+          "timestamp": 1,
+          "turnId": "turn-anchor",
+          "type": "turn.start"
+        },
+        {
+          "iterationCount": 1,
+          "timestamp": 2,
+          "turnNodeHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "type": "state.checkpoint"
+        },
+        {
+          "delta": "forged",
+          "messageId": "message-anchor",
+          "timestamp": 3,
+          "type": "text.delta"
+        },
+        {
+          "messageId": "message-anchor",
+          "text": "forged",
+          "timestamp": 4,
+          "type": "text.done"
+        },
+        {
+          "status": "completed",
+          "timestamp": 5,
+          "turnId": "turn-anchor",
+          "type": "turn.end"
+        }
+      ]
+    },
     "sse-reconnect": {
       "description": "SSE projection populates frame ids with cursors; decoding a trace truncated after 4 frames yields a Last-Event-ID that resumes the remaining frames.",
       "capacity": 32,

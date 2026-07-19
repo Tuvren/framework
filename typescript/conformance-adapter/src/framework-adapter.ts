@@ -50,6 +50,7 @@ import {
 import { createFrameworkAdapterEventStream } from "./framework-adapter-event-stream.ts";
 import { createFrameworkAdapterEventStreamResume } from "./framework-adapter-event-stream-resume.ts";
 import { createFrameworkAdapterEventStreamSse } from "./framework-adapter-event-stream-sse.ts";
+import { createFrameworkAdapterEventStreamWs } from "./framework-adapter-event-stream-ws.ts";
 import {
   runExecutionBoundsConcurrencyThrottle,
   runExecutionBoundsInvalidConfig,
@@ -149,6 +150,7 @@ const orchestrationScenarios = createFrameworkAdapterOrchestration({
 
 const eventStreamSseScenarios = createFrameworkAdapterEventStreamSse();
 const eventStreamResumeScenarios = createFrameworkAdapterEventStreamResume();
+const eventStreamWsScenarios = createFrameworkAdapterEventStreamWs();
 
 const eventStreamScenarios = createFrameworkAdapterEventStream({
   isRecord,
@@ -272,6 +274,7 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         "framework.event-stream-sse",
         "framework.event-stream-resume",
         "framework.host-session",
+        "framework.event-stream-ws",
         "framework.orchestration",
         "framework.run-liveness",
         "framework.react-runner",
@@ -486,6 +489,16 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runCancelWhilePaused();
       case "host-session.validate-frame-fixtures":
         return runValidateFrameFixtures(input);
+      case "event-stream-ws.decode-trace":
+        return eventStreamWsScenarios.runDecodeTrace(input);
+      case "event-stream-ws.session-roundtrip":
+        return eventStreamWsScenarios.runSessionRoundtrip();
+      case "event-stream-ws.reconnect-with-cursor":
+        return eventStreamWsScenarios.runReconnectWithCursor();
+      case "event-stream-ws.handshake-rejections":
+        return eventStreamWsScenarios.runHandshakeRejections(input);
+      case "event-stream-ws.policy-closures":
+        return eventStreamWsScenarios.runPolicyClosures(input);
       default:
         throw new Error(
           `unsupported promoted framework operation ${operation}`

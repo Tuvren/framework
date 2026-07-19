@@ -1,0 +1,366 @@
+{
+  "planId": "tuvren.framework.event-stream-ws.core",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.framework.event-stream-ws",
+  "applicability": {
+    "capabilities": ["framework.event-stream-ws"]
+  },
+  "fixtures": {
+    "event-stream-ws-scenarios": "../fixtures/event-stream-ws-scenarios.json"
+  },
+  "checks": [
+    {
+      "checkId": "event-stream-ws.decode-trace.handshake-with-cursor-and-token",
+      "operation": "event-stream-ws.decode-trace",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.decodeTraces.handshake-with-cursor-and-token"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.kind",
+          "equals": "handshake"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshake.protocolVersion",
+          "equals": "1"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshake.sessionId",
+          "equals": "sess-decode-1"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshake.cursor",
+          "equals": "opaque-cursor-token"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshake.authToken",
+          "equals": "opaque-auth-token"
+        }
+      ],
+      "evidence": [
+        "result.ws.decode.kind",
+        "result.ws.decode.handshake.protocolVersion",
+        "result.ws.decode.handshake.sessionId",
+        "result.ws.decode.handshake.cursor",
+        "result.ws.decode.handshake.authToken"
+      ]
+    },
+    {
+      "checkId": "event-stream-ws.decode-trace.handshake-without-cursor",
+      "operation": "event-stream-ws.decode-trace",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.decodeTraces.handshake-without-cursor"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.kind",
+          "equals": "handshake"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshake.protocolVersion",
+          "equals": "1"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshake.sessionId",
+          "equals": null
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshake.cursor",
+          "equals": null
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshake.authToken",
+          "equals": null
+        }
+      ],
+      "evidence": [
+        "result.ws.decode.kind",
+        "result.ws.decode.handshake.protocolVersion"
+      ]
+    },
+    {
+      "checkId": "event-stream-ws.decode-trace.handshake-ack",
+      "operation": "event-stream-ws.decode-trace",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.decodeTraces.handshake-ack"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.kind",
+          "equals": "handshake_ack"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshakeAck.protocolVersion",
+          "equals": "1"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshakeAck.sessionId",
+          "equals": "sess-decode-1"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.handshakeAck.resumeStatus",
+          "equals": "none"
+        }
+      ],
+      "evidence": [
+        "result.ws.decode.kind",
+        "result.ws.decode.handshakeAck.protocolVersion",
+        "result.ws.decode.handshakeAck.sessionId",
+        "result.ws.decode.handshakeAck.resumeStatus"
+      ]
+    },
+    {
+      "checkId": "event-stream-ws.decode-trace.frame-envelope",
+      "operation": "event-stream-ws.decode-trace",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.decodeTraces.frame-envelope"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.kind",
+          "equals": "frame"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.frame.present",
+          "equals": true
+        }
+      ],
+      "evidence": ["result.ws.decode.kind", "result.ws.decode.frame.present"]
+    },
+    {
+      "checkId": "event-stream-ws.decode-trace.ping",
+      "operation": "event-stream-ws.decode-trace",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.decodeTraces.ping"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.kind",
+          "equals": "ping"
+        }
+      ],
+      "evidence": ["result.ws.decode.kind"]
+    },
+    {
+      "checkId": "event-stream-ws.decode-trace.pong",
+      "operation": "event-stream-ws.decode-trace",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.decodeTraces.pong"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.kind",
+          "equals": "pong"
+        }
+      ],
+      "evidence": ["result.ws.decode.kind"]
+    },
+    {
+      "checkId": "event-stream-ws.decode-trace.malformed-json",
+      "operation": "event-stream-ws.decode-trace",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.decodeTraces.malformed-json"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.kind",
+          "equals": "unparseable"
+        }
+      ],
+      "evidence": ["result.ws.decode.kind"]
+    },
+    {
+      "checkId": "event-stream-ws.decode-trace.unknown-kind",
+      "operation": "event-stream-ws.decode-trace",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.decodeTraces.unknown-kind"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.kind",
+          "equals": "unparseable"
+        }
+      ],
+      "evidence": ["result.ws.decode.kind"]
+    },
+    {
+      "checkId": "event-stream-ws.decode-trace.frame-with-garbage-inner",
+      "operation": "event-stream-ws.decode-trace",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.decodeTraces.frame-with-garbage-inner"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.kind",
+          "equals": "frame"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.decode.frame.present",
+          "equals": true
+        }
+      ],
+      "evidence": ["result.ws.decode.kind", "result.ws.decode.frame.present"]
+    },
+    {
+      "checkId": "event-stream-ws.session-roundtrip-live-stream",
+      "operation": "event-stream-ws.session-roundtrip",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.session.firstMessageKind",
+          "equals": "handshake_ack"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.session.firstMessageResumeStatus",
+          "equals": "none"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.session.firstMessageSessionId",
+          "equals": "sess-ws-roundtrip-1"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.session.allSubsequentAreFrame",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.session.sequencesStrictlyIncreasingFromZero",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.session.allMessagesSchemaValid",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "result.ws.session.firstMessageKind",
+        "result.ws.session.firstMessageResumeStatus",
+        "result.ws.session.firstMessageSessionId",
+        "result.ws.session.allSubsequentAreFrame",
+        "result.ws.session.sequencesStrictlyIncreasingFromZero",
+        "result.ws.session.allMessagesSchemaValid"
+      ]
+    },
+    {
+      "checkId": "event-stream-ws.reconnect-replays-from-cursor",
+      "operation": "event-stream-ws.reconnect-with-cursor",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.reconnect.ackResumeStatus",
+          "equals": "resumed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.reconnect.replayedSequences",
+          "equalsPath": "$.result.ws.reconnect.expectedReplaySequences"
+        }
+      ],
+      "evidence": [
+        "result.ws.reconnect.ackResumeStatus",
+        "result.ws.reconnect.replayedSequences"
+      ]
+    },
+    {
+      "checkId": "event-stream-ws.handshake-rejection-close-codes",
+      "operation": "event-stream-ws.handshake-rejections",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.sessionScenarios.handshake-rejections"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.handshakeRejections.nonHandshakeFirstMessageCloseCode",
+          "equals": 4000
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.handshakeRejections.protocolVersionMismatchCloseCode",
+          "equals": 4001
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.handshakeRejections.sessionMismatchCloseCode",
+          "equals": 4002
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.handshakeRejections.authRejectedCloseCode",
+          "equals": 4003
+        }
+      ],
+      "evidence": [
+        "result.ws.handshakeRejections.nonHandshakeFirstMessageCloseCode",
+        "result.ws.handshakeRejections.protocolVersionMismatchCloseCode",
+        "result.ws.handshakeRejections.sessionMismatchCloseCode",
+        "result.ws.handshakeRejections.authRejectedCloseCode"
+      ]
+    },
+    {
+      "checkId": "event-stream-ws.policy-closure-codes",
+      "operation": "event-stream-ws.policy-closures",
+      "fixture": "event-stream-ws-scenarios",
+      "input": {
+        "fixturePath": "$.sessionScenarios.policy-closures"
+      },
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.ws.policyClosures.heartbeatCloseCode",
+          "equals": 4004
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.policyClosures.backpressureCloseCode",
+          "equals": 4005
+        },
+        {
+          "kind": "resultField",
+          "field": "$.ws.policyClosures.backpressureSentFrameCount",
+          "equals": 0
+        }
+      ],
+      "evidence": [
+        "result.ws.policyClosures.heartbeatCloseCode",
+        "result.ws.policyClosures.backpressureCloseCode",
+        "result.ws.policyClosures.backpressureSentFrameCount"
+      ]
+    }
+  ]
+}

@@ -69,6 +69,10 @@ the multi-language transition foundation:
 │   ├── streaming/
 │   │   ├── sse/
 │   │   │   └── authority-packet.json
+│   │   ├── resume/                          # tuvren.framework.event-stream-resume (ADR-061)
+│   │   │   └── authority-packet.json
+│   │   ├── ws/                               # tuvren.framework.event-stream-ws (ADR-062)
+│   │   │   └── authority-packet.json
 │   │   ├── typespec/
 │   │   └── bindings/
 │   ├── telemetry/
@@ -179,7 +183,8 @@ the multi-language transition foundation:
 │   ├── streaming/
 │   │   ├── core/                            # peerDep @tuvren/core
 │   │   ├── sse/                             # peerDep @tuvren/core
-│   │   └── agui/                            # peerDep @tuvren/core
+│   │   ├── agui/                            # peerDep @tuvren/core
+│   │   └── ws/                              # @tuvren/stream-ws; peerDep @tuvren/core
 │   ├── telemetry/
 │   │   ├── semconv/
 │   │   └── otel/                            # @tuvren/telemetry-otel (ADR-042); peerDep @tuvren/core
