@@ -505,6 +505,67 @@ describe("createDuplexSessionBinding", () => {
     expect(result.done).toBe(true);
   });
 
+  test("construction does not consume handle.events(); the first outbound() call does", () => {
+    const lazyFake = makeFakeHandle();
+    createDuplexSessionBinding(lazyFake.handle, { sessionId: "sess-15" });
+    // Still claimable by us: the binding has not touched the stream yet.
+    expect(() => lazyFake.events[Symbol.asyncIterator]()).not.toThrow();
+
+    const eagerFake = makeFakeHandle();
+    const binding = createDuplexSessionBinding(eagerFake.handle, {
+      sessionId: "sess-16",
+    });
+    binding.outbound();
+    // Claimed by the binding's drain the moment outbound() was called.
+    expect(() => eagerFake.events[Symbol.asyncIterator]()).toThrow(
+      "consumed twice"
+    );
+  });
+
+  test("whitespace-only correlationId is rejected as session_frame_invalid", async () => {
+    const fake = makeFakeHandle();
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "sess-17",
+    });
+    const outbound = binding.outbound();
+
+    binding.dispatchInbound({
+      correlationId: "   ",
+      kind: "cancel",
+      protocolVersion: "1",
+      sessionId: "sess-17",
+    });
+
+    const [frame] = await collectFrames(outbound, 1);
+    const rej = rejection(frame);
+    expect(rej.code).toBe("session_frame_invalid");
+    expect(rej.correlationId).toBe("unknown");
+    expect(fake.calls.cancel).toBe(0);
+  });
+
+  test("dispatch after the session is terminal rejects immediately", async () => {
+    const fake = makeFakeHandle({ phase: "running" });
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "sess-18",
+    });
+    const outbound = binding.outbound();
+
+    fake.setPhase("completed");
+    fake.events.end();
+    const iterator = outbound[Symbol.asyncIterator]();
+    const result = await iterator.next();
+    expect(result.done).toBe(true);
+
+    await expect(
+      binding.clientEndpoint.dispatch({
+        callId: "call-18",
+        capabilityId: "cap.demo",
+        input: {},
+        leaseToken: "lease-18",
+      })
+    ).rejects.toMatchObject({ code: "duplex_session_closed" });
+  });
+
   test("a non-TuvrenRuntimeError thrown by the handle propagates out of dispatchInbound", () => {
     const fake = makeFakeHandle({
       onCancel: () => {

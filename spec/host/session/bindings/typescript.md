@@ -57,11 +57,19 @@ way `ExecutionHandle` method signatures are binding-only per
 
 - `outbound(): AsyncIterable<SessionOutboundFrame>` mirrors
   `ExecutionHandle.events()` single-consumer semantics: it throws if called a
-  second time on the same binding.
+  second time on the same binding. The first call is also what starts
+  draining the handle's event stream, preserving the runtime's lazy-start
+  contract — constructing a binding does not commit the turn. Once claimed,
+  the internal frame buffer is unbounded while the consumer lags;
+  backpressure and connection-lifecycle policy belong to the transport
+  layer (issues #100/#102).
 - `dispatchInbound(frame: unknown): void` is fire-and-forget. Every
   structural or state rejection surfaces as a `session_rejection` frame on
   `outbound()` instead of throwing, echoing the offending frame's
-  `correlationId` (or `"unknown"` when the frame did not carry a usable one).
+  `correlationId` (or `"unknown"` when the frame did not carry a usable one —
+  rejections for structurally un-parseable frames are therefore not
+  correlatable back to the frame that caused them; a peer that needs strict
+  correlation must always send a well-formed `correlationId`).
   Two narrow exceptions: an unexpected non-`TuvrenRuntimeError` failure from
   the underlying handle propagates to the caller rather than being masked as
   a rejection, and a frame arriving after the outbound stream has reached a

@@ -69,6 +69,13 @@ export interface DuplexSessionBinding {
   /**
    * The single-consumer outbound frame stream (mirrors
    * `ExecutionHandle.events()`). Throws if called more than once.
+   *
+   * The first call starts draining the held handle's event stream, which is
+   * what triggers execution under the runtime's lazy-start contract —
+   * constructing the binding alone does not commit the turn. Once claimed,
+   * the internal buffer is unbounded: frames accumulate while the consumer
+   * lags. Backpressure and connection lifecycle policy belong to the
+   * transport layer above this binding.
    */
   outbound(): AsyncIterable<SessionOutboundFrame>;
   /** The session identifier carried on every frame this binding produces or accepts. */
@@ -128,6 +135,10 @@ class DuplexSessionOutboundQueue
    */
   onTerminal: (() => void) | undefined;
 
+  isTerminal(): boolean {
+    return this.closed || this.failure !== undefined;
+  }
+
   fail(error: unknown): void {
     if (this.closed || this.failure !== undefined) {
       return;
@@ -179,8 +190,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+// Mirrors the wire authority's NonEmptyString scalar (@minLength(1) plus
+// the ".*\S.*" must-contain-non-whitespace pattern) so the structural
+// guard cannot accept a value the generated JSON Schema rejects.
+const CONTAINS_NON_WHITESPACE = /\S/;
+
 function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
+  return typeof value === "string" && CONTAINS_NON_WHITESPACE.test(value);
 }
 
 function extractCorrelationId(raw: unknown): string {
@@ -457,13 +473,24 @@ export function createDuplexSessionBinding(
     drain.catch(() => undefined);
   }
 
-  bridgeCurrentHandle(current);
-
   const clientEndpoint: AttachedClientEndpoint = {
     advertisedCapabilities,
     dispatch(
       envelope: ClientInvocationEnvelope
     ): Promise<ClientReportedResult> {
+      // A terminal session can never deliver a client_result, so a dispatch
+      // arriving after close/failure must reject immediately instead of
+      // registering a promise nothing will ever settle (the onTerminal sweep
+      // has already run and will not run again).
+      if (queue.isTerminal()) {
+        return Promise.reject(
+          new TuvrenRuntimeError(
+            `duplex session is closed; client dispatch "${envelope.callId}" cannot be delivered`,
+            { code: "duplex_session_closed" }
+          )
+        );
+      }
+
       // callId uniqueness is a runtime invariant (each dispatch mints a fresh
       // call); guard defensively so a violation surfaces instead of silently
       // orphaning the first dispatch's promise.
@@ -597,6 +624,11 @@ export function createDuplexSessionBinding(
       }
 
       outboundClaimed = true;
+      // Bridging starts here, not at construction: the runtime does not
+      // begin execution until the handle's event stream is consumed, and the
+      // binding preserves that lazy contract — constructing a binding "to be
+      // ready" must not commit the turn.
+      bridgeCurrentHandle(current);
       return queue;
     },
     sessionId,
