@@ -56,6 +56,8 @@ const MIRRORED_MODELS = [
   "ApprovalResponse",
 ] as const;
 
+const PACKET_ID_BASE = /^https:\/\/tuvren\.dev\/schemas\/framework\/[a-z-]+\//;
+
 function normalize(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(normalize);
@@ -67,10 +69,7 @@ function normalize(value: unknown): unknown {
         continue;
       }
       if ((key === "$id" || key === "$ref") && typeof entry === "string") {
-        out[key] = entry.replace(
-          /^https:\/\/tuvren\.dev\/schemas\/framework\/[a-z-]+\//,
-          ""
-        );
+        out[key] = entry.replace(PACKET_ID_BASE, "");
         continue;
       }
       out[key] = normalize(entry);
