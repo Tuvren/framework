@@ -601,6 +601,8 @@ export async function runCancelWhilePaused(): Promise<AdapterProjection> {
 
   const resultPromise = handle.awaitResult();
   await waitFor(() => handle.status().phase === "paused");
+  // Observed (not assumed) phase at the moment the cancel frame is sent.
+  const phaseAtCancel = handle.status().phase;
 
   binding.dispatchInbound({
     correlationId: "corr-cancel-paused-1",
@@ -626,7 +628,7 @@ export async function runCancelWhilePaused(): Promise<AdapterProjection> {
   const observation = {
     awaitResultStatus,
     outboundClosed,
-    pausedBeforeCancel: true,
+    pausedBeforeCancel: phaseAtCancel === "paused",
   };
 
   return {

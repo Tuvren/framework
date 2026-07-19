@@ -72,7 +72,10 @@ way `ExecutionHandle` method signatures are binding-only per
   correlation must always send a well-formed `correlationId`).
   Two narrow exceptions: an unexpected non-`TuvrenRuntimeError` failure from
   the underlying handle propagates to the caller rather than being masked as
-  a rejection, and a frame arriving after the outbound stream has reached a
+  a rejection — a transport read loop that feeds decoded frames into
+  `dispatchInbound` should therefore wrap the call in its own `try/catch` so
+  a stray infrastructure failure cannot kill the loop — and a frame
+  arriving after the outbound stream has reached a
   terminal state has no remaining consumer, so its rejection frame is
   unobservable. Once the stream is terminal the binding also settles every
   still-pending client dispatch by rejecting it (`duplex_session_closed`) —
