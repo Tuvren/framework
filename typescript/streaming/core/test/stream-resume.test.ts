@@ -353,3 +353,66 @@ describe("createReplayBuffer", () => {
     expect(() => createReplayBuffer({ capacity: 1.5 })).toThrow(RangeError);
   });
 });
+
+describe("review-fix regressions", () => {
+  test("early termination releases the claimed source iterator", async () => {
+    let returned = false;
+    const source: AsyncIterable<TuvrenStreamEvent> = {
+      [Symbol.asyncIterator]() {
+        let index = 0;
+        const events = turnEvents("turn-cleanup");
+
+        return {
+          next(): Promise<IteratorResult<TuvrenStreamEvent>> {
+            const event = events[index];
+            index += 1;
+
+            if (event === undefined) {
+              return Promise.resolve({ done: true, value: undefined });
+            }
+
+            return Promise.resolve({ done: false, value: event });
+          },
+          return(): Promise<IteratorResult<TuvrenStreamEvent>> {
+            returned = true;
+            return Promise.resolve({ done: true, value: undefined });
+          },
+        };
+      },
+    };
+
+    for await (const frame of createSequencedTuvrenStreamEvents(source)) {
+      if (frame.sequence === 1) {
+        break;
+      }
+    }
+
+    expect(returned).toBe(true);
+  });
+
+  test("a fully evicted turn reports unknown-turn and prunes bookkeeping", async () => {
+    const firstTurn = await collect(
+      createSequencedTuvrenStreamEvents(
+        createFixtureStream(turnEvents("turn-old"))
+      )
+    );
+    const secondTurn = await collect(
+      createSequencedTuvrenStreamEvents(
+        createFixtureStream(turnEvents("turn-new"))
+      )
+    );
+    const buffer = createReplayBuffer({ capacity: 4 });
+
+    for (const frame of [...firstTurn, ...secondTurn]) {
+      buffer.record(frame);
+    }
+
+    // turn-new's 4 frames pushed every turn-old frame out.
+    expect(buffer.replayFrom(firstTurn[0]?.cursor as string).status).toBe(
+      "unknown-turn"
+    );
+    expect(buffer.replayFrom(secondTurn[1]?.cursor as string).status).toBe(
+      "resumed"
+    );
+  });
+});

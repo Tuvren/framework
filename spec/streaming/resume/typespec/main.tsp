@@ -109,9 +109,11 @@ enum ReplayStatus {
   outOfWindow: "out-of-window",
 
   /**
-   * The cursor names a Turn the replay window has never observed. Snapshot
-   * fallback applies exactly as for `out-of-window`; the distinct status
-   * exists so hosts can observe cross-session or cross-process cursor
+   * The cursor names a Turn for which the replay window retains no frames —
+   * either never observed, or fully evicted (windows prune per-turn
+   * bookkeeping with eviction so memory stays bounded). Snapshot fallback
+   * applies exactly as for `out-of-window`; the distinct status exists so
+   * hosts can observe cross-session, cross-process, or long-stale cursor
    * presentation.
    */
   unknownTurn: "unknown-turn",

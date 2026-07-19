@@ -183,15 +183,11 @@ export function createSequencedTuvrenStreamEvents(
     let turnNodeHash: string | undefined;
     let sequence = 0;
 
-    for (;;) {
-      const next = await sourceIterator.next();
-
-      if (next.done) {
-        return;
-      }
-
-      const event = next.value;
-
+    // `for await` over the claimed iterator forwards early termination
+    // (consumer break/throw/return) to `sourceIterator.return()`, releasing
+    // upstream resources such as a tee branch — the disconnect scenario this
+    // module exists to serve.
+    for await (const event of createIteratorIterable(sourceIterator)) {
       if (event.type === "turn.start") {
         turnId = event.turnId;
         turnNodeHash = undefined;
@@ -233,6 +229,17 @@ export function createSequencedTuvrenStreamEvents(
   })();
 }
 
+/** Wraps an already-claimed iterator as a single-use `AsyncIterable`, so `for await` drives (and cleans up) that exact iterator. */
+function createIteratorIterable<T>(
+  iterator: AsyncIterator<T>
+): AsyncIterable<T> {
+  return {
+    [Symbol.asyncIterator](): AsyncIterator<T> {
+      return iterator;
+    },
+  };
+}
+
 /**
  * Outcome of a {@link ReplayBuffer.replayFrom} attempt (authority model
  * `ReplayResult`). Both non-`resumed` statuses mean snapshot fallback:
@@ -265,12 +272,16 @@ export interface ReplayBuffer {
  * sequenced frames across turns, in arrival order.
  *
  * `replayFrom(cursor)` semantics (normative, binding appendix):
- * - Turn never observed by the buffer → `unknown-turn`.
+ * - Turn with no retained frames (never observed, or fully evicted) →
+ *   `unknown-turn`. The buffer's memory stays bounded by `capacity`: turn
+ *   bookkeeping is pruned as a turn's last frame is evicted, so a very-late
+ *   cursor for a long-evicted turn reports `unknown-turn` rather than
+ *   `out-of-window` — both mean the same snapshot fallback to the client.
  * - Position evicted below the retention floor → `out-of-window`.
  * - Cursor `turnNodeHash` present but not among the checkpoint anchors the
- *   buffer observed for that turn's retained history → `out-of-window`
- *   (never silently serve a different anchor lineage). A cursor anchored at
- *   an older retained checkpoint of the same turn replays normally.
+ *   buffer retains for that turn → `out-of-window` (never silently serve a
+ *   different anchor lineage). A cursor anchored at an older retained
+ *   checkpoint of the same turn replays normally.
  * - Malformed tokens and unknown payload versions → `out-of-window`.
  * - Otherwise → `resumed` with the retained frames strictly after the cursor
  *   position, in sequence order.
@@ -288,21 +299,48 @@ export function createReplayBuffer(options: {
     );
   }
 
-  const frames: SequencedTuvrenStreamEvent[] = [];
-  /** Every turnId the buffer has ever observed, retained or not. */
-  const observedTurnIds = new Set<string>();
+  interface RetainedFrame {
+    /** Checkpoint anchor decoded once at record time. */
+    anchor?: string;
+    frame: SequencedTuvrenStreamEvent;
+  }
+
+  const retained: RetainedFrame[] = [];
+  /** Retained-frame count per turnId; entries are pruned at zero so memory stays bounded by `capacity`. */
+  const retainedTurnCounts = new Map<string, number>();
 
   return {
     latestCursor(): string | undefined {
-      return frames.at(-1)?.cursor;
+      return retained.at(-1)?.frame.cursor;
     },
 
     record(sequenced: SequencedTuvrenStreamEvent): void {
-      observedTurnIds.add(sequenced.turnId);
-      frames.push(sequenced);
+      const entry: RetainedFrame = { frame: sequenced };
+      const anchor = decodeResumeCursor(sequenced.cursor)?.turnNodeHash;
 
-      if (frames.length > capacity) {
-        frames.shift();
+      if (anchor !== undefined) {
+        entry.anchor = anchor;
+      }
+
+      retained.push(entry);
+      retainedTurnCounts.set(
+        sequenced.turnId,
+        (retainedTurnCounts.get(sequenced.turnId) ?? 0) + 1
+      );
+
+      if (retained.length > capacity) {
+        const evicted = retained.shift();
+
+        if (evicted !== undefined) {
+          const remaining =
+            (retainedTurnCounts.get(evicted.frame.turnId) ?? 1) - 1;
+
+          if (remaining < 1) {
+            retainedTurnCounts.delete(evicted.frame.turnId);
+          } else {
+            retainedTurnCounts.set(evicted.frame.turnId, remaining);
+          }
+        }
       }
     },
 
@@ -313,32 +351,26 @@ export function createReplayBuffer(options: {
         return { status: "out-of-window" };
       }
 
-      if (!observedTurnIds.has(payload.turnId)) {
+      if (!retainedTurnCounts.has(payload.turnId)) {
         return { status: "unknown-turn" };
       }
 
-      const retainedForTurn = frames.filter(
-        (frame) => frame.turnId === payload.turnId
+      const retainedForTurn = retained.filter(
+        (entry) => entry.frame.turnId === payload.turnId
       );
 
       if (payload.turnNodeHash !== undefined) {
-        const retainedAnchors = new Set<string>();
+        const anchorRetained = retainedForTurn.some(
+          (entry) => entry.anchor === payload.turnNodeHash
+        );
 
-        for (const frame of retainedForTurn) {
-          const framePayload = decodeResumeCursor(frame.cursor);
-
-          if (framePayload?.turnNodeHash !== undefined) {
-            retainedAnchors.add(framePayload.turnNodeHash);
-          }
-        }
-
-        if (!retainedAnchors.has(payload.turnNodeHash)) {
+        if (!anchorRetained) {
           return { status: "out-of-window" };
         }
       }
 
       const cursorFrameRetained = retainedForTurn.some(
-        (frame) => frame.sequence === payload.sequence
+        (entry) => entry.frame.sequence === payload.sequence
       );
 
       if (!cursorFrameRetained) {
@@ -346,9 +378,9 @@ export function createReplayBuffer(options: {
       }
 
       return {
-        events: retainedForTurn.filter(
-          (frame) => frame.sequence > payload.sequence
-        ),
+        events: retainedForTurn
+          .filter((entry) => entry.frame.sequence > payload.sequence)
+          .map((entry) => entry.frame),
         status: "resumed",
       };
     },
