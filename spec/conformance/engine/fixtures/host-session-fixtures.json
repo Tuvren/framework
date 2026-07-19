@@ -1,0 +1,204 @@
+[
+  {
+    "name": "event-frame-valid",
+    "direction": "outbound",
+    "expectedValid": true,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "event",
+      "sessionId": "sess-fixture-1",
+      "event": { "type": "turn.start", "turnId": "turn-1", "timestamp": 0 }
+    }
+  },
+  {
+    "name": "client-invocation-frame-valid",
+    "direction": "outbound",
+    "expectedValid": true,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "client_invocation",
+      "sessionId": "sess-fixture-1",
+      "invocation": {
+        "callId": "call-1",
+        "capabilityId": "cap.email.send",
+        "input": { "to": "a@example.com" },
+        "leaseToken": "lease-1"
+      }
+    }
+  },
+  {
+    "name": "session-rejection-frame-valid",
+    "direction": "outbound",
+    "expectedValid": true,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "session_rejection",
+      "sessionId": "sess-fixture-1",
+      "rejection": {
+        "correlationId": "corr-1",
+        "code": "session_frame_invalid",
+        "message": "bad frame"
+      }
+    }
+  },
+  {
+    "name": "client-result-frame-valid",
+    "direction": "inbound",
+    "expectedValid": true,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "client_result",
+      "sessionId": "sess-fixture-1",
+      "correlationId": "corr-2",
+      "result": {
+        "callId": "call-1",
+        "content": { "ok": true },
+        "leaseToken": "lease-1"
+      }
+    }
+  },
+  {
+    "name": "approval-response-frame-valid",
+    "direction": "inbound",
+    "expectedValid": true,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "approval_response",
+      "sessionId": "sess-fixture-1",
+      "correlationId": "corr-3",
+      "response": {
+        "decisions": [{ "callId": "call-1", "type": "approve" }]
+      }
+    }
+  },
+  {
+    "name": "steer-frame-valid",
+    "direction": "inbound",
+    "expectedValid": true,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "steer",
+      "sessionId": "sess-fixture-1",
+      "correlationId": "corr-4",
+      "signal": {
+        "parts": [{ "type": "text", "text": "steer this" }]
+      }
+    }
+  },
+  {
+    "name": "cancel-frame-valid",
+    "direction": "inbound",
+    "expectedValid": true,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "cancel",
+      "sessionId": "sess-fixture-1",
+      "correlationId": "corr-5"
+    }
+  },
+  {
+    "name": "cancel-frame-boundary-single-char-ids-valid",
+    "direction": "inbound",
+    "expectedValid": true,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "cancel",
+      "sessionId": "s",
+      "correlationId": "1"
+    }
+  },
+  {
+    "name": "wrong-protocol-version-invalid",
+    "direction": "inbound",
+    "expectedValid": false,
+    "frame": {
+      "protocolVersion": "2",
+      "kind": "cancel",
+      "sessionId": "sess-fixture-1",
+      "correlationId": "corr-6"
+    }
+  },
+  {
+    "name": "missing-correlation-id-invalid",
+    "direction": "inbound",
+    "expectedValid": false,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "steer",
+      "sessionId": "sess-fixture-1",
+      "signal": {
+        "parts": [{ "type": "text", "text": "x" }]
+      }
+    }
+  },
+  {
+    "name": "unknown-kind-invalid",
+    "direction": "outbound",
+    "expectedValid": false,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "ping",
+      "sessionId": "sess-fixture-1"
+    }
+  },
+  {
+    "name": "missing-payload-field-invalid",
+    "direction": "outbound",
+    "expectedValid": false,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "client_invocation",
+      "sessionId": "sess-fixture-1"
+    }
+  },
+  {
+    "name": "wrong-nesting-rejection-invalid",
+    "direction": "outbound",
+    "expectedValid": false,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "session_rejection",
+      "sessionId": "sess-fixture-1",
+      "correlationId": "corr-7",
+      "code": "session_frame_invalid",
+      "message": "flattened, not nested under rejection"
+    }
+  },
+  {
+    "name": "missing-required-nested-field-invalid",
+    "direction": "inbound",
+    "expectedValid": false,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "client_result",
+      "sessionId": "sess-fixture-1",
+      "correlationId": "corr-8",
+      "result": {
+        "callId": "call-2",
+        "content": { "ok": false }
+      }
+    }
+  },
+  {
+    "name": "empty-session-id-invalid",
+    "direction": "outbound",
+    "expectedValid": false,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "event",
+      "sessionId": "",
+      "event": { "type": "turn.start" }
+    }
+  },
+  {
+    "name": "whitespace-only-correlation-id-invalid",
+    "direction": "inbound",
+    "expectedValid": false,
+    "frame": {
+      "protocolVersion": "1",
+      "kind": "cancel",
+      "sessionId": "sess-fixture-1",
+      "correlationId": "   "
+    }
+  }
+]

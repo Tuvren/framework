@@ -75,6 +75,12 @@ import {
   runSecretIsolationTelemetry,
 } from "./framework-adapter-secret-isolation.ts";
 import {
+  runApprovalResponseResume,
+  runCancelCooperative,
+  runStaleClientResult,
+  runValidateFrameFixtures,
+} from "./framework-adapter-session.ts";
+import {
   runTrustBoundaryApprovalNonBypassable,
   runTrustBoundaryLocalToolInput,
 } from "./framework-adapter-trust-boundary.ts";
@@ -461,6 +467,14 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runCapabilityPolicyNonretryablePolicy();
       case "runtime.capability-policy.wired-risk-approval":
         return runCapabilityPolicyWiredRiskApproval();
+      case "host-session.stale-client-result":
+        return runStaleClientResult();
+      case "host-session.approval-response-resume":
+        return runApprovalResponseResume();
+      case "host-session.cancel-cooperative":
+        return runCancelCooperative();
+      case "host-session.validate-frame-fixtures":
+        return runValidateFrameFixtures(input);
       default:
         throw new Error(
           `unsupported promoted framework operation ${operation}`

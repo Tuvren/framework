@@ -1,0 +1,120 @@
+{
+  "planId": "tuvren.framework.host-session.core",
+  "planVersion": "0.1.0",
+  "packetId": "tuvren.framework.host-session",
+  "applicability": {
+    "capabilities": ["framework.host-session"]
+  },
+  "fixtures": {
+    "host-session-fixtures": "../fixtures/host-session-fixtures.json"
+  },
+  "checks": [
+    {
+      "checkId": "host-session.stale-client-result-rejected",
+      "operation": "host-session.stale-client-result",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.rejection.code",
+          "equals": "capability_result_stale"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.rejection.correlationId",
+          "equals": "corr-stale-1"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.accepted.callId",
+          "equals": "call-1"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.finalPhase",
+          "equals": "completed"
+        }
+      ],
+      "evidence": [
+        "rejection.code",
+        "rejection.correlationId",
+        "accepted.callId",
+        "finalPhase"
+      ]
+    },
+    {
+      "checkId": "host-session.approval-response-resumes-from-checkpoint",
+      "operation": "host-session.approval-response-resume",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.handleSwapped",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.resumedPhase",
+          "equals": "completed"
+        },
+        {
+          "kind": "eventSequence",
+          "contains": "approval.resolved"
+        },
+        {
+          "kind": "ordering",
+          "contains": ["approval.resolved", "tool.start"]
+        }
+      ],
+      "evidence": ["handleSwapped", "resumedPhase"]
+    },
+    {
+      "checkId": "host-session.cancel-propagates-cooperatively",
+      "operation": "host-session.cancel-cooperative",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.toolObservedAbort",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.finalPhase",
+          "equals": "failed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.awaitResultStatus",
+          "equals": "failed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.awaitResultErrorCode",
+          "equals": "execution_cancelled"
+        }
+      ],
+      "evidence": [
+        "toolObservedAbort",
+        "finalPhase",
+        "awaitResultStatus",
+        "awaitResultErrorCode"
+      ]
+    },
+    {
+      "checkId": "host-session.frame-schema-validation",
+      "operation": "host-session.validate-frame-fixtures",
+      "fixture": "host-session-fixtures",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.frameValidation.allMatch",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.frameValidation.count",
+          "equals": 16
+        }
+      ],
+      "evidence": ["frameValidation.allMatch", "frameValidation.count"]
+    }
+  ]
+}
