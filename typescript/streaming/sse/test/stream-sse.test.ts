@@ -19,9 +19,19 @@ import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import { readFrameworkStreamFixtures } from "@tuvren/framework-testkit";
 import {
   createFixtureStream,
+  createReplayBuffer,
+  createSequencedTuvrenStreamEvents,
+  decodeResumeCursor,
+  streamAdapterFixtures,
   teeTuvrenStreamEvents,
 } from "@tuvren/stream-core";
-import { toSseFrames, toSseResponse } from "../src/index.ts";
+import {
+  decodeSseStream,
+  type TuvrenSseFrame,
+  toResumableSseFrames,
+  toSseFrames,
+  toSseResponse,
+} from "../src/index.ts";
 
 const frameworkStreamFixtures = await readFrameworkStreamFixtures();
 
@@ -136,3 +146,82 @@ async function collectStreamValues<T>(values: AsyncIterable<T>): Promise<T[]> {
 async function waitForAsyncTurn(): Promise<void> {
   await Promise.resolve();
 }
+
+describe("toResumableSseFrames", () => {
+  test("populates every frame id with the envelope's resume cursor", async () => {
+    const sequenced = createSequencedTuvrenStreamEvents(
+      createFixtureStream(streamAdapterFixtures.completedTurn)
+    );
+    const frames: TuvrenSseFrame[] = [];
+
+    for await (const frame of toResumableSseFrames(sequenced)) {
+      frames.push(frame);
+    }
+
+    expect(frames).toHaveLength(streamAdapterFixtures.completedTurn.length);
+
+    for (const [index, frame] of frames.entries()) {
+      expect(frame.id).toBeDefined();
+      const payload = decodeResumeCursor(frame.id as string);
+      expect(payload?.turnId).toBe("turn-main");
+      expect(payload?.sequence).toBe(index);
+      expect(frame.event).toBe(
+        streamAdapterFixtures.completedTurn[index]?.type as string
+      );
+    }
+  });
+
+  test("a decoded Last-Event-ID resumes the stream through a replay buffer", async () => {
+    const sequenced = createSequencedTuvrenStreamEvents(
+      createFixtureStream(streamAdapterFixtures.completedTurn)
+    );
+    const buffer = createReplayBuffer({ capacity: 32 });
+    const wireFrames: string[] = [];
+
+    // Server side: record each sequenced frame while emitting SSE wire text.
+    const recording = (async function* () {
+      for await (const frame of sequenced) {
+        buffer.record(frame);
+        yield frame;
+      }
+    })();
+
+    for await (const frame of toResumableSseFrames(recording)) {
+      wireFrames.push(
+        `event: ${frame.event}\nid: ${frame.id}\ndata: ${frame.data}\n\n`
+      );
+    }
+
+    // Client side: decode a truncated trace (disconnect mid-turn), then
+    // present the WHATWG lastEventId back as the resume cursor.
+    const truncated = wireFrames.slice(0, 5).join("");
+    const decoded = decodeSseStream(truncated);
+
+    expect(decoded.lastEventId).toBeDefined();
+
+    const result = buffer.replayFrom(decoded.lastEventId as string);
+
+    expect(result.status).toBe("resumed");
+
+    if (result.status === "resumed") {
+      expect(result.events.map((frame) => frame.sequence)).toEqual(
+        Array.from(
+          { length: streamAdapterFixtures.completedTurn.length - 5 },
+          (_unused, index) => index + 5
+        )
+      );
+    }
+  });
+
+  test("keeps toSseFrames id-less for hosts that do not opt in", async () => {
+    const frames: TuvrenSseFrame[] = [];
+
+    for await (const frame of toSseFrames(
+      createFixtureStream(streamAdapterFixtures.completedTurn)
+    )) {
+      frames.push(frame);
+    }
+
+    expect(frames.every((frame) => frame.id === undefined)).toBe(true);
+  });
+});

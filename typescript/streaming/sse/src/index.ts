@@ -33,4 +33,8 @@ export type {
 } from "./lib/sse-decoder.js";
 export { decodeSseStream, reportSseWireCompliance } from "./lib/sse-decoder.js";
 export type { TuvrenSseFrame } from "./lib/stream-sse.js";
-export { toSseFrames, toSseResponse } from "./lib/stream-sse.js";
+export {
+  toResumableSseFrames,
+  toSseFrames,
+  toSseResponse,
+} from "./lib/stream-sse.js";
