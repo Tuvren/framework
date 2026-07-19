@@ -166,6 +166,13 @@ export interface WsSessionTransport {
  * socket — only handshake failures and the outbound pump's own terminal
  * conditions do.
  *
+ * The transport cannot observe socket-level errors through the sink seam, so
+ * the host MUST call {@link WsSessionTransport.close} on every terminal
+ * socket condition it observes (error, unexpected close, connection drop) —
+ * `close()` is what releases the claimed outbound iterator and clears the
+ * heartbeat timers; a transport whose socket dies without `close()` keeps
+ * its heartbeat interval scheduled.
+ *
  * @experimental
  */
 export function createWsSessionTransport(
@@ -562,6 +569,10 @@ export function createWsSessionTransport(
     }
 
     const envelope = sequencedResult.value;
+    // Recorded before the budget check on purpose: a frame caught by the
+    // overflow close (4005) is then recorded-but-not-sent, so the client's
+    // next resume from its last received cursor still replays it — reordering
+    // record after enforceBackpressure would turn overflow into real loss.
     options.replayBuffer?.record(envelope);
 
     if (enforceBackpressure()) {
@@ -626,6 +637,12 @@ export function createWsSessionTransport(
     // time by a single-slot push channel: push(event) then
     // sequencedIterator.next() is guaranteed to yield exactly one envelope
     // because the channel's next() never resolves without a pending push.
+    // Sequencer scope is per-connection by design: a second transport over
+    // the same binding cannot exist today (binding.outbound() throws
+    // duplex_session_outbound_already_claimed on a second claim), so live
+    // continuation of one binding's numbering across sockets is out of scope
+    // until the issue #102 detach/lease work makes sequencer ownership a
+    // host-side concern (recorded in ADR-062).
     const channel = new SingleSlotPushChannel<TuvrenStreamEvent>();
     const sequenced = createSequencedTuvrenStreamEvents(channel, {
       onWarning: reportWarning,
