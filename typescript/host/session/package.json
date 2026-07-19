@@ -1,0 +1,33 @@
+{
+  "name": "@tuvren/host-session",
+  "private": true,
+  "description": "TypeScript reference binding for the duplex host session frame vocabulary (issue #99): merges an ExecutionHandle's event stream with client-invocation and rejection frames into a single transport-agnostic duplex channel.",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/host/session"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "peerDependencies": {
+    "@tuvren/core": "workspace:~"
+  },
+  "peerDependenciesMeta": {
+    "@tuvren/core": {
+      "optional": false
+    }
+  }
+}

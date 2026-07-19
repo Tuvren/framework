@@ -138,6 +138,9 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-runtime",
   "runner-react",
   "host-repl",
+  // @tuvren/host-session (issue #99 / ADR-060): the duplex session frame
+  // binding's routing tests run only in this lane.
+  "host-session",
   // Go, Python, and Dart kernel-port projects run their language-native
   // test runners (go test / pytest / dart test) through these Nx targets;
   // certification wrappers join the conformance lanes separately once
