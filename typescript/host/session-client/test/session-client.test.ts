@@ -32,12 +32,22 @@ class FakeSocket implements SessionClientSocket {
   onmessage: ((event: { data: string | Uint8Array }) => void) | null = null;
   onclose: ((event: { code?: number; reason?: string }) => void) | null = null;
   onerror: ((event?: unknown) => void) | null = null;
+  /**
+   * Number of remaining `send()` calls that should throw instead of
+   * succeeding, decremented on each throw. Lets tests simulate a socket that
+   * looks live (post-handshake_ack) but dies mid-send.
+   */
+  sendFailures = 0;
 
   constructor(url: string) {
     this.url = url;
   }
 
   send(data: string): void {
+    if (this.sendFailures > 0) {
+      this.sendFailures -= 1;
+      throw new Error("FakeSocket: simulated send failure");
+    }
     this.sent.push(JSON.parse(data));
   }
 
@@ -805,5 +815,134 @@ describe("createSessionClient: option validation (P2-6)", () => {
         url: "wss://example.invalid/session",
       })
     ).not.toThrow();
+  });
+});
+
+describe("createSessionClient: outboundQueue robustness (P2 close/flush/settle)", () => {
+  test("close() clears the outboundQueue instead of re-queuing it across a later reconnect", () => {
+    const { client, clock, sockets } = makeClient({
+      reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
+    });
+    client.connect();
+    const first = sockets[0] as FakeSocket;
+    first.open();
+    ack(first);
+
+    // Drop into backoff with no live socket, then queue a steer while
+    // reconnecting.
+    first.serverClose(4004, "heartbeat timeout");
+    client.steer({ parts: [{ text: "should be cleared", type: "text" }] });
+
+    // The user closes explicitly before the reconnect completes: the queued
+    // steer must be cleared, not carried over to a subsequent connection.
+    client.close(1000, "user closed during backoff");
+
+    // Advancing the clock must not resume the reconnect (close() cancels the
+    // pending timer) or send the cleared frame.
+    clock.advance(1000);
+    expect(sockets).toHaveLength(1);
+
+    // Reconnecting fresh afterwards must not replay the cleared steer.
+    client.connect();
+    expect(sockets).toHaveLength(2);
+    const second = sockets[1] as FakeSocket;
+    second.open();
+    ack(second);
+
+    expect(second.sent).toHaveLength(1); // only the handshake
+    expect(second.sent[0]).toMatchObject({ kind: "handshake" });
+  });
+
+  test("flushOutboundQueue re-queues the unsent tail when a send throws mid-flush", () => {
+    const { client, clock, sockets } = makeClient({
+      reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
+    });
+    client.connect();
+    const first = sockets[0] as FakeSocket;
+    first.open();
+
+    // Queue two control frames before the handshake ack lands.
+    client.steer({ parts: [{ text: "first", type: "text" }] });
+    client.cancel();
+    expect(first.sent).toHaveLength(1); // only the handshake so far
+
+    // The first flush attempt's send throws (socket looked alive but died).
+    first.sendFailures = 1;
+    ack(first);
+
+    // Neither queued frame reached the wire: the throwing send must not have
+    // dropped itself or the frame after it.
+    expect(first.sent).toHaveLength(1);
+
+    // Simulate the connection dying and reconnecting; the still-queued
+    // frames must flush, in original order, once the new socket acks.
+    first.serverClose(4004, "heartbeat timeout");
+    clock.advance(100);
+    const second = sockets[1] as FakeSocket;
+    second.open();
+    ack(second);
+
+    expect(second.sent).toHaveLength(3); // handshake + steer + cancel
+    const steerEnvelope = second.sent[1] as Record<string, unknown>;
+    expect(steerEnvelope.frame).toMatchObject({ kind: "steer" });
+    const cancelEnvelope = second.sent[2] as Record<string, unknown>;
+    expect(cancelEnvelope.frame).toMatchObject({ kind: "cancel" });
+  });
+
+  test("a socket.send throw in the error-path settle does not reject the handler chain; the result queues and flushes after the next handshake", async () => {
+    const { client, clock, sockets } = makeClient({
+      capabilities: {
+        "boom.tool": () => {
+          throw new Error("boom");
+        },
+      },
+      reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
+    });
+    client.connect();
+    const first = sockets[0] as FakeSocket;
+    first.open();
+    ack(first);
+
+    // The socket is "open" (handshakeOpen) but the very next send throws,
+    // simulating a socket that died between the ack and this dispatch.
+    first.sendFailures = 1;
+
+    first.receive({
+      frame: {
+        invocation: {
+          callId: "call-boom",
+          capabilityId: "boom.tool",
+          input: {},
+          leaseToken: "lease-boom",
+        },
+        kind: "client_invocation",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+
+    // If the throw inside settle()'s send escaped as an unhandled rejection,
+    // this await would not be what surfaces it (bun fails the run instead) —
+    // asserting the queue recovers on the next handshake below is the
+    // behavioral proof that the chain settled without throwing further.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // The result never reached the wire (send failed) and was not dropped.
+    expect(first.sent).toHaveLength(1); // only the handshake
+
+    // Reconnect: the queued client_result for call-boom flushes in order.
+    first.serverClose(4004, "heartbeat timeout");
+    clock.advance(100);
+    const second = sockets[1] as FakeSocket;
+    second.open();
+    ack(second);
+
+    expect(second.sent).toHaveLength(2); // handshake + the queued client_result
+    const resultFrame = second.lastFrame();
+    expect(resultFrame.kind).toBe("client_result");
+    const result = resultFrame.result as Record<string, unknown>;
+    expect(result.callId).toBe("call-boom");
+    expect(result.isError).toBe(true);
+    expect((result.content as { error: string }).error).toBe("boom");
   });
 });

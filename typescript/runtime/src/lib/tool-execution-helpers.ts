@@ -18,7 +18,10 @@ import { TuvrenRuntimeError } from "@tuvren/core";
 import type { ExecutionClass } from "@tuvren/core/capabilities";
 import { TOOL_RESULT_SANITIZATION_FAILED } from "@tuvren/core/errors";
 import type { EventSource, TuvrenStreamEvent } from "@tuvren/core/events";
-import type { SanitizeToolResultContext } from "@tuvren/core/execution";
+import type {
+  SanitizeToolResultContext,
+  SanitizeToolResultHook,
+} from "@tuvren/core/execution";
 import type {
   AroundToolContext,
   AroundToolResult,
@@ -826,14 +829,13 @@ export async function stageAndEmitResults(
  * Applies the host's {@link ToolBatchEnvironment.sanitizeToolResult} hook
  * (ADR-064) to a would-be-staged result, if one is configured.
  *
- * A no-op when the hook is absent — byte-identical behavior to today. A hook
- * that throws is treated as a defect on this specific tool call, not the
- * turn (framework spec §8.6: tool failures become results, never turn
- * failures): the throw is not swallowed into a scrubbed-by-default result —
- * silently substituting content the host did not author would be worse than
- * a loud failure — so it becomes this call's own `isError: true` result
- * carrying `output.code: "tool_result_sanitization_failed"`, and the caller's
- * staging/emission proceeds with that replacement result instead.
+ * A no-op when the hook is absent — byte-identical behavior to today.
+ * Delegates the actual hook application (context construction, identity
+ * re-stamp, throw handling) to {@link applySanitizeHookToPart}, the same
+ * pure helper the pre-staged-provider staging path in
+ * `runtime-core-iteration.ts` uses — one shared implementation, two
+ * application sites (the Tool Execution Gateway chokepoint here, and the
+ * AY003 pre-staged provider message path), per ADR-064 §3.
  */
 function applySanitizeToolResult(
   environment: ToolBatchEnvironment,
@@ -846,6 +848,37 @@ function applySanitizeToolResult(
     return result;
   }
 
+  return applySanitizeHookToPart(hook, result, executionClass);
+}
+
+/**
+ * Pure application of the ADR-064 host sanitization hook to a single
+ * {@link ToolResultPart}: builds the {@link SanitizeToolResultContext},
+ * invokes the hook, and re-stamps `callId`/`name`/`type` onto whatever the
+ * hook returns.
+ *
+ * Correlation identity is load-bearing and framework-owned, never host
+ * policy: kernel skip-by-callId recovery, result/call pairing, and the
+ * client-endpoint echo check all key on it. Re-stamping after the hook means
+ * a careless object rebuild cannot desync the durable record from its
+ * tool.call — content is the host's to sanitize, identity is not.
+ *
+ * A hook that throws is treated as a defect on this specific tool call, not
+ * the turn (framework spec §8.6: tool failures become results, never turn
+ * failures): the throw is not swallowed into a scrubbed-by-default result —
+ * silently substituting content the host did not author would be worse than
+ * a loud failure — so it becomes this call's own `isError: true` result
+ * carrying `output.code: "tool_result_sanitization_failed"`.
+ *
+ * Exported so every application site of the seam (the gateway chokepoint in
+ * {@link stageAndEmitResult} and the pre-staged provider message path in
+ * `runtime-core-iteration.ts`) shares byte-identical semantics.
+ */
+export function applySanitizeHookToPart(
+  hook: SanitizeToolResultHook,
+  result: ToolResultPart,
+  executionClass: ExecutionClass | undefined
+): ToolResultPart {
   const context: SanitizeToolResultContext = {
     callId: result.callId,
     toolName: result.name,
@@ -854,11 +887,6 @@ function applySanitizeToolResult(
 
   try {
     const sanitized = hook(result, context);
-    // Correlation identity is load-bearing and framework-owned, never host
-    // policy: kernel skip-by-callId recovery, result/call pairing, and the
-    // client-endpoint echo check all key on it. Re-stamp it after the hook so
-    // a careless object rebuild cannot desync the durable record from its
-    // tool.call — content is the host's to sanitize, identity is not.
     return {
       ...sanitized,
       callId: result.callId,

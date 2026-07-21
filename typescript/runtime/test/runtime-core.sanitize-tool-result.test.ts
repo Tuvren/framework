@@ -33,7 +33,7 @@ import { describe, expect, test } from "bun:test";
 import { TOOL_RESULT_SANITIZATION_FAILED } from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { SanitizeToolResultContext } from "@tuvren/core/execution";
-import type { ToolResultPart } from "@tuvren/core/messages";
+import type { ToolResultPart, TuvrenMessage } from "@tuvren/core/messages";
 import type { RunnerExecutionResult, RuntimeRunner } from "@tuvren/core/runner";
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
@@ -101,6 +101,60 @@ async function stagedToolResultParts(
   return extractToolMessages(messages).flatMap(
     (message) => message.parts as ToolResultPart[]
   );
+}
+
+/** Builds a pre-staged provider tool message (AY003). */
+function buildProviderToolMessage(opts: {
+  callId: string;
+  executionClass: "provider-native" | "provider-mediated";
+  name: string;
+  output: unknown;
+}): TuvrenMessage {
+  return {
+    role: "tool",
+    parts: [
+      {
+        callId: opts.callId,
+        name: opts.name,
+        output: opts.output,
+        providerMetadata: {
+          executionClass: opts.executionClass,
+          owner: "provider",
+          providerCallId: opts.callId,
+        },
+        type: "tool_result",
+      },
+    ],
+  };
+}
+
+/** One-shot runner returning a single pre-staged provider tool message. */
+function makeProviderRunner(
+  executionClass: "provider-native" | "provider-mediated",
+  output: unknown
+): RuntimeRunner {
+  return {
+    id: "provider-sanitize-runner",
+    execute(context): Promise<RunnerExecutionResult> {
+      if (!context.messages.some((m) => m.role === "tool")) {
+        return Promise.resolve({
+          messages: [
+            buildProviderToolMessage({
+              callId: "prov-sanitize-call",
+              executionClass,
+              name: "code_execution",
+              output,
+            }),
+          ],
+          resolution: { type: "continue_iteration" as const },
+        });
+      }
+      return Promise.resolve({
+        messages: [assistantText("done")],
+        resolution: { reason: "done", type: "end_turn" as const },
+      });
+    },
+  };
 }
 
 describe("host sanitization seam (ADR-064): stageAndEmitResult chokepoint", () => {
@@ -485,5 +539,144 @@ describe("host sanitization seam (ADR-064): stageAndEmitResult chokepoint", () =
     expect(observedToolResults).toBeDefined();
     expect(JSON.stringify(observedToolResults)).not.toContain(MARKER);
     expect(observedToolResults?.[0]?.output).toEqual({ text: SCRUBBED });
+  });
+});
+
+describe("host sanitization seam (ADR-064): pre-staged provider tool messages (AY003)", () => {
+  test("scrubs a provider-mediated pre-staged result on both durable state and the tool.result event", async () => {
+    const harness = createFakeKernelHarness();
+    const recordedContexts: SanitizeToolResultContext[] = [];
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "provider-sanitize-runner",
+      runnerRegistry: createBaseRunnerRegistry([
+        makeProviderRunner("provider-mediated", {
+          outputs: [{ text: MARKER, type: "text" }],
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        sanitizeToolResult(result, ctx) {
+          recordedContexts.push(ctx);
+          return { ...result, output: { text: SCRUBBED } };
+        },
+      },
+      signal: textSignal("run provider sanitize test"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+    await handle.awaitResult();
+
+    const staged = await stagedToolResultParts(harness, thread.branchId);
+    expect(staged).toHaveLength(1);
+    expect(staged[0]?.output).toEqual({ text: SCRUBBED });
+    expect(JSON.stringify(staged)).not.toContain(MARKER);
+    // providerMetadata (continuity/identity) survives the hook untouched.
+    expect(staged[0]?.providerMetadata).toEqual({
+      executionClass: "provider-mediated",
+      owner: "provider",
+      providerCallId: "prov-sanitize-call",
+    });
+
+    const results = toolResultEvents(events);
+    const providerResult = results.find(
+      (e) => e.callId === "prov-sanitize-call"
+    );
+    expect(providerResult).toBeDefined();
+    expect(providerResult?.output).toEqual({ text: SCRUBBED });
+    expect(JSON.stringify(results)).not.toContain(MARKER);
+
+    expect(recordedContexts).toHaveLength(1);
+    expect(recordedContexts[0]?.callId).toBe("prov-sanitize-call");
+    expect(recordedContexts[0]?.toolName).toBe("code_execution");
+    expect(recordedContexts[0]?.executionClass).toBe("provider-mediated");
+  });
+
+  test("a hook throw on a provider-mediated result stages/emits the sanitization-failed error, and the turn still completes", async () => {
+    const harness = createFakeKernelHarness();
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "provider-sanitize-runner",
+      runnerRegistry: createBaseRunnerRegistry([
+        makeProviderRunner("provider-mediated", {
+          outputs: [{ text: MARKER, type: "text" }],
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        sanitizeToolResult(): never {
+          throw new Error("host policy exploded");
+        },
+      },
+      signal: textSignal("run provider hook-throw test"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+    const result = await handle.awaitResult();
+
+    expect(result.status).toBe("completed");
+
+    const staged = await stagedToolResultParts(harness, thread.branchId);
+    expect(staged).toHaveLength(1);
+    expect(staged[0]?.isError).toBe(true);
+    expect((staged[0]?.output as { code?: string } | undefined)?.code).toBe(
+      TOOL_RESULT_SANITIZATION_FAILED
+    );
+    expect(JSON.stringify(staged)).not.toContain(MARKER);
+
+    const results = toolResultEvents(events);
+    const providerResult = results.find(
+      (e) => e.callId === "prov-sanitize-call"
+    );
+    expect(providerResult).toBeDefined();
+    expect(providerResult?.isError).toBe(true);
+    const output = providerResult?.output as
+      | { code?: string; error?: string }
+      | undefined;
+    expect(output?.code).toBe(TOOL_RESULT_SANITIZATION_FAILED);
+  });
+
+  test("no hook configured: pre-staged provider message stages/emits byte-identical to today (regression guard)", async () => {
+    const harness = createFakeKernelHarness();
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "provider-sanitize-runner",
+      runnerRegistry: createBaseRunnerRegistry([
+        makeProviderRunner("provider-native", {
+          outputs: [{ text: MARKER, type: "text" }],
+        }),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: { name: "primary" },
+      signal: textSignal("run provider no-hook test"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+    await handle.awaitResult();
+
+    const staged = await stagedToolResultParts(harness, thread.branchId);
+    expect(staged).toHaveLength(1);
+    expect(staged[0]?.output).toEqual({
+      outputs: [{ text: MARKER, type: "text" }],
+    });
+
+    const results = toolResultEvents(events);
+    const providerResult = results.find(
+      (e) => e.callId === "prov-sanitize-call"
+    );
+    expect(providerResult?.output).toEqual({
+      outputs: [{ text: MARKER, type: "text" }],
+    });
   });
 });

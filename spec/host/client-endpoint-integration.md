@@ -161,9 +161,14 @@ Design notes, so the seam is not mistaken for more than it is:
 - **It is host policy, never framework inspection.** No default redaction, no
   pattern matching, no key heuristics. Install nothing and behavior is
   byte-identical to having no hook.
-- **It is symmetric.** The hook sits at the shared tool-result chokepoint, so
-  it also covers `tuvren-server` and provider-mediated results and every error
-  path. Branch on `ctx.executionClass` to scope a policy to remote peers.
+- **It is symmetric.** The hook's application sites together cover every path
+  that can durably stage a tool result — the Tool Execution Gateway
+  chokepoint plus the pre-staged provider tool-message path (AY003), which
+  bypasses the gateway entirely — sharing one application helper so the
+  semantics are identical at both. It covers `tuvren-server`,
+  `tuvren-client`, `provider-native`, and `provider-mediated` results, and
+  every error path. Branch on `ctx.executionClass` to scope a policy to
+  remote peers.
 - **It is synchronous and total.** It returns a `ToolResultPart`; it cannot
   defer, reject, or fail the call. Deciding *whether* a call proceeds is the
   approval seam's job, not this one.

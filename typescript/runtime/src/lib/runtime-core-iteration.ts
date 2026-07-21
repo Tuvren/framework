@@ -21,6 +21,7 @@ import type {
   AgentConfig,
   ContextManifest,
   RuntimeResolution,
+  SanitizeToolResultHook,
 } from "@tuvren/core/execution";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type {
@@ -48,6 +49,7 @@ import {
 import { synthesizeResponse } from "./runtime-core-response.js";
 import { cloneValue } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
+import { applySanitizeHookToPart } from "./tool-execution-helpers.js";
 
 /**
  * Result of one runner iteration phase: either the iteration executed and
@@ -529,6 +531,74 @@ function emitProviderToolAttributionEvents(
 }
 
 /**
+ * Applies the host's `sanitizeToolResult` hook (ADR-064) to every pre-staged
+ * provider tool-role message's parts (AY003) before those messages are
+ * durably staged and before {@link emitProviderToolAttributionEvents} reads
+ * them. Pre-staged provider results never pass through
+ * `stageAndEmitResult` — the Tool Execution Gateway chokepoint — so this is
+ * the seam's second application site; both share
+ * {@link applySanitizeHookToPart} from `tool-execution-helpers.ts` so hook
+ * semantics (context shape, callId/name/type re-stamp, throw handling) are
+ * identical at both.
+ *
+ * `executionClass` is discriminated the same way
+ * {@link emitProviderToolAttributionEvents} discriminates it — from
+ * `part.providerMetadata.executionClass`, defaulting to `"provider-native"`.
+ * `providerMetadata` itself is re-attached after the hook runs: like
+ * `callId`/`name`/`type`, it is framework-owned continuity/identity data
+ * (AY005), not host-authored content, so a hook that drops or rebuilds it
+ * cannot desync provider continuation state from the durable record.
+ *
+ * A no-op (returns `messages` unchanged) when no hook is configured —
+ * byte-identical staging for hosts that install nothing.
+ */
+function applySanitizeToPrestagedProviderMessages(
+  messages: TuvrenMessage[],
+  hook: SanitizeToolResultHook | undefined
+): TuvrenMessage[] {
+  if (hook === undefined) {
+    return messages;
+  }
+
+  return messages.map((message) => {
+    if (message.role !== "tool") {
+      return message;
+    }
+
+    let changed = false;
+    const parts = message.parts.map((part) => {
+      const meta = part.providerMetadata;
+      if (
+        typeof meta !== "object" ||
+        meta === null ||
+        (meta as Record<string, unknown>).owner !== "provider"
+      ) {
+        // Same invariant emitProviderToolAttributionEvents relies on: a mixed
+        // tool message is rejected before reaching here by
+        // isPrestagedProviderToolMessage in runner-contract-guards.ts.
+        return part;
+      }
+
+      const executionClass: "provider-native" | "provider-mediated" =
+        (meta as Record<string, unknown>).executionClass === "provider-mediated"
+          ? "provider-mediated"
+          : "provider-native";
+
+      const sanitized = applySanitizeHookToPart(hook, part, executionClass);
+      changed = true;
+      return { ...sanitized, providerMetadata: meta };
+    });
+
+    return changed
+      ? {
+          ...message,
+          parts: parts as unknown as [ToolResultPart, ...ToolResultPart[]],
+        }
+      : message;
+  });
+}
+
+/**
  * Executes one full runner iteration against the current branch head.
  *
  * The phase creates a tracked iteration run, executes the runner, validates
@@ -688,19 +758,27 @@ export async function executeIterationPhase(
     synthesizedAssistantEvents
   );
 
-  const stagedMessages = [...runnerMessages];
+  // ADR-064 §3: pre-staged provider tool messages (AY003) never pass through
+  // stageAndEmitResult, so the host sanitize hook is applied here — before
+  // durable staging and before attribution events are read — so the scrubbed
+  // form is what lands in kernel history, on the canonical tool.result event,
+  // and in every downstream in-memory consumer of stagedMessages.
+  const stagedMessages = applySanitizeToPrestagedProviderMessages(
+    runnerMessages,
+    input.loopState.activeConfig.sanitizeToolResult
+  );
   const stagedMessageHashes = await host.stageRunnerMessages(
     iterationRunId,
-    runnerMessages,
+    stagedMessages,
     input.iterationCount
   );
   emitProviderToolAttributionEvents(
-    runnerMessages,
+    stagedMessages,
     () => host.now(),
     (event) => host.publishEvent(input.handle, event, input.loopState)
   );
   const runnerResponse = synthesizeResponse(
-    runnerMessages,
+    stagedMessages,
     resolution,
     emittedRunnerEvents,
     runnerResult.assistantEventReconciliation

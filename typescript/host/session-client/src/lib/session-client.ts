@@ -374,16 +374,36 @@ export function createSessionClient(
       outboundQueue.push(frame);
       return;
     }
-    socket.send(JSON.stringify({ frame, kind: "frame" }));
+    try {
+      socket.send(JSON.stringify({ frame, kind: "frame" }));
+    } catch {
+      // The socket looked live (handshakeOpen) but send() threw — e.g. it
+      // died between the handshake ack and this call. Queue the frame rather
+      // than let the throw propagate: it will flush after the next
+      // handshake_ack, which is exactly the redelivery-recovery story this
+      // client already relies on for `client_result` frames sent under
+      // ADR-063 redelivery.
+      outboundQueue.push(frame);
+    }
   }
 
   function flushOutboundQueue(): void {
     if (socket === undefined) {
       return;
     }
-    const queued = outboundQueue.splice(0, outboundQueue.length);
-    for (const frame of queued) {
-      socket.send(JSON.stringify({ frame, kind: "frame" }));
+    // Send one frame at a time, only removing it from the queue once send()
+    // has actually succeeded. A throwing send (dead socket mid-flush) puts
+    // the frame back at the head of the queue and stops the flush instead of
+    // silently dropping it and every frame after it — the next successful
+    // handshake_ack retries the whole remaining queue in order.
+    while (outboundQueue.length > 0) {
+      const frame = outboundQueue.shift();
+      try {
+        socket.send(JSON.stringify({ frame, kind: "frame" }));
+      } catch {
+        outboundQueue.unshift(frame);
+        return;
+      }
     }
   }
 
@@ -626,6 +646,10 @@ export function createSessionClient(
 
   function close(code = 1000, reason?: string): void {
     closedByUser = true;
+    // Cleared, not re-queued (see outboundQueue's doc comment above): once
+    // the caller has explicitly asked to close, queued frames represent
+    // intent for a connection the caller no longer wants re-established.
+    outboundQueue.length = 0;
     const wasWaitingOnBackoff = reconnectTimer !== undefined;
     clearReconnectTimer();
     if (socket === undefined) {
