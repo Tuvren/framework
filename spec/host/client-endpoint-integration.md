@@ -114,6 +114,73 @@ No credentials or environment secrets should appear in:
 
 These values enter durable lineage. The runtime never injects provider credentials, MCP auth tokens, or other secrets into the dispatch envelope.
 
+## Durable Lineage Is Forever
+
+Read this before shipping an endpoint whose environment contains secrets.
+
+Kernel history is **content-addressed and immutable**. A value that reaches it
+cannot be edited, masked, or deleted afterwards. Two paths carry
+endpoint-authored text into that history:
+
+1. `ClientReportedResult.content` — whatever your `dispatch` returns.
+2. A thrown error's `message` — if `dispatch` rejects, the runtime converts
+   `err.message` into result content (see the error-handling note above).
+
+The second path is the one that bites, because error messages are written
+casually and interpolate whatever is in scope. A browser extension running
+inside a third-party web app is an environment rich in bearer tokens, session
+cookies, and signed URLs, and a message like
+`` `PUT ${signedUrl} failed: ${res.status}` `` writes a credential into durable
+state permanently. The runtime does **not** redact: it cannot know what
+counts as a secret in an arbitrary tool payload.
+
+### The sanitization seam
+
+Because that default is correct but undiscoverable, the framework provides a
+seam to hang host policy on — and guarantees only its **ordering**:
+
+```ts
+const agentConfig = {
+  name: "my-agent",
+  clientEndpoints: [myEndpoint],
+  sanitizeToolResult(result, ctx) {
+    if (ctx.executionClass !== "tuvren-client") return result;
+    return { ...result, output: redact(result.output) };
+  },
+};
+```
+
+The guarantee is that `sanitizeToolResult` runs **before** the result is
+durably staged and **before** the canonical `tool.result` event is emitted, so
+the scrubbed value is what enters kernel history *and* what every stream
+consumer, projection, and transcript observes. The unscrubbed value never
+leaves the runtime.
+
+Design notes, so the seam is not mistaken for more than it is:
+
+- **It is host policy, never framework inspection.** No default redaction, no
+  pattern matching, no key heuristics. Install nothing and behavior is
+  byte-identical to having no hook.
+- **It is symmetric.** The hook sits at the shared tool-result chokepoint, so
+  it also covers `tuvren-server` and provider-mediated results and every error
+  path. Branch on `ctx.executionClass` to scope a policy to remote peers.
+- **It is synchronous and total.** It returns a `ToolResultPart`; it cannot
+  defer, reject, or fail the call. Deciding *whether* a call proceeds is the
+  approval seam's job, not this one.
+- **A throw is a host defect on a durability-critical path.** The runtime does
+  not swallow it into a scrubbed-by-default result — silently substituting
+  content you did not author would be the worse failure — so it surfaces as
+  the tool call's error.
+
+The seam is a backstop, not a substitute for discipline at the endpoint: the
+strongest position is still not putting the secret in the message. Sanitize
+because error paths are hard to fully enumerate, not because the endpoint may
+be careless.
+
+See ADR-064 for the decision record, and ADR-044 for the separate,
+framework-*enforced* secret isolation that covers credentials the framework
+itself introduces (provider keys, MCP auth, backend connection strings).
+
 ## Reference Implementation
 
 The conformance mock endpoint used in the `tuvren-client-execution-class` conformance check set serves as a minimal reference implementation:
