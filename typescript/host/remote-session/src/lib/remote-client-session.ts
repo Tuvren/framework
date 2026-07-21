@@ -254,8 +254,9 @@ interface PendingInvocation {
  * Single-slot push channel feeding exactly one {@link createSequencedTuvrenStreamEvents}
  * instance: `push(value)` followed immediately by a `next()` call is
  * guaranteed to resolve with that exact value, because the pump only ever
- * calls `next()` in that lockstep push-then-pull order (mirrors the identical
- * helper in `@tuvren/stream-ws`'s `createWsSessionTransport`).
+ * calls `next()` in that lockstep push-then-pull order. `next()` called
+ * without a preceding `push()` is a contract violation by the caller (this
+ * file's own pump), not a state this channel is meant to tolerate silently.
  */
 class SingleSlotPushChannel<T> implements AsyncIterable<T> {
   private hasValue = false;
@@ -297,8 +298,40 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+// Mirrors `CONTAINS_NON_WHITESPACE` in
+// `typescript/host/session/src/lib/duplex-session-binding.ts` byte-for-byte,
+// not merely `.length > 0`: the binding's `validateInboundFrame` accepts a
+// string only when it contains a non-whitespace character, so a
+// whitespace-only `leaseToken`/`correlationId` passes a naive `.length > 0`
+// check here but is then rejected by the binding as `session_frame_invalid`.
+// If this predicate is ever laxer than the binding's, a client_result the
+// binding will reject gets treated as settleable here, clearing the pending
+// entry and its dispatch timer for a call the binding never actually
+// settled — orphaning the dispatch with no timer and no redelivery owed by
+// anyone.
+const CONTAINS_NON_WHITESPACE = /\S/;
+
+/**
+ * Builds the `client_invocation` outbound frame for `invocation`. Shared by
+ * the live-dispatch path ({@link handleOutboundInvocation}) and the
+ * reattach-redelivery path (inside {@link RemoteClientSession.attach}) so the
+ * two can never drift into structurally different frames for the same
+ * invocation.
+ */
+function makeInvocationFrame(
+  invocation: ClientInvocationEnvelope,
+  sessionId: string
+): SessionOutboundFrame {
+  return {
+    invocation,
+    kind: "client_invocation",
+    protocolVersion: PROTOCOL_VERSION,
+    sessionId,
+  };
+}
+
 function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
+  return typeof value === "string" && CONTAINS_NON_WHITESPACE.test(value);
 }
 
 /**
@@ -531,15 +564,7 @@ export function createRemoteClientSession(
       pending.dispatchTimer = armDispatchTimer(invocation.callId);
     }
 
-    forwardFrame(
-      {
-        invocation,
-        kind: "client_invocation",
-        protocolVersion: PROTOCOL_VERSION,
-        sessionId,
-      },
-      undefined
-    );
+    forwardFrame(makeInvocationFrame(invocation, sessionId), undefined);
   }
 
   function claimAndStartPump(): void {
@@ -667,15 +692,7 @@ export function createRemoteClientSession(
     // dispatchTimeoutMs rather than a deadline that ran out while it was gone
     // (ADR-063 decision 5).
     for (const pending of pendingInvocations.values()) {
-      sink.send(
-        {
-          invocation: pending.envelope,
-          kind: "client_invocation",
-          protocolVersion: PROTOCOL_VERSION,
-          sessionId,
-        },
-        undefined
-      );
+      sink.send(makeInvocationFrame(pending.envelope, sessionId), undefined);
       pending.dispatchTimer = armDispatchTimer(pending.envelope.callId);
     }
 

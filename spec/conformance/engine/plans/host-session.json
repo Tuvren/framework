@@ -213,6 +213,7 @@
         "sessionEnded",
         "pendingTimersBeforeDetach",
         "pendingTimersAfterDetach",
+        "pendingGraceTimerAfterDetach",
         "finalStatus"
       ]
     },
@@ -232,12 +233,27 @@
         },
         {
           "kind": "resultField",
+          "field": "$.pendingDispatchTimerWhileAttached",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
           "field": "$.pendingTimersAfterDetach",
           "equals": 1
         },
         {
           "kind": "resultField",
+          "field": "$.pendingDispatchTimerAfterDetach",
+          "equals": 0
+        },
+        {
+          "kind": "resultField",
           "field": "$.pendingTimersAfterReattach",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.pendingDispatchTimerAfterReattach",
           "equals": 1
         },
         {
@@ -254,8 +270,11 @@
       "evidence": [
         "persistedToolResultOutputCode",
         "pendingTimersWhileAttached",
+        "pendingDispatchTimerWhileAttached",
         "pendingTimersAfterDetach",
+        "pendingDispatchTimerAfterDetach",
         "pendingTimersAfterReattach",
+        "pendingDispatchTimerAfterReattach",
         "redeliveredInvocationCount",
         "finalStatus"
       ]

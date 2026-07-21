@@ -444,6 +444,20 @@ export async function runTuvrenClientNetworkReconnectRedelivery(): Promise<Adapt
   const inFlightCallIds = new Set<string>();
   const idempotencyKeysSeen = new Set<string>();
   const invocationSightingCount = new Map<string, number>();
+  // `effectCount` is observational only: it counts how many times THIS
+  // ADAPTER's own `inFlightCallIds` dedup table (below) chose to run the
+  // simulated peer's effect, which proves the adapter's own bookkeeping
+  // works, not that the real implementation dedups. The real
+  // implementation-side proof that a redelivered invocation is recognized
+  // and not double-effected lives in `@tuvren/session-client`'s own package
+  // tests (redelivery dedup: an already-answered callId re-sends the
+  // recorded result without re-running the handler) and the M6 repl e2e
+  // (`typescript/host/repl/test/repl-serve-ws.e2e.test.ts`), which drives a
+  // real WebSocket peer across a genuine socket drop. This plan's
+  // load-bearing assertions are `redeliveredInvocationCount`,
+  // `idempotencyKeyCount`, `observedAtLeastOneCursor`, and
+  // `noCursorDuplication` — all read from the session/session under test's
+  // own outbound frames, not from this adapter's simulated peer.
   let effectCount = 0;
   let pendingReply: { callId: string; leaseToken: string } | undefined;
   let activeTransport: WsSessionTransport | undefined;
@@ -664,17 +678,33 @@ export async function runTuvrenClientResultDurability(): Promise<AdapterProjecti
   const toolMessages = read.messages.filter(
     (message) => isRecord(message) && message.role === "tool"
   );
-  const hasCommittedResult = toolMessages.some((message) => {
-    const parts = isRecord(message) ? message.parts : undefined;
-    return (
-      Array.isArray(parts) &&
-      parts.some(
-        (part) => isRecord(part) && part.name === RESULT_DURABILITY_CAP
-      )
-    );
-  });
+  const committedPart = toolMessages
+    .flatMap((message) => {
+      const parts = isRecord(message) ? message.parts : undefined;
+      return Array.isArray(parts) ? parts : [];
+    })
+    .find((part) => isRecord(part) && part.name === RESULT_DURABILITY_CAP);
+  const hasCommittedResult = committedPart !== undefined;
+
+  // `hasCommittedResult` alone only proves a part with the right name was
+  // persisted, not that it survived as the SUCCESSFUL result the endpoint
+  // actually returned — a durably-committed error result would satisfy it
+  // just as well. `committedResultIsError` and `committedResultOutputEcho`
+  // close that gap: they prove the specific `{ acknowledged: true }` payload
+  // the endpoint's `dispatch` resolved with (see above) is the exact payload
+  // read back from the separate reader runtime/kernel, not merely that
+  // *some* result for this capability was committed.
+  const committedResultIsError =
+    isRecord(committedPart) && committedPart.isError === true;
+  const committedOutput = isRecord(committedPart)
+    ? committedPart.output
+    : undefined;
+  const committedResultOutputEcho =
+    isRecord(committedOutput) && committedOutput.acknowledged === true;
 
   const observation = {
+    committedResultIsError,
+    committedResultOutputEcho,
     committedToolMessageCount: toolMessages.length,
     hasCommittedResult,
     idempotencyKeyPresent: [...idempotencyKeysSeen].some(

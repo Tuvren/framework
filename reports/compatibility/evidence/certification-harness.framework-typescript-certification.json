@@ -4261,7 +4261,31 @@
           "status": "pass"
         },
         {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.8.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.9.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.finalStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.pendingDispatchTimerAfterDetach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.pendingDispatchTimerAfterReattach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.pendingDispatchTimerWhileAttached",
           "status": "pass"
         },
         {
@@ -4286,6 +4310,18 @@
         },
         {
           "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.finalStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.pendingDispatchTimerAfterDetach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.pendingDispatchTimerAfterReattach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.pendingDispatchTimerWhileAttached",
           "status": "pass"
         },
         {
@@ -4366,6 +4402,10 @@
         },
         {
           "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.finalStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.pendingGraceTimerAfterDetach",
           "status": "pass"
         },
         {
@@ -11202,55 +11242,51 @@
     {
       "assertionResults": [
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.1.resultField",
+          "assertionId": "az.az006.network-reconnect-redelivery.1.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.2.resultField",
+          "assertionId": "az.az006.network-reconnect-redelivery.2.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.3.resultField",
+          "assertionId": "az.az006.network-reconnect-redelivery.3.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.4.resultField",
+          "assertionId": "az.az006.network-reconnect-redelivery.4.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.5.resultField",
+          "assertionId": "az.az006.network-reconnect-redelivery.5.resultField",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.6.resultField",
+          "assertionId": "az.az006.network-reconnect-redelivery.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.effectCount",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.effectCount",
+          "assertionId": "az.az006.network-reconnect-redelivery.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.idempotencyKeyCount",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.idempotencyKeyCount",
+          "assertionId": "az.az006.network-reconnect-redelivery.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.noCursorDuplication",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.noCursorDuplication",
+          "assertionId": "az.az006.network-reconnect-redelivery.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.observedAtLeastOneCursor",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.observedAtLeastOneCursor",
+          "assertionId": "az.az006.network-reconnect-redelivery.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.redeliveredInvocationCount",
           "status": "pass"
         },
         {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.redeliveredInvocationCount",
-          "status": "pass"
-        },
-        {
-          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.status",
+          "assertionId": "az.az006.network-reconnect-redelivery.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.status",
           "status": "pass"
         }
       ],
-      "checkId": "az.az006.network-reconnect-redelivery-dedup",
+      "checkId": "az.az006.network-reconnect-redelivery",
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.tuvren-client-execution-class"
@@ -11269,6 +11305,22 @@
         },
         {
           "assertionId": "az.az006.result-durability-recovered.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.result-durability-recovered.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.result-durability-recovered.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.result-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.committedResultIsError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.result-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.committedResultOutputEcho",
           "status": "pass"
         },
         {

@@ -694,6 +694,68 @@ describe("createSessionClient: malformed client_invocation (P2-3)", () => {
   });
 });
 
+describe("createSessionClient: malformed session_rejection (P2-3b)", () => {
+  test("malformed rejection frames do not throw and are not delivered; a valid one still is", () => {
+    const { client, sockets, rejections } = makeClient();
+    client.connect();
+    const socket = sockets[0] as FakeSocket;
+    socket.open();
+    ack(socket);
+
+    const malformedRejections: unknown[] = [
+      undefined,
+      null,
+      "not-an-object",
+      42,
+      {},
+      { correlationId: "corr-1" }, // missing code/message
+      { code: "session_frame_invalid", correlationId: "corr-2" }, // missing message
+      { code: "not-a-real-code", correlationId: "corr-3", message: "bad code" },
+      {
+        code: "session_frame_invalid",
+        correlationId: 7,
+        message: "non-string correlationId",
+      },
+    ];
+
+    for (const rejection of malformedRejections) {
+      expect(() => {
+        socket.receive({
+          frame: {
+            kind: "session_rejection",
+            rejection,
+            sessionId: "test-session",
+          },
+          kind: "frame",
+        });
+      }).not.toThrow();
+    }
+
+    expect(rejections).toHaveLength(0);
+
+    // A subsequent well-shaped rejection is still delivered.
+    socket.receive({
+      frame: {
+        kind: "session_rejection",
+        rejection: {
+          code: "session_frame_invalid",
+          correlationId: "corr-valid",
+          message: "inbound frame must be an object",
+        },
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+
+    expect(rejections).toHaveLength(1);
+    expect(rejections[0]).toEqual({
+      code: "session_frame_invalid",
+      correlationId: "corr-valid",
+      message: "inbound frame must be an object",
+    });
+  });
+});
+
 describe("createSessionClient: close() during backoff emits terminal status (P2-5)", () => {
   test("connect -> retryable close -> close() during backoff observes a terminal status and stops reconnecting", () => {
     const { client, clock, sockets, statuses } = makeClient({

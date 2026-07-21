@@ -766,23 +766,41 @@ function sentFramesOfKind<Kind extends SessionOutboundFrame["kind"]>(
     );
 }
 
-/** A deterministic, test-controlled `RemoteSessionClock`: timers only fire when the adapter explicitly calls {@link fireOldest}. Mirrors `@tuvren/remote-session`'s own test fake; kept local since adapters do not import another package's test sources. */
+/**
+ * A deterministic, test-controlled `RemoteSessionClock`: timers only fire
+ * when the adapter explicitly calls {@link fireOldest}. Mirrors
+ * `@tuvren/remote-session`'s own test fake; kept local since adapters do not
+ * import another package's test sources.
+ *
+ * `pendingCount()` alone cannot distinguish a pending dispatch timer from a
+ * pending grace timer — both are just "one scheduled timeout" to a plain
+ * count, and `RemoteClientSession` schedules both kinds through this same
+ * clock at different points in its lifecycle (dispatch timers at
+ * `dispatchTimeoutMs`, the grace timer at `disconnectGraceMs`). This fake
+ * therefore also records each timer's requested duration, so
+ * {@link pendingCountWithMs} can answer "how many pending timers were
+ * scheduled for exactly this many milliseconds" — letting a check assert
+ * WHICH timer is pending, not merely how many timers are pending, as long as
+ * the two durations configured for a given scenario are distinct (which
+ * every conformance scenario using this fake deliberately arranges).
+ */
 function createFakeSessionClock(): {
   clock: RemoteSessionClock;
   fireOldest(): void;
   pendingCount(): number;
+  pendingCountWithMs(ms: number): number;
 } {
   let nextId = 0;
-  const timers = new Map<number, () => void>();
+  const timers = new Map<number, { callback: () => void; ms: number }>();
 
   const clock: RemoteSessionClock = {
     clearTimeout(handle: unknown): void {
       timers.delete(handle as number);
     },
-    scheduleTimeout(callback: () => void, _ms: number): unknown {
+    scheduleTimeout(callback: () => void, ms: number): unknown {
       const id = nextId;
       nextId += 1;
-      timers.set(id, callback);
+      timers.set(id, { callback, ms });
       return id;
     },
   };
@@ -795,12 +813,15 @@ function createFakeSessionClock(): {
       if (id === undefined) {
         throw new Error("createFakeSessionClock.fireOldest: no pending timer");
       }
-      const callback = timers.get(id);
+      const timer = timers.get(id);
       timers.delete(id);
-      callback?.();
+      timer?.callback();
     },
     pendingCount(): number {
       return timers.size;
+    },
+    pendingCountWithMs(ms: number): number {
+      return [...timers.values()].filter((timer) => timer.ms === ms).length;
     },
   };
 }
@@ -1020,9 +1041,22 @@ export async function runGraceWindowExpiry(): Promise<AdapterProjection> {
     () => sentFramesOfKind(sink1.sent, "client_invocation").length > 0
   );
 
+  // `pendingTimersBeforeDetach`/`pendingTimersAfterDetach` are corroboration,
+  // not proof on their own: a bare count of 1 is consistent with either "the
+  // dispatch timer is still running" or "the grace timer just replaced it",
+  // and this scenario's real semantic claim — that detach suspends the
+  // dispatch timer and starts a distinct grace timer instead of leaving the
+  // dispatch timer running — is what `pendingGraceTimerAfterDetach` (below)
+  // and the persisted `capability_binding_unavailable` result actually
+  // prove.
   const pendingTimersBeforeDetach = fakeClock.pendingCount();
   session.detach();
   const pendingTimersAfterDetach = fakeClock.pendingCount();
+  // Distinguishes the grace timer (scheduled for `disconnectGraceMs`) from a
+  // same-count dispatch timer: proves the timer pending immediately after
+  // detach is specifically the grace timer, not a dispatch timer that failed
+  // to suspend.
+  const pendingGraceTimerAfterDetach = fakeClock.pendingCountWithMs(1000);
   fakeClock.fireOldest();
 
   const result = await handle.awaitResult();
@@ -1034,6 +1068,7 @@ export async function runGraceWindowExpiry(): Promise<AdapterProjection> {
 
   const observation = {
     finalStatus: result.status,
+    pendingGraceTimerAfterDetach,
     pendingTimersAfterDetach,
     pendingTimersBeforeDetach,
     persistedToolResultOutputCode:
@@ -1104,14 +1139,35 @@ export async function runDispatchTimeout(): Promise<AdapterProjection> {
   await waitFor(
     () => sentFramesOfKind(sink1.sent, "client_invocation").length > 0
   );
+  // `pendingTimersWhileAttached`/`pendingTimersAfterDetach`/
+  // `pendingTimersAfterReattach` are corroboration, not proof: a bare count
+  // of 1 at every step is equally consistent with "the same dispatch timer
+  // never stopped" as with "a dispatch timer was suspended and a distinct
+  // grace timer took its place, then a fresh dispatch timer was armed on
+  // reattach" — the two scenarios this check exists to distinguish. This
+  // scenario deliberately configures `dispatchTimeoutMs: 500` and
+  // `disconnectGraceMs: 100_000` (two very different durations) so
+  // `pendingCountWithMs` can tell them apart: `pendingDispatchTimer*` fields
+  // below are the actual semantic proof, alongside the persisted
+  // `capability_dispatch_timeout` result and `redeliveredInvocationCount`.
   const pendingTimersWhileAttached = fakeClock.pendingCount();
+  const pendingDispatchTimerWhileAttached = fakeClock.pendingCountWithMs(500);
 
   session.detach();
   const pendingTimersAfterDetach = fakeClock.pendingCount();
+  // Proves the dispatch timer was actually suspended on detach (ADR-063
+  // decision 5), not merely that some timer count stayed steady — the
+  // pending set right after detach must contain zero timers scheduled for
+  // the dispatch duration.
+  const pendingDispatchTimerAfterDetach = fakeClock.pendingCountWithMs(500);
 
   const sink2 = createRecordingSessionSink();
   session.attach(sink2);
   const pendingTimersAfterReattach = fakeClock.pendingCount();
+  // Proves the timer pending after reattach is a freshly re-armed dispatch
+  // timer with the full budget, not a leftover grace timer or a stale
+  // dispatch timer that survived detach.
+  const pendingDispatchTimerAfterReattach = fakeClock.pendingCountWithMs(500);
   const redeliveredInvocationCount = sentFramesOfKind(
     sink2.sent,
     "client_invocation"
@@ -1128,6 +1184,9 @@ export async function runDispatchTimeout(): Promise<AdapterProjection> {
 
   const observation = {
     finalStatus: result.status,
+    pendingDispatchTimerAfterDetach,
+    pendingDispatchTimerAfterReattach,
+    pendingDispatchTimerWhileAttached,
     pendingTimersAfterDetach,
     pendingTimersAfterReattach,
     pendingTimersWhileAttached,

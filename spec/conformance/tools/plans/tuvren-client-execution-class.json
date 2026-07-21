@@ -183,7 +183,7 @@
       "operation": "runtime.tuvren-client.lifecycle"
     },
     {
-      "checkId": "az.az006.network-reconnect-redelivery-dedup",
+      "checkId": "az.az006.network-reconnect-redelivery",
       "evidence": [
         "result.tuvrenClient.networkReconnectRedelivery.effectCount",
         "result.tuvrenClient.networkReconnectRedelivery.redeliveredInvocationCount",
@@ -193,11 +193,6 @@
         "result.tuvrenClient.networkReconnectRedelivery.observedAtLeastOneCursor"
       ],
       "assertions": [
-        {
-          "kind": "resultField",
-          "field": "$.tuvrenClient.networkReconnectRedelivery.effectCount",
-          "equals": 1
-        },
         {
           "kind": "resultField",
           "field": "$.tuvrenClient.networkReconnectRedelivery.redeliveredInvocationCount",
@@ -230,6 +225,8 @@
       "checkId": "az.az006.result-durability-recovered",
       "evidence": [
         "result.tuvrenClient.networkKillDurability.hasCommittedResult",
+        "result.tuvrenClient.networkKillDurability.committedResultIsError",
+        "result.tuvrenClient.networkKillDurability.committedResultOutputEcho",
         "result.tuvrenClient.networkKillDurability.idempotencyKeyPresent",
         "result.tuvrenClient.networkKillDurability.writerStatus"
       ],
@@ -237,6 +234,16 @@
         {
           "kind": "resultField",
           "field": "$.tuvrenClient.networkKillDurability.hasCommittedResult",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkKillDurability.committedResultIsError",
+          "equals": false
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkKillDurability.committedResultOutputEcho",
           "equals": true
         },
         {

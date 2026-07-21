@@ -606,6 +606,59 @@ describe("createRemoteClientSession", () => {
     );
   });
 
+  test("a client_result with a whitespace-only leaseToken does not clear redelivery tracking or the dispatch timer", async () => {
+    const { binding, fakeClock, session } = setup();
+    const sink1 = createFakeSink();
+    session.attach(sink1);
+
+    const dispatchPromise = binding.clientEndpoint.dispatch({
+      callId: "call-whitespace",
+      capabilityId: "cap-1",
+      input: {},
+      leaseToken: "lease-ws",
+    });
+    dispatchPromise.catch(() => undefined);
+    await flush();
+    expect(fakeClock.pendingCount()).toBe(1);
+
+    // Names the tracked callId and has a `leaseToken` key, but its value is
+    // whitespace-only, so the binding's own `isNonEmptyString` (`/\S/`) rejects
+    // it as session_frame_invalid without settling anything. A `.length > 0`
+    // predicate here would have wrongly treated this as settleable, clearing
+    // the pending entry and its timer and orphaning the dispatch.
+    session.dispatchInbound({
+      correlationId: "corr-whitespace",
+      kind: "client_result",
+      protocolVersion: "1",
+      result: { callId: "call-whitespace", content: {}, leaseToken: "   " },
+      sessionId: "sess-remote-1",
+    });
+    await flush();
+
+    // The dispatch timer is still armed, and the malformed frame drew a
+    // session_rejection from the binding.
+    expect(fakeClock.pendingCount()).toBe(1);
+    expect(
+      sink1.sent.filter((s) => s.frame.kind === "session_rejection")
+    ).toHaveLength(1);
+
+    // The invocation is still owed redelivery on reattach.
+    session.detach();
+    const sink2 = createFakeSink();
+    session.attach(sink2);
+    expect(
+      sink2.sent.filter((s) => s.frame.kind === "client_invocation")
+    ).toHaveLength(1);
+
+    // And the re-armed timer still settles it if the peer stays quiet.
+    fakeClock.fireOldest();
+    const result = await dispatchPromise;
+    expect(result.isError).toBe(true);
+    expect(resultContentCode(result.content)).toBe(
+      "capability_dispatch_timeout"
+    );
+  });
+
   test("reattach ordering: replayed events arrive before the redelivered client_invocation, which arrives before live forwarding resumes (ADR-063 §2/§3)", async () => {
     const { binding, events, session } = setup();
     const sink1 = createFakeSink();

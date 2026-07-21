@@ -108,7 +108,8 @@ export type SessionClientStatus =
   | { phase: "connecting" }
   | { phase: "open"; resumeStatus: string }
   | { phase: "reconnecting"; attempt: number; delayMs: number }
-  | { phase: "closed"; code?: number; reason?: string; terminal: boolean };
+  | { phase: "closed"; code?: number; reason?: string; terminal: boolean }
+  | { phase: "error"; message: string };
 
 /**
  * Reconnect backoff tuning. All fields optional; see
@@ -267,6 +268,39 @@ function isInvocationEnvelope(
   );
 }
 
+// The known `SessionRejectionCode` values (mirrors
+// `spec/host/session/artifacts/json-schema/SessionRejectionCode.json`).
+const SESSION_REJECTION_CODES = new Set<string>([
+  "session_frame_invalid",
+  "session_frame_wrong_state",
+  "capability_result_stale",
+]);
+
+/**
+ * Structural guard for a `session_rejection` frame's `rejection` field, per
+ * the wire authority (`SessionInboundRejection` in
+ * `spec/host/session/artifacts/json-schema/SessionInboundRejection.json`):
+ * a non-empty `correlationId`, a `code` from the closed rejection-code
+ * enum, and a `message` string. Sibling `client_invocation` frames are
+ * already structurally validated by {@link isInvocationEnvelope} before
+ * being handed to a caller; `session_rejection` frames were previously
+ * passed through with an unchecked cast, so a malformed one from a
+ * misbehaving or buggy server could reach `onRejection` with an
+ * arbitrary shape. Same server-trust-boundary posture as
+ * {@link isInvocationEnvelope}: ignore a malformed frame rather than throw.
+ */
+function isInboundRejection(
+  value: unknown
+): value is SessionClientInboundRejection {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.correlationId) &&
+    typeof value.code === "string" &&
+    SESSION_REJECTION_CODES.has(value.code) &&
+    typeof value.message === "string"
+  );
+}
+
 function validateOptions(options: SessionClientOptions): void {
   if (!isNonEmptyString(options.url)) {
     throw new RangeError("createSessionClient: url must be a non-empty string");
@@ -303,21 +337,29 @@ function validateOptions(options: SessionClientOptions): void {
   }
 }
 
-let correlationCounter = 0;
-
-function nextCorrelationId(): string {
-  const cryptoGlobal = (
-    globalThis as { crypto?: { randomUUID?: () => string } }
-  ).crypto;
-  if (typeof cryptoGlobal?.randomUUID === "function") {
-    return cryptoGlobal.randomUUID();
-  }
-  correlationCounter += 1;
-  return `session-client-correlation-${correlationCounter}`;
-}
-
 function errorMessageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Best-effort message extraction for a `WebSocket` `error` event, which is
+ * neither a `string` nor an `Error` in most runtimes (typically an
+ * `ErrorEvent`-shaped object whose own `message`/`error` field carries the
+ * useful detail, or `undefined` entirely).
+ */
+function socketErrorMessageOf(event: unknown): string {
+  if (event instanceof Error) {
+    return event.message;
+  }
+  if (
+    typeof event === "object" &&
+    event !== null &&
+    "message" in event &&
+    typeof (event as { message: unknown }).message === "string"
+  ) {
+    return (event as { message: string }).message;
+  }
+  return "socket reported an error event";
 }
 
 /**
@@ -364,6 +406,25 @@ export function createSessionClient(
   // re-queued) if the user calls `close()` themselves.
   const outboundQueue: unknown[] = [];
   const callState = new Map<string, CallState>();
+  // Instance-scoped fallback counter for `nextCorrelationId`, used only when
+  // `crypto.randomUUID` is unavailable. Previously a module-level variable
+  // shared (and incremented) across every `createSessionClient` instance in
+  // the process, which meant two clients running side by side without
+  // `crypto.randomUUID` could observe interleaved, non-contiguous sequences
+  // — harmless for uniqueness (correlationId only needs to be unique within
+  // one client) but confusing and unnecessarily shared state.
+  let correlationCounter = 0;
+
+  function nextCorrelationId(): string {
+    const cryptoGlobal = (
+      globalThis as { crypto?: { randomUUID?: () => string } }
+    ).crypto;
+    if (typeof cryptoGlobal?.randomUUID === "function") {
+      return cryptoGlobal.randomUUID();
+    }
+    correlationCounter += 1;
+    return `session-client-correlation-${correlationCounter}`;
+  }
 
   function reportStatus(status: SessionClientStatus): void {
     options.onStatusChange?.(status);
@@ -526,7 +587,14 @@ export function createSessionClient(
       return;
     }
     if (kind === "session_rejection") {
-      options.onRejection?.(record.rejection as SessionClientInboundRejection);
+      // Server-trust-boundary hygiene, matching the `client_invocation`
+      // branch above: a malformed `rejection` payload must not reach
+      // `onRejection` with an arbitrary shape. Ignore it silently — there is
+      // no channel back to the server for a carriage-level shape problem.
+      if (!isInboundRejection(record.rejection)) {
+        return;
+      }
+      options.onRejection?.(record.rejection);
     }
   }
 
@@ -632,7 +700,17 @@ export function createSessionClient(
       });
     };
 
-    nextSocket.onerror = () => undefined;
+    nextSocket.onerror = (event) => {
+      // Purely observational: the socket's own `onclose` still drives every
+      // reconnect decision, since a browser/runtime `error` event carries no
+      // reliable code/reason and is typically followed immediately by
+      // `close`. Previously this diagnostic was discarded entirely
+      // (`() => undefined`); surfacing it through the existing
+      // `onStatusChange` callback costs no new public option while giving
+      // hosts visibility into socket-level failures `onclose` alone doesn't
+      // explain.
+      reportStatus({ message: socketErrorMessageOf(event), phase: "error" });
+    };
   }
 
   function connect(): void {

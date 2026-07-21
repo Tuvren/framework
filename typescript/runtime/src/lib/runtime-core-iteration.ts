@@ -566,7 +566,7 @@ function applySanitizeToPrestagedProviderMessages(
     }
 
     let changed = false;
-    const parts = message.parts.map((part) => {
+    const sanitizePart = (part: ToolResultPart): ToolResultPart => {
       const meta = part.providerMetadata;
       if (
         typeof meta !== "object" ||
@@ -587,14 +587,22 @@ function applySanitizeToPrestagedProviderMessages(
       const sanitized = applySanitizeHookToPart(hook, part, executionClass);
       changed = true;
       return { ...sanitized, providerMetadata: meta };
-    });
+    };
 
-    return changed
-      ? {
-          ...message,
-          parts: parts as unknown as [ToolResultPart, ...ToolResultPart[]],
-        }
-      : message;
+    // `message.parts` is the non-empty tuple `[ToolResultPart,
+    // ...ToolResultPart[]]`; `Array.prototype.map` widens that to a plain
+    // `ToolResultPart[]`, which previously required an `as unknown as
+    // [ToolResultPart, ...ToolResultPart[]]` double-cast to reassign. Mapping
+    // the known-present head and the rest separately keeps the tuple's
+    // non-emptiness honestly typed instead of casting past the type
+    // checker.
+    const [firstPart, ...restParts] = message.parts;
+    const parts: [ToolResultPart, ...ToolResultPart[]] = [
+      sanitizePart(firstPart),
+      ...restParts.map(sanitizePart),
+    ];
+
+    return changed ? { ...message, parts } : message;
   });
 }
 
