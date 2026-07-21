@@ -433,7 +433,11 @@
     "host-session.approval-response-resumes-from-checkpoint",
     "host-session.cancel-propagates-cooperatively",
     "host-session.cancel-while-paused-terminates-stream",
+    "host-session.dispatch-timeout-settles-while-attached",
     "host-session.frame-schema-validation",
+    "host-session.grace-window-expiry-settles-binding-unavailable",
+    "host-session.reattach-redelivers-unanswered-invocation",
+    "host-session.sequence-continuity-across-reattach",
     "host-session.stale-client-result-rejected",
     "ba.ba001.policy-denied-lifecycle-no-start-error-result",
     "ba.ba001.provider-mediated-lifecycle-start-emitted",
@@ -583,6 +587,7 @@
     "runtime-callable-ext.tool-execute.state-tool-results-total-one",
     "runtime-callable-ext.validate-structured-output.resolution-fail",
     "runtime-callable-ext.validate-structured-output.resolution-type-string",
+    "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces",
     "schema-authoring.branch1-already-wrapped.has-schema-symbol",
     "schema-authoring.branch2-zod-v4.has-schema-symbol",
     "schema-authoring.branch2-zod-v4.json-schema-type",
@@ -702,6 +707,8 @@
     "az.az004.client-side-mcp-resolves-tuvren-client-class",
     "az.az005.no-tool-audit-events-for-tuvren-client",
     "az.az005.no-tool-audit-for-client-mcp",
+    "az.az006.network-kill-durability-recovered",
+    "az.az006.network-reconnect-redelivery-dedup",
     "ax.ax001.input-validated-audit-event-emitted",
     "ax.ax001.input-validation-failure-carries-code",
     "ax.ax001.input-validation-failure-surfaces-error",
@@ -729,9 +736,9 @@
   "summary": {
     "failedChecks": 0,
     "passedChecks": 12,
-    "totalChecks": 504,
+    "totalChecks": 511,
     "applicableChecks": 12,
-    "nonApplicableChecks": 492
+    "nonApplicableChecks": 499
   },
   "suiteId": "tuvren.framework.runtime-api.batteries-included",
   "suiteVersion": "0.1.0"

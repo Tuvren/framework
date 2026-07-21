@@ -4237,6 +4237,88 @@
     {
       "assertionResults": [
         {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.finalStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.pendingTimersAfterDetach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.pendingTimersAfterReattach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.pendingTimersWhileAttached",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.persistedToolResultOutputCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.redeliveredInvocationCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.finalStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.pendingTimersAfterDetach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.pendingTimersAfterReattach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.pendingTimersWhileAttached",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.persistedToolResultOutputCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.dispatch-timeout-settles-while-attached.requiredEvidence.result.redeliveredInvocationCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "host-session.dispatch-timeout-settles-while-attached",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.host-session.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "host-session.frame-schema-validation.1.resultField",
           "status": "pass"
         },
@@ -4262,6 +4344,208 @@
         }
       ],
       "checkId": "host-session.frame-schema-validation",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.host-session.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.finalStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.pendingTimersAfterDetach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.pendingTimersBeforeDetach",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.persistedToolResultOutputCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.result.finalStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.result.persistedToolResultOutputCode",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.result.sessionEnded",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.grace-window-expiry-settles-binding-unavailable.requiredEvidence.sessionEnded",
+          "status": "pass"
+        }
+      ],
+      "checkId": "host-session.grace-window-expiry-settles-binding-unavailable",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.host-session.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.6.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.7.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.finalStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.idempotencyKeyPresent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.redeliveredInvocationCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.result.finalStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.result.idempotencyKeyPresent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.result.redeliveredInvocationCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.result.sameCallId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.result.sameIdempotencyKey",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.result.sameLeaseToken",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.result.sessionRejectionRedeliveredCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.sameCallId",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.sameIdempotencyKey",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.sameLeaseToken",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.reattach-redelivers-unanswered-invocation.requiredEvidence.sessionRejectionRedeliveredCount",
+          "status": "pass"
+        }
+      ],
+      "checkId": "host-session.reattach-redelivers-unanswered-invocation",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.host-session.core"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.expectedReplaySequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.noSequenceRestart",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.replayGaplessAndContiguous",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.replayedSequences",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.result.noSequenceRestart",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.result.replayGaplessAndContiguous",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.result.resumeStatus",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.resumeStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "host-session.sequence-continuity-across-reattach",
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.host-session.core"
@@ -8019,6 +8303,56 @@
     {
       "assertionResults": [
         {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.1.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.2.secretAbsence",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.requiredEvidence.result.sanitizeSeam.emittedToolResultEvent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.requiredEvidence.result.sanitizeSeam.emittedToolResultEvent.output.message",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.requiredEvidence.result.sanitizeSeam.persistedToolMessagePart",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.requiredEvidence.result.sanitizeSeam.persistedToolMessagePart.isError",
+          "status": "pass"
+        },
+        {
+          "assertionId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces.requiredEvidence.result.sanitizeSeam.persistedToolMessagePart.output.message",
+          "status": "pass"
+        }
+      ],
+      "checkId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.runtime-api.callables-extended"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "schema-authoring.branch1-already-wrapped.has-schema-symbol.1.resultField",
           "status": "pass"
         },
@@ -10856,6 +11190,90 @@
     {
       "assertionResults": [
         {
+          "assertionId": "az.az006.network-kill-durability-recovered.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-kill-durability-recovered.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-kill-durability-recovered.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-kill-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.hasCommittedResult",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-kill-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.idempotencyKeyPresent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-kill-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.writerStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az006.network-kill-durability-recovered",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.4.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.5.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.effectCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.idempotencyKeyCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.noCursorDuplication",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.redeliveredInvocationCount",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.status",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az006.network-reconnect-redelivery-dedup",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
           "assertionId": "ax.ax001.input-validated-audit-event-emitted.1.resultField",
           "status": "pass"
         },
@@ -11328,9 +11746,9 @@
   "status": "pass",
   "summary": {
     "failedChecks": 0,
-    "passedChecks": 492,
-    "totalChecks": 504,
-    "applicableChecks": 492,
+    "passedChecks": 499,
+    "totalChecks": 511,
+    "applicableChecks": 499,
     "nonApplicableChecks": 12
   },
   "suiteId": "tuvren.framework.promoted-authority",

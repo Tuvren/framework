@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.framework.host-session.core",
-  "planVersion": "0.2.0",
+  "planVersion": "0.3.0",
   "packetId": "tuvren.framework.host-session",
   "applicability": {
     "capabilities": ["framework.host-session"]
@@ -137,6 +137,156 @@
         }
       ],
       "evidence": ["frameValidation.allMatch", "frameValidation.count"]
+    },
+    {
+      "checkId": "host-session.reattach-redelivers-unanswered-invocation",
+      "operation": "host-session.reattach-redelivery",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.sameCallId",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.sameLeaseToken",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.sameIdempotencyKey",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.idempotencyKeyPresent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.redeliveredInvocationCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.sessionRejectionRedeliveredCount",
+          "equals": 0
+        },
+        {
+          "kind": "resultField",
+          "field": "$.finalStatus",
+          "equals": "completed"
+        }
+      ],
+      "evidence": [
+        "sameCallId",
+        "sameLeaseToken",
+        "sameIdempotencyKey",
+        "idempotencyKeyPresent",
+        "redeliveredInvocationCount",
+        "sessionRejectionRedeliveredCount",
+        "finalStatus"
+      ]
+    },
+    {
+      "checkId": "host-session.grace-window-expiry-settles-binding-unavailable",
+      "operation": "host-session.grace-window-expiry",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.persistedToolResultOutputCode",
+          "equals": "capability_binding_unavailable"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.sessionEnded",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.finalStatus",
+          "equals": "completed"
+        }
+      ],
+      "evidence": [
+        "persistedToolResultOutputCode",
+        "sessionEnded",
+        "pendingTimersBeforeDetach",
+        "pendingTimersAfterDetach",
+        "finalStatus"
+      ]
+    },
+    {
+      "checkId": "host-session.dispatch-timeout-settles-while-attached",
+      "operation": "host-session.dispatch-timeout",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.persistedToolResultOutputCode",
+          "equals": "capability_dispatch_timeout"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.pendingTimersWhileAttached",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.pendingTimersAfterDetach",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.pendingTimersAfterReattach",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.redeliveredInvocationCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.finalStatus",
+          "equals": "completed"
+        }
+      ],
+      "evidence": [
+        "persistedToolResultOutputCode",
+        "pendingTimersWhileAttached",
+        "pendingTimersAfterDetach",
+        "pendingTimersAfterReattach",
+        "redeliveredInvocationCount",
+        "finalStatus"
+      ]
+    },
+    {
+      "checkId": "host-session.sequence-continuity-across-reattach",
+      "operation": "host-session.sequence-continuity",
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.resumeStatus",
+          "equals": "resumed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.noSequenceRestart",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.replayGaplessAndContiguous",
+          "equals": true
+        }
+      ],
+      "evidence": [
+        "resumeStatus",
+        "noSequenceRestart",
+        "replayGaplessAndContiguous",
+        "replayedSequences",
+        "expectedReplaySequences"
+      ]
     }
   ]
 }

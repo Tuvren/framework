@@ -1859,6 +1859,42 @@
     {
       "assertions": [
         {
+          "field": "$.sanitizeSeam.persistedToolMessagePart",
+          "kind": "secretAbsence",
+          "secretsPath": "$.fixture.secretValues"
+        },
+        {
+          "field": "$.sanitizeSeam.emittedToolResultEvent",
+          "kind": "secretAbsence",
+          "secretsPath": "$.fixture.secretValues"
+        },
+        {
+          "contains": "[scrubbed-by-host-policy]",
+          "field": "$.sanitizeSeam.persistedToolMessagePart.output.message",
+          "kind": "resultField"
+        },
+        {
+          "contains": "[scrubbed-by-host-policy]",
+          "field": "$.sanitizeSeam.emittedToolResultEvent.output.message",
+          "kind": "resultField"
+        },
+        {
+          "equals": true,
+          "field": "$.sanitizeSeam.persistedToolMessagePart.isError",
+          "kind": "resultField"
+        }
+      ],
+      "checkId": "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces",
+      "evidence": [
+        "result.sanitizeSeam.persistedToolMessagePart",
+        "result.sanitizeSeam.emittedToolResultEvent"
+      ],
+      "fixture": "secret-isolation",
+      "operation": "runtime.sanitize-seam.tool-result"
+    },
+    {
+      "assertions": [
+        {
           "equals": "paused",
           "field": "$.trustBoundary.approval.pausedPhase",
           "kind": "resultField"
@@ -1920,7 +1956,7 @@
   },
   "packetId": "tuvren.shared.core",
   "planId": "tuvren.framework.runtime-api.callables-extended",
-  "planVersion": "0.7.0",
+  "planVersion": "0.8.0",
   "scenarios": {
     "runtime-api-scenarios": "../scenarios/runtime-api-scenarios.json"
   }
