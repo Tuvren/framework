@@ -15,7 +15,10 @@
  */
 
 import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import type { ExecutionClass } from "@tuvren/core/capabilities";
+import { TOOL_RESULT_SANITIZATION_FAILED } from "@tuvren/core/errors";
 import type { EventSource, TuvrenStreamEvent } from "@tuvren/core/events";
+import type { SanitizeToolResultContext } from "@tuvren/core/execution";
 import type {
   AroundToolContext,
   AroundToolResult,
@@ -750,22 +753,36 @@ function createApprovalResultMetadata(
  *
  * Waits on the wave's start barrier first, enforcing the §6.4 invariant that
  * no `tool.result` of a wave is emitted before every `tool.start` of that
- * wave. Staging precedes emission so a crash between the two loses only the
- * event, never the durable result (framework spec §8.6 incremental staging).
+ * wave. `environment.sanitizeToolResult` (ADR-064), when configured, is
+ * applied here before either durable staging or event emission — this is the
+ * single chokepoint for both, so the scrubbed form is what lands in kernel
+ * history *and* what the canonical `tool.result` event carries; the
+ * pre-sanitization form never reaches either. Staging precedes emission so a
+ * crash between the two loses only the event, never the durable result
+ * (framework spec §8.6 incremental staging).
  *
  * @param orderIndex - Original tool-call position used as the durable order
  *   key.
+ * @param executionClass - The result's resolved execution class, when known;
+ *   absent for outcomes decided before a binding was resolved (unknown tool,
+ *   input-validation failure, policy denial, resume rejection) per ADR-064 §3.
  * @returns The staged message's content hash.
  */
 export async function stageAndEmitResult(
   environment: ToolBatchEnvironment,
   result: ToolResultPart,
   orderIndex: number,
-  startBarrier: ToolStartBarrier
+  startBarrier: ToolStartBarrier,
+  executionClass?: ExecutionClass
 ): Promise<HashString> {
   await startBarrier.waitUntilReady();
-  const hash = await environment.stageResult(result, orderIndex);
-  emitToolResultEvent(environment, result);
+  const sanitized = applySanitizeToolResult(
+    environment,
+    result,
+    executionClass
+  );
+  const hash = await environment.stageResult(sanitized, orderIndex);
+  emitToolResultEvent(environment, sanitized);
   return hash;
 }
 
@@ -773,23 +790,78 @@ export async function stageAndEmitResult(
  * Sequentially stages and emits several results that share one order index —
  * e.g. the `completedResults` accompanying an approval pause.
  *
+ * @param executionClass - See {@link stageAndEmitResult}; applies to every
+ *   result in `results`.
  * @returns Content hashes aligned with `results`.
  */
 export async function stageAndEmitResults(
   environment: ToolBatchEnvironment,
   results: ToolResultPart[],
   orderIndex: number,
-  startBarrier: ToolStartBarrier
+  startBarrier: ToolStartBarrier,
+  executionClass?: ExecutionClass
 ): Promise<HashString[]> {
   const hashes: HashString[] = [];
 
   for (const result of results) {
     hashes.push(
-      await stageAndEmitResult(environment, result, orderIndex, startBarrier)
+      await stageAndEmitResult(
+        environment,
+        result,
+        orderIndex,
+        startBarrier,
+        executionClass
+      )
     );
   }
 
   return hashes;
+}
+
+/**
+ * Applies the host's {@link ToolBatchEnvironment.sanitizeToolResult} hook
+ * (ADR-064) to a would-be-staged result, if one is configured.
+ *
+ * A no-op when the hook is absent — byte-identical behavior to today. A hook
+ * that throws is treated as a defect on this specific tool call, not the
+ * turn (framework spec §8.6: tool failures become results, never turn
+ * failures): the throw is not swallowed into a scrubbed-by-default result —
+ * silently substituting content the host did not author would be worse than
+ * a loud failure — so it becomes this call's own `isError: true` result
+ * carrying `output.code: "tool_result_sanitization_failed"`, and the caller's
+ * staging/emission proceeds with that replacement result instead.
+ */
+function applySanitizeToolResult(
+  environment: ToolBatchEnvironment,
+  result: ToolResultPart,
+  executionClass: ExecutionClass | undefined
+): ToolResultPart {
+  const hook = environment.sanitizeToolResult;
+
+  if (hook === undefined) {
+    return result;
+  }
+
+  const context: SanitizeToolResultContext = {
+    callId: result.callId,
+    toolName: result.name,
+    ...(executionClass === undefined ? {} : { executionClass }),
+  };
+
+  try {
+    return hook(result, context);
+  } catch (error: unknown) {
+    return {
+      callId: result.callId,
+      isError: true,
+      name: result.name,
+      output: {
+        code: TOOL_RESULT_SANITIZATION_FAILED,
+        error: `sanitizeToolResult threw: ${normalizeError(error).message}`,
+      },
+      type: "tool_result",
+    };
+  }
 }
 
 /**

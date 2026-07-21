@@ -277,6 +277,11 @@
         "signature": "\"tool_invocation_rate_limited\"",
         "stability": "stable"
       },
+      "TOOL_RESULT_SANITIZATION_FAILED": {
+        "kind": "value",
+        "signature": "\"tool_result_sanitization_failed\"",
+        "stability": "stable"
+      },
       "TOOL_RESULT_VALIDATION_FAILED": {
         "kind": "value",
         "signature": "\"tool_result_validation_failed\"",
@@ -513,7 +518,7 @@
       },
       "AgentConfig": {
         "kind": "type",
-        "signature": "export interface AgentConfig { capabilityPolicyEngine?: CapabilityPolicyEngine; clientEndpointBoundary?: ClientEndpointBoundary; clientEndpoints?: AttachedClientEndpoint[]; contextPolicy?: ContextPolicy; extensions?: TuvrenExtension[]; loopPolicy?: LoopPolicy; maxIterations?: number; maxParallelToolCalls?: number; model?: string | TuvrenProvider; name: string; policyContextInputs?: CapabilityPolicyContextInputs; providerMediatedTools?: ProviderMediatedToolConfig[]; providerNativeTools?: ProviderNativeToolDeclaration[]; responseFormat?: StructuredOutputRequest; sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown; }>; serverExecution?: ServerExecutionConfig; systemPrompt?: string; tools?: TuvrenToolDefinition[]; }",
+        "signature": "export interface AgentConfig { capabilityPolicyEngine?: CapabilityPolicyEngine; clientEndpointBoundary?: ClientEndpointBoundary; clientEndpoints?: AttachedClientEndpoint[]; contextPolicy?: ContextPolicy; extensions?: TuvrenExtension[]; loopPolicy?: LoopPolicy; maxIterations?: number; maxParallelToolCalls?: number; model?: string | TuvrenProvider; name: string; policyContextInputs?: CapabilityPolicyContextInputs; providerMediatedTools?: ProviderMediatedToolConfig[]; providerNativeTools?: ProviderNativeToolDeclaration[]; responseFormat?: StructuredOutputRequest; sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown; }>; sanitizeToolResult?: (result: ToolResultPart, ctx: SanitizeToolResultContext) => ToolResultPart; serverExecution?: ServerExecutionConfig; systemPrompt?: string; tools?: TuvrenToolDefinition[]; }",
         "stability": "stable"
       },
       "AroundModelContext": {
@@ -704,6 +709,11 @@
       "RuntimeResolution": {
         "kind": "type",
         "signature": "export type RuntimeResolution = { type: \"continue_iteration\"; } | { type: \"end_turn\"; reason: string; } | { type: \"pause\"; reason: string; approval: ApprovalRequest; } | { type: \"handoff\"; targetAgent: string; contextPlan: HandoffContextPlan; } | { type: \"fail\"; error: Error; fatality: \"hard\" | \"soft\"; };",
+        "stability": "stable"
+      },
+      "SanitizeToolResultContext": {
+        "kind": "type",
+        "signature": "export interface SanitizeToolResultContext { callId: string; executionClass?: ExecutionClass; toolName: string; }",
         "stability": "stable"
       },
       "ServerExecutionConfig": {
@@ -1461,7 +1471,7 @@
       },
       "AgentConfig": {
         "kind": "type",
-        "signature": "export interface AgentConfig { capabilityPolicyEngine?: CapabilityPolicyEngine; clientEndpointBoundary?: ClientEndpointBoundary; clientEndpoints?: AttachedClientEndpoint[]; contextPolicy?: ContextPolicy; extensions?: TuvrenExtension[]; loopPolicy?: LoopPolicy; maxIterations?: number; maxParallelToolCalls?: number; model?: string | TuvrenProvider; name: string; policyContextInputs?: CapabilityPolicyContextInputs; providerMediatedTools?: ProviderMediatedToolConfig[]; providerNativeTools?: ProviderNativeToolDeclaration[]; responseFormat?: StructuredOutputRequest; sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown; }>; serverExecution?: ServerExecutionConfig; systemPrompt?: string; tools?: TuvrenToolDefinition[]; }",
+        "signature": "export interface AgentConfig { capabilityPolicyEngine?: CapabilityPolicyEngine; clientEndpointBoundary?: ClientEndpointBoundary; clientEndpoints?: AttachedClientEndpoint[]; contextPolicy?: ContextPolicy; extensions?: TuvrenExtension[]; loopPolicy?: LoopPolicy; maxIterations?: number; maxParallelToolCalls?: number; model?: string | TuvrenProvider; name: string; policyContextInputs?: CapabilityPolicyContextInputs; providerMediatedTools?: ProviderMediatedToolConfig[]; providerNativeTools?: ProviderNativeToolDeclaration[]; responseFormat?: StructuredOutputRequest; sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown; }>; sanitizeToolResult?: (result: ToolResultPart, ctx: SanitizeToolResultContext) => ToolResultPart; serverExecution?: ServerExecutionConfig; systemPrompt?: string; tools?: TuvrenToolDefinition[]; }",
         "stability": "stable"
       },
       "ApprovalRequest": {
@@ -2048,6 +2058,24 @@
         "@tuvren/core/errors#CAPABILITY_DISPATCH_TIMEOUT: export-added"
       ],
       "recordedAt": "2026-07-21T13:14:10.821Z"
+    },
+    {
+      "bump": "major",
+      "changes": [
+        "@tuvren/core/execution#AgentConfig: stable-signature-changed",
+        "@tuvren/sdk#AgentConfig: stable-signature-changed",
+        "@tuvren/core/errors#TOOL_RESULT_SANITIZATION_FAILED: export-added",
+        "@tuvren/core/execution#SanitizeToolResultContext: export-added"
+      ],
+      "recordedAt": "2026-07-21T14:19:03.640Z"
+    },
+    {
+      "bump": "major",
+      "changes": [
+        "@tuvren/core/execution#AgentConfig: stable-signature-changed",
+        "@tuvren/sdk#AgentConfig: stable-signature-changed"
+      ],
+      "recordedAt": "2026-07-21T14:23:49.818Z"
     }
   ]
 }

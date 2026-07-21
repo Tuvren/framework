@@ -79,6 +79,19 @@ export const CAPABILITY_DISPATCH_TIMEOUT =
   "capability_dispatch_timeout" as const;
 
 /**
+ * Stable code emitted when {@link AgentConfig.sanitizeToolResult} (ADR-064)
+ * throws instead of returning a sanitized `ToolResultPart`. The runtime does
+ * not swallow the throw into a scrubbed-by-default result — silently
+ * substituting content the host did not author would be a worse failure than
+ * a loud one — and does not fail the turn either: per framework spec §8.6
+ * (tool failures become results, never turn failures), the throw surfaces as
+ * this call's own `isError: true` tool result, and the turn continues.
+ * Surfaced as `tool.result` with `isError: true`.
+ */
+export const TOOL_RESULT_SANITIZATION_FAILED =
+  "tool_result_sanitization_failed" as const;
+
+/**
  * Stable `TuvrenRuntimeError` code emitted when a turn breaches a framework
  * hard-stop execution bound (`maxIterations`, `maxToolCalls`, or
  * `maxWallClockMs`) above runner discretion. The framework stops the loop,

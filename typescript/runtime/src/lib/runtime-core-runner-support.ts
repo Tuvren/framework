@@ -163,6 +163,7 @@ export function createToolBatchEnvironment(
       host.publishProjectedError(handle, error, false, loopState);
     },
     runId,
+    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     resolveSandboxExecutor:
       loopState.activeConfig.sandboxExecutors === undefined
         ? undefined

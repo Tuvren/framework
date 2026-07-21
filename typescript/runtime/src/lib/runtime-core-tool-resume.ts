@@ -515,6 +515,7 @@ function createToolBatchEnvironment(
       host.publishProjectedError(handle, error, false, loopState);
     },
     runId,
+    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     signal: handle.abortSignal,
     stageResult: async (result, orderIndex) => {
       return await host.stageMessage(

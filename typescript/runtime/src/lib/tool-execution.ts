@@ -25,7 +25,10 @@ import {
   TOOL_RESULT_VALIDATION_FAILED,
 } from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import type { ContextManifest } from "@tuvren/core/execution";
+import type {
+  ContextManifest,
+  SanitizeToolResultContext,
+} from "@tuvren/core/execution";
 import type {
   AroundToolHandler,
   TuvrenExtension,
@@ -43,6 +46,7 @@ import {
   createBindingResolver,
   isClientEndpointTool,
 } from "./binding-resolver.js";
+import { buildToolAttribution } from "./capability-attribution.js";
 import { runWithTimeout } from "./execution-timeouts.js";
 import {
   buildSharedExports,
@@ -169,6 +173,16 @@ export interface ToolBatchEnvironment {
   ): TuvrenSandboxExecutor | undefined;
   /** Kernel run this batch executes under; stamped onto `tool.audit` events. */
   runId: string;
+  /**
+   * Host sanitization seam threaded from `AgentConfig.sanitizeToolResult`
+   * (ADR-064). Applied inside `stageAndEmitResult` before both durable
+   * staging and `tool.result` event emission — see that function's doc for
+   * the full ordering guarantee.
+   */
+  sanitizeToolResult?: (
+    result: ToolResultPart,
+    ctx: SanitizeToolResultContext
+  ) => ToolResultPart;
   /**
    * Optional per-tenant rate limiter for the Tuvren-server execution class.
    * Each runtime instance creates its own limiter from AgentConfig.serverExecution,
@@ -1182,6 +1196,13 @@ async function executeSingleTool(
     },
   }
 ): Promise<SingleToolOutcome> {
+  // Resolved once per call: this ExecutableToolCall's binding is already
+  // settled (registry lookup, input validation, policy admission, approval
+  // all cleared), so every result this call produces — success, approval
+  // pause, or execution failure — carries a known execution class into the
+  // sanitization seam (ADR-064), unlike stageImmediateResults' pre-binding
+  // outcomes.
+  const executionClass = buildToolAttribution(toolCall.tool).executionClass;
   // Idempotent retry per §4.21 / AX002. Non-idempotent tools are never
   // retried. maxRetries defaults to 1 when idempotent is true and unset.
   // BB004: nonRetryable overrides idempotent: true — policy governs retry.
@@ -1241,7 +1262,8 @@ async function executeSingleTool(
           environment,
           outcome.approval.completedResults,
           orderIndex,
-          startBarrier
+          startBarrier,
+          executionClass
         );
         return {
           approval: outcome.approval,
@@ -1259,7 +1281,8 @@ async function executeSingleTool(
         environment,
         result,
         orderIndex,
-        startBarrier
+        startBarrier,
+        executionClass
       );
 
       return {
@@ -1274,7 +1297,8 @@ async function executeSingleTool(
           environment,
           error.approval.completedResults,
           orderIndex,
-          startBarrier
+          startBarrier,
+          executionClass
         );
         return {
           approval: error.approval,
@@ -1305,7 +1329,8 @@ async function executeSingleTool(
     environment,
     result,
     orderIndex,
-    startBarrier
+    startBarrier,
+    executionClass
   );
 
   return {
