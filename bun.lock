@@ -92,6 +92,10 @@
         "@tuvren/core": "workspace:~",
       },
     },
+    "typescript/host/session-client": {
+      "name": "@tuvren/session-client",
+      "version": "0.1.0",
+    },
     "typescript/kernel/backends/memory": {
       "name": "@tuvren/backend-memory",
       "version": "0.1.0",
@@ -1042,6 +1046,8 @@
     "@tuvren/runtime": ["@tuvren/runtime@workspace:typescript/runtime"],
 
     "@tuvren/sdk": ["@tuvren/sdk@workspace:typescript/sdk"],
+
+    "@tuvren/session-client": ["@tuvren/session-client@workspace:typescript/host/session-client"],
 
     "@tuvren/stream-agui": ["@tuvren/stream-agui@workspace:typescript/streaming/agui"],
 

@@ -61,6 +61,9 @@
       "@tuvren/remote-session": [
         "./typescript/host/remote-session/src/index.ts"
       ],
+      "@tuvren/session-client": [
+        "./typescript/host/session-client/src/index.ts"
+      ],
       "@tuvren/runner-react": ["./typescript/runners/react/src/index.ts"],
       "@tuvren/provider-bridge-ai-sdk": [
         "./typescript/providers/bridge-ai-sdk/src/index.ts"
