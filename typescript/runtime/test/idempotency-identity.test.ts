@@ -29,7 +29,9 @@
  * and the fencing token are deliberately excluded because neither is stable for
  * one logical call: a Run is one execution attempt (freshly minted per ReAct
  * iteration, per approval resume, and per recovery) and the fencing token
- * rotates on every lease renewal.
+ * rotates on every lease renewal. The fencing token is no longer carried on
+ * `ToolBatchEnvironment` at all, so only `runId` variance is representable
+ * here; that it cannot influence the key is the property these tests pin.
  *
  * Carriage on the Client Endpoint Boundary dispatch envelope is covered in
  * client-endpoint-boundary.test.ts.
@@ -54,17 +56,13 @@ const TOOL: TuvrenToolDefinition = {
 };
 
 /**
- * Builds a batch environment for one *execution attempt*. `runId` and
- * `fencingToken` vary per attempt in reality, which is exactly why the identity
- * must not depend on them; `turnId` is the identifier that survives.
+ * Builds a batch environment for one *execution attempt*. `runId` varies per
+ * attempt in reality — a fresh Run is minted per ReAct iteration, per approval
+ * resume, and per recovery — which is exactly why the identity must not depend
+ * on it; `turnId` is the identifier that survives.
  */
-function makeEnvironment(
-  turnId: string,
-  runId: string,
-  fencingToken: string | undefined
-): ToolBatchEnvironment {
+function makeEnvironment(turnId: string, runId: string): ToolBatchEnvironment {
   return {
-    fencingToken,
     publishCustom: () => undefined,
     publishEvent: () => undefined,
     runId,
@@ -99,7 +97,7 @@ describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
     const context = createToolExecutionContext(
       makeToolCall("call-alpha"),
       TOOL,
-      makeEnvironment("turn-alpha", "run-alpha", "fence-alpha"),
+      makeEnvironment("turn-alpha", "run-alpha"),
       undefined
     );
 
@@ -108,7 +106,7 @@ describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
     );
   });
 
-  test("is stable across a new Run and a rotated fencing token", () => {
+  test("is stable across a new Run serving the same Turn", () => {
     // This is ADR-052 §1's actual promise. A Turn is served by many Runs
     // (kernel §5.3): the framework mints a fresh runId per ReAct iteration,
     // per approval resume, and per recovery, and the fencing token rotates on
@@ -119,13 +117,13 @@ describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
     const firstAttempt = createToolExecutionContext(
       makeToolCall("call-beta"),
       TOOL,
-      makeEnvironment("turn-beta", "run-1", "fence-1"),
+      makeEnvironment("turn-beta", "run-1"),
       undefined
     );
     const reDispatchAfterResume = createToolExecutionContext(
       makeToolCall("call-beta"),
       TOOL,
-      makeEnvironment("turn-beta", "run-2", "fence-2"),
+      makeEnvironment("turn-beta", "run-2"),
       undefined
     );
 
@@ -134,30 +132,8 @@ describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
     );
   });
 
-  test("does not depend on whether a run lease is held at all", () => {
-    // Liveness configuration must never change a call's identity: a runtime
-    // without run-liveness leases derives the same key as one with them.
-    const withLease = createToolExecutionContext(
-      makeToolCall("call-gamma"),
-      TOOL,
-      makeEnvironment("turn-gamma", "run-gamma", "fence-gamma"),
-      undefined
-    );
-    const withoutLease = createToolExecutionContext(
-      makeToolCall("call-gamma"),
-      TOOL,
-      makeEnvironment("turn-gamma", "run-gamma", undefined),
-      undefined
-    );
-
-    expect(withoutLease.idempotencyKey).toBe(withLease.idempotencyKey);
-    expect(withLease.idempotencyKey).toBe(
-      deriveIdempotencyKey("turn-gamma", "call-gamma")
-    );
-  });
-
   test("distinguishes two different calls within the same turn", () => {
-    const environment = makeEnvironment("turn-delta", "run-delta", "fence");
+    const environment = makeEnvironment("turn-delta", "run-delta");
     const first = createToolExecutionContext(
       makeToolCall("call-one"),
       TOOL,

@@ -105,8 +105,7 @@ export interface RuntimeCoreRunnerSupportHost {
  * check can run inside tool-call resolution (BB001–BB004), and sandbox
  * executor lookup strips the "sandbox:" endpoint-id prefix added by the
  * binding resolver so `AgentConfig.sandboxExecutors` stays keyed by raw
- * endpoint ids (AX004). The environment also carries the active run-lease
- * fencing token for side-effect-once idempotency (ADR-052).
+ * endpoint ids (AX004).
  */
 export function createToolBatchEnvironment(
   host: RuntimeCoreRunnerSupportHost,
@@ -147,7 +146,6 @@ export function createToolBatchEnvironment(
     policyCapabilityMetadata,
     policyContextInputs,
     extensions: loopState.activeConfig.extensions ?? [],
-    fencingToken: host.getActiveFencingToken(handle),
     iterationCount,
     manifest,
     maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(

@@ -23,7 +23,8 @@ A->>State: attempt to commit result under old fencing token
 State--xA: rejected — stale fencing token (durable write fenced)
 Note over A: framework does NOT retry the in-flight non-idempotent call; handle aborts
 B->>Ext: re-dispatch same logical call with same idempotency identity
-Note over B,Ext: identity is (turnId, callId) — the Turn survives the preemption and B's replacement Run, so B genuinely presents A's key; keying on runId or the fencing token would have handed Ext a NEW key here and defeated the dedup
+Note over B,Ext: identity is (turnId, callId) — the Turn survives the preemption and B's replacement Run, so keying on runId or the fencing token would have handed Ext a NEW key here and defeated the dedup
+Note over B,Ext: B presents A's key only if B re-presents A's callId, i.e. resumes the staged calls per 4.9 rather than re-invoking the model. That re-presentation is spec-required but not yet realized in the TypeScript runtime (ADR-065 open obligation 1), so this step is exact for lease-loss-without-crash and aspirational for the cold-crash variant.
 Ext-->>B: deduplicated by idempotency identity — effect occurred once
 B->>State: commit result under valid fencing token
 Note over A,State: any late client-reported result from A is a proposal; under a stale token it can never mutate committed history

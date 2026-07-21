@@ -499,7 +499,6 @@ function createToolBatchEnvironment(
     branchId: handle.request.branchId,
     capabilityPolicyEngine: policyEngine ?? undefined,
     extensions: loopState.activeConfig.extensions ?? [],
-    fencingToken: host.getActiveFencingToken(handle),
     iterationCount,
     manifest,
     maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(loopState),
