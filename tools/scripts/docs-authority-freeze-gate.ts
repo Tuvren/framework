@@ -1032,17 +1032,19 @@ function classifySaaSReadinessTargetClaim(
   }
 
   if (text.includes("side-effect-once under preemption (v0.21)")) {
-    // KRT-BG003/BG004 realized the (runId, callId, fencingToken) idempotency
-    // envelope, the no-retry of in-flight nonRetryable on authority loss, and the
-    // client-result-as-proposal invariant; KRT-BG005 promoted the conformance to
-    // evidence-backed coverage. The PostgreSQL clock-skew-preemption check proves
-    // the completed side-effecting call is incorporated by callId so the effect
-    // is driven at most once, and the framework client-result-as-proposal check
-    // proves a client result returning after authority loss is never committed,
-    // so the claim is authority-backed-conformance-covered. (The idempotency
-    // identity is a per-attempt envelope key; cross-recovery side-effect-once is
-    // achieved by the composition of backend-clock no-split-brain, no-retry, and
-    // recovery-skip-by-callId — see ADR-052 realization note in the tech spec.)
+    // KRT-BG003/BG004 realized the idempotency envelope, the no-retry of
+    // in-flight nonRetryable on authority loss, and the client-result-as-proposal
+    // invariant; KRT-BG005 promoted the conformance to evidence-backed coverage.
+    // The PostgreSQL clock-skew-preemption check proves the completed
+    // side-effecting call is incorporated by callId so the effect is driven at
+    // most once, and the framework client-result-as-proposal check proves a
+    // client result returning after authority loss is never committed, so the
+    // claim is authority-backed-conformance-covered. (ADR-065 replaced the
+    // original (runId, callId, fencingToken) triple with the (turnId, callId)
+    // logical call identity: runId is per-attempt and the fencing token rotates
+    // per renewal, so the old key churned on retry, resume, and recovery. The
+    // identity is now genuinely stable across those, rather than cross-recovery
+    // side-effect-once resting solely on composition.)
     return authorityDecision(
       "side-effect-once under preemption",
       EVIDENCE.runLiveness

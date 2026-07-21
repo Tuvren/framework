@@ -171,10 +171,12 @@ export function createBatchScopedEnvironment(
  *
  * `emit`/`forward` publish onto the turn stream but become no-ops once
  * `timeoutSignal` aborts, so a timed-out tool cannot keep emitting events.
- * `idempotencyKey` is derived from `(runId, callId, fencingToken)` so
- * external systems can deduplicate a side effect retried under a new
- * execution owner (ADR-052 side-effect-once; see
- * `deriveIdempotencyKey` in idempotency-identity.ts). Tool `metadata` is
+ * `idempotencyKey` is derived from `(turnId, callId)` — the logical call
+ * identity, which survives retries, approval resumes, and recovery — so
+ * external systems can deduplicate a side effect re-dispatched under a new
+ * Run or a new execution owner (ADR-052 side-effect-once as amended by
+ * ADR-065; see `deriveIdempotencyKey` in idempotency-identity.ts). Tool
+ * `metadata` is
  * deep-cloned (preserving functions) so the tool cannot mutate the registry's
  * definition, and `signal` falls back to the batch signal when no per-call
  * timeout signal exists.
@@ -204,11 +206,7 @@ export function createToolExecutionContext(
         source,
       });
     },
-    idempotencyKey: deriveIdempotencyKey(
-      environment.runId,
-      toolCall.callId,
-      environment.fencingToken
-    ),
+    idempotencyKey: deriveIdempotencyKey(environment.turnId, toolCall.callId),
     metadata:
       tool.metadata === undefined
         ? undefined
