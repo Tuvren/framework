@@ -38,8 +38,8 @@ import type { ToolBatchEnvironment } from "./tool-execution.js";
  * Host capabilities backing the tool-batch environment and handoff-plan
  * helpers in this module: config cloning and freezing, context-engineering
  * helper construction, parallelism resolution, event and error publication,
- * fencing-token access, and tool-result staging. Implemented by the
- * runtime-core orchestration layer.
+ * and tool-result staging. Implemented by the runtime-core orchestration
+ * layer.
  */
 export interface RuntimeCoreRunnerSupportHost {
   cloneAgentConfigForRequest(
@@ -53,12 +53,6 @@ export interface RuntimeCoreRunnerSupportHost {
   };
   createFrozenSnapshot<T>(value: T): T;
   defaultMaxParallelToolCalls(): number;
-  /**
-   * Active run lease fencing token for this handle, or undefined when no
-   * run-liveness lease is held. Feeds the side-effect-once idempotency identity
-   * placed on the tool batch environment (ADR-052).
-   */
-  getActiveFencingToken(handle: RuntimeExecutionHandle): string | undefined;
   now(): number;
   publishCustomEvent(
     handle: RuntimeExecutionHandle,

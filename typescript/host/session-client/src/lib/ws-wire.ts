@@ -69,6 +69,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isResumeStatus(value: unknown): value is SessionClientResumeStatus {
+  return (
+    typeof value === "string" &&
+    (WS_RESUME_STATUSES as readonly string[]).includes(value)
+  );
+}
+
 function asHandshakeAck(
   candidate: Record<string, unknown>
 ): SessionClientHandshakeAck | undefined {
@@ -78,18 +85,13 @@ function asHandshakeAck(
   if (typeof candidate.sessionId !== "string") {
     return undefined;
   }
-  if (
-    typeof candidate.resumeStatus !== "string" ||
-    !WS_RESUME_STATUSES.includes(
-      candidate.resumeStatus as SessionClientResumeStatus
-    )
-  ) {
+  if (!isResumeStatus(candidate.resumeStatus)) {
     return undefined;
   }
   return {
     kind: "handshake_ack",
     protocolVersion: candidate.protocolVersion,
-    resumeStatus: candidate.resumeStatus as SessionClientResumeStatus,
+    resumeStatus: candidate.resumeStatus,
     sessionId: candidate.sessionId,
   };
 }

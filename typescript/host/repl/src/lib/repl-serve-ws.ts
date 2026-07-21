@@ -346,10 +346,13 @@ export function createReplWsSessionRegistry(
     const binding = createDuplexSessionBinding(handle, { sessionId });
     deferredEndpoint.setDelegate(binding.clientEndpoint);
 
-    const entry: ReplWsSessionEntry = {
-      session: undefined as unknown as RemoteClientSession,
-    };
-    entry.session = createRemoteClientSession({
+    // The session must exist before the entry (its `onEnded` callback needs
+    // to close whichever transport currently owns the entry), so the mutable
+    // `currentTransport` slot is held in this closure-local `let` binding
+    // first and the entry object below merely exposes it as an accessor
+    // property — no placeholder/undefined cast stands in for `session`.
+    let currentTransport: WsSessionTransport | undefined;
+    const session = createRemoteClientSession({
       binding,
       disconnectGraceMs: options.disconnectGraceMs,
       dispatchTimeoutMs: options.dispatchTimeoutMs,
@@ -359,11 +362,21 @@ export function createReplWsSessionRegistry(
         // session with the normal-closure code, then release the registry
         // slot so a later handshake for the same sessionId mints a fresh
         // turn rather than resurrecting a dead session.
-        entry.currentTransport?.close(1000, "session ended");
+        currentTransport?.close(1000, "session ended");
         entries.delete(sessionId);
       },
       replayBufferCapacity: options.replayBufferCapacity,
     });
+
+    const entry: ReplWsSessionEntry = {
+      get currentTransport(): WsSessionTransport | undefined {
+        return currentTransport;
+      },
+      set currentTransport(value: WsSessionTransport | undefined) {
+        currentTransport = value;
+      },
+      session,
+    };
 
     options.onSessionCreated?.({
       branchId: thread.branchId,
@@ -453,6 +466,21 @@ interface ReplWsConnectionState {
 }
 
 /**
+ * The structural subset of Bun's `ServerWebSocket<ReplWsConnectionState>`
+ * this module actually uses: enough to run the handshake path and hand a
+ * sink to `createWsSessionTransport`. Named once and shared by both call
+ * sites in this file (the `handleFirstMessage` parameter and the raw
+ * `websocket.message` handler below) instead of repeating the same inline
+ * structural type twice.
+ */
+interface ServeWsSocket {
+  bufferedAmount?: number;
+  close(code?: number, reason?: string): void;
+  data: ReplWsConnectionState;
+  send(data: string): void;
+}
+
+/**
  * Starts the REPL host's `--serve-ws` demo server: `Bun.serve` websocket
  * handlers composing `binding -> session -> transport -> socket`
  * (`spec/streaming/ws/bindings/typescript.md`).
@@ -471,11 +499,7 @@ export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
   });
 
   async function handleFirstMessage(
-    ws: { data: ReplWsConnectionState } & {
-      send(data: string): void;
-      close(code?: number, reason?: string): void;
-      bufferedAmount?: number;
-    },
+    ws: ServeWsSocket,
     text: string
   ): Promise<void> {
     // P2-2: validate the handshake's own shape — `kind === "handshake"` and a
@@ -595,22 +619,16 @@ export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
           // ordinary websocket message events and are handled once
           // ws.data.transport is set. A failure here has nowhere useful to
           // propagate to but the socket itself.
-          handleFirstMessage(
-            ws as unknown as {
-              data: ReplWsConnectionState;
-              send(data: string): void;
-              close(code?: number, reason?: string): void;
-              bufferedAmount?: number;
-            },
-            text
-          ).catch((error: unknown) => {
-            ws.close(
-              1011,
-              `internal error handling handshake: ${
-                error instanceof Error ? error.message : String(error)
-              }`
-            );
-          });
+          handleFirstMessage(ws as ServeWsSocket, text).catch(
+            (error: unknown) => {
+              ws.close(
+                1011,
+                `internal error handling handshake: ${
+                  error instanceof Error ? error.message : String(error)
+                }`
+              );
+            }
+          );
           return;
         }
 

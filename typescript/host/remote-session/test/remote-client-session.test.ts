@@ -606,6 +606,170 @@ describe("createRemoteClientSession", () => {
     );
   });
 
+  test("reattach ordering: replayed events arrive before the redelivered client_invocation, which arrives before live forwarding resumes (ADR-063 §2/§3)", async () => {
+    const { binding, events, session } = setup();
+    const sink1 = createFakeSink();
+    session.attach(sink1);
+
+    events.push({ turnId: "t1", type: "turn.start" });
+    await flush();
+    const cursorAfterTurnStart = sink1.sent[0]?.cursor as string;
+
+    // An unanswered client_invocation: created while sink1 is attached, so it
+    // is both forwarded live and tracked as pending for later redelivery.
+    const dispatchPromise = binding.clientEndpoint.dispatch({
+      callId: "call-reattach-order",
+      capabilityId: "cap-1",
+      input: {},
+      leaseToken: "lease-reattach-order",
+    });
+    dispatchPromise.catch(() => undefined);
+    await flush();
+
+    session.detach();
+
+    // Recorded into the shared replay buffer while no sink is attached: this
+    // is the "replayable event gap" a reattach with cursorAfterTurnStart must
+    // deliver before anything else.
+    events.push({ turnId: "t1", type: "message.delta", text: "gap" });
+    await flush();
+
+    const sink2 = createFakeSink();
+    const { resumeStatus } = session.attach(sink2, {
+      cursor: cursorAfterTurnStart,
+    });
+
+    // Live forwarding: a fresh event arriving right after attach must land
+    // strictly after both the replay and the redelivery below.
+    events.push({ turnId: "t1", type: "message.delta", text: "live" });
+    await flush();
+
+    expect(resumeStatus).toBe("resumed");
+    expect(sink2.sent.map((s) => s.frame.kind)).toEqual([
+      "event",
+      "client_invocation",
+      "event",
+    ]);
+
+    const [replayed, redelivered, live] = sink2.sent;
+    expect(
+      (replayed?.frame.kind === "event"
+        ? (replayed.frame.event as unknown as { text: string })
+        : undefined
+      )?.text
+    ).toBe("gap");
+    expect(
+      redelivered?.frame.kind === "client_invocation"
+        ? redelivered.frame.invocation.callId
+        : undefined
+    ).toBe("call-reattach-order");
+    expect(
+      (live?.frame.kind === "event"
+        ? (live.frame.event as unknown as { text: string })
+        : undefined
+      )?.text
+    ).toBe("live");
+
+    session.dispatchInbound({
+      correlationId: "call-reattach-order",
+      kind: "client_result",
+      protocolVersion: "1",
+      result: {
+        callId: "call-reattach-order",
+        content: { ok: true },
+        leaseToken: "lease-reattach-order",
+      },
+      sessionId: "sess-remote-1",
+    });
+    await dispatchPromise;
+  });
+
+  test("an invocation dispatched while fully detached is not forwarded anywhere and arms no dispatch timer; reattach redelivers it with a fresh timer", async () => {
+    const { binding, fakeClock, session } = setup({ disconnectGraceMs: 1000 });
+    const sink1 = createFakeSink();
+    session.attach(sink1);
+    await flush();
+
+    session.detach();
+    // Only the grace timer is pending immediately after detach.
+    expect(fakeClock.pendingCount()).toBe(1);
+
+    const dispatchPromise = binding.clientEndpoint.dispatch({
+      callId: "call-while-detached",
+      capabilityId: "cap-1",
+      input: {},
+      leaseToken: "lease-while-detached",
+    });
+    dispatchPromise.catch(() => undefined);
+    await flush();
+
+    // No sink is attached: forwardFrame is a no-op (nothing sent to sink1,
+    // which is already detached), and handleOutboundInvocation only arms a
+    // dispatch timer when a sink is attached — so pendingCount stays at 1
+    // (grace-only), never 2.
+    expect(
+      sink1.sent.filter((s) => s.frame.kind === "client_invocation")
+    ).toHaveLength(0);
+    expect(fakeClock.pendingCount()).toBe(1);
+
+    const sink2 = createFakeSink();
+    session.attach(sink2);
+
+    // Reattach clears the grace timer and arms a fresh, full-budget dispatch
+    // timer for the now-redelivered invocation: still exactly one pending
+    // timer, but it is the dispatch timer now, not the grace timer.
+    expect(fakeClock.pendingCount()).toBe(1);
+    expect(
+      sink2.sent.filter((s) => s.frame.kind === "client_invocation")
+    ).toHaveLength(1);
+
+    fakeClock.fireOldest();
+    const result = await dispatchPromise;
+    expect(result.isError).toBe(true);
+    expect(resultContentCode(result.content)).toBe(
+      "capability_dispatch_timeout"
+    );
+  });
+
+  test("outbound() is claimed exactly once across attach -> detach -> attach -> detach -> attach", () => {
+    const { handle } = makeFakeHandle();
+    const realBinding = createDuplexSessionBinding(handle, {
+      sessionId: "sess-claim-count",
+    });
+    let outboundClaims = 0;
+    const wrappedBinding: DuplexSessionBinding = {
+      ...realBinding,
+      outbound: () => {
+        outboundClaims += 1;
+        return realBinding.outbound();
+      },
+    };
+    const fakeClock = createFakeClock();
+
+    const session = createRemoteClientSession({
+      binding: wrappedBinding,
+      clock: fakeClock.clock,
+      disconnectGraceMs: 1000,
+      dispatchTimeoutMs: 500,
+      replayBufferCapacity: 10,
+    });
+
+    session.attach(createFakeSink());
+    expect(outboundClaims).toBe(1);
+
+    session.detach();
+    expect(outboundClaims).toBe(1);
+
+    session.attach(createFakeSink());
+    expect(outboundClaims).toBe(1);
+
+    session.detach();
+    expect(outboundClaims).toBe(1);
+
+    session.attach(createFakeSink());
+    expect(outboundClaims).toBe(1);
+  });
+
   test("an outbound pump failure is reported and ends the session instead of wedging it silently", async () => {
     const { handle } = makeFakeHandle();
     const realBinding = createDuplexSessionBinding(handle, {

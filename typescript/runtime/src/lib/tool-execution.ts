@@ -27,7 +27,7 @@ import {
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   ContextManifest,
-  SanitizeToolResultContext,
+  SanitizeToolResultHook,
 } from "@tuvren/core/execution";
 import type {
   AroundToolHandler,
@@ -178,10 +178,7 @@ export interface ToolBatchEnvironment {
    * staging and `tool.result` event emission — see that function's doc for
    * the full ordering guarantee.
    */
-  sanitizeToolResult?: (
-    result: ToolResultPart,
-    ctx: SanitizeToolResultContext
-  ) => ToolResultPart;
+  sanitizeToolResult?: SanitizeToolResultHook;
   /**
    * Optional per-tenant rate limiter for the Tuvren-server execution class.
    * Each runtime instance creates its own limiter from AgentConfig.serverExecution,

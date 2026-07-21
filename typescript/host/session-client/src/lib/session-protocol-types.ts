@@ -123,7 +123,7 @@ export interface SessionClientApprovalDecision {
   callId: string;
   editedInput?: unknown;
   message?: string;
-  type: "approve" | "edit" | "reject" | string;
+  type: "approve" | "edit" | "reject" | (string & {});
 }
 
 /** Mirrors `ApprovalResponse`. @experimental */

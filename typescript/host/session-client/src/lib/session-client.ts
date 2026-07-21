@@ -112,16 +112,22 @@ export type SessionClientStatus =
 
 /**
  * Reconnect backoff tuning. All fields optional; see
- * {@link createSessionClient} for defaults. Every field, when provided, must
- * be a positive finite number; {@link createSessionClient} throws
- * `RangeError` at construction otherwise.
+ * {@link createSessionClient} for defaults. `baseDelayMs` and `maxDelayMs`,
+ * when provided, must be a positive finite number; `maxAttempts`, when
+ * provided, must be a positive finite number or positive `Infinity` (its
+ * documented default is `Infinity`, so passing it explicitly is valid).
+ * {@link createSessionClient} throws `RangeError` at construction otherwise.
  *
  * @experimental
  */
 export interface SessionClientReconnectOptions {
   /** Delay before the first reconnect attempt, in milliseconds. Defaults to `250`. */
   baseDelayMs?: number;
-  /** Maximum consecutive reconnect attempts before giving up as terminal. Defaults to `Infinity`. */
+  /**
+   * Maximum consecutive reconnect attempts before giving up as terminal.
+   * Defaults to `Infinity`. An explicit `Infinity` is accepted; `NaN`, `0`,
+   * and negative values are rejected.
+   */
   maxAttempts?: number;
   /** Upper bound for the exponential backoff delay, in milliseconds. Defaults to `10000`. */
   maxDelayMs?: number;
@@ -224,6 +230,16 @@ function isPositiveFiniteNumber(value: number): boolean {
   return Number.isFinite(value) && value > 0;
 }
 
+/**
+ * Accepts either a positive finite number or positive `Infinity`. Used for
+ * `maxAttempts`, whose documented default is `Infinity` (unbounded retry),
+ * so an explicit `Infinity` passed by a caller must validate successfully
+ * rather than being rejected alongside `NaN`, `0`, and negative values.
+ */
+function isPositiveFiniteNumberOrInfinity(value: number): boolean {
+  return value === Number.POSITIVE_INFINITY || isPositiveFiniteNumber(value);
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
@@ -279,10 +295,10 @@ function validateOptions(options: SessionClientOptions): void {
   }
   if (
     reconnect?.maxAttempts !== undefined &&
-    !isPositiveFiniteNumber(reconnect.maxAttempts)
+    !isPositiveFiniteNumberOrInfinity(reconnect.maxAttempts)
   ) {
     throw new RangeError(
-      "createSessionClient: reconnect.maxAttempts must be a positive finite number"
+      "createSessionClient: reconnect.maxAttempts must be a positive number or Infinity"
     );
   }
 }

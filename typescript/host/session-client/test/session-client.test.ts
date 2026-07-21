@@ -763,6 +763,39 @@ describe("createSessionClient: option validation (P2-6)", () => {
     ).toThrow(RangeError);
   });
 
+  test("throws RangeError for a NaN reconnect.maxAttempts", () => {
+    expect(() =>
+      createSessionClient({
+        capabilities: {},
+        reconnect: { maxAttempts: Number.NaN },
+        sessionId: "test-session",
+        url: "wss://example.invalid/session",
+      })
+    ).toThrow(RangeError);
+  });
+
+  test("throws RangeError for a zero reconnect.maxAttempts", () => {
+    expect(() =>
+      createSessionClient({
+        capabilities: {},
+        reconnect: { maxAttempts: 0 },
+        sessionId: "test-session",
+        url: "wss://example.invalid/session",
+      })
+    ).toThrow(RangeError);
+  });
+
+  test("accepts an explicit reconnect.maxAttempts of Infinity, matching the documented default", () => {
+    expect(() =>
+      createSessionClient({
+        capabilities: {},
+        reconnect: { maxAttempts: Number.POSITIVE_INFINITY },
+        sessionId: "test-session",
+        url: "wss://example.invalid/session",
+      })
+    ).not.toThrow();
+  });
+
   test("accepts valid options without throwing", () => {
     expect(() =>
       createSessionClient({

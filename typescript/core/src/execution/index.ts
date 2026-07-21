@@ -76,6 +76,7 @@ export type {
   RuntimeMaintenance,
   RuntimeResolution,
   SanitizeToolResultContext,
+  SanitizeToolResultHook,
   ServerExecutionConfig,
   ServerExecutionRateLimitConfig,
   SystemPromptContext,

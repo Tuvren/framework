@@ -1630,6 +1630,20 @@ export interface SanitizeToolResultContext {
 }
 
 /**
+ * Shape of the host sanitization seam installed at
+ * {@link AgentConfig.sanitizeToolResult} and threaded through to
+ * `ToolBatchEnvironment.sanitizeToolResult` in `@tuvren/framework-runtime`.
+ * Named once here so both sites (and any local variable that holds the
+ * resolved hook) share a single alias instead of repeating the inline
+ * function type. See {@link AgentConfig.sanitizeToolResult} for the full
+ * contract (ADR-064).
+ */
+export type SanitizeToolResultHook = (
+  result: ToolResultPart,
+  ctx: SanitizeToolResultContext
+) => ToolResultPart;
+
+/**
  * The static, per-agent configuration for a Turn
  * (KrakenFrameworkSpecification §10.1): model, system prompt, tools,
  * extensions, the pluggable policy contracts, capability-orchestration
@@ -1765,10 +1779,7 @@ export interface AgentConfig {
    * See `spec/host/client-endpoint-integration.md` ("Durable Lineage Is
    * Forever") and ADR-064 for the full decision record.
    */
-  sanitizeToolResult?: (
-    result: ToolResultPart,
-    ctx: SanitizeToolResultContext
-  ) => ToolResultPart;
+  sanitizeToolResult?: SanitizeToolResultHook;
   /**
    * Server execution class configuration for this agent. Controls per-tenant
    * rate limiting of Tuvren-server invocations. (AX003)

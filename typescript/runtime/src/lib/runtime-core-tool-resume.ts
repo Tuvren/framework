@@ -85,12 +85,6 @@ export interface RuntimeCoreToolResumeHost {
     runId: string,
     stableHeadTurnNodeHash: HashString
   ): Promise<void>;
-  /**
-   * Active run lease fencing token for this handle, or undefined when no
-   * run-liveness lease is held. Feeds the side-effect-once idempotency identity
-   * placed on the resumed tool batch environment (ADR-052).
-   */
-  getActiveFencingToken(handle: RuntimeExecutionHandle): string | undefined;
   loadHeadState(branchId: string): Promise<HeadState>;
   now(): number;
   publishCustomEvent(
