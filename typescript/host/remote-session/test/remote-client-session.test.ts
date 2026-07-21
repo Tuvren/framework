@@ -470,4 +470,121 @@ describe("createRemoteClientSession", () => {
       ).length
     ).toBe(1);
   });
+
+  test("disconnectGraceMs of 0 reproduces immediate-detach semantics: no grace timer, pending dispatch settles at once", async () => {
+    const { binding, fakeClock, session } = setup({ disconnectGraceMs: 0 });
+    session.attach(createFakeSink());
+
+    const dispatchPromise = binding.clientEndpoint.dispatch({
+      callId: "call-zero-grace",
+      capabilityId: "cap-1",
+      input: {},
+      leaseToken: "lease-zg",
+    });
+    await flush();
+
+    session.detach();
+
+    // No timer was ever scheduled for the grace window (the dispatch timer
+    // was suspended by detach before endSession released it); the session is
+    // already ended and the dispatch already settled.
+    expect(fakeClock.pendingCount()).toBe(0);
+    expect(session.isEnded()).toBe(true);
+    const result = await dispatchPromise;
+    expect(result.isError).toBe(true);
+    expect(resultContentCode(result.content)).toBe(
+      "capability_binding_unavailable"
+    );
+  });
+
+  test("close() settles tracked dispatches, releases the outbound claim, and makes new dispatches fail fast instead of hanging", async () => {
+    const { binding, fakeClock, session } = setup();
+    session.attach(createFakeSink());
+
+    const trackedDispatch = binding.clientEndpoint.dispatch({
+      callId: "call-before-close",
+      capabilityId: "cap-1",
+      input: {},
+      leaseToken: "lease-bc",
+    });
+    await flush();
+
+    session.close("host is done with this session");
+    await flush();
+
+    // The tracked dispatch settles with the session's well-shaped result, not
+    // the binding sweep's rejection: the settle loop runs before the claimed
+    // outbound() iterator is released.
+    const settled = await trackedDispatch;
+    expect(settled.isError).toBe(true);
+    expect(resultContentCode(settled.content)).toBe(
+      "capability_binding_unavailable"
+    );
+    expect(fakeClock.pendingCount()).toBe(0);
+
+    // Releasing the iterator drove the binding's queue terminal, so a NEW
+    // dispatch after close() is refused immediately by the binding itself
+    // (duplex_session_closed) rather than parked forever against a dead link.
+    await expect(
+      binding.clientEndpoint.dispatch({
+        callId: "call-after-close",
+        capabilityId: "cap-1",
+        input: {},
+        leaseToken: "lease-ac",
+      })
+    ).rejects.toMatchObject({ code: "duplex_session_closed" });
+  });
+
+  test("a malformed callId-bearing client_result does not clear redelivery tracking or the dispatch timer", async () => {
+    const { binding, fakeClock, session } = setup();
+    const sink1 = createFakeSink();
+    session.attach(sink1);
+
+    const dispatchPromise = binding.clientEndpoint.dispatch({
+      callId: "call-orphan",
+      capabilityId: "cap-1",
+      input: {},
+      leaseToken: "lease-or",
+    });
+    dispatchPromise.catch(() => undefined);
+    await flush();
+    expect(fakeClock.pendingCount()).toBe(1);
+
+    // Names the tracked callId but is missing leaseToken and content, so the
+    // binding rejects it as session_frame_invalid without settling anything.
+    // If the session treated it as settleable it would delete the pending
+    // entry and its timer, leaving the dispatch owed by no one — the hung
+    // tool call ADR-062 §6 exists to eliminate.
+    session.dispatchInbound({
+      correlationId: "corr-malformed",
+      kind: "client_result",
+      protocolVersion: "1",
+      result: { callId: "call-orphan" },
+      sessionId: "sess-remote-1",
+    });
+    await flush();
+
+    // The dispatch timer is still armed, and the malformed frame drew a
+    // session_rejection from the binding.
+    expect(fakeClock.pendingCount()).toBe(1);
+    expect(
+      sink1.sent.filter((s) => s.frame.kind === "session_rejection")
+    ).toHaveLength(1);
+
+    // The invocation is still owed redelivery on reattach.
+    session.detach();
+    const sink2 = createFakeSink();
+    session.attach(sink2);
+    expect(
+      sink2.sent.filter((s) => s.frame.kind === "client_invocation")
+    ).toHaveLength(1);
+
+    // And the re-armed timer still settles it if the peer stays quiet.
+    fakeClock.fireOldest();
+    const result = await dispatchPromise;
+    expect(result.isError).toBe(true);
+    expect(resultContentCode(result.content)).toBe(
+      "capability_dispatch_timeout"
+    );
+  });
 });

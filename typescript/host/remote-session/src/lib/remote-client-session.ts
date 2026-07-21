@@ -270,13 +270,43 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Best-effort extraction of a `client_result` frame's `callId`, tolerant of malformed input (full structural validation is the binding's job). */
-function extractClientResultCallId(raw: unknown): string | undefined {
-  if (!isRecord(raw) || raw.kind !== "client_result") {
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+/**
+ * Extracts the `callId` of a `client_result` frame, but only when the frame
+ * would pass the binding's own structural validation (`validateInboundFrame`
+ * in `@tuvren/host-session`: `protocolVersion`, matching `sessionId`,
+ * non-empty `correlationId`, and a result payload with non-empty `callId`,
+ * non-empty `leaseToken`, and a `content` key). Mirroring those criteria is
+ * load-bearing: the session clears its redelivery tracking for a `callId` the
+ * moment a settleable result naming it is observed, so treating a frame the
+ * binding will *reject* as settleable would orphan an in-flight dispatch —
+ * no timer, no redelivery, nobody left owing the call.
+ */
+function extractSettleableClientResultCallId(
+  raw: unknown,
+  sessionId: string
+): string | undefined {
+  if (
+    !isRecord(raw) ||
+    raw.kind !== "client_result" ||
+    raw.protocolVersion !== "1" ||
+    raw.sessionId !== sessionId ||
+    !isNonEmptyString(raw.correlationId)
+  ) {
     return undefined;
   }
   const result = raw.result;
-  if (!isRecord(result) || typeof result.callId !== "string") {
+  if (
+    !(
+      isRecord(result) &&
+      isNonEmptyString(result.callId) &&
+      isNonEmptyString(result.leaseToken) &&
+      "content" in result
+    )
+  ) {
     return undefined;
   }
   return result.callId;
@@ -320,6 +350,7 @@ export function createRemoteClientSession(
   let started = false;
   let ended = false;
   let graceTimerHandle: unknown;
+  let outboundIterator: AsyncIterator<SessionOutboundFrame> | undefined;
   const pendingInvocations = new Map<string, PendingInvocation>();
 
   function forwardFrame(
@@ -402,6 +433,15 @@ export function createRemoteClientSession(
     }
     pendingInvocations.clear();
 
+    // Release the claimed outbound() iterator so the binding's underlying
+    // handle/queue resources are never leaked (same discipline as
+    // @tuvren/stream-ws's close paths). Ordered after the settle loop above:
+    // return() drives the binding's queue terminal, and its onTerminal sweep
+    // rejects surviving binding-pending calls with duplex_session_closed —
+    // the tracked ones must settle with their well-shaped {code, error}
+    // results first.
+    outboundIterator?.return?.().catch(() => undefined);
+
     options.onEnded?.(reason);
   }
 
@@ -426,8 +466,15 @@ export function createRemoteClientSession(
     // The binding's own onTerminal sweep already rejects every one of its
     // pending client dispatches with duplex_session_closed the moment its
     // outbound stream goes terminal, so this session's redelivery bookkeeping
-    // is now moot for those calls — just release timers and stop accepting
-    // new attaches.
+    // is now moot for those calls — release their timers and drop them here
+    // rather than let endSession synthesize results the binding would only
+    // discard as settling already-swept calls.
+    for (const pending of pendingInvocations.values()) {
+      if (pending.dispatchTimer !== undefined) {
+        clock.clearTimeout(pending.dispatchTimer);
+      }
+    }
+    pendingInvocations.clear();
     endSession("the underlying duplex session binding's outbound stream ended");
   }
 
@@ -471,7 +518,8 @@ export function createRemoteClientSession(
   function claimAndStartPump(): void {
     started = true;
 
-    const outboundIterator = binding.outbound()[Symbol.asyncIterator]();
+    const claimedIterator = binding.outbound()[Symbol.asyncIterator]();
+    outboundIterator = claimedIterator;
     const channel = new SingleSlotPushChannel<TuvrenStreamEvent>();
     const sequenced = createSequencedTuvrenStreamEvents(channel, {
       onWarning: reportWarning,
@@ -480,7 +528,7 @@ export function createRemoteClientSession(
 
     const pump = (async () => {
       for (;;) {
-        const next = await outboundIterator.next();
+        const next = await claimedIterator.next();
 
         if (next.done) {
           handleBindingTerminal();
@@ -625,13 +673,16 @@ export function createRemoteClientSession(
       return;
     }
 
-    // Once ANY client_result frame naming a tracked callId is observed —
-    // whether the binding ultimately accepts it or discards it as stale — the
-    // session's redelivery job for that callId is done; a genuinely
-    // duplicate late result is exactly what the binding's own
-    // capability_result_stale guard already handles, unaffected by this
-    // bookkeeping.
-    const callId = extractClientResultCallId(raw);
+    // Once a *settleable* client_result frame naming a tracked callId is
+    // observed — one the binding's structural validation will accept, whether
+    // it is then applied or discarded as stale — the session's redelivery job
+    // for that callId is done; a genuinely duplicate late result is exactly
+    // what the binding's own capability_result_stale guard already handles,
+    // unaffected by this bookkeeping. A frame the binding will *reject*
+    // (missing leaseToken/content, wrong session, ...) must NOT clear
+    // tracking: it settles nothing, so the dispatch is still owed its timer
+    // and its redelivery.
+    const callId = extractSettleableClientResultCallId(raw, sessionId);
     if (callId !== undefined) {
       const pending = pendingInvocations.get(callId);
       if (pending !== undefined) {
