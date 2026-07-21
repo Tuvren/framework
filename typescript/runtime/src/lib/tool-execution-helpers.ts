@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
 import type { ExecutionClass } from "@tuvren/core/capabilities";
 import { TOOL_RESULT_SANITIZATION_FAILED } from "@tuvren/core/errors";
 import type { EventSource, TuvrenStreamEvent } from "@tuvren/core/events";
@@ -766,7 +766,11 @@ function createApprovalResultMetadata(
  * @param executionClass - The result's resolved execution class, when known;
  *   absent for outcomes decided before a binding was resolved (unknown tool,
  *   input-validation failure, policy denial, resume rejection) per ADR-064 §3.
- * @returns The staged message's content hash.
+ * @returns The staged (sanitized) result paired with its content hash. The
+ *   returned `result` — not the caller's input — is what was durably staged
+ *   and emitted; callers must thread it into every in-memory downstream
+ *   consumer (batch outcomes, after-iteration hooks) so the in-memory view
+ *   never diverges from durable state.
  */
 export async function stageAndEmitResult(
   environment: ToolBatchEnvironment,
@@ -774,7 +778,7 @@ export async function stageAndEmitResult(
   orderIndex: number,
   startBarrier: ToolStartBarrier,
   executionClass?: ExecutionClass
-): Promise<HashString> {
+): Promise<StagedToolResult> {
   await startBarrier.waitUntilReady();
   const sanitized = applySanitizeToolResult(
     environment,
@@ -783,7 +787,7 @@ export async function stageAndEmitResult(
   );
   const hash = await environment.stageResult(sanitized, orderIndex);
   emitToolResultEvent(environment, sanitized);
-  return hash;
+  return { hash, result: sanitized };
 }
 
 /**
@@ -792,7 +796,7 @@ export async function stageAndEmitResult(
  *
  * @param executionClass - See {@link stageAndEmitResult}; applies to every
  *   result in `results`.
- * @returns Content hashes aligned with `results`.
+ * @returns Staged (sanitized) results, index-aligned with `results`.
  */
 export async function stageAndEmitResults(
   environment: ToolBatchEnvironment,
@@ -800,11 +804,11 @@ export async function stageAndEmitResults(
   orderIndex: number,
   startBarrier: ToolStartBarrier,
   executionClass?: ExecutionClass
-): Promise<HashString[]> {
-  const hashes: HashString[] = [];
+): Promise<StagedToolResult[]> {
+  const staged: StagedToolResult[] = [];
 
   for (const result of results) {
-    hashes.push(
+    staged.push(
       await stageAndEmitResult(
         environment,
         result,
@@ -815,7 +819,7 @@ export async function stageAndEmitResults(
     );
   }
 
-  return hashes;
+  return staged;
 }
 
 /**
@@ -849,7 +853,18 @@ function applySanitizeToolResult(
   };
 
   try {
-    return hook(result, context);
+    const sanitized = hook(result, context);
+    // Correlation identity is load-bearing and framework-owned, never host
+    // policy: kernel skip-by-callId recovery, result/call pairing, and the
+    // client-endpoint echo check all key on it. Re-stamp it after the hook so
+    // a careless object rebuild cannot desync the durable record from its
+    // tool.call — content is the host's to sanitize, identity is not.
+    return {
+      ...sanitized,
+      callId: result.callId,
+      name: result.name,
+      type: "tool_result",
+    };
   } catch (error: unknown) {
     return {
       callId: result.callId,
@@ -884,13 +899,13 @@ export async function stageImmediateResults(
       continue;
     }
 
-    const hashes = await stageAndEmitResults(
+    const staged = await stageAndEmitResults(
       environment,
       results,
       index,
       startBarrier
     );
-    orderedResults[index].push(...zipStagedToolResults(results, hashes));
+    orderedResults[index].push(...staged);
   }
 }
 
@@ -1241,27 +1256,6 @@ export function cloneValue<T>(value: T): T {
 /** Coerces an arbitrary thrown value into an `Error`, stringifying non-errors. */
 export function normalizeError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
-}
-
-/**
- * Pairs results with their staging hashes into {@link StagedToolResult}
- * entries.
- *
- * @throws Error when the two arrays differ in length — hashes must stay
- *   index-aligned with the results they were staged from.
- */
-export function zipStagedToolResults(
-  results: ToolResultPart[],
-  hashes: HashString[]
-): StagedToolResult[] {
-  if (results.length !== hashes.length) {
-    throw new Error("tool result hashes must align with tool results");
-  }
-
-  return results.map((result, index) => ({
-    hash: hashes[index],
-    result,
-  }));
 }
 
 /**

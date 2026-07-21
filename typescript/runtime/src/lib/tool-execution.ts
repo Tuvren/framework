@@ -82,7 +82,6 @@ import {
   toExecutableToolCall,
   validateToolInput,
   validateToolOutput,
-  zipStagedToolResults,
 } from "./tool-execution-helpers.js";
 import { resolveToolDefinition } from "./tool-registry.js";
 
@@ -374,7 +373,14 @@ export type SingleToolOutcome =
     }
   | {
       approval: ApprovalRequest;
-      completedResultHashes: HashString[];
+      /**
+       * The staged (sanitized, ADR-064) forms of the sibling results that
+       * completed before the pause, paired with their durable hashes. Carried
+       * as pairs — not bare hashes — so downstream in-memory consumers see
+       * exactly what was durably staged, never the pre-sanitization parts
+       * still reachable via `approval.completedResults`.
+       */
+      completedStagedResults: StagedToolResult[];
       result?: never;
       updates: ExtensionStateUpdate[];
     };
@@ -624,12 +630,7 @@ async function runParallelToolBatch(
 
     if (outcome.approval !== undefined) {
       pendingToolCalls.push(...outcome.approval.toolCalls);
-      orderedResults[resultIndex].push(
-        ...zipStagedToolResults(
-          outcome.approval.completedResults,
-          outcome.completedResultHashes
-        )
-      );
+      orderedResults[resultIndex].push(...outcome.completedStagedResults);
       continue;
     }
 
@@ -675,15 +676,13 @@ async function runSequentialToolBatch(
     }
 
     if ("result" in resolved) {
-      const resultHashes = await stageAndEmitResults(
+      const staged = await stageAndEmitResults(
         environment,
         [resolved.result],
         index,
         createToolStartBarrier(0)
       );
-      orderedResults[index].push(
-        ...zipStagedToolResults([resolved.result], resultHashes)
-      );
+      orderedResults[index].push(...staged);
       continue;
     }
 
@@ -697,12 +696,7 @@ async function runSequentialToolBatch(
 
     if (outcome.approval !== undefined) {
       pendingToolCalls.push(...outcome.approval.toolCalls);
-      orderedResults[index].push(
-        ...zipStagedToolResults(
-          outcome.approval.completedResults,
-          outcome.completedResultHashes
-        )
-      );
+      orderedResults[index].push(...outcome.completedStagedResults);
       break;
     }
 
@@ -1258,7 +1252,7 @@ async function executeSingleTool(
       );
 
       if (outcome.approval !== undefined) {
-        const completedResultHashes = await stageAndEmitResults(
+        const completedStagedResults = await stageAndEmitResults(
           environment,
           outcome.approval.completedResults,
           orderIndex,
@@ -1267,7 +1261,7 @@ async function executeSingleTool(
         );
         return {
           approval: outcome.approval,
-          completedResultHashes,
+          completedStagedResults,
           updates: outcome.updates,
         };
       }
@@ -1277,7 +1271,7 @@ async function executeSingleTool(
         toolCall.approvalDecision,
         toolCall.approvalAudit
       );
-      const resultHash = await stageAndEmitResult(
+      const staged = await stageAndEmitResult(
         environment,
         result,
         orderIndex,
@@ -1286,14 +1280,14 @@ async function executeSingleTool(
       );
 
       return {
-        resultHash,
-        result,
+        resultHash: staged.hash,
+        result: staged.result,
         updates: outcome.updates,
       };
     } catch (error: unknown) {
       if (error instanceof ToolPauseSignal) {
         await settleToolStartIfNeeded(toolStartState, startBarrier);
-        const completedResultHashes = await stageAndEmitResults(
+        const completedStagedResults = await stageAndEmitResults(
           environment,
           error.approval.completedResults,
           orderIndex,
@@ -1302,7 +1296,7 @@ async function executeSingleTool(
         );
         return {
           approval: error.approval,
-          completedResultHashes,
+          completedStagedResults,
           updates: error.updates,
         };
       }
@@ -1325,7 +1319,7 @@ async function executeSingleTool(
     toolCall.approvalAudit
   );
   await settleToolStartIfNeeded(toolStartState, startBarrier);
-  const resultHash = await stageAndEmitResult(
+  const staged = await stageAndEmitResult(
     environment,
     result,
     orderIndex,
@@ -1334,8 +1328,8 @@ async function executeSingleTool(
   );
 
   return {
-    resultHash,
-    result,
+    resultHash: staged.hash,
+    result: staged.result,
     updates: [],
   };
 }

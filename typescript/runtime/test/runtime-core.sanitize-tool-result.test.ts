@@ -376,4 +376,114 @@ describe("host sanitization seam (ADR-064): stageAndEmitResult chokepoint", () =
     expect(results).toHaveLength(1);
     expect(results[0]?.output).toEqual({ text: MARKER });
   });
+
+  test("correlation identity is re-stamped after the hook: a callId-mutating hook cannot desync the durable record", async () => {
+    const harness = createFakeKernelHarness();
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      runnerRegistry: createBaseRunnerRegistry([
+        makeRunner([{ callId: "call-identity", input: {}, name: "echo" }]),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        // A careless object rebuild that drops the correlation identity:
+        // content is the host's to sanitize, identity is not — kernel
+        // skip-by-callId recovery and the client-endpoint echo check key on
+        // it, so the framework re-stamps callId/name/type after the hook.
+        sanitizeToolResult: (result) =>
+          ({
+            callId: "mangled-by-host",
+            isError: result.isError,
+            name: "wrong-name",
+            output: { text: SCRUBBED },
+            type: "tool_result",
+          }) as ToolResultPart,
+        tools: [
+          {
+            description: "echo a secret-bearing marker",
+            execute: () => Promise.resolve({ text: MARKER }),
+            inputSchema: { type: "object" },
+            name: "echo",
+          },
+        ],
+      },
+      signal: textSignal("run identity re-stamp test"),
+      threadId: thread.threadId,
+    });
+    const events = await collectEvents(handle.events());
+    await handle.awaitResult();
+
+    const staged = await stagedToolResultParts(harness, thread.branchId);
+    expect(staged).toHaveLength(1);
+    expect(staged[0]?.callId).toBe("call-identity");
+    expect(staged[0]?.name).toBe("echo");
+    expect(staged[0]?.output).toEqual({ text: SCRUBBED });
+
+    const results = toolResultEvents(events);
+    expect(results[0]?.callId).toBe("call-identity");
+  });
+
+  test("afterIteration extension hooks observe the sanitized results, matching durable state", async () => {
+    const harness = createFakeKernelHarness();
+    let observedToolResults: ToolResultPart[] | undefined;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      runnerRegistry: createBaseRunnerRegistry([
+        makeRunner([{ callId: "call-hooks", input: {}, name: "echo" }]),
+      ]),
+      kernel: harness.kernel,
+    });
+    const thread = await runtime.createThread({});
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        extensions: [
+          {
+            afterIteration(context) {
+              // Captured only for the iteration that actually ran the tool;
+              // the closing iteration reports no tool results and must not
+              // overwrite the capture.
+              if (
+                context.toolResults !== undefined &&
+                context.toolResults.length > 0
+              ) {
+                observedToolResults = context.toolResults;
+              }
+              return undefined;
+            },
+            name: "tool-result-observer",
+          },
+        ],
+        name: "primary",
+        sanitizeToolResult: (result) => ({
+          ...result,
+          output: { text: SCRUBBED },
+        }),
+        tools: [
+          {
+            description: "echo a secret-bearing marker",
+            execute: () => Promise.resolve({ text: MARKER }),
+            inputSchema: { type: "object" },
+            name: "echo",
+          },
+        ],
+      },
+      signal: textSignal("run after-iteration visibility test"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(handle.events());
+    await handle.awaitResult();
+
+    // The in-memory view handed to same-turn extension hooks must match the
+    // durable record: the pre-sanitization part never survives staging in
+    // any consumer, not only in kernel history and on the stream.
+    expect(observedToolResults).toBeDefined();
+    expect(JSON.stringify(observedToolResults)).not.toContain(MARKER);
+    expect(observedToolResults?.[0]?.output).toEqual({ text: SCRUBBED });
+  });
 });
