@@ -48,6 +48,17 @@
       "name": "@tuvren/core",
       "version": "0.1.0",
     },
+    "typescript/host/remote-session": {
+      "name": "@tuvren/remote-session",
+      "version": "0.1.0",
+      "dependencies": {
+        "@tuvren/host-session": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:~",
+      },
+    },
     "typescript/host/repl": {
       "name": "@tuvren/repl-host",
       "version": "0.1.0",
@@ -1020,6 +1031,8 @@
     "@tuvren/provider-testkit": ["@tuvren/provider-testkit@workspace:typescript/providers/testkit"],
 
     "@tuvren/providers-typescript-certification": ["@tuvren/providers-typescript-certification@workspace:typescript/providers/certification"],
+
+    "@tuvren/remote-session": ["@tuvren/remote-session@workspace:typescript/host/remote-session"],
 
     "@tuvren/repl-host": ["@tuvren/repl-host@workspace:typescript/host/repl"],
 

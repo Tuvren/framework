@@ -59,6 +59,23 @@ export const TOOL_INVOCATION_RATE_LIMITED =
 export const CAPABILITY_RESULT_STALE = "capability_result_stale" as const;
 
 /**
+ * Stable `TuvrenRuntimeError` code emitted when a `tuvren-client` invocation
+ * dispatched to a *reachable* remote peer receives no `client_result` within
+ * the configured `dispatchTimeoutMs`. Surfaced as `tool.result` with
+ * `isError: true` per §4.21, joining `capability_binding_unavailable` and
+ * `capability_result_stale` in the same error family. Distinct from
+ * `capability_binding_unavailable` — which means no endpoint is attached, or
+ * the disconnect grace window expired with none reattaching — this code means
+ * the endpoint *is* attached and accepted the work but went quiet; the two
+ * budgets are deliberately independent so a peer given a fresh chance after
+ * reconnecting is never handed a deadline that expired while it was
+ * unreachable. Owned by `@tuvren/remote-session` (ADR-063 §5,
+ * `spec/host/client-endpoint-integration.md` §4.21).
+ */
+export const CAPABILITY_DISPATCH_TIMEOUT =
+  "capability_dispatch_timeout" as const;
+
+/**
  * Stable `TuvrenRuntimeError` code emitted when a turn breaches a framework
  * hard-stop execution bound (`maxIterations`, `maxToolCalls`, or
  * `maxWallClockMs`) above runner discretion. The framework stops the loop,

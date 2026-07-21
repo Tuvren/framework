@@ -1,0 +1,37 @@
+{
+  "name": "@tuvren/remote-session",
+  "private": true,
+  "description": "Host-owned reattachable remote client session lifecycle seam (ADR-063): keeps a duplex session binding alive across a link that can drop, above the frame vocabulary and below carriage.",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/host/remote-session"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@tuvren/host-session": "workspace:*",
+    "@tuvren/stream-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tuvren/core": "workspace:~"
+  },
+  "peerDependenciesMeta": {
+    "@tuvren/core": {
+      "optional": false
+    }
+  }
+}

@@ -252,6 +252,11 @@
         "signature": "\"capability_binding_unavailable\"",
         "stability": "stable"
       },
+      "CAPABILITY_DISPATCH_TIMEOUT": {
+        "kind": "value",
+        "signature": "\"capability_dispatch_timeout\"",
+        "stability": "stable"
+      },
       "CAPABILITY_RESULT_STALE": {
         "kind": "value",
         "signature": "\"capability_result_stale\"",
@@ -2036,6 +2041,13 @@
       "bump": "baseline",
       "changes": ["initial freeze baseline"],
       "recordedAt": "2026-07-11T05:05:26.408Z"
+    },
+    {
+      "bump": "minor",
+      "changes": [
+        "@tuvren/core/errors#CAPABILITY_DISPATCH_TIMEOUT: export-added"
+      ],
+      "recordedAt": "2026-07-21T13:14:10.821Z"
     }
   ]
 }
