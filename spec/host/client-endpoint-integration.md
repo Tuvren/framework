@@ -205,8 +205,11 @@ the session layer adds only frame schemas and a second, outer staleness
 check (a `client_result` matching no pending dispatch), while the
 per-dispatch `leaseToken` echo check remains the boundary's own. The
 TypeScript reference binding is `@tuvren/host-session`
-(`typescript/host/session`); network transport, timeout, and disconnect
-policy remain host concerns (issues #100/#102).
+(`typescript/host/session`). Network timeout and disconnect policy are
+settled by ADR-063: `@tuvren/remote-session` owns the session lifecycle
+(disconnect grace window, per-dispatch timeout, redelivery), `@tuvren/stream-ws`
+carries it over WebSocket, and session identity (which `sessionId` maps to
+which live session) remains host application state.
 
 ## Configuration Summary
 
