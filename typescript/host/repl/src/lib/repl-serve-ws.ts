@@ -38,6 +38,33 @@
  *   on `AgentConfig.clientEndpoints` so the model can dispatch to the remote
  *   peer.
  *
+ * Recorded limitations (demo scope, not fixed here):
+ *
+ * (a) **Reconnect-vs-close race is refused, not retried.** A reconnect whose
+ *     handshake races this host's processing of the *prior* socket's close
+ *     for the same `sessionId` can observe `entry.session` still attached
+ *     (the old transport has not yet `detach()`-ed) and be refused with
+ *     `WS_CLOSE_CODE_HANDSHAKE_INVALID` (`4000`) — a close code the
+ *     reference `@tuvren/session-client` treats as non-retryable
+ *     (`isRetryableCloseCode`), so that peer gives up rather than backing off
+ *     and trying again. This is localhost-timing-dependent and acceptable
+ *     for a demo host; a production host would serialize handshake
+ *     processing per `sessionId` (so a reconnect never observes the stale
+ *     attach) or map a busy-refusal outcome to a retryable close code
+ *     instead of reusing `4000`.
+ * (b) **Ended-session identity shadowing.** Once a session has permanently
+ *     ended (`onEnded` fired, entry removed), a later handshake presenting
+ *     that same `sessionId` is indistinguishable from a genuinely unknown
+ *     id to `createReplWsSessionRegistry.resolve` — it mints a *fresh* demo
+ *     turn under the old identity rather than closing with
+ *     `WS_CLOSE_CODE_SESSION_NOT_FOUND`. This is intentional for the demo
+ *     (no persistent record of "this id existed and ended" is kept), with a
+ *     named consequence: a peer that reconnects with a stale resume cursor
+ *     from the ended session resolves that cursor against the *new*
+ *     session's empty replay buffer, not the old one — `attach()` reports
+ *     `"unknown-turn"` or `"out-of-window"` rather than anything describing
+ *     the identity shadowing.
+ *
  * @packageDocumentation
  */
 
@@ -62,9 +89,14 @@ import type {
 } from "@tuvren/sdk";
 import {
   createWsSessionTransport,
+  parseWsMessage,
+  WS_CLOSE_CODE_HANDSHAKE_INVALID,
+  WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED,
   type WsSessionTransport,
   type WsSocketSink,
 } from "@tuvren/stream-ws";
+
+const HANDSHAKE_SUPPORTED_PROTOCOL_VERSION = "1";
 
 /**
  * Stable identifier of the demonstration `tuvren-client` capability
@@ -251,8 +283,17 @@ export interface ReplWsSessionRegistry {
    * registry. Returns the existing entry — attached, detached, or
    * permanently ended — for a known id, so the transport's own
    * `session.attach()` call decides the reattach/refusal outcome.
+   *
+   * `created` is `true` only for the caller whose invocation actually ran
+   * {@link createEntry} for this `sessionId` — never for a concurrent second
+   * caller that merely awaited the same in-flight creation (P2-4), and never
+   * for a caller that reused a pre-existing entry. Callers use this to scope
+   * cleanup narrowly: only the connection that minted a brand-new entry may
+   * ever tear it down on a failed handshake (P2-2); a connection that only
+   * observed a pre-existing entry must never do so.
    */
   resolve(sessionId: string | undefined): Promise<{
+    created: boolean;
     entry: ReplWsSessionEntry;
     sessionId: string;
   }>;
@@ -265,6 +306,12 @@ export function createReplWsSessionRegistry(
 ): ReplWsSessionRegistry {
   const provider = options.provider ?? createServeWsDemoProvider();
   const entries = new Map<string, ReplWsSessionEntry>();
+  // P2-4: two sockets presenting the same unknown sessionId can both pass
+  // the `entries.get` miss above before the first caller's async
+  // `createEntry` finishes. Tracking the in-flight creation promise here
+  // means the second caller awaits and reuses the first caller's entry
+  // instead of racing it into creating a second, orphaned one.
+  const pendingCreations = new Map<string, Promise<ReplWsSessionEntry>>();
 
   async function createEntry(sessionId: string): Promise<ReplWsSessionEntry> {
     const thread = await options.runtime.createThread({});
@@ -332,38 +379,37 @@ export function createReplWsSessionRegistry(
       if (requestedSessionId !== undefined) {
         const existing = entries.get(requestedSessionId);
         if (existing !== undefined) {
-          return { entry: existing, sessionId: requestedSessionId };
+          return {
+            created: false,
+            entry: existing,
+            sessionId: requestedSessionId,
+          };
+        }
+
+        const inFlight = pendingCreations.get(requestedSessionId);
+        if (inFlight !== undefined) {
+          const entry = await inFlight;
+          return { created: false, entry, sessionId: requestedSessionId };
         }
       }
 
       const sessionId = requestedSessionId ?? randomUUID();
-      const entry = await createEntry(sessionId);
-      entries.set(sessionId, entry);
-      return { entry, sessionId };
+      const creation = createEntry(sessionId).then((entry) => {
+        entries.set(sessionId, entry);
+        return entry;
+      });
+      pendingCreations.set(sessionId, creation);
+      try {
+        const entry = await creation;
+        return { created: true, entry, sessionId };
+      } finally {
+        pendingCreations.delete(sessionId);
+      }
     },
     size(): number {
       return entries.size;
     },
   };
-}
-
-/** Best-effort extraction of a handshake's `sessionId`, without full frame validation (the transport itself re-validates on ingest). */
-export function peekHandshakeSessionId(text: string): string | undefined {
-  try {
-    const parsed: unknown = JSON.parse(text);
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      "sessionId" in parsed &&
-      typeof (parsed as { sessionId?: unknown }).sessionId === "string"
-    ) {
-      return (parsed as { sessionId: string }).sessionId;
-    }
-  } catch {
-    // Malformed JSON: let the transport's own parseWsMessage/session_rejection
-    // path handle it once ingested rather than duplicating that diagnosis here.
-  }
-  return undefined;
 }
 
 /** Options accepted by {@link startReplWsServer}. */
@@ -432,25 +478,84 @@ export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
     },
     text: string
   ): Promise<void> {
-    const requestedSessionId = peekHandshakeSessionId(text);
-    // sessionId itself is not needed here: the transport's own handshake_ack
-    // already carries it back to the peer, and `entry` is all this function
-    // needs to compose the transport.
-    const { entry } = await registry.resolve(requestedSessionId);
+    // P2-2: validate the handshake's own shape — `kind === "handshake"` and a
+    // supported `protocolVersion` — BEFORE ever touching the registry. A
+    // garbage or protocol-mismatched first message must never allocate a
+    // registry entry (thread + turn + binding): there would be nothing left
+    // to clean it up, since no transport ever gets far enough to attach and
+    // no later message on this closed socket will arrive to trigger it. This
+    // mirrors exactly what `createWsSessionTransport`'s own
+    // `processHandshake` validates and closes with, so behavior for a valid
+    // handshake is unchanged — only the ordering (validate, then allocate)
+    // is new.
+    const parsed = parseWsMessage(text);
+
+    if (parsed.kind !== "handshake") {
+      ws.close(
+        WS_CLOSE_CODE_HANDSHAKE_INVALID,
+        "first message on a WebSocket session transport must be a handshake"
+      );
+      return;
+    }
+
+    if (
+      parsed.message.protocolVersion !== HANDSHAKE_SUPPORTED_PROTOCOL_VERSION
+    ) {
+      ws.close(
+        WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED,
+        `unsupported handshake protocolVersion "${parsed.message.protocolVersion}"`
+      );
+      return;
+    }
+
+    // Only a structurally plausible handshake reaches registry allocation.
+    // `created` scopes the failed-handshake cleanup below to entries THIS
+    // connection minted — never a pre-existing entry another connection
+    // still owns (P2-2, P2-4).
+    const { created, entry } = await registry.resolve(parsed.message.sessionId);
+
+    // P2-3: `entry.currentTransport` must only ever point at a transport
+    // whose handshake actually attached — never a refused newcomer, so that
+    // `onEnded`'s `entry.currentTransport?.close(...)` always closes the
+    // transport that actually owns the attached sink. `createWsSessionTransport`
+    // exposes no attach-succeeded callback, so this transport's own
+    // `handshake_ack` — sent from inside `attachToSession` only after
+    // `session.attach()` has already succeeded — is the seam: observing that
+    // exact frame on its way out is the attach-succeeded signal.
+    let transport: WsSessionTransport | undefined;
+    let ackObserved = false;
 
     const sink: WsSocketSink = {
       bufferedAmount(): number {
         return ws.bufferedAmount ?? 0;
       },
       close(code, reason) {
+        // P2-2: a close observed before this connection's own handshake_ack
+        // ever went out means this transport's attach never succeeded. If
+        // this connection is also the one that just minted a brand-new
+        // registry entry (created === true), that entry now has no attached
+        // transport and never will — tear it down (session.close(), which
+        // drives the registry's own onEnded cleanup) rather than leak a
+        // permanent thread + turn + binding. Never do this for an entry this
+        // connection did not create: a refused concurrent second attach on
+        // an existing, still-live session must leave that session alone.
+        if (!ackObserved && created) {
+          entry.session.close(
+            "handshake failed before this newly created session ever attached"
+          );
+        }
         ws.close(code, reason);
       },
       send(data) {
+        if (!ackObserved && isHandshakeAckFrame(data)) {
+          ackObserved = true;
+          entry.currentTransport = transport;
+        }
         ws.send(data);
       },
     };
 
-    const transport = createWsSessionTransport({
+    transport = createWsSessionTransport({
       ...(options.heartbeat === undefined
         ? {}
         : { heartbeat: options.heartbeat }),
@@ -459,7 +564,6 @@ export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
     });
 
     ws.data.transport = transport;
-    entry.currentTransport = transport;
     transport.start();
     transport.ingest(text);
   }
@@ -525,4 +629,27 @@ export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
     },
     url: `ws://${options.hostname ?? "127.0.0.1"}:${boundPort}`,
   };
+}
+
+/**
+ * Structural check for the exact `handshake_ack` frame
+ * `createWsSessionTransport`'s `attachToSession` sends immediately after a
+ * successful `session.attach()` — the attach-succeeded signal
+ * {@link startReplWsServer}'s sink wrapper uses (P2-3), since the transport
+ * itself exposes no dedicated success callback. Deliberately loose (only the
+ * `kind` discriminator): this is an internal observation of an outbound frame
+ * this same module's own transport call produced, not an untrusted inbound
+ * payload needing full structural validation.
+ */
+function isHandshakeAckFrame(data: string): boolean {
+  try {
+    const value: unknown = JSON.parse(data);
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      (value as { kind?: unknown }).kind === "handshake_ack"
+    );
+  } catch {
+    return false;
+  }
 }

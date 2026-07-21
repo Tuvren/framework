@@ -28,7 +28,6 @@
     "@tuvren/provider-bridge-ai-sdk": "workspace:*",
     "@tuvren/remote-session": "workspace:*",
     "@tuvren/runner-react": "workspace:*",
-    "@tuvren/runtime": "workspace:*",
     "@tuvren/sdk": "workspace:*",
     "@tuvren/session-client": "workspace:*",
     "@tuvren/stream-agui": "workspace:*",

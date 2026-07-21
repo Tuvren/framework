@@ -39,16 +39,42 @@
  * provable with this runtime today, and which ADR-065 obligation is the
  * blocker.
  *
- * Variant A (fully proven): reconnect-redelivery. The server process stays
- * alive; only the peer's *socket* is killed mid-dispatch (a real WebSocket
- * close, not a `session.close()` call). The peer's built-in reconnect logic
- * (`@tuvren/session-client`) reattaches with its last cursor; the server's
- * `RemoteClientSession` (still alive in the same process) redelivers the
- * still-unanswered `client_invocation`. Because the SAME in-process peer
- * still holds that call's callId as "in-flight" in its own dedup table, it
- * ignores the redelivery rather than re-running the capability handler —
- * so exactly one side effect is recorded for the callId, keyed by a single
- * `idempotencyKey`, and the turn completes normally.
+ * Variant A (fully proven): reconnect-redelivery, restructured so redelivery
+ * is LOAD-BEARING for completion (M6 review P1-1) rather than incidental. A
+ * prior version of this test killed the raw socket while the capability
+ * handler was still in-flight; every assertion it made held even with the
+ * server's redelivery loop deleted entirely, because the client's own
+ * "in-flight" dedup entry (see `handleInvocation` in
+ * `@tuvren/session-client`) suppresses a redelivered invocation on its own,
+ * with no dependency on the server ever redelivering anything.
+ *
+ * This version instead lets the peer's handler fully ANSWER the invocation
+ * — `settle()` records the result and calls `sendClientResult` — and
+ * intercepts that specific outbound `client_result` websocket frame via a
+ * wrapped `webSocketFactory`: the wrapper drops the frame's bytes (the
+ * server never receives it) and, in the same call, closes the *raw* socket
+ * to force a real reconnect. The server's `RemoteClientSession` never
+ * observed a settling `client_result`, so its `pendingInvocations` entry for
+ * that `callId` survives the reconnect untouched; on reattach it redelivers
+ * the still-unanswered `client_invocation` (ADR-063 decision 3). The peer's
+ * `callState` for that `callId` is now `"answered"` (the handler already
+ * ran), so `handleInvocation` takes the redelivery branch that RE-SENDS the
+ * recorded result rather than re-running the handler — and this time the
+ * wrapper forwards it, since only the first `client_result` send is ever
+ * dropped. The turn can therefore only reach `message.done` if the server's
+ * redelivery actually fired: with the redelivery loop deleted, the dropped
+ * result is gone forever, the server's dispatch never settles inside this
+ * test's short post-reattach window, and the turn never completes — making
+ * completion a genuine function of redelivery having happened, not an
+ * artifact of client-side dedup.
+ *
+ * The wrapper also counts `client_invocation` frames at the raw-socket level
+ * (before any of the peer's own dedup logic runs), across both the original
+ * and the reattached connection, and records each one's `callId` — the
+ * positive, direct proof that the SAME call was actually redelivered over
+ * the wire (expected count: 2, both instances naming the same `callId`),
+ * rather than inferring redelivery only from the absence of a second
+ * handler execution.
  *
  * Variant B (honest, weaker): resume-from-committed-head across a real
  * process kill. A second session runs its demo turn to completion on the
@@ -179,70 +205,130 @@ async function startServer(schemaName: string): Promise<ServerHandle> {
     threadId: string;
   }> = [];
 
-  let resolveListening: ((url: string) => void) | undefined;
-  const listening = new Promise<string>((resolve) => {
-    resolveListening = resolve;
-  });
+  // P2-5: from here on, any failure (the "listening" line never arriving,
+  // JSON.parse throwing on a malformed line, the reader itself rejecting)
+  // must not leave this already-spawned child process orphaned — kill it
+  // before rethrowing rather than only relying on `afterAll`'s best-effort
+  // `server?.kill()`, which never runs if `startServer` itself never
+  // resolves into `server` (see `beforeAll` below).
+  try {
+    let resolveListening: ((url: string) => void) | undefined;
+    const listening = new Promise<string>((resolve) => {
+      resolveListening = resolve;
+    });
 
-  (async () => {
-    const reader = proc.stdout.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) {
-        return;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      let newlineIndex = buffer.indexOf("\n");
-      while (newlineIndex !== -1) {
-        const line = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 1);
-        newlineIndex = buffer.indexOf("\n");
-        if (line.trim().length === 0) {
-          continue;
+    (async () => {
+      const reader = proc.stdout.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) {
+          return;
         }
-        const parsed: unknown = JSON.parse(line);
-        if (isRecord(parsed) && parsed.kind === "listening") {
-          resolveListening?.(String(parsed.url));
-        } else if (isRecord(parsed) && parsed.kind === "session-created") {
-          sessionsCreated.push({
-            branchId: String(parsed.branchId),
-            sessionId: String(parsed.sessionId),
-            threadId: String(parsed.threadId),
-          });
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIndex = buffer.indexOf("\n");
+        while (newlineIndex !== -1) {
+          const line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+          newlineIndex = buffer.indexOf("\n");
+          if (line.trim().length === 0) {
+            continue;
+          }
+          const parsed: unknown = JSON.parse(line);
+          if (isRecord(parsed) && parsed.kind === "listening") {
+            resolveListening?.(String(parsed.url));
+          } else if (isRecord(parsed) && parsed.kind === "session-created") {
+            sessionsCreated.push({
+              branchId: String(parsed.branchId),
+              sessionId: String(parsed.sessionId),
+              threadId: String(parsed.threadId),
+            });
+          }
         }
       }
-    }
-  })().catch(() => undefined);
+    })().catch(() => undefined);
 
-  const url = await Promise.race([
-    listening,
-    new Promise<string>((_resolve, reject) => {
-      setTimeout(
-        () =>
-          reject(
-            new Error("--serve-ws subprocess did not report listening in time")
-          ),
-        20_000
-      );
-    }),
-  ]);
+    const url = await Promise.race([
+      listening,
+      new Promise<string>((_resolve, reject) => {
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                "--serve-ws subprocess did not report listening in time"
+              )
+            ),
+          20_000
+        );
+      }),
+    ]);
 
-  return {
-    effectsLogPath,
-    async kill(): Promise<void> {
-      proc.kill("SIGKILL");
-      await proc.exited;
-    },
-    proc,
-    sessionsCreated,
-    url,
-  };
+    return {
+      effectsLogPath,
+      async kill(): Promise<void> {
+        proc.kill("SIGKILL");
+        await proc.exited;
+      },
+      proc,
+      sessionsCreated,
+      url,
+    };
+  } catch (error) {
+    proc.kill("SIGKILL");
+    await proc.exited.catch(() => undefined);
+    throw error;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+/**
+ * Structural peek at a wire text frame's `{kind: "frame", frame: {...}}`
+ * envelope (`@tuvren/stream-ws`'s `WsOutboundFrameEnvelope`/`WsInboundFrameEnvelope`),
+ * used only by variant A's raw-socket wrapper to detect the specific
+ * `client_result` frame to drop and every `client_invocation` frame that
+ * arrives (original delivery and redelivery alike). Never throws — malformed
+ * or unrelated frames (handshake_ack, ping/pong, event frames) simply report
+ * `kind: undefined`.
+ */
+function parseSessionFrameText(text: string): {
+  kind: "client_result" | "client_invocation" | undefined;
+  callId?: string;
+} {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (
+      !isRecord(parsed) ||
+      parsed.kind !== "frame" ||
+      !isRecord(parsed.frame)
+    ) {
+      return { kind: undefined };
+    }
+    const inner = parsed.frame;
+
+    if (inner.kind === "client_result" && isRecord(inner.result)) {
+      const callId = inner.result.callId;
+      return {
+        callId: typeof callId === "string" ? callId : undefined,
+        kind: "client_result",
+      };
+    }
+
+    if (inner.kind === "client_invocation" && isRecord(inner.invocation)) {
+      const callId = inner.invocation.callId;
+      return {
+        callId: typeof callId === "string" ? callId : undefined,
+        kind: "client_invocation",
+      };
+    }
+
+    return { kind: undefined };
+  } catch {
+    return { kind: undefined };
+  }
 }
 
 /**
@@ -336,11 +422,17 @@ describe("repl --serve-ws end-to-end", () => {
     }
   }, 30_000);
 
-  test("variant A: socket-kill mid-dispatch redelivers on reconnect with exactly one side effect and no cursor restart", async () => {
+  test("variant A: dropping the client_result frame forces a reconnect whose completion REQUIRES server redelivery", async () => {
     const sessionId = `sess-a-${crypto.randomUUID()}`;
-    let rawSocket: WebSocket | undefined;
     const statuses: SessionClientStatus[] = [];
     const observedCursors: string[] = [];
+    // Every client_invocation frame observed at the raw-socket/factory-wrapper
+    // level, across BOTH connections (original + reattach), together with the
+    // callId it named — the positive, direct proof that the server actually
+    // redelivered the SAME call over the wire, independent of the client's
+    // own in-flight dedup bookkeeping.
+    const wireInvocationCallIds: string[] = [];
+    let resultFrameDropped = false;
     let turnEnded = false;
     let invocationSeen = 0;
     let releaseGate: (() => void) | undefined;
@@ -378,10 +470,56 @@ describe("repl --serve-ws end-to-end", () => {
       },
       sessionId,
       url: server.url,
+      // This wrapper is the load-bearing part of the proof (M6 review
+      // P1-1): it lets the peer's handler fully ANSWER the invocation, but
+      // makes sure the server never receives that answer, and closes the
+      // raw socket in the same tick — forcing session-client's ordinary
+      // reconnect path rather than this test driving `session.close()` or
+      // a process kill.
       webSocketFactory(url) {
-        const socket = new WebSocket(url);
-        rawSocket = socket;
-        return socket as unknown as SessionClientSocket;
+        const real = new WebSocket(url);
+        const wrapper: SessionClientSocket = {
+          close(code, reason) {
+            real.close(code, reason);
+          },
+          onclose: null,
+          onerror: null,
+          onmessage: null,
+          onopen: null,
+          send(data: string) {
+            const outgoing = parseSessionFrameText(data);
+            if (outgoing.kind === "client_result" && !resultFrameDropped) {
+              resultFrameDropped = true;
+              // Drop the bytes: `real.send` is never called for this
+              // frame, so the server's RemoteClientSession never observes
+              // a settling client_result and its pendingInvocations entry
+              // for this callId survives. Closing the raw socket
+              // synchronously (rather than merely delaying the send)
+              // simulates the frame being lost in flight, not just slow.
+              real.close(1001, "simulated client_result frame loss");
+              return;
+            }
+            real.send(data);
+          },
+        };
+
+        real.onopen = () => wrapper.onopen?.();
+        real.onmessage = (event: MessageEvent) => {
+          const incoming = parseSessionFrameText(
+            typeof event.data === "string" ? event.data : ""
+          );
+          if (
+            incoming.kind === "client_invocation" &&
+            incoming.callId !== undefined
+          ) {
+            wireInvocationCallIds.push(incoming.callId);
+          }
+          wrapper.onmessage?.(event);
+        };
+        real.onclose = (event) => wrapper.onclose?.(event);
+        real.onerror = (event) => wrapper.onerror?.(event);
+
+        return wrapper;
       },
     });
 
@@ -389,32 +527,46 @@ describe("repl --serve-ws end-to-end", () => {
 
     await waitFor(() => statuses.some((status) => status.phase === "open"));
     await waitFor(() => invocationSeen >= 1);
+    // The original client_invocation has been observed at the wire level.
+    expect(wireInvocationCallIds.length).toBe(1);
 
-    // Kill the SOCKET, not the process: a real WebSocket close the peer
-    // did not request through `client.close()`, so the client's own
-    // reconnect logic treats it exactly like a network drop.
-    expect(rawSocket).toBeDefined();
-    rawSocket?.close(1001, "simulated socket drop");
+    // Let the handler settle. `settle()` records the result (callState
+    // becomes "answered") and sends the client_result frame — which the
+    // wrapper above drops and, in dropping, closes the raw socket.
+    releaseGate?.();
 
+    await waitFor(() => resultFrameDropped);
     await waitFor(() =>
       statuses.some((status) => status.phase === "reconnecting")
     );
-    // A fresh handshake_ack with phase "open" after the reconnect proves
-    // the peer re-attached; RemoteClientSession's own redelivery of the
-    // still-unanswered client_invocation happens synchronously inside
-    // that reattach (server-side), before this client observes it.
     await waitFor(
       () => statuses.filter((status) => status.phase === "open").length >= 2,
       20_000
     );
 
     // The redelivered client_invocation must not re-invoke the handler:
-    // this same client process still holds the callId "in-flight".
+    // callState for this callId is "answered", so session-client re-sends
+    // the recorded result instead of running the handler again.
     expect(invocationSeen).toBe(1);
 
-    releaseGate?.();
+    // Tight deadline, deliberately much shorter than the registry's default
+    // dispatchTimeoutMs (10s): this is what makes completion load-bearing on
+    // redelivery rather than on the dispatch-timeout's own synthesized-error
+    // fallback. The server's attach()-time redelivery and the client's
+    // answered-resend both happen synchronously inside the reattach
+    // handshake, so if the redelivery loop fires at all, the turn completes
+    // within a couple of seconds of the second "open" status above — not
+    // within the ~10s a timeout-driven fallback would take. If
+    // RemoteClientSession's redelivery loop were deleted, the server's
+    // pendingInvocations entry would never be redelivered, the client would
+    // never re-send its recorded result, and this wait would time out.
+    await waitFor(() => turnEnded, 4000);
 
-    await waitFor(() => turnEnded, 20_000);
+    // Positive arrival proof: the SAME callId was delivered over the wire
+    // twice — once on the original connection, once redelivered on
+    // reattach — not merely "the handler ran once".
+    expect(wireInvocationCallIds.length).toBe(2);
+    expect(wireInvocationCallIds[1]).toBe(wireInvocationCallIds[0]);
 
     // The runtime mints its own callId for the dispatched invocation
     // (distinct from the scripted provider's own `providerCallId`), so
