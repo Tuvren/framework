@@ -17,6 +17,9 @@
       "path": "../../host/session/tsconfig.lib.json"
     },
     {
+      "path": "../../host/remote-session/tsconfig.lib.json"
+    },
+    {
       "path": "../../testkit/tsconfig.lib.json"
     }
   ]

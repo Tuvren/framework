@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
   ClientInvocationEnvelope,
   ClientReportedResult,
@@ -38,6 +39,29 @@ import {
 } from "@tuvren/stream-core";
 
 const PROTOCOL_VERSION = "1";
+
+/**
+ * Stable code carried by the `TuvrenRuntimeError` thrown when
+ * {@link RemoteClientSession.attach} is called while another sink is still
+ * attached — ADR-063 decision 2's at-most-one-sink rule surfacing a
+ * concurrent second attach as a programming error rather than a silent
+ * second consumer. Transports branch on this code (never on message text)
+ * to refuse the *new* connection while leaving the live one untouched.
+ *
+ * @experimental
+ */
+export const REMOTE_SESSION_ALREADY_ATTACHED =
+  "remote_session_already_attached" as const;
+
+/**
+ * Stable code carried by the `TuvrenRuntimeError` thrown when
+ * {@link RemoteClientSession.attach} is called on a session that has
+ * permanently ended (explicit `close()`, disconnect grace-window expiry, or
+ * the underlying binding's outbound stream reaching a terminal state).
+ *
+ * @experimental
+ */
+export const REMOTE_SESSION_ENDED = "remote_session_ended" as const;
 
 /**
  * Injectable timer pair backing {@link RemoteClientSession}'s disconnect
@@ -182,8 +206,11 @@ export interface RemoteClientSession {
    * full fresh budget — before resuming live forwarding. `session_rejection`
    * frames are never redelivered.
    *
-   * Throws if this session has already ended (grace-window expiry or an
-   * explicit {@link close}) or if a sink is already attached.
+   * Throws a `TuvrenRuntimeError` if this session has already ended
+   * (grace-window expiry or an explicit {@link close}) — code
+   * {@link REMOTE_SESSION_ENDED} — or if a sink is already attached — code
+   * {@link REMOTE_SESSION_ALREADY_ATTACHED}. Callers branch on `code`, never
+   * on message text.
    */
   attach(
     sink: RemoteClientSessionSink,
@@ -569,13 +596,15 @@ export function createRemoteClientSession(
     attachOptions: RemoteClientSessionAttachOptions = {}
   ): RemoteClientSessionAttachResult {
     if (ended) {
-      throw new Error(
-        "RemoteClientSession.attach: this session has already ended and can no longer be attached"
+      throw new TuvrenRuntimeError(
+        "RemoteClientSession.attach: this session has already ended and can no longer be attached",
+        { code: REMOTE_SESSION_ENDED }
       );
     }
     if (attachedSink !== undefined) {
-      throw new Error(
-        "RemoteClientSession.attach: a sink is already attached; a second concurrent attach is a programming error"
+      throw new TuvrenRuntimeError(
+        "RemoteClientSession.attach: a sink is already attached; a second concurrent attach is a programming error",
+        { code: REMOTE_SESSION_ALREADY_ATTACHED }
       );
     }
 

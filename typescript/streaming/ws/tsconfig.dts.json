@@ -18,7 +18,8 @@
       "@tuvren/core/extensions": ["../../core/dist/extensions/index.d.ts"],
       "@tuvren/core/capabilities": ["../../core/dist/capabilities/index.d.ts"],
       "@tuvren/stream-core": ["../core/dist/index.d.ts"],
-      "@tuvren/host-session": ["../../host/session/dist/index.d.ts"]
+      "@tuvren/host-session": ["../../host/session/dist/index.d.ts"],
+      "@tuvren/remote-session": ["../../host/remote-session/dist/index.d.ts"]
     },
     "rootDir": "./src",
     "target": "esnext",

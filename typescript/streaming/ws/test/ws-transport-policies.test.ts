@@ -15,190 +15,47 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type {
-  AttachedClientEndpoint,
-  ClientInvocationEnvelope,
-} from "@tuvren/core/capabilities";
-import type {
-  DuplexSessionBinding,
-  SessionOutboundFrame,
-} from "@tuvren/host-session";
+import type { SessionOutboundFrame } from "@tuvren/host-session";
+import { streamAdapterFixtures } from "@tuvren/stream-core";
+import { createWsSessionTransport } from "../src/lib/ws-session-transport.js";
 import {
-  createReplayBuffer,
-  createSequencedTuvrenStreamEvents,
-  streamAdapterFixtures,
-} from "@tuvren/stream-core";
-import {
-  createWsSessionTransport,
-  type WsSocketSink,
-} from "../src/lib/ws-session-transport.js";
-
-const SESSION_ID = "session-under-test";
-
-const unusedClientEndpoint: AttachedClientEndpoint = {
-  advertisedCapabilities: [],
-  dispatch(): Promise<never> {
-    return Promise.reject(new Error("clientEndpoint.dispatch is unused"));
-  },
-  endpointId: "unused-endpoint",
-};
-
-interface FakeBinding {
-  binding: DuplexSessionBinding;
-  dispatched: unknown[];
-}
-
-/** A structural fake `DuplexSessionBinding` whose outbound stream hangs forever (models an open live connection with no more frames yet). */
-function createFakeBinding(
-  outboundFrames: SessionOutboundFrame[] = []
-): FakeBinding {
-  const dispatched: unknown[] = [];
-  let index = 0;
-  let claimed = false;
-
-  const binding: DuplexSessionBinding = {
-    clientEndpoint: unusedClientEndpoint,
-    currentHandle(): never {
-      throw new Error("currentHandle is unused in these tests");
-    },
-    dispatchInbound(frame: unknown): void {
-      dispatched.push(frame);
-    },
-    outbound(): AsyncIterable<SessionOutboundFrame> {
-      if (claimed) {
-        throw new Error(
-          "outbound() may only be called once per DuplexSessionBinding"
-        );
-      }
-      claimed = true;
-
-      return {
-        [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
-          return {
-            next(): Promise<IteratorResult<SessionOutboundFrame>> {
-              if (index < outboundFrames.length) {
-                const value = outboundFrames[index] as SessionOutboundFrame;
-                index += 1;
-                return Promise.resolve({ done: false, value });
-              }
-
-              return new Promise<IteratorResult<SessionOutboundFrame>>(() => {
-                // Never resolves: models a still-open connection.
-              });
-            },
-            // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution.
-            async return(): Promise<IteratorResult<SessionOutboundFrame>> {
-              index = outboundFrames.length;
-              return { done: true, value: undefined };
-            },
-          };
-        },
-      };
-    },
-    sessionId: SESSION_ID,
-  };
-
-  return { binding, dispatched };
-}
-
-interface FakeSink extends WsSocketSink {
-  closes: Array<{ code: number; reason: string | undefined }>;
-  sent: unknown[];
-}
-
-function createFakeSink(): FakeSink {
-  const sent: unknown[] = [];
-  const closes: Array<{ code: number; reason: string | undefined }> = [];
-
-  return {
-    close(code: number, reason?: string): void {
-      closes.push({ code, reason });
-    },
-    closes,
-    send(data: string): void {
-      sent.push(JSON.parse(data));
-    },
-    sent,
-  };
-}
-
-/** A fake sink whose `bufferedAmount()` is scripted call-by-call; the last scripted value repeats once the script is exhausted. */
-function createScriptedBufferedAmountSink(script: number[]): FakeSink {
-  const sink = createFakeSink();
-  let index = 0;
-
-  sink.bufferedAmount = (): number => {
-    const value = script[Math.min(index, script.length - 1)] as number;
-    index += 1;
-    return value;
-  };
-
-  return sink;
-}
-
-async function flushMicrotasks(): Promise<void> {
-  for (let i = 0; i < 200; i += 1) {
-    await Promise.resolve();
-  }
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
-}
-
-function handshakeMessage(
-  overrides: Partial<{
-    authToken: string;
-    cursor: string;
-    protocolVersion: string;
-    sessionId: string;
-  }> = {}
-): string {
-  return JSON.stringify({
-    kind: "handshake",
-    protocolVersion: "1",
-    ...overrides,
-  });
-}
-
-function clientInvocationOutboundFrame(): SessionOutboundFrame {
-  const invocation: ClientInvocationEnvelope = {
-    callId: "call-1",
-    capabilityId: "capability.example",
-    input: { key: "value" },
-    leaseToken: "lease-1",
-  };
-
-  return {
-    invocation,
-    kind: "client_invocation",
-    protocolVersion: "1",
-    sessionId: SESSION_ID,
-  };
-}
+  clientInvocationOutboundFrame,
+  createFakeBinding,
+  createFakeSessionSink,
+  createFakeSink,
+  createFiniteOutboundIterable,
+  createHangingOutboundIterable,
+  createScriptedBufferedAmountSink,
+  createTestSession,
+  delay,
+  eventOutboundFrame,
+  flushMicrotasks,
+  handshakeMessage,
+  SESSION_ID,
+} from "./session-test-helpers.js";
 
 describe("createWsSessionTransport: option validation", () => {
   test("heartbeat.intervalMs must be a positive finite number", () => {
     const fake = createFakeBinding();
+    const session = createTestSession({ binding: fake.binding });
     expect(() =>
       createWsSessionTransport({
-        binding: fake.binding,
         heartbeat: { intervalMs: 0, timeoutMs: 10 },
+        session,
         sink: createFakeSink(),
       })
     ).toThrow(RangeError);
     expect(() =>
       createWsSessionTransport({
-        binding: fake.binding,
         heartbeat: { intervalMs: -5, timeoutMs: 10 },
+        session,
         sink: createFakeSink(),
       })
     ).toThrow(RangeError);
     expect(() =>
       createWsSessionTransport({
-        binding: fake.binding,
         heartbeat: { intervalMs: Number.POSITIVE_INFINITY, timeoutMs: 10 },
+        session,
         sink: createFakeSink(),
       })
     ).toThrow(RangeError);
@@ -206,17 +63,18 @@ describe("createWsSessionTransport: option validation", () => {
 
   test("heartbeat.timeoutMs must be a positive finite number", () => {
     const fake = createFakeBinding();
+    const session = createTestSession({ binding: fake.binding });
     expect(() =>
       createWsSessionTransport({
-        binding: fake.binding,
         heartbeat: { intervalMs: 10, timeoutMs: 0 },
+        session,
         sink: createFakeSink(),
       })
     ).toThrow(RangeError);
     expect(() =>
       createWsSessionTransport({
-        binding: fake.binding,
         heartbeat: { intervalMs: 10, timeoutMs: Number.NaN },
+        session,
         sink: createFakeSink(),
       })
     ).toThrow(RangeError);
@@ -224,28 +82,31 @@ describe("createWsSessionTransport: option validation", () => {
 
   test("heartbeat.timeoutMs may be less than, equal to, or greater than intervalMs", () => {
     const fakeLess = createFakeBinding();
+    const sessionLess = createTestSession({ binding: fakeLess.binding });
     expect(() =>
       createWsSessionTransport({
-        binding: fakeLess.binding,
         heartbeat: { intervalMs: 20, timeoutMs: 5 },
+        session: sessionLess,
         sink: createFakeSink(),
       })
     ).not.toThrow();
 
     const fakeEqual = createFakeBinding();
+    const sessionEqual = createTestSession({ binding: fakeEqual.binding });
     expect(() =>
       createWsSessionTransport({
-        binding: fakeEqual.binding,
         heartbeat: { intervalMs: 20, timeoutMs: 20 },
+        session: sessionEqual,
         sink: createFakeSink(),
       })
     ).not.toThrow();
 
     const fakeGreater = createFakeBinding();
+    const sessionGreater = createTestSession({ binding: fakeGreater.binding });
     expect(() =>
       createWsSessionTransport({
-        binding: fakeGreater.binding,
         heartbeat: { intervalMs: 20, timeoutMs: 60 },
+        session: sessionGreater,
         sink: createFakeSink(),
       })
     ).not.toThrow();
@@ -253,24 +114,25 @@ describe("createWsSessionTransport: option validation", () => {
 
   test("backpressure.maxBufferedBytes must be a positive finite number", () => {
     const fake = createFakeBinding();
+    const session = createTestSession({ binding: fake.binding });
     expect(() =>
       createWsSessionTransport({
         backpressure: { maxBufferedBytes: 0 },
-        binding: fake.binding,
+        session,
         sink: createFakeSink(),
       })
     ).toThrow(RangeError);
     expect(() =>
       createWsSessionTransport({
         backpressure: { maxBufferedBytes: -1 },
-        binding: fake.binding,
+        session,
         sink: createFakeSink(),
       })
     ).toThrow(RangeError);
     expect(() =>
       createWsSessionTransport({
         backpressure: { maxBufferedBytes: Number.POSITIVE_INFINITY },
-        binding: fake.binding,
+        session,
         sink: createFakeSink(),
       })
     ).toThrow(RangeError);
@@ -282,13 +144,14 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
   const TIMEOUT_MS = 40;
 
   test("a silent peer is closed with 4004 and the timeout warning after no inbound activity", async () => {
-    const fake = createFakeBinding();
+    const fake = createFakeBinding(createHangingOutboundIterable());
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
     const warnings: string[] = [];
     const transport = createWsSessionTransport({
-      binding: fake.binding,
       heartbeat: { intervalMs: INTERVAL_MS, timeoutMs: TIMEOUT_MS },
       onWarning: (warning) => warnings.push(warning.code),
+      session,
       sink,
     });
 
@@ -312,7 +175,8 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
   });
 
   test("a peer that answers every ping with pong keeps the connection open across several intervals", async () => {
-    const fake = createFakeBinding();
+    const fake = createFakeBinding(createHangingOutboundIterable());
+    const session = createTestSession({ binding: fake.binding });
     let transportRef: { ingest(data: string): void } | undefined;
     const sink = createFakeSink();
     const baseSend = sink.send.bind(sink);
@@ -327,8 +191,8 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
     };
 
     const transport = createWsSessionTransport({
-      binding: fake.binding,
       heartbeat: { intervalMs: INTERVAL_MS, timeoutMs: TIMEOUT_MS },
+      session,
       sink,
     });
     transportRef = transport;
@@ -344,14 +208,16 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
     ).length;
     expect(pingCount).toBeGreaterThanOrEqual(3);
     expect(sink.closes).toEqual([]);
+    transport.close();
   });
 
   test("inbound frame traffic (not only pong) counts as heartbeat liveness", async () => {
-    const fake = createFakeBinding();
+    const fake = createFakeBinding(createHangingOutboundIterable());
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
     const transport = createWsSessionTransport({
-      binding: fake.binding,
       heartbeat: { intervalMs: INTERVAL_MS, timeoutMs: TIMEOUT_MS },
+      session,
       sink,
     });
 
@@ -375,11 +241,12 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
   });
 
   test("timers are cleaned up after close: no further sink activity after a wait longer than the interval", async () => {
-    const fake = createFakeBinding();
+    const fake = createFakeBinding(createHangingOutboundIterable());
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
     const transport = createWsSessionTransport({
-      binding: fake.binding,
       heartbeat: { intervalMs: INTERVAL_MS, timeoutMs: TIMEOUT_MS },
+      session,
       sink,
     });
 
@@ -398,12 +265,10 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
   });
 
   test("heartbeat is disabled (no timers run) when the option is omitted", async () => {
-    const fake = createFakeBinding();
+    const fake = createFakeBinding(createHangingOutboundIterable());
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink,
-    });
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
     transport.ingest(handshakeMessage());
@@ -422,15 +287,18 @@ describe("createWsSessionTransport: heartbeat / half-open detection", () => {
 describe("createWsSessionTransport: bounded backpressure", () => {
   test("a live pump send that would overflow the budget closes with 4005 instead of sending it", async () => {
     const invocationFrame = clientInvocationOutboundFrame();
-    const fake = createFakeBinding([invocationFrame]);
+    const fake = createFakeBinding(
+      createFiniteOutboundIterable([invocationFrame])
+    );
+    const session = createTestSession({ binding: fake.binding });
     // handshake_ack read is not scripted against the budget (no pump send
     // yet); the pump's first send reads a bufferedAmount over budget.
     const sink = createScriptedBufferedAmountSink([500]);
     const warnings: string[] = [];
     const transport = createWsSessionTransport({
       backpressure: { maxBufferedBytes: 100 },
-      binding: fake.binding,
       onWarning: (warning) => warnings.push(warning.code),
+      session,
       sink,
     });
 
@@ -458,42 +326,38 @@ describe("createWsSessionTransport: bounded backpressure", () => {
   });
 
   test("a replayed frame sent during handshake that would overflow the budget closes with 4005", async () => {
-    // Prime a replay buffer the same way the "resume path" tests in
-    // ws-session-transport.test.ts do, so the handshake's replay loop has
+    // Prime the session's replay buffer via a first attach/detach cycle,
+    // then reconnect with a cursor so the handshake's replay flush has
     // frames to send.
-    const replayBuffer = createReplayBuffer({ capacity: 100 });
     const sourceEvents = streamAdapterFixtures.completedTurn;
-    const sequenced = createSequencedTuvrenStreamEvents(
-      // biome-ignore lint/suspicious/useAwait: async generators must remain async even when fixture production is synchronous.
-      (async function* () {
-        for (const event of sourceEvents) {
-          yield event;
-        }
-      })()
+    const outboundFrames = sourceEvents.map((event) =>
+      eventOutboundFrame(event)
     );
+    const fake = createFakeBinding(
+      createHangingOutboundIterable(outboundFrames)
+    );
+    const session = createTestSession({ binding: fake.binding });
 
-    const recorded: Array<{ cursor: string }> = [];
-    for await (const frame of sequenced) {
-      replayBuffer.record(frame);
-      recorded.push({ cursor: frame.cursor });
-    }
+    const primerSink = createFakeSessionSink();
+    session.attach(primerSink);
+    await flushMicrotasks();
+    const resumeCursor = primerSink.sent[0]?.cursor as string;
+    session.detach();
 
-    const fake = createFakeBinding([]);
     const sink = createScriptedBufferedAmountSink([500]);
     const warnings: string[] = [];
     const transport = createWsSessionTransport({
       backpressure: { maxBufferedBytes: 100 },
-      binding: fake.binding,
       onWarning: (warning) => warnings.push(warning.code),
-      replayBuffer,
+      session,
       sink,
     });
 
     transport.start();
-    transport.ingest(handshakeMessage({ cursor: recorded[0]?.cursor }));
+    transport.ingest(handshakeMessage({ cursor: resumeCursor }));
     await flushMicrotasks();
 
-    // Only the handshake_ack was sent before the replay loop's own
+    // Only the handshake_ack was sent before the replay flush's own
     // backpressure check tripped.
     expect(sink.sent).toEqual([
       {
@@ -515,11 +379,14 @@ describe("createWsSessionTransport: bounded backpressure", () => {
 
   test("no bufferedAmount capability on the sink disables enforcement even with the option set", async () => {
     const invocationFrame = clientInvocationOutboundFrame();
-    const fake = createFakeBinding([invocationFrame]);
+    const fake = createFakeBinding(
+      createFiniteOutboundIterable([invocationFrame])
+    );
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink(); // no bufferedAmount()
     const transport = createWsSessionTransport({
       backpressure: { maxBufferedBytes: 1 },
-      binding: fake.binding,
+      session,
       sink,
     });
 
@@ -534,12 +401,12 @@ describe("createWsSessionTransport: bounded backpressure", () => {
 
   test("backpressure option absent disables enforcement even when the sink reports a large bufferedAmount", async () => {
     const invocationFrame = clientInvocationOutboundFrame();
-    const fake = createFakeBinding([invocationFrame]);
+    const fake = createFakeBinding(
+      createFiniteOutboundIterable([invocationFrame])
+    );
+    const session = createTestSession({ binding: fake.binding });
     const sink = createScriptedBufferedAmountSink([1_000_000]);
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink,
-    });
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
     transport.ingest(handshakeMessage());
@@ -552,8 +419,7 @@ describe("createWsSessionTransport: bounded backpressure", () => {
 });
 
 describe("createWsSessionTransport: overflow keeps the unsent event frame resumable", () => {
-  test("an event frame recorded before an overflow close replays on reconnect", async () => {
-    const sharedBuffer = createReplayBuffer({ capacity: 32 });
+  test("an event frame recorded before an overflow close replays on the next transport over the SAME session", async () => {
     const eventFrames: SessionOutboundFrame[] =
       streamAdapterFixtures.completedTurn.slice(0, 3).map((event) => ({
         event,
@@ -561,15 +427,16 @@ describe("createWsSessionTransport: overflow keeps the unsent event frame resuma
         protocolVersion: "1",
         sessionId: SESSION_ID,
       }));
+    const fake = createFakeBinding(createHangingOutboundIterable(eventFrames));
+    const session = createTestSession({ binding: fake.binding });
+
     // The first two event sends stay under budget (the handshake ack is not
     // budget-checked); the third event's pre-send check reports an
     // over-budget socket.
     const overflowSink = createScriptedBufferedAmountSink([0, 0, 999]);
-    const first = createFakeBinding(eventFrames);
     const firstTransport = createWsSessionTransport({
       backpressure: { maxBufferedBytes: 100 },
-      binding: first.binding,
-      replayBuffer: sharedBuffer,
+      session,
       sink: overflowSink,
     });
 
@@ -586,7 +453,8 @@ describe("createWsSessionTransport: overflow keeps the unsent event frame resuma
     ]);
 
     // Two live event envelopes made it onto the wire; the third was
-    // sequenced and recorded but never sent.
+    // sequenced and recorded by the session (event recording happens
+    // unconditionally, before the budget check ever runs) but never sent.
     const sentFrames = (
       overflowSink.sent as Array<{ kind: string; cursor?: string }>
     ).filter((message) => message.kind === "frame");
@@ -594,11 +462,9 @@ describe("createWsSessionTransport: overflow keeps the unsent event frame resuma
     expect(sentFrames).toHaveLength(2);
 
     const lastReceivedCursor = sentFrames.at(-1)?.cursor as string;
-    const second = createFakeBinding();
     const secondSink = createFakeSink();
     const secondTransport = createWsSessionTransport({
-      binding: second.binding,
-      replayBuffer: sharedBuffer,
+      session,
       sink: secondSink,
     });
 
@@ -624,6 +490,5 @@ describe("createWsSessionTransport: overflow keeps the unsent event frame resuma
     );
 
     secondTransport.close();
-    firstTransport.close();
   });
 });

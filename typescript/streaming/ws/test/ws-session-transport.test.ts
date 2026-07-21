@@ -15,18 +15,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type {
-  AttachedClientEndpoint,
-  ClientInvocationEnvelope,
-} from "@tuvren/core/capabilities";
-import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import type {
-  DuplexSessionBinding,
-  SessionOutboundFrame,
-} from "@tuvren/host-session";
+import type { SessionOutboundFrame } from "@tuvren/host-session";
 import {
-  createReplayBuffer,
-  createSequencedTuvrenStreamEvents,
   decodeResumeCursor,
   encodeResumeCursor,
   streamAdapterFixtures,
@@ -34,246 +24,29 @@ import {
 import {
   createWsSessionTransport,
   type WsSessionTransport,
-  type WsSocketSink,
 } from "../src/lib/ws-session-transport.js";
-
-const SESSION_ID = "session-under-test";
-
-/** A finite outbound iterable that observes `.return()` calls and closes normally after its frames are exhausted. */
-function createFiniteOutboundIterable(frames: SessionOutboundFrame[]): {
-  iterable: AsyncIterable<SessionOutboundFrame>;
-  returnCallCount: () => number;
-} {
-  let index = 0;
-  let returnCallCount = 0;
-
-  const iterable: AsyncIterable<SessionOutboundFrame> = {
-    [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
-      return {
-        // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution for deterministic test ordering.
-        async next(): Promise<IteratorResult<SessionOutboundFrame>> {
-          if (index >= frames.length) {
-            return { done: true, value: undefined };
-          }
-
-          const value = frames[index] as SessionOutboundFrame;
-          index += 1;
-          return { done: false, value };
-        },
-        // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution for deterministic test ordering.
-        async return(): Promise<IteratorResult<SessionOutboundFrame>> {
-          returnCallCount += 1;
-          index = frames.length;
-          return { done: true, value: undefined };
-        },
-      };
-    },
-  };
-
-  return { iterable, returnCallCount: () => returnCallCount };
-}
-
-/** An outbound iterable that yields its frames and then hangs forever, modeling a still-open live connection until `.return()` releases it. */
-function createHangingOutboundIterable(frames: SessionOutboundFrame[]): {
-  iterable: AsyncIterable<SessionOutboundFrame>;
-  returnCallCount: () => number;
-} {
-  let index = 0;
-  let returnCallCount = 0;
-
-  const iterable: AsyncIterable<SessionOutboundFrame> = {
-    [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
-      return {
-        next(): Promise<IteratorResult<SessionOutboundFrame>> {
-          if (index < frames.length) {
-            const value = frames[index] as SessionOutboundFrame;
-            index += 1;
-            return Promise.resolve({ done: false, value });
-          }
-
-          return new Promise<IteratorResult<SessionOutboundFrame>>(() => {
-            // Never resolves: models an open connection with no more frames yet.
-          });
-        },
-        // biome-ignore lint/suspicious/useAwait: intentionally synchronous resolution for deterministic test ordering.
-        async return(): Promise<IteratorResult<SessionOutboundFrame>> {
-          returnCallCount += 1;
-          return { done: true, value: undefined };
-        },
-      };
-    },
-  };
-
-  return { iterable, returnCallCount: () => returnCallCount };
-}
-
-const unusedClientEndpoint: AttachedClientEndpoint = {
-  advertisedCapabilities: [],
-  dispatch(): Promise<never> {
-    return Promise.reject(new Error("clientEndpoint.dispatch is unused"));
-  },
-  endpointId: "unused-endpoint",
-};
-
-interface FakeBinding {
-  binding: DuplexSessionBinding;
-  claimCount: () => number;
-  dispatched: unknown[];
-  outboundReturnCallCount: () => number;
-}
-
-/** A structural fake `DuplexSessionBinding`: records `outbound()` claims and `dispatchInbound()` calls; the transport only relies on the structural contract. */
-function createFakeBinding(
-  outbound:
-    | {
-        iterable: AsyncIterable<SessionOutboundFrame>;
-        returnCallCount: () => number;
-      }
-    | undefined,
-  sessionId: string = SESSION_ID
-): FakeBinding {
-  let claimCount = 0;
-  const dispatched: unknown[] = [];
-
-  const binding: DuplexSessionBinding = {
-    clientEndpoint: unusedClientEndpoint,
-    currentHandle(): never {
-      throw new Error("currentHandle is unused in these tests");
-    },
-    dispatchInbound(frame: unknown): void {
-      dispatched.push(frame);
-    },
-    outbound(): AsyncIterable<SessionOutboundFrame> {
-      claimCount += 1;
-      if (claimCount > 1) {
-        throw new Error(
-          "outbound() may only be called once per DuplexSessionBinding"
-        );
-      }
-
-      return outbound?.iterable ?? emptyAsyncIterable();
-    },
-    sessionId,
-  };
-
-  return {
-    binding,
-    claimCount: () => claimCount,
-    dispatched,
-    outboundReturnCallCount: () => outbound?.returnCallCount() ?? 0,
-  };
-}
-
-function emptyAsyncIterable(): AsyncIterable<SessionOutboundFrame> {
-  return {
-    [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
-      return {
-        next(): Promise<IteratorResult<SessionOutboundFrame>> {
-          return Promise.resolve({ done: true, value: undefined });
-        },
-      };
-    },
-  };
-}
-
-interface FakeSink extends WsSocketSink {
-  closes: Array<{ code: number; reason: string | undefined }>;
-  sent: unknown[];
-}
-
-function createFakeSink(): FakeSink {
-  const sent: unknown[] = [];
-  const closes: Array<{ code: number; reason: string | undefined }> = [];
-
-  return {
-    close(code: number, reason?: string): void {
-      closes.push({ code, reason });
-    },
-    closes,
-    send(data: string): void {
-      sent.push(JSON.parse(data));
-    },
-    sent,
-  };
-}
-
-/**
- * Flushes the internal ingest promise chain so async processing (including a
- * resolved `authorize`, the handshake/replay sends, and the outbound pump's
- * per-frame sequencer round-trip) completes before assertions run. Each
- * pumped frame costs a handful of microtask hops, so this drains a generous
- * number of microtask turns plus one macrotask turn for good measure.
- */
-async function flushMicrotasks(): Promise<void> {
-  for (let i = 0; i < 500; i += 1) {
-    await Promise.resolve();
-  }
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-}
-
-function handshakeMessage(
-  overrides: Partial<{
-    authToken: string;
-    cursor: string;
-    protocolVersion: string;
-    sessionId: string;
-  }> = {}
-): string {
-  return JSON.stringify({
-    kind: "handshake",
-    protocolVersion: "1",
-    ...overrides,
-  });
-}
-
-function eventOutboundFrame(
-  event: TuvrenStreamEvent,
-  sessionId: string = SESSION_ID
-): SessionOutboundFrame {
-  return {
-    event,
-    kind: "event",
-    protocolVersion: "1",
-    sessionId,
-  };
-}
-
-function clientInvocationOutboundFrame(
-  sessionId: string = SESSION_ID
-): SessionOutboundFrame {
-  const invocation: ClientInvocationEnvelope = {
-    callId: "call-1",
-    capabilityId: "capability.example",
-    input: { key: "value" },
-    leaseToken: "lease-1",
-  };
-
-  return {
-    invocation,
-    kind: "client_invocation",
-    protocolVersion: "1",
-    sessionId,
-  };
-}
+import {
+  clientInvocationOutboundFrame,
+  createFakeBinding,
+  createFakeSessionSink,
+  createFakeSink,
+  createFiniteOutboundIterable,
+  createHangingOutboundIterable,
+  createRealBinding,
+  createTestSession,
+  eventOutboundFrame,
+  type FakeSink,
+  flushMicrotasks,
+  handshakeMessage,
+  SESSION_ID,
+} from "./session-test-helpers.js";
 
 describe("createWsSessionTransport: claim and lifecycle", () => {
-  test("start() claims the outbound stream exactly once, synchronously", () => {
-    const { iterable } = createHangingOutboundIterable([]);
-    const fake = createFakeBinding({ iterable, returnCallCount: () => 0 });
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink: createFakeSink(),
-    });
-
-    expect(fake.claimCount()).toBe(0);
-    transport.start();
-    expect(fake.claimCount()).toBe(1);
-  });
-
   test("a second start() throws", () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const transport = createWsSessionTransport({
-      binding: fake.binding,
+      session,
       sink: createFakeSink(),
     });
 
@@ -283,31 +56,57 @@ describe("createWsSessionTransport: claim and lifecycle", () => {
 
   test("ingest() before start() throws", () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const transport = createWsSessionTransport({
-      binding: fake.binding,
+      session,
       sink: createFakeSink(),
     });
 
     expect(() => transport.ingest(handshakeMessage())).toThrow();
   });
 
-  test("transport.close() releases the outbound iterator", async () => {
-    const outbound = createHangingOutboundIterable([]);
-    const fake = createFakeBinding(outbound);
+  test("transport.close() before any successful handshake never touches the session", () => {
+    const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink,
-    });
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
-    expect(outbound.returnCallCount()).toBe(0);
-
     transport.close();
+
+    expect(sink.closes).toEqual([{ code: 1000, reason: undefined }]);
+    // A session that was never attached has nothing to detach from, and
+    // detaching an unattached session is a documented no-op regardless, so
+    // the only observable fact this test pins is that close() before a
+    // handshake never throws and closes the socket normally.
+    expect(session.isEnded()).toBe(false);
+  });
+
+  test("transport.close() after a successful handshake detaches the attached sink from the session", async () => {
+    const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({
+      binding: fake.binding,
+      disconnectGraceMs: 10_000,
+    });
+    const sink = createFakeSink();
+    const transport = createWsSessionTransport({ session, sink });
+
+    transport.start();
+    transport.ingest(handshakeMessage());
     await flushMicrotasks();
 
-    expect(outbound.returnCallCount()).toBe(1);
+    transport.close();
+
     expect(sink.closes).toEqual([{ code: 1000, reason: undefined }]);
+    // detach() starts the grace window rather than ending the session
+    // outright (ADR-063 decision 4) — the transport must never end/close
+    // the session itself.
+    expect(session.isEnded()).toBe(false);
+
+    // A second attach (as a later transport would perform on reattach)
+    // succeeds, proving the prior sink was actually released rather than
+    // left dangling as "still attached".
+    expect(() => session.attach(createFakeSessionSink())).not.toThrow();
   });
 });
 
@@ -315,24 +114,21 @@ describe("createWsSessionTransport: happy path", () => {
   async function startHandshakedTransport(
     outboundFrames: SessionOutboundFrame[]
   ): Promise<{
-    fake: FakeBinding;
     sink: FakeSink;
     transport: WsSessionTransport;
   }> {
     const fake = createFakeBinding(
       createFiniteOutboundIterable(outboundFrames)
     );
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink,
-    });
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
     transport.ingest(handshakeMessage());
     await flushMicrotasks();
 
-    return { fake, sink, transport };
+    return { sink, transport };
   }
 
   test("handshake with no cursor acks resumeStatus none", async () => {
@@ -386,97 +182,180 @@ describe("createWsSessionTransport: happy path", () => {
     expect(frameMessage.frame).toEqual(invocationFrame);
   });
 
-  test("normal outbound completion closes with 1000", async () => {
-    const { sink } = await startHandshakedTransport([]);
+  test("the underlying session ending closes the currently attached socket: a host-composition responsibility via onEnded", async () => {
+    // ADR-063: the transport no longer owns the outbound pump, so it has no
+    // intrinsic signal for "the turn is over, close the socket normally".
+    // That signal is now RemoteClientSessionOptions.onEnded, and it is the
+    // HOST's job (not the transport's) to close whichever transport is
+    // currently attached when it fires. This test pins that composition
+    // contract rather than any transport-internal behavior.
+    const fake = createFakeBinding(createFiniteOutboundIterable([]));
+    let currentTransport: WsSessionTransport | undefined;
+    const session = createTestSession({
+      binding: fake.binding,
+      onEnded: (reason) => currentTransport?.close(1000, reason),
+    });
+    const sink = createFakeSink();
+    const transport = createWsSessionTransport({ session, sink });
+    currentTransport = transport;
 
-    expect(sink.closes).toEqual([{ code: 1000, reason: "session ended" }]);
+    transport.start();
+    transport.ingest(handshakeMessage());
+    await flushMicrotasks();
+
+    expect(sink.closes).toEqual([
+      {
+        code: 1000,
+        reason: "the underlying duplex session binding's outbound stream ended",
+      },
+    ]);
   });
 });
 
-describe("createWsSessionTransport: resume path", () => {
-  test("resumed status replays retained frames after the ack and before live frames", async () => {
-    const replayBuffer = createReplayBuffer({ capacity: 100 });
+describe("createWsSessionTransport: resume and redelivery across a reconnect", () => {
+  test("a second transport attaching to the SAME session after the first closes replays retained events with continuous sequence numbering", async () => {
     const sourceEvents = streamAdapterFixtures.completedTurn;
-
-    // Feed the fixture through the same kind of sequencer the transport uses
-    // internally, recording every sequenced frame into the replay buffer —
-    // mirroring the ADR-061 one-sequencer-instance wiring rule.
-    const sequenced = createSequencedTuvrenStreamEvents(
-      // biome-ignore lint/suspicious/useAwait: async generators must remain async even when fixture production is synchronous.
-      (async function* () {
-        for (const event of sourceEvents) {
-          yield event;
-        }
-      })()
+    const outboundFrames = sourceEvents.map((event) =>
+      eventOutboundFrame(event)
     );
 
-    const recorded: Array<{ cursor: string; sequence: number }> = [];
-    for await (const frame of sequenced) {
-      replayBuffer.record(frame);
-      recorded.push({ cursor: frame.cursor, sequence: frame.sequence });
-    }
-
-    // Resume from partway through the turn (after the second recorded frame).
-    const resumeCursor = recorded[1]?.cursor as string;
-
-    const liveEvent: TuvrenStreamEvent = {
-      threadId: "thread-live",
-      timestamp: 100,
-      turnId: "turn-live",
-      type: "turn.start",
-    };
-    const outboundFrames = [eventOutboundFrame(liveEvent)];
-
+    // A hanging (still-open) outbound iterable: the underlying turn is
+    // still live after these events, so the session does not permanently
+    // end once they drain — exactly the "socket dropped mid-turn" scenario
+    // a reconnect test needs.
     const fake = createFakeBinding(
-      createFiniteOutboundIterable(outboundFrames)
+      createHangingOutboundIterable(outboundFrames)
     );
-    const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      replayBuffer,
-      sink,
+    const session = createTestSession({ binding: fake.binding });
+
+    const sinkOne = createFakeSink();
+    const transportOne = createWsSessionTransport({
+      session,
+      sink: sinkOne,
     });
 
-    transport.start();
-    transport.ingest(handshakeMessage({ cursor: resumeCursor }));
+    transportOne.start();
+    transportOne.ingest(handshakeMessage());
     await flushMicrotasks();
 
-    expect(sink.sent[0]).toEqual({
+    const sentFrameMessages = sinkOne.sent.slice(1) as Array<{
+      cursor: string;
+      frame: SessionOutboundFrame;
+      kind: "frame";
+    }>;
+    expect(sentFrameMessages).toHaveLength(outboundFrames.length);
+
+    // Close the first socket (not the session) partway through, then attach
+    // a second transport to the SAME session, resuming from a cursor
+    // partway through what the first socket already received.
+    transportOne.close();
+
+    const resumeCursor = sentFrameMessages[1]?.cursor as string;
+    const expectedTail = sentFrameMessages.slice(2);
+
+    const sinkTwo = createFakeSink();
+    const transportTwo = createWsSessionTransport({
+      session,
+      sink: sinkTwo,
+    });
+
+    transportTwo.start();
+    transportTwo.ingest(handshakeMessage({ cursor: resumeCursor }));
+    await flushMicrotasks();
+
+    expect(sinkTwo.sent[0]).toEqual({
       kind: "handshake_ack",
       protocolVersion: "1",
       resumeStatus: "resumed",
       sessionId: SESSION_ID,
     });
 
-    // Replayed frames (strictly after the cursor position) come next, in
-    // order, before the live frame.
-    const replayedCount = sourceEvents.length - 2;
-    const replayedMessages = sink.sent.slice(1, 1 + replayedCount) as Array<{
+    const replayedMessages = sinkTwo.sent.slice(1) as Array<{
       cursor: string;
-      frame: { kind: string };
+      frame: SessionOutboundFrame;
       kind: "frame";
     }>;
 
-    expect(replayedMessages).toHaveLength(replayedCount);
+    expect(replayedMessages).toHaveLength(expectedTail.length);
     replayedMessages.forEach((message, index) => {
-      expect(message.cursor).toBe(recorded[2 + index]?.cursor);
-      expect(message.frame.kind).toBe("event");
+      // Continuous numbering: the replayed sequence on the SECOND socket
+      // picks up exactly where the FIRST socket's own cursors left off —
+      // there is only ever one sequencer (ADR-063), owned by the session,
+      // not recreated per transport.
+      expect(decodeResumeCursor(message.cursor)?.sequence).toBe(
+        decodeResumeCursor(expectedTail[index]?.cursor as string)?.sequence
+      );
+      expect(message.cursor).toBe(expectedTail[index]?.cursor);
+      expect(message.frame).toEqual(expectedTail[index]?.frame);
     });
 
-    const liveMessage = sink.sent.at(-1) as {
-      frame: SessionOutboundFrame;
-      kind: "frame";
-    };
-    expect(liveMessage.frame).toEqual(outboundFrames[0]);
+    transportTwo.close();
   });
 
-  test("a cursor with no replay buffer configured resolves resumeStatus out-of-window", async () => {
-    const fake = createFakeBinding(createFiniteOutboundIterable([]));
-    const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink,
+  test("an unanswered client_invocation is redelivered by the session through the new transport on reattach", async () => {
+    const { binding } = createRealBinding();
+    const session = createTestSession({
+      binding,
+      disconnectGraceMs: 10_000,
+      dispatchTimeoutMs: 10_000,
     });
+
+    const sinkOne = createFakeSink();
+    const transportOne = createWsSessionTransport({
+      session,
+      sink: sinkOne,
+    });
+
+    transportOne.start();
+    transportOne.ingest(handshakeMessage());
+    await flushMicrotasks();
+
+    const dispatchPromise = binding.clientEndpoint.dispatch({
+      callId: "reconnect-call-1",
+      capabilityId: "capability.reconnect",
+      input: {},
+      leaseToken: "reconnect-lease-1",
+    });
+    dispatchPromise.catch(() => undefined);
+    await flushMicrotasks();
+
+    const invocationMessages = (
+      sinkOne.sent as Array<{ frame?: { kind: string } }>
+    ).filter((message) => message.frame?.kind === "client_invocation");
+    expect(invocationMessages).toHaveLength(1);
+
+    // The socket drops before a client_result ever arrives: close the first
+    // transport (detaching, not ending, the session) and reattach with a
+    // second transport over the SAME session.
+    transportOne.close();
+
+    const sinkTwo = createFakeSink();
+    const transportTwo = createWsSessionTransport({
+      session,
+      sink: sinkTwo,
+    });
+
+    transportTwo.start();
+    transportTwo.ingest(handshakeMessage());
+    await flushMicrotasks();
+
+    const redeliveredMessages = (
+      sinkTwo.sent as Array<{ frame?: { invocation?: { callId?: string } } }>
+    ).filter((message) => message.frame?.invocation !== undefined);
+
+    expect(redeliveredMessages).toHaveLength(1);
+    expect(redeliveredMessages[0]?.frame?.invocation?.callId).toBe(
+      "reconnect-call-1"
+    );
+
+    transportTwo.close();
+  });
+
+  test("a malformed opaque cursor resolves resumeStatus out-of-window", async () => {
+    const fake = createFakeBinding(createFiniteOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
+    const sink = createFakeSink();
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
     transport.ingest(handshakeMessage({ cursor: "any-opaque-cursor" }));
@@ -490,20 +369,21 @@ describe("createWsSessionTransport: resume path", () => {
     });
   });
 
-  test("a foreign-turn cursor with a replay buffer resolves resumeStatus unknown-turn", async () => {
-    const replayBuffer = createReplayBuffer({ capacity: 100 });
-    const sequenced = createSequencedTuvrenStreamEvents(
-      // biome-ignore lint/suspicious/useAwait: async generators must remain async even when fixture production is synchronous.
-      (async function* () {
-        for (const event of streamAdapterFixtures.completedTurn) {
-          yield event;
-        }
-      })()
+  test("a foreign-turn cursor resolves resumeStatus unknown-turn", async () => {
+    const sourceEvents = streamAdapterFixtures.completedTurn;
+    const outboundFrames = sourceEvents.map((event) =>
+      eventOutboundFrame(event)
     );
+    const fake = createFakeBinding(
+      createHangingOutboundIterable(outboundFrames)
+    );
+    const session = createTestSession({ binding: fake.binding });
 
-    for await (const frame of sequenced) {
-      replayBuffer.record(frame);
-    }
+    // Drive the session's own sequencer/replay buffer by attaching once.
+    const primerSink = createFakeSessionSink();
+    session.attach(primerSink);
+    await flushMicrotasks();
+    session.detach();
 
     const foreignCursor = encodeResumeCursor({
       sequence: 0,
@@ -511,13 +391,8 @@ describe("createWsSessionTransport: resume path", () => {
       v: 1,
     });
 
-    const fake = createFakeBinding(createFiniteOutboundIterable([]));
     const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      replayBuffer,
-      sink,
-    });
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
     transport.ingest(handshakeMessage({ cursor: foreignCursor }));
@@ -535,11 +410,9 @@ describe("createWsSessionTransport: resume path", () => {
 describe("createWsSessionTransport: handshake close codes", () => {
   test("a non-handshake first message closes with 4000 and stops further processing", async () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink,
-    });
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
     transport.ingest(JSON.stringify({ kind: "ping" }));
@@ -562,11 +435,9 @@ describe("createWsSessionTransport: handshake close codes", () => {
 
   test("an unsupported protocolVersion closes with 4001", async () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink,
-    });
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
     transport.ingest(handshakeMessage({ protocolVersion: "2" }));
@@ -579,11 +450,9 @@ describe("createWsSessionTransport: handshake close codes", () => {
 
   test("a mismatched sessionId closes with 4002", async () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink,
-    });
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
     transport.ingest(handshakeMessage({ sessionId: "wrong-session" }));
@@ -597,15 +466,74 @@ describe("createWsSessionTransport: handshake close codes", () => {
     ]);
   });
 
+  test("a handshake against a permanently-ended session closes with 4002", async () => {
+    const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
+    session.close("host is done with this session");
+
+    const sink = createFakeSink();
+    const transport = createWsSessionTransport({ session, sink });
+
+    transport.start();
+    transport.ingest(handshakeMessage());
+    await flushMicrotasks();
+
+    expect(sink.closes).toEqual([
+      {
+        code: 4002,
+        reason:
+          "this remote client session has already ended and can no longer be attached",
+      },
+    ]);
+  });
+
+  test("a second concurrent handshake for an already-attached session closes the NEW socket with 4000 and leaves the first attached", async () => {
+    const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
+
+    const sinkOne = createFakeSink();
+    const transportOne = createWsSessionTransport({
+      session,
+      sink: sinkOne,
+    });
+    transportOne.start();
+    transportOne.ingest(handshakeMessage());
+    await flushMicrotasks();
+
+    const sinkTwo = createFakeSink();
+    const transportTwo = createWsSessionTransport({
+      session,
+      sink: sinkTwo,
+    });
+    transportTwo.start();
+    transportTwo.ingest(handshakeMessage());
+    await flushMicrotasks();
+
+    expect(sinkTwo.closes).toEqual([
+      {
+        code: 4000,
+        reason:
+          "a live sink is already attached to this session; a concurrent second handshake cannot be honored",
+      },
+    ]);
+    // The first connection is untouched: no close, and its handshake_ack
+    // remains the only message it ever received.
+    expect(sinkOne.closes).toEqual([]);
+    expect(sinkOne.sent).toHaveLength(1);
+
+    transportOne.close();
+  });
+
   test("authorize resolving false (async) closes with 4003", async () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
     const transport = createWsSessionTransport({
       authorize: async (authToken) => {
         await Promise.resolve();
         return authToken === "the-right-token";
       },
-      binding: fake.binding,
+      session,
       sink,
     });
 
@@ -621,13 +549,14 @@ describe("createWsSessionTransport: handshake close codes", () => {
 
   test("authorize resolving true (async) proceeds to a normal handshake ack", async () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
     const transport = createWsSessionTransport({
       authorize: async (authToken) => {
         await Promise.resolve();
         return authToken === "the-right-token";
       },
-      binding: fake.binding,
+      session,
       sink,
     });
 
@@ -647,16 +576,14 @@ describe("createWsSessionTransport: handshake close codes", () => {
 
 describe("createWsSessionTransport: post-handshake inbound routing", () => {
   async function startHandshakedTransport(): Promise<{
-    fake: FakeBinding;
+    fake: ReturnType<typeof createFakeBinding>;
     sink: FakeSink;
     transport: WsSessionTransport;
   }> {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      sink,
-    });
+    const transport = createWsSessionTransport({ session, sink });
 
     transport.start();
     transport.ingest(handshakeMessage());
@@ -665,7 +592,7 @@ describe("createWsSessionTransport: post-handshake inbound routing", () => {
     return { fake, sink, transport };
   }
 
-  test("a frame envelope's inner frame reaches dispatchInbound verbatim", async () => {
+  test("a frame envelope's inner frame reaches the binding verbatim", async () => {
     const { fake, transport } = await startHandshakedTransport();
     const innerFrame = {
       correlationId: "corr-1",
@@ -680,7 +607,7 @@ describe("createWsSessionTransport: post-handshake inbound routing", () => {
     expect(fake.dispatched).toEqual([innerFrame]);
   });
 
-  test("a malformed post-handshake message reaches dispatchInbound and does not close the socket", async () => {
+  test("a malformed post-handshake message reaches the binding and does not close the socket", async () => {
     const { fake, sink, transport } = await startHandshakedTransport();
 
     transport.ingest("{not json");
@@ -690,7 +617,7 @@ describe("createWsSessionTransport: post-handshake inbound routing", () => {
     expect(sink.closes).toEqual([]);
   });
 
-  test("an unrecognized-kind post-handshake message reaches dispatchInbound and does not close the socket", async () => {
+  test("an unrecognized-kind post-handshake message reaches the binding and does not close the socket", async () => {
     const { fake, sink, transport } = await startHandshakedTransport();
     const raw = { field: "value", kind: "not-a-real-kind" };
 
@@ -722,109 +649,10 @@ describe("createWsSessionTransport: post-handshake inbound routing", () => {
   });
 });
 
-describe("createWsSessionTransport: M6 review carry-overs", () => {
-  test("a second transport over the same replay buffer resumes with the pump-recorded tail (pins runOutboundPump's record() call)", async () => {
-    // Deliberately do NOT pre-record anything manually: the replay buffer is
-    // fed only by the first transport's own outbound pump, so deleting the
-    // pump's `options.replayBuffer?.record(envelope)` call must fail this
-    // test.
-    const replayBuffer = createReplayBuffer({ capacity: 100 });
-    const sourceEvents = streamAdapterFixtures.completedTurn;
-    const outboundFrames = sourceEvents.map((event) =>
-      eventOutboundFrame(event)
-    );
-
-    const fakeOne = createFakeBinding(
-      createFiniteOutboundIterable(outboundFrames)
-    );
-    const sinkOne = createFakeSink();
-    const transportOne = createWsSessionTransport({
-      binding: fakeOne.binding,
-      replayBuffer,
-      sink: sinkOne,
-    });
-
-    transportOne.start();
-    transportOne.ingest(handshakeMessage());
-    await flushMicrotasks();
-
-    const sentFrameMessages = sinkOne.sent.slice(1) as Array<{
-      cursor: string;
-      frame: SessionOutboundFrame;
-      kind: "frame";
-    }>;
-    expect(sentFrameMessages).toHaveLength(outboundFrames.length);
-
-    // Resume from partway through the first transport's own sent envelopes.
-    const resumeCursor = sentFrameMessages[1]?.cursor as string;
-    const expectedTail = sentFrameMessages.slice(2);
-
-    const fakeTwo = createFakeBinding(createFiniteOutboundIterable([]));
-    const sinkTwo = createFakeSink();
-    const transportTwo = createWsSessionTransport({
-      binding: fakeTwo.binding,
-      replayBuffer,
-      sink: sinkTwo,
-    });
-
-    transportTwo.start();
-    transportTwo.ingest(handshakeMessage({ cursor: resumeCursor }));
-    await flushMicrotasks();
-
-    expect(sinkTwo.sent[0]).toEqual({
-      kind: "handshake_ack",
-      protocolVersion: "1",
-      resumeStatus: "resumed",
-      sessionId: SESSION_ID,
-    });
-
-    const replayedMessages = sinkTwo.sent.slice(1) as Array<{
-      cursor: string;
-      frame: SessionOutboundFrame;
-      kind: "frame";
-    }>;
-
-    expect(replayedMessages).toHaveLength(expectedTail.length);
-    replayedMessages.forEach((message, index) => {
-      expect(message.cursor).toBe(expectedTail[index]?.cursor);
-      expect(message.frame).toEqual(expectedTail[index]?.frame);
-    });
-  });
-
-  test("an outbound iterable whose next() rejects reports ws_transport_outbound_pump_failed and closes with 1011", async () => {
-    const failure = new Error("outbound iterable exploded");
-    const rejectingIterable: AsyncIterable<SessionOutboundFrame> = {
-      [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
-        return {
-          next(): Promise<IteratorResult<SessionOutboundFrame>> {
-            return Promise.reject(failure);
-          },
-        };
-      },
-    };
-
-    const fake = createFakeBinding({
-      iterable: rejectingIterable,
-      returnCallCount: () => 0,
-    });
-    const sink = createFakeSink();
-    const warnings: string[] = [];
-    const transport = createWsSessionTransport({
-      binding: fake.binding,
-      onWarning: (warning) => warnings.push(warning.code),
-      sink,
-    });
-
-    transport.start();
-    transport.ingest(handshakeMessage());
-    await flushMicrotasks();
-
-    expect(warnings).toContain("ws_transport_outbound_pump_failed");
-    expect(sink.closes).toEqual([{ code: 1011, reason: "internal error" }]);
-  });
-
-  test("ingest() serializes a slow async authorize: dispatchInbound sees nothing until authorize resolves, the ack is sent[0], and the frame dispatches only after it", async () => {
+describe("createWsSessionTransport: ingest ordering", () => {
+  test("ingest() serializes a slow async authorize: dispatch sees nothing until authorize resolves, the ack is sent[0], and the frame dispatches only after it", async () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
     const sink = createFakeSink();
     let resolveAuthorize: (authorized: boolean) => void = () => undefined;
     const transport = createWsSessionTransport({
@@ -832,7 +660,7 @@ describe("createWsSessionTransport: M6 review carry-overs", () => {
         new Promise<boolean>((resolve) => {
           resolveAuthorize = resolve;
         }),
-      binding: fake.binding,
+      session,
       sink,
     });
 

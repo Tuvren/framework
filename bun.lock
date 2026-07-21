@@ -352,6 +352,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@tuvren/host-session": "workspace:*",
+        "@tuvren/remote-session": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
       },
       "devDependencies": {

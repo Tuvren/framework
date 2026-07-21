@@ -352,10 +352,28 @@ describe("createRemoteClientSession", () => {
     );
   });
 
-  test("a second concurrent attach is a programming error", () => {
+  test("a second concurrent attach is a programming error with a stable code, as is attaching to an ended session", () => {
     const { session } = setup();
     session.attach(createFakeSink());
-    expect(() => session.attach(createFakeSink())).toThrow();
+
+    let doubleAttachError: unknown;
+    try {
+      session.attach(createFakeSink());
+    } catch (error) {
+      doubleAttachError = error;
+    }
+    expect(doubleAttachError).toMatchObject({
+      code: "remote_session_already_attached",
+    });
+
+    session.close();
+    let endedError: unknown;
+    try {
+      session.attach(createFakeSink());
+    } catch (error) {
+      endedError = error;
+    }
+    expect(endedError).toMatchObject({ code: "remote_session_ended" });
   });
 
   test("cursor replay across a reconnect delivers the missed sequenced events from the shared buffer", async () => {

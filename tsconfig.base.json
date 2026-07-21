@@ -58,6 +58,9 @@
       "@tuvren/runtime": ["./typescript/runtime/src/index.ts"],
       "@tuvren/repl-host": ["./typescript/host/repl/src/index.ts"],
       "@tuvren/host-session": ["./typescript/host/session/src/index.ts"],
+      "@tuvren/remote-session": [
+        "./typescript/host/remote-session/src/index.ts"
+      ],
       "@tuvren/runner-react": ["./typescript/runners/react/src/index.ts"],
       "@tuvren/provider-bridge-ai-sdk": [
         "./typescript/providers/bridge-ai-sdk/src/index.ts"

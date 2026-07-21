@@ -48,3 +48,7 @@ export type { RemoteClientSessionResumeStatus } from "./lib/remote-client-sessio
 export type { RemoteSessionClock } from "./lib/remote-client-session.js";
 /** @experimental */
 export { createRemoteClientSession } from "./lib/remote-client-session.js";
+/** @experimental */
+export { REMOTE_SESSION_ALREADY_ATTACHED } from "./lib/remote-client-session.js";
+/** @experimental */
+export { REMOTE_SESSION_ENDED } from "./lib/remote-client-session.js";

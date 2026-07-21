@@ -12,6 +12,7 @@
     "smoke/**/*.ts",
     "../../testkit/src/**/*.ts",
     "../core/src/**/*.ts",
-    "../../host/session/src/**/*.ts"
+    "../../host/session/src/**/*.ts",
+    "../../host/remote-session/src/**/*.ts"
   ]
 }
