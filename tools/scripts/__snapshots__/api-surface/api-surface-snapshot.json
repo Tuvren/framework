@@ -252,6 +252,11 @@
         "signature": "\"capability_binding_unavailable\"",
         "stability": "stable"
       },
+      "CAPABILITY_DISPATCH_TIMEOUT": {
+        "kind": "value",
+        "signature": "\"capability_dispatch_timeout\"",
+        "stability": "stable"
+      },
       "CAPABILITY_RESULT_STALE": {
         "kind": "value",
         "signature": "\"capability_result_stale\"",
@@ -270,6 +275,11 @@
       "TOOL_INVOCATION_RATE_LIMITED": {
         "kind": "value",
         "signature": "\"tool_invocation_rate_limited\"",
+        "stability": "stable"
+      },
+      "TOOL_RESULT_SANITIZATION_FAILED": {
+        "kind": "value",
+        "signature": "\"tool_result_sanitization_failed\"",
         "stability": "stable"
       },
       "TOOL_RESULT_VALIDATION_FAILED": {
@@ -508,7 +518,7 @@
       },
       "AgentConfig": {
         "kind": "type",
-        "signature": "export interface AgentConfig { capabilityPolicyEngine?: CapabilityPolicyEngine; clientEndpointBoundary?: ClientEndpointBoundary; clientEndpoints?: AttachedClientEndpoint[]; contextPolicy?: ContextPolicy; extensions?: TuvrenExtension[]; loopPolicy?: LoopPolicy; maxIterations?: number; maxParallelToolCalls?: number; model?: string | TuvrenProvider; name: string; policyContextInputs?: CapabilityPolicyContextInputs; providerMediatedTools?: ProviderMediatedToolConfig[]; providerNativeTools?: ProviderNativeToolDeclaration[]; responseFormat?: StructuredOutputRequest; sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown; }>; serverExecution?: ServerExecutionConfig; systemPrompt?: string; tools?: TuvrenToolDefinition[]; }",
+        "signature": "export interface AgentConfig { capabilityPolicyEngine?: CapabilityPolicyEngine; clientEndpointBoundary?: ClientEndpointBoundary; clientEndpoints?: AttachedClientEndpoint[]; contextPolicy?: ContextPolicy; extensions?: TuvrenExtension[]; loopPolicy?: LoopPolicy; maxIterations?: number; maxParallelToolCalls?: number; model?: string | TuvrenProvider; name: string; policyContextInputs?: CapabilityPolicyContextInputs; providerMediatedTools?: ProviderMediatedToolConfig[]; providerNativeTools?: ProviderNativeToolDeclaration[]; responseFormat?: StructuredOutputRequest; sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown; }>; sanitizeToolResult?: SanitizeToolResultHook; serverExecution?: ServerExecutionConfig; systemPrompt?: string; tools?: TuvrenToolDefinition[]; }",
         "stability": "stable"
       },
       "AroundModelContext": {
@@ -699,6 +709,16 @@
       "RuntimeResolution": {
         "kind": "type",
         "signature": "export type RuntimeResolution = { type: \"continue_iteration\"; } | { type: \"end_turn\"; reason: string; } | { type: \"pause\"; reason: string; approval: ApprovalRequest; } | { type: \"handoff\"; targetAgent: string; contextPlan: HandoffContextPlan; } | { type: \"fail\"; error: Error; fatality: \"hard\" | \"soft\"; };",
+        "stability": "stable"
+      },
+      "SanitizeToolResultContext": {
+        "kind": "type",
+        "signature": "export interface SanitizeToolResultContext { callId: string; executionClass?: ExecutionClass; toolName: string; }",
+        "stability": "stable"
+      },
+      "SanitizeToolResultHook": {
+        "kind": "type",
+        "signature": "export type SanitizeToolResultHook = (result: ToolResultPart, ctx: SanitizeToolResultContext) => ToolResultPart;",
         "stability": "stable"
       },
       "ServerExecutionConfig": {
@@ -1456,7 +1476,7 @@
       },
       "AgentConfig": {
         "kind": "type",
-        "signature": "export interface AgentConfig { capabilityPolicyEngine?: CapabilityPolicyEngine; clientEndpointBoundary?: ClientEndpointBoundary; clientEndpoints?: AttachedClientEndpoint[]; contextPolicy?: ContextPolicy; extensions?: TuvrenExtension[]; loopPolicy?: LoopPolicy; maxIterations?: number; maxParallelToolCalls?: number; model?: string | TuvrenProvider; name: string; policyContextInputs?: CapabilityPolicyContextInputs; providerMediatedTools?: ProviderMediatedToolConfig[]; providerNativeTools?: ProviderNativeToolDeclaration[]; responseFormat?: StructuredOutputRequest; sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown; }>; serverExecution?: ServerExecutionConfig; systemPrompt?: string; tools?: TuvrenToolDefinition[]; }",
+        "signature": "export interface AgentConfig { capabilityPolicyEngine?: CapabilityPolicyEngine; clientEndpointBoundary?: ClientEndpointBoundary; clientEndpoints?: AttachedClientEndpoint[]; contextPolicy?: ContextPolicy; extensions?: TuvrenExtension[]; loopPolicy?: LoopPolicy; maxIterations?: number; maxParallelToolCalls?: number; model?: string | TuvrenProvider; name: string; policyContextInputs?: CapabilityPolicyContextInputs; providerMediatedTools?: ProviderMediatedToolConfig[]; providerNativeTools?: ProviderNativeToolDeclaration[]; responseFormat?: StructuredOutputRequest; sandboxExecutors?: Map<string, { execute(input: unknown, context: ToolExecutionContext): Promise<unknown> | unknown; }>; sanitizeToolResult?: SanitizeToolResultHook; serverExecution?: ServerExecutionConfig; systemPrompt?: string; tools?: TuvrenToolDefinition[]; }",
         "stability": "stable"
       },
       "ApprovalRequest": {
@@ -2036,6 +2056,24 @@
       "bump": "baseline",
       "changes": ["initial freeze baseline"],
       "recordedAt": "2026-07-11T05:05:26.408Z"
+    },
+    {
+      "bump": "minor",
+      "changes": [
+        "@tuvren/core/errors#CAPABILITY_DISPATCH_TIMEOUT: export-added"
+      ],
+      "recordedAt": "2026-07-21T13:14:10.821Z"
+    },
+    {
+      "bump": "major",
+      "changes": [
+        "@tuvren/core/execution#AgentConfig: stable-signature-changed",
+        "@tuvren/sdk#AgentConfig: stable-signature-changed",
+        "@tuvren/core/errors#TOOL_RESULT_SANITIZATION_FAILED: export-added",
+        "@tuvren/core/execution#SanitizeToolResultContext: export-added",
+        "@tuvren/core/execution#SanitizeToolResultHook: export-added"
+      ],
+      "recordedAt": "2026-07-21T14:19:03.640Z"
     }
   ]
 }

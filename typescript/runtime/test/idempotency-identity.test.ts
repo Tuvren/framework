@@ -15,12 +15,26 @@
  */
 
 /**
- * KRT-BG003 — side-effect-once idempotency envelope (ADR-052).
+ * KRT-BG003 — side-effect-once idempotency envelope (ADR-052 as amended by
+ * ADR-065).
  *
- * These tests prove the idempotency identity is a deterministic function of
- * the (runId, callId, fencingToken) triple and that the Tuvren-server tool
- * execution context carries it. Carriage on the Client Endpoint Boundary
- * dispatch envelope is covered in client-endpoint-boundary.test.ts.
+ * These tests assert the *contract* ADR-052 §1 states — that every dispatch of
+ * one logical call presents an identical identity — rather than the weaker
+ * property that the helper is a pure function of its arguments. The distinction
+ * is what the previous version of this file got wrong: it asserted that a
+ * changed fencing token yields a changed key, which is true of the function and
+ * irrelevant to the promise, and it left cross-recovery stability untested.
+ *
+ * The identity is `(turnId, callId)` — the logical call identity. The `runId`
+ * and the fencing token are deliberately excluded because neither is stable for
+ * one logical call: a Run is one execution attempt (freshly minted per ReAct
+ * iteration, per approval resume, and per recovery) and the fencing token
+ * rotates on every lease renewal. The fencing token is no longer carried on
+ * `ToolBatchEnvironment` at all, so only `runId` variance is representable
+ * here; that it cannot influence the key is the property these tests pin.
+ *
+ * Carriage on the Client Endpoint Boundary dispatch envelope is covered in
+ * client-endpoint-boundary.test.ts.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -41,99 +55,98 @@ const TOOL: TuvrenToolDefinition = {
   name: "side.effect",
 };
 
-function makeEnvironment(
-  runId: string,
-  fencingToken: string | undefined
-): ToolBatchEnvironment {
+/**
+ * Builds a batch environment for one *execution attempt*. `runId` varies per
+ * attempt in reality — a fresh Run is minted per ReAct iteration, per approval
+ * resume, and per recovery — which is exactly why the identity must not depend
+ * on it; `turnId` is the identifier that survives.
+ */
+function makeEnvironment(turnId: string, runId: string): ToolBatchEnvironment {
   return {
-    fencingToken,
     publishCustom: () => undefined,
     publishEvent: () => undefined,
     runId,
+    turnId,
     signal: undefined,
   } as unknown as ToolBatchEnvironment;
 }
 
-describe("deriveIdempotencyKey (ADR-052 / KRT-BG003)", () => {
-  test("is a deterministic function of the triple", () => {
-    expect(deriveIdempotencyKey("run-1", "call-1", "fence-1")).toBe(
-      deriveIdempotencyKey("run-1", "call-1", "fence-1")
+describe("deriveIdempotencyKey (ADR-052/ADR-065 / KRT-BG003)", () => {
+  test("is a deterministic function of the logical call identity", () => {
+    expect(deriveIdempotencyKey("turn-1", "call-1")).toBe(
+      deriveIdempotencyKey("turn-1", "call-1")
     );
   });
 
-  test("distinct triples produce distinct identities", () => {
-    const base = deriveIdempotencyKey("run-1", "call-1", "fence-1");
-    expect(deriveIdempotencyKey("run-2", "call-1", "fence-1")).not.toBe(base);
-    expect(deriveIdempotencyKey("run-1", "call-2", "fence-1")).not.toBe(base);
-    expect(deriveIdempotencyKey("run-1", "call-1", "fence-2")).not.toBe(base);
-  });
-
-  test("an absent fencing token cannot collide with an empty-string token", () => {
-    expect(deriveIdempotencyKey("run-1", "call-1")).not.toBe(
-      deriveIdempotencyKey("run-1", "call-1", "")
-    );
+  test("distinct logical calls produce distinct identities", () => {
+    const base = deriveIdempotencyKey("turn-1", "call-1");
+    expect(deriveIdempotencyKey("turn-2", "call-1")).not.toBe(base);
+    expect(deriveIdempotencyKey("turn-1", "call-2")).not.toBe(base);
   });
 
   test("the canonical encoding is injective across field boundaries", () => {
     // A naive join on ':' would fold ("a:b","c") and ("a","b:c") together.
-    expect(deriveIdempotencyKey("a:b", "c", "fence")).not.toBe(
-      deriveIdempotencyKey("a", "b:c", "fence")
+    expect(deriveIdempotencyKey("a:b", "c")).not.toBe(
+      deriveIdempotencyKey("a", "b:c")
     );
   });
 });
 
 describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
-  test("carries the identity derived from runId, callId, and fencingToken", () => {
-    const environment = makeEnvironment("run-alpha", "fence-alpha");
+  test("carries the identity derived from turnId and callId", () => {
     const context = createToolExecutionContext(
       makeToolCall("call-alpha"),
+      TOOL,
+      makeEnvironment("turn-alpha", "run-alpha"),
+      undefined
+    );
+
+    expect(context.idempotencyKey).toBe(
+      deriveIdempotencyKey("turn-alpha", "call-alpha")
+    );
+  });
+
+  test("is stable across a new Run serving the same Turn", () => {
+    // This is ADR-052 §1's actual promise. A Turn is served by many Runs
+    // (kernel §5.3): the framework mints a fresh runId per ReAct iteration,
+    // per approval resume, and per recovery, and the fencing token rotates on
+    // every lease renewal. A re-dispatch of the same logical call therefore
+    // arrives with different run and authority identity every time — and must
+    // still present the same idempotency key, or an external system cannot
+    // deduplicate the effect.
+    const firstAttempt = createToolExecutionContext(
+      makeToolCall("call-beta"),
+      TOOL,
+      makeEnvironment("turn-beta", "run-1"),
+      undefined
+    );
+    const reDispatchAfterResume = createToolExecutionContext(
+      makeToolCall("call-beta"),
+      TOOL,
+      makeEnvironment("turn-beta", "run-2"),
+      undefined
+    );
+
+    expect(reDispatchAfterResume.idempotencyKey).toBe(
+      firstAttempt.idempotencyKey
+    );
+  });
+
+  test("distinguishes two different calls within the same turn", () => {
+    const environment = makeEnvironment("turn-delta", "run-delta");
+    const first = createToolExecutionContext(
+      makeToolCall("call-one"),
+      TOOL,
+      environment,
+      undefined
+    );
+    const second = createToolExecutionContext(
+      makeToolCall("call-two"),
       TOOL,
       environment,
       undefined
     );
 
-    expect(context.idempotencyKey).toBe(
-      deriveIdempotencyKey("run-alpha", "call-alpha", "fence-alpha")
-    );
-  });
-
-  test("re-presenting the same triple reproduces the same identity (cross-recovery dedup precondition)", () => {
-    // Determinism over a *re-presented* triple is the precondition for
-    // cross-recovery deduplication: if the same (runId, callId, fencingToken)
-    // is presented again, the identity is identical, so an external system can
-    // collapse the duplicate effect. This proves only that precondition — it is
-    // NOT a recovery scenario. In real preemption recovery the runtime mints a
-    // fresh runId (randomUUID per run) and rotates the fencingToken, so the live
-    // triple is not stable across recovery; reconciling that rotation against
-    // ADR-052's (runId, callId, fencingToken) triple, and the end-to-end
-    // "side effect occurs at most once after recovery" proof, are owned by the
-    // KRT-BG005 two-worker clock-skew conformance.
-    const firstDispatch = createToolExecutionContext(
-      makeToolCall("call-beta"),
-      TOOL,
-      makeEnvironment("run-beta", "fence-beta"),
-      undefined
-    );
-    const reDispatch = createToolExecutionContext(
-      makeToolCall("call-beta"),
-      TOOL,
-      makeEnvironment("run-beta", "fence-beta"),
-      undefined
-    );
-
-    expect(reDispatch.idempotencyKey).toBe(firstDispatch.idempotencyKey);
-  });
-
-  test("derives an identity even when no run lease (fencing token) is held", () => {
-    const context = createToolExecutionContext(
-      makeToolCall("call-gamma"),
-      TOOL,
-      makeEnvironment("run-gamma", undefined),
-      undefined
-    );
-
-    expect(context.idempotencyKey).toBe(
-      deriveIdempotencyKey("run-gamma", "call-gamma", undefined)
-    );
+    expect(second.idempotencyKey).not.toBe(first.idempotencyKey);
   });
 });

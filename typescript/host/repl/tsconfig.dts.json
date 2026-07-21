@@ -32,11 +32,30 @@
       ],
       "@tuvren/stream-sse": [
         "../../../typescript/streaming/sse/dist/index.d.ts"
+      ],
+      "@tuvren/core": ["../../../typescript/core/dist/index.d.ts"],
+      "@tuvren/core/capabilities": [
+        "../../../typescript/core/dist/capabilities/index.d.ts"
+      ],
+      "@tuvren/host-session": [
+        "../../../typescript/host/session/dist/index.d.ts"
+      ],
+      "@tuvren/remote-session": [
+        "../../../typescript/host/remote-session/dist/index.d.ts"
+      ],
+      "@tuvren/stream-ws": ["../../../typescript/streaming/ws/dist/index.d.ts"],
+      "@tuvren/session-client": [
+        "../../../typescript/host/session-client/dist/index.d.ts"
       ]
     },
     "rootDir": "./src",
+    // P2-7: bun-types and the DOM lib both declare overlapping globals (e.g.
+    // WebSocket, fetch) with incompatible shapes; without skipLibCheck the
+    // declaration build fails on that clash rather than on anything this
+    // package's own source does wrong.
+    "skipLibCheck": true,
     "target": "esnext",
-    "types": ["node"],
+    "types": ["bun", "node"],
     "verbatimModuleSyntax": true
   },
   "include": ["src/**/*.ts"]

@@ -1075,14 +1075,21 @@ export interface ToolExecutionContext {
   emit?: (event: { name: string; data: unknown }) => void;
   forward?: (event: TuvrenStreamEvent, source: EventSource) => void;
   /**
-   * Side-effect-once idempotency identity for this invocation (ADR-052).
+   * Side-effect-once idempotency identity for this invocation (ADR-052 as
+   * amended by ADR-065).
    *
-   * A deterministic identity derived from the run id, this call id, and the
-   * active run fencing token. A tool that performs a non-idempotent external
-   * side effect should thread this value into its external call so the external
-   * system can deduplicate a dispatch that is retried or re-issued after a
-   * preemption recovery. Present whenever the runtime builds an execution
-   * context; tools that do not perform external effects may ignore it.
+   * A deterministic identity derived from the turn id and this call id — the
+   * logical call identity. A tool that performs a non-idempotent external side
+   * effect should thread this value into its external call so the external
+   * system can deduplicate a dispatch it has already seen: every dispatch of one
+   * logical call presents an identical key, whether it is the first attempt, a
+   * framework retry, or a re-dispatch after an approval resume or a preemption
+   * recovery. The `runId` and the run fencing token are deliberately excluded —
+   * a Run is one execution attempt (freshly minted per iteration, per resume,
+   * and per recovery) and the fencing token rotates on every lease renewal, so
+   * either would make the identity churn under the very conditions it must
+   * survive. Present whenever the runtime builds an execution context; tools
+   * that do not perform external effects may ignore it.
    */
   idempotencyKey?: string;
   metadata?: Record<string, unknown>;
@@ -1599,6 +1606,44 @@ export interface CapabilityPolicyContextInputs {
 }
 
 /**
+ * Context handed to {@link AgentConfig.sanitizeToolResult} alongside the
+ * would-be-staged {@link ToolResultPart}.
+ *
+ * `executionClass` is present only when the result came from a call whose
+ * binding was resolved (`tuvren-server`, `tuvren-client`, `provider-native`,
+ * `provider-mediated`) — it is absent for outcomes decided before dispatch
+ * (unknown tool, input-validation failure, policy denial, resume rejection),
+ * per ADR-064 §3: those genuinely have no execution class, and a guessed one
+ * would be worse than none. A policy scoped to remote-peer content branches
+ * on `executionClass === "tuvren-client"`; a deny-by-default policy should
+ * branch on absence explicitly rather than relying on a negative equality
+ * test against a specific class.
+ */
+export interface SanitizeToolResultContext {
+  /** The tool call this result answers. */
+  callId: string;
+  /** Present only for results whose execution class was resolved before this
+   * hook ran; see the interface doc for the absence rule. */
+  executionClass?: ExecutionClass;
+  /** Name of the tool that produced (or would have produced) the result. */
+  toolName: string;
+}
+
+/**
+ * Shape of the host sanitization seam installed at
+ * {@link AgentConfig.sanitizeToolResult} and threaded through to
+ * `ToolBatchEnvironment.sanitizeToolResult` in `@tuvren/framework-runtime`.
+ * Named once here so both sites (and any local variable that holds the
+ * resolved hook) share a single alias instead of repeating the inline
+ * function type. See {@link AgentConfig.sanitizeToolResult} for the full
+ * contract (ADR-064).
+ */
+export type SanitizeToolResultHook = (
+  result: ToolResultPart,
+  ctx: SanitizeToolResultContext
+) => ToolResultPart;
+
+/**
  * The static, per-agent configuration for a Turn
  * (KrakenFrameworkSpecification §10.1): model, system prompt, tools,
  * extensions, the pluggable policy contracts, capability-orchestration
@@ -1706,6 +1751,35 @@ export interface AgentConfig {
       ): Promise<unknown> | unknown;
     }
   >;
+  /**
+   * Host sanitization seam for tool-result content, ordered before durability
+   * (ADR-064). Applied inside `stageAndEmitResult` — the single chokepoint
+   * shared by every execution class and every error path, including the
+   * thrown-`err.message` conversion at the client-endpoint boundary — so the
+   * value this hook returns is what is durably staged into kernel history
+   * and equally what the canonical `tool.result` event carries. The
+   * pre-sanitization form never reaches either. Runs before both; there is
+   * no later point at which host policy can still matter.
+   *
+   * The framework guarantees only the seam and its ordering, never content
+   * inspection: no default redaction, no pattern matching, no key
+   * heuristics. A host that installs nothing observes byte-identical
+   * behavior to today. Hosts scope a policy to remote-peer content by
+   * checking `ctx.executionClass === "tuvren-client"` (see
+   * {@link SanitizeToolResultContext}).
+   *
+   * The hook is synchronous and total: it must return a {@link ToolResultPart}
+   * and cannot defer, reject, or fail the call — deciding whether a call
+   * proceeds is the approval seam's job, not this one. A hook that throws is
+   * treated as a tool failure, not a turn failure (the framework spec §8.6
+   * precedent that tool failures become results rather than aborting the
+   * run): the call's result becomes an `isError: true` result carrying
+   * `output.code: "tool_result_sanitization_failed"`, and the turn continues.
+   *
+   * See `spec/host/client-endpoint-integration.md` ("Durable Lineage Is
+   * Forever") and ADR-064 for the full decision record.
+   */
+  sanitizeToolResult?: SanitizeToolResultHook;
   /**
    * Server execution class configuration for this agent. Controls per-tenant
    * rate limiting of Tuvren-server invocations. (AX003)

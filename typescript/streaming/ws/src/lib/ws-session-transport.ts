@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import type {
-  DuplexSessionBinding,
-  SessionEventFrame,
-  SessionOutboundFrame,
-} from "@tuvren/host-session";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { SessionOutboundFrame } from "@tuvren/host-session";
 import {
-  createSequencedTuvrenStreamEvents,
+  REMOTE_SESSION_ALREADY_ATTACHED,
+  REMOTE_SESSION_ENDED,
+  type RemoteClientSession,
+  type RemoteClientSessionAttachResult,
+  type RemoteClientSessionSink,
+} from "@tuvren/remote-session";
+import {
   createStreamAdapterWarningReporter,
-  type ReplayBuffer,
-  type SequencedTuvrenStreamEvent,
   type StreamAdapterOptions,
   type StreamAdapterWarning,
 } from "@tuvren/stream-core";
@@ -41,7 +41,7 @@ import { type ParsedWsMessage, parseWsMessage } from "./ws-messages.js";
 
 /** Standard WebSocket normal-closure code (RFC 6455 §7.4.1), not part of ADR-062's 4000-range application vocabulary. */
 const WS_CLOSE_CODE_NORMAL = 1000;
-/** Standard WebSocket internal-error code (RFC 6455 §7.4.1), used when the outbound pump fails unexpectedly — not part of ADR-062's 4000-range application vocabulary. */
+/** Standard WebSocket internal-error code (RFC 6455 §7.4.1), used when a heartbeat ping cannot be sent — not part of ADR-062's 4000-range application vocabulary. */
 const WS_CLOSE_CODE_INTERNAL_ERROR = 1011;
 const SUPPORTED_PROTOCOL_VERSION = "1";
 
@@ -72,6 +72,13 @@ export interface WsSocketSink {
 /**
  * Options accepted by {@link createWsSessionTransport}.
  *
+ * ADR-063 moved sequencing and replay ownership host-side into
+ * `@tuvren/remote-session`: this transport no longer takes a
+ * `DuplexSessionBinding` or a replay buffer, only the {@link RemoteClientSession}
+ * it attaches beneath. A host composes `binding → session → transport →
+ * socket`, and the same session can outlive many transports across a link
+ * that drops and reconnects.
+ *
  * @experimental
  */
 export interface WsSessionTransportOptions {
@@ -86,21 +93,21 @@ export interface WsSessionTransportOptions {
    * Bounds the outbound socket buffer. Enforced only when both this option
    * and the sink's optional {@link WsSocketSink.bufferedAmount} capability
    * are present: before each outbound send — live event frames, live
-   * non-event frames, and frames replayed during handshake — the transport
-   * reads `sink.bufferedAmount()`; when it exceeds `maxBufferedBytes` the
-   * transport reports a `ws_transport_backpressure_exceeded` warning and
-   * closes with `WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED` instead of sending.
-   * ADR-062 forbids a silent drop here: a dropped frame would create a
+   * non-event frames, and frames replayed/redelivered during the handshake —
+   * the transport reads `sink.bufferedAmount()`; when it exceeds
+   * `maxBufferedBytes` the transport reports a
+   * `ws_transport_backpressure_exceeded` warning and closes with
+   * `WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED` instead of sending. ADR-062
+   * forbids a silent drop here: a dropped `event` frame would create a
    * sequence gap the resume cursor could neither explain nor repair, while
-   * the close converts overflow into an honest reconnect-with-cursor. Hosts
-   * whose sink cannot report buffering run without transport-level
-   * backpressure enforcement even when this option is set. Throws
+   * the close converts overflow into an honest reconnect-with-cursor —
+   * unconditionally safe now that the session (not this transport) records
+   * every sequenced event before it is ever handed to a sink, regardless of
+   * whether that sink is still attached when the budget check runs. Throws
    * `RangeError` at construction if `maxBufferedBytes` is not a positive
    * finite number.
    */
   backpressure?: { maxBufferedBytes: number };
-  /** The duplex session binding this transport carries (packet `tuvren.framework.host-session`). */
-  binding: DuplexSessionBinding;
   /**
    * Enables application-level heartbeat / half-open detection. When
    * present, once the handshake completes the transport sends
@@ -123,55 +130,88 @@ export interface WsSessionTransportOptions {
   /** Receives non-fatal transport-level observations, deduplicated by warning code. */
   onWarning?: (warning: StreamAdapterWarning) => void;
   /**
-   * Host-owned replay window (packet `tuvren.framework.event-stream-resume`)
-   * fed by this transport's outbound pump. Omit to always report
-   * `resumeStatus: "out-of-window"` for a cursor-bearing handshake.
+   * The host-owned, reattachable session (ADR-063, `@tuvren/remote-session`)
+   * this transport attaches beneath on a successful handshake and detaches
+   * from on close. The session — not this transport — owns sequencing, the
+   * replay window, and unanswered-`client_invocation` redelivery, so the
+   * same session may be attached by a later transport instance after this
+   * one closes; the session's `disconnectGraceMs` governs how long that
+   * reattach window stays open.
    */
-  replayBuffer?: ReplayBuffer;
+  session: RemoteClientSession;
   /** The socket adapter this transport sends to and closes. */
   sink: WsSocketSink;
 }
 
 /**
- * A running WebSocket session transport (ADR-062).
+ * A running WebSocket session transport (ADR-062, as amended by ADR-063).
  *
  * @experimental
  */
 export interface WsSessionTransport {
-  /** Idempotently closes the connection: releases the claimed outbound iterator, then closes `sink` with `code` (default `1000`). */
+  /**
+   * Idempotently closes the connection: closes `sink` with `code` (default
+   * `1000`), and — only if this transport's handshake ever succeeded in
+   * attaching a sink to `options.session` — detaches from the session. The
+   * transport never ends the session itself; detaching only starts (or
+   * leaves running) the session's own `disconnectGraceMs` window, so a later
+   * transport can still reattach and resume. Hosts MUST call this on every
+   * terminal socket condition they observe (error, unexpected close,
+   * connection drop) — a transport whose socket dies without `close()` keeps
+   * its heartbeat interval scheduled and its session sink still (nominally)
+   * attached.
+   */
   close(code?: number, reason?: string): void;
   /** Feeds one inbound wire message into the transport. Throws if called before {@link start}. */
   ingest(data: string | Uint8Array): void;
-  /** Claims the binding's outbound stream and enters the `awaiting-handshake` state. May only be called once. */
+  /** Enters the `awaiting-handshake` state. May only be called once. */
   start(): void;
 }
 
 /**
  * Creates a server-side WebSocket session transport over a
- * {@link DuplexSessionBinding} (ADR-062, `spec/streaming/ws/typespec/main.tsp`).
+ * {@link RemoteClientSession} (ADR-062 as amended by ADR-063,
+ * `spec/streaming/ws/typespec/main.tsp`).
  *
- * `start()` claims `options.binding.outbound()`'s iterator exactly once,
- * synchronously, honoring the binding's single-consumer obligation, and does
- * not send anything until a valid handshake is ingested. All `ingest()`
- * calls are serialized through one internal promise chain — including an
- * async `options.authorize` — so message ordering (replay-before-live,
- * handshake-before-frames) is preserved even when a callback is slow.
+ * This is pure carriage: the transport owns only the WebSocket-level
+ * concerns — handshake parse/validate, heartbeat, bounded backpressure, and
+ * close-code vocabulary. It never claims a `DuplexSessionBinding.outbound()`
+ * stream, never creates a sequencer, and never records a replay buffer; all
+ * of that is `options.session`'s job for the session's entire life, across
+ * however many transports attach and detach beneath it. `start()` merely
+ * enters the `awaiting-handshake` state — nothing is claimed and nothing is
+ * sent until a valid handshake is ingested.
  *
- * Only the canonical event stream is sequenced and replayable: `event`
- * frames are stamped with a resume cursor via one internal
- * `createSequencedTuvrenStreamEvents` instance and (when
- * `options.replayBuffer` is supplied) recorded into it; `client_invocation`
- * and `session_rejection` frames are forwarded without a cursor. Per
- * ADR-062, frame-level and unrecognized-message problems never close the
- * socket — only handshake failures and the outbound pump's own terminal
- * conditions do.
+ * On a valid handshake, the transport calls `options.session.attach(sink,
+ * {cursor})`. That call is synchronous and, for a resumed reattach, sends
+ * every replayed `event` frame and every redelivered unanswered
+ * `client_invocation` through the sink **before returning** — so this
+ * transport queues those sends internally and flushes them only after its
+ * own `handshake_ack` has gone out, preserving the wire-order contract
+ * (ack, then replay/redelivery, then live frames) with a session that no
+ * longer waits for the transport to ask for its resume burst one frame at a
+ * time.
  *
- * The transport cannot observe socket-level errors through the sink seam, so
- * the host MUST call {@link WsSessionTransport.close} on every terminal
- * socket condition it observes (error, unexpected close, connection drop) —
- * `close()` is what releases the claimed outbound iterator and clears the
- * heartbeat timers; a transport whose socket dies without `close()` keeps
- * its heartbeat interval scheduled.
+ * A second concurrent handshake for a session that already has a live sink
+ * attached is refused: `session.attach()` throws, and this transport closes
+ * the *new* socket with `WS_CLOSE_CODE_HANDSHAKE_INVALID` — reusing the
+ * "this handshake cannot be honored" code rather than inventing a new one,
+ * since a double-attach is exactly a handshake this transport cannot accept
+ * as presented. A handshake against a session that has already permanently
+ * ended closes with `WS_CLOSE_CODE_SESSION_NOT_FOUND` — there is no longer a
+ * live session for the presented identity to bind to. `RemoteClientSession`
+ * throws a `TuvrenRuntimeError` with a stable code for each failure
+ * (`remote_session_already_attached` / `remote_session_ended`), and this
+ * transport branches on `error.code` per the core error contract — never on
+ * message text; see `isSinkAlreadyAttachedError` below. An attach failure
+ * carrying neither code is an unexpected internal error and closes `1011`.
+ *
+ * Per ADR-062, frame-level and unrecognized-message problems never close the
+ * socket — only handshake failures and the transport's own heartbeat/
+ * backpressure policy do. On any close, if this transport's handshake had
+ * already attached a sink, the transport calls `session.detach(reason)` —
+ * never `close`/end — so the session's `disconnectGraceMs` window (not this
+ * transport) decides whether a later reattach is still possible.
  *
  * @experimental
  */
@@ -207,7 +247,10 @@ export function createWsSessionTransport(
   let started = false;
   let handshakeDone = false;
   let closed = false;
-  let outboundIterator: AsyncIterator<SessionOutboundFrame> | undefined;
+  // Whether this transport's handshake ever succeeded in attaching a sink to
+  // options.session. Gates whether close() detaches (a handshake that never
+  // reached attach() has nothing to detach).
+  let attached = false;
   let ingestChain: Promise<void> = Promise.resolve();
   let heartbeatIntervalTimer: ReturnType<typeof setInterval> | undefined;
   const heartbeatTimeoutTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -237,9 +280,17 @@ export function createWsSessionTransport(
 
     closed = true;
     clearHeartbeatTimers();
-    // Always release the claimed outbound iterator on every close path, so
-    // the binding's underlying handle/queue resources are never leaked.
-    outboundIterator?.return?.().catch(() => undefined);
+
+    // The transport never ends or closes the session (ADR-063): a dropped
+    // link, a heartbeat half-open close, or a backpressure overflow only
+    // detaches this sink, starting (or leaving running) the session's own
+    // disconnectGraceMs window so a later transport can still reattach and
+    // resume. Skipped entirely when this handshake never reached attach() —
+    // there is nothing to detach.
+    if (attached) {
+      options.session.detach(reason);
+    }
+
     options.sink.close(code, reason);
   }
 
@@ -264,7 +315,7 @@ export function createWsSessionTransport(
       // A throwing send from a timer callback would otherwise surface as an
       // uncaught exception; a sink that cannot send is exactly the half-open
       // condition the heartbeat exists to detect, so close gracefully with
-      // the same internal-error discipline as the outbound pump.
+      // the same internal-error discipline the outbound path always used.
       doClose(WS_CLOSE_CODE_INTERNAL_ERROR, "internal error");
       return;
     }
@@ -346,73 +397,208 @@ export function createWsSessionTransport(
 
   function dispatchInboundSafely(value: unknown): void {
     try {
-      options.binding.dispatchInbound(value);
+      options.session.dispatchInbound(value);
     } catch (error) {
       reportWarning({
         code: "ws_transport_inbound_dispatch_failed",
         details: { error: describeError(error) },
         message:
-          "binding.dispatchInbound() threw for an inbound WebSocket message",
+          "session.dispatchInbound() threw for an inbound WebSocket message",
       });
     }
   }
 
-  function computeResumeStatus(cursor: string | undefined): {
-    events: SequencedTuvrenStreamEvent[];
-    status: "resumed" | "out-of-window" | "unknown-turn" | "none";
-  } {
-    if (cursor === undefined) {
-      return { events: [], status: "none" };
+  /**
+   * Sends one outbound envelope (a live frame, a replayed `event`, or a
+   * redelivered `client_invocation`), enforcing backpressure first. Returns
+   * `false` when the caller must stop — already closed, or this send just
+   * overflowed the budget and closed `4005` (backpressure already invoked
+   * `doClose`).
+   */
+  function sendFrameEnvelope(
+    frame: SessionOutboundFrame,
+    cursor: string | undefined
+  ): boolean {
+    if (closed) {
+      return false;
     }
 
-    if (options.replayBuffer === undefined) {
-      return { events: [], status: "out-of-window" };
+    if (enforceBackpressure()) {
+      return false;
     }
 
-    const result = options.replayBuffer.replayFrom(cursor);
-
-    if (result.status === "resumed") {
-      return { events: result.events, status: "resumed" };
-    }
-
-    return { events: [], status: result.status };
+    options.sink.send(
+      JSON.stringify(
+        cursor === undefined
+          ? { frame, kind: "frame" }
+          : { cursor, frame, kind: "frame" }
+      )
+    );
+    return true;
   }
 
   /**
-   * Sends the replay burst resolved for a resumed handshake, honoring the
-   * same closed/backpressure guards as the live pump (ADR-062: replay
-   * bursts are exactly when a slow socket saturates). Returns `false` if the
-   * connection was closed partway through and the caller must stop.
+   * Adapts this transport's `WsSocketSink` into the
+   * `RemoteClientSessionSink` shape `session.attach()` expects, with one
+   * carriage-ordering seam: `session.attach()` is synchronous and, for a
+   * resumed reattach, sends every replayed `event` and every redelivered
+   * `client_invocation` through this sink **from inside that call**, before
+   * `attach()` returns to the caller — i.e. before this transport has had a
+   * chance to send its own `handshake_ack`. Every `send()` before
+   * {@link release} is called is therefore queued rather than written to the
+   * wire; `release()` (called right after the `handshake_ack` is sent) flushes
+   * the queue in order, and every `send()` after that point goes straight to
+   * the wire. This is what keeps the wire order `handshake_ack`, then
+   * replay/redelivery, then live frames — the same order ADR-062 always
+   * guaranteed, now produced by a session whose replay/redelivery burst is
+   * not paced one frame at a time by this transport's own pump.
    */
-  function sendReplayedFrames(
-    events: readonly SequencedTuvrenStreamEvent[]
-  ): boolean {
-    for (const sequenced of events) {
-      if (closed) {
-        return false;
+  function createSessionSinkAdapter(): {
+    release(): boolean;
+    sink: RemoteClientSessionSink;
+  } {
+    let released = false;
+    const queued: Array<{
+      cursor: string | undefined;
+      frame: SessionOutboundFrame;
+    }> = [];
+
+    const sink: RemoteClientSessionSink = {
+      send(frame: SessionOutboundFrame, cursor?: string): void {
+        if (!released) {
+          queued.push({ cursor, frame });
+          return;
+        }
+        // A live send after the handshake fully completed; a `false` return
+        // means sendFrameEnvelope already closed the connection (or it was
+        // already closed), and there is nothing further for this call to do.
+        sendFrameEnvelope(frame, cursor);
+      },
+    };
+
+    return {
+      release(): boolean {
+        released = true;
+        for (const item of queued) {
+          if (!sendFrameEnvelope(item.frame, item.cursor)) {
+            return false;
+          }
+        }
+        return true;
+      },
+      sink,
+    };
+  }
+
+  /**
+   * Distinguishes `session.attach()`'s two documented throw cases by their
+   * stable `TuvrenRuntimeError` codes (`remote_session_already_attached` vs
+   * `remote_session_ended`) — the core error contract's rule that callers
+   * branch on `code`, never on message text. Anything that is not the
+   * already-attached code (including a non-Tuvren error) falls through to
+   * the session-not-found close below.
+   */
+  function isSinkAlreadyAttachedError(error: unknown): boolean {
+    return (
+      error instanceof TuvrenRuntimeError &&
+      error.code === REMOTE_SESSION_ALREADY_ATTACHED
+    );
+  }
+
+  /**
+   * Attaches this transport's sink adapter to `options.session` for the
+   * given (already-authorized) handshake request, closing the connection
+   * with the appropriate code when the session refuses the attach. Split
+   * out of {@link processHandshake} purely to keep that function's own
+   * branching within the lint-enforced cognitive-complexity budget — no
+   * behavioral seam.
+   */
+  function attachToSession(cursor: string | undefined): void {
+    const adapter = createSessionSinkAdapter();
+    let attachResult: RemoteClientSessionAttachResult;
+
+    try {
+      attachResult = options.session.attach(adapter.sink, { cursor });
+    } catch (error) {
+      if (isSinkAlreadyAttachedError(error)) {
+        doClose(
+          WS_CLOSE_CODE_HANDSHAKE_INVALID,
+          "a live sink is already attached to this session; a concurrent second handshake cannot be honored"
+        );
+        return;
       }
 
-      if (enforceBackpressure()) {
-        return false;
+      if (
+        error instanceof TuvrenRuntimeError &&
+        error.code === REMOTE_SESSION_ENDED
+      ) {
+        doClose(
+          WS_CLOSE_CODE_SESSION_NOT_FOUND,
+          "this remote client session has already ended and can no longer be attached"
+        );
+        return;
       }
 
-      const replayedFrame: SessionEventFrame = {
-        event: sequenced.event,
-        kind: "event",
-        protocolVersion: SUPPORTED_PROTOCOL_VERSION,
-        sessionId: options.binding.sessionId,
-      };
-
-      options.sink.send(
-        JSON.stringify({
-          cursor: sequenced.cursor,
-          frame: replayedFrame,
-          kind: "frame",
-        })
+      // Anything else — a throw from claiming binding.outbound() on the
+      // session's first attach, or a defect in the session itself — is not
+      // "your session is gone"; mislabeling it 4002 would send the peer away
+      // permanently for a server-side fault. Close as an internal error.
+      reportWarning({
+        code: "ws_transport_session_attach_failed",
+        message: `session.attach failed unexpectedly: ${describeError(error)}`,
+      });
+      doClose(
+        WS_CLOSE_CODE_INTERNAL_ERROR,
+        "the session refused the attach with an unexpected internal error"
       );
+      return;
     }
 
-    return true;
+    attached = true;
+    handshakeDone = true;
+
+    try {
+      options.sink.send(
+        JSON.stringify({
+          kind: "handshake_ack",
+          protocolVersion: SUPPORTED_PROTOCOL_VERSION,
+          resumeStatus: attachResult.resumeStatus,
+          sessionId: options.session.sessionId,
+        })
+      );
+    } catch (error) {
+      // A sink that cannot even carry the ack is a dead socket: close (which
+      // detaches, since attach succeeded above) instead of leaving a
+      // half-initialized transport whose only recovery would be heartbeat
+      // half-open detection — or nothing at all when heartbeat is disabled.
+      reportWarning({
+        code: "ws_transport_ack_send_failed",
+        message: `handshake_ack could not be sent on the socket sink: ${describeError(error)}`,
+      });
+      doClose(
+        WS_CLOSE_CODE_INTERNAL_ERROR,
+        "handshake_ack could not be sent on the socket sink"
+      );
+      return;
+    }
+
+    if (closed) {
+      return;
+    }
+
+    // Flushes the replay/redelivery burst session.attach() queued above, in
+    // order, honoring the same backpressure guard as any live send.
+    if (!adapter.release()) {
+      return;
+    }
+
+    if (closed) {
+      return;
+    }
+
+    // Heartbeat pings start only once the handshake has fully completed
+    // (ack plus any replay/redelivery burst sent), per ADR-062 §6.
+    startHeartbeat();
   }
 
   async function processHandshake(parsed: ParsedWsMessage): Promise<void> {
@@ -436,7 +622,7 @@ export function createWsSessionTransport(
 
     if (
       message.sessionId !== undefined &&
-      message.sessionId !== options.binding.sessionId
+      message.sessionId !== options.session.sessionId
     ) {
       doClose(
         WS_CLOSE_CODE_SESSION_NOT_FOUND,
@@ -464,34 +650,7 @@ export function createWsSessionTransport(
       }
     }
 
-    const resume = computeResumeStatus(message.cursor);
-    handshakeDone = true;
-
-    options.sink.send(
-      JSON.stringify({
-        kind: "handshake_ack",
-        protocolVersion: SUPPORTED_PROTOCOL_VERSION,
-        resumeStatus: resume.status,
-        sessionId: options.binding.sessionId,
-      })
-    );
-
-    if (!sendReplayedFrames(resume.events)) {
-      return;
-    }
-
-    if (closed) {
-      return;
-    }
-
-    // Heartbeat pings start only once the handshake has fully completed
-    // (ack plus any replay burst sent), per ADR-062 §6.
-    startHeartbeat();
-
-    // Detached: the pump's only observable effects are sink.send()/close()
-    // above, so ingest() never needs to await it (mirrors
-    // teeTuvrenStreamEvents' detached pump in @tuvren/stream-core).
-    runOutboundPump().catch(() => undefined);
+    attachToSession(message.cursor);
   }
 
   function processPostHandshake(parsed: ParsedWsMessage): void {
@@ -541,145 +700,6 @@ export function createWsSessionTransport(
     }
   }
 
-  /**
-   * Sequences and sends one live `event` outbound frame: pushes it through
-   * the connection's one sequencer instance, records it into the replay
-   * buffer when configured, enforces backpressure, then sends. Returns
-   * `false` when the caller must stop the pump (closed mid-await, or a
-   * backpressure close just happened) and `true` otherwise.
-   */
-  async function pumpEventFrame(
-    frame: SessionOutboundFrame,
-    channel: SingleSlotPushChannel<TuvrenStreamEvent>,
-    sequencedIterator: AsyncIterator<SequencedTuvrenStreamEvent>
-  ): Promise<boolean> {
-    if (frame.kind !== "event") {
-      return true;
-    }
-
-    channel.push(frame.event);
-    const sequencedResult = await sequencedIterator.next();
-
-    if (closed) {
-      return false;
-    }
-
-    if (sequencedResult.done) {
-      return true;
-    }
-
-    const envelope = sequencedResult.value;
-    // Recorded before the budget check on purpose: a frame caught by the
-    // overflow close (4005) is then recorded-but-not-sent, so the client's
-    // next resume from its last received cursor still replays it — reordering
-    // record after enforceBackpressure would turn overflow into real loss.
-    options.replayBuffer?.record(envelope);
-
-    if (enforceBackpressure()) {
-      return false;
-    }
-
-    options.sink.send(
-      JSON.stringify({
-        cursor: envelope.cursor,
-        frame,
-        kind: "frame",
-      })
-    );
-    return true;
-  }
-
-  /**
-   * Sends one live non-event outbound frame (`client_invocation` /
-   * `session_rejection`, ADR-062 §3: not replayable, carries no cursor)
-   * after enforcing backpressure. Returns `false` when the caller must stop
-   * the pump.
-   */
-  function pumpNonEventFrame(frame: SessionOutboundFrame): boolean {
-    if (enforceBackpressure()) {
-      return false;
-    }
-
-    options.sink.send(JSON.stringify({ frame, kind: "frame" }));
-    return true;
-  }
-
-  /**
-   * Dispatches one already-fetched `outboundIterator.next()` result: a
-   * `done` result ends the connection normally, an `event` frame is
-   * sequenced/recorded/sent via {@link pumpEventFrame}, and any other frame
-   * is sent as-is via {@link pumpNonEventFrame}. Returns `false` when the
-   * caller must stop the pump.
-   */
-  async function handleOutboundNext(
-    next: IteratorResult<SessionOutboundFrame>,
-    channel: SingleSlotPushChannel<TuvrenStreamEvent>,
-    sequencedIterator: AsyncIterator<SequencedTuvrenStreamEvent>
-  ): Promise<boolean> {
-    if (next.done) {
-      doClose(WS_CLOSE_CODE_NORMAL, "session ended");
-      return false;
-    }
-
-    const frame = next.value;
-
-    return frame.kind === "event"
-      ? await pumpEventFrame(frame, channel, sequencedIterator)
-      : pumpNonEventFrame(frame);
-  }
-
-  async function runOutboundPump(): Promise<void> {
-    if (outboundIterator === undefined) {
-      return;
-    }
-
-    // One sequencer instance feeds the whole connection, fed one event at a
-    // time by a single-slot push channel: push(event) then
-    // sequencedIterator.next() is guaranteed to yield exactly one envelope
-    // because the channel's next() never resolves without a pending push.
-    // Sequencer scope is per-connection by design: a second transport over
-    // the same binding cannot exist today (binding.outbound() throws
-    // duplex_session_outbound_already_claimed on a second claim), so live
-    // continuation of one binding's numbering across sockets is out of scope
-    // until the issue #102 detach/lease work makes sequencer ownership a
-    // host-side concern (recorded in ADR-062).
-    const channel = new SingleSlotPushChannel<TuvrenStreamEvent>();
-    const sequenced = createSequencedTuvrenStreamEvents(channel, {
-      onWarning: reportWarning,
-    });
-    const sequencedIterator = sequenced[Symbol.asyncIterator]();
-
-    try {
-      for (;;) {
-        const next = await outboundIterator.next();
-
-        // A next() call can latch a value in the very tick close() runs
-        // (e.g. an explicit transport.close() or a concurrent backpressure
-        // close); re-check after every await so nothing sends post-close.
-        if (closed) {
-          return;
-        }
-
-        const shouldContinue = await handleOutboundNext(
-          next,
-          channel,
-          sequencedIterator
-        );
-
-        if (!shouldContinue) {
-          return;
-        }
-      }
-    } catch (error) {
-      reportWarning({
-        code: "ws_transport_outbound_pump_failed",
-        details: { error: describeError(error) },
-        message: "the outbound frame pump failed unexpectedly",
-      });
-      doClose(WS_CLOSE_CODE_INTERNAL_ERROR, "internal error");
-    }
-  }
-
   return {
     close(code?: number, reason?: string): void {
       doClose(code ?? WS_CLOSE_CODE_NORMAL, reason);
@@ -692,11 +712,12 @@ export function createWsSessionTransport(
       }
 
       // Serialize every ingest through one promise chain so ordering is
-      // preserved (replay-before-live, handshake-before-frames) even when
-      // options.authorize is async and a later ingest() call arrives first.
-      // The chain itself never rejects (a throwing authorize() is reported
-      // as a warning instead) so one bad message can never wedge every
-      // subsequent ingest() call behind a rejected promise.
+      // preserved (replay/redelivery-before-live, handshake-before-frames)
+      // even when options.authorize is async and a later ingest() call
+      // arrives first. The chain itself never rejects (a throwing
+      // authorize() is reported as a warning instead) so one bad message can
+      // never wedge every subsequent ingest() call behind a rejected
+      // promise.
       ingestChain = ingestChain
         .then(() => {
           if (closed) {
@@ -724,47 +745,13 @@ export function createWsSessionTransport(
       }
 
       started = true;
-      // Claims the binding's single-consumer outbound stream synchronously,
-      // before returning, honoring the binding's single-claim obligation.
-      // Nothing is sent yet — the transport is in the awaiting-handshake
-      // state until a valid handshake is ingested.
-      outboundIterator = options.binding.outbound()[Symbol.asyncIterator]();
+      // Nothing to claim eagerly: options.session claims its underlying
+      // binding's outbound() stream lazily, on its own first attach() call
+      // (ADR-063), which this transport triggers only once a valid
+      // handshake is ingested. The transport is in the awaiting-handshake
+      // state until then — nothing is sent.
     },
   };
-}
-
-/**
- * Single-slot push channel: `push(value)` followed immediately by a `next()`
- * call is guaranteed to resolve with that exact value, because `next()`
- * never resolves without a pending push (the outbound pump only ever calls
- * `next()` in that lockstep order).
- */
-class SingleSlotPushChannel<T> implements AsyncIterable<T> {
-  private hasValue = false;
-  private value: T | undefined;
-
-  push(value: T): void {
-    this.value = value;
-    this.hasValue = true;
-  }
-
-  [Symbol.asyncIterator](): AsyncIterator<T> {
-    return {
-      // biome-ignore lint/suspicious/useAwait: kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.
-      next: async (): Promise<IteratorResult<T>> => {
-        if (!this.hasValue) {
-          throw new Error(
-            "SingleSlotPushChannel: next() called without a pending push()"
-          );
-        }
-
-        const value = this.value as T;
-        this.hasValue = false;
-        this.value = undefined;
-        return { done: false, value };
-      },
-    };
-  }
 }
 
 function describeError(error: unknown): string {

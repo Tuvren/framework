@@ -62,9 +62,10 @@ way `ExecutionHandle` method signatures are binding-only per
   contract — constructing a binding does not commit the turn. Once claimed,
   the internal frame buffer is unbounded while the consumer lags;
   backpressure and connection-lifecycle policy belong to the transport
-  layer (issues #100/#102). A transport must claim `outbound()` before
-  feeding inbound frames: pre-claim inbound routing is undefined ordering —
-  rejection frames would buffer unseen and a pre-claim `cancel` can
+  layer (issues #100/#102). The outbound consumer — a transport directly, or
+  `@tuvren/remote-session` on its behalf (ADR-063) — must claim `outbound()`
+  before any inbound frame is routed: pre-claim inbound routing is undefined
+  ordering — rejection frames would buffer unseen and a pre-claim `cancel` can
   terminate a never-started handle whose terminal then has no stream to
   surface on.
 - `dispatchInbound(frame: unknown): void` is fire-and-forget. Every
@@ -176,10 +177,59 @@ inside this binding. A frame that fails this structural guard produces a
 `resolveApproval`/the client-result pending-call table; the binding remains
 fully functional for subsequent valid frames afterward.
 
+## Session lifecycle over a droppable link (ADR-063)
+
+Everything above describes a binding whose outbound stream is claimed once and
+consumed to termination — the shape a same-process host or a connection that
+never drops sees. When the consumer is a *remote* peer whose link can fail
+mid-session, the lifecycle concerns (which socket is live, what has to be
+re-sent, how long to wait) do **not** belong to this package. They belong to
+`@tuvren/remote-session` (`typescript/host/remote-session`, ADR-063), which
+composes above this binding and below any transport:
+
+- It takes this binding's **single** `outbound()` claim and holds it for the
+  session's whole life, so the single-consumer rule above is satisfied exactly
+  once no matter how many sockets come and go beneath it — and it, rather than
+  any individual transport, is the "outbound consumer" the claim-before-inbound
+  ordering rule above refers to. It claims on first `attach` rather than at
+  construction, preserving the lazy-start contract, and routes no inbound frame
+  while unattached.
+- It owns the one `createSequencedTuvrenStreamEvents` instance and the one
+  `createReplayBuffer` for the session, satisfying ADR-061's normative
+  one-sequencer wiring rule across reconnects rather than only within a single
+  connection.
+- It re-sends unanswered `client_invocation` frames on reattach. That
+  interacts with the two staleness layers described above in one way worth
+  stating explicitly: a redelivered invocation reuses its **original**
+  `callId` and `leaseToken`, so it is not stale at either layer, and a result
+  for it settles the same pending-call entry. A *second* result for an
+  already-settled `callId` is `capability_result_stale` exactly as before —
+  redelivery does not widen what this binding accepts.
+- It converts a lost link and an unresponsive peer into well-shaped
+  `{ code, error }` results (`capability_binding_unavailable` and
+  `capability_dispatch_timeout` respectively) rather than letting the
+  dispatch promise reject, which would take the code-less thrown path
+  `spec/host/client-endpoint-integration.md` warns hosts away from.
+
+This binding is unchanged by ADR-063; the note above exists so a maintainer
+reading the deferrals in the `outbound()` bullet above ("backpressure and
+connection-lifecycle policy belong to the transport layer (issues #100/#102)")
+and in `dispatchInbound` ("connection-lifecycle policy beyond that
+[`duplex_session_closed`] is issue #102's scope") knows where that policy
+actually landed. The corresponding source comment on
+`DuplexSessionBinding.outbound()` in
+`typescript/host/session/src/lib/duplex-session-binding.ts` says only
+"backpressure and connection lifecycle policy belong to the transport layer
+above this binding" without naming an issue; ADR-063 is the answer to it.
+
 ## Conformance adapter status
 
-As of this writing, no conformance-adapter operation exercises
-`@tuvren/host-session` yet; this appendix will be updated once a shared
-duplex-session conformance plan and adapter wiring land (tracked outside this
-package's scope per the repository's `spec/host/session/typespec` and
-`spec/host/session/artifacts` ownership split).
+`typescript/conformance-adapter/src/framework-adapter-session.ts` exercises
+this package under the shared conformance plan
+`spec/conformance/engine/plans/host-session.json`, driving a real
+`@tuvren/runtime` turn through `createDuplexSessionBinding` for every check.
+The adapter returns raw observations only — no grading, no check IDs — per the
+adapter protocol. It uses a deferred client-endpoint wrapper
+(`createDeferredClientEndpoint`) to break the
+`executeTurn` → `ExecutionHandle` → binding construction cycle, installing the
+real `binding.clientEndpoint` as its delegate in the same synchronous tick.

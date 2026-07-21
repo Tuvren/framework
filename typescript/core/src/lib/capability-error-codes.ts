@@ -59,6 +59,39 @@ export const TOOL_INVOCATION_RATE_LIMITED =
 export const CAPABILITY_RESULT_STALE = "capability_result_stale" as const;
 
 /**
+ * Stable capability error code synthesized when a `tuvren-client` invocation
+ * dispatched to a *reachable* remote peer receives no `client_result` within
+ * the configured `dispatchTimeoutMs`. Never thrown: `@tuvren/remote-session`
+ * settles the dispatch with a well-shaped `ClientReportedResult` whose
+ * `content` carries the `{ code, error }` shape
+ * (`spec/host/client-endpoint-integration.md`, "Error handling"), surfaced as
+ * `tool.result` with `isError: true` and joining
+ * `capability_binding_unavailable` and `capability_result_stale` in the §4.21
+ * error family (`docs/KrakenFrameworkSpecification.md`). Distinct from
+ * `capability_binding_unavailable` — which means no endpoint is attached, or
+ * the disconnect grace window expired with none reattaching — this code means
+ * the endpoint *is* attached and accepted the work but went quiet; the two
+ * budgets are deliberately independent so a peer given a fresh chance after
+ * reconnecting is never handed a deadline that expired while it was
+ * unreachable. Owned by `@tuvren/remote-session` (ADR-063 §5).
+ */
+export const CAPABILITY_DISPATCH_TIMEOUT =
+  "capability_dispatch_timeout" as const;
+
+/**
+ * Stable code emitted when {@link AgentConfig.sanitizeToolResult} (ADR-064)
+ * throws instead of returning a sanitized `ToolResultPart`. The runtime does
+ * not swallow the throw into a scrubbed-by-default result — silently
+ * substituting content the host did not author would be a worse failure than
+ * a loud one — and does not fail the turn either: per framework spec §8.6
+ * (tool failures become results, never turn failures), the throw surfaces as
+ * this call's own `isError: true` tool result, and the turn continues.
+ * Surfaced as `tool.result` with `isError: true`.
+ */
+export const TOOL_RESULT_SANITIZATION_FAILED =
+  "tool_result_sanitization_failed" as const;
+
+/**
  * Stable `TuvrenRuntimeError` code emitted when a turn breaches a framework
  * hard-stop execution bound (`maxIterations`, `maxToolCalls`, or
  * `maxWallClockMs`) above runner discretion. The framework stops the loop,

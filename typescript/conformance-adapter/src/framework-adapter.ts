@@ -71,6 +71,7 @@ import type {
 import { createFrameworkAdapterRuntimeScenarios } from "./framework-adapter-runtime-scenarios.ts";
 import { createFrameworkAdapterSchemaAuthoring } from "./framework-adapter-schema-authoring.ts";
 import {
+  runSanitizeSeamToolResult,
   runScopeIsolationSurfaces,
   runSecretIsolationProviderBridge,
   runSecretIsolationRuntimeApi,
@@ -80,6 +81,10 @@ import {
   runApprovalResponseResume,
   runCancelCooperative,
   runCancelWhilePaused,
+  runDispatchTimeout,
+  runGraceWindowExpiry,
+  runReattachRedelivery,
+  runSequenceContinuity,
   runStaleClientResult,
   runValidateFrameFixtures,
 } from "./framework-adapter-session.ts";
@@ -87,7 +92,11 @@ import {
   runTrustBoundaryApprovalNonBypassable,
   runTrustBoundaryLocalToolInput,
 } from "./framework-adapter-trust-boundary.ts";
-import { runTuvrenClientLifecycle } from "./framework-adapter-tuvren-client-execution-class.ts";
+import {
+  runTuvrenClientLifecycle,
+  runTuvrenClientNetworkReconnectRedelivery,
+  runTuvrenClientResultDurability,
+} from "./framework-adapter-tuvren-client-execution-class.ts";
 import {
   runTuvrenServerBindingClassification,
   runTuvrenServerCancellation,
@@ -451,6 +460,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runSecretIsolationTelemetry(input);
       case "runtime.secret-isolation.provider-bridge":
         return runSecretIsolationProviderBridge(input);
+      case "runtime.sanitize-seam.tool-result":
+        return runSanitizeSeamToolResult(input);
       case "runtime.scope-isolation.surfaces":
         return runScopeIsolationSurfaces(input);
       case "runtime.trust-boundary.approval-gate":
@@ -459,6 +470,10 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runTrustBoundaryLocalToolInput(input);
       case "runtime.tuvren-client.lifecycle":
         return runTuvrenClientLifecycle();
+      case "runtime.tuvren-client.network-reconnect-redelivery":
+        return runTuvrenClientNetworkReconnectRedelivery();
+      case "runtime.tuvren-client.result-durability":
+        return runTuvrenClientResultDurability();
       case "runtime.tuvren-server.lifecycle":
         return runTuvrenServerLifecycle();
       case "runtime.tuvren-server.binding-classification":
@@ -489,6 +504,14 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runCancelWhilePaused();
       case "host-session.validate-frame-fixtures":
         return runValidateFrameFixtures(input);
+      case "host-session.reattach-redelivery":
+        return runReattachRedelivery();
+      case "host-session.grace-window-expiry":
+        return runGraceWindowExpiry();
+      case "host-session.dispatch-timeout":
+        return runDispatchTimeout();
+      case "host-session.sequence-continuity":
+        return runSequenceContinuity();
       case "event-stream-ws.decode-trace":
         return eventStreamWsScenarios.runDecodeTrace(input);
       case "event-stream-ws.session-roundtrip":

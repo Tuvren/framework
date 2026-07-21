@@ -38,18 +38,19 @@ import type {
 } from "@tuvren/host-session";
 import { createDuplexSessionBinding } from "@tuvren/host-session";
 import {
+  createRemoteClientSession,
+  type RemoteClientSession,
+} from "@tuvren/remote-session";
+import {
   createRunnerRegistry,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/runtime";
-import {
-  createReplayBuffer,
-  decodeResumeCursor,
-  type ReplayBuffer,
-} from "@tuvren/stream-core";
+import { decodeResumeCursor } from "@tuvren/stream-core";
 import {
   createWsSessionTransport,
   type ParsedWsMessage,
   parseWsMessage,
+  type WsSessionTransport,
   type WsSocketSink,
 } from "@tuvren/stream-ws";
 import type { AnySchema, ValidateFunction } from "ajv";
@@ -158,10 +159,55 @@ function assertNeverParsed(value: never): never {
 }
 
 // ---------------------------------------------------------------------------
+// ADR-063 composition helper: binding → session → transport → socket.
+//
+// @tuvren/stream-ws no longer takes a DuplexSessionBinding or a replay
+// buffer; it attaches beneath a @tuvren/remote-session RemoteClientSession,
+// which owns the single outbound() claim, the one sequencer, and the one
+// replay buffer for the session's whole life. Because the session (not the
+// transport) now owns the pump driving binding.outbound(), the transport has
+// no intrinsic "the turn ended, close the socket" signal — that is
+// RemoteClientSessionOptions.onEnded, and wiring it to whichever transport is
+// currently attached is a host-composition responsibility every caller of
+// this helper gets for free.
+// ---------------------------------------------------------------------------
+
+const WS_ADAPTER_DISCONNECT_GRACE_MS = 30_000;
+const WS_ADAPTER_DISPATCH_TIMEOUT_MS = 30_000;
+const WS_ADAPTER_REPLAY_BUFFER_CAPACITY = 200;
+
+interface SessionComposition {
+  attachTransport(sink: WsSocketSink): WsSessionTransport;
+  session: RemoteClientSession;
+}
+
+function createSessionComposition(
+  binding: DuplexSessionBinding
+): SessionComposition {
+  let currentTransport: WsSessionTransport | undefined;
+  const session = createRemoteClientSession({
+    binding,
+    disconnectGraceMs: WS_ADAPTER_DISCONNECT_GRACE_MS,
+    dispatchTimeoutMs: WS_ADAPTER_DISPATCH_TIMEOUT_MS,
+    onEnded: (reason) => currentTransport?.close(1000, reason),
+    replayBufferCapacity: WS_ADAPTER_REPLAY_BUFFER_CAPACITY,
+  });
+
+  return {
+    attachTransport(sink: WsSocketSink): WsSessionTransport {
+      const transport = createWsSessionTransport({ session, sink });
+      currentTransport = transport;
+      return transport;
+    },
+    session,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Operation: session roundtrip
 //
-// Drives a real runtime turn through a duplex session binding wrapped in a
-// WS transport, and observes the wire trace a recording sink captures:
+// Drives a real runtime turn through the binding → session → transport
+// composition above, and observes the wire trace a recording sink captures:
 // handshake_ack first, every subsequent message a frame envelope, cursors
 // strictly increasing from 0, and schema validity of every sent message.
 // ---------------------------------------------------------------------------
@@ -203,8 +249,9 @@ async function runSessionRoundtrip(): Promise<AdapterProjection> {
   const binding = createDuplexSessionBinding(handle, {
     sessionId: WS_ROUNDTRIP_SESSION_ID,
   });
+  const composition = createSessionComposition(binding);
   const sink = createRecordingSink();
-  const transport = createWsSessionTransport({ binding, sink });
+  const transport = composition.attachTransport(sink);
 
   transport.start();
   transport.ingest(JSON.stringify({ kind: "handshake", protocolVersion: "1" }));
@@ -243,10 +290,23 @@ async function runSessionRoundtrip(): Promise<AdapterProjection> {
 // ---------------------------------------------------------------------------
 // Operation: reconnect with cursor
 //
-// Runs one transport over a real turn with a shared replay buffer, captures
-// a mid-stream cursor, then hands that cursor to a second transport over a
-// structural fake binding (the subject under test is the transport's resume
-// behavior, not a second real turn).
+// ADR-063: sequencer and replay-buffer ownership moved host-side into
+// @tuvren/remote-session, so a real cross-socket reconnect over the SAME
+// session (not a second, independently-claimed binding) is now possible and
+// is exactly what this operation exercises. A first transport observes a
+// few sequenced frames from a real runtime turn, is then closed early
+// (simulating a dropped link — this only detaches the sink from the
+// session, per ADR-063 decision 4, it does not end the session), and a
+// second transport attaches to the SAME session with a cursor captured from
+// the first frame it ever saw. Because the underlying turn may still be
+// producing further events at the moment of reconnect, this operation
+// cannot know in advance exactly how many frames the replay burst will
+// contain; what it CAN assert without racing the turn's own pace is that the
+// replay is gapless and contiguous starting immediately after the resume
+// cursor's sequence number — `expectedReplaySequences` is computed as that
+// arithmetic progression, independently of what actually arrived, so a
+// dropped or duplicated frame in the replay would make the two arrays
+// diverge.
 // ---------------------------------------------------------------------------
 
 const WS_RECONNECT_SESSION_ID = "sess-ws-reconnect-1";
@@ -254,8 +314,6 @@ const WS_RECONNECT_TOOL_NAME = "ws.reconnect.tool";
 const WS_RECONNECT_CALL_ID = "ws-reconnect-call-1";
 
 async function runReconnectWithCursor(): Promise<AdapterProjection> {
-  const sharedBuffer: ReplayBuffer = createReplayBuffer({ capacity: 100 });
-
   const harness = createConformanceKernelHarness();
   const runner = createSingleToolCallRunner(
     WS_RECONNECT_TOOL_NAME,
@@ -285,41 +343,43 @@ async function runReconnectWithCursor(): Promise<AdapterProjection> {
     signal: textSignal("ws reconnect conformance"),
     threadId: thread.threadId,
   });
-  const firstBinding = createDuplexSessionBinding(handle, {
+  const binding = createDuplexSessionBinding(handle, {
     sessionId: WS_RECONNECT_SESSION_ID,
   });
+  const composition = createSessionComposition(binding);
+
   const firstSink = createRecordingSink();
-  const firstTransport = createWsSessionTransport({
-    binding: firstBinding,
-    replayBuffer: sharedBuffer,
-    sink: firstSink,
-  });
+  const firstTransport = composition.attachTransport(firstSink);
 
   firstTransport.start();
   firstTransport.ingest(
     JSON.stringify({ kind: "handshake", protocolVersion: "1" })
   );
-  await waitFor(() => firstSink.closes.length > 0);
+
+  // Wait for at least two sequenced frames before simulating the drop: a
+  // cursor from the very first frame guarantees at least one further frame
+  // is already retained in the session's replay buffer, so the reconnect
+  // below is guaranteed a non-empty "resumed" replay regardless of exactly
+  // how fast the underlying turn is producing events.
+  await waitFor(
+    () =>
+      countFrameMessagesWithCursor(
+        firstSink.sent as Record<string, unknown>[]
+      ) >= 2
+  );
 
   const firstFrames = (firstSink.sent as Record<string, unknown>[]).filter(
     (message) => message.kind === "frame" && typeof message.cursor === "string"
   );
-  const midIndex = Math.floor((firstFrames.length - 1) / 2);
-  const midCursor = firstFrames[midIndex]?.cursor as string;
-  const expectedReplaySequences = firstFrames
-    .slice(midIndex + 1)
-    .map(
-      (message) =>
-        decodeResumeCursor(message.cursor as string)?.sequence ?? null
-    );
+  const midCursor = firstFrames[0]?.cursor as string;
+  const midSequence = decodeResumeCursor(midCursor)?.sequence;
 
-  const second = createFakeBinding([], WS_RECONNECT_SESSION_ID);
+  // Simulated drop: detaches this sink from the session (ADR-063 decision
+  // 4) without ending it — the underlying turn keeps running.
+  firstTransport.close();
+
   const secondSink = createRecordingSink();
-  const secondTransport = createWsSessionTransport({
-    binding: second.binding,
-    replayBuffer: sharedBuffer,
-    sink: secondSink,
-  });
+  const secondTransport = composition.attachTransport(secondSink);
 
   secondTransport.start();
   secondTransport.ingest(
@@ -329,8 +389,10 @@ async function runReconnectWithCursor(): Promise<AdapterProjection> {
       protocolVersion: "1",
     })
   );
-  await flushMicrotasks();
-  secondTransport.close();
+  // The session eventually ends (the turn completes) and, per the
+  // composition helper's onEnded wiring, closes whichever transport is
+  // currently attached — the second one.
+  await waitFor(() => secondSink.closes.length > 0);
 
   const secondSent = secondSink.sent as Record<string, unknown>[];
   const ack = secondSent[0];
@@ -341,6 +403,10 @@ async function runReconnectWithCursor(): Promise<AdapterProjection> {
       (message) =>
         decodeResumeCursor(message.cursor as string)?.sequence ?? null
     );
+  const expectedReplaySequences =
+    midSequence === undefined
+      ? []
+      : replayedSequences.map((_, index) => midSequence + 1 + index);
 
   const observation = {
     ackResumeStatus: ack?.resumeStatus ?? null,
@@ -349,6 +415,14 @@ async function runReconnectWithCursor(): Promise<AdapterProjection> {
   };
 
   return { result: { ws: { reconnect: observation } } };
+}
+
+function countFrameMessagesWithCursor(
+  messages: readonly Record<string, unknown>[]
+): number {
+  return messages.filter(
+    (message) => message.kind === "frame" && typeof message.cursor === "string"
+  ).length;
 }
 
 // ---------------------------------------------------------------------------
@@ -426,10 +500,11 @@ async function observeRejectionClose(
   }
 ): Promise<number | null> {
   const fake = createFakeBinding([], sessionId);
+  const session = createTestRemoteClientSession(fake.binding);
   const sink = createRecordingSink();
   const transport = createWsSessionTransport({
     authorize: options?.authorize,
-    binding: fake.binding,
+    session,
     sink,
   });
 
@@ -462,10 +537,11 @@ async function runPolicyClosures(input: unknown): Promise<AdapterProjection> {
   const sessionId = "sess-ws-policy-1";
 
   const livenessFake = createFakeBinding([], sessionId);
+  const livenessSession = createTestRemoteClientSession(livenessFake.binding);
   const livenessSink = createRecordingSink();
   const livenessTransport = createWsSessionTransport({
-    binding: livenessFake.binding,
     heartbeat: { intervalMs, timeoutMs },
+    session: livenessSession,
     sink: livenessSink,
   });
 
@@ -490,12 +566,15 @@ async function runPolicyClosures(input: unknown): Promise<AdapterProjection> {
     sessionId,
   };
   const backpressureFake = createFakeBinding([invocationFrame], sessionId);
+  const backpressureSession = createTestRemoteClientSession(
+    backpressureFake.binding
+  );
   const backpressureSink = createScriptedBufferedAmountSink([
     overflowBufferedAmount,
   ]);
   const backpressureTransport = createWsSessionTransport({
     backpressure: { maxBufferedBytes },
-    binding: backpressureFake.binding,
+    session: backpressureSession,
     sink: backpressureSink,
   });
 
@@ -525,6 +604,18 @@ async function runPolicyClosures(input: unknown): Promise<AdapterProjection> {
 interface FakeBindingResult {
   binding: DuplexSessionBinding;
   dispatched: unknown[];
+}
+
+/** Wraps a structural fake `DuplexSessionBinding` in a `RemoteClientSession` with generous grace/timeout defaults (these fixtures never exercise reattach/redelivery — only handshake and heartbeat/backpressure policy — so the exact values are not load-bearing). */
+function createTestRemoteClientSession(
+  binding: DuplexSessionBinding
+): RemoteClientSession {
+  return createRemoteClientSession({
+    binding,
+    disconnectGraceMs: WS_ADAPTER_DISCONNECT_GRACE_MS,
+    dispatchTimeoutMs: WS_ADAPTER_DISPATCH_TIMEOUT_MS,
+    replayBufferCapacity: WS_ADAPTER_REPLAY_BUFFER_CAPACITY,
+  });
 }
 
 const unusedClientEndpoint: AttachedClientEndpoint = {
@@ -686,13 +777,6 @@ function isStrictlyIncreasingFromZero(
   return (
     sequences.length > 0 && sequences.every((value, index) => value === index)
   );
-}
-
-async function flushMicrotasks(): Promise<void> {
-  for (let i = 0; i < 200; i += 1) {
-    await Promise.resolve();
-  }
-  await new Promise<void>((resolveDelay) => setTimeout(resolveDelay, 0));
 }
 
 function readFixtureRecord(

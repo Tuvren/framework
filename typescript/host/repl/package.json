@@ -21,17 +21,23 @@
     "@tuvren/backend-memory": "workspace:*",
     "@tuvren/backend-postgres": "workspace:*",
     "@tuvren/backend-sqlite": "workspace:*",
+    "@tuvren/core": "workspace:*",
+    "@tuvren/host-session": "workspace:*",
     "@tuvren/kernel-grpc-client": "workspace:*",
     "@tuvren/mcp-client": "workspace:*",
-    "@tuvren/runner-react": "workspace:*",
     "@tuvren/provider-bridge-ai-sdk": "workspace:*",
+    "@tuvren/remote-session": "workspace:*",
+    "@tuvren/runner-react": "workspace:*",
     "@tuvren/sdk": "workspace:*",
+    "@tuvren/session-client": "workspace:*",
     "@tuvren/stream-agui": "workspace:*",
     "@tuvren/stream-core": "workspace:*",
     "@tuvren/stream-sse": "workspace:*",
+    "@tuvren/stream-ws": "workspace:*",
     "@tuvren/telemetry-semconv": "workspace:*"
   },
   "devDependencies": {
-    "@copilotkit/aimock": "1.15.1"
+    "@copilotkit/aimock": "1.15.1",
+    "postgres": "3.4.9"
   }
 }

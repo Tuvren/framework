@@ -1,0 +1,25 @@
+{
+  "name": "@tuvren/session-client",
+  "private": true,
+  "description": "Thin, zero-dependency reference remote peer for the Tuvren duplex session protocol over WebSocket (ADR-060/ADR-061/ADR-062/ADR-063): runs where tools actually execute (browser, Bun, Node >=22) and speaks the handshake/frame/heartbeat wire vocabulary a host server exposes via DuplexSessionBinding -> RemoteClientSession -> createWsSessionTransport.",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/host/session-client"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts"
+}

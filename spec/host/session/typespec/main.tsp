@@ -182,15 +182,20 @@ model ClientInvocationEnvelope {
   capabilityId: NonEmptyString;
 
   /**
-   * Side-effect-once idempotency identity for this invocation (ADR-052).
+   * Side-effect-once idempotency identity for this invocation (ADR-052 as
+   * amended by ADR-065).
    *
-   * A deterministic identity derived from the run id, call id, and active
-   * run fencing token. The client environment can present it to the
-   * external system it drives so a dispatch retried or re-issued after a
-   * preemption recovery is deduplicated. Distinct from `leaseToken`: the
-   * lease token guards staleness of *this* dispatch and is echoed back,
-   * while the idempotency key dedupes the *external effect* and is never
-   * echoed.
+   * A deterministic identity derived from the turn id and call id — the
+   * logical call identity. The client environment can present it to the
+   * external system it drives so a dispatch it has already seen is
+   * deduplicated: every dispatch of one logical call presents an identical
+   * key, across framework retries, approval resume, and redelivery after a
+   * reconnect. The run id and the run fencing token are deliberately
+   * excluded — a Run is one execution attempt and the fencing token rotates
+   * per lease renewal, so either would make the identity churn under the
+   * very conditions it must survive. Distinct from `leaseToken`: the lease
+   * token guards staleness of *this* dispatch and is echoed back, while the
+   * idempotency key dedupes the *external effect* and is never echoed.
    */
   idempotencyKey?: string;
 

@@ -1,6 +1,6 @@
 {
   "packetId": "tuvren.framework.host-session",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "boundary": "framework",
   "surface": "host-session",
   "humanAuthorityRefs": [
@@ -32,7 +32,7 @@
   "conformancePlans": [
     {
       "planId": "tuvren.framework.host-session.core",
-      "planVersion": "0.2.0",
+      "planVersion": "0.3.0",
       "path": "spec/conformance/engine/plans/host-session.json"
     }
   ],

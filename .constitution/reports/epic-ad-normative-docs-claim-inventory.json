@@ -2144,8 +2144,8 @@
     {
       "affectedBoundary": "framework",
       "adapterCapability": "kernel.run-liveness; kernel.shared-lease-clock; framework.run-liveness",
-      "claimFingerprint": "102846662c0f48f1a8e627e3d34d6cea9868bc62f7f267ae602781d64cb7d9c9",
-      "claimId": "FWK-102846662C0F",
+      "claimFingerprint": "9bec18e4fee2c4c361ebafa22eb123561947c65704d3151c8a8a2201ebbb49d1",
+      "claimId": "FWK-9BEC18E4FEE2",
       "duplicateOf": null,
       "line": 999,
       "rationaleContext": "normative",
@@ -2154,7 +2154,7 @@
       "sectionKey": "running-lease-ownership",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
       "surface": "side-effect-once under preemption",
-      "text": "**Side-effect-once under preemption (v0.21).** Backend-authoritative clocking and fencing protect *durable writes*; they do not by themselves prevent a non-idempotent *external* side effect already in flight when execution authority is lost. Shared core MUST therefore: (1) carry an idempotency identity derived from `(runId, callId, fencingToken)` on side-effecting invocation envelopes (Tuvren-server tool dispatch and the Client Endpoint Boundary dispatch envelope) so an external system or client environment can deduplicate a retried effect; (2) on loss of execution authority, NOT retry an in-flight invocation marked `nonRetryable` (`nonRetryable: true` continues to override `idempotent: true` in the retry budget), recovering only durably-staged completed results by `callId` as in §4.9; and (3) treat a client-reported result as a **proposal** that becomes durable state only through a runtime commit performed under a valid run fencing token, so a stale or late client report can never mutate committed history. The run execution lease (write authority) and the client-endpoint lease (availability/staleness) compose without being conflated."
+      "text": "**Side-effect-once under preemption (v0.21).** Backend-authoritative clocking and fencing protect *durable writes*; they do not by themselves prevent a non-idempotent *external* side effect already in flight when execution authority is lost. Shared core MUST therefore: (1) carry an idempotency identity derived from `(turnId, callId)` on side-effecting invocation envelopes (Tuvren-server tool dispatch and the Client Endpoint Boundary dispatch envelope) so an external system or client environment can deduplicate a retried effect. This identity is the **logical call identity** and MUST NOT incorporate the `runId` or the `fencingToken`: a Run is one execution *attempt* (a new Run is minted per iteration, per approval resume, and per recovery — kernel §5.2) and the fencing token rotates on every lease renewal, so either would make the identity churn under exactly the retry, resume, and recovery conditions it must survive. `turnId` and `callId` are both stable for one logical call: a Turn spans its Runs (kernel §5.3), and `callId` is minted once and re-presented by recovery as §4.9 requires. Note that cross-*crash* stability is therefore conditional on that §4.9 re-presentation actually occurring: an implementation whose recovery re-invokes the model instead of resuming the staged calls mints fresh `callId`s, and the identity cannot survive what the call itself does not; (2) on loss of execution authority, NOT retry an in-flight invocation marked `nonRetryable` (`nonRetryable: true` continues to override `idempotent: true` in the retry budget), recovering only durably-staged completed results by `callId` as in §4.9; and (3) treat a client-reported result as a **proposal** that becomes durable state only through a runtime commit performed under a valid run fencing token, so a stale or late client report can never mutate committed history. The run execution lease (write authority) and the client-endpoint lease (availability/staleness) compose without being conflated."
     },
     {
       "affectedBoundary": "framework",

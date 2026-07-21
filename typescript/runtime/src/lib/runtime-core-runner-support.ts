@@ -38,8 +38,8 @@ import type { ToolBatchEnvironment } from "./tool-execution.js";
  * Host capabilities backing the tool-batch environment and handoff-plan
  * helpers in this module: config cloning and freezing, context-engineering
  * helper construction, parallelism resolution, event and error publication,
- * fencing-token access, and tool-result staging. Implemented by the
- * runtime-core orchestration layer.
+ * and tool-result staging. Implemented by the runtime-core orchestration
+ * layer.
  */
 export interface RuntimeCoreRunnerSupportHost {
   cloneAgentConfigForRequest(
@@ -53,12 +53,6 @@ export interface RuntimeCoreRunnerSupportHost {
   };
   createFrozenSnapshot<T>(value: T): T;
   defaultMaxParallelToolCalls(): number;
-  /**
-   * Active run lease fencing token for this handle, or undefined when no
-   * run-liveness lease is held. Feeds the side-effect-once idempotency identity
-   * placed on the tool batch environment (ADR-052).
-   */
-  getActiveFencingToken(handle: RuntimeExecutionHandle): string | undefined;
   now(): number;
   publishCustomEvent(
     handle: RuntimeExecutionHandle,
@@ -105,8 +99,7 @@ export interface RuntimeCoreRunnerSupportHost {
  * check can run inside tool-call resolution (BB001–BB004), and sandbox
  * executor lookup strips the "sandbox:" endpoint-id prefix added by the
  * binding resolver so `AgentConfig.sandboxExecutors` stays keyed by raw
- * endpoint ids (AX004). The environment also carries the active run-lease
- * fencing token for side-effect-once idempotency (ADR-052).
+ * endpoint ids (AX004).
  */
 export function createToolBatchEnvironment(
   host: RuntimeCoreRunnerSupportHost,
@@ -147,7 +140,6 @@ export function createToolBatchEnvironment(
     policyCapabilityMetadata,
     policyContextInputs,
     extensions: loopState.activeConfig.extensions ?? [],
-    fencingToken: host.getActiveFencingToken(handle),
     iterationCount,
     manifest,
     maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(
@@ -165,6 +157,7 @@ export function createToolBatchEnvironment(
       host.publishProjectedError(handle, error, false, loopState);
     },
     runId,
+    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     resolveSandboxExecutor:
       loopState.activeConfig.sandboxExecutors === undefined
         ? undefined

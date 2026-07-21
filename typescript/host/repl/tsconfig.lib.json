@@ -42,6 +42,24 @@
     },
     {
       "path": "../../../typescript/providers/bridge-ai-sdk/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../typescript/core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../typescript/runtime/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../typescript/host/session/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../typescript/host/remote-session/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../typescript/streaming/ws/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../typescript/host/session-client/tsconfig.lib.json"
     }
   ]
 }

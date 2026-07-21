@@ -48,6 +48,17 @@
       "name": "@tuvren/core",
       "version": "0.1.0",
     },
+    "typescript/host/remote-session": {
+      "name": "@tuvren/remote-session",
+      "version": "0.1.0",
+      "dependencies": {
+        "@tuvren/host-session": "workspace:*",
+        "@tuvren/stream-core": "workspace:*",
+      },
+      "peerDependencies": {
+        "@tuvren/core": "workspace:~",
+      },
+    },
     "typescript/host/repl": {
       "name": "@tuvren/repl-host",
       "version": "0.1.0",
@@ -60,18 +71,24 @@
         "@tuvren/backend-memory": "workspace:*",
         "@tuvren/backend-postgres": "workspace:*",
         "@tuvren/backend-sqlite": "workspace:*",
+        "@tuvren/core": "workspace:*",
+        "@tuvren/host-session": "workspace:*",
         "@tuvren/kernel-grpc-client": "workspace:*",
         "@tuvren/mcp-client": "workspace:*",
         "@tuvren/provider-bridge-ai-sdk": "workspace:*",
+        "@tuvren/remote-session": "workspace:*",
         "@tuvren/runner-react": "workspace:*",
         "@tuvren/sdk": "workspace:*",
+        "@tuvren/session-client": "workspace:*",
         "@tuvren/stream-agui": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
         "@tuvren/stream-sse": "workspace:*",
+        "@tuvren/stream-ws": "workspace:*",
         "@tuvren/telemetry-semconv": "workspace:*",
       },
       "devDependencies": {
         "@copilotkit/aimock": "1.15.1",
+        "postgres": "3.4.9",
       },
     },
     "typescript/host/session": {
@@ -80,6 +97,10 @@
       "peerDependencies": {
         "@tuvren/core": "workspace:~",
       },
+    },
+    "typescript/host/session-client": {
+      "name": "@tuvren/session-client",
+      "version": "0.1.0",
     },
     "typescript/kernel/backends/memory": {
       "name": "@tuvren/backend-memory",
@@ -108,7 +129,7 @@
         "@tuvren/kernel-testkit": "workspace:*",
       },
       "peerDependencies": {
-        "@tuvren/core": "workspace:*",
+        "@tuvren/core": "workspace:~",
       },
     },
     "typescript/kernel/backends/shared": {
@@ -159,7 +180,7 @@
         "@tuvren/kernel-protocol": "workspace:*",
       },
       "peerDependencies": {
-        "@tuvren/core": "workspace:*",
+        "@tuvren/core": "workspace:~",
       },
     },
     "typescript/kernel/protocol": {
@@ -291,7 +312,7 @@
       },
       "peerDependencies": {
         "@standard-schema/spec": "^1.1.0",
-        "@tuvren/core": "workspace:*",
+        "@tuvren/core": "workspace:~",
         "zod": "^4.4.3",
       },
       "optionalPeers": [
@@ -341,6 +362,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@tuvren/host-session": "workspace:*",
+        "@tuvren/remote-session": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
       },
       "devDependencies": {
@@ -384,7 +406,7 @@
         "zod": "4.4.3",
       },
       "peerDependencies": {
-        "@tuvren/core": "workspace:*",
+        "@tuvren/core": "workspace:~",
         "@tuvren/sdk": "workspace:*",
       },
     },
@@ -1021,6 +1043,8 @@
 
     "@tuvren/providers-typescript-certification": ["@tuvren/providers-typescript-certification@workspace:typescript/providers/certification"],
 
+    "@tuvren/remote-session": ["@tuvren/remote-session@workspace:typescript/host/remote-session"],
+
     "@tuvren/repl-host": ["@tuvren/repl-host@workspace:typescript/host/repl"],
 
     "@tuvren/runner-react": ["@tuvren/runner-react@workspace:typescript/runners/react"],
@@ -1028,6 +1052,8 @@
     "@tuvren/runtime": ["@tuvren/runtime@workspace:typescript/runtime"],
 
     "@tuvren/sdk": ["@tuvren/sdk@workspace:typescript/sdk"],
+
+    "@tuvren/session-client": ["@tuvren/session-client@workspace:typescript/host/session-client"],
 
     "@tuvren/stream-agui": ["@tuvren/stream-agui@workspace:typescript/streaming/agui"],
 

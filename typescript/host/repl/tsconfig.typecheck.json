@@ -10,6 +10,7 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "smoke/**/*.ts",
+    "scripts/**/*.ts",
     "../../../typescript/kernel/backends/memory/src/**/*.ts",
     "../../../typescript/kernel/backends/postgres/src/**/*.ts",
     "../../../typescript/kernel/backends/sqlite/src/**/*.ts",
@@ -21,6 +22,12 @@
     "../../../typescript/streaming/core/src/**/*.ts",
     "../../../typescript/streaming/sse/src/**/*.ts",
     "../../../typescript/streaming/agui/src/**/*.ts",
-    "../../../typescript/providers/bridge-ai-sdk/src/**/*.ts"
+    "../../../typescript/providers/bridge-ai-sdk/src/**/*.ts",
+    "../../../typescript/core/src/**/*.ts",
+    "../../../typescript/runtime/src/**/*.ts",
+    "../../../typescript/host/session/src/**/*.ts",
+    "../../../typescript/host/remote-session/src/**/*.ts",
+    "../../../typescript/streaming/ws/src/**/*.ts",
+    "../../../typescript/host/session-client/src/**/*.ts"
   ]
 }

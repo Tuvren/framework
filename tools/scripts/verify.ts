@@ -142,6 +142,14 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   // @tuvren/host-session (issue #99 / ADR-060): the duplex session frame
   // binding's routing tests run only in this lane.
   "host-session",
+  // @tuvren/remote-session (ADR-063): the reattach/redelivery/grace/dispatch-
+  // timeout session-lifecycle seam's tests run only in this lane.
+  "remote-session",
+  // @tuvren/session-client (M5): the thin, zero-dependency reference remote
+  // peer for the duplex session protocol over WebSocket. Its handshake,
+  // dispatch-dedup, redelivery, reconnect/backoff, heartbeat, and inbound
+  // frame-shape tests run only in this lane.
+  "session-client",
   // Go, Python, and Dart kernel-port projects run their language-native
   // test runners (go test / pytest / dart test) through these Nx targets;
   // certification wrappers join the conformance lanes separately once
@@ -178,6 +186,13 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "telemetry-semconv",
   "host-repl",
   "host-session",
+  // @tuvren/remote-session (ADR-063): builds above host-session and
+  // stream-core, so its lane must run alongside them.
+  "remote-session",
+  // @tuvren/session-client (M5): zero-dependency remote-peer package; builds
+  // standalone (no workspace dependency edges) but still needs its own
+  // lane entry so the build graph covers it.
+  "session-client",
 ];
 
 export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
@@ -201,6 +216,12 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "telemetry-semconv",
   "host-repl",
   "host-session",
+  // @tuvren/remote-session (ADR-063): package-exports smoke for the
+  // reattachable session-lifecycle seam.
+  "remote-session",
+  // @tuvren/session-client (M5): package-exports smoke for the
+  // zero-dependency reference WebSocket remote peer.
+  "session-client",
 ];
 
 // The read-only constitutional gate: authority/conformance validators that must

@@ -1,0 +1,48 @@
+{
+  "name": "remote-session",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/host/remote-session",
+  "sourceRoot": "typescript/host/remote-session/src",
+  "projectType": "library",
+  "tags": ["boundary:hosts", "layer:implementation"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/host/remote-session",
+        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+      }
+    },
+    "exports-smoke": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "typescript/host/remote-session",
+        "command": "bun test ./smoke/package-exports.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/host/remote-session"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "cwd": "typescript/host/remote-session",
+        "command": "bun test"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/host/remote-session"
+      }
+    }
+  }
+}

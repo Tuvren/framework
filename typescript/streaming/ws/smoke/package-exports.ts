@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { createRemoteClientSession } from "@tuvren/remote-session";
 import {
   createWsSessionTransport,
   parseWsMessage,
@@ -38,10 +39,10 @@ describe("stream-ws package exports", () => {
     const closes: Array<{ code: number; reason: string | undefined }> = [];
 
     async function* emptyOutbound() {
-      // No frames; the pump observes completion once start() drains it.
+      // No frames; the session observes completion once it drains this.
     }
 
-    const transport = createWsSessionTransport({
+    const session = createRemoteClientSession({
       binding: {
         clientEndpoint: {
           advertisedCapabilities: [],
@@ -55,6 +56,13 @@ describe("stream-ws package exports", () => {
         outbound: () => emptyOutbound(),
         sessionId: "smoke-session",
       },
+      disconnectGraceMs: 1000,
+      dispatchTimeoutMs: 1000,
+      replayBufferCapacity: 10,
+    });
+
+    const transport = createWsSessionTransport({
+      session,
       sink: {
         close: (code, reason) => closes.push({ code, reason }),
         send: (data) => sent.push(data),

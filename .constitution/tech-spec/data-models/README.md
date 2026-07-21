@@ -706,7 +706,7 @@ export interface CapabilityInvocationAttribution {
   - `correlationId` is always client-generated on an inbound frame and always echoed back on any resulting `session_rejection`, so a client can match a rejection to the frame that caused it without a server-assigned identity round trip.
   - No inbound frame is ever silently dropped: every inbound frame produces either a routed effect on the held handle or exactly one `session_rejection` naming a `SessionRejectionCode`.
   - `leaseToken` on `ClientInvocationEnvelope`/`ClientReportedResult` is confined to the session channel between the runtime and the executing client endpoint; it is never broadcast on the canonical event stream (§4.5), which is the rationale ADR-060 records for session-frame-only promotion rather than extending `TuvrenStreamEvent`.
-  - `idempotencyKey` and `leaseToken` are distinct on `ClientInvocationEnvelope`: `leaseToken` guards staleness of *this* dispatch and is echoed back by the client; `idempotencyKey` (ADR-052) dedupes the *external side effect* the client environment may re-issue after a preemption recovery and is not echoed.
+  - `idempotencyKey` and `leaseToken` are distinct on `ClientInvocationEnvelope`: `leaseToken` guards staleness of *this* dispatch and is echoed back by the client; `idempotencyKey` (ADR-052, amended by ADR-065) dedupes the *external side effect* the client environment may re-issue after a preemption recovery or an ADR-063 redelivery, is derived from `(turnId, callId)` so it is stable across those recoveries, and is not echoed.
 - **Shapes:**
 
 ```ts
@@ -770,14 +770,22 @@ export interface ClientInvocationEnvelope {
   callId: string;
   capabilityId: string;
   /**
-   * Side-effect-once idempotency identity for this invocation (ADR-052).
+   * Side-effect-once idempotency identity for this invocation (ADR-052, as
+   * amended by ADR-065).
    *
-   * A deterministic identity derived from the run id, call id, and active run
-   * fencing token. The client environment can present it to the external system
-   * it drives so a dispatch retried or re-issued after a preemption recovery is
-   * deduplicated. Distinct from `leaseToken`: the lease token guards staleness
-   * of *this* dispatch (and is echoed back), while the idempotency key dedupes
-   * the *external effect* and is not echoed.
+   * A deterministic identity derived from the turn id and call id — the logical
+   * call identity. The client environment can present it to the external system
+   * it drives so a dispatch retried, re-issued after an approval resume or a
+   * preemption recovery, or redelivered after a reconnect (ADR-063) is
+   * deduplicated; every such dispatch of one logical call presents an identical
+   * key. Distinct from `leaseToken`: the lease token guards staleness of *this*
+   * dispatch (and is echoed back), while the idempotency key dedupes the
+   * *external effect* and is not echoed. The `runId` and the run fencing token
+   * are deliberately absent — a Run is one execution attempt (freshly minted per
+   * iteration, per resume, and per recovery) and the fencing token rotates on
+   * every lease renewal, so either would make the identity unstable across
+   * exactly the retries and recoveries it exists to survive; fencing remains
+   * write authority only (ADR-052 §3).
    */
   idempotencyKey?: string;
   input: unknown;

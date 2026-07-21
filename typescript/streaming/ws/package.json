@@ -23,6 +23,7 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@tuvren/host-session": "workspace:*",
+    "@tuvren/remote-session": "workspace:*",
     "@tuvren/stream-core": "workspace:*"
   },
   "devDependencies": {

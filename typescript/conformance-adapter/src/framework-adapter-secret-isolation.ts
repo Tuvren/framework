@@ -25,6 +25,11 @@
  */
 
 import type {
+  AttachedClientEndpoint,
+  ClientInvocationEnvelope,
+  ClientReportedResult,
+} from "@tuvren/core/capabilities";
+import type {
   TelemetryEvent,
   TelemetrySpan,
   TuvrenTelemetrySink,
@@ -46,6 +51,7 @@ import type {
 import {
   AGENT_NAME,
   assistantText,
+  assistantToolCalls,
   collectValues,
   createConformanceIdFactory,
   createConformanceKernelHarness,
@@ -579,6 +585,156 @@ export async function runScopeIsolationSurfaces(
     result: {
       scopeA: scopeASurfaces,
       scopeB: scopeBSurfaces,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Operation: runtime.sanitize-seam.tool-result
+//
+// ADR-064 §4, following ADR-044 §4's precedent ("absence of secret material
+// is asserted by conformance ... never by trusting that the hook was
+// called"): a tuvren-client capability reports an error result whose content
+// embeds the fixture's `sanitizeSeamMarker`. `AgentConfig.sanitizeToolResult`
+// scrubs it. `stageAndEmitResult` (typescript/runtime/src/lib/
+// tool-execution-helpers.ts) is the single chokepoint that applies the hook
+// before BOTH durable staging and the canonical `tool.result` event, so this
+// operation returns the RAW persisted tool_result part (read back from
+// kernel state after the turn completes) and the RAW captured `tool.result`
+// event — never the hook's return value directly. The plan's secretAbsence
+// assertions (scanning both surfaces for the marker) and resultField
+// assertions (requiring the scrubbed replacement text) own the verdict; this
+// adapter performs no scanning or grading.
+// ---------------------------------------------------------------------------
+
+const SANITIZE_SEAM_CAP = "sanitize-seam.client.marker-bearing";
+const SANITIZE_SEAM_CALL_ID = "sanitize-seam-call-1";
+const SANITIZE_SEAM_SCRUBBED_MARKER = "[scrubbed-by-host-policy]";
+
+function readSanitizeSeamMarker(input: unknown): string {
+  const fixture =
+    isRecord(input) && isRecord(input.fixture) ? input.fixture : {};
+  return readString(fixture.sanitizeSeamMarker, "missing-sanitize-seam-marker");
+}
+
+function findToolResultPart(
+  messages: readonly unknown[],
+  callId: string
+): Record<string, unknown> | undefined {
+  for (const message of messages) {
+    if (!isRecord(message) || message.role !== "tool") {
+      continue;
+    }
+    const parts = message.parts;
+    if (!Array.isArray(parts)) {
+      continue;
+    }
+    for (const part of parts) {
+      if (
+        isRecord(part) &&
+        part.type === "tool_result" &&
+        part.callId === callId
+      ) {
+        return part;
+      }
+    }
+  }
+  return undefined;
+}
+
+export async function runSanitizeSeamToolResult(
+  input: unknown
+): Promise<AdapterProjection> {
+  const marker = readSanitizeSeamMarker(input);
+  const harness = createConformanceKernelHarness();
+  const runner = createStaticRunner(async (context) => {
+    await Promise.resolve();
+    if (!context.messages.some((message) => message.role === "tool")) {
+      return {
+        messages: [
+          assistantToolCalls([
+            {
+              callId: SANITIZE_SEAM_CALL_ID,
+              input: {},
+              name: SANITIZE_SEAM_CAP,
+            },
+          ]),
+        ],
+        resolution: { type: "continue_iteration" as const },
+        toolExecutionMode: "parallel" as const,
+      };
+    }
+    return {
+      messages: [assistantText("sanitize-seam conformance turn")],
+      resolution: { reason: "done", type: "end_turn" as const },
+    };
+  });
+  const endpoint: AttachedClientEndpoint = {
+    advertisedCapabilities: [
+      {
+        capabilityId: SANITIZE_SEAM_CAP,
+        description: "sanitize-seam conformance capability",
+        inputSchema: { type: "object" },
+      },
+    ],
+    dispatch(
+      envelope: ClientInvocationEnvelope
+    ): Promise<ClientReportedResult> {
+      return Promise.resolve({
+        callId: envelope.callId,
+        content: {
+          message: `boom: leaked secret ${marker} in a client-reported error message`,
+        },
+        isError: true,
+        leaseToken: envelope.leaseToken,
+      });
+    },
+    endpointId: "ep-sanitize-seam",
+  };
+  const runtime = createTuvrenRuntimeCore({
+    createId: createConformanceIdFactory(),
+    defaultRunnerId: RUNNER_ID,
+    runnerRegistry: createRunnerRegistry([runner]),
+    kernel: harness.kernel,
+  });
+  const thread = await runtime.createThread({});
+  const handle = runtime.executeTurn({
+    branchId: thread.branchId,
+    config: {
+      clientEndpoints: [endpoint],
+      name: AGENT_NAME,
+      sanitizeToolResult(result) {
+        const output = isRecord(result.output) ? result.output : {};
+        const message =
+          typeof output.message === "string" ? output.message : "";
+        return {
+          ...result,
+          output: {
+            message: message.split(marker).join(SANITIZE_SEAM_SCRUBBED_MARKER),
+          },
+        };
+      },
+    },
+    signal: textSignal("sanitize-seam conformance"),
+    threadId: thread.threadId,
+  });
+  const streamEvents = await collectValues(handle.events());
+  await handle.awaitResult();
+
+  const persistedMessages = await harness.readBranchMessages(thread.branchId);
+  const persistedToolMessagePart =
+    findToolResultPart(persistedMessages, SANITIZE_SEAM_CALL_ID) ?? null;
+  const emittedToolResultEvent =
+    streamEvents.find(
+      (event) => isRecord(event) && event.type === "tool.result"
+    ) ?? null;
+
+  return {
+    result: {
+      sanitizeSeam: {
+        emittedToolResultEvent,
+        persistedToolMessagePart,
+      },
     },
   };
 }

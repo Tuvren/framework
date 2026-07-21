@@ -250,9 +250,12 @@ async function* streamFixtureChunks(
     // falling back to a generous deadline so the turn still terminates if
     // steering is somehow never observed (for example a future scenario
     // change). Once steering has already been observed — as is the case for
-    // the follow-up turn that incorporates it — this resolves immediately,
-    // so replay/determinism-sensitive turns are not penalized with an
-    // artificial wait.
+    // the follow-up iteration that incorporates it — this resolves
+    // immediately, so replay/determinism-sensitive turns are not penalized
+    // with an artificial wait. Note this gate only guarantees the steer is
+    // ACCEPTED while the turn is running; creating the extra iteration that
+    // incorporation needs is the job of the steering scenario's loop policy
+    // (CONTINUE_UNTIL_STEERED_POLICY in repl-scenarios.ts).
     await steeringGate.waitForObservedOrDeadline(3000);
   }
 

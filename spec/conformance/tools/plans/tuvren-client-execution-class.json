@@ -1,6 +1,6 @@
 {
   "planId": "tuvren.framework.tuvren-client-execution-class",
-  "planVersion": "0.2.0",
+  "planVersion": "0.3.0",
   "packetId": "tuvren.shared.core",
   "applicability": {
     "capabilities": ["framework.runtime-api"]
@@ -181,6 +181,83 @@
         }
       ],
       "operation": "runtime.tuvren-client.lifecycle"
+    },
+    {
+      "checkId": "az.az006.network-reconnect-redelivery",
+      "evidence": [
+        "result.tuvrenClient.networkReconnectRedelivery.effectCount",
+        "result.tuvrenClient.networkReconnectRedelivery.redeliveredInvocationCount",
+        "result.tuvrenClient.networkReconnectRedelivery.idempotencyKeyCount",
+        "result.tuvrenClient.networkReconnectRedelivery.noCursorDuplication",
+        "result.tuvrenClient.networkReconnectRedelivery.status",
+        "result.tuvrenClient.networkReconnectRedelivery.observedAtLeastOneCursor"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkReconnectRedelivery.redeliveredInvocationCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkReconnectRedelivery.idempotencyKeyCount",
+          "equals": 1
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkReconnectRedelivery.noCursorDuplication",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkReconnectRedelivery.status",
+          "equals": "completed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkReconnectRedelivery.observedAtLeastOneCursor",
+          "equals": true
+        }
+      ],
+      "operation": "runtime.tuvren-client.network-reconnect-redelivery"
+    },
+    {
+      "checkId": "az.az006.result-durability-recovered",
+      "evidence": [
+        "result.tuvrenClient.networkKillDurability.hasCommittedResult",
+        "result.tuvrenClient.networkKillDurability.committedResultIsError",
+        "result.tuvrenClient.networkKillDurability.committedResultOutputEcho",
+        "result.tuvrenClient.networkKillDurability.idempotencyKeyPresent",
+        "result.tuvrenClient.networkKillDurability.writerStatus"
+      ],
+      "assertions": [
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkKillDurability.hasCommittedResult",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkKillDurability.committedResultIsError",
+          "equals": false
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkKillDurability.committedResultOutputEcho",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkKillDurability.idempotencyKeyPresent",
+          "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkKillDurability.writerStatus",
+          "equals": "completed"
+        }
+      ],
+      "operation": "runtime.tuvren-client.result-durability"
     }
   ]
 }

@@ -211,7 +211,11 @@
             "host-session.approval-response-resumes-from-checkpoint",
             "host-session.cancel-propagates-cooperatively",
             "host-session.cancel-while-paused-terminates-stream",
+            "host-session.dispatch-timeout-settles-while-attached",
             "host-session.frame-schema-validation",
+            "host-session.grace-window-expiry-settles-binding-unavailable",
+            "host-session.reattach-redelivers-unanswered-invocation",
+            "host-session.sequence-continuity-across-reattach",
             "host-session.stale-client-result-rejected",
             "ba.ba001.policy-denied-lifecycle-no-start-error-result",
             "ba.ba001.provider-mediated-lifecycle-start-emitted",
@@ -361,6 +365,7 @@
             "runtime-callable-ext.tool-execute.state-tool-results-total-one",
             "runtime-callable-ext.validate-structured-output.resolution-fail",
             "runtime-callable-ext.validate-structured-output.resolution-type-string",
+            "sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces",
             "schema-authoring.branch1-already-wrapped.has-schema-symbol",
             "schema-authoring.branch2-zod-v4.has-schema-symbol",
             "schema-authoring.branch2-zod-v4.json-schema-type",
@@ -480,6 +485,8 @@
             "az.az004.client-side-mcp-resolves-tuvren-client-class",
             "az.az005.no-tool-audit-events-for-tuvren-client",
             "az.az005.no-tool-audit-for-client-mcp",
+            "az.az006.network-reconnect-redelivery",
+            "az.az006.result-durability-recovered",
             "ax.ax001.input-validated-audit-event-emitted",
             "ax.ax001.input-validation-failure-carries-code",
             "ax.ax001.input-validation-failure-surfaces-error",
@@ -502,9 +509,9 @@
           ],
           "checkSummary": {
             "failedChecks": 0,
-            "passedChecks": 492,
-            "totalChecks": 504,
-            "applicableChecks": 492,
+            "passedChecks": 499,
+            "totalChecks": 511,
+            "applicableChecks": 499,
             "nonApplicableChecks": 12
           },
           "declaredCapabilities": [
@@ -548,9 +555,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 12,
-            "totalChecks": 504,
+            "totalChecks": 511,
             "applicableChecks": 12,
-            "nonApplicableChecks": 492
+            "nonApplicableChecks": 499
           },
           "declaredCapabilities": ["framework.batteries-included"],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json",
@@ -1376,9 +1383,9 @@
           "checkSummary": {
             "failedChecks": 0,
             "passedChecks": 0,
-            "totalChecks": 504,
+            "totalChecks": 511,
             "applicableChecks": 0,
-            "nonApplicableChecks": 504
+            "nonApplicableChecks": 511
           },
           "declaredCapabilities": [],
           "evidencePath": "reports/compatibility/evidence/certification-harness.framework-rust-certification.json",

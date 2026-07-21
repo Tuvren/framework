@@ -85,12 +85,6 @@ export interface RuntimeCoreToolResumeHost {
     runId: string,
     stableHeadTurnNodeHash: HashString
   ): Promise<void>;
-  /**
-   * Active run lease fencing token for this handle, or undefined when no
-   * run-liveness lease is held. Feeds the side-effect-once idempotency identity
-   * placed on the resumed tool batch environment (ADR-052).
-   */
-  getActiveFencingToken(handle: RuntimeExecutionHandle): string | undefined;
   loadHeadState(branchId: string): Promise<HeadState>;
   now(): number;
   publishCustomEvent(
@@ -499,7 +493,6 @@ function createToolBatchEnvironment(
     branchId: handle.request.branchId,
     capabilityPolicyEngine: policyEngine ?? undefined,
     extensions: loopState.activeConfig.extensions ?? [],
-    fencingToken: host.getActiveFencingToken(handle),
     iterationCount,
     manifest,
     maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(loopState),
@@ -516,6 +509,7 @@ function createToolBatchEnvironment(
       host.publishProjectedError(handle, error, false, loopState);
     },
     runId,
+    sanitizeToolResult: loopState.activeConfig.sanitizeToolResult,
     signal: handle.abortSignal,
     stageResult: async (result, orderIndex) => {
       return await host.stageMessage(

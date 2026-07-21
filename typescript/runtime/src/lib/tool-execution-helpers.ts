@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-import { type HashString, TuvrenRuntimeError } from "@tuvren/core";
+import { TuvrenRuntimeError } from "@tuvren/core";
+import type { ExecutionClass } from "@tuvren/core/capabilities";
+import { TOOL_RESULT_SANITIZATION_FAILED } from "@tuvren/core/errors";
 import type { EventSource, TuvrenStreamEvent } from "@tuvren/core/events";
+import type {
+  SanitizeToolResultContext,
+  SanitizeToolResultHook,
+} from "@tuvren/core/execution";
 import type {
   AroundToolContext,
   AroundToolResult,
@@ -171,10 +177,12 @@ export function createBatchScopedEnvironment(
  *
  * `emit`/`forward` publish onto the turn stream but become no-ops once
  * `timeoutSignal` aborts, so a timed-out tool cannot keep emitting events.
- * `idempotencyKey` is derived from `(runId, callId, fencingToken)` so
- * external systems can deduplicate a side effect retried under a new
- * execution owner (ADR-052 side-effect-once; see
- * `deriveIdempotencyKey` in idempotency-identity.ts). Tool `metadata` is
+ * `idempotencyKey` is derived from `(turnId, callId)` — the logical call
+ * identity, which survives retries, approval resumes, and recovery — so
+ * external systems can deduplicate a side effect re-dispatched under a new
+ * Run or a new execution owner (ADR-052 side-effect-once as amended by
+ * ADR-065; see `deriveIdempotencyKey` in idempotency-identity.ts). Tool
+ * `metadata` is
  * deep-cloned (preserving functions) so the tool cannot mutate the registry's
  * definition, and `signal` falls back to the batch signal when no per-call
  * timeout signal exists.
@@ -204,11 +212,7 @@ export function createToolExecutionContext(
         source,
       });
     },
-    idempotencyKey: deriveIdempotencyKey(
-      environment.runId,
-      toolCall.callId,
-      environment.fencingToken
-    ),
+    idempotencyKey: deriveIdempotencyKey(environment.turnId, toolCall.callId),
     metadata:
       tool.metadata === undefined
         ? undefined
@@ -752,46 +756,155 @@ function createApprovalResultMetadata(
  *
  * Waits on the wave's start barrier first, enforcing the §6.4 invariant that
  * no `tool.result` of a wave is emitted before every `tool.start` of that
- * wave. Staging precedes emission so a crash between the two loses only the
- * event, never the durable result (framework spec §8.6 incremental staging).
+ * wave. `environment.sanitizeToolResult` (ADR-064), when configured, is
+ * applied here before either durable staging or event emission — this is the
+ * single chokepoint for both, so the scrubbed form is what lands in kernel
+ * history *and* what the canonical `tool.result` event carries; the
+ * pre-sanitization form never reaches either. Staging precedes emission so a
+ * crash between the two loses only the event, never the durable result
+ * (framework spec §8.6 incremental staging).
  *
  * @param orderIndex - Original tool-call position used as the durable order
  *   key.
- * @returns The staged message's content hash.
+ * @param executionClass - The result's resolved execution class, when known;
+ *   absent for outcomes decided before a binding was resolved (unknown tool,
+ *   input-validation failure, policy denial, resume rejection) per ADR-064 §3.
+ * @returns The staged (sanitized) result paired with its content hash. The
+ *   returned `result` — not the caller's input — is what was durably staged
+ *   and emitted; callers must thread it into every in-memory downstream
+ *   consumer (batch outcomes, after-iteration hooks) so the in-memory view
+ *   never diverges from durable state.
  */
 export async function stageAndEmitResult(
   environment: ToolBatchEnvironment,
   result: ToolResultPart,
   orderIndex: number,
-  startBarrier: ToolStartBarrier
-): Promise<HashString> {
+  startBarrier: ToolStartBarrier,
+  executionClass?: ExecutionClass
+): Promise<StagedToolResult> {
   await startBarrier.waitUntilReady();
-  const hash = await environment.stageResult(result, orderIndex);
-  emitToolResultEvent(environment, result);
-  return hash;
+  const sanitized = applySanitizeToolResult(
+    environment,
+    result,
+    executionClass
+  );
+  const hash = await environment.stageResult(sanitized, orderIndex);
+  emitToolResultEvent(environment, sanitized);
+  return { hash, result: sanitized };
 }
 
 /**
  * Sequentially stages and emits several results that share one order index —
  * e.g. the `completedResults` accompanying an approval pause.
  *
- * @returns Content hashes aligned with `results`.
+ * @param executionClass - See {@link stageAndEmitResult}; applies to every
+ *   result in `results`.
+ * @returns Staged (sanitized) results, index-aligned with `results`.
  */
 export async function stageAndEmitResults(
   environment: ToolBatchEnvironment,
   results: ToolResultPart[],
   orderIndex: number,
-  startBarrier: ToolStartBarrier
-): Promise<HashString[]> {
-  const hashes: HashString[] = [];
+  startBarrier: ToolStartBarrier,
+  executionClass?: ExecutionClass
+): Promise<StagedToolResult[]> {
+  const staged: StagedToolResult[] = [];
 
   for (const result of results) {
-    hashes.push(
-      await stageAndEmitResult(environment, result, orderIndex, startBarrier)
+    staged.push(
+      await stageAndEmitResult(
+        environment,
+        result,
+        orderIndex,
+        startBarrier,
+        executionClass
+      )
     );
   }
 
-  return hashes;
+  return staged;
+}
+
+/**
+ * Applies the host's {@link ToolBatchEnvironment.sanitizeToolResult} hook
+ * (ADR-064) to a would-be-staged result, if one is configured.
+ *
+ * A no-op when the hook is absent — byte-identical behavior to today.
+ * Delegates the actual hook application (context construction, identity
+ * re-stamp, throw handling) to {@link applySanitizeHookToPart}, the same
+ * pure helper the pre-staged-provider staging path in
+ * `runtime-core-iteration.ts` uses — one shared implementation, two
+ * application sites (the Tool Execution Gateway chokepoint here, and the
+ * AY003 pre-staged provider message path), per ADR-064 §3.
+ */
+function applySanitizeToolResult(
+  environment: ToolBatchEnvironment,
+  result: ToolResultPart,
+  executionClass: ExecutionClass | undefined
+): ToolResultPart {
+  const hook = environment.sanitizeToolResult;
+
+  if (hook === undefined) {
+    return result;
+  }
+
+  return applySanitizeHookToPart(hook, result, executionClass);
+}
+
+/**
+ * Pure application of the ADR-064 host sanitization hook to a single
+ * {@link ToolResultPart}: builds the {@link SanitizeToolResultContext},
+ * invokes the hook, and re-stamps `callId`/`name`/`type` onto whatever the
+ * hook returns.
+ *
+ * Correlation identity is load-bearing and framework-owned, never host
+ * policy: kernel skip-by-callId recovery, result/call pairing, and the
+ * client-endpoint echo check all key on it. Re-stamping after the hook means
+ * a careless object rebuild cannot desync the durable record from its
+ * tool.call — content is the host's to sanitize, identity is not.
+ *
+ * A hook that throws is treated as a defect on this specific tool call, not
+ * the turn (framework spec §8.6: tool failures become results, never turn
+ * failures): the throw is not swallowed into a scrubbed-by-default result —
+ * silently substituting content the host did not author would be worse than
+ * a loud failure — so it becomes this call's own `isError: true` result
+ * carrying `output.code: "tool_result_sanitization_failed"`.
+ *
+ * Exported so every application site of the seam (the gateway chokepoint in
+ * {@link stageAndEmitResult} and the pre-staged provider message path in
+ * `runtime-core-iteration.ts`) shares byte-identical semantics.
+ */
+export function applySanitizeHookToPart(
+  hook: SanitizeToolResultHook,
+  result: ToolResultPart,
+  executionClass: ExecutionClass | undefined
+): ToolResultPart {
+  const context: SanitizeToolResultContext = {
+    callId: result.callId,
+    toolName: result.name,
+    ...(executionClass === undefined ? {} : { executionClass }),
+  };
+
+  try {
+    const sanitized = hook(result, context);
+    return {
+      ...sanitized,
+      callId: result.callId,
+      name: result.name,
+      type: "tool_result",
+    };
+  } catch (error: unknown) {
+    return {
+      callId: result.callId,
+      isError: true,
+      name: result.name,
+      output: {
+        code: TOOL_RESULT_SANITIZATION_FAILED,
+        error: `sanitizeToolResult threw: ${normalizeError(error).message}`,
+      },
+      type: "tool_result",
+    };
+  }
 }
 
 /**
@@ -814,13 +927,13 @@ export async function stageImmediateResults(
       continue;
     }
 
-    const hashes = await stageAndEmitResults(
+    const staged = await stageAndEmitResults(
       environment,
       results,
       index,
       startBarrier
     );
-    orderedResults[index].push(...zipStagedToolResults(results, hashes));
+    orderedResults[index].push(...staged);
   }
 }
 
@@ -1171,27 +1284,6 @@ export function cloneValue<T>(value: T): T {
 /** Coerces an arbitrary thrown value into an `Error`, stringifying non-errors. */
 export function normalizeError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
-}
-
-/**
- * Pairs results with their staging hashes into {@link StagedToolResult}
- * entries.
- *
- * @throws Error when the two arrays differ in length — hashes must stay
- *   index-aligned with the results they were staged from.
- */
-export function zipStagedToolResults(
-  results: ToolResultPart[],
-  hashes: HashString[]
-): StagedToolResult[] {
-  if (results.length !== hashes.length) {
-    throw new Error("tool result hashes must align with tool results");
-  }
-
-  return results.map((result, index) => ({
-    hash: hashes[index],
-    result,
-  }));
 }
 
 /**

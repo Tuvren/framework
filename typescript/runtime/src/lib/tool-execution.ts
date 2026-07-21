@@ -25,7 +25,10 @@ import {
   TOOL_RESULT_VALIDATION_FAILED,
 } from "@tuvren/core/errors";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
-import type { ContextManifest } from "@tuvren/core/execution";
+import type {
+  ContextManifest,
+  SanitizeToolResultHook,
+} from "@tuvren/core/execution";
 import type {
   AroundToolHandler,
   TuvrenExtension,
@@ -43,6 +46,7 @@ import {
   createBindingResolver,
   isClientEndpointTool,
 } from "./binding-resolver.js";
+import { buildToolAttribution } from "./capability-attribution.js";
 import { runWithTimeout } from "./execution-timeouts.js";
 import {
   buildSharedExports,
@@ -78,7 +82,6 @@ import {
   toExecutableToolCall,
   validateToolInput,
   validateToolOutput,
-  zipStagedToolResults,
 } from "./tool-execution-helpers.js";
 import { resolveToolDefinition } from "./tool-registry.js";
 
@@ -113,12 +116,6 @@ export interface ToolBatchEnvironment {
    * {@link ToolBatchOutcome.updates}.
    */
   extensions: TuvrenExtension[];
-  /**
-   * Active run lease fencing token, when this batch runs under a run-liveness
-   * lease. Feeds the per-invocation side-effect-once idempotency identity
-   * (ADR-052); absent for runtimes without run-liveness leases.
-   */
-  fencingToken?: string;
   /**
    * Iteration-loop counter of the turn issuing this batch; surfaced to
    * `aroundTool` contexts for observability.
@@ -175,6 +172,13 @@ export interface ToolBatchEnvironment {
   ): TuvrenSandboxExecutor | undefined;
   /** Kernel run this batch executes under; stamped onto `tool.audit` events. */
   runId: string;
+  /**
+   * Host sanitization seam threaded from `AgentConfig.sanitizeToolResult`
+   * (ADR-064). Applied inside `stageAndEmitResult` before both durable
+   * staging and `tool.result` event emission — see that function's doc for
+   * the full ordering guarantee.
+   */
+  sanitizeToolResult?: SanitizeToolResultHook;
   /**
    * Optional per-tenant rate limiter for the Tuvren-server execution class.
    * Each runtime instance creates its own limiter from AgentConfig.serverExecution,
@@ -366,7 +370,14 @@ export type SingleToolOutcome =
     }
   | {
       approval: ApprovalRequest;
-      completedResultHashes: HashString[];
+      /**
+       * The staged (sanitized, ADR-064) forms of the sibling results that
+       * completed before the pause, paired with their durable hashes. Carried
+       * as pairs — not bare hashes — so downstream in-memory consumers see
+       * exactly what was durably staged, never the pre-sanitization parts
+       * still reachable via `approval.completedResults`.
+       */
+      completedStagedResults: StagedToolResult[];
       result?: never;
       updates: ExtensionStateUpdate[];
     };
@@ -616,12 +627,7 @@ async function runParallelToolBatch(
 
     if (outcome.approval !== undefined) {
       pendingToolCalls.push(...outcome.approval.toolCalls);
-      orderedResults[resultIndex].push(
-        ...zipStagedToolResults(
-          outcome.approval.completedResults,
-          outcome.completedResultHashes
-        )
-      );
+      orderedResults[resultIndex].push(...outcome.completedStagedResults);
       continue;
     }
 
@@ -667,15 +673,13 @@ async function runSequentialToolBatch(
     }
 
     if ("result" in resolved) {
-      const resultHashes = await stageAndEmitResults(
+      const staged = await stageAndEmitResults(
         environment,
         [resolved.result],
         index,
         createToolStartBarrier(0)
       );
-      orderedResults[index].push(
-        ...zipStagedToolResults([resolved.result], resultHashes)
-      );
+      orderedResults[index].push(...staged);
       continue;
     }
 
@@ -689,12 +693,7 @@ async function runSequentialToolBatch(
 
     if (outcome.approval !== undefined) {
       pendingToolCalls.push(...outcome.approval.toolCalls);
-      orderedResults[index].push(
-        ...zipStagedToolResults(
-          outcome.approval.completedResults,
-          outcome.completedResultHashes
-        )
-      );
+      orderedResults[index].push(...outcome.completedStagedResults);
       break;
     }
 
@@ -1188,6 +1187,13 @@ async function executeSingleTool(
     },
   }
 ): Promise<SingleToolOutcome> {
+  // Resolved once per call: this ExecutableToolCall's binding is already
+  // settled (registry lookup, input validation, policy admission, approval
+  // all cleared), so every result this call produces — success, approval
+  // pause, or execution failure — carries a known execution class into the
+  // sanitization seam (ADR-064), unlike stageImmediateResults' pre-binding
+  // outcomes.
+  const executionClass = buildToolAttribution(toolCall.tool).executionClass;
   // Idempotent retry per §4.21 / AX002. Non-idempotent tools are never
   // retried. maxRetries defaults to 1 when idempotent is true and unset.
   // BB004: nonRetryable overrides idempotent: true — policy governs retry.
@@ -1243,15 +1249,16 @@ async function executeSingleTool(
       );
 
       if (outcome.approval !== undefined) {
-        const completedResultHashes = await stageAndEmitResults(
+        const completedStagedResults = await stageAndEmitResults(
           environment,
           outcome.approval.completedResults,
           orderIndex,
-          startBarrier
+          startBarrier,
+          executionClass
         );
         return {
           approval: outcome.approval,
-          completedResultHashes,
+          completedStagedResults,
           updates: outcome.updates,
         };
       }
@@ -1261,30 +1268,32 @@ async function executeSingleTool(
         toolCall.approvalDecision,
         toolCall.approvalAudit
       );
-      const resultHash = await stageAndEmitResult(
+      const staged = await stageAndEmitResult(
         environment,
         result,
         orderIndex,
-        startBarrier
+        startBarrier,
+        executionClass
       );
 
       return {
-        resultHash,
-        result,
+        resultHash: staged.hash,
+        result: staged.result,
         updates: outcome.updates,
       };
     } catch (error: unknown) {
       if (error instanceof ToolPauseSignal) {
         await settleToolStartIfNeeded(toolStartState, startBarrier);
-        const completedResultHashes = await stageAndEmitResults(
+        const completedStagedResults = await stageAndEmitResults(
           environment,
           error.approval.completedResults,
           orderIndex,
-          startBarrier
+          startBarrier,
+          executionClass
         );
         return {
           approval: error.approval,
-          completedResultHashes,
+          completedStagedResults,
           updates: error.updates,
         };
       }
@@ -1307,16 +1316,17 @@ async function executeSingleTool(
     toolCall.approvalAudit
   );
   await settleToolStartIfNeeded(toolStartState, startBarrier);
-  const resultHash = await stageAndEmitResult(
+  const staged = await stageAndEmitResult(
     environment,
     result,
     orderIndex,
-    startBarrier
+    startBarrier,
+    executionClass
   );
 
   return {
-    resultHash,
-    result,
+    resultHash: staged.hash,
+    result: staged.result,
     updates: [],
   };
 }
