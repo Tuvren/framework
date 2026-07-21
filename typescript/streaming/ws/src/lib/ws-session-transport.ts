@@ -18,6 +18,7 @@ import { TuvrenRuntimeError } from "@tuvren/core";
 import type { SessionOutboundFrame } from "@tuvren/host-session";
 import {
   REMOTE_SESSION_ALREADY_ATTACHED,
+  REMOTE_SESSION_ENDED,
   type RemoteClientSession,
   type RemoteClientSessionAttachResult,
   type RemoteClientSessionSink,
@@ -199,10 +200,11 @@ export interface WsSessionTransport {
  * as presented. A handshake against a session that has already permanently
  * ended closes with `WS_CLOSE_CODE_SESSION_NOT_FOUND` — there is no longer a
  * live session for the presented identity to bind to. `RemoteClientSession`
- * does not expose a structured error code for either failure (both are a
- * thrown `Error` with a descriptive message), so this transport
- * distinguishes them by matching a stable substring of that message; see
- * `isSinkAlreadyAttachedError` below.
+ * throws a `TuvrenRuntimeError` with a stable code for each failure
+ * (`remote_session_already_attached` / `remote_session_ended`), and this
+ * transport branches on `error.code` per the core error contract — never on
+ * message text; see `isSinkAlreadyAttachedError` below. An attach failure
+ * carrying neither code is an unexpected internal error and closes `1011`.
  *
  * Per ADR-062, frame-level and unrecognized-message problems never close the
  * socket — only handshake failures and the transport's own heartbeat/
@@ -526,9 +528,28 @@ export function createWsSessionTransport(
         return;
       }
 
+      if (
+        error instanceof TuvrenRuntimeError &&
+        error.code === REMOTE_SESSION_ENDED
+      ) {
+        doClose(
+          WS_CLOSE_CODE_SESSION_NOT_FOUND,
+          "this remote client session has already ended and can no longer be attached"
+        );
+        return;
+      }
+
+      // Anything else — a throw from claiming binding.outbound() on the
+      // session's first attach, or a defect in the session itself — is not
+      // "your session is gone"; mislabeling it 4002 would send the peer away
+      // permanently for a server-side fault. Close as an internal error.
+      reportWarning({
+        code: "ws_transport_session_attach_failed",
+        message: `session.attach failed unexpectedly: ${describeError(error)}`,
+      });
       doClose(
-        WS_CLOSE_CODE_SESSION_NOT_FOUND,
-        "this remote client session has already ended and can no longer be attached"
+        WS_CLOSE_CODE_INTERNAL_ERROR,
+        "the session refused the attach with an unexpected internal error"
       );
       return;
     }

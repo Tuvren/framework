@@ -264,7 +264,10 @@ function isInvocationEnvelope(
     isRecord(value) &&
     isNonEmptyString(value.callId) &&
     isNonEmptyString(value.capabilityId) &&
-    isNonEmptyString(value.leaseToken)
+    isNonEmptyString(value.leaseToken) &&
+    // `input` is required by ClientInvocationEnvelope.json; any value —
+    // including null — satisfies it, but the KEY must be present.
+    "input" in value
   );
 }
 
@@ -663,7 +666,14 @@ export function createSessionClient(
           break;
         }
         case "ping": {
-          nextSocket.send(JSON.stringify({ kind: "pong" }));
+          // Guarded like every other outbound send: a socket that died
+          // between delivering the ping and this reply must not throw out of
+          // onmessage. A lost pong is retryable — the server pings again.
+          try {
+            nextSocket.send(JSON.stringify({ kind: "pong" }));
+          } catch {
+            // The subsequent close event drives reconnect; nothing to do.
+          }
           break;
         }
         case "pong":

@@ -297,7 +297,7 @@ export interface ReplWsSessionRegistry {
     entry: ReplWsSessionEntry;
     sessionId: string;
   }>;
-  /** Observability only: the number of sessions this registry has ever created. */
+  /** Observability only: the number of currently live sessions (entries are removed again when a session ends). */
   size(): number;
 }
 

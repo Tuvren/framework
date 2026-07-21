@@ -386,6 +386,11 @@ async function waitFor(
 }
 
 describe("repl --serve-ws end-to-end", () => {
+  // ORDER-DEPENDENT: both tests share this one server, and variant B ends by
+  // SIGKILLing it — so variant A (reconnect-redelivery) must run first, which
+  // bun:test's definition-order execution guarantees for an unfiltered run.
+  // Running variant B in isolation is fine (it starts from a fresh turn);
+  // running variant A after B is not. Keep the definition order.
   let schemaName: string;
   let server: ServerHandle;
 
@@ -560,7 +565,11 @@ describe("repl --serve-ws end-to-end", () => {
     // RemoteClientSession's redelivery loop were deleted, the server's
     // pendingInvocations entry would never be redelivered, the client would
     // never re-send its recorded result, and this wait would time out.
-    await waitFor(() => turnEnded, 4000);
+    // 6.5s keeps headroom for a loaded CI box (a false NEGATIVE risk only —
+    // the wire-level double-arrival assertion below is what forecloses a
+    // false pass) while still sitting under the 10s dispatch-timeout
+    // fallback that would otherwise mask a deleted redelivery loop.
+    await waitFor(() => turnEnded, 6500);
 
     // Positive arrival proof: the SAME callId was delivered over the wire
     // twice — once on the original connection, once redelivered on
