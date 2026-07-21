@@ -62,9 +62,10 @@ way `ExecutionHandle` method signatures are binding-only per
   contract — constructing a binding does not commit the turn. Once claimed,
   the internal frame buffer is unbounded while the consumer lags;
   backpressure and connection-lifecycle policy belong to the transport
-  layer (issues #100/#102). A transport must claim `outbound()` before
-  feeding inbound frames: pre-claim inbound routing is undefined ordering —
-  rejection frames would buffer unseen and a pre-claim `cancel` can
+  layer (issues #100/#102). The outbound consumer — a transport directly, or
+  `@tuvren/remote-session` on its behalf (ADR-063) — must claim `outbound()`
+  before any inbound frame is routed: pre-claim inbound routing is undefined
+  ordering — rejection frames would buffer unseen and a pre-claim `cancel` can
   terminate a never-started handle whose terminal then has no stream to
   surface on.
 - `dispatchInbound(frame: unknown): void` is fire-and-forget. Every
@@ -188,8 +189,11 @@ composes above this binding and below any transport:
 
 - It takes this binding's **single** `outbound()` claim and holds it for the
   session's whole life, so the single-consumer rule above is satisfied exactly
-  once no matter how many sockets come and go beneath it. A transport never
-  claims `outbound()` itself.
+  once no matter how many sockets come and go beneath it — and it, rather than
+  any individual transport, is the "outbound consumer" the claim-before-inbound
+  ordering rule above refers to. It claims on first `attach` rather than at
+  construction, preserving the lazy-start contract, and routes no inbound frame
+  while unattached.
 - It owns the one `createSequencedTuvrenStreamEvents` instance and the one
   `createReplayBuffer` for the session, satisfying ADR-061's normative
   one-sequencer wiring rule across reconnects rather than only within a single
@@ -208,8 +212,15 @@ composes above this binding and below any transport:
   `spec/host/client-endpoint-integration.md` warns hosts away from.
 
 This binding is unchanged by ADR-063; the note above exists so a maintainer
-reading the "connection-lifecycle policy beyond that is issue #102's scope"
-caveats in `dispatchInbound` knows where that policy actually landed.
+reading the deferrals in the `outbound()` bullet above ("backpressure and
+connection-lifecycle policy belong to the transport layer (issues #100/#102)")
+and in `dispatchInbound` ("connection-lifecycle policy beyond that
+[`duplex_session_closed`] is issue #102's scope") knows where that policy
+actually landed. The corresponding source comment on
+`DuplexSessionBinding.outbound()` in
+`typescript/host/session/src/lib/duplex-session-binding.ts` says only
+"backpressure and connection lifecycle policy belong to the transport layer
+above this binding" without naming an issue; ADR-063 is the answer to it.
 
 ## Conformance adapter status
 

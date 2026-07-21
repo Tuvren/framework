@@ -2,6 +2,8 @@
 
 - **Maps to PRD capability:** CAP-P0-019, CAP-P0-061, CAP-P1-063, CAP-P0-055
 
+> The CAP-P0-055 trace covers the sanitization step's *placement* — that nothing sensitive reaches durable state, telemetry, or transcripts — not its mechanism. CAP-P0-055 and ADR-044 govern credentials the framework itself handles and enforces; the seam shown below is host-authored payload policy the framework only orders (ADR-064 §1). The two are deliberately distinct and share a capability only because they defend the same surfaces.
+
 ```mermaid
 sequenceDiagram
   participant Peer as Remote Session Peer
@@ -37,7 +39,7 @@ sequenceDiagram
     Session->>Session: cancel grace timer
     Session-->>Peer: replay sequenced event frames from cursor (numbering never restarted — one sequencer)
     Session-->>Peer: REDELIVER unanswered client_invocation frames (original callId + leaseToken)
-    Note over Peer: idempotencyKey suppresses the duplicate SIDE EFFECT; the framework guarantees at-least-once presentation only
+    Note over Peer: idempotencyKey is stable across the reconnect (logical call identity, not the rotating authority epoch), so it suppresses the duplicate SIDE EFFECT; the framework guarantees at-least-once presentation only
     Session-->>Peer: resume live forwarding
     Note over Session: session_rejection frames are NOT redelivered — advisory replies the peer can re-request
   else grace window expires with no reattach
@@ -46,7 +48,8 @@ sequenceDiagram
   end
 
   Note over Peer,Session: Connected but unresponsive is a DIFFERENT failure from a dropped link
-  Session->>Session: dispatchTimeoutMs elapses with the link healthy
+  Note over Session: the dispatch clock measures peer responsiveness only — suspended while detached, restarted on redelivery, so the two budgets never consume each other
+  Session->>Session: dispatchTimeoutMs elapses with a reachable peer
   Session->>Endpoint: settle with capability_dispatch_timeout ({code, error}, not a code-less throw)
 
   Note over Endpoint,Kernel: Whatever the outcome, durability is the last gate
