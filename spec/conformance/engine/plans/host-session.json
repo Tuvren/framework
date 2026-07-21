@@ -278,6 +278,11 @@
           "kind": "resultField",
           "field": "$.replayGaplessAndContiguous",
           "equals": true
+        },
+        {
+          "kind": "resultField",
+          "field": "$.replayObservedAtLeastOneEvent",
+          "equals": true
         }
       ],
       "evidence": [
@@ -285,7 +290,8 @@
         "noSequenceRestart",
         "replayGaplessAndContiguous",
         "replayedSequences",
-        "expectedReplaySequences"
+        "expectedReplaySequences",
+        "replayObservedAtLeastOneEvent"
       ]
     }
   ]

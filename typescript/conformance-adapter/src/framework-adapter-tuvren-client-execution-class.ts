@@ -462,15 +462,19 @@ export async function runTuvrenClientNetworkReconnectRedelivery(): Promise<Adapt
       callId,
       (invocationSightingCount.get(callId) ?? 0) + 1
     );
+    // Recorded for EVERY sighting — original and redelivery alike — so the
+    // plan's single-key assertion proves the redelivered invocation carried
+    // the same idempotency key as the original, not merely that the first
+    // delivery carried one.
+    if (typeof invocation.idempotencyKey === "string") {
+      idempotencyKeysSeen.add(invocation.idempotencyKey);
+    }
 
     if (inFlightCallIds.has(callId)) {
       return; // Redelivery of an already-in-flight call: dedup, no re-invoke.
     }
     inFlightCallIds.add(callId);
     effectCount += 1;
-    if (typeof invocation.idempotencyKey === "string") {
-      idempotencyKeysSeen.add(invocation.idempotencyKey);
-    }
     pendingReply = { callId, leaseToken: String(invocation.leaseToken) };
   }
 
@@ -565,6 +569,9 @@ export async function runTuvrenClientNetworkReconnectRedelivery(): Promise<Adapt
     idempotencyKeyCount: idempotencyKeysSeen.size,
     noCursorDuplication:
       new Set(observedCursors).size === observedCursors.length,
+    // Guards noCursorDuplication's vacuous-empty case (an empty set trivially
+    // has no duplicates); the plan requires at least one cursor was observed.
+    observedAtLeastOneCursor: observedCursors.length > 0,
     redeliveredInvocationCount,
     status: result.status,
   };
@@ -575,7 +582,7 @@ export async function runTuvrenClientNetworkReconnectRedelivery(): Promise<Adapt
 }
 
 // ---------------------------------------------------------------------------
-// Operation: runtime.tuvren-client.network-kill-durability
+// Operation: runtime.tuvren-client.result-durability
 //
 // Network-evidence lane matching what M6's real e2e proved for "Variant B"
 // (typescript/host/repl/test/repl-serve-ws.e2e.test.ts): a durably committed
@@ -592,12 +599,12 @@ export async function runTuvrenClientNetworkReconnectRedelivery(): Promise<Adapt
 // reference to the writer's runtime survives into the read.
 // ---------------------------------------------------------------------------
 
-const NETWORK_KILL_DURABILITY_CAP = "az006.client.network-kill-durability";
+const RESULT_DURABILITY_CAP = "az006.client.result-durability";
 
-export async function runTuvrenClientNetworkKillDurability(): Promise<AdapterProjection> {
+export async function runTuvrenClientResultDurability(): Promise<AdapterProjection> {
   const backend = createMemoryBackend();
   const writerKernel = createRuntimeKernel({ backend });
-  const runner = makeSingleCallRunner(NETWORK_KILL_DURABILITY_CAP);
+  const runner = makeSingleCallRunner(RESULT_DURABILITY_CAP);
   const writerRuntime = createTuvrenRuntimeCore({
     createId: createConformanceIdFactory(),
     defaultRunnerId: RUNNER_ID,
@@ -610,8 +617,8 @@ export async function runTuvrenClientNetworkKillDurability(): Promise<AdapterPro
   const endpoint: AttachedClientEndpoint = {
     advertisedCapabilities: [
       {
-        capabilityId: NETWORK_KILL_DURABILITY_CAP,
-        description: "az006 network-kill-durability conformance capability",
+        capabilityId: RESULT_DURABILITY_CAP,
+        description: "az006 result-durability conformance capability",
         inputSchema: { type: "object" },
       },
     ],
@@ -627,7 +634,7 @@ export async function runTuvrenClientNetworkKillDurability(): Promise<AdapterPro
         leaseToken: envelope.leaseToken,
       });
     },
-    endpointId: "ep-az006-network-kill-durability",
+    endpointId: "ep-az006-result-durability",
   };
 
   const handle = writerRuntime.executeTurn({
@@ -662,7 +669,7 @@ export async function runTuvrenClientNetworkKillDurability(): Promise<AdapterPro
     return (
       Array.isArray(parts) &&
       parts.some(
-        (part) => isRecord(part) && part.name === NETWORK_KILL_DURABILITY_CAP
+        (part) => isRecord(part) && part.name === RESULT_DURABILITY_CAP
       )
     );
   });

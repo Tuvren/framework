@@ -4513,6 +4513,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "host-session.sequence-continuity-across-reattach.4.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.expectedReplaySequences",
           "status": "pass"
         },
@@ -4525,6 +4529,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.replayObservedAtLeastOneEvent",
+          "status": "pass"
+        },
+        {
           "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.replayedSequences",
           "status": "pass"
         },
@@ -4534,6 +4542,10 @@
         },
         {
           "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.result.replayGaplessAndContiguous",
+          "status": "pass"
+        },
+        {
+          "assertionId": "host-session.sequence-continuity-across-reattach.requiredEvidence.result.replayObservedAtLeastOneEvent",
           "status": "pass"
         },
         {
@@ -11190,40 +11202,6 @@
     {
       "assertionResults": [
         {
-          "assertionId": "az.az006.network-kill-durability-recovered.1.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "az.az006.network-kill-durability-recovered.2.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "az.az006.network-kill-durability-recovered.3.resultField",
-          "status": "pass"
-        },
-        {
-          "assertionId": "az.az006.network-kill-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.hasCommittedResult",
-          "status": "pass"
-        },
-        {
-          "assertionId": "az.az006.network-kill-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.idempotencyKeyPresent",
-          "status": "pass"
-        },
-        {
-          "assertionId": "az.az006.network-kill-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.writerStatus",
-          "status": "pass"
-        }
-      ],
-      "checkId": "az.az006.network-kill-durability-recovered",
-      "details": {
-        "adapterId": "typescript-framework",
-        "planId": "tuvren.framework.tuvren-client-execution-class"
-      },
-      "status": "pass"
-    },
-    {
-      "assertionResults": [
-        {
           "assertionId": "az.az006.network-reconnect-redelivery-dedup.1.resultField",
           "status": "pass"
         },
@@ -11244,6 +11222,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.6.resultField",
+          "status": "pass"
+        },
+        {
           "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.effectCount",
           "status": "pass"
         },
@@ -11256,6 +11238,10 @@
           "status": "pass"
         },
         {
+          "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.observedAtLeastOneCursor",
+          "status": "pass"
+        },
+        {
           "assertionId": "az.az006.network-reconnect-redelivery-dedup.requiredEvidence.result.tuvrenClient.networkReconnectRedelivery.redeliveredInvocationCount",
           "status": "pass"
         },
@@ -11265,6 +11251,40 @@
         }
       ],
       "checkId": "az.az006.network-reconnect-redelivery-dedup",
+      "details": {
+        "adapterId": "typescript-framework",
+        "planId": "tuvren.framework.tuvren-client-execution-class"
+      },
+      "status": "pass"
+    },
+    {
+      "assertionResults": [
+        {
+          "assertionId": "az.az006.result-durability-recovered.1.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.result-durability-recovered.2.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.result-durability-recovered.3.resultField",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.result-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.hasCommittedResult",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.result-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.idempotencyKeyPresent",
+          "status": "pass"
+        },
+        {
+          "assertionId": "az.az006.result-durability-recovered.requiredEvidence.result.tuvrenClient.networkKillDurability.writerStatus",
+          "status": "pass"
+        }
+      ],
+      "checkId": "az.az006.result-durability-recovered",
       "details": {
         "adapterId": "typescript-framework",
         "planId": "tuvren.framework.tuvren-client-execution-class"

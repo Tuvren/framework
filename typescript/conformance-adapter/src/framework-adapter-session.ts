@@ -1266,6 +1266,12 @@ export async function runSequenceContinuity(): Promise<AdapterProjection> {
         sequence !== null &&
         sequence > (lastSequenceBeforeDetach ?? Number.NEGATIVE_INFINITY)
     ),
+    // Guards the vacuous-empty case: expectedReplaySequences is derived from
+    // replayedSequences' own length, so with zero replayed events both the
+    // gapless and no-restart comparisons would be trivially true. A resumed
+    // reattach in this scenario must actually replay the events recorded
+    // while detached; a plan assertion requires this to be true.
+    replayObservedAtLeastOneEvent: replayedSequences.length > 0,
     replayGaplessAndContiguous:
       JSON.stringify(replayedSequences) ===
       JSON.stringify(expectedReplaySequences),

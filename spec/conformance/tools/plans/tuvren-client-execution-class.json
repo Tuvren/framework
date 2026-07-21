@@ -3,16 +3,12 @@
   "planVersion": "0.3.0",
   "packetId": "tuvren.shared.core",
   "applicability": {
-    "capabilities": [
-      "framework.runtime-api"
-    ]
+    "capabilities": ["framework.runtime-api"]
   },
   "checks": [
     {
       "checkId": "az.az001.attach-and-dispatch-completes-normally",
-      "evidence": [
-        "result.tuvrenClient.normal.status"
-      ],
+      "evidence": ["result.tuvrenClient.normal.status"],
       "assertions": [
         {
           "kind": "resultField",
@@ -24,9 +20,7 @@
     },
     {
       "checkId": "az.az001.tool-start-event-emitted",
-      "evidence": [
-        "result.tuvrenClient.normal.toolStartCount"
-      ],
+      "evidence": ["result.tuvrenClient.normal.toolStartCount"],
       "assertions": [
         {
           "kind": "resultField",
@@ -38,9 +32,7 @@
     },
     {
       "checkId": "az.az001.tool-result-event-emitted",
-      "evidence": [
-        "result.tuvrenClient.normal.toolResultCount"
-      ],
+      "evidence": ["result.tuvrenClient.normal.toolResultCount"],
       "assertions": [
         {
           "kind": "resultField",
@@ -52,9 +44,7 @@
     },
     {
       "checkId": "az.az002.client-reported-result-surfaced",
-      "evidence": [
-        "result.tuvrenClient.normal.toolResultIsError"
-      ],
+      "evidence": ["result.tuvrenClient.normal.toolResultIsError"],
       "assertions": [
         {
           "kind": "resultField",
@@ -86,9 +76,7 @@
     },
     {
       "checkId": "az.az003.unavailable-endpoint-does-not-block",
-      "evidence": [
-        "result.tuvrenClient.unavailable.status"
-      ],
+      "evidence": ["result.tuvrenClient.unavailable.status"],
       "assertions": [
         {
           "kind": "resultField",
@@ -100,9 +88,7 @@
     },
     {
       "checkId": "az.az003.stale-late-completion-surfaces-error",
-      "evidence": [
-        "result.tuvrenClient.stale.toolResultIsError"
-      ],
+      "evidence": ["result.tuvrenClient.stale.toolResultIsError"],
       "assertions": [
         {
           "kind": "resultField",
@@ -114,9 +100,7 @@
     },
     {
       "checkId": "az.az003.stale-late-completion-surfaces-stale-code",
-      "evidence": [
-        "result.tuvrenClient.stale.toolResultOutputCode"
-      ],
+      "evidence": ["result.tuvrenClient.stale.toolResultOutputCode"],
       "assertions": [
         {
           "kind": "resultField",
@@ -128,9 +112,7 @@
     },
     {
       "checkId": "az.az003.stale-late-completion-does-not-reach-model",
-      "evidence": [
-        "result.tuvrenClient.stale.staleContentInResult"
-      ],
+      "evidence": ["result.tuvrenClient.stale.staleContentInResult"],
       "assertions": [
         {
           "kind": "resultField",
@@ -142,9 +124,7 @@
     },
     {
       "checkId": "az.az004.client-side-mcp-resolves-tuvren-client-class",
-      "evidence": [
-        "result.tuvrenClient.clientMcp.bindingExecutionClass"
-      ],
+      "evidence": ["result.tuvrenClient.clientMcp.bindingExecutionClass"],
       "assertions": [
         {
           "kind": "resultField",
@@ -156,9 +136,7 @@
     },
     {
       "checkId": "az.az004.client-side-mcp-resolves-mcp-server-endpoint-kind",
-      "evidence": [
-        "result.tuvrenClient.clientMcp.bindingEndpointKind"
-      ],
+      "evidence": ["result.tuvrenClient.clientMcp.bindingEndpointKind"],
       "assertions": [
         {
           "kind": "resultField",
@@ -170,9 +148,7 @@
     },
     {
       "checkId": "az.az004.client-side-mcp-dispatch-completes",
-      "evidence": [
-        "result.tuvrenClient.clientMcp.status"
-      ],
+      "evidence": ["result.tuvrenClient.clientMcp.status"],
       "assertions": [
         {
           "kind": "resultField",
@@ -184,9 +160,7 @@
     },
     {
       "checkId": "az.az005.no-tool-audit-events-for-tuvren-client",
-      "evidence": [
-        "result.tuvrenClient.normal.toolAuditCount"
-      ],
+      "evidence": ["result.tuvrenClient.normal.toolAuditCount"],
       "assertions": [
         {
           "kind": "resultField",
@@ -198,9 +172,7 @@
     },
     {
       "checkId": "az.az005.no-tool-audit-for-client-mcp",
-      "evidence": [
-        "result.tuvrenClient.clientMcp.toolAuditCount"
-      ],
+      "evidence": ["result.tuvrenClient.clientMcp.toolAuditCount"],
       "assertions": [
         {
           "kind": "resultField",
@@ -217,7 +189,8 @@
         "result.tuvrenClient.networkReconnectRedelivery.redeliveredInvocationCount",
         "result.tuvrenClient.networkReconnectRedelivery.idempotencyKeyCount",
         "result.tuvrenClient.networkReconnectRedelivery.noCursorDuplication",
-        "result.tuvrenClient.networkReconnectRedelivery.status"
+        "result.tuvrenClient.networkReconnectRedelivery.status",
+        "result.tuvrenClient.networkReconnectRedelivery.observedAtLeastOneCursor"
       ],
       "assertions": [
         {
@@ -244,12 +217,17 @@
           "kind": "resultField",
           "field": "$.tuvrenClient.networkReconnectRedelivery.status",
           "equals": "completed"
+        },
+        {
+          "kind": "resultField",
+          "field": "$.tuvrenClient.networkReconnectRedelivery.observedAtLeastOneCursor",
+          "equals": true
         }
       ],
       "operation": "runtime.tuvren-client.network-reconnect-redelivery"
     },
     {
-      "checkId": "az.az006.network-kill-durability-recovered",
+      "checkId": "az.az006.result-durability-recovered",
       "evidence": [
         "result.tuvrenClient.networkKillDurability.hasCommittedResult",
         "result.tuvrenClient.networkKillDurability.idempotencyKeyPresent",
@@ -272,7 +250,7 @@
           "equals": "completed"
         }
       ],
-      "operation": "runtime.tuvren-client.network-kill-durability"
+      "operation": "runtime.tuvren-client.result-durability"
     }
   ]
 }

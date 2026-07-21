@@ -94,8 +94,8 @@ import {
 } from "./framework-adapter-trust-boundary.ts";
 import {
   runTuvrenClientLifecycle,
-  runTuvrenClientNetworkKillDurability,
   runTuvrenClientNetworkReconnectRedelivery,
+  runTuvrenClientResultDurability,
 } from "./framework-adapter-tuvren-client-execution-class.ts";
 import {
   runTuvrenServerBindingClassification,
@@ -472,8 +472,8 @@ export class TypeScriptFrameworkAdapter implements ImplementationAdapter {
         return runTuvrenClientLifecycle();
       case "runtime.tuvren-client.network-reconnect-redelivery":
         return runTuvrenClientNetworkReconnectRedelivery();
-      case "runtime.tuvren-client.network-kill-durability":
-        return runTuvrenClientNetworkKillDurability();
+      case "runtime.tuvren-client.result-durability":
+        return runTuvrenClientResultDurability();
       case "runtime.tuvren-server.lifecycle":
         return runTuvrenServerLifecycle();
       case "runtime.tuvren-server.binding-classification":
