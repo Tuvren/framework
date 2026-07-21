@@ -605,4 +605,45 @@ describe("createRemoteClientSession", () => {
       "capability_dispatch_timeout"
     );
   });
+
+  test("an outbound pump failure is reported and ends the session instead of wedging it silently", async () => {
+    const { handle } = makeFakeHandle();
+    const realBinding = createDuplexSessionBinding(handle, {
+      sessionId: "sess-pump-fail",
+    });
+    // A binding whose claimed outbound iterator rejects mid-stream: the
+    // session must not swallow it (attached sink, no frames, nothing ever
+    // ending) — it must surface a warning and end the session.
+    const wrappedBinding: DuplexSessionBinding = {
+      ...realBinding,
+      outbound: () => ({
+        [Symbol.asyncIterator]: () => ({
+          next: () =>
+            Promise.reject(new Error("outbound stream broke mid-pump")),
+        }),
+      }),
+    };
+    const warnings: StreamAdapterWarning[] = [];
+    let endedReason: string | undefined;
+
+    const session = createRemoteClientSession({
+      binding: wrappedBinding,
+      disconnectGraceMs: 1000,
+      dispatchTimeoutMs: 500,
+      onEnded: (reason) => {
+        endedReason = reason;
+      },
+      onWarning: (warning) => warnings.push(warning),
+      replayBufferCapacity: 10,
+    });
+
+    session.attach(createFakeSink());
+    await flush();
+
+    expect(
+      warnings.filter((w) => w.code === "remote_session_outbound_pump_failed")
+    ).toHaveLength(1);
+    expect(session.isEnded()).toBe(true);
+    expect(endedReason).toBe("the session's outbound pump failed");
+  });
 });

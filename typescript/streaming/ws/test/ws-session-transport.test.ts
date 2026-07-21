@@ -65,6 +65,41 @@ describe("createWsSessionTransport: claim and lifecycle", () => {
     expect(() => transport.ingest(handshakeMessage())).toThrow();
   });
 
+  test("a sink that throws on the handshake_ack send closes 1011 and detaches instead of wedging half-initialized", async () => {
+    const fake = createFakeBinding(createHangingOutboundIterable([]));
+    const session = createTestSession({ binding: fake.binding });
+    const closes: Array<{ code: number; reason: string | undefined }> = [];
+    const throwingSink = {
+      close(code: number, reason?: string): void {
+        closes.push({ code, reason });
+      },
+      send(): void {
+        throw new Error("socket died before the ack could be written");
+      },
+    };
+    const transport = createWsSessionTransport({
+      session,
+      sink: throwingSink,
+    });
+
+    transport.start();
+    transport.ingest(handshakeMessage({ sessionId: SESSION_ID }));
+    await flushMicrotasks();
+
+    // The attach succeeded before the ack failed, so the close path must
+    // detach: the session stays alive (grace window running) and a later
+    // transport can attach a fresh sink instead of hitting
+    // remote_session_already_attached.
+    expect(closes).toEqual([
+      {
+        code: 1011,
+        reason: "handshake_ack could not be sent on the socket sink",
+      },
+    ]);
+    expect(session.isEnded()).toBe(false);
+    expect(() => session.attach(createFakeSessionSink())).not.toThrow();
+  });
+
   test("transport.close() before any successful handshake never touches the session", () => {
     const fake = createFakeBinding(createHangingOutboundIterable([]));
     const session = createTestSession({ binding: fake.binding });

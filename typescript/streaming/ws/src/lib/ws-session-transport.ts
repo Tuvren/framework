@@ -536,14 +536,30 @@ export function createWsSessionTransport(
     attached = true;
     handshakeDone = true;
 
-    options.sink.send(
-      JSON.stringify({
-        kind: "handshake_ack",
-        protocolVersion: SUPPORTED_PROTOCOL_VERSION,
-        resumeStatus: attachResult.resumeStatus,
-        sessionId: options.session.sessionId,
-      })
-    );
+    try {
+      options.sink.send(
+        JSON.stringify({
+          kind: "handshake_ack",
+          protocolVersion: SUPPORTED_PROTOCOL_VERSION,
+          resumeStatus: attachResult.resumeStatus,
+          sessionId: options.session.sessionId,
+        })
+      );
+    } catch (error) {
+      // A sink that cannot even carry the ack is a dead socket: close (which
+      // detaches, since attach succeeded above) instead of leaving a
+      // half-initialized transport whose only recovery would be heartbeat
+      // half-open detection — or nothing at all when heartbeat is disabled.
+      reportWarning({
+        code: "ws_transport_ack_send_failed",
+        message: `handshake_ack could not be sent on the socket sink: ${describeError(error)}`,
+      });
+      doClose(
+        WS_CLOSE_CODE_INTERNAL_ERROR,
+        "handshake_ack could not be sent on the socket sink"
+      );
+      return;
+    }
 
     if (closed) {
       return;

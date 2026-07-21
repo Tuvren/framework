@@ -588,7 +588,30 @@ export function createRemoteClientSession(
 
     // Detached: the pump's only observable effects are the forwardFrame /
     // settleSynthesizedResult calls above, so callers never need to await it.
-    pump.catch(() => undefined);
+    // A rejection, though, must not be swallowed silently: an outbound
+    // iterator or sink adapter that throws would otherwise wedge the session
+    // — sink attached, no frames flowing, nothing ever ending — with no
+    // signal to the host. Report it and end the session so pending dispatches
+    // settle and the outbound claim is released.
+    // (A dropped *socket* never takes this path: a conforming transport sink
+    // catches its own send failures and detaches — @tuvren/stream-ws returns
+    // false from its send guard rather than throwing — so a throw reaching
+    // the pump is a broken binding or a sink violating its contract, and
+    // failing the whole session loudly is the correct response.)
+    pump.catch((error: unknown) => {
+      reportWarning({
+        code: "remote_session_outbound_pump_failed",
+        message: `the session's outbound pump failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      });
+      try {
+        endSession("the session's outbound pump failed");
+      } catch {
+        // endSession settles pending dispatches through the binding; if the
+        // binding itself is what broke, best-effort cleanup already happened.
+      }
+    });
   }
 
   function attach(
