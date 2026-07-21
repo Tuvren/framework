@@ -69,6 +69,34 @@ const CONTINUE_UNTIL_CANCELLED_POLICY: LoopPolicy = {
   },
 };
 
+// The runtime drains queued steering only at an iteration START
+// (`incorporateQueuedSteeringIfNeeded` in the execution loop), so a steer
+// accepted while an iteration's model call is already in flight needs a
+// *subsequent* iteration to be incorporated. With the default loop policy the
+// steering fixture's "stop" response ends the turn after iteration 1, which
+// made the scenario depend on `host.steer(...)` winning the race into the
+// pre-iteration-1 window — the source of a recurring CI flake (the provider's
+// steering gate only holds the model call open for acceptance; it cannot
+// create the extra iteration incorporation needs). This policy removes the
+// race by continuing until the fixture's post-steering response is observed,
+// so both orderings converge: steer landing before iteration 1 incorporates
+// immediately, and steer landing mid-iteration incorporates on the next one.
+// The iteration bound is an escape hatch so a regression fails diagnosably
+// instead of hanging; a healthy run ends at iteration 1 or 2.
+const CONTINUE_UNTIL_STEERED_POLICY: LoopPolicy = {
+  evaluate(response, _manifest, iterationCount) {
+    const steeringIncorporated = response.parts.some(
+      (part) => part.type === "text" && part.text === "Steering incorporated."
+    );
+
+    return {
+      continue: !steeringIncorporated && iterationCount < 5,
+      executeTools: false,
+      reason: "repl_steering_incorporated",
+    };
+  },
+};
+
 export async function runReplScenario(
   config: ReplConfig
 ): Promise<ReplScenarioReport> {
@@ -476,6 +504,10 @@ async function runSteeringScenario(
   const thread = await host.createThread();
   const handle = host.executeTurn({
     branchId: thread.branchId,
+    config: {
+      loopPolicy: CONTINUE_UNTIL_STEERED_POLICY,
+      name: "primary",
+    },
     signal: textSignal("Run steering source"),
     threadId: thread.threadId,
   });
