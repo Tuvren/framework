@@ -71,18 +71,25 @@
         "@tuvren/backend-memory": "workspace:*",
         "@tuvren/backend-postgres": "workspace:*",
         "@tuvren/backend-sqlite": "workspace:*",
+        "@tuvren/core": "workspace:*",
+        "@tuvren/host-session": "workspace:*",
         "@tuvren/kernel-grpc-client": "workspace:*",
         "@tuvren/mcp-client": "workspace:*",
         "@tuvren/provider-bridge-ai-sdk": "workspace:*",
+        "@tuvren/remote-session": "workspace:*",
         "@tuvren/runner-react": "workspace:*",
+        "@tuvren/runtime": "workspace:*",
         "@tuvren/sdk": "workspace:*",
+        "@tuvren/session-client": "workspace:*",
         "@tuvren/stream-agui": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
         "@tuvren/stream-sse": "workspace:*",
+        "@tuvren/stream-ws": "workspace:*",
         "@tuvren/telemetry-semconv": "workspace:*",
       },
       "devDependencies": {
         "@copilotkit/aimock": "1.15.1",
+        "postgres": "3.4.9",
       },
     },
     "typescript/host/session": {
@@ -123,7 +130,7 @@
         "@tuvren/kernel-testkit": "workspace:*",
       },
       "peerDependencies": {
-        "@tuvren/core": "workspace:*",
+        "@tuvren/core": "workspace:~",
       },
     },
     "typescript/kernel/backends/shared": {
@@ -174,7 +181,7 @@
         "@tuvren/kernel-protocol": "workspace:*",
       },
       "peerDependencies": {
-        "@tuvren/core": "workspace:*",
+        "@tuvren/core": "workspace:~",
       },
     },
     "typescript/kernel/protocol": {
@@ -306,7 +313,7 @@
       },
       "peerDependencies": {
         "@standard-schema/spec": "^1.1.0",
-        "@tuvren/core": "workspace:*",
+        "@tuvren/core": "workspace:~",
         "zod": "^4.4.3",
       },
       "optionalPeers": [
@@ -400,7 +407,7 @@
         "zod": "4.4.3",
       },
       "peerDependencies": {
-        "@tuvren/core": "workspace:*",
+        "@tuvren/core": "workspace:~",
         "@tuvren/sdk": "workspace:*",
       },
     },

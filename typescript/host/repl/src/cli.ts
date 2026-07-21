@@ -26,8 +26,10 @@ import {
   runReplScenario,
 } from "./index.js";
 import { runReplHeadlessMode } from "./lib/repl-headless-mode.js";
+import { createReplHost } from "./lib/repl-host.js";
 import { createLiveTurnWriter } from "./lib/repl-live-output.js";
 import { replayReplTranscript } from "./lib/repl-replay.js";
+import { startReplWsServer } from "./lib/repl-serve-ws.js";
 import {
   createReplTranscriptFileWriter,
   type ReplTranscriptBackendConfig,
@@ -46,6 +48,11 @@ await main(argv);
 async function main(argv: readonly string[]): Promise<void> {
   try {
     const options = parseCliOptions(argv);
+
+    if (options.serveWs) {
+      await runServeWsMode(options);
+      return;
+    }
 
     if (options.replayPath !== undefined) {
       const report = await replayReplTranscript(
@@ -130,6 +137,9 @@ interface CliOptions {
   headless: boolean;
   recordPath?: string;
   replayPath?: string;
+  serveWs: boolean;
+  serveWsHostname?: string;
+  serveWsPort?: number;
   streamJsonl: boolean;
 }
 
@@ -139,6 +149,9 @@ function parseCliOptions(argv: readonly string[]): CliOptions {
   let recordPath: string | undefined;
   let replayPath: string | undefined;
   let streamJsonl = false;
+  let serveWs = false;
+  let serveWsHostname: string | undefined;
+  let serveWsPort: number | undefined;
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -170,10 +183,99 @@ function parseCliOptions(argv: readonly string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--serve-ws") {
+      serveWs = true;
+      continue;
+    }
+
+    if (arg === "--serve-ws-port") {
+      serveWsPort = Number.parseInt(
+        readRequiredCliValue(argv, index, "--serve-ws-port"),
+        10
+      );
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--serve-ws-hostname") {
+      serveWsHostname = readRequiredCliValue(
+        argv,
+        index,
+        "--serve-ws-hostname"
+      );
+      index += 1;
+      continue;
+    }
+
     configArgv.push(arg);
   }
 
-  return { configArgv, headless, recordPath, replayPath, streamJsonl };
+  return {
+    configArgv,
+    headless,
+    recordPath,
+    replayPath,
+    serveWs,
+    serveWsHostname,
+    serveWsPort,
+    streamJsonl,
+  };
+}
+
+/**
+ * `--serve-ws`: starts the REPL host's `Bun.serve` WebSocket demo server
+ * (M6, issue #102) over the same backend/kernel wiring `createReplHost` uses
+ * for every other REPL mode, and keeps the process alive until `SIGINT` /
+ * `SIGTERM` (or, for tests, until forcibly killed). On startup it prints a
+ * single JSON line `{ "url": "ws://...", "port": <number> }` to stdout so a
+ * harness spawning this as a subprocess can read back the bound port without
+ * scraping human-readable log text.
+ */
+async function runServeWsMode(options: CliOptions): Promise<void> {
+  const config = loadReplConfig(process.env, options.configArgv);
+  const host = createReplHost(config);
+
+  const server = startReplWsServer({
+    hostname: options.serveWsHostname,
+    onSessionCreated(info) {
+      process.stdout.write(
+        `${JSON.stringify({ kind: "session-created", ...info })}\n`
+      );
+    },
+    port: options.serveWsPort,
+    runtime: host.runtime,
+    systemPrompt: config.systemPrompt,
+  });
+
+  process.stdout.write(
+    `${JSON.stringify({ kind: "listening", port: server.port, url: server.url })}\n`
+  );
+
+  let shuttingDown = false;
+  const shutdown = async (): Promise<void> => {
+    if (shuttingDown) {
+      return;
+    }
+    shuttingDown = true;
+    await server.stop();
+    await host.dispose?.();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", () => {
+    shutdown().catch(() => undefined);
+  });
+  process.on("SIGTERM", () => {
+    shutdown().catch(() => undefined);
+  });
+
+  // Keep the event loop alive: --serve-ws is a long-running server process,
+  // not a one-shot command. The websocket server's own listeners already do
+  // this in practice, but an explicit never-settling promise makes that
+  // intent legible rather than incidental.
+  await new Promise<void>(() => {
+    // Intentionally never resolves; shutdown() calls process.exit directly.
+  });
 }
 
 async function runInteractiveShell(

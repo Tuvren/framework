@@ -32,11 +32,27 @@
       ],
       "@tuvren/stream-sse": [
         "../../../typescript/streaming/sse/dist/index.d.ts"
+      ],
+      "@tuvren/core": ["../../../typescript/core/dist/index.d.ts"],
+      "@tuvren/core/capabilities": [
+        "../../../typescript/core/dist/capabilities/index.d.ts"
+      ],
+      "@tuvren/runtime": ["../../../typescript/runtime/dist/index.d.ts"],
+      "@tuvren/host-session": [
+        "../../../typescript/host/session/dist/index.d.ts"
+      ],
+      "@tuvren/remote-session": [
+        "../../../typescript/host/remote-session/dist/index.d.ts"
+      ],
+      "@tuvren/stream-ws": ["../../../typescript/streaming/ws/dist/index.d.ts"],
+      "@tuvren/session-client": [
+        "../../../typescript/host/session-client/dist/index.d.ts"
       ]
     },
     "rootDir": "./src",
+    "skipLibCheck": true,
     "target": "esnext",
-    "types": ["node"],
+    "types": ["bun", "node"],
     "verbatimModuleSyntax": true
   },
   "include": ["src/**/*.ts"]
