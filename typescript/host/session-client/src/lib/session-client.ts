@@ -112,7 +112,9 @@ export type SessionClientStatus =
 
 /**
  * Reconnect backoff tuning. All fields optional; see
- * {@link createSessionClient} for defaults.
+ * {@link createSessionClient} for defaults. Every field, when provided, must
+ * be a positive finite number; {@link createSessionClient} throws
+ * `RangeError` at construction otherwise.
  *
  * @experimental
  */
@@ -133,7 +135,22 @@ export interface SessionClientReconnectOptions {
 export interface SessionClientOptions {
   /** Opaque authentication material, carried to the host unmodified. */
   authToken?: string;
-  /** Capability handlers, keyed by `capabilityId`. */
+  /**
+   * Capability handlers, keyed by `capabilityId`.
+   *
+   * **Known limitation — unbounded answered-call retention.** Every settled
+   * `callId` this client has ever answered is retained for the lifetime of
+   * the client instance (see `callState` in `createSessionClient`), never
+   * evicted. This is a deliberate, conservative choice, not an oversight: the
+   * duplex session protocol has no result-ack frame, so this client cannot
+   * learn when the server has durably recorded a `client_result` and it is
+   * therefore safe to forget. An LRU or size-bounded cache would silently
+   * weaken the redelivery-dedup guarantee `handleInvocation` relies on — a
+   * long-lived connection that evicted an old `callId` could re-run a
+   * handler's non-idempotent effect on a very late redelivery. Callers
+   * running this client for very long-lived sessions with very many calls
+   * should be aware memory grows with total answered-call count.
+   */
   capabilities: Record<string, SessionClientCapabilityHandler>;
   /** Injectable timer pair for the reconnect backoff scheduler. Defaults to the global timers. */
   clock?: SessionClientClock;
@@ -145,9 +162,17 @@ export interface SessionClientOptions {
   onStatusChange?: (status: SessionClientStatus) => void;
   /** Reconnect backoff tuning. */
   reconnect?: SessionClientReconnectOptions;
-  /** Session identity to attach to; carried on the handshake and every frame. */
+  /**
+   * Session identity to attach to; carried on the handshake and every frame.
+   * Must be a non-empty string; {@link createSessionClient} throws
+   * `RangeError` at construction otherwise.
+   */
   sessionId: string;
-  /** WebSocket URL of the host's session endpoint. */
+  /**
+   * WebSocket URL of the host's session endpoint. Must be a non-empty
+   * string; {@link createSessionClient} throws `RangeError` at construction
+   * otherwise.
+   */
   url: string;
   /** Injection seam for tests: builds the socket for a given URL. Defaults to `new WebSocket(url)`. */
   webSocketFactory?: (url: string) => SessionClientSocket;
@@ -159,21 +184,108 @@ export interface SessionClientOptions {
  * @experimental
  */
 export interface SessionClientHandle {
-  /** Sends an `approval_response` frame for a paused run. No-op while disconnected. */
+  /**
+   * Sends an `approval_response` frame for a paused run. If the current
+   * socket's handshake has not yet been acknowledged (still connecting, or
+   * mid-reconnect backoff), the frame is queued and flushed in order once
+   * the next `handshake_ack` arrives, rather than dropped.
+   */
   approve(response: SessionClientApprovalResponse): void;
-  /** Sends a `cancel` frame for the active run. No-op while disconnected. */
+  /**
+   * Sends a `cancel` frame for the active run. If the current socket's
+   * handshake has not yet been acknowledged (still connecting, or
+   * mid-reconnect backoff), the frame is queued and flushed in order once
+   * the next `handshake_ack` arrives, rather than dropped.
+   */
   cancel(): void;
-  /** Closes the connection permanently; no further reconnect attempts are made. */
+  /**
+   * Closes the connection permanently; no further reconnect attempts are
+   * made. If called while a reconnect backoff is pending (no live socket),
+   * the terminal `closed` status is reported directly, since no `onclose`
+   * event will ever fire to report it otherwise.
+   */
   close(code?: number, reason?: string): void;
   /** Opens the connection (and begins the reconnect lifecycle on drop). No-op if already connecting/open. */
   connect(): void;
-  /** Sends a `steer` frame carrying mid-run input. No-op while disconnected. */
+  /**
+   * Sends a `steer` frame carrying mid-run input. If the current socket's
+   * handshake has not yet been acknowledged (still connecting, or
+   * mid-reconnect backoff), the frame is queued and flushed in order once
+   * the next `handshake_ack` arrives, rather than dropped.
+   */
   steer(signal: SessionClientInputSignal): void;
 }
 
 type CallState =
   | { status: "in-flight" }
   | { status: "answered"; result: SessionClientReportedResult };
+
+function isPositiveFiniteNumber(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Structural guard for a `client_invocation` frame's `invocation` field.
+ * This package trusts the wire only as far as its shape: a malformed or
+ * missing invocation (absent, non-object, or missing/non-string `callId` /
+ * `capabilityId` / `leaseToken`) must never throw inside the `onmessage`
+ * handler — it is simply ignored, same server-trust-boundary posture as
+ * {@link parseWsClientMessage}'s throw-free parsing.
+ */
+function isInvocationEnvelope(
+  value: unknown
+): value is SessionClientInvocationEnvelope {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.callId) &&
+    isNonEmptyString(value.capabilityId) &&
+    isNonEmptyString(value.leaseToken)
+  );
+}
+
+function validateOptions(options: SessionClientOptions): void {
+  if (!isNonEmptyString(options.url)) {
+    throw new RangeError("createSessionClient: url must be a non-empty string");
+  }
+  if (!isNonEmptyString(options.sessionId)) {
+    throw new RangeError(
+      "createSessionClient: sessionId must be a non-empty string"
+    );
+  }
+  const reconnect = options.reconnect;
+  if (
+    reconnect?.baseDelayMs !== undefined &&
+    !isPositiveFiniteNumber(reconnect.baseDelayMs)
+  ) {
+    throw new RangeError(
+      "createSessionClient: reconnect.baseDelayMs must be a positive finite number"
+    );
+  }
+  if (
+    reconnect?.maxDelayMs !== undefined &&
+    !isPositiveFiniteNumber(reconnect.maxDelayMs)
+  ) {
+    throw new RangeError(
+      "createSessionClient: reconnect.maxDelayMs must be a positive finite number"
+    );
+  }
+  if (
+    reconnect?.maxAttempts !== undefined &&
+    !isPositiveFiniteNumber(reconnect.maxAttempts)
+  ) {
+    throw new RangeError(
+      "createSessionClient: reconnect.maxAttempts must be a positive finite number"
+    );
+  }
+}
 
 let correlationCounter = 0;
 
@@ -202,6 +314,7 @@ function errorMessageOf(error: unknown): string {
 export function createSessionClient(
   options: SessionClientOptions
 ): SessionClientHandle {
+  validateOptions(options);
   const clock = options.clock ?? globalClock;
   const maxAttempts =
     options.reconnect?.maxAttempts ?? Number.POSITIVE_INFINITY;
@@ -216,6 +329,24 @@ export function createSessionClient(
   let reconnectAttempt = 0;
   let reconnectTimer: unknown;
   let lastCursor: string | undefined;
+  // Set once the current socket's handshake_ack has been observed, cleared on
+  // every close. Sending an inbound control frame before the ack lands can
+  // throw (socket still `CONNECTING`) or, worse, hand the server a
+  // non-handshake first message it closes with `WS_CLOSE_CODE_HANDSHAKE_INVALID`
+  // (4000) — the handshake is defined to be the first frame on every fresh
+  // connection. See `outboundQueue` below for what happens to a frame sent
+  // before this is true.
+  let handshakeOpen = false;
+  // Outbound `client_result` / `approval_response` / `steer` / `cancel`
+  // frames queued because `handshakeOpen` was false when they were sent.
+  // Queuing (rather than dropping) is the deliberate choice here: a `steer()`
+  // or `approve()` call made while a reconnect is in flight represents real
+  // user/handler intent that should still reach the server once the
+  // connection is re-established, not silently vanish because of a backoff
+  // window the caller has no visibility into. The queue is flushed in order
+  // as soon as the next `handshake_ack` arrives, and is cleared (not
+  // re-queued) if the user calls `close()` themselves.
+  const outboundQueue: unknown[] = [];
   const callState = new Map<string, CallState>();
 
   function reportStatus(status: SessionClientStatus): void {
@@ -223,10 +354,21 @@ export function createSessionClient(
   }
 
   function sendInboundFrame(frame: unknown): void {
-    if (socket === undefined) {
+    if (socket === undefined || !handshakeOpen) {
+      outboundQueue.push(frame);
       return;
     }
     socket.send(JSON.stringify({ frame, kind: "frame" }));
+  }
+
+  function flushOutboundQueue(): void {
+    if (socket === undefined) {
+      return;
+    }
+    const queued = outboundQueue.splice(0, outboundQueue.length);
+    for (const frame of queued) {
+      socket.send(JSON.stringify({ frame, kind: "frame" }));
+    }
   }
 
   function sendClientResult(result: SessionClientReportedResult): void {
@@ -301,7 +443,19 @@ export function createSessionClient(
       .then((content) => {
         settle(envelope, {
           callId: envelope.callId,
-          content,
+          // `content ?? null`, not `content` verbatim: a handler that
+          // resolves `undefined` (the common case for a void handler) would
+          // otherwise produce `JSON.stringify({..., content: undefined,
+          // ...})`, which drops the `content` key entirely. Both the
+          // server's `validateInboundFrame` and
+          // `@tuvren/remote-session`'s `extractSettleableClientResultCallId`
+          // require `"content" in result` to accept a `client_result`; a
+          // dropped key fails that check, the frame is rejected as
+          // `session_frame_invalid`, and the redelivery-tracking entry this
+          // callId depended on is never cleared — triggering a redelivery
+          // loop and, eventually, a dispatch timeout. `null` serializes and
+          // satisfies both checks.
+          content: content ?? null,
           leaseToken: envelope.leaseToken,
         });
       })
@@ -321,7 +475,18 @@ export function createSessionClient(
       return;
     }
     if (kind === "client_invocation") {
-      handleInvocation(record.invocation as SessionClientInvocationEnvelope);
+      // Server-trust-boundary hygiene: a malformed `client_invocation` (no
+      // `invocation` field, a non-object one, or one missing/mistyping
+      // `callId` / `capabilityId` / `leaseToken`) must not crash the
+      // `onmessage` handler and take down every future frame on this socket.
+      // Silently ignore it — there is no rejection channel back to the
+      // server for a carriage-level shape problem, and `onRejection` is
+      // reserved for the server's own `session_rejection` frames, not
+      // client-observed malformity.
+      if (!isInvocationEnvelope(record.invocation)) {
+        return;
+      }
+      handleInvocation(record.invocation);
       return;
     }
     if (kind === "session_rejection") {
@@ -378,6 +543,8 @@ export function createSessionClient(
       switch (parsed.kind) {
         case "handshake_ack": {
           reconnectAttempt = 0;
+          handshakeOpen = true;
+          flushOutboundQueue();
           reportStatus({
             phase: "open",
             resumeStatus: parsed.message.resumeStatus,
@@ -407,6 +574,7 @@ export function createSessionClient(
 
     nextSocket.onclose = (event) => {
       socket = undefined;
+      handshakeOpen = false;
       if (closedByUser) {
         reportStatus({
           code: event.code,
@@ -442,8 +610,23 @@ export function createSessionClient(
 
   function close(code = 1000, reason?: string): void {
     closedByUser = true;
+    const wasWaitingOnBackoff = reconnectTimer !== undefined;
     clearReconnectTimer();
-    socket?.close(code, reason);
+    if (socket === undefined) {
+      // No live socket to close: either never connected, or currently
+      // waiting out a reconnect backoff window. Neither case will ever fire
+      // `onclose` to report the terminal status this call promises, so emit
+      // it directly. `wasWaitingOnBackoff` distinguishes this from the
+      // never-connected case only in spirit — both report the same terminal
+      // status shape; the point is that the caller unconditionally observes
+      // a terminal `closed` status after calling `close()`, regardless of
+      // which connection phase it was called in.
+      if (wasWaitingOnBackoff) {
+        reportStatus({ code, phase: "closed", reason, terminal: true });
+      }
+      return;
+    }
+    socket.close(code, reason);
   }
 
   function approve(response: SessionClientApprovalResponse): void {

@@ -51,6 +51,14 @@
  * Every export is tagged `@experimental` per ADR-056 — the whole package is
  * still settling, and signatures may change without a major version bump
  * until an export graduates by losing its tag.
+ *
+ * **Known limitation — unbounded answered-call retention.** `createSessionClient`
+ * retains every settled `callId` for the client instance's whole lifetime with
+ * no eviction. The duplex session protocol has no result-ack frame, so there
+ * is no wire signal telling this client when it is safe to forget an answered
+ * call; an LRU or other size-bounded cache would silently weaken the
+ * redelivery-dedup guarantee ADR-063 depends on. See the `capabilities` option
+ * doc comment on {@link SessionClientOptions} for the full rationale.
  */
 
 /** @experimental */

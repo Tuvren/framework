@@ -523,3 +523,254 @@ describe("createSessionClient: inbound frame shapes", () => {
     expect((sent.correlationId as string).length).toBeGreaterThan(0);
   });
 });
+
+describe("createSessionClient: void handler wire shape (P1-1)", () => {
+  test("a void-returning handler's client_result carries a present content:null, not a dropped key", async () => {
+    const { client, sockets } = makeClient({
+      capabilities: {
+        "void.tool": () => {
+          // Deliberately returns nothing.
+        },
+      },
+    });
+    client.connect();
+    const socket = sockets[0] as FakeSocket;
+    socket.open();
+    ack(socket);
+
+    socket.receive({
+      frame: {
+        invocation: {
+          callId: "call-void",
+          capabilityId: "void.tool",
+          input: {},
+          leaseToken: "lease-void",
+        },
+        kind: "client_invocation",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    await flush();
+
+    const resultFrame = socket.lastFrame();
+    const result = resultFrame.result as Record<string, unknown>;
+    expect("content" in result).toBe(true);
+    expect(result.content).toBeNull();
+
+    // Also assert directly against the raw sent JSON string, since a naive
+    // fix could satisfy the parsed-object assertion above while a different
+    // serialization step still dropped the key.
+    const rawSent = socket.sent.at(-1);
+    const rawFrame = (rawSent as Record<string, unknown>).frame as Record<
+      string,
+      unknown
+    >;
+    const rawResult = rawFrame.result as Record<string, unknown>;
+    expect("content" in rawResult).toBe(true);
+  });
+});
+
+describe("createSessionClient: control frames queue until handshake_ack (P2-2)", () => {
+  test("steer() called before the handshake ack is not on the wire until after ack", () => {
+    const { client, sockets } = makeClient();
+    client.connect();
+    const socket = sockets[0] as FakeSocket;
+    socket.open();
+
+    // No ack yet: steer() must not reach the socket.
+    client.steer({ parts: [{ text: "too early", type: "text" }] });
+    expect(socket.sent).toHaveLength(1); // only the handshake
+    expect(socket.sent[0]).toMatchObject({ kind: "handshake" });
+
+    ack(socket);
+
+    // The queued steer flushes right after the ack.
+    expect(socket.sent).toHaveLength(2);
+    const flushed = socket.lastFrame();
+    expect(flushed.kind).toBe("steer");
+  });
+
+  test("steer() called during backoff flushes after the next successful handshake", () => {
+    const { client, clock, sockets } = makeClient({
+      reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
+    });
+    client.connect();
+    const first = sockets[0] as FakeSocket;
+    first.open();
+    ack(first);
+
+    // Retryable close drops us into backoff with no live socket.
+    first.serverClose(4004, "heartbeat timeout");
+
+    // Called mid-backoff: no live socket at all, so this can only queue.
+    client.steer({ parts: [{ text: "during backoff", type: "text" }] });
+
+    clock.advance(100);
+    const second = sockets[1] as FakeSocket;
+    second.open();
+
+    // Not sent yet: still waiting on the new socket's ack.
+    expect(second.sent).toHaveLength(1); // only the handshake
+    expect(second.sent[0]).toMatchObject({ kind: "handshake" });
+
+    ack(second);
+
+    expect(second.sent).toHaveLength(2);
+    const flushed = second.lastFrame();
+    expect(flushed.kind).toBe("steer");
+  });
+});
+
+describe("createSessionClient: malformed client_invocation (P2-3)", () => {
+  test("malformed invocation frames are ignored and do not throw; later valid frames still process", async () => {
+    const { client, sockets } = makeClient({
+      capabilities: {
+        "echo.tool": async (input) => ({ echoed: input }),
+      },
+    });
+    client.connect();
+    const socket = sockets[0] as FakeSocket;
+    socket.open();
+    ack(socket);
+
+    const malformedInvocations: unknown[] = [
+      undefined,
+      null,
+      "not-an-object",
+      42,
+      {},
+      { callId: "call-x" }, // missing capabilityId/leaseToken
+      { callId: 7, capabilityId: "echo.tool", leaseToken: "l" }, // non-string callId
+    ];
+
+    for (const invocation of malformedInvocations) {
+      expect(() => {
+        socket.receive({
+          frame: {
+            invocation,
+            kind: "client_invocation",
+            sessionId: "test-session",
+          },
+          kind: "frame",
+        });
+      }).not.toThrow();
+    }
+
+    // No client_result should have been produced for any malformed frame.
+    expect(socket.sent).toHaveLength(1); // only the handshake
+
+    // A subsequent valid invocation still dispatches normally.
+    socket.receive({
+      frame: {
+        invocation: {
+          callId: "call-valid",
+          capabilityId: "echo.tool",
+          input: { ok: true },
+          leaseToken: "lease-valid",
+        },
+        kind: "client_invocation",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    await flush();
+
+    const resultFrame = socket.lastFrame();
+    expect(resultFrame.kind).toBe("client_result");
+    const result = resultFrame.result as Record<string, unknown>;
+    expect(result.callId).toBe("call-valid");
+    expect(result.content).toEqual({ echoed: { ok: true } });
+  });
+});
+
+describe("createSessionClient: close() during backoff emits terminal status (P2-5)", () => {
+  test("connect -> retryable close -> close() during backoff observes a terminal status and stops reconnecting", () => {
+    const { client, clock, sockets, statuses } = makeClient({
+      reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
+    });
+    client.connect();
+    const socket = sockets[0] as FakeSocket;
+    socket.open();
+    ack(socket);
+
+    socket.serverClose(4004, "heartbeat timeout");
+    expect(clock.delays()).toEqual([100]);
+
+    client.close(1000, "user closed during backoff");
+
+    const terminal = statuses.at(-1);
+    expect(terminal).toMatchObject({ phase: "closed", terminal: true });
+
+    // The pending reconnect timer must have been cancelled: advancing the
+    // clock produces no new socket.
+    clock.advance(1000);
+    expect(sockets).toHaveLength(1);
+  });
+});
+
+describe("createSessionClient: option validation (P2-6)", () => {
+  test("throws RangeError for an empty url", () => {
+    expect(() =>
+      createSessionClient({
+        capabilities: {},
+        sessionId: "test-session",
+        url: "",
+      })
+    ).toThrow(RangeError);
+  });
+
+  test("throws RangeError for an empty sessionId", () => {
+    expect(() =>
+      createSessionClient({
+        capabilities: {},
+        sessionId: "",
+        url: "wss://example.invalid/session",
+      })
+    ).toThrow(RangeError);
+  });
+
+  test("throws RangeError for a non-positive reconnect.baseDelayMs", () => {
+    expect(() =>
+      createSessionClient({
+        capabilities: {},
+        reconnect: { baseDelayMs: 0 },
+        sessionId: "test-session",
+        url: "wss://example.invalid/session",
+      })
+    ).toThrow(RangeError);
+  });
+
+  test("throws RangeError for a non-finite reconnect.maxDelayMs", () => {
+    expect(() =>
+      createSessionClient({
+        capabilities: {},
+        reconnect: { maxDelayMs: Number.POSITIVE_INFINITY },
+        sessionId: "test-session",
+        url: "wss://example.invalid/session",
+      })
+    ).toThrow(RangeError);
+  });
+
+  test("throws RangeError for a non-positive reconnect.maxAttempts", () => {
+    expect(() =>
+      createSessionClient({
+        capabilities: {},
+        reconnect: { maxAttempts: -1 },
+        sessionId: "test-session",
+        url: "wss://example.invalid/session",
+      })
+    ).toThrow(RangeError);
+  });
+
+  test("accepts valid options without throwing", () => {
+    expect(() =>
+      createSessionClient({
+        capabilities: {},
+        reconnect: { baseDelayMs: 100, maxAttempts: 5, maxDelayMs: 1000 },
+        sessionId: "test-session",
+        url: "wss://example.invalid/session",
+      })
+    ).not.toThrow();
+  });
+});
