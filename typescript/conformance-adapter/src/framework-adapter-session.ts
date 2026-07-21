@@ -1256,12 +1256,51 @@ export async function runSequenceContinuity(): Promise<AdapterProjection> {
 
   const sink1 = createRecordingSessionSink();
   session.attach(sink1);
+
+  // Pacing is structural, not incidental: the client_result is deliberately
+  // NOT submitted until after the reattach below, so the turn cannot finish
+  // (and the binding cannot go terminal) at any point during the
+  // detach/reattach window — the unanswered tuvren-client call holds it
+  // open under the generous 30s budgets above. Waiting for two cursor-bearing
+  // event frames (turn.start plus at least one more precedes any tool
+  // resolution) guarantees the replay from the FIRST event's cursor is
+  // non-empty by construction, so the plan's replayObservedAtLeastOneEvent
+  // assertion cannot fail on turn pacing.
   await waitFor(
-    () => sentFramesOfKind(sink1.sent, "client_invocation").length > 0
+    () =>
+      sentFramesOfKind(sink1.sent, "client_invocation").length > 0 &&
+      sink1.sent.filter(
+        (entry) =>
+          entry.frame.kind === "event" && typeof entry.cursor === "string"
+      ).length >= 2
   );
   const invocation = sentFramesOfKind(sink1.sent, "client_invocation")[0]
     ?.invocation as ClientInvocationEnvelope;
+  const eventFramesBeforeDetach = sink1.sent.filter(
+    (entry): entry is RecordedSessionFrame & { cursor: string } =>
+      entry.frame.kind === "event" && typeof entry.cursor === "string"
+  );
+  const cursorAtFirstEvent = eventFramesBeforeDetach[0]?.cursor;
+  const sequenceAtFirstEvent =
+    cursorAtFirstEvent === undefined
+      ? undefined
+      : decodeResumeCursor(cursorAtFirstEvent)?.sequence;
 
+  // Simulated drop, not session.close(): detaches this sink without ending
+  // the still-running turn (ADR-063 decision 4). The pump keeps recording
+  // further sequenced events into the shared replay buffer regardless of
+  // attachment.
+  session.detach();
+
+  const sink2 = createRecordingSessionSink();
+  const { resumeStatus } =
+    cursorAtFirstEvent === undefined
+      ? session.attach(sink2)
+      : session.attach(sink2, { cursor: cursorAtFirstEvent });
+
+  // Only now — with sink2 attached (inbound routing requires an attached
+  // sink) and the replay already delivered — is the invocation answered,
+  // releasing the turn to run to completion.
   session.dispatchInbound({
     correlationId: "corr-seqcontinuity-accept-1",
     kind: "client_result",
@@ -1273,29 +1312,6 @@ export async function runSequenceContinuity(): Promise<AdapterProjection> {
     },
     sessionId: SEQCONT_SESSION_ID,
   });
-
-  await waitFor(() => sink1.sent.some((entry) => entry.frame.kind === "event"));
-  const eventFramesBeforeDetach = sink1.sent.filter(
-    (entry): entry is RecordedSessionFrame & { cursor: string } =>
-      entry.frame.kind === "event" && typeof entry.cursor === "string"
-  );
-  const lastCursorBeforeDetach = eventFramesBeforeDetach.at(-1)?.cursor;
-  const lastSequenceBeforeDetach =
-    lastCursorBeforeDetach === undefined
-      ? undefined
-      : decodeResumeCursor(lastCursorBeforeDetach)?.sequence;
-
-  // Simulated drop, not session.close(): detaches this sink without ending
-  // the still-running turn (ADR-063 decision 4). The pump keeps recording
-  // further sequenced events into the shared replay buffer regardless of
-  // attachment.
-  session.detach();
-
-  const sink2 = createRecordingSessionSink();
-  const { resumeStatus } =
-    lastCursorBeforeDetach === undefined
-      ? session.attach(sink2)
-      : session.attach(sink2, { cursor: lastCursorBeforeDetach });
 
   // The turn finishes on its own schedule; wait for the session to end
   // naturally (the underlying binding's outbound stream reaching terminal)
@@ -1311,19 +1327,19 @@ export async function runSequenceContinuity(): Promise<AdapterProjection> {
         : (decodeResumeCursor(entry.cursor)?.sequence ?? null)
     );
   const expectedReplaySequences =
-    lastSequenceBeforeDetach === undefined
+    sequenceAtFirstEvent === undefined
       ? []
       : replayedSequences.map(
-          (_, index) => (lastSequenceBeforeDetach as number) + 1 + index
+          (_, index) => (sequenceAtFirstEvent as number) + 1 + index
         );
 
   const observation = {
     expectedReplaySequences,
-    lastSequenceBeforeDetach: lastSequenceBeforeDetach ?? null,
+    lastSequenceBeforeDetach: sequenceAtFirstEvent ?? null,
     noSequenceRestart: replayedSequences.every(
       (sequence) =>
         sequence !== null &&
-        sequence > (lastSequenceBeforeDetach ?? Number.NEGATIVE_INFINITY)
+        sequence > (sequenceAtFirstEvent ?? Number.NEGATIVE_INFINITY)
     ),
     // Guards the vacuous-empty case: expectedReplaySequences is derived from
     // replayedSequences' own length, so with zero replayed events both the

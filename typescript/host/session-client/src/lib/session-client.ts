@@ -738,20 +738,15 @@ export function createSessionClient(
     // the caller has explicitly asked to close, queued frames represent
     // intent for a connection the caller no longer wants re-established.
     outboundQueue.length = 0;
-    const wasWaitingOnBackoff = reconnectTimer !== undefined;
     clearReconnectTimer();
     if (socket === undefined) {
       // No live socket to close: either never connected, or currently
       // waiting out a reconnect backoff window. Neither case will ever fire
       // `onclose` to report the terminal status this call promises, so emit
-      // it directly. `wasWaitingOnBackoff` distinguishes this from the
-      // never-connected case only in spirit — both report the same terminal
-      // status shape; the point is that the caller unconditionally observes
-      // a terminal `closed` status after calling `close()`, regardless of
-      // which connection phase it was called in.
-      if (wasWaitingOnBackoff) {
-        reportStatus({ code, phase: "closed", reason, terminal: true });
-      }
+      // it directly — the caller unconditionally observes a terminal
+      // `closed` status after calling `close()`, regardless of which
+      // connection phase it was called in.
+      reportStatus({ code, phase: "closed", reason, terminal: true });
       return;
     }
     socket.close(code, reason);
