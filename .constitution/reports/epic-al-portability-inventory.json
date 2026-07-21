@@ -80,11 +80,7 @@
   "standingExceptions": [
     {
       "label": "AG-UI projection (@tuvren/stream-agui)",
-      "forbiddenSurfaceNames": [
-        "ag-ui",
-        "stream-agui",
-        "event-stream-agui"
-      ],
+      "forbiddenSurfaceNames": ["ag-ui", "stream-agui", "event-stream-agui"],
       "inventorySection": "§4.1"
     },
     {
@@ -98,11 +94,7 @@
     },
     {
       "label": "OpenTelemetry projection (@tuvren/telemetry-otel)",
-      "forbiddenSurfaceNames": [
-        "telemetry-otel",
-        "otel",
-        "opentelemetry"
-      ],
+      "forbiddenSurfaceNames": ["telemetry-otel", "otel", "opentelemetry"],
       "inventorySection": "§4.3"
     }
   ],
