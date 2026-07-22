@@ -426,6 +426,59 @@ export async function loadPersistedStateForUpdate(
   }
 }
 
+/**
+ * Lightweight liveness/coherence check for a Scope's snapshot row (issue
+ * #108 M5): confirms the connection can execute a query, the Scope's
+ * snapshot row exists, and its `schema_version` is one this package version
+ * can decode — without fetching or decoding the row's `snapshot_cbor` bytes
+ * at all. This is the read `PostgresBackend.health()` runs; the full
+ * decode+validate pass this function deliberately skips still runs at
+ * commit time (every `transact()`/`reclaim()` call validates its own draft
+ * before `COMMIT`) and on demand via `PostgresBackend.fsck()`
+ * ({@link loadPersistedStateForUpdate} plus `validateCommittedState`).
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_missing_snapshot_row` when
+ *   the Scope has no snapshot row (e.g. reused after {@link deletePersistedStateSnapshot}),
+ *   or `postgres_backend_snapshot_version_unsupported` when the row's schema
+ *   version predates what this package version can decode.
+ */
+export async function checkPersistedStateLiveness(
+  sql: Sql,
+  schemaName: string,
+  scope: Scope
+): Promise<void> {
+  const snapshotsTable = qualifyIdentifier(
+    schemaName,
+    "backend_postgres_snapshots"
+  );
+  const rows = await sql.unsafe<Array<{ schema_version: number }>>(
+    `SELECT schema_version
+       FROM ${snapshotsTable}
+      WHERE snapshot_id = $1 AND scope = $2`,
+    [SNAPSHOT_ROW_ID, scope]
+  );
+  const row = rows[0];
+
+  if (row === undefined) {
+    throw persistenceError(
+      "postgres backend snapshot row is missing",
+      "postgres_backend_missing_snapshot_row",
+      { scope }
+    );
+  }
+
+  if (row.schema_version !== CURRENT_SNAPSHOT_VERSION) {
+    throw persistenceError(
+      "postgres backend snapshot version is unsupported",
+      "postgres_backend_snapshot_version_unsupported",
+      {
+        actualVersion: row.schema_version,
+        expectedVersion: CURRENT_SNAPSHOT_VERSION,
+      }
+    );
+  }
+}
+
 /** The outcome of a successful {@link persistStateSnapshot} call. */
 export interface PersistStateSnapshotResult {
   /**

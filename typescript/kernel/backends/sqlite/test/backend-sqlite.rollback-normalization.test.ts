@@ -173,8 +173,10 @@ describe("@tuvren/backend-sqlite transact rollback normalization (KRT-BK009)", (
       }
     );
 
-    // (ii) Rolled back cleanly: `health()` runs `BEGIN IMMEDIATE` on the exact
-    // same private connection `transact` used, so it would fail here if that
+    // (ii) Rolled back cleanly: `health()` still runs `BEGIN IMMEDIATE` /
+    // `ROLLBACK` on the exact same private connection `transact` used (issue
+    // #108 M5 kept this transaction hygiene even though the lightweight
+    // probe no longer loads/validates state), so it would fail here if that
     // connection were still mid-transaction.
     const health = await backend.health();
     strictEqual(health.ok, true);

@@ -112,6 +112,7 @@ import {
 } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
 import {
+  checkPersistedStateLiveness,
   createPostgresClient,
   deletePersistedStateSnapshot,
   ensurePostgresSchemaInitialized,
@@ -242,11 +243,50 @@ class PostgresBackend implements KrakenBackend {
   }
 
   /**
-   * Checks connectivity and invariant health by initializing (if needed),
-   * loading the Scope's committed snapshot, and re-validating it against
-   * itself as both draft and base state.
+   * Lightweight liveness/coherence probe (issue #108 M5). Initializes the
+   * Scope's schema if needed, then confirms the connection can execute a
+   * query and the Scope's snapshot row exists with a `schema_version` this
+   * package version supports ({@link checkPersistedStateLiveness}) —
+   * without loading, decoding, or validating the row's `snapshot_cbor`
+   * bytes at all. Deliberately does NOT run the full committed-state
+   * invariant suite: `RuntimeBackend.health()`'s contract
+   * (kernel-protocol's `kernel-types.ts`) only promises "can serve
+   * traffic", no conformance plan requires a full re-validation on every
+   * call, and every `transact()`/`reclaim()` call already re-validates its
+   * own draft against `validateCommittedState` before `COMMIT`. The full
+   * decode+validate pass this method used to run on every call is still
+   * available on demand via {@link fsck} — the Git-fsck analogy this split
+   * is named for: `git fsck` is occasional maintenance, never run on every
+   * read, but the repository's integrity guarantee does not depend on it
+   * running on every read either.
    */
   async health(): Promise<{ ok: true } | { ok: false; reason: string }> {
+    try {
+      await this.ensureInitialized();
+      await checkPersistedStateLiveness(this.sql, this.schemaName, this.scope);
+      return { ok: true };
+    } catch (error: unknown) {
+      return {
+        ok: false,
+        reason: readErrorMessage(error),
+      };
+    }
+  }
+
+  /**
+   * Git-fsck-style maintenance validation (issue #108 M5): loads the
+   * Scope's full committed snapshot and re-validates it against itself as
+   * both draft and base state — exactly what `health()` ran on every call
+   * before M5. This is now a deliberate maintenance action a host calls
+   * occasionally, not part of the hot read path `health()` serves. The
+   * guarantee this replaces is preserved, not weakened: every
+   * `transact()`/`reclaim()` call already re-validates its own write against
+   * the full committed-state invariant suite before `COMMIT` regardless of
+   * whether `fsck()` is ever called; `fsck()` exists to additionally catch
+   * corruption introduced outside the backend's own write path (e.g. direct
+   * database tampering, or a bug in a different writer).
+   */
+  async fsck(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
       await this.ensureInitialized();
       await this.sql.begin(async (tx): Promise<void> => {

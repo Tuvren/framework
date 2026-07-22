@@ -21,6 +21,13 @@
         "command": "bun bench/postgres-write-latency.bench.ts"
       }
     },
+    "bench-encode-family": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/backends/postgres",
+        "command": "bun bench/postgres-encode-family.bench.ts"
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {

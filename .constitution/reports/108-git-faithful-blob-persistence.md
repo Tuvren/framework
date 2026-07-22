@@ -1039,6 +1039,22 @@ changing blob granularity (splitting the canonical encoding unit below
 and reserves for the separate Option-B storage-shape decision (feeding
 ADR-066).
 
+**Review debt (M5 follow-up):** the ad-hoc script that produced the
+7.237 ms/14.250 ms numbers above was not committed at M4 time (see "What
+was salvaged versus reverted" below). It is now committed as a permanent
+diagnostic, `typescript/kernel/backends/postgres/bench/postgres-encode-family.bench.ts`
+(`bun run nx run backend-postgres:bench-encode-family`), so the ~4–8%
+attribution above is reproducible on demand instead of resting on a
+one-time, uncommitted measurement. It needs no PostgreSQL connection: it
+isolates the identical clone+sort shape over an in-memory
+`Map<string, StoredObject>` family, bypassing CBOR encoding and the
+database entirely, and accepts `BENCH_FAMILY_SIZE`/`BENCH_SAMPLE_COUNT`
+overrides the same way the other benches in this report do. A fresh run
+at the default 10,000-object family size and `n=15` measured **best
+6.339 ms, median 6.989 ms, p95 9.743 ms** — consistent with (in fact
+slightly below) the original ~4–8% attribution against the ~172–182 ms
+encode phase above, so the headline figures are unchanged.
+
 ### The prototype: design, and proof it was byte-identical
 
 A per-family, dirty-tracked, instance-level projection cache
@@ -1122,10 +1138,28 @@ Per-phase `encode` best/median at each size (this run):
 | 1,000 | 14.372 ms | 15.198 ms |
 | 10,000 | 172.257 ms | 182.553 ms |
 
-**Every number above is within normal run-to-run noise of M3's own
-committed baseline** (differences of roughly ±1–5%, the same band M3
-itself reported between repeated runs) — there is no reproducible gain
-here, at any size. This is the expected consequence of A1 being refuted
+**None of the numbers above show a reproducible gain, at any size**, but
+the size of the noise band is not uniform across the ladder, and an
+earlier draft of this section overstated it as a flat "±1–5%" — corrected
+here (review debt). The decisive 10,000-object tier is genuinely within
+±1–5% (best −2.0%, median −1.1%, p95 −3.4%, avg −2.1%): at that size the
+scope is large enough that run-to-run scheduling/GC jitter averages out,
+and this is the tier that actually carries the landing-bar decision, since
+it is where the canonical-CBOR serialization floor dominates most clearly.
+The smaller tiers (10, 100, 1,000 objects) swing far outside that band in
+both directions — 10-object p95 −36.5%, 10-object avg −19.5%, 100-object
+best −22.0%, 100-object p95 *+12.1%* (a regression, not an improvement),
+1,000-object median/p95/avg all +2–3% — because at tens-to-hundreds of
+microseconds/milliseconds total, absolute noise from process scheduling,
+GC pauses, and OS jitter is a much larger fraction of the measured
+quantity: these tiers are high-relative-variance on tiny absolute values,
+not evidence of a real effect in either direction. Reading the small-tier
+swings as signal (rather than noise amplified by a small denominator)
+would be the wrong conclusion in both directions — neither "small tiers
+regressed" nor "small tiers improved" is a claim this data supports. The
+disposition below rests on the 10,000-object tier and the phase/mechanism
+argument, not on the small-tier deltas. This is the expected consequence
+of A1 being refuted
 (above): `postgres-write-latency.bench.ts` writes a single
 `tx.objects.put(record)` per `transact()` against a scope where `objects`
 is the only large family, so `objects` is always the dirty family on every
@@ -1209,8 +1243,270 @@ milestone's scope and this issue's stated non-goal) can move it.
 - Two ad-hoc, uncommitted measurement scripts were written and run locally
   to produce the "why A1 is refuted" numbers above (a schemas-only
   marginal-write variant of the committed bench, and the isolated
-  clone+sort micro-benchmark); neither is part of the committed change —
-  closing with measured reason calls for honest measurement of the
-  residual, not a second permanent bench target, and adding one would have
-  been scope creep against "Keep package entrypoints small and explicit" /
-  avoiding unnecessary committed surface for a one-time diagnostic.
+  clone+sort micro-benchmark); at M4 time neither was part of the
+  committed change — closing with measured reason calls for honest
+  measurement of the residual, not necessarily a second permanent bench
+  target, and adding one seemed like scope creep against "Keep package
+  entrypoints small and explicit" / avoiding unnecessary committed surface
+  for a one-time diagnostic.
+- **M5 review debt revisits this:** a reviewer flagged that "one-time
+  diagnostic" was in tension with citing the numbers as reproducible
+  evidence in a permanent report. The isolated clone+sort micro-benchmark
+  (not the schemas-only marginal-write variant, which stays an uncommitted
+  local script since it exercises the full committed bench path rather
+  than isolating a single mechanism) is now committed as
+  `typescript/kernel/backends/postgres/bench/postgres-encode-family.bench.ts`
+  with a `bench-encode-family` Nx target — see the M4 review-debt note
+  under "Why A1 is refuted" above for the re-run numbers.
+
+## M5 — B1 health()/fsck() split (validation off the hot read path)
+
+**Goal:** issue #108 area B1 — move whole-state validation off the hot read
+path. Both backends implemented `health()` as a full fsck: BEGIN/load/
+validate/ROLLBACK, every call. Post-M2, `health()` at 10,000 rows cost
+~1.13s on the sqlite backend, ~81.8% of it inside `validateLoadedState`'s
+per-record identity re-hash (see the M2 section above). Git runs `fsck` as
+occasional maintenance, never on every read — the goal is to make `health()`
+behave the same way, without weakening what the backend actually guarantees.
+
+### Design
+
+1. **`health()` becomes a lightweight liveness/coherence probe** on both
+   backends, with no whole-state load or validation:
+   - **sqlite:** the connection genuinely starts and completes a transaction
+     (`BEGIN IMMEDIATE` / `ROLLBACK` around a trivial `SELECT 1` — the same
+     transaction hygiene the old deep probe used, so a connection wedged
+     mid-transaction still fails health() exactly as before) and
+     `validateMigrationState` (cheap; the only check that ever distinguished
+     "corrupt/missing schema" from "healthy" at this probe) still runs. No
+     `loadState`, no `validateLoadedState`, no lineage-index validation, no
+     `validateCommittedState`.
+   - **postgres:** the connection can execute a query, the Scope's snapshot
+     row exists, and its `schema_version` is one this package version
+     supports (`checkPersistedStateLiveness`, a new function in
+     `postgres-backend-persistence.ts`) — without fetching or decoding the
+     row's `snapshot_cbor` bytes at all. No decode, no `validateCommittedState`.
+   - Both keep the exact poll-safe `{ ok: true } | { ok: false; reason }`
+     shape; nothing about error handling or transaction hygiene changed.
+2. **A new `fsck()` method on both backend classes** (`SqliteBackend`,
+   `PostgresBackend` — deliberately NOT added to the `RuntimeBackend`
+   interface in `kernel-protocol`, since it is a maintenance capability
+   above the contract, not a syscall the kernel drives) performs exactly
+   what `health()` did before this milestone: sqlite's `BEGIN IMMEDIATE` +
+   full `loadValidatedState` + `ROLLBACK`; postgres's full
+   `loadPersistedStateForUpdate` (decode) + `validateCommittedState(state,
+   state)`. Same `{ ok: true } | { ok: false; reason }` return shape.
+   `createSqliteBackend`'s exported return type now includes `fsck` (mirroring
+   how it already widened for `close`); `createPostgresBackend` keeps its
+   plain `RuntimeBackend` return type (widening it to include `fsck` broke
+   several pre-existing `as ClosablePostgresBackend`-style test casts —
+   TypeScript's "sufficiently overlaps" cast heuristic treats an explicit
+   intersection type more strictly than a plain interface reference — so
+   postgres tests that need `fsck()` cast through a local interface instead,
+   the same pattern already used for `destroy()`/`sql`).
+
+### Contract argument: `health()` never promised whole-state validation
+
+`RuntimeBackend.health()`'s doc comment
+(`typescript/kernel/protocol/src/lib/kernel-types.ts:987–991`) reads, in
+full:
+
+> Probes the durable substrate. Returns `{ ok: true }` when the backend can
+> serve traffic, otherwise `{ ok: false }` with a human-readable reason.
+
+"Can serve traffic" is a liveness/coherence claim, not a promise to
+re-validate every persisted record and cross-record invariant on every
+call. No conformance plan governs `health()` either — `spec/conformance`
+has zero references to `health` as a checked surface — so there was no
+authority packet or promoted check this milestone had to satisfy, extend,
+or contradict. The full load+validate pass both backends ran on every call
+was therefore an implementation choice inherited from getting persistence
+working, not a contractual obligation; this milestone brings the
+implementation back in line with what the contract actually promises.
+
+### The guarantee is preserved, not weakened
+
+Nothing about *when* validation happens at write time changed: every
+`transact()` call already re-validates its own write before `COMMIT`
+(sqlite's `validateTransactionWriteSet` plus repository invariants;
+postgres's `validateCommittedState(draftState, baseState)`), and `reclaim()`
+still runs the full load+validate pass twice (before and after the sweep)
+on both backends, exactly as before. What moved is *only* the redundant
+re-validation that used to run again on every `health()` poll, on top of
+what commit-time validation had already checked. The full pass is still one
+call away via `fsck()`, callable as often as an operator wants — Git's own
+`fsck` is "occasional maintenance, never on every read," and the
+repository's integrity guarantee never depended on running it on every
+read either.
+
+### The proof test (both backends)
+
+Both backends' proof tests inject committed-state corruption that no
+migration/schema/connectivity check can see, then assert `health()` still
+reports `{ ok: true }` while `fsck()` reports `{ ok: false, reason }` —
+demonstrating the split with behavior, not argument.
+
+- **sqlite** (`backend-sqlite.invariants.test.ts`, "keeps committed-state
+  corruption invisible to health() but reports it through fsck() (issue
+  #108 M5)"): seeds a valid database, then directly tampers with a stored
+  object row's `hash` column via raw SQL so it no longer matches the row's
+  `bytes` (the same corruption `backend-sqlite.record-validation.test.ts`'s
+  "rejects stored object rows whose hash no longer matches bytes" case
+  uses, now routed through both methods instead of only the old `health()`).
+  `transact()` still runs normally (the corruption does not block the hot
+  path); `health()` returns `{ ok: true }`; `fsck()` returns `{ ok: false }`
+  with a reason matching the object-row identity error pattern.
+- **postgres** (new file `backend-postgres.health-fsck.test.ts`, "keeps an
+  active-run/branch-head misalignment invisible to health() but reports it
+  through fsck()"): builds a thread/branch/turn/running-run through
+  `@tuvren/kernel-runtime`'s `createRuntimeKernel`, decodes the persisted
+  snapshot, directly rewrites the branch's `headTurnNodeHash` back to the
+  thread root (bypassing `transact()`'s own `validateCommittedState`
+  entirely, mirroring how a raw SQL edit or a different writer's bug could
+  produce the same corruption), and re-persists the tampered bytes via
+  `writeSnapshotCbor`. Every individual record is still schema-valid
+  (`decodeSnapshot`'s per-record asserts pass); only the cross-record
+  active-run/branch-head alignment invariant (`assertActiveRunHeadAlignment`)
+  is broken — exactly the class of corruption a connectivity/schema-version
+  check can never see. `health()` returns `{ ok: true }`; `fsck()` returns
+  `{ ok: false }` with a reason matching `/stay aligned with the current
+  branch head/`.
+
+### Before/after: health() drops to constant cost; fsck() continues the old curve
+
+sqlite, `bun run nx run backend-sqlite:bench-load-cost` (`n=15`,
+`2026-07-22`, same machine/ladder as M1/M2):
+
+| Turn nodes | health best | health median | health p95 | fsck best | fsck median | fsck p95 | fsck/health best ratio |
+|---|---|---|---|---|---|---|---|
+| 10 | 265.8 μs | 286.6 μs | 368.5 μs | 4.457 ms | 4.861 ms | 6.159 ms | 16.8x |
+| 100 | 238.3 μs | 247.6 μs | 271.1 μs | 13.398 ms | 14.665 ms | 19.294 ms | 56.2x |
+| 1,000 | 235.4 μs | 241.4 μs | 252.7 μs | 115.731 ms | 125.667 ms | 137.637 ms | 491.7x |
+| 10,000 | 239.7 μs | 256.9 μs | 853.1 μs | 1.119 s | 1.167 s | 1.231 s | 4666.7x |
+
+`health()` is now flat — roughly 235–370 μs (best/median/p95, ignoring the
+10,000-tier p95 outlier at 853 μs) across three orders of magnitude of
+database size, consistent with "a trivial read plus schema-shape checks
+that don't scale with row count." `health()` no longer reports any
+`PhaseObserver` samples at all (there is nothing left inside it to
+attribute — no `load`/`validate-*` phase runs). `fsck()` reproduces the old
+health() curve exactly, because it is byte-for-byte the same code path: at
+10,000 rows, `fsck()`'s own `validate-loaded` phase (915 ms of a 1.119 s
+total, ~81.8%) matches the M2 section's "~81.8% of health() in
+`validateLoadedState`" finding precisely, confirming `fsck()` is a faithful
+rename-and-relocate of the pre-M5 `health()`, not a reimplementation.
+`reclaim()`'s cost (which still runs the same full load+validate pass
+twice, unconditionally) is unaffected — it was never routed through
+`health()` and continues to scale the same way it did in M1/M2.
+
+### Migration inventory: which tests moved to `fsck()`, which stayed on `health()`, and why
+
+**Moved to `fsck()`** (committed-state/per-record corruption — invisible to
+the new lightweight `health()` by design):
+
+- `backend-sqlite-test-helpers.ts`'s `expectCorruptedStateRejection` helper
+  now calls `fsck()` instead of `health()`. Every test in
+  `backend-sqlite.record-validation.test.ts` (12 cases: invalid run status,
+  invalid object `byteLength`, object hash/bytes mismatch, invalid
+  `currentStepIndex`, interrupted staged result with null payload,
+  malformed consumed-staged-results payload, corrupted lineage depth,
+  invalid thread/branch/turn timestamp metadata, invalid turn-tree-path
+  collection kind, corrupted `orderedCount`/`item_count` cardinality) moved
+  transitively through this one helper change.
+- `backend-sqlite.invariants.test.ts`: "reports unhealthy status through
+  fsck() when committed-state invariants are broken" (a raw-SQL-inserted
+  second active run on the same branch — the duplicate-active-run
+  invariant) and the proof test described above both call `fsck()`
+  directly.
+- `backend-sqlite.phase-observer.test.ts`: both tests now exercise `fsck()`
+  instead of `health()`, since the load/validate-loaded/
+  validate-lineage-index/validate-committed phase-attribution this suite
+  proves only exists inside the full pass, which lives in `fsck()` now.
+- postgres: the new `backend-postgres.health-fsck.test.ts` proof test
+  (described above) is the only postgres test exercising this class of
+  corruption end-to-end; no pre-existing postgres test needed migrating,
+  since postgres had no equivalent pre-M5 committed-state-corruption test
+  routed through `health()`.
+
+**Stayed on `health()`** (migration/schema/connectivity corruption — still
+visible to the lightweight probe by design):
+
+- `backend-sqlite.invariants.test.ts`: "reports unhealthy status when
+  required schema tables are missing" and "reports missing tables through
+  health instead of transaction preflight" (both `DROP TABLE objects`, then
+  assert `health()` fails) and "rejects databases that are missing baseline
+  indexes" (`DROP INDEX`, then assert `health()` fails) — all three are
+  caught by `validateMigrationState`, which the lightweight `health()` still
+  runs.
+- `backend-sqlite.rollback-normalization.test.ts`: still asserts
+  `health()` returns `{ ok: true }` after a rolled-back transaction, to
+  prove the connection was not left mid-transaction — `health()` still runs
+  `BEGIN IMMEDIATE`/`ROLLBACK` around its trivial read, so this transaction-
+  hygiene assertion is unaffected by the lightweight-probe change.
+- `backend-sqlite.wal-locking.test.ts`, `backend-sqlite.startup.test.ts`:
+  unchanged `{ ok: true }` sanity checks after normal startup/reopen/WAL
+  scenarios — none of these assert on committed-state corruption, so they
+  needed no migration.
+- postgres: `backend-postgres.test.ts`'s "retries initialization after a
+  transient bootstrap failure" (patches `sql.begin` to fail once, asserting
+  `health()` surfaces the transient error and then recovers) exercises
+  `ensureInitialized()`, which `health()` still calls first — unaffected.
+  `backend-postgres.pool-contention.test.ts` and
+  `backend-postgres.reclamation.test.ts`'s `{ ok: true }` sanity checks
+  after normal operation/reclaim also needed no migration.
+
+### Review debts folded in from M4 (see the M4 section above for the first two)
+
+1. Reworded the M4 "±1–5% run-to-run noise" claim, which its own table
+   contradicted at small tiers (10-object p95 −36.5%, 100-object best
+   −22.0%, mixed signs including a +12.1% regression at 100-object p95):
+   the ±1–5% band holds only at the decisive 10,000-object tier; smaller
+   tiers are high-relative-variance on tiny absolute values, not evidence of
+   a real effect. No re-measurement — this was a wording fix over existing
+   numbers.
+2. Committed the clone+sort micro-benchmark as
+   `postgres-encode-family.bench.ts` with a `bench-encode-family` Nx target
+   (see the M4 section's "Why A1 is refuted" for the re-run numbers: best
+   6.339 ms / median 6.989 ms / p95 9.743 ms at the default 10,000-object
+   family size, `n=15` — consistent with, in fact slightly below, the
+   original ~4–8% attribution, so the headline M4 figures are unchanged).
+3. Tightened `backend-postgres.snapshot-cache.test.ts`'s "a fault injected
+   before COMMIT rolls back cleanly..." test to assert the specific
+   injected-fault error code (`rejects.toMatchObject({ code:
+   "kernel_persistence_fault_injected" })`) instead of a bare
+   `rejects.toThrow()`, matching its two `mid-commit`/`after-commit-before-ack`
+   siblings.
+
+### Validation performed for M5
+
+- `bun run nx run backend-sqlite:test` — 103/103 pass.
+- `bun run nx run backend-sqlite:typecheck` — pass.
+- `bun run nx run backend-sqlite:lint` — pass (one
+  `lint/suspicious/useAwait` finding on the now-synchronous `health()` body,
+  resolved with a `biome-ignore` — `queueConnectionWork` requires a
+  Promise-returning callback even though every read inside is synchronous
+  better-sqlite3 work).
+- `bun run nx run backend-postgres:test` — 60/60 pass (devenv PostgreSQL
+  already running per session setup; `devenv up` itself was never invoked).
+- `bun run nx run backend-postgres:typecheck` — pass.
+- `bun run nx run backend-postgres:lint` — pass.
+- `bun run check` — pass.
+- `bun run verify:kernel` — pass; health is not conformance-governed (see
+  the contract argument above), and this run is the evidence that nothing
+  conformance-relevant regressed anyway.
+- `git diff | grep '\[DEBUG-'` — no matches outside this report's own prose.
+
+### Deviations from the M5 brief
+
+- `createPostgresBackend`'s exported return type was not widened to include
+  `fsck()` the way `createSqliteBackend`'s was widened for `close()`
+  (design point 2 anticipated mirroring that pattern). Widening it broke
+  several pre-existing `as ClosablePostgresBackend`/`as
+  TestablePostgresBackend`-style test casts elsewhere in the suite
+  (TypeScript's cast-overlap heuristic treats an explicit intersection type
+  more strictly than a plain interface reference, so those casts stopped
+  type-checking). Postgres tests that need `fsck()` cast through a local
+  interface instead (`as unknown as FsckCapableBackend`), the same
+  double-cast pattern already in use for `destroy()`/`sql` elsewhere in the
+  postgres test suite. Behavior is identical either way; only the exported
+  static type signature differs from what the design anticipated.

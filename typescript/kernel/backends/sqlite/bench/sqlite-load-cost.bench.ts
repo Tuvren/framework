@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-// KRT-BK007 measurement-only spike: wall-clock cost of health() (one full
-// loadValidatedState() load per call) and reclaim() (loadValidatedState()
-// called TWICE inside one writer-blocking transaction -- once to capture
-// survivor keys before the sweep, once to re-validate referential integrity
-// after it) as database size grows. Drives the backend exclusively through
-// its public RuntimeBackend surface -- no production source under
-// typescript/kernel/backends/sqlite/src changes as part of this spike.
+// KRT-BK007 measurement-only spike, extended by issue #108 M5: wall-clock
+// cost of health() (issue #108 M5: now a lightweight liveness/coherence
+// probe -- DB handle open, migration/schema posture valid, one trivial read
+// -- with NO loadValidatedState() call at all), fsck() (the new
+// maintenance method that inherits the exact pre-M5 health() behavior: one
+// full loadValidatedState() load per call, so its curve continues the M1/M2
+// health() series), and reclaim() (loadValidatedState() called TWICE inside
+// one writer-blocking transaction -- once to capture survivor keys before
+// the sweep, once to re-validate referential integrity after it) as
+// database size grows. Drives the backend exclusively through its public
+// RuntimeBackend surface (plus the backend-class-level `fsck()` method) --
+// no production source under typescript/kernel/backends/sqlite/src changes
+// as part of this spike.
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -76,6 +82,7 @@ interface OperationResult extends TimingStats {
 
 interface LoadCostResult extends Record<string, unknown> {
   databaseSize: number;
+  fsck: OperationResult;
   health: OperationResult;
   lastReclaimReleasedObjectCount: number;
   reclaim: OperationResult;
@@ -125,6 +132,24 @@ async function main(): Promise<void> {
         observer
       );
 
+      // Issue #108 M5: fsck() inherits the exact pre-M5 health() behavior
+      // (one full loadValidatedState() load per call), so measuring it here
+      // keeps series continuity with the M1/M2 health() numbers even though
+      // health() itself is now the lightweight probe measured above.
+      const fsck = await measureRepeated(
+        WARMUP_ITERATIONS,
+        SAMPLE_COUNT,
+        {
+          run: async () => {
+            const outcome = await backend.fsck();
+            if (!outcome.ok) {
+              throw new Error(`fsck() reported unhealthy: ${outcome.reason}`);
+            }
+          },
+        },
+        observer
+      );
+
       let lastReclaimReleasedObjectCount = 0;
       const reclaim = await measureRepeated(
         1,
@@ -151,6 +176,7 @@ async function main(): Promise<void> {
 
       const result: LoadCostResult = {
         databaseSize,
+        fsck,
         health,
         lastReclaimReleasedObjectCount,
         reclaim,
@@ -161,14 +187,22 @@ async function main(): Promise<void> {
           health.bestNs
         )} median ${formatNs(health.medianNs)} p95 ${formatNs(
           health.p95Ns
-        )}; reclaim best ${formatNs(reclaim.bestNs)} median ${formatNs(
-          reclaim.medianNs
-        )} p95 ${formatNs(reclaim.p95Ns)} (releasedObjectCount=${lastReclaimReleasedObjectCount}); reclaim/health best ratio ${(
-          reclaim.bestNs / health.bestNs
+        )}; fsck best ${formatNs(fsck.bestNs)} median ${formatNs(
+          fsck.medianNs
+        )} p95 ${formatNs(fsck.p95Ns)}; reclaim best ${formatNs(
+          reclaim.bestNs
+        )} median ${formatNs(reclaim.medianNs)} p95 ${formatNs(
+          reclaim.p95Ns
+        )} (releasedObjectCount=${lastReclaimReleasedObjectCount}); fsck/health best ratio ${(
+          fsck.bestNs / health.bestNs
+        ).toFixed(2)}x; reclaim/fsck best ratio ${(
+          reclaim.bestNs / fsck.bestNs
         ).toFixed(2)}x\n`
       );
       process.stdout.write("  health phases:\n");
       process.stdout.write(formatPhaseTable(health.phases, "    "));
+      process.stdout.write("  fsck phases:\n");
+      process.stdout.write(formatPhaseTable(fsck.phases, "    "));
       process.stdout.write("  reclaim phases:\n");
       process.stdout.write(formatPhaseTable(reclaim.phases, "    "));
     } finally {

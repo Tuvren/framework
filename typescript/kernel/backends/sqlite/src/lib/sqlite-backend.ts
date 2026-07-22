@@ -361,11 +361,69 @@ class SqliteBackend implements KrakenBackend {
   }
 
   /**
-   * Deep health probe: loads and fully validates the persisted state inside
-   * a read-only (rolled-back) transaction. Returns `{ ok: false, reason }`
+   * Lightweight liveness/coherence probe (issue #108 M5). Confirms the
+   * connection is open and can genuinely start and complete a transaction
+   * (`BEGIN IMMEDIATE` / `ROLLBACK` around a trivial read — the same
+   * transaction hygiene the old deep probe used, so a connection wedged
+   * mid-transaction still fails here), and that the migration/schema
+   * posture matches this package version (`validateMigrationState`, which
+   * is cheap and is what catches a missing/mismatched table or index).
+   * Deliberately does NOT load or validate the persisted state:
+   * `RuntimeBackend.health()`'s contract (kernel-protocol's
+   * `kernel-types.ts`) only promises "can serve traffic", no conformance
+   * plan requires a full per-record re-validation on every call, and every
+   * write already re-validates its own transaction before `COMMIT`
+   * (`validateTransactionWriteSet` plus the repository invariants). The
+   * full load+validate pass this method used to run on every call is still
+   * available on demand via {@link fsck} — the Git-fsck analogy this
+   * split is named for: `git fsck` is occasional maintenance, never run on
+   * every read, but the repository's integrity guarantee does not depend on
+   * it running on every read either. Returns `{ ok: false, reason }`
    * instead of throwing, so hosts can poll it safely.
    */
   health(): Promise<{ ok: true } | { ok: false; reason: string }> {
+    return this.queueConnectionWork(
+      // biome-ignore lint/suspicious/useAwait: queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await.
+      async () => {
+        try {
+          this.db.exec("BEGIN IMMEDIATE");
+          validateMigrationState(this.db, persistenceError);
+          this.db.prepare("SELECT 1").get();
+          this.db.exec("ROLLBACK");
+          return { ok: true as const };
+        } catch (error: unknown) {
+          if (this.db.inTransaction) {
+            this.db.exec("ROLLBACK");
+          }
+
+          return {
+            ok: false as const,
+            reason: getErrorMessage(normalizeBackendError(error)),
+          };
+        }
+      }
+    );
+  }
+
+  /**
+   * Git-fsck-style maintenance validation (issue #108 M5): loads and fully
+   * validates the persisted state inside a read-only (rolled-back)
+   * transaction — migration/schema posture, per-record shape/identity, the
+   * derived lineage-root index, and the full committed-state invariant
+   * suite. This is exactly what `health()` ran on every call before M5;
+   * it is now a deliberate maintenance action a host calls occasionally
+   * (mirroring how `git fsck` is occasional maintenance, never run on every
+   * `git log`/`git show`), not part of the hot read path `health()` serves.
+   * The guarantee this replaces is preserved, not weakened: every
+   * `transact()` call already re-validates its own write against the full
+   * committed-state invariant suite before `COMMIT` regardless of whether
+   * `fsck()` is ever called; `fsck()` exists to additionally catch
+   * corruption introduced outside the backend's own write path (e.g. direct
+   * database tampering, or a bug in a different writer). Returns
+   * `{ ok: false, reason }` instead of throwing, so hosts can poll it
+   * safely, the same as `health()`.
+   */
+  fsck(): Promise<{ ok: true } | { ok: false; reason: string }> {
     return this.queueConnectionWork(async () => {
       try {
         this.db.exec("BEGIN IMMEDIATE");
@@ -591,7 +649,10 @@ class SqliteBackend implements KrakenBackend {
  */
 export function createSqliteBackend(
   options: SqliteBackendOptions
-): KrakenBackend & { close(): Promise<void> } {
+): KrakenBackend & {
+  close(): Promise<void>;
+  fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
+} {
   return new SqliteBackend(options);
 }
 
@@ -988,7 +1049,8 @@ function runMigrations(db: Database.Database, now: () => number): void {
 /**
  * Loads the full persisted state and runs every layer of validation over it:
  * migration posture, per-record shape/identity, the derived lineage-root
- * index, and the committed-state invariant suite. Used by `health` and as
+ * index, and the committed-state invariant suite. Used by `fsck` (issue
+ * #108 M5 — `health()` no longer runs this; see `fsck`'s doc comment) and as
  * the pre/post gate around reclamation.
  *
  * @param phaseObserver - Phase-attribution seam (issue #108): the row load
@@ -998,7 +1060,7 @@ function runMigrations(db: Database.Database, now: () => number): void {
  *   "validate-lineage-index"; and the committed-state invariant suite
  *   (`validateCommittedState`) to "validate-committed" (M2 — these three
  *   replace M1's single unattributed-residual-hiding "validate" phase for
- *   this backend), so `health()`'s and `reclaim()`'s cost is attributable by
+ *   this backend), so `fsck()`'s and `reclaim()`'s cost is attributable by
  *   phase without altering either call's result.
  * @param priorState - Baseline for cross-transaction invariants; defaults to
  *   the loaded state itself (no-change baseline).

@@ -20,11 +20,15 @@
 // byte-identical to NOOP_PHASE_OBSERVER's, not just to the default, so the
 // seam is proven neutral even while it is actively timing every phase) and
 // that a RecordingPhaseObserver captures the load/validate-loaded/
-// validate-lineage-index/validate-committed/write phases a health()/
+// validate-lineage-index/validate-committed/write phases a fsck()/
 // reclaim() flow actually runs, in plausible order (M2: sub-phases replace
 // M1's single unattributed-residual-hiding "validate" phase for this
 // backend — see the M2 section of
-// `.constitution/reports/108-git-faithful-blob-persistence.md`).
+// `.constitution/reports/108-git-faithful-blob-persistence.md`). M5 moved
+// the phased load+validate pass from `health()` to the new `fsck()`
+// maintenance method (`health()` is now a lightweight probe with no phases
+// to attribute), so the phase-attribution assertions below exercise
+// `fsck()`, not `health()`.
 
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -42,7 +46,7 @@ import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 
 describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
-  test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist identical rows for an equivalent transact()+health() flow", async () => {
+  test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist identical rows for an equivalent transact()+fsck() flow", async () => {
     const fixedNow = () => 1_700_000_000_000;
     const schema = createCanonicalKernelTestSchema();
     const schemaRecord = createStoredSchemaRecord(schema, 1);
@@ -83,8 +87,8 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
           await tx.schemas.put(schemaRecord);
           await tx.objects.put(objectRecord);
         });
-        const outcome = await backend.health();
-        ok(outcome.ok, "expected health() to report ok");
+        const outcome = await backend.fsck();
+        ok(outcome.ok, "expected fsck() to report ok");
       }
 
       for (const table of ["objects", "schemas"] as const) {
@@ -110,7 +114,7 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
     }
   });
 
-  test("a RecordingPhaseObserver captures every persistence phase in the order health()/reclaim() run them", async () => {
+  test("a RecordingPhaseObserver captures every persistence phase in the order fsck()/reclaim() run them", async () => {
     const observer = createRecordingPhaseObserver();
     const backend = createSqliteBackend({
       databasePath: createTempDatabasePath(),
@@ -131,10 +135,10 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
 
       observer.reset();
 
-      const healthOutcome = await backend.health();
-      ok(healthOutcome.ok, "expected health() to report ok");
+      const fsckOutcome = await backend.fsck();
+      ok(fsckOutcome.ok, "expected fsck() to report ok");
 
-      const healthPhases = observer.samples.map((sample) => sample.phase);
+      const fsckPhases = observer.samples.map((sample) => sample.phase);
       for (const phase of [
         "load",
         "validate-loaded",
@@ -142,23 +146,23 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
         "validate-committed",
       ] as const) {
         strictEqual(
-          healthPhases.filter((sample) => sample === phase).length,
+          fsckPhases.filter((sample) => sample === phase).length,
           1,
-          `expected exactly one ${phase} phase from health()'s single loadValidatedState call`
+          `expected exactly one ${phase} phase from fsck()'s single loadValidatedState call`
         );
       }
       ok(
-        healthPhases.indexOf("load") < healthPhases.indexOf("validate-loaded"),
+        fsckPhases.indexOf("load") < fsckPhases.indexOf("validate-loaded"),
         "expected load to be attributed before validate-loaded"
       );
       ok(
-        healthPhases.indexOf("validate-loaded") <
-          healthPhases.indexOf("validate-lineage-index"),
+        fsckPhases.indexOf("validate-loaded") <
+          fsckPhases.indexOf("validate-lineage-index"),
         "expected validate-loaded to be attributed before validate-lineage-index"
       );
       ok(
-        healthPhases.indexOf("validate-lineage-index") <
-          healthPhases.indexOf("validate-committed"),
+        fsckPhases.indexOf("validate-lineage-index") <
+          fsckPhases.indexOf("validate-committed"),
         "expected validate-lineage-index to be attributed before validate-committed"
       );
 

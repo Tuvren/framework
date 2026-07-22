@@ -292,7 +292,7 @@ describe("@tuvren/backend-postgres single-entry snapshot cache (issue #108 M3)",
       faultedBackend.transact(async (tx) => {
         await tx.objects.put(neverCommittedObject);
       })
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({ code: "kernel_persistence_fault_injected" });
 
     // The next transact() (through the unwrapped inner backend, same
     // instance) must see the pre-fault committed state, proving the cache

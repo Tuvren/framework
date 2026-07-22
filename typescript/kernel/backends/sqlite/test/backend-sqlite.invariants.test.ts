@@ -95,7 +95,12 @@ const VALIDATION_HELPERS = {
 };
 
 describe("@tuvren/backend-sqlite invariants", () => {
-  test("reports unhealthy status when committed-state invariants are broken", async () => {
+  // Issue #108 M5: committed-state invariant corruption (as opposed to
+  // migration/schema corruption) is invisible to the lightweight health()
+  // probe by design -- it is only ever caught by the fsck() maintenance
+  // method, which inherits the full load+validate pass health() used to run
+  // on every call before M5.
+  test("reports unhealthy status through fsck() when committed-state invariants are broken", async () => {
     const seeded = await seedCorruptionDatabase();
     const backend = createSqliteBackend({ databasePath: seeded.databasePath });
     const probe = new Database(seeded.databasePath);
@@ -140,12 +145,12 @@ describe("@tuvren/backend-sqlite invariants", () => {
       );
     probe.close();
 
-    const health = await backend.health();
-    deepStrictEqual(health.ok, false);
-    if (health.ok) {
+    const fsck = await backend.fsck();
+    deepStrictEqual(fsck.ok, false);
+    if (fsck.ok) {
       throw new Error("expected unhealthy status");
     }
-    strictEqual(MULTIPLE_ACTIVE_RUNS_ERROR_PATTERN.test(health.reason), true);
+    strictEqual(MULTIPLE_ACTIVE_RUNS_ERROR_PATTERN.test(fsck.reason), true);
   });
 
   test("keeps invariant-broken persisted state out of the transaction hot path", async () => {
@@ -458,7 +463,18 @@ describe("@tuvren/backend-sqlite invariants", () => {
     strictEqual(MISSING_SCHEMA_ERROR_PATTERN.test(health.reason), true);
   });
 
-  test("leaves committed corruption detection on the explicit health path", async () => {
+  // Issue #108 M5 — the proof test the milestone demands: committed-state
+  // corruption that migration/schema checks cannot see (a stored object
+  // row whose hash no longer matches its bytes) must stay invisible to the
+  // lightweight health() probe -- proving health() genuinely no longer
+  // does a full load+validate pass, not merely that its happy path still
+  // works -- while fsck() still catches it. This demonstrates "the
+  // guarantee is preserved: validation still happens, just not on every
+  // read" with behavior, not argument: commit-time validation
+  // (`transact()`'s own pre-COMMIT `validateTransactionWriteSet`) is
+  // unaffected either way, and the on-demand fsck() maintenance path still
+  // finds exactly what health() used to find.
+  test("keeps committed-state corruption invisible to health() but reports it through fsck() (issue #108 M5)", async () => {
     const seeded = await seedCorruptionDatabase();
     const backend = createSqliteBackend({ databasePath: seeded.databasePath });
     const probe = new Database(seeded.databasePath);
@@ -467,6 +483,7 @@ describe("@tuvren/backend-sqlite invariants", () => {
       .run(createHashFromIndex(999), seeded.objectHash);
     probe.close();
 
+    // The corruption does not block the hot transaction path either.
     let callbackRan = false;
     await backend.transact(() => {
       callbackRan = true;
@@ -474,12 +491,19 @@ describe("@tuvren/backend-sqlite invariants", () => {
     });
     strictEqual(callbackRan, true);
 
+    // The lightweight probe never loads or validates committed state, so it
+    // reports healthy even though the row is corrupted.
     const health = await backend.health();
-    deepStrictEqual(health.ok, false);
-    if (health.ok) {
+    deepStrictEqual(health, { ok: true });
+
+    // fsck() is the maintenance entry point that still performs the full
+    // load+validate pass health() used to run on every call.
+    const fsck = await backend.fsck();
+    deepStrictEqual(fsck.ok, false);
+    if (fsck.ok) {
       throw new Error("expected unhealthy status");
     }
-    strictEqual(OBJECT_ROW_ERROR_PATTERN.test(health.reason), true);
+    strictEqual(OBJECT_ROW_ERROR_PATTERN.test(fsck.reason), true);
   });
 
   test("reports missing tables through health instead of transaction preflight", async () => {
