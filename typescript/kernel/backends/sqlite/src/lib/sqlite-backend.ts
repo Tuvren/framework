@@ -20,6 +20,10 @@ import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, format, parse } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  NOOP_PHASE_OBSERVER,
+  type PhaseObserver,
+} from "@tuvren/backend-shared";
+import {
   assertScope,
   DEFAULT_SCOPE,
   type EpochMs,
@@ -230,6 +234,14 @@ export interface SqliteBackendOptions {
    */
   now?: () => EpochMs;
   /**
+   * Phase-attribution seam (issue #108) for the load/validate/write cost of
+   * `health()`, `reclaim()`, and the `loadValidatedState` call they share.
+   * Defaults to {@link NOOP_PHASE_OBSERVER}, so omitting it costs one shared
+   * frozen no-op call per phase and never changes measured production bytes
+   * or behavior. Benches/tests supply a recording observer instead.
+   */
+  phaseObserver?: PhaseObserver;
+  /**
    * Host-supplied partition identity bound at construction (ADR-048).
    *
    * Isolation is realized as file-per-scope (ADR-049): the default Scope maps to
@@ -298,6 +310,7 @@ class SqliteBackend implements KrakenBackend {
     hooks: null,
   };
   private readonly now: () => number;
+  private readonly phaseObserver: PhaseObserver;
   /**
    * The concrete per-Scope database file backing this backend (file-per-scope
    * isolation, ADR-049). Retained so `purgeScope` can drop the partition by
@@ -309,6 +322,7 @@ class SqliteBackend implements KrakenBackend {
 
   constructor(options: SqliteBackendOptions) {
     this.now = options.now ?? Date.now;
+    this.phaseObserver = options.phaseObserver ?? NOOP_PHASE_OBSERVER;
     const scope = options.scope ?? DEFAULT_SCOPE;
     assertScope(scope);
     this.scopedDatabasePath = resolveScopedDatabasePath(
@@ -355,7 +369,7 @@ class SqliteBackend implements KrakenBackend {
     return this.queueConnectionWork(async () => {
       try {
         this.db.exec("BEGIN IMMEDIATE");
-        await loadValidatedState(this.db);
+        await loadValidatedState(this.db, this.phaseObserver);
         this.db.exec("ROLLBACK");
         return { ok: true as const };
       } catch (error: unknown) {
@@ -528,7 +542,7 @@ class SqliteBackend implements KrakenBackend {
         // re-asserts referential integrity before the deferred checks run.
         this.db.pragma("defer_foreign_keys = ON");
 
-        const state = await loadValidatedState(this.db);
+        const state = await loadValidatedState(this.db, this.phaseObserver);
         const survivorKeysBefore = captureReclamationKeys(state);
         // Reachability and the grace horizon's pinning value are derived from
         // the loaded state's own active runs (§9.4); reclaimBackendState
@@ -541,10 +555,22 @@ class SqliteBackend implements KrakenBackend {
           state,
           options?.nowMs ?? this.now()
         );
-        applyReclamationDeletions(this.db, survivorKeysBefore, state);
 
-        await loadValidatedState(this.db);
-        this.db.exec("COMMIT");
+        const endDeleteWrite = this.phaseObserver.startPhase("write");
+        try {
+          applyReclamationDeletions(this.db, survivorKeysBefore, state);
+        } finally {
+          endDeleteWrite();
+        }
+
+        await loadValidatedState(this.db, this.phaseObserver);
+
+        const endCommitWrite = this.phaseObserver.startPhase("write");
+        try {
+          this.db.exec("COMMIT");
+        } finally {
+          endCommitWrite();
+        }
         return summary;
       } catch (error: unknown) {
         if (this.db.inTransaction) {
@@ -965,30 +991,50 @@ function runMigrations(db: Database.Database, now: () => number): void {
  * index, and the committed-state invariant suite. Used by `health` and as
  * the pre/post gate around reclamation.
  *
+ * @param phaseObserver - Phase-attribution seam (issue #108): the row load
+ *   (`loadState`) is charged to "load", the committed-state invariant suite
+ *   to "validate", so `health()`'s and `reclaim()`'s cost is attributable by
+ *   phase without altering either call's result.
  * @param priorState - Baseline for cross-transaction invariants; defaults to
  *   the loaded state itself (no-change baseline).
  */
 async function loadValidatedState(
   db: Database.Database,
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER,
   priorState?: BackendState
 ): Promise<BackendState> {
   validateMigrationState(db, persistenceError);
-  const state = loadState(db);
+
+  const endLoad = phaseObserver.startPhase("load");
+  let state: BackendState;
+  try {
+    state = loadState(db);
+  } finally {
+    endLoad();
+  }
+
   await validateLoadedState(state);
   validateTurnNodeLineageRootIndex(db, state);
-  validateCommittedState(state, priorState ?? state, {
-    assertActiveRunHeadAlignment,
-    assertBackwardBranchMoveIsArchived,
-    assertChunkedTurnTreePathChunkLayout,
-    assertRunCreatedTurnNodeWithinTurnSpan,
-    assertRunCreatedTurnNodesAreCanonical,
-    assertRunStartTurnNodeWithinTurnSpan,
-    assertTurnParentLink,
-    classifyTurnNodeRelationship,
-    decodeRunCreatedTurnNodeHashes,
-    decodeTurnNodeConsumedStagedResultObjectHashes,
-    validateHashString,
-  });
+
+  const endValidate = phaseObserver.startPhase("validate");
+  try {
+    validateCommittedState(state, priorState ?? state, {
+      assertActiveRunHeadAlignment,
+      assertBackwardBranchMoveIsArchived,
+      assertChunkedTurnTreePathChunkLayout,
+      assertRunCreatedTurnNodeWithinTurnSpan,
+      assertRunCreatedTurnNodesAreCanonical,
+      assertRunStartTurnNodeWithinTurnSpan,
+      assertTurnParentLink,
+      classifyTurnNodeRelationship,
+      decodeRunCreatedTurnNodeHashes,
+      decodeTurnNodeConsumedStagedResultObjectHashes,
+      validateHashString,
+    });
+  } finally {
+    endValidate();
+  }
+
   return state;
 }
 

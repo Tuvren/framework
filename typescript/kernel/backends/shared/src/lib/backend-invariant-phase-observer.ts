@@ -1,0 +1,117 @@
+/**
+ * Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import process from "node:process";
+
+/**
+ * Named phases of the blob-per-scope persistence path (issue #108) that a
+ * backend can attribute cost to: waiting on the in-process transaction queue
+ * or a database row lock, decoding the persisted snapshot, running the
+ * committed-state invariant suite, encoding a draft back to the wire format,
+ * writing/committing it, and (for backends without a decode/encode split,
+ * e.g. SQLite's row-per-table load) loading persisted rows into memory.
+ */
+export type PersistencePhase =
+  | "decode"
+  | "encode"
+  | "load"
+  | "lock-wait"
+  | "validate"
+  | "write";
+
+/**
+ * A phase-attribution seam a backend calls at construction to report where
+ * persistence time goes. `startPhase` is called immediately before the named
+ * phase of work begins and returns an end-callback the caller must invoke
+ * exactly once immediately after that work finishes (typically from a
+ * `finally` block, so a thrown error still closes the phase).
+ *
+ * Implementations must be safe to call on every persistence operation: the
+ * {@link NOOP_PHASE_OBSERVER} default costs a single frozen function call and
+ * must not allocate, so instrumentation is O(1) overhead and never changes a
+ * production path's measured bytes or behavior when no observer is supplied.
+ */
+export interface PhaseObserver {
+  startPhase(phase: PersistencePhase): () => void;
+}
+
+/** Shared frozen no-op end-callback every {@link NOOP_PHASE_OBSERVER} phase returns. */
+const NOOP_PHASE_END: () => void = Object.freeze(() => undefined);
+
+/**
+ * The default {@link PhaseObserver} every instrumented backend construction
+ * option falls back to. Returns the same frozen no-op callback for every
+ * call, so enabling the instrumentation seam without supplying a recording
+ * observer allocates nothing beyond the one shared closure.
+ */
+export const NOOP_PHASE_OBSERVER: PhaseObserver = Object.freeze({
+  startPhase(_phase: PersistencePhase): () => void {
+    return NOOP_PHASE_END;
+  },
+});
+
+/** One completed phase measurement recorded by a {@link RecordingPhaseObserver}. */
+export interface PhaseSample {
+  readonly durationNs: number;
+  readonly phase: PersistencePhase;
+}
+
+/**
+ * A {@link PhaseObserver} that accumulates every phase it observes as a
+ * {@link PhaseSample}, timed with `process.hrtime.bigint()`. Intended for
+ * benches and tests; production callers use {@link NOOP_PHASE_OBSERVER}.
+ */
+export interface RecordingPhaseObserver extends PhaseObserver {
+  /** Clears all recorded samples so the observer can be reused across bench tiers. */
+  reset(): void;
+  /** Every phase measurement recorded since construction or the last {@link reset}. */
+  readonly samples: readonly PhaseSample[];
+}
+
+/**
+ * Creates a fresh {@link RecordingPhaseObserver}. Each call to `startPhase`
+ * captures `process.hrtime.bigint()` immediately and records the elapsed
+ * nanoseconds the first time the returned end-callback is invoked; later
+ * calls to the same end-callback are no-ops so a caller that defensively
+ * invokes it more than once (e.g. success and `finally` paths) never
+ * double-counts a phase.
+ */
+export function createRecordingPhaseObserver(): RecordingPhaseObserver {
+  const samples: PhaseSample[] = [];
+
+  return {
+    reset(): void {
+      samples.length = 0;
+    },
+    samples,
+    startPhase(phase: PersistencePhase): () => void {
+      const startedAtNs = process.hrtime.bigint();
+      let ended = false;
+
+      return () => {
+        if (ended) {
+          return;
+        }
+
+        ended = true;
+        samples.push({
+          durationNs: Number(process.hrtime.bigint() - startedAtNs),
+          phase,
+        });
+      };
+    },
+  };
+}

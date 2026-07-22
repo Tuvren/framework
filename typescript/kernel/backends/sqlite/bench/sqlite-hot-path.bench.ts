@@ -17,6 +17,12 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import process from "node:process";
+import {
+  createRecordingPhaseObserver,
+  type PersistencePhase,
+  type PhaseSample,
+} from "@tuvren/backend-shared";
 import type {
   RuntimeBackend,
   StoredBranch,
@@ -33,7 +39,13 @@ import {
 } from "@tuvren/kernel-testkit";
 import { createSqliteBackend } from "../src/index.js";
 
-const SAMPLE_COUNT = 5;
+// Override via BENCH_SAMPLE_COUNT; see postgres-write-latency.bench.ts /
+// sqlite-load-cost.bench.ts for the n=5 -> p95≈max rationale. transact() on
+// this backend is not phase-instrumented in M1 (issue #108): SQLite's write
+// path is already row-granular, not a full-blob rewrite, so it has no
+// decode/validate/encode seam to attribute -- the phase table below is
+// expected to be empty for every case here.
+const SAMPLE_COUNT = readSampleCountFromEnv(15);
 const WARMUP_ITERATIONS = 3;
 const HOT_PATH_HISTORY_SIZES = [0, 100, 500, 1000] as const;
 
@@ -45,6 +57,15 @@ interface BenchmarkCase {
   run(iterations: number): Promise<void>;
 }
 
+interface PhaseStats {
+  averageNs: number;
+  bestNs: number;
+  medianNs: number;
+  n: number;
+  p95Ns: number;
+  phase: PersistencePhase;
+}
+
 interface BenchmarkResult {
   averageNs: number;
   bestNs: number;
@@ -53,6 +74,7 @@ interface BenchmarkResult {
   medianNs: number;
   name: string;
   p95Ns: number;
+  phases: PhaseStats[];
 }
 
 interface SeededHistory {
@@ -73,8 +95,10 @@ async function main(): Promise<void> {
     const tempDirectory = mkdtempSync(join(tmpdir(), "tuvren-sqlite-bench-"));
 
     try {
+      const observer = createRecordingPhaseObserver();
       const backend = createSqliteBackend({
         databasePath: join(tempDirectory, "kraken.db"),
+        phaseObserver: observer,
       });
 
       const seededHistory = await seedHistory(backend, historySize);
@@ -83,10 +107,10 @@ async function main(): Promise<void> {
         backend,
         seededHistory
       )) {
-        const result = await measure(benchmarkCase);
+        const result = await measure(benchmarkCase, observer);
         results.push(result);
         process.stdout.write(
-          `${result.name} at ${result.historySize} TurnNodes: best ${formatNs(
+          `${result.name} at ${result.historySize} TurnNodes (n=${SAMPLE_COUNT}): best ${formatNs(
             result.bestNs
           )} total, ${formatNs(result.bestNs / result.iterations)}/iter; median ${formatNs(
             result.medianNs / result.iterations
@@ -94,6 +118,7 @@ async function main(): Promise<void> {
             result.averageNs
           )} total\n`
         );
+        process.stdout.write(formatPhaseTable(result.phases));
       }
     } finally {
       rmSync(tempDirectory, { force: true, recursive: true });
@@ -117,6 +142,7 @@ async function main(): Promise<void> {
           name: result.name,
           p95Ns: result.p95Ns,
           p95PerIterationNs: result.p95Ns / result.iterations,
+          phases: result.phases,
         })),
       },
       null,
@@ -329,13 +355,20 @@ function createBenchmarkCases(
   ];
 }
 
-async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
+async function measure(
+  benchmarkCase: BenchmarkCase,
+  observer: ReturnType<typeof createRecordingPhaseObserver>
+): Promise<BenchmarkResult> {
   const warmupIterations = Math.min(
     WARMUP_ITERATIONS,
     benchmarkCase.iterations
   );
   await benchmarkCase.prepare?.(warmupIterations);
   await benchmarkCase.run(warmupIterations);
+
+  // Only attribute phases for the measured samples below, not the warmup
+  // iterations above.
+  observer.reset();
 
   const samples: number[] = [];
 
@@ -359,6 +392,7 @@ async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
     bestNs,
     historySize: benchmarkCase.historySize,
     iterations: benchmarkCase.iterations,
+    phases: summarizePhases(observer.samples),
     medianNs,
     name: benchmarkCase.name,
     p95Ns,
@@ -465,6 +499,76 @@ async function seedHistory(
     rootTurnNodeHash: rootTurnNode.hash,
     threadId: thread.threadId,
   };
+}
+
+/** Reads `BENCH_SAMPLE_COUNT` from the environment, falling back to `fallback`. */
+function readSampleCountFromEnv(fallback: number): number {
+  const raw = process.env.BENCH_SAMPLE_COUNT;
+
+  if (raw === undefined || raw.length === 0) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      `BENCH_SAMPLE_COUNT must be a positive integer, received "${raw}"`
+    );
+  }
+
+  return parsed;
+}
+
+/** Groups recorded phase samples by phase and computes best/median/p95/avg/n per phase. */
+function summarizePhases(samples: readonly PhaseSample[]): PhaseStats[] {
+  const byPhase = new Map<PersistencePhase, number[]>();
+
+  for (const sample of samples) {
+    const durations = byPhase.get(sample.phase) ?? [];
+    durations.push(sample.durationNs);
+    byPhase.set(sample.phase, durations);
+  }
+
+  const phaseStats: PhaseStats[] = [];
+
+  for (const [phase, durations] of byPhase) {
+    const sorted = [...durations].sort((left, right) => left - right);
+    phaseStats.push({
+      averageNs:
+        durations.reduce((total, duration) => total + duration, 0) /
+        durations.length,
+      bestNs: Math.min(...durations),
+      medianNs: percentile(sorted, 0.5),
+      n: durations.length,
+      p95Ns: percentile(sorted, 0.95),
+      phase,
+    });
+  }
+
+  phaseStats.sort((left, right) => left.phase.localeCompare(right.phase));
+  return phaseStats;
+}
+
+/**
+ * Renders a phase-attribution table for stdout. `transact()` is not
+ * phase-instrumented on this backend in M1 (see the SAMPLE_COUNT comment
+ * above), so this is expected to report no samples for every case here.
+ */
+function formatPhaseTable(phases: readonly PhaseStats[]): string {
+  if (phases.length === 0) {
+    return "  (no phase samples recorded)\n";
+  }
+
+  const rows = phases.map(
+    (phase) =>
+      `  ${phase.phase.padEnd(10)} n=${phase.n} best ${formatNs(
+        phase.bestNs
+      )} median ${formatNs(phase.medianNs)} p95 ${formatNs(
+        phase.p95Ns
+      )} avg ${formatNs(phase.averageNs)}\n`
+  );
+  return rows.join("");
 }
 
 function percentile(sortedSamples: readonly number[], rank: number): number {

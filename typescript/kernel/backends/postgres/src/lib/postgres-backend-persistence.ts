@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import {
+  NOOP_PHASE_OBSERVER,
+  type PhaseObserver,
+} from "@tuvren/backend-shared";
 import { DEFAULT_SCOPE, type EpochMs, type Scope } from "@tuvren/core";
 import {
   assertStoredBranch,
@@ -81,6 +85,14 @@ export interface PostgresBackendPersistenceOptions {
   host?: string;
   now?: () => EpochMs;
   password?: string;
+  /**
+   * Phase-attribution seam (issue #108) for the decode/validate/encode/write/
+   * lock-wait cost of this backend's blob-per-scope persistence path.
+   * Defaults to {@link NOOP_PHASE_OBSERVER}, so omitting it costs one shared
+   * frozen no-op call per phase and never changes measured production bytes
+   * or behavior. Benches/tests supply a recording observer instead.
+   */
+  phaseObserver?: PhaseObserver;
   port?: number;
   schemaName?: string;
   /**
@@ -300,19 +312,30 @@ async function migrateSnapshotsToScopePartition(
 export async function loadPersistedStateForUpdate(
   sql: Sql | TransactionSql<Record<string, never>>,
   schemaName: string,
-  scope: Scope
+  scope: Scope,
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
 ): Promise<BackendState> {
   const snapshotsTable = qualifyIdentifier(
     schemaName,
     "backend_postgres_snapshots"
   );
-  const rows = await sql.unsafe<PersistedSnapshotRow[]>(
-    `SELECT schema_version, snapshot_cbor
-       FROM ${snapshotsTable}
-      WHERE snapshot_id = $1 AND scope = $2
-      FOR UPDATE`,
-    [SNAPSHOT_ROW_ID, scope]
-  );
+  // `FOR UPDATE` is where this call actually blocks: on a Scope's row lock
+  // held by a concurrent writer. Charged to "lock-wait" so it is
+  // distinguishable from the CBOR decode below.
+  const endLockWait = phaseObserver.startPhase("lock-wait");
+  let rows: PersistedSnapshotRow[];
+  try {
+    rows = await sql.unsafe<PersistedSnapshotRow[]>(
+      `SELECT schema_version, snapshot_cbor
+         FROM ${snapshotsTable}
+        WHERE snapshot_id = $1 AND scope = $2
+        FOR UPDATE`,
+      [SNAPSHOT_ROW_ID, scope]
+    );
+  } finally {
+    endLockWait();
+  }
+
   const row = rows[0];
 
   if (row === undefined) {
@@ -334,7 +357,12 @@ export async function loadPersistedStateForUpdate(
     );
   }
 
-  return decodeSnapshot(row.snapshot_cbor);
+  const endDecode = phaseObserver.startPhase("decode");
+  try {
+    return decodeSnapshot(row.snapshot_cbor);
+  } finally {
+    endDecode();
+  }
 }
 
 /**
@@ -347,28 +375,41 @@ export async function persistStateSnapshot(
   schemaName: string,
   scope: Scope,
   state: BackendState,
-  updatedAtMs: EpochMs
+  updatedAtMs: EpochMs,
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
 ): Promise<void> {
   const snapshotsTable = qualifyIdentifier(
     schemaName,
     "backend_postgres_snapshots"
   );
-  const snapshotBytes = encodeSnapshot(state);
 
-  await sql.unsafe(
-    `UPDATE ${snapshotsTable}
-        SET schema_version = $1,
-            snapshot_cbor = $2,
-            updated_at_ms = $3
-      WHERE snapshot_id = $4 AND scope = $5`,
-    [
-      CURRENT_SNAPSHOT_VERSION,
-      snapshotBytes,
-      updatedAtMs,
-      SNAPSHOT_ROW_ID,
-      scope,
-    ]
-  );
+  const endEncode = phaseObserver.startPhase("encode");
+  let snapshotBytes: Uint8Array;
+  try {
+    snapshotBytes = encodeSnapshot(state);
+  } finally {
+    endEncode();
+  }
+
+  const endWrite = phaseObserver.startPhase("write");
+  try {
+    await sql.unsafe(
+      `UPDATE ${snapshotsTable}
+          SET schema_version = $1,
+              snapshot_cbor = $2,
+              updated_at_ms = $3
+        WHERE snapshot_id = $4 AND scope = $5`,
+      [
+        CURRENT_SNAPSHOT_VERSION,
+        snapshotBytes,
+        updatedAtMs,
+        SNAPSHOT_ROW_ID,
+        scope,
+      ]
+    );
+  } finally {
+    endWrite();
+  }
 }
 
 /**

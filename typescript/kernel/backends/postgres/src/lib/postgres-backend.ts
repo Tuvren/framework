@@ -15,6 +15,10 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
+import {
+  NOOP_PHASE_OBSERVER,
+  type PhaseObserver,
+} from "@tuvren/backend-shared";
 import { assertScope, DEFAULT_SCOPE, type Scope } from "@tuvren/core";
 import {
   assertStoredBranch,
@@ -191,6 +195,7 @@ class PostgresBackend implements KrakenBackend {
     hooks: null,
   };
   private initializationPromise: Promise<void> | undefined;
+  private readonly phaseObserver: PhaseObserver;
   private readonly schemaName: string;
   private readonly scope: Scope;
   private readonly sql: Sql;
@@ -207,6 +212,7 @@ class PostgresBackend implements KrakenBackend {
     this.scope = resolvedOptions.scope ?? DEFAULT_SCOPE;
     assertScope(this.scope);
     this.sql = createPostgresClient(resolvedOptions);
+    this.phaseObserver = resolvedOptions.phaseObserver ?? NOOP_PHASE_OBSERVER;
     this.now = resolvedOptions.now ?? Date.now;
     // Track whether a clock was explicitly injected so the per-transaction
     // authoritative lease clock can fall back to the PostgreSQL server clock in
@@ -231,9 +237,15 @@ class PostgresBackend implements KrakenBackend {
         const state = await loadPersistedStateForUpdate(
           tx,
           this.schemaName,
-          this.scope
+          this.scope,
+          this.phaseObserver
         );
-        validateCommittedState(state, state);
+        const endValidate = this.phaseObserver.startPhase("validate");
+        try {
+          validateCommittedState(state, state);
+        } finally {
+          endValidate();
+        }
       });
       return { ok: true };
     } catch (error: unknown) {
@@ -302,7 +314,13 @@ class PostgresBackend implements KrakenBackend {
       releaseQueue = resolve;
     });
 
+    // The in-process queue wait is the first component of "lock-wait":
+    // another transact()/reclaim()/purgeScope() call on this instance may
+    // already be in flight, and this call cannot proceed until it releases
+    // the queue.
+    const endQueueWait = this.phaseObserver.startPhase("lock-wait");
     await priorTransaction;
+    endQueueWait();
 
     try {
       const reserved = (await this.sql.reserve()) as Sql & {
@@ -327,7 +345,8 @@ class PostgresBackend implements KrakenBackend {
         const baseState = await loadPersistedStateForUpdate(
           reserved,
           this.schemaName,
-          this.scope
+          this.scope,
+          this.phaseObserver
         );
         const draftState = cloneState(baseState);
         let active = true;
@@ -346,7 +365,13 @@ class PostgresBackend implements KrakenBackend {
           active = false;
         }
 
-        validateCommittedState(draftState, baseState);
+        const endTransactValidate = this.phaseObserver.startPhase("validate");
+        try {
+          validateCommittedState(draftState, baseState);
+        } finally {
+          endTransactValidate();
+        }
+
         await this.faultState.hooks?.beforeCommit?.();
 
         let committed = false;
@@ -362,9 +387,15 @@ class PostgresBackend implements KrakenBackend {
             this.schemaName,
             this.scope,
             draftState,
-            txNow
+            txNow,
+            this.phaseObserver
           );
-          await reserved.unsafe("COMMIT");
+          const endCommitWrite = this.phaseObserver.startPhase("write");
+          try {
+            await reserved.unsafe("COMMIT");
+          } finally {
+            endCommitWrite();
+          }
           inTransaction = false;
           committed = true;
         };
@@ -431,7 +462,9 @@ class PostgresBackend implements KrakenBackend {
       releaseQueue = resolve;
     });
 
+    const endQueueWait = this.phaseObserver.startPhase("lock-wait");
     await priorTransaction;
+    endQueueWait();
 
     try {
       const reserved = (await this.sql.reserve()) as Sql & {
@@ -446,7 +479,8 @@ class PostgresBackend implements KrakenBackend {
         const baseState = await loadPersistedStateForUpdate(
           reserved,
           this.schemaName,
-          this.scope
+          this.scope,
+          this.phaseObserver
         );
         const draftState = cloneState(baseState);
         // The snapshot backend reclaims by rewriting the scope snapshot row:
@@ -461,16 +495,27 @@ class PostgresBackend implements KrakenBackend {
           draftState,
           options?.nowMs ?? this.now()
         );
-        validateCommittedState(draftState, baseState);
+        const endReclaimValidate = this.phaseObserver.startPhase("validate");
+        try {
+          validateCommittedState(draftState, baseState);
+        } finally {
+          endReclaimValidate();
+        }
 
         await persistStateSnapshot(
           reserved,
           this.schemaName,
           this.scope,
           draftState,
-          this.now()
+          this.now(),
+          this.phaseObserver
         );
-        await reserved.unsafe("COMMIT");
+        const endCommitWrite = this.phaseObserver.startPhase("write");
+        try {
+          await reserved.unsafe("COMMIT");
+        } finally {
+          endCommitWrite();
+        }
         inTransaction = false;
 
         return summary;

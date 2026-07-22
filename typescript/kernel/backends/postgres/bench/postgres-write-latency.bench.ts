@@ -25,6 +25,11 @@
 import { randomUUID } from "node:crypto";
 import process from "node:process";
 import {
+  createRecordingPhaseObserver,
+  type PersistencePhase,
+  type PhaseSample,
+} from "@tuvren/backend-shared";
+import {
   createCanonicalKernelTestSchema,
   createStoredObjectRecord,
   createStoredSchemaRecord,
@@ -35,16 +40,28 @@ import {
   type PostgresBackendOptions,
 } from "../src/index.js";
 
-const SAMPLE_COUNT = 5;
+// Default sample count for the decisive large tiers (1k, 10k): the KRT-BK007
+// spike ran n=5, where p95 collapses onto max; override via BENCH_SAMPLE_COUNT
+// for a quicker local iteration loop.
+const SAMPLE_COUNT = readSampleCountFromEnv(15);
 const WARMUP_WRITES = 3;
 const SCOPE_OBJECT_COUNTS = [10, 100, 1000, 10_000] as const;
 const DEVENV_DATABASE_NAME = "tuvren_runtime";
 
-interface WriteLatencyResult {
+interface TimingStats {
   averageNs: number;
   bestNs: number;
   medianNs: number;
+  n: number;
   p95Ns: number;
+}
+
+interface PhaseStats extends TimingStats {
+  phase: PersistencePhase;
+}
+
+interface WriteLatencyResult extends TimingStats {
+  phases: PhaseStats[];
   scopeObjectCount: number;
 }
 
@@ -52,10 +69,14 @@ await main();
 
 async function main(): Promise<void> {
   process.stdout.write("postgres backend write-latency benchmark\n");
+  process.stdout.write(
+    `sample count: ${SAMPLE_COUNT} (BENCH_SAMPLE_COUNT to override)\n`
+  );
   const results: WriteLatencyResult[] = [];
 
   for (const scopeObjectCount of SCOPE_OBJECT_COUNTS) {
-    const options = createBenchBackendOptions();
+    const observer = createRecordingPhaseObserver();
+    const options = createBenchBackendOptions(observer);
     const backend = createPostgresBackend(options);
 
     try {
@@ -82,16 +103,18 @@ async function main(): Promise<void> {
 
       const result = await measureMarginalWriteLatency(
         backend,
-        scopeObjectCount
+        scopeObjectCount,
+        observer
       );
       results.push(result);
       process.stdout.write(
-        `scope at ${result.scopeObjectCount} objects: best ${formatNs(
+        `scope at ${result.scopeObjectCount} objects (n=${result.n}): best ${formatNs(
           result.bestNs
         )}, median ${formatNs(result.medianNs)}, p95 ${formatNs(
           result.p95Ns
         )}, avg ${formatNs(result.averageNs)}\n`
       );
+      process.stdout.write(formatPhaseTable(result.phases));
     } finally {
       await destroyPostgresBackend(options);
     }
@@ -112,7 +135,8 @@ async function main(): Promise<void> {
 
 async function measureMarginalWriteLatency(
   backend: ReturnType<typeof createPostgresBackend>,
-  scopeObjectCount: number
+  scopeObjectCount: number,
+  observer: ReturnType<typeof createRecordingPhaseObserver>
 ): Promise<WriteLatencyResult> {
   let writeCounter = 0;
 
@@ -134,6 +158,11 @@ async function measureMarginalWriteLatency(
     await writeOnce();
   }
 
+  // Only attribute phases for the measured samples below, not the warmup
+  // writes above -- so the phase table lines up 1:1 with the reported
+  // latency sample count.
+  observer.reset();
+
   const samples: number[] = [];
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
     samples.push(await writeOnce());
@@ -146,12 +175,16 @@ async function measureMarginalWriteLatency(
       samples.reduce((total, sample) => total + sample, 0) / samples.length,
     bestNs: Math.min(...samples),
     medianNs: percentile(sortedSamples, 0.5),
+    n: samples.length,
     p95Ns: percentile(sortedSamples, 0.95),
+    phases: summarizePhases(observer.samples),
     scopeObjectCount,
   };
 }
 
-function createBenchBackendOptions(): PostgresBackendOptions {
+function createBenchBackendOptions(
+  phaseObserver: ReturnType<typeof createRecordingPhaseObserver>
+): PostgresBackendOptions {
   const host = process.env.PGHOST;
   const portValue = process.env.PGPORT;
   const username = process.env.PGUSER ?? process.env.USER;
@@ -185,10 +218,77 @@ function createBenchBackendOptions(): PostgresBackendOptions {
   return {
     database: DEVENV_DATABASE_NAME,
     host,
+    phaseObserver,
     port,
     schemaName: `bench_${randomUUID().replaceAll("-", "_")}`,
     username,
   };
+}
+
+/** Reads `BENCH_SAMPLE_COUNT` from the environment, falling back to `fallback`. */
+function readSampleCountFromEnv(fallback: number): number {
+  const raw = process.env.BENCH_SAMPLE_COUNT;
+
+  if (raw === undefined || raw.length === 0) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      `BENCH_SAMPLE_COUNT must be a positive integer, received "${raw}"`
+    );
+  }
+
+  return parsed;
+}
+
+/** Groups recorded phase samples by phase and computes best/median/p95/avg/n per phase. */
+function summarizePhases(samples: readonly PhaseSample[]): PhaseStats[] {
+  const byPhase = new Map<PersistencePhase, number[]>();
+
+  for (const sample of samples) {
+    const durations = byPhase.get(sample.phase) ?? [];
+    durations.push(sample.durationNs);
+    byPhase.set(sample.phase, durations);
+  }
+
+  const phaseStats: PhaseStats[] = [];
+
+  for (const [phase, durations] of byPhase) {
+    const sorted = [...durations].sort((left, right) => left - right);
+    phaseStats.push({
+      averageNs:
+        durations.reduce((total, duration) => total + duration, 0) /
+        durations.length,
+      bestNs: Math.min(...durations),
+      medianNs: percentile(sorted, 0.5),
+      n: durations.length,
+      p95Ns: percentile(sorted, 0.95),
+      phase,
+    });
+  }
+
+  phaseStats.sort((left, right) => left.phase.localeCompare(right.phase));
+  return phaseStats;
+}
+
+/** Renders a phase-attribution table for stdout, one row per observed phase. */
+function formatPhaseTable(phases: readonly PhaseStats[]): string {
+  if (phases.length === 0) {
+    return "  (no phase samples recorded)\n";
+  }
+
+  const rows = phases.map(
+    (phase) =>
+      `  ${phase.phase.padEnd(10)} n=${phase.n} best ${formatNs(
+        phase.bestNs
+      )} median ${formatNs(phase.medianNs)} p95 ${formatNs(
+        phase.p95Ns
+      )} avg ${formatNs(phase.averageNs)}\n`
+  );
+  return rows.join("");
 }
 
 function seededObjectBytes(scopeObjectCount: number, index: number) {

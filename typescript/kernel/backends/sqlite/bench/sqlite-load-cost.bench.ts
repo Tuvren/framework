@@ -26,6 +26,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
+import {
+  createRecordingPhaseObserver,
+  type PersistencePhase,
+  type PhaseSample,
+  type RecordingPhaseObserver,
+} from "@tuvren/backend-shared";
 import type {
   RuntimeBackend,
   StoredBranch,
@@ -42,12 +48,18 @@ import {
 } from "@tuvren/kernel-testkit";
 import { createSqliteBackend } from "../src/index.js";
 
-const SAMPLE_COUNT = 5;
+// Default sample count for the decisive large tiers (1k, 10k): the KRT-BK007
+// spike ran n=5, where p95 collapses onto max. The 10k tier is slow enough
+// (pre-optimization: ~9s/sample health(), ~16s/sample reclaim()) that a full
+// n=15 run at every tier can take minutes; override via BENCH_SAMPLE_COUNT for
+// a quicker local loop, and BENCH_DATABASE_SIZES (comma-separated) to run one
+// tier at a time.
+const SAMPLE_COUNT = readSampleCountFromEnv(15);
 const WARMUP_ITERATIONS = 2;
 // Turn node chain length; an equal count of orphaned (unreferenced) objects
 // is seeded alongside it so reclaim() has real, size-independent sweep work
 // to do at every database size (see reseedOrphanGarbage).
-const DATABASE_SIZES = [10, 100, 1000, 10_000] as const;
+const DATABASE_SIZES = readDatabaseSizesFromEnv([10, 100, 1000, 10_000]);
 // Reseeded before every reclaim() sample so each sample's actual delete work
 // is constant across database sizes -- isolating the load cost as the
 // size-dependent variable rather than conflating it with sweep volume.
@@ -57,20 +69,32 @@ interface TimingStats {
   averageNs: number;
   bestNs: number;
   medianNs: number;
+  n: number;
   p95Ns: number;
+}
+
+interface PhaseStats extends TimingStats {
+  phase: PersistencePhase;
+}
+
+interface OperationResult extends TimingStats {
+  phases: PhaseStats[];
 }
 
 interface LoadCostResult extends Record<string, unknown> {
   databaseSize: number;
-  health: TimingStats;
+  health: OperationResult;
   lastReclaimReleasedObjectCount: number;
-  reclaim: TimingStats;
+  reclaim: OperationResult;
 }
 
 await main();
 
 async function main(): Promise<void> {
   process.stdout.write("sqlite backend load-cost benchmark\n");
+  process.stdout.write(
+    `sample count: ${SAMPLE_COUNT} (BENCH_SAMPLE_COUNT to override); sizes: ${DATABASE_SIZES.join(", ")} (BENCH_DATABASE_SIZES to override)\n`
+  );
   const results: LoadCostResult[] = [];
 
   for (const databaseSize of DATABASE_SIZES) {
@@ -79,8 +103,10 @@ async function main(): Promise<void> {
     );
 
     try {
+      const observer = createRecordingPhaseObserver();
       const backend = createSqliteBackend({
         databasePath: join(tempDirectory, "kraken.db"),
+        phaseObserver: observer,
       });
 
       await seedChain(backend, databaseSize);
@@ -92,33 +118,43 @@ async function main(): Promise<void> {
         databaseSize
       );
 
-      const health = await measureRepeated(WARMUP_ITERATIONS, SAMPLE_COUNT, {
-        run: async () => {
-          const outcome = await backend.health();
-          if (!outcome.ok) {
-            throw new Error(`health() reported unhealthy: ${outcome.reason}`);
-          }
+      const health = await measureRepeated(
+        WARMUP_ITERATIONS,
+        SAMPLE_COUNT,
+        {
+          run: async () => {
+            const outcome = await backend.health();
+            if (!outcome.ok) {
+              throw new Error(`health() reported unhealthy: ${outcome.reason}`);
+            }
+          },
         },
-      });
+        observer
+      );
 
       let lastReclaimReleasedObjectCount = 0;
-      const reclaim = await measureRepeated(1, SAMPLE_COUNT, {
-        prepareSample: async () => {
-          orphanSequence = await seedOrphanObjects(
-            backend,
-            databaseSize,
-            orphanSequence,
-            ORPHAN_GARBAGE_PER_RECLAIM_SAMPLE
-          );
+      const reclaim = await measureRepeated(
+        1,
+        SAMPLE_COUNT,
+        {
+          prepareSample: async () => {
+            orphanSequence = await seedOrphanObjects(
+              backend,
+              databaseSize,
+              orphanSequence,
+              ORPHAN_GARBAGE_PER_RECLAIM_SAMPLE
+            );
+          },
+          run: async () => {
+            if (backend.reclaim === undefined) {
+              throw new Error("expected sqlite backend to implement reclaim()");
+            }
+            const summary = await backend.reclaim({ nowMs: Date.now() });
+            lastReclaimReleasedObjectCount = summary.releasedObjectCount;
+          },
         },
-        run: async () => {
-          if (backend.reclaim === undefined) {
-            throw new Error("expected sqlite backend to implement reclaim()");
-          }
-          const summary = await backend.reclaim({ nowMs: Date.now() });
-          lastReclaimReleasedObjectCount = summary.releasedObjectCount;
-        },
-      });
+        observer
+      );
 
       const result: LoadCostResult = {
         databaseSize,
@@ -128,7 +164,7 @@ async function main(): Promise<void> {
       };
       results.push(result);
       process.stdout.write(
-        `database at ${databaseSize} turn nodes: health best ${formatNs(
+        `database at ${databaseSize} turn nodes (n=${health.n}): health best ${formatNs(
           health.bestNs
         )} median ${formatNs(health.medianNs)} p95 ${formatNs(
           health.p95Ns
@@ -138,6 +174,10 @@ async function main(): Promise<void> {
           reclaim.bestNs / health.bestNs
         ).toFixed(2)}x\n`
       );
+      process.stdout.write("  health phases:\n");
+      process.stdout.write(formatPhaseTable(health.phases));
+      process.stdout.write("  reclaim phases:\n");
+      process.stdout.write(formatPhaseTable(reclaim.phases));
     } finally {
       rmSync(tempDirectory, { force: true, recursive: true });
     }
@@ -164,12 +204,18 @@ interface RepeatedMeasurement {
 async function measureRepeated(
   warmupIterations: number,
   sampleCount: number,
-  measurement: RepeatedMeasurement
-): Promise<TimingStats> {
+  measurement: RepeatedMeasurement,
+  observer: RecordingPhaseObserver
+): Promise<OperationResult> {
   for (let index = 0; index < warmupIterations; index += 1) {
     await measurement.prepareSample?.(-1 - index);
     await measurement.run();
   }
+
+  // Only attribute phases for the measured samples below, not the warmup
+  // iterations above, so the phase table lines up with the reported sample
+  // count.
+  observer.reset();
 
   const samples: number[] = [];
   for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
@@ -186,7 +232,9 @@ async function measureRepeated(
       samples.reduce((total, sample) => total + sample, 0) / samples.length,
     bestNs: Math.min(...samples),
     medianNs: percentile(sortedSamples, 0.5),
+    n: samples.length,
     p95Ns: percentile(sortedSamples, 0.95),
+    phases: summarizePhases(observer.samples),
   };
 }
 
@@ -316,6 +364,97 @@ async function seedOrphanObjects(
   });
 
   return startSequence + count;
+}
+
+/** Reads `BENCH_SAMPLE_COUNT` from the environment, falling back to `fallback`. */
+function readSampleCountFromEnv(fallback: number): number {
+  const raw = process.env.BENCH_SAMPLE_COUNT;
+
+  if (raw === undefined || raw.length === 0) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      `BENCH_SAMPLE_COUNT must be a positive integer, received "${raw}"`
+    );
+  }
+
+  return parsed;
+}
+
+/**
+ * Reads a comma-separated `BENCH_DATABASE_SIZES` override from the
+ * environment (e.g. `BENCH_DATABASE_SIZES=10000` to run one decisive tier at
+ * a time), falling back to `fallback`.
+ */
+function readDatabaseSizesFromEnv(fallback: readonly number[]): number[] {
+  const raw = process.env.BENCH_DATABASE_SIZES;
+
+  if (raw === undefined || raw.length === 0) {
+    return [...fallback];
+  }
+
+  return raw.split(",").map((entry) => {
+    const parsed = Number.parseInt(entry.trim(), 10);
+
+    if (!Number.isSafeInteger(parsed) || parsed < 0) {
+      throw new Error(
+        `BENCH_DATABASE_SIZES entries must be non-negative integers, received "${entry}"`
+      );
+    }
+
+    return parsed;
+  });
+}
+
+/** Groups recorded phase samples by phase and computes best/median/p95/avg/n per phase. */
+function summarizePhases(samples: readonly PhaseSample[]): PhaseStats[] {
+  const byPhase = new Map<PersistencePhase, number[]>();
+
+  for (const sample of samples) {
+    const durations = byPhase.get(sample.phase) ?? [];
+    durations.push(sample.durationNs);
+    byPhase.set(sample.phase, durations);
+  }
+
+  const phaseStats: PhaseStats[] = [];
+
+  for (const [phase, durations] of byPhase) {
+    const sorted = [...durations].sort((left, right) => left - right);
+    phaseStats.push({
+      averageNs:
+        durations.reduce((total, duration) => total + duration, 0) /
+        durations.length,
+      bestNs: Math.min(...durations),
+      medianNs: percentile(sorted, 0.5),
+      n: durations.length,
+      p95Ns: percentile(sorted, 0.95),
+      phase,
+    });
+  }
+
+  phaseStats.sort((left, right) => left.phase.localeCompare(right.phase));
+  return phaseStats;
+}
+
+/** Renders a phase-attribution table for stdout, one row per observed phase. */
+function formatPhaseTable(phases: readonly PhaseStats[]): string {
+  if (phases.length === 0) {
+    return "    (no phase samples recorded)\n";
+  }
+
+  const rows = phases.map(
+    (phase) =>
+      `    ${phase.phase.padEnd(10)} n=${phase.n} best ${formatNs(
+        phase.bestNs
+      )} median ${formatNs(phase.medianNs)} p95 ${formatNs(
+        phase.p95Ns
+      )} avg ${formatNs(phase.averageNs)}\n`
+  );
+  return rows.join("");
 }
 
 function percentile(sortedSamples: readonly number[], rank: number): number {
