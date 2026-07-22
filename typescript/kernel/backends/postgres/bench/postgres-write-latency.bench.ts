@@ -24,15 +24,18 @@
 
 import { randomUUID } from "node:crypto";
 import process from "node:process";
-import {
-  createRecordingPhaseObserver,
-  type PersistencePhase,
-  type PhaseSample,
-} from "@tuvren/backend-shared";
+import { createRecordingPhaseObserver } from "@tuvren/backend-shared";
 import {
   createCanonicalKernelTestSchema,
   createStoredObjectRecord,
   createStoredSchemaRecord,
+  formatNs,
+  formatPhaseTable,
+  type PhaseStats,
+  percentile,
+  readSampleCountFromEnv,
+  summarizePhases,
+  type TimingStats,
 } from "@tuvren/kernel-testkit";
 import {
   createPostgresBackend,
@@ -47,18 +50,6 @@ const SAMPLE_COUNT = readSampleCountFromEnv(15);
 const WARMUP_WRITES = 3;
 const SCOPE_OBJECT_COUNTS = [10, 100, 1000, 10_000] as const;
 const DEVENV_DATABASE_NAME = "tuvren_runtime";
-
-interface TimingStats {
-  averageNs: number;
-  bestNs: number;
-  medianNs: number;
-  n: number;
-  p95Ns: number;
-}
-
-interface PhaseStats extends TimingStats {
-  phase: PersistencePhase;
-}
 
 interface WriteLatencyResult extends TimingStats {
   phases: PhaseStats[];
@@ -225,72 +216,6 @@ function createBenchBackendOptions(
   };
 }
 
-/** Reads `BENCH_SAMPLE_COUNT` from the environment, falling back to `fallback`. */
-function readSampleCountFromEnv(fallback: number): number {
-  const raw = process.env.BENCH_SAMPLE_COUNT;
-
-  if (raw === undefined || raw.length === 0) {
-    return fallback;
-  }
-
-  const parsed = Number.parseInt(raw, 10);
-
-  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
-    throw new Error(
-      `BENCH_SAMPLE_COUNT must be a positive integer, received "${raw}"`
-    );
-  }
-
-  return parsed;
-}
-
-/** Groups recorded phase samples by phase and computes best/median/p95/avg/n per phase. */
-function summarizePhases(samples: readonly PhaseSample[]): PhaseStats[] {
-  const byPhase = new Map<PersistencePhase, number[]>();
-
-  for (const sample of samples) {
-    const durations = byPhase.get(sample.phase) ?? [];
-    durations.push(sample.durationNs);
-    byPhase.set(sample.phase, durations);
-  }
-
-  const phaseStats: PhaseStats[] = [];
-
-  for (const [phase, durations] of byPhase) {
-    const sorted = [...durations].sort((left, right) => left - right);
-    phaseStats.push({
-      averageNs:
-        durations.reduce((total, duration) => total + duration, 0) /
-        durations.length,
-      bestNs: Math.min(...durations),
-      medianNs: percentile(sorted, 0.5),
-      n: durations.length,
-      p95Ns: percentile(sorted, 0.95),
-      phase,
-    });
-  }
-
-  phaseStats.sort((left, right) => left.phase.localeCompare(right.phase));
-  return phaseStats;
-}
-
-/** Renders a phase-attribution table for stdout, one row per observed phase. */
-function formatPhaseTable(phases: readonly PhaseStats[]): string {
-  if (phases.length === 0) {
-    return "  (no phase samples recorded)\n";
-  }
-
-  const rows = phases.map(
-    (phase) =>
-      `  ${phase.phase.padEnd(10)} n=${phase.n} best ${formatNs(
-        phase.bestNs
-      )} median ${formatNs(phase.medianNs)} p95 ${formatNs(
-        phase.p95Ns
-      )} avg ${formatNs(phase.averageNs)}\n`
-  );
-  return rows.join("");
-}
-
 function seededObjectBytes(scopeObjectCount: number, index: number) {
   return new Uint8Array([
     scopeObjectCount % 251,
@@ -298,38 +223,4 @@ function seededObjectBytes(scopeObjectCount: number, index: number) {
     Math.floor(index / 251) % 251,
     Math.floor(index / 63_001) % 251,
   ]);
-}
-
-function percentile(sortedSamples: readonly number[], rank: number): number {
-  if (sortedSamples.length === 0) {
-    throw new Error("expected benchmark samples");
-  }
-
-  const index = Math.min(
-    sortedSamples.length - 1,
-    Math.max(0, Math.ceil(sortedSamples.length * rank) - 1)
-  );
-  const value = sortedSamples[index];
-
-  if (value === undefined) {
-    throw new Error("expected benchmark sample at percentile index");
-  }
-
-  return value;
-}
-
-function formatNs(value: number): string {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(3)}s`;
-  }
-
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(3)}ms`;
-  }
-
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(3)}us`;
-  }
-
-  return `${value.toFixed(0)}ns`;
 }

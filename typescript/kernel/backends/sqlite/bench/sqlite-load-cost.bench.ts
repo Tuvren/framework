@@ -28,8 +28,6 @@ import { join } from "node:path";
 import process from "node:process";
 import {
   createRecordingPhaseObserver,
-  type PersistencePhase,
-  type PhaseSample,
   type RecordingPhaseObserver,
 } from "@tuvren/backend-shared";
 import type {
@@ -45,6 +43,13 @@ import {
   createStoredSchemaRecord,
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
+  formatNs,
+  formatPhaseTable,
+  type PhaseStats,
+  percentile,
+  readSampleCountFromEnv,
+  summarizePhases,
+  type TimingStats,
 } from "@tuvren/kernel-testkit";
 import { createSqliteBackend } from "../src/index.js";
 
@@ -64,18 +69,6 @@ const DATABASE_SIZES = readDatabaseSizesFromEnv([10, 100, 1000, 10_000]);
 // is constant across database sizes -- isolating the load cost as the
 // size-dependent variable rather than conflating it with sweep volume.
 const ORPHAN_GARBAGE_PER_RECLAIM_SAMPLE = 25;
-
-interface TimingStats {
-  averageNs: number;
-  bestNs: number;
-  medianNs: number;
-  n: number;
-  p95Ns: number;
-}
-
-interface PhaseStats extends TimingStats {
-  phase: PersistencePhase;
-}
 
 interface OperationResult extends TimingStats {
   phases: PhaseStats[];
@@ -175,9 +168,9 @@ async function main(): Promise<void> {
         ).toFixed(2)}x\n`
       );
       process.stdout.write("  health phases:\n");
-      process.stdout.write(formatPhaseTable(health.phases));
+      process.stdout.write(formatPhaseTable(health.phases, "    "));
       process.stdout.write("  reclaim phases:\n");
-      process.stdout.write(formatPhaseTable(reclaim.phases));
+      process.stdout.write(formatPhaseTable(reclaim.phases, "    "));
     } finally {
       rmSync(tempDirectory, { force: true, recursive: true });
     }
@@ -366,25 +359,6 @@ async function seedOrphanObjects(
   return startSequence + count;
 }
 
-/** Reads `BENCH_SAMPLE_COUNT` from the environment, falling back to `fallback`. */
-function readSampleCountFromEnv(fallback: number): number {
-  const raw = process.env.BENCH_SAMPLE_COUNT;
-
-  if (raw === undefined || raw.length === 0) {
-    return fallback;
-  }
-
-  const parsed = Number.parseInt(raw, 10);
-
-  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
-    throw new Error(
-      `BENCH_SAMPLE_COUNT must be a positive integer, received "${raw}"`
-    );
-  }
-
-  return parsed;
-}
-
 /**
  * Reads a comma-separated `BENCH_DATABASE_SIZES` override from the
  * environment (e.g. `BENCH_DATABASE_SIZES=10000` to run one decisive tier at
@@ -408,85 +382,4 @@ function readDatabaseSizesFromEnv(fallback: readonly number[]): number[] {
 
     return parsed;
   });
-}
-
-/** Groups recorded phase samples by phase and computes best/median/p95/avg/n per phase. */
-function summarizePhases(samples: readonly PhaseSample[]): PhaseStats[] {
-  const byPhase = new Map<PersistencePhase, number[]>();
-
-  for (const sample of samples) {
-    const durations = byPhase.get(sample.phase) ?? [];
-    durations.push(sample.durationNs);
-    byPhase.set(sample.phase, durations);
-  }
-
-  const phaseStats: PhaseStats[] = [];
-
-  for (const [phase, durations] of byPhase) {
-    const sorted = [...durations].sort((left, right) => left - right);
-    phaseStats.push({
-      averageNs:
-        durations.reduce((total, duration) => total + duration, 0) /
-        durations.length,
-      bestNs: Math.min(...durations),
-      medianNs: percentile(sorted, 0.5),
-      n: durations.length,
-      p95Ns: percentile(sorted, 0.95),
-      phase,
-    });
-  }
-
-  phaseStats.sort((left, right) => left.phase.localeCompare(right.phase));
-  return phaseStats;
-}
-
-/** Renders a phase-attribution table for stdout, one row per observed phase. */
-function formatPhaseTable(phases: readonly PhaseStats[]): string {
-  if (phases.length === 0) {
-    return "    (no phase samples recorded)\n";
-  }
-
-  const rows = phases.map(
-    (phase) =>
-      `    ${phase.phase.padEnd(10)} n=${phase.n} best ${formatNs(
-        phase.bestNs
-      )} median ${formatNs(phase.medianNs)} p95 ${formatNs(
-        phase.p95Ns
-      )} avg ${formatNs(phase.averageNs)}\n`
-  );
-  return rows.join("");
-}
-
-function percentile(sortedSamples: readonly number[], rank: number): number {
-  if (sortedSamples.length === 0) {
-    throw new Error("expected benchmark samples");
-  }
-
-  const index = Math.min(
-    sortedSamples.length - 1,
-    Math.max(0, Math.ceil(sortedSamples.length * rank) - 1)
-  );
-  const value = sortedSamples[index];
-
-  if (value === undefined) {
-    throw new Error("expected benchmark sample at percentile index");
-  }
-
-  return value;
-}
-
-function formatNs(value: number): string {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(3)}s`;
-  }
-
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(3)}ms`;
-  }
-
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(3)}us`;
-  }
-
-  return `${value.toFixed(0)}ns`;
 }

@@ -992,8 +992,13 @@ function runMigrations(db: Database.Database, now: () => number): void {
  * the pre/post gate around reclamation.
  *
  * @param phaseObserver - Phase-attribution seam (issue #108): the row load
- *   (`loadState`) is charged to "load", the committed-state invariant suite
- *   to "validate", so `health()`'s and `reclaim()`'s cost is attributable by
+ *   (`loadState`) is charged to "load"; per-record shape/identity
+ *   re-validation (`validateLoadedState`) to "validate-loaded"; the derived
+ *   lineage-root index cross-check (`validateTurnNodeLineageRootIndex`) to
+ *   "validate-lineage-index"; and the committed-state invariant suite
+ *   (`validateCommittedState`) to "validate-committed" (M2 — these three
+ *   replace M1's single unattributed-residual-hiding "validate" phase for
+ *   this backend), so `health()`'s and `reclaim()`'s cost is attributable by
  *   phase without altering either call's result.
  * @param priorState - Baseline for cross-transaction invariants; defaults to
  *   the loaded state itself (no-change baseline).
@@ -1013,10 +1018,29 @@ async function loadValidatedState(
     endLoad();
   }
 
-  await validateLoadedState(state);
-  validateTurnNodeLineageRootIndex(db, state);
+  // Issue #108 M2: `validateLoadedState` (per-record shape/identity
+  // re-validation) and `validateTurnNodeLineageRootIndex` (the derived
+  // lineage-root index cross-check) were the unattributed residual M1's
+  // phase table left as a gap between `load` and `validate` — see the M2
+  // section of `.constitution/reports/108-git-faithful-blob-persistence.md`
+  // for the bisected before/after numbers.
+  const endValidateLoaded = phaseObserver.startPhase("validate-loaded");
+  try {
+    await validateLoadedState(state);
+  } finally {
+    endValidateLoaded();
+  }
 
-  const endValidate = phaseObserver.startPhase("validate");
+  const endValidateLineageIndex = phaseObserver.startPhase(
+    "validate-lineage-index"
+  );
+  try {
+    validateTurnNodeLineageRootIndex(db, state);
+  } finally {
+    endValidateLineageIndex();
+  }
+
+  const endValidateCommitted = phaseObserver.startPhase("validate-committed");
   try {
     validateCommittedState(state, priorState ?? state, {
       assertActiveRunHeadAlignment,
@@ -1032,7 +1056,7 @@ async function loadValidatedState(
       validateHashString,
     });
   } finally {
-    endValidate();
+    endValidateCommitted();
   }
 
   return state;

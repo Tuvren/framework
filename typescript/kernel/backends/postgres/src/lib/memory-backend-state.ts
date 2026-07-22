@@ -15,13 +15,17 @@
  */
 
 import {
+  createTurnNodeLineageIndex,
+  type TurnNodeLineageIndex,
+} from "@tuvren/backend-shared";
+import {
   assertActiveRunHeadAlignment,
   assertBackwardBranchMoveIsArchived,
   assertRunCreatedTurnNodesAreCanonical,
   assertRunCreatedTurnNodeWithinTurnSpan,
   assertRunStartTurnNodeWithinTurnSpan,
-  assertTurnNodeBelongsToThread,
-  assertTurnNodeDescendsFrom,
+  assertTurnNodeBelongsToThreadIndexed,
+  assertTurnNodeDescendsFromIndexed,
   assertTurnParentLink,
   classifyTurnNodeRelationship,
   decodeRunCreatedTurnNodeHashes,
@@ -76,11 +80,17 @@ export function validateCommittedState(
   state: BackendState,
   baseState: BackendState
 ): void {
+  // Issue #108 M2: one memoized root+depth index shared across every
+  // thread-membership/descent check this pass runs, so a shared ancestor
+  // prefix (e.g. a long turn node chain many turns/runs all reference) is
+  // walked at most once instead of once per referencing turn/run.
+  const lineageIndex = createTurnNodeLineageIndex();
+
   validateThreadInvariants(state);
-  validateBranchInvariants(state, baseState);
+  validateBranchInvariants(state, baseState, lineageIndex);
   validateTurnNodeInvariants(state);
-  validateTurnInvariants(state);
-  validateRunInvariants(state);
+  validateTurnInvariants(state, lineageIndex);
+  validateRunInvariants(state, lineageIndex);
   validateTurnTreePathInvariants(state);
   validateObserveAnnotationInvariants(state);
 }
@@ -144,7 +154,8 @@ function validateThreadInvariants(state: BackendState): void {
 
 function validateBranchInvariants(
   state: BackendState,
-  baseState: BackendState
+  baseState: BackendState,
+  lineageIndex: TurnNodeLineageIndex
 ): void {
   for (const branch of state.branches.values()) {
     const thread = ensureThreadExists(
@@ -153,11 +164,12 @@ function validateBranchInvariants(
       "branch.threadId"
     );
 
-    assertTurnNodeBelongsToThread(
+    assertTurnNodeBelongsToThreadIndexed(
       state,
       branch.headTurnNodeHash,
       thread,
-      "branch.headTurnNodeHash"
+      "branch.headTurnNodeHash",
+      lineageIndex
     );
 
     if (branch.archivedFromBranchId === undefined) {
@@ -301,7 +313,10 @@ function validateTurnNodeInvariants(state: BackendState): void {
   }
 }
 
-function validateTurnInvariants(state: BackendState): void {
+function validateTurnInvariants(
+  state: BackendState,
+  lineageIndex: TurnNodeLineageIndex
+): void {
   for (const turn of state.turns.values()) {
     const thread = ensureThreadExists(state, turn.threadId, "turn.threadId");
     const branch = ensureBranchExists(state, turn.branchId, "turn.branchId");
@@ -319,30 +334,36 @@ function validateTurnInvariants(state: BackendState): void {
       );
     }
 
-    assertTurnNodeBelongsToThread(
+    assertTurnNodeBelongsToThreadIndexed(
       state,
       turn.startTurnNodeHash,
       thread,
-      "turn.startTurnNodeHash"
+      "turn.startTurnNodeHash",
+      lineageIndex
     );
-    assertTurnNodeBelongsToThread(
+    assertTurnNodeBelongsToThreadIndexed(
       state,
       turn.headTurnNodeHash,
       thread,
-      "turn.headTurnNodeHash"
+      "turn.headTurnNodeHash",
+      lineageIndex
     );
-    assertTurnNodeDescendsFrom(
+    assertTurnNodeDescendsFromIndexed(
       state,
       turn.headTurnNodeHash,
       turn.startTurnNodeHash,
-      "turn.headTurnNodeHash"
+      "turn.headTurnNodeHash",
+      lineageIndex
     );
 
     assertTurnParentLink(state, turn, "turn.parentTurnId");
   }
 }
 
-function validateRunInvariants(state: BackendState): void {
+function validateRunInvariants(
+  state: BackendState,
+  lineageIndex: TurnNodeLineageIndex
+): void {
   const activeRunCounts = new Map<string, number>();
 
   for (const run of state.runs.values()) {
@@ -368,11 +389,12 @@ function validateRunInvariants(state: BackendState): void {
       );
     }
 
-    assertTurnNodeBelongsToThread(
+    assertTurnNodeBelongsToThreadIndexed(
       state,
       run.startTurnNodeHash,
       thread,
-      "run.startTurnNodeHash"
+      "run.startTurnNodeHash",
+      lineageIndex
     );
 
     if (startTurnNode.schemaId !== run.schemaId) {
@@ -401,11 +423,12 @@ function validateRunInvariants(state: BackendState): void {
         turnNodeHash,
         "run.createdTurnNodesCbor"
       );
-      assertTurnNodeBelongsToThread(
+      assertTurnNodeBelongsToThreadIndexed(
         state,
         turnNodeHash,
         thread,
-        "run.createdTurnNodesCbor"
+        "run.createdTurnNodesCbor",
+        lineageIndex
       );
       assertRunCreatedTurnNodeWithinTurnSpan(
         state,

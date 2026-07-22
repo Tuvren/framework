@@ -23,6 +23,18 @@ import process from "node:process";
  * committed-state invariant suite, encoding a draft back to the wire format,
  * writing/committing it, and (for backends without a decode/encode split,
  * e.g. SQLite's row-per-table load) loading persisted rows into memory.
+ *
+ * `validate-loaded`, `validate-lineage-index`, and `validate-committed`
+ * (issue #108 M2) are SQLite-specific sub-phases of what M1 attributed as a
+ * single `validate` phase for that backend only: SQLite's `loadValidatedState`
+ * runs three distinct validation passes between `load` and returning —
+ * per-record shape/identity re-validation (`validateLoadedState`), the
+ * derived turn-node-lineage-root index cross-check
+ * (`validateTurnNodeLineageRootIndex`), and the committed-state invariant
+ * suite (`validateCommittedState`) — and M1 left the first two
+ * unattributed, which is where its measured superlinear residual actually
+ * lived. Postgres has no equivalent three-way split and keeps using the
+ * single `validate` phase.
  */
 export type PersistencePhase =
   | "decode"
@@ -30,6 +42,9 @@ export type PersistencePhase =
   | "load"
   | "lock-wait"
   | "validate"
+  | "validate-committed"
+  | "validate-lineage-index"
+  | "validate-loaded"
   | "write";
 
 /**

@@ -25,15 +25,36 @@ import { TuvrenPersistenceError } from "@tuvren/core";
 import {
   encodeDeterministicKernelRecord,
   type RuntimeBackendTx as KrakenBackendTx,
+  type StoredBranch,
+  type StoredThread,
 } from "@tuvren/kernel-protocol";
 import {
+  createCanonicalKernelTestSchema,
   createHashFromIndex,
   createStoredObjectRecord,
   createStoredTurnNodeRecord,
+  createStoredTurnTreeRecord,
   delay,
 } from "@tuvren/kernel-testkit";
 import Database from "better-sqlite3";
 import { createSqliteBackend } from "../src/index.js";
+import {
+  assertBackwardBranchMoveIsArchived,
+  assertChunkedTurnTreePathChunkLayout,
+  assertTurnParentLink,
+} from "../src/lib/sqlite-integrity-assertions.js";
+import { createEmptyState } from "../src/lib/sqlite-records.js";
+import {
+  assertActiveRunHeadAlignment,
+  assertRunCreatedTurnNodesAreCanonical,
+  assertRunCreatedTurnNodeWithinTurnSpan,
+  assertRunStartTurnNodeWithinTurnSpan,
+  classifyTurnNodeRelationship,
+  decodeRunCreatedTurnNodeHashes,
+  decodeTurnNodeConsumedStagedResultObjectHashes,
+  validateHashString,
+} from "../src/lib/sqlite-run-invariants.js";
+import { validateCommittedState } from "../src/lib/sqlite-state-validation.js";
 import {
   assertPlanUsesIndex,
   BACKWARD_ARCHIVE_ERROR_PATTERN,
@@ -52,6 +73,26 @@ import {
   seedLineageMembershipCorruptionDatabase,
   TURN_PARENT_ERROR_PATTERN,
 } from "./backend-sqlite-test-helpers.js";
+
+const CYCLIC_LINEAGE_ERROR_PATTERN =
+  /must not traverse a cyclic turn node lineage/u;
+const THREAD_LINEAGE_MISMATCH_ERROR_PATTERN =
+  /must belong to the referenced thread by lineage walk/u;
+
+/** The real lineage/run-invariant helpers `sqlite-backend.ts` injects into `validateCommittedState`. */
+const VALIDATION_HELPERS = {
+  assertActiveRunHeadAlignment,
+  assertBackwardBranchMoveIsArchived,
+  assertChunkedTurnTreePathChunkLayout,
+  assertRunCreatedTurnNodesAreCanonical,
+  assertRunCreatedTurnNodeWithinTurnSpan,
+  assertRunStartTurnNodeWithinTurnSpan,
+  assertTurnParentLink,
+  classifyTurnNodeRelationship,
+  decodeRunCreatedTurnNodeHashes,
+  decodeTurnNodeConsumedStagedResultObjectHashes,
+  validateHashString,
+};
 
 describe("@tuvren/backend-sqlite invariants", () => {
   test("reports unhealthy status when committed-state invariants are broken", async () => {
@@ -572,6 +613,154 @@ describe("@tuvren/backend-sqlite invariants", () => {
     await rejects(
       async () => txHandle.objects.has("0".repeat(64)),
       TuvrenPersistenceError
+    );
+  });
+});
+
+// Issue #108 M2: `validateCommittedState`'s `assertTurnNodeBelongsToThread`
+// now resolves every turn node's root+depth through one shared
+// `TurnNodeLineageIndex` for the whole pass instead of walking
+// `previousTurnNodeHash` ancestry fresh per call (see
+// @tuvren/backend-shared's `createBackendInvariantTurnNodeLineage`). These
+// cases prove memoization did not change the two failure modes the walk
+// itself detects: a cyclic lineage, and a lineage that reaches a different
+// thread's root. The public write path forbids constructing either shape
+// directly (a real database mutated outside the backend could produce one),
+// so these call the validator directly with a crafted state, the same
+// pattern `seedCorruptionDatabase`'s callers use for the health()-surfaced
+// cases above.
+describe("@tuvren/backend-sqlite validateCommittedState turn node lineage invariant (issue #108 M2)", () => {
+  test("rejects a branch head whose turn node lineage is cyclic", async () => {
+    const schema = createCanonicalKernelTestSchema();
+    const turnTree = await createStoredTurnTreeRecord(
+      schema,
+      { "context.manifest": null, messages: [] },
+      500
+    );
+    // `hashTurnNodeIdentity` does not fold `createdAtMs` into a turn node's
+    // content-addressed hash -- only a distinct `eventHash` keeps these
+    // three otherwise-identically-shaped nodes from colliding onto the same
+    // map key.
+    const rootNode = await createStoredTurnNodeRecord({
+      consumedStagedResults: [],
+      createdAtMs: 501,
+      eventHash: createHashFromIndex(500),
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const nodeA = await createStoredTurnNodeRecord({
+      consumedStagedResults: [],
+      createdAtMs: 502,
+      eventHash: createHashFromIndex(501),
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const nodeB = await createStoredTurnNodeRecord({
+      consumedStagedResults: [],
+      createdAtMs: 503,
+      eventHash: createHashFromIndex(502),
+      previousTurnNodeHash: nodeA.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    // The public write path can never produce a real cycle (a node's hash is
+    // derived from its own previousTurnNodeHash, so two nodes cannot both
+    // legitimately point at each other); craft one directly onto the loaded
+    // state, at the same key `nodeA.hash` already occupies, the way a
+    // database mutated outside the backend could.
+    const cyclicNodeA = { ...nodeA, previousTurnNodeHash: nodeB.hash };
+
+    const thread: StoredThread = {
+      createdAtMs: 504,
+      rootTurnNodeHash: rootNode.hash,
+      schemaId: schema.schemaId,
+      threadId: "thread_cycle",
+    };
+    const branch: StoredBranch = {
+      branchId: "branch_cycle",
+      createdAtMs: 505,
+      headTurnNodeHash: cyclicNodeA.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 505,
+    };
+
+    const state = createEmptyState();
+    state.turnNodes.set(rootNode.hash, rootNode);
+    state.turnNodes.set(cyclicNodeA.hash, cyclicNodeA);
+    state.turnNodes.set(nodeB.hash, nodeB);
+    state.threads.set(thread.threadId, thread);
+    state.branches.set(branch.branchId, branch);
+
+    throws(
+      () =>
+        validateCommittedState(state, createEmptyState(), VALIDATION_HELPERS),
+      CYCLIC_LINEAGE_ERROR_PATTERN
+    );
+  });
+
+  test("rejects a branch head whose turn node lineage reaches a different thread's root", async () => {
+    const schema = createCanonicalKernelTestSchema();
+    const turnTree = await createStoredTurnTreeRecord(
+      schema,
+      { "context.manifest": null, messages: [] },
+      510
+    );
+    // Distinct `eventHash` values, for the same reason as the cyclic-lineage
+    // test above: these three would otherwise collide onto one map key.
+    const ownRoot = await createStoredTurnNodeRecord({
+      consumedStagedResults: [],
+      createdAtMs: 511,
+      eventHash: createHashFromIndex(510),
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const foreignRoot = await createStoredTurnNodeRecord({
+      consumedStagedResults: [],
+      createdAtMs: 512,
+      eventHash: createHashFromIndex(511),
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const foreignChild = await createStoredTurnNodeRecord({
+      consumedStagedResults: [],
+      createdAtMs: 513,
+      eventHash: createHashFromIndex(512),
+      previousTurnNodeHash: foreignRoot.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+
+    const thread: StoredThread = {
+      createdAtMs: 514,
+      rootTurnNodeHash: ownRoot.hash,
+      schemaId: schema.schemaId,
+      threadId: "thread_cross_root",
+    };
+    const branch: StoredBranch = {
+      branchId: "branch_cross_root",
+      createdAtMs: 515,
+      // Genuinely on the foreign root's lineage, not the owning thread's own
+      // root -- a real cross-thread-root membership violation, not a cycle.
+      headTurnNodeHash: foreignChild.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 515,
+    };
+
+    const state = createEmptyState();
+    state.turnNodes.set(ownRoot.hash, ownRoot);
+    state.turnNodes.set(foreignRoot.hash, foreignRoot);
+    state.turnNodes.set(foreignChild.hash, foreignChild);
+    state.threads.set(thread.threadId, thread);
+    state.branches.set(branch.branchId, branch);
+
+    throws(
+      () =>
+        validateCommittedState(state, createEmptyState(), VALIDATION_HELPERS),
+      THREAD_LINEAGE_MISMATCH_ERROR_PATTERN
     );
   });
 });

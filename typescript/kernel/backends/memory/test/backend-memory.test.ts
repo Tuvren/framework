@@ -635,3 +635,144 @@ describe("@tuvren/backend-memory validateCommittedState observe-annotation invar
     );
   });
 });
+
+// Issue #108 M2: `assertTurnNodeBelongsToThread` now resolves every turn
+// node's root+depth through one `TurnNodeLineageIndex` shared across the
+// whole `validateCommittedState` pass instead of walking
+// `previousTurnNodeHash` ancestry fresh per call. These cases prove that
+// memoization did not change the two failure modes the walk itself detects:
+// a cyclic lineage, and a lineage that reaches a different thread's root.
+// The public write path forbids constructing either shape directly, so
+// these craft a state and call the validator directly, the same pattern
+// the observe-annotation invariant tests above use.
+describe("@tuvren/backend-memory validateCommittedState turn node lineage invariant (issue #108 M2)", () => {
+  test("rejects a branch head whose turn node lineage is cyclic", async () => {
+    const schema = createSchema();
+    const turnTree = await createStoredTurnTree(
+      schema,
+      { "context.manifest": null, messages: [] },
+      30
+    );
+    // `hashTurnNodeIdentity` does not fold `createdAtMs` into a turn node's
+    // content-addressed hash -- only its distinct `eventHash` keeps these
+    // three otherwise-identically-shaped nodes from colliding onto the same
+    // map key.
+    const rootNode = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 31,
+      eventHash: createHashFromIndex(300),
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const nodeA = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 32,
+      eventHash: createHashFromIndex(301),
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const nodeB = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 33,
+      eventHash: createHashFromIndex(302),
+      previousTurnNodeHash: nodeA.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    // The public write path can never produce a real cycle (a node's hash is
+    // derived from its own previousTurnNodeHash, so two nodes cannot both
+    // legitimately point at each other); craft one directly onto the loaded
+    // state, at the same key `nodeA.hash` already occupies, the way a
+    // database mutated outside the backend could.
+    const cyclicNodeA = { ...nodeA, previousTurnNodeHash: nodeB.hash };
+
+    const thread: StoredThread = {
+      createdAtMs: 34,
+      rootTurnNodeHash: rootNode.hash,
+      schemaId: schema.schemaId,
+      threadId: "thread_cycle",
+    };
+    const branch: StoredBranch = {
+      branchId: "branch_cycle",
+      createdAtMs: 35,
+      headTurnNodeHash: cyclicNodeA.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 35,
+    };
+
+    const state = createEmptyState();
+    state.turnNodes.set(rootNode.hash, rootNode);
+    state.turnNodes.set(cyclicNodeA.hash, cyclicNodeA);
+    state.turnNodes.set(nodeB.hash, nodeB);
+    state.threads.set(thread.threadId, thread);
+    state.branches.set(branch.branchId, branch);
+
+    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
+      "must not traverse a cyclic turn node lineage"
+    );
+  });
+
+  test("rejects a branch head whose turn node lineage reaches a different thread's root", async () => {
+    const schema = createSchema();
+    const turnTree = await createStoredTurnTree(
+      schema,
+      { "context.manifest": null, messages: [] },
+      40
+    );
+    // Distinct `eventHash` values, for the same reason as the cyclic-lineage
+    // test above: these three would otherwise collide onto one map key.
+    const ownRoot = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 41,
+      eventHash: createHashFromIndex(400),
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const foreignRoot = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 42,
+      eventHash: createHashFromIndex(401),
+      previousTurnNodeHash: null,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+    const foreignChild = await createStoredTurnNode({
+      consumedStagedResults: [],
+      createdAtMs: 43,
+      eventHash: createHashFromIndex(402),
+      previousTurnNodeHash: foreignRoot.hash,
+      schemaId: schema.schemaId,
+      turnTreeHash: turnTree.hash,
+    });
+
+    const thread: StoredThread = {
+      createdAtMs: 44,
+      rootTurnNodeHash: ownRoot.hash,
+      schemaId: schema.schemaId,
+      threadId: "thread_cross_root",
+    };
+    const branch: StoredBranch = {
+      branchId: "branch_cross_root",
+      createdAtMs: 45,
+      // Genuinely on the foreign root's lineage, not the owning thread's own
+      // root -- a real cross-thread-root membership violation, not a cycle.
+      headTurnNodeHash: foreignChild.hash,
+      threadId: thread.threadId,
+      updatedAtMs: 45,
+    };
+
+    const state = createEmptyState();
+    state.turnNodes.set(ownRoot.hash, ownRoot);
+    state.turnNodes.set(foreignRoot.hash, foreignRoot);
+    state.turnNodes.set(foreignChild.hash, foreignChild);
+    state.threads.set(thread.threadId, thread);
+    state.branches.set(branch.branchId, branch);
+
+    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
+      "must belong to the referenced thread by lineage walk"
+    );
+  });
+});

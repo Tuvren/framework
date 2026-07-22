@@ -15,6 +15,11 @@
  */
 
 import {
+  createBackendInvariantTurnNodeLineage,
+  createTurnNodeLineageIndex,
+  type TurnNodeLineageIndex,
+} from "@tuvren/backend-shared";
+import {
   assertStoredBranch,
   assertStoredObjectIdentity,
   assertStoredObserveAnnotation,
@@ -31,7 +36,6 @@ import {
   type StoredBranch,
   type StoredOrderedPathChunk,
   type StoredRun,
-  type StoredThread,
   type StoredTurn,
   type StoredTurnNode,
   type StoredTurnTree,
@@ -63,6 +67,17 @@ import {
 // the memory backend's live maps. `ValidationHelpers` injects the
 // lineage-relationship assertions from sqlite-db-lineage.js so this module
 // stays free of a direct dependency on that SQL-query layer.
+
+// Issue #108 M2: thread-membership/descent lineage walks
+// (`assertTurnNodeBelongsToThread`, `assertTurnNodeDescendsFrom`) are the
+// same shared, memoized algorithm the memory and postgres backends use
+// (`@tuvren/backend-shared`'s `createBackendInvariantTurnNodeLineage`), so a
+// `validateCommittedState` pass touching many turns/runs amortizes each
+// shared ancestor prefix's walk cost to O(n) total instead of O(depth) per
+// call.
+const turnNodeLineage = createBackendInvariantTurnNodeLineage({
+  errorPrefix: "sqlite",
+});
 
 /**
  * Backend-owned lineage and decoding helpers injected into
@@ -227,11 +242,17 @@ export function validateCommittedState(
   baseState: BackendState,
   helpers: ValidationHelpers
 ): void {
+  // One memoized root+depth index shared across every thread-membership/
+  // descent check this pass runs (issue #108 M2): a shared ancestor prefix
+  // (e.g. a long turn node chain many turns/runs all reference) is walked
+  // at most once instead of once per referencing turn/run.
+  const lineageIndex = createTurnNodeLineageIndex();
+
   validateThreadInvariants(state);
-  validateBranchInvariants(state, baseState, helpers);
+  validateBranchInvariants(state, baseState, helpers, lineageIndex);
   validateTurnNodeInvariants(state, helpers);
-  validateTurnInvariants(state, helpers);
-  validateRunInvariants(state, helpers);
+  validateTurnInvariants(state, helpers, lineageIndex);
+  validateRunInvariants(state, helpers, lineageIndex);
   validateTurnTreePathInvariants(state, helpers);
 }
 
@@ -303,7 +324,8 @@ function validateThreadInvariants(state: BackendState): void {
 function validateBranchInvariants(
   state: BackendState,
   baseState: BackendState,
-  helpers: ValidationHelpers
+  helpers: ValidationHelpers,
+  lineageIndex: TurnNodeLineageIndex
 ): void {
   for (const branch of state.branches.values()) {
     const thread = ensureThreadExists(
@@ -312,11 +334,12 @@ function validateBranchInvariants(
       "branch.threadId"
     );
 
-    assertTurnNodeBelongsToThread(
+    turnNodeLineage.assertTurnNodeBelongsToThread(
       state,
       branch.headTurnNodeHash,
       thread,
-      "branch.headTurnNodeHash"
+      "branch.headTurnNodeHash",
+      lineageIndex
     );
 
     if (branch.archivedFromBranchId === undefined) {
@@ -474,7 +497,8 @@ function validateTurnNodeInvariants(
  */
 function validateTurnInvariants(
   state: BackendState,
-  helpers: ValidationHelpers
+  helpers: ValidationHelpers,
+  lineageIndex: TurnNodeLineageIndex
 ): void {
   for (const turn of state.turns.values()) {
     const thread = ensureThreadExists(state, turn.threadId, "turn.threadId");
@@ -493,23 +517,26 @@ function validateTurnInvariants(
       );
     }
 
-    assertTurnNodeBelongsToThread(
+    turnNodeLineage.assertTurnNodeBelongsToThread(
       state,
       turn.startTurnNodeHash,
       thread,
-      "turn.startTurnNodeHash"
+      "turn.startTurnNodeHash",
+      lineageIndex
     );
-    assertTurnNodeBelongsToThread(
+    turnNodeLineage.assertTurnNodeBelongsToThread(
       state,
       turn.headTurnNodeHash,
       thread,
-      "turn.headTurnNodeHash"
+      "turn.headTurnNodeHash",
+      lineageIndex
     );
-    assertTurnNodeDescendsFrom(
+    turnNodeLineage.assertTurnNodeDescendsFrom(
       state,
       turn.headTurnNodeHash,
       turn.startTurnNodeHash,
-      "turn.headTurnNodeHash"
+      "turn.headTurnNodeHash",
+      lineageIndex
     );
 
     helpers.assertTurnParentLink(state, turn, "turn.parentTurnId");
@@ -525,7 +552,8 @@ function validateTurnInvariants(
  */
 function validateRunInvariants(
   state: BackendState,
-  helpers: ValidationHelpers
+  helpers: ValidationHelpers,
+  lineageIndex: TurnNodeLineageIndex
 ): void {
   const activeRunCounts = new Map<string, number>();
 
@@ -552,11 +580,12 @@ function validateRunInvariants(
       );
     }
 
-    assertTurnNodeBelongsToThread(
+    turnNodeLineage.assertTurnNodeBelongsToThread(
       state,
       run.startTurnNodeHash,
       thread,
-      "run.startTurnNodeHash"
+      "run.startTurnNodeHash",
+      lineageIndex
     );
 
     if (startTurnNode.schemaId !== run.schemaId) {
@@ -585,11 +614,12 @@ function validateRunInvariants(
         turnNodeHash,
         "run.createdTurnNodesCbor"
       );
-      assertTurnNodeBelongsToThread(
+      turnNodeLineage.assertTurnNodeBelongsToThread(
         state,
         turnNodeHash,
         thread,
-        "run.createdTurnNodesCbor"
+        "run.createdTurnNodesCbor",
+        lineageIndex
       );
       helpers.assertRunCreatedTurnNodeWithinTurnSpan(
         state,
@@ -843,116 +873,6 @@ function getSchemaForTurnTree(
   turnTree: StoredTurnTree
 ): TurnTreeSchema {
   return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
-}
-
-/**
- * Asserts that a turn node reaches the thread's root turn node by walking
- * `previousTurnNodeHash` ancestry over the loaded state projection — i.e.
- * the node genuinely belongs to the thread rather than merely existing in
- * it.
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_thread_lineage_mismatch` when the walk exhausts
- *   ancestry without reaching the thread root, or
- *   `sqlite_backend_cyclic_turn_node_lineage` on a lineage cycle.
- */
-function assertTurnNodeBelongsToThread(
-  state: BackendState,
-  turnNodeHash: string,
-  thread: StoredThread,
-  label: string
-): void {
-  const visitedTurnNodes = new Set<string>();
-  let currentTurnNodeHash: string | null = turnNodeHash;
-
-  while (currentTurnNodeHash !== null) {
-    if (visitedTurnNodes.has(currentTurnNodeHash)) {
-      throw persistenceError(
-        `${label} must not traverse a cyclic turn node lineage`,
-        "sqlite_backend_cyclic_turn_node_lineage",
-        {
-          threadId: thread.threadId,
-          turnNodeHash,
-        }
-      );
-    }
-
-    visitedTurnNodes.add(currentTurnNodeHash);
-
-    if (currentTurnNodeHash === thread.rootTurnNodeHash) {
-      return;
-    }
-
-    currentTurnNodeHash = ensureTurnNodeExists(
-      state,
-      currentTurnNodeHash,
-      label
-    ).previousTurnNodeHash;
-  }
-
-  throw persistenceError(
-    `${label} must belong to the referenced thread by lineage walk`,
-    "sqlite_backend_thread_lineage_mismatch",
-    {
-      threadId: thread.threadId,
-      threadRootTurnNodeHash: thread.rootTurnNodeHash,
-      turnNodeHash,
-    }
-  );
-}
-
-/**
- * Asserts that `descendantTurnNodeHash` is the ancestor itself or a
- * descendant of it along the `previousTurnNodeHash` chain over the loaded
- * state projection. Used to keep turn heads append-only: a turn's new head
- * must extend its previous head.
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_turn_node_not_descendant` when the ancestor is not on
- *   the descendant's lineage, or `sqlite_backend_cyclic_turn_node_lineage`
- *   on a lineage cycle.
- */
-function assertTurnNodeDescendsFrom(
-  state: BackendState,
-  descendantTurnNodeHash: string,
-  ancestorTurnNodeHash: string,
-  label: string
-): void {
-  const visitedTurnNodes = new Set<string>();
-  let currentTurnNodeHash: string | null = descendantTurnNodeHash;
-
-  while (currentTurnNodeHash !== null) {
-    if (visitedTurnNodes.has(currentTurnNodeHash)) {
-      throw persistenceError(
-        `${label} must not traverse a cyclic turn node lineage`,
-        "sqlite_backend_cyclic_turn_node_lineage",
-        {
-          ancestorTurnNodeHash,
-          descendantTurnNodeHash,
-        }
-      );
-    }
-
-    if (currentTurnNodeHash === ancestorTurnNodeHash) {
-      return;
-    }
-
-    visitedTurnNodes.add(currentTurnNodeHash);
-    currentTurnNodeHash = ensureTurnNodeExists(
-      state,
-      currentTurnNodeHash,
-      label
-    ).previousTurnNodeHash;
-  }
-
-  throw persistenceError(
-    `${label} must be a descendant of the referenced start turn node`,
-    "sqlite_backend_turn_node_not_descendant",
-    {
-      ancestorTurnNodeHash,
-      descendantTurnNodeHash,
-    }
-  );
 }
 
 /**

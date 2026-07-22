@@ -319,3 +319,319 @@ several minutes at n=15).
   predates this milestone and is a different axis (TurnNode chain length,
   not database row count) than the two blob-cost benches' `[10, 100, 1000,
   10000]` scope-size ladder the brief was referring to.
+
+## M2 — Bisecting and fixing the sqlite superlinear residual
+
+M1 left the `loadValidatedState` residual (79–97% of `health()`/`reclaim()`
+wall time, growing 4.35×/12.83×/46.06× per decade) attributed only to "two
+calls M1 did not instrument" — `validateLoadedState`'s per-record identity
+re-hashing and `validateTurnNodeLineageRootIndex`'s ancestry cross-check —
+without measurement separating the two. An independent review correctly
+flagged that conclusion as unproven: both suspects are O(N) *on paper*, and a
+GC/allocation confound (large `n`, large object graphs, more time under GC
+pressure) had not been ruled out either. M2 instruments each suspect as its
+own `PhaseObserver` phase and re-measures before changing any code, so the
+attribution below is measured, not inferred.
+
+### Sub-phase instrumentation
+
+`loadValidatedState` (`sqlite-backend.ts`) now reports four phases instead of
+M1's two, in call order:
+
+1. `load` — unchanged from M1 (`loadState`).
+2. `validate-loaded` — `validateLoadedState`'s per-record shape/identity
+   re-hash pass (M1's first suspect).
+3. `validate-lineage-index` — `validateTurnNodeLineageRootIndex`'s
+   second-table-read-plus-cross-check pass (M1's second suspect).
+4. `validate-committed` — `validateCommittedState`, renamed from M1's
+   `validate` phase now that `validate` no longer uniquely identifies one
+   call.
+
+`PersistencePhase` (`backend-invariant-phase-observer.ts`) gained
+`"validate-committed" | "validate-lineage-index" | "validate-loaded"` for
+this; postgres is unaffected and keeps its single `"validate"` phase, since
+postgres's residual was already fully attributed in M1 (B1/B2, not part of
+this milestone's open question).
+
+### Bisect result: before the fix (unmemoized), n=5, sizes 10/100/1000/5000
+
+Measured by running the real, already-sub-phase-instrumented code path with
+one deliberate temporary change reverted afterward: `validateTurnNodeLineageRootIndex`'s per-node lineage lookup used a *fresh*
+lookup structure on every loop iteration (the exact pre-fix behavior —
+`computeExpectedTurnNodeLineageMetadata` walked `previousTurnNodeHash`
+ancestry back to the thread root from scratch for every turn node), instead
+of the one lookup structure shared across the whole loop that the landed fix
+uses. This isolates the *algorithm* under test (fresh-walk-per-node vs.
+memoized-once) while holding everything else — instrumentation, call sites,
+error codes — identical, so the "before" and "after" numbers are directly
+comparable at the sub-phase level.
+
+| Size | health best | load | validate-loaded | validate-lineage-index | validate-committed |
+|---|---|---|---|---|---|
+| 10 | 5.254 ms | 574.8 us | 3.839 ms | 107.4 us | 240.0 us |
+| 100 | 16.935 ms | 2.223 ms | 12.545 ms | 886.3 us | 417.5 us |
+| 1,000 | 198.210 ms | 15.700 ms | 113.371 ms | 65.367 ms | 2.281 ms |
+| 5,000 | 2.523 s | 80.547 ms | 438.996 ms | 1.992 s | 10.270 ms |
+
+Decade multipliers (n=5, before fix):
+
+| Phase | 10→100 | 100→1,000 | 1,000→5,000 (per-decade) |
+|---|---|---|---|
+| `validate-lineage-index` | 8.25× | **73.75×** | **132.77×** |
+| `validate-loaded` | 3.27× | 9.04× | 6.94× |
+| `load` | 3.87× | 7.06× | 10.37× |
+| `validate-committed` | 1.74× | 5.46× | 8.61× |
+| health total | 3.22× | 11.70× | 38.07× |
+
+This settles the bisect unambiguously: `validate-lineage-index` is the only
+sub-phase with superlinear growth (73.75× and an extrapolated 132.77× per
+decade — an *accelerating* curve, the signature of O(n²) work, not GC
+pressure, which would show as a roughly constant multiplicative penalty
+across all four phases rather than isolated to one). `validate-loaded`
+(M1's *other* suspect) grows at 6.94×–9.04× per decade throughout — close to
+the ~10× a linear cost produces, and *not* accelerating. `load` and
+`validate-committed` are similarly near-linear. **The GC/allocation confound
+the review flagged is ruled out by this same evidence**: if the superlinear
+growth were GC-driven, it would show up across all four phases roughly
+proportionally to allocation volume, not concentrated in exactly one of
+them while the other three stay near-linear at the same sizes with the same
+object graph.
+
+### The driver, with file:line evidence
+
+The superlinear term was `computeExpectedTurnNodeLineageMetadata`, a
+function that used to live at `sqlite-transaction-validation.ts:803-845` in
+commit `5714d16` (M1's baseline; the function no longer exists in the tree —
+see "The fix" below). It was called once per turn node from
+`validateTurnNodeLineageRootIndex`'s main loop
+(`sqlite-transaction-validation.ts:144`, then around what is now line 199),
+and its body walked `previousTurnNodeHash` backward, one hop at a time,
+**all the way to the thread's root turn node**, for every single call.
+
+Why that is O(n²): a thread's turn node lineage is, in the shapes this bench
+exercises, a single linear chain (`sqlite-load-cost.bench.ts` builds each
+scope as one straight-line history of `databaseSize` turn nodes). Walking
+"all the way to the root" from turn node `k` costs `O(k)` hops. Summed over
+all `n` turn nodes in the outer loop, total work is
+`Σ(k=1..n) O(k) = O(n²)`. Every other phase in `loadValidatedState` — the
+row load, the per-record identity re-hash, the committed-state structural
+checks — does a constant amount of work per record, so none of them show
+this shape.
+
+### The fix
+
+Replace the per-call ancestor walk with one shared, cycle-detecting,
+memoizing pass: `resolveTurnNodeLineagePosition`
+(`typescript/kernel/backends/shared/src/lib/backend-invariant-turn-node-lineage.ts:81`)
+walks from a start node only as far as the nearest node whose
+root-hash/depth is *already cached* in a shared `TurnNodeLineageIndex`
+(`createTurnNodeLineageIndex`, same file), then unwinds the walked prefix
+assigning depth/root to every node it just visited, caching all of them.
+`validateTurnNodeLineageRootIndex` now creates one `TurnNodeLineageIndex`
+before its loop (`sqlite-transaction-validation.ts:197`) and passes it to
+every call (`sqlite-transaction-validation.ts:210`), so a shared ancestor
+prefix — the common case on a chain — is walked at most once for the whole
+loop regardless of how many descendants reference it: total work collapses
+to `O(n)`.
+
+The same shared module backs a second, independent superlinear risk that the
+bench shape does not trigger but that the brief called out explicitly:
+`assertTurnNodeBelongsToThread` and `assertTurnNodeDescendsFrom`
+(formerly `sqlite-state-validation.ts:859-902` / `915-956`) did their own
+per-call ancestor walks inside `validateCommittedState`, which is worst-case
+O(n²) at state shapes with many turns/runs referencing deep lineages even
+though `sqlite-load-cost`'s shape (few branches, one long chain) does not
+land in that worst case. `createBackendInvariantTurnNodeLineage` (same
+shared module,
+`typescript/kernel/backends/shared/src/lib/backend-invariant-turn-node-lineage.ts:239`)
+wraps the same memoized-index primitive behind the exact per-backend error
+codes (`sqlite_backend_*`, `memory_backend_*`, `postgres_backend_*`) the two
+assertions used to throw, and `validateCommittedState` now builds one
+`TurnNodeLineageIndex` per pass and threads it through
+`validateBranchInvariants`/`validateTurnInvariants`/`validateRunInvariants`
+so every lineage check in one `validateCommittedState` call shares the same
+memoization. The identical change landed in the memory backend
+(`typescript/kernel/backends/memory/src/lib/memory-backend-lineage.ts`,
+`memory-backend-state.ts`) and the postgres backend's memory-backend fork
+(`typescript/kernel/backends/postgres/src/lib/memory-backend-lineage.ts`,
+`memory-backend-state.ts`), keeping the three copies in lockstep per
+KRT-BK001. No error code, message, or throw site changed in any of the
+three backends — only how the position each one throws about is computed.
+
+`validateLoadedState`'s per-record canonical-identity re-hash was **not**
+touched: the bisect confirms it is linear (6.94×–9.04× per decade, both
+before and after the fix, since this milestone's change never touches it),
+matching M1's own textual claim about `hashTurnNodeIdentity`
+(`typescript/kernel/protocol/src/lib/kernel-validation-stored.ts:138-163`)
+hashing only a node's own fields. After the fix it becomes the *new*
+dominant cost (81.8% of `health()` at 10,000 — see below), which is real and
+substantial but is O(1)-per-record work multiplied by `n` records, not an
+algorithmic defect; changing hashing/re-validation semantics is out of this
+milestone's scope. It is a legitimate candidate for a future fsck-style
+milestone (e.g. M5) that considers incremental/cached identity verification
+instead of a full re-hash on every `health()`/`reclaim()` call.
+
+### After the fix: full n=15, official `[10, 100, 1,000, 10,000]` ladder
+
+`health()`/`reclaim()` totals:
+
+| DB size | health best | health median | health p95 | reclaim best | reclaim median | reclaim p95 | reclaim/health (best) |
+|---|---|---|---|---|---|---|---|
+| 10 | 3.805 ms | 5.212 ms | 6.107 ms | 7.065 ms | 7.927 ms | 9.302 ms | 1.86× |
+| 100 | 14.762 ms | 16.963 ms | 19.156 ms | 22.217 ms | 23.854 ms | 25.206 ms | 1.51× |
+| 1,000 | 124.905 ms | 133.858 ms | 152.636 ms | 160.901 ms | 186.808 ms | 213.985 ms | 1.29× |
+| 10,000 | 1.126 s | 1.192 s | 1.237 s | 1.580 s | 1.650 s | 1.754 s | 1.40× |
+
+Per-phase attribution (best; `n=15` for `health`, `n=30` for `reclaim` — same
+reason as M1: `reclaim()` calls `loadValidatedState` twice per call):
+
+| Size | Op | Phase | best |
+|---|---|---|---|
+| 10 | health | load | 498.5 us |
+| 10 | health | validate-committed | 191.3 us |
+| 10 | health | validate-lineage-index | 89.5 us |
+| 10 | health | validate-loaded | 2.558 ms |
+| 100 | health | load | 1.807 ms |
+| 100 | health | validate-committed | 355.8 us |
+| 100 | health | validate-lineage-index | 227.8 us |
+| 100 | health | validate-loaded | 11.865 ms |
+| 1,000 | health | load | 15.030 ms |
+| 1,000 | health | validate-committed | 2.142 ms |
+| 1,000 | health | validate-lineage-index | 1.726 ms |
+| 1,000 | health | validate-loaded | 102.297 ms |
+| 10,000 | health | load | 162.503 ms |
+| 10,000 | health | validate-committed | 21.137 ms |
+| 10,000 | health | validate-lineage-index | 18.107 ms |
+| 10,000 | health | validate-loaded | 921.106 ms |
+
+Residual (health total minus the sum of all four instrumented phases) is now
+fully attributed at every size, closing M1's open unattributed gap:
+
+| Size | health total (best) | sum of 4 phases (best) | residual | residual % |
+|---|---|---|---|---|
+| 10 | 3.805 ms | 3.337 ms | 468.1 us | 12.3% |
+| 100 | 14.762 ms | 14.256 ms | 506.2 us | 3.4% |
+| 1,000 | 124.905 ms | 121.194 ms | 3.710 ms | 3.0% |
+| 10,000 | 1.126 s | 1.123 s | 2.859 ms | **0.25%** |
+
+(The small residual is scheduler/observer overhead between phase
+boundaries, not an unaccounted-for algorithmic cost; it shrinks in relative
+terms as `n` grows, the opposite of what M1's 97.3%-and-growing residual
+showed.)
+
+### Before/after growth-curve comparison (the collapse to ~linear)
+
+| Phase | Before (per-decade) | After (per-decade) |
+|---|---|---|
+| `validate-lineage-index` | 8.25× / **73.75×** / **132.77×** | 2.55× / 7.57× / 10.49× |
+| health total | 3.22× / 11.70× / 38.07× (n=5, 5k top tier) | 3.88× / 8.46× / 9.01× (n=15, official 10k top tier) |
+
+The isolated driver collapses from an accelerating curve (peaking near
+133× per decade) to a curve indistinguishable from linear (10.49× per
+decade — an O(n) cost with a constant per-node factor produces exactly
+10× per decade). `health()`'s own end-to-end growth after the fix
+(3.88×/8.46×/9.01×) is now close to the ~10× ideal at every step, compared
+to M1's 4.35×/12.83×/46.06× residual-driven curve that accelerated sharply
+at the top tier.
+
+Absolute effect at the size that matters most (10,000 rows): `health()`
+best-case dropped from M1's **7.030 s to 1.126 s — a 6.2× speedup** — with
+`reclaim()` following proportionally (13.658 s → 1.580 s, an 8.6× speedup).
+
+### Hot-path regression check
+
+`bun run nx run backend-sqlite:bench` (n=15, unchanged `[0, 100, 500, 1,000]`
+history-size ladder) confirms `transact()` itself is unaffected, as
+expected — `transact()`'s pre-commit path is `validateTransactionWriteSet`
+(targeted per-write SQL lookups), which never calls `validateCommittedState`
+or `loadValidatedState`. Representative rows, M1 baseline vs. this
+milestone (best/iter):
+
+| History size | Case | M1 (5714d16) | M2 (this run) |
+|---|---|---|---|
+| 0 | deep branch non-root rollback | 253.8 us | 263.4 us |
+| 100 | deep branch non-root forward | 1.666 ms | 1.676 ms |
+| 100 | deep branch non-root rollback | 120.9 ms | 121.4 ms |
+| 1,000 | deep branch forward | 3.382 ms | 3.359 ms |
+| 1,000 | deep branch non-root rollback | 587.1 ms | 580.0 ms |
+
+All within normal run-to-run noise (a few percent either direction); no
+case regressed or improved beyond that noise band, confirming the fix is
+scoped to `health()`/`reclaim()` as intended.
+
+### B3 resolution (supersedes the M1 paragraph)
+
+M1's B3 paragraph concluded "**Neither, within what M1 instruments**" — the
+superlinear term lived somewhere inside `loadValidatedState`'s two
+uninstrumented calls, without saying which one. That was accurate as far as
+M1's own instrumentation could show, but left the question open, which is
+exactly the gap SPK-BK007 flagged as unresolved.
+
+**M2 resolves it with direct sub-phase measurement**: the superlinear term
+was entirely inside `validateTurnNodeLineageRootIndex`
+(`sqlite-transaction-validation.ts`, formerly calling the now-deleted
+`computeExpectedTurnNodeLineageMetadata` at lines 803-845 of commit
+`5714d16`) — specifically its per-turn-node walk back to the thread root,
+O(n²) on a linear chain. `validateLoadedState`'s per-record identity
+re-hash, M1's *other* named suspect, was linear both before and after this
+milestone's change and was never part of the superlinear residual. The fix
+(one shared, memoized `TurnNodeLineageIndex` per validation pass instead of
+a fresh ancestor walk per node or per assertion call) collapsed
+`validate-lineage-index`'s growth from an accelerating ~133×-per-decade
+curve to a linear ~10×-per-decade curve, and the same memoized-index
+primitive now also backs `validateCommittedState`'s
+`assertTurnNodeBelongsToThread`/`assertTurnNodeDescendsFrom` checks in all
+three backends (sqlite, memory, postgres) to close the parallel O(n²) risk
+those two assertions carried at lineage-heavy state shapes, even though the
+`sqlite-load-cost` bench shape does not exercise that particular path.
+SPK-BK007's open secondary question — sqlite `loadState` vs.
+`validateCommittedState` — is answered: it was neither of those two named
+phases; it was the *third*, previously-unnamed call
+(`validateTurnNodeLineageRootIndex`) that M1 had not scoped for
+instrumentation, now isolated, fixed, and measured back down to linear.
+
+### Validation performed for M2
+
+- `bun run nx run backend-sqlite:test` — pass (103/103: 101 pre-existing
+  tests unmodified, plus 2 new turn-node-lineage cases and the
+  strengthened phase-observer test).
+- `bun run nx run backend-sqlite:typecheck` — pass.
+- `bun run nx run backend-sqlite:lint` — pass.
+- `bun run nx run backend-postgres:test` — pass (51/51: 49 pre-existing
+  tests unmodified, plus 2 new turn-node-lineage cases; the
+  phase-observer test was strengthened, not behaviorally changed).
+- `bun run nx run backend-postgres:typecheck` — pass.
+- `bun run nx run backend-postgres:lint` — pass.
+- `bun run nx run backend-memory:test` — pass (77/77: 75 pre-existing tests
+  unmodified, plus 2 new turn-node-lineage cases).
+- `bun run nx run backend-memory:typecheck` — pass.
+- `bun run nx run backend-memory:lint` — pass.
+- `bun run nx run backend-shared:test` / `:typecheck` / `:lint` — pass
+  (covers the new `backend-invariant-turn-node-lineage.ts` module and the
+  `PersistencePhase` union additions).
+- `bun run check` — pass (fast inner-loop lane: authority gates + affected
+  typecheck/test/lint).
+- `git diff | grep '\[DEBUG-'` — no matches.
+- All pre-existing corruption-injection suites
+  (`backend-sqlite.invariants.test.ts`, `backend-sqlite.record-validation.test.ts`,
+  and their memory/postgres equivalents, including the shared
+  `expectCorruptedStateRejection` helper paths) pass **unmodified** — no
+  error code, message, or rejection behavior changed. The only test files
+  touched are the three `*.phase-observer.test.ts` files (deliberately
+  strengthened per this milestone's review-debt item, from a
+  near-tautological noop-vs-absent comparison to a genuine
+  NOOP-vs-RECORDING byte-identity comparison) and the three
+  `backend-*.test.ts`/`backend-sqlite.invariants.test.ts` files that gained
+  the two new lineage-index cycle/cross-thread-root tests.
+
+### Deviations from the M2 brief
+
+- `sqlite-state-validation.ts` still exceeds the 500-LoC recommended size
+  (and, at roughly 1,036 lines, still exceeds the 1,000-LoC hard ceiling) —
+  it dropped from 1,116 lines pre-M2 by removing the two local ancestor-walk
+  functions, but the net reduction was not enough to bring it under the
+  ceiling on its own. Splitting this file is not part of this milestone's
+  scope (the milestone's mandate was the algorithmic fix and its shared-code
+  consequences, not a broader file-layout pass); flagged here for the lead
+  to decide whether a follow-up split belongs in M3 or a dedicated
+  housekeeping change.

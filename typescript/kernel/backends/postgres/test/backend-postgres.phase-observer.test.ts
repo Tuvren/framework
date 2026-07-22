@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-// Issue #108 (M1): validates the postgres backend's PhaseObserver seam is
-// behavior-neutral by default (no observer and an explicit NOOP_PHASE_OBSERVER
-// must persist byte-identical snapshot_cbor for equivalent writes) and that a
-// RecordingPhaseObserver captures the decode/validate/encode/write/lock-wait
-// phases of a transact() call in the order the persistence path actually runs
-// them.
+// Issue #108: validates the postgres backend's PhaseObserver seam is
+// behavior-neutral (M1's original noop-vs-absent check plus M2's stronger
+// recording-vs-noop check: a RecordingPhaseObserver must persist
+// snapshot_cbor byte-identical to NOOP_PHASE_OBSERVER's, not just to the
+// default, so the seam is proven neutral even while it is actively timing
+// every phase) and that a RecordingPhaseObserver captures the
+// decode/validate/encode/write/lock-wait phases of a transact() call in the
+// order the persistence path actually runs them.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
@@ -48,8 +50,8 @@ afterAll(async () => {
   await cleanupAllocatedSchemas();
 });
 
-describe("@tuvren/backend-postgres phase observer seam (issue #108 M1)", () => {
-  test("omitting phaseObserver and passing NOOP_PHASE_OBSERVER persist byte-identical snapshot_cbor", async () => {
+describe("@tuvren/backend-postgres phase observer seam (issue #108)", () => {
+  test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist byte-identical snapshot_cbor", async () => {
     const fixedNow = () => 1_700_000_000_000;
     const schema = createCanonicalKernelTestSchema();
     const schemaRecord = createStoredSchemaRecord(schema, 1);
@@ -65,11 +67,24 @@ describe("@tuvren/backend-postgres phase observer seam (issue #108 M1)", () => {
       now: fixedNow,
       phaseObserver: NOOP_PHASE_OBSERVER,
     });
+    // M2: a *recording* observer (not just an unused NOOP one) must also
+    // leave snapshot_cbor byte-identical -- proving the seam never alters
+    // production bytes even while it is actively timing every phase, which
+    // the M1 noop-vs-default comparison alone could not show.
+    const recordingOptions = createPostgresTestBackendOptions({
+      now: fixedNow,
+      phaseObserver: createRecordingPhaseObserver(),
+    });
 
     const defaultBackend = createPostgresBackend(defaultOptions);
     const explicitNoopBackend = createPostgresBackend(explicitNoopOptions);
+    const recordingBackend = createPostgresBackend(recordingOptions);
 
-    for (const backend of [defaultBackend, explicitNoopBackend]) {
+    for (const backend of [
+      defaultBackend,
+      explicitNoopBackend,
+      recordingBackend,
+    ]) {
       await backend.transact(async (tx) => {
         await tx.schemas.put(schemaRecord);
         await tx.objects.put(objectRecord);
@@ -78,10 +93,14 @@ describe("@tuvren/backend-postgres phase observer seam (issue #108 M1)", () => {
 
     const defaultBytes = await readSnapshotCbor(defaultOptions);
     const explicitNoopBytes = await readSnapshotCbor(explicitNoopOptions);
+    const recordingBytes = await readSnapshotCbor(recordingOptions);
 
     expect(
       Buffer.from(defaultBytes).equals(Buffer.from(explicitNoopBytes))
     ).toBe(true);
+    expect(Buffer.from(defaultBytes).equals(Buffer.from(recordingBytes))).toBe(
+      true
+    );
   });
 
   test("a RecordingPhaseObserver captures every persistence phase in the order transact() runs them", async () => {

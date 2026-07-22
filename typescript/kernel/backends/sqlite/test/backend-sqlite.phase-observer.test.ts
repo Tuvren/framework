@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-// Issue #108 (M1): validates the sqlite backend's PhaseObserver seam is
-// behavior-neutral by default (no observer and an explicit NOOP_PHASE_OBSERVER
-// must persist identical rows for an equivalent transact()+health() flow) and
-// that a RecordingPhaseObserver captures the load/validate/write phases a
-// health()+reclaim() flow actually runs, in plausible order.
+// Issue #108: validates the sqlite backend's PhaseObserver seam is
+// behavior-neutral (M1's original noop-vs-absent check plus M2's stronger
+// recording-vs-noop check: a RecordingPhaseObserver must persist rows
+// byte-identical to NOOP_PHASE_OBSERVER's, not just to the default, so the
+// seam is proven neutral even while it is actively timing every phase) and
+// that a RecordingPhaseObserver captures the load/validate-loaded/
+// validate-lineage-index/validate-committed/write phases a health()/
+// reclaim() flow actually runs, in plausible order (M2: sub-phases replace
+// M1's single unattributed-residual-hiding "validate" phase for this
+// backend — see the M2 section of
+// `.constitution/reports/108-git-faithful-blob-persistence.md`).
 
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -35,8 +41,8 @@ import Database from "better-sqlite3";
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 
-describe("@tuvren/backend-sqlite phase observer seam (issue #108 M1)", () => {
-  test("omitting phaseObserver and passing NOOP_PHASE_OBSERVER persist identical rows for an equivalent transact()+health() flow", async () => {
+describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
+  test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist identical rows for an equivalent transact()+health() flow", async () => {
     const fixedNow = () => 1_700_000_000_000;
     const schema = createCanonicalKernelTestSchema();
     const schemaRecord = createStoredSchemaRecord(schema, 1);
@@ -47,6 +53,7 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108 M1)", () => {
 
     const defaultDatabasePath = createTempDatabasePath();
     const explicitNoopDatabasePath = createTempDatabasePath();
+    const recordingDatabasePath = createTempDatabasePath();
     const defaultBackend = createSqliteBackend({
       databasePath: defaultDatabasePath,
       now: fixedNow,
@@ -56,9 +63,22 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108 M1)", () => {
       now: fixedNow,
       phaseObserver: NOOP_PHASE_OBSERVER,
     });
+    // M2: a *recording* observer (not just an unused NOOP one) must also
+    // leave the persisted rows byte-identical -- proving the seam never
+    // alters production bytes/rows even while it is actively timing every
+    // phase, which the M1 noop-vs-default comparison alone could not show.
+    const recordingBackend = createSqliteBackend({
+      databasePath: recordingDatabasePath,
+      now: fixedNow,
+      phaseObserver: createRecordingPhaseObserver(),
+    });
 
     try {
-      for (const backend of [defaultBackend, explicitNoopBackend]) {
+      for (const backend of [
+        defaultBackend,
+        explicitNoopBackend,
+        recordingBackend,
+      ]) {
         await backend.transact(async (tx) => {
           await tx.schemas.put(schemaRecord);
           await tx.objects.put(objectRecord);
@@ -67,17 +87,26 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108 M1)", () => {
         ok(outcome.ok, "expected health() to report ok");
       }
 
-      deepStrictEqual(
-        readTableRows(defaultDatabasePath, "objects", "hash"),
-        readTableRows(explicitNoopDatabasePath, "objects", "hash")
-      );
-      deepStrictEqual(
-        readTableRows(defaultDatabasePath, "schemas", "schema_id"),
-        readTableRows(explicitNoopDatabasePath, "schemas", "schema_id")
-      );
+      for (const table of ["objects", "schemas"] as const) {
+        const orderColumn = table === "objects" ? "hash" : "schema_id";
+        const defaultRows = readTableRows(
+          defaultDatabasePath,
+          table,
+          orderColumn
+        );
+        deepStrictEqual(
+          readTableRows(explicitNoopDatabasePath, table, orderColumn),
+          defaultRows
+        );
+        deepStrictEqual(
+          readTableRows(recordingDatabasePath, table, orderColumn),
+          defaultRows
+        );
+      }
     } finally {
       await defaultBackend.close();
       await explicitNoopBackend.close();
+      await recordingBackend.close();
     }
   });
 
@@ -106,19 +135,31 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108 M1)", () => {
       ok(healthOutcome.ok, "expected health() to report ok");
 
       const healthPhases = observer.samples.map((sample) => sample.phase);
-      strictEqual(
-        healthPhases.filter((phase) => phase === "load").length,
-        1,
-        "expected exactly one load phase from health()'s single loadValidatedState call"
-      );
-      strictEqual(
-        healthPhases.filter((phase) => phase === "validate").length,
-        1,
-        "expected exactly one validate phase from health()'s single loadValidatedState call"
+      for (const phase of [
+        "load",
+        "validate-loaded",
+        "validate-lineage-index",
+        "validate-committed",
+      ] as const) {
+        strictEqual(
+          healthPhases.filter((sample) => sample === phase).length,
+          1,
+          `expected exactly one ${phase} phase from health()'s single loadValidatedState call`
+        );
+      }
+      ok(
+        healthPhases.indexOf("load") < healthPhases.indexOf("validate-loaded"),
+        "expected load to be attributed before validate-loaded"
       );
       ok(
-        healthPhases.indexOf("load") < healthPhases.indexOf("validate"),
-        "expected load to be attributed before validate"
+        healthPhases.indexOf("validate-loaded") <
+          healthPhases.indexOf("validate-lineage-index"),
+        "expected validate-loaded to be attributed before validate-lineage-index"
+      );
+      ok(
+        healthPhases.indexOf("validate-lineage-index") <
+          healthPhases.indexOf("validate-committed"),
+        "expected validate-lineage-index to be attributed before validate-committed"
       );
 
       observer.reset();
@@ -131,17 +172,20 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108 M1)", () => {
       const reclaimPhases = observer.samples.map((sample) => sample.phase);
       // reclaim() runs loadValidatedState twice (before and after the sweep's
       // deletions) plus its own delete/commit write phases, so "load" and
-      // "validate" must each appear twice and "write" at least twice.
-      strictEqual(
-        reclaimPhases.filter((phase) => phase === "load").length,
-        2,
-        "expected two load phases from reclaim()'s two loadValidatedState calls"
-      );
-      strictEqual(
-        reclaimPhases.filter((phase) => phase === "validate").length,
-        2,
-        "expected two validate phases from reclaim()'s two loadValidatedState calls"
-      );
+      // every "validate-*" sub-phase must each appear twice and "write" at
+      // least twice.
+      for (const phase of [
+        "load",
+        "validate-loaded",
+        "validate-lineage-index",
+        "validate-committed",
+      ] as const) {
+        strictEqual(
+          reclaimPhases.filter((sample) => sample === phase).length,
+          2,
+          `expected two ${phase} phases from reclaim()'s two loadValidatedState calls`
+        );
+      }
       ok(
         reclaimPhases.filter((phase) => phase === "write").length >= 2,
         "expected at least two write phases from reclaim()'s delete and commit"

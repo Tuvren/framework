@@ -65,3 +65,14 @@ export type {
 } from "./lib/backend-invariant-run-logic.js";
 export { createBackendInvariantRunLogic } from "./lib/backend-invariant-run-logic.js";
 export type { BackendState } from "./lib/backend-invariant-state.js";
+export type {
+  BackendInvariantTurnNodeLineage,
+  BackendInvariantTurnNodeLineageConfig,
+  TurnNodeLineageIndex,
+  TurnNodeLineagePosition,
+} from "./lib/backend-invariant-turn-node-lineage.js";
+export {
+  createBackendInvariantTurnNodeLineage,
+  createTurnNodeLineageIndex,
+  resolveTurnNodeLineagePosition,
+} from "./lib/backend-invariant-turn-node-lineage.js";

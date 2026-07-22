@@ -318,6 +318,10 @@ class PostgresBackend implements KrakenBackend {
     // another transact()/reclaim()/purgeScope() call on this instance may
     // already be in flight, and this call cannot proceed until it releases
     // the queue.
+    // Deliberately outside try/finally: `priorTransaction` is the queue's own
+    // release promise, constructed above from a `Promise` executor that only
+    // ever calls `resolve`, so it can never reject and `endQueueWait()` can
+    // never be skipped by a thrown error here.
     const endQueueWait = this.phaseObserver.startPhase("lock-wait");
     await priorTransaction;
     endQueueWait();
