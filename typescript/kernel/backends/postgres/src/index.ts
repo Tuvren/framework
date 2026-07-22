@@ -36,3 +36,9 @@ export {
   createPostgresBackend,
   destroyPostgresBackend,
 } from "./lib/postgres-backend.js";
+// Issue #108 M3: `SnapshotCacheObserver` is the non-public-surface testkit
+// seam `PostgresBackendOptions.snapshotCacheObserver` accepts to observe the
+// single-entry content-hash memo's hit/miss behavior. Exported as a type
+// only (never constructed by this package) so a bench/test can type-check
+// the observer it hands to `createPostgresBackend` without a deep import.
+export type { SnapshotCacheObserver } from "./lib/postgres-backend-snapshot-cache.js";

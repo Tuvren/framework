@@ -35,10 +35,19 @@ import process from "node:process";
  * unattributed, which is where its measured superlinear residual actually
  * lived. Postgres has no equivalent three-way split and keeps using the
  * single `validate` phase.
+ *
+ * `hash` (issue #108 M3) is the postgres-backend-specific cost of SHA-256
+ * hashing the loaded/about-to-be-written `snapshot_cbor` bytes for the
+ * single-entry content-hash memo that lets a repeat load of byte-identical
+ * bytes skip `decode` entirely. It is charged on every load (hit or miss)
+ * and on every successful write, so a cache-hit load shows only `hash`
+ * where a cache-miss load still shows `hash` followed by the usual
+ * `decode`.
  */
 export type PersistencePhase =
   | "decode"
   | "encode"
+  | "hash"
   | "load"
   | "lock-wait"
   | "validate"

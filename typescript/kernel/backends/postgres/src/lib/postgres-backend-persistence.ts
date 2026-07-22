@@ -70,6 +70,11 @@ import {
   getSchemaForTurnTree,
 } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
+import {
+  hashSnapshotBytes,
+  type SnapshotCacheObserver,
+  type SnapshotStateCache,
+} from "./postgres-backend-snapshot-cache.js";
 
 const CURRENT_SNAPSHOT_VERSION = 1;
 const INITIAL_MIGRATION_NAME = "0001_initial_schema.sql";
@@ -108,6 +113,14 @@ export interface PostgresBackendPersistenceOptions {
    * databases keep working unchanged. Must be a non-empty string.
    */
   scope?: Scope;
+  /**
+   * Issue #108 M3 testkit-only seam: when supplied, every load through this
+   * backend's single-entry content-hash memo ({@link SnapshotStateCache})
+   * reports a hit or a miss to it. Not part of the public `RuntimeBackend`
+   * surface — production callers never supply one, and omitting it costs
+   * nothing beyond an `undefined` check per load.
+   */
+  snapshotCacheObserver?: SnapshotCacheObserver;
   username?: string;
 }
 
@@ -299,10 +312,34 @@ async function migrateSnapshotsToScopePartition(
   );
 }
 
+/** Options for {@link loadPersistedStateForUpdate}. */
+export interface LoadPersistedStateOptions {
+  /**
+   * Issue #108 M3 single-entry content-hash memo: when supplied, a load
+   * whose row bytes hash to the memoized entry's hash returns that entry's
+   * already-decoded state instead of running `decodeSnapshot` again, and a
+   * load that decodes (cache miss or no cache supplied) refreshes the
+   * memo. Omitted by callers that do not want memoization (there are none
+   * in production — every `PostgresBackend` instance owns one).
+   */
+  cache?: SnapshotStateCache;
+  /** Testkit-only hit/miss counter seam; see {@link SnapshotCacheObserver}. */
+  cacheObserver?: SnapshotCacheObserver;
+  phaseObserver?: PhaseObserver;
+}
+
 /**
- * Loads and decodes a Scope's persisted `BackendState` snapshot, locking its
- * row with `FOR UPDATE` so the caller can safely mutate a draft and write it
- * back with {@link persistStateSnapshot} inside the same transaction.
+ * Loads a Scope's persisted `BackendState` snapshot, locking its row with
+ * `FOR UPDATE` so the caller can safely mutate a draft and write it back
+ * with {@link persistStateSnapshot} inside the same transaction. The row
+ * lock and `schema_version` check always run against the database, exactly
+ * as before issue #108 M3; only what happens with the loaded bytes
+ * afterward differs when `options.cache` is supplied: the bytes are hashed
+ * (SHA-256, {@link hashSnapshotBytes}) and, on a hash match against the
+ * memoized entry, the memoized `BackendState` is returned directly and
+ * `decodeSnapshot` never runs — a full decode only happens on a cache miss
+ * (first load, or another writer changed the row since this instance last
+ * saw it), which then refreshes the memo.
  *
  * @throws TuvrenPersistenceError `postgres_backend_missing_snapshot_row` when
  *   the Scope has no snapshot row (e.g. reused after {@link deletePersistedStateSnapshot}),
@@ -313,8 +350,9 @@ export async function loadPersistedStateForUpdate(
   sql: Sql | TransactionSql<Record<string, never>>,
   schemaName: string,
   scope: Scope,
-  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
+  options: LoadPersistedStateOptions = {}
 ): Promise<BackendState> {
+  const { cache, cacheObserver, phaseObserver = NOOP_PHASE_OBSERVER } = options;
   const snapshotsTable = qualifyIdentifier(
     schemaName,
     "backend_postgres_snapshots"
@@ -357,18 +395,56 @@ export async function loadPersistedStateForUpdate(
     );
   }
 
+  // Issue #108 M3: hash the loaded bytes before deciding whether a full
+  // decode is needed. This runs unconditionally (even with no `cache`
+  // supplied) so the "hash" phase always reflects the real per-load cost,
+  // not just the cost on instances that opted into memoization.
+  const endHash = phaseObserver.startPhase("hash");
+  let hashHex: string;
+  try {
+    hashHex = hashSnapshotBytes(row.snapshot_cbor);
+  } finally {
+    endHash();
+  }
+
+  const cached = cache?.get(hashHex);
+
+  if (cached !== undefined) {
+    cacheObserver?.recordHit();
+    return cached;
+  }
+
+  cacheObserver?.recordMiss();
+
   const endDecode = phaseObserver.startPhase("decode");
   try {
-    return decodeSnapshot(row.snapshot_cbor);
+    const state = decodeSnapshot(row.snapshot_cbor);
+    cache?.set(hashHex, state);
+    return state;
   } finally {
     endDecode();
   }
 }
 
+/** The outcome of a successful {@link persistStateSnapshot} call. */
+export interface PersistStateSnapshotResult {
+  /**
+   * SHA-256 hex digest of the exact `snapshot_cbor` bytes just written
+   * (issue #108 M3). The `UPDATE` this function issues runs inside the
+   * caller's still-open transaction, so this hash is only safe to treat as
+   * "the committed row's hash" once the caller's own `COMMIT` afterward
+   * actually succeeds — callers populate a {@link SnapshotStateCache} with
+   * this hash themselves, after `COMMIT`, never from inside this function.
+   */
+  hashHex: string;
+}
+
 /**
  * Encodes `state` as deterministic CBOR and overwrites the Scope's snapshot
  * row with it, stamping `updatedAtMs`. Callers must hold the row lock from a
- * prior {@link loadPersistedStateForUpdate} in the same transaction.
+ * prior {@link loadPersistedStateForUpdate} in the same transaction, and
+ * must not treat the returned hash as durable until their own `COMMIT`
+ * (issued after this function returns) has succeeded.
  */
 export async function persistStateSnapshot(
   sql: Sql | TransactionSql<Record<string, never>>,
@@ -377,7 +453,7 @@ export async function persistStateSnapshot(
   state: BackendState,
   updatedAtMs: EpochMs,
   phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
-): Promise<void> {
+): Promise<PersistStateSnapshotResult> {
   const snapshotsTable = qualifyIdentifier(
     schemaName,
     "backend_postgres_snapshots"
@@ -389,6 +465,14 @@ export async function persistStateSnapshot(
     snapshotBytes = encodeSnapshot(state);
   } finally {
     endEncode();
+  }
+
+  const endHash = phaseObserver.startPhase("hash");
+  let hashHex: string;
+  try {
+    hashHex = hashSnapshotBytes(snapshotBytes);
+  } finally {
+    endHash();
   }
 
   const endWrite = phaseObserver.startPhase("write");
@@ -410,6 +494,8 @@ export async function persistStateSnapshot(
   } finally {
     endWrite();
   }
+
+  return { hashHex };
 }
 
 /**
@@ -443,8 +529,13 @@ export async function deletePersistedStateSnapshot(
  * family flattened to a deterministically sorted array (so the encoding is
  * stable regardless of `Map` iteration order) and CBOR-encoded alongside the
  * schema version.
+ *
+ * Exported (but not re-exported from the package's `index.ts`, mirroring
+ * `memory-backend-state.ts`'s `createEmptyState`/`validateCommittedState`)
+ * so tests can exercise the encode/decode round trip directly instead of
+ * only indirectly through `transact()`.
  */
-function encodeSnapshot(state: BackendState): Uint8Array {
+export function encodeSnapshot(state: BackendState): Uint8Array {
   const snapshot = {
     branches: Array.from(state.branches.values(), cloneStoredBranch).sort(
       compareStoredBranch
@@ -504,12 +595,14 @@ function encodeSnapshot(state: BackendState): Uint8Array {
  * inserted (schema records first, since turn trees and turn tree paths need
  * their schema to validate) and checking the payload's schema version.
  *
+ * Exported for the same test-only reason as {@link encodeSnapshot}.
+ *
  * @throws TuvrenPersistenceError with code `postgres_backend_snapshot_payload_invalid`
  *   when the payload or a field's shape is malformed, or
  *   `postgres_backend_snapshot_payload_version_unsupported` when the
  *   embedded version does not match {@link CURRENT_SNAPSHOT_VERSION}.
  */
-function decodeSnapshot(value: Uint8Array): BackendState {
+export function decodeSnapshot(value: Uint8Array): BackendState {
   const decoded = decodeDeterministicKernelRecord(toUint8Array(value));
   const snapshot = readSnapshotRecord(decoded);
   const state = createEmptyState();

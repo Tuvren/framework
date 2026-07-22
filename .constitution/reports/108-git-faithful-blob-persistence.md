@@ -519,6 +519,18 @@ boundaries, not an unaccounted-for algorithmic cost; it shrinks in relative
 terms as `n` grows, the opposite of what M1's 97.3%-and-growing residual
 showed.)
 
+(M3 review note: the "sum of 4 phases (best)" column above adds each
+phase's own best-case sample, and those bests are not guaranteed to come
+from the same one of the 15 `health()` iterations as each other or as the
+"health total (best)" column — best-of-15 per phase can land on different
+iterations than best-of-15 for the total. The derived residual is therefore
+an approximation, not an exact per-iteration decomposition; the qualitative
+conclusion above (residual shrinks to ~0.25% as `n` grows) is unaffected,
+since the same approximation applies uniformly across all four rows and the
+trend is far larger than the iteration-selection noise it introduces. The
+underlying per-iteration samples were not re-derived for this note — see
+the M2 section's own scope note above.)
+
 ### Before/after growth-curve comparison (the collapse to ~linear)
 
 | Phase | Before (per-decade) | After (per-decade) |
@@ -635,3 +647,332 @@ instrumentation, now isolated, fixed, and measured back down to linear.
   consequences, not a broader file-layout pass); flagged here for the lead
   to decide whether a follow-up split belongs in M3 or a dedicated
   housekeeping change.
+
+## M3 — A3 content-hash memoization
+
+**Goal:** area A3 of issue #108 — memoize the postgres backend's
+decode+validate cost across repeat loads of byte-identical `snapshot_cbor`
+rows, since M1's baseline showed `decode`+`encode` at ~79% of best-case
+write time at 10,000 objects (220.9 ms decode + 147.0 ms encode of
+466.5 ms) and every `transact()`/`health()`/`reclaim()` paid a full
+`decodeSnapshot` even when the row bytes were exactly what this same
+instance itself just wrote. Git-native principle: trust a hash you have
+already seen.
+
+### Design implemented
+
+A single-entry, per-instance cache
+(`typescript/kernel/backends/postgres/src/lib/postgres-backend-snapshot-cache.ts`,
+`createSnapshotStateCache`), owned by `PostgresBackend` as
+`this.snapshotCache`, memoizing `{ hashHex, state }` — the SHA-256 hex
+digest (`node:crypto` `createHash("sha256")`, synchronous — chosen over the
+kernel-protocol `hashOpaqueObjectBytes` helper specifically because that
+helper is `async` (WebCrypto) and this runs on the hot load/write path; the
+digest is an internal cache-validity key only, never persisted, never
+compared cross-process, and unrelated to any ADR-008 canonical
+content-address) of the last `snapshot_cbor` bytes this instance itself
+saw, and that snapshot's already-decoded `BackendState`. One entry per
+instance is correct because one `PostgresBackend` instance is bound to
+exactly one Scope's row (ADR-048/ADR-049).
+
+- **Read side** (`loadPersistedStateForUpdate`,
+  `postgres-backend-persistence.ts`): the `SELECT ... FOR UPDATE` row lock
+  and the `schema_version` check run exactly as before this milestone,
+  unconditionally, on every call. Only what happens with the loaded bytes
+  afterward changed: they are hashed (a new `"hash"` `PersistencePhase`,
+  added to the shared `PersistencePhase` union in
+  `typescript/kernel/backends/shared/src/lib/backend-invariant-phase-observer.ts`
+  since the seam is cross-backend even though only postgres populates this
+  phase today) and looked up in the cache. A hash match returns the
+  memoized `BackendState` directly — `decodeSnapshot` never runs. A miss
+  (first load on this instance, or another writer changed the row since
+  this instance last saw it) runs the full `decodeSnapshot` exactly as
+  before and then refreshes the memo with the newly decoded state. This
+  also means `health()` (a read-only path that already called
+  `loadPersistedStateForUpdate`) shares the same memo for free — a
+  read-heavy sequence of `health()` calls or read-only `transact()`s
+  benefits identically to a write-heavy sequence.
+- **Write side** (`persistStateSnapshot`): after encoding the committed
+  draft to `snapshotBytes` (unchanged), the function now also hashes those
+  exact bytes (same `"hash"` phase) and returns `{ hashHex }` to its
+  caller. It does **not** write to the cache itself, and does not know
+  whether its caller's transaction will actually commit — `persistStateSnapshot`
+  runs the `UPDATE` inside the caller's still-open transaction, before the
+  caller's own `COMMIT`.
+- **Cache population is owned entirely by `PostgresBackend`**, and only
+  ever happens *after* the physical `COMMIT` has succeeded:
+  `transact()`'s `commit()` closure and `reclaim()`'s commit sequence both
+  call `this.snapshotCache.set(hashHex, draftState)` on the line
+  immediately after `await reserved.unsafe("COMMIT")` returns
+  successfully, never before. This placement is deliberate and is the
+  entire correctness argument for rollback safety (below) — no additional
+  rollback-specific code exists anywhere in the change; the safety falls
+  out of *where* one line sits relative to the `COMMIT` statement.
+- `purgeScope()` additionally calls `this.snapshotCache.clear()` after
+  deleting the Scope's row — defensive tidiness for the (contractually
+  unsupported) case where the instance is used again after being purged,
+  not required for correctness since the `RuntimeBackend.purgeScope`
+  contract already says the instance is discarded.
+- A non-public, construction-injected testkit seam
+  (`PostgresBackendOptions.snapshotCacheObserver`, type `SnapshotCacheObserver`
+  with `recordHit()`/`recordMiss()`, re-exported as a type only from the
+  package's `index.ts` — never constructed by the package itself) lets a
+  bench or test count hits/misses without adding anything to the public
+  `RuntimeBackend` surface. Omitting it costs one `undefined` check per
+  load, matching the existing `phaseObserver` seam's zero-cost-when-absent
+  discipline.
+
+### Aliasing safety (why serving the cached state as `base` is exactly as
+safe as serving a fresh decode)
+
+The transaction flow is `load → cloneState(base) → mutate draft via
+repositories`. `cloneState` (`memory-backend-turn-tree.ts`) constructs new
+top-level `Map`s but does not deep-clone the *records* inside them — base
+and draft share record object references by design (documented at
+`cloneState`'s call sites). Every repository `set`/`put` in
+`postgres-backend.ts`'s `createRepositories` replaces a draft-Map entry
+with a freshly cloned record (`cloneStoredBranch`, `cloneStoredObject`,
+etc.) rather than mutating an existing record in place — clone-on-write.
+Confirmed by direct inspection of every `set`/`put` call site: none of them
+mutate a record's fields; they always construct a new record via a
+`cloneStored*` helper before `state.<family>.set(...)`. `validateCommittedState`
+(`memory-backend-state.ts`) takes `baseState` as a second argument (used by
+`validateBranchInvariants` to look up a branch's pre-transaction head for
+linearity checking) and only ever *reads* from it — grepped every
+`baseState` reference in that file to confirm none of them mutate it.
+Since `base` (whether freshly decoded or served from the cache) is never
+mutated in place by anything downstream of `loadPersistedStateForUpdate`,
+returning the exact same cached object reference across multiple calls
+(e.g. a `health()` call and a later `transact()` call both hitting the
+memo) is safe: every caller either only reads it or clones it before
+writing.
+
+Concurrency: this per-instance cache needs no locking of its own beyond
+what already exists. Every mutating operation (`transact`, `reclaim`,
+`purgeScope`) serializes through `this.transactionQueue` at the JS level,
+and every `loadPersistedStateForUpdate` call (including `health()`'s, which
+does *not* go through `transactionQueue`) takes the row's `FOR UPDATE`
+lock before touching the cache — a second concurrent
+`SELECT ... FOR UPDATE` on the same row physically cannot resolve until the
+first transaction commits or rolls back. So no two cache reads/writes for
+one Scope's row can interleave in a way that matters, independent of
+whether the concurrent callers are `health()`, `transact()`, or `reclaim()`.
+
+### Failure semantics — rollback and cross-process invalidation
+
+- **Rollback safety.** If `work(repositories)` throws, or
+  `validateCommittedState` throws, or a fault hook throws before `commit()`
+  runs, or `persistStateSnapshot` itself throws, or the `COMMIT` statement
+  itself throws (network drop, constraint violation, etc.) — in every one
+  of these cases execution never reaches the
+  `this.snapshotCache.set(hashHex, draftState)` line, because that line is
+  physically after `committed = true` in `transact()`'s `commit()` closure
+  (and after the equivalent point in `reclaim()`). The outer `catch` block
+  issues `ROLLBACK` and rethrows; the cache is untouched. A rolled-back
+  draft can therefore never become the cached "committed" state. This was
+  traced through every throw site in `transact()` (`work`, `validateCommittedState`,
+  `beforeCommit`, `persistStateSnapshot`, `COMMIT`, `midCommit` calling
+  `commit` and then itself throwing, `midCommit` never calling `commit`)
+  and confirmed correct in each case without adding any
+  rollback-detection code — the ordering already guaranteed it.
+- **Cross-process invalidation.** A different writer (a second
+  `PostgresBackend` instance bound to the same schema/scope — modeling a
+  second process or worker, or literally a raw `UPDATE` of the row) changes
+  `snapshot_cbor` between two loads on this instance. This instance's next
+  `loadPersistedStateForUpdate` still runs `SELECT ... FOR UPDATE` (so it
+  observes the new bytes, not stale ones), hashes them, finds no match
+  against its stale memoized hash, and falls through to a full
+  `decodeSnapshot` — which also refreshes the memo. No stale state is ever
+  served; the only cost of an external write is one extra decode on the
+  next load, exactly the cost every load paid before this milestone.
+- **Corruption on a miss.** Tampering `snapshot_cbor` bytes directly (byte
+  content, not merely a hash the cache would already reject) still fails
+  the same way it did before this milestone: `decodeSnapshot` is what
+  raises `postgres_backend_snapshot_payload_invalid` (or the CBOR-decoder-level
+  `TuvrenValidationError` for bytes that are not even valid canonical CBOR),
+  and a memoized hash from before the tamper cannot mask this — the tamper
+  changes the bytes, which changes the hash, which is exactly what forces
+  the cache miss that runs `decodeSnapshot` in the first place.
+
+### Tests added
+
+All five in
+`typescript/kernel/backends/postgres/test/backend-postgres.snapshot-cache.test.ts`
+(new file), plus a shared-helper extraction in `postgres-test-helpers.ts`
+(`readSnapshotCbor`/`writeSnapshotCbor`, generalized from a duplicate
+`readSnapshotCbor` previously local to `backend-postgres.phase-observer.test.ts`,
+which now imports the shared version instead):
+
+1. **Cache hit correctness** — "a warmed cache produces byte-identical
+   persisted snapshots to a decode-every-time baseline": two sequential
+   `transact()` calls on one instrumented instance (asserting `{ hits: 1,
+   misses: 1 }` from the `snapshotCacheObserver` seam), compared against
+   the same two writes replayed on fresh, cache-less instances (a new
+   instance per write, forcing `decodeSnapshot` every time). Asserts the
+   final `snapshot_cbor` bytes are identical between the cache-warmed run
+   and the always-decode baseline.
+2. **Cross-process invalidation** — "detects a cross-process write and
+   falls back to a full decode instead of serving a stale hit": a second
+   `PostgresBackend` instance bound to the same schema/scope writes between
+   two of the first instance's transacts. Asserts the hit/miss counts land
+   exactly where expected (miss, hit, then a forced miss after the
+   external write) and that the first instance's subsequent read observes
+   all four objects — its own two writes and the other writer's two writes
+   — proving no stale data was served.
+3. **Corruption still caught on miss** — "rejects a corrupted snapshot
+   payload on the next load": overwrites `snapshot_cbor` directly via SQL
+   with valid canonical deterministic CBOR of the wrong top-level shape (a
+   string, not the snapshot object), so the corruption is caught by
+   `decodeSnapshot`'s own shape guard. Asserts the thrown error is a
+   `TuvrenPersistenceError` with code `postgres_backend_snapshot_payload_invalid`.
+   This is the first byte-level corruption-injection coverage for the
+   postgres backend (a pre-existing gap the sqlite/memory backends did not
+   share, since their corruption suites operate at the row/field level,
+   not on an opaque CBOR blob).
+4. **Rollback safety** — "a rolled-back transaction does not poison the
+   cache": a `transact()` whose work callback mutates the draft and then
+   throws. Asserts the next `transact()` on the same instance sees the
+   pre-failure committed state (the rolled-back object absent), and
+   cross-checks against an independent, cache-less backend instance
+   reading the same row to rule out the first instance's cache silently
+   diverging from ground truth.
+5. **Round-trip** — "decodeSnapshot(encodeSnapshot(cachedState)) round-trips
+   a nontrivial committed state byte-for-byte": commits a state spanning
+   six record families (schema, object, two turn trees, two turn tree path
+   sets, two turn nodes, thread, branch) through the real `transact()`
+   path, reads the persisted bytes back, decodes them with the (now
+   test-exported, not package-public) `decodeSnapshot`, re-encodes with
+   `encodeSnapshot`, and asserts the re-encoded bytes exactly match the
+   originally persisted bytes — proving the round trip is faithful using
+   canonical-CBOR byte equality (chosen over `Map`-shaped deep-equality
+   assertions, which are both harder to get right against nested `Map`s
+   and less directly tied to what "faithful" means for a canonical
+   encoding).
+
+`encodeSnapshot`/`decodeSnapshot` were changed from module-private to
+`export`ed-but-not-`index.ts`-surfaced, mirroring the existing
+`createEmptyState`/`validateCommittedState` precedent
+(`memory-backend-state.ts`) that other postgres test files already rely on
+for the same reason — direct round-trip testing without inflating the
+package's public contract.
+
+### Bench: before/after write-latency
+
+"Before" reuses the M1 baseline table above (`5714d16`, same bench, same
+`[10, 100, 1,000, 10,000]` ladder, `n=15`) rather than re-running it,
+per this milestone's brief — M2 did not touch the postgres write path in
+any way that would change these numbers (M2's shared memoized-lineage-index
+fix landed in postgres's `validateCommittedState` too, but `validate` was
+already flat/negligible at 13–24 μs at every size in M1 and stays so
+here). "After" is a fresh run of the same bench, same machine, same
+`BENCH_SAMPLE_COUNT=15`, dated 2026-07-22.
+
+| Scope size | Before best | After best | Before median | After median | Before p95 | After p95 | Before avg | After avg | n |
+|---|---|---|---|---|---|---|---|---|---|
+| 10 | 4.125 ms | 2.773 ms | 5.284 ms | 3.720 ms | 8.078 ms | 8.804 ms | 5.794 ms | 4.633 ms | 15 |
+| 100 | 7.470 ms | 5.616 ms | 10.174 ms | 7.016 ms | 15.047 ms | 8.287 ms | 10.592 ms | 6.867 ms | 15 |
+| 1,000 | 48.951 ms | 26.941 ms | 51.319 ms | 28.986 ms | 61.382 ms | 38.828 ms | 53.134 ms | 30.046 ms | 15 |
+| 10,000 | 466.464 ms | 248.374 ms | 487.192 ms | 283.823 ms | 570.242 ms | 323.078 ms | 499.074 ms | 284.643 ms | 15 |
+
+Best-case speedup: **1.49×** (10), **1.33×** (100), **1.82×** (1,000),
+**1.88×** (10,000). Median speedup: 1.42×/1.45×/1.77×/1.72× at the same
+sizes. p95 is noisier (dominated by `write`'s network/WAL-flush variance,
+unrelated to this milestone) and even regresses slightly at 10 and 100
+objects — expected at these sizes, where `write`'s own p95 (driven by
+transient connection/WAL scheduling, not by anything this milestone
+touched) is a larger fraction of the now-smaller total.
+
+### Per-phase attribution: the decode → hash collapse
+
+Per-phase best-case, M1 `decode` vs M3 `hash` (the phase that replaces it
+on every cache hit):
+
+| Size | M1 `decode` best | M3 `hash` best | Reduction | M3 `decode` occurrences (measured window) |
+|---|---|---|---|---|
+| 10 | 1.150 ms | 9.9 μs | ~116× | 0 / 15 |
+| 100 | 2.756 ms | 18.3 μs | ~151× | 0 / 15 |
+| 1,000 | 20.558 ms | 81.7 μs | ~251× | 0 / 15 |
+| 10,000 | 220.927 ms | 722.8 μs | ~306× | 0 / 15 |
+
+**Every one of the 15 measured loads at every size was a cache hit** — the
+bench's `decode` phase is entirely absent from the "after" phase table at
+every tier (the shared `summarizePhases` helper only emits a row for a
+phase that actually recorded at least one sample), which is the strongest
+possible evidence of a 100% hit rate for this access pattern: one
+long-lived `PostgresBackend` instance issuing a strictly sequential series
+of single-object writes, exactly the marginal-write-latency pattern this
+bench is designed to measure. `hash` shows `n=30` (not 15) because, as
+designed, it is charged twice per `transact()` — once on the load side
+(`loadPersistedStateForUpdate`) and once on the write side
+(`persistStateSnapshot`, to compute the hash the backend will memoize
+after `COMMIT` succeeds) — the same reason `write` and `lock-wait` were
+already `n=30` in M1.
+
+At 10,000 objects the best-case total dropped by 218.1 ms (466.5 ms →
+248.4 ms), which is within 1% of the 220.2 ms `decode` removal alone
+(220.927 ms − 0.723 ms) — confirming the win is coming from exactly where
+the design intended and that `encode`/`write`/`validate`/`lock-wait` are
+unaffected (their best-case values in the "after" run: `encode` 168.240 ms
+vs M1's 146.963 ms, `write` 1.865 ms vs M1's 2.057 ms, `validate` 14.6 μs
+vs M1's 13.5 μs, `lock-wait` 370 ns vs M1's 461 ns — all within normal
+run-to-run machine noise for phases this milestone's change does not touch;
+`encode` remains the single dominant cost post-fix, exactly as flagged as
+the next candidate in the M1/M2 narrative).
+
+### Honest notes and scope boundaries
+
+- **This bench measures the best case for this optimization.** A single,
+  long-lived `PostgresBackend` instance issuing a strictly sequential
+  series of writes to one Scope, with no other writer ever touching that
+  Scope's row, is exactly the shape that produces a 100% hit rate. Two
+  realistic deployment shapes get little or none of this speedup:
+  - **A host that constructs a fresh `PostgresBackend` per request** (a
+    reasonable reading of the ADR-048 per-request-scoped-backend pattern)
+    never reuses an instance's cache across requests — every request's
+    first (and often only) `transact()` is a cache miss, so write latency
+    stays at the pre-M3 baseline. The cache only helps a host that keeps a
+    `PostgresBackend` instance alive across multiple operations against the
+    same Scope.
+  - **Multiple writers sharing one Scope** (multiple processes/workers, or
+    multiple long-lived instances in one process) degrade toward the
+    pre-M3 baseline in proportion to write interleaving: every write from
+    a different writer invalidates every other writer's memo, so a Scope
+    under contended multi-writer traffic sees close to 100% misses even
+    though every individual instance is warm from its own perspective. The
+    cross-process-invalidation test above exercises exactly this case and
+    confirms correctness, not speed, under it.
+- **`encode` is now the dominant cost** (168 ms of the 248 ms best-case
+  total at 10,000 objects — 68%), unchanged by this milestone by design.
+  Collapsing it the way this milestone collapsed `decode` is not possible
+  with the same technique (there is no "bytes already seen" shortcut for a
+  write whose content is, by definition, new), and is out of this
+  milestone's scope; a future milestone would need a different approach
+  (e.g. incremental re-encoding of only the changed records) to address it.
+- **p95/avg improvements are smaller and noisier than best/median**,
+  consistent with `write`'s already-documented (M1) network/WAL-flush
+  variance dominating the tail at every size — this milestone does not
+  touch `write` and does not claim to improve its variance.
+- Sqlite is out of scope for this milestone, as directed: its loads are
+  row-based (no single "whole snapshot blob" to hash), so there is no
+  equivalent identical-bytes fast path to add there.
+
+### Validation performed for M3
+
+- `bun run nx run backend-postgres:test` — pass (56/56: 51 pre-existing
+  tests unmodified, plus 5 new snapshot-cache tests).
+- `bun run nx run backend-postgres:typecheck` — pass.
+- `bun run nx run backend-postgres:lint` — pass.
+- `bun run nx run backend-shared:typecheck` / `:lint` — pass (covers the
+  `PersistencePhase` union's new `"hash"` member).
+- `bun run check` — pass.
+- `bun run verify:kernel` — pass.
+- `git diff | grep '\[DEBUG-'` — no matches.
+
+### Deviations from the M3 brief
+
+- None. The row lock and `schema_version` check in
+  `loadPersistedStateForUpdate` were left completely untouched, as
+  required; no aliasing bug was found (see "Aliasing safety" above); sqlite
+  was left out of scope; the cache-hit accounting seam was added as a
+  non-public, construction-injected observer rather than any addition to
+  the public `RuntimeBackend` surface.

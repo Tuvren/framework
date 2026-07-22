@@ -28,18 +28,17 @@ import {
   createRecordingPhaseObserver,
   NOOP_PHASE_OBSERVER,
 } from "@tuvren/backend-shared";
-import { DEFAULT_SCOPE } from "@tuvren/core";
 import {
   createCanonicalKernelTestSchema,
   createStoredObjectRecord,
   createStoredSchemaRecord,
 } from "@tuvren/kernel-testkit";
-import postgres from "postgres";
 import { createPostgresBackend } from "../src/index.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
   createPostgresTestBackendOptions,
+  readSnapshotCbor,
 } from "./postgres-test-helpers.js";
 
 beforeAll(async () => {
@@ -146,45 +145,3 @@ describe("@tuvren/backend-postgres phase observer seam (issue #108)", () => {
     expect(writeIndex).toBeGreaterThan(encodeIndex);
   });
 });
-
-/** Reads the raw `snapshot_cbor` bytes for the default Scope's snapshot row. */
-async function readSnapshotCbor(
-  options: ReturnType<typeof createPostgresTestBackendOptions>
-): Promise<Uint8Array> {
-  const sql = postgres({
-    connect_timeout: 5,
-    database: options.database,
-    host: options.host,
-    idle_timeout: 1,
-    max: 1,
-    onnotice: () => undefined,
-    password: options.password,
-    port: options.port,
-    prepare: false,
-    username: options.username,
-  });
-
-  try {
-    const schemaName = options.schemaName;
-
-    if (schemaName === undefined) {
-      throw new Error("expected a schema name on the test backend options");
-    }
-
-    const rows = await sql.unsafe<Array<{ snapshot_cbor: Uint8Array }>>(
-      `SELECT snapshot_cbor
-         FROM "${schemaName}".backend_postgres_snapshots
-        WHERE snapshot_id = 1 AND scope = $1`,
-      [DEFAULT_SCOPE]
-    );
-    const row = rows[0];
-
-    if (row === undefined) {
-      throw new Error("expected a persisted snapshot row");
-    }
-
-    return new Uint8Array(row.snapshot_cbor);
-  } finally {
-    await sql.end({ timeout: 0 });
-  }
-}

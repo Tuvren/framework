@@ -120,6 +120,11 @@ import {
   type PostgresBackendPersistenceOptions,
   persistStateSnapshot,
 } from "./postgres-backend-persistence.js";
+import {
+  createSnapshotStateCache,
+  type SnapshotCacheObserver,
+  type SnapshotStateCache,
+} from "./postgres-backend-snapshot-cache.js";
 
 /** A transaction's repository surface, plus the transaction-local clock it was built with. */
 interface MutableRepositories extends KrakenBackendTx {
@@ -199,6 +204,16 @@ class PostgresBackend implements KrakenBackend {
   private readonly schemaName: string;
   private readonly scope: Scope;
   private readonly sql: Sql;
+  // Issue #108 M3 (A3 content-hash memoization): one single-entry cache per
+  // instance, since one instance is bound to exactly one Scope's row
+  // (ADR-048/ADR-049). Populated/consulted by every loadPersistedStateForUpdate
+  // call and updated only after a transact()/reclaim() COMMIT actually
+  // succeeds -- never from inside the transaction body -- so a rolled-back
+  // draft can never become the cached committed state (see transact()/
+  // reclaim()'s commit sequencing for why that placement is safe).
+  private readonly snapshotCache: SnapshotStateCache =
+    createSnapshotStateCache();
+  private readonly snapshotCacheObserver: SnapshotCacheObserver | undefined;
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
   private transactionQueue: Promise<void> = Promise.resolve();
   private readonly now: () => number;
@@ -213,6 +228,7 @@ class PostgresBackend implements KrakenBackend {
     assertScope(this.scope);
     this.sql = createPostgresClient(resolvedOptions);
     this.phaseObserver = resolvedOptions.phaseObserver ?? NOOP_PHASE_OBSERVER;
+    this.snapshotCacheObserver = resolvedOptions.snapshotCacheObserver;
     this.now = resolvedOptions.now ?? Date.now;
     // Track whether a clock was explicitly injected so the per-transaction
     // authoritative lease clock can fall back to the PostgreSQL server clock in
@@ -238,7 +254,11 @@ class PostgresBackend implements KrakenBackend {
           tx,
           this.schemaName,
           this.scope,
-          this.phaseObserver
+          {
+            cache: this.snapshotCache,
+            cacheObserver: this.snapshotCacheObserver,
+            phaseObserver: this.phaseObserver,
+          }
         );
         const endValidate = this.phaseObserver.startPhase("validate");
         try {
@@ -350,7 +370,11 @@ class PostgresBackend implements KrakenBackend {
           reserved,
           this.schemaName,
           this.scope,
-          this.phaseObserver
+          {
+            cache: this.snapshotCache,
+            cacheObserver: this.snapshotCacheObserver,
+            phaseObserver: this.phaseObserver,
+          }
         );
         const draftState = cloneState(baseState);
         let active = true;
@@ -386,7 +410,7 @@ class PostgresBackend implements KrakenBackend {
             );
           }
 
-          await persistStateSnapshot(
+          const { hashHex } = await persistStateSnapshot(
             reserved,
             this.schemaName,
             this.scope,
@@ -402,6 +426,15 @@ class PostgresBackend implements KrakenBackend {
           }
           inTransaction = false;
           committed = true;
+          // Only now -- after the physical COMMIT has actually succeeded --
+          // is `draftState` safe to treat as "the committed state for
+          // `hashHex`". Populating the memo any earlier (e.g. right after
+          // the UPDATE, before COMMIT) would poison it with an uncommitted
+          // draft if COMMIT itself then failed and the transaction rolled
+          // back; populating it here means a thrown error anywhere above
+          // this line (including inside persistStateSnapshot or COMMIT
+          // itself) never touches the cache at all.
+          this.snapshotCache.set(hashHex, draftState);
         };
 
         if (this.faultState.hooks?.midCommit === undefined) {
@@ -484,7 +517,11 @@ class PostgresBackend implements KrakenBackend {
           reserved,
           this.schemaName,
           this.scope,
-          this.phaseObserver
+          {
+            cache: this.snapshotCache,
+            cacheObserver: this.snapshotCacheObserver,
+            phaseObserver: this.phaseObserver,
+          }
         );
         const draftState = cloneState(baseState);
         // The snapshot backend reclaims by rewriting the scope snapshot row:
@@ -506,7 +543,7 @@ class PostgresBackend implements KrakenBackend {
           endReclaimValidate();
         }
 
-        await persistStateSnapshot(
+        const { hashHex } = await persistStateSnapshot(
           reserved,
           this.schemaName,
           this.scope,
@@ -521,6 +558,10 @@ class PostgresBackend implements KrakenBackend {
           endCommitWrite();
         }
         inTransaction = false;
+        // Same rule as transact()'s commit(): only populate the memo once
+        // COMMIT has actually succeeded, so a rolled-back reclaim sweep can
+        // never poison it.
+        this.snapshotCache.set(hashHex, draftState);
 
         return summary;
       } catch (error: unknown) {
@@ -575,6 +616,10 @@ class PostgresBackend implements KrakenBackend {
       // instance is unusable afterward (callers discard it per the purgeScope
       // contract), exactly like the SQLite backend after it removes its file.
       await deletePersistedStateSnapshot(this.sql, this.schemaName, this.scope);
+      // The row this memo describes no longer exists; drop it so a
+      // (contractually unsupported, but defensive) later call never serves a
+      // hit for a scope that has been purged.
+      this.snapshotCache.clear();
     } finally {
       releaseQueue?.();
     }
