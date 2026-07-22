@@ -1946,49 +1946,84 @@ repetition:
   shared schema. Each runs 20 sequential `transact()` single-object writes;
   all 4 scopes' write sequences run concurrently via `Promise.all`, timed
   end-to-end.
-- **Serial baseline:** 1 `PostgresBackend` instance, 1 scope (same schema),
-  running the same total write count (4 × 20 = 80) sequentially, timed
-  end-to-end.
-- **Correctness:** after the concurrent phase, each of the 4 scopes is
-  re-queried through its own backend instance and asserted to contain
-  exactly its own 20 written hashes and none of the other 3 scopes' hashes
-  (`assertScopeIsolation`) — a lightweight check layered on top of, not a
-  replacement for, `backend-postgres.scope-isolation.test.ts`'s existing,
-  thorough scope-isolation correctness suite, which this bench references
-  rather than duplicates.
+- **Serial baseline:** 4 `PostgresBackend` instances, 4 *fresh* distinct
+  scopes (same schema), run one at a time, each doing the same 20 sequential
+  `transact()` single-object writes as a concurrent leg, for the same total
+  write count (4 × 20 = 80) timed end-to-end. An earlier version of this
+  bench used 1 scope for all 80 serial writes; a milestone review caught
+  that this was not a fair baseline (see "Baseline correction" below), and
+  it was replaced with this fresh-scope-per-leg design before the numbers
+  below were taken.
+- **Correctness:** after the concurrent phase, each of the 4 concurrent
+  scopes is re-queried through its own backend instance and asserted to
+  contain exactly its own 20 written hashes and none of the other 3 scopes'
+  hashes (`assertScopeIsolation`) — a lightweight check layered on top of,
+  not a replacement for, `backend-postgres.scope-isolation.test.ts`'s
+  existing, thorough scope-isolation correctness suite, which this bench
+  references rather than duplicates.
 
-**Results (n=5, `2026-07-22`, same machine as the rest of this report):**
+**Baseline correction.** The postgres write path re-persists a scope's
+*whole* committed blob on every `transact()`, so per-write cost grows with
+how many objects already live in that scope (the same growth curve B2's
+whole-state-validation-share table above measures against). The original
+serial baseline ran all 80 writes into a single scope, so its writes 21-80
+each landed on a scope already larger than any concurrent leg (capped at 20
+objects) ever reaches — that baseline was paying real, growing per-write
+cost the concurrent run structurally could never pay, inflating the serial
+denominator and biasing the ratio below 1/4 as a measurement artifact, not
+a true speedup. The original write-up read that artifact as "at or slightly
+better than ideal — consistent with true concurrent I/O-wait overlap," a
+claim this milestone's review correctly identified as not mechanically
+coherent (four independent instances contending for the same host and
+network cannot exceed ideal linear scaling from I/O-wait overlap alone).
+The corrected baseline above gives every leg — concurrent and serial alike
+— the identical fresh, 0→20-object growth profile, so the ratio it produces
+reflects serialization alone, not a size-driven cost asymmetry between the
+two arms.
 
-| | best | median | p95 | avg |
-|---|---|---|---|---|
-| Concurrent (4 scopes × 20 writes, parallel) | 145.180 ms | 154.569 ms | 197.333 ms | 159.641 ms |
-| Serial (1 scope × 80 writes, sequential) | 645.590 ms | 688.627 ms | 737.684 ms | 691.478 ms |
+**Results, corrected baseline (n=5 each run, `2026-07-22`, same machine as
+the rest of this report, two independent runs to show run-to-run spread):**
 
-**Scaling factor (concurrent ÷ serial): best 0.225, median 0.224.** The
-ideal fully-parallel result for 4 independent scopes doing 1/4 the serial
-work each is 1/4 = 0.250; the measured ratio (0.224–0.225) is *at or
-slightly better than* that ideal, not worse — consistent with true
-concurrent I/O-wait overlap across 4 independent connections/pools (each
-scope's `transact()` round trips overlap in wall-clock time instead of
-queueing behind one another), and the opposite of what genuine cross-scope
-serialization would show (a ratio trending toward 1.0, the same total work
-regardless of concurrency). Every repetition's `assertScopeIsolation` check
-passed (the bench throws and fails the run otherwise), confirming the
-concurrent run did not cross-contaminate scopes while achieving that
-speedup.
+| Run | | best | median | p95 | avg |
+|---|---|---|---|---|---|
+| 1 | Concurrent (4 scopes × 20 writes, parallel) | 176.447 ms | 185.211 ms | 214.859 ms | 189.158 ms |
+| 1 | Serial (4 fresh scopes × 20 writes, sequential) | 595.252 ms | 608.104 ms | 644.300 ms | 612.478 ms |
+| 2 | Concurrent (4 scopes × 20 writes, parallel) | 158.659 ms | 159.917 ms | 196.857 ms | 168.675 ms |
+| 2 | Serial (4 fresh scopes × 20 writes, sequential) | 498.785 ms | 536.655 ms | 600.988 ms | 543.143 ms |
 
-**Disposition: D1 — closed as not applicable (measured).** Instance-per-scope
-binding means cross-scope parallelism already exists architecturally and is
-confirmed operationally: 4 concurrent scopes complete in ~22.5% of the
-serial-equivalent time, i.e. essentially full parallelism, not the ~100%
-(fully serialized) a shared-queue defect would produce. No production change
-is needed. **Residual observation, explicitly out of scope:** a shared
-connection pool *across* instances (rather than the current one-pool-per-instance
-model) would be a connection-*efficiency* concern — fewer total physical
-connections for a host that multiplexes many scopes in one process — not a
-serialization concern; this is available to a future epic if a host's scope
-count grows large enough that per-scope connection overhead (not
-serialization) becomes the operative cost.
+**Scaling factor (concurrent ÷ serial):** run 1 — best 0.296, median 0.305;
+run 2 — best 0.318, median 0.298. The ideal fully-parallel result for 4
+independent scopes doing 1/4 the serial work each is 1/4 = 0.250. Both runs
+land at or slightly above that ideal (0.296–0.318 across best/median, a
+~7% run-to-run spread on this network-bound, real-postgres bench, n=5 per
+run), never below it and nowhere near 1.0 (the signature a genuine
+shared-queue/pool defect would produce). This is the expected shape once
+the baseline confound is removed: real concurrent execution carries some
+overhead the idealized 1/4 fraction does not model (4 simultaneous
+connections/pools contending for the same host's network and I/O
+scheduling, `Promise.all` scheduling and per-leg bookkeeping), so a ratio
+a little *above* 0.25 — not below it — is the mechanically coherent
+outcome; this report makes no claim of better-than-ideal parallelism. Every
+repetition's `assertScopeIsolation` check passed in both runs (the bench
+throws and fails the run otherwise), confirming the concurrent run did not
+cross-contaminate scopes.
+
+**Disposition: D1 — closed as not applicable (measured).** The primary
+basis for this disposition is architectural, not the ratio itself:
+instance-per-scope binding (`this.scope` bound at construction) plus
+per-instance pool and `transactionQueue` state means two backends on two
+different scopes share nothing to serialize on. The corrected throughput
+measurement is confirmatory evidence for that architectural argument — 4
+concurrent scopes complete in a ratio close to the 1/4 fraction independent
+work implies, not the ~1.0 ratio a shared-queue defect would produce — not
+the argument's foundation. No production change is needed. **Residual
+observation, explicitly out of scope:** a shared connection pool *across*
+instances (rather than the current one-pool-per-instance model) would be a
+connection-*efficiency* concern — fewer total physical connections for a
+host that multiplexes many scopes in one process — not a serialization
+concern; this is available to a future epic if a host's scope count grows
+large enough that per-scope connection overhead (not serialization)
+becomes the operative cost.
 
 ### M6 review debts
 

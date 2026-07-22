@@ -72,6 +72,20 @@ async function closeBackend(backend: RuntimeBackend): Promise<void> {
 // BENCH_SAMPLE_COUNT; the default is intentionally smaller than the
 // per-write latency benches' n=15 because each sample here is itself
 // SCOPE_COUNT * WRITES_PER_SCOPE real transact() round trips, not one.
+//
+// The SAME growth-curve confound also applies WITHIN a repetition, not just
+// across repetitions: the postgres write path re-encodes/persists the
+// scope's whole committed blob on every transact(), so its cost grows with
+// how many objects are already in that scope. A serial baseline that runs
+// all 80 writes into ONE scope would therefore have writes 21-80 landing on
+// a scope that has already grown past the 0-20 range any single concurrent
+// leg ever reaches -- inflating the serial denominator with cost the
+// concurrent run never pays and biasing the scaling factor below the 1/4
+// ideal as a measurement artifact, not a real speedup. The serial baseline
+// below instead runs SCOPE_COUNT sequential, freshly-scoped
+// WRITES_PER_SCOPE-write legs (same total 80 writes, same per-scope 0-20
+// growth profile as each concurrent leg), so the only variable the
+// concurrent/serial ratio can reflect is serialization itself.
 const SAMPLE_COUNT = readSampleCountFromEnv(5);
 const SCOPE_COUNT = 4;
 const WRITES_PER_SCOPE = 20;
@@ -116,7 +130,7 @@ async function main(): Promise<void> {
     )}, avg ${formatNs(concurrentStats.averageNs)}\n`
   );
   process.stdout.write(
-    `serial (1 scope, ${SCOPE_COUNT * WRITES_PER_SCOPE} writes sequentially): best ${formatNs(
+    `serial (${SCOPE_COUNT} fresh scopes, ${WRITES_PER_SCOPE} writes each, run sequentially): best ${formatNs(
       serialStats.bestNs
     )}, median ${formatNs(serialStats.medianNs)}, p95 ${formatNs(
       serialStats.p95Ns
@@ -158,13 +172,22 @@ async function runRepetition(
     { length: SCOPE_COUNT },
     (_unused, index) => `cross-scope-concurrent-${repetition}-${index}`
   );
-  const serialScopeName = `cross-scope-serial-${repetition}`;
+  // Fair serial baseline: SCOPE_COUNT freshly-scoped legs of WRITES_PER_SCOPE
+  // writes each, run sequentially -- same total write count and the same
+  // per-scope 0-20 growth profile as the concurrent legs, so this baseline
+  // isolates serialization instead of also charging the serial run for
+  // whole-blob write cost the concurrent run never pays (see the
+  // module-level comment above).
+  const serialScopeNames = Array.from(
+    { length: SCOPE_COUNT },
+    (_unused, index) => `cross-scope-serial-${repetition}-${index}`
+  );
 
   const concurrentBackends = concurrentScopeNames.map((scope) =>
     createPostgresBackend(createBenchBackendOptions(schemaName, scope))
   );
-  const serialBackend = createPostgresBackend(
-    createBenchBackendOptions(schemaName, serialScopeName)
+  const serialBackends = serialScopeNames.map((scope) =>
+    createPostgresBackend(createBenchBackendOptions(schemaName, scope))
   );
 
   // Pre-initialize every backend (schema/table provisioning, the per-scope
@@ -172,7 +195,7 @@ async function runRepetition(
   // `backend-postgres.pool-contention.test.ts` uses -- otherwise cold-start
   // schema initialization on the first backend would masquerade as
   // cross-scope contention.
-  for (const backend of [...concurrentBackends, serialBackend]) {
+  for (const backend of [...concurrentBackends, ...serialBackends]) {
     await backend.health();
   }
 
@@ -197,17 +220,25 @@ async function runRepetition(
 
   const startedSerialAt = process.hrtime.bigint();
   for (
-    let writeIndex = 0;
-    writeIndex < SCOPE_COUNT * WRITES_PER_SCOPE;
-    writeIndex += 1
+    let scopeIndex = 0;
+    scopeIndex < serialBackends.length;
+    scopeIndex += 1
   ) {
-    const record = await createStoredObjectRecord(
-      seededObjectBytes(repetition, SCOPE_COUNT, writeIndex),
-      1000 + writeIndex
-    );
-    await serialBackend.transact(async (tx) => {
-      await tx.objects.put(record);
-    });
+    const backend = serialBackends[scopeIndex];
+
+    if (backend === undefined) {
+      throw new Error(`missing serial backend for scope index ${scopeIndex}`);
+    }
+
+    for (let writeIndex = 0; writeIndex < WRITES_PER_SCOPE; writeIndex += 1) {
+      const record = await createStoredObjectRecord(
+        seededObjectBytes(repetition, SCOPE_COUNT + scopeIndex, writeIndex),
+        1000 + writeIndex
+      );
+      await backend.transact(async (tx) => {
+        await tx.objects.put(record);
+      });
+    }
   }
   const serialNs = Number(process.hrtime.bigint() - startedSerialAt);
 
@@ -215,7 +246,7 @@ async function runRepetition(
   // scope must see exactly its own writes and none of its siblings'.
   await assertScopeIsolation(concurrentBackends, expectedHashesByScope);
 
-  for (const backend of [...concurrentBackends, serialBackend]) {
+  for (const backend of [...concurrentBackends, ...serialBackends]) {
     await closeBackend(backend);
   }
 
