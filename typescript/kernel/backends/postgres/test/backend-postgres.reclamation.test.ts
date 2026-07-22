@@ -15,7 +15,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import type { RuntimeBackend, TurnTreeSchema } from "@tuvren/kernel-protocol";
+import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createPostgresBackend } from "../src/index.js";
 import {
@@ -32,10 +32,6 @@ const TEST_SCHEMA = {
   ],
   schemaId: "schema_postgres_reclamation",
 } satisfies TurnTreeSchema;
-
-interface ClosablePostgresBackend extends RuntimeBackend {
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
-}
 
 function createMonotonicClock(): () => number {
   let clock = 0;
@@ -130,7 +126,7 @@ describe("createPostgresBackend maintenance.reclamation", () => {
       const health = await backend.health();
       expect(health.ok).toBe(true);
     } finally {
-      await (backend as ClosablePostgresBackend).destroy();
+      await backend.destroy();
     }
   });
 
@@ -161,7 +157,7 @@ describe("createPostgresBackend maintenance.reclamation", () => {
       const health = await backend.health();
       expect(health.ok).toBe(true);
     } finally {
-      await (backend as ClosablePostgresBackend).destroy();
+      await backend.destroy();
     }
   });
 });

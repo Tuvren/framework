@@ -16,7 +16,6 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { setTimeout as delay } from "node:timers/promises";
-import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import { createStoredObjectRecord } from "@tuvren/kernel-testkit";
 import { createPostgresBackend } from "../src/index.js";
 import {
@@ -46,15 +45,13 @@ import {
  * `transact()` calls rather than erroring under pool exhaustion.
  */
 
-interface ClosablePostgresBackend extends RuntimeBackend {
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
-}
-
 // Closes a backend's connection pool without dropping its schema, so two
 // backends sharing a schema can each be closed independently before the
 // afterAll teardown drops the schema.
-async function closeBackend(backend: RuntimeBackend): Promise<void> {
-  await (backend as ClosablePostgresBackend).destroy();
+async function closeBackend(
+  backend: ReturnType<typeof createPostgresBackend>
+): Promise<void> {
+  await backend.destroy();
 }
 
 beforeAll(async () => {

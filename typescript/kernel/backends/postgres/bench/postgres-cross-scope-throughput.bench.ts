@@ -38,7 +38,6 @@
 
 import { randomUUID } from "node:crypto";
 import process from "node:process";
-import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import {
   createStoredObjectRecord,
   formatNs,
@@ -52,17 +51,10 @@ import {
   type PostgresBackendOptions,
 } from "../src/index.js";
 
-// `createPostgresBackend` returns the narrow `RuntimeBackend` surface;
-// `close`/`destroy` are concrete `PostgresBackend` members outside that
-// interface, the same reason `backend-postgres.pool-contention.test.ts` and
-// `backend-postgres.scope-isolation.test.ts` both declare this local cast
-// type rather than widening the public return type.
-interface ClosablePostgresBackend extends RuntimeBackend {
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
-}
-
-async function closeBackend(backend: RuntimeBackend): Promise<void> {
-  await (backend as ClosablePostgresBackend).destroy();
+async function closeBackend(
+  backend: ReturnType<typeof createPostgresBackend>
+): Promise<void> {
+  await backend.destroy();
 }
 
 // Network-bound, real-postgres bench: each repetition allocates fresh scopes

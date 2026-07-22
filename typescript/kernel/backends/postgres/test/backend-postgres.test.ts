@@ -15,11 +15,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import type {
-  RuntimeBackend,
-  StoredBranch,
-  StoredThread,
-} from "@tuvren/kernel-protocol";
+import type { StoredBranch, StoredThread } from "@tuvren/kernel-protocol";
 import {
   createCanonicalKernelTestSchema,
   createHashFromIndex,
@@ -92,8 +88,8 @@ describe("@tuvren/backend-postgres", () => {
   });
 
   test("retries initialization after a transient bootstrap failure", async () => {
-    interface TestablePostgresBackend extends RuntimeBackend {
-      destroy(options?: { dropSchema?: boolean }): Promise<void>;
+    interface TestablePostgresBackend
+      extends ReturnType<typeof createPostgresBackend> {
       readonly sql: Sql;
     }
 

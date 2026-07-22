@@ -723,10 +723,22 @@ class PostgresBackend implements KrakenBackend {
  * named in `options.scope` (or the default Scope). Schema/table
  * provisioning is deferred to the first call that needs it, not performed
  * eagerly here.
+ *
+ * The return type widens `KrakenBackend` with this backend's own
+ * maintenance/lifecycle surface (mirroring {@link createSqliteBackend}'s
+ * `close`/`fsck` intersection, plus this backend's `destroy` — the
+ * connection-pool-and-schema teardown SQLite's file-per-scope model has no
+ * equivalent for) so callers reach `close()`, `destroy()`, and `fsck()`
+ * without an unsound cast back down from the narrower `RuntimeBackend`
+ * contract.
  */
 export function createPostgresBackend(
   options?: PostgresBackendOptions
-): KrakenBackend {
+): KrakenBackend & {
+  close(): Promise<void>;
+  destroy(options?: { dropSchema?: boolean }): Promise<void>;
+  fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
+} {
   return new PostgresBackend(options);
 }
 

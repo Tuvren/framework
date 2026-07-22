@@ -111,6 +111,20 @@ import { resolveStoredTurnTreePathValue } from "./sqlite-state-validation.js";
  *    guarantee were ever violated by a defective sweep, so this is covered
  *    transitively rather than by a second read of the table.
  *
+ * Beyond the specific references enumerated above, this is why a purely
+ * referential check suffices for every semantic committed-state invariant
+ * `validateCommittedState` enforces, not only the ones covered by name here:
+ * a deletion-only sweep never edits a surviving record's fields, so the only
+ * way it can break a semantic invariant is by leaving a surviving record
+ * pointing at something the sweep removed. Every existence-dependent
+ * invariant therefore fails exclusively through a dangling reference, which
+ * the referential checks above plus SQLite's deferred foreign keys catch.
+ * Invariants quantified over the whole surviving set (e.g.
+ * at-most-one-active-run-per-branch, branch-head/turn-node alignment) can
+ * only shrink their domain under deletion — they cannot acquire a new
+ * violation — and were already proven for every surviving record by
+ * `loadValidatedState`'s full, pre-sweep validation.
+ *
  * @throws TuvrenPersistenceError with a `sqlite_backend_*` code on the first
  *   invariant a defective sweep violated.
  */

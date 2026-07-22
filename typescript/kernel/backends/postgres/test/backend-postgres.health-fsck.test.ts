@@ -27,7 +27,7 @@
 // invisible to `health()` but caught by `fsck()`.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import type { RuntimeBackend, TurnTreeSchema } from "@tuvren/kernel-protocol";
+import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createPostgresBackend } from "../src/index.js";
 import {
@@ -54,11 +54,6 @@ const TEST_SCHEMA = {
   schemaId: "schema_postgres_health_fsck",
 } satisfies TurnTreeSchema;
 
-interface FsckCapableBackend extends RuntimeBackend {
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
-  fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
-}
-
 beforeAll(async () => {
   await assertDevenvPostgresReady();
 });
@@ -70,9 +65,7 @@ afterAll(async () => {
 describe("@tuvren/backend-postgres health()/fsck() split (issue #108 M5)", () => {
   test("keeps an active-run/branch-head misalignment invisible to health() but reports it through fsck()", async () => {
     const options = createPostgresTestBackendOptions();
-    const backend = createPostgresBackend(
-      options
-    ) as unknown as FsckCapableBackend;
+    const backend = createPostgresBackend(options);
 
     try {
       const kernel = createRuntimeKernel({ backend });

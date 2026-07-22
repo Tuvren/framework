@@ -46,11 +46,15 @@ export interface SnapshotStateCache {
 }
 
 /**
- * Testkit-only, non-public seam a bench or test can inject at backend
- * construction (`PostgresBackendOptions.snapshotCacheObserver`) to count the
- * {@link SnapshotStateCache}'s hits and misses. Intentionally not part of
- * the public `RuntimeBackend` surface — production callers never supply
- * one, and its absence costs nothing beyond an `undefined` check per load.
+ * Construction-time observability seam a bench or test can inject
+ * (`PostgresBackendOptions.snapshotCacheObserver`) to count the {@link
+ * SnapshotStateCache}'s hits and misses. It is a real option on
+ * `PostgresBackendOptions`, deliberately kept outside the operational
+ * `RuntimeBackend` contract rather than hidden from TypeScript, so it is
+ * intended for benches, tests, and diagnostics rather than production call
+ * sites. Supplying it in production is harmless (observation only, no
+ * behavior or persisted-bytes change), and its absence costs nothing beyond
+ * an `undefined` check per load.
  */
 export interface SnapshotCacheObserver {
   /** Called when a load's hash matched the memoized entry and decoding was skipped. */
