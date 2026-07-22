@@ -699,15 +699,29 @@ exactly one Scope's row (ADR-048/ADR-049).
   whether its caller's transaction will actually commit — `persistStateSnapshot`
   runs the `UPDATE` inside the caller's still-open transaction, before the
   caller's own `COMMIT`.
-- **Cache population is owned entirely by `PostgresBackend`**, and only
-  ever happens *after* the physical `COMMIT` has succeeded:
-  `transact()`'s `commit()` closure and `reclaim()`'s commit sequence both
-  call `this.snapshotCache.set(hashHex, draftState)` on the line
-  immediately after `await reserved.unsafe("COMMIT")` returns
-  successfully, never before. This placement is deliberate and is the
-  entire correctness argument for rollback safety (below) — no additional
-  rollback-specific code exists anywhere in the change; the safety falls
-  out of *where* one line sits relative to the `COMMIT` statement.
+- **Drafts are only ever cached after `COMMIT`.** `transact()`'s `commit()`
+  closure and `reclaim()`'s commit sequence both call
+  `this.snapshotCache.set(hashHex, draftState)` on the line immediately
+  after `await reserved.unsafe("COMMIT")` returns successfully, never
+  before. This placement is deliberate and is the entire correctness
+  argument for rollback safety (below) — no additional rollback-specific
+  code exists anywhere in the change; the safety falls out of *where* one
+  line sits relative to the `COMMIT` statement. (M4 review-debt
+  correction: an earlier draft of this bullet said cache population was
+  "owned entirely by `PostgresBackend`" and only ever happened after
+  `COMMIT` — that overstated it. `loadPersistedStateForUpdate`
+  (`postgres-backend-persistence.ts`) has its own, separate,
+  already-safe cache write on the decode-miss path: it memoizes the
+  decode of bytes already read under the row's `FOR UPDATE` lock, i.e.
+  bytes that were already durably committed by whichever transaction
+  wrote them (this instance's own prior commit, or a different writer
+  entirely) before this load ever ran. That write is not gated on this
+  transaction's own `COMMIT` because it has nothing to do with this
+  transaction's draft — it is memoizing a decode of already-durable data,
+  not caching a not-yet-committed one. The rollback-safety property this
+  bullet is about applies specifically to *draft* caching, which remains
+  exactly as described: `PostgresBackend` alone decides when a `draftState`
+  is safe to promote, and only after that draft's own `COMMIT` succeeds.)
 - `purgeScope()` additionally calls `this.snapshotCache.clear()` after
   deleting the Scope's row — defensive tidiness for the (contractually
   unsupported) case where the instance is used again after being purged,
@@ -976,3 +990,227 @@ the next candidate in the M1/M2 narrative).
   was left out of scope; the cache-hit accounting seam was added as a
   non-public, construction-injected observer rather than any addition to
   the public `RuntimeBackend` surface.
+
+## M4 — A1/A2 closed with measured reason (canonical projection cache prototype)
+
+**Goal:** areas A1+A2 of issue #108 — eliminate the per-write full re-sort
+and full deep-clone `encodeSnapshot` pays on every `transact()`, since M3
+left `encode` as the dominant write cost (best ~168ms of ~248ms total at
+10,000 objects, ~68%). The issue's working hypothesis for A1 was that the
+per-write re-sort of every record family is the superlinear term worth
+attacking; the git-native intuition behind A2 was that a write touching one
+record family should not have to re-derive the other eleven.
+
+**Disposition: CLOSED, not landed.** A full prototype was designed, built,
+and proven correct — including a byte-identity fuzz harness that caught a
+real cross-family-coupling bug during development — but measurement showed
+it delivers no real, reproducible wall-clock gain on the committed
+write-latency bench (248.374ms → 243.510ms at 10,000 objects, within normal
+run-to-run noise). Per issue #108's landing bar — "land only if measured
+before/after shows a real, reproducible gain" — the prototype is not landed.
+Both A1 and A2 are closed with this measured reason. The remainder of this
+section documents the investigation as the evidence and prototype-proof
+deliverable the milestone brief asked for, not as a description of shipped
+behavior.
+
+### Why A1 is refuted: the re-sort is not the superlinear term
+
+A1's hypothesis was tested directly with a micro-benchmark isolating
+*only* the clone+sort step
+(`Array.from(map.values(), cloneStoredObject).sort(compareStoredObject)`)
+for a 10,000-entry `objects` family, bypassing CBOR encoding entirely:
+**best 7.237 ms, median 14.250 ms**, against a total `encode` phase of
+~172–182ms (best/median) at the same size — i.e. clone+sort is at most
+**~4–8% of `encode`'s cost**, not the dominant term A1 assumed. The
+remaining **~90–96% of `encode`'s total cost at 10,000 objects is
+`encodeDeterministicKernelRecord`'s canonical-CBOR serialization of the
+*entire* composed snapshot** — canonicalizing every value's key order and
+re-encoding every byte of every family. A per-family projection cache
+(A1/A2's mechanism) changes what feeds the top-level
+`encodeProjectedSnapshot` call, not what that call itself does once handed
+a complete twelve-family object: `encodeDeterministicKernelRecord` is
+called exactly once per encode over the whole composed snapshot, not once
+per family, so it still serializes every family's array on every single
+write, reused or not. This cost is a property of the current storage
+shape — one canonical CBOR blob per Scope — not of how the twelve family
+arrays feeding that blob are derived, and reducing it would require
+changing blob granularity (splitting the canonical encoding unit below
+"the whole Scope"), which issue #108 marks a hard non-goal for this area
+and reserves for the separate Option-B storage-shape decision (feeding
+ADR-066).
+
+### The prototype: design, and proof it was byte-identical
+
+A per-family, dirty-tracked, instance-level projection cache
+(`postgres-backend-projection-cache.ts`, `createProjectionCache`) was built
+and wired into `PostgresBackend` as `this.projectionCache`, memoizing
+`{ the exact BackendState object the projection was built against, that
+state's complete twelve-family projection }`. Design summary (for the
+record; none of this is part of the committed change):
+
+- `postgres-backend-persistence.ts`'s `encodeSnapshot` had its twelve
+  inlined `Array.from(...).sort(...)` calls factored into a
+  `buildFamilyProjection(state, family)` switch, used by both a full
+  rebuild path and a new incremental `buildSnapshotProjection` that reuses
+  a prior projection's entry for every family absent from a
+  `dirtyFamilies` set threaded through `createRepositories`.
+- Validity was coupled to the M3 snapshot cache's state identity:
+  `ProjectionCache.getFor(state)` returned a memoized projection only when
+  `state` was the exact object reference last `set` — so a decode-miss
+  (cold start, cross-process write) naturally forced a full rebuild with no
+  separate invalidation bookkeeping, and `reclaim()` (which mutates draft
+  `Map`s directly, outside the dirty-tracked repositories) was made to
+  bypass reuse by construction by passing an explicit empty dirty set.
+- Both caches were promoted together, from the same `draftState`, only
+  after the same successful `COMMIT`, mirroring M3's rollback-safety
+  argument exactly.
+- **The mandatory byte-identity gate (ADR-008 proof):** a seeded-RNG
+  (mulberry32, seed `0x5eed1234`, logged at test start) sequence of 30
+  randomized single- and multi-family mutation steps was run through the
+  public `transact()` surface on a warm-cached instance. After **every**
+  commit (setup + 39 deterministic ADR-011 chunk-growth steps + 30
+  randomized steps = **70 total comparison points**, exceeding the ≥25
+  minimum), the persisted `snapshot_cbor` was compared byte-for-byte
+  against a fresh, cache-less `PostgresBackend` instance replaying the
+  identical step. Every one of the 70 comparison points was byte-identical
+  once the design was correct.
+- **The fuzz test earned its keep during development — it caught a real
+  bug, not a hypothetical one.** Before a fix, at the step where an ordered
+  turn-tree path first crossed the ADR-011 chunking threshold, the
+  warm-cached instance's persisted bytes were missing the
+  newly-materialized `StoredOrderedPathChunk` entirely: `turnTreePaths.putMany`
+  can transitively mutate `state.orderedPathChunks` as a side effect
+  (`normalizeStoredTurnTreePath`'s flat→chunked promotion), and the
+  family's cached projection — from before the promotion — was incorrectly
+  reused instead of rebuilt. The per-family diff pinpointed the exact
+  family and step; the fix (marking `orderedPathChunks` dirty on every
+  `"ordered"` `putMany` call) made every subsequent run byte-identical.
+  This is direct evidence that correct per-family dirty tracking is subtle
+  — a hand-written targeted test would not have hit this specific
+  cross-family coupling unless it happened to grow an ordered path past the
+  threshold.
+- Targeted unit tests (five, plus the fault-injected-rollback test salvaged
+  into the M3 snapshot-cache suite — see below) confirmed, with an
+  observer seam counting per-family rebuild/reuse calls: a warm write
+  touching only `objects` rebuilds `["objects"]` and reuses the other
+  **11 of 12** families; `reclaim()` always forces 12/12 rebuilds and 0
+  reuses, then the very next `transact()` goes straight back to 1/12; a
+  cross-process write or a `purgeScope()` + fresh instance both force
+  12/12 rebuilds; a rolled-back transaction never promotes a staged
+  projection.
+
+### Bench: before/after write-latency (the landing-bar measurement)
+
+"Before" reuses M3's committed "after" table (same bench, same ladder,
+`n=15`, `2026-07-22`). "After" is a fresh run of the identical bench, same
+machine, same `BENCH_SAMPLE_COUNT=15`, same date, against the prototype
+before it was reverted.
+
+| Scope size | Before best | After best | Before median | After median | Before p95 | After p95 | Before avg | After avg |
+|---|---|---|---|---|---|---|---|---|
+| 10 | 2.773 ms | 2.723 ms | 3.720 ms | 3.412 ms | 8.804 ms | 5.592 ms | 4.633 ms | 3.730 ms |
+| 100 | 5.616 ms | 4.383 ms | 7.016 ms | 6.013 ms | 8.287 ms | 9.289 ms | 6.867 ms | 6.231 ms |
+| 1,000 | 26.941 ms | 24.690 ms | 28.986 ms | 29.601 ms | 38.828 ms | 39.655 ms | 30.046 ms | 30.854 ms |
+| 10,000 | 248.374 ms | 243.510 ms | 283.823 ms | 280.628 ms | 323.078 ms | 312.190 ms | 284.643 ms | 278.675 ms |
+
+Per-phase `encode` best/median at each size (this run):
+
+| Size | encode best | encode median |
+|---|---|---|
+| 10 | 724.992 μs | 835.048 μs |
+| 100 | 2.006 ms | 2.206 ms |
+| 1,000 | 14.372 ms | 15.198 ms |
+| 10,000 | 172.257 ms | 182.553 ms |
+
+**Every number above is within normal run-to-run noise of M3's own
+committed baseline** (differences of roughly ±1–5%, the same band M3
+itself reported between repeated runs) — there is no reproducible gain
+here, at any size. This is the expected consequence of A1 being refuted
+(above): `postgres-write-latency.bench.ts` writes a single
+`tx.objects.put(record)` per `transact()` against a scope where `objects`
+is the only large family, so `objects` is always the dirty family on every
+write this bench measures, and the ~4–8% clone+sort saving A1/A2 could
+offer for that one family is swamped by the ~90–96% canonical-CBOR
+serialization floor that exists regardless of what changed. Even in the
+most favorable case this design targets (a write touching a small family
+while large sibling families go untouched), the observer-verified 11/12
+family reuse is real and unconditional at the family level, but it saves,
+at most, the ~7–14ms this micro-benchmark measured against a ~172ms encode
+phase — not a change large enough to move the committed bench outside its
+own noise band, and not the "real, reproducible gain" issue #108's landing
+bar requires before something is allowed to land.
+
+### Disposition and what this feeds forward
+
+**A1 (per-write re-sort) and A2 (per-family projection cache) are CLOSED
+with this measured reason.** The re-sort A1 targeted is a minor fraction
+of `encode`'s cost, not the dominant term; the projection-cache mechanism
+A2 built to avoid it is correct (proven byte-identical across 70 fuzz
+comparison points, including catching a real cross-family bug) but its
+wall-clock benefit is too small to clear the landing bar, and cannot be
+made larger without changing what it targets. The residual ~90–96% cost —
+canonical CBOR serialization of the entire composed snapshot on every
+write — is a property of the current one-blob-per-Scope storage shape, not
+of family-level derivation, so no per-family caching strategy can reduce it
+by design. This is the concrete evidence that feeds the ADR-066
+residual-curve question: the curve is not flat because A1/A2 "didn't
+work" — it is flat because the next bottleneck downstream (canonical
+serialization of the full composed value) sits entirely outside what A1/A2
+could ever touch, and only a storage-shape change (Option B, out of this
+milestone's scope and this issue's stated non-goal) can move it.
+
+### What was salvaged versus reverted
+
+- The prototype implementation
+  (`postgres-backend-projection-cache.ts`, the `postgres-backend.ts` /
+  `postgres-backend-persistence.ts` / `index.ts` wiring, and the dedicated
+  `backend-postgres.projection-cache.test.ts` suite) was reverted in full —
+  it is not part of the committed change, consistent with the "do not land"
+  disposition above.
+- The M3 review-debt item this milestone's investigation surfaced along the
+  way — "a fault-hook-driven test asserting cache non-poisoning when
+  COMMIT/midCommit throws" — was salvaged and ported into
+  `backend-postgres.snapshot-cache.test.ts` as three tests scoped to the
+  M3 snapshot cache alone (no projection-cache assertions or imports):
+  one exercising `point: "before-commit"` (a genuine rollback — the fault
+  fires before `persistStateSnapshot`/`COMMIT` ever run, so the cache is
+  never populated), and one each for `point: "mid-commit"` and
+  `point: "after-commit-before-ack"` (both fire strictly *after* a real
+  `COMMIT` has already succeeded, so these are successful-write/
+  failed-acknowledgment scenarios rather than rollbacks; the tests assert
+  the snapshot cache stays byte-for-byte in sync with what was actually
+  durably committed in every case, cross-checked against an independent,
+  cache-less backend instance reading the same row).
+
+### Validation performed for M4
+
+- `bun run nx run backend-postgres:test` — pass, on the reverted tree (the
+  three salvaged fault-hook tests pass alongside the pre-existing M3
+  snapshot-cache suite; nothing from the reverted prototype remains).
+- `bun run nx run backend-postgres:typecheck` — pass.
+- `bun run nx run backend-postgres:lint` — pass.
+- `bun run check` — pass.
+- `git diff | grep '\[DEBUG-'` — no matches outside this report's own
+  prose.
+- Before reverting, the prototype itself passed its full local suite
+  (`bun run nx run backend-postgres:test` — 63/63: 56 pre-existing tests
+  unmodified, plus 7 projection-cache tests, including the 70-point
+  byte-identity fuzz test) and `bun run verify:kernel` — this is part of
+  the evidence that the "not landed" decision was a measured-benefit
+  judgment call, not a correctness retreat.
+
+### Deviations from the M4 brief
+
+- The milestone brief anticipated landing A1/A2 if the design proved
+  correct. It proved correct but did not clear issue #108's own landing
+  bar (a real, reproducible before/after gain), so the deviation is the
+  disposition itself: close with measured reason instead of land, per the
+  issue's own stated criterion, not a departure from it.
+- Two ad-hoc, uncommitted measurement scripts were written and run locally
+  to produce the "why A1 is refuted" numbers above (a schemas-only
+  marginal-write variant of the committed bench, and the isolated
+  clone+sort micro-benchmark); neither is part of the committed change —
+  closing with measured reason calls for honest measurement of the
+  residual, not a second permanent bench target, and adding one would have
+  been scope creep against "Keep package entrypoints small and explicit" /
+  avoiding unnecessary committed surface for a one-time diagnostic.

@@ -20,6 +20,13 @@
 // that snapshot's already-decoded BackendState} that lets
 // loadPersistedStateForUpdate skip decodeSnapshot entirely on a hash match,
 // while the row lock and schema_version check keep running unconditionally.
+//
+// The fault-hook-driven tests below (one per FaultPoint: "before-commit",
+// "mid-commit", "after-commit-before-ack") close an M3 review
+// recommendation by asserting this cache is never poisoned when a fault
+// fires at any COMMIT-adjacent stage of the commit sequence -- whether that
+// fault genuinely rolls the transaction back (before-commit) or fires after
+// a real COMMIT has already succeeded (mid-commit, after-commit-before-ack).
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { TuvrenPersistenceError } from "@tuvren/core";
@@ -27,10 +34,12 @@ import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import {
   createCanonicalKernelTestSchema,
   createCanonicalTurnTreePaths,
+  createFaultInjectingBackend,
   createStoredObjectRecord,
   createStoredSchemaRecord,
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
+  type FaultPoint,
 } from "@tuvren/kernel-testkit";
 import type { SnapshotCacheObserver } from "../src/index.js";
 import { createPostgresBackend } from "../src/index.js";
@@ -250,6 +259,88 @@ describe("@tuvren/backend-postgres single-entry snapshot cache (issue #108 M3)",
     });
   });
 
+  test("a fault injected before COMMIT rolls back cleanly and does not poison the cache with the aborted draft", async () => {
+    const options = createPostgresTestBackendOptions();
+    const innerBackend = createPostgresBackend(options);
+    const schema = createCanonicalKernelTestSchema();
+    const committedObject = await createStoredObjectRecord(
+      new Uint8Array([77]),
+      2
+    );
+    const neverCommittedObject = await createStoredObjectRecord(
+      new Uint8Array([78]),
+      3
+    );
+
+    await innerBackend.transact(async (tx) => {
+      await tx.schemas.put(createStoredSchemaRecord(schema, 1));
+      await tx.objects.put(committedObject);
+    });
+
+    // "before-commit" fires after validateCommittedState but strictly
+    // before persistStateSnapshot/COMMIT ever run, so the transaction
+    // genuinely rolls back at the database level (unlike "mid-commit" and
+    // "after-commit-before-ack", which let the real COMMIT succeed first
+    // and only fail the caller's acknowledgment afterward -- not a rollback
+    // scenario at all; see the fault-injected-after-COMMIT test below).
+    const faultedBackend = createFaultInjectingBackend(innerBackend, {
+      point: "before-commit",
+      policy: "once",
+    });
+
+    await expect(
+      faultedBackend.transact(async (tx) => {
+        await tx.objects.put(neverCommittedObject);
+      })
+    ).rejects.toThrow();
+
+    // The next transact() (through the unwrapped inner backend, same
+    // instance) must see the pre-fault committed state, proving the cache
+    // was not poisoned by the fault-injected rollback (the fault fires
+    // before persistStateSnapshot or COMMIT ever run, so this instance's
+    // commit() closure -- and its snapshotCache.set() call -- never
+    // executes for the faulted transaction).
+    const secondObject = await createStoredObjectRecord(
+      new Uint8Array([79]),
+      4
+    );
+    await innerBackend.transact(async (tx) => {
+      expect(await tx.objects.get(committedObject.hash)).toEqual(
+        committedObject
+      );
+      expect(await tx.objects.get(neverCommittedObject.hash)).toBeNull();
+      await tx.objects.put(secondObject);
+    });
+
+    const persistedBytes = await readSnapshotCbor(options);
+    const independentBackend = createPostgresBackend(
+      createPostgresTestBackendOptions({ schemaName: options.schemaName })
+    );
+    await independentBackend.transact(async (tx) => {
+      expect(await tx.objects.get(committedObject.hash)).toEqual(
+        committedObject
+      );
+      expect(await tx.objects.get(secondObject.hash)).toEqual(secondObject);
+      expect(await tx.objects.get(neverCommittedObject.hash)).toBeNull();
+    });
+    expect(
+      Buffer.from(await readSnapshotCbor(options)).equals(
+        Buffer.from(persistedBytes)
+      )
+    ).toBe(true);
+  }, 20_000);
+
+  test("a mid-commit fault does not desynchronize the cache from its own already-committed write", async () => {
+    await assertPostCommitFaultCacheStaysInSync("mid-commit", [81, 82]);
+  }, 20_000);
+
+  test("an after-commit-before-ack fault does not desynchronize the cache from its own already-committed write", async () => {
+    await assertPostCommitFaultCacheStaysInSync(
+      "after-commit-before-ack",
+      [83, 84]
+    );
+  }, 20_000);
+
   test("decodeSnapshot(encodeSnapshot(cachedState)) round-trips a nontrivial committed state byte-for-byte", async () => {
     const options = createPostgresTestBackendOptions();
     const backend = createPostgresBackend(options);
@@ -338,6 +429,87 @@ describe("@tuvren/backend-postgres single-entry snapshot cache (issue #108 M3)",
     );
   });
 });
+
+/**
+ * Shared body for the "mid-commit" and "after-commit-before-ack" fault
+ * points: both fire strictly AFTER the real COMMIT statement -- and this
+ * instance's own `snapshotCache.set()` call -- have already run, so the
+ * write genuinely persists even though the caller sees the `transact()`
+ * call reject. This is a successful-write-failed-acknowledgment scenario,
+ * not a rollback (contrast the "before-commit" test above, where the fault
+ * fires before COMMIT and the write is genuinely aborted). The assertion
+ * this proves is that the cache stays byte-for-byte in sync with the row it
+ * was populated from, never silently diverging from what was actually
+ * durably committed.
+ */
+async function assertPostCommitFaultCacheStaysInSync(
+  point: FaultPoint,
+  objectBytes: readonly [number, number]
+): Promise<void> {
+  const hitsAndMisses = createHitMissCounter();
+  const options = createPostgresTestBackendOptions({
+    snapshotCacheObserver: hitsAndMisses.observer,
+  });
+  const innerBackend = createPostgresBackend(options);
+  const schema = createCanonicalKernelTestSchema();
+  const [firstByte, secondByte] = objectBytes;
+  const committedObject = await createStoredObjectRecord(
+    new Uint8Array([firstByte]),
+    2
+  );
+  const committedThroughFaultObject = await createStoredObjectRecord(
+    new Uint8Array([secondByte]),
+    3
+  );
+
+  await innerBackend.transact(async (tx) => {
+    await tx.schemas.put(createStoredSchemaRecord(schema, 1));
+    await tx.objects.put(committedObject);
+  });
+
+  const faultedBackend = createFaultInjectingBackend(innerBackend, {
+    point,
+    policy: "once",
+  });
+
+  await expect(
+    faultedBackend.transact(async (tx) => {
+      await tx.objects.put(committedThroughFaultObject);
+    })
+  ).rejects.toMatchObject({ code: "kernel_persistence_fault_injected" });
+
+  // The faulted transact() call already primed this instance's cache before
+  // the fault fired, so the next transact() on the SAME instance must be a
+  // cache HIT that already reflects committedThroughFaultObject. A cache
+  // MISS here would still self-correct via decodeSnapshot, but a hit
+  // serving anything other than the real committed state would prove the
+  // cache had gone out of sync with the row -- so the hit/miss tally below
+  // is as load-bearing as the object-presence assertions.
+  await innerBackend.transact(async (tx) => {
+    expect(await tx.objects.get(committedObject.hash)).toEqual(committedObject);
+    expect(await tx.objects.get(committedThroughFaultObject.hash)).toEqual(
+      committedThroughFaultObject
+    );
+  });
+
+  expect(hitsAndMisses.counts()).toEqual({ hits: 2, misses: 1 });
+
+  const persistedBytes = await readSnapshotCbor(options);
+  const independentBackend = createPostgresBackend(
+    createPostgresTestBackendOptions({ schemaName: options.schemaName })
+  );
+  await independentBackend.transact(async (tx) => {
+    expect(await tx.objects.get(committedObject.hash)).toEqual(committedObject);
+    expect(await tx.objects.get(committedThroughFaultObject.hash)).toEqual(
+      committedThroughFaultObject
+    );
+  });
+  expect(
+    Buffer.from(await readSnapshotCbor(options)).equals(
+      Buffer.from(persistedBytes)
+    )
+  ).toBe(true);
+}
 
 /** Small hit/miss counter built on {@link SnapshotCacheObserver}. */
 function createHitMissCounter(): {
