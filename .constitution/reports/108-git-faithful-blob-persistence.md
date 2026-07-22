@@ -1,14 +1,21 @@
 # Issue #108 — Make the blob-per-scope persistence path Git-faithful
 
-> **Status:** in-progress evidence/completion report for GitHub issue #108.
+> **Status:** complete. Evidence/completion report for GitHub issue #108,
+> closed out with [`ADR-066`](../tech-spec/adrs/ADR-066-blob-per-scope-persistence-retained-git-faithful-operations.md)
+> (accepted).
 > **Origin:** [`SPK-BK007`](../spikes/SPK-BK007.md) · audit finding `[C-01]`
 > (`audit-2026-07-04-170703-post-epic-87-baseline.md`) · `.constitution/tech-spec/changelog.md`
 > v0.32.0 (persistence-model decision deferred as evidence-gated).
 >
-> This report accumulates evidence milestone by milestone. It currently
-> contains the **M1 — Phase-attributed baseline** section only; later
-> milestones (A/B/C/D optimizations and the closing recommendation) append
-> further sections without rewriting this one.
+> This report accumulates evidence milestone by milestone: M1 (phase-attributed
+> baseline), M2 (the sqlite O(n²) lineage-validation bisect and fix), M3 (A3
+> decode memoization), M4 (A1/A2 closed with measured reason), M5 (B1
+> `health()`/`fsck()` split), M6 (C1 reclaim single-load), M7 (B2/D1 closed
+> with measured reason). The **Closing summary and recommendation** section at
+> the end of this report is the final milestone: an executive summary of every
+> area's disposition and the written recommendation issue #108 asked for,
+> feeding — not making — the separate Option-B storage-shape decision per
+> ADR-066.
 
 ## M1 — Phase-attributed baseline
 
@@ -313,7 +320,9 @@ several minutes at n=15).
   for `docs/perf-benchmarks.md` to carry the numbers table — that is deferred
   to whichever milestone the lead designates for documentation, to avoid
   duplicating/drifting two number sources before the A/B/C/D optimizations
-  land.
+  land. *(Resolved at closeout: by the lead's standing decision this report
+  is the single home for the persistence numbers; `docs/perf-benchmarks.md`
+  carries only a cross-reference to it, never a duplicate table.)*
 - sqlite-hot-path's own history-size ladder (`[0, 100, 500, 1000]`) was left
   unchanged rather than forced to `[10, 100, 1000, 10000]`; that ladder
   predates this milestone and is a different axis (TurnNode chain length,
@@ -2163,6 +2172,123 @@ that the outcome looks the same either way") and proves the wiring directly.
 - D1's bench uses n=5 rather than the n=15 convention the per-write latency
   benches use, sized down deliberately because each sample is a full
   `SCOPE_COUNT × WRITES_PER_SCOPE`-write concurrent-vs-serial pair against
-  real postgres, not a single write; the resulting scaling-factor spread
-  across n=5 (best 0.225 vs median 0.224) is already tight enough that a
-  larger n would not change the qualitative conclusion.
+  real postgres, not a single write. Under the corrected fair baseline the
+  scaling factor spans 0.296–0.318 across two independent runs (~7%
+  run-to-run spread); that variance is documented in the baseline-correction
+  paragraph above and does not change the qualitative conclusion.
+
+## Closing summary and recommendation
+
+This section closes out issue #108: an executive summary of every area's
+disposition, and the written recommendation the issue asked for — grounded
+in the measured data above, not asserted independently of it. It is
+accompanied by [`ADR-066`](../tech-spec/adrs/ADR-066-blob-per-scope-persistence-retained-git-faithful-operations.md)
+(accepted), which records the architectural decision this report's evidence
+supports; this report remains the evidentiary record ADR-066 cites rather
+than restates.
+
+### Executive summary
+
+| Area | What it targeted | Disposition | Headline before → after (10,000-item tier, best-case unless noted) |
+|---|---|---|---|
+| B3 (M1+M2) | sqlite `health()`/`reclaim()`'s unexplained superlinear residual (spike's open secondary question) | **Resolved + fixed** — real O(n²) per-node lineage-ancestor walk found and replaced with one shared memoized `TurnNodeLineageIndex` per pass | `health()` 7.030s → 1.126s (6.2×); `reclaim()` 13.658s → 1.580s (8.6×) |
+| A3 (M3) | Postgres decode cost on repeat loads of byte-identical rows | **Landed** — content-hash-memoized decode; 100% hit rate for the single-long-lived-instance access pattern measured | write 466.464ms → 248.374ms (1.88×); `decode` phase 220.927ms → a 722.8μs `hash` phase (~306×) on every one of 15 measured loads |
+| A1/A2 (M4) | Per-write full re-sort + per-family projection cache, to avoid re-deriving untouched families | **Closed, not landed** — correct, fully proven (70-point byte-identity fuzz), but re-sort is only ~4–8% of `encode`'s cost; no reproducible wall-clock gain (248.374ms → 243.510ms, within noise) | no change (reverted) |
+| B1 (M5) | Whole-state validation running on every `health()` call | **Landed** — `health()` is now a liveness/coherence probe; full validation moved to an explicit `fsck()` | `health()` 1.126s (post-M2) → ~240μs flat, independent of size (~4,700×); `fsck()` reproduces the old curve exactly (1.098–1.126s) |
+| C1 (M6) | `reclaim()`'s second full `loadValidatedState` pass | **Landed** — replaced with an O(survivors) targeted check backed by deferred FKs plus explicit checks for the FK-uncoverable opaque-CBOR references | `reclaim()` 1.580s → 834ms (1.9×); reclaim/fsck ratio 1.4×–1.9× → 0.76×–0.99× |
+| B2 (M7) | Whole-state `validateCommittedState` cost on the write path (delta-validation prototype considered) | **Closed, measured reason** — already flat and negligible post-M2 (≤0.27% of postgres write time, ≤0.76% of sqlite's already-delta write path); invariant-locality proof burden disproportionate to the ceiling | no change (not attempted beyond instrumentation) |
+| D1 (M7) | Cross-scope serialization via the shared `max: 1` pool / `transactionQueue` | **Closed, not applicable (measured)** — instance-per-scope binding shares nothing across scopes; throughput bench confirms near-ideal (0.296×–0.318× vs. 0.25× ideal) concurrent/serial scaling | no change (architecture already correct) |
+
+### The recommendation
+
+**What landed.** Four real, measured, committed changes: content-hash decode
+memoization (A3); the `health()`/`fsck()` liveness-probe split (B1);
+single-load `reclaim()` with a targeted survivor check and deferred foreign
+keys (C1); and the memoized `TurnNodeLineageIndex` that resolved the
+spike's unexplained superlinear residual and closed the same-shaped risk in
+`validateCommittedState`'s lineage assertions across all three backends
+(the B3 fix, M1+M2). Two areas were investigated to a fully proven prototype
+and closed without landing because the measured gain did not clear the
+issue's own landing bar (A1/A2). Two areas were closed with measured reason
+because the thing they proposed to fix was never actually a cost worth
+paying to remove (B2, D1). Every disposition in this issue rests on a
+committed, reproducible bench — none on assertion.
+
+**The residual curve.** With health/validation and reclaim structurally
+fixed, what remains is exactly what ADR-066 records as irreducible at this
+storage shape:
+
+- **Postgres write is O(blob).** `encodeDeterministicKernelRecord`'s
+  canonical-CBOR serialization of the *entire* composed snapshot is
+  ~90–96% of `encode`'s cost at 10,000 objects (M4's isolated clone+sort
+  micro-benchmark measured the part A1/A2 could reduce at only ~4–8%). No
+  per-family caching strategy can touch this without lowering blob
+  granularity below "the whole Scope" — the Option-B question.
+- **`fsck()`/full validation is O(N), dominated by per-record identity
+  re-hashing.** 81.8% of `fsck()`'s wall time at 10,000 sqlite rows is
+  `validateLoadedState`'s per-record canonical-identity re-hash — real,
+  correct, O(1)-per-record work multiplied by `n`, not an algorithmic
+  defect, but still the reason a full validation pass costs just over a
+  second at that size.
+- **Cold-cache loads are O(N).** A3's benefit requires a warm, single-writer
+  memo; a host that constructs a fresh `PostgresBackend` per request, or
+  that spreads writes to one Scope across contended concurrent writers, sees
+  close to zero of A3's benefit and pays close to the pre-optimization
+  decode cost (220.9ms at 10,000 objects) on every load.
+
+**The scope-size envelope at the 50ms bar.** Interpolating a power-law fit
+(`cost = a · size^b`) between the committed 1,000- and 10,000-object tiers of
+the postgres warm write-latency curve (M3's committed "after" table, the
+current shipped baseline since M4 was not landed):
+
+- **Warm / memoized (A3's favorable case — one long-lived `PostgresBackend`
+  instance, sequential single-writer traffic):** best-case crosses 50ms at
+  **~1,900 objects** (`b≈0.965` between 26.941ms@1,000 and 248.374ms@10,000),
+  median-case at **~1,700 objects** (`b≈0.991`). p95 — noisier, dominated by
+  `write`'s own network/WAL-flush variance rather than by anything this
+  issue touched — crosses earlier, around **~1,300 objects**.
+- **Cold / fresh-instance-per-request (A3's unfavorable case, and any
+  multi-writer-contended Scope):** decode never memoizes, so this path pays
+  approximately the pre-A3 (M1) cost curve. That curve's best-case crosses
+  50ms at **~1,000 objects** (48.951ms measured at exactly 1,000) — the same
+  order of magnitude the spike itself measured and recommended as an interim
+  ceiling.
+- **Versus the spike's own pre-optimization guidance (~500–1,000 objects,
+  derived from p95 at the 1,000-object tier already exceeding the bar):**
+  issue #108 measurably pushed the ceiling outward for the access pattern
+  A3 targets (roughly **1.3×–1.9×**, depending on percentile), but did
+  **not** move it for the cold/per-request access pattern, because A1/A2 —
+  the changes that could have helped the cold path — did not clear the
+  landing bar. The read/maintenance-path ceiling (`health()`'s pre-fix ~9s
+  at 10,000 rows, ~178× over the bar) is a different story: B1 removed that
+  constraint structurally rather than pushing its crossing point outward —
+  `health()` no longer does size-proportional work at all, so it has no
+  crossing point to interpolate.
+
+**The verdict.** The row-per-record/path-granular redesign (Option B,
+SPK-BK007) **remains justified at scale**, and this report — together with
+ADR-066 — is the evidence that decides *at what scale*, not whether. Issue
+#108 has already extracted essentially all of the available in-place gain:
+A1/A2's negative result (a correct, fully proven mechanism that still could
+not clear the landing bar) and B2's Amdahl-bounded closure (validation's own
+cost is already too small to matter) are direct, measured proof that no
+further optimization *within* the current blob-per-scope shape is available
+to push the write-path ceiling meaningfully further out. A future host
+whose real per-scope write traffic keeps single scopes at or below roughly
+1,000–1,900 objects (the range above, access-pattern-dependent) is
+measured-adequate on the current, optimized model and does not, on its own,
+justify Option B's cost/risk — issue #108's own brief frames that redesign
+as "large, high-risk." A host whose workload pushes single scopes past that
+range on the write-hot-path — or that calls `fsck()`/`reclaim()` on a
+live-traffic cadence rather than as occasional maintenance, inheriting the
+O(N) full-validation floor on a path meant to be occasional — has exhausted
+what this issue's operational optimizations can buy it and is the concrete
+trigger condition for opening the Option-B redesign epic (Epic BQ), using
+this report's committed bench scripts and numbers as the regression
+baseline that redesign must beat, per ADR-066.
+
+### Validation performed for the closing summary
+
+- No production code changed in this milestone; only this report,
+  `ADR-066`, and constitution reconciliation edits.
+- `git diff | grep '\[DEBUG-'` — no matches outside this report's own prose.

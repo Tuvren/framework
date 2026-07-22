@@ -49,12 +49,12 @@ wall-clock against the full typecheck lane.
 - Projects selected by the 1-file edit: **6 of 28** typecheck-capable projects
   (`mcp-client` + its dependents `providers-bridge-ai-sdk`,
   `providers-typescript-certification`, `framework-runtime-core`,
-  `framework-runtime`, `host-repl`). `framework-runtime-core` is a historical
-  project name recorded as measured at the time — it was retired at M3.2c
-  (Epic 87) when `@tuvren/runtime-core` folded into the successor engine
-  package now at `typescript/runtime` (Nx project `framework-runtime`); the
-  measurement predates that rename and is left as originally recorded rather
-  than fabricating a re-run.
+  `framework-runtime`, `host-repl`). The `framework-runtime-core` entry
+  reflects the project graph as it stood when this measurement was taken; that
+  package was retired at M3.2c (Epic 87), when `@tuvren/runtime-core` folded
+  into today's `typescript/runtime` (Nx project `framework-runtime`), the
+  current successor package. The measurement predates that rename and is left
+  as originally recorded rather than fabricating a re-run.
 - Cold wall-clock:
 
 | Lane | wall-clock |
@@ -104,3 +104,8 @@ A full end-to-end `bun run verify` A/B (which needs `devenv up` + PostgreSQL and
 runs ~10 min/side) was not run; the verify-specific wins are the sum of the
 phase-1 parallelism and the Rust dedup above, plus W1 cache hits on the
 conformance phase across repeated runs.
+
+Persistence-path (kernel backend read/write) benchmarks are a different
+subsystem and are not covered by this file at all; see
+`.constitution/reports/108-git-faithful-blob-persistence.md` for the
+postgres/sqlite blob-persistence measurements.
