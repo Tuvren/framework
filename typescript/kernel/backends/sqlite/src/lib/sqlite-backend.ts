@@ -525,7 +525,13 @@ class SqliteBackend implements KrakenBackend {
           work(repositories)
         );
         active = false;
-        validateTransactionWriteSet(this.db, writeTracker);
+        const endValidateWriteSet =
+          this.phaseObserver.startPhase("validate-write-set");
+        try {
+          validateTransactionWriteSet(this.db, writeTracker);
+        } finally {
+          endValidateWriteSet();
+        }
         await this.faultState.hooks?.beforeCommit?.();
 
         let committed = false;

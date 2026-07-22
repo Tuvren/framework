@@ -43,10 +43,14 @@ import { createSqliteBackend } from "../src/index.js";
 
 // Override via BENCH_SAMPLE_COUNT; see postgres-write-latency.bench.ts /
 // sqlite-load-cost.bench.ts for the n=5 -> p95≈max rationale. transact() on
-// this backend is not phase-instrumented in M1 (issue #108): SQLite's write
+// this backend was not phase-instrumented in M1 (issue #108): SQLite's write
 // path is already row-granular, not a full-blob rewrite, so it has no
-// decode/validate/encode seam to attribute -- the phase table below is
-// expected to be empty for every case here.
+// decode/validate-committed/encode seam to attribute. The B2-closure
+// milestone (see the report's "B2" section) adds a single
+// "validate-write-set" phase around transact()'s pre-commit
+// validateTransactionWriteSet call, so the phase table below now reports
+// exactly that one phase per case instead of being empty -- it measures the
+// write-path validate share this milestone's B2 closure cites.
 const SAMPLE_COUNT = readSampleCountFromEnv(15);
 const WARMUP_ITERATIONS = 3;
 const HOT_PATH_HISTORY_SIZES = [0, 100, 500, 1000] as const;

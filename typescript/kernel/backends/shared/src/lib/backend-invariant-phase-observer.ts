@@ -53,6 +53,19 @@ import process from "node:process";
  * `sqlite-reclamation-validation.ts`'s `assertReclamationSurvivorInvariants`
  * for the full enumeration of what deletion can and cannot break and how
  * each case is covered.
+ *
+ * `validate-write-set` (issue #108 B2 closure) is SQLite-specific: it wraps
+ * `transact()`'s pre-commit call to `validateTransactionWriteSet`, the
+ * targeted, delta-shaped check that re-validates only the rows a single
+ * transaction actually touched (as tracked by `TransactionWriteTracker`),
+ * not the whole committed state. It exists so the write-path validate share
+ * this milestone measures is visible by name in the bench's phase table,
+ * the same way postgres's single `validate` phase already makes its own
+ * (whole-state) write-path validate share visible; the two are deliberately
+ * not the same phase name because they validate different things (a
+ * write's delta vs. the entire committed state) and conflating them would
+ * make a future reader misread SQLite's already-delta-shaped write path as
+ * doing the same whole-state work postgres does.
  */
 export type PersistencePhase =
   | "decode"
@@ -65,6 +78,7 @@ export type PersistencePhase =
   | "validate-lineage-index"
   | "validate-loaded"
   | "validate-reclaim-survivors"
+  | "validate-write-set"
   | "write";
 
 /**

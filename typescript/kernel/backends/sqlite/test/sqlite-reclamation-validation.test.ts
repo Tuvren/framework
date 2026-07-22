@@ -39,6 +39,7 @@ import {
 import {
   createCanonicalKernelTestSchema,
   createStoredObjectRecord,
+  createStoredOrderedPathChunkRecord,
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
 } from "@tuvren/kernel-testkit";
@@ -301,6 +302,71 @@ describe("assertReclamationSurvivorInvariants (issue #108 M6)", () => {
     }
     state.stagedResults.clear();
     state.objects.delete(object.hash);
+
+    throws(
+      () => assertReclamationSurvivorInvariants(state),
+      (error: unknown) =>
+        error instanceof TuvrenPersistenceError &&
+        error.code === "sqlite_backend_missing_object_reference"
+    );
+  });
+
+  // Issue #108 M7 review debt: the seven cases above only ever build a
+  // "single" collectionKind turn-tree path, so they never reach the
+  // `decodeHashStringArray` + `ensureOrderedPathChunkExists` branch
+  // `assertTurnTreePathSurvivorReferences` runs for `chunked` ordered paths,
+  // nor the inline-array `Array.isArray(resolved)` branch it runs for
+  // `flat` ordered paths. The two cases below add a "messages" ordered path
+  // (the canonical schema's other declared path, alongside "context.manifest")
+  // in each encoding and corrupt exactly what a defective sweep could break
+  // in that shape.
+
+  test("rejects a chunked ordered turn-tree path whose referenced chunk a defective sweep deleted", async () => {
+    const { state, object, turnTreePath } = await buildBaseFixture();
+    const chunk = await createStoredOrderedPathChunkRecord([object.hash], 1009);
+    state.orderedPathChunks.set(chunk.chunkHash, chunk);
+    state.turnTreePaths.get(turnTreePath.turnTreeHash)?.set("messages", {
+      collectionKind: "ordered",
+      orderedChunkListCbor: encodeDeterministicKernelRecord([chunk.chunkHash]),
+      orderedCount: 1,
+      orderedEncoding: "chunked",
+      path: "messages",
+      turnTreeHash: turnTreePath.turnTreeHash,
+    });
+
+    // Sanity: the fixture is consistent before the corruption below.
+    doesNotThrow(() => assertReclamationSurvivorInvariants(state));
+
+    state.orderedPathChunks.delete(chunk.chunkHash);
+
+    throws(
+      () => assertReclamationSurvivorInvariants(state),
+      (error: unknown) =>
+        error instanceof TuvrenPersistenceError &&
+        error.code === "sqlite_backend_missing_ordered_path_chunk_reference"
+    );
+  });
+
+  test("rejects a flat (inline-array) ordered turn-tree path whose referenced object a defective sweep deleted", async () => {
+    const { state, turnTreePath } = await buildBaseFixture();
+    const messageObject = await createStoredObjectRecord(
+      new Uint8Array([4, 5, 6]),
+      1010
+    );
+    state.objects.set(messageObject.hash, messageObject);
+    state.turnTreePaths.get(turnTreePath.turnTreeHash)?.set("messages", {
+      collectionKind: "ordered",
+      orderedCount: 1,
+      orderedEncoding: "flat",
+      orderedInlineCbor: encodeDeterministicKernelRecord([messageObject.hash]),
+      path: "messages",
+      turnTreeHash: turnTreePath.turnTreeHash,
+    });
+
+    // Sanity: the fixture is consistent before the corruption below.
+    doesNotThrow(() => assertReclamationSurvivorInvariants(state));
+
+    state.objects.delete(messageObject.hash);
 
     throws(
       () => assertReclamationSurvivorInvariants(state),

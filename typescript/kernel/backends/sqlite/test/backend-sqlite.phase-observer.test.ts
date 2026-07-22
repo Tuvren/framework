@@ -216,6 +216,49 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
       await backend.close();
     }
   });
+
+  test("a RecordingPhaseObserver captures a validate-write-set phase from transact()'s pre-commit write-set check (issue #108 B2 closure)", async () => {
+    const observer = createRecordingPhaseObserver();
+    const backend = createSqliteBackend({
+      databasePath: createTempDatabasePath(),
+      phaseObserver: observer,
+    });
+
+    try {
+      const schema = createCanonicalKernelTestSchema();
+      const schemaRecord = createStoredSchemaRecord(schema, 1);
+      const objectRecord = await createStoredObjectRecord(
+        new Uint8Array([9, 9, 9]),
+        1
+      );
+
+      observer.reset();
+
+      await backend.transact(async (tx) => {
+        await tx.schemas.put(schemaRecord);
+        await tx.objects.put(objectRecord);
+      });
+
+      const transactPhases = observer.samples.map((sample) => sample.phase);
+      strictEqual(
+        transactPhases.filter((phase) => phase === "validate-write-set").length,
+        1,
+        "expected exactly one validate-write-set phase from transact()'s pre-commit check"
+      );
+      // transact() has no decode/encode/load/validate-committed seam (row-
+      // per-record writes, not a full-blob rewrite), so no other phase should
+      // ever appear on this path.
+      for (const phase of transactPhases) {
+        strictEqual(
+          phase,
+          "validate-write-set",
+          `expected transact() to report only validate-write-set phases, saw ${phase}`
+        );
+      }
+    } finally {
+      await backend.close();
+    }
+  });
 });
 
 function fixedReclaimClock(): number {

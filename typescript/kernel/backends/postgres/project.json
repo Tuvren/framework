@@ -28,6 +28,13 @@
         "command": "bun bench/postgres-encode-family.bench.ts"
       }
     },
+    "bench-cross-scope-throughput": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "typescript/kernel/backends/postgres",
+        "command": "bun bench/postgres-cross-scope-throughput.bench.ts"
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {

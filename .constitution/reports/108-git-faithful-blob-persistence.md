@@ -1762,3 +1762,372 @@ attribution, the enumerated coverage table above accounts for every
 deletion-breakable reference the sweep's own semantics expose, and the
 corruption-proof tests demonstrate the targeted check rejects each specific
 class of defective-sweep corruption the brief asked for.
+
+## M7 — B2 closed with measured reason, D1 closed as not applicable (measured), and M6 review debts
+
+**Goal:** close the two remaining open issue areas from the original #108
+disposition matrix — B2 (delta-validation instead of whole-state
+`validateCommittedState` per commit) and D1 (whether the postgres `max: 1`
+pool plus in-process `transactionQueue` wrongly serializes writers on
+*different* scopes) — with committed measurement rather than assertion, and
+fold in the two M6 review debts identified after that milestone landed
+(chunked/inline-array turn-tree-path corruption coverage, and a wiring guard
+proving `reclaim()` actually calls its post-sweep invariant check).
+
+### B2 — closed with measured reason
+
+**The question.** B2 proposed validating only a commit's write-set against
+prior committed state (delta-validation), prototyped shadow-first, instead
+of running whole-state `validateCommittedState` on every commit — on the
+theory that whole-state validation might be a write-path cost worth cutting
+as scope/database size grows.
+
+**The measured answer: whole-state validation is already flat and already a
+negligible share of write cost on both backends, post-M2.** M2 (the shared
+memoized `TurnNodeLineageIndex`) fixed the one place `validateCommittedState`
+could have gone superlinear (`assertTurnNodeBelongsToThread`/
+`assertTurnNodeDescendsFrom`'s per-call ancestor walks); since that landed,
+`validateCommittedState` is O(state size) with a small constant, and every
+bench this report has run confirms it stays a tiny, roughly flat number of
+microseconds regardless of scope/database size, while the surrounding
+write-path work (postgres's whole-blob CBOR decode/encode, sqlite's
+per-record row I/O) grows with size and dominates the total.
+
+**Postgres.** `transact()`'s single `validate` phase (whole-state
+`validateCommittedState`, unchanged in cost by M2/M3/M4 — M3's own text
+above confirms it: "`validate` was already flat/negligible at 13–24 μs at
+every size in M1 and stays so here", and the M3 per-phase comparison at
+10,000 objects measured `validate` at 14.6 μs vs M1's 13.5 μs, i.e. the same
+number within machine noise) against the *current* committed write-latency
+baseline (M3's "after" table — M4's canonical-projection-cache prototype was
+reverted per that milestone's own "closed with measured reason" disposition,
+so M3's numbers, not M4's, are what ships):
+
+| Scope size | total best (M3, committed) | validate best (flat, M1–M3) | share (best) | total median (M3) | validate median (M1) | share (median) |
+|---|---|---|---|---|---|---|
+| 10 | 2.773 ms | 7.5 μs | **0.270%** | 3.720 ms | 8.9 μs | 0.239% |
+| 100 | 5.616 ms | 10.7 μs | **0.191%** | 7.016 ms | 15.3 μs | 0.218% |
+| 1,000 | 26.941 ms | 11.9 μs | **0.044%** | 28.986 ms | 13.8 μs | 0.048% |
+| 10,000 | 248.374 ms | 14.6 μs | **0.006%** | 283.823 ms | 16.7 μs | 0.006% |
+
+**SQLite.** `transact()` has no whole-state validate call on its write path
+at all — `sqlite-backend.ts`'s `transact()` calls
+`validateTransactionWriteSet(this.db, writeTracker)` (line 528), never
+`validateCommittedState`; that whole-state check only runs on the read/
+maintenance paths (`fsck()`/`reclaim()`'s `loadValidatedState`), which this
+issue's write-path question does not concern. This means sqlite's write path
+was **already delta-shaped before this milestone** — `validateTransactionWriteSet`
+re-validates only the rows a transaction actually touched (tracked by
+`TransactionWriteTracker`), the exact shape B2 proposed adding to postgres.
+That call had no phase attribution before this milestone (M1 explicitly
+scoped it out: "`transact()`'s write path is not instrumented in M1... it
+has no full-blob decode/validate/encode seam to attribute"), so this
+milestone adds the minimal instrumentation the B2 closure needs to make its
+share visible by name: a new `"validate-write-set"` `PersistencePhase`
+(`backend-invariant-phase-observer.ts`), wrapping the existing
+`validateTransactionWriteSet` call in `transact()`
+(`sqlite-backend.ts:528-534`) with `this.phaseObserver.startPhase(...)` /
+end, deliberately *not* reusing postgres's `"validate"` name (the two check
+different things — a commit's delta vs. the entire committed state — and
+sharing a name would make a future reader misread sqlite's already-delta-shaped
+write path as doing postgres's whole-state work). `bun run nx run
+backend-sqlite:bench` (`sqlite-hot-path.bench.ts`, n=15, `BENCH_SAMPLE_COUNT`
+default) now reports this phase on every case; the "single object write
+transaction" case is the direct sqlite analogue of postgres's one-object
+`transact()` bench:
+
+| History size | total best/iter | validate-write-set best | share (best) | total median/iter | validate-write-set median | share (median) |
+|---|---|---|---|---|---|---|
+| 0 | 162.662 μs | 752 ns | **0.462%** | 227.064 μs | 1.714 μs | 0.755% |
+| 100 | 152.352 μs | 982 ns | **0.645%** | 217.725 μs | 1.593 μs | 0.732% |
+| 500 | 143.148 μs | 922 ns | **0.644%** | 163.450 μs | 1.042 μs | 0.638% |
+| 1,000 | 142.675 μs | 701 ns | **0.491%** | 162.981 μs | 881 ns | 0.540% |
+
+sqlite's `validate-write-set` share (~0.46–0.76%) is flat across history
+size, as expected: it costs O(write-set size), not O(database size), so
+growing the turn-node chain the write is unrelated to does not move it.
+
+**The disposition.**
+
+1. **Theoretical max gain (Amdahl).** Even a hypothetically *zero-cost*
+   delta validator can only ever save the share measured above: ≤0.27% of
+   write time on postgres (already shrinking as scope grows — 0.27%→0.006%
+   across the ladder, because `validate`'s absolute cost is flat while the
+   denominator grows), and ≤0.76% on sqlite (also flat, but sqlite's write
+   path is already the delta-shaped check B2 asked for, so this is not
+   headroom B2 could add — it is the cost of the delta validator that
+   already runs). Neither number is a write-path bottleneck by any
+   reasonable threshold.
+2. **The O(N)-encode/persist floor dominates regardless.** Postgres's write
+   cost is a whole-blob CBOR `decode` + `encode` + `write` on every
+   `transact()` (M1/M3: `encode` alone is ~168 ms of the ~248 ms best-case
+   total at 10,000 objects — 68% — unchanged by any validation strategy);
+   deleting `validate`'s 14.6 μs entirely would not move that floor.
+   SQLite's write path is **already O(delta)**, not O(database size) — its
+   per-write row operations only ever touch the rows a transaction's
+   repository calls wrote, which is exactly why `validateTransactionWriteSet`
+   (the thing already running) is delta-shaped rather than whole-state. This
+   makes delta-*validation* the only candidate B2 could have targeted on
+   sqlite in the first place (the surrounding write path was never
+   whole-state to begin with), and that candidate's own measured ceiling is
+   the ≤0.76% table above.
+3. **Correctness-risk asymmetry.** Delta-validation requires proving, per
+   invariant, that the invariant is *local* — that no invariant in
+   `validateCommittedState`'s suite (turn-node lineage, branch/turn/run
+   cross-references, turn-tree-path resolution, staged-result references,
+   schema conformance) can be violated by a write whose direct write-set
+   satisfies it in isolation but whose *combination* with unrelated existing
+   state does not. M2's own fix (the shared `TurnNodeLineageIndex`) is
+   direct evidence this is not a safe assumption to make casually: lineage
+   invariants are defined over ancestor chains that a single write's
+   immediate write-set does not fully contain. Proving invariant locality
+   for all twelve state families, correctly, for a ≤0.27%/≤0.76% ceiling, is
+   a poor risk/reward trade against whole-state validation's existing,
+   simple, already-fast-enough correctness argument ("re-check everything,
+   cheaply, every time").
+4. **Base-state threading stays.** `validateCommittedState(state,
+   baseState)`'s two-argument shape (added for the cross-transaction
+   invariants M2's lineage-index fix and the shared-module extraction rely
+   on) remains in place. It costs nothing extra to keep and gives a future
+   milestone a ready seam if a workload profile ever emerges where
+   `validate`'s share is no longer negligible (e.g. a state shape or write
+   pattern this report's benches do not exercise).
+
+**Disposition: B2 — closed with measured reason.** Whole-state validation is
+flat-cost and a ≤0.27% (postgres) / ≤0.76% (sqlite, already-delta) share of
+write time at every measured size; the O(N) encode/persist floor dominates
+regardless of validation strategy; and the invariant-locality proof burden
+delta-validation would require is disproportionate to a ceiling this small.
+No further action beyond the instrumentation and this measurement.
+
+### D1 — closed as not applicable (measured)
+
+**The question.** D1 asked whether the postgres backend's `max: 1`
+connection pool (`postgres-backend-persistence.ts:146`, `createPostgresClient`)
+combined with `PostgresBackend`'s in-process `transactionQueue`
+(`postgres-backend.ts:219`, a `private` per-instance field) wrongly
+serializes writers bound to *different* scopes, the way it deliberately
+does for writers on the *same* scope.
+
+**Architecture fact, confirmed by reading the source.** `PostgresBackend`
+resolves and binds exactly one Scope at construction
+(`this.scope = resolvedOptions.scope ?? DEFAULT_SCOPE`, `postgres-backend.ts:228`,
+validated by `assertScope`), and every persisted row is keyed by
+`(snapshot_id, scope)` — a genuine composite primary key
+(`postgres-backend-persistence.ts:233`), always `snapshot_id = 1` for a
+given scope's single row. `transactionQueue` and the `postgres.js` client's
+connection pool are both **instance fields**, not shared across instances or
+keyed by anything wider than the one scope a given `PostgresBackend` was
+constructed for. Two backend instances bound to two different scopes
+therefore own entirely separate queues and entirely separate `max: 1` pools
+— there is no shared state between them for either layer to serialize on.
+Cross-scope writers already use separate instances in every deployment shape
+this backend supports (`backend-postgres.scope-isolation.test.ts` already
+proves this is correct in isolation; `backend-postgres.pool-contention.test.ts`
+proves the converse — that *same*-scope writers genuinely do serialize on
+the row lock, which is explicitly out of scope for this issue to change).
+D1's premise does not hold architecturally; this milestone proves it does
+not hold operationally either, with a throughput measurement.
+
+**The measurement.** New bench,
+`typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts`
+(`bun run nx run backend-postgres:bench-cross-scope-throughput`, n=5 —
+smaller default than the per-write latency benches' n=15 because each
+sample here is `SCOPE_COUNT × WRITES_PER_SCOPE` real `transact()` round
+trips, not one; override via `BENCH_SAMPLE_COUNT`). Each repetition
+allocates fresh scope names (never reusing a scope across repetitions), so
+per-scope object count stays constant across every repetition instead of
+growing the way the write-latency bench's ladder deliberately does — this
+keeps the comparison isolated to the concurrency question, not conflated
+with the already-measured whole-blob write-latency growth curve. Per
+repetition:
+
+- **Concurrent:** 4 `PostgresBackend` instances, 4 distinct scopes, one
+  shared schema. Each runs 20 sequential `transact()` single-object writes;
+  all 4 scopes' write sequences run concurrently via `Promise.all`, timed
+  end-to-end.
+- **Serial baseline:** 1 `PostgresBackend` instance, 1 scope (same schema),
+  running the same total write count (4 × 20 = 80) sequentially, timed
+  end-to-end.
+- **Correctness:** after the concurrent phase, each of the 4 scopes is
+  re-queried through its own backend instance and asserted to contain
+  exactly its own 20 written hashes and none of the other 3 scopes' hashes
+  (`assertScopeIsolation`) — a lightweight check layered on top of, not a
+  replacement for, `backend-postgres.scope-isolation.test.ts`'s existing,
+  thorough scope-isolation correctness suite, which this bench references
+  rather than duplicates.
+
+**Results (n=5, `2026-07-22`, same machine as the rest of this report):**
+
+| | best | median | p95 | avg |
+|---|---|---|---|---|
+| Concurrent (4 scopes × 20 writes, parallel) | 145.180 ms | 154.569 ms | 197.333 ms | 159.641 ms |
+| Serial (1 scope × 80 writes, sequential) | 645.590 ms | 688.627 ms | 737.684 ms | 691.478 ms |
+
+**Scaling factor (concurrent ÷ serial): best 0.225, median 0.224.** The
+ideal fully-parallel result for 4 independent scopes doing 1/4 the serial
+work each is 1/4 = 0.250; the measured ratio (0.224–0.225) is *at or
+slightly better than* that ideal, not worse — consistent with true
+concurrent I/O-wait overlap across 4 independent connections/pools (each
+scope's `transact()` round trips overlap in wall-clock time instead of
+queueing behind one another), and the opposite of what genuine cross-scope
+serialization would show (a ratio trending toward 1.0, the same total work
+regardless of concurrency). Every repetition's `assertScopeIsolation` check
+passed (the bench throws and fails the run otherwise), confirming the
+concurrent run did not cross-contaminate scopes while achieving that
+speedup.
+
+**Disposition: D1 — closed as not applicable (measured).** Instance-per-scope
+binding means cross-scope parallelism already exists architecturally and is
+confirmed operationally: 4 concurrent scopes complete in ~22.5% of the
+serial-equivalent time, i.e. essentially full parallelism, not the ~100%
+(fully serialized) a shared-queue defect would produce. No production change
+is needed. **Residual observation, explicitly out of scope:** a shared
+connection pool *across* instances (rather than the current one-pool-per-instance
+model) would be a connection-*efficiency* concern — fewer total physical
+connections for a host that multiplexes many scopes in one process — not a
+serialization concern; this is available to a future epic if a host's scope
+count grows large enough that per-scope connection overhead (not
+serialization) becomes the operative cost.
+
+### M6 review debts
+
+**1. Chunked-path and inline-array corruption coverage.** M6's seven
+`sqlite-reclamation-validation.test.ts` cases only ever built a `"single"`
+`collectionKind` turn-tree path, so none of them reached
+`assertTurnTreePathSurvivorReferences`'s `chunked`-encoding branch
+(`decodeHashStringArray(storedPath.orderedChunkListCbor, ...)` +
+`ensureOrderedPathChunkExists`) or its `flat`-encoding
+`Array.isArray(resolved)` branch (the inline hash array). Two cases added:
+
+- *Chunked:* builds a `"messages"` ordered/chunked path (the canonical test
+  schema's other declared path, alongside `"context.manifest"`) referencing
+  a real `StoredOrderedPathChunk` via `createStoredOrderedPathChunkRecord`,
+  confirms the fixture is consistent (`doesNotThrow`), then deletes the
+  chunk from `state.orderedPathChunks` and asserts rejection with
+  `sqlite_backend_missing_ordered_path_chunk_reference`.
+- *Flat/inline-array:* builds a `"messages"` ordered/flat path whose
+  `orderedInlineCbor` references a real object, confirms consistency, then
+  deletes the object and asserts rejection with
+  `sqlite_backend_missing_object_reference`.
+
+  Both new cases pass, and while implementing them a structural observation
+  surfaced worth recording (not fixed — out of this debt's scope):
+  `resolveStoredTurnTreePathValue` (called first, inside
+  `assertTurnTreePathSurvivorReferences`) already internally calls
+  `ensureOrderedPathChunkExists` while resolving a chunked path's item
+  hashes, so it already throws
+  `sqlite_backend_missing_ordered_path_chunk_reference` before the
+  function's own second, explicit chunked-branch loop
+  (lines 285–299 of `sqlite-reclamation-validation.ts`) ever runs; that
+  second loop decodes the exact same `storedPath.orderedChunkListCbor` the
+  first call already walked, so it is currently unreachable as a *distinct*
+  failure path (both would always throw the same code for the same reason).
+  This does not change the correctness of the check or this debt's test
+  coverage — flagged here for the lead in case a future cleanup wants to
+  fold the redundant loop into `resolveStoredTurnTreePathValue`'s own
+  result.
+
+**2. `reclaim()` → `assertReclamationSurvivorInvariants` wiring guard.** New
+file `backend-sqlite.reclaim-invariant-wiring-guard.test.ts`, a call-count
+spy on `assertReclamationSurvivorInvariants` via `node:test`'s `mock.module`
+(the same `--experimental-test-module-mocks` mechanism, dynamic-import-only
+discipline, and `mockContext.restore()` pattern
+`backend-sqlite.rollback-normalization-guard.test.ts` established for
+KRT-BK009's `normalizeBackendError` call-count guard). It asserts a fresh
+backend's `reclaim()` call invokes the real check exactly once, and that a
+second `reclaim()` call invokes it again (call count 2), proving `reclaim()`
+genuinely calls the check function itself rather than only timing an empty
+phase window around it.
+
+*Why a call-count spy instead of an end-to-end corruption-through-`reclaim()`
+test.* An end-to-end fixture where **only**
+`assertReclamationSurvivorInvariants` (not the deferred SQL foreign keys,
+and not `loadValidatedState`'s own pre-sweep `validateCommittedState` pass)
+would catch a defect, driven through the real `reclaim()`, turns out not to
+be constructible without deliberately breaking the sweep itself:
+`loadValidatedState` already fully validates every FK-uncovered opaque-CBOR
+reference the targeted check re-verifies (`consumedStagedResultsCbor`,
+`createdTurnNodesCbor`, turn-tree-path values —
+`sqlite-transaction-validation.ts` / `sqlite-state-validation.ts`) *before*
+the sweep ever runs, so a pre-existing dangling reference is already
+rejected there and never reaches the post-sweep check. And the sweep's own
+reachability closure (`backend-invariant-reclamation.ts`'s
+`closeTurnNodeReachability` / `keepPathObjects`) seeds every one of those
+same references into its keep set for any record it retains, so a *correct*
+sweep cannot itself produce a fresh dangling reference for the post-sweep
+check to catch — only a defective sweep could, and the M6 report's own
+enumerated-coverage table argues (correctly) that the sweep is correct;
+intentionally breaking it to manufacture a test fixture would test a
+hypothetical bug in a different module, not this wiring. The call-count spy
+is the lighter, precedented alternative (KRT-BK009 already established the
+exact mechanism this repository uses for "prove the call happened, not just
+that the outcome looks the same either way") and proves the wiring directly.
+
+### Files touched
+
+- `typescript/kernel/backends/shared/src/lib/backend-invariant-phase-observer.ts`
+  — adds `"validate-write-set"` to the `PersistencePhase` union (B2).
+- `typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts` — wraps
+  `transact()`'s existing `validateTransactionWriteSet` call with the new
+  `"validate-write-set"` phase (B2); no behavior change, timing only.
+- `typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts` —
+  updates the stale M1 comment (the phase table used to be empty by design;
+  it now reports `validate-write-set`).
+- `typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts`
+  — new case asserting `transact()` reports exactly one
+  `validate-write-set` phase and no other phase.
+- `typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts`
+  — two new corruption cases (chunked, flat/inline-array), review debt 1.
+- `typescript/kernel/backends/sqlite/test/backend-sqlite.reclaim-invariant-wiring-guard.test.ts`
+  (new) — the call-count wiring guard, review debt 2.
+- `typescript/kernel/backends/postgres/bench/postgres-cross-scope-throughput.bench.ts`
+  (new) — the D1 throughput/scaling measurement.
+- `typescript/kernel/backends/postgres/project.json` — adds the
+  `bench-cross-scope-throughput` Nx target.
+- `.constitution/reports/108-git-faithful-blob-persistence.md` — this
+  section.
+
+### Validation performed for M7
+
+- `bun run nx run backend-sqlite:test` — 114/114 pass (110 pre-existing plus
+  2 new reclamation-validation corruption cases, 1 new phase-observer case,
+  1 new wiring-guard case).
+- `bun run nx run backend-sqlite:typecheck` — pass.
+- `bun run nx run backend-sqlite:lint` — pass.
+- `bun run nx run backend-postgres:test` — 60/60 pass, unmodified (no
+  postgres `src`/`test` behavior changed; only a new bench file and an Nx
+  target were added).
+- `bun run nx run backend-postgres:typecheck` — pass (covers `bench/**/*.ts`
+  per `tsconfig.typecheck.json`).
+- `bun run nx run backend-postgres:lint` — pass.
+- `bun run nx run backend-shared:test` / `:typecheck` / `:lint` — pass
+  (covers the `PersistencePhase` union addition).
+- `bun run nx run backend-postgres:bench-cross-scope-throughput` — ran to
+  completion, n=5, numbers above; every repetition's scope-isolation
+  assertion passed.
+- `bun run nx run backend-sqlite:bench` — ran to completion, n=15, numbers
+  above.
+- `bun run check` — pass.
+- `bun run verify:kernel` — pass (backend `src` changed: the shared
+  `PersistencePhase` union and sqlite's `transact()` phase wrapping).
+- `git diff | grep '\[DEBUG-'` — no matches outside this report's own prose.
+
+### Deviations from the M7 brief
+
+- The postgres per-size `validate` phase table used for the B2 closure
+  combines M1's per-size best/median values with M3's per-size totals
+  (explicitly justified above: M2/M3/M4 never changed `validate`'s cost,
+  confirmed both by M3's own text and by the direct 10,000-object
+  before/after comparison) rather than re-running the full postgres
+  write-latency bench at every size for this milestone. Re-running it would
+  reproduce numbers already committed in this report to within normal
+  machine noise; the 10,000-object tier (the decisive one) *was* freshly
+  cross-checked via M3's own measured `validate` value (14.6 μs), not
+  assumed.
+- D1's bench uses n=5 rather than the n=15 convention the per-write latency
+  benches use, sized down deliberately because each sample is a full
+  `SCOPE_COUNT × WRITES_PER_SCOPE`-write concurrent-vs-serial pair against
+  real postgres, not a single write; the resulting scaling-factor spread
+  across n=5 (best 0.225 vs median 0.224) is already tight enough that a
+  larger n would not change the qualitative conclusion.
