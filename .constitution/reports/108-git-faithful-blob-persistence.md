@@ -1406,7 +1406,7 @@ the new lightweight `health()` by design):
 
 - `backend-sqlite-test-helpers.ts`'s `expectCorruptedStateRejection` helper
   now calls `fsck()` instead of `health()`. Every test in
-  `backend-sqlite.record-validation.test.ts` (12 cases: invalid run status,
+  `backend-sqlite.record-validation.test.ts` (13 cases: invalid run status,
   invalid object `byteLength`, object hash/bytes mismatch, invalid
   `currentStepIndex`, interrupted staged result with null payload,
   malformed consumed-staged-results payload, corrupted lineage depth,
@@ -1510,3 +1510,255 @@ visible to the lightweight probe by design):
   double-cast pattern already in use for `destroy()`/`sql` elsewhere in the
   postgres test suite. Behavior is identical either way; only the exported
   static type signature differs from what the design anticipated.
+
+## M6 — C1 reclaim single-load
+
+**Goal:** issue #108 area C1 — eliminate sqlite `reclaim()`'s second full
+`loadValidatedState` pass. Post-M2/M5, `reclaim()` called `loadValidatedState`
+twice per call (once to capture survivor keys before the sweep, once to
+re-validate referential integrity after deleting), making its cost roughly
+1.4×–1.9× `fsck()`'s own single-pass cost even though the second pass mostly
+re-verified work the sweep could not have invalidated.
+
+### Design
+
+`reclaim()` keeps its shape — `BEGIN IMMEDIATE` → `defer_foreign_keys = ON`
+→ `loadValidatedState` (unchanged: load, `validate-loaded`,
+`validate-lineage-index`, `validate-committed`) → capture survivor keys →
+`reclaimBackendState` (shared sweep, mutates the loaded projection via
+`Map.delete`) → `applyReclamationDeletions` (batched `DELETE`s diffed from
+pre/post key sets) → `COMMIT` — but the second `loadValidatedState` call
+between the deletes and `COMMIT` is gone. In its place,
+`assertReclamationSurvivorInvariants`
+(`typescript/kernel/backends/sqlite/src/lib/sqlite-reclamation-validation.ts`,
+a new module, exported for direct unit testing the same way
+`encodeSnapshot`/`decodeSnapshot` are in the postgres backend) runs a
+targeted, O(survivors) check directly over the same in-memory `state` object
+the deletes were diffed from — the post-deletion truth, not a fresh read.
+It gets its own `PersistencePhase`, `"validate-reclaim-survivors"`, added to
+the shared union in `backend-invariant-phase-observer.ts`, so the bench's
+phase table stays honest about where reclaim's remaining cost sits after the
+second load disappears.
+
+The reasoning the check relies on: `loadValidatedState`'s first call already
+fully validated the pre-sweep state (shape/identity, the derived
+lineage-root index, every committed-state invariant). `reclaimBackendState`
+only ever calls `Map.delete` on the loaded projection — it never edits a
+surviving record's fields (confirmed by reading every `sweep*` function in
+`typescript/kernel/backends/shared/src/lib/backend-invariant-reclamation.ts`:
+`sweepRuns`/`sweepTurns`/`sweepArchivedBranches`/`sweepTurnNodes`/
+`sweepTurnTrees`/`sweepChunks`/`sweepObjects` are all `Map.delete` loops with
+no field mutation). So nothing about record shape or identity can have
+changed; the only thing deletion can break is a surviving record's
+*reference* to something the sweep removed. `applyReclamationDeletions`
+already computes the swept keys — `reclaimedKeys` diffs the pre-sweep key set
+against the post-sweep `Map` — so those same swept-vs-kept sets are exactly
+what the targeted check needs to verify against, with no additional
+bookkeeping.
+
+### Enumerated invariant coverage
+
+Reasoned from `reclaimBackendState`'s closure-computation semantics
+(`computeKeepClosure`, `sweep*`) and the actual schema
+(`migrations/0001_initial_schema.sql`, `0002_targeted_validation_indexes.sql`):
+
+| Deletion-breakable invariant | Covered by |
+|---|---|
+| Surviving turn node's `previousTurnNodeHash` ancestor chain resolves entirely within survivors | **FK** (`turn_nodes.previous_turn_node_hash → turn_nodes.hash`, self-referencing, enforced at `COMMIT` under `defer_foreign_keys = ON`) **+ targeted check** (`assertSurvivingTurnNodeLineage`'s shared `TurnNodeLineageIndex` walk, for a friendly `sqlite_backend_missing_turn_node_reference`/`sqlite_backend_turn_node_lineage_cycle` error instead of a raw SQLite constraint failure) |
+| Surviving branch's `headTurnNodeHash` resolves to a surviving turn node | **FK** (`branches.head_turn_node_hash → turn_nodes.hash`) **+ targeted check** (`assertSurvivingRootReferences`) |
+| Surviving thread's `rootTurnNodeHash` resolves to a surviving turn node | **FK** (`threads.root_turn_node_hash → turn_nodes.hash`) **+ targeted check** (`assertSurvivingRootReferences`); threads are never swept by `reclaimBackendState` at all (no `sweepThreads` exists), so this is doubly guaranteed |
+| Surviving turn's branch/thread/start-turn-node/head-turn-node references | **FK** (`turns.branch_id`/`thread_id`/`start_turn_node_hash`/`head_turn_node_hash`) **+ targeted check** (`assertSurvivingTurnReferences`) |
+| Surviving run's branch/turn/start-turn-node references | **FK** (`runs.branch_id`/`turn_id`/`start_turn_node_hash`) **+ targeted check** (`assertSurvivingRunReferences`) |
+| Surviving run's `createdTurnNodesCbor` lineage | **Not FK-covered** — it is an opaque CBOR-encoded hash array, not a real column. **Targeted check only** (`assertSurvivingRunReferences` decodes it via `decodeRunCreatedTurnNodeHashes` and checks every hash against the survivors) — this is the genuine gap a deferred FK cannot close |
+| Surviving turn node's `consumedStagedResultsCbor` object references | **Not FK-covered** (same opaque-CBOR reason). **Targeted check only** (`assertSurvivingTurnNodeLineage`, via `decodeTurnNodeConsumedStagedResultObjectHashes`) |
+| Surviving staged result's `runId`/`objectHash` | **FK** (`staged_results.run_id`/`object_hash`) **+ structurally impossible to diverge** (`sweepRuns` in `backend-invariant-reclamation.ts` deletes `state.stagedResults.get(runId)` in the same iteration it deletes `state.runs.get(runId)`) **+ targeted check** (`assertSurvivingStagedResultReferences`) as direct, negligible-cost defense against a defect in that same sweep logic |
+| Surviving turn-tree path's `turnTreeHash` | **FK** (`turn_tree_paths.turn_tree_hash → turn_trees.hash`) **+ structurally impossible to diverge** (`sweepTurnTrees` deletes `state.turnTreePaths` in the same iteration it deletes `state.turnTrees`) **+ targeted check** (`assertSurvivingTurnTreePathReferences`) |
+| Surviving turn-tree path's resolved object/chunk references (`single_hash`, `ordered_inline_cbor`, `ordered_chunk_list_cbor`) | **Not FK-covered** — no foreign key is declared on these columns at all. **Targeted check only** (`assertTurnTreePathSurvivorReferences`, using the same `resolveStoredTurnTreePathValue` the sweep's own `keepPathObjects` closure step uses to decide what to retain) — the other genuine gap |
+| `turn_node_lineage_roots` row set matches `turn_nodes`' surviving row set | **Structurally impossible to diverge** — `applyReclamationDeletions` deletes both tables using the exact same key list (`deletedTurnNodeHashes`), computed once from the same before/after `turnNodes` diff; nothing to re-read from the database |
+| `turn_node_lineage_roots`'s cached `(rootTurnNodeHash, depth)` value for a surviving row | **Structurally impossible to go stale** — deletion never edits a surviving row's columns, and the sweep's `closeTurnNodeReachability` walk retains a kept turn node's *entire* ancestor chain back to genesis, never a partial prefix, so a surviving node's ancestor set is unchanged by the sweep; transitively re-proven by the targeted lineage-chain walk (first row of this table), which would surface a broken link if that structural guarantee were ever violated |
+
+### Corruption-still-caught proof
+
+`assertReclamationSurvivorInvariants` is exported (module-private, not
+re-exported from `index.ts` — the same precedent as postgres's
+`encodeSnapshot`/`decodeSnapshot`) and unit-tested directly in the new
+`typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts`,
+seven cases against a shared, fully cross-referenced fixture builder
+(`buildBaseFixture`: a three-node turn-node chain, thread, branch, turn, run,
+staged result, and turn-tree path, all genuinely resolving to each other):
+
+1. **Baseline** — the unmodified fixture passes (`doesNotThrow`), proving the
+   check does not false-positive on a genuinely consistent post-sweep state.
+2. **Branch head pointing at a deleted node** — deletes the turn node a
+   surviving branch's `headTurnNodeHash` points to; rejects with
+   `sqlite_backend_missing_turn_node_reference`.
+3. **Surviving child of a deleted parent** — deletes the *middle* node of a
+   three-node chain, leaving the branch head (the grandchild, still present)
+   with a broken ancestor link; rejects with
+   `sqlite_backend_missing_turn_node_reference` from the lineage-chain walk,
+   isolated from case 2 by construction (the branch head's own row is never
+   touched in this case).
+4. **`consumedStagedResultsCbor` referencing a deleted object** — deletes the
+   object a surviving turn node's consumed-staged-result entry references;
+   rejects with `sqlite_backend_missing_object_reference`.
+5. **`createdTurnNodesCbor` referencing a deleted turn node** — rebases the
+   branch/turn heads off the node under test first (isolating this case from
+   cases 2–3), then deletes a turn node a surviving run's
+   `createdTurnNodesCbor` lineage references; rejects with
+   `sqlite_backend_missing_turn_node_reference` — the CBOR-blob gap no
+   foreign key can see.
+6. **Staged result of a deleted run** — deletes the run a surviving staged
+   result still references (simulating `sweepRuns` dropping the run map
+   entry without also dropping the staged-results entry); rejects with
+   `sqlite_backend_missing_run_reference`.
+7. **Turn-tree path resolving to a deleted object** — clears every other
+   object reference in the fixture, then deletes the object a surviving
+   turn-tree path's `single_hash` resolves to; rejects with
+   `sqlite_backend_missing_object_reference` — the other CBOR/no-FK gap.
+
+Each case asserts the specific `TuvrenPersistenceError.code`, not just that
+*something* threw, so the proof is that the *right* check catches the
+*right* defect. The pre-existing end-to-end reclamation test
+(`backend-sqlite.reclamation.test.ts`, "reclaims unreferenced objects and
+archived branches after a rollback" / "is a safe no-op when nothing is
+unreachable") was **not modified** and still passes unmodified against the
+real `reclaim()` path, proving normal reclamation still releases unreachable
+data and retains reachable data with the second load gone.
+
+### Before/after: `bun run nx run backend-sqlite:bench-load-cost` (n=15)
+
+**Before** (M2's committed reclaim series — M5 did not re-report `reclaim()`
+numbers since its scope was `health()`/`fsck()` only, and `reclaim()`'s own
+implementation was untouched between M2 and this milestone — against M5's
+committed `fsck()` series, since `fsck()` is byte-for-byte the pre-M5
+`health()` code path `reclaim()`'s own `loadValidatedState` calls always
+ran):
+
+| DB size | fsck best (M5) | reclaim best (M2) | reclaim/fsck ratio |
+|---|---|---|---|
+| 10 | 4.457 ms | 7.065 ms | 1.58× |
+| 100 | 13.398 ms | 22.217 ms | 1.66× |
+| 1,000 | 115.731 ms | 160.901 ms | 1.39× |
+| 10,000 | 1.119 s | 1.580 s | 1.41× |
+
+**After** (this milestone, same machine/ladder, `2026-07-22`, n=15):
+
+| DB size | health best | fsck best | reclaim best | reclaim median | reclaim p95 | reclaim/fsck ratio |
+|---|---|---|---|---|---|---|
+| 10 | 266.4 μs | 4.086 ms | 4.026 ms | 4.914 ms | 6.136 ms | 0.99× |
+| 100 | 235.6 μs | 13.893 ms | 11.223 ms | 11.708 ms | 13.381 ms | 0.81× |
+| 1,000 | 231.7 μs | 115.194 ms | 90.517 ms | 93.686 ms | 106.372 ms | 0.79× |
+| 10,000 | 238.5 μs | 1.098 s | 834.098 ms | 855.039 ms | 905.153 ms | 0.76× |
+
+The reclaim/fsck ratio collapses from **1.4×–1.7×** (the spike-era range the
+brief cited, and consistent with M2/M5's own ~1.3×–1.9× series) down to
+**0.76×–0.99×** — reclaim is now at or *below* `fsck()`'s own single-pass
+cost at every tier, not the ~2× multiple of it the second load used to cost.
+At the decisive 10,000-row tier: reclaim best-case dropped from **1.580 s to
+834 ms, a 1.9× speedup**, while releasing the same `25` orphaned objects each
+sample seeds (`releasedObjectCount=25`, unchanged from prior milestones'
+bench shape).
+
+### Phase attribution: the second load's phases disappear, one new phase replaces them
+
+Per-phase attribution at 10,000 rows (best; `n=15` for every phase now —
+`reclaim()` no longer calls `loadValidatedState` twice, so M1/M2's "n=30
+because two samples of that phase are recorded per single reclaim() call"
+note no longer applies to `reclaim()`):
+
+| Phase | fsck (single load+validate pass) | reclaim (before M6: same pass × 2) | reclaim (after M6) |
+|---|---|---|---|
+| `load` | 164.3 ms | ran twice (~2× 103 ms) | 104.3 ms (once) |
+| `validate-loaded` | 891.0 ms | ran twice (~2× 640–900 ms) | 624.8 ms (once) |
+| `validate-lineage-index` | 19.2 ms | ran twice | 19.2 ms (once) |
+| `validate-committed` | 21.3 ms | ran twice | 21.4 ms (once) |
+| `validate-reclaim-survivors` | n/a (new phase) | did not exist | 21.0 ms (new, replaces the second pass) |
+| `write` | n/a | delete + commit | delete + commit (unchanged) |
+
+`validate-reclaim-survivors` (21.0 ms at 10,000 rows) is roughly **1/40th**
+the cost of the `validate-loaded` pass it stands in for avoiding a second run
+of (891.0 ms) — the O(survivors) targeted check is dramatically cheaper than
+a full per-record identity re-hash plus a fresh database read, exactly the
+saving the design predicted. The updated
+`backend-sqlite.phase-observer.test.ts` case ("a RecordingPhaseObserver
+captures every persistence phase in the order fsck()/reclaim() run them")
+asserts this shape directly: every `load`/`validate-*` phase from
+`loadValidatedState` now appears **exactly once** per `reclaim()` call (was
+twice before this milestone), `validate-reclaim-survivors` appears exactly
+once and is attributed after `validate-committed`, and `write` still appears
+at least twice (the batched deletes, then `COMMIT`).
+
+### Files touched
+
+- `typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts` — `reclaim()`
+  drops the second `loadValidatedState` call, adds the
+  `validate-reclaim-survivors` phase around the new targeted check, and its
+  doc comment (plus `loadValidatedState`'s) is updated to describe the new
+  shape and the FK/targeted-check reliance.
+- `typescript/kernel/backends/sqlite/src/lib/sqlite-reclamation-validation.ts`
+  (new) — `assertReclamationSurvivorInvariants` and its six per-family helper
+  functions, with the full enumerated-coverage reasoning in its doc comment.
+- `typescript/kernel/backends/shared/src/lib/backend-invariant-phase-observer.ts`
+  — adds `"validate-reclaim-survivors"` to the `PersistencePhase` union.
+- `typescript/kernel/backends/sqlite/test/sqlite-reclamation-validation.test.ts`
+  (new) — the seven corruption-proof unit tests described above.
+- `typescript/kernel/backends/sqlite/test/backend-sqlite.phase-observer.test.ts`
+  — updated reclaim-phase assertions for the single-load shape plus the new
+  phase.
+- `typescript/kernel/backends/sqlite/test/backend-sqlite-test-helpers.ts` —
+  adds `sqlite-reclamation-validation.js` to the fake-dist-layout file list
+  `copyCompiledSqliteRuntimeBundle` copies, so the dist-layout startup tests
+  keep resolving the new module.
+- `typescript/kernel/protocol/src/lib/kernel-types.ts` — M5 review debt:
+  tightens `RuntimeBackend.health()`'s doc comment to state what it actually
+  proves (connectivity plus schema/migration liveness) and explicitly not
+  prove (a decodable/semantically valid committed blob), pointing to
+  backend-level `fsck()`/commit-time validation for the deeper guarantee.
+  `docs/KrakenKernelSpecification.md` §8.1 (Storage Contract) does not
+  mention `health()` at all, so it was already "probe-shaped" by omission
+  and needed no alignment edit.
+- `typescript/kernel/testkit/src/lib/fault-injecting-backend.ts` — M5 review
+  debt: forwards an optional `fsck()` method through
+  `createFaultInjectingBackend`'s decorator (discovered structurally via
+  `readOptionalFsckMethod`, the same `Reflect.get`-based pattern
+  `close`/`destroy` already use, since `fsck` is not a `RuntimeBackend`
+  member), so a wrapped backend that has `fsck()` does not silently lose it
+  behind the fault-injection decorator.
+
+### Validation performed for M6
+
+- `bun run nx run backend-sqlite:test` — 110/110 pass (103 pre-existing plus
+  7 new `assertReclamationSurvivorInvariants` corruption-proof cases; the
+  pre-existing reclamation end-to-end tests and the phase-observer suite
+  pass with the phase-observer test's reclaim-phase assertions updated for
+  the new single-load shape).
+- `bun run nx run backend-sqlite:typecheck` — pass.
+- `bun run nx run backend-sqlite:lint` — pass (after one `biome check --write`
+  formatting pass over the new/edited files; no logic changes from
+  formatting).
+- `bun run nx run backend-shared:typecheck` — pass (the `PersistencePhase`
+  union addition).
+- `bun run nx run backend-postgres:typecheck` — pass (unaffected; postgres's
+  `reclaim()` was never in scope for this milestone since it already runs a
+  single load/validate pass, per its own snapshot-blob write model).
+- `bun run nx run kernel-contract-protocol:typecheck` /`:lint` /`:test` —
+  pass (86/86 tests; the `health()` doc-comment change).
+- `bun run nx run kernel-testkit:typecheck` /`:lint` /`:test` — pass (13/13
+  tests; the `fsck()` forwarding change).
+- `bun run check` — pass (fast inner-loop lane: authority gates + affected
+  typecheck/test/lint across the full affected set).
+- `bun run verify:kernel` — pass, including sqlite conformance at
+  `71/71` applicable checks (`kernel-typescript-sqlite-certification`) —
+  reclamation's observable semantics (what is released/retained under grace
+  windows, leases, live roots) are unchanged; `spec/conformance/kernel/plans/kernel-reclamation.json`
+  stayed green throughout.
+- `git diff | grep '\[DEBUG-'` — no matches outside this report's own prose.
+
+### Deviations from the M6 brief
+
+None. The design landed as specified: the second `loadValidatedState` pass
+is gone, replaced by a targeted O(survivors) check with its own phase
+attribution, the enumerated coverage table above accounts for every
+deletion-breakable reference the sweep's own semantics expose, and the
+corruption-proof tests demonstrate the targeted check rejects each specific
+class of defective-sweep corruption the brief asked for.

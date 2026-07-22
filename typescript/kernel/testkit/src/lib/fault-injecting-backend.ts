@@ -116,10 +116,22 @@ type TransactionOutcome<T> =
   | { error: unknown; status: "rejected" };
 
 /**
+ * Structural shape of the optional backend-level `fsck()` maintenance
+ * method (issue #108 M5) some backends (e.g. `SqliteBackend`,
+ * `PostgresBackend`) expose. Deliberately not part of `RuntimeBackend` — it
+ * is a maintenance capability above the kernel-driven contract, not a
+ * syscall — so a wrapped backend that has it must be discovered
+ * structurally, the same way `close`/`destroy` already are below.
+ */
+interface FsckCapableBackend {
+  fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
+}
+
+/**
  * Wraps a `RuntimeBackend` so its next matching `transact` call (per
  * `plan`) fails at a chosen point in the commit sequence, for exercising a
  * backend's crash-recovery behavior. `capabilities`/`health`/`reclaim`/
- * `purgeScope`/`close`/`destroy` pass straight through to `inner`
+ * `purgeScope`/`close`/`destroy`/`fsck` pass straight through to `inner`
  * unmodified; only `transact` is instrumented.
  *
  * Requires the wrapped backend to expose a hidden fault-injection control
@@ -145,6 +157,7 @@ export function createFaultInjectingBackend(
   const decorated: RuntimeBackend & {
     close?: () => Promise<void>;
     destroy?: (options?: { dropSchema?: boolean }) => Promise<void>;
+    fsck?: FsckCapableBackend["fsck"];
   } = {
     capabilities() {
       return inner.capabilities();
@@ -249,6 +262,7 @@ export function createFaultInjectingBackend(
 
   const closeMethod = readOptionalMethod(inner, "close");
   const destroyMethod = readOptionalMethod(inner, "destroy");
+  const fsckMethod = readOptionalFsckMethod(inner);
 
   if (closeMethod !== undefined) {
     decorated.close = closeMethod.bind(inner);
@@ -256,6 +270,10 @@ export function createFaultInjectingBackend(
 
   if (destroyMethod !== undefined) {
     decorated.destroy = destroyMethod.bind(inner);
+  }
+
+  if (fsckMethod !== undefined) {
+    decorated.fsck = fsckMethod.bind(inner);
   }
 
   return decorated;
@@ -536,4 +554,19 @@ function readOptionalMethod(
 ): ((...args: unknown[]) => Promise<void>) | undefined {
   const method = Reflect.get(value, key);
   return typeof method === "function" ? method : undefined;
+}
+
+/**
+ * Reads an optional `fsck()` method off `value` if present and callable —
+ * mirrors {@link readOptionalMethod}, but kept separate since `fsck`'s
+ * return type differs from `close`/`destroy`'s and it is not a key of
+ * `RuntimeBackend`, so it cannot be discovered through that interface.
+ */
+function readOptionalFsckMethod(
+  value: object
+): FsckCapableBackend["fsck"] | undefined {
+  const method = Reflect.get(value, "fsck");
+  return typeof method === "function"
+    ? (method as FsckCapableBackend["fsck"])
+    : undefined;
 }

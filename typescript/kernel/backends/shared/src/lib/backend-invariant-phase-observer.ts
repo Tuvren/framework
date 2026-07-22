@@ -43,6 +43,16 @@ import process from "node:process";
  * and on every successful write, so a cache-hit load shows only `hash`
  * where a cache-miss load still shows `hash` followed by the usual
  * `decode`.
+ *
+ * `validate-reclaim-survivors` (issue #108 M6) is SQLite-specific: it
+ * replaces the second, full `loadValidatedState` pass `reclaim()` used to
+ * run after sweeping and deleting the unreachable closure. Instead of
+ * reloading and fully re-validating the whole database a second time,
+ * `reclaim()` now runs a targeted, O(survivors) check directly over the
+ * already-swept in-memory projection — see
+ * `sqlite-reclamation-validation.ts`'s `assertReclamationSurvivorInvariants`
+ * for the full enumeration of what deletion can and cannot break and how
+ * each case is covered.
  */
 export type PersistencePhase =
   | "decode"
@@ -54,6 +64,7 @@ export type PersistencePhase =
   | "validate-committed"
   | "validate-lineage-index"
   | "validate-loaded"
+  | "validate-reclaim-survivors"
   | "write";
 
 /**

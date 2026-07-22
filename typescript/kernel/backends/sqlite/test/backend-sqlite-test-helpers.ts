@@ -158,6 +158,7 @@ export function copyCompiledSqliteRuntimeBundle(
     "sqlite-state-utils.js",
     "sqlite-state-validation.js",
     "sqlite-reclamation.js",
+    "sqlite-reclamation-validation.js",
     "sqlite-run-invariants.js",
     "sqlite-db-lineage.js",
     "sqlite-integrity-assertions.js",

@@ -92,6 +92,7 @@ import {
   selectTurnTreePathsByTurnTree,
 } from "./sqlite-lookups.js";
 import { reclaimBackendState } from "./sqlite-reclamation.js";
+import { assertReclamationSurvivorInvariants } from "./sqlite-reclamation-validation.js";
 import {
   type BackendState,
   decodeHashStringArray,
@@ -576,7 +577,30 @@ class SqliteBackend implements KrakenBackend {
    * Runs the §9.4 reachability reclamation sweep in one serialized
    * transaction: load and validate the persisted state, sweep the in-memory
    * projection, mirror the removed keys as batched row deletions (with
-   * deferred foreign keys), then re-validate before `COMMIT`.
+   * deferred foreign keys), then run a targeted post-sweep check before
+   * `COMMIT`.
+   *
+   * Issue #108 M6: this used to run the *entire* `loadValidatedState` pass
+   * (a fresh `loadState` from disk plus full re-validation) a second time
+   * after the sweep, to re-prove referential integrity before the deferred
+   * foreign-key checks fired at `COMMIT`. That second pass re-verified two
+   * things the sweep cannot have changed — per-record shape/identity (the
+   * sweep only deletes whole rows, it never edits a surviving record's
+   * fields) and the derived lineage-root index's cached values for
+   * survivors (structurally guaranteed stable — see
+   * `assertReclamationSurvivorInvariants`'s doc comment) — while costing
+   * roughly as much as the entire rest of the operation combined. It is
+   * replaced with `assertReclamationSurvivorInvariants`, a targeted,
+   * O(survivors) check directly over the already-swept in-memory `state`
+   * (the same object the deletes below were diffed from), which checks only
+   * what deletion can actually break: whether a surviving record now
+   * references something the sweep removed. Real SQL `FOREIGN KEY`
+   * constraints, enforced by SQLite itself at this `COMMIT` under
+   * `defer_foreign_keys = ON`, independently cover most of the same ground;
+   * the targeted check additionally covers the CBOR-encoded reference
+   * arrays (`consumedStagedResultsCbor`, `createdTurnNodesCbor`, turn-tree
+   * path values) no foreign key can see, and produces a friendly
+   * `sqlite_backend_*` error instead of a raw constraint-failure message.
    *
    * @param options - `nowMs` overrides the backend clock for leaseless-run
    *   expiry evaluation.
@@ -596,8 +620,9 @@ class SqliteBackend implements KrakenBackend {
       try {
         this.db.exec("BEGIN IMMEDIATE");
         // Defer foreign-key enforcement to COMMIT so the unreachable closure can
-        // be deleted in any table order; the post-delete `loadValidatedState`
-        // re-asserts referential integrity before the deferred checks run.
+        // be deleted in any table order; the post-delete targeted check plus
+        // SQLite's own deferred FK check re-assert referential integrity
+        // before this COMMIT actually runs.
         this.db.pragma("defer_foreign_keys = ON");
 
         const state = await loadValidatedState(this.db, this.phaseObserver);
@@ -621,7 +646,14 @@ class SqliteBackend implements KrakenBackend {
           endDeleteWrite();
         }
 
-        await loadValidatedState(this.db, this.phaseObserver);
+        const endValidateSurvivors = this.phaseObserver.startPhase(
+          "validate-reclaim-survivors"
+        );
+        try {
+          assertReclamationSurvivorInvariants(state);
+        } finally {
+          endValidateSurvivors();
+        }
 
         const endCommitWrite = this.phaseObserver.startPhase("write");
         try {
@@ -1051,7 +1083,10 @@ function runMigrations(db: Database.Database, now: () => number): void {
  * migration posture, per-record shape/identity, the derived lineage-root
  * index, and the committed-state invariant suite. Used by `fsck` (issue
  * #108 M5 — `health()` no longer runs this; see `fsck`'s doc comment) and as
- * the pre/post gate around reclamation.
+ * `reclaim`'s single pre-sweep gate (issue #108 M6 — `reclaim` no longer
+ * calls this a second time after sweeping; see `reclaim`'s doc comment and
+ * `assertReclamationSurvivorInvariants` for what replaces the post-sweep
+ * pass).
  *
  * @param phaseObserver - Phase-attribution seam (issue #108): the row load
  *   (`loadState`) is charged to "load"; per-record shape/identity

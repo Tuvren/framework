@@ -28,7 +28,10 @@
 // the phased load+validate pass from `health()` to the new `fsck()`
 // maintenance method (`health()` is now a lightweight probe with no phases
 // to attribute), so the phase-attribution assertions below exercise
-// `fsck()`, not `health()`.
+// `fsck()`, not `health()`. M6 dropped reclaim()'s former second
+// loadValidatedState pass in favor of a single "validate-reclaim-survivors"
+// phase over the targeted post-sweep check — see the M6 section of the same
+// report.
 
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -174,25 +177,33 @@ describe("@tuvren/backend-sqlite phase observer seam (issue #108)", () => {
       await backend.reclaim({ nowMs: fixedReclaimClock() });
 
       const reclaimPhases = observer.samples.map((sample) => sample.phase);
-      // reclaim() runs loadValidatedState twice (before and after the sweep's
-      // deletions) plus its own delete/commit write phases, so "load" and
-      // every "validate-*" sub-phase must each appear twice and "write" at
-      // least twice.
+      // Issue #108 M6: reclaim() now calls loadValidatedState only once (the
+      // pre-sweep gate), so "load" and every "validate-*" sub-phase from that
+      // call appear exactly once; the former second loadValidatedState pass
+      // is replaced by the single "validate-reclaim-survivors" phase, and
+      // "write" still appears at least twice (the sweep's batched deletes,
+      // then COMMIT).
       for (const phase of [
         "load",
         "validate-loaded",
         "validate-lineage-index",
         "validate-committed",
+        "validate-reclaim-survivors",
       ] as const) {
         strictEqual(
           reclaimPhases.filter((sample) => sample === phase).length,
-          2,
-          `expected two ${phase} phases from reclaim()'s two loadValidatedState calls`
+          1,
+          `expected exactly one ${phase} phase from reclaim()'s single loadValidatedState call plus its targeted post-sweep check`
         );
       }
       ok(
         reclaimPhases.filter((phase) => phase === "write").length >= 2,
         "expected at least two write phases from reclaim()'s delete and commit"
+      );
+      ok(
+        reclaimPhases.indexOf("validate-committed") <
+          reclaimPhases.indexOf("validate-reclaim-survivors"),
+        "expected the pre-sweep validate-committed phase to be attributed before the post-sweep validate-reclaim-survivors phase"
       );
 
       for (const sample of observer.samples) {
