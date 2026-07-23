@@ -17,6 +17,8 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import process from "node:process";
+import { createRecordingPhaseObserver } from "@tuvren/backend-shared";
 import type {
   RuntimeBackend,
   StoredBranch,
@@ -30,10 +32,26 @@ import {
   createStoredSchemaRecord,
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
+  formatNs,
+  formatPhaseTable,
+  type PhaseStats,
+  percentile,
+  readSampleCountFromEnv,
+  summarizePhases,
 } from "@tuvren/kernel-testkit";
 import { createSqliteBackend } from "../src/index.js";
 
-const SAMPLE_COUNT = 5;
+// Override via BENCH_SAMPLE_COUNT; see postgres-write-latency.bench.ts /
+// sqlite-load-cost.bench.ts for the n=5 -> p95≈max rationale. transact() on
+// this backend was not phase-instrumented in M1 (issue #108): SQLite's write
+// path is already row-granular, not a full-blob rewrite, so it has no
+// decode/validate-committed/encode seam to attribute. The B2-closure
+// milestone (see the report's "B2" section) adds a single
+// "validate-write-set" phase around transact()'s pre-commit
+// validateTransactionWriteSet call, so the phase table below now reports
+// exactly that one phase per case instead of being empty -- it measures the
+// write-path validate share this milestone's B2 closure cites.
+const SAMPLE_COUNT = readSampleCountFromEnv(15);
 const WARMUP_ITERATIONS = 3;
 const HOT_PATH_HISTORY_SIZES = [0, 100, 500, 1000] as const;
 
@@ -53,6 +71,7 @@ interface BenchmarkResult {
   medianNs: number;
   name: string;
   p95Ns: number;
+  phases: PhaseStats[];
 }
 
 interface SeededHistory {
@@ -73,8 +92,10 @@ async function main(): Promise<void> {
     const tempDirectory = mkdtempSync(join(tmpdir(), "tuvren-sqlite-bench-"));
 
     try {
+      const observer = createRecordingPhaseObserver();
       const backend = createSqliteBackend({
         databasePath: join(tempDirectory, "kraken.db"),
+        phaseObserver: observer,
       });
 
       const seededHistory = await seedHistory(backend, historySize);
@@ -83,10 +104,10 @@ async function main(): Promise<void> {
         backend,
         seededHistory
       )) {
-        const result = await measure(benchmarkCase);
+        const result = await measure(benchmarkCase, observer);
         results.push(result);
         process.stdout.write(
-          `${result.name} at ${result.historySize} TurnNodes: best ${formatNs(
+          `${result.name} at ${result.historySize} TurnNodes (n=${SAMPLE_COUNT}): best ${formatNs(
             result.bestNs
           )} total, ${formatNs(result.bestNs / result.iterations)}/iter; median ${formatNs(
             result.medianNs / result.iterations
@@ -94,6 +115,7 @@ async function main(): Promise<void> {
             result.averageNs
           )} total\n`
         );
+        process.stdout.write(formatPhaseTable(result.phases));
       }
     } finally {
       rmSync(tempDirectory, { force: true, recursive: true });
@@ -117,6 +139,7 @@ async function main(): Promise<void> {
           name: result.name,
           p95Ns: result.p95Ns,
           p95PerIterationNs: result.p95Ns / result.iterations,
+          phases: result.phases,
         })),
       },
       null,
@@ -329,13 +352,20 @@ function createBenchmarkCases(
   ];
 }
 
-async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
+async function measure(
+  benchmarkCase: BenchmarkCase,
+  observer: ReturnType<typeof createRecordingPhaseObserver>
+): Promise<BenchmarkResult> {
   const warmupIterations = Math.min(
     WARMUP_ITERATIONS,
     benchmarkCase.iterations
   );
   await benchmarkCase.prepare?.(warmupIterations);
   await benchmarkCase.run(warmupIterations);
+
+  // Only attribute phases for the measured samples below, not the warmup
+  // iterations above.
+  observer.reset();
 
   const samples: number[] = [];
 
@@ -359,6 +389,7 @@ async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
     bestNs,
     historySize: benchmarkCase.historySize,
     iterations: benchmarkCase.iterations,
+    phases: summarizePhases(observer.samples),
     medianNs,
     name: benchmarkCase.name,
     p95Ns,
@@ -465,38 +496,4 @@ async function seedHistory(
     rootTurnNodeHash: rootTurnNode.hash,
     threadId: thread.threadId,
   };
-}
-
-function percentile(sortedSamples: readonly number[], rank: number): number {
-  if (sortedSamples.length === 0) {
-    throw new Error("expected benchmark samples");
-  }
-
-  const index = Math.min(
-    sortedSamples.length - 1,
-    Math.max(0, Math.ceil(sortedSamples.length * rank) - 1)
-  );
-  const value = sortedSamples[index];
-
-  if (value === undefined) {
-    throw new Error("expected benchmark sample at percentile index");
-  }
-
-  return value;
-}
-
-function formatNs(value: number): string {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(3)}s`;
-  }
-
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(3)}ms`;
-  }
-
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(3)}us`;
-  }
-
-  return `${value.toFixed(0)}ns`;
 }

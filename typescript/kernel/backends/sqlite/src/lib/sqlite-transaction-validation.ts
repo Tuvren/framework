@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import type { StoredBranch, StoredTurnNode } from "@tuvren/kernel-protocol";
+import {
+  createTurnNodeLineageIndex,
+  resolveTurnNodeLineagePosition,
+} from "@tuvren/backend-shared";
+import type { StoredBranch } from "@tuvren/kernel-protocol";
 import type Database from "better-sqlite3";
 import {
   assertActiveRunHeadAlignmentInDatabase,
@@ -180,6 +184,18 @@ export function validateTurnNodeLineageRootIndex(
     }
   }
 
+  // Issue #108 M2: `expectedPosition` used to be recomputed by walking
+  // `previousTurnNodeHash` ancestry all the way to the thread root on every
+  // single turn node (`computeExpectedTurnNodeLineageMetadata`), making this
+  // loop O(n^2) on a long linear chain — the measured superlinear residual
+  // in `loadValidatedState` (see the M2 section of
+  // `.constitution/reports/108-git-faithful-blob-persistence.md`). One
+  // `TurnNodeLineageIndex` shared across every iteration below memoizes each
+  // node's root+depth the first time it is reached, so the whole loop is
+  // O(n) total: a shared ancestor prefix (the common case on a chain) is
+  // walked at most once no matter how many turn nodes reference it.
+  const lineageIndex = createTurnNodeLineageIndex();
+
   for (const turnNode of state.turnNodes.values()) {
     const actualMetadata = actualMetadataByTurnNodeHash.get(turnNode.hash);
 
@@ -191,14 +207,34 @@ export function validateTurnNodeLineageRootIndex(
       );
     }
 
-    const expectedMetadata = computeExpectedTurnNodeLineageMetadata(
-      state,
-      turnNode
+    const expectedPosition = resolveTurnNodeLineagePosition(
+      state.turnNodes,
+      turnNode,
+      lineageIndex,
+      {
+        onCycle: (): never => {
+          throw persistenceError(
+            "turn node lineage must not contain cycles",
+            "sqlite_backend_turn_node_lineage_cycle",
+            { turnNodeHash: turnNode.hash }
+          );
+        },
+        onMissingPreviousTurnNode: (missingTurnNodeHash: string): never => {
+          throw persistenceError(
+            "turn node lineage metadata requires complete turn node parent links",
+            "sqlite_backend_missing_turn_node_reference",
+            {
+              previousTurnNodeHash: missingTurnNodeHash,
+              turnNodeHash: turnNode.hash,
+            }
+          );
+        },
+      }
     );
 
     if (
-      actualMetadata.rootTurnNodeHash !== expectedMetadata.rootTurnNodeHash ||
-      actualMetadata.depth !== expectedMetadata.depth
+      actualMetadata.rootTurnNodeHash !== expectedPosition.rootTurnNodeHash ||
+      actualMetadata.depth !== expectedPosition.depth
     ) {
       throw persistenceError(
         "turn node lineage metadata must match the parent-linked turn node chain",
@@ -206,8 +242,8 @@ export function validateTurnNodeLineageRootIndex(
         {
           actualDepth: actualMetadata.depth,
           actualRootTurnNodeHash: actualMetadata.rootTurnNodeHash,
-          expectedDepth: expectedMetadata.depth,
-          expectedRootTurnNodeHash: expectedMetadata.rootTurnNodeHash,
+          expectedDepth: expectedPosition.depth,
+          expectedRootTurnNodeHash: expectedPosition.rootTurnNodeHash,
           turnNodeHash: turnNode.hash,
         }
       );
@@ -788,60 +824,6 @@ function validateTurnTreePathsInDatabase(
     decodeTurnNodeConsumedStagedResultObjectHashes,
     validateHashString,
   });
-}
-
-/**
- * Recomputes a turn node's expected lineage metadata (root hash, depth) by
- * walking `previousTurnNodeHash` ancestry over an already-loaded
- * `BackendState`, the ground truth {@link validateTurnNodeLineageRootIndex}
- * checks the persisted `turn_node_lineage_roots` index against.
- *
- * @throws The injected persistence error with code
- *   `sqlite_backend_turn_node_lineage_cycle` on a lineage cycle, or
- *   `sqlite_backend_missing_turn_node_reference` on a broken parent link.
- */
-function computeExpectedTurnNodeLineageMetadata(
-  state: BackendState,
-  turnNode: StoredTurnNode
-): TurnNodeLineageMetadata {
-  const visitedTurnNodeHashes = new Set<string>();
-  let currentTurnNode = turnNode;
-  let depth = 0;
-
-  while (currentTurnNode.previousTurnNodeHash !== null) {
-    if (visitedTurnNodeHashes.has(currentTurnNode.hash)) {
-      throw persistenceError(
-        "turn node lineage must not contain cycles",
-        "sqlite_backend_turn_node_lineage_cycle",
-        { turnNodeHash: turnNode.hash }
-      );
-    }
-
-    visitedTurnNodeHashes.add(currentTurnNode.hash);
-    const previousTurnNode = state.turnNodes.get(
-      currentTurnNode.previousTurnNodeHash
-    );
-
-    if (previousTurnNode === undefined) {
-      throw persistenceError(
-        "turn node lineage metadata requires complete turn node parent links",
-        "sqlite_backend_missing_turn_node_reference",
-        {
-          previousTurnNodeHash: currentTurnNode.previousTurnNodeHash,
-          turnNodeHash: turnNode.hash,
-        }
-      );
-    }
-
-    currentTurnNode = previousTurnNode;
-    depth += 1;
-  }
-
-  return {
-    depth,
-    rootTurnNodeHash: currentTurnNode.hash,
-    turnNodeHash: turnNode.hash,
-  };
 }
 
 /**

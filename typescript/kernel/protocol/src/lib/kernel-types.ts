@@ -985,8 +985,14 @@ export interface RuntimeBackend {
    */
   capabilities(): BackendCapability;
   /**
-   * Probes the durable substrate. Returns `{ ok: true }` when the backend can
-   * serve traffic, otherwise `{ ok: false }` with a human-readable reason.
+   * Probes the durable substrate's liveness: connectivity plus schema/
+   * migration posture (e.g. a persisted snapshot row exists and its
+   * `schema_version` is one this backend supports). Returns `{ ok: true }`
+   * when the backend can serve traffic, otherwise `{ ok: false }` with a
+   * human-readable reason. Does NOT prove a committed blob is decodable or
+   * semantically valid — that deeper validation is a backend-level concern
+   * (e.g. `fsck()`-style maintenance methods, or the validation every write
+   * already runs before `COMMIT`), not part of this contract.
    */
   health(): Promise<{ ok: true } | { ok: false; reason: string }>;
   /**

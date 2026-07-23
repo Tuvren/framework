@@ -204,7 +204,12 @@ erDiagram
   - WAL mode enabled.
   - Kernel write transactions use `BEGIN IMMEDIATE` and commit atomically.
   - Normal kernel write transactions validate touched records, referenced records, active Branch/Run constraints, and required lineage proofs without reloading and validating the full database.
-  - Full persisted-state validation belongs to explicit health and diagnostic paths.
+  - Full persisted-state validation belongs to an explicit maintenance path
+    (each backend's `fsck()`), not the hot read path. `health()` is a
+    lightweight liveness/coherence probe (connectivity plus schema/migration
+    checks) with no whole-state load or validation, per issue #108/ADR-066;
+    the full load-and-validate pass it used to run on every call is one
+    `fsck()` call away.
   - SQLite may maintain backend-local validation indexes such as TurnNode lineage root/depth metadata; those indexes do not change canonical kernel record shapes.
   - The first SQLite backend implementation uses `better-sqlite3@12.8.0`.
   - Because of that binding choice, the first SQLite backend implementation targets Node.js runtimes with local filesystem access and native addon support.

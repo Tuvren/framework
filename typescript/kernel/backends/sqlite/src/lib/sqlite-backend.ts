@@ -20,6 +20,10 @@ import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, format, parse } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  NOOP_PHASE_OBSERVER,
+  type PhaseObserver,
+} from "@tuvren/backend-shared";
+import {
   assertScope,
   DEFAULT_SCOPE,
   type EpochMs,
@@ -88,6 +92,7 @@ import {
   selectTurnTreePathsByTurnTree,
 } from "./sqlite-lookups.js";
 import { reclaimBackendState } from "./sqlite-reclamation.js";
+import { assertReclamationSurvivorInvariants } from "./sqlite-reclamation-validation.js";
 import {
   type BackendState,
   decodeHashStringArray,
@@ -230,6 +235,14 @@ export interface SqliteBackendOptions {
    */
   now?: () => EpochMs;
   /**
+   * Phase-attribution seam (issue #108) for the load/validate/write cost of
+   * `health()`, `reclaim()`, and the `loadValidatedState` call they share.
+   * Defaults to {@link NOOP_PHASE_OBSERVER}, so omitting it costs one shared
+   * frozen no-op call per phase and never changes measured production bytes
+   * or behavior. Benches/tests supply a recording observer instead.
+   */
+  phaseObserver?: PhaseObserver;
+  /**
    * Host-supplied partition identity bound at construction (ADR-048).
    *
    * Isolation is realized as file-per-scope (ADR-049): the default Scope maps to
@@ -298,6 +311,7 @@ class SqliteBackend implements KrakenBackend {
     hooks: null,
   };
   private readonly now: () => number;
+  private readonly phaseObserver: PhaseObserver;
   /**
    * The concrete per-Scope database file backing this backend (file-per-scope
    * isolation, ADR-049). Retained so `purgeScope` can drop the partition by
@@ -309,6 +323,7 @@ class SqliteBackend implements KrakenBackend {
 
   constructor(options: SqliteBackendOptions) {
     this.now = options.now ?? Date.now;
+    this.phaseObserver = options.phaseObserver ?? NOOP_PHASE_OBSERVER;
     const scope = options.scope ?? DEFAULT_SCOPE;
     assertScope(scope);
     this.scopedDatabasePath = resolveScopedDatabasePath(
@@ -347,15 +362,73 @@ class SqliteBackend implements KrakenBackend {
   }
 
   /**
-   * Deep health probe: loads and fully validates the persisted state inside
-   * a read-only (rolled-back) transaction. Returns `{ ok: false, reason }`
+   * Lightweight liveness/coherence probe (issue #108 M5). Confirms the
+   * connection is open and can genuinely start and complete a transaction
+   * (`BEGIN IMMEDIATE` / `ROLLBACK` around a trivial read — the same
+   * transaction hygiene the old deep probe used, so a connection wedged
+   * mid-transaction still fails here), and that the migration/schema
+   * posture matches this package version (`validateMigrationState`, which
+   * is cheap and is what catches a missing/mismatched table or index).
+   * Deliberately does NOT load or validate the persisted state:
+   * `RuntimeBackend.health()`'s contract (kernel-protocol's
+   * `kernel-types.ts`) only promises "can serve traffic", no conformance
+   * plan requires a full per-record re-validation on every call, and every
+   * write already re-validates its own transaction before `COMMIT`
+   * (`validateTransactionWriteSet` plus the repository invariants). The
+   * full load+validate pass this method used to run on every call is still
+   * available on demand via {@link fsck} — the Git-fsck analogy this
+   * split is named for: `git fsck` is occasional maintenance, never run on
+   * every read, but the repository's integrity guarantee does not depend on
+   * it running on every read either. Returns `{ ok: false, reason }`
    * instead of throwing, so hosts can poll it safely.
    */
   health(): Promise<{ ok: true } | { ok: false; reason: string }> {
+    return this.queueConnectionWork(
+      // biome-ignore lint/suspicious/useAwait: queueConnectionWork requires a Promise-returning callback; every read below is synchronous better-sqlite3 work, so there is nothing to await.
+      async () => {
+        try {
+          this.db.exec("BEGIN IMMEDIATE");
+          validateMigrationState(this.db, persistenceError);
+          this.db.prepare("SELECT 1").get();
+          this.db.exec("ROLLBACK");
+          return { ok: true as const };
+        } catch (error: unknown) {
+          if (this.db.inTransaction) {
+            this.db.exec("ROLLBACK");
+          }
+
+          return {
+            ok: false as const,
+            reason: getErrorMessage(normalizeBackendError(error)),
+          };
+        }
+      }
+    );
+  }
+
+  /**
+   * Git-fsck-style maintenance validation (issue #108 M5): loads and fully
+   * validates the persisted state inside a read-only (rolled-back)
+   * transaction — migration/schema posture, per-record shape/identity, the
+   * derived lineage-root index, and the full committed-state invariant
+   * suite. This is exactly what `health()` ran on every call before M5;
+   * it is now a deliberate maintenance action a host calls occasionally
+   * (mirroring how `git fsck` is occasional maintenance, never run on every
+   * `git log`/`git show`), not part of the hot read path `health()` serves.
+   * The guarantee this replaces is preserved, not weakened: every
+   * `transact()` call already re-validates its own write against the full
+   * committed-state invariant suite before `COMMIT` regardless of whether
+   * `fsck()` is ever called; `fsck()` exists to additionally catch
+   * corruption introduced outside the backend's own write path (e.g. direct
+   * database tampering, or a bug in a different writer). Returns
+   * `{ ok: false, reason }` instead of throwing, so hosts can poll it
+   * safely, the same as `health()`.
+   */
+  fsck(): Promise<{ ok: true } | { ok: false; reason: string }> {
     return this.queueConnectionWork(async () => {
       try {
         this.db.exec("BEGIN IMMEDIATE");
-        await loadValidatedState(this.db);
+        await loadValidatedState(this.db, this.phaseObserver);
         this.db.exec("ROLLBACK");
         return { ok: true as const };
       } catch (error: unknown) {
@@ -452,7 +525,13 @@ class SqliteBackend implements KrakenBackend {
           work(repositories)
         );
         active = false;
-        validateTransactionWriteSet(this.db, writeTracker);
+        const endValidateWriteSet =
+          this.phaseObserver.startPhase("validate-write-set");
+        try {
+          validateTransactionWriteSet(this.db, writeTracker);
+        } finally {
+          endValidateWriteSet();
+        }
         await this.faultState.hooks?.beforeCommit?.();
 
         let committed = false;
@@ -504,7 +583,30 @@ class SqliteBackend implements KrakenBackend {
    * Runs the §9.4 reachability reclamation sweep in one serialized
    * transaction: load and validate the persisted state, sweep the in-memory
    * projection, mirror the removed keys as batched row deletions (with
-   * deferred foreign keys), then re-validate before `COMMIT`.
+   * deferred foreign keys), then run a targeted post-sweep check before
+   * `COMMIT`.
+   *
+   * Issue #108 M6: this used to run the *entire* `loadValidatedState` pass
+   * (a fresh `loadState` from disk plus full re-validation) a second time
+   * after the sweep, to re-prove referential integrity before the deferred
+   * foreign-key checks fired at `COMMIT`. That second pass re-verified two
+   * things the sweep cannot have changed — per-record shape/identity (the
+   * sweep only deletes whole rows, it never edits a surviving record's
+   * fields) and the derived lineage-root index's cached values for
+   * survivors (structurally guaranteed stable — see
+   * `assertReclamationSurvivorInvariants`'s doc comment) — while costing
+   * roughly as much as the entire rest of the operation combined. It is
+   * replaced with `assertReclamationSurvivorInvariants`, a targeted,
+   * O(survivors) check directly over the already-swept in-memory `state`
+   * (the same object the deletes below were diffed from), which checks only
+   * what deletion can actually break: whether a surviving record now
+   * references something the sweep removed. Real SQL `FOREIGN KEY`
+   * constraints, enforced by SQLite itself at this `COMMIT` under
+   * `defer_foreign_keys = ON`, independently cover most of the same ground;
+   * the targeted check additionally covers the CBOR-encoded reference
+   * arrays (`consumedStagedResultsCbor`, `createdTurnNodesCbor`, turn-tree
+   * path values) no foreign key can see, and produces a friendly
+   * `sqlite_backend_*` error instead of a raw constraint-failure message.
    *
    * @param options - `nowMs` overrides the backend clock for leaseless-run
    *   expiry evaluation.
@@ -524,11 +626,12 @@ class SqliteBackend implements KrakenBackend {
       try {
         this.db.exec("BEGIN IMMEDIATE");
         // Defer foreign-key enforcement to COMMIT so the unreachable closure can
-        // be deleted in any table order; the post-delete `loadValidatedState`
-        // re-asserts referential integrity before the deferred checks run.
+        // be deleted in any table order; the post-delete targeted check plus
+        // SQLite's own deferred FK check re-assert referential integrity
+        // before this COMMIT actually runs.
         this.db.pragma("defer_foreign_keys = ON");
 
-        const state = await loadValidatedState(this.db);
+        const state = await loadValidatedState(this.db, this.phaseObserver);
         const survivorKeysBefore = captureReclamationKeys(state);
         // Reachability and the grace horizon's pinning value are derived from
         // the loaded state's own active runs (§9.4); reclaimBackendState
@@ -541,10 +644,29 @@ class SqliteBackend implements KrakenBackend {
           state,
           options?.nowMs ?? this.now()
         );
-        applyReclamationDeletions(this.db, survivorKeysBefore, state);
 
-        await loadValidatedState(this.db);
-        this.db.exec("COMMIT");
+        const endDeleteWrite = this.phaseObserver.startPhase("write");
+        try {
+          applyReclamationDeletions(this.db, survivorKeysBefore, state);
+        } finally {
+          endDeleteWrite();
+        }
+
+        const endValidateSurvivors = this.phaseObserver.startPhase(
+          "validate-reclaim-survivors"
+        );
+        try {
+          assertReclamationSurvivorInvariants(state);
+        } finally {
+          endValidateSurvivors();
+        }
+
+        const endCommitWrite = this.phaseObserver.startPhase("write");
+        try {
+          this.db.exec("COMMIT");
+        } finally {
+          endCommitWrite();
+        }
         return summary;
       } catch (error: unknown) {
         if (this.db.inTransaction) {
@@ -565,7 +687,10 @@ class SqliteBackend implements KrakenBackend {
  */
 export function createSqliteBackend(
   options: SqliteBackendOptions
-): KrakenBackend & { close(): Promise<void> } {
+): KrakenBackend & {
+  close(): Promise<void>;
+  fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
+} {
   return new SqliteBackend(options);
 }
 
@@ -962,33 +1087,81 @@ function runMigrations(db: Database.Database, now: () => number): void {
 /**
  * Loads the full persisted state and runs every layer of validation over it:
  * migration posture, per-record shape/identity, the derived lineage-root
- * index, and the committed-state invariant suite. Used by `health` and as
- * the pre/post gate around reclamation.
+ * index, and the committed-state invariant suite. Used by `fsck` (issue
+ * #108 M5 — `health()` no longer runs this; see `fsck`'s doc comment) and as
+ * `reclaim`'s single pre-sweep gate (issue #108 M6 — `reclaim` no longer
+ * calls this a second time after sweeping; see `reclaim`'s doc comment and
+ * `assertReclamationSurvivorInvariants` for what replaces the post-sweep
+ * pass).
  *
+ * @param phaseObserver - Phase-attribution seam (issue #108): the row load
+ *   (`loadState`) is charged to "load"; per-record shape/identity
+ *   re-validation (`validateLoadedState`) to "validate-loaded"; the derived
+ *   lineage-root index cross-check (`validateTurnNodeLineageRootIndex`) to
+ *   "validate-lineage-index"; and the committed-state invariant suite
+ *   (`validateCommittedState`) to "validate-committed" (M2 — these three
+ *   replace M1's single unattributed-residual-hiding "validate" phase for
+ *   this backend), so `fsck()`'s and `reclaim()`'s cost is attributable by
+ *   phase without altering either call's result.
  * @param priorState - Baseline for cross-transaction invariants; defaults to
  *   the loaded state itself (no-change baseline).
  */
 async function loadValidatedState(
   db: Database.Database,
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER,
   priorState?: BackendState
 ): Promise<BackendState> {
   validateMigrationState(db, persistenceError);
-  const state = loadState(db);
-  await validateLoadedState(state);
-  validateTurnNodeLineageRootIndex(db, state);
-  validateCommittedState(state, priorState ?? state, {
-    assertActiveRunHeadAlignment,
-    assertBackwardBranchMoveIsArchived,
-    assertChunkedTurnTreePathChunkLayout,
-    assertRunCreatedTurnNodeWithinTurnSpan,
-    assertRunCreatedTurnNodesAreCanonical,
-    assertRunStartTurnNodeWithinTurnSpan,
-    assertTurnParentLink,
-    classifyTurnNodeRelationship,
-    decodeRunCreatedTurnNodeHashes,
-    decodeTurnNodeConsumedStagedResultObjectHashes,
-    validateHashString,
-  });
+
+  const endLoad = phaseObserver.startPhase("load");
+  let state: BackendState;
+  try {
+    state = loadState(db);
+  } finally {
+    endLoad();
+  }
+
+  // Issue #108 M2: `validateLoadedState` (per-record shape/identity
+  // re-validation) and `validateTurnNodeLineageRootIndex` (the derived
+  // lineage-root index cross-check) were the unattributed residual M1's
+  // phase table left as a gap between `load` and `validate` — see the M2
+  // section of `.constitution/reports/108-git-faithful-blob-persistence.md`
+  // for the bisected before/after numbers.
+  const endValidateLoaded = phaseObserver.startPhase("validate-loaded");
+  try {
+    await validateLoadedState(state);
+  } finally {
+    endValidateLoaded();
+  }
+
+  const endValidateLineageIndex = phaseObserver.startPhase(
+    "validate-lineage-index"
+  );
+  try {
+    validateTurnNodeLineageRootIndex(db, state);
+  } finally {
+    endValidateLineageIndex();
+  }
+
+  const endValidateCommitted = phaseObserver.startPhase("validate-committed");
+  try {
+    validateCommittedState(state, priorState ?? state, {
+      assertActiveRunHeadAlignment,
+      assertBackwardBranchMoveIsArchived,
+      assertChunkedTurnTreePathChunkLayout,
+      assertRunCreatedTurnNodeWithinTurnSpan,
+      assertRunCreatedTurnNodesAreCanonical,
+      assertRunStartTurnNodeWithinTurnSpan,
+      assertTurnParentLink,
+      classifyTurnNodeRelationship,
+      decodeRunCreatedTurnNodeHashes,
+      decodeTurnNodeConsumedStagedResultObjectHashes,
+      validateHashString,
+    });
+  } finally {
+    endValidateCommitted();
+  }
+
   return state;
 }
 

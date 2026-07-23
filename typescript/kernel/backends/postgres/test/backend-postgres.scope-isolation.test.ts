@@ -38,15 +38,13 @@ import {
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
 
-interface ClosablePostgresBackend extends RuntimeBackend {
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
-}
-
 // Closes a backend's connection pool without dropping its schema, so two
 // backends sharing a schema can each be closed independently before the
 // afterAll teardown drops the schema.
-async function closeBackend(backend: RuntimeBackend): Promise<void> {
-  await (backend as ClosablePostgresBackend).destroy();
+async function closeBackend(
+  backend: ReturnType<typeof createPostgresBackend>
+): Promise<void> {
+  await backend.destroy();
 }
 
 function createAdminClient(options: PostgresBackendOptions): Sql {

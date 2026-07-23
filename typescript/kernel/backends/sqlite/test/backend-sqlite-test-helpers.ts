@@ -158,6 +158,7 @@ export function copyCompiledSqliteRuntimeBundle(
     "sqlite-state-utils.js",
     "sqlite-state-validation.js",
     "sqlite-reclamation.js",
+    "sqlite-reclamation-validation.js",
     "sqlite-run-invariants.js",
     "sqlite-db-lineage.js",
     "sqlite-integrity-assertions.js",
@@ -416,17 +417,25 @@ export async function seedLineageMembershipCorruptionDatabase(): Promise<Lineage
   };
 }
 
+/**
+ * Asserts that `fsck()` (issue #108 M5 — the maintenance validation that
+ * inherits the old, pre-M5 `health()` behavior of a full load+validate pass)
+ * rejects the persisted state at `databasePath` with a reason matching
+ * `pattern`. Per-record shape/identity and committed-state invariant
+ * corruption is invisible to the lightweight `health()` probe by design; use
+ * this helper (not `health()`) for that class of corruption assertion.
+ */
 export async function expectCorruptedStateRejection(
   databasePath: string,
   pattern: RegExp
 ): Promise<void> {
   const backend = createSqliteBackend({ databasePath });
-  const health = await backend.health();
-  deepStrictEqual(health.ok, false);
-  if (health.ok) {
+  const fsck = await backend.fsck();
+  deepStrictEqual(fsck.ok, false);
+  if (fsck.ok) {
     throw new Error("expected unhealthy status");
   }
-  strictEqual(pattern.test(health.reason), true);
+  strictEqual(pattern.test(fsck.reason), true);
 }
 
 after(() => {

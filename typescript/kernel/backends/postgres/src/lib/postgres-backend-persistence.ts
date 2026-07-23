@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import {
+  NOOP_PHASE_OBSERVER,
+  type PhaseObserver,
+} from "@tuvren/backend-shared";
 import { DEFAULT_SCOPE, type EpochMs, type Scope } from "@tuvren/core";
 import {
   assertStoredBranch,
@@ -66,6 +70,11 @@ import {
   getSchemaForTurnTree,
 } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
+import {
+  hashSnapshotBytes,
+  type SnapshotCacheObserver,
+  type SnapshotStateCache,
+} from "./postgres-backend-snapshot-cache.js";
 
 const CURRENT_SNAPSHOT_VERSION = 1;
 const INITIAL_MIGRATION_NAME = "0001_initial_schema.sql";
@@ -81,6 +90,14 @@ export interface PostgresBackendPersistenceOptions {
   host?: string;
   now?: () => EpochMs;
   password?: string;
+  /**
+   * Phase-attribution seam (issue #108) for the decode/validate/encode/write/
+   * lock-wait cost of this backend's blob-per-scope persistence path.
+   * Defaults to {@link NOOP_PHASE_OBSERVER}, so omitting it costs one shared
+   * frozen no-op call per phase and never changes measured production bytes
+   * or behavior. Benches/tests supply a recording observer instead.
+   */
+  phaseObserver?: PhaseObserver;
   port?: number;
   schemaName?: string;
   /**
@@ -96,6 +113,19 @@ export interface PostgresBackendPersistenceOptions {
    * databases keep working unchanged. Must be a non-empty string.
    */
   scope?: Scope;
+  /**
+   * Issue #108 M3 construction-time observability seam: when supplied, every
+   * load through this backend's single-entry content-hash memo ({@link
+   * SnapshotStateCache}) reports a hit or a miss to it. This is a real,
+   * structurally reachable option on {@link PostgresBackendOptions} — it is
+   * deliberately excluded from the operational `RuntimeBackend` contract
+   * (`transact`/`health`/`capabilities`/etc.) rather than hidden from
+   * TypeScript, so it is meant for benches, tests, and diagnostics, not
+   * production call sites. Passing it in production is harmless: it is
+   * observation-only (no behavior changes, no persisted bytes change), and
+   * omitting it costs nothing beyond an `undefined` check per load.
+   */
+  snapshotCacheObserver?: SnapshotCacheObserver;
   username?: string;
 }
 
@@ -287,10 +317,34 @@ async function migrateSnapshotsToScopePartition(
   );
 }
 
+/** Options for {@link loadPersistedStateForUpdate}. */
+export interface LoadPersistedStateOptions {
+  /**
+   * Issue #108 M3 single-entry content-hash memo: when supplied, a load
+   * whose row bytes hash to the memoized entry's hash returns that entry's
+   * already-decoded state instead of running `decodeSnapshot` again, and a
+   * load that decodes (cache miss or no cache supplied) refreshes the
+   * memo. Omitted by callers that do not want memoization (there are none
+   * in production — every `PostgresBackend` instance owns one).
+   */
+  cache?: SnapshotStateCache;
+  /** Testkit-only hit/miss counter seam; see {@link SnapshotCacheObserver}. */
+  cacheObserver?: SnapshotCacheObserver;
+  phaseObserver?: PhaseObserver;
+}
+
 /**
- * Loads and decodes a Scope's persisted `BackendState` snapshot, locking its
- * row with `FOR UPDATE` so the caller can safely mutate a draft and write it
- * back with {@link persistStateSnapshot} inside the same transaction.
+ * Loads a Scope's persisted `BackendState` snapshot, locking its row with
+ * `FOR UPDATE` so the caller can safely mutate a draft and write it back
+ * with {@link persistStateSnapshot} inside the same transaction. The row
+ * lock and `schema_version` check always run against the database, exactly
+ * as before issue #108 M3; only what happens with the loaded bytes
+ * afterward differs when `options.cache` is supplied: the bytes are hashed
+ * (SHA-256, {@link hashSnapshotBytes}) and, on a hash match against the
+ * memoized entry, the memoized `BackendState` is returned directly and
+ * `decodeSnapshot` never runs — a full decode only happens on a cache miss
+ * (first load, or another writer changed the row since this instance last
+ * saw it), which then refreshes the memo.
  *
  * @throws TuvrenPersistenceError `postgres_backend_missing_snapshot_row` when
  *   the Scope has no snapshot row (e.g. reused after {@link deletePersistedStateSnapshot}),
@@ -300,17 +354,112 @@ async function migrateSnapshotsToScopePartition(
 export async function loadPersistedStateForUpdate(
   sql: Sql | TransactionSql<Record<string, never>>,
   schemaName: string,
-  scope: Scope
+  scope: Scope,
+  options: LoadPersistedStateOptions = {}
 ): Promise<BackendState> {
+  const { cache, cacheObserver, phaseObserver = NOOP_PHASE_OBSERVER } = options;
   const snapshotsTable = qualifyIdentifier(
     schemaName,
     "backend_postgres_snapshots"
   );
-  const rows = await sql.unsafe<PersistedSnapshotRow[]>(
-    `SELECT schema_version, snapshot_cbor
+  // `FOR UPDATE` is where this call actually blocks: on a Scope's row lock
+  // held by a concurrent writer. Charged to "lock-wait" so it is
+  // distinguishable from the CBOR decode below.
+  const endLockWait = phaseObserver.startPhase("lock-wait");
+  let rows: PersistedSnapshotRow[];
+  try {
+    rows = await sql.unsafe<PersistedSnapshotRow[]>(
+      `SELECT schema_version, snapshot_cbor
+         FROM ${snapshotsTable}
+        WHERE snapshot_id = $1 AND scope = $2
+        FOR UPDATE`,
+      [SNAPSHOT_ROW_ID, scope]
+    );
+  } finally {
+    endLockWait();
+  }
+
+  const row = rows[0];
+
+  if (row === undefined) {
+    throw persistenceError(
+      "postgres backend snapshot row is missing",
+      "postgres_backend_missing_snapshot_row",
+      { scope }
+    );
+  }
+
+  if (row.schema_version !== CURRENT_SNAPSHOT_VERSION) {
+    throw persistenceError(
+      "postgres backend snapshot version is unsupported",
+      "postgres_backend_snapshot_version_unsupported",
+      {
+        actualVersion: row.schema_version,
+        expectedVersion: CURRENT_SNAPSHOT_VERSION,
+      }
+    );
+  }
+
+  // Issue #108 M3: hash the loaded bytes before deciding whether a full
+  // decode is needed. This runs unconditionally (even with no `cache`
+  // supplied) so the "hash" phase always reflects the real per-load cost,
+  // not just the cost on instances that opted into memoization.
+  const endHash = phaseObserver.startPhase("hash");
+  let hashHex: string;
+  try {
+    hashHex = hashSnapshotBytes(row.snapshot_cbor);
+  } finally {
+    endHash();
+  }
+
+  const cached = cache?.get(hashHex);
+
+  if (cached !== undefined) {
+    cacheObserver?.recordHit();
+    return cached;
+  }
+
+  cacheObserver?.recordMiss();
+
+  const endDecode = phaseObserver.startPhase("decode");
+  try {
+    const state = decodeSnapshot(row.snapshot_cbor);
+    cache?.set(hashHex, state);
+    return state;
+  } finally {
+    endDecode();
+  }
+}
+
+/**
+ * Lightweight liveness/coherence check for a Scope's snapshot row (issue
+ * #108 M5): confirms the connection can execute a query, the Scope's
+ * snapshot row exists, and its `schema_version` is one this package version
+ * can decode — without fetching or decoding the row's `snapshot_cbor` bytes
+ * at all. This is the read `PostgresBackend.health()` runs; the full
+ * decode+validate pass this function deliberately skips still runs at
+ * commit time (every `transact()`/`reclaim()` call validates its own draft
+ * before `COMMIT`) and on demand via `PostgresBackend.fsck()`
+ * ({@link loadPersistedStateForUpdate} plus `validateCommittedState`).
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_missing_snapshot_row` when
+ *   the Scope has no snapshot row (e.g. reused after {@link deletePersistedStateSnapshot}),
+ *   or `postgres_backend_snapshot_version_unsupported` when the row's schema
+ *   version predates what this package version can decode.
+ */
+export async function checkPersistedStateLiveness(
+  sql: Sql,
+  schemaName: string,
+  scope: Scope
+): Promise<void> {
+  const snapshotsTable = qualifyIdentifier(
+    schemaName,
+    "backend_postgres_snapshots"
+  );
+  const rows = await sql.unsafe<Array<{ schema_version: number }>>(
+    `SELECT schema_version
        FROM ${snapshotsTable}
-      WHERE snapshot_id = $1 AND scope = $2
-      FOR UPDATE`,
+      WHERE snapshot_id = $1 AND scope = $2`,
     [SNAPSHOT_ROW_ID, scope]
   );
   const row = rows[0];
@@ -333,42 +482,78 @@ export async function loadPersistedStateForUpdate(
       }
     );
   }
+}
 
-  return decodeSnapshot(row.snapshot_cbor);
+/** The outcome of a successful {@link persistStateSnapshot} call. */
+export interface PersistStateSnapshotResult {
+  /**
+   * SHA-256 hex digest of the exact `snapshot_cbor` bytes just written
+   * (issue #108 M3). The `UPDATE` this function issues runs inside the
+   * caller's still-open transaction, so this hash is only safe to treat as
+   * "the committed row's hash" once the caller's own `COMMIT` afterward
+   * actually succeeds — callers populate a {@link SnapshotStateCache} with
+   * this hash themselves, after `COMMIT`, never from inside this function.
+   */
+  hashHex: string;
 }
 
 /**
  * Encodes `state` as deterministic CBOR and overwrites the Scope's snapshot
  * row with it, stamping `updatedAtMs`. Callers must hold the row lock from a
- * prior {@link loadPersistedStateForUpdate} in the same transaction.
+ * prior {@link loadPersistedStateForUpdate} in the same transaction, and
+ * must not treat the returned hash as durable until their own `COMMIT`
+ * (issued after this function returns) has succeeded.
  */
 export async function persistStateSnapshot(
   sql: Sql | TransactionSql<Record<string, never>>,
   schemaName: string,
   scope: Scope,
   state: BackendState,
-  updatedAtMs: EpochMs
-): Promise<void> {
+  updatedAtMs: EpochMs,
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
+): Promise<PersistStateSnapshotResult> {
   const snapshotsTable = qualifyIdentifier(
     schemaName,
     "backend_postgres_snapshots"
   );
-  const snapshotBytes = encodeSnapshot(state);
 
-  await sql.unsafe(
-    `UPDATE ${snapshotsTable}
-        SET schema_version = $1,
-            snapshot_cbor = $2,
-            updated_at_ms = $3
-      WHERE snapshot_id = $4 AND scope = $5`,
-    [
-      CURRENT_SNAPSHOT_VERSION,
-      snapshotBytes,
-      updatedAtMs,
-      SNAPSHOT_ROW_ID,
-      scope,
-    ]
-  );
+  const endEncode = phaseObserver.startPhase("encode");
+  let snapshotBytes: Uint8Array;
+  try {
+    snapshotBytes = encodeSnapshot(state);
+  } finally {
+    endEncode();
+  }
+
+  const endHash = phaseObserver.startPhase("hash");
+  let hashHex: string;
+  try {
+    hashHex = hashSnapshotBytes(snapshotBytes);
+  } finally {
+    endHash();
+  }
+
+  const endWrite = phaseObserver.startPhase("write");
+  try {
+    await sql.unsafe(
+      `UPDATE ${snapshotsTable}
+          SET schema_version = $1,
+              snapshot_cbor = $2,
+              updated_at_ms = $3
+        WHERE snapshot_id = $4 AND scope = $5`,
+      [
+        CURRENT_SNAPSHOT_VERSION,
+        snapshotBytes,
+        updatedAtMs,
+        SNAPSHOT_ROW_ID,
+        scope,
+      ]
+    );
+  } finally {
+    endWrite();
+  }
+
+  return { hashHex };
 }
 
 /**
@@ -402,8 +587,13 @@ export async function deletePersistedStateSnapshot(
  * family flattened to a deterministically sorted array (so the encoding is
  * stable regardless of `Map` iteration order) and CBOR-encoded alongside the
  * schema version.
+ *
+ * Exported (but not re-exported from the package's `index.ts`, mirroring
+ * `memory-backend-state.ts`'s `createEmptyState`/`validateCommittedState`)
+ * so tests can exercise the encode/decode round trip directly instead of
+ * only indirectly through `transact()`.
  */
-function encodeSnapshot(state: BackendState): Uint8Array {
+export function encodeSnapshot(state: BackendState): Uint8Array {
   const snapshot = {
     branches: Array.from(state.branches.values(), cloneStoredBranch).sort(
       compareStoredBranch
@@ -463,12 +653,14 @@ function encodeSnapshot(state: BackendState): Uint8Array {
  * inserted (schema records first, since turn trees and turn tree paths need
  * their schema to validate) and checking the payload's schema version.
  *
+ * Exported for the same test-only reason as {@link encodeSnapshot}.
+ *
  * @throws TuvrenPersistenceError with code `postgres_backend_snapshot_payload_invalid`
  *   when the payload or a field's shape is malformed, or
  *   `postgres_backend_snapshot_payload_version_unsupported` when the
  *   embedded version does not match {@link CURRENT_SNAPSHOT_VERSION}.
  */
-function decodeSnapshot(value: Uint8Array): BackendState {
+export function decodeSnapshot(value: Uint8Array): BackendState {
   const decoded = decodeDeterministicKernelRecord(toUint8Array(value));
   const snapshot = readSnapshotRecord(decoded);
   const state = createEmptyState();

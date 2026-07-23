@@ -210,6 +210,7 @@
       "name": "@tuvren/kernel-testkit",
       "version": "0.1.0",
       "dependencies": {
+        "@tuvren/backend-shared": "workspace:*",
         "@tuvren/core": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
         "ajv": "8.18.0",

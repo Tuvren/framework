@@ -15,6 +15,10 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
+import {
+  NOOP_PHASE_OBSERVER,
+  type PhaseObserver,
+} from "@tuvren/backend-shared";
 import { assertScope, DEFAULT_SCOPE, type Scope } from "@tuvren/core";
 import {
   assertStoredBranch,
@@ -108,6 +112,7 @@ import {
 } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
 import {
+  checkPersistedStateLiveness,
   createPostgresClient,
   deletePersistedStateSnapshot,
   ensurePostgresSchemaInitialized,
@@ -116,6 +121,11 @@ import {
   type PostgresBackendPersistenceOptions,
   persistStateSnapshot,
 } from "./postgres-backend-persistence.js";
+import {
+  createSnapshotStateCache,
+  type SnapshotCacheObserver,
+  type SnapshotStateCache,
+} from "./postgres-backend-snapshot-cache.js";
 
 /** A transaction's repository surface, plus the transaction-local clock it was built with. */
 interface MutableRepositories extends KrakenBackendTx {
@@ -191,9 +201,20 @@ class PostgresBackend implements KrakenBackend {
     hooks: null,
   };
   private initializationPromise: Promise<void> | undefined;
+  private readonly phaseObserver: PhaseObserver;
   private readonly schemaName: string;
   private readonly scope: Scope;
   private readonly sql: Sql;
+  // Issue #108 M3 (A3 content-hash memoization): one single-entry cache per
+  // instance, since one instance is bound to exactly one Scope's row
+  // (ADR-048/ADR-049). Populated/consulted by every loadPersistedStateForUpdate
+  // call and updated only after a transact()/reclaim() COMMIT actually
+  // succeeds -- never from inside the transaction body -- so a rolled-back
+  // draft can never become the cached committed state (see transact()/
+  // reclaim()'s commit sequencing for why that placement is safe).
+  private readonly snapshotCache: SnapshotStateCache =
+    createSnapshotStateCache();
+  private readonly snapshotCacheObserver: SnapshotCacheObserver | undefined;
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
   private transactionQueue: Promise<void> = Promise.resolve();
   private readonly now: () => number;
@@ -207,6 +228,8 @@ class PostgresBackend implements KrakenBackend {
     this.scope = resolvedOptions.scope ?? DEFAULT_SCOPE;
     assertScope(this.scope);
     this.sql = createPostgresClient(resolvedOptions);
+    this.phaseObserver = resolvedOptions.phaseObserver ?? NOOP_PHASE_OBSERVER;
+    this.snapshotCacheObserver = resolvedOptions.snapshotCacheObserver;
     this.now = resolvedOptions.now ?? Date.now;
     // Track whether a clock was explicitly injected so the per-transaction
     // authoritative lease clock can fall back to the PostgreSQL server clock in
@@ -220,20 +243,69 @@ class PostgresBackend implements KrakenBackend {
   }
 
   /**
-   * Checks connectivity and invariant health by initializing (if needed),
-   * loading the Scope's committed snapshot, and re-validating it against
-   * itself as both draft and base state.
+   * Lightweight liveness/coherence probe (issue #108 M5). Initializes the
+   * Scope's schema if needed, then confirms the connection can execute a
+   * query and the Scope's snapshot row exists with a `schema_version` this
+   * package version supports ({@link checkPersistedStateLiveness}) —
+   * without loading, decoding, or validating the row's `snapshot_cbor`
+   * bytes at all. Deliberately does NOT run the full committed-state
+   * invariant suite: `RuntimeBackend.health()`'s contract
+   * (kernel-protocol's `kernel-types.ts`) only promises "can serve
+   * traffic", no conformance plan requires a full re-validation on every
+   * call, and every `transact()`/`reclaim()` call already re-validates its
+   * own draft against `validateCommittedState` before `COMMIT`. The full
+   * decode+validate pass this method used to run on every call is still
+   * available on demand via {@link fsck} — the Git-fsck analogy this split
+   * is named for: `git fsck` is occasional maintenance, never run on every
+   * read, but the repository's integrity guarantee does not depend on it
+   * running on every read either.
    */
   async health(): Promise<{ ok: true } | { ok: false; reason: string }> {
+    try {
+      await this.ensureInitialized();
+      await checkPersistedStateLiveness(this.sql, this.schemaName, this.scope);
+      return { ok: true };
+    } catch (error: unknown) {
+      return {
+        ok: false,
+        reason: readErrorMessage(error),
+      };
+    }
+  }
+
+  /**
+   * Git-fsck-style maintenance validation (issue #108 M5): loads the
+   * Scope's full committed snapshot and re-validates it against itself as
+   * both draft and base state — exactly what `health()` ran on every call
+   * before M5. This is now a deliberate maintenance action a host calls
+   * occasionally, not part of the hot read path `health()` serves. The
+   * guarantee this replaces is preserved, not weakened: every
+   * `transact()`/`reclaim()` call already re-validates its own write against
+   * the full committed-state invariant suite before `COMMIT` regardless of
+   * whether `fsck()` is ever called; `fsck()` exists to additionally catch
+   * corruption introduced outside the backend's own write path (e.g. direct
+   * database tampering, or a bug in a different writer).
+   */
+  async fsck(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
       await this.ensureInitialized();
       await this.sql.begin(async (tx): Promise<void> => {
         const state = await loadPersistedStateForUpdate(
           tx,
           this.schemaName,
-          this.scope
+          this.scope,
+          {
+            cache: this.snapshotCache,
+            cacheObserver: this.snapshotCacheObserver,
+            phaseObserver: this.phaseObserver,
+          }
         );
-        validateCommittedState(state, state);
+        const endValidate = this.phaseObserver.startPhase("validate");
+        try {
+          validateCommittedState(state, state);
+        } finally {
+          endValidate();
+        }
       });
       return { ok: true };
     } catch (error: unknown) {
@@ -302,7 +374,17 @@ class PostgresBackend implements KrakenBackend {
       releaseQueue = resolve;
     });
 
+    // The in-process queue wait is the first component of "lock-wait":
+    // another transact()/reclaim()/purgeScope() call on this instance may
+    // already be in flight, and this call cannot proceed until it releases
+    // the queue.
+    // Deliberately outside try/finally: `priorTransaction` is the queue's own
+    // release promise, constructed above from a `Promise` executor that only
+    // ever calls `resolve`, so it can never reject and `endQueueWait()` can
+    // never be skipped by a thrown error here.
+    const endQueueWait = this.phaseObserver.startPhase("lock-wait");
     await priorTransaction;
+    endQueueWait();
 
     try {
       const reserved = (await this.sql.reserve()) as Sql & {
@@ -327,7 +409,12 @@ class PostgresBackend implements KrakenBackend {
         const baseState = await loadPersistedStateForUpdate(
           reserved,
           this.schemaName,
-          this.scope
+          this.scope,
+          {
+            cache: this.snapshotCache,
+            cacheObserver: this.snapshotCacheObserver,
+            phaseObserver: this.phaseObserver,
+          }
         );
         const draftState = cloneState(baseState);
         let active = true;
@@ -346,7 +433,13 @@ class PostgresBackend implements KrakenBackend {
           active = false;
         }
 
-        validateCommittedState(draftState, baseState);
+        const endTransactValidate = this.phaseObserver.startPhase("validate");
+        try {
+          validateCommittedState(draftState, baseState);
+        } finally {
+          endTransactValidate();
+        }
+
         await this.faultState.hooks?.beforeCommit?.();
 
         let committed = false;
@@ -357,16 +450,31 @@ class PostgresBackend implements KrakenBackend {
             );
           }
 
-          await persistStateSnapshot(
+          const { hashHex } = await persistStateSnapshot(
             reserved,
             this.schemaName,
             this.scope,
             draftState,
-            txNow
+            txNow,
+            this.phaseObserver
           );
-          await reserved.unsafe("COMMIT");
+          const endCommitWrite = this.phaseObserver.startPhase("write");
+          try {
+            await reserved.unsafe("COMMIT");
+          } finally {
+            endCommitWrite();
+          }
           inTransaction = false;
           committed = true;
+          // Only now -- after the physical COMMIT has actually succeeded --
+          // is `draftState` safe to treat as "the committed state for
+          // `hashHex`". Populating the memo any earlier (e.g. right after
+          // the UPDATE, before COMMIT) would poison it with an uncommitted
+          // draft if COMMIT itself then failed and the transaction rolled
+          // back; populating it here means a thrown error anywhere above
+          // this line (including inside persistStateSnapshot or COMMIT
+          // itself) never touches the cache at all.
+          this.snapshotCache.set(hashHex, draftState);
         };
 
         if (this.faultState.hooks?.midCommit === undefined) {
@@ -431,7 +539,9 @@ class PostgresBackend implements KrakenBackend {
       releaseQueue = resolve;
     });
 
+    const endQueueWait = this.phaseObserver.startPhase("lock-wait");
     await priorTransaction;
+    endQueueWait();
 
     try {
       const reserved = (await this.sql.reserve()) as Sql & {
@@ -446,7 +556,12 @@ class PostgresBackend implements KrakenBackend {
         const baseState = await loadPersistedStateForUpdate(
           reserved,
           this.schemaName,
-          this.scope
+          this.scope,
+          {
+            cache: this.snapshotCache,
+            cacheObserver: this.snapshotCacheObserver,
+            phaseObserver: this.phaseObserver,
+          }
         );
         const draftState = cloneState(baseState);
         // The snapshot backend reclaims by rewriting the scope snapshot row:
@@ -461,17 +576,32 @@ class PostgresBackend implements KrakenBackend {
           draftState,
           options?.nowMs ?? this.now()
         );
-        validateCommittedState(draftState, baseState);
+        const endReclaimValidate = this.phaseObserver.startPhase("validate");
+        try {
+          validateCommittedState(draftState, baseState);
+        } finally {
+          endReclaimValidate();
+        }
 
-        await persistStateSnapshot(
+        const { hashHex } = await persistStateSnapshot(
           reserved,
           this.schemaName,
           this.scope,
           draftState,
-          this.now()
+          this.now(),
+          this.phaseObserver
         );
-        await reserved.unsafe("COMMIT");
+        const endCommitWrite = this.phaseObserver.startPhase("write");
+        try {
+          await reserved.unsafe("COMMIT");
+        } finally {
+          endCommitWrite();
+        }
         inTransaction = false;
+        // Same rule as transact()'s commit(): only populate the memo once
+        // COMMIT has actually succeeded, so a rolled-back reclaim sweep can
+        // never poison it.
+        this.snapshotCache.set(hashHex, draftState);
 
         return summary;
       } catch (error: unknown) {
@@ -526,6 +656,10 @@ class PostgresBackend implements KrakenBackend {
       // instance is unusable afterward (callers discard it per the purgeScope
       // contract), exactly like the SQLite backend after it removes its file.
       await deletePersistedStateSnapshot(this.sql, this.schemaName, this.scope);
+      // The row this memo describes no longer exists; drop it so a
+      // (contractually unsupported, but defensive) later call never serves a
+      // hit for a scope that has been purged.
+      this.snapshotCache.clear();
     } finally {
       releaseQueue?.();
     }
@@ -589,10 +723,22 @@ class PostgresBackend implements KrakenBackend {
  * named in `options.scope` (or the default Scope). Schema/table
  * provisioning is deferred to the first call that needs it, not performed
  * eagerly here.
+ *
+ * The return type widens `KrakenBackend` with this backend's own
+ * maintenance/lifecycle surface (mirroring {@link createSqliteBackend}'s
+ * `close`/`fsck` intersection, plus this backend's `destroy` — the
+ * connection-pool-and-schema teardown SQLite's file-per-scope model has no
+ * equivalent for) so callers reach `close()`, `destroy()`, and `fsck()`
+ * without an unsound cast back down from the narrower `RuntimeBackend`
+ * contract.
  */
 export function createPostgresBackend(
   options?: PostgresBackendOptions
-): KrakenBackend {
+): KrakenBackend & {
+  close(): Promise<void>;
+  destroy(options?: { dropSchema?: boolean }): Promise<void>;
+  fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
+} {
   return new PostgresBackend(options);
 }
 

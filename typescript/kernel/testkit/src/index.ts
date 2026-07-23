@@ -47,6 +47,14 @@ export type {
   BackendFactory,
   BackendTestSuiteApi,
 } from "./lib/backend-test-suite-types.js";
+export type { PhaseStats, TimingStats } from "./lib/bench-phase-stats.js";
+export {
+  formatNs,
+  formatPhaseTable,
+  percentile,
+  readSampleCountFromEnv,
+  summarizePhases,
+} from "./lib/bench-phase-stats.js";
 export type { FaultPlan, FaultPoint } from "./lib/fault-injecting-backend.js";
 export { createFaultInjectingBackend } from "./lib/fault-injecting-backend.js";
 export {

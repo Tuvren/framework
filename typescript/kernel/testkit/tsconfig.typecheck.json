@@ -5,6 +5,7 @@
     "rootDir": "../../../",
     "allowImportingTsExtensions": true,
     "paths": {
+      "@tuvren/backend-shared": ["../backends/shared/src/index.ts"],
       "@tuvren/core": ["../../core/src/index.ts"],
       "@tuvren/core/runner": ["../../core/src/runner/index.ts"],
       "@tuvren/core/errors": ["../../core/src/errors/index.ts"],
@@ -18,5 +19,10 @@
     },
     "types": ["bun", "node"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "../protocol/src/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../backends/shared/src/**/*.ts",
+    "../protocol/src/**/*.ts"
+  ]
 }

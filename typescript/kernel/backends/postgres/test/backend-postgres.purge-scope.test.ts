@@ -20,7 +20,7 @@
 // row while every co-tenant Scope's row in the shared schema is left intact.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import type { RuntimeBackend, TurnTreeSchema } from "@tuvren/kernel-protocol";
+import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createPostgresBackend } from "../src/index.js";
 import {
@@ -38,12 +38,10 @@ const TEST_SCHEMA = {
   schemaId: "schema_postgres_purge",
 } satisfies TurnTreeSchema;
 
-interface ClosablePostgresBackend extends RuntimeBackend {
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
-}
-
-async function closeBackend(backend: RuntimeBackend): Promise<void> {
-  await (backend as ClosablePostgresBackend).destroy();
+async function closeBackend(
+  backend: ReturnType<typeof createPostgresBackend>
+): Promise<void> {
+  await backend.destroy();
 }
 
 beforeAll(async () => {

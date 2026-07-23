@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+import {
+  createBackendInvariantTurnNodeLineage,
+  createTurnNodeLineageIndex,
+  type TurnNodeLineageIndex,
+} from "@tuvren/backend-shared";
 import type {
   StoredBranch,
   StoredRun,
@@ -34,57 +39,59 @@ import {
 } from "./memory-backend-turn-tree.js";
 import type { BackendState } from "./memory-backend-types.js";
 
+// Issue #108 M2: the ancestor walk `assertTurnNodeBelongsToThread` and
+// `assertTurnNodeDescendsFrom` perform is shared, memoized algorithm now
+// lives in `@tuvren/backend-shared` (`createBackendInvariantTurnNodeLineage`)
+// so a validation pass touching many turn nodes (e.g.
+// `validateCommittedState` re-checking every turn/run in a large committed
+// state) amortizes to O(n) total instead of O(depth) per call. The
+// `*Indexed` exports below take the shared per-pass `TurnNodeLineageIndex`
+// explicitly; the plain exports are unchanged-signature wrappers for the
+// single ad hoc call sites in memory-backend.ts that validate one write at a
+// time and have no per-pass index to share.
+const turnNodeLineage = createBackendInvariantTurnNodeLineage({
+  errorPrefix: "memory",
+});
+
 /**
- * Asserts that a turn node reaches the thread's root turn node by walking
- * `previousTurnNodeHash` ancestry — i.e. the node genuinely belongs to the
- * thread rather than merely existing in the store.
+ * Asserts that a turn node reaches the thread's root turn node by lineage —
+ * i.e. the node genuinely belongs to the thread rather than merely existing
+ * in the store. Reuses `index`'s memoized positions across every call
+ * sharing it in the same validation pass.
  *
  * @throws TuvrenPersistenceError `memory_backend_thread_lineage_mismatch`
- *   when the walk exhausts ancestry without reaching the thread root, or
- *   `memory_backend_cyclic_turn_node_lineage` on a lineage cycle.
+ *   when the walk reaches a different root than `thread.rootTurnNodeHash`,
+ *   or `memory_backend_cyclic_turn_node_lineage` on a lineage cycle.
  */
+export function assertTurnNodeBelongsToThreadIndexed(
+  state: BackendState,
+  turnNodeHash: string,
+  thread: StoredThread,
+  label: string,
+  index: TurnNodeLineageIndex
+): void {
+  turnNodeLineage.assertTurnNodeBelongsToThread(
+    state,
+    turnNodeHash,
+    thread,
+    label,
+    index
+  );
+}
+
+/** {@link assertTurnNodeBelongsToThreadIndexed} for a single ad hoc check with nothing to amortize across. */
 export function assertTurnNodeBelongsToThread(
   state: BackendState,
   turnNodeHash: string,
   thread: StoredThread,
   label: string
 ): void {
-  const visitedTurnNodes = new Set<string>();
-  let currentTurnNodeHash: string | null = turnNodeHash;
-
-  while (currentTurnNodeHash !== null) {
-    if (visitedTurnNodes.has(currentTurnNodeHash)) {
-      throw persistenceError(
-        `${label} must not traverse a cyclic turn node lineage`,
-        "memory_backend_cyclic_turn_node_lineage",
-        {
-          threadId: thread.threadId,
-          turnNodeHash,
-        }
-      );
-    }
-
-    visitedTurnNodes.add(currentTurnNodeHash);
-
-    if (currentTurnNodeHash === thread.rootTurnNodeHash) {
-      return;
-    }
-
-    currentTurnNodeHash = ensureTurnNodeExists(
-      state,
-      currentTurnNodeHash,
-      label
-    ).previousTurnNodeHash;
-  }
-
-  throw persistenceError(
-    `${label} must belong to the referenced thread by lineage walk`,
-    "memory_backend_thread_lineage_mismatch",
-    {
-      threadId: thread.threadId,
-      threadRootTurnNodeHash: thread.rootTurnNodeHash,
-      turnNodeHash,
-    }
+  assertTurnNodeBelongsToThreadIndexed(
+    state,
+    turnNodeHash,
+    thread,
+    label,
+    createTurnNodeLineageIndex()
   );
 }
 
@@ -92,51 +99,42 @@ export function assertTurnNodeBelongsToThread(
  * Asserts that `descendantTurnNodeHash` is the ancestor itself or a
  * descendant of it along the `previousTurnNodeHash` chain. Used to keep turn
  * heads append-only: a turn's new head must extend its previous head.
+ * Reuses `index`'s memoized positions across every call sharing it in the
+ * same validation pass.
  *
  * @throws TuvrenPersistenceError `memory_backend_turn_node_not_descendant`
  *   when the ancestor is not on the descendant's lineage, or
  *   `memory_backend_cyclic_turn_node_lineage` on a lineage cycle.
  */
+export function assertTurnNodeDescendsFromIndexed(
+  state: BackendState,
+  descendantTurnNodeHash: string,
+  ancestorTurnNodeHash: string,
+  label: string,
+  index: TurnNodeLineageIndex
+): void {
+  turnNodeLineage.assertTurnNodeDescendsFrom(
+    state,
+    descendantTurnNodeHash,
+    ancestorTurnNodeHash,
+    label,
+    index
+  );
+}
+
+/** {@link assertTurnNodeDescendsFromIndexed} for a single ad hoc check with nothing to amortize across. */
 export function assertTurnNodeDescendsFrom(
   state: BackendState,
   descendantTurnNodeHash: string,
   ancestorTurnNodeHash: string,
   label: string
 ): void {
-  const visitedTurnNodes = new Set<string>();
-  let currentTurnNodeHash: string | null = descendantTurnNodeHash;
-
-  while (currentTurnNodeHash !== null) {
-    if (visitedTurnNodes.has(currentTurnNodeHash)) {
-      throw persistenceError(
-        `${label} must not traverse a cyclic turn node lineage`,
-        "memory_backend_cyclic_turn_node_lineage",
-        {
-          ancestorTurnNodeHash,
-          descendantTurnNodeHash,
-        }
-      );
-    }
-
-    if (currentTurnNodeHash === ancestorTurnNodeHash) {
-      return;
-    }
-
-    visitedTurnNodes.add(currentTurnNodeHash);
-    currentTurnNodeHash = ensureTurnNodeExists(
-      state,
-      currentTurnNodeHash,
-      label
-    ).previousTurnNodeHash;
-  }
-
-  throw persistenceError(
-    `${label} must be a descendant of the referenced start turn node`,
-    "memory_backend_turn_node_not_descendant",
-    {
-      ancestorTurnNodeHash,
-      descendantTurnNodeHash,
-    }
+  assertTurnNodeDescendsFromIndexed(
+    state,
+    descendantTurnNodeHash,
+    ancestorTurnNodeHash,
+    label,
+    createTurnNodeLineageIndex()
   );
 }
 

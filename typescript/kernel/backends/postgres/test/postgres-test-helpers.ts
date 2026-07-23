@@ -17,6 +17,7 @@
 import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
+import { DEFAULT_SCOPE } from "@tuvren/core";
 import postgres from "postgres";
 import type { PostgresBackendOptions } from "../src/index.js";
 
@@ -107,6 +108,88 @@ export async function cleanupAllocatedSchemas(): Promise<void> {
     allocatedSchemas.clear();
     await sql.end({ timeout: 0 });
   }
+}
+
+/**
+ * Reads the raw `snapshot_cbor` bytes for `options`'s Scope, bypassing the
+ * `PostgresBackend` entirely (a direct SQL round trip). Used by the
+ * phase-observer and snapshot-cache test suites to assert on the exact
+ * persisted bytes rather than on anything the backend's public surface
+ * would re-decode/re-validate for them.
+ */
+export async function readSnapshotCbor(
+  options: PostgresBackendOptions
+): Promise<Uint8Array> {
+  const sql = createOptionsSqlClient(options);
+
+  try {
+    const schemaName = requireSchemaName(options);
+    const rows = await sql.unsafe<Array<{ snapshot_cbor: Uint8Array }>>(
+      `SELECT snapshot_cbor
+         FROM "${schemaName}".backend_postgres_snapshots
+        WHERE snapshot_id = 1 AND scope = $1`,
+      [options.scope ?? DEFAULT_SCOPE]
+    );
+    const row = rows[0];
+
+    if (row === undefined) {
+      throw new Error("expected a persisted snapshot row");
+    }
+
+    return new Uint8Array(row.snapshot_cbor);
+  } finally {
+    await sql.end({ timeout: 0 });
+  }
+}
+
+/**
+ * Overwrites `options`'s Scope's `snapshot_cbor` row directly via SQL,
+ * bypassing every backend-owned invariant (`persistStateSnapshot`'s encode,
+ * the row lock, everything). Simulates either a byte-level corruption of the
+ * stored payload or a same-schema/scope write from an entirely different
+ * writer/process, for the issue #108 M3 corruption-injection and
+ * cross-process-invalidation coverage.
+ */
+export async function writeSnapshotCbor(
+  options: PostgresBackendOptions,
+  bytes: Uint8Array
+): Promise<void> {
+  const sql = createOptionsSqlClient(options);
+
+  try {
+    const schemaName = requireSchemaName(options);
+    await sql.unsafe(
+      `UPDATE "${schemaName}".backend_postgres_snapshots
+          SET snapshot_cbor = $1
+        WHERE snapshot_id = 1 AND scope = $2`,
+      [bytes, options.scope ?? DEFAULT_SCOPE]
+    );
+  } finally {
+    await sql.end({ timeout: 0 });
+  }
+}
+
+function requireSchemaName(options: PostgresBackendOptions): string {
+  if (options.schemaName === undefined) {
+    throw new Error("expected a schema name on the test backend options");
+  }
+
+  return options.schemaName;
+}
+
+function createOptionsSqlClient(options: PostgresBackendOptions) {
+  return postgres({
+    connect_timeout: 5,
+    database: options.database,
+    host: options.host,
+    idle_timeout: 1,
+    max: 1,
+    onnotice: () => undefined,
+    password: options.password,
+    port: options.port,
+    prepare: false,
+    username: options.username,
+  });
 }
 
 function createSqlClient() {

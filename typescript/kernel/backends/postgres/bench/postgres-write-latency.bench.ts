@@ -24,10 +24,18 @@
 
 import { randomUUID } from "node:crypto";
 import process from "node:process";
+import { createRecordingPhaseObserver } from "@tuvren/backend-shared";
 import {
   createCanonicalKernelTestSchema,
   createStoredObjectRecord,
   createStoredSchemaRecord,
+  formatNs,
+  formatPhaseTable,
+  type PhaseStats,
+  percentile,
+  readSampleCountFromEnv,
+  summarizePhases,
+  type TimingStats,
 } from "@tuvren/kernel-testkit";
 import {
   createPostgresBackend,
@@ -35,16 +43,16 @@ import {
   type PostgresBackendOptions,
 } from "../src/index.js";
 
-const SAMPLE_COUNT = 5;
+// Default sample count for the decisive large tiers (1k, 10k): the KRT-BK007
+// spike ran n=5, where p95 collapses onto max; override via BENCH_SAMPLE_COUNT
+// for a quicker local iteration loop.
+const SAMPLE_COUNT = readSampleCountFromEnv(15);
 const WARMUP_WRITES = 3;
 const SCOPE_OBJECT_COUNTS = [10, 100, 1000, 10_000] as const;
 const DEVENV_DATABASE_NAME = "tuvren_runtime";
 
-interface WriteLatencyResult {
-  averageNs: number;
-  bestNs: number;
-  medianNs: number;
-  p95Ns: number;
+interface WriteLatencyResult extends TimingStats {
+  phases: PhaseStats[];
   scopeObjectCount: number;
 }
 
@@ -52,10 +60,14 @@ await main();
 
 async function main(): Promise<void> {
   process.stdout.write("postgres backend write-latency benchmark\n");
+  process.stdout.write(
+    `sample count: ${SAMPLE_COUNT} (BENCH_SAMPLE_COUNT to override)\n`
+  );
   const results: WriteLatencyResult[] = [];
 
   for (const scopeObjectCount of SCOPE_OBJECT_COUNTS) {
-    const options = createBenchBackendOptions();
+    const observer = createRecordingPhaseObserver();
+    const options = createBenchBackendOptions(observer);
     const backend = createPostgresBackend(options);
 
     try {
@@ -82,16 +94,18 @@ async function main(): Promise<void> {
 
       const result = await measureMarginalWriteLatency(
         backend,
-        scopeObjectCount
+        scopeObjectCount,
+        observer
       );
       results.push(result);
       process.stdout.write(
-        `scope at ${result.scopeObjectCount} objects: best ${formatNs(
+        `scope at ${result.scopeObjectCount} objects (n=${result.n}): best ${formatNs(
           result.bestNs
         )}, median ${formatNs(result.medianNs)}, p95 ${formatNs(
           result.p95Ns
         )}, avg ${formatNs(result.averageNs)}\n`
       );
+      process.stdout.write(formatPhaseTable(result.phases));
     } finally {
       await destroyPostgresBackend(options);
     }
@@ -112,7 +126,8 @@ async function main(): Promise<void> {
 
 async function measureMarginalWriteLatency(
   backend: ReturnType<typeof createPostgresBackend>,
-  scopeObjectCount: number
+  scopeObjectCount: number,
+  observer: ReturnType<typeof createRecordingPhaseObserver>
 ): Promise<WriteLatencyResult> {
   let writeCounter = 0;
 
@@ -134,6 +149,11 @@ async function measureMarginalWriteLatency(
     await writeOnce();
   }
 
+  // Only attribute phases for the measured samples below, not the warmup
+  // writes above -- so the phase table lines up 1:1 with the reported
+  // latency sample count.
+  observer.reset();
+
   const samples: number[] = [];
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
     samples.push(await writeOnce());
@@ -146,12 +166,16 @@ async function measureMarginalWriteLatency(
       samples.reduce((total, sample) => total + sample, 0) / samples.length,
     bestNs: Math.min(...samples),
     medianNs: percentile(sortedSamples, 0.5),
+    n: samples.length,
     p95Ns: percentile(sortedSamples, 0.95),
+    phases: summarizePhases(observer.samples),
     scopeObjectCount,
   };
 }
 
-function createBenchBackendOptions(): PostgresBackendOptions {
+function createBenchBackendOptions(
+  phaseObserver: ReturnType<typeof createRecordingPhaseObserver>
+): PostgresBackendOptions {
   const host = process.env.PGHOST;
   const portValue = process.env.PGPORT;
   const username = process.env.PGUSER ?? process.env.USER;
@@ -185,6 +209,7 @@ function createBenchBackendOptions(): PostgresBackendOptions {
   return {
     database: DEVENV_DATABASE_NAME,
     host,
+    phaseObserver,
     port,
     schemaName: `bench_${randomUUID().replaceAll("-", "_")}`,
     username,
@@ -198,38 +223,4 @@ function seededObjectBytes(scopeObjectCount: number, index: number) {
     Math.floor(index / 251) % 251,
     Math.floor(index / 63_001) % 251,
   ]);
-}
-
-function percentile(sortedSamples: readonly number[], rank: number): number {
-  if (sortedSamples.length === 0) {
-    throw new Error("expected benchmark samples");
-  }
-
-  const index = Math.min(
-    sortedSamples.length - 1,
-    Math.max(0, Math.ceil(sortedSamples.length * rank) - 1)
-  );
-  const value = sortedSamples[index];
-
-  if (value === undefined) {
-    throw new Error("expected benchmark sample at percentile index");
-  }
-
-  return value;
-}
-
-function formatNs(value: number): string {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(3)}s`;
-  }
-
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(3)}ms`;
-  }
-
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(3)}us`;
-  }
-
-  return `${value.toFixed(0)}ns`;
 }

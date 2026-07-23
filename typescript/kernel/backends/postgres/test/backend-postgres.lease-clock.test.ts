@@ -22,7 +22,7 @@
 // the kernel (the worker's wall clock).
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import type { RuntimeBackend, TurnTreeSchema } from "@tuvren/kernel-protocol";
+import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createPostgresBackend } from "../src/index.js";
 import {
@@ -40,17 +40,13 @@ const TEST_SCHEMA = {
   schemaId: "schema_postgres_lease_clock",
 } satisfies TurnTreeSchema;
 
-interface ClosablePostgresBackend extends RuntimeBackend {
-  destroy(options?: { dropSchema?: boolean }): Promise<void>;
-}
-
 // Worker A's wall clock is deliberately far behind the backend clock so that any
 // owner-time stamping or comparison would produce an obviously wrong absolute
 // value (around 50) instead of the backend-time value (around 1050).
 const WORKER_CLOCK_MS = 0;
 
 interface LeaseClockFixture {
-  backend: ClosablePostgresBackend;
+  backend: ReturnType<typeof createPostgresBackend>;
   branchId: string;
   kernel: ReturnType<typeof createRuntimeKernel>;
   rootTurnNodeHash: string;
@@ -65,7 +61,7 @@ async function createLeaseClockFixture(
   let backendNowMs = initialBackendNowMs;
   const backend = createPostgresBackend(
     createPostgresTestBackendOptions({ now: () => backendNowMs })
-  ) as ClosablePostgresBackend;
+  );
   // The worker (kernel) wall clock is fixed and far behind the backend clock.
   const kernel = createRuntimeKernel({ backend, now: () => WORKER_CLOCK_MS });
   const schemaId = await kernel.schema.register(TEST_SCHEMA);
@@ -122,9 +118,7 @@ afterAll(async () => {
 
 describe("createPostgresBackend backend-authoritative lease clock", () => {
   test("advertises shared-lease-clock support", async () => {
-    const backend = createPostgresBackend(
-      createPostgresTestBackendOptions()
-    ) as ClosablePostgresBackend;
+    const backend = createPostgresBackend(createPostgresTestBackendOptions());
 
     try {
       expect(backend.capabilities()["shared-lease-clock"]).toBe(true);
@@ -140,9 +134,7 @@ describe("createPostgresBackend backend-authoritative lease clock", () => {
     // transaction. The DB server and the test runner share a host, so the
     // captured value must sit within the wall-clock window bracketing the
     // transaction (with a generous tolerance for any host skew).
-    const backend = createPostgresBackend(
-      createPostgresTestBackendOptions()
-    ) as ClosablePostgresBackend;
+    const backend = createPostgresBackend(createPostgresTestBackendOptions());
 
     try {
       const beforeMs = Date.now();
