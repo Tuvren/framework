@@ -1,0 +1,156 @@
+/**
+ * Copyright 2026 Oscar Yáñez Cisterna (@SkrOYC)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import type { EpochMs, Scope } from "@tuvren/core";
+import type { Sql, TransactionSql } from "postgres";
+import { persistenceError } from "./postgres-errors.js";
+import {
+  LEGACY_SNAPSHOTS_TABLE,
+  listMigrationFiles,
+  MIGRATIONS_TABLE,
+  readMigrationSql,
+  RELATIONAL_REQUIRED_TABLES,
+  RELATIONAL_SCHEMA_MIGRATION_NAME,
+  resolveMigrationDirectory,
+} from "./postgres-schema.js";
+import { qualifyIdentifier, quoteIdentifier } from "./postgres-sql.js";
+
+type Tx = TransactionSql<Record<string, never>>;
+
+/**
+ * Idempotently provisions a host PostgreSQL schema for the relational
+ * backend (ADR-067 / issue #110): creates the schema and migration ledger,
+ * applies checked-in SQL migrations, and runs the open-time blob→row
+ * explode when a legacy `backend_postgres_snapshots` table is present.
+ *
+ * Concurrent initializers of the same schema are serialized via a
+ * transaction-scoped advisory lock keyed on the schema name.
+ */
+export async function ensurePostgresRelationalSchemaInitialized(
+  sql: Sql,
+  schemaName: string,
+  now: () => EpochMs,
+  _scope: Scope
+): Promise<void> {
+  const migrationsTable = qualifyIdentifier(schemaName, MIGRATIONS_TABLE);
+
+  await sql.begin(async (tx) => {
+    await tx.unsafe("SELECT pg_advisory_xact_lock(hashtext($1))", [schemaName]);
+    await tx.unsafe(
+      `CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(schemaName)}`
+    );
+    await tx.unsafe(
+      `CREATE TABLE IF NOT EXISTS ${migrationsTable} (
+        name TEXT PRIMARY KEY,
+        applied_at_ms BIGINT NOT NULL
+      )`
+    );
+
+    const applied = await loadAppliedMigrations(tx, migrationsTable);
+    const migrationDirectory = resolveMigrationDirectory(persistenceError);
+    const migrationFiles = listMigrationFiles(migrationDirectory);
+
+    for (const migrationName of migrationFiles) {
+      if (applied.has(migrationName)) {
+        continue;
+      }
+
+      const body = readMigrationSql(migrationDirectory, migrationName);
+      // Migration SQL uses unqualified table names; set search_path for the
+      // host schema so CREATE TABLE lands in the right namespace.
+      await tx.unsafe(
+        `SET LOCAL search_path TO ${quoteIdentifier(schemaName)}, public`
+      );
+      await tx.unsafe(body);
+      await tx.unsafe(
+        `INSERT INTO ${migrationsTable} (name, applied_at_ms) VALUES ($1, $2)`,
+        [migrationName, now()]
+      );
+      applied.add(migrationName);
+    }
+
+    // Ensure the relational migration is recorded even if SQL was applied
+    // under a different ledger name in a future dual-path scenario.
+    if (!applied.has(RELATIONAL_SCHEMA_MIGRATION_NAME)) {
+      // If family tables already exist (manual apply), just ledger them.
+      const hasObjects = await tableExists(tx, schemaName, "objects");
+      if (hasObjects) {
+        await tx.unsafe(
+          `INSERT INTO ${migrationsTable} (name, applied_at_ms)
+           VALUES ($1, $2) ON CONFLICT (name) DO NOTHING`,
+          [RELATIONAL_SCHEMA_MIGRATION_NAME, now()]
+        );
+      } else {
+        throw persistenceError(
+          "postgres backend relational schema migration did not create required tables",
+          "postgres_backend_relational_schema_missing",
+          { schemaName, required: [...RELATIONAL_REQUIRED_TABLES] }
+        );
+      }
+    }
+
+    await migrateLegacyBlobSnapshotsIfPresent(tx, schemaName, now);
+  });
+}
+
+async function loadAppliedMigrations(
+  tx: Tx,
+  migrationsTable: string
+): Promise<Set<string>> {
+  const rows = await tx.unsafe<Array<{ name: string }>>(
+    `SELECT name FROM ${migrationsTable} ORDER BY name`
+  );
+  return new Set(rows.map((row) => row.name));
+}
+
+async function tableExists(
+  tx: Tx,
+  schemaName: string,
+  tableName: string
+): Promise<boolean> {
+  const rows = await tx.unsafe<Array<{ exists: boolean }>>(
+    `SELECT EXISTS (
+       SELECT 1
+         FROM information_schema.tables
+        WHERE table_schema = $1
+          AND table_name = $2
+     ) AS exists`,
+    [schemaName, tableName]
+  );
+  return rows[0]?.exists === true;
+}
+
+/**
+ * Explodes legacy blob-per-scope rows into the relational family tables and
+ * drops `backend_postgres_snapshots`. Implemented in a separate module to keep
+ * the snapshot decoder out of the hot path once migration has run.
+ */
+async function migrateLegacyBlobSnapshotsIfPresent(
+  tx: Tx,
+  schemaName: string,
+  now: () => EpochMs
+): Promise<void> {
+  const hasSnapshots = await tableExists(tx, schemaName, LEGACY_SNAPSHOTS_TABLE);
+  if (!hasSnapshots) {
+    return;
+  }
+
+  // Lazy import so the blob decoder is only pulled when a legacy DB is opened.
+  const { explodeLegacyBlobSnapshots } = await import(
+    "./postgres-blob-migration.js"
+  );
+  await explodeLegacyBlobSnapshots(tx, schemaName, now);
+}

@@ -27,20 +27,17 @@ import {
 /**
  * KRT-BK011: backend-specific storage test uplift.
  *
- * `createPostgresClient` (postgres-backend-persistence.ts) hardcodes `max: 1`
- * on every `postgres.js` client, so each `PostgresBackend` instance owns
- * exactly one physical connection, and `loadPersistedStateForUpdate` takes a
- * real `SELECT ... FOR UPDATE` row lock keyed by `(schemaName, scope)`. These
- * are concrete properties of this backend's implementation that the shared
- * cross-backend testkit cannot express (it asserts uniform semantics across
- * all three backends and never constructs two backend instances contending
- * on one shared durable scope).
+ * `createPostgresClient` hardcodes `max: 1` on every `postgres.js` client, so
+ * each `PostgresBackend` instance owns exactly one physical connection. Under
+ * ADR-067, same-scope multi-instance serialization uses a transaction-scoped
+ * advisory lock keyed by `(schemaName, scope)` at the start of every
+ * `transact()`/`reclaim()`/`purgeScope()` — the relational replacement for
+ * the blob-era `SELECT ... FOR UPDATE` on the single snapshot row.
  *
  * `backend-postgres.scope-isolation.test.ts` already covers two backend
- * instances sharing a schema but bound to *different* scopes (no row
- * contention by construction, proven not to corrupt each other). This file is
- * the same-scope counterpart: it proves genuine PostgreSQL-level `FOR UPDATE`
- * row-lock contention between two independent instances, and that a single
+ * instances sharing a schema but bound to *different* scopes. This file is
+ * the same-scope counterpart: it proves genuine PostgreSQL-level advisory-
+ * lock contention between two independent instances, and that a single
  * instance's one physical connection safely serializes several concurrent
  * `transact()` calls rather than erroring under pool exhaustion.
  */
@@ -70,13 +67,10 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
     const backendX = createPostgresBackend(sharedOptions);
     const backendY = createPostgresBackend(sharedOptions);
 
-    // Pre-initialize both backends (creates the schema/table and this scope's
-    // snapshot row, and commits it) before the contention window below. This
-    // keeps a cold-start schema-initialization round-trip from masquerading as
-    // "blocked", and ensures Y's own first-touch initialization (an
-    // `INSERT ... ON CONFLICT DO NOTHING` against the same row) does not
-    // itself contend with X's held `FOR UPDATE` lock -- Y should block on
-    // exactly one thing: the `FOR UPDATE` read inside its real transact().
+    // Pre-initialize both backends (creates the relational schema) before the
+    // contention window below so cold-start schema init does not masquerade
+    // as lock wait. Y should block on exactly one thing: the same-scope
+    // advisory lock X holds for the duration of its open transaction.
     expect(await backendX.health()).toEqual({ ok: true });
     expect(await backendY.health()).toEqual({ ok: true });
 
@@ -101,9 +95,8 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
 
     try {
       // By the time `work` starts executing, `PostgresBackend.transact` has
-      // already run `SELECT ... FOR UPDATE` (loadPersistedStateForUpdate is
-      // awaited before `work` is invoked), so the row lock is genuinely held
-      // the instant this callback body starts.
+      // already taken the scope advisory lock (`pg_advisory_xact_lock`), so
+      // the lock is genuinely held the instant this callback body starts.
       const xPromise = backendX.transact(async (tx) => {
         sequence.push("x-holding-row-lock");
         markXHoldingRowLock();

@@ -14,27 +14,15 @@
  * limitations under the License.
  */
 
-// Issue #108 D1 — "does the postgres backend's `max: 1` pool plus its
-// in-process `transactionQueue` wrongly serialize writers bound to
-// DIFFERENT scopes?" Architecturally, no: `PostgresBackend` binds exactly
-// one Scope at construction (`options.scope`), and both the pool and the
-// queue are per-instance state. Two backend instances on two different
-// scopes therefore own entirely separate pools and queues -- there is
-// nothing shared for them to contend on. This bench measures that claim
-// directly through the public `RuntimeBackend` surface: N backend instances
-// on N distinct scopes (one shared schema) running a fixed number of
-// transact() writes CONCURRENTLY, against the same total write count run
-// SERIALLY on one scope. Near-linear scaling (concurrent wall time well
-// under N times the serial-equivalent single-scope share) demonstrates no
-// cross-scope serialization; the only inherent serialization this backend
-// has is same-scope (the row lock), which is explicitly out of scope for
-// this issue to change and is already covered by
-// `backend-postgres.pool-contention.test.ts`. Scope isolation's correctness
-// half (a scope never observes another scope's writes) is the existing,
-// thorough `backend-postgres.scope-isolation.test.ts` suite; this bench adds
-// only the lightweight per-scope hash-membership check needed to prove the
-// concurrent run did not cross-contaminate scopes, not a duplicate of that
-// suite.
+// Cross-scope throughput: does the Postgres backend wrongly serialize
+// writers bound to DIFFERENT scopes? Architecturally no — each instance
+// binds one Scope (`options.scope`), owns its own pool/queue, and same-
+// scope serialization is a transaction-scoped advisory lock keyed by
+// (schemaName, scope) only (ADR-067). N instances on N scopes running
+// concurrent writes should scale near-linearly vs the same total write
+// count run serially. Same-scope lock contention is covered by
+// `backend-postgres.pool-contention.test.ts`; isolation correctness by
+// `backend-postgres.scope-isolation.test.ts`.
 
 import { randomUUID } from "node:crypto";
 import process from "node:process";

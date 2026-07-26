@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-// Issue #108: validates the postgres backend's PhaseObserver seam is
-// behavior-neutral (M1's original noop-vs-absent check plus M2's stronger
-// recording-vs-noop check: a RecordingPhaseObserver must persist
-// snapshot_cbor byte-identical to NOOP_PHASE_OBSERVER's, not just to the
-// default, so the seam is proven neutral even while it is actively timing
-// every phase) and that a RecordingPhaseObserver captures the
-// decode/validate/encode/write/lock-wait phases of a transact() call in the
-// order the persistence path actually runs them.
+// Issue #108 / #110: validates the postgres backend's PhaseObserver seam is
+// behavior-neutral under the relational write path (ADR-067): a
+// RecordingPhaseObserver must leave durable rows identical to NOOP /
+// omitted observers, and must capture the phases the relational transact()
+// path actually runs (lock-wait → validate-write-set → write) rather than
+// the retired blob decode/encode phases.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
@@ -38,7 +36,6 @@ import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
   createPostgresTestBackendOptions,
-  readSnapshotCbor,
 } from "./postgres-test-helpers.js";
 
 beforeAll(async () => {
@@ -50,7 +47,7 @@ afterAll(async () => {
 });
 
 describe("@tuvren/backend-postgres phase observer seam (issue #108)", () => {
-  test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist byte-identical snapshot_cbor", async () => {
+  test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist identical records", async () => {
     const fixedNow = () => 1_700_000_000_000;
     const schema = createCanonicalKernelTestSchema();
     const schemaRecord = createStoredSchemaRecord(schema, 1);
@@ -66,10 +63,6 @@ describe("@tuvren/backend-postgres phase observer seam (issue #108)", () => {
       now: fixedNow,
       phaseObserver: NOOP_PHASE_OBSERVER,
     });
-    // M2: a *recording* observer (not just an unused NOOP one) must also
-    // leave snapshot_cbor byte-identical -- proving the seam never alters
-    // production bytes even while it is actively timing every phase, which
-    // the M1 noop-vs-default comparison alone could not show.
     const recordingOptions = createPostgresTestBackendOptions({
       now: fixedNow,
       phaseObserver: createRecordingPhaseObserver(),
@@ -90,19 +83,32 @@ describe("@tuvren/backend-postgres phase observer seam (issue #108)", () => {
       });
     }
 
-    const defaultBytes = await readSnapshotCbor(defaultOptions);
-    const explicitNoopBytes = await readSnapshotCbor(explicitNoopOptions);
-    const recordingBytes = await readSnapshotCbor(recordingOptions);
+    // Behavior-neutral seam: every construction path must leave the same
+    // durable rows for the same inputs (relational equivalent of the old
+    // byte-identical snapshot_cbor check).
+    const loaded: Array<{ schemaId: string; objectHash: string }> = [];
+    for (const backend of [
+      defaultBackend,
+      explicitNoopBackend,
+      recordingBackend,
+    ]) {
+      await backend.transact(async (tx) => {
+        const storedSchema = await tx.schemas.get(schemaRecord.schemaId);
+        const storedObject = await tx.objects.get(objectRecord.hash);
+        loaded.push({
+          objectHash: storedObject?.hash ?? "",
+          schemaId: storedSchema?.schemaId ?? "",
+        });
+      });
+    }
 
-    expect(
-      Buffer.from(defaultBytes).equals(Buffer.from(explicitNoopBytes))
-    ).toBe(true);
-    expect(Buffer.from(defaultBytes).equals(Buffer.from(recordingBytes))).toBe(
-      true
-    );
+    expect(loaded[0]).toEqual(loaded[1]);
+    expect(loaded[0]).toEqual(loaded[2]);
+    expect(loaded[0]?.schemaId).toBe(schemaRecord.schemaId);
+    expect(loaded[0]?.objectHash).toBe(objectRecord.hash);
   });
 
-  test("a RecordingPhaseObserver captures every persistence phase in the order transact() runs them", async () => {
+  test("a RecordingPhaseObserver captures every relational persistence phase in the order transact() runs them", async () => {
     const observer = createRecordingPhaseObserver();
     const options = createPostgresTestBackendOptions({
       phaseObserver: observer,
@@ -122,26 +128,21 @@ describe("@tuvren/backend-postgres phase observer seam (issue #108)", () => {
     const phases = observer.samples.map((sample) => sample.phase);
 
     expect(phases).toContain("lock-wait");
-    expect(phases).toContain("decode");
-    expect(phases).toContain("validate");
-    expect(phases).toContain("encode");
+    expect(phases).toContain("validate-write-set");
     expect(phases).toContain("write");
 
     for (const sample of observer.samples) {
       expect(sample.durationNs).toBeGreaterThanOrEqual(0);
     }
 
-    // The persistence path decodes the row-locked snapshot, validates the
-    // resulting draft, encodes it back to CBOR, then writes/commits it — so
-    // the first occurrence of each phase must appear in that relative order.
-    const decodeIndex = phases.indexOf("decode");
-    const validateIndex = phases.indexOf("validate");
-    const encodeIndex = phases.indexOf("encode");
+    // Relational path: queue for the connection, re-validate the write set,
+    // then COMMIT. No whole-blob decode/encode phases remain.
+    const lockWaitIndex = phases.indexOf("lock-wait");
+    const validateIndex = phases.indexOf("validate-write-set");
     const writeIndex = phases.indexOf("write");
 
-    expect(decodeIndex).toBeGreaterThanOrEqual(0);
-    expect(validateIndex).toBeGreaterThan(decodeIndex);
-    expect(encodeIndex).toBeGreaterThan(validateIndex);
-    expect(writeIndex).toBeGreaterThan(encodeIndex);
+    expect(lockWaitIndex).toBeGreaterThanOrEqual(0);
+    expect(validateIndex).toBeGreaterThan(lockWaitIndex);
+    expect(writeIndex).toBeGreaterThan(validateIndex);
   });
 });

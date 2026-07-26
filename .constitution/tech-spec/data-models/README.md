@@ -272,7 +272,7 @@ erDiagram
 #### PostgreSQL Backend Schema
 
 - **Purpose:** Specify the service-backed PostgreSQL backend concretely enough to implement, verify, and operate without weakening the shared kernel contract.
-- **Storage Shape:** PostgreSQL schema-local storage using Postgres.js, one backend-owned schema per backend instance, a forward-only migration ledger, and one canonical snapshot row per Scope containing deterministic-CBOR-encoded backend state. The host-supplied Scope is bound at construction (ADR-048) and realized as row-level isolation (ADR-049): each Scope owns its own snapshot row in the shared `backend_postgres_snapshots` table.
+- **Storage Shape:** PostgreSQL schema-local storage using Postgres.js, one backend-owned schema per backend instance (host-chosen `schemaName`), a forward-only migration ledger, and a relational row-per-record family schema (ADR-067 / issue #110). The host-supplied Scope is bound at construction (ADR-048) and realized as row-level isolation (ADR-049): every family table includes `scope` in its primary key and foreign keys so backends sharing one schema never observe each other's rows. Leaf record values remain deterministic-CBOR-encoded per row (ADR-008/010/011); there is no live whole-Scope `snapshot_cbor` cell after the open-time blob→relational migrator has run.
 - **Constraints / Invariants:**
   - Development and CI standardize on `devenv`-managed `services.postgres`; the backend itself accepts normal PostgreSQL connection settings such as `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, and `PGDATABASE`.
   - Kernel writes run inside PostgreSQL transactions and take a `FOR UPDATE` lock on the constructing Scope's snapshot row (`WHERE snapshot_id = 1 AND scope = $scope`) before mutating state.
@@ -284,8 +284,8 @@ erDiagram
   - PostgreSQL is an official persistent backend, not the canonical physical model for all future service-backed backends.
 - **Indexes / Access Paths:**
   - `backend_postgres_migrations(name)` primary key for forward-only backend migration tracking
-  - `backend_postgres_snapshots(snapshot_id, scope)` composite primary key for the per-Scope persisted state rows
-- **Migration Notes:** `@tuvren/backend-postgres` owns schema initialization, forward-only migration names, and snapshot payload versioning. `0002_scope_partition.sql` adds the `scope` column and rekeys `backend_postgres_snapshots` to the composite primary key `(snapshot_id, scope)`, assigning any pre-scope row the default Scope so existing single-scope databases keep working unchanged. The migration is idempotent (gated on the absence of the `scope` column).
+  - Family tables (`objects`, `schemas`, `turn_trees`, `turn_tree_paths`, `ordered_path_chunks`, `turn_nodes`, `threads`, `branches`, `turns`, `runs`, `staged_results`, `observe_annotations`, `turn_node_lineage_roots`) each keyed by `(scope, …)` with deferred foreign keys
+- **Migration Notes:** `@tuvren/backend-postgres` owns schema initialization and forward-only migration names. `0001_relational_schema.sql` creates the family schema (ADR-067). Opening a pre-#110 database that still has `backend_postgres_snapshots` explodes each Scope's blob into relational rows once under an advisory lock and retires the blob table; leaf hashes are preserved. Downgrade is not supported.
 
 ##### PostgreSQL Tables
 
@@ -293,10 +293,10 @@ erDiagram
   - columns: `name TEXT PRIMARY KEY`, `applied_at_ms BIGINT NOT NULL`
   - indexes: primary key on `name`
   - notes: records `0001_initial_schema.sql` and `0002_scope_partition.sql`
-- `backend_postgres_snapshots`
-  - columns: `snapshot_id SMALLINT NOT NULL`, `scope TEXT NOT NULL`, `schema_version INTEGER NOT NULL`, `snapshot_cbor BYTEA NOT NULL`, `updated_at_ms BIGINT NOT NULL`
+- `backend_postgres_snapshots` (legacy, retired by open-time migrator after ADR-067)
+  - historical columns: `snapshot_id SMALLINT NOT NULL`, `scope TEXT NOT NULL`, `schema_version INTEGER NOT NULL`, `snapshot_cbor BYTEA NOT NULL`, `updated_at_ms BIGINT NOT NULL`
   - indexes: composite primary key on `(snapshot_id, scope)`
-  - notes: persists exactly one row per Scope with `snapshot_id = 1`; `snapshot_cbor` stores the deterministic-CBOR-encoded canonical backend state for that Scope and is row-locked during kernel writes
+  - notes: pre-#110 live state; after migration, operational state lives in the family tables above (mirroring SQLite) with `scope` on every key
 
 ### 3.6 Boundary-Owned Contract, Conformance, and Compatibility Assets
 
