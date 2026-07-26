@@ -514,7 +514,12 @@ export async function ensureOrderedPathChunkExistsInDatabase(
   chunkHash: string,
   label: string
 ): Promise<StoredOrderedPathChunk> {
-  const record = await selectOrderedPathChunk(sql, schemaName, scope, chunkHash);
+  const record = await selectOrderedPathChunk(
+    sql,
+    schemaName,
+    scope,
+    chunkHash
+  );
   if (record === null) {
     throw persistenceError(
       `${label} must reference an existing ordered path chunk`,
@@ -701,7 +706,7 @@ export async function getSchemaForSchemaIdInDatabase(
 }
 
 /** Loads and decodes the turn-tree schema a stored turn tree references. */
-export async function getSchemaForTurnTreeInDatabase(
+export function getSchemaForTurnTreeInDatabase(
   sql: DbSql,
   schemaName: string,
   scope: string,

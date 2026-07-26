@@ -16,6 +16,9 @@
 
 import { TuvrenPersistenceError, TuvrenValidationError } from "@tuvren/core";
 
+/** SQLSTATE codes from Postgres drivers (e.g. 23503 foreign_key_violation). */
+const SQLSTATE_CODE = /^[0-9A-Z]{5}$/;
+
 /**
  * Constructs the backend's uniform `TuvrenPersistenceError`. Codes follow the
  * `postgres_backend_<reason>` convention.
@@ -54,7 +57,7 @@ export function normalizeBackendError(error: unknown): Error {
     // (e.g. 23503 foreign_key_violation) and connection failures as named codes.
     if (
       code !== undefined &&
-      (/^[0-9A-Z]{5}$/.test(code) ||
+      (SQLSTATE_CODE.test(code) ||
         code.startsWith("ECONN") ||
         code === "CONNECTION_CLOSED" ||
         code === "CONNECT_TIMEOUT")

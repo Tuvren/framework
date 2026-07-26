@@ -909,13 +909,14 @@ async function isTurnNodeDescendantOfInDatabase(
       descendantTurnNodeHash,
       "descendantTurnNodeHash"
     );
-  const ancestorMetadata = await ensureValidatedTurnNodeLineageMetadataInDatabase(
-    sql,
-    schemaName,
-    scope,
-    ancestorTurnNodeHash,
-    "ancestorTurnNodeHash"
-  );
+  const ancestorMetadata =
+    await ensureValidatedTurnNodeLineageMetadataInDatabase(
+      sql,
+      schemaName,
+      scope,
+      ancestorTurnNodeHash,
+      "ancestorTurnNodeHash"
+    );
 
   if (
     descendantMetadata.rootTurnNodeHash !== ancestorMetadata.rootTurnNodeHash ||

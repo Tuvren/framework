@@ -21,9 +21,9 @@ import {
   LEGACY_SNAPSHOTS_TABLE,
   listMigrationFiles,
   MIGRATIONS_TABLE,
-  readMigrationSql,
   RELATIONAL_REQUIRED_TABLES,
   RELATIONAL_SCHEMA_MIGRATION_NAME,
+  readMigrationSql,
   resolveMigrationDirectory,
 } from "./postgres-schema.js";
 import { qualifyIdentifier, quoteIdentifier } from "./postgres-sql.js";
@@ -143,7 +143,11 @@ async function migrateLegacyBlobSnapshotsIfPresent(
   schemaName: string,
   now: () => EpochMs
 ): Promise<void> {
-  const hasSnapshots = await tableExists(tx, schemaName, LEGACY_SNAPSHOTS_TABLE);
+  const hasSnapshots = await tableExists(
+    tx,
+    schemaName,
+    LEGACY_SNAPSHOTS_TABLE
+  );
   if (!hasSnapshots) {
     return;
   }

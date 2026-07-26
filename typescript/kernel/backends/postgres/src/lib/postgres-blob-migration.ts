@@ -19,9 +19,9 @@ import type { TransactionSql } from "postgres";
 import { decodeSnapshot } from "./postgres-backend-persistence.js";
 import { persistenceError } from "./postgres-errors.js";
 import type { BackendState } from "./postgres-records.js";
-import { insertBackendStateRows } from "./postgres-state-persist.js";
 import { LEGACY_SNAPSHOTS_TABLE } from "./postgres-schema.js";
 import { qualifyIdentifier } from "./postgres-sql.js";
+import { insertBackendStateRows } from "./postgres-state-persist.js";
 
 type Tx = TransactionSql<Record<string, never>>;
 

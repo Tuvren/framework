@@ -27,7 +27,10 @@ import {
   type StoredTurnNode,
 } from "@tuvren/kernel-protocol";
 import { persistenceError } from "./postgres-errors.js";
-import { type BackendState, decodeHashStringArray } from "./postgres-records.js";
+import {
+  type BackendState,
+  decodeHashStringArray,
+} from "./postgres-records.js";
 import { ensureTurnNodeExists } from "./postgres-state-utils.js";
 
 /**

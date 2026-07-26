@@ -305,7 +305,9 @@ export async function loadState(
     );
   }
 
-  for (const row of await selectAll<PostgresTurnTreePathRow>("turn_tree_paths")) {
+  for (const row of await selectAll<PostgresTurnTreePathRow>(
+    "turn_tree_paths"
+  )) {
     const record = decodeTurnTreePathRow(row);
     const treePaths =
       state.turnTreePaths.get(record.turnTreeHash) ??
@@ -361,7 +363,9 @@ export async function loadState(
     state.observeAnnotations.set(record.runId, records);
   }
 
-  for (const row of await selectAll<PostgresStagedResultRow>("staged_results")) {
+  for (const row of await selectAll<PostgresStagedResultRow>(
+    "staged_results"
+  )) {
     const record = decodeStagedResultRow(row);
     const stagedResults =
       state.stagedResults.get(record.runId) ??
@@ -991,12 +995,14 @@ export function toSafeInteger(
   value: number | string | bigint,
   field: string
 ): number {
-  const n =
-    typeof value === "number"
-      ? value
-      : typeof value === "bigint"
-        ? Number(value)
-        : Number(value);
+  let n: number;
+  if (typeof value === "number") {
+    n = value;
+  } else if (typeof value === "bigint") {
+    n = Number(value);
+  } else {
+    n = Number(value);
+  }
   if (!Number.isSafeInteger(n)) {
     throw persistenceError(
       `stored rows must keep ${field} as a non-negative safe integer`,

@@ -45,8 +45,19 @@ export async function insertBackendStateRows(
   state: BackendState
 ): Promise<void> {
   const q = (table: string) => qualifyIdentifier(schemaName, table);
-  const bytesFrom = (bytes: Uint8Array): Uint8Array => bytes;
+  await insertContentAddressedRows(sql, q, scope, state);
+  await insertTurnTreePathRows(sql, q, scope, state);
+  await insertTurnNodeAndLineageRows(sql, q, scope, state);
+  await insertThreadBranchTurnRunRows(sql, q, scope, state);
+  await insertStagedAndAnnotationRows(sql, q, scope, state);
+}
 
+async function insertContentAddressedRows(
+  sql: DbSql,
+  q: (table: string) => string,
+  scope: Scope,
+  state: BackendState
+): Promise<void> {
   for (const record of state.objects.values()) {
     await sql.unsafe(
       `INSERT INTO ${q("objects")} (
@@ -57,7 +68,7 @@ export async function insertBackendStateRows(
         scope,
         record.hash,
         record.mediaType,
-        bytesFrom(record.bytes),
+        record.bytes,
         record.byteLength,
         record.createdAtMs,
       ]
@@ -70,12 +81,7 @@ export async function insertBackendStateRows(
          scope, schema_id, schema_cbor, created_at_ms
        ) VALUES ($1, $2, $3, $4)
        ON CONFLICT (scope, schema_id) DO NOTHING`,
-      [
-        scope,
-        record.schemaId,
-        bytesFrom(record.schemaCbor),
-        record.createdAtMs,
-      ]
+      [scope, record.schemaId, record.schemaCbor, record.createdAtMs]
     );
   }
 
@@ -89,7 +95,7 @@ export async function insertBackendStateRows(
         scope,
         record.hash,
         record.schemaId,
-        bytesFrom(record.manifestCbor),
+        record.manifestCbor,
         record.createdAtMs,
       ]
     );
@@ -105,18 +111,32 @@ export async function insertBackendStateRows(
         scope,
         record.chunkHash,
         record.itemCount,
-        bytesFrom(record.itemsCbor),
+        record.itemsCbor,
         record.createdAtMs,
       ]
     );
   }
+}
 
+async function insertTurnTreePathRows(
+  sql: DbSql,
+  q: (table: string) => string,
+  scope: Scope,
+  state: BackendState
+): Promise<void> {
   for (const pathMap of state.turnTreePaths.values()) {
     for (const record of pathMap.values()) {
       await insertTurnTreePathRow(sql, q("turn_tree_paths"), scope, record);
     }
   }
+}
 
+async function insertTurnNodeAndLineageRows(
+  sql: DbSql,
+  q: (table: string) => string,
+  scope: Scope,
+  state: BackendState
+): Promise<void> {
   for (const record of state.turnNodes.values()) {
     await sql.unsafe(
       `INSERT INTO ${q("turn_nodes")} (
@@ -129,7 +149,7 @@ export async function insertBackendStateRows(
         record.hash,
         record.previousTurnNodeHash,
         record.turnTreeHash,
-        bytesFrom(record.consumedStagedResultsCbor),
+        record.consumedStagedResultsCbor,
         record.schemaId,
         record.eventHash,
         record.createdAtMs,
@@ -171,7 +191,14 @@ export async function insertBackendStateRows(
       [scope, turnNode.hash, position.rootTurnNodeHash, position.depth]
     );
   }
+}
 
+async function insertThreadBranchTurnRunRows(
+  sql: DbSql,
+  q: (table: string) => string,
+  scope: Scope,
+  state: BackendState
+): Promise<void> {
   for (const record of state.threads.values()) {
     await sql.unsafe(
       `INSERT INTO ${q("threads")} (
@@ -249,13 +276,13 @@ export async function insertBackendStateRows(
         record.startTurnNodeHash,
         record.status,
         record.currentStepIndex,
-        bytesFrom(record.stepSequenceCbor),
-        bytesFrom(record.createdTurnNodesCbor),
+        record.stepSequenceCbor,
+        record.createdTurnNodesCbor,
         record.createdAtMs,
         record.updatedAtMs,
         record.pendingSignalsCbor === undefined
           ? null
-          : bytesFrom(record.pendingSignalsCbor),
+          : record.pendingSignalsCbor,
         record.executionOwnerId ?? null,
         record.leaseExpiresAtMs ?? null,
         record.fencingToken ?? null,
@@ -263,7 +290,14 @@ export async function insertBackendStateRows(
       ]
     );
   }
+}
 
+async function insertStagedAndAnnotationRows(
+  sql: DbSql,
+  q: (table: string) => string,
+  scope: Scope,
+  state: BackendState
+): Promise<void> {
   for (const stagedByTask of state.stagedResults.values()) {
     for (const record of stagedByTask.values()) {
       await sql.unsafe(
@@ -279,9 +313,7 @@ export async function insertBackendStateRows(
           record.objectHash,
           record.objectType,
           record.status,
-          record.status === "interrupted"
-            ? bytesFrom(record.interruptPayloadCbor)
-            : null,
+          record.status === "interrupted" ? record.interruptPayloadCbor : null,
           record.createdAtMs,
         ]
       );

@@ -281,17 +281,14 @@ export function createSupportRepositories(
     objects: {
       async get(hash) {
         assertTransactionActive();
-        const record = await helpers.selectObject(
-          sql,
-          schemaName,
-          scope,
-          hash
-        );
+        const record = await helpers.selectObject(sql, schemaName, scope, hash);
         return record === null ? null : helpers.cloneStoredObject(record);
       },
       async has(hash) {
         assertTransactionActive();
-        return (await helpers.selectObject(sql, schemaName, scope, hash)) !== null;
+        return (
+          (await helpers.selectObject(sql, schemaName, scope, hash)) !== null
+        );
       },
       async put(record) {
         assertTransactionActive();
