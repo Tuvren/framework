@@ -30,13 +30,13 @@ import type {
 } from "@tuvren/kernel-protocol";
 
 import { persistenceError } from "./postgres-errors.js";
-import type { DbSql } from "./postgres-sql.js";
-import { qualifyIdentifier } from "./postgres-sql.js";
 import {
   type BackendState,
   cloneBytes,
   cloneEncodedBytes,
 } from "./postgres-records.js";
+import type { DbSql } from "./postgres-sql.js";
+import { qualifyIdentifier } from "./postgres-sql.js";
 
 // Existence-check helpers below operate on an already-loaded `BackendState`
 // projection (see postgres-records.js), not the live database; each throws the

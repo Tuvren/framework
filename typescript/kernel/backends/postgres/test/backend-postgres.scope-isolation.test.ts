@@ -358,9 +358,7 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
     )}`;
     const objectsTable = `${qSchema}.${quoteIdentifier("objects")}`;
 
-    const { createEmptyState } = await import(
-      "../src/lib/postgres-records.js"
-    );
+    const { createEmptyState } = await import("../src/lib/postgres-records.js");
     const { encodeSnapshot } = await import(
       "../src/lib/postgres-backend-persistence.js"
     );

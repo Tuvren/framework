@@ -677,12 +677,7 @@ async function validateTurnDependentsInDatabase(
     scope,
     turnId
   )) {
-    await validateTurnInDatabase(
-      sql,
-      schemaName,
-      scope,
-      dependentTurn.turnId
-    );
+    await validateTurnInDatabase(sql, schemaName, scope, dependentTurn.turnId);
   }
 
   for (const run of await selectRunsByTurn(sql, schemaName, scope, turnId)) {

@@ -22,6 +22,9 @@ import type { Sql, TransactionSql } from "postgres";
  */
 export type DbSql = Sql | TransactionSql<Record<string, never>>;
 
+/** Conservative unquoted-identifier alphabet (letters, digits, `_`, `-`). */
+const SAFE_SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_-]*$/;
+
 /**
  * Double-quotes a SQL identifier after rejecting characters outside the
  * conservative unquoted-identifier alphabet (letters, digits, `_`, `-`).
@@ -29,7 +32,7 @@ export type DbSql = Sql | TransactionSql<Record<string, never>>;
  * the last line of defense before interpolating into DDL/DML.
  */
 export function quoteIdentifier(identifier: string): string {
-  if (!/^[A-Za-z_][A-Za-z0-9_-]*$/.test(identifier)) {
+  if (!SAFE_SQL_IDENTIFIER.test(identifier)) {
     throw new Error(
       `postgres backend refused to quote unsafe SQL identifier "${identifier}"`
     );
@@ -39,7 +42,10 @@ export function quoteIdentifier(identifier: string): string {
 }
 
 /** Returns `"schema"."table"` for a validated schema name and table name. */
-export function qualifyIdentifier(schemaName: string, tableName: string): string {
+export function qualifyIdentifier(
+  schemaName: string,
+  tableName: string
+): string {
   return `${quoteIdentifier(schemaName)}.${quoteIdentifier(tableName)}`;
 }
 

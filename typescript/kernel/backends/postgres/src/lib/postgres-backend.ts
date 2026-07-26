@@ -25,7 +25,6 @@ import {
   assertStoredOrderedPathChunkIdentity,
   assertStoredTurnNodeIdentity,
   assertStoredTurnTreeIdentity,
-  assertStoredTurnTreePath,
   type BackendCapability,
   encodeDeterministicKernelRecord,
   hashKernelRecord,
@@ -270,7 +269,7 @@ class PostgresBackend implements KrakenBackend {
     this.sql = createPostgresClient(resolvedOptions);
     this.phaseObserver = resolvedOptions.phaseObserver ?? NOOP_PHASE_OBSERVER;
     // snapshotCacheObserver intentionally unused (relational path; #110).
-    void resolvedOptions.snapshotCacheObserver;
+    // Keep the option accepted for source compatibility with benches/tests.
     this.now = resolvedOptions.now ?? Date.now;
     // Track whether a clock was explicitly injected so the per-transaction
     // authoritative lease clock can fall back to the PostgreSQL server clock in

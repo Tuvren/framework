@@ -51,7 +51,9 @@ import {
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
 
-function assertCommittedState(state: ReturnType<typeof createEmptyState>): void {
+function assertCommittedState(
+  state: ReturnType<typeof createEmptyState>
+): void {
   validateCommittedState(state, createEmptyState(), {
     assertActiveRunHeadAlignment,
     assertBackwardBranchMoveIsArchived,
