@@ -341,74 +341,98 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
     await closeBackend(scopedBackend);
   });
 
-  test("migrates a legacy single-scope snapshot table to the scope-partitioned shape, preserving its data as the default scope", async () => {
+  test("migrates a legacy blob-per-scope snapshot into relational family rows without data loss", async () => {
+    // Issue #110 / ADR-067: seed a pre-relational database shape (migrations
+    // ledger + backend_postgres_snapshots with one CBOR blob), then open the
+    // relational backend and prove the blob is exploded into objects rows and
+    // the snapshots table is retired.
     const baseOptions = createPostgresTestBackendOptions();
     const record = await createStoredObjectRecord(new Uint8Array([4, 2]), 1);
     const schemaName = baseOptions.schemaName ?? "public";
-    const snapshotsTable = `${quoteIdentifier(schemaName)}.${quoteIdentifier(
+    const qSchema = quoteIdentifier(schemaName);
+    const snapshotsTable = `${qSchema}.${quoteIdentifier(
       "backend_postgres_snapshots"
     )}`;
-    const migrationsTable = `${quoteIdentifier(schemaName)}.${quoteIdentifier(
+    const migrationsTable = `${qSchema}.${quoteIdentifier(
       "backend_postgres_migrations"
     )}`;
+    const objectsTable = `${qSchema}.${quoteIdentifier("objects")}`;
 
-    // Seed the scoped backend (default scope) with a record, then downgrade the
-    // table in place to the legacy pre-scope shape to simulate a database that
-    // predates row-level scope isolation.
-    const seeded = createPostgresBackend(baseOptions);
-    await seeded.transact(async (tx) => {
-      await tx.objects.put(record);
-    });
-    await closeBackend(seeded);
+    const { createEmptyState } = await import(
+      "../src/lib/postgres-records.js"
+    );
+    const { encodeSnapshot } = await import(
+      "../src/lib/postgres-backend-persistence.js"
+    );
+
+    const state = createEmptyState();
+    state.objects.set(record.hash, record);
+    const snapshotBytes = encodeSnapshot(state);
 
     const admin = createAdminClient(baseOptions);
     try {
+      await admin.unsafe(`CREATE SCHEMA IF NOT EXISTS ${qSchema}`);
       await admin.unsafe(
-        `ALTER TABLE ${snapshotsTable} DROP CONSTRAINT backend_postgres_snapshots_pkey`
+        `CREATE TABLE ${migrationsTable} (
+           name TEXT PRIMARY KEY,
+           applied_at_ms BIGINT NOT NULL
+         )`
       );
-      await admin.unsafe(`ALTER TABLE ${snapshotsTable} DROP COLUMN scope`);
       await admin.unsafe(
-        `ALTER TABLE ${snapshotsTable} ADD CONSTRAINT backend_postgres_snapshots_pkey PRIMARY KEY (snapshot_id)`
+        `CREATE TABLE ${snapshotsTable} (
+           snapshot_id SMALLINT NOT NULL,
+           scope TEXT NOT NULL,
+           schema_version INTEGER NOT NULL,
+           snapshot_cbor BYTEA NOT NULL,
+           updated_at_ms BIGINT NOT NULL,
+           PRIMARY KEY (snapshot_id, scope)
+         )`
       );
-      await admin.unsafe(`DELETE FROM ${migrationsTable} WHERE name = $1`, [
-        "0002_scope_partition.sql",
-      ]);
+      await admin.unsafe(
+        `INSERT INTO ${migrationsTable} (name, applied_at_ms)
+         VALUES ('0001_initial_schema.sql', $1), ('0002_scope_partition.sql', $1)`,
+        [Date.now()]
+      );
+      await admin.unsafe(
+        `INSERT INTO ${snapshotsTable} (
+           snapshot_id, scope, schema_version, snapshot_cbor, updated_at_ms
+         ) VALUES (1, $1, 1, $2, $3)`,
+        [DEFAULT_SCOPE, snapshotBytes, Date.now()]
+      );
     } finally {
       await admin.end({ timeout: 0 });
     }
 
-    // Reopening with the default scope must migrate the legacy table and surface
-    // the pre-scope data as the default scope's snapshot.
     const migrated = createPostgresBackend(baseOptions);
     await migrated.transact(async (tx) => {
       expect(await tx.objects.has(record.hash)).toBe(true);
+      expect(await tx.objects.get(record.hash)).toEqual(record);
     });
     await closeBackend(migrated);
 
     const verify = createAdminClient(baseOptions);
     try {
-      const scopeColumns = await verify.unsafe<Array<{ column_name: string }>>(
-        `SELECT column_name
-           FROM information_schema.columns
+      const snapshotTables = await verify.unsafe<Array<{ table_name: string }>>(
+        `SELECT table_name
+           FROM information_schema.tables
           WHERE table_schema = $1
-            AND table_name = 'backend_postgres_snapshots'
-            AND column_name = 'scope'`,
+            AND table_name = 'backend_postgres_snapshots'`,
         [schemaName]
       );
-      expect(scopeColumns.length).toBe(1);
+      expect(snapshotTables.length).toBe(0);
 
-      const rows = await verify.unsafe<Array<{ scope: string }>>(
-        `SELECT scope FROM ${snapshotsTable} ORDER BY scope`
+      const objectRows = await verify.unsafe<Array<{ hash: string }>>(
+        `SELECT hash FROM ${objectsTable} WHERE scope = $1`,
+        [DEFAULT_SCOPE]
       );
-      expect(rows.map((row) => row.scope)).toEqual([DEFAULT_SCOPE]);
+      expect(objectRows.map((row) => row.hash)).toEqual([record.hash]);
 
       const migrationRows = await verify.unsafe<Array<{ name: string }>>(
         `SELECT name FROM ${migrationsTable} ORDER BY name`
       );
-      expect(migrationRows.map((row) => row.name)).toEqual([
-        "0001_initial_schema.sql",
-        "0002_scope_partition.sql",
-      ]);
+      expect(migrationRows.map((row) => row.name)).toContain(
+        "0001_relational_schema.sql"
+      );
     } finally {
       await verify.end({ timeout: 0 });
     }

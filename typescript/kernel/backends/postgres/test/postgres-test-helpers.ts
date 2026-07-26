@@ -111,59 +111,32 @@ export async function cleanupAllocatedSchemas(): Promise<void> {
 }
 
 /**
- * Reads the raw `snapshot_cbor` bytes for `options`'s Scope, bypassing the
- * `PostgresBackend` entirely (a direct SQL round trip). Used by the
- * phase-observer and snapshot-cache test suites to assert on the exact
- * persisted bytes rather than on anything the backend's public surface
- * would re-decode/re-validate for them.
+ * Overwrites a branch head via direct SQL, bypassing every backend-owned
+ * invariant. Used by the health/fsck suite to inject committed-state
+ * corruption that connectivity checks cannot see (relational equivalent of
+ * the pre-#110 snapshot_cbor tamper path).
  */
-export async function readSnapshotCbor(
-  options: PostgresBackendOptions
-): Promise<Uint8Array> {
-  const sql = createOptionsSqlClient(options);
-
-  try {
-    const schemaName = requireSchemaName(options);
-    const rows = await sql.unsafe<Array<{ snapshot_cbor: Uint8Array }>>(
-      `SELECT snapshot_cbor
-         FROM "${schemaName}".backend_postgres_snapshots
-        WHERE snapshot_id = 1 AND scope = $1`,
-      [options.scope ?? DEFAULT_SCOPE]
-    );
-    const row = rows[0];
-
-    if (row === undefined) {
-      throw new Error("expected a persisted snapshot row");
-    }
-
-    return new Uint8Array(row.snapshot_cbor);
-  } finally {
-    await sql.end({ timeout: 0 });
-  }
-}
-
-/**
- * Overwrites `options`'s Scope's `snapshot_cbor` row directly via SQL,
- * bypassing every backend-owned invariant (`persistStateSnapshot`'s encode,
- * the row lock, everything). Simulates either a byte-level corruption of the
- * stored payload or a same-schema/scope write from an entirely different
- * writer/process, for the issue #108 M3 corruption-injection and
- * cross-process-invalidation coverage.
- */
-export async function writeSnapshotCbor(
+export async function updateBranchHeadDirectly(
   options: PostgresBackendOptions,
-  bytes: Uint8Array
+  branchId: string,
+  headTurnNodeHash: string
 ): Promise<void> {
   const sql = createOptionsSqlClient(options);
 
   try {
     const schemaName = requireSchemaName(options);
-    await sql.unsafe(
-      `UPDATE "${schemaName}".backend_postgres_snapshots
-          SET snapshot_cbor = $1
-        WHERE snapshot_id = 1 AND scope = $2`,
-      [bytes, options.scope ?? DEFAULT_SCOPE]
+    const scope = options.scope ?? DEFAULT_SCOPE;
+    const result = await sql.unsafe(
+      `UPDATE "${schemaName}".branches
+          SET head_turn_node_hash = $1
+        WHERE scope = $2 AND branch_id = $3`,
+      [headTurnNodeHash, scope, branchId]
     );
+    if (result.count === 0) {
+      throw new Error(
+        `expected branch ${branchId} to exist under scope ${scope}`
+      );
+    }
   } finally {
     await sql.end({ timeout: 0 });
   }

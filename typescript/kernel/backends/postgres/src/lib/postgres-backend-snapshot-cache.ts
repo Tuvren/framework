@@ -15,7 +15,7 @@
  */
 
 import { createHash } from "node:crypto";
-import type { BackendState } from "./memory-backend-types.js";
+import type { BackendState } from "./postgres-records.js";
 
 /**
  * Issue #108 M3 (`A3` content-hash memoization): a single-entry, per-instance

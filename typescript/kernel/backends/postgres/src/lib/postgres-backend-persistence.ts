@@ -45,6 +45,12 @@ import {
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import postgres, { type Sql, type TransactionSql } from "postgres";
+import { persistenceError } from "./postgres-errors.js";
+import {
+  createEmptyState,
+  decodeTurnTreeSchema,
+  type BackendState,
+} from "./postgres-records.js";
 import {
   cloneStoredBranch,
   cloneStoredObject,
@@ -62,14 +68,7 @@ import {
   compareStoredObserveAnnotation,
   compareStoredRun,
   compareStoredStagedResult,
-  persistenceError,
-} from "./memory-backend-record-utils.js";
-import { createEmptyState } from "./memory-backend-state.js";
-import {
-  getSchemaForSchemaId,
-  getSchemaForTurnTree,
-} from "./memory-backend-turn-tree.js";
-import type { BackendState } from "./memory-backend-types.js";
+} from "./postgres-state-utils.js";
 import {
   hashSnapshotBytes,
   type SnapshotCacheObserver,
@@ -889,6 +888,31 @@ function qualifyIdentifier(schemaName: string, tableName: string): string {
 /** Copies a possibly-driver-specific byte buffer into a plain `Uint8Array`. */
 function toUint8Array(value: Uint8Array): Uint8Array {
   return new Uint8Array(value);
+}
+
+/** Resolves a turn-tree schema by id from a decoded snapshot state. */
+function getSchemaForSchemaId(
+  state: BackendState,
+  schemaId: string,
+  label: string
+) {
+  const record = state.schemas.get(schemaId);
+  if (record === undefined) {
+    throw persistenceError(
+      `${label} must reference an existing schema`,
+      "postgres_backend_missing_schema_reference",
+      { label, schemaId }
+    );
+  }
+  return decodeTurnTreeSchema(record.schemaCbor, `${label} schema`);
+}
+
+/** Resolves the turn-tree schema referenced by a stored turn tree. */
+function getSchemaForTurnTree(
+  state: BackendState,
+  turnTree: { schemaId: string }
+) {
+  return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
 }
 
 // Comparators below give the encoded snapshot a deterministic element order

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-// KRT-BK007 measurement-only spike: per-write latency of the postgres
-// whole-blob-per-scope persistence model (postgres-backend-persistence.ts's
-// loadPersistedStateForUpdate/persistStateSnapshot decode/clone/re-encode the
-// FULL scope snapshot on every transact()) as accumulated scope size grows.
-// Drives the backend exclusively through its public RuntimeBackend surface
-// (transact/schemas/objects) -- no production source under
-// typescript/kernel/backends/postgres/src changes as part of this spike.
+// Issue #110 / ADR-067 regression baseline: per-write latency of the
+// relational Postgres backend as accumulated Scope size grows. Under the
+// pre-#110 blob-per-scope model a single-object `transact()` re-encoded the
+// entire Scope (~248ms warm best-case at 10k objects). The relational path
+// must keep marginal single-object write latency roughly flat across the
+// size ladder (network-bound floor allowed). Drives the backend exclusively
+// through its public RuntimeBackend surface (transact/schemas/objects).
 
 import { randomUUID } from "node:crypto";
 import process from "node:process";
@@ -77,11 +77,8 @@ async function main(): Promise<void> {
       });
 
       // Bulk-seed the scope to `scopeObjectCount` objects inside ONE
-      // transaction (one whole-blob write), not `scopeObjectCount`
-      // sequential transact() calls. Sequential per-item writes at growing
-      // size *is* the O(n^2) cost this benchmark measures the marginal end
-      // of; using it to build the fixture would conflate setup cost with the
-      // measured quantity.
+      // transaction so setup cost does not dominate the measured marginal
+      // single-object writes below.
       await backend.transact(async (tx) => {
         for (let index = 0; index < scopeObjectCount; index += 1) {
           const record = await createStoredObjectRecord(

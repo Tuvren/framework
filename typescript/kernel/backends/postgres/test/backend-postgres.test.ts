@@ -29,14 +29,43 @@ import {
 import type { Sql } from "postgres";
 import { createPostgresBackend } from "../src/index.js";
 import {
-  createEmptyState,
-  validateCommittedState,
-} from "../src/lib/memory-backend-state.js";
+  assertBackwardBranchMoveIsArchived,
+  assertChunkedTurnTreePathChunkLayout,
+  assertTurnParentLink,
+} from "../src/lib/postgres-integrity-assertions.js";
+import { createEmptyState } from "../src/lib/postgres-records.js";
+import {
+  assertActiveRunHeadAlignment,
+  assertRunCreatedTurnNodesAreCanonical,
+  assertRunCreatedTurnNodeWithinTurnSpan,
+  assertRunStartTurnNodeWithinTurnSpan,
+  classifyTurnNodeRelationship,
+  decodeRunCreatedTurnNodeHashes,
+  decodeTurnNodeConsumedStagedResultObjectHashes,
+  validateHashString,
+} from "../src/lib/postgres-run-invariants.js";
+import { validateCommittedState } from "../src/lib/postgres-state-validation.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
+
+function assertCommittedState(state: ReturnType<typeof createEmptyState>): void {
+  validateCommittedState(state, createEmptyState(), {
+    assertActiveRunHeadAlignment,
+    assertBackwardBranchMoveIsArchived,
+    assertChunkedTurnTreePathChunkLayout,
+    assertRunCreatedTurnNodeWithinTurnSpan,
+    assertRunCreatedTurnNodesAreCanonical,
+    assertRunStartTurnNodeWithinTurnSpan,
+    assertTurnParentLink,
+    classifyTurnNodeRelationship,
+    decodeRunCreatedTurnNodeHashes,
+    decodeTurnNodeConsumedStagedResultObjectHashes,
+    validateHashString,
+  });
+}
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();
@@ -194,7 +223,7 @@ describe("@tuvren/backend-postgres validateCommittedState turn node lineage inva
     state.threads.set(thread.threadId, thread);
     state.branches.set(branch.branchId, branch);
 
-    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
+    expect(() => assertCommittedState(state)).toThrow(
       "must not traverse a cyclic turn node lineage"
     );
   });
@@ -256,7 +285,7 @@ describe("@tuvren/backend-postgres validateCommittedState turn node lineage inva
     state.threads.set(thread.threadId, thread);
     state.branches.set(branch.branchId, branch);
 
-    expect(() => validateCommittedState(state, createEmptyState())).toThrow(
+    expect(() => assertCommittedState(state)).toThrow(
       "must belong to the referenced thread by lineage walk"
     );
   });

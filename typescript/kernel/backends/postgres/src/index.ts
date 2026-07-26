@@ -18,14 +18,18 @@
  * PostgreSQL-backed persistent backend for the Tuvren kernel.
  *
  * {@link createPostgresBackend} builds a `RuntimeBackend` that persists all
- * durable state in a PostgreSQL database, one row-level-isolated snapshot
- * per Scope (ADR-049). Unlike the SQLite backend's relational schema, the
- * whole `BackendState` for a Scope is kept as a single deterministic-CBOR
- * blob in `backend_postgres_snapshots`; a transaction loads that snapshot
- * under `SELECT ... FOR UPDATE`, mutates an in-memory copy-on-write draft
- * using the same invariant logic as the memory backend, then re-encodes and
- * writes the whole snapshot back. {@link destroyPostgresBackend} drops a
- * throwaway schema entirely, for test/conformance teardown.
+ * durable state in a PostgreSQL database as a relational, row-per-record
+ * schema (ADR-067 / issue #110): one table per record family, one row per
+ * item, foreign keys deferred until commit, and Scope isolation via a
+ * `scope` column on every key (ADR-048/049 row-level isolation in a shared
+ * host schema). Transactions apply targeted SQL for only the rows they
+ * touch and re-validate the write set before `COMMIT`.
+ * {@link destroyPostgresBackend} drops a throwaway schema entirely, for
+ * test/conformance teardown.
+ *
+ * Opening a pre-#110 database that still has the legacy
+ * `backend_postgres_snapshots` blob table explodes each Scope into family
+ * rows once and retires the blob table.
  *
  * @packageDocumentation
  */
@@ -36,12 +40,8 @@ export {
   createPostgresBackend,
   destroyPostgresBackend,
 } from "./lib/postgres-backend.js";
-// Issue #108 M3: `SnapshotCacheObserver` types the construction-time
-// observability seam `PostgresBackendOptions.snapshotCacheObserver` accepts
-// to observe the single-entry content-hash memo's hit/miss behavior. It is
-// kept outside the operational `RuntimeBackend` contract (intended for
-// benches/tests/diagnostics, harmless if passed in production) but exported
-// as a type only (never constructed by this package) so a bench/test can
-// type-check the observer it hands to `createPostgresBackend` without a
-// deep import.
+// Issue #108 M3: `SnapshotCacheObserver` typed the construction-time
+// observability seam for the retired whole-blob decode memo. Kept as a type
+// export for source compatibility with benches/tests that still name it;
+// the relational write path no longer consults a whole-scope snapshot cache.
 export type { SnapshotCacheObserver } from "./lib/postgres-backend-snapshot-cache.js";

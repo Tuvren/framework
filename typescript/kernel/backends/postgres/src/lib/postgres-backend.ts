@@ -21,43 +21,99 @@ import {
 } from "@tuvren/backend-shared";
 import { assertScope, DEFAULT_SCOPE, type Scope } from "@tuvren/core";
 import {
-  assertStoredBranch,
-  assertStoredObject,
   assertStoredObjectIdentity,
-  assertStoredObserveAnnotation,
-  assertStoredOrderedPathChunk,
   assertStoredOrderedPathChunkIdentity,
-  assertStoredRun,
-  assertStoredSchema,
-  assertStoredStagedResult,
-  assertStoredThread,
-  assertStoredTurn,
-  assertStoredTurnNode,
   assertStoredTurnNodeIdentity,
-  assertStoredTurnTree,
   assertStoredTurnTreeIdentity,
   assertStoredTurnTreePath,
   type BackendCapability,
+  encodeDeterministicKernelRecord,
+  hashKernelRecord,
   type RuntimeBackend as KrakenBackend,
   type RuntimeBackendTx as KrakenBackendTx,
-  type ListThreadsCursorPayload,
   type ReclamationOptions,
   type ReclamationSummary,
-  type StoredBranch,
-  type StoredRun,
-  type StoredStagedResult,
-  type StoredThread,
+  type StoredOrderedPathChunk,
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import type { Sql } from "postgres";
 import {
-  assertBranchHeadMoveIsLinear,
+  createPostgresClient,
+  normalizeSchemaName,
+  type PostgresBackendPersistenceOptions,
+} from "./postgres-backend-persistence.js";
+import type { SnapshotCacheObserver } from "./postgres-backend-snapshot-cache.js";
+import {
+  assertBranchHeadMoveIsLinearInDatabase,
+  insertTurnNodeLineageMetadata,
+} from "./postgres-db-lineage.js";
+import {
+  getErrorMessage,
+  normalizeBackendError,
+  persistenceError,
+} from "./postgres-errors.js";
+import {
+  assertBackwardBranchMoveIsArchived,
+  assertChunkedTurnTreePathChunkLayout,
+  assertTurnParentLink,
+  ensureImmutableRecordMatch,
+  ORDERED_PATH_CHUNK_SIZE,
+} from "./postgres-integrity-assertions.js";
+import {
+  ensureBranchExistsInDatabase,
+  ensureObjectExistsInDatabase,
+  ensureRunExistsInDatabase,
+  ensureSchemaExistsInDatabase,
+  ensureThreadExistsInDatabase,
+  ensureTurnExistsInDatabase,
+  ensureTurnNodeExistsInDatabase,
+  ensureTurnTreeExistsInDatabase,
+  getSchemaForSchemaIdInDatabase,
+  selectBranch,
+  selectBranchesByThread,
+  selectExpiredRuns,
+  selectObject,
+  selectObserveAnnotationsByRun,
+  selectOrderedPathChunk,
+  selectRun,
+  selectRunsByBranch,
+  selectSchema,
+  selectStagedResult,
+  selectStagedResultsByRun,
+  selectThread,
+  selectTurn,
+  selectTurnNode,
+  selectTurnsByThread,
+  selectTurnTree,
+  selectTurnTreePath,
+  selectTurnTreePathsByTurnTree,
+} from "./postgres-lookups.js";
+import { reclaimBackendState } from "./postgres-reclamation.js";
+import { assertReclamationSurvivorInvariants } from "./postgres-reclamation-validation.js";
+import {
+  type BackendState,
+  decodeHashStringArray,
+  loadState,
+} from "./postgres-records.js";
+import { createCoreRepositories } from "./postgres-repositories-core.js";
+import { createSupportRepositories } from "./postgres-repositories-support.js";
+import {
+  assertActiveRunHeadAlignment,
+  assertImmutableField,
+  assertImmutableOptionalField,
+  assertMonotonicUpdatedAtMs,
+  assertRunCreatedTurnNodesAreCanonical,
+  assertRunCreatedTurnNodeWithinTurnSpan,
   assertRunStartTurnNodeWithinTurnSpan,
-  assertTurnNodeBelongsToThread,
-  assertTurnNodeDescendsFrom,
+  assertRunUpdateIsLegal,
+  classifyTurnNodeRelationship,
+  decodeRunCreatedTurnNodeHashes,
   decodeTurnNodeConsumedStagedResultObjectHashes,
-} from "./memory-backend-lineage.js";
-import { reclaimBackendState } from "./memory-backend-reclamation.js";
+  validateHashString,
+} from "./postgres-run-invariants.js";
+import { ensurePostgresRelationalSchemaInitialized } from "./postgres-schema-init.js";
+import type { DbSql } from "./postgres-sql.js";
+import { qualifyIdentifier, quoteIdentifier } from "./postgres-sql.js";
 import {
   areStoredObjectsEqual,
   areStoredOrderedPathChunksEqual,
@@ -67,8 +123,6 @@ import {
   areStoredTurnNodesEqual,
   areStoredTurnTreePathsEqual,
   areStoredTurnTreesEqual,
-  assertImmutableField,
-  assertImmutableOptionalField,
   cloneStoredBranch,
   cloneStoredObject,
   cloneStoredObserveAnnotation,
@@ -85,47 +139,30 @@ import {
   compareStoredObserveAnnotation,
   compareStoredRun,
   compareStoredStagedResult,
-  ensureBranchExists,
-  ensureImmutableRecordMatch,
-  ensureObjectExists,
-  ensureRunExists,
-  ensureSchemaRecordExists,
-  ensureThreadExists,
-  ensureTurnExists,
-  ensureTurnNodeExists,
-  ensureTurnTreeExists,
-  isExpiredLeasedRunningRun,
-  persistenceError,
-  putImmutableRecord,
-} from "./memory-backend-record-utils.js";
+  compareStoredTurn,
+  nextObserveAnnotationRecordKey,
+} from "./postgres-state-utils.js";
 import {
-  assertMonotonicUpdatedAtMs,
-  assertRunUpdateIsLegal,
-} from "./memory-backend-run-logic.js";
-import { validateCommittedState } from "./memory-backend-state.js";
+  validateCommittedState,
+  validateLoadedState,
+} from "./postgres-state-validation.js";
 import {
-  cloneState,
-  getSchemaForSchemaId,
-  getSchemaForTurnTree,
-  listTurnsByThread,
-  normalizeStoredTurnTreePath,
-} from "./memory-backend-turn-tree.js";
-import type { BackendState } from "./memory-backend-types.js";
-import {
-  checkPersistedStateLiveness,
-  createPostgresClient,
-  deletePersistedStateSnapshot,
-  ensurePostgresSchemaInitialized,
-  loadPersistedStateForUpdate,
-  normalizeSchemaName,
-  type PostgresBackendPersistenceOptions,
-  persistStateSnapshot,
-} from "./postgres-backend-persistence.js";
-import {
-  createSnapshotStateCache,
-  type SnapshotCacheObserver,
-  type SnapshotStateCache,
-} from "./postgres-backend-snapshot-cache.js";
+  validateTransactionWriteSet,
+  validateTurnNodeLineageRootIndex,
+} from "./postgres-transaction-validation.js";
+import { TransactionWriteTracker } from "./postgres-write-tracker.js";
+
+/**
+ * Ordered paths with at most this many items stay inline (`flat` encoding);
+ * crossing it promotes the path to `chunked` encoding.
+ */
+const ORDERED_PATH_CHUNK_THRESHOLD = 32;
+
+/**
+ * Keys per reclamation `DELETE ... ANY(...)` statement, kept comfortably
+ * under practical Postgres bind/array size comfort zones.
+ */
+const RECLAMATION_DELETE_BATCH_SIZE = 500;
 
 /** A transaction's repository surface, plus the transaction-local clock it was built with. */
 interface MutableRepositories extends KrakenBackendTx {
@@ -159,9 +196,22 @@ interface PostgresBackendDestroyOptions {
   dropSchema?: boolean;
 }
 
-/** Construction options for {@link createPostgresBackend}. */
+/**
+ * Construction options for {@link createPostgresBackend}.
+ *
+ * `snapshotCacheObserver` is accepted for source compatibility with pre-#110
+ * benches/tests that still pass it, but is unused: the relational write path
+ * no longer consults a whole-scope snapshot cache (issue #108 A3 blob
+ * mitigation retired by ADR-067 row-per-record storage).
+ */
 export interface PostgresBackendOptions
-  extends PostgresBackendPersistenceOptions {}
+  extends PostgresBackendPersistenceOptions {
+  /**
+   * @deprecated Accepted but unused under the relational backend (issue #110).
+   * Retained so existing tests that pass `snapshotCacheObserver` still construct.
+   */
+  snapshotCacheObserver?: SnapshotCacheObserver;
+}
 
 const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
@@ -176,13 +226,13 @@ const FAULT_INJECTION_CONTROL = Symbol(
 );
 
 /**
- * `RuntimeBackend` implementation over a single PostgreSQL snapshot row per
- * Scope. Every mutating operation (`transact`, `reclaim`, `purgeScope`)
- * serializes on this instance's own in-process `transactionQueue` and then
- * takes a reserved connection with `SELECT ... FOR UPDATE` on the Scope's
- * row, so cross-process contention on the same Scope is resolved by
- * PostgreSQL row locking while same-process contention is resolved by the
- * queue.
+ * `RuntimeBackend` implementation over a relational PostgreSQL schema
+ * (ADR-067 / issue #110): one table per record family, one row per item,
+ * Scope isolation via a `scope` column on every key (ADR-048/049). Mutating
+ * operations serialize on this instance's in-process `transactionQueue` and
+ * then take a reserved connection with `BEGIN`/`COMMIT`, so same-process
+ * contention is ordered by the queue while multi-worker contention is
+ * resolved by PostgreSQL transaction isolation and deferred foreign keys.
  */
 class PostgresBackend implements KrakenBackend {
   readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
@@ -205,16 +255,6 @@ class PostgresBackend implements KrakenBackend {
   private readonly schemaName: string;
   private readonly scope: Scope;
   private readonly sql: Sql;
-  // Issue #108 M3 (A3 content-hash memoization): one single-entry cache per
-  // instance, since one instance is bound to exactly one Scope's row
-  // (ADR-048/ADR-049). Populated/consulted by every loadPersistedStateForUpdate
-  // call and updated only after a transact()/reclaim() COMMIT actually
-  // succeeds -- never from inside the transaction body -- so a rolled-back
-  // draft can never become the cached committed state (see transact()/
-  // reclaim()'s commit sequencing for why that placement is safe).
-  private readonly snapshotCache: SnapshotStateCache =
-    createSnapshotStateCache();
-  private readonly snapshotCacheObserver: SnapshotCacheObserver | undefined;
   private readonly transactionContext = new AsyncLocalStorage<boolean>();
   private transactionQueue: Promise<void> = Promise.resolve();
   private readonly now: () => number;
@@ -229,7 +269,8 @@ class PostgresBackend implements KrakenBackend {
     assertScope(this.scope);
     this.sql = createPostgresClient(resolvedOptions);
     this.phaseObserver = resolvedOptions.phaseObserver ?? NOOP_PHASE_OBSERVER;
-    this.snapshotCacheObserver = resolvedOptions.snapshotCacheObserver;
+    // snapshotCacheObserver intentionally unused (relational path; #110).
+    void resolvedOptions.snapshotCacheObserver;
     this.now = resolvedOptions.now ?? Date.now;
     // Track whether a clock was explicitly injected so the per-transaction
     // authoritative lease clock can fall back to the PostgreSQL server clock in
@@ -244,74 +285,73 @@ class PostgresBackend implements KrakenBackend {
 
   /**
    * Lightweight liveness/coherence probe (issue #108 M5). Initializes the
-   * Scope's schema if needed, then confirms the connection can execute a
-   * query and the Scope's snapshot row exists with a `schema_version` this
-   * package version supports ({@link checkPersistedStateLiveness}) —
-   * without loading, decoding, or validating the row's `snapshot_cbor`
-   * bytes at all. Deliberately does NOT run the full committed-state
-   * invariant suite: `RuntimeBackend.health()`'s contract
-   * (kernel-protocol's `kernel-types.ts`) only promises "can serve
-   * traffic", no conformance plan requires a full re-validation on every
-   * call, and every `transact()`/`reclaim()` call already re-validates its
-   * own draft against `validateCommittedState` before `COMMIT`. The full
-   * decode+validate pass this method used to run on every call is still
-   * available on demand via {@link fsck} — the Git-fsck analogy this split
-   * is named for: `git fsck` is occasional maintenance, never run on every
-   * read, but the repository's integrity guarantee does not depend on it
-   * running on every read either.
+   * schema if needed, proves connectivity with a trivial query, and proves
+   * the relational family tables exist — without loading full state.
    */
   async health(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
       await this.ensureInitialized();
-      await checkPersistedStateLiveness(this.sql, this.schemaName, this.scope);
+      await this.sql.unsafe("SELECT 1");
+      // Prove relational schema present: objects is required by the migration.
+      const objectsTable = qualifyIdentifier(this.schemaName, "objects");
+      await this.sql.unsafe(
+        `SELECT 1 FROM ${objectsTable} WHERE scope = $1 LIMIT 1`,
+        [this.scope]
+      );
       return { ok: true };
     } catch (error: unknown) {
       return {
         ok: false,
-        reason: readErrorMessage(error),
+        reason: getErrorMessage(normalizeBackendError(error)),
       };
     }
   }
 
   /**
-   * Git-fsck-style maintenance validation (issue #108 M5): loads the
-   * Scope's full committed snapshot and re-validates it against itself as
-   * both draft and base state — exactly what `health()` ran on every call
-   * before M5. This is now a deliberate maintenance action a host calls
-   * occasionally, not part of the hot read path `health()` serves. The
-   * guarantee this replaces is preserved, not weakened: every
-   * `transact()`/`reclaim()` call already re-validates its own write against
-   * the full committed-state invariant suite before `COMMIT` regardless of
-   * whether `fsck()` is ever called; `fsck()` exists to additionally catch
-   * corruption introduced outside the backend's own write path (e.g. direct
-   * database tampering, or a bug in a different writer).
+   * Git-fsck-style maintenance validation (issue #108 M5): loads and fully
+   * validates the Scope's committed relational state inside a rolled-back
+   * transaction.
    */
   async fsck(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
       await this.ensureInitialized();
-      await this.sql.begin(async (tx): Promise<void> => {
-        const state = await loadPersistedStateForUpdate(
-          tx,
+
+      const reserved = (await this.sql.reserve()) as Sql & {
+        release(): Promise<void>;
+      };
+      let inTransaction = false;
+
+      try {
+        await reserved.unsafe("BEGIN");
+        inTransaction = true;
+        await loadValidatedState(
+          reserved,
           this.schemaName,
           this.scope,
-          {
-            cache: this.snapshotCache,
-            cacheObserver: this.snapshotCacheObserver,
-            phaseObserver: this.phaseObserver,
-          }
+          this.phaseObserver
         );
-        const endValidate = this.phaseObserver.startPhase("validate");
-        try {
-          validateCommittedState(state, state);
-        } finally {
-          endValidate();
+        await reserved.unsafe("ROLLBACK");
+        inTransaction = false;
+        return { ok: true };
+      } catch (error: unknown) {
+        if (inTransaction) {
+          try {
+            await reserved.unsafe("ROLLBACK");
+          } catch {
+            // Prefer the original validation error.
+          }
         }
-      });
-      return { ok: true };
+        return {
+          ok: false,
+          reason: getErrorMessage(normalizeBackendError(error)),
+        };
+      } finally {
+        await reserved.release();
+      }
     } catch (error: unknown) {
       return {
         ok: false,
-        reason: readErrorMessage(error),
+        reason: getErrorMessage(normalizeBackendError(error)),
       };
     }
   }
@@ -344,13 +384,10 @@ class PostgresBackend implements KrakenBackend {
   }
 
   /**
-   * Runs `work` against a fresh copy-on-write draft of the Scope's committed
-   * snapshot: loads and row-locks the snapshot, clones it into a draft,
-   * exposes repositories over the draft to `work`, validates the resulting
-   * draft against the full committed-state invariant suite, then persists
-   * the draft and commits — so a caller never observes a partially
-   * validated write. Transactions on this instance are serialized (no
-   * nesting) via `transactionQueue`; the transaction's `now` is a single
+   * Runs `work` inside a serialized `BEGIN`/`COMMIT` transaction against the
+   * relational schema. A write tracker records every row the transaction
+   * touches; after `work` resolves, the tracked write set is re-validated
+   * against the database before `COMMIT`. The transaction's `now` is a single
    * authoritative timestamp captured once at the start (the injected clock
    * under test, otherwise the PostgreSQL server clock — ADR-050).
    *
@@ -374,14 +411,6 @@ class PostgresBackend implements KrakenBackend {
       releaseQueue = resolve;
     });
 
-    // The in-process queue wait is the first component of "lock-wait":
-    // another transact()/reclaim()/purgeScope() call on this instance may
-    // already be in flight, and this call cannot proceed until it releases
-    // the queue.
-    // Deliberately outside try/finally: `priorTransaction` is the queue's own
-    // release promise, constructed above from a `Promise` executor that only
-    // ever calls `resolve`, so it can never reject and `endQueueWait()` can
-    // never be skipped by a thrown error here.
     const endQueueWait = this.phaseObserver.startPhase("lock-wait");
     await priorTransaction;
     endQueueWait();
@@ -391,53 +420,50 @@ class PostgresBackend implements KrakenBackend {
         release(): Promise<void>;
       };
       let inTransaction = false;
+      let active = false;
 
       try {
-        let hasResult = false;
-        let result: T | undefined;
-
         await reserved.unsafe("BEGIN");
         inTransaction = true;
+        // Same-scope multi-instance serialization (ADR-067 v1): transaction-
+        // scoped advisory lock keyed by (schemaName, scope). Replaces the
+        // blob-era `SELECT ... FOR UPDATE` on the single snapshot row so two
+        // independent backend instances still cannot interleave writes to
+        // the same Scope (plan: keep SQLite-equivalent single-writer-per-
+        // scope until a later multi-writer design).
+        await this.acquireScopeTransactionLock(reserved);
 
         // Backend-authoritative lease clock (ADR-050): capture one authoritative
         // timestamp per transaction — the injected clock when supplied
-        // (tests/conformance), else the PostgreSQL server clock — and use it for
-        // every clock read in this transaction (repository `now`, the exposed
-        // `tx.now` the kernel consults for lease stamping/expiry, and the
-        // snapshot stamp).
+        // (tests/conformance), else the PostgreSQL server clock.
         const txNow = await this.resolveTransactionNow(reserved);
-        const baseState = await loadPersistedStateForUpdate(
+        const writeTracker = new TransactionWriteTracker();
+        active = true;
+        const repositories = createRepositories(
           reserved,
           this.schemaName,
           this.scope,
-          {
-            cache: this.snapshotCache,
-            cacheObserver: this.snapshotCacheObserver,
-            phaseObserver: this.phaseObserver,
-          }
-        );
-        const draftState = cloneState(baseState);
-        let active = true;
-        const repositories = createRepositories(
-          draftState,
           () => txNow,
-          () => active && this.transactionContext.getStore() === true
+          () => active && this.transactionContext.getStore() === true,
+          writeTracker
         );
 
-        try {
-          result = await this.transactionContext.run(true, () =>
-            work(repositories)
-          );
-          hasResult = true;
-        } finally {
-          active = false;
-        }
+        const result = await this.transactionContext.run(true, () =>
+          work(repositories)
+        );
+        active = false;
 
-        const endTransactValidate = this.phaseObserver.startPhase("validate");
+        const endValidateWriteSet =
+          this.phaseObserver.startPhase("validate-write-set");
         try {
-          validateCommittedState(draftState, baseState);
+          await validateTransactionWriteSet(
+            reserved,
+            this.schemaName,
+            this.scope,
+            writeTracker
+          );
         } finally {
-          endTransactValidate();
+          endValidateWriteSet();
         }
 
         await this.faultState.hooks?.beforeCommit?.();
@@ -450,14 +476,6 @@ class PostgresBackend implements KrakenBackend {
             );
           }
 
-          const { hashHex } = await persistStateSnapshot(
-            reserved,
-            this.schemaName,
-            this.scope,
-            draftState,
-            txNow,
-            this.phaseObserver
-          );
           const endCommitWrite = this.phaseObserver.startPhase("write");
           try {
             await reserved.unsafe("COMMIT");
@@ -466,15 +484,6 @@ class PostgresBackend implements KrakenBackend {
           }
           inTransaction = false;
           committed = true;
-          // Only now -- after the physical COMMIT has actually succeeded --
-          // is `draftState` safe to treat as "the committed state for
-          // `hashHex`". Populating the memo any earlier (e.g. right after
-          // the UPDATE, before COMMIT) would poison it with an uncommitted
-          // draft if COMMIT itself then failed and the transaction rolled
-          // back; populating it here means a thrown error anywhere above
-          // this line (including inside persistStateSnapshot or COMMIT
-          // itself) never touches the cache at all.
-          this.snapshotCache.set(hashHex, draftState);
         };
 
         if (this.faultState.hooks?.midCommit === undefined) {
@@ -490,20 +499,17 @@ class PostgresBackend implements KrakenBackend {
         }
 
         await this.faultState.hooks?.afterCommitBeforeAck?.();
-
-        if (!hasResult) {
-          throw new Error(
-            "postgres backend transaction completed without a result"
-          );
-        }
-
-        return result as T;
+        return result;
       } catch (error: unknown) {
+        active = false;
         if (inTransaction) {
-          await reserved.unsafe("ROLLBACK");
+          try {
+            await reserved.unsafe("ROLLBACK");
+          } catch (rollbackError: unknown) {
+            throw normalizeBackendError(rollbackError);
+          }
         }
-
-        throw error;
+        throw normalizeBackendError(error);
       } finally {
         await reserved.release();
       }
@@ -513,11 +519,10 @@ class PostgresBackend implements KrakenBackend {
   }
 
   /**
-   * Runs the shared §9.4 reachability reclamation sweep over the Scope's
-   * committed snapshot and persists the swept result: loads and row-locks
-   * the snapshot, clones it into a draft, sweeps unreachable records from
-   * the draft, re-validates the result, then persists and commits. Must not
-   * run inside a `transact` call on this instance.
+   * Runs the §9.4 reachability reclamation sweep in one serialized
+   * transaction: load and validate state, sweep the in-memory projection,
+   * mirror removed keys as batched row deletions (with deferred FKs), then
+   * assert survivor invariants before `COMMIT`.
    *
    * @throws TuvrenPersistenceError `postgres_backend_nested_transaction` when
    *   called from inside a transaction on this instance.
@@ -552,45 +557,49 @@ class PostgresBackend implements KrakenBackend {
       try {
         await reserved.unsafe("BEGIN");
         inTransaction = true;
+        await this.acquireScopeTransactionLock(reserved);
 
-        const baseState = await loadPersistedStateForUpdate(
+        const state = await loadValidatedState(
           reserved,
           this.schemaName,
           this.scope,
-          {
-            cache: this.snapshotCache,
-            cacheObserver: this.snapshotCacheObserver,
-            phaseObserver: this.phaseObserver,
-          }
-        );
-        const draftState = cloneState(baseState);
-        // The snapshot backend reclaims by rewriting the scope snapshot row:
-        // sweep the in-memory draft, validate the referentially-closed result,
-        // and re-persist it. Reachability and the grace horizon's pinning value
-        // are still derived structurally from the draft's own active runs
-        // (§9.4); a clock argument is required so a leaseless running run whose
-        // updatedAtMs has gone quiet past the administrative expiry horizon
-        // (KRT-BK002, ADR-050/ADR-051) can be excluded from pinning that
-        // horizon, judged against this wall-clock reference.
-        const summary = reclaimBackendState(
-          draftState,
-          options?.nowMs ?? this.now()
-        );
-        const endReclaimValidate = this.phaseObserver.startPhase("validate");
-        try {
-          validateCommittedState(draftState, baseState);
-        } finally {
-          endReclaimValidate();
-        }
-
-        const { hashHex } = await persistStateSnapshot(
-          reserved,
-          this.schemaName,
-          this.scope,
-          draftState,
-          this.now(),
           this.phaseObserver
         );
+        const survivorKeysBefore = captureReclamationKeys(state);
+        // Reachability and the grace horizon's pinning value are derived from
+        // the loaded state's own active runs (§9.4); reclaimBackendState
+        // mutates the in-memory projection so the surviving key sets reveal
+        // exactly what to delete. The clock argument lets a leaseless running
+        // run whose updatedAtMs has gone quiet past the administrative expiry
+        // horizon (KRT-BK002, ADR-050/ADR-051) be excluded from pinning that
+        // horizon.
+        const summary = reclaimBackendState(
+          state,
+          options?.nowMs ?? this.now()
+        );
+
+        const endDeleteWrite = this.phaseObserver.startPhase("write");
+        try {
+          await applyReclamationDeletions(
+            reserved,
+            this.schemaName,
+            this.scope,
+            survivorKeysBefore,
+            state
+          );
+        } finally {
+          endDeleteWrite();
+        }
+
+        const endValidateSurvivors = this.phaseObserver.startPhase(
+          "validate-reclaim-survivors"
+        );
+        try {
+          assertReclamationSurvivorInvariants(state);
+        } finally {
+          endValidateSurvivors();
+        }
+
         const endCommitWrite = this.phaseObserver.startPhase("write");
         try {
           await reserved.unsafe("COMMIT");
@@ -598,18 +607,16 @@ class PostgresBackend implements KrakenBackend {
           endCommitWrite();
         }
         inTransaction = false;
-        // Same rule as transact()'s commit(): only populate the memo once
-        // COMMIT has actually succeeded, so a rolled-back reclaim sweep can
-        // never poison it.
-        this.snapshotCache.set(hashHex, draftState);
-
         return summary;
       } catch (error: unknown) {
         if (inTransaction) {
-          await reserved.unsafe("ROLLBACK");
+          try {
+            await reserved.unsafe("ROLLBACK");
+          } catch (rollbackError: unknown) {
+            throw normalizeBackendError(rollbackError);
+          }
         }
-
-        throw error;
+        throw normalizeBackendError(error);
       } finally {
         await reserved.release();
       }
@@ -619,12 +626,11 @@ class PostgresBackend implements KrakenBackend {
   }
 
   /**
-   * Drops this Scope's snapshot row for full tenant offboarding (kernel spec
-   * §9.4). Every other Scope's row in the shared schema is untouched. Per
-   * the `RuntimeBackend.purgeScope` contract this instance is unusable
-   * afterward and must be discarded; a later `transact`/`health`/`reclaim`
-   * call raises `postgres_backend_missing_snapshot_row`. Must not run inside
-   * a `transact` call on this instance.
+   * Deletes every family row for this Scope (full tenant offboarding, kernel
+   * spec §9.4). Other Scopes' rows in the shared schema are untouched. Does
+   * not require a snapshot row — the relational model has no whole-scope
+   * blob. The instance should be discarded afterward per the purgeScope
+   * contract.
    *
    * @throws TuvrenPersistenceError `postgres_backend_nested_transaction` when
    *   called from inside a transaction on this instance.
@@ -649,19 +655,51 @@ class PostgresBackend implements KrakenBackend {
     await priorTransaction;
 
     try {
-      // Full tenant offboarding (§9.4): under the row-level isolation model the
-      // Scope owns exactly one snapshot row, so dropping the partition is
-      // deleting that row. Every other Scope's row in the shared table is
-      // untouched, so offboarding one tenant is invisible to the rest. This
-      // instance is unusable afterward (callers discard it per the purgeScope
-      // contract), exactly like the SQLite backend after it removes its file.
-      await deletePersistedStateSnapshot(this.sql, this.schemaName, this.scope);
-      // The row this memo describes no longer exists; drop it so a
-      // (contractually unsupported, but defensive) later call never serves a
-      // hit for a scope that has been purged.
-      this.snapshotCache.clear();
+      // Children first for clarity; deferred FKs make order non-load-bearing.
+      const purgeOrder = [
+        "observe_annotations",
+        "staged_results",
+        "runs",
+        "turns",
+        "branches",
+        "turn_tree_paths",
+        "turn_node_lineage_roots",
+        "turn_nodes",
+        "ordered_path_chunks",
+        "turn_trees",
+        "threads",
+        "objects",
+        "schemas",
+      ] as const;
+
+      await this.sql.begin(async (tx) => {
+        await this.acquireScopeTransactionLock(tx);
+        for (const tableName of purgeOrder) {
+          const table = qualifyIdentifier(this.schemaName, tableName);
+          await tx.unsafe(`DELETE FROM ${table} WHERE scope = $1`, [
+            this.scope,
+          ]);
+        }
+      });
     } finally {
       releaseQueue?.();
+    }
+  }
+
+  /**
+   * Transaction-scoped advisory lock for this instance's (schemaName, scope)
+   * partition. Blocks concurrent same-scope writers across backend instances
+   * until COMMIT/ROLLBACK releases the lock.
+   */
+  private async acquireScopeTransactionLock(sql: DbSql): Promise<void> {
+    const endLockWait = this.phaseObserver.startPhase("lock-wait");
+    try {
+      await sql.unsafe(
+        "SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))",
+        [this.schemaName, this.scope]
+      );
+    } finally {
+      endLockWait();
     }
   }
 
@@ -672,10 +710,6 @@ class PostgresBackend implements KrakenBackend {
    * multi-worker deployment).
    */
   private async resolveTransactionNow(reserved: Sql): Promise<number> {
-    // An explicitly injected clock is treated as the authoritative backend clock
-    // so tests/conformance can deterministically align or skew it against an
-    // execution owner's clock. With no injection the PostgreSQL server is the
-    // shared rendezvous clock for the multi-worker deployment (ADR-050).
     if (this.injectedNow !== undefined) {
       return this.injectedNow();
     }
@@ -684,15 +718,14 @@ class PostgresBackend implements KrakenBackend {
   }
 
   /**
-   * Lazily provisions this Scope's schema/tables/snapshot row exactly once
-   * per instance, memoizing the in-flight promise so concurrent callers
-   * await the same initialization. A failed attempt clears the memoized
-   * promise so the next call retries instead of replaying the failure
-   * forever.
+   * Lazily provisions this schema's relational tables exactly once per
+   * instance, memoizing the in-flight promise so concurrent callers await
+   * the same initialization. A failed attempt clears the memoized promise
+   * so the next call retries instead of replaying the failure forever.
    */
   private async ensureInitialized(): Promise<void> {
     if (this.initializationPromise === undefined) {
-      const initialization = ensurePostgresSchemaInitialized(
+      const initialization = ensurePostgresRelationalSchemaInitialized(
         this.sql,
         this.schemaName,
         this.now,
@@ -719,18 +752,14 @@ class PostgresBackend implements KrakenBackend {
 }
 
 /**
- * Builds a `RuntimeBackend` over a PostgreSQL snapshot row for the Scope
- * named in `options.scope` (or the default Scope). Schema/table
- * provisioning is deferred to the first call that needs it, not performed
- * eagerly here.
+ * Builds a `RuntimeBackend` over the relational PostgreSQL schema for the
+ * Scope named in `options.scope` (or the default Scope). Schema/table
+ * provisioning is deferred to the first call that needs it.
  *
  * The return type widens `KrakenBackend` with this backend's own
  * maintenance/lifecycle surface (mirroring {@link createSqliteBackend}'s
- * `close`/`fsck` intersection, plus this backend's `destroy` — the
- * connection-pool-and-schema teardown SQLite's file-per-scope model has no
- * equivalent for) so callers reach `close()`, `destroy()`, and `fsck()`
- * without an unsound cast back down from the narrower `RuntimeBackend`
- * contract.
+ * `close`/`fsck` intersection, plus this backend's `destroy`) so callers
+ * reach `close()`, `destroy()`, and `fsck()` without an unsound cast.
  */
 export function createPostgresBackend(
   options?: PostgresBackendOptions
@@ -762,17 +791,17 @@ export async function destroyPostgresBackend(
 }
 
 /**
- * Builds the full `RuntimeBackendTx` repository surface over an in-memory
- * draft `BackendState`, mirroring the memory backend's own repositories:
- * every `get`/`list` clones records out of `state` before returning them,
- * every `set`/`put` validates referenced records and per-family invariants
- * before mutating `state` in place, and every method call first asserts the
- * owning transaction is still active via `isTransactionActive`.
+ * Builds the per-transaction repository surface over the open connection by
+ * composing the core and support repository factories with their
+ * Postgres-specific helper dependencies.
  */
 function createRepositories(
-  state: BackendState,
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
   now: () => number,
-  isTransactionActive: () => boolean
+  isTransactionActive: () => boolean,
+  writeTracker: TransactionWriteTracker
 ): MutableRepositories {
   const assertTransactionActive = (): void => {
     if (!isTransactionActive()) {
@@ -784,743 +813,529 @@ function createRepositories(
   };
 
   return {
-    branches: {
-      get(branchId) {
-        assertTransactionActive();
-        const branch = state.branches.get(branchId);
-        return Promise.resolve(
-          branch === undefined ? null : cloneStoredBranch(branch)
-        );
-      },
-      listByThread(threadId) {
-        assertTransactionActive();
-        const branches: StoredBranch[] = [];
-
-        for (const branch of state.branches.values()) {
-          if (branch.threadId === threadId) {
-            branches.push(cloneStoredBranch(branch));
-          }
-        }
-
-        branches.sort(compareStoredBranch);
-        return Promise.resolve(branches);
-      },
-      set(record) {
-        assertTransactionActive();
-        assertStoredBranch(record, "record");
-        const thread = ensureThreadExists(
-          state,
-          record.threadId,
-          "record.threadId"
-        );
-        ensureTurnNodeExists(
-          state,
-          record.headTurnNodeHash,
-          "record.headTurnNodeHash"
-        );
-        assertTurnNodeBelongsToThread(
-          state,
-          record.headTurnNodeHash,
-          thread,
-          "record.headTurnNodeHash"
-        );
-
-        const existingBranch = state.branches.get(record.branchId);
-
-        if (record.archivedFromBranchId !== undefined) {
-          const sourceBranch = ensureBranchExists(
-            state,
-            record.archivedFromBranchId,
-            "record.archivedFromBranchId"
-          );
-
-          if (sourceBranch.threadId !== record.threadId) {
-            throw persistenceError(
-              "stored branches must archive only from branches in the same thread",
-              "postgres_backend_branch_archive_thread_mismatch",
-              {
-                archivedFromBranchId: sourceBranch.branchId,
-                branchId: record.branchId,
-                branchThreadId: record.threadId,
-                sourceThreadId: sourceBranch.threadId,
-              }
-            );
-          }
-        }
-
-        if (existingBranch !== undefined) {
-          assertImmutableField(
-            existingBranch.threadId,
-            record.threadId,
-            "record.threadId",
-            "postgres_backend_branch_thread_immutable"
-          );
-          assertImmutableField(
-            existingBranch.createdAtMs,
-            record.createdAtMs,
-            "record.createdAtMs",
-            "postgres_backend_branch_created_at_immutable"
-          );
-          assertImmutableOptionalField(
-            existingBranch.archivedFromBranchId,
-            record.archivedFromBranchId,
-            "record.archivedFromBranchId",
-            "postgres_backend_branch_archive_source_immutable"
-          );
-          assertMonotonicUpdatedAtMs(
-            existingBranch.updatedAtMs,
-            record.updatedAtMs,
-            "record.updatedAtMs",
-            "postgres_backend_branch_updated_at_regressed"
-          );
-
-          assertBranchHeadMoveIsLinear(
-            state,
-            existingBranch.headTurnNodeHash,
-            record.headTurnNodeHash,
-            "record.headTurnNodeHash"
-          );
-        }
-
-        state.branches.set(record.branchId, cloneStoredBranch(record));
-        return Promise.resolve();
-      },
-    },
     now,
-    observeAnnotations: {
-      listByRun(runId) {
-        assertTransactionActive();
-        const records = state.observeAnnotations.get(runId) ?? [];
-        return Promise.resolve(
-          records
-            .map(cloneStoredObserveAnnotation)
-            .sort(compareStoredObserveAnnotation)
-        );
+    ...createSupportRepositories(
+      {
+        assertTransactionActive,
+        schemaName,
+        scope,
+        sql,
+        writeTracker,
       },
-      set(record) {
-        assertTransactionActive();
-        assertStoredObserveAnnotation(record, "record");
-        ensureRunExists(state, record.runId, "record.runId");
-
-        if (record.turnNodeHash !== null) {
-          ensureTurnNodeExists(
-            state,
-            record.turnNodeHash,
-            "record.turnNodeHash"
-          );
-        }
-
-        const records = state.observeAnnotations.get(record.runId) ?? [];
-        // Observe annotations are append-only evidence, so identical payloads
-        // must survive as distinct records instead of being deduplicated.
-        records.push(cloneStoredObserveAnnotation(record));
-        state.observeAnnotations.set(record.runId, records);
-        return Promise.resolve();
+      {
+        areStoredObjectsEqual,
+        areStoredSchemasEqual,
+        areStoredStagedResultsEqual,
+        areStoredThreadsEqual,
+        assertStoredObjectIdentity,
+        assertStoredOrderedPathChunkIdentity,
+        bytesFrom,
+        cloneStoredObject,
+        cloneStoredObserveAnnotation,
+        cloneStoredOrderedPathChunk,
+        cloneStoredSchema,
+        cloneStoredStagedResult,
+        cloneStoredThread,
+        compareStoredObserveAnnotation,
+        compareStoredStagedResult,
+        ensureImmutableRecordMatch,
+        ensureObjectExistsInDatabase,
+        ensureRunExistsInDatabase,
+        ensureSchemaExistsInDatabase,
+        ensureTurnNodeExistsInDatabase,
+        insertOrderedPathChunk,
+        nextObserveAnnotationRecordKey,
+        selectObject,
+        selectObserveAnnotationsByRun,
+        selectOrderedPathChunk,
+        selectSchema,
+        selectStagedResult,
+        selectStagedResultsByRun,
+        selectThread,
+      }
+    ),
+    ...createCoreRepositories(
+      {
+        assertTransactionActive,
+        now,
+        schemaName,
+        scope,
+        sql,
+        writeTracker,
       },
-    },
-    objects: {
-      get(hash) {
-        assertTransactionActive();
-        const record = state.objects.get(hash);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredObject(record)
-        );
-      },
-      has(hash) {
-        assertTransactionActive();
-        return Promise.resolve(state.objects.has(hash));
-      },
-      async put(record) {
-        assertTransactionActive();
-        assertStoredObject(record, "record");
-        await assertStoredObjectIdentity(record, "record");
-        putImmutableRecord(
-          state.objects,
-          record.hash,
-          record,
-          cloneStoredObject,
-          areStoredObjectsEqual,
-          "stored object"
-        );
-      },
-    },
-    orderedPathChunks: {
-      get(chunkHash) {
-        assertTransactionActive();
-        const record = state.orderedPathChunks.get(chunkHash);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredOrderedPathChunk(record)
-        );
-      },
-      async put(record) {
-        assertTransactionActive();
-        assertStoredOrderedPathChunk(record, "record");
-        await assertStoredOrderedPathChunkIdentity(record, "record");
-        putImmutableRecord(
-          state.orderedPathChunks,
-          record.chunkHash,
-          record,
-          cloneStoredOrderedPathChunk,
-          areStoredOrderedPathChunksEqual,
-          "ordered path chunk"
-        );
-      },
-    },
-    runs: {
-      get(runId) {
-        assertTransactionActive();
-        const record = state.runs.get(runId);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredRun(record)
-        );
-      },
-      listByBranch(branchId) {
-        assertTransactionActive();
-        const runs: StoredRun[] = [];
-
-        for (const run of state.runs.values()) {
-          if (run.branchId === branchId) {
-            runs.push(cloneStoredRun(run));
-          }
-        }
-
-        runs.sort(compareStoredRun);
-        return Promise.resolve(runs);
-      },
-      listExpired(nowMs) {
-        assertTransactionActive();
-        const runs: StoredRun[] = [];
-
-        for (const run of state.runs.values()) {
-          if (isExpiredLeasedRunningRun(run, nowMs)) {
-            runs.push(cloneStoredRun(run));
-          }
-        }
-
-        runs.sort(compareStoredRun);
-        return Promise.resolve(runs);
-      },
-      set(record) {
-        assertTransactionActive();
-        assertStoredRun(record, "record");
-        const branch = ensureBranchExists(
-          state,
-          record.branchId,
-          "record.branchId"
-        );
-        const turn = ensureTurnExists(state, record.turnId, "record.turnId");
-        ensureSchemaRecordExists(state, record.schemaId, "record.schemaId");
-        const startTurnNode = ensureTurnNodeExists(
-          state,
-          record.startTurnNodeHash,
-          "record.startTurnNodeHash"
-        );
-        const thread = ensureThreadExists(
-          state,
-          turn.threadId,
-          "turn.threadId"
-        );
-        assertTurnNodeBelongsToThread(
-          state,
-          record.startTurnNodeHash,
-          thread,
-          "record.startTurnNodeHash"
-        );
-
-        if (turn.branchId !== branch.branchId) {
-          throw persistenceError(
-            "stored runs must reference a turn on the same branch",
-            "postgres_backend_run_branch_mismatch",
-            { branchId: branch.branchId, turnId: turn.turnId }
-          );
-        }
-
-        if (startTurnNode.schemaId !== record.schemaId) {
-          throw persistenceError(
-            "stored runs must use the schema of their start turn node",
-            "postgres_backend_run_schema_mismatch",
-            {
-              runId: record.runId,
-              runSchemaId: record.schemaId,
-              startTurnNodeHash: startTurnNode.hash,
-              turnNodeSchemaId: startTurnNode.schemaId,
-            }
-          );
-        }
-
-        assertRunStartTurnNodeWithinTurnSpan(
-          state,
-          turn,
-          record.startTurnNodeHash,
-          "record.startTurnNodeHash"
-        );
-
-        const existingRun = state.runs.get(record.runId);
-        if (existingRun === undefined) {
-          if (record.status !== "running") {
-            throw persistenceError(
-              "stored runs must be created in the running state",
-              "postgres_backend_run_initial_status_invalid",
-              {
-                runId: record.runId,
-                status: record.status,
-              }
-            );
-          }
-
-          if (branch.headTurnNodeHash !== record.startTurnNodeHash) {
-            throw persistenceError(
-              "stored runs must start from the current branch head when first created",
-              "postgres_backend_run_start_turn_node_mismatch",
-              {
-                branchHeadTurnNodeHash: branch.headTurnNodeHash,
-                runId: record.runId,
-                startTurnNodeHash: record.startTurnNodeHash,
-              }
-            );
-          }
-        } else {
-          assertRunUpdateIsLegal(existingRun, record);
-        }
-
-        state.runs.set(record.runId, cloneStoredRun(record));
-        return Promise.resolve();
-      },
-    },
-    schemas: {
-      get(schemaId) {
-        assertTransactionActive();
-        const record = state.schemas.get(schemaId);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredSchema(record)
-        );
-      },
-      put(record) {
-        assertTransactionActive();
-        assertStoredSchema(record, "record");
-        putImmutableRecord(
-          state.schemas,
-          record.schemaId,
-          record,
-          cloneStoredSchema,
-          areStoredSchemasEqual,
-          "stored schema"
-        );
-        return Promise.resolve();
-      },
-    },
-    stagedResults: {
-      clearRun(runId) {
-        assertTransactionActive();
-        state.stagedResults.delete(runId);
-        return Promise.resolve();
-      },
-      get(runId, taskId) {
-        assertTransactionActive();
-        const runResults = state.stagedResults.get(runId);
-        const record = runResults?.get(taskId);
-
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredStagedResult(record)
-        );
-      },
-      listByRun(runId) {
-        assertTransactionActive();
-        const runResults = state.stagedResults.get(runId);
-
-        if (runResults === undefined) {
-          return Promise.resolve([]);
-        }
-
-        const stagedResults = Array.from(
-          runResults.values(),
-          cloneStoredStagedResult
-        );
-        stagedResults.sort(compareStoredStagedResult);
-        return Promise.resolve(stagedResults);
-      },
-      set(record) {
-        assertTransactionActive();
-        assertStoredStagedResult(record, "record");
-        const run = ensureRunExists(state, record.runId, "record.runId");
-        ensureObjectExists(state, record.objectHash, "record.objectHash");
-
-        if (run.status !== "running") {
-          throw persistenceError(
-            "stored staged results may only be attached to running runs",
-            "postgres_backend_staged_result_run_not_running",
-            {
-              runId: run.runId,
-              status: run.status,
-            }
-          );
-        }
-
-        const runResults =
-          state.stagedResults.get(record.runId) ??
-          new Map<string, StoredStagedResult>();
-        const existingResult = runResults.get(record.taskId);
-
-        if (existingResult === undefined) {
-          runResults.set(record.taskId, cloneStoredStagedResult(record));
-        } else {
-          ensureImmutableRecordMatch(
-            existingResult,
-            record,
-            areStoredStagedResultsEqual,
-            "stored staged result"
-          );
-        }
-
-        state.stagedResults.set(record.runId, runResults);
-        return Promise.resolve();
-      },
-    },
-    threads: {
-      get(threadId) {
-        assertTransactionActive();
-        const record = state.threads.get(threadId);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredThread(record)
-        );
-      },
-      put(record) {
-        assertTransactionActive();
-        assertStoredThread(record, "record");
-        ensureSchemaRecordExists(state, record.schemaId, "record.schemaId");
-        const rootTurnNode = ensureTurnNodeExists(
-          state,
-          record.rootTurnNodeHash,
-          "record.rootTurnNodeHash"
-        );
-        if (rootTurnNode.previousTurnNodeHash !== null) {
-          throw persistenceError(
-            "stored thread roots must be genesis turn nodes",
-            "postgres_backend_thread_root_not_genesis",
-            {
-              previousTurnNodeHash: rootTurnNode.previousTurnNodeHash,
-              rootTurnNodeHash: rootTurnNode.hash,
-              threadId: record.threadId,
-            }
-          );
-        }
-        putImmutableRecord(
-          state.threads,
-          record.threadId,
-          record,
-          cloneStoredThread,
-          areStoredThreadsEqual,
-          "stored thread"
-        );
-        return Promise.resolve();
-      },
-      list(options) {
-        assertTransactionActive();
-        let threads: StoredThread[] = Array.from(
-          state.threads.values(),
-          cloneStoredThread
-        );
-
-        if (options?.filter?.schemaId !== undefined) {
-          const { schemaId } = options.filter;
-          threads = threads.filter((t) => t.schemaId === schemaId);
-        }
-
-        threads.sort((a, b) => {
-          if (a.createdAtMs !== b.createdAtMs) {
-            return a.createdAtMs < b.createdAtMs ? -1 : 1;
-          }
-          return a.threadId.localeCompare(b.threadId);
-        });
-
-        if (options?.cursor !== undefined) {
-          const { lastCreatedAtMs, lastThreadId } = options.cursor;
-          const idx = threads.findIndex(
-            (t) =>
-              t.createdAtMs > lastCreatedAtMs ||
-              (t.createdAtMs === lastCreatedAtMs && t.threadId > lastThreadId)
-          );
-          threads = idx === -1 ? [] : threads.slice(idx);
-        }
-
-        const limit = options?.limit;
-        let nextCursor: ListThreadsCursorPayload | undefined;
-
-        if (limit !== undefined && threads.length > limit) {
-          threads = threads.slice(0, limit);
-          const last = threads.at(-1);
-          if (last !== undefined) {
-            nextCursor = {
-              v: 1,
-              kind: "list-threads",
-              lastThreadId: last.threadId,
-              lastCreatedAtMs: last.createdAtMs,
-              filter: options?.filter,
-            };
-          }
-        }
-
-        return Promise.resolve({ threads, nextCursor });
-      },
-    },
-    turnNodes: {
-      get(hash) {
-        assertTransactionActive();
-        const record = state.turnNodes.get(hash);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredTurnNode(record)
-        );
-      },
-      async put(record) {
-        assertTransactionActive();
-        assertStoredTurnNode(record, "record");
-        await assertStoredTurnNodeIdentity(record, "record");
-        ensureTurnTreeExists(state, record.turnTreeHash, "record.turnTreeHash");
-        ensureSchemaRecordExists(state, record.schemaId, "record.schemaId");
-
-        if (record.eventHash !== null) {
-          ensureObjectExists(state, record.eventHash, "record.eventHash");
-        }
-
-        for (const objectHash of decodeTurnNodeConsumedStagedResultObjectHashes(
-          record
-        )) {
-          ensureObjectExists(
-            state,
-            objectHash,
-            "record.consumedStagedResultsCbor"
-          );
-        }
-
-        if (record.previousTurnNodeHash !== null) {
-          ensureTurnNodeExists(
-            state,
-            record.previousTurnNodeHash,
-            "record.previousTurnNodeHash"
-          );
-        }
-
-        putImmutableRecord(
-          state.turnNodes,
-          record.hash,
-          record,
-          cloneStoredTurnNode,
-          areStoredTurnNodesEqual,
-          "stored turn node"
-        );
-      },
-    },
-    turnTreePaths: {
-      get(turnTreeHash, path) {
-        assertTransactionActive();
-        const treePaths = state.turnTreePaths.get(turnTreeHash);
-        const record = treePaths?.get(path);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredTurnTreePath(record)
-        );
-      },
-      listByTurnTree(turnTreeHash) {
-        assertTransactionActive();
-        const treePaths = state.turnTreePaths.get(turnTreeHash);
-
-        if (treePaths === undefined) {
-          return Promise.resolve([]);
-        }
-
-        const records = Array.from(treePaths.values(), cloneStoredTurnTreePath);
-        records.sort((left, right) => left.path.localeCompare(right.path));
-        return Promise.resolve(records);
-      },
-      async putMany(records) {
-        assertTransactionActive();
-        const seenCompositeKeys = new Set<string>();
-
-        for (const record of records) {
-          const turnTree = ensureTurnTreeExists(
-            state,
-            record.turnTreeHash,
-            "record.turnTreeHash"
-          );
-          const schema = getSchemaForTurnTree(state, turnTree);
-          assertStoredTurnTreePath(record, schema, "record");
-
-          const compositeKey = `${record.turnTreeHash}:${record.path}`;
-          if (seenCompositeKeys.has(compositeKey)) {
-            throw persistenceError(
-              "turn tree path batches must not contain duplicate keys",
-              "postgres_backend_duplicate_turn_tree_path_batch_entry",
-              { compositeKey }
-            );
-          }
-
-          seenCompositeKeys.add(compositeKey);
-
-          const normalizedRecord = await normalizeStoredTurnTreePath(
-            state,
-            record,
-            now
-          );
-          const treePaths =
-            state.turnTreePaths.get(normalizedRecord.turnTreeHash) ??
-            new Map<string, StoredTurnTreePath>();
-          const existing = treePaths.get(normalizedRecord.path);
-
-          if (existing === undefined) {
-            treePaths.set(
-              normalizedRecord.path,
-              cloneStoredTurnTreePath(normalizedRecord)
-            );
-          } else {
-            ensureImmutableRecordMatch(
-              existing,
-              normalizedRecord,
-              areStoredTurnTreePathsEqual,
-              "stored turn tree path"
-            );
-          }
-
-          state.turnTreePaths.set(normalizedRecord.turnTreeHash, treePaths);
-        }
-      },
-    },
-    turnTrees: {
-      get(hash) {
-        assertTransactionActive();
-        const record = state.turnTrees.get(hash);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredTurnTree(record)
-        );
-      },
-      async put(record) {
-        assertTransactionActive();
-        const schema = getSchemaForSchemaId(
-          state,
-          record.schemaId,
-          "record.schemaId"
-        );
-        assertStoredTurnTree(record, schema, "record");
-        await assertStoredTurnTreeIdentity(record, schema, "record");
-        putImmutableRecord(
-          state.turnTrees,
-          record.hash,
-          record,
-          cloneStoredTurnTree,
-          areStoredTurnTreesEqual,
-          "stored turn tree"
-        );
-      },
-    },
-    turns: {
-      get(turnId) {
-        assertTransactionActive();
-        const record = state.turns.get(turnId);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredTurn(record)
-        );
-      },
-      listByThread(threadId) {
-        assertTransactionActive();
-        return Promise.resolve(
-          listTurnsByThread(state, threadId).map(cloneStoredTurn)
-        );
-      },
-      set(record) {
-        assertTransactionActive();
-        assertStoredTurn(record, "record");
-        const thread = ensureThreadExists(
-          state,
-          record.threadId,
-          "record.threadId"
-        );
-        const branch = ensureBranchExists(
-          state,
-          record.branchId,
-          "record.branchId"
-        );
-        ensureTurnNodeExists(
-          state,
-          record.startTurnNodeHash,
-          "record.startTurnNodeHash"
-        );
-        ensureTurnNodeExists(
-          state,
-          record.headTurnNodeHash,
-          "record.headTurnNodeHash"
-        );
-
-        if (branch.threadId !== thread.threadId) {
-          throw persistenceError(
-            "stored turns must reference a branch on the same thread",
-            "postgres_backend_turn_branch_thread_mismatch",
-            { branchId: branch.branchId, threadId: thread.threadId }
-          );
-        }
-
-        const existingTurn = state.turns.get(record.turnId);
-        if (existingTurn !== undefined) {
-          assertImmutableField(
-            existingTurn.branchId,
-            record.branchId,
-            "record.branchId",
-            "postgres_backend_turn_branch_immutable"
-          );
-          assertImmutableField(
-            existingTurn.threadId,
-            record.threadId,
-            "record.threadId",
-            "postgres_backend_turn_thread_immutable"
-          );
-          assertImmutableField(
-            existingTurn.startTurnNodeHash,
-            record.startTurnNodeHash,
-            "record.startTurnNodeHash",
-            "postgres_backend_turn_start_immutable"
-          );
-          assertImmutableOptionalField(
-            existingTurn.parentTurnId,
-            record.parentTurnId,
-            "record.parentTurnId",
-            "postgres_backend_turn_parent_immutable"
-          );
-          assertImmutableField(
-            existingTurn.createdAtMs,
-            record.createdAtMs,
-            "record.createdAtMs",
-            "postgres_backend_turn_created_at_immutable"
-          );
-          assertMonotonicUpdatedAtMs(
-            existingTurn.updatedAtMs,
-            record.updatedAtMs,
-            "record.updatedAtMs",
-            "postgres_backend_turn_updated_at_regressed"
-          );
-          assertTurnNodeDescendsFrom(
-            state,
-            record.headTurnNodeHash,
-            existingTurn.headTurnNodeHash,
-            "record.headTurnNodeHash"
-          );
-        }
-
-        state.turns.set(record.turnId, cloneStoredTurn(record));
-        return Promise.resolve();
-      },
-    },
+      {
+        areStoredTurnNodesEqual,
+        areStoredTurnTreesEqual,
+        areStoredTurnTreePathsEqual,
+        assertBranchHeadMoveIsLinearInDatabase,
+        assertImmutableField,
+        assertImmutableOptionalField,
+        assertMonotonicUpdatedAtMs,
+        assertRunUpdateIsLegal,
+        assertStoredTurnNodeIdentity,
+        assertStoredTurnTreeIdentity,
+        bytesFrom,
+        cloneStoredBranch,
+        cloneStoredRun,
+        cloneStoredTurn,
+        cloneStoredTurnNode,
+        cloneStoredTurnTree,
+        cloneStoredTurnTreePath,
+        compareStoredBranch,
+        compareStoredRun,
+        compareStoredTurn,
+        ensureBranchExistsInDatabase,
+        ensureImmutableRecordMatch,
+        ensureObjectExistsInDatabase,
+        ensureSchemaExistsInDatabase,
+        ensureThreadExistsInDatabase,
+        ensureTurnExistsInDatabase,
+        ensureTurnNodeExistsInDatabase,
+        ensureTurnTreeExistsInDatabase,
+        getSchemaForSchemaIdInDatabase,
+        insertTurnNodeLineageMetadata,
+        normalizeStoredTurnTreePathInDatabase,
+        selectBranch,
+        selectBranchesByThread,
+        selectExpiredRuns,
+        selectRun,
+        selectRunsByBranch,
+        selectTurn,
+        selectTurnNode,
+        selectTurnTree,
+        selectTurnTreePath,
+        selectTurnTreePathsByTurnTree,
+        selectTurnsByThread,
+      }
+    ),
   };
+}
+
+/**
+ * Loads the Scope's full state projection and runs the maintenance validation
+ * suite used by `fsck()` and `reclaim()`: per-record shape/identity, the
+ * derived lineage-root index, and the committed-state invariant suite.
+ */
+async function loadValidatedState(
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER,
+  priorState?: BackendState
+): Promise<BackendState> {
+  const endLoad = phaseObserver.startPhase("load");
+  let state: BackendState;
+  try {
+    state = await loadState(sql, schemaName, scope);
+  } finally {
+    endLoad();
+  }
+
+  const endValidateLoaded = phaseObserver.startPhase("validate-loaded");
+  try {
+    await validateLoadedState(state);
+  } finally {
+    endValidateLoaded();
+  }
+
+  const endValidateLineageIndex = phaseObserver.startPhase(
+    "validate-lineage-index"
+  );
+  try {
+    await validateTurnNodeLineageRootIndex(sql, schemaName, scope, state);
+  } finally {
+    endValidateLineageIndex();
+  }
+
+  const endValidateCommitted = phaseObserver.startPhase("validate-committed");
+  try {
+    validateCommittedState(state, priorState ?? state, {
+      assertActiveRunHeadAlignment,
+      assertBackwardBranchMoveIsArchived,
+      assertChunkedTurnTreePathChunkLayout,
+      assertRunCreatedTurnNodeWithinTurnSpan,
+      assertRunCreatedTurnNodesAreCanonical,
+      assertRunStartTurnNodeWithinTurnSpan,
+      assertTurnParentLink,
+      classifyTurnNodeRelationship,
+      decodeRunCreatedTurnNodeHashes,
+      decodeTurnNodeConsumedStagedResultObjectHashes,
+      validateHashString,
+    });
+  } finally {
+    endValidateCommitted();
+  }
+
+  return state;
+}
+
+/**
+ * Snapshot of every reclaimable record family's keys taken before the
+ * in-memory sweep, so the swept projection can be diffed into row deletions.
+ */
+interface ReclamationSurvivorKeys {
+  branches: Set<string>;
+  objects: Set<string>;
+  orderedPathChunks: Set<string>;
+  runs: Set<string>;
+  turnNodes: Set<string>;
+  turns: Set<string>;
+  turnTrees: Set<string>;
+}
+
+/** Captures the pre-sweep key sets for {@link applyReclamationDeletions}. */
+function captureReclamationKeys(state: BackendState): ReclamationSurvivorKeys {
+  return {
+    branches: new Set(state.branches.keys()),
+    objects: new Set(state.objects.keys()),
+    orderedPathChunks: new Set(state.orderedPathChunks.keys()),
+    runs: new Set(state.runs.keys()),
+    turnNodes: new Set(state.turnNodes.keys()),
+    turns: new Set(state.turns.keys()),
+    turnTrees: new Set(state.turnTrees.keys()),
+  };
+}
+
+/** Keys present before the sweep but absent from the swept draft. */
+function reclaimedKeys(
+  before: Set<string>,
+  survivors: Map<string, unknown>
+): string[] {
+  const removed: string[] = [];
+  for (const key of before) {
+    if (!survivors.has(key)) {
+      removed.push(key);
+    }
+  }
+  return removed;
+}
+
+/**
+ * Deletes the rows the in-memory sweep removed. Child tables (including the
+ * derived `turn_node_lineage_roots` index and run-scoped staging/annotations)
+ * are deleted alongside their parents; with deferred foreign keys the order is
+ * not load-bearing, but children are still listed first for clarity.
+ */
+async function applyReclamationDeletions(
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  before: ReclamationSurvivorKeys,
+  survivors: BackendState
+): Promise<void> {
+  const deletedRunIds = reclaimedKeys(before.runs, survivors.runs);
+  const deletedTurnIds = reclaimedKeys(before.turns, survivors.turns);
+  const deletedBranchIds = reclaimedKeys(before.branches, survivors.branches);
+  const deletedTurnTreeHashes = reclaimedKeys(
+    before.turnTrees,
+    survivors.turnTrees
+  );
+  const deletedTurnNodeHashes = reclaimedKeys(
+    before.turnNodes,
+    survivors.turnNodes
+  );
+  const deletedChunkHashes = reclaimedKeys(
+    before.orderedPathChunks,
+    survivors.orderedPathChunks
+  );
+  const deletedObjectHashes = reclaimedKeys(before.objects, survivors.objects);
+
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "staged_results",
+    "run_id",
+    deletedRunIds
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "observe_annotations",
+    "run_id",
+    deletedRunIds
+  );
+  await deleteByColumn(sql, schemaName, scope, "runs", "run_id", deletedRunIds);
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turns",
+    "turn_id",
+    deletedTurnIds
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "branches",
+    "branch_id",
+    deletedBranchIds
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turn_tree_paths",
+    "turn_tree_hash",
+    deletedTurnTreeHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turn_trees",
+    "hash",
+    deletedTurnTreeHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turn_node_lineage_roots",
+    "turn_node_hash",
+    deletedTurnNodeHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turn_nodes",
+    "hash",
+    deletedTurnNodeHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "ordered_path_chunks",
+    "chunk_hash",
+    deletedChunkHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "objects",
+    "hash",
+    deletedObjectHashes
+  );
+}
+
+/**
+ * Deletes rows for this Scope whose column matches one of `keys`, batched.
+ * `table` and `column` are fixed internal identifiers, never caller input.
+ */
+async function deleteByColumn(
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  table: string,
+  column: string,
+  keys: string[]
+): Promise<void> {
+  if (keys.length === 0) {
+    return;
+  }
+
+  const qualified = qualifyIdentifier(schemaName, table);
+
+  for (
+    let index = 0;
+    index < keys.length;
+    index += RECLAMATION_DELETE_BATCH_SIZE
+  ) {
+    const batch = keys.slice(index, index + RECLAMATION_DELETE_BATCH_SIZE);
+    await sql.unsafe(
+      `DELETE FROM ${qualified} WHERE scope = $1 AND ${column} = ANY($2::text[])`,
+      [scope, batch]
+    );
+  }
+}
+
+/**
+ * Normalizes an incoming turn-tree path record to its canonical stored
+ * encoding, resolving chunk references against the database: `single` and
+ * small ordered paths pass through; a flat ordered path above the promotion
+ * threshold is rewritten to `chunked` encoding.
+ */
+async function normalizeStoredTurnTreePathInDatabase(
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  record: StoredTurnTreePath,
+  now: () => number
+): Promise<StoredTurnTreePath> {
+  if (record.collectionKind === "single") {
+    return cloneStoredTurnTreePath(record);
+  }
+
+  if (record.orderedEncoding === "chunked") {
+    const chunkHashes = decodeHashStringArray(
+      record.orderedChunkListCbor,
+      "record.orderedChunkListCbor"
+    );
+
+    if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
+      throw persistenceError(
+        "chunked ordered turn tree paths must only be used after crossing the promotion threshold",
+        "postgres_backend_chunked_turn_tree_path_below_threshold",
+        {
+          orderedCount: record.orderedCount,
+          threshold: ORDERED_PATH_CHUNK_THRESHOLD,
+        }
+      );
+    }
+
+    let totalCount = 0;
+    for (const [index, chunkHash] of chunkHashes.entries()) {
+      const chunk = await selectOrderedPathChunk(
+        sql,
+        schemaName,
+        scope,
+        chunkHash
+      );
+      if (chunk === null) {
+        throw persistenceError(
+          "chunked turn tree paths must reference existing chunk records",
+          "postgres_backend_missing_ordered_path_chunk_reference",
+          { chunkHash, path: record.path, turnTreeHash: record.turnTreeHash }
+        );
+      }
+
+      assertChunkedTurnTreePathChunkLayout(chunk, index, chunkHashes.length);
+      totalCount += chunk.itemCount;
+    }
+
+    if (totalCount !== record.orderedCount) {
+      throw persistenceError(
+        "chunked turn tree paths must agree with the stored chunk cardinality",
+        "postgres_backend_chunked_turn_tree_path_count_mismatch",
+        { orderedCount: record.orderedCount, totalCount }
+      );
+    }
+
+    return cloneStoredTurnTreePath(record);
+  }
+
+  if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
+    return cloneStoredTurnTreePath(record);
+  }
+
+  const orderedHashes = decodeHashStringArray(
+    record.orderedInlineCbor,
+    "record.orderedInlineCbor"
+  );
+  const chunkHashes: string[] = [];
+
+  for (
+    let index = 0;
+    index < orderedHashes.length;
+    index += ORDERED_PATH_CHUNK_SIZE
+  ) {
+    const chunkItems = orderedHashes.slice(
+      index,
+      index + ORDERED_PATH_CHUNK_SIZE
+    );
+    const itemsCbor = encodeHashStringArray(chunkItems);
+    const chunkHash = await hashKernelRecord(chunkItems);
+    const existingChunk = await selectOrderedPathChunk(
+      sql,
+      schemaName,
+      scope,
+      chunkHash
+    );
+    const chunkRecord: StoredOrderedPathChunk = {
+      chunkHash,
+      createdAtMs: existingChunk?.createdAtMs ?? now(),
+      itemCount: chunkItems.length,
+      itemsCbor,
+    };
+
+    await insertOrderedPathChunk(sql, schemaName, scope, chunkRecord);
+    chunkHashes.push(chunkHash);
+  }
+
+  return {
+    collectionKind: "ordered",
+    orderedChunkListCbor: encodeHashStringArray(chunkHashes),
+    orderedCount: record.orderedCount,
+    orderedEncoding: "chunked",
+    path: record.path,
+    turnTreeHash: record.turnTreeHash,
+  };
+}
+
+/**
+ * Inserts a content-addressed ordered-path chunk row, or verifies byte-level
+ * equality against the existing row for the same hash (immutable put).
+ */
+async function insertOrderedPathChunk(
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  record: StoredOrderedPathChunk
+): Promise<void> {
+  const existing = await selectOrderedPathChunk(
+    sql,
+    schemaName,
+    scope,
+    record.chunkHash
+  );
+
+  if (existing !== null) {
+    ensureImmutableRecordMatch(
+      existing,
+      record,
+      areStoredOrderedPathChunksEqual,
+      "ordered path chunk"
+    );
+    return;
+  }
+
+  const table = qualifyIdentifier(schemaName, "ordered_path_chunks");
+  await sql.unsafe(
+    `
+      INSERT INTO ${table} (
+        scope,
+        chunk_hash,
+        item_count,
+        items_cbor,
+        created_at_ms
+      ) VALUES ($1, $2, $3, $4, $5)
+    `,
+    [
+      scope,
+      record.chunkHash,
+      record.itemCount,
+      bytesFrom(record.itemsCbor),
+      record.createdAtMs,
+    ]
+  );
+}
+
+/** Returns bytes suitable for BYTEA bind parameters. */
+function bytesFrom(bytes: Uint8Array): Uint8Array {
+  return bytes;
+}
+
+/**
+ * Encodes a hash array as deterministic CBOR, validating every element first
+ * so only well-formed hash strings are ever persisted.
+ */
+function encodeHashStringArray(hashes: string[]): Uint8Array {
+  return encodeDeterministicKernelRecord(
+    hashes.map((hash) => validateHashString(hash))
+  );
 }
 
 /**
  * Reads the PostgreSQL server's current wall-clock time (`clock_timestamp()`)
  * as epoch milliseconds, once per transaction, for the ADR-050 shared
  * rendezvous clock.
- *
- * @throws TuvrenPersistenceError `postgres_backend_clock_unavailable` when
- *   the query returns no row, or `postgres_backend_clock_unsafe_integer`
- *   when the value falls outside the safe-integer range.
  */
 async function readBackendClockMs(reserved: Sql): Promise<number> {
-  // clock_timestamp() is the actual wall-clock time at call, captured once per
-  // transaction so the whole transaction shares a single authoritative instant.
   const rows = await reserved.unsafe<Array<{ now_ms: string }>>(
     "SELECT (extract(epoch from clock_timestamp()) * 1000)::bigint AS now_ms"
   );
@@ -1533,8 +1348,6 @@ async function readBackendClockMs(reserved: Sql): Promise<number> {
     );
   }
 
-  // ::bigint is serialized as a string by postgres.js; epoch milliseconds stay
-  // well within the safe-integer range for any realistic deployment date.
   const nowMs = Number(rawNowMs);
 
   if (!Number.isSafeInteger(nowMs)) {
@@ -1546,18 +1359,4 @@ async function readBackendClockMs(reserved: Sql): Promise<number> {
   }
 
   return nowMs;
-}
-
-/** Extracts a human-readable message from any thrown value. */
-function readErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
-}
-
-/** Double-quotes and escapes a PostgreSQL identifier for safe interpolation. */
-function quoteIdentifier(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
 }

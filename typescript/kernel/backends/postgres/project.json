@@ -11,7 +11,7 @@
       "dependsOn": ["^build"],
       "options": {
         "cwd": "typescript/kernel/backends/postgres",
-        "command": "bunx --bun tsup --config tsup.config.ts && bunx --bun tsc --project tsconfig.dts.json --pretty false"
+        "command": "bunx --bun tsup --config tsup.config.ts && bun ../../../../tools/scripts/compile-with-migrations.ts --tsconfig tsconfig.dts.json --out dist"
       }
     },
     "bench": {
@@ -46,7 +46,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "typescript/kernel/backends/postgres",
-        "command": "bun test"
+        "command": "bun test ./test"
       }
     },
     "typecheck": {
