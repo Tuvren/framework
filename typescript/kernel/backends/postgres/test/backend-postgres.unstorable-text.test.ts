@@ -130,6 +130,47 @@ describe("@tuvren/backend-postgres NUL-identifier boundary validation", () => {
     }
   });
 
+  test("rejects tx.stagedResults.set's objectType containing U+0000 with a typed error, not the raw engine error", async () => {
+    const options = createPostgresTestBackendOptions();
+    const backend = createPostgresBackend(options);
+
+    try {
+      const kernel = createRuntimeKernel({ backend });
+      // A real stored object supplies a well-formed objectHash so the failing
+      // write below passes the record-shape guard — only objectType is bad.
+      // The storable-text assertion fires before the run-existence check, so
+      // no run needs to exist.
+      const objectHash = await kernel.store.put(
+        new Uint8Array([7, 8, 9]),
+        "text/plain"
+      );
+
+      let caughtError: unknown;
+      try {
+        await backend.transact(async (tx) => {
+          await tx.stagedResults.set({
+            createdAtMs: Date.now(),
+            objectHash,
+            objectType: `message${NUL}evil`,
+            runId: "run_unstorable_object_type",
+            status: "completed",
+            taskId: "task_unstorable_object_type",
+          });
+        });
+      } catch (error: unknown) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(Error);
+      expect(readErrorCode(caughtError)).toBe(UNSTORABLE_TEXT_CODE);
+      expect(readErrorCode(caughtError)).not.toBe(
+        "postgres_backend_engine_error"
+      );
+    } finally {
+      await backend.destroy({ dropSchema: true });
+    }
+  });
+
   test("still accepts ordinary NUL-free writes", async () => {
     const options = createPostgresTestBackendOptions();
     const backend = createPostgresBackend(options);

@@ -438,6 +438,7 @@ export function createSupportRepositories(
         assertStoredStagedResult(record, "record");
         assertPostgresStorableText(record.runId, "record.runId");
         assertPostgresStorableText(record.taskId, "record.taskId");
+        assertPostgresStorableText(record.objectType, "record.objectType");
         await helpers.ensureRunExistsInDatabase(
           sql,
           schemaName,

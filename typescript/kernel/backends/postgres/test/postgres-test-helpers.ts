@@ -20,6 +20,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { DEFAULT_SCOPE } from "@tuvren/core";
 import postgres, { type Sql } from "postgres";
 import type { PostgresBackendOptions } from "../src/index.js";
+import { quoteIdentifier } from "../src/lib/postgres-sql.js";
 
 const DEVENV_DATABASE_NAME = "tuvren_runtime";
 const SCHEMA_NAME_PATTERN = /^[a-z][a-z0-9_]*$/;
@@ -230,8 +231,4 @@ function assertSchemaName(schemaName: string): void {
   if (!SCHEMA_NAME_PATTERN.test(schemaName)) {
     throw new Error(`invalid PostgreSQL schema name "${schemaName}"`);
   }
-}
-
-function quoteIdentifier(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
 }

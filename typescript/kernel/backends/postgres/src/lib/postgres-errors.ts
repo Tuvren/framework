@@ -26,14 +26,16 @@ const SQLSTATE_CODE = /^[0-9A-Z]{5}$/;
  * with a `postgresCode` would hand operators a confidently wrong signal on
  * exactly the failure paths they page on. postgres.js engine errors are
  * `PostgresError` instances carrying a `severity` field; connection-lifecycle
- * failures use the driver's named codes checked explicitly below.
+ * failures use the driver's named codes checked explicitly below (postgres.js
+ * emits `CONNECTION_CLOSED`, `CONNECTION_ENDED`, and `CONNECTION_DESTROYED`,
+ * all sharing the `CONNECTION_` prefix, plus the distinct `CONNECT_TIMEOUT`).
  */
 function isPostgresEngineError(error: Error, code: string): boolean {
   if (code.startsWith("ECONN")) {
     return true;
   }
 
-  if (code === "CONNECTION_CLOSED" || code === "CONNECT_TIMEOUT") {
+  if (code.startsWith("CONNECTION_") || code === "CONNECT_TIMEOUT") {
     return true;
   }
 

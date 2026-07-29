@@ -147,12 +147,22 @@ export function createPostgresClient(
 }
 
 /**
+ * PostgreSQL's `NAMEDATALEN` is 64, leaving 63 bytes for an identifier before
+ * it is silently truncated (e.g. by `CREATE SCHEMA`). A caller-supplied name
+ * longer than that would be truncated at creation time while posture queries
+ * that compare the untruncated string would then fail with a misleading
+ * "missing schema" error, so length is rejected up front instead.
+ */
+const MAX_SCHEMA_NAME_BYTES = 63;
+
+/**
  * Defaults an unset schema name to `"public"` and validates it against
- * {@link VALID_SCHEMA_NAME_PATTERN} so it is safe to interpolate into
- * unparameterized DDL identifiers.
+ * {@link VALID_SCHEMA_NAME_PATTERN} and {@link MAX_SCHEMA_NAME_BYTES} so it is
+ * safe to interpolate into unparameterized DDL identifiers and will not be
+ * truncated by PostgreSQL's `NAMEDATALEN` limit.
  *
  * @throws TuvrenPersistenceError `postgres_backend_invalid_schema_name` when
- *   the name does not match the pattern.
+ *   the name does not match the pattern or exceeds the byte-length limit.
  */
 export function normalizeSchemaName(schemaName: string | undefined): string {
   const normalized = schemaName ?? "public";
@@ -160,6 +170,20 @@ export function normalizeSchemaName(schemaName: string | undefined): string {
   if (!VALID_SCHEMA_NAME_PATTERN.test(normalized)) {
     throw persistenceError(
       `postgres backend schema "${normalized}" must match ${VALID_SCHEMA_NAME_PATTERN.source}`,
+      "postgres_backend_invalid_schema_name",
+      { schemaName: normalized }
+    );
+  }
+
+  // The pattern is ASCII-only, so byte length already equals character
+  // length here — but the byte-length check is kept explicit rather than
+  // assumed, since it is the actual PostgreSQL-enforced limit.
+  const byteLength = Buffer.byteLength(normalized, "utf8");
+  if (byteLength > MAX_SCHEMA_NAME_BYTES) {
+    throw persistenceError(
+      `postgres backend schema "${normalized}" is ${byteLength} bytes, ` +
+        `exceeding PostgreSQL's ${MAX_SCHEMA_NAME_BYTES}-byte identifier limit ` +
+        "(NAMEDATALEN - 1); a longer name would be silently truncated",
       "postgres_backend_invalid_schema_name",
       { schemaName: normalized }
     );

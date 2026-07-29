@@ -24,7 +24,7 @@ import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createPostgresBackend } from "../src/index.js";
 import { RELATIONAL_REQUIRED_INDEXES } from "../src/lib/postgres-schema.js";
-import { qualifyIdentifier } from "../src/lib/postgres-sql.js";
+import { quoteIdentifier } from "../src/lib/postgres-sql.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
@@ -125,7 +125,14 @@ describe("@tuvren/backend-postgres health()/fsck() split (ADR-067 relational per
   });
 
   test("reports a posture failure through health() when a required relational index is dropped", async () => {
-    const options = createPostgresTestBackendOptions();
+    // health() memoizes a successful posture validation for
+    // POSTURE_REVALIDATION_INTERVAL_MS (60s); advance this test's injected
+    // clock past that window before the post-tamper probe so the memo does
+    // not mask the drift this test injects.
+    let simulatedNowMs = Date.now();
+    const options = createPostgresTestBackendOptions({
+      now: () => simulatedNowMs,
+    });
     const backend = createPostgresBackend(options);
     const schemaName = options.schemaName ?? "public";
 
@@ -143,12 +150,13 @@ describe("@tuvren/backend-postgres health()/fsck() split (ADR-067 relational per
       const admin = createAdminClient(options);
       try {
         await admin.unsafe(
-          `DROP INDEX ${qualifyIdentifier(schemaName, droppedIndex)}`
+          `DROP INDEX ${quoteIdentifier(schemaName)}.${quoteIdentifier(droppedIndex)}`
         );
       } finally {
         await admin.end({ timeout: 0 });
       }
 
+      simulatedNowMs += 60_001;
       const health = await backend.health();
       expect(health.ok).toBe(false);
       expect(health.ok === false ? health.reason : undefined).toMatch(

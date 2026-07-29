@@ -18,7 +18,7 @@ import {
   NOOP_PHASE_OBSERVER,
   type PhaseObserver,
 } from "@tuvren/backend-shared";
-import type { Scope } from "@tuvren/core";
+import { assertScope } from "@tuvren/core";
 import type { TransactionSql } from "postgres";
 import {
   CURRENT_SNAPSHOT_VERSION,
@@ -111,7 +111,8 @@ export async function explodeLegacyBlobSnapshots(
       }
 
       try {
-        await insertBackendStateRows(tx, schemaName, row.scope as Scope, state);
+        assertScope(row.scope);
+        await insertBackendStateRows(tx, schemaName, row.scope, state);
       } catch (error: unknown) {
         throw persistenceError(
           "postgres backend failed to insert exploded family rows during blob migration",

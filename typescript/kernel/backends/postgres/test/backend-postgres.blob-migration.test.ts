@@ -48,6 +48,7 @@ import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createPostgresBackend } from "../src/index.js";
 import { CURRENT_SNAPSHOT_VERSION } from "../src/lib/postgres-backend-persistence.js";
 import { type BackendState, loadState } from "../src/lib/postgres-records.js";
+import type { RelationalTableName } from "../src/lib/postgres-schema.js";
 import { qualifyIdentifier, quoteIdentifier } from "../src/lib/postgres-sql.js";
 import { areBytesEqual } from "../src/lib/postgres-state-utils.js";
 import {
@@ -457,7 +458,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       expect(snapshotTables.length).toBe(0);
 
       // Per-family row counts match the seeded state exactly.
-      const simpleFamilyCounts: [string, number][] = [
+      const simpleFamilyCounts: [RelationalTableName, number][] = [
         ["objects", state.objects.size],
         ["schemas", state.schemas.size],
         ["turn_trees", state.turnTrees.size],

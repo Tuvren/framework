@@ -109,7 +109,10 @@ import {
   decodeTurnNodeConsumedStagedResultObjectHashes,
   validateHashString,
 } from "./postgres-run-invariants.js";
-import { RELATIONAL_REQUIRED_TABLES } from "./postgres-schema.js";
+import {
+  RELATIONAL_REQUIRED_TABLES,
+  type RelationalTableName,
+} from "./postgres-schema.js";
 import {
   ensurePostgresRelationalSchemaInitialized,
   validateRelationalSchemaPosture,
@@ -182,6 +185,15 @@ const RECLAMATION_DELETE_BATCH_SIZE = 500;
  * pooled connection forever behind a wedged peer transaction.
  */
 const SCOPE_LOCK_TIMEOUT_MS = 5000;
+
+/**
+ * Minimum interval between `health()`'s catalog-driven posture revalidations.
+ * Drift is still detected within a minute; the per-poll catalog query cost is
+ * not paid on every probe. A failed validation is never memoized (only a
+ * successful one advances the memo), and `fsck`/`reclaim` always validate
+ * fresh via `loadValidatedState` regardless of this memo.
+ */
+const POSTURE_REVALIDATION_INTERVAL_MS = 60_000;
 
 /** A reserved single connection from the pool, released after use. */
 type ReservedSql = Sql & { release(): Promise<void> };
@@ -268,6 +280,7 @@ class PostgresBackend implements KrakenBackend {
   private readonly now: () => number;
   private readonly injectedNow: (() => number) | undefined;
   private readonly scopeLockKey: bigint;
+  private postureValidatedAtMs: number | undefined;
 
   constructor(options?: PostgresBackendOptions) {
     const resolvedOptions = options ?? {};
@@ -310,7 +323,14 @@ class PostgresBackend implements KrakenBackend {
   async health(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
       await this.ensureInitialized();
-      await validateRelationalSchemaPosture(this.sql, this.schemaName);
+      const nowMs = this.now();
+      if (
+        this.postureValidatedAtMs === undefined ||
+        nowMs - this.postureValidatedAtMs >= POSTURE_REVALIDATION_INTERVAL_MS
+      ) {
+        await validateRelationalSchemaPosture(this.sql, this.schemaName);
+        this.postureValidatedAtMs = nowMs;
+      }
       const objectsTable = qualifyIdentifier(this.schemaName, "objects");
       await this.sql.unsafe(
         `SELECT 1 FROM ${objectsTable} WHERE scope = $1 LIMIT 1`,
@@ -1157,7 +1177,7 @@ async function deleteByColumn(
   sql: DbSql,
   schemaName: string,
   scope: string,
-  table: string,
+  table: RelationalTableName,
   column: string,
   keys: string[]
 ): Promise<void> {

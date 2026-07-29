@@ -91,6 +91,20 @@ export const {
  * (`runId`, `createdAtMs`, `annotationHash`, `turnNodeHash`) — distinct from
  * its storage `record_key`, which additionally disambiguates repeats of the
  * same identity via {@link nextObserveAnnotationRecordKey}.
+ *
+ * The bare `"\0"` join below is a known theoretical ambiguity: without
+ * length-prefixing, two different field splits can produce the same joined
+ * string (e.g. `("a\0b", "c")` and `("a", "b\0c")` collapse to the same key
+ * if a field itself happened to contain `"\0"`). This is deliberately not
+ * fixed here: shipped SQLite databases already contain `record_key` values
+ * derived with this exact bare-join format, and changing the derivation
+ * would risk an old-format key colliding with a new-format key for a
+ * different identity, silently corrupting existing data on upgrade. The
+ * PostgreSQL backend's `keyObserveAnnotation` (in `postgres-state-utils.ts`)
+ * is the greenfield fix for this class of ambiguity: it length-prefixes each
+ * field before joining, so the key is injective over field tuples. That fix
+ * was adopted there because that backend has no legacy bare-join format to
+ * stay compatible with.
  */
 export function keyObserveAnnotation(record: StoredObserveAnnotation): string {
   return [
