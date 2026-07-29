@@ -71,7 +71,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
       const admin = createAdminClient(options);
       try {
         await admin.unsafe(
-          `DROP INDEX ${qualifyIdentifier(schemaName, droppedIndex)}`
+          `DROP INDEX ${quoteIdentifier(schemaName)}.${quoteIdentifier(droppedIndex)}`
         );
       } finally {
         await admin.end({ timeout: 0 });
@@ -88,7 +88,14 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
   });
 
   test('health() reports a posture failure when a required TEXT column\'s collation drifts away from "C"', async () => {
-    const options = createPostgresTestBackendOptions();
+    // health() memoizes a successful posture validation for
+    // POSTURE_REVALIDATION_INTERVAL_MS (60s); advance this test's injected
+    // clock past that window before the post-tamper probe so the memo does
+    // not mask the drift this test injects.
+    let simulatedNowMs = Date.now();
+    const options = createPostgresTestBackendOptions({
+      now: () => simulatedNowMs,
+    });
     const backend = createPostgresBackend(options);
     const schemaName = options.schemaName ?? "public";
 
@@ -106,6 +113,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
         await admin.end({ timeout: 0 });
       }
 
+      simulatedNowMs += 60_001;
       const health = await backend.health();
       expect(health.ok).toBe(false);
       expect(health.ok === false ? health.reason : undefined).toMatch(
@@ -117,7 +125,13 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
   });
 
   test("health() reports a posture failure when a foreign key is no longer DEFERRABLE INITIALLY DEFERRED", async () => {
-    const options = createPostgresTestBackendOptions();
+    // See the collation test above: advance the injected clock past
+    // POSTURE_REVALIDATION_INTERVAL_MS so health()'s posture memo does not
+    // mask the drift this test injects between the two health() calls.
+    let simulatedNowMs = Date.now();
+    const options = createPostgresTestBackendOptions({
+      now: () => simulatedNowMs,
+    });
     const backend = createPostgresBackend(options);
     const schemaName = options.schemaName ?? "public";
 
@@ -154,6 +168,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
         await admin.end({ timeout: 0 });
       }
 
+      simulatedNowMs += 60_001;
       const health = await backend.health();
       expect(health.ok).toBe(false);
       expect(health.ok === false ? health.reason : undefined).toMatch(

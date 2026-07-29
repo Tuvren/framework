@@ -30,6 +30,7 @@ import {
   createStoredTurnTreeRecord,
 } from "@tuvren/kernel-testkit";
 import { createPostgresBackend } from "../src/index.js";
+import { quoteIdentifier } from "../src/lib/postgres-sql.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
@@ -44,10 +45,6 @@ async function closeBackend(
   backend: ReturnType<typeof createPostgresBackend>
 ): Promise<void> {
   await backend.destroy();
-}
-
-function quoteIdentifier(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
 }
 
 // Seeds a minimal thread (schema + genesis turn tree/node + thread) so

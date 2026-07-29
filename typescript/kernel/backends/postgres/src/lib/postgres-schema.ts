@@ -52,12 +52,12 @@ export const RELATIONAL_REQUIRED_TABLES = [
   "runs",
   "turns",
   "branches",
+  "threads",
   "turn_tree_paths",
   "turn_node_lineage_roots",
   "turn_nodes",
   "ordered_path_chunks",
   "turn_trees",
-  "threads",
   "objects",
   "schemas",
 ] as const;
@@ -92,6 +92,12 @@ export const LEGACY_SNAPSHOTS_TABLE = "backend_postgres_snapshots";
 
 /** Migration ledger table (shared name across blob and relational eras). */
 export const MIGRATIONS_TABLE = "backend_postgres_migrations";
+
+/** The table names {@link qualifyIdentifier} accepts, making the roster load-bearing at every call site. */
+export type RelationalTableName =
+  | (typeof RELATIONAL_REQUIRED_TABLES)[number]
+  | typeof LEGACY_SNAPSHOTS_TABLE
+  | typeof MIGRATIONS_TABLE;
 
 /** Lists the directory's `.sql` migration files in application (name) order. */
 export function listMigrationFiles(migrationDirectory: string): string[] {

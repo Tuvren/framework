@@ -289,79 +289,15 @@ erDiagram
 
 ##### PostgreSQL Tables
 
-Every family table below is defined in `migrations/0001_relational_schema.sql` and mirrors the SQLite family shape with four systematic differences: every table carries a leading `scope TEXT COLLATE "C" NOT NULL` column that is part of its primary key and part of every foreign key (ADR-048/049 row-level isolation in a shared schema), every TEXT column is declared `COLLATE "C"` so ordering and range comparisons are byte-wise and match SQLite's BINARY collation instead of the database's locale-dependent default — most repository list surfaces already agree across backends on their own (`turnTreePaths.listByTurnTree` re-sorts via `localeCompare`, and `observeAnnotations`/`stagedResults`/`branches`/`runs`/`turns` re-sort via comparator helpers, all in JS and independent of SQL collation), so `COLLATE "C"` is load-bearing specifically for SQL-only ordered surfaces such as `thread.list`'s `ORDER BY created_at_ms, thread_id` keyset pagination and for deployment-independent SQL-level range comparisons and index usability, every foreign key is declared `DEFERRABLE INITIALLY DEFERRED` (the Postgres equivalent of SQLite's `defer_foreign_keys` pragma, letting batched writes and reclamation deletes run in any table order within one transaction and be checked only at `COMMIT`), and the greenfield Postgres `runs` table omits `last_step_annotations_cbor`, a column SQLite's `runs` table still carries from its migration history (`typescript/kernel/backends/sqlite/migrations/0003_pending_signals_and_annotations.sql`) but never writes to on any live path; the relational Postgres schema simply never introduced that residue column.
+This is a pointer index, not the column-level oracle (per this constitution's Authority rule: data-models docs point at boundary-owned authority, they do not restate it). The column-level authority is `typescript/kernel/backends/postgres/migrations/0001_relational_schema.sql`; `backend-postgres.schema-roster-agreement.test.ts` is the drift guard that keeps the roster consumed by posture validation and `purgeScope` in agreement with that migration.
 
-- `backend_postgres_migrations`
-  - columns: `name TEXT PRIMARY KEY`, `applied_at_ms BIGINT NOT NULL`
-  - indexes: primary key on `name`
-  - notes: a fresh database created after issue #110 records only `0001_relational_schema.sql`. A database that migrated forward from the pre-#110 blob era additionally retains its legacy ledger entries `0001_initial_schema.sql` and `0002_scope_partition.sql` (`LEGACY_BLOB_INITIAL_MIGRATION_NAME` / `LEGACY_BLOB_SCOPE_PARTITION_MIGRATION_NAME` in `postgres-schema.ts`), so schema/migration health checks recognize both eras' names rather than treating the legacy rows as unknown future migrations.
-- `objects`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `hash TEXT COLLATE "C" NOT NULL`, `media_type TEXT COLLATE "C" NOT NULL`, `bytes BYTEA NOT NULL`, `byte_length INTEGER NOT NULL`, `created_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, hash)`
-  - indexes: primary key
-- `schemas`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `schema_id TEXT COLLATE "C" NOT NULL`, `schema_cbor BYTEA NOT NULL`, `created_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, schema_id)`
-  - indexes: primary key
-- `turn_trees`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `hash TEXT COLLATE "C" NOT NULL`, `schema_id TEXT COLLATE "C" NOT NULL`, `manifest_cbor BYTEA NOT NULL`, `created_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, hash)`
-  - foreign keys: `(scope, schema_id) -> schemas(scope, schema_id)` DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, secondary on `(scope, schema_id)`
-- `turn_tree_paths`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `turn_tree_hash TEXT COLLATE "C" NOT NULL`, `path TEXT COLLATE "C" NOT NULL`, `collection_kind TEXT COLLATE "C" NOT NULL`, `single_hash TEXT COLLATE "C" NULL`, `ordered_encoding TEXT COLLATE "C" NULL`, `ordered_count INTEGER NULL`, `ordered_inline_cbor BYTEA NULL`, `ordered_chunk_list_cbor BYTEA NULL`
-  - primary key: `(scope, turn_tree_hash, path)`
-  - foreign keys: `(scope, turn_tree_hash) -> turn_trees(scope, hash)` DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, secondary on `(scope, path, turn_tree_hash)`
-- `ordered_path_chunks`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `chunk_hash TEXT COLLATE "C" NOT NULL`, `item_count INTEGER NOT NULL`, `items_cbor BYTEA NOT NULL`, `created_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, chunk_hash)`
-  - indexes: primary key
-- `turn_nodes`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `hash TEXT COLLATE "C" NOT NULL`, `previous_turn_node_hash TEXT COLLATE "C" NULL`, `turn_tree_hash TEXT COLLATE "C" NOT NULL`, `consumed_staged_results_cbor BYTEA NOT NULL`, `schema_id TEXT COLLATE "C" NOT NULL`, `event_hash TEXT COLLATE "C" NULL`, `created_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, hash)`
-  - foreign keys: `(scope, previous_turn_node_hash) -> turn_nodes(scope, hash)`, `(scope, turn_tree_hash) -> turn_trees(scope, hash)`, `(scope, schema_id) -> schemas(scope, schema_id)`, `(scope, event_hash) -> objects(scope, hash)` — all DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, secondary on `(scope, previous_turn_node_hash)`, `(scope, turn_tree_hash)`
-- `threads`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `thread_id TEXT COLLATE "C" NOT NULL`, `schema_id TEXT COLLATE "C" NOT NULL`, `root_turn_node_hash TEXT COLLATE "C" NOT NULL`, `created_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, thread_id)`
-  - foreign keys: `(scope, schema_id) -> schemas(scope, schema_id)`, `(scope, root_turn_node_hash) -> turn_nodes(scope, hash)` — both DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, unique secondary on `(scope, root_turn_node_hash)`, secondary on `(scope, created_at_ms, thread_id)`
-- `branches`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `branch_id TEXT COLLATE "C" NOT NULL`, `thread_id TEXT COLLATE "C" NOT NULL`, `head_turn_node_hash TEXT COLLATE "C" NOT NULL`, `archived_from_branch_id TEXT COLLATE "C" NULL`, `created_at_ms BIGINT NOT NULL`, `updated_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, branch_id)`
-  - foreign keys: `(scope, thread_id) -> threads(scope, thread_id)`, `(scope, head_turn_node_hash) -> turn_nodes(scope, hash)`, `(scope, archived_from_branch_id) -> branches(scope, branch_id)` — all DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, secondary on `(scope, thread_id)`, `(scope, head_turn_node_hash)`, `(scope, archived_from_branch_id)`
-- `turns`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `turn_id TEXT COLLATE "C" NOT NULL`, `thread_id TEXT COLLATE "C" NOT NULL`, `branch_id TEXT COLLATE "C" NOT NULL`, `parent_turn_id TEXT COLLATE "C" NULL`, `start_turn_node_hash TEXT COLLATE "C" NOT NULL`, `head_turn_node_hash TEXT COLLATE "C" NOT NULL`, `created_at_ms BIGINT NOT NULL`, `updated_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, turn_id)`
-  - foreign keys: `(scope, thread_id) -> threads(scope, thread_id)`, `(scope, branch_id) -> branches(scope, branch_id)`, `(scope, parent_turn_id) -> turns(scope, turn_id)`, `(scope, start_turn_node_hash) -> turn_nodes(scope, hash)`, `(scope, head_turn_node_hash) -> turn_nodes(scope, hash)` — all DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, secondary on `(scope, thread_id)`, `(scope, branch_id)`, `(scope, parent_turn_id)`, `(scope, thread_id, branch_id, head_turn_node_hash)`
-- `runs`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `run_id TEXT COLLATE "C" NOT NULL`, `turn_id TEXT COLLATE "C" NOT NULL`, `branch_id TEXT COLLATE "C" NOT NULL`, `schema_id TEXT COLLATE "C" NOT NULL`, `start_turn_node_hash TEXT COLLATE "C" NOT NULL`, `status TEXT COLLATE "C" NOT NULL`, `current_step_index INTEGER NOT NULL`, `step_sequence_cbor BYTEA NOT NULL`, `created_turn_nodes_cbor BYTEA NOT NULL`, `pending_signals_cbor BYTEA NULL`, `execution_owner_id TEXT COLLATE "C" NULL`, `lease_expires_at_ms BIGINT NULL`, `fencing_token TEXT COLLATE "C" NULL`, `preemption_reason TEXT COLLATE "C" NULL`, `created_at_ms BIGINT NOT NULL`, `updated_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, run_id)`
-  - foreign keys: `(scope, turn_id) -> turns(scope, turn_id)`, `(scope, branch_id) -> branches(scope, branch_id)`, `(scope, schema_id) -> schemas(scope, schema_id)`, `(scope, start_turn_node_hash) -> turn_nodes(scope, hash)` — all DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, secondary on `(scope, turn_id)`, `(scope, branch_id)`, `(scope, branch_id, status)`, `(scope, status, lease_expires_at_ms)`
-- `staged_results`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `run_id TEXT COLLATE "C" NOT NULL`, `task_id TEXT COLLATE "C" NOT NULL`, `object_hash TEXT COLLATE "C" NOT NULL`, `object_type TEXT COLLATE "C" NOT NULL`, `status TEXT COLLATE "C" NOT NULL`, `interrupt_payload_cbor BYTEA NULL`, `created_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, run_id, task_id)`
-  - foreign keys: `(scope, run_id) -> runs(scope, run_id)`, `(scope, object_hash) -> objects(scope, hash)` — both DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, secondary on `(scope, run_id, status)`, `(scope, object_hash)`
-- `observe_annotations`
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `record_key TEXT COLLATE "C" NOT NULL`, `run_id TEXT COLLATE "C" NOT NULL`, `annotation_hash TEXT COLLATE "C" NOT NULL`, `turn_node_hash TEXT COLLATE "C" NULL`, `annotation_cbor BYTEA NOT NULL`, `created_at_ms BIGINT NOT NULL`
-  - primary key: `(scope, record_key)`
-  - foreign keys: `(scope, run_id) -> runs(scope, run_id)`, `(scope, turn_node_hash) -> turn_nodes(scope, hash)` — both DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, secondary on `(scope, run_id, created_at_ms)`
-- `turn_node_lineage_roots`
-  - backend-local validation index; not a canonical kernel record (mirrors the SQLite table of the same name)
-  - columns: `scope TEXT COLLATE "C" NOT NULL`, `turn_node_hash TEXT COLLATE "C" NOT NULL`, `root_turn_node_hash TEXT COLLATE "C" NOT NULL`, `depth INTEGER NOT NULL`
-  - primary key: `(scope, turn_node_hash)`
-  - foreign keys: `(scope, turn_node_hash) -> turn_nodes(scope, hash)`, `(scope, root_turn_node_hash) -> turn_nodes(scope, hash)` — both DEFERRABLE INITIALLY DEFERRED
-  - indexes: primary key, secondary on `(scope, root_turn_node_hash, depth)`
-- `backend_postgres_snapshots` (legacy; present only in a database that predates issue #110)
-  - historical columns: `snapshot_id SMALLINT NOT NULL`, `scope TEXT NOT NULL`, `schema_version INTEGER NOT NULL`, `snapshot_cbor BYTEA NOT NULL`, `updated_at_ms BIGINT NOT NULL`
-  - historical indexes: composite primary key on `(snapshot_id, scope)`
-  - notes: `explodeLegacyBlobSnapshots` (`postgres-blob-migration.ts`) runs once, inside the schema-init advisory-lock transaction, whenever `migrateLegacyBlobSnapshotsIfPresent` (`postgres-schema-init.ts`) finds this table physically present via an `information_schema.tables` check — the gate is the table's existence, not the migration ledger's contents: it decodes every row's `snapshot_cbor` into the family tables above under that row's `scope`, then issues `DROP TABLE` on this table in the same transaction. A database that has completed the open-time migration therefore no longer has this table at all — not merely an emptied or deprecated one — and a fresh database created after issue #110 never creates it in the first place.
+- **Family + support tables (13):** `objects`, `schemas`, `turn_trees`, `turn_tree_paths`, `ordered_path_chunks`, `turn_nodes`, `threads`, `branches`, `turns`, `runs`, `staged_results`, `observe_annotations`, `turn_node_lineage_roots` (the last is a backend-local validation index, not a canonical kernel record, mirroring the SQLite table of the same name). Each mirrors its SQLite family shape (§ SQLite Tables above) with four systematic differences from that shape:
+  - Every table carries a leading `scope TEXT COLLATE "C" NOT NULL` column that is part of its primary key and part of every foreign key (ADR-048/049 row-level isolation in a shared schema).
+  - Every TEXT column is declared `COLLATE "C"` so ordering and range comparisons are byte-wise and match SQLite's BINARY collation instead of the database's locale-dependent default. Most repository list surfaces already agree across backends on their own (`turnTreePaths.listByTurnTree` re-sorts via `localeCompare`, and `observeAnnotations`/`stagedResults`/`branches`/`runs`/`turns` re-sort via comparator helpers, all in JS and independent of SQL collation); `COLLATE "C"` is load-bearing specifically for SQL-only ordered surfaces such as `thread.list`'s `ORDER BY created_at_ms, thread_id` keyset pagination, and for deployment-independent SQL-level range comparisons and index usability.
+  - Every foreign key is declared `DEFERRABLE INITIALLY DEFERRED` (the Postgres equivalent of SQLite's `defer_foreign_keys` pragma), letting batched writes and reclamation deletes run in any table order within one transaction and be checked only at `COMMIT`.
+  - The greenfield Postgres `runs` table omits `last_step_annotations_cbor`, a column SQLite's `runs` table still carries from its migration history (`typescript/kernel/backends/sqlite/migrations/0003_pending_signals_and_annotations.sql`) but never writes to on any live path; the relational Postgres schema simply never introduced that residue column.
+- **`backend_postgres_migrations`** (forward-only migration ledger): a fresh database created after issue #110 records only `0001_relational_schema.sql`. A database that migrated forward from the pre-#110 blob era additionally retains its legacy ledger entries `0001_initial_schema.sql` and `0002_scope_partition.sql` (`LEGACY_BLOB_INITIAL_MIGRATION_NAME` / `LEGACY_BLOB_SCOPE_PARTITION_MIGRATION_NAME` in `postgres-schema.ts`), so schema/migration health checks recognize both eras' names rather than treating the legacy rows as unknown future migrations.
+- **`backend_postgres_snapshots`** (legacy; present only in a database that predates issue #110): `explodeLegacyBlobSnapshots` (`postgres-blob-migration.ts`) runs once, inside the schema-init advisory-lock transaction, whenever `migrateLegacyBlobSnapshotsIfPresent` (`postgres-schema-init.ts`) finds this table physically present via an `information_schema.tables` check — the gate is the table's existence, not the migration ledger's contents: it decodes every row's `snapshot_cbor` into the family tables above under that row's `scope`, then issues `DROP TABLE` on this table in the same transaction. A database that has completed the open-time migration therefore no longer has this table at all — not merely an emptied or deprecated one — and a fresh database created after issue #110 never creates it in the first place.
 
 ### 3.6 Boundary-Owned Contract, Conformance, and Compatibility Assets
 

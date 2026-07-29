@@ -43,6 +43,7 @@ import {
 } from "@tuvren/kernel-protocol";
 
 import { persistenceError } from "./postgres-errors.js";
+import type { RelationalTableName } from "./postgres-schema.js";
 import type { DbSql } from "./postgres-sql.js";
 import { qualifyIdentifier } from "./postgres-sql.js";
 
@@ -262,7 +263,7 @@ export async function loadState(
 ): Promise<BackendState> {
   const state = createEmptyState();
 
-  const selectAll = async <T>(table: string): Promise<T[]> => {
+  const selectAll = async <T>(table: RelationalTableName): Promise<T[]> => {
     const qualified = qualifyIdentifier(schemaName, table);
     return await sql.unsafe<T[]>(
       `SELECT * FROM ${qualified} WHERE scope = $1`,

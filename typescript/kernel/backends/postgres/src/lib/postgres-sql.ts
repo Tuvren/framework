@@ -17,6 +17,7 @@
 import { createHash } from "node:crypto";
 import type { Sql, TransactionSql } from "postgres";
 import { persistenceError } from "./postgres-errors.js";
+import type { RelationalTableName } from "./postgres-schema.js";
 
 /**
  * Connection or in-transaction handle accepted by relational Postgres modules.
@@ -34,7 +35,9 @@ const NUL_CODE_POINT = "\u0000";
  * Double-quotes a SQL identifier after rejecting characters outside the
  * conservative unquoted-identifier alphabet (letters, digits, `_`, `-`).
  * Schema names are already validated by {@link normalizeSchemaName}; this is
- * the last line of defense before interpolating into DDL/DML.
+ * the last line of defense before interpolating into DDL/DML. The SAFE
+ * alphabet already excludes `"`, so escaping an embedded quote is
+ * unreachable; the identifier is simply wrapped in double quotes.
  */
 export function quoteIdentifier(identifier: string): string {
   if (!SAFE_SQL_IDENTIFIER.test(identifier)) {
@@ -45,7 +48,7 @@ export function quoteIdentifier(identifier: string): string {
     );
   }
 
-  return `"${identifier.replaceAll('"', '""')}"`;
+  return `"${identifier}"`;
 }
 
 /**
@@ -81,7 +84,7 @@ export function assertPostgresStorableText(value: string, label: string): void {
 /** Returns `"schema"."table"` for a validated schema name and table name. */
 export function qualifyIdentifier(
   schemaName: string,
-  tableName: string
+  tableName: RelationalTableName
 ): string {
   return `${quoteIdentifier(schemaName)}.${quoteIdentifier(tableName)}`;
 }

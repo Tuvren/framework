@@ -16,7 +16,7 @@
 
 // This module is a thin delegate to the shared kernel-backend invariant
 // core (KRT-BK001): the §9.4 reachability reclamation algorithm it exposes
-// is identical to the memory and PostgreSQL backends' copies (this file's
+// is identical to the memory and SQLite backends' copies (this file's
 // own pre-extraction JSDoc already said as much). See @tuvren/backend-shared
 // for the actual implementation. The decode/resolve helpers below stay
 // backend-owned (they are not part of this extraction) and are injected into

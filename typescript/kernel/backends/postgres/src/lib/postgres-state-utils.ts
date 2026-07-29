@@ -134,6 +134,11 @@ export async function nextObserveAnnotationRecordKey(
 ): Promise<string> {
   const identityKey = keyObserveAnnotation(record);
   const table = qualifyIdentifier(schemaName, "observe_annotations");
+  // Precondition for the COUNT-derived suffix: annotation deletion is only
+  // ever whole-run (reclaim) or whole-scope (purgeScope), so the count for an
+  // identity never regresses and re-issuing an existing key is impossible. A
+  // future path deleting a *subset* of a run's annotations would break that
+  // and must switch this derivation to MAX(existing suffix) + 1.
   const rows = await sql.unsafe<Array<{ count: number | string | bigint }>>(
     `
         SELECT COUNT(*)::int AS count

@@ -23,6 +23,7 @@ import type { StoredTurnTreePath } from "@tuvren/kernel-protocol";
 import type { ParameterOrJSON } from "postgres";
 import { persistenceError } from "./postgres-errors.js";
 import type { BackendState } from "./postgres-records.js";
+import type { RelationalTableName } from "./postgres-schema.js";
 import type { DbSql } from "./postgres-sql.js";
 import { qualifyIdentifier } from "./postgres-sql.js";
 import {
@@ -60,7 +61,7 @@ export async function insertBackendStateRows(
   state: BackendState
 ): Promise<void> {
   const insertFamily = async (
-    table: string,
+    table: RelationalTableName,
     columns: readonly string[],
     rows: unknown[][]
   ): Promise<void> => {
@@ -443,6 +444,26 @@ async function insertRowsInBatches(
         parameters as ParameterOrJSON<never>[]
       );
     } catch (error: unknown) {
+      const code =
+        error instanceof Error && typeof Reflect.get(error, "code") === "string"
+          ? (Reflect.get(error, "code") as string)
+          : undefined;
+      if (code === "22021") {
+        throw persistenceError(
+          `postgres backend migration cannot store a value from table "${table}": ` +
+            "PostgreSQL TEXT columns cannot encode a U+0000 (NUL) code point, " +
+            "and the legacy blob contains one",
+          "postgres_backend_unstorable_text",
+          {
+            chunkOffset: offset,
+            chunkRows: chunk.length,
+            table,
+            totalRows: rows.length,
+          },
+          error
+        );
+      }
+
       throw persistenceError(
         "postgres backend bulk family insert failed",
         "postgres_backend_bulk_insert_failed",
