@@ -19,145 +19,370 @@ import {
   resolveTurnNodeLineagePosition,
 } from "@tuvren/backend-shared";
 import type { Scope } from "@tuvren/core";
-import type {
-  StoredObserveAnnotation,
-  StoredTurnTreePath,
-} from "@tuvren/kernel-protocol";
+import type { StoredTurnTreePath } from "@tuvren/kernel-protocol";
+import type { ParameterOrJSON } from "postgres";
 import { persistenceError } from "./postgres-errors.js";
 import type { BackendState } from "./postgres-records.js";
 import type { DbSql } from "./postgres-sql.js";
 import { qualifyIdentifier } from "./postgres-sql.js";
-import { keyObserveAnnotation } from "./postgres-state-utils.js";
+import {
+  keyObserveAnnotation,
+  OBSERVE_ANNOTATION_KEY_SEPARATOR,
+} from "./postgres-state-utils.js";
+
+/**
+ * Ceiling on bind parameters per generated multi-row `INSERT`, kept well
+ * under the PostgreSQL extended-protocol maximum of 65535 so statement size
+ * never becomes the failure mode. Rows are chunked to fit under it.
+ */
+const MAX_PARAMETERS_PER_STATEMENT = 20_000;
 
 /**
  * Inserts every family row from a decoded {@link BackendState} into the
- * relational tables for one Scope. Used by the open-time blob→row explode
- * (legacy `backend_postgres_snapshots`) and any bulk restore path.
+ * relational tables for one Scope, using batched multi-row `INSERT`s so the
+ * open-time blob→row explode costs round trips proportional to record
+ * families, not records. Used by the open-time migration (legacy
+ * `backend_postgres_snapshots`) and any bulk restore path.
  *
  * Foreign keys are DEFERRABLE INITIALLY DEFERRED, so insert order is
  * still kept topologically tidy for readability rather than necessity.
  * Lineage-root metadata is recomputed from the turn-node parent chain.
+ *
+ * Returns the number of rows written per family table, for callers that
+ * surface migration diagnostics.
  */
 export async function insertBackendStateRows(
   sql: DbSql,
   schemaName: string,
   scope: Scope,
   state: BackendState
-): Promise<void> {
-  const q = (table: string) => qualifyIdentifier(schemaName, table);
-  await insertContentAddressedRows(sql, q, scope, state);
-  await insertTurnTreePathRows(sql, q, scope, state);
-  await insertTurnNodeAndLineageRows(sql, q, scope, state);
-  await insertThreadBranchTurnRunRows(sql, q, scope, state);
-  await insertStagedAndAnnotationRows(sql, q, scope, state);
-}
-
-async function insertContentAddressedRows(
-  sql: DbSql,
-  q: (table: string) => string,
-  scope: Scope,
-  state: BackendState
-): Promise<void> {
-  for (const record of state.objects.values()) {
-    await sql.unsafe(
-      `INSERT INTO ${q("objects")} (
-         scope, hash, media_type, bytes, byte_length, created_at_ms
-       ) VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (scope, hash) DO NOTHING`,
-      [
-        scope,
-        record.hash,
-        record.mediaType,
-        record.bytes,
-        record.byteLength,
-        record.createdAtMs,
-      ]
+): Promise<Record<string, number>> {
+  const counts: Record<string, number> = {};
+  const insertFamily = async (
+    table: string,
+    columns: readonly string[],
+    conflictTarget: string,
+    rows: unknown[][]
+  ): Promise<void> => {
+    counts[table] = rows.length;
+    await insertRowsInBatches(
+      sql,
+      qualifyIdentifier(schemaName, table),
+      columns,
+      conflictTarget,
+      rows
     );
-  }
+  };
 
-  for (const record of state.schemas.values()) {
-    await sql.unsafe(
-      `INSERT INTO ${q("schemas")} (
-         scope, schema_id, schema_cbor, created_at_ms
-       ) VALUES ($1, $2, $3, $4)
-       ON CONFLICT (scope, schema_id) DO NOTHING`,
-      [scope, record.schemaId, record.schemaCbor, record.createdAtMs]
-    );
-  }
+  await insertFamily(
+    "objects",
+    ["scope", "hash", "media_type", "bytes", "byte_length", "created_at_ms"],
+    "scope, hash",
+    Array.from(state.objects.values(), (record) => [
+      scope,
+      record.hash,
+      record.mediaType,
+      record.bytes,
+      record.byteLength,
+      record.createdAtMs,
+    ])
+  );
 
-  for (const record of state.turnTrees.values()) {
-    await sql.unsafe(
-      `INSERT INTO ${q("turn_trees")} (
-         scope, hash, schema_id, manifest_cbor, created_at_ms
-       ) VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (scope, hash) DO NOTHING`,
-      [
-        scope,
-        record.hash,
-        record.schemaId,
-        record.manifestCbor,
-        record.createdAtMs,
-      ]
-    );
-  }
+  await insertFamily(
+    "schemas",
+    ["scope", "schema_id", "schema_cbor", "created_at_ms"],
+    "scope, schema_id",
+    Array.from(state.schemas.values(), (record) => [
+      scope,
+      record.schemaId,
+      record.schemaCbor,
+      record.createdAtMs,
+    ])
+  );
 
-  for (const record of state.orderedPathChunks.values()) {
-    await sql.unsafe(
-      `INSERT INTO ${q("ordered_path_chunks")} (
-         scope, chunk_hash, item_count, items_cbor, created_at_ms
-       ) VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (scope, chunk_hash) DO NOTHING`,
-      [
-        scope,
-        record.chunkHash,
-        record.itemCount,
-        record.itemsCbor,
-        record.createdAtMs,
-      ]
-    );
-  }
-}
+  await insertFamily(
+    "turn_trees",
+    ["scope", "hash", "schema_id", "manifest_cbor", "created_at_ms"],
+    "scope, hash",
+    Array.from(state.turnTrees.values(), (record) => [
+      scope,
+      record.hash,
+      record.schemaId,
+      record.manifestCbor,
+      record.createdAtMs,
+    ])
+  );
 
-async function insertTurnTreePathRows(
-  sql: DbSql,
-  q: (table: string) => string,
-  scope: Scope,
-  state: BackendState
-): Promise<void> {
+  await insertFamily(
+    "ordered_path_chunks",
+    ["scope", "chunk_hash", "item_count", "items_cbor", "created_at_ms"],
+    "scope, chunk_hash",
+    Array.from(state.orderedPathChunks.values(), (record) => [
+      scope,
+      record.chunkHash,
+      record.itemCount,
+      record.itemsCbor,
+      record.createdAtMs,
+    ])
+  );
+
+  const turnTreePathRows: unknown[][] = [];
   for (const pathMap of state.turnTreePaths.values()) {
     for (const record of pathMap.values()) {
-      await insertTurnTreePathRow(sql, q("turn_tree_paths"), scope, record);
+      turnTreePathRows.push(turnTreePathRow(scope, record));
     }
   }
+  await insertFamily(
+    "turn_tree_paths",
+    [
+      "scope",
+      "turn_tree_hash",
+      "path",
+      "collection_kind",
+      "single_hash",
+      "ordered_encoding",
+      "ordered_count",
+      "ordered_inline_cbor",
+      "ordered_chunk_list_cbor",
+    ],
+    "scope, turn_tree_hash, path",
+    turnTreePathRows
+  );
+
+  await insertFamily(
+    "turn_nodes",
+    [
+      "scope",
+      "hash",
+      "previous_turn_node_hash",
+      "turn_tree_hash",
+      "consumed_staged_results_cbor",
+      "schema_id",
+      "event_hash",
+      "created_at_ms",
+    ],
+    "scope, hash",
+    Array.from(state.turnNodes.values(), (record) => [
+      scope,
+      record.hash,
+      record.previousTurnNodeHash,
+      record.turnTreeHash,
+      record.consumedStagedResultsCbor,
+      record.schemaId,
+      record.eventHash,
+      record.createdAtMs,
+    ])
+  );
+
+  await insertFamily(
+    "turn_node_lineage_roots",
+    ["scope", "turn_node_hash", "root_turn_node_hash", "depth"],
+    "scope, turn_node_hash",
+    lineageRootRows(scope, state)
+  );
+
+  await insertFamily(
+    "threads",
+    ["scope", "thread_id", "schema_id", "root_turn_node_hash", "created_at_ms"],
+    "scope, thread_id",
+    Array.from(state.threads.values(), (record) => [
+      scope,
+      record.threadId,
+      record.schemaId,
+      record.rootTurnNodeHash,
+      record.createdAtMs,
+    ])
+  );
+
+  await insertFamily(
+    "branches",
+    [
+      "scope",
+      "branch_id",
+      "thread_id",
+      "head_turn_node_hash",
+      "archived_from_branch_id",
+      "created_at_ms",
+      "updated_at_ms",
+    ],
+    "scope, branch_id",
+    Array.from(state.branches.values(), (record) => [
+      scope,
+      record.branchId,
+      record.threadId,
+      record.headTurnNodeHash,
+      record.archivedFromBranchId ?? null,
+      record.createdAtMs,
+      record.updatedAtMs,
+    ])
+  );
+
+  await insertFamily(
+    "turns",
+    [
+      "scope",
+      "turn_id",
+      "thread_id",
+      "branch_id",
+      "parent_turn_id",
+      "start_turn_node_hash",
+      "head_turn_node_hash",
+      "created_at_ms",
+      "updated_at_ms",
+    ],
+    "scope, turn_id",
+    Array.from(state.turns.values(), (record) => [
+      scope,
+      record.turnId,
+      record.threadId,
+      record.branchId,
+      record.parentTurnId,
+      record.startTurnNodeHash,
+      record.headTurnNodeHash,
+      record.createdAtMs,
+      record.updatedAtMs,
+    ])
+  );
+
+  await insertFamily(
+    "runs",
+    [
+      "scope",
+      "run_id",
+      "turn_id",
+      "branch_id",
+      "schema_id",
+      "start_turn_node_hash",
+      "status",
+      "current_step_index",
+      "step_sequence_cbor",
+      "created_turn_nodes_cbor",
+      "created_at_ms",
+      "updated_at_ms",
+      "pending_signals_cbor",
+      "execution_owner_id",
+      "lease_expires_at_ms",
+      "fencing_token",
+      "preemption_reason",
+    ],
+    "scope, run_id",
+    Array.from(state.runs.values(), (record) => [
+      scope,
+      record.runId,
+      record.turnId,
+      record.branchId,
+      record.schemaId,
+      record.startTurnNodeHash,
+      record.status,
+      record.currentStepIndex,
+      record.stepSequenceCbor,
+      record.createdTurnNodesCbor,
+      record.createdAtMs,
+      record.updatedAtMs,
+      record.pendingSignalsCbor === undefined
+        ? null
+        : record.pendingSignalsCbor,
+      record.executionOwnerId ?? null,
+      record.leaseExpiresAtMs ?? null,
+      record.fencingToken ?? null,
+      record.preemptionReason ?? null,
+    ])
+  );
+
+  const stagedResultRows: unknown[][] = [];
+  for (const stagedByTask of state.stagedResults.values()) {
+    for (const record of stagedByTask.values()) {
+      stagedResultRows.push([
+        scope,
+        record.runId,
+        record.taskId,
+        record.objectHash,
+        record.objectType,
+        record.status,
+        record.status === "interrupted" ? record.interruptPayloadCbor : null,
+        record.createdAtMs,
+      ]);
+    }
+  }
+  await insertFamily(
+    "staged_results",
+    [
+      "scope",
+      "run_id",
+      "task_id",
+      "object_hash",
+      "object_type",
+      "status",
+      "interrupt_payload_cbor",
+      "created_at_ms",
+    ],
+    "scope, run_id, task_id",
+    stagedResultRows
+  );
+
+  const annotationIdentityCounts = new Map<string, number>();
+  const annotationRows: unknown[][] = [];
+  for (const annotations of state.observeAnnotations.values()) {
+    for (const record of annotations) {
+      const identityKey = keyObserveAnnotation(record);
+      const count = annotationIdentityCounts.get(identityKey) ?? 0;
+      annotationIdentityCounts.set(identityKey, count + 1);
+      annotationRows.push([
+        scope,
+        `${identityKey}${OBSERVE_ANNOTATION_KEY_SEPARATOR}${count}`,
+        record.runId,
+        record.annotationHash,
+        record.turnNodeHash,
+        record.annotationCbor,
+        record.createdAtMs,
+      ]);
+    }
+  }
+  await insertFamily(
+    "observe_annotations",
+    [
+      "scope",
+      "record_key",
+      "run_id",
+      "annotation_hash",
+      "turn_node_hash",
+      "annotation_cbor",
+      "created_at_ms",
+    ],
+    "scope, record_key",
+    annotationRows
+  );
+
+  return counts;
 }
 
-async function insertTurnNodeAndLineageRows(
-  sql: DbSql,
-  q: (table: string) => string,
-  scope: Scope,
-  state: BackendState
-): Promise<void> {
-  for (const record of state.turnNodes.values()) {
-    await sql.unsafe(
-      `INSERT INTO ${q("turn_nodes")} (
-         scope, hash, previous_turn_node_hash, turn_tree_hash,
-         consumed_staged_results_cbor, schema_id, event_hash, created_at_ms
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT (scope, hash) DO NOTHING`,
-      [
-        scope,
-        record.hash,
-        record.previousTurnNodeHash,
-        record.turnTreeHash,
-        record.consumedStagedResultsCbor,
-        record.schemaId,
-        record.eventHash,
-        record.createdAtMs,
-      ]
-    );
-  }
+/** Flattens one stored turn-tree path into its column value tuple. */
+function turnTreePathRow(scope: string, record: StoredTurnTreePath): unknown[] {
+  return [
+    scope,
+    record.turnTreeHash,
+    record.path,
+    record.collectionKind,
+    record.collectionKind === "single" ? record.singleHash : null,
+    record.collectionKind === "ordered" ? record.orderedEncoding : null,
+    record.collectionKind === "ordered" ? record.orderedCount : null,
+    record.collectionKind === "ordered" && record.orderedEncoding === "flat"
+      ? record.orderedInlineCbor
+      : null,
+    record.collectionKind === "ordered" && record.orderedEncoding === "chunked"
+      ? record.orderedChunkListCbor
+      : null,
+  ];
+}
 
+/**
+ * Recomputes every turn node's lineage-root position from the parent chain,
+ * failing the migration on a cycle or a dangling parent link.
+ */
+function lineageRootRows(scope: string, state: BackendState): unknown[][] {
   const lineageIndex = createTurnNodeLineageIndex();
+  const rows: unknown[][] = [];
+
   for (const turnNode of state.turnNodes.values()) {
     const position = resolveTurnNodeLineagePosition(
       state.turnNodes,
@@ -183,214 +408,55 @@ async function insertTurnNodeAndLineageRows(
         },
       }
     );
-    await sql.unsafe(
-      `INSERT INTO ${q("turn_node_lineage_roots")} (
-         scope, turn_node_hash, root_turn_node_hash, depth
-       ) VALUES ($1, $2, $3, $4)
-       ON CONFLICT (scope, turn_node_hash) DO NOTHING`,
-      [scope, turnNode.hash, position.rootTurnNodeHash, position.depth]
-    );
+    rows.push([
+      scope,
+      turnNode.hash,
+      position.rootTurnNodeHash,
+      position.depth,
+    ]);
   }
+
+  return rows;
 }
 
-async function insertThreadBranchTurnRunRows(
-  sql: DbSql,
-  q: (table: string) => string,
-  scope: Scope,
-  state: BackendState
-): Promise<void> {
-  for (const record of state.threads.values()) {
-    await sql.unsafe(
-      `INSERT INTO ${q("threads")} (
-         scope, thread_id, schema_id, root_turn_node_hash, created_at_ms
-       ) VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (scope, thread_id) DO NOTHING`,
-      [
-        scope,
-        record.threadId,
-        record.schemaId,
-        record.rootTurnNodeHash,
-        record.createdAtMs,
-      ]
-    );
-  }
-
-  for (const record of state.branches.values()) {
-    await sql.unsafe(
-      `INSERT INTO ${q("branches")} (
-         scope, branch_id, thread_id, head_turn_node_hash,
-         archived_from_branch_id, created_at_ms, updated_at_ms
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (scope, branch_id) DO NOTHING`,
-      [
-        scope,
-        record.branchId,
-        record.threadId,
-        record.headTurnNodeHash,
-        record.archivedFromBranchId ?? null,
-        record.createdAtMs,
-        record.updatedAtMs,
-      ]
-    );
-  }
-
-  for (const record of state.turns.values()) {
-    await sql.unsafe(
-      `INSERT INTO ${q("turns")} (
-         scope, turn_id, thread_id, branch_id, parent_turn_id,
-         start_turn_node_hash, head_turn_node_hash, created_at_ms, updated_at_ms
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       ON CONFLICT (scope, turn_id) DO NOTHING`,
-      [
-        scope,
-        record.turnId,
-        record.threadId,
-        record.branchId,
-        record.parentTurnId,
-        record.startTurnNodeHash,
-        record.headTurnNodeHash,
-        record.createdAtMs,
-        record.updatedAtMs,
-      ]
-    );
-  }
-
-  for (const record of state.runs.values()) {
-    await sql.unsafe(
-      `INSERT INTO ${q("runs")} (
-         scope, run_id, turn_id, branch_id, schema_id, start_turn_node_hash,
-         status, current_step_index, step_sequence_cbor, created_turn_nodes_cbor,
-         created_at_ms, updated_at_ms, pending_signals_cbor,
-         last_step_annotations_cbor, execution_owner_id, lease_expires_at_ms,
-         fencing_token, preemption_reason
-       ) VALUES (
-         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NULL, $14, $15, $16, $17
-       )
-       ON CONFLICT (scope, run_id) DO NOTHING`,
-      [
-        scope,
-        record.runId,
-        record.turnId,
-        record.branchId,
-        record.schemaId,
-        record.startTurnNodeHash,
-        record.status,
-        record.currentStepIndex,
-        record.stepSequenceCbor,
-        record.createdTurnNodesCbor,
-        record.createdAtMs,
-        record.updatedAtMs,
-        record.pendingSignalsCbor === undefined
-          ? null
-          : record.pendingSignalsCbor,
-        record.executionOwnerId ?? null,
-        record.leaseExpiresAtMs ?? null,
-        record.fencingToken ?? null,
-        record.preemptionReason ?? null,
-      ]
-    );
-  }
-}
-
-async function insertStagedAndAnnotationRows(
-  sql: DbSql,
-  q: (table: string) => string,
-  scope: Scope,
-  state: BackendState
-): Promise<void> {
-  for (const stagedByTask of state.stagedResults.values()) {
-    for (const record of stagedByTask.values()) {
-      await sql.unsafe(
-        `INSERT INTO ${q("staged_results")} (
-           scope, run_id, task_id, object_hash, object_type, status,
-           interrupt_payload_cbor, created_at_ms
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (scope, run_id, task_id) DO NOTHING`,
-        [
-          scope,
-          record.runId,
-          record.taskId,
-          record.objectHash,
-          record.objectType,
-          record.status,
-          record.status === "interrupted" ? record.interruptPayloadCbor : null,
-          record.createdAtMs,
-        ]
-      );
-    }
-  }
-
-  const annotationIdentityCounts = new Map<string, number>();
-  for (const annotations of state.observeAnnotations.values()) {
-    for (const record of annotations) {
-      await insertObserveAnnotationRow(
-        sql,
-        q("observe_annotations"),
-        scope,
-        record,
-        annotationIdentityCounts
-      );
-    }
-  }
-}
-
-async function insertTurnTreePathRow(
+/**
+ * Issues `INSERT ... VALUES (...), (...) ON CONFLICT (...) DO NOTHING` in
+ * chunks sized so no statement exceeds {@link MAX_PARAMETERS_PER_STATEMENT}
+ * bind parameters. `table`, `columns`, and `conflictTarget` are fixed
+ * internal identifiers, never caller input.
+ */
+async function insertRowsInBatches(
   sql: DbSql,
   table: string,
-  scope: string,
-  record: StoredTurnTreePath
+  columns: readonly string[],
+  conflictTarget: string,
+  rows: unknown[][]
 ): Promise<void> {
-  await sql.unsafe(
-    `INSERT INTO ${table} (
-       scope, turn_tree_hash, path, collection_kind, single_hash,
-       ordered_encoding, ordered_count, ordered_inline_cbor, ordered_chunk_list_cbor
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     ON CONFLICT (scope, turn_tree_hash, path) DO NOTHING`,
-    [
-      scope,
-      record.turnTreeHash,
-      record.path,
-      record.collectionKind,
-      record.collectionKind === "single" ? record.singleHash : null,
-      record.collectionKind === "ordered" ? record.orderedEncoding : null,
-      record.collectionKind === "ordered" ? record.orderedCount : null,
-      record.collectionKind === "ordered" && record.orderedEncoding === "flat"
-        ? record.orderedInlineCbor
-        : null,
-      record.collectionKind === "ordered" &&
-      record.orderedEncoding === "chunked"
-        ? record.orderedChunkListCbor
-        : null,
-    ]
-  );
-}
+  if (rows.length === 0) {
+    return;
+  }
 
-async function insertObserveAnnotationRow(
-  sql: DbSql,
-  table: string,
-  scope: string,
-  record: StoredObserveAnnotation,
-  identityCounts: Map<string, number>
-): Promise<void> {
-  const identityKey = keyObserveAnnotation(record);
-  const count = identityCounts.get(identityKey) ?? 0;
-  identityCounts.set(identityKey, count + 1);
-  const recordKey = `${identityKey}\0${count}`;
-
-  await sql.unsafe(
-    `INSERT INTO ${table} (
-       scope, record_key, run_id, annotation_hash, turn_node_hash,
-       annotation_cbor, created_at_ms
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-     ON CONFLICT (scope, record_key) DO NOTHING`,
-    [
-      scope,
-      recordKey,
-      record.runId,
-      record.annotationHash,
-      record.turnNodeHash,
-      record.annotationCbor,
-      record.createdAtMs,
-    ]
+  const chunkSize = Math.max(
+    1,
+    Math.floor(MAX_PARAMETERS_PER_STATEMENT / columns.length)
   );
+
+  for (let offset = 0; offset < rows.length; offset += chunkSize) {
+    const chunk = rows.slice(offset, offset + chunkSize);
+    const parameters: unknown[] = [];
+    const tuples = chunk.map((row) => {
+      const placeholders = row.map((value) => {
+        parameters.push(value);
+        return `$${parameters.length}`;
+      });
+      return `(${placeholders.join(", ")})`;
+    });
+
+    await sql.unsafe(
+      `INSERT INTO ${table} (${columns.join(", ")})
+       VALUES ${tuples.join(", ")}
+       ON CONFLICT (${conflictTarget}) DO NOTHING`,
+      parameters as ParameterOrJSON<never>[]
+    );
+  }
 }

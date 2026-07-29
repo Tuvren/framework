@@ -196,7 +196,6 @@ export interface PostgresRunRow {
   current_step_index: PgInt;
   execution_owner_id: string | null;
   fencing_token: string | null;
-  last_step_annotations_cbor: Uint8Array | null;
   lease_expires_at_ms: PgInt | null;
   pending_signals_cbor: Uint8Array | null;
   preemption_reason: string | null;

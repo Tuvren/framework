@@ -110,9 +110,16 @@ import {
   decodeTurnNodeConsumedStagedResultObjectHashes,
   validateHashString,
 } from "./postgres-run-invariants.js";
-import { ensurePostgresRelationalSchemaInitialized } from "./postgres-schema-init.js";
+import {
+  ensurePostgresRelationalSchemaInitialized,
+  validateRelationalSchemaPosture,
+} from "./postgres-schema-init.js";
 import type { DbSql } from "./postgres-sql.js";
-import { qualifyIdentifier, quoteIdentifier } from "./postgres-sql.js";
+import {
+  deriveAdvisoryLockKey,
+  qualifyIdentifier,
+  quoteIdentifier,
+} from "./postgres-sql.js";
 import {
   areStoredObjectsEqual,
   areStoredOrderedPathChunksEqual,
@@ -162,6 +169,18 @@ const ORDERED_PATH_CHUNK_THRESHOLD = 32;
  * under practical Postgres bind/array size comfort zones.
  */
 const RECLAMATION_DELETE_BATCH_SIZE = 500;
+
+/**
+ * Upper bound on waiting for the same-scope advisory lock, mirroring the
+ * SQLite backend's `SQLITE_BUSY_TIMEOUT_MS = 5000` bounded-wait semantics:
+ * a second instance contending for the same `(schemaName, scope)` partition
+ * fails with a normalized persistence error instead of blocking its only
+ * pooled connection forever behind a wedged peer transaction.
+ */
+const SCOPE_LOCK_TIMEOUT_MS = 5000;
+
+/** A reserved single connection from the pool, released after use. */
+type ReservedSql = Sql & { release(): Promise<void> };
 
 /** A transaction's repository surface, plus the transaction-local clock it was built with. */
 interface MutableRepositories extends KrakenBackendTx {
@@ -258,6 +277,7 @@ class PostgresBackend implements KrakenBackend {
   private transactionQueue: Promise<void> = Promise.resolve();
   private readonly now: () => number;
   private readonly injectedNow: (() => number) | undefined;
+  private readonly scopeLockKey: bigint;
 
   constructor(options?: PostgresBackendOptions) {
     const resolvedOptions = options ?? {};
@@ -266,6 +286,11 @@ class PostgresBackend implements KrakenBackend {
     this.schemaName = normalizeSchemaName(resolvedOptions.schemaName);
     this.scope = resolvedOptions.scope ?? DEFAULT_SCOPE;
     assertScope(this.scope);
+    this.scopeLockKey = deriveAdvisoryLockKey(
+      "tuvren-postgres-scope",
+      this.schemaName,
+      this.scope
+    );
     this.sql = createPostgresClient(resolvedOptions);
     this.phaseObserver = resolvedOptions.phaseObserver ?? NOOP_PHASE_OBSERVER;
     // snapshotCacheObserver intentionally unused (relational path; #110).
@@ -284,14 +309,15 @@ class PostgresBackend implements KrakenBackend {
 
   /**
    * Lightweight liveness/coherence probe (issue #108 M5). Initializes the
-   * schema if needed, proves connectivity with a trivial query, and proves
-   * the relational family tables exist — without loading full state.
+   * schema if needed, validates the schema's durable posture (migration
+   * ledger, family tables, indexes — the relational equivalent of the
+   * SQLite backend's `validateMigrationState`), and proves this Scope's
+   * partition is queryable — without loading full state.
    */
   async health(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
       await this.ensureInitialized();
-      await this.sql.unsafe("SELECT 1");
-      // Prove relational schema present: objects is required by the migration.
+      await validateRelationalSchemaPosture(this.sql, this.schemaName);
       const objectsTable = qualifyIdentifier(this.schemaName, "objects");
       await this.sql.unsafe(
         `SELECT 1 FROM ${objectsTable} WHERE scope = $1 LIMIT 1`,
@@ -309,44 +335,46 @@ class PostgresBackend implements KrakenBackend {
   /**
    * Git-fsck-style maintenance validation (issue #108 M5): loads and fully
    * validates the Scope's committed relational state inside a rolled-back
-   * transaction.
+   * read-only transaction. Serialized on the in-process transaction queue
+   * against this instance's own writers, and run under `REPEATABLE READ` so
+   * the 13 family selects all read one snapshot — a concurrent writer on
+   * another instance can never yield a torn projection that reports
+   * spurious corruption (the consistency the SQLite port's `BEGIN
+   * IMMEDIATE` provided, achieved here without blocking those writers).
    */
   async fsck(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
-      await this.ensureInitialized();
+      return await this.withSerializedConnection(async (reserved) => {
+        let inTransaction = false;
 
-      const reserved = (await this.sql.reserve()) as Sql & {
-        release(): Promise<void>;
-      };
-      let inTransaction = false;
-
-      try {
-        await reserved.unsafe("BEGIN");
-        inTransaction = true;
-        await loadValidatedState(
-          reserved,
-          this.schemaName,
-          this.scope,
-          this.phaseObserver
-        );
-        await reserved.unsafe("ROLLBACK");
-        inTransaction = false;
-        return { ok: true };
-      } catch (error: unknown) {
-        if (inTransaction) {
-          try {
-            await reserved.unsafe("ROLLBACK");
-          } catch {
-            // Prefer the original validation error.
+        try {
+          await reserved.unsafe(
+            "BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY"
+          );
+          inTransaction = true;
+          await loadValidatedState(
+            reserved,
+            this.schemaName,
+            this.scope,
+            this.phaseObserver
+          );
+          await reserved.unsafe("ROLLBACK");
+          inTransaction = false;
+          return { ok: true } as const;
+        } catch (error: unknown) {
+          if (inTransaction) {
+            try {
+              await reserved.unsafe("ROLLBACK");
+            } catch {
+              // Prefer the original validation error.
+            }
           }
+          return {
+            ok: false as const,
+            reason: getErrorMessage(normalizeBackendError(error)),
+          };
         }
-        return {
-          ok: false,
-          reason: getErrorMessage(normalizeBackendError(error)),
-        };
-      } finally {
-        await reserved.release();
-      }
+      });
     } catch (error: unknown) {
       return {
         ok: false,
@@ -401,23 +429,7 @@ class PostgresBackend implements KrakenBackend {
       );
     }
 
-    await this.ensureInitialized();
-
-    const priorTransaction = this.transactionQueue;
-    let releaseQueue: (() => void) | undefined;
-
-    this.transactionQueue = new Promise<void>((resolve) => {
-      releaseQueue = resolve;
-    });
-
-    const endQueueWait = this.phaseObserver.startPhase("lock-wait");
-    await priorTransaction;
-    endQueueWait();
-
-    try {
-      const reserved = (await this.sql.reserve()) as Sql & {
-        release(): Promise<void>;
-      };
+    return await this.withSerializedConnection(async (reserved) => {
       let inTransaction = false;
       let active = false;
 
@@ -509,12 +521,8 @@ class PostgresBackend implements KrakenBackend {
           }
         }
         throw normalizeBackendError(error);
-      } finally {
-        await reserved.release();
       }
-    } finally {
-      releaseQueue?.();
-    }
+    });
   }
 
   /**
@@ -534,23 +542,7 @@ class PostgresBackend implements KrakenBackend {
       );
     }
 
-    await this.ensureInitialized();
-
-    const priorTransaction = this.transactionQueue;
-    let releaseQueue: (() => void) | undefined;
-
-    this.transactionQueue = new Promise<void>((resolve) => {
-      releaseQueue = resolve;
-    });
-
-    const endQueueWait = this.phaseObserver.startPhase("lock-wait");
-    await priorTransaction;
-    endQueueWait();
-
-    try {
-      const reserved = (await this.sql.reserve()) as Sql & {
-        release(): Promise<void>;
-      };
+    return await this.withSerializedConnection(async (reserved) => {
       let inTransaction = false;
 
       try {
@@ -616,12 +608,8 @@ class PostgresBackend implements KrakenBackend {
           }
         }
         throw normalizeBackendError(error);
-      } finally {
-        await reserved.release();
       }
-    } finally {
-      releaseQueue?.();
-    }
+    });
   }
 
   /**
@@ -642,18 +630,7 @@ class PostgresBackend implements KrakenBackend {
       );
     }
 
-    await this.ensureInitialized();
-
-    const priorTransaction = this.transactionQueue;
-    let releaseQueue: (() => void) | undefined;
-
-    this.transactionQueue = new Promise<void>((resolve) => {
-      releaseQueue = resolve;
-    });
-
-    await priorTransaction;
-
-    try {
+    await this.withSerializedConnection(async (reserved) => {
       // Children first for clarity; deferred FKs make order non-load-bearing.
       const purgeOrder = [
         "observe_annotations",
@@ -671,15 +648,65 @@ class PostgresBackend implements KrakenBackend {
         "schemas",
       ] as const;
 
-      await this.sql.begin(async (tx) => {
-        await this.acquireScopeTransactionLock(tx);
+      let inTransaction = false;
+
+      try {
+        await reserved.unsafe("BEGIN");
+        inTransaction = true;
+        await this.acquireScopeTransactionLock(reserved);
         for (const tableName of purgeOrder) {
           const table = qualifyIdentifier(this.schemaName, tableName);
-          await tx.unsafe(`DELETE FROM ${table} WHERE scope = $1`, [
+          await reserved.unsafe(`DELETE FROM ${table} WHERE scope = $1`, [
             this.scope,
           ]);
         }
-      });
+        await reserved.unsafe("COMMIT");
+        inTransaction = false;
+      } catch (error: unknown) {
+        if (inTransaction) {
+          try {
+            await reserved.unsafe("ROLLBACK");
+          } catch (rollbackError: unknown) {
+            throw normalizeBackendError(rollbackError);
+          }
+        }
+        throw normalizeBackendError(error);
+      }
+    });
+  }
+
+  /**
+   * Shared serialization prologue/epilogue for every operation that needs
+   * exclusive use of the pool's single connection: waits its turn on the
+   * in-process transaction queue (charged to `lock-wait`), reserves the
+   * connection for `body`, and releases both in reverse order. Extracted so
+   * `transact`, `reclaim`, `purgeScope`, and `fsck` cannot drift apart in
+   * how they queue and reserve.
+   */
+  private async withSerializedConnection<T>(
+    body: (reserved: ReservedSql) => Promise<T>
+  ): Promise<T> {
+    await this.ensureInitialized();
+
+    const priorTransaction = this.transactionQueue;
+    let releaseQueue: (() => void) | undefined;
+
+    this.transactionQueue = new Promise<void>((resolve) => {
+      releaseQueue = resolve;
+    });
+
+    const endQueueWait = this.phaseObserver.startPhase("lock-wait");
+    await priorTransaction;
+    endQueueWait();
+
+    try {
+      const reserved = (await this.sql.reserve()) as ReservedSql;
+
+      try {
+        return await body(reserved);
+      } finally {
+        await reserved.release();
+      }
     } finally {
       releaseQueue?.();
     }
@@ -688,14 +715,19 @@ class PostgresBackend implements KrakenBackend {
   /**
    * Transaction-scoped advisory lock for this instance's (schemaName, scope)
    * partition. Blocks concurrent same-scope writers across backend instances
-   * until COMMIT/ROLLBACK releases the lock.
+   * until COMMIT/ROLLBACK releases the lock. The wait is bounded by
+   * {@link SCOPE_LOCK_TIMEOUT_MS} via `SET LOCAL lock_timeout` (which then
+   * governs the rest of the transaction too — harmless, since same-scope row
+   * contention is already excluded by holding this lock). The key is a
+   * bigint derived client-side from SHA-256 (see {@link deriveAdvisoryLockKey}),
+   * safe to inline; the no-parameter multi-statement form keeps this on one
+   * round trip.
    */
   private async acquireScopeTransactionLock(sql: DbSql): Promise<void> {
     const endLockWait = this.phaseObserver.startPhase("lock-wait");
     try {
       await sql.unsafe(
-        "SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))",
-        [this.schemaName, this.scope]
+        `SET LOCAL lock_timeout = '${SCOPE_LOCK_TIMEOUT_MS}ms'; SELECT pg_advisory_xact_lock(${this.scopeLockKey})`
       );
     } finally {
       endLockWait();
@@ -728,7 +760,7 @@ class PostgresBackend implements KrakenBackend {
         this.sql,
         this.schemaName,
         this.now,
-        this.scope
+        this.phaseObserver
       );
       const retryableInitialization = initialization.catch((error: unknown) => {
         if (this.initializationPromise === retryableInitialization) {
@@ -919,8 +951,7 @@ async function loadValidatedState(
   sql: DbSql,
   schemaName: string,
   scope: string,
-  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER,
-  priorState?: BackendState
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
 ): Promise<BackendState> {
   const endLoad = phaseObserver.startPhase("load");
   let state: BackendState;
@@ -948,7 +979,11 @@ async function loadValidatedState(
 
   const endValidateCommitted = phaseObserver.startPhase("validate-committed");
   try {
-    validateCommittedState(state, priorState ?? state, {
+    // Maintenance validation has no prior in-memory generation to diff
+    // against, so the state is validated against itself: the transition
+    // checks degrade to identity (always legal) and what remains is the
+    // full standing-invariant suite, matching the SQLite maintenance paths.
+    validateCommittedState(state, state, {
       assertActiveRunHeadAlignment,
       assertBackwardBranchMoveIsArchived,
       assertChunkedTurnTreePathChunkLayout,
@@ -1147,7 +1182,7 @@ async function deleteByColumn(
   ) {
     const batch = keys.slice(index, index + RECLAMATION_DELETE_BATCH_SIZE);
     await sql.unsafe(
-      `DELETE FROM ${qualified} WHERE scope = $1 AND ${column} = ANY($2::text[])`,
+      `DELETE FROM ${qualified} WHERE scope = $1 AND ${quoteIdentifier(column)} = ANY($2::text[])`,
       [scope, batch]
     );
   }

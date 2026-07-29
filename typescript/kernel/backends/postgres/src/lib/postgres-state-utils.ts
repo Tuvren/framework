@@ -298,6 +298,17 @@ export function cloneStoredTurn(record: StoredTurn): StoredTurn {
 }
 
 /**
+ * Separator between the identity fields of an observe annotation key and
+ * between the identity key and its duplicate-count suffix. The SQLite
+ * backend uses `"\0"` here, but PostgreSQL `text` cannot store U+0000
+ * (`invalid byte sequence for encoding "UTF8": 0x00`), and this key is
+ * persisted as the `observe_annotations.record_key` column — so this
+ * backend uses the ASCII unit separator instead. Like NUL it cannot occur
+ * in run IDs, hashes, or stringified timestamps, so joins stay unambiguous.
+ */
+export const OBSERVE_ANNOTATION_KEY_SEPARATOR = "\u001f";
+
+/**
  * Derives an observe annotation's identity key from its logical fields
  * (`runId`, `createdAtMs`, `annotationHash`, `turnNodeHash`) — distinct from
  * its storage `record_key`, which additionally disambiguates repeats of the
@@ -309,7 +320,7 @@ export function keyObserveAnnotation(record: StoredObserveAnnotation): string {
     String(record.createdAtMs),
     record.annotationHash,
     record.turnNodeHash ?? "",
-  ].join("\0");
+  ].join(OBSERVE_ANNOTATION_KEY_SEPARATOR);
 }
 
 /**
@@ -349,7 +360,7 @@ export async function nextObserveAnnotationRecordKey(
   );
   const count = Number(rows[0]?.count ?? 0);
 
-  return `${identityKey}\0${count}`;
+  return `${identityKey}${OBSERVE_ANNOTATION_KEY_SEPARATOR}${count}`;
 }
 
 export function cloneStoredTurnTreePath(

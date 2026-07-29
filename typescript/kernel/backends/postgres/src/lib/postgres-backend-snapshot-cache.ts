@@ -22,22 +22,20 @@ import type { BackendState } from "./postgres-records.js";
  * memo of `{ hash of the last snapshot_cbor bytes this instance itself
  * committed or decoded, that snapshot's already-decoded BackendState }`.
  *
- * The Git-native principle this realizes: trust a hash you have already
- * seen. `loadPersistedStateForUpdate` still always runs `SELECT ... FOR
- * UPDATE` (the row lock and `schema_version` check are untouched) but, once
- * it has the row's raw bytes in hand, hashes them and asks this cache
- * whether it already knows the decoded state for exactly those bytes before
- * paying for a full `decodeSnapshot`. A hit is only possible when nothing
- * else wrote a different snapshot to this Scope's row since this instance
- * last saw it — a different writer's bytes hash differently and fall
- * straight through to a full decode, which also refreshes the memo.
+ * The Git-native principle this realized: trust a hash you have already
+ * seen. The blob-era load path (`loadPersistedStateForUpdate`, removed with
+ * issue #110's relational redesign) hashed the loaded row bytes and asked
+ * this cache whether it already knew the decoded state for exactly those
+ * bytes before paying for a full `decodeSnapshot`. The relational write
+ * path no longer consults it; the module survives only to type the
+ * deprecated `snapshotCacheObserver` construction option.
  *
  * Single-entry by design (issue #108 M3 brief): one `PostgresBackend`
  * instance is bound to exactly one Scope (ADR-048/ADR-049), so it only ever
  * has one row worth remembering.
  */
 export interface SnapshotStateCache {
-  /** Drops the memoized entry, e.g. after {@link deletePersistedStateSnapshot} makes it meaningless. */
+  /** Drops the memoized entry, e.g. after the Scope's rows are purged. */
   clear(): void;
   /** Returns the memoized state when `hashHex` matches the memoized hash, else `undefined`. */
   get(hashHex: string): BackendState | undefined;

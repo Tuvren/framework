@@ -26,17 +26,105 @@ import {
   createRecordingPhaseObserver,
   NOOP_PHASE_OBSERVER,
 } from "@tuvren/backend-shared";
+import { DEFAULT_SCOPE } from "@tuvren/core";
 import {
   createCanonicalKernelTestSchema,
   createStoredObjectRecord,
   createStoredSchemaRecord,
 } from "@tuvren/kernel-testkit";
+import postgres, { type Sql } from "postgres";
+import type { PostgresBackendOptions } from "../src/index.js";
 import { createPostgresBackend } from "../src/index.js";
+import { qualifyIdentifier } from "../src/lib/postgres-sql.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
+
+function createAdminClient(options: PostgresBackendOptions): Sql {
+  return postgres({
+    database: options.database,
+    host: options.host,
+    idle_timeout: 1,
+    max: 1,
+    onnotice: () => undefined,
+    port: options.port,
+    prepare: false,
+    username: options.username,
+  });
+}
+
+/**
+ * Dumps every column of the seeded `objects` and `schemas` rows for one
+ * backend's own schema/scope partition — the full family-table content the
+ * PhaseObserver seam must leave byte-identical across every construction
+ * path, not just the two identity fields the caller already knows.
+ */
+async function dumpFamilyRows(
+  options: PostgresBackendOptions,
+  schemaId: string,
+  objectHash: string
+): Promise<{
+  objectRow: {
+    byteLength: number;
+    bytes: number[];
+    createdAtMs: number;
+    mediaType: string;
+  } | null;
+  schemaRow: { createdAtMs: number; schemaCbor: number[] } | null;
+}> {
+  const schemaName = options.schemaName ?? "public";
+  const admin = createAdminClient(options);
+
+  try {
+    const objectRows = await admin.unsafe<
+      Array<{
+        byte_length: number;
+        bytes: Uint8Array;
+        created_at_ms: number;
+        media_type: string;
+      }>
+    >(
+      `SELECT media_type, bytes, byte_length, created_at_ms
+         FROM ${qualifyIdentifier(schemaName, "objects")}
+        WHERE scope = $1 AND hash = $2`,
+      [DEFAULT_SCOPE, objectHash]
+    );
+    const schemaRows = await admin.unsafe<
+      Array<{ created_at_ms: number; schema_cbor: Uint8Array }>
+    >(
+      `SELECT schema_cbor, created_at_ms
+         FROM ${qualifyIdentifier(schemaName, "schemas")}
+        WHERE scope = $1 AND schema_id = $2`,
+      [DEFAULT_SCOPE, schemaId]
+    );
+
+    const objectRow = objectRows[0];
+    const schemaRow = schemaRows[0];
+
+    return {
+      objectRow:
+        objectRow === undefined
+          ? null
+          : {
+              byteLength: Number(objectRow.byte_length),
+              bytes: Array.from(objectRow.bytes),
+              createdAtMs: Number(objectRow.created_at_ms),
+              mediaType: objectRow.media_type,
+            },
+      schemaRow:
+        schemaRow === undefined
+          ? null
+          : {
+              createdAtMs: Number(schemaRow.created_at_ms),
+              schemaCbor: Array.from(schemaRow.schema_cbor),
+            },
+    };
+  } finally {
+    await admin.end({ timeout: 0 });
+  }
+}
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();
@@ -46,8 +134,11 @@ afterAll(async () => {
   await cleanupAllocatedSchemas();
 });
 
-describe("@tuvren/backend-postgres phase observer seam (issue #108)", () => {
+describe("@tuvren/backend-postgres phase observer seam (ADR-067 relational persistence)", () => {
   test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist identical records", async () => {
+    // A fixed clock is load-bearing here: created_at_ms is part of the
+    // row-for-row comparison below, so every construction must stamp the
+    // same value rather than drifting across real wall-clock reads.
     const fixedNow = () => 1_700_000_000_000;
     const schema = createCanonicalKernelTestSchema();
     const schemaRecord = createStoredSchemaRecord(schema, 1);
@@ -85,27 +176,38 @@ describe("@tuvren/backend-postgres phase observer seam (issue #108)", () => {
 
     // Behavior-neutral seam: every construction path must leave the same
     // durable rows for the same inputs (relational equivalent of the old
-    // byte-identical snapshot_cbor check).
-    const loaded: Array<{ schemaId: string; objectHash: string }> = [];
-    for (const backend of [
-      defaultBackend,
-      explicitNoopBackend,
-      recordingBackend,
-    ]) {
-      await backend.transact(async (tx) => {
-        const storedSchema = await tx.schemas.get(schemaRecord.schemaId);
-        const storedObject = await tx.objects.get(objectRecord.hash);
-        loaded.push({
-          objectHash: storedObject?.hash ?? "",
-          schemaId: storedSchema?.schemaId ?? "",
-        });
-      });
+    // byte-identical snapshot_cbor check) — dumped and compared field-for-field
+    // across all family-table columns the repository surface itself exposed
+    // above (objects: media_type/bytes/byte_length/created_at_ms; schemas:
+    // schema_cbor/created_at_ms), not just the two identity keys the caller
+    // already knows.
+    const dumps = await Promise.all(
+      [defaultOptions, explicitNoopOptions, recordingOptions].map((options) =>
+        dumpFamilyRows(options, schemaRecord.schemaId, objectRecord.hash)
+      )
+    );
+
+    for (const dump of dumps) {
+      expect(dump.objectRow).not.toBeNull();
+      expect(dump.schemaRow).not.toBeNull();
     }
 
-    expect(loaded[0]).toEqual(loaded[1]);
-    expect(loaded[0]).toEqual(loaded[2]);
-    expect(loaded[0]?.schemaId).toBe(schemaRecord.schemaId);
-    expect(loaded[0]?.objectHash).toBe(objectRecord.hash);
+    expect(dumps[1]).toEqual(dumps[0]);
+    expect(dumps[2]).toEqual(dumps[0]);
+    expect(dumps[0]?.objectRow).toEqual({
+      byteLength: objectRecord.byteLength,
+      bytes: Array.from(objectRecord.bytes),
+      createdAtMs: objectRecord.createdAtMs,
+      mediaType: objectRecord.mediaType,
+    });
+    expect(dumps[0]?.schemaRow).toEqual({
+      createdAtMs: schemaRecord.createdAtMs,
+      schemaCbor: Array.from(schemaRecord.schemaCbor),
+    });
+
+    await defaultBackend.destroy();
+    await explicitNoopBackend.destroy();
+    await recordingBackend.destroy();
   });
 
   test("a RecordingPhaseObserver captures every relational persistence phase in the order transact() runs them", async () => {
