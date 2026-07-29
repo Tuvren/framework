@@ -22,7 +22,11 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+import postgres, { type Sql } from "postgres";
+import type { PostgresBackendOptions } from "../src/index.js";
 import { createPostgresBackend } from "../src/index.js";
+import { RELATIONAL_REQUIRED_INDEXES } from "../src/lib/postgres-schema.js";
+import { qualifyIdentifier } from "../src/lib/postgres-sql.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
@@ -30,8 +34,23 @@ import {
   updateBranchHeadDirectly,
 } from "./postgres-test-helpers.js";
 
+function createAdminClient(options: PostgresBackendOptions): Sql {
+  return postgres({
+    database: options.database,
+    host: options.host,
+    idle_timeout: 1,
+    max: 1,
+    onnotice: () => undefined,
+    port: options.port,
+    prepare: false,
+    username: options.username,
+  });
+}
+
 const BRANCH_HEAD_MISALIGNMENT_ERROR_PATTERN =
   /stay aligned with the current branch head/u;
+const RELATIONAL_INDEXES_MISSING_ERROR_PATTERN =
+  /relational indexes are missing/u;
 
 const TEST_SCHEMA = {
   incorporationRules: [{ objectType: "message", targetPath: "messages" }],
@@ -50,7 +69,7 @@ afterAll(async () => {
   await cleanupAllocatedSchemas();
 });
 
-describe("@tuvren/backend-postgres health()/fsck() split (issue #108 M5)", () => {
+describe("@tuvren/backend-postgres health()/fsck() split (ADR-067 relational persistence)", () => {
   test("keeps an active-run/branch-head misalignment invisible to health() but reports it through fsck()", async () => {
     const options = createPostgresTestBackendOptions();
     const backend = createPostgresBackend(options);
@@ -113,6 +132,41 @@ describe("@tuvren/backend-postgres health()/fsck() split (issue #108 M5)", () =>
       expect(fsck.ok).toBe(false);
       expect(fsck.ok === false ? fsck.reason : undefined).toMatch(
         BRANCH_HEAD_MISALIGNMENT_ERROR_PATTERN
+      );
+    } finally {
+      await backend.destroy({ dropSchema: true });
+    }
+  });
+
+  test("reports a posture failure through health() when a required relational index is dropped", async () => {
+    const options = createPostgresTestBackendOptions();
+    const backend = createPostgresBackend(options);
+    const schemaName = options.schemaName ?? "public";
+
+    try {
+      // Force schema initialization (every required table/index) before
+      // tampering, and confirm the baseline posture is healthy.
+      const baseline = await backend.health();
+      expect(baseline.ok).toBe(true);
+
+      const [droppedIndex] = RELATIONAL_REQUIRED_INDEXES;
+      if (droppedIndex === undefined) {
+        throw new Error("expected at least one required relational index");
+      }
+
+      const admin = createAdminClient(options);
+      try {
+        await admin.unsafe(
+          `DROP INDEX ${qualifyIdentifier(schemaName, droppedIndex)}`
+        );
+      } finally {
+        await admin.end({ timeout: 0 });
+      }
+
+      const health = await backend.health();
+      expect(health.ok).toBe(false);
+      expect(health.ok === false ? health.reason : undefined).toMatch(
+        RELATIONAL_INDEXES_MISSING_ERROR_PATTERN
       );
     } finally {
       await backend.destroy({ dropSchema: true });

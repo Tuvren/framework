@@ -66,8 +66,14 @@ import process from "node:process";
  * write's delta vs. the entire committed state) and conflating them would
  * make a future reader misread SQLite's already-delta-shaped write path as
  * doing the same whole-state work postgres does.
+ *
+ * `blob-migration` (issue #110) is postgres-specific: it wraps the one-time
+ * open-time explode of legacy `backend_postgres_snapshots` blob rows into
+ * relational family rows, so an operator opening a legacy database can see
+ * where a slow first initialization is spending its time.
  */
 export type PersistencePhase =
+  | "blob-migration"
   | "decode"
   | "encode"
   | "hash"

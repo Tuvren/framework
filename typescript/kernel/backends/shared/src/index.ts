@@ -32,22 +32,31 @@
  * @packageDocumentation
  */
 
+// Individual sub-factories/functions are exposed directly (rather than
+// composed into a single umbrella factory) so a backend shim that only needs
+// one invariant surface (e.g. reclamation alone) is not forced to also supply
+// config fields it does not use, and so a shim never needs a reverse
+// dependency on another backend-local module it does not otherwise need.
+export type {
+  BackendInvariantIntegrityAssertions,
+  BackendInvariantIntegrityAssertionsConfig,
+} from "./lib/backend-invariant-integrity-assertions.js";
+// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
+export {
+  createBackendInvariantIntegrityAssertions,
+  listTurnsByThread,
+  ORDERED_PATH_CHUNK_SIZE,
+} from "./lib/backend-invariant-integrity-assertions.js";
 export type {
   PersistencePhase,
   PhaseObserver,
   PhaseSample,
   RecordingPhaseObserver,
 } from "./lib/backend-invariant-phase-observer.js";
-// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export {
   createRecordingPhaseObserver,
   NOOP_PHASE_OBSERVER,
 } from "./lib/backend-invariant-phase-observer.js";
-// Individual sub-factories/functions are exposed directly (rather than
-// composed into a single umbrella factory) so a backend shim that only needs
-// one invariant surface (e.g. reclamation alone) is not forced to also supply
-// config fields it does not use, and so a shim never needs a reverse
-// dependency on another backend-local module it does not otherwise need.
 export type { BackendInvariantReclamationDeps } from "./lib/backend-invariant-reclamation.js";
 export { reclaimBackendState } from "./lib/backend-invariant-reclamation.js";
 export type {
@@ -65,6 +74,12 @@ export type {
 } from "./lib/backend-invariant-run-logic.js";
 export { createBackendInvariantRunLogic } from "./lib/backend-invariant-run-logic.js";
 export type { BackendState } from "./lib/backend-invariant-state.js";
+export type {
+  BackendInvariantStateValidation,
+  BackendInvariantStateValidationConfig,
+  ValidationHelpers,
+} from "./lib/backend-invariant-state-validation.js";
+export { createBackendInvariantStateValidation } from "./lib/backend-invariant-state-validation.js";
 export type {
   BackendInvariantTurnNodeLineage,
   BackendInvariantTurnNodeLineageConfig,

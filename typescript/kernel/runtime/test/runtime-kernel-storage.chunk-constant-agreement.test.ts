@@ -37,14 +37,16 @@ const DECLARATION_SOURCES = [
     TEST_DIRECTORY,
     "../../backends/memory/src/lib/memory-backend-turn-tree.ts"
   ),
-  join(
-    TEST_DIRECTORY,
-    "../../backends/postgres/src/lib/memory-backend-turn-tree.ts"
-  ),
+  // The relational Postgres backend (issue #110) declares only the
+  // threshold; its chunk size comes from the shared integrity-assertions
+  // module below.
+  join(TEST_DIRECTORY, "../../backends/postgres/src/lib/postgres-backend.ts"),
   join(TEST_DIRECTORY, "../../backends/sqlite/src/lib/sqlite-backend.ts"),
+  // Declares the single shared ORDERED_PATH_CHUNK_SIZE the SQLite and
+  // Postgres integrity-assertion shims re-export.
   join(
     TEST_DIRECTORY,
-    "../../backends/sqlite/src/lib/sqlite-integrity-assertions.ts"
+    "../../backends/shared/src/lib/backend-invariant-integrity-assertions.ts"
   ),
 ];
 
@@ -76,9 +78,9 @@ describe("ORDERED_PATH_CHUNK_THRESHOLD/SIZE cross-module agreement", () => {
   test("every ORDERED_PATH_CHUNK_THRESHOLD declaration across all 5 modules agrees", () => {
     const declarations = extractDeclaredValues("ORDERED_PATH_CHUNK_THRESHOLD");
 
-    // sqlite-integrity-assertions.ts intentionally declares only the size
-    // constant (per ADR-011's per-module framing), so the threshold is
-    // expected in the other 4 files.
+    // backend-invariant-integrity-assertions.ts intentionally declares only
+    // the size constant (per ADR-011's per-module framing), so the threshold
+    // is expected in the other 4 files.
     expect(declarations.length).toBe(4);
 
     const [first, ...rest] = declarations;
@@ -92,7 +94,9 @@ describe("ORDERED_PATH_CHUNK_THRESHOLD/SIZE cross-module agreement", () => {
   test("every ORDERED_PATH_CHUNK_SIZE declaration across all 5 modules agrees", () => {
     const declarations = extractDeclaredValues("ORDERED_PATH_CHUNK_SIZE");
 
-    expect(declarations.length).toBe(5);
+    // postgres-backend.ts declares only the threshold (its size is the
+    // shared module's), so the size is expected in the other 4 files.
+    expect(declarations.length).toBe(4);
 
     const [first, ...rest] = declarations;
     expect(first).toBeDefined();
@@ -102,14 +106,18 @@ describe("ORDERED_PATH_CHUNK_THRESHOLD/SIZE cross-module agreement", () => {
     }
   });
 
-  test("ORDERED_PATH_CHUNK_THRESHOLD and ORDERED_PATH_CHUNK_SIZE agree with each other everywhere they coexist", () => {
+  test("ORDERED_PATH_CHUNK_THRESHOLD and ORDERED_PATH_CHUNK_SIZE agree with each other globally", () => {
+    // Threshold and size no longer always coexist in one file (postgres
+    // splits them between postgres-backend.ts and the shared module), so
+    // cross-agreement is asserted globally: every declaration of either
+    // constant carries the same ADR-011 value.
     const thresholds = extractDeclaredValues("ORDERED_PATH_CHUNK_THRESHOLD");
     const sizes = extractDeclaredValues("ORDERED_PATH_CHUNK_SIZE");
+    const [firstThreshold] = thresholds;
+    expect(firstThreshold).toBeDefined();
 
-    for (const threshold of thresholds) {
-      const size = sizes.find((entry) => entry.file === threshold.file);
-      expect(size).toBeDefined();
-      expect(threshold.value).toBe((size as { value: number }).value);
+    for (const size of sizes) {
+      expect(size.value).toBe((firstThreshold as { value: number }).value);
     }
   });
 });

@@ -58,23 +58,26 @@ import { resolveStoredTurnTreePathValue } from "./postgres-state-validation.js";
  * 1. **Surviving turn nodes' `previousTurnNodeHash` ancestor chain,
  *    branches' `headTurnNodeHash`, threads' `rootTurnNodeHash`, turns'
  *    thread/branch references, and runs' turn/branch/start-turn-node
- *    references** are all backed by real SQL `FOREIGN KEY` constraints
- *    (`migrations/0001_initial_schema.sql`) that PostgreSQL itself enforces at
- *    `COMMIT` under `defer_foreign_keys = ON` — the exact mechanism
- *    `reclaim()` already relies on to let its batched deletes run in any
- *    table order. A defective sweep that broke one of these would fail the
- *    real `COMMIT`, not silently persist. This function re-checks the same
- *    references anyway, in memory, before `COMMIT` ever runs: it is
- *    redundant with the deferred FK in the sense that both would catch the
- *    same defect, but it produces a friendly `postgres_backend_*` error
- *    instead of a raw PostgreSQL constraint-failure message, and it fails fast
- *    without a round trip through the database engine's own commit path.
+ *    references** are all backed by real, scope-qualified SQL `FOREIGN KEY`
+ *    constraints (`migrations/0001_relational_schema.sql`) declared
+ *    `DEFERRABLE INITIALLY DEFERRED`, which PostgreSQL itself enforces at
+ *    `COMMIT` rather than per-statement — the exact mechanism `reclaim()`
+ *    already relies on to let its batched deletes run in any table order. A
+ *    defective sweep that broke one of these would fail the real `COMMIT`,
+ *    not silently persist. This function re-checks the same references
+ *    anyway, in memory, before `COMMIT` ever runs: it is redundant with the
+ *    deferred FK in the sense that both would catch the same defect, but it
+ *    produces a friendly `postgres_backend_*` error instead of a raw
+ *    PostgreSQL constraint-failure message, and it fails fast without a round
+ *    trip through the database engine's own commit path.
  * 2. **Turn nodes' `consumedStagedResultsCbor` and runs'
- *    `createdTurnNodesCbor`** are opaque CBOR-encoded hash arrays, not real
- *    columns — PostgreSQL has no foreign key to enforce on bytes inside a BLOB.
- *    This is the genuine gap the deferred FK cannot close by itself; this
- *    function decodes both and checks every referenced hash still exists
- *    among the survivors.
+ *    `createdTurnNodesCbor`** are opaque CBOR-encoded hash arrays stored
+ *    inside a `BYTEA` column, not columns a `FOREIGN KEY` can target — a
+ *    real foreign-key constraint can only bind a whole column to a whole
+ *    referenced column, not individual hashes packed inside one row's bytes.
+ *    This is the genuine gap the schema's real foreign keys cannot close by
+ *    themselves; this function decodes both and checks every referenced hash
+ *    still exists among the survivors.
  * 3. **Turn-tree paths' resolved object/chunk references** (`single_hash`,
  *    `ordered_inline_cbor`, `ordered_chunk_list_cbor`) are the same kind of
  *    opaque, non-FK-backed reference. This function resolves every

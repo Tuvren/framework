@@ -508,13 +508,12 @@ export function createCoreRepositories(
               created_at_ms,
               updated_at_ms,
               pending_signals_cbor,
-              last_step_annotations_cbor,
               execution_owner_id,
               lease_expires_at_ms,
               fencing_token,
               preemption_reason
             ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NULL, $14, $15, $16, $17
+              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
             )
             ON CONFLICT (scope, run_id) DO UPDATE SET
               status = EXCLUDED.status,
@@ -522,7 +521,6 @@ export function createCoreRepositories(
               created_turn_nodes_cbor = EXCLUDED.created_turn_nodes_cbor,
               updated_at_ms = EXCLUDED.updated_at_ms,
               pending_signals_cbor = EXCLUDED.pending_signals_cbor,
-              last_step_annotations_cbor = NULL,
               execution_owner_id = EXCLUDED.execution_owner_id,
               lease_expires_at_ms = EXCLUDED.lease_expires_at_ms,
               fencing_token = EXCLUDED.fencing_token,
@@ -664,6 +662,10 @@ export function createCoreRepositories(
           scope,
           turnTreeHash
         );
+        // The query above already runs `ORDER BY path`, but this JS sort is
+        // the authoritative final order: it matches the SQLite backend's
+        // identical re-sort, so the two backends return identical path
+        // ordering regardless of each database's SQL collation.
         records.sort((left, right) => left.path.localeCompare(right.path));
         return records.map(helpers.cloneStoredTurnTreePath);
       },

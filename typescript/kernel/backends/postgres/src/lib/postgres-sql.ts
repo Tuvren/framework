@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { createHash } from "node:crypto";
 import type { Sql, TransactionSql } from "postgres";
 
 /**
@@ -50,9 +51,23 @@ export function qualifyIdentifier(
 }
 
 /**
- * Narrows a connection or transaction handle to {@link DbSql} for helpers that
- * accept either shape.
+ * Derives a PostgreSQL advisory-lock key (signed 64-bit, the single-argument
+ * `pg_advisory_xact_lock(bigint)` form) from a domain tag plus identity
+ * parts: the first 8 bytes of SHA-256 over the length-prefixed parts.
+ *
+ * Documented derivation instead of server-side `hashtext()`, which is an
+ * undocumented internal whose algorithm carries no stability contract and
+ * whose 32-bit output doubles the collision exposure. Collisions here are
+ * safe (two unrelated partitions would merely serialize against each other,
+ * never unlock each other) but a 64-bit auditable key space keeps them
+ * negligible. Length-prefixing keeps `("ab","c")` and `("a","bc")` distinct.
  */
-export function asTxSql(sql: DbSql): DbSql {
-  return sql;
+export function deriveAdvisoryLockKey(...parts: string[]): bigint {
+  const hash = createHash("sha256");
+  for (const part of parts) {
+    hash.update(`${part.length}:`);
+    hash.update(part);
+  }
+
+  return hash.digest().readBigInt64BE(0);
 }

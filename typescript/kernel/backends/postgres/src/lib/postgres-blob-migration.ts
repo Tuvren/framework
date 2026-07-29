@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-import type { EpochMs, Scope } from "@tuvren/core";
+import {
+  NOOP_PHASE_OBSERVER,
+  type PhaseObserver,
+} from "@tuvren/backend-shared";
+import type { Scope } from "@tuvren/core";
 import type { TransactionSql } from "postgres";
-import { decodeSnapshot } from "./postgres-backend-persistence.js";
+import {
+  CURRENT_SNAPSHOT_VERSION,
+  decodeSnapshot,
+} from "./postgres-backend-persistence.js";
 import { persistenceError } from "./postgres-errors.js";
 import type { BackendState } from "./postgres-records.js";
 import { LEGACY_SNAPSHOTS_TABLE } from "./postgres-schema.js";
@@ -35,36 +42,68 @@ interface LegacySnapshotRow {
  * One-shot open-time migration: for each legacy blob-per-scope row, decode the
  * snapshot into {@link BackendState}, insert family rows under that Scope, then
  * drop the legacy snapshots table. Must run inside the schema-init advisory
- * lock transaction.
+ * lock transaction; the whole explode is charged to the `blob-migration`
+ * phase so a slow first open of a legacy database is attributable.
+ *
+ * The migration is one-way (ADR-067: downgrade is not supported) and
+ * all-or-nothing: any failure rolls back the enclosing schema-init
+ * transaction, leaving the legacy table intact for the next attempt.
  */
 export async function explodeLegacyBlobSnapshots(
   tx: Tx,
   schemaName: string,
-  _now: () => EpochMs
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
 ): Promise<void> {
   const snapshotsTable = qualifyIdentifier(schemaName, LEGACY_SNAPSHOTS_TABLE);
-  const rows = await tx.unsafe<LegacySnapshotRow[]>(
-    `SELECT scope, schema_version, snapshot_cbor FROM ${snapshotsTable}`
-  );
+  const endMigration = phaseObserver.startPhase("blob-migration");
 
-  for (const row of rows) {
-    let state: BackendState;
-    try {
-      state = decodeSnapshot(new Uint8Array(row.snapshot_cbor));
-    } catch (error: unknown) {
-      throw persistenceError(
-        "postgres backend failed to decode a legacy blob snapshot during migration",
-        "postgres_backend_blob_migration_decode_failed",
-        {
-          scope: row.scope,
-          schemaVersion: row.schema_version,
-        },
-        error
-      );
+  try {
+    const rows = await tx.unsafe<LegacySnapshotRow[]>(
+      `SELECT scope, schema_version, snapshot_cbor FROM ${snapshotsTable}`
+    );
+
+    for (const row of rows) {
+      if (row.schema_version !== CURRENT_SNAPSHOT_VERSION) {
+        throw persistenceError(
+          "postgres backend cannot migrate a legacy blob snapshot with an unsupported schema version",
+          "postgres_backend_blob_migration_version_unsupported",
+          {
+            actualVersion: row.schema_version,
+            expectedVersion: CURRENT_SNAPSHOT_VERSION,
+            scope: row.scope,
+          }
+        );
+      }
+
+      let state: BackendState;
+      try {
+        state = decodeSnapshot(new Uint8Array(row.snapshot_cbor));
+      } catch (error: unknown) {
+        throw persistenceError(
+          "postgres backend failed to decode a legacy blob snapshot during migration",
+          "postgres_backend_blob_migration_decode_failed",
+          {
+            scope: row.scope,
+            schemaVersion: row.schema_version,
+          },
+          error
+        );
+      }
+
+      try {
+        await insertBackendStateRows(tx, schemaName, row.scope as Scope, state);
+      } catch (error: unknown) {
+        throw persistenceError(
+          "postgres backend failed to insert exploded family rows during blob migration",
+          "postgres_backend_blob_migration_insert_failed",
+          { scope: row.scope },
+          error
+        );
+      }
     }
 
-    await insertBackendStateRows(tx, schemaName, row.scope as Scope, state);
+    await tx.unsafe(`DROP TABLE ${snapshotsTable}`);
+  } finally {
+    endMigration();
   }
-
-  await tx.unsafe(`DROP TABLE ${snapshotsTable}`);
 }
