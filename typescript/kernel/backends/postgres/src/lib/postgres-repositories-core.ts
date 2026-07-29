@@ -674,6 +674,15 @@ export function createCoreRepositories(
         assertTransactionActive();
         const seenCompositeKeys = new Set<string>();
         const table = qualifyIdentifier(schemaName, "turn_tree_paths");
+        // Batch-local memo (lives only for this `putMany` call): every record
+        // in the batch that shares a `turnTreeHash` resolves to the same
+        // turn tree and, transitively, the same schema, so fetch each
+        // distinct one once instead of once per record. A record whose
+        // `turnTreeHash`/`schemaId` is not yet memoized still goes through
+        // `ensureTurnTreeExistsInDatabase`/`getSchemaForSchemaIdInDatabase`
+        // and still throws the same missing-reference error it always did.
+        const turnTreeMemo = new Map<string, StoredTurnTree>();
+        const schemaMemo = new Map<string, TurnTreeSchema>();
 
         for (const record of records) {
           const compositeKey = `${record.turnTreeHash}:${record.path}`;
@@ -687,20 +696,30 @@ export function createCoreRepositories(
 
           seenCompositeKeys.add(compositeKey);
 
-          const turnTree = await helpers.ensureTurnTreeExistsInDatabase(
-            sql,
-            schemaName,
-            scope,
-            record.turnTreeHash,
-            "record.turnTreeHash"
-          );
-          const schema = await helpers.getSchemaForSchemaIdInDatabase(
-            sql,
-            schemaName,
-            scope,
-            turnTree.schemaId,
-            "turnTree.schemaId"
-          );
+          let turnTree = turnTreeMemo.get(record.turnTreeHash);
+          if (turnTree === undefined) {
+            turnTree = await helpers.ensureTurnTreeExistsInDatabase(
+              sql,
+              schemaName,
+              scope,
+              record.turnTreeHash,
+              "record.turnTreeHash"
+            );
+            turnTreeMemo.set(record.turnTreeHash, turnTree);
+          }
+
+          let schema = schemaMemo.get(turnTree.schemaId);
+          if (schema === undefined) {
+            schema = await helpers.getSchemaForSchemaIdInDatabase(
+              sql,
+              schemaName,
+              scope,
+              turnTree.schemaId,
+              "turnTree.schemaId"
+            );
+            schemaMemo.set(turnTree.schemaId, schema);
+          }
+
           assertStoredTurnTreePath(record, schema, "record");
 
           const normalizedRecord =

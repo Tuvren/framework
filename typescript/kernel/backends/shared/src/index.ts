@@ -60,6 +60,11 @@ export {
 export type { BackendInvariantReclamationDeps } from "./lib/backend-invariant-reclamation.js";
 export { reclaimBackendState } from "./lib/backend-invariant-reclamation.js";
 export type {
+  BackendInvariantReclamationValidation,
+  BackendInvariantReclamationValidationConfig,
+} from "./lib/backend-invariant-reclamation-validation.js";
+export { createBackendInvariantReclamationValidation } from "./lib/backend-invariant-reclamation-validation.js";
+export type {
   BackendInvariantRecordUtils,
   BackendInvariantRecordUtilsConfig,
 } from "./lib/backend-invariant-record-utils.js";
@@ -73,6 +78,12 @@ export type {
   BackendInvariantRunLogicConfig,
 } from "./lib/backend-invariant-run-logic.js";
 export { createBackendInvariantRunLogic } from "./lib/backend-invariant-run-logic.js";
+export type {
+  BackendInvariantRunSpan,
+  BackendInvariantRunSpanConfig,
+  TurnNodeRelationship,
+} from "./lib/backend-invariant-run-span.js";
+export { createBackendInvariantRunSpan } from "./lib/backend-invariant-run-span.js";
 export type { BackendState } from "./lib/backend-invariant-state.js";
 export type {
   BackendInvariantStateValidation,

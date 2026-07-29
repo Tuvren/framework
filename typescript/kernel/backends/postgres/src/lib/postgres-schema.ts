@@ -39,21 +39,27 @@ export const LEGACY_BLOB_INITIAL_MIGRATION_NAME = "0001_initial_schema.sql";
 export const LEGACY_BLOB_SCOPE_PARTITION_MIGRATION_NAME =
   "0002_scope_partition.sql";
 
-/** Family + support tables created by {@link RELATIONAL_SCHEMA_MIGRATION_NAME}. */
+/**
+ * Family + support tables created by {@link RELATIONAL_SCHEMA_MIGRATION_NAME}
+ * — the single roster consumed by both posture validation (order-agnostic)
+ * and `purgeScope`'s per-table deletes, so adding a family cannot silently
+ * miss one consumer. Ordered children-first for the purge path's
+ * readability; deferred foreign keys make the order non-load-bearing.
+ */
 export const RELATIONAL_REQUIRED_TABLES = [
+  "observe_annotations",
+  "staged_results",
+  "runs",
+  "turns",
+  "branches",
+  "turn_tree_paths",
+  "turn_node_lineage_roots",
+  "turn_nodes",
+  "ordered_path_chunks",
+  "turn_trees",
+  "threads",
   "objects",
   "schemas",
-  "turn_trees",
-  "turn_tree_paths",
-  "ordered_path_chunks",
-  "turn_nodes",
-  "threads",
-  "branches",
-  "turns",
-  "runs",
-  "staged_results",
-  "observe_annotations",
-  "turn_node_lineage_roots",
 ] as const;
 
 /** Indexes created by {@link RELATIONAL_SCHEMA_MIGRATION_NAME}. */

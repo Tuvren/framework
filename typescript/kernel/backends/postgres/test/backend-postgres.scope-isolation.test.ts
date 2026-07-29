@@ -29,12 +29,11 @@ import {
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
 } from "@tuvren/kernel-testkit";
-import postgres, { type Sql } from "postgres";
-import type { PostgresBackendOptions } from "../src/index.js";
 import { createPostgresBackend } from "../src/index.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
+  createAdminClient,
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
 
@@ -45,19 +44,6 @@ async function closeBackend(
   backend: ReturnType<typeof createPostgresBackend>
 ): Promise<void> {
   await backend.destroy();
-}
-
-function createAdminClient(options: PostgresBackendOptions): Sql {
-  return postgres({
-    database: options.database,
-    host: options.host,
-    idle_timeout: 1,
-    max: 1,
-    onnotice: () => undefined,
-    port: options.port,
-    prepare: false,
-    username: options.username,
-  });
 }
 
 function quoteIdentifier(value: string): string {

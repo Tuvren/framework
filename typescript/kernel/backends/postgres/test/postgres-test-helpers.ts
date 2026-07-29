@@ -18,7 +18,7 @@ import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { DEFAULT_SCOPE } from "@tuvren/core";
-import postgres from "postgres";
+import postgres, { type Sql } from "postgres";
 import type { PostgresBackendOptions } from "../src/index.js";
 
 const DEVENV_DATABASE_NAME = "tuvren_runtime";
@@ -121,13 +121,14 @@ export async function updateBranchHeadDirectly(
   branchId: string,
   headTurnNodeHash: string
 ): Promise<void> {
-  const sql = createOptionsSqlClient(options);
+  const sql = createAdminClient(options);
 
   try {
     const schemaName = requireSchemaName(options);
+    assertSchemaName(schemaName);
     const scope = options.scope ?? DEFAULT_SCOPE;
     const result = await sql.unsafe(
-      `UPDATE "${schemaName}".branches
+      `UPDATE ${quoteIdentifier(schemaName)}.branches
           SET head_turn_node_hash = $1
         WHERE scope = $2 AND branch_id = $3`,
       [headTurnNodeHash, scope, branchId]
@@ -150,7 +151,13 @@ function requireSchemaName(options: PostgresBackendOptions): string {
   return options.schemaName;
 }
 
-function createOptionsSqlClient(options: PostgresBackendOptions) {
+/**
+ * Canonical admin `postgres` client for test-only direct-SQL access
+ * (schema/scope teardown, corruption injection, etc.), bypassing the
+ * backend's own connection handling. Shared by every test file that needs
+ * to reach into a schema the backend under test owns.
+ */
+export function createAdminClient(options: PostgresBackendOptions): Sql {
   return postgres({
     connect_timeout: 5,
     database: options.database,

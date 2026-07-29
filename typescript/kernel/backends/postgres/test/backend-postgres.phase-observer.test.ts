@@ -32,28 +32,15 @@ import {
   createStoredObjectRecord,
   createStoredSchemaRecord,
 } from "@tuvren/kernel-testkit";
-import postgres, { type Sql } from "postgres";
 import type { PostgresBackendOptions } from "../src/index.js";
 import { createPostgresBackend } from "../src/index.js";
 import { qualifyIdentifier } from "../src/lib/postgres-sql.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
+  createAdminClient,
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
-
-function createAdminClient(options: PostgresBackendOptions): Sql {
-  return postgres({
-    database: options.database,
-    host: options.host,
-    idle_timeout: 1,
-    max: 1,
-    onnotice: () => undefined,
-    port: options.port,
-    prepare: false,
-    username: options.username,
-  });
-}
 
 /**
  * Dumps every column of the seeded `objects` and `schemas` rows for one

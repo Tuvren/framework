@@ -42,7 +42,6 @@ import {
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import postgres, { type Sql } from "postgres";
-import type { SnapshotCacheObserver } from "./postgres-backend-snapshot-cache.js";
 import { persistenceError } from "./postgres-errors.js";
 import {
   type BackendState,
@@ -108,19 +107,6 @@ export interface PostgresBackendPersistenceOptions {
    * databases keep working unchanged. Must be a non-empty string.
    */
   scope?: Scope;
-  /**
-   * Issue #108 M3 construction-time observability seam: when supplied, every
-   * load through this backend's single-entry content-hash memo ({@link
-   * SnapshotStateCache}) reports a hit or a miss to it. This is a real,
-   * structurally reachable option on {@link PostgresBackendOptions} — it is
-   * deliberately excluded from the operational `RuntimeBackend` contract
-   * (`transact`/`health`/`capabilities`/etc.) rather than hidden from
-   * TypeScript, so it is meant for benches, tests, and diagnostics, not
-   * production call sites. Passing it in production is harmless: it is
-   * observation-only (no behavior changes, no persisted bytes change), and
-   * omitting it costs nothing beyond an `undefined` check per load.
-   */
-  snapshotCacheObserver?: SnapshotCacheObserver;
   username?: string;
 }
 

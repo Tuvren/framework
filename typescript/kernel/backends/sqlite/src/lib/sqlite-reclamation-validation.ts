@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-import {
-  createTurnNodeLineageIndex,
-  resolveTurnNodeLineagePosition,
-} from "@tuvren/backend-shared";
-import type { StoredTurnTreePath } from "@tuvren/kernel-protocol";
-import { persistenceError } from "./sqlite-errors.js";
+// This module is a thin delegate to the shared kernel-backend invariant core
+// (KRT-BK001) for the reclamation-survivor-invariant surface
+// (`assertReclamationSurvivorInvariants` and its private per-family
+// sub-checks): identical to the PostgreSQL backend's copy modulo the
+// `sqlite_backend_*` error-code prefix and this backend's own accurate
+// FK/storage-shape docblock below. See @tuvren/backend-shared for the actual
+// implementation. The decode/resolve helpers stay backend-owned (they are
+// not part of this extraction) and are injected into the shared factory.
+import { createBackendInvariantReclamationValidation } from "@tuvren/backend-shared";
 import { type BackendState, decodeHashStringArray } from "./sqlite-records.js";
 import {
   decodeRunCreatedTurnNodeHashes,
   decodeTurnNodeConsumedStagedResultObjectHashes,
 } from "./sqlite-run-invariants.js";
-import {
-  ensureBranchExists,
-  ensureObjectExists,
-  ensureOrderedPathChunkExists,
-  ensureRunExists,
-  ensureThreadExists,
-  ensureTurnExists,
-  ensureTurnNodeExists,
-  ensureTurnTreeExists,
-} from "./sqlite-state-utils.js";
 import { resolveStoredTurnTreePathValue } from "./sqlite-state-validation.js";
+
+const reclamationValidation = createBackendInvariantReclamationValidation({
+  decodeHashStringArray,
+  decodeRunCreatedTurnNodeHashes,
+  decodeTurnNodeConsumedStagedResultObjectHashes,
+  errorPrefix: "sqlite",
+  resolveStoredTurnTreePathValue,
+});
 
 /**
  * Issue #108 M6 — replaces `reclaim()`'s former second full
@@ -129,186 +130,5 @@ import { resolveStoredTurnTreePathValue } from "./sqlite-state-validation.js";
  *   invariant a defective sweep violated.
  */
 export function assertReclamationSurvivorInvariants(state: BackendState): void {
-  assertSurvivingRootReferences(state);
-  assertSurvivingTurnNodeLineage(state);
-  assertSurvivingTurnReferences(state);
-  assertSurvivingRunReferences(state);
-  assertSurvivingStagedResultReferences(state);
-  assertSurvivingTurnTreePathReferences(state);
-}
-
-/** Branch heads and thread roots must still resolve to surviving turn nodes. */
-function assertSurvivingRootReferences(state: BackendState): void {
-  for (const branch of state.branches.values()) {
-    ensureTurnNodeExists(
-      state,
-      branch.headTurnNodeHash,
-      "branch.headTurnNodeHash"
-    );
-    ensureThreadExists(state, branch.threadId, "branch.threadId");
-  }
-
-  for (const thread of state.threads.values()) {
-    ensureTurnNodeExists(
-      state,
-      thread.rootTurnNodeHash,
-      "thread.rootTurnNodeHash"
-    );
-  }
-}
-
-/**
- * Every surviving turn node's `previousTurnNodeHash` chain must resolve
- * entirely within the survivors, and its `consumedStagedResultsCbor` object
- * references must still exist. One shared `TurnNodeLineageIndex` amortizes
- * the ancestor walk to O(survivors) total, the same memoization
- * `validateCommittedState`/`validateTurnNodeLineageRootIndex` use.
- */
-function assertSurvivingTurnNodeLineage(state: BackendState): void {
-  const lineageIndex = createTurnNodeLineageIndex();
-
-  for (const turnNode of state.turnNodes.values()) {
-    resolveTurnNodeLineagePosition(state.turnNodes, turnNode, lineageIndex, {
-      onCycle: (): never => {
-        throw persistenceError(
-          "surviving turn node lineage must not contain cycles after reclamation",
-          "sqlite_backend_turn_node_lineage_cycle",
-          { turnNodeHash: turnNode.hash }
-        );
-      },
-      onMissingPreviousTurnNode: (missingTurnNodeHash: string): never => {
-        throw persistenceError(
-          "surviving turn node lineage requires complete turn node parent links after reclamation",
-          "sqlite_backend_missing_turn_node_reference",
-          {
-            previousTurnNodeHash: missingTurnNodeHash,
-            turnNodeHash: turnNode.hash,
-          }
-        );
-      },
-    });
-
-    for (const objectHash of decodeTurnNodeConsumedStagedResultObjectHashes(
-      turnNode
-    )) {
-      ensureObjectExists(
-        state,
-        objectHash,
-        "turnNode.consumedStagedResultsCbor"
-      );
-    }
-  }
-}
-
-/**
- * Surviving turns must reference surviving branches, threads, and turn
- * nodes (`startTurnNodeHash`/`headTurnNodeHash` are FK-backed columns, so
- * this duplicates what the deferred FK will also verify at `COMMIT` — kept
- * for the same friendlier-error reasoning as item 1 above).
- */
-function assertSurvivingTurnReferences(state: BackendState): void {
-  for (const turn of state.turns.values()) {
-    ensureBranchExists(state, turn.branchId, "turn.branchId");
-    ensureThreadExists(state, turn.threadId, "turn.threadId");
-    ensureTurnNodeExists(
-      state,
-      turn.startTurnNodeHash,
-      "turn.startTurnNodeHash"
-    );
-    ensureTurnNodeExists(state, turn.headTurnNodeHash, "turn.headTurnNodeHash");
-  }
-}
-
-/**
- * Surviving runs must reference surviving branches, turns, and turn nodes —
- * including the opaque `createdTurnNodesCbor` lineage no foreign key covers.
- */
-function assertSurvivingRunReferences(state: BackendState): void {
-  for (const run of state.runs.values()) {
-    ensureBranchExists(state, run.branchId, "run.branchId");
-    ensureTurnExists(state, run.turnId, "run.turnId");
-    ensureTurnNodeExists(state, run.startTurnNodeHash, "run.startTurnNodeHash");
-
-    for (const turnNodeHash of decodeRunCreatedTurnNodeHashes(run)) {
-      ensureTurnNodeExists(state, turnNodeHash, "run.createdTurnNodesCbor");
-    }
-  }
-}
-
-/**
- * Surviving staged results must reference surviving runs and objects
- * (structurally guaranteed for `runId` by the sweep's own logic — see item 4
- * above — but checked directly anyway).
- */
-function assertSurvivingStagedResultReferences(state: BackendState): void {
-  for (const stagedResultsByRun of state.stagedResults.values()) {
-    for (const stagedResult of stagedResultsByRun.values()) {
-      ensureRunExists(state, stagedResult.runId, "stagedResult.runId");
-      ensureObjectExists(
-        state,
-        stagedResult.objectHash,
-        "stagedResult.objectHash"
-      );
-    }
-  }
-}
-
-/**
- * Surviving turn-tree paths must resolve only to surviving objects/chunks —
- * the opaque `single_hash`/`ordered_inline_cbor`/`ordered_chunk_list_cbor`
- * references no foreign key covers, exactly what the sweep's own
- * `keepPathObjects` closure step promises to retain.
- */
-function assertSurvivingTurnTreePathReferences(state: BackendState): void {
-  for (const [turnTreeHash, storedPaths] of state.turnTreePaths.entries()) {
-    // Belt-and-suspenders, same as the staged-result/run check above: a
-    // surviving path collection can only exist alongside its owning turn
-    // tree (`sweepTurnTrees` deletes `state.turnTreePaths` in the same
-    // iteration it deletes `state.turnTrees`), so this is structurally
-    // guaranteed rather than a real gap, but it is free to re-check.
-    ensureTurnTreeExists(state, turnTreeHash, "turnTreePath.turnTreeHash");
-
-    for (const storedPath of storedPaths.values()) {
-      assertTurnTreePathSurvivorReferences(state, storedPath);
-    }
-  }
-}
-
-function assertTurnTreePathSurvivorReferences(
-  state: BackendState,
-  storedPath: StoredTurnTreePath
-): void {
-  const resolved = resolveStoredTurnTreePathValue(state, storedPath);
-
-  if (typeof resolved === "string") {
-    ensureObjectExists(
-      state,
-      resolved,
-      "turnTreePath resolved object reference"
-    );
-  } else if (Array.isArray(resolved)) {
-    for (const objectHash of resolved) {
-      ensureObjectExists(
-        state,
-        objectHash,
-        "turnTreePath resolved object reference"
-      );
-    }
-  }
-
-  if (
-    storedPath.collectionKind === "ordered" &&
-    storedPath.orderedEncoding === "chunked"
-  ) {
-    for (const chunkHash of decodeHashStringArray(
-      storedPath.orderedChunkListCbor,
-      "storedPath.orderedChunkListCbor"
-    )) {
-      ensureOrderedPathChunkExists(
-        state,
-        chunkHash,
-        "turnTreePath.orderedChunkListCbor"
-      );
-    }
-  }
+  reclamationValidation.assertReclamationSurvivorInvariants(state);
 }

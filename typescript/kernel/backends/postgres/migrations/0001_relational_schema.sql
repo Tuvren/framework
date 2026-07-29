@@ -7,6 +7,15 @@
 --     byte-wise, matching SQLite's BINARY collation instead of the database's
 --     locale-dependent default (keeps ORDER BY / keyset pagination results
 --     identical across backends and deployments)
+--
+-- Index policy: the index set mirrors SQLite's (targeted-validation and
+-- lookup indexes). Several FK *referencing* columns that reclaim()/purgeScope
+-- delete through have no covering index (e.g. turn_nodes.event_hash,
+-- runs.start_turn_node_hash), so deferred-FK checks at COMMIT probe those
+-- tables per deleted parent row. This is a deliberate trade: reclamation is
+-- a maintenance path, while every extra index taxes the per-transaction
+-- write path this schema exists to keep flat. Revisit if reclaim latency is
+-- ever measured as a problem.
 
 CREATE TABLE objects (
   scope TEXT COLLATE "C" NOT NULL,

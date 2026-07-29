@@ -41,35 +41,33 @@ const MAX_PARAMETERS_PER_STATEMENT = 20_000;
  * Inserts every family row from a decoded {@link BackendState} into the
  * relational tables for one Scope, using batched multi-row `INSERT`s so the
  * open-time blob→row explode costs round trips proportional to record
- * families, not records. Used by the open-time migration (legacy
- * `backend_postgres_snapshots`) and any bulk restore path.
+ * families, not records. Used only by the open-time migration (legacy
+ * `backend_postgres_snapshots`), whose target tables were created moments
+ * earlier in the same transaction — so the inserts are deliberately strict:
+ * a key conflict can only mean a genuine anomaly (e.g. a duplicate
+ * record-key derivation) and must abort the migration transaction rather
+ * than silently drop a row (ADR-067 decision 5: no committed logical state
+ * may be lost).
  *
  * Foreign keys are DEFERRABLE INITIALLY DEFERRED, so insert order is
  * still kept topologically tidy for readability rather than necessity.
  * Lineage-root metadata is recomputed from the turn-node parent chain.
- *
- * Returns the number of rows written per family table, for callers that
- * surface migration diagnostics.
  */
 export async function insertBackendStateRows(
   sql: DbSql,
   schemaName: string,
   scope: Scope,
   state: BackendState
-): Promise<Record<string, number>> {
-  const counts: Record<string, number> = {};
+): Promise<void> {
   const insertFamily = async (
     table: string,
     columns: readonly string[],
-    conflictTarget: string,
     rows: unknown[][]
   ): Promise<void> => {
-    counts[table] = rows.length;
     await insertRowsInBatches(
       sql,
       qualifyIdentifier(schemaName, table),
       columns,
-      conflictTarget,
       rows
     );
   };
@@ -77,7 +75,6 @@ export async function insertBackendStateRows(
   await insertFamily(
     "objects",
     ["scope", "hash", "media_type", "bytes", "byte_length", "created_at_ms"],
-    "scope, hash",
     Array.from(state.objects.values(), (record) => [
       scope,
       record.hash,
@@ -91,7 +88,6 @@ export async function insertBackendStateRows(
   await insertFamily(
     "schemas",
     ["scope", "schema_id", "schema_cbor", "created_at_ms"],
-    "scope, schema_id",
     Array.from(state.schemas.values(), (record) => [
       scope,
       record.schemaId,
@@ -103,7 +99,6 @@ export async function insertBackendStateRows(
   await insertFamily(
     "turn_trees",
     ["scope", "hash", "schema_id", "manifest_cbor", "created_at_ms"],
-    "scope, hash",
     Array.from(state.turnTrees.values(), (record) => [
       scope,
       record.hash,
@@ -116,7 +111,6 @@ export async function insertBackendStateRows(
   await insertFamily(
     "ordered_path_chunks",
     ["scope", "chunk_hash", "item_count", "items_cbor", "created_at_ms"],
-    "scope, chunk_hash",
     Array.from(state.orderedPathChunks.values(), (record) => [
       scope,
       record.chunkHash,
@@ -145,7 +139,6 @@ export async function insertBackendStateRows(
       "ordered_inline_cbor",
       "ordered_chunk_list_cbor",
     ],
-    "scope, turn_tree_hash, path",
     turnTreePathRows
   );
 
@@ -161,7 +154,6 @@ export async function insertBackendStateRows(
       "event_hash",
       "created_at_ms",
     ],
-    "scope, hash",
     Array.from(state.turnNodes.values(), (record) => [
       scope,
       record.hash,
@@ -177,14 +169,12 @@ export async function insertBackendStateRows(
   await insertFamily(
     "turn_node_lineage_roots",
     ["scope", "turn_node_hash", "root_turn_node_hash", "depth"],
-    "scope, turn_node_hash",
     lineageRootRows(scope, state)
   );
 
   await insertFamily(
     "threads",
     ["scope", "thread_id", "schema_id", "root_turn_node_hash", "created_at_ms"],
-    "scope, thread_id",
     Array.from(state.threads.values(), (record) => [
       scope,
       record.threadId,
@@ -205,7 +195,6 @@ export async function insertBackendStateRows(
       "created_at_ms",
       "updated_at_ms",
     ],
-    "scope, branch_id",
     Array.from(state.branches.values(), (record) => [
       scope,
       record.branchId,
@@ -230,7 +219,6 @@ export async function insertBackendStateRows(
       "created_at_ms",
       "updated_at_ms",
     ],
-    "scope, turn_id",
     Array.from(state.turns.values(), (record) => [
       scope,
       record.turnId,
@@ -265,7 +253,6 @@ export async function insertBackendStateRows(
       "fencing_token",
       "preemption_reason",
     ],
-    "scope, run_id",
     Array.from(state.runs.values(), (record) => [
       scope,
       record.runId,
@@ -316,7 +303,6 @@ export async function insertBackendStateRows(
       "interrupt_payload_cbor",
       "created_at_ms",
     ],
-    "scope, run_id, task_id",
     stagedResultRows
   );
 
@@ -349,11 +335,8 @@ export async function insertBackendStateRows(
       "annotation_cbor",
       "created_at_ms",
     ],
-    "scope, record_key",
     annotationRows
   );
-
-  return counts;
 }
 
 /** Flattens one stored turn-tree path into its column value tuple. */
@@ -420,16 +403,17 @@ function lineageRootRows(scope: string, state: BackendState): unknown[][] {
 }
 
 /**
- * Issues `INSERT ... VALUES (...), (...) ON CONFLICT (...) DO NOTHING` in
- * chunks sized so no statement exceeds {@link MAX_PARAMETERS_PER_STATEMENT}
- * bind parameters. `table`, `columns`, and `conflictTarget` are fixed
- * internal identifiers, never caller input.
+ * Issues strict `INSERT ... VALUES (...), (...)` statements (no ON CONFLICT
+ * escape hatch — see {@link insertBackendStateRows}) in chunks sized so no
+ * statement exceeds {@link MAX_PARAMETERS_PER_STATEMENT} bind parameters.
+ * `table` and `columns` are fixed internal identifiers, never caller input.
+ * A failed chunk is re-thrown with the table and chunk position attached so
+ * a migration failure names exactly which family and rows broke.
  */
 async function insertRowsInBatches(
   sql: DbSql,
   table: string,
   columns: readonly string[],
-  conflictTarget: string,
   rows: unknown[][]
 ): Promise<void> {
   if (rows.length === 0) {
@@ -452,11 +436,24 @@ async function insertRowsInBatches(
       return `(${placeholders.join(", ")})`;
     });
 
-    await sql.unsafe(
-      `INSERT INTO ${table} (${columns.join(", ")})
-       VALUES ${tuples.join(", ")}
-       ON CONFLICT (${conflictTarget}) DO NOTHING`,
-      parameters as ParameterOrJSON<never>[]
-    );
+    try {
+      await sql.unsafe(
+        `INSERT INTO ${table} (${columns.join(", ")})
+         VALUES ${tuples.join(", ")}`,
+        parameters as ParameterOrJSON<never>[]
+      );
+    } catch (error: unknown) {
+      throw persistenceError(
+        "postgres backend bulk family insert failed",
+        "postgres_backend_bulk_insert_failed",
+        {
+          chunkOffset: offset,
+          chunkRows: chunk.length,
+          table,
+          totalRows: rows.length,
+        },
+        error
+      );
+    }
   }
 }
