@@ -1005,7 +1005,7 @@ export function toSafeInteger(
   }
   if (!Number.isSafeInteger(n)) {
     throw persistenceError(
-      `stored rows must keep ${field} as a non-negative safe integer`,
+      `stored rows must keep ${field} as a safe integer`,
       "postgres_backend_invalid_numeric_column",
       { field, value: String(value) }
     );

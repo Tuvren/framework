@@ -126,12 +126,14 @@ describe("@tuvren/backend-postgres health()/fsck() split (ADR-067 relational per
 
   test("reports a posture failure through health() when a required relational index is dropped", async () => {
     // health() memoizes a successful posture validation for
-    // POSTURE_REVALIDATION_INTERVAL_MS (60s); advance this test's injected
-    // clock past that window before the post-tamper probe so the memo does
-    // not mask the drift this test injects.
+    // POSTURE_REVALIDATION_INTERVAL_MS (60s), keyed on `postureNow` (a wall
+    // clock independent of the injectable ADR-050 domain clock `now`, which
+    // only governs lease/reclaim semantics). Advance `postureNow` past that
+    // window before the post-tamper probe so the memo does not mask the
+    // drift this test injects.
     let simulatedNowMs = Date.now();
     const options = createPostgresTestBackendOptions({
-      now: () => simulatedNowMs,
+      postureNow: () => simulatedNowMs,
     });
     const backend = createPostgresBackend(options);
     const schemaName = options.schemaName ?? "public";

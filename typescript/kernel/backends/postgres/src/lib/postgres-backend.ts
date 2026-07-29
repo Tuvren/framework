@@ -187,11 +187,14 @@ const RECLAMATION_DELETE_BATCH_SIZE = 500;
 const SCOPE_LOCK_TIMEOUT_MS = 5000;
 
 /**
- * Minimum interval between `health()`'s catalog-driven posture revalidations.
- * Drift is still detected within a minute; the per-poll catalog query cost is
- * not paid on every probe. A failed validation is never memoized (only a
- * successful one advances the memo), and `fsck`/`reclaim` always validate
- * fresh via `loadValidatedState` regardless of this memo.
+ * Minimum interval between `health()`'s catalog-driven posture revalidations,
+ * measured against the instance's `postureNow` wall clock (see
+ * {@link PostgresBackendOptions.postureNow}), not the injectable ADR-050
+ * domain clock. Drift is still detected within a minute; the per-poll
+ * catalog query cost is not paid on every probe. A failed validation is
+ * never memoized (only a successful one advances the memo), and
+ * `fsck`/`reclaim` always validate fresh via `loadValidatedState` regardless
+ * of this memo.
  */
 const POSTURE_REVALIDATION_INTERVAL_MS = 60_000;
 
@@ -231,7 +234,17 @@ interface PostgresBackendDestroyOptions {
 }
 
 /** Construction options for {@link createPostgresBackend}. */
-export type PostgresBackendOptions = PostgresBackendPersistenceOptions;
+export type PostgresBackendOptions = PostgresBackendPersistenceOptions & {
+  /**
+   * Undocumented test-only seam for `health()`'s posture-revalidation memo
+   * (see {@link POSTURE_REVALIDATION_INTERVAL_MS}). Defaults to `Date.now`.
+   * Kept separate from the public, injectable ADR-050 domain clock (`now`)
+   * so a host that legitimately freezes or coarsens `now` for lease/reclaim
+   * determinism cannot also freeze how often `health()` revalidates schema
+   * posture; only tests need to steer this wall clock independently.
+   */
+  postureNow?: () => number;
+};
 
 const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
@@ -280,6 +293,7 @@ class PostgresBackend implements KrakenBackend {
   private readonly now: () => number;
   private readonly injectedNow: (() => number) | undefined;
   private readonly scopeLockKey: bigint;
+  private readonly postureNow: () => number;
   private postureValidatedAtMs: number | undefined;
 
   constructor(options?: PostgresBackendOptions) {
@@ -306,6 +320,11 @@ class PostgresBackend implements KrakenBackend {
     // authoritative lease clock can fall back to the PostgreSQL server clock in
     // production while staying deterministic under an injected clock (ADR-050).
     this.injectedNow = resolvedOptions.now;
+    // health()'s posture memo is keyed on its own wall clock, independent of
+    // the injectable domain clock above: `now` may be frozen/coarsened by a
+    // host for lease/reclaim determinism, and this memo must still revalidate
+    // roughly once a minute regardless.
+    this.postureNow = resolvedOptions.postureNow ?? Date.now;
   }
 
   /** Reports the fixed {@link POSTGRES_BACKEND_CAPABILITIES} this backend supports. */
@@ -319,11 +338,28 @@ class PostgresBackend implements KrakenBackend {
    * ledger, family tables, indexes — the relational equivalent of the
    * SQLite backend's `validateMigrationState`), and proves this Scope's
    * partition is queryable — without loading full state.
+   *
+   * The posture-revalidation memo ({@link POSTURE_REVALIDATION_INTERVAL_MS})
+   * is keyed on `postureNow`, a dedicated wall clock that defaults to
+   * `Date.now` and is never the injectable ADR-050 domain clock (`now`): a
+   * host may legitimately freeze or coarsen `now` for lease/reclaim
+   * determinism, and keying this memo on it would validate posture at most
+   * once per instance lifetime instead of within roughly a minute of drift,
+   * as the memo's interval promises.
+   *
+   * This probe's own latency is bounded by more than the (now-cheapened)
+   * catalog query: the underlying pool is `max: 1`, and `transact()`,
+   * `reclaim()`, `purgeScope()`, and `fsck()` all serialize on that single
+   * physical connection via `withSerializedConnection`. A `health()` call
+   * that lands while one of those is in flight queues behind it for the
+   * driver to free the connection before this probe's own query can run —
+   * the posture memo only removes the catalog-query cost once posture is
+   * known-good, it does not remove that head-of-line wait.
    */
   async health(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
       await this.ensureInitialized();
-      const nowMs = this.now();
+      const nowMs = this.postureNow();
       if (
         this.postureValidatedAtMs === undefined ||
         nowMs - this.postureValidatedAtMs >= POSTURE_REVALIDATION_INTERVAL_MS
@@ -691,33 +727,47 @@ class PostgresBackend implements KrakenBackend {
    * connection for `body`, and releases both in reverse order. Extracted so
    * `transact`, `reclaim`, `purgeScope`, and `fsck` cannot drift apart in
    * how they queue and reserve.
+   *
+   * The whole prologue/epilogue is wrapped in one `normalizeBackendError`
+   * boundary so a failure in `ensureInitialized()` (e.g. schema
+   * provisioning colliding with a pre-existing, host-owned table of the
+   * same name) or in `sql.reserve()` surfaces as the same typed
+   * `TuvrenPersistenceError` every other failure in this class does,
+   * instead of an unwrapped driver error escaping before `body` ever runs.
+   * `body` itself already normalizes its own errors before rethrowing, so
+   * re-normalizing here is a no-op for those (a `TuvrenPersistenceError`
+   * passes through {@link normalizeBackendError} unchanged).
    */
   private async withSerializedConnection<T>(
     body: (reserved: ReservedSql) => Promise<T>
   ): Promise<T> {
-    await this.ensureInitialized();
-
-    const priorTransaction = this.transactionQueue;
-    let releaseQueue: (() => void) | undefined;
-
-    this.transactionQueue = new Promise<void>((resolve) => {
-      releaseQueue = resolve;
-    });
-
-    const endQueueWait = this.phaseObserver.startPhase("lock-wait");
-    await priorTransaction;
-    endQueueWait();
-
     try {
-      const reserved = (await this.sql.reserve()) as ReservedSql;
+      await this.ensureInitialized();
+
+      const priorTransaction = this.transactionQueue;
+      let releaseQueue: (() => void) | undefined;
+
+      this.transactionQueue = new Promise<void>((resolve) => {
+        releaseQueue = resolve;
+      });
+
+      const endQueueWait = this.phaseObserver.startPhase("lock-wait");
+      await priorTransaction;
+      endQueueWait();
 
       try {
-        return await body(reserved);
+        const reserved = (await this.sql.reserve()) as ReservedSql;
+
+        try {
+          return await body(reserved);
+        } finally {
+          await reserved.release();
+        }
       } finally {
-        await reserved.release();
+        releaseQueue?.();
       }
-    } finally {
-      releaseQueue?.();
+    } catch (error: unknown) {
+      throw normalizeBackendError(error);
     }
   }
 

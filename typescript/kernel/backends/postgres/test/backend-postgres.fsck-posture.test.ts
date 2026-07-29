@@ -89,12 +89,14 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
 
   test('health() reports a posture failure when a required TEXT column\'s collation drifts away from "C"', async () => {
     // health() memoizes a successful posture validation for
-    // POSTURE_REVALIDATION_INTERVAL_MS (60s); advance this test's injected
-    // clock past that window before the post-tamper probe so the memo does
-    // not mask the drift this test injects.
+    // POSTURE_REVALIDATION_INTERVAL_MS (60s), keyed on `postureNow` (a wall
+    // clock independent of the injectable ADR-050 domain clock `now`, which
+    // only governs lease/reclaim semantics). Advance `postureNow` past that
+    // window before the post-tamper probe so the memo does not mask the
+    // drift this test injects.
     let simulatedNowMs = Date.now();
     const options = createPostgresTestBackendOptions({
-      now: () => simulatedNowMs,
+      postureNow: () => simulatedNowMs,
     });
     const backend = createPostgresBackend(options);
     const schemaName = options.schemaName ?? "public";
@@ -125,12 +127,12 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
   });
 
   test("health() reports a posture failure when a foreign key is no longer DEFERRABLE INITIALLY DEFERRED", async () => {
-    // See the collation test above: advance the injected clock past
+    // See the collation test above: advance `postureNow` past
     // POSTURE_REVALIDATION_INTERVAL_MS so health()'s posture memo does not
     // mask the drift this test injects between the two health() calls.
     let simulatedNowMs = Date.now();
     const options = createPostgresTestBackendOptions({
-      now: () => simulatedNowMs,
+      postureNow: () => simulatedNowMs,
     });
     const backend = createPostgresBackend(options);
     const schemaName = options.schemaName ?? "public";

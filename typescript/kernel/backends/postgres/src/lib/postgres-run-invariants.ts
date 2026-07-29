@@ -20,7 +20,10 @@ import {
   createBackendInvariantRunSpan,
 } from "@tuvren/backend-shared";
 import type { StoredRun } from "@tuvren/kernel-protocol";
-import { decodeHashStringArray } from "./postgres-records.js";
+import {
+  cloneEncodedBytes,
+  decodeHashStringArray,
+} from "./postgres-records.js";
 
 export type { TurnNodeRelationship } from "@tuvren/backend-shared";
 
@@ -44,6 +47,7 @@ const runLogic = createBackendInvariantRunLogic({
   errorPrefix: "postgres",
 });
 const recordUtils = createBackendInvariantRecordUtils({
+  cloneEncodedBytes,
   errorPrefix: "postgres",
 });
 const runSpan = createBackendInvariantRunSpan({
