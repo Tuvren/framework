@@ -40,6 +40,8 @@ import {
   createPostgresClient,
   normalizeSchemaName,
   type PostgresBackendPersistenceOptions,
+  SCOPE_LOCK_TIMEOUT_MS,
+  wasSchemaNameDefaulted,
 } from "./postgres-backend-persistence.js";
 import {
   assertBranchHeadMoveIsLinearInDatabase,
@@ -178,15 +180,6 @@ const ORDERED_PATH_CHUNK_THRESHOLD = 32;
 const RECLAMATION_DELETE_BATCH_SIZE = 500;
 
 /**
- * Upper bound on waiting for the same-scope advisory lock, mirroring the
- * SQLite backend's `SQLITE_BUSY_TIMEOUT_MS = 5000` bounded-wait semantics:
- * a second instance contending for the same `(schemaName, scope)` partition
- * fails with a normalized persistence error instead of blocking its only
- * pooled connection forever behind a wedged peer transaction.
- */
-const SCOPE_LOCK_TIMEOUT_MS = 5000;
-
-/**
  * Minimum interval between `health()`'s catalog-driven posture revalidations,
  * measured against the instance's `postureNow` wall clock (see
  * {@link PostgresBackendOptions.postureNow}), not the injectable ADR-050
@@ -295,12 +288,20 @@ class PostgresBackend implements KrakenBackend {
   private readonly scopeLockKey: bigint;
   private readonly postureNow: () => number;
   private postureValidatedAtMs: number | undefined;
+  private readonly schemaNameWasDefaulted: boolean;
 
   constructor(options?: PostgresBackendOptions) {
     const resolvedOptions = options ?? {};
 
     this.connectionOptions = { ...resolvedOptions };
     this.schemaName = normalizeSchemaName(resolvedOptions.schemaName);
+    // Threaded into schema-init (round-6 review P2) so the legacy-blob-
+    // elsewhere guard only fires when the host never chose a schema name —
+    // an explicit choice (even one that happens to equal the default
+    // string) is a deliberate host decision this backend must respect.
+    this.schemaNameWasDefaulted = wasSchemaNameDefaulted(
+      resolvedOptions.schemaName
+    );
     this.scope = resolvedOptions.scope ?? DEFAULT_SCOPE;
     assertScope(this.scope);
     // assertScope only rejects an empty string; a scope carrying U+0000
@@ -355,6 +356,17 @@ class PostgresBackend implements KrakenBackend {
    * driver to free the connection before this probe's own query can run —
    * the posture memo only removes the catalog-query cost once posture is
    * known-good, it does not remove that head-of-line wait.
+   *
+   * This method issues its posture/liveness queries directly on `this.sql`
+   * with no explicit `SET LOCAL lock_timeout` of its own (there is no
+   * transaction to scope one to). What keeps a lock-blocked probe (e.g. a
+   * concurrent `DROP SCHEMA ... CASCADE` from another process, or an
+   * operator `VACUUM FULL`/`ALTER TABLE` holding `ACCESS EXCLUSIVE`) from
+   * hanging this instance forever — and wedging every other operation behind
+   * the `max: 1` pool's single connection — is the connection-wide
+   * `lock_timeout` startup parameter set in {@link createPostgresClient}
+   * (round-6 review P2): a blocked query here fails within roughly 5 seconds
+   * with SQLSTATE `55P03` instead of hanging.
    */
   async health(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
@@ -390,6 +402,19 @@ class PostgresBackend implements KrakenBackend {
    * another instance can never yield a torn projection that reports
    * spurious corruption (the consistency the SQLite port's `BEGIN
    * IMMEDIATE` provided, achieved here without blocking those writers).
+   *
+   * The `BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY` below never goes
+   * through `acquireScopeTransactionLock` (there is no same-scope advisory
+   * lock to take for a read-only maintenance pass), so it carries no
+   * transaction-local `SET LOCAL lock_timeout` of its own. It is still
+   * bounded: the connection-wide `lock_timeout` startup parameter set in
+   * {@link createPostgresClient} (round-6 review P2) applies to every
+   * statement on this reserved connection, so a `BEGIN`/read blocked behind
+   * an `ACCESS EXCLUSIVE` lock (a concurrent `DROP SCHEMA ... CASCADE`, an
+   * operator `VACUUM FULL`/`ALTER TABLE`) fails within roughly 5 seconds
+   * with SQLSTATE `55P03` instead of holding this instance's only pooled
+   * connection (`max: 1`) forever and wedging `transact`/`reclaim`/
+   * `purgeScope`/`health` behind it.
    */
   async fsck(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
@@ -777,10 +802,17 @@ class PostgresBackend implements KrakenBackend {
    * until COMMIT/ROLLBACK releases the lock. The wait is bounded by
    * {@link SCOPE_LOCK_TIMEOUT_MS} via `SET LOCAL lock_timeout` (which then
    * governs the rest of the transaction too — harmless, since same-scope row
-   * contention is already excluded by holding this lock). The key is a
-   * bigint derived client-side from SHA-256 (see {@link deriveAdvisoryLockKey}),
-   * safe to inline; the no-parameter multi-statement form keeps this on one
-   * round trip.
+   * contention is already excluded by holding this lock). Since round-6
+   * review P2, `createPostgresClient` already sets this same
+   * {@link SCOPE_LOCK_TIMEOUT_MS} bound connection-wide via the `connection`
+   * startup parameter, so this `SET LOCAL` is now a deliberate duplicate of
+   * the connection default rather than the only bound in place — kept
+   * because it is explicit and self-documenting at the one call site that
+   * takes the same-scope advisory lock, and because it protects this path
+   * even if a future change ever narrowed the connection-wide default. The
+   * key is a bigint derived client-side from SHA-256 (see
+   * {@link deriveAdvisoryLockKey}), safe to inline; the no-parameter
+   * multi-statement form keeps this on one round trip.
    */
   private async acquireScopeTransactionLock(sql: DbSql): Promise<void> {
     const endLockWait = this.phaseObserver.startPhase("lock-wait");
@@ -818,6 +850,7 @@ class PostgresBackend implements KrakenBackend {
       const initialization = ensurePostgresRelationalSchemaInitialized(
         this.sql,
         this.schemaName,
+        this.schemaNameWasDefaulted,
         this.now,
         this.phaseObserver
       );

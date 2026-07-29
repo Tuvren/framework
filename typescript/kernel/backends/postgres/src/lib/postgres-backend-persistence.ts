@@ -27,6 +27,23 @@ import { persistenceError } from "./postgres-errors.js";
 const DEFAULT_SCHEMA_NAME = "tuvren_kernel";
 const VALID_SCHEMA_NAME_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
+/**
+ * Connection-wide bound (milliseconds) on how long any statement on a
+ * physical connection this backend opens will wait to acquire a PostgreSQL
+ * lock before failing with SQLSTATE `55P03` (`lock_not_available`). Set as a
+ * `postgres.js` startup parameter (see {@link createPostgresClient}) so it
+ * applies to every connection the pool opens — including ones opened after
+ * `idle_timeout` recycles an idle one — mirroring how the SQLite backend's
+ * connection-wide `SQLITE_BUSY_TIMEOUT_MS = 5000` bounds every path on that
+ * backend. `transact`/`reclaim`/`purgeScope` additionally take the same-scope
+ * advisory lock under an explicit `SET LOCAL lock_timeout` (see
+ * `acquireScopeTransactionLock` in postgres-backend.ts) for self-documenting
+ * clarity; `fsck()`'s read-only snapshot transaction and `health()`'s
+ * posture/liveness queries have no equivalent explicit `SET LOCAL` and rely
+ * entirely on this connection-wide default to stay bounded.
+ */
+export const SCOPE_LOCK_TIMEOUT_MS = 5000;
+
 /** Connection and partition options for the PostgreSQL backend's persistence layer. */
 export interface PostgresBackendPersistenceOptions {
   connectionString?: string;
@@ -89,12 +106,32 @@ export interface PostgresBackendPersistenceOptions {
  * accumulating named-statement state on the one connection. Prepared
  * statements remain a candidate optimization if per-statement query planning
  * ever shows up as a bottleneck in write benches.
+ *
+ * `connection: { lock_timeout: SCOPE_LOCK_TIMEOUT_MS }` sends `lock_timeout`
+ * as a PostgreSQL startup parameter (round-6 review P2), so every physical
+ * connection this client ever opens — including a replacement opened after
+ * `idle_timeout: 5` recycles an idle one — starts with the same 5-second
+ * bound on lock waits, with no reliance on a one-off session-level `SET`
+ * that recycling would silently lose. This is what protects `fsck()`'s
+ * read-only snapshot transaction and `health()`'s posture/liveness queries,
+ * neither of which goes through `acquireScopeTransactionLock`'s explicit
+ * `SET LOCAL lock_timeout`: without this connection-wide default, either
+ * could block forever on an `ACCESS EXCLUSIVE` lock held by a concurrent
+ * `DROP SCHEMA ... CASCADE` or an operator `VACUUM FULL`/`ALTER TABLE` and,
+ * because the pool is `max: 1` and `withSerializedConnection` holds the
+ * reservation until its body resolves, wedge every other operation on this
+ * instance (`transact`/`reclaim`/`purgeScope`/`health`) behind it
+ * indefinitely. With the bound in place, a lock-blocked maintenance/probe
+ * query instead fails within roughly 5 seconds with SQLSTATE `55P03`
+ * (`lock_not_available`), normalized to a typed `TuvrenPersistenceError`
+ * (`postgres_backend_engine_error`) by `normalizeBackendError`.
  */
 export function createPostgresClient(
   options: PostgresBackendPersistenceOptions
 ): Sql {
   const configuration = {
     connect_timeout: 5,
+    connection: { lock_timeout: SCOPE_LOCK_TIMEOUT_MS },
     database: options.database,
     host: options.host,
     idle_timeout: 5,
@@ -173,4 +210,21 @@ export function normalizeSchemaName(schemaName: string | undefined): string {
   }
 
   return normalized;
+}
+
+/**
+ * True when the host did not supply an explicit `schemaName` and
+ * {@link normalizeSchemaName} therefore fell back to the backend-owned
+ * {@link DEFAULT_SCHEMA_NAME}. Threaded into
+ * `ensurePostgresRelationalSchemaInitialized` (round-6 review P2) so the
+ * open-time schema-init path can tell an operator's *explicit* choice of
+ * `"tuvren_kernel"` (or any other name) apart from the implicit default —
+ * the legacy-blob-elsewhere guard must only fire on the latter, since an
+ * explicit `schemaName` is a deliberate host decision to respect, not a
+ * default this backend chose on the host's behalf.
+ */
+export function wasSchemaNameDefaulted(
+  schemaName: string | undefined
+): boolean {
+  return schemaName === undefined;
 }

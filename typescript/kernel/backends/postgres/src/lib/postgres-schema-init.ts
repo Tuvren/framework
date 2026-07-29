@@ -84,10 +84,28 @@ function resolveMigrationFileListing(): {
  * {@link deriveAdvisoryLockKey}). The wait is deliberately unbounded: a
  * process arriving second may legitimately be waiting on another process's
  * one-time blob→row migration of the same schema.
+ *
+ * `schemaNameWasDefaulted` (round-6 review P2) guards against a silent
+ * residual failure mode left by the public → `tuvren_kernel` default-schema
+ * change: a pre-#110 deployment that omitted `schemaName` has its legacy
+ * `backend_postgres_snapshots` table sitting in `"public"`; after upgrading
+ * to a package version defaulting to `"tuvren_kernel"`, this function would
+ * otherwise provision a fresh, empty `"tuvren_kernel"` schema and the
+ * open-time migration above would never look in `"public"`, so the
+ * deployment comes up with zero data with no error at all. When the schema
+ * name was defaulted (the host never chose one) AND this call is creating
+ * the configured schema for the first time (it did not exist before this
+ * call) AND a table named `backend_postgres_snapshots` exists in some other
+ * schema in the same database, this throws a typed
+ * `postgres_backend_legacy_blob_schema_elsewhere` error instead of silently
+ * provisioning an empty schema. An explicit `schemaName` (even one that
+ * happens to equal the default string) always skips this guard — an
+ * explicit choice is a deliberate host decision to respect.
  */
 export async function ensurePostgresRelationalSchemaInitialized(
   sql: Sql,
   schemaName: string,
+  schemaNameWasDefaulted: boolean,
   now: () => EpochMs,
   phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
 ): Promise<void> {
@@ -101,6 +119,22 @@ export async function ensurePostgresRelationalSchemaInitialized(
     // The key is a bigint derived from our own SHA-256, safe to inline; the
     // single-statement no-parameter form keeps this on one round trip.
     await tx.unsafe(`SELECT pg_advisory_xact_lock(${lockKey})`);
+
+    // Captured before `CREATE SCHEMA IF NOT EXISTS` below so the guard can
+    // tell "this call is the one creating the schema" apart from "the
+    // schema already existed" — the latter means an earlier init (by this
+    // process or another) already ran the open-time migration check (or the
+    // schema is simply an established one with its own data), so silence is
+    // correct there even for a defaulted schema name.
+    const schemaExistedBeforeInit = await schemaExistsInDatabase(
+      tx,
+      schemaName
+    );
+
+    if (schemaNameWasDefaulted && !schemaExistedBeforeInit) {
+      await assertNoLegacyBlobSnapshotsTableElsewhere(tx, schemaName);
+    }
+
     await tx.unsafe(
       `CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(schemaName)}`
     );
@@ -330,6 +364,79 @@ async function tableExists(
     [schemaName, tableName]
   );
   return rows[0]?.exists === true;
+}
+
+/**
+ * True when `schemaName` already exists in the database, checked against
+ * `pg_catalog.pg_namespace` (not `information_schema.schemata`, which only
+ * lists schemas the connected role can see under its privileges —
+ * `pg_namespace` is the authoritative catalog for "does this schema exist at
+ * all"). Used by the legacy-blob-elsewhere guard to distinguish "this call
+ * is creating the schema for the first time" from "the schema already
+ * existed" before `CREATE SCHEMA IF NOT EXISTS` runs.
+ */
+async function schemaExistsInDatabase(
+  tx: Tx,
+  schemaName: string
+): Promise<boolean> {
+  const rows = await tx.unsafe<Array<{ exists: boolean }>>(
+    `SELECT EXISTS (
+       SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1
+     ) AS exists`,
+    [schemaName]
+  );
+  return rows[0]?.exists === true;
+}
+
+/**
+ * Round-6 review P2 — closes the silent-data-loss residual left by the
+ * public → `tuvren_kernel` default-schema change. When a defaulted
+ * `schemaName` is about to provision a brand-new schema, this looks for a
+ * table named {@link LEGACY_SNAPSHOTS_TABLE} living in any *other* schema in
+ * the database (querying `pg_catalog` directly rather than
+ * `information_schema.tables` so the check is not scoped by the connected
+ * role's visibility rules) and throws a typed, loud error naming every
+ * schema where it was found, rather than letting the deployment come up
+ * against a fresh empty schema with no error at all.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_legacy_blob_schema_elsewhere`
+ *   when the legacy table exists in one or more other schemas.
+ */
+async function assertNoLegacyBlobSnapshotsTableElsewhere(
+  tx: Tx,
+  configuredSchemaName: string
+): Promise<void> {
+  const rows = await tx.unsafe<Array<{ table_schema: string }>>(
+    `SELECT n.nspname AS table_schema
+       FROM pg_catalog.pg_class c
+       JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+      WHERE c.relname = $1
+        AND c.relkind IN ('r', 'p')
+        AND n.nspname <> $2
+        AND n.nspname NOT IN ('pg_catalog', 'information_schema')`,
+    [LEGACY_SNAPSHOTS_TABLE, configuredSchemaName]
+  );
+
+  if (rows.length === 0) {
+    return;
+  }
+
+  const legacySchemas = rows.map((row) => row.table_schema);
+
+  throw persistenceError(
+    `postgres backend found the legacy "${LEGACY_SNAPSHOTS_TABLE}" table in ` +
+      `schema(s) ${legacySchemas.join(", ")}, not in the configured schema ` +
+      `"${configuredSchemaName}" (which does not exist yet). This backend ` +
+      "defaulted the schema name because none was supplied, and would " +
+      `otherwise provision a fresh, empty "${configuredSchemaName}" schema ` +
+      "and silently never migrate the existing data. Set schemaName " +
+      `explicitly (for example schemaName: "${legacySchemas[0]}") so the ` +
+      "open-time migration can find the legacy data, or move the legacy " +
+      `table into "${configuredSchemaName}" before opening this backend ` +
+      "again.",
+    "postgres_backend_legacy_blob_schema_elsewhere",
+    { configuredSchemaName, legacySchemas }
+  );
 }
 
 /**
