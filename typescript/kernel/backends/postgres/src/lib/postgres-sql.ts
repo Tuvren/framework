@@ -16,6 +16,7 @@
 
 import { createHash } from "node:crypto";
 import type { Sql, TransactionSql } from "postgres";
+import { persistenceError } from "./postgres-errors.js";
 
 /**
  * Connection or in-transaction handle accepted by relational Postgres modules.
@@ -26,6 +27,9 @@ export type DbSql = Sql | TransactionSql<Record<string, never>>;
 /** Conservative unquoted-identifier alphabet (letters, digits, `_`, `-`). */
 const SAFE_SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_-]*$/;
 
+/** The one code point PostgreSQL `TEXT`/`VARCHAR` columns cannot encode. */
+const NUL_CODE_POINT = "\u0000";
+
 /**
  * Double-quotes a SQL identifier after rejecting characters outside the
  * conservative unquoted-identifier alphabet (letters, digits, `_`, `-`).
@@ -34,12 +38,44 @@ const SAFE_SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_-]*$/;
  */
 export function quoteIdentifier(identifier: string): string {
   if (!SAFE_SQL_IDENTIFIER.test(identifier)) {
-    throw new Error(
-      `postgres backend refused to quote unsafe SQL identifier "${identifier}"`
+    throw persistenceError(
+      `postgres backend refused to quote unsafe SQL identifier "${identifier}"`,
+      "postgres_backend_unsafe_sql_identifier",
+      { identifier }
     );
   }
 
   return `"${identifier.replaceAll('"', '""')}"`;
+}
+
+/**
+ * Rejects a caller-supplied identifier/text value that contains U+0000
+ * (NUL). Every affected field here now lands directly in a relational `TEXT`
+ * column (ADR-067 moved it out of a CBOR blob, where an embedded NUL byte
+ * round-tripped without complaint); PostgreSQL's wire protocol cannot encode
+ * NUL in `text`/`varchar` and rejects it with SQLSTATE 22021
+ * (`invalid_text_representation`) deep inside the driver. Calling this at the
+ * repository boundary turns that into a typed, predictable
+ * `postgres_backend_unstorable_text` error instead of a confusing
+ * `postgres_backend_engine_error`.
+ *
+ * Only caller-supplied opaque strings need this (scope, thread/branch/turn/
+ * run/task ids, schema ids, turn-tree paths, media types, lease/execution
+ * fields). Kernel-derived content hashes never need it: they are hex/base
+ * digests validated by kernel-protocol's own hash guards and cannot contain a
+ * NUL byte.
+ *
+ * @throws TuvrenPersistenceError `postgres_backend_unstorable_text` when
+ *   `value` contains U+0000.
+ */
+export function assertPostgresStorableText(value: string, label: string): void {
+  if (value.includes(NUL_CODE_POINT)) {
+    throw persistenceError(
+      `postgres backend cannot store ${label}: PostgreSQL TEXT columns cannot encode a U+0000 (NUL) code point`,
+      "postgres_backend_unstorable_text",
+      { label }
+    );
+  }
 }
 
 /** Returns `"schema"."table"` for a validated schema name and table name. */

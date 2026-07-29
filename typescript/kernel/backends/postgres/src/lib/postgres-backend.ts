@@ -116,6 +116,7 @@ import {
 } from "./postgres-schema-init.js";
 import type { DbSql } from "./postgres-sql.js";
 import {
+  assertPostgresStorableText,
   deriveAdvisoryLockKey,
   qualifyIdentifier,
   quoteIdentifier,
@@ -275,6 +276,11 @@ class PostgresBackend implements KrakenBackend {
     this.schemaName = normalizeSchemaName(resolvedOptions.schemaName);
     this.scope = resolvedOptions.scope ?? DEFAULT_SCOPE;
     assertScope(this.scope);
+    // assertScope only rejects an empty string; a scope carrying U+0000
+    // would otherwise reach every family table's `scope` column as a
+    // caller-supplied TEXT value (ADR-048/049), so it needs the same
+    // boundary check every other caller-supplied identifier field gets.
+    assertPostgresStorableText(this.scope, "scope");
     this.scopeLockKey = deriveAdvisoryLockKey(
       "tuvren-postgres-scope",
       this.schemaName,
@@ -843,7 +849,6 @@ function createRepositories(
         areStoredThreadsEqual,
         assertStoredObjectIdentity,
         assertStoredOrderedPathChunkIdentity,
-        bytesFrom,
         cloneStoredObject,
         cloneStoredObserveAnnotation,
         cloneStoredOrderedPathChunk,
@@ -888,7 +893,6 @@ function createRepositories(
         assertRunUpdateIsLegal,
         assertStoredTurnNodeIdentity,
         assertStoredTurnTreeIdentity,
-        bytesFrom,
         cloneStoredBranch,
         cloneStoredRun,
         cloneStoredTurn,
@@ -927,8 +931,11 @@ function createRepositories(
 
 /**
  * Loads the Scope's full state projection and runs the maintenance validation
- * suite used by `fsck()` and `reclaim()`: per-record shape/identity, the
- * derived lineage-root index, and the committed-state invariant suite.
+ * suite used by `fsck()` and `reclaim()`: the schema's durable posture
+ * (mirroring the SQLite backend's `validateMigrationState` gate — a dropped
+ * required index or a collation/deferred-FK drift is caught here, not just
+ * by `health()`), per-record shape/identity, the derived lineage-root index,
+ * and the committed-state invariant suite.
  */
 async function loadValidatedState(
   sql: DbSql,
@@ -936,6 +943,8 @@ async function loadValidatedState(
   scope: string,
   phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
 ): Promise<BackendState> {
+  await validateRelationalSchemaPosture(sql, schemaName);
+
   const endLoad = phaseObserver.startPhase("load");
   let state: BackendState;
   try {
@@ -1326,15 +1335,10 @@ async function insertOrderedPathChunk(
       scope,
       record.chunkHash,
       record.itemCount,
-      bytesFrom(record.itemsCbor),
+      record.itemsCbor,
       record.createdAtMs,
     ]
   );
-}
-
-/** Returns bytes suitable for BYTEA bind parameters. */
-function bytesFrom(bytes: Uint8Array): Uint8Array {
-  return bytes;
 }
 
 /**

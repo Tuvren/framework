@@ -32,7 +32,10 @@ import {
 } from "@tuvren/kernel-protocol";
 import { persistenceError } from "./postgres-errors.js";
 import type { DbSql } from "./postgres-sql.js";
-import { qualifyIdentifier } from "./postgres-sql.js";
+import {
+  assertPostgresStorableText,
+  qualifyIdentifier,
+} from "./postgres-sql.js";
 import type { TransactionWriteTracker } from "./postgres-write-tracker.js";
 
 /**
@@ -108,8 +111,6 @@ interface CoreRepositoryHelpers {
     schema: TurnTreeSchema,
     label: string
   ) => Promise<void>;
-  /** Returns bytes suitable for BYTEA bind parameters. */
-  bytesFrom: (bytes: Uint8Array) => Uint8Array;
   cloneStoredBranch: (record: StoredBranch) => StoredBranch;
   cloneStoredRun: (record: StoredRun) => StoredRun;
   cloneStoredTurn: (record: StoredTurn) => StoredTurn;
@@ -305,6 +306,14 @@ export function createCoreRepositories(
       async set(record) {
         assertTransactionActive();
         assertStoredBranch(record, "record");
+        assertPostgresStorableText(record.branchId, "record.branchId");
+        assertPostgresStorableText(record.threadId, "record.threadId");
+        if (record.archivedFromBranchId !== undefined) {
+          assertPostgresStorableText(
+            record.archivedFromBranchId,
+            "record.archivedFromBranchId"
+          );
+        }
         await helpers.ensureThreadExistsInDatabase(
           sql,
           schemaName,
@@ -436,6 +445,28 @@ export function createCoreRepositories(
       async set(record) {
         assertTransactionActive();
         assertStoredRun(record, "record");
+        assertPostgresStorableText(record.runId, "record.runId");
+        assertPostgresStorableText(record.turnId, "record.turnId");
+        assertPostgresStorableText(record.branchId, "record.branchId");
+        assertPostgresStorableText(record.schemaId, "record.schemaId");
+        if (record.executionOwnerId !== undefined) {
+          assertPostgresStorableText(
+            record.executionOwnerId,
+            "record.executionOwnerId"
+          );
+        }
+        if (record.fencingToken !== undefined) {
+          assertPostgresStorableText(
+            record.fencingToken,
+            "record.fencingToken"
+          );
+        }
+        if (record.preemptionReason !== undefined) {
+          assertPostgresStorableText(
+            record.preemptionReason,
+            "record.preemptionReason"
+          );
+        }
         const branch = await helpers.ensureBranchExistsInDatabase(
           sql,
           schemaName,
@@ -535,13 +566,13 @@ export function createCoreRepositories(
             record.startTurnNodeHash,
             record.status,
             record.currentStepIndex,
-            helpers.bytesFrom(record.stepSequenceCbor),
-            helpers.bytesFrom(record.createdTurnNodesCbor),
+            record.stepSequenceCbor,
+            record.createdTurnNodesCbor,
             record.createdAtMs,
             record.updatedAtMs,
             record.pendingSignalsCbor === undefined
               ? null
-              : helpers.bytesFrom(record.pendingSignalsCbor),
+              : record.pendingSignalsCbor,
             record.executionOwnerId ?? null,
             record.leaseExpiresAtMs ?? null,
             record.fencingToken ?? null,
@@ -565,6 +596,7 @@ export function createCoreRepositories(
       async put(record) {
         assertTransactionActive();
         assertStoredTurnNode(record, "record");
+        assertPostgresStorableText(record.schemaId, "record.schemaId");
         await helpers.assertStoredTurnNodeIdentity(record, "record");
         await helpers.ensureTurnTreeExistsInDatabase(
           sql,
@@ -627,7 +659,7 @@ export function createCoreRepositories(
             record.hash,
             record.previousTurnNodeHash,
             record.turnTreeHash,
-            helpers.bytesFrom(record.consumedStagedResultsCbor),
+            record.consumedStagedResultsCbor,
             record.schemaId,
             record.eventHash,
             record.createdAtMs,
@@ -685,6 +717,7 @@ export function createCoreRepositories(
         const schemaMemo = new Map<string, TurnTreeSchema>();
 
         for (const record of records) {
+          assertPostgresStorableText(record.path, "record.path");
           const compositeKey = `${record.turnTreeHash}:${record.path}`;
           if (seenCompositeKeys.has(compositeKey)) {
             throw persistenceError(
@@ -778,11 +811,11 @@ export function createCoreRepositories(
                 : null,
               normalizedRecord.collectionKind === "ordered" &&
               normalizedRecord.orderedEncoding === "flat"
-                ? helpers.bytesFrom(normalizedRecord.orderedInlineCbor)
+                ? normalizedRecord.orderedInlineCbor
                 : null,
               normalizedRecord.collectionKind === "ordered" &&
               normalizedRecord.orderedEncoding === "chunked"
-                ? helpers.bytesFrom(normalizedRecord.orderedChunkListCbor)
+                ? normalizedRecord.orderedChunkListCbor
                 : null,
             ]
           );
@@ -803,6 +836,7 @@ export function createCoreRepositories(
       },
       async put(record) {
         assertTransactionActive();
+        assertPostgresStorableText(record.schemaId, "record.schemaId");
         const schema = await helpers.getSchemaForSchemaIdInDatabase(
           sql,
           schemaName,
@@ -844,7 +878,7 @@ export function createCoreRepositories(
             scope,
             record.hash,
             record.schemaId,
-            helpers.bytesFrom(record.manifestCbor),
+            record.manifestCbor,
             record.createdAtMs,
           ]
         );
@@ -871,6 +905,15 @@ export function createCoreRepositories(
       async set(record) {
         assertTransactionActive();
         assertStoredTurn(record, "record");
+        assertPostgresStorableText(record.turnId, "record.turnId");
+        assertPostgresStorableText(record.threadId, "record.threadId");
+        assertPostgresStorableText(record.branchId, "record.branchId");
+        if (record.parentTurnId !== null) {
+          assertPostgresStorableText(
+            record.parentTurnId,
+            "record.parentTurnId"
+          );
+        }
         await helpers.ensureThreadExistsInDatabase(
           sql,
           schemaName,
