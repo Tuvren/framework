@@ -19,6 +19,7 @@ import { createStoredObjectRecord } from "@tuvren/kernel-testkit";
 import type { Sql } from "postgres";
 import { createPostgresBackend } from "../src/index.js";
 import { RELATIONAL_REQUIRED_TABLES } from "../src/lib/postgres-schema.js";
+import { quoteIdentifier } from "../src/lib/postgres-sql.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
@@ -40,10 +41,6 @@ import {
  * update elsewhere), this test would see more than one row bearing the
  * write transaction's `xmin`.
  */
-
-function quoteIdentifier(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
-}
 
 function requireSchemaName(
   options: ReturnType<typeof createPostgresTestBackendOptions>
@@ -151,88 +148,89 @@ afterAll(async () => {
   await cleanupAllocatedSchemas();
 });
 
+// The two cases only differ in scale (how many pre-existing objects share
+// the scope) and the resulting seed batching/timeout budget; the assertions
+// under test — exactly one row total, and that row landing in `objects` —
+// are identical, so both scales run through one parameterized body instead
+// of two copies that could silently drift apart.
+interface DeltaWriteCase {
+  readonly description: string;
+  readonly scope: string;
+  readonly seedBatchSize: number;
+  readonly seedCount: number;
+  readonly timeoutMs: number;
+}
+
+const DELTA_WRITE_CASES: readonly DeltaWriteCase[] = [
+  {
+    description:
+      "writing one new object into a 1,000-object scope touches exactly one row across every family table",
+    scope: "delta-write-large-scope",
+    seedCount: 1000,
+    seedBatchSize: 100,
+    timeoutMs: 30_000,
+  },
+  {
+    description:
+      "writing one new object into a tiny 10-object scope also touches exactly one row, making the flatness explicit",
+    scope: "delta-write-tiny-scope",
+    seedCount: 10,
+    seedBatchSize: 10,
+    timeoutMs: 10_000,
+  },
+];
+
 describe("@tuvren/backend-postgres delta-proportional writes (KRT-BK012)", () => {
-  test("writing one new object into a 1,000-object scope touches exactly one row across every family table", async () => {
-    const scope = "delta-write-large-scope";
-    const options = createPostgresTestBackendOptions({ scope });
-    const backend = createPostgresBackend(options);
+  for (const testCase of DELTA_WRITE_CASES) {
+    test(
+      testCase.description,
+      async () => {
+        const options = createPostgresTestBackendOptions({
+          scope: testCase.scope,
+        });
+        const backend = createPostgresBackend(options);
 
-    try {
-      await seedObjects(backend, 1000, 100);
+        try {
+          await seedObjects(
+            backend,
+            testCase.seedCount,
+            testCase.seedBatchSize
+          );
 
-      const newRecord = await createStoredObjectRecord(
-        objectBytesForIndex(1000),
-        2
-      );
+          const newRecord = await createStoredObjectRecord(
+            objectBytesForIndex(testCase.seedCount),
+            2
+          );
 
-      await backend.transact(async (tx) => {
-        await tx.objects.put(newRecord);
-      });
+          await backend.transact(async (tx) => {
+            await tx.objects.put(newRecord);
+          });
 
-      const admin = createAdminClient(options);
-      try {
-        const transactionId = await readObjectRowTransactionId(
-          admin,
-          requireSchemaName(options),
-          scope,
-          newRecord.hash
-        );
-        const countsByTable = await countRowsWrittenByTransaction(
-          admin,
-          requireSchemaName(options),
-          scope,
-          transactionId
-        );
+          const admin = createAdminClient(options);
+          try {
+            const transactionId = await readObjectRowTransactionId(
+              admin,
+              requireSchemaName(options),
+              testCase.scope,
+              newRecord.hash
+            );
+            const countsByTable = await countRowsWrittenByTransaction(
+              admin,
+              requireSchemaName(options),
+              testCase.scope,
+              transactionId
+            );
 
-        expect(totalRows(countsByTable)).toBe(1);
-        expect(countsByTable.objects).toBe(1);
-      } finally {
-        await admin.end({ timeout: 0 });
-      }
-    } finally {
-      await backend.destroy();
-    }
-  }, 30_000);
-
-  test("writing one new object into a tiny 10-object scope also touches exactly one row, making the flatness explicit", async () => {
-    const scope = "delta-write-tiny-scope";
-    const options = createPostgresTestBackendOptions({ scope });
-    const backend = createPostgresBackend(options);
-
-    try {
-      await seedObjects(backend, 10, 10);
-
-      const newRecord = await createStoredObjectRecord(
-        objectBytesForIndex(10),
-        2
-      );
-
-      await backend.transact(async (tx) => {
-        await tx.objects.put(newRecord);
-      });
-
-      const admin = createAdminClient(options);
-      try {
-        const transactionId = await readObjectRowTransactionId(
-          admin,
-          requireSchemaName(options),
-          scope,
-          newRecord.hash
-        );
-        const countsByTable = await countRowsWrittenByTransaction(
-          admin,
-          requireSchemaName(options),
-          scope,
-          transactionId
-        );
-
-        expect(totalRows(countsByTable)).toBe(1);
-        expect(countsByTable.objects).toBe(1);
-      } finally {
-        await admin.end({ timeout: 0 });
-      }
-    } finally {
-      await backend.destroy();
-    }
-  }, 10_000);
+            expect(totalRows(countsByTable)).toBe(1);
+            expect(countsByTable.objects).toBe(1);
+          } finally {
+            await admin.end({ timeout: 0 });
+          }
+        } finally {
+          await backend.destroy();
+        }
+      },
+      testCase.timeoutMs
+    );
+  }
 });

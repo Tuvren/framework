@@ -30,14 +30,7 @@ import {
   assertStoredTurnTree,
   assertStoredTurnTreePath,
   decodeDeterministicKernelRecord,
-  encodeDeterministicKernelRecord,
-  type StoredObject,
-  type StoredOrderedPathChunk,
-  type StoredSchema,
   type StoredStagedResult,
-  type StoredThread,
-  type StoredTurn,
-  type StoredTurnNode,
   type StoredTurnTree,
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
@@ -61,10 +54,6 @@ import {
   cloneStoredTurnNode,
   cloneStoredTurnTree,
   cloneStoredTurnTreePath,
-  compareStoredBranch,
-  compareStoredObserveAnnotation,
-  compareStoredRun,
-  compareStoredStagedResult,
 } from "./postgres-state-utils.js";
 
 /** Wire-format version stamped into every encoded snapshot payload. */
@@ -80,13 +69,21 @@ export interface PostgresBackendPersistenceOptions {
   password?: string;
   /**
    * Phase-attribution seam (issue #108) for the relational persistence
-   * path's per-transaction costs (ADR-067): `lock-wait` for the row locks a
-   * transaction waits on, `load` for reading a record family's rows,
-   * `validate-*` for the kernel-protocol `assertStored*` passes run against
-   * loaded and staged records, and `write` for the `INSERT`/`UPDATE`
-   * statements that commit a draft. A one-time `blob-migration` phase also
-   * reports the cost of exploding a legacy blob-per-scope snapshot into its
-   * relational rows the first time a pre-#110 schema is opened. Defaults to
+   * path's per-transaction costs (ADR-067), sharing the same
+   * {@link PersistencePhase} vocabulary as the SQLite backend: `lock-wait`
+   * covers both waiting on the in-process transaction queue and waiting on
+   * the database-level same-scope advisory lock (there are no row locks to
+   * wait on here — Postgres's MVCC readers never block on a writer); `load`
+   * is the maintenance-path cost of reading a record family's rows into an
+   * in-memory projection; the four named `validate-*` phases
+   * (`validate-loaded`, `validate-lineage-index`, `validate-committed`,
+   * `validate-write-set`) and `validate-reclaim-survivors` are the distinct
+   * validation passes `loadValidatedState`, `transact`, and `reclaim` each
+   * run, not one undifferentiated `validate` phase; and `write` covers both
+   * `COMMIT` on the transaction path and the maintenance paths' bulk row
+   * deletions. A one-time `blob-migration` phase also reports the cost of
+   * exploding a legacy blob-per-scope snapshot into its relational rows the
+   * first time a pre-#110 schema is opened. Defaults to
    * {@link NOOP_PHASE_OBSERVER}, so omitting it costs one shared frozen no-op
    * call per phase and never changes measured production bytes or behavior.
    * Benches/tests supply a recording observer instead.
@@ -172,77 +169,19 @@ export function normalizeSchemaName(schemaName: string | undefined): string {
 }
 
 /**
- * Projects a `BackendState` into the snapshot wire format: every record
- * family flattened to a deterministically sorted array (so the encoding is
- * stable regardless of `Map` iteration order) and CBOR-encoded alongside the
- * schema version.
- *
- * Exported (but not re-exported from the package's `index.ts`, mirroring
- * `memory-backend-state.ts`'s `createEmptyState`/`validateCommittedState`)
- * so tests can exercise the encode/decode round trip directly instead of
- * only indirectly through `transact()`.
- */
-export function encodeSnapshot(state: BackendState): Uint8Array {
-  const snapshot = {
-    branches: Array.from(state.branches.values(), cloneStoredBranch).sort(
-      compareStoredBranch
-    ),
-    objects: Array.from(state.objects.values(), cloneStoredObject).sort(
-      compareStoredObject
-    ),
-    observeAnnotations: Array.from(
-      state.observeAnnotations.values(),
-      (records) => records.map(cloneStoredObserveAnnotation)
-    )
-      .flat()
-      .sort(compareStoredObserveAnnotation),
-    orderedPathChunks: Array.from(
-      state.orderedPathChunks.values(),
-      cloneStoredOrderedPathChunk
-    ).sort(compareStoredOrderedPathChunk),
-    runs: Array.from(state.runs.values(), cloneStoredRun).sort(
-      compareStoredRun
-    ),
-    schemas: Array.from(state.schemas.values(), cloneStoredSchema).sort(
-      compareStoredSchema
-    ),
-    stagedResults: Array.from(state.stagedResults.values(), (records) =>
-      Array.from(records.values(), cloneStoredStagedResult)
-    )
-      .flat()
-      .sort(compareStoredStagedResult),
-    threads: Array.from(state.threads.values(), cloneStoredThread).sort(
-      compareStoredThread
-    ),
-    turnNodes: Array.from(state.turnNodes.values(), cloneStoredTurnNode).sort(
-      compareStoredTurnNode
-    ),
-    turnTreePaths: Array.from(state.turnTreePaths.values(), (records) =>
-      Array.from(records.values(), cloneStoredTurnTreePath)
-    )
-      .flat()
-      .sort(compareStoredTurnTreePath),
-    turnTrees: Array.from(state.turnTrees.values(), cloneStoredTurnTree).sort(
-      compareStoredTurnTree
-    ),
-    turns: Array.from(state.turns.values(), cloneStoredTurn).sort(
-      compareStoredTurn
-    ),
-    version: CURRENT_SNAPSHOT_VERSION,
-  } satisfies Record<string, unknown>;
-
-  return encodeDeterministicKernelRecord(
-    snapshot as unknown as Parameters<typeof encodeDeterministicKernelRecord>[0]
-  );
-}
-
-/**
  * Decodes the snapshot wire format back into a `BackendState`, re-validating
  * every record with the kernel-protocol `assertStored*` guards as it is
  * inserted (schema records first, since turn trees and turn tree paths need
  * their schema to validate) and checking the payload's schema version.
  *
- * Exported for the same test-only reason as {@link encodeSnapshot}.
+ * Exported (but not re-exported from the package's `index.ts`) for two
+ * consumers: the production one-time blob→row migration
+ * (`postgres-blob-migration.ts`'s `explodeLegacyBlobSnapshots`, which decodes
+ * a pre-#110 database's legacy `backend_postgres_snapshots` blob), and tests
+ * that exercise this decode path directly against a snapshot payload built by
+ * the test-only `encodeSnapshot` in `test/legacy-snapshot-encoder.ts` (the
+ * writer side of this wire format retired from production source once
+ * ADR-067's relational schema replaced blob-per-scope persistence).
  *
  * @throws TuvrenPersistenceError with code `postgres_backend_snapshot_payload_invalid`
  *   when the payload or a field's shape is malformed, or
@@ -493,57 +432,4 @@ function getSchemaForTurnTree(
   turnTree: { schemaId: string }
 ) {
   return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
-}
-
-// Comparators below give the encoded snapshot a deterministic element order
-// per record family, by identity key, independent of `Map` iteration order.
-
-function compareStoredObject(left: StoredObject, right: StoredObject): number {
-  return left.hash.localeCompare(right.hash);
-}
-
-function compareStoredOrderedPathChunk(
-  left: StoredOrderedPathChunk,
-  right: StoredOrderedPathChunk
-): number {
-  return left.chunkHash.localeCompare(right.chunkHash);
-}
-
-function compareStoredSchema(left: StoredSchema, right: StoredSchema): number {
-  return left.schemaId.localeCompare(right.schemaId);
-}
-
-function compareStoredThread(left: StoredThread, right: StoredThread): number {
-  return left.threadId.localeCompare(right.threadId);
-}
-
-function compareStoredTurnNode(
-  left: StoredTurnNode,
-  right: StoredTurnNode
-): number {
-  return left.hash.localeCompare(right.hash);
-}
-
-function compareStoredTurnTree(
-  left: StoredTurnTree,
-  right: StoredTurnTree
-): number {
-  return left.hash.localeCompare(right.hash);
-}
-
-function compareStoredTurnTreePath(
-  left: StoredTurnTreePath,
-  right: StoredTurnTreePath
-): number {
-  const treeCompare = left.turnTreeHash.localeCompare(right.turnTreeHash);
-
-  if (treeCompare !== 0) {
-    return treeCompare;
-  }
-
-  return left.path.localeCompare(right.path);
-}
-
-function compareStoredTurn(left: StoredTurn, right: StoredTurn): number {
-  return left.turnId.localeCompare(right.turnId);
 }

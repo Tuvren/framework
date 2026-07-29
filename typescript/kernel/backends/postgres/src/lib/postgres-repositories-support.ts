@@ -34,7 +34,10 @@ import {
 } from "@tuvren/kernel-protocol";
 import { persistenceError } from "./postgres-errors.js";
 import type { DbSql } from "./postgres-sql.js";
-import { qualifyIdentifier } from "./postgres-sql.js";
+import {
+  assertPostgresStorableText,
+  qualifyIdentifier,
+} from "./postgres-sql.js";
 import type { TransactionWriteTracker } from "./postgres-write-tracker.js";
 
 /**
@@ -71,7 +74,6 @@ interface SupportRepositoryHelpers {
     record: StoredOrderedPathChunk,
     label: string
   ) => Promise<void>;
-  bytesFrom: (bytes: Uint8Array) => Uint8Array;
   cloneStoredObject: (record: StoredObject) => StoredObject;
   cloneStoredObserveAnnotation: (
     record: StoredObserveAnnotation
@@ -227,6 +229,7 @@ export function createSupportRepositories(
       async set(record) {
         assertTransactionActive();
         assertStoredObserveAnnotation(record, "record");
+        assertPostgresStorableText(record.runId, "record.runId");
         await helpers.ensureRunExistsInDatabase(
           sql,
           schemaName,
@@ -263,8 +266,6 @@ export function createSupportRepositories(
               annotation_cbor,
               created_at_ms
             ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ON CONFLICT (scope, record_key) DO UPDATE SET
-              annotation_cbor = EXCLUDED.annotation_cbor
           `,
           [
             scope,
@@ -272,7 +273,7 @@ export function createSupportRepositories(
             record.runId,
             record.annotationHash,
             record.turnNodeHash,
-            helpers.bytesFrom(record.annotationCbor),
+            record.annotationCbor,
             record.createdAtMs,
           ]
         );
@@ -293,6 +294,7 @@ export function createSupportRepositories(
       async put(record) {
         assertTransactionActive();
         assertStoredObject(record, "record");
+        assertPostgresStorableText(record.mediaType, "record.mediaType");
         await helpers.assertStoredObjectIdentity(record, "record");
         const existing = await helpers.selectObject(
           sql,
@@ -327,7 +329,7 @@ export function createSupportRepositories(
             scope,
             record.hash,
             record.mediaType,
-            helpers.bytesFrom(record.bytes),
+            record.bytes,
             record.byteLength,
             record.createdAtMs,
           ]
@@ -368,6 +370,7 @@ export function createSupportRepositories(
       async put(record) {
         assertTransactionActive();
         assertStoredSchema(record, "record");
+        assertPostgresStorableText(record.schemaId, "record.schemaId");
         const existing = await helpers.selectSchema(
           sql,
           schemaName,
@@ -391,12 +394,7 @@ export function createSupportRepositories(
             INSERT INTO ${table} (scope, schema_id, schema_cbor, created_at_ms)
             VALUES ($1, $2, $3, $4)
           `,
-          [
-            scope,
-            record.schemaId,
-            helpers.bytesFrom(record.schemaCbor),
-            record.createdAtMs,
-          ]
+          [scope, record.schemaId, record.schemaCbor, record.createdAtMs]
         );
       },
     },
@@ -438,6 +436,8 @@ export function createSupportRepositories(
       async set(record) {
         assertTransactionActive();
         assertStoredStagedResult(record, "record");
+        assertPostgresStorableText(record.runId, "record.runId");
+        assertPostgresStorableText(record.taskId, "record.taskId");
         await helpers.ensureRunExistsInDatabase(
           sql,
           schemaName,
@@ -492,7 +492,7 @@ export function createSupportRepositories(
             record.objectType,
             record.status,
             record.status === "interrupted"
-              ? helpers.bytesFrom(record.interruptPayloadCbor)
+              ? record.interruptPayloadCbor
               : null,
             record.createdAtMs,
           ]
@@ -514,6 +514,8 @@ export function createSupportRepositories(
       async put(record) {
         assertTransactionActive();
         assertStoredThread(record, "record");
+        assertPostgresStorableText(record.threadId, "record.threadId");
+        assertPostgresStorableText(record.schemaId, "record.schemaId");
         await helpers.ensureSchemaExistsInDatabase(
           sql,
           schemaName,

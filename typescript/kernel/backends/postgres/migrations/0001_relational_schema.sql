@@ -5,8 +5,14 @@
 --   * DEFERRABLE INITIALLY DEFERRED foreign keys (SQLite reclaim's defer_foreign_keys equivalent)
 --   * COLLATE "C" on every TEXT column so ordering and range comparisons are
 --     byte-wise, matching SQLite's BINARY collation instead of the database's
---     locale-dependent default (keeps ORDER BY / keyset pagination results
---     identical across backends and deployments)
+--     locale-dependent default. Most repository list surfaces already agree
+--     across backends on their own: turnTreePaths.listByTurnTree re-sorts via
+--     localeCompare, and observeAnnotations/stagedResults/branches/runs/turns
+--     re-sort via comparator helpers, all in JS and independent of SQL
+--     collation. COLLATE "C" is load-bearing specifically for SQL-only
+--     ordered surfaces such as thread.list's ORDER BY created_at_ms,
+--     thread_id keyset pagination, and for deployment-independent SQL-level
+--     range comparisons and index usability.
 --
 -- Index policy: the index set mirrors SQLite's (targeted-validation and
 -- lookup indexes). Several FK *referencing* columns that reclaim()/purgeScope

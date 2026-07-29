@@ -43,6 +43,37 @@ import {
 type Tx = TransactionSql<Record<string, never>>;
 
 /**
+ * Memoized `(migrationDirectory, migrationFiles)` pair, computed at most
+ * once per process. The migrations directory's location and its checked-in
+ * `.sql` file listing are fixed at build/install time (issue #108 M5 follow-
+ * up): they cannot change while the process is running, so every repeated
+ * `resolveMigrationDirectory`/`listMigrationFiles` pair after the first was
+ * paying `existsSync`/`readdirSync` system calls for an answer that could
+ * never differ — most visibly on `health()`, which callers may poll often.
+ */
+let memoizedMigrationFiles: { directory: string; names: string[] } | undefined;
+
+/**
+ * Returns the resolved migrations directory and its sorted `.sql` file
+ * listing, computing it once per process and reusing the memoized result on
+ * every later call (see {@link memoizedMigrationFiles}).
+ */
+function resolveMigrationFileListing(): {
+  directory: string;
+  names: string[];
+} {
+  if (memoizedMigrationFiles === undefined) {
+    const directory = resolveMigrationDirectory(persistenceError);
+    memoizedMigrationFiles = {
+      directory,
+      names: listMigrationFiles(directory),
+    };
+  }
+
+  return memoizedMigrationFiles;
+}
+
+/**
  * Idempotently provisions a host PostgreSQL schema for the relational
  * backend (ADR-067 / issue #110): creates the schema and migration ledger,
  * applies checked-in SQL migrations, and runs the open-time blob→row
@@ -81,8 +112,8 @@ export async function ensurePostgresRelationalSchemaInitialized(
     );
 
     const applied = await loadAppliedMigrations(tx, migrationsTable);
-    const migrationDirectory = resolveMigrationDirectory(persistenceError);
-    const migrationFiles = listMigrationFiles(migrationDirectory);
+    const { directory: migrationDirectory, names: migrationFiles } =
+      resolveMigrationFileListing();
 
     for (const migrationName of migrationFiles) {
       if (applied.has(migrationName)) {
@@ -122,14 +153,27 @@ export async function ensurePostgresRelationalSchemaInitialized(
  * Validates the schema's durable posture without loading state: the
  * migration ledger contains the relational migration and nothing this
  * package version does not recognize (legacy blob-era ledger names are
- * expected on migrated databases), and every required family table and
- * index exists. This is the coherence half of `health()` — the relational
- * equivalent of the SQLite backend's `validateMigrationState`.
+ * expected on migrated databases), every required family table and index
+ * exists, every `TEXT` column on those tables still carries the byte-wise
+ * `COLLATE "C"` the migration created it with, and every foreign key among
+ * those tables is still `DEFERRABLE INITIALLY DEFERRED`. This is the
+ * coherence half of `health()` — the relational equivalent of the SQLite
+ * backend's `validateMigrationState` — and it is also the first step of
+ * `loadValidatedState`, so `fsck()`/`reclaim()` catch the same drift (e.g. an
+ * operator manually dropping a required index or altering a column's
+ * collation) that `health()` catches.
+ *
+ * Each aspect below costs exactly one round trip: one query against
+ * `information_schema.tables`, one against `pg_indexes`, one against
+ * `information_schema.columns` for collation, and one against `pg_constraint`
+ * for FK deferrability.
  *
  * @throws TuvrenPersistenceError `postgres_backend_unknown_migrations`,
  *   `postgres_backend_relational_schema_missing`,
- *   `postgres_backend_relational_tables_missing`, or
- *   `postgres_backend_relational_indexes_missing` naming what is wrong.
+ *   `postgres_backend_relational_tables_missing`,
+ *   `postgres_backend_relational_indexes_missing`,
+ *   `postgres_backend_relational_collation_invalid`, or
+ *   `postgres_backend_relational_fks_not_deferrable` naming what is wrong.
  */
 export async function validateRelationalSchemaPosture(
   sql: DbSql,
@@ -144,7 +188,7 @@ export async function validateRelationalSchemaPosture(
   // migrated databases. Anything else is a future package's migration and a
   // genuine posture failure for this version.
   const knownMigrations = new Set<string>([
-    ...listMigrationFiles(resolveMigrationDirectory(persistenceError)),
+    ...resolveMigrationFileListing().names,
     LEGACY_BLOB_INITIAL_MIGRATION_NAME,
     LEGACY_BLOB_SCOPE_PARTITION_MIGRATION_NAME,
   ]);
@@ -205,6 +249,58 @@ export async function validateRelationalSchemaPosture(
       "postgres backend relational indexes are missing",
       "postgres_backend_relational_indexes_missing",
       { missingIndexes, schemaName }
+    );
+  }
+
+  const misCollatedColumns = await sql.unsafe<
+    Array<{ column_name: string; table_name: string }>
+  >(
+    `SELECT table_name, column_name
+       FROM information_schema.columns
+      WHERE table_schema = $1
+        AND table_name = ANY($2::text[])
+        AND data_type IN ('text', 'character varying')
+        AND collation_name IS DISTINCT FROM 'C'`,
+    [schemaName, [...RELATIONAL_REQUIRED_TABLES]]
+  );
+
+  if (misCollatedColumns.length > 0) {
+    throw persistenceError(
+      'postgres backend relational text columns must use COLLATE "C"',
+      "postgres_backend_relational_collation_invalid",
+      {
+        columns: misCollatedColumns.map(
+          (row) => `${row.table_name}.${row.column_name}`
+        ),
+        schemaName,
+      }
+    );
+  }
+
+  const nonDeferrableForeignKeys = await sql.unsafe<
+    Array<{ constraint_name: string; table_name: string }>
+  >(
+    `SELECT cls.relname AS table_name, con.conname AS constraint_name
+       FROM pg_constraint con
+       JOIN pg_class cls ON cls.oid = con.conrelid
+       JOIN pg_namespace ns ON ns.oid = cls.relnamespace
+      WHERE ns.nspname = $1
+        AND cls.relname = ANY($2::text[])
+        AND con.contype = 'f'
+        AND NOT (con.condeferrable AND con.condeferred)`,
+    [schemaName, [...RELATIONAL_REQUIRED_TABLES]]
+  );
+
+  if (nonDeferrableForeignKeys.length > 0) {
+    throw persistenceError(
+      "postgres backend relational foreign keys must be DEFERRABLE INITIALLY DEFERRED",
+      "postgres_backend_relational_fks_not_deferrable",
+      {
+        constraints: nonDeferrableForeignKeys.map(
+          (row) => `${row.table_name}.${row.constraint_name}`
+        ),
+        schemaName,
+      }
     );
   }
 }

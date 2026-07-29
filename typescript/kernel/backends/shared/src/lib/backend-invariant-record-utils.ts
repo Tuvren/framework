@@ -38,6 +38,23 @@ import type { BackendState } from "./backend-invariant-state.js";
 /** Configuration for {@link createBackendInvariantRecordUtils}. */
 export interface BackendInvariantRecordUtilsConfig {
   /**
+   * Clones a CBOR-encoded byte field for every `cloneStored*` helper that
+   * carries one (e.g. `cloneStoredSchema`'s `schemaCbor`, `cloneStoredRun`'s
+   * `stepSequenceCbor`). Defaults to the same plain, byte-for-byte
+   * {@link cloneBytes} every consumer used before this field existed, so a
+   * consumer that omits it (the in-memory backend) keeps its original
+   * behavior unchanged.
+   *
+   * The SQLite and PostgreSQL backends inject their own
+   * `cloneEncodedBytes`, which additionally re-attaches the `dataView`
+   * property their deterministic CBOR decoder expects on an encoded
+   * payload — a marker plain `cloneBytes` does not carry, because those two
+   * backends round-trip stored bytes through that decoder (via a loaded
+   * database row) in a way the in-memory backend, which never leaves the
+   * process, does not need to.
+   */
+  cloneEncodedBytes?(bytes: Uint8Array): Uint8Array;
+  /**
    * The backend-owned error-code prefix (e.g. `"memory"`, `"sqlite"`,
    * `"postgres"`). Every persistence error this module raises is coded
    * `${errorPrefix}_backend_<reason>`, matching each backend's pre-extraction
@@ -207,6 +224,8 @@ export function createBackendInvariantRecordUtils(
   function code(suffix: string): string {
     return `${config.errorPrefix}_backend_${suffix}`;
   }
+
+  const cloneEncodedBytes = config.cloneEncodedBytes ?? cloneBytes;
 
   function persistenceError(
     message: string,
@@ -506,14 +525,14 @@ export function createBackendInvariantRecordUtils(
   function cloneStoredSchema(record: StoredSchema): StoredSchema {
     return {
       ...record,
-      schemaCbor: cloneBytes(record.schemaCbor),
+      schemaCbor: cloneEncodedBytes(record.schemaCbor),
     };
   }
 
   function cloneStoredTurnTree(record: StoredTurnTree): StoredTurnTree {
     return {
       ...record,
-      manifestCbor: cloneBytes(record.manifestCbor),
+      manifestCbor: cloneEncodedBytes(record.manifestCbor),
     };
   }
 
@@ -522,25 +541,29 @@ export function createBackendInvariantRecordUtils(
   ): StoredOrderedPathChunk {
     return {
       ...record,
-      itemsCbor: cloneBytes(record.itemsCbor),
+      itemsCbor: cloneEncodedBytes(record.itemsCbor),
     };
   }
 
   function cloneStoredTurnNode(record: StoredTurnNode): StoredTurnNode {
     return {
       ...record,
-      consumedStagedResultsCbor: cloneBytes(record.consumedStagedResultsCbor),
+      consumedStagedResultsCbor: cloneEncodedBytes(
+        record.consumedStagedResultsCbor
+      ),
     };
   }
 
   function cloneStoredRun(record: StoredRun): StoredRun {
     return {
       ...record,
-      createdTurnNodesCbor: cloneBytes(record.createdTurnNodesCbor),
-      stepSequenceCbor: cloneBytes(record.stepSequenceCbor),
+      createdTurnNodesCbor: cloneEncodedBytes(record.createdTurnNodesCbor),
+      stepSequenceCbor: cloneEncodedBytes(record.stepSequenceCbor),
       ...(record.pendingSignalsCbor === undefined
         ? {}
-        : { pendingSignalsCbor: cloneBytes(record.pendingSignalsCbor) }),
+        : {
+            pendingSignalsCbor: cloneEncodedBytes(record.pendingSignalsCbor),
+          }),
     };
   }
 
@@ -549,7 +572,7 @@ export function createBackendInvariantRecordUtils(
   ): StoredObserveAnnotation {
     return {
       ...record,
-      annotationCbor: cloneBytes(record.annotationCbor),
+      annotationCbor: cloneEncodedBytes(record.annotationCbor),
     };
   }
 
@@ -559,7 +582,7 @@ export function createBackendInvariantRecordUtils(
     if (record.status === "interrupted") {
       return {
         ...record,
-        interruptPayloadCbor: cloneBytes(record.interruptPayloadCbor),
+        interruptPayloadCbor: cloneEncodedBytes(record.interruptPayloadCbor),
       };
     }
 
@@ -588,13 +611,13 @@ export function createBackendInvariantRecordUtils(
     if (record.orderedEncoding === "flat") {
       return {
         ...record,
-        orderedInlineCbor: cloneBytes(record.orderedInlineCbor),
+        orderedInlineCbor: cloneEncodedBytes(record.orderedInlineCbor),
       };
     }
 
     return {
       ...record,
-      orderedChunkListCbor: cloneBytes(record.orderedChunkListCbor),
+      orderedChunkListCbor: cloneEncodedBytes(record.orderedChunkListCbor),
     };
   }
 
