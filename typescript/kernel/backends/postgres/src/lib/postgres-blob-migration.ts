@@ -32,9 +32,12 @@ import { insertBackendStateRows } from "./postgres-state-persist.js";
 
 type Tx = TransactionSql<Record<string, never>>;
 
-interface LegacySnapshotRow {
+interface LegacySnapshotMetadataRow {
   schema_version: number;
   scope: string;
+}
+
+interface LegacySnapshotBlobRow {
   snapshot_cbor: Uint8Array;
 }
 
@@ -58,11 +61,14 @@ export async function explodeLegacyBlobSnapshots(
   const endMigration = phaseObserver.startPhase("blob-migration");
 
   try {
-    const rows = await tx.unsafe<LegacySnapshotRow[]>(
-      `SELECT scope, schema_version, snapshot_cbor FROM ${snapshotsTable}`
+    // Fetch scope metadata first and each blob individually, so peak
+    // resident memory is bounded by the largest single Scope (whose blob a
+    // decode needs whole anyway), not the sum of every Scope's blob.
+    const scopes = await tx.unsafe<LegacySnapshotMetadataRow[]>(
+      `SELECT scope, schema_version FROM ${snapshotsTable} ORDER BY scope`
     );
 
-    for (const row of rows) {
+    for (const row of scopes) {
       if (row.schema_version !== CURRENT_SNAPSHOT_VERSION) {
         throw persistenceError(
           "postgres backend cannot migrate a legacy blob snapshot with an unsupported schema version",
@@ -75,9 +81,23 @@ export async function explodeLegacyBlobSnapshots(
         );
       }
 
+      const blobs = await tx.unsafe<LegacySnapshotBlobRow[]>(
+        `SELECT snapshot_cbor FROM ${snapshotsTable} WHERE scope = $1`,
+        [row.scope]
+      );
+      const blob = blobs[0];
+
+      if (blob === undefined) {
+        throw persistenceError(
+          "postgres backend legacy blob snapshot disappeared mid-migration",
+          "postgres_backend_blob_migration_row_missing",
+          { scope: row.scope }
+        );
+      }
+
       let state: BackendState;
       try {
-        state = decodeSnapshot(new Uint8Array(row.snapshot_cbor));
+        state = decodeSnapshot(new Uint8Array(blob.snapshot_cbor));
       } catch (error: unknown) {
         throw persistenceError(
           "postgres backend failed to decode a legacy blob snapshot during migration",

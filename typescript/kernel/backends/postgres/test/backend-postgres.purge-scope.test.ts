@@ -15,9 +15,11 @@
  */
 
 // KRT-BF006 — substrate partition drop for full tenant offboarding (kernel spec
-// §9.4). The PostgreSQL backend realizes a Scope partition as its own snapshot
-// row under the row-level isolation model (ADR-049), so dropping it deletes that
-// row while every co-tenant Scope's row in the shared schema is left intact.
+// §9.4). The PostgreSQL backend realizes a Scope partition as a `scope`
+// column on every family table's rows under the row-level isolation model
+// (ADR-049/ADR-067), so dropping it deletes every row tagged with that scope
+// across every family table while every co-tenant Scope's rows in the shared
+// schema are left intact.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
@@ -53,7 +55,7 @@ afterAll(async () => {
 });
 
 describe("createPostgresBackend purgeScope", () => {
-  test("drops the bound scope's snapshot row while a co-tenant scope sharing the schema survives", async () => {
+  test("drops every family-table row tagged with the bound scope while a co-tenant scope sharing the schema survives", async () => {
     const baseOptions = createPostgresTestBackendOptions();
     const scopeA = createPostgresBackend({ ...baseOptions, scope: "tenant-a" });
     const scopeB = createPostgresBackend({ ...baseOptions, scope: "tenant-b" });

@@ -20,6 +20,31 @@ import { TuvrenPersistenceError, TuvrenValidationError } from "@tuvren/core";
 const SQLSTATE_CODE = /^[0-9A-Z]{5}$/;
 
 /**
+ * True only for errors the PostgreSQL driver/engine actually produced. A
+ * bare 5-char uppercase `code` is not enough: Node errno codes like `EPIPE`
+ * and `EPERM` also match {@link SQLSTATE_CODE}, and labeling one of those
+ * with a `postgresCode` would hand operators a confidently wrong signal on
+ * exactly the failure paths they page on. postgres.js engine errors are
+ * `PostgresError` instances carrying a `severity` field; connection-lifecycle
+ * failures use the driver's named codes checked explicitly below.
+ */
+function isPostgresEngineError(error: Error, code: string): boolean {
+  if (code.startsWith("ECONN")) {
+    return true;
+  }
+
+  if (code === "CONNECTION_CLOSED" || code === "CONNECT_TIMEOUT") {
+    return true;
+  }
+
+  return (
+    SQLSTATE_CODE.test(code) &&
+    (error.name === "PostgresError" ||
+      typeof Reflect.get(error, "severity") === "string")
+  );
+}
+
+/**
  * Constructs the backend's uniform `TuvrenPersistenceError`. Codes follow the
  * `postgres_backend_<reason>` convention.
  */
@@ -55,13 +80,7 @@ export function normalizeBackendError(error: unknown): Error {
         : undefined;
     // node-postgres / postgres.js surface SQLSTATE codes as 5-char strings
     // (e.g. 23503 foreign_key_violation) and connection failures as named codes.
-    if (
-      code !== undefined &&
-      (SQLSTATE_CODE.test(code) ||
-        code.startsWith("ECONN") ||
-        code === "CONNECTION_CLOSED" ||
-        code === "CONNECT_TIMEOUT")
-    ) {
+    if (code !== undefined && isPostgresEngineError(error, code)) {
       return persistenceError(
         `postgres backend engine operation failed: ${error.message}`,
         "postgres_backend_engine_error",

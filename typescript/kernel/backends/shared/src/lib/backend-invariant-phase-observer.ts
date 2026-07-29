@@ -17,69 +17,55 @@
 import process from "node:process";
 
 /**
- * Named phases of the blob-per-scope persistence path (issue #108) that a
- * backend can attribute cost to: waiting on the in-process transaction queue
- * or a database row lock, decoding the persisted snapshot, running the
- * committed-state invariant suite, encoding a draft back to the wire format,
- * writing/committing it, and (for backends without a decode/encode split,
- * e.g. SQLite's row-per-table load) loading persisted rows into memory.
+ * Named phases of the row-per-record persistence paths (issues #108/#110)
+ * that a backend can attribute cost to. The SQLite and PostgreSQL backends
+ * emit the same phase vocabulary since the relational Postgres redesign
+ * (ADR-067) ported SQLite's row-per-table shape:
+ *
+ * `lock-wait` covers both waiting on the in-process transaction queue and
+ * waiting on a database-level lock (SQLite's busy handler, Postgres's
+ * same-scope advisory lock).
+ *
+ * `load` is the maintenance-path cost of reading every family table's rows
+ * for the Scope into an in-memory projection (`fsck`/`reclaim` only — the
+ * write path never loads whole-scope state).
  *
  * `validate-loaded`, `validate-lineage-index`, and `validate-committed`
- * (issue #108 M2) are SQLite-specific sub-phases of what M1 attributed as a
- * single `validate` phase for that backend only: SQLite's `loadValidatedState`
- * runs three distinct validation passes between `load` and returning —
- * per-record shape/identity re-validation (`validateLoadedState`), the
- * derived turn-node-lineage-root index cross-check
- * (`validateTurnNodeLineageRootIndex`), and the committed-state invariant
- * suite (`validateCommittedState`) — and M1 left the first two
- * unattributed, which is where its measured superlinear residual actually
- * lived. Postgres has no equivalent three-way split and keeps using the
- * single `validate` phase.
+ * (issue #108 M2) are the three distinct maintenance validation passes
+ * `loadValidatedState` runs between `load` and returning: per-record
+ * shape/identity re-validation, the derived turn-node-lineage-root index
+ * cross-check, and the committed-state invariant suite. M1 originally
+ * attributed all three as one `validate` phase, which hid where the
+ * measured superlinear residual actually lived.
  *
- * `hash` (issue #108 M3) is the postgres-backend-specific cost of SHA-256
- * hashing the loaded/about-to-be-written `snapshot_cbor` bytes for the
- * single-entry content-hash memo that lets a repeat load of byte-identical
- * bytes skip `decode` entirely. It is charged on every load (hit or miss)
- * and on every successful write, so a cache-hit load shows only `hash`
- * where a cache-miss load still shows `hash` followed by the usual
- * `decode`.
+ * `validate-reclaim-survivors` (issue #108 M6) replaces the second, full
+ * `loadValidatedState` pass `reclaim()` used to run after sweeping and
+ * deleting the unreachable closure: a targeted, O(survivors) check directly
+ * over the already-swept in-memory projection — see the shared
+ * `assertReclamationSurvivorInvariants` for the full enumeration of what
+ * deletion can and cannot break and how each case is covered.
  *
- * `validate-reclaim-survivors` (issue #108 M6) is SQLite-specific: it
- * replaces the second, full `loadValidatedState` pass `reclaim()` used to
- * run after sweeping and deleting the unreachable closure. Instead of
- * reloading and fully re-validating the whole database a second time,
- * `reclaim()` now runs a targeted, O(survivors) check directly over the
- * already-swept in-memory projection — see
- * `sqlite-reclamation-validation.ts`'s `assertReclamationSurvivorInvariants`
- * for the full enumeration of what deletion can and cannot break and how
- * each case is covered.
+ * `validate-write-set` (issue #108 B2 closure) wraps `transact()`'s
+ * pre-commit call to `validateTransactionWriteSet`, the targeted,
+ * delta-shaped check that re-validates only the rows a single transaction
+ * actually touched (as tracked by the write tracker), not the whole
+ * committed state.
  *
- * `validate-write-set` (issue #108 B2 closure) is SQLite-specific: it wraps
- * `transact()`'s pre-commit call to `validateTransactionWriteSet`, the
- * targeted, delta-shaped check that re-validates only the rows a single
- * transaction actually touched (as tracked by `TransactionWriteTracker`),
- * not the whole committed state. It exists so the write-path validate share
- * this milestone measures is visible by name in the bench's phase table,
- * the same way postgres's single `validate` phase already makes its own
- * (whole-state) write-path validate share visible; the two are deliberately
- * not the same phase name because they validate different things (a
- * write's delta vs. the entire committed state) and conflating them would
- * make a future reader misread SQLite's already-delta-shaped write path as
- * doing the same whole-state work postgres does.
+ * `write` covers COMMIT and bulk row deletion on the maintenance paths.
  *
  * `blob-migration` (issue #110) is postgres-specific: it wraps the one-time
  * open-time explode of legacy `backend_postgres_snapshots` blob rows into
  * relational family rows, so an operator opening a legacy database can see
  * where a slow first initialization is spending its time.
+ *
+ * The blob-era phases (`decode`, `encode`, `hash`, and the undifferentiated
+ * `validate`) were retired with the storage models that emitted them
+ * (issue #110 for Postgres; issue #108's M2 split for `validate`).
  */
 export type PersistencePhase =
   | "blob-migration"
-  | "decode"
-  | "encode"
-  | "hash"
   | "load"
   | "lock-wait"
-  | "validate"
   | "validate-committed"
   | "validate-lineage-index"
   | "validate-loaded"

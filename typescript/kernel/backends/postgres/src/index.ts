@@ -40,8 +40,3 @@ export {
   createPostgresBackend,
   destroyPostgresBackend,
 } from "./lib/postgres-backend.js";
-// Issue #108 M3: `SnapshotCacheObserver` typed the construction-time
-// observability seam for the retired whole-blob decode memo. Kept as a type
-// export for source compatibility with benches/tests that still name it;
-// the relational write path no longer consults a whole-scope snapshot cache.
-export type { SnapshotCacheObserver } from "./lib/postgres-backend-snapshot-cache.js";

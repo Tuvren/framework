@@ -138,8 +138,13 @@ export async function validateRelationalSchemaPosture(
   const migrationsTable = qualifyIdentifier(schemaName, MIGRATIONS_TABLE);
   const applied = await loadAppliedMigrations(sql, migrationsTable);
 
+  // Known = every migration file this package version ships (so adding a
+  // future 0002_*.sql never makes health() reject the ledger entry the same
+  // package just wrote) plus the legacy blob-era ledger names retained on
+  // migrated databases. Anything else is a future package's migration and a
+  // genuine posture failure for this version.
   const knownMigrations = new Set<string>([
-    RELATIONAL_SCHEMA_MIGRATION_NAME,
+    ...listMigrationFiles(resolveMigrationDirectory(persistenceError)),
     LEGACY_BLOB_INITIAL_MIGRATION_NAME,
     LEGACY_BLOB_SCOPE_PARTITION_MIGRATION_NAME,
   ]);

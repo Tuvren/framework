@@ -41,7 +41,6 @@ import {
   normalizeSchemaName,
   type PostgresBackendPersistenceOptions,
 } from "./postgres-backend-persistence.js";
-import type { SnapshotCacheObserver } from "./postgres-backend-snapshot-cache.js";
 import {
   assertBranchHeadMoveIsLinearInDatabase,
   insertTurnNodeLineageMetadata,
@@ -110,6 +109,7 @@ import {
   decodeTurnNodeConsumedStagedResultObjectHashes,
   validateHashString,
 } from "./postgres-run-invariants.js";
+import { RELATIONAL_REQUIRED_TABLES } from "./postgres-schema.js";
 import {
   ensurePostgresRelationalSchemaInitialized,
   validateRelationalSchemaPosture,
@@ -165,8 +165,11 @@ import { TransactionWriteTracker } from "./postgres-write-tracker.js";
 const ORDERED_PATH_CHUNK_THRESHOLD = 32;
 
 /**
- * Keys per reclamation `DELETE ... ANY(...)` statement, kept comfortably
- * under practical Postgres bind/array size comfort zones.
+ * Keys per reclamation `DELETE ... ANY(...)` statement. Each statement binds
+ * only two parameters (the scope and one text[]), so this is not a
+ * bind-limit guard: it caps per-statement work so a huge sweep is many
+ * modest deletes (bounded row-lock footprint, plannable array sizes)
+ * instead of one giant one.
  */
 const RECLAMATION_DELETE_BATCH_SIZE = 500;
 
@@ -214,22 +217,8 @@ interface PostgresBackendDestroyOptions {
   dropSchema?: boolean;
 }
 
-/**
- * Construction options for {@link createPostgresBackend}.
- *
- * `snapshotCacheObserver` is accepted for source compatibility with pre-#110
- * benches/tests that still pass it, but is unused: the relational write path
- * no longer consults a whole-scope snapshot cache (issue #108 A3 blob
- * mitigation retired by ADR-067 row-per-record storage).
- */
-export interface PostgresBackendOptions
-  extends PostgresBackendPersistenceOptions {
-  /**
-   * @deprecated Accepted but unused under the relational backend (issue #110).
-   * Retained so existing tests that pass `snapshotCacheObserver` still construct.
-   */
-  snapshotCacheObserver?: SnapshotCacheObserver;
-}
+/** Construction options for {@link createPostgresBackend}. */
+export type PostgresBackendOptions = PostgresBackendPersistenceOptions;
 
 const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
@@ -293,8 +282,6 @@ class PostgresBackend implements KrakenBackend {
     );
     this.sql = createPostgresClient(resolvedOptions);
     this.phaseObserver = resolvedOptions.phaseObserver ?? NOOP_PHASE_OBSERVER;
-    // snapshotCacheObserver intentionally unused (relational path; #110).
-    // Keep the option accepted for source compatibility with benches/tests.
     this.now = resolvedOptions.now ?? Date.now;
     // Track whether a clock was explicitly injected so the per-transaction
     // authoritative lease clock can fall back to the PostgreSQL server clock in
@@ -516,8 +503,11 @@ class PostgresBackend implements KrakenBackend {
         if (inTransaction) {
           try {
             await reserved.unsafe("ROLLBACK");
-          } catch (rollbackError: unknown) {
-            throw normalizeBackendError(rollbackError);
+          } catch {
+            // Prefer the original error (matching fsck): a failed ROLLBACK
+            // almost always means the connection itself died, which the
+            // next statement on this reserved connection will surface with
+            // its own normalized error.
           }
         }
         throw normalizeBackendError(error);
@@ -603,8 +593,11 @@ class PostgresBackend implements KrakenBackend {
         if (inTransaction) {
           try {
             await reserved.unsafe("ROLLBACK");
-          } catch (rollbackError: unknown) {
-            throw normalizeBackendError(rollbackError);
+          } catch {
+            // Prefer the original error (matching fsck): a failed ROLLBACK
+            // almost always means the connection itself died, which the
+            // next statement on this reserved connection will surface with
+            // its own normalized error.
           }
         }
         throw normalizeBackendError(error);
@@ -631,30 +624,17 @@ class PostgresBackend implements KrakenBackend {
     }
 
     await this.withSerializedConnection(async (reserved) => {
-      // Children first for clarity; deferred FKs make order non-load-bearing.
-      const purgeOrder = [
-        "observe_annotations",
-        "staged_results",
-        "runs",
-        "turns",
-        "branches",
-        "turn_tree_paths",
-        "turn_node_lineage_roots",
-        "turn_nodes",
-        "ordered_path_chunks",
-        "turn_trees",
-        "threads",
-        "objects",
-        "schemas",
-      ] as const;
-
       let inTransaction = false;
 
       try {
         await reserved.unsafe("BEGIN");
         inTransaction = true;
         await this.acquireScopeTransactionLock(reserved);
-        for (const tableName of purgeOrder) {
+        // The shared roster is ordered children-first; deferred FKs make
+        // the order non-load-bearing. Using the roster (not a local copy)
+        // means a new family table cannot be missed here and leak rows
+        // across a tenant purge.
+        for (const tableName of RELATIONAL_REQUIRED_TABLES) {
           const table = qualifyIdentifier(this.schemaName, tableName);
           await reserved.unsafe(`DELETE FROM ${table} WHERE scope = $1`, [
             this.scope,
@@ -666,8 +646,11 @@ class PostgresBackend implements KrakenBackend {
         if (inTransaction) {
           try {
             await reserved.unsafe("ROLLBACK");
-          } catch (rollbackError: unknown) {
-            throw normalizeBackendError(rollbackError);
+          } catch {
+            // Prefer the original error (matching fsck): a failed ROLLBACK
+            // almost always means the connection itself died, which the
+            // next statement on this reserved connection will surface with
+            // its own normalized error.
           }
         }
         throw normalizeBackendError(error);

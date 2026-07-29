@@ -194,4 +194,96 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
 
     await closeBackend(backend);
   });
+
+  test("a second instance's transact() on a scope held open past SCOPE_LOCK_TIMEOUT_MS rejects with the normalized engine error instead of blocking forever, and the holder still commits", async () => {
+    // The two tests above prove the lock genuinely blocks a concurrent
+    // same-scope transact(), releasing the hold well inside
+    // SCOPE_LOCK_TIMEOUT_MS (5000ms) so the blocked call always resumes
+    // normally. This test proves the other half of ADR-067's contract: the
+    // `SET LOCAL lock_timeout = '5000ms'` guard that precedes
+    // `pg_advisory_xact_lock` actually fires when the wait is *not*
+    // released in time, so a second instance fails fast with a normalized
+    // `TuvrenPersistenceError` rather than hanging indefinitely.
+    const sharedOptions = createPostgresTestBackendOptions({
+      scope: "lock-timeout-scope",
+    });
+    const backendA = createPostgresBackend(sharedOptions);
+    const backendB = createPostgresBackend(sharedOptions);
+
+    expect(await backendA.health()).toEqual({ ok: true });
+    expect(await backendB.health()).toEqual({ ok: true });
+
+    const recordA = await createStoredObjectRecord(
+      new Uint8Array([11, 22, 33]),
+      1
+    );
+
+    let markAHoldingLock: () => void = () => undefined;
+    const aHoldingLock = new Promise<void>((resolve) => {
+      markAHoldingLock = resolve;
+    });
+    let releaseAHold: () => void = () => undefined;
+    const aHold = new Promise<void>((resolve) => {
+      releaseAHold = resolve;
+    });
+
+    try {
+      // By the time `work` starts executing, backendA's `transact` has
+      // already acquired the (schemaName, scope) advisory lock, so the
+      // lock is genuinely held for the whole `aHold` wait below.
+      const aPromise = backendA.transact(async (tx) => {
+        await tx.objects.put(recordA);
+        markAHoldingLock();
+        await aHold;
+      });
+
+      await aHoldingLock;
+
+      const startedAt = Date.now();
+      let caughtError: unknown;
+      try {
+        await backendB.transact(async (tx) => {
+          await tx.objects.has(recordA.hash);
+        });
+      } catch (error) {
+        caughtError = error;
+      }
+      const elapsedMs = Date.now() - startedAt;
+
+      // Release the holder and let it finish committing before asserting,
+      // so a failed assertion below cannot leave backendA's transaction
+      // open and hang the afterAll teardown's DROP SCHEMA.
+      releaseAHold();
+      await aPromise;
+
+      expect(caughtError).toBeInstanceOf(Error);
+
+      // Bounded: the wait must actually reach close to the 5000ms
+      // lock_timeout (some scheduling slack allowed) and must not degrade
+      // into an effectively unbounded hang.
+      expect(elapsedMs).toBeGreaterThanOrEqual(4500);
+      expect(elapsedMs).toBeLessThan(20_000);
+
+      const normalizedError = caughtError as Error & {
+        code?: string;
+        details?: unknown;
+      };
+      expect(normalizedError.code).toBe("postgres_backend_engine_error");
+      const details = normalizedError.details as
+        | { postgresCode?: string }
+        | undefined;
+      // 55P03 is PostgreSQL's `lock_not_available` SQLSTATE, raised when a
+      // statement bound by `lock_timeout` cannot acquire its lock in time.
+      expect(details?.postgresCode).toBe("55P03");
+
+      // The holder's write is durable: the bounded wait on the second
+      // instance did not disturb or roll back the first instance's commit.
+      await backendA.transact(async (tx) => {
+        expect(await tx.objects.has(recordA.hash)).toBe(true);
+      });
+    } finally {
+      await closeBackend(backendA);
+      await closeBackend(backendB);
+    }
+  }, 20_000);
 });

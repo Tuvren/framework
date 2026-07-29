@@ -45,8 +45,6 @@ import {
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import postgres, { type Sql } from "postgres";
-import type { PostgresBackendOptions } from "../src/index.js";
 import { createPostgresBackend } from "../src/index.js";
 import { CURRENT_SNAPSHOT_VERSION } from "../src/lib/postgres-backend-persistence.js";
 import { type BackendState, loadState } from "../src/lib/postgres-records.js";
@@ -55,6 +53,7 @@ import { areBytesEqual } from "../src/lib/postgres-state-utils.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
+  createAdminClient,
   createPostgresTestBackendOptions,
 } from "./postgres-test-helpers.js";
 
@@ -72,19 +71,6 @@ const TEST_SCHEMA = {
 // collection past this many entries flips its storage from a flat inline
 // encoding to chunked `ordered_path_chunks` rows.
 const CHUNK_THRESHOLD = 32;
-
-function createAdminClient(options: PostgresBackendOptions): Sql {
-  return postgres({
-    database: options.database,
-    host: options.host,
-    idle_timeout: 1,
-    max: 1,
-    onnotice: () => undefined,
-    port: options.port,
-    prepare: false,
-    username: options.username,
-  });
-}
 
 function createMonotonicClock(start: number): () => number {
   let clock = start;
