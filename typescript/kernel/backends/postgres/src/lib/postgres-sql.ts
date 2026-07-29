@@ -52,6 +52,63 @@ export function quoteIdentifier(identifier: string): string {
 }
 
 /**
+ * PostgreSQL btree indexes cap a single index tuple at 2704 bytes on the
+ * default 8 KB page size (`ERROR: index row size ... exceeds btree version 4
+ * maximum 2704`, SQLSTATE 54000) — a limit independent of, and far tighter
+ * than, anything a `TEXT` column itself enforces (1 GB). Every family table
+ * in migrations/0001_relational_schema.sql puts caller-supplied identifiers
+ * directly into `(scope, ...)` primary keys and the 21 `idx_*` indexes, so an
+ * incompressible, sufficiently long identifier can fail a write with an
+ * untyped `postgres_backend_engine_error` while the memory and SQLite
+ * backends — no btree index-row limit — accept the same value.
+ *
+ * `MAX_STORABLE_TEXT_BYTES` bounds every caller-supplied field this module
+ * already guards, so no index row this schema builds can approach 2704
+ * bytes. Worst composites across the schema at a per-field bound L = 512:
+ *
+ * - `idx_turns_scope_thread_branch_head_turn_node` (scope, thread_id,
+ *   branch_id, head_turn_node_hash): three L-bounded columns (scope,
+ *   thread_id, branch_id) plus one fixed 64-byte kernel content hash
+ *   (head_turn_node_hash) = 3*512 + 64 = 1600 raw text bytes. Adding a
+ *   generous 50-byte allowance for btree/varlena overhead (an 8-byte index
+ *   tuple header, a 4-byte varlena header per long text column, alignment
+ *   padding) lands at ~1650 — over 1000 bytes of headroom under the 2704
+ *   limit, and the largest raw-byte composite in the schema.
+ *
+ * - `observe_annotations` primary key (scope, record_key): record_key (see
+ *   `keyObserveAnnotation`/`nextObserveAnnotationRecordKey` in
+ *   postgres-state-utils.ts) is the *densest single-column* composite,
+ *   length-prefixing runId, String(createdAtMs), annotationHash, and
+ *   turnNodeHash (or "") together, plus a trailing duplicate-count suffix.
+ *   Only runId is an L-bounded caller-supplied field here — annotationHash
+ *   and turnNodeHash are kernel content hashes fixed at exactly 64 lowercase
+ *   hex characters (`assertHashString`), and createdAtMs is a numeric
+ *   epoch-ms string. Worst case with L = 512, a generously over-estimated
+ *   20-digit createdAtMs string, and a generously over-estimated 10-digit
+ *   duplicate-count suffix:
+ *     runId field           (3-digit length prefix + sep + 512 bytes) = 516
+ *     createdAtMs field     (2-digit length prefix + sep + 20 bytes)  =  23
+ *     annotationHash field  (2-digit length prefix + sep + 64 bytes)  =  67
+ *     turnNodeHash field    (2-digit length prefix + sep + 64 bytes)  =  67
+ *     3 separators joining the four fields                           =   3
+ *     identityKey subtotal                                           = 676
+ *     trailing separator + 10-digit duplicate-count suffix           =  11
+ *     record_key total                                               = 687
+ *   PK total = scope (512) + record_key (687) = 1199 raw bytes, safely
+ *   below the turns-index worst case above — so
+ *   `idx_turns_scope_thread_branch_head_turn_node` governs, not this one,
+ *   even though this key packs the most distinct identity fields into a
+ *   single column (the reason it is the *tightest per caller-controlled
+ *   field* in the schema).
+ *
+ * L = 512 is not engineered to the 2704 ceiling: real kernel identifiers are
+ * hashes/UUIDs well under 100 bytes, so this bound is a divergence-honesty
+ * backstop against pathological caller input, not a constraint any
+ * legitimate identifier is expected to approach.
+ */
+const MAX_STORABLE_TEXT_BYTES = 512;
+
+/**
  * Rejects a caller-supplied identifier/text value that contains U+0000
  * (NUL). Every affected field here now lands directly in a relational `TEXT`
  * column (ADR-067 moved it out of a CBOR blob, where an embedded NUL byte
@@ -68,8 +125,25 @@ export function quoteIdentifier(identifier: string): string {
  * digests validated by kernel-protocol's own hash guards and cannot contain a
  * NUL byte.
  *
+ * Also rejects a value whose UTF-8 byte length exceeds
+ * {@link MAX_STORABLE_TEXT_BYTES} (round 6 review P2): every field guarded
+ * here lands directly in a `(scope, ...)` btree primary key or one of the 21
+ * `idx_*` indexes in migrations/0001_relational_schema.sql, and PostgreSQL
+ * caps a single btree index tuple at 2704 bytes regardless of the column's
+ * own `TEXT` type limit — see {@link MAX_STORABLE_TEXT_BYTES}'s docblock for
+ * the worst-composite arithmetic. This is a divergence-honesty backstop, not
+ * a working constraint: real kernel identifiers are hashes/UUIDs well under
+ * 100 bytes.
+ *
+ * The NUL check runs first and keeps its own distinct error code: a value
+ * that is both too long and NUL-containing is reported as unstorable text,
+ * not as merely too long, since the NUL is the more fundamental encoding
+ * failure (PostgreSQL cannot represent it at any length).
+ *
  * @throws TuvrenPersistenceError `postgres_backend_unstorable_text` when
  *   `value` contains U+0000.
+ * @throws TuvrenPersistenceError `postgres_backend_text_too_long` when
+ *   `value`'s UTF-8 byte length exceeds {@link MAX_STORABLE_TEXT_BYTES}.
  */
 export function assertPostgresStorableText(value: string, label: string): void {
   if (value.includes(NUL_CODE_POINT)) {
@@ -77,6 +151,18 @@ export function assertPostgresStorableText(value: string, label: string): void {
       `postgres backend cannot store ${label}: PostgreSQL TEXT columns cannot encode a U+0000 (NUL) code point`,
       "postgres_backend_unstorable_text",
       { label }
+    );
+  }
+
+  const byteLength = Buffer.byteLength(value, "utf8");
+  if (byteLength > MAX_STORABLE_TEXT_BYTES) {
+    throw persistenceError(
+      `postgres backend cannot store ${label}: value is ${byteLength} UTF-8 bytes, ` +
+        `exceeding the ${MAX_STORABLE_TEXT_BYTES}-byte bound kernel identifiers are ` +
+        "held to so no btree index row built from it can approach PostgreSQL's " +
+        "2704-byte btree index-row limit",
+      "postgres_backend_text_too_long",
+      { actualBytes: byteLength, label, maxBytes: MAX_STORABLE_TEXT_BYTES }
     );
   }
 }

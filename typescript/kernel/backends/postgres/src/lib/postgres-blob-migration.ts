@@ -18,7 +18,7 @@ import {
   NOOP_PHASE_OBSERVER,
   type PhaseObserver,
 } from "@tuvren/backend-shared";
-import { assertScope } from "@tuvren/core";
+import { assertScope, TuvrenPersistenceError } from "@tuvren/core";
 import type { TransactionSql } from "postgres";
 import { persistenceError } from "./postgres-errors.js";
 import {
@@ -62,8 +62,10 @@ export async function explodeLegacyBlobSnapshots(
 
   try {
     // Fetch scope metadata first and each blob individually, so peak
-    // resident memory is bounded by the largest single Scope (whose blob a
-    // decode needs whole anyway), not the sum of every Scope's blob.
+    // resident memory is a small constant multiple of the largest single
+    // Scope's decoded state (decoded records plus their materialized row
+    // and parameter arrays; the blob decode needs the whole Scope anyway),
+    // not the sum of every Scope's blob.
     const scopes = await tx.unsafe<LegacySnapshotMetadataRow[]>(
       `SELECT scope, schema_version FROM ${snapshotsTable} ORDER BY scope`
     );
@@ -128,6 +130,22 @@ export async function explodeLegacyBlobSnapshots(
         assertScope(row.scope);
         await insertBackendStateRows(tx, schemaName, row.scope, state);
       } catch (error: unknown) {
+        // A NUL-bearing text value is diagnosed with its own typed code
+        // (postgres_backend_unstorable_text) by insertRowsInBatches. Pass it
+        // through unchanged — the same TuvrenPersistenceError pass-through
+        // normalizeBackendError relies on — so that code survives to the
+        // caller instead of being buried as error.cause.code under the
+        // generic wrapper below. The scope being migrated is still
+        // derivable from the row content: it is the `row.scope` in this
+        // loop iteration and is not attached here because TuvrenError's
+        // `details` is immutable after construction.
+        if (
+          error instanceof TuvrenPersistenceError &&
+          error.code === "postgres_backend_unstorable_text"
+        ) {
+          throw error;
+        }
+
         throw persistenceError(
           "postgres backend failed to insert exploded family rows during blob migration",
           "postgres_backend_blob_migration_insert_failed",

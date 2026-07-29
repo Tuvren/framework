@@ -50,10 +50,15 @@ import {
   type PostgresBackendOptions,
 } from "../src/index.js";
 import { CURRENT_SNAPSHOT_VERSION } from "../src/lib/postgres-legacy-snapshot-decode.js";
-import { type BackendState, loadState } from "../src/lib/postgres-records.js";
+import {
+  type BackendState,
+  createEmptyState,
+  loadState,
+} from "../src/lib/postgres-records.js";
 import type { RelationalTableName } from "../src/lib/postgres-schema.js";
 import { qualifyIdentifier, quoteIdentifier } from "../src/lib/postgres-sql.js";
 import { areBytesEqual } from "../src/lib/postgres-state-utils.js";
+import { encodeSnapshot } from "./legacy-snapshot-encoder.js";
 import {
   assertDevenvPostgresReady,
   cleanupAllocatedSchemas,
@@ -1086,6 +1091,69 @@ describe("@tuvren/backend-postgres blob->row migration typed diagnosis", () => {
       expect(normalizedError.details).toEqual({
         rowCount: 2,
         scope,
+      });
+    } finally {
+      await migrated.destroy({ dropSchema: true });
+    }
+  });
+
+  test("throws postgres_backend_unstorable_text, not the generic insert-failed wrapper, for a legacy blob whose decoded state carries a NUL code point in a text-bound field", async () => {
+    // The blob era stored whole-state CBOR, so a NUL code point in a text
+    // field was storable then; only the relational explode's TEXT columns
+    // reject it. This proves the specific diagnosis from
+    // insertRowsInBatches (postgres-state-persist.ts) survives
+    // explodeLegacyBlobSnapshots' catch instead of being buried as
+    // error.cause.code under postgres_backend_blob_migration_insert_failed.
+    const targetOptions = createPostgresTestBackendOptions();
+    const targetSchemaName = targetOptions.schemaName ?? "public";
+    const scope = "scope_migration_unstorable_text";
+
+    const state = createEmptyState();
+    const objectHash = await hashKernelRecord(
+      "migration-unstorable-text-object"
+    );
+    const bytes = new Uint8Array([1, 2, 3]);
+    state.objects.set(objectHash, {
+      byteLength: bytes.byteLength,
+      bytes,
+      createdAtMs: 1_700_000_000_000,
+      hash: objectHash,
+      // media_type is a TEXT column; a NUL code point in it is exactly the
+      // shape PostgreSQL's TEXT type cannot encode (SQLSTATE 22021).
+      mediaType: "text/plain\u0000nul",
+    });
+
+    await seedLegacySnapshotSchema(targetOptions, [
+      {
+        schemaVersion: CURRENT_SNAPSHOT_VERSION,
+        scope,
+        snapshotCbor: encodeSnapshot(state),
+      },
+    ]);
+
+    const migrated = createPostgresBackend(targetOptions);
+    try {
+      let caughtError: unknown;
+      try {
+        await migrated.transact(async () => undefined);
+      } catch (error: unknown) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(Error);
+      const normalizedError = caughtError as Error & {
+        code?: string;
+        details?: unknown;
+      };
+      expect(normalizedError.code).toBe("postgres_backend_unstorable_text");
+      expect(normalizedError.code).not.toBe(
+        "postgres_backend_blob_migration_insert_failed"
+      );
+      expect(normalizedError.details).toEqual({
+        chunkOffset: 0,
+        chunkRows: 1,
+        table: qualifyIdentifier(targetSchemaName, "objects"),
+        totalRows: 1,
       });
     } finally {
       await migrated.destroy({ dropSchema: true });

@@ -53,6 +53,12 @@ const MAX_PARAMETERS_PER_STATEMENT = 20_000;
  * Foreign keys are DEFERRABLE INITIALLY DEFERRED, so insert order is
  * still kept topologically tidy for readability rather than necessity.
  * Lineage-root metadata is recomputed from the turn-node parent chain.
+ *
+ * Peak resident memory here is a small constant multiple of the largest
+ * single Scope's decoded state, not one copy of it: the decoded
+ * {@link BackendState} coexists with its materialized per-family row
+ * arrays and, within {@link insertRowsInBatches}, per-chunk parameter
+ * arrays, all held at once before a chunk's statement is issued.
  */
 export async function insertBackendStateRows(
   sql: DbSql,
