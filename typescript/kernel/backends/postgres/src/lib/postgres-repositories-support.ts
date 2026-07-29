@@ -401,6 +401,7 @@ export function createSupportRepositories(
     stagedResults: {
       async clearRun(runId) {
         assertTransactionActive();
+        assertPostgresStorableText(runId, "runId");
         const table = qualifyIdentifier(schemaName, "staged_results");
         const result = await sql.unsafe(
           `DELETE FROM ${table} WHERE scope = $1 AND run_id = $2`,

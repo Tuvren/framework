@@ -171,6 +171,34 @@ describe("@tuvren/backend-postgres NUL-identifier boundary validation", () => {
     }
   });
 
+  test("rejects tx.stagedResults.clearRun's runId containing U+0000 with a typed error, not the raw engine error", async () => {
+    const options = createPostgresTestBackendOptions();
+    const backend = createPostgresBackend(options);
+
+    try {
+      // clearRun issues a bare DELETE keyed on scope + runId with no other
+      // record to validate first, so no seed state (kernel, schema, run) is
+      // required to reach the storable-text check — only the runId argument
+      // is bad.
+      let caughtError: unknown;
+      try {
+        await backend.transact(async (tx) => {
+          await tx.stagedResults.clearRun(`run_bad${NUL}id`);
+        });
+      } catch (error: unknown) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(Error);
+      expect(readErrorCode(caughtError)).toBe(UNSTORABLE_TEXT_CODE);
+      expect(readErrorCode(caughtError)).not.toBe(
+        "postgres_backend_engine_error"
+      );
+    } finally {
+      await backend.destroy({ dropSchema: true });
+    }
+  });
+
   test("still accepts ordinary NUL-free writes", async () => {
     const options = createPostgresTestBackendOptions();
     const backend = createPostgresBackend(options);

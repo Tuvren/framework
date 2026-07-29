@@ -20,11 +20,11 @@ import {
 } from "@tuvren/backend-shared";
 import { assertScope } from "@tuvren/core";
 import type { TransactionSql } from "postgres";
+import { persistenceError } from "./postgres-errors.js";
 import {
   CURRENT_SNAPSHOT_VERSION,
   decodeSnapshot,
-} from "./postgres-backend-persistence.js";
-import { persistenceError } from "./postgres-errors.js";
+} from "./postgres-legacy-snapshot-decode.js";
 import type { BackendState } from "./postgres-records.js";
 import { LEGACY_SNAPSHOTS_TABLE } from "./postgres-schema.js";
 import { qualifyIdentifier } from "./postgres-sql.js";
@@ -82,7 +82,7 @@ export async function explodeLegacyBlobSnapshots(
       }
 
       const blobs = await tx.unsafe<LegacySnapshotBlobRow[]>(
-        `SELECT snapshot_cbor FROM ${snapshotsTable} WHERE scope = $1`,
+        `SELECT snapshot_cbor FROM ${snapshotsTable} WHERE scope = $1 ORDER BY snapshot_id`,
         [row.scope]
       );
       const blob = blobs[0];
@@ -92,6 +92,20 @@ export async function explodeLegacyBlobSnapshots(
           "postgres backend legacy blob snapshot disappeared mid-migration",
           "postgres_backend_blob_migration_row_missing",
           { scope: row.scope }
+        );
+      }
+
+      // The legacy primary key was (snapshot_id, scope): the legacy writer
+      // only ever wrote snapshot_id = 1, so exactly one row per scope is the
+      // load-bearing assumption `blobs[0]` below relies on. ADR-067 decision
+      // 5 forbids losing any committed logical state, so a second row for
+      // the same scope — which `blobs[0]` would otherwise silently drop —
+      // must fail loudly instead of being ignored.
+      if (blobs.length > 1) {
+        throw persistenceError(
+          "postgres backend found more than one legacy blob snapshot row for a scope",
+          "postgres_backend_blob_migration_ambiguous_rows",
+          { rowCount: blobs.length, scope: row.scope }
         );
       }
 

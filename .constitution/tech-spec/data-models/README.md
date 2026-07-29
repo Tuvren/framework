@@ -280,6 +280,7 @@ erDiagram
   - Scope isolation is row-level: `scope` is part of the primary key and every foreign key on every family table, so two backends sharing a schema but bound to different Scopes never observe each other's rows, with no cross-scope dedup. There is no snapshot row to provision, so a first-seen Scope needs no initialization step at all — its rows simply do not exist until the first write creates them. The kernel syscall surface carries no scope argument; the discriminator is supplied at construction only.
   - Nested backend transactions are forbidden.
   - Backend-owned PostgreSQL schema names are validated and may be disposable per proving-host or conformance run.
+  - When a host omits `schemaName`, the backend defaults to the backend-owned name `"tuvren_kernel"`, never `"public"` — the generic, unprefixed family table names above would otherwise risk colliding with or colonizing an adopter's default schema, and `destroyPostgresBackend`'s `CASCADE` drop would risk taking the adopter's own tables with it.
   - PostgreSQL persistence remains backend-local: the kernel contract still exposes no backend capability negotiation or backend-specific semantic branches.
   - PostgreSQL is an official persistent backend, not the canonical physical model for all future service-backed backends.
 - **Indexes / Access Paths:**

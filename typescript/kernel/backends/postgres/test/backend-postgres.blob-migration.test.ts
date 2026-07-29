@@ -45,8 +45,11 @@ import {
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
-import { createPostgresBackend } from "../src/index.js";
-import { CURRENT_SNAPSHOT_VERSION } from "../src/lib/postgres-backend-persistence.js";
+import {
+  createPostgresBackend,
+  type PostgresBackendOptions,
+} from "../src/index.js";
+import { CURRENT_SNAPSHOT_VERSION } from "../src/lib/postgres-legacy-snapshot-decode.js";
 import { type BackendState, loadState } from "../src/lib/postgres-records.js";
 import type { RelationalTableName } from "../src/lib/postgres-schema.js";
 import { qualifyIdentifier, quoteIdentifier } from "../src/lib/postgres-sql.js";
@@ -216,6 +219,79 @@ function encodeLegacySnapshotForTest(state: BackendState): Uint8Array {
   return encodeDeterministicKernelRecord(
     snapshot as unknown as Parameters<typeof encodeDeterministicKernelRecord>[0]
   );
+}
+
+interface LegacySnapshotSeedRow {
+  schemaVersion: number;
+  scope: string;
+  snapshotCbor: Uint8Array;
+  /** Defaults to `1`, the only value the retired legacy writer ever wrote. */
+  snapshotId?: number;
+}
+
+/**
+ * Seeds a fresh schema with the pre-relational (blob-per-scope) shape: the
+ * migrations ledger plus `backend_postgres_snapshots`, populated with one row
+ * per entry in `rows`. Shared by every test below that needs to force the
+ * open-time migration over a specific legacy shape (multi-scope, or a single
+ * scope with a deliberately malformed row).
+ */
+async function seedLegacySnapshotSchema(
+  options: PostgresBackendOptions,
+  rows: LegacySnapshotSeedRow[]
+): Promise<void> {
+  const schemaName = options.schemaName ?? "public";
+  const qSchema = quoteIdentifier(schemaName);
+  const snapshotsTable = qualifyIdentifier(
+    schemaName,
+    "backend_postgres_snapshots"
+  );
+  const migrationsTable = qualifyIdentifier(
+    schemaName,
+    "backend_postgres_migrations"
+  );
+
+  const seedAdmin = createAdminClient(options);
+  try {
+    await seedAdmin.unsafe(`CREATE SCHEMA IF NOT EXISTS ${qSchema}`);
+    await seedAdmin.unsafe(
+      `CREATE TABLE ${migrationsTable} (
+         name TEXT PRIMARY KEY,
+         applied_at_ms BIGINT NOT NULL
+       )`
+    );
+    await seedAdmin.unsafe(
+      `CREATE TABLE ${snapshotsTable} (
+         snapshot_id SMALLINT NOT NULL,
+         scope TEXT NOT NULL,
+         schema_version INTEGER NOT NULL,
+         snapshot_cbor BYTEA NOT NULL,
+         updated_at_ms BIGINT NOT NULL,
+         PRIMARY KEY (snapshot_id, scope)
+       )`
+    );
+    await seedAdmin.unsafe(
+      `INSERT INTO ${migrationsTable} (name, applied_at_ms)
+       VALUES ('0001_initial_schema.sql', $1), ('0002_scope_partition.sql', $1)`,
+      [Date.now()]
+    );
+    for (const row of rows) {
+      await seedAdmin.unsafe(
+        `INSERT INTO ${snapshotsTable} (
+           snapshot_id, scope, schema_version, snapshot_cbor, updated_at_ms
+         ) VALUES ($1, $2, $3, $4, $5)`,
+        [
+          row.snapshotId ?? 1,
+          row.scope,
+          row.schemaVersion,
+          row.snapshotCbor,
+          Date.now(),
+        ]
+      );
+    }
+  } finally {
+    await seedAdmin.end({ timeout: 0 });
+  }
 }
 
 beforeAll(async () => {
@@ -714,6 +790,307 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
 
     await migrated.destroy();
   }, 30_000);
+});
+
+describe("@tuvren/backend-postgres blob->row migration multi-scope coverage", () => {
+  test("migrates two distinct scopes from the same legacy blob table without cross-scope leakage", async () => {
+    // Two backend instances bound to different Scopes but sharing one
+    // schema (ADR-048/049) build genuinely distinct family content: the
+    // scope-isolation suite's original blob-migration coverage only ever
+    // seeded one scope, so the per-scope loop, per-scope blob fetch, and
+    // per-scope error attribution in `explodeLegacyBlobSnapshots` had no
+    // automated check path.
+    const sourceOptions = createPostgresTestBackendOptions();
+    const scopeAlpha = "scope_migration_multi_alpha";
+    const scopeBeta = "scope_migration_multi_beta";
+
+    const backendAlpha = createPostgresBackend({
+      ...sourceOptions,
+      scope: scopeAlpha,
+    });
+    const kernelAlpha = createRuntimeKernel({
+      backend: backendAlpha,
+      now: createMonotonicClock(2_000_000_000_000),
+    });
+    const schemaIdAlpha = await kernelAlpha.schema.register(TEST_SCHEMA);
+    const threadAlpha = await kernelAlpha.thread.create(
+      "thread_multi_alpha",
+      schemaIdAlpha,
+      "branch_multi_alpha"
+    );
+    await kernelAlpha.turn.create(
+      "turn_multi_alpha",
+      "thread_multi_alpha",
+      "branch_multi_alpha",
+      null,
+      threadAlpha.rootTurnNodeHash
+    );
+
+    const backendBeta = createPostgresBackend({
+      ...sourceOptions,
+      scope: scopeBeta,
+    });
+    const kernelBeta = createRuntimeKernel({
+      backend: backendBeta,
+      now: createMonotonicClock(2_100_000_000_000),
+    });
+    const schemaIdBeta = await kernelBeta.schema.register(TEST_SCHEMA);
+    const threadBeta = await kernelBeta.thread.create(
+      "thread_multi_beta",
+      schemaIdBeta,
+      "branch_multi_beta"
+    );
+    await kernelBeta.turn.create(
+      "turn_multi_beta",
+      "thread_multi_beta",
+      "branch_multi_beta",
+      null,
+      threadBeta.rootTurnNodeHash
+    );
+
+    const sourceSchemaName = sourceOptions.schemaName ?? "public";
+    const sourceAdmin = createAdminClient(sourceOptions);
+    let stateAlpha: BackendState;
+    let stateBeta: BackendState;
+    try {
+      stateAlpha = await loadState(sourceAdmin, sourceSchemaName, scopeAlpha);
+      stateBeta = await loadState(sourceAdmin, sourceSchemaName, scopeBeta);
+    } finally {
+      await sourceAdmin.end({ timeout: 0 });
+    }
+    await backendAlpha.destroy();
+    await backendBeta.destroy();
+
+    // Sanity: each scope actually produced disjoint, non-empty content
+    // before it is round-tripped through the legacy wire format.
+    expect(stateAlpha.threads.size).toBe(1);
+    expect(stateBeta.threads.size).toBe(1);
+    expect(stateAlpha.threads.has("thread_multi_alpha")).toBe(true);
+    expect(stateAlpha.threads.has("thread_multi_beta")).toBe(false);
+    expect(stateBeta.threads.has("thread_multi_beta")).toBe(true);
+    expect(stateBeta.threads.has("thread_multi_alpha")).toBe(false);
+
+    const targetOptions = createPostgresTestBackendOptions();
+    const targetSchemaName = targetOptions.schemaName ?? "public";
+    await seedLegacySnapshotSchema(targetOptions, [
+      {
+        schemaVersion: CURRENT_SNAPSHOT_VERSION,
+        scope: scopeAlpha,
+        snapshotCbor: encodeLegacySnapshotForTest(stateAlpha),
+      },
+      {
+        schemaVersion: CURRENT_SNAPSHOT_VERSION,
+        scope: scopeBeta,
+        snapshotCbor: encodeLegacySnapshotForTest(stateBeta),
+      },
+    ]);
+
+    const migrated = createPostgresBackend(targetOptions);
+    try {
+      const fsckResult = await migrated.fsck();
+      expect(fsckResult).toEqual({ ok: true });
+
+      const verify = createAdminClient(targetOptions);
+      try {
+        const simpleFamilyCounts: [RelationalTableName, number, number][] = [
+          ["threads", stateAlpha.threads.size, stateBeta.threads.size],
+          ["branches", stateAlpha.branches.size, stateBeta.branches.size],
+          ["turns", stateAlpha.turns.size, stateBeta.turns.size],
+          ["turn_nodes", stateAlpha.turnNodes.size, stateBeta.turnNodes.size],
+          ["turn_trees", stateAlpha.turnTrees.size, stateBeta.turnTrees.size],
+          ["schemas", stateAlpha.schemas.size, stateBeta.schemas.size],
+        ];
+
+        for (const [
+          table,
+          expectedAlphaCount,
+          expectedBetaCount,
+        ] of simpleFamilyCounts) {
+          const qualifiedTable = qualifyIdentifier(targetSchemaName, table);
+          const alphaRows = await verify.unsafe<Array<{ count: number }>>(
+            `SELECT COUNT(*)::int AS count FROM ${qualifiedTable} WHERE scope = $1`,
+            [scopeAlpha]
+          );
+          expect(Number(alphaRows[0]?.count ?? -1)).toBe(expectedAlphaCount);
+
+          const betaRows = await verify.unsafe<Array<{ count: number }>>(
+            `SELECT COUNT(*)::int AS count FROM ${qualifiedTable} WHERE scope = $1`,
+            [scopeBeta]
+          );
+          expect(Number(betaRows[0]?.count ?? -1)).toBe(expectedBetaCount);
+        }
+
+        // Distinguishing record per scope, plus an explicit cross-scope
+        // leakage check: scope alpha's rows carry scope alpha's thread id,
+        // never scope beta's, and vice versa.
+        const threadsTable = qualifyIdentifier(targetSchemaName, "threads");
+        const alphaThreadRows = await verify.unsafe<
+          Array<{ thread_id: string }>
+        >(`SELECT thread_id FROM ${threadsTable} WHERE scope = $1`, [
+          scopeAlpha,
+        ]);
+        expect(alphaThreadRows.map((row) => row.thread_id)).toEqual([
+          "thread_multi_alpha",
+        ]);
+
+        const betaThreadRows = await verify.unsafe<
+          Array<{ thread_id: string }>
+        >(`SELECT thread_id FROM ${threadsTable} WHERE scope = $1`, [
+          scopeBeta,
+        ]);
+        expect(betaThreadRows.map((row) => row.thread_id)).toEqual([
+          "thread_multi_beta",
+        ]);
+
+        const crossLeakAlpha = await verify.unsafe<Array<{ count: number }>>(
+          `SELECT COUNT(*)::int AS count FROM ${threadsTable}
+            WHERE scope = $1 AND thread_id = $2`,
+          [scopeAlpha, "thread_multi_beta"]
+        );
+        expect(Number(crossLeakAlpha[0]?.count ?? -1)).toBe(0);
+
+        const crossLeakBeta = await verify.unsafe<Array<{ count: number }>>(
+          `SELECT COUNT(*)::int AS count FROM ${threadsTable}
+            WHERE scope = $1 AND thread_id = $2`,
+          [scopeBeta, "thread_multi_alpha"]
+        );
+        expect(Number(crossLeakBeta[0]?.count ?? -1)).toBe(0);
+      } finally {
+        await verify.end({ timeout: 0 });
+      }
+    } finally {
+      await migrated.destroy();
+    }
+  }, 30_000);
+});
+
+describe("@tuvren/backend-postgres blob->row migration typed diagnosis", () => {
+  test("throws postgres_backend_blob_migration_version_unsupported for a legacy row with an unsupported schema_version", async () => {
+    const targetOptions = createPostgresTestBackendOptions();
+    const scope = "scope_migration_version_unsupported";
+    const unsupportedVersion = CURRENT_SNAPSHOT_VERSION + 41;
+
+    await seedLegacySnapshotSchema(targetOptions, [
+      {
+        schemaVersion: unsupportedVersion,
+        scope,
+        // The version check runs before the blob is ever fetched or
+        // decoded, so the payload bytes here are never touched.
+        snapshotCbor: new Uint8Array([0]),
+      },
+    ]);
+
+    const migrated = createPostgresBackend(targetOptions);
+    try {
+      let caughtError: unknown;
+      try {
+        await migrated.transact(async () => undefined);
+      } catch (error: unknown) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(Error);
+      const normalizedError = caughtError as Error & {
+        code?: string;
+        details?: unknown;
+      };
+      expect(normalizedError.code).toBe(
+        "postgres_backend_blob_migration_version_unsupported"
+      );
+      expect(normalizedError.details).toEqual({
+        actualVersion: unsupportedVersion,
+        expectedVersion: CURRENT_SNAPSHOT_VERSION,
+        scope,
+      });
+    } finally {
+      await migrated.destroy({ dropSchema: true });
+    }
+  });
+
+  test("throws postgres_backend_blob_migration_decode_failed for a legacy row whose blob is not valid deterministic CBOR", async () => {
+    const targetOptions = createPostgresTestBackendOptions();
+    const scope = "scope_migration_decode_failed";
+
+    await seedLegacySnapshotSchema(targetOptions, [
+      {
+        schemaVersion: CURRENT_SNAPSHOT_VERSION,
+        scope,
+        snapshotCbor: new Uint8Array([0xff, 0x00, 0xde, 0xad, 0xbe, 0xef]),
+      },
+    ]);
+
+    const migrated = createPostgresBackend(targetOptions);
+    try {
+      let caughtError: unknown;
+      try {
+        await migrated.transact(async () => undefined);
+      } catch (error: unknown) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(Error);
+      const normalizedError = caughtError as Error & {
+        code?: string;
+        details?: unknown;
+        cause?: unknown;
+      };
+      expect(normalizedError.code).toBe(
+        "postgres_backend_blob_migration_decode_failed"
+      );
+      expect(normalizedError.details).toEqual({
+        schemaVersion: CURRENT_SNAPSHOT_VERSION,
+        scope,
+      });
+      expect(normalizedError.cause).toBeDefined();
+    } finally {
+      await migrated.destroy({ dropSchema: true });
+    }
+  });
+
+  test("throws postgres_backend_blob_migration_ambiguous_rows when more than one legacy row exists for a scope", async () => {
+    const targetOptions = createPostgresTestBackendOptions();
+    const scope = "scope_migration_ambiguous_rows";
+
+    await seedLegacySnapshotSchema(targetOptions, [
+      {
+        schemaVersion: CURRENT_SNAPSHOT_VERSION,
+        scope,
+        snapshotCbor: new Uint8Array([1]),
+        snapshotId: 1,
+      },
+      {
+        schemaVersion: CURRENT_SNAPSHOT_VERSION,
+        scope,
+        snapshotCbor: new Uint8Array([2]),
+        snapshotId: 2,
+      },
+    ]);
+
+    const migrated = createPostgresBackend(targetOptions);
+    try {
+      let caughtError: unknown;
+      try {
+        await migrated.transact(async () => undefined);
+      } catch (error: unknown) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(Error);
+      const normalizedError = caughtError as Error & {
+        code?: string;
+        details?: unknown;
+      };
+      expect(normalizedError.code).toBe(
+        "postgres_backend_blob_migration_ambiguous_rows"
+      );
+      expect(normalizedError.details).toEqual({
+        rowCount: 2,
+        scope,
+      });
+    } finally {
+      await migrated.destroy({ dropSchema: true });
+    }
+  });
 });
 
 describe("@tuvren/backend-postgres observe annotation duplicate identity (live write path)", () => {

@@ -37,7 +37,7 @@ import type {
   StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
-import { CURRENT_SNAPSHOT_VERSION } from "../src/lib/postgres-backend-persistence.js";
+import { CURRENT_SNAPSHOT_VERSION } from "../src/lib/postgres-legacy-snapshot-decode.js";
 import type { BackendState } from "../src/lib/postgres-records.js";
 import {
   cloneStoredBranch,
@@ -63,7 +63,7 @@ import {
  * record family flattened to a deterministically sorted array (so the
  * encoding is stable regardless of `Map` iteration order) and CBOR-encoded
  * alongside the schema version. The counterpart to
- * `decodeSnapshot` (`src/lib/postgres-backend-persistence.ts`), which stays
+ * `decodeSnapshot` (`src/lib/postgres-legacy-snapshot-decode.ts`), which stays
  * in production source for the blob-migration reader path; this writer half
  * is test-only, used to seed a pre-#110 `backend_postgres_snapshots` blob
  * row so a test can exercise the open-time migration end-to-end.
