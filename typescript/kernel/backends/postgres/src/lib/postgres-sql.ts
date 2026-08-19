@@ -62,8 +62,8 @@ export function quoteIdentifier(identifier: string): string {
  * untyped `postgres_backend_engine_error` while the memory and SQLite
  * backends — no btree index-row limit — accept the same value.
  *
- * `MAX_STORABLE_TEXT_BYTES` bounds every caller-supplied field this module
- * already guards, so no index row this schema builds can approach 2704
+ * `MAX_STORABLE_TEXT_BYTES` bounds every caller-supplied field passed to
+ * {@link assertPostgresIndexedText}, so no index row this schema builds can approach 2704
  * bytes. Worst composites across the schema at a per-field bound L = 512:
  *
  * - `idx_turns_scope_thread_branch_head_turn_node` (scope, thread_id,
@@ -126,26 +126,8 @@ const MAX_STORABLE_TEXT_BYTES = 512;
  * digests validated by kernel-protocol's own hash guards and cannot contain a
  * NUL byte.
  *
- * Also rejects a value whose UTF-8 byte length exceeds
- * {@link MAX_STORABLE_TEXT_BYTES} (round 6 review P2): every field guarded
- * here lands directly in a `(scope, ...)` btree primary key or one of the 21
- * `idx_*` indexes in migrations/0001_relational_schema.sql, and PostgreSQL
- * caps a single btree index tuple at 2704 bytes regardless of the column's
- * own `TEXT` type limit — see {@link MAX_STORABLE_TEXT_BYTES}'s docblock for
- * the worst-composite arithmetic. This is a divergence-honesty backstop, not
- * a working constraint: real kernel identifiers are hashes/UUIDs well under
- * 100 bytes.
- *
- * The representability checks run before the byte-length check and keep their
- * own distinct error code: a value
- * that is both too long and NUL-containing is reported as unstorable text,
- * not as merely too long, since the NUL is the more fundamental encoding
- * failure (PostgreSQL cannot represent it at any length).
- *
  * @throws TuvrenPersistenceError `postgres_backend_unstorable_text` when
  *   `value` is not well-formed UTF-16 or contains U+0000.
- * @throws TuvrenPersistenceError `postgres_backend_text_too_long` when
- *   `value`'s UTF-8 byte length exceeds {@link MAX_STORABLE_TEXT_BYTES}.
  */
 export function assertPostgresStorableText(value: string, label: string): void {
   assertPostgresWellFormedText(value, label);
@@ -157,7 +139,14 @@ export function assertPostgresStorableText(value: string, label: string): void {
       { label }
     );
   }
+}
 
+/**
+ * Applies the representability guard plus the conservative btree byte bound
+ * to a caller-supplied field that participates in a primary key or index.
+ */
+export function assertPostgresIndexedText(value: string, label: string): void {
+  assertPostgresStorableText(value, label);
   const byteLength = Buffer.byteLength(value, "utf8");
   if (byteLength > MAX_STORABLE_TEXT_BYTES) {
     throw persistenceError(

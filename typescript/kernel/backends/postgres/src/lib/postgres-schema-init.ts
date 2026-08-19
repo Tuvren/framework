@@ -27,11 +27,13 @@ import {
   LEGACY_SNAPSHOTS_TABLE,
   listMigrationFiles,
   MIGRATIONS_TABLE,
+  RELATIONAL_REQUIRED_COLUMNS,
   RELATIONAL_REQUIRED_FOREIGN_KEYS,
   RELATIONAL_REQUIRED_INDEXES,
   RELATIONAL_REQUIRED_TABLES,
   RELATIONAL_SCHEMA_MIGRATION_NAME,
   readMigrationSql,
+  relationalColumnSignature,
   relationalForeignKeySignature,
   resolveMigrationDirectory,
 } from "./postgres-schema.js";
@@ -47,6 +49,7 @@ type Tx = TransactionSql<Record<string, never>>;
 interface ForeignKeyPostureRow {
   constraint_name: string;
   deferrable: boolean;
+  enforced: "NO" | "YES";
   initially_deferred: boolean;
   source_columns: string[];
   source_table: string;
@@ -54,6 +57,13 @@ interface ForeignKeyPostureRow {
   target_schema: string;
   target_table: string;
   validated: boolean;
+}
+
+interface ColumnPostureRow {
+  column_name: string;
+  data_type: string;
+  is_nullable: "NO" | "YES";
+  table_name: string;
 }
 
 /**
@@ -284,6 +294,39 @@ export async function validateRelationalSchemaPosture(
     );
   }
 
+  const columns = await sql.unsafe<ColumnPostureRow[]>(
+    `SELECT table_name, column_name, data_type, is_nullable
+       FROM information_schema.columns
+      WHERE table_schema = $1
+        AND table_name = ANY($2::text[])`,
+    [schemaName, [...RELATIONAL_REQUIRED_TABLES]]
+  );
+  const liveColumnSignatures = new Set(
+    columns.map((row) =>
+      relationalColumnSignature(
+        row.table_name,
+        row.column_name,
+        row.data_type,
+        row.is_nullable === "YES"
+      )
+    )
+  );
+  const requiredColumnSignatures = new Set<string>(RELATIONAL_REQUIRED_COLUMNS);
+  const missingColumns = RELATIONAL_REQUIRED_COLUMNS.filter(
+    (signature) => !liveColumnSignatures.has(signature)
+  );
+  const unexpectedColumns = [...liveColumnSignatures].filter(
+    (signature) => !requiredColumnSignatures.has(signature)
+  );
+
+  if (missingColumns.length > 0 || unexpectedColumns.length > 0) {
+    throw persistenceError(
+      "postgres backend relational columns differ from the required roster",
+      "postgres_backend_relational_columns_invalid",
+      { missingColumns, schemaName, unexpectedColumns }
+    );
+  }
+
   const presentIndexes = await sql.unsafe<Array<{ indexname: string }>>(
     `SELECT indexname
        FROM pg_indexes
@@ -334,6 +377,7 @@ export async function validateRelationalSchemaPosture(
             con.condeferrable AS deferrable,
             con.condeferred AS initially_deferred,
             con.convalidated AS validated,
+            info.enforced AS enforced,
             source.relname AS source_table,
             target_ns.nspname AS target_schema,
             target.relname AS target_table,
@@ -358,6 +402,12 @@ export async function validateRelationalSchemaPosture(
        JOIN pg_class target ON target.oid = con.confrelid
        JOIN pg_namespace ns ON ns.oid = source.relnamespace
        JOIN pg_namespace target_ns ON target_ns.oid = target.relnamespace
+       JOIN information_schema.table_constraints info
+         ON info.constraint_schema = ns.nspname
+        AND info.table_schema = ns.nspname
+        AND info.table_name = source.relname
+        AND info.constraint_name = con.conname
+        AND info.constraint_type = 'FOREIGN KEY'
       WHERE ns.nspname = $1
         AND source.relname = ANY($2::text[])
         AND con.contype = 'f'`,
@@ -412,6 +462,23 @@ export async function validateRelationalSchemaPosture(
       "postgres_backend_relational_fks_not_validated",
       {
         constraints: unvalidatedForeignKeys.map(
+          (row) => `${row.source_table}.${row.constraint_name}`
+        ),
+        schemaName,
+      }
+    );
+  }
+
+  const unenforcedForeignKeys = foreignKeys.filter(
+    (row) => row.enforced !== "YES"
+  );
+
+  if (unenforcedForeignKeys.length > 0) {
+    throw persistenceError(
+      "postgres backend relational foreign keys must be enforced",
+      "postgres_backend_relational_fks_not_enforced",
+      {
+        constraints: unenforcedForeignKeys.map(
           (row) => `${row.source_table}.${row.constraint_name}`
         ),
         schemaName,

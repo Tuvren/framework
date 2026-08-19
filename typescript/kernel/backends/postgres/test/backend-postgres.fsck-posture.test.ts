@@ -43,6 +43,8 @@ const RELATIONAL_COLLATION_INVALID_ERROR_PATTERN = /must use COLLATE "C"/u;
 const RELATIONAL_FKS_NOT_DEFERRABLE_ERROR_PATTERN =
   /DEFERRABLE INITIALLY DEFERRED/u;
 const RELATIONAL_FKS_MISSING_ERROR_PATTERN = /foreign keys are missing/u;
+const RELATIONAL_COLUMNS_INVALID_ERROR_PATTERN =
+  /relational columns differ from the required roster/u;
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();
@@ -53,6 +55,37 @@ afterAll(async () => {
 });
 
 describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
+  test("health() reports a posture failure when an ordinary required column is dropped", async () => {
+    let simulatedNowMs = Date.now();
+    const options = createPostgresTestBackendOptions({
+      postureNow: () => simulatedNowMs,
+    });
+    const backend = createPostgresBackend(options);
+    const schemaName = options.schemaName ?? "public";
+
+    try {
+      expect((await backend.health()).ok).toBe(true);
+
+      const admin = createAdminClient(options);
+      try {
+        await admin.unsafe(
+          `ALTER TABLE ${qualifyIdentifier(schemaName, "objects")} DROP COLUMN media_type`
+        );
+      } finally {
+        await admin.end({ timeout: 0 });
+      }
+
+      simulatedNowMs += 60_001;
+      const health = await backend.health();
+      expect(health.ok).toBe(false);
+      expect(health.ok === false ? health.reason : undefined).toMatch(
+        RELATIONAL_COLUMNS_INVALID_ERROR_PATTERN
+      );
+    } finally {
+      await backend.destroy({ dropSchema: true });
+    }
+  });
+
   test("fsck() reports a posture failure when a required relational index is dropped", async () => {
     const options = createPostgresTestBackendOptions();
     const backend = createPostgresBackend(options);

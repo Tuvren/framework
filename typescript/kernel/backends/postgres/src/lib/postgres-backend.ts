@@ -121,7 +121,7 @@ import {
 } from "./postgres-schema-init.js";
 import type { DbSql } from "./postgres-sql.js";
 import {
-  assertPostgresStorableText,
+  assertPostgresIndexedText,
   deriveAdvisoryLockKey,
   qualifyIdentifier,
   quoteIdentifier,
@@ -308,7 +308,7 @@ class PostgresBackend implements KrakenBackend {
     // would otherwise reach every family table's `scope` column as a
     // caller-supplied TEXT value (ADR-048/049), so it needs the same
     // boundary check every other caller-supplied identifier field gets.
-    assertPostgresStorableText(this.scope, "scope");
+    assertPostgresIndexedText(this.scope, "scope");
     this.scopeLockKey = deriveAdvisoryLockKey(
       "tuvren-postgres-scope",
       this.schemaName,
