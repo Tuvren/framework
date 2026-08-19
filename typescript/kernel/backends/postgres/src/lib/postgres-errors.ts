@@ -19,23 +19,12 @@ import { TuvrenPersistenceError, TuvrenValidationError } from "@tuvren/core";
 /** SQLSTATE codes from Postgres drivers (e.g. 23503 foreign_key_violation). */
 const SQLSTATE_CODE = /^[0-9A-Z]{5}$/;
 
-/** Native DNS/socket error codes Postgres.js forwards from the runtime. */
-const NETWORK_ERROR_CODES = new Set([
-  "EADDRNOTAVAIL",
-  "EAI_AGAIN",
-  "ECONNABORTED",
-  "ECONNREFUSED",
-  "ECONNRESET",
-  "EHOSTDOWN",
-  "EHOSTUNREACH",
-  "ENETDOWN",
-  "ENETRESET",
-  "ENETUNREACH",
-  "ENOENT",
-  "ENOTFOUND",
-  "EPIPE",
-  "ETIMEDOUT",
-]);
+/** Runtime syscalls that identify a DNS or socket operation. */
+const NETWORK_SYSCALLS = new Set(["connect", "getaddrinfo", "read", "write"]);
+
+/** TLS verification failures surfaced by Node-compatible runtimes. */
+const TLS_ERROR_CODE =
+  /^(?:CERT_|DEPTH_ZERO_SELF_SIGNED_CERT$|ERR_TLS_|SELF_SIGNED_CERT_IN_CHAIN$|UNABLE_TO_)/u;
 
 /** Connection-lifecycle codes created by Postgres.js itself. */
 const POSTGRES_JS_CONNECTION_ERROR_CODES = new Set([
@@ -47,16 +36,10 @@ const POSTGRES_JS_CONNECTION_ERROR_CODES = new Set([
 
 /** True for a runtime error raised by DNS lookup or socket I/O. */
 function isNetworkError(error: Error, code: string): boolean {
-  if (!NETWORK_ERROR_CODES.has(code)) {
-    return false;
-  }
-
   const syscall = Reflect.get(error, "syscall");
   return (
-    syscall === "connect" ||
-    syscall === "getaddrinfo" ||
-    syscall === "read" ||
-    syscall === "write"
+    (typeof syscall === "string" && NETWORK_SYSCALLS.has(syscall)) ||
+    TLS_ERROR_CODE.test(code)
   );
 }
 

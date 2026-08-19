@@ -17,8 +17,33 @@
 import { describe, expect, test } from "bun:test";
 import { TuvrenPersistenceError } from "@tuvren/core";
 import { createPostgresBackend } from "../src/index.js";
+import { normalizeBackendError } from "../src/lib/postgres-errors.js";
 
 describe("@tuvren/backend-postgres connection error normalization", () => {
+  test.each([
+    { code: "EACCES", syscall: "connect" },
+    { code: "ERR_TLS_CERT_ALTNAME_INVALID" },
+  ])("wraps native $code connection failures", ({ code, syscall }) => {
+    const nativeError = Object.assign(new Error(`native ${code} failure`), {
+      code,
+      syscall,
+    });
+
+    const normalized = normalizeBackendError(nativeError);
+
+    expect(normalized).toBeInstanceOf(TuvrenPersistenceError);
+    if (!(normalized instanceof TuvrenPersistenceError)) {
+      throw new Error("expected a TuvrenPersistenceError");
+    }
+
+    expect(normalized.code).toBe("postgres_backend_connection_error");
+    expect(normalized.details).toEqual({
+      message: nativeError.message,
+      networkCode: code,
+    });
+    expect(normalized.details).not.toHaveProperty("postgresCode");
+  });
+
   test("transact wraps a forwarded DNS failure without labeling it as a PostgreSQL SQLSTATE", async () => {
     const backend = createPostgresBackend({
       database: "tuvren_runtime",

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { assertHashString } from "@tuvren/core";
+import { assertHashString, type TuvrenPersistenceError } from "@tuvren/core";
 import {
   assertStoredBranch,
   assertStoredObject,
@@ -428,6 +428,15 @@ export function decodeTurnTreePathRow(
   row: PostgresTurnTreePathRow
 ): StoredTurnTreePath {
   if (row.collection_kind === "single") {
+    if (
+      row.ordered_encoding !== null ||
+      row.ordered_count !== null ||
+      row.ordered_inline_cbor !== null ||
+      row.ordered_chunk_list_cbor !== null
+    ) {
+      throw invalidTurnTreePathRow(row);
+    }
+
     return {
       collectionKind: "single",
       path: row.path,
@@ -451,7 +460,12 @@ export function decodeTurnTreePathRow(
     { path: row.path, turnTreeHash: row.turn_tree_hash }
   );
 
-  if (row.ordered_encoding === "flat" && row.ordered_inline_cbor !== null) {
+  if (
+    row.single_hash === null &&
+    row.ordered_encoding === "flat" &&
+    row.ordered_inline_cbor !== null &&
+    row.ordered_chunk_list_cbor === null
+  ) {
     return {
       collectionKind: "ordered",
       orderedCount,
@@ -466,7 +480,9 @@ export function decodeTurnTreePathRow(
 
   if (
     row.ordered_encoding === "chunked" &&
-    row.ordered_chunk_list_cbor !== null
+    row.ordered_chunk_list_cbor !== null &&
+    row.ordered_inline_cbor === null &&
+    row.single_hash === null
   ) {
     return {
       collectionKind: "ordered",
@@ -480,7 +496,13 @@ export function decodeTurnTreePathRow(
     };
   }
 
-  throw persistenceError(
+  throw invalidTurnTreePathRow(row);
+}
+
+function invalidTurnTreePathRow(
+  row: PostgresTurnTreePathRow
+): TuvrenPersistenceError {
+  return persistenceError(
     "stored turn tree path rows must decode to a valid ordered or single variant",
     "postgres_backend_invalid_turn_tree_path_row",
     { path: row.path, turnTreeHash: row.turn_tree_hash }
