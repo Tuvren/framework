@@ -38,9 +38,11 @@ import { persistenceError } from "../src/lib/postgres-errors.js";
 import {
   listMigrationFiles,
   MIGRATIONS_TABLE,
+  RELATIONAL_REQUIRED_FOREIGN_KEYS,
   RELATIONAL_REQUIRED_INDEXES,
   RELATIONAL_REQUIRED_TABLES,
   readMigrationSql,
+  relationalForeignKeySignature,
   resolveMigrationDirectory,
 } from "../src/lib/postgres-schema.js";
 
@@ -56,6 +58,9 @@ const SCHEMA_INIT_SOURCE_PATH = join(
 // as the single-line form.
 const CREATE_TABLE_PATTERN = /CREATE TABLE\s+(\w+)\s*\(/g;
 const CREATE_INDEX_PATTERN = /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(\w+)\s+ON/g;
+const CREATE_TABLE_BODY_PATTERN = /CREATE TABLE\s+(\w+)\s*\(([\s\S]*?)\n\);/g;
+const FOREIGN_KEY_PATTERN =
+  /FOREIGN KEY\s*\(([^)]+)\)\s+REFERENCES\s+(\w+)\s*\(([^)]+)\)/g;
 
 // The migration ledger table must be created via `CREATE TABLE IF NOT
 // EXISTS` bound to the `migrationsTable` identifier (derived from
@@ -84,6 +89,46 @@ function loadAllMigrationSql(): Array<{ name: string; sql: string }> {
     name,
     sql: readMigrationSql(migrationDirectory, name),
   }));
+}
+
+function parseColumnList(columns: string): string[] {
+  return columns.split(",").map((column) => column.trim());
+}
+
+function extractForeignKeySignatures(sql: string): string[] {
+  const signatures: string[] = [];
+
+  for (const tableMatch of sql.matchAll(CREATE_TABLE_BODY_PATTERN)) {
+    const sourceTable = tableMatch[1];
+    const tableBody = tableMatch[2];
+    if (sourceTable === undefined || tableBody === undefined) {
+      throw new Error("CREATE TABLE match omitted its table name or body");
+    }
+
+    for (const foreignKeyMatch of tableBody.matchAll(FOREIGN_KEY_PATTERN)) {
+      const sourceColumns = foreignKeyMatch[1];
+      const targetTable = foreignKeyMatch[2];
+      const targetColumns = foreignKeyMatch[3];
+      if (
+        sourceColumns === undefined ||
+        targetTable === undefined ||
+        targetColumns === undefined
+      ) {
+        throw new Error("FOREIGN KEY match omitted structural fields");
+      }
+
+      signatures.push(
+        relationalForeignKeySignature(
+          sourceTable,
+          parseColumnList(sourceColumns),
+          targetTable,
+          parseColumnList(targetColumns)
+        )
+      );
+    }
+  }
+
+  return signatures;
 }
 
 function formatSetDiff(missing: string[], extra: string[]): string {
@@ -136,6 +181,15 @@ describe("relational Postgres schema DDL <-> roster agreement", () => {
     );
 
     assertSetsEqual(ddlIndexNames, RELATIONAL_REQUIRED_INDEXES);
+  });
+
+  test("every FOREIGN KEY across all migration files matches RELATIONAL_REQUIRED_FOREIGN_KEYS exactly", () => {
+    const migrations = loadAllMigrationSql();
+    const ddlForeignKeys = migrations.flatMap(({ sql }) =>
+      extractForeignKeySignatures(sql)
+    );
+
+    assertSetsEqual(ddlForeignKeys, RELATIONAL_REQUIRED_FOREIGN_KEYS);
   });
 
   test("the migration ledger table is provisioned by postgres-schema-init.ts outside any migration file, not by DDL", () => {

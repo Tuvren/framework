@@ -103,6 +103,26 @@ afterAll(async () => {
 });
 
 describe("@tuvren/backend-postgres NUL-identifier boundary validation", () => {
+  test("rejects distinct lone-surrogate scopes before the driver can replacement-encode them into one tenant identity", () => {
+    const options = createPostgresTestBackendOptions();
+    const illFormedScopes = ["tenant_\uD800", "tenant_\uD801"];
+
+    for (const scope of illFormedScopes) {
+      let caughtError: unknown;
+      try {
+        createPostgresBackend({ ...options, scope });
+      } catch (error: unknown) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(Error);
+      expect(readErrorCode(caughtError)).toBe(UNSTORABLE_TEXT_CODE);
+      expect(readErrorCode(caughtError)).not.toBe(
+        "postgres_backend_engine_error"
+      );
+    }
+  });
+
   test("rejects tx.objects.put's mediaType containing U+0000 with a typed error, not the raw engine error", async () => {
     const options = createPostgresTestBackendOptions();
     const backend = createPostgresBackend(options);

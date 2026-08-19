@@ -19,26 +19,58 @@ import { TuvrenPersistenceError, TuvrenValidationError } from "@tuvren/core";
 /** SQLSTATE codes from Postgres drivers (e.g. 23503 foreign_key_violation). */
 const SQLSTATE_CODE = /^[0-9A-Z]{5}$/;
 
+/** Native DNS/socket error codes Postgres.js forwards from the runtime. */
+const NETWORK_ERROR_CODES = new Set([
+  "EADDRNOTAVAIL",
+  "EAI_AGAIN",
+  "ECONNABORTED",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTDOWN",
+  "EHOSTUNREACH",
+  "ENETDOWN",
+  "ENETRESET",
+  "ENETUNREACH",
+  "ENOENT",
+  "ENOTFOUND",
+  "EPIPE",
+  "ETIMEDOUT",
+]);
+
+/** Connection-lifecycle codes created by Postgres.js itself. */
+const POSTGRES_JS_CONNECTION_ERROR_CODES = new Set([
+  "CONNECTION_CLOSED",
+  "CONNECTION_DESTROYED",
+  "CONNECTION_ENDED",
+  "CONNECT_TIMEOUT",
+]);
+
+/** True for a runtime error raised by DNS lookup or socket I/O. */
+function isNetworkError(error: Error, code: string): boolean {
+  if (!NETWORK_ERROR_CODES.has(code)) {
+    return false;
+  }
+
+  const syscall = Reflect.get(error, "syscall");
+  return (
+    syscall === "connect" ||
+    syscall === "getaddrinfo" ||
+    syscall === "read" ||
+    syscall === "write"
+  );
+}
+
 /**
  * True only for errors the PostgreSQL driver/engine actually produced. A
  * bare 5-char uppercase `code` is not enough: Node errno codes like `EPIPE`
  * and `EPERM` also match {@link SQLSTATE_CODE}, and labeling one of those
  * with a `postgresCode` would hand operators a confidently wrong signal on
- * exactly the failure paths they page on. postgres.js engine errors are
- * `PostgresError` instances carrying a `severity` field; connection-lifecycle
- * failures use the driver's named codes checked explicitly below (postgres.js
- * emits `CONNECTION_CLOSED`, `CONNECTION_ENDED`, and `CONNECTION_DESTROYED`,
- * all sharing the `CONNECTION_` prefix, plus the distinct `CONNECT_TIMEOUT`).
+ * exactly the failure paths they page on. Postgres.js engine errors are
+ * `PostgresError` instances carrying a `severity` field. Native DNS/socket
+ * errors and Postgres.js's own connection-lifecycle errors are classified
+ * separately by {@link normalizeBackendError}.
  */
 function isPostgresEngineError(error: Error, code: string): boolean {
-  if (code.startsWith("ECONN")) {
-    return true;
-  }
-
-  if (code.startsWith("CONNECTION_") || code === "CONNECT_TIMEOUT") {
-    return true;
-  }
-
   return (
     SQLSTATE_CODE.test(code) &&
     (error.name === "PostgresError" ||
@@ -81,7 +113,33 @@ export function normalizeBackendError(error: unknown): Error {
         ? (Reflect.get(error, "code") as string)
         : undefined;
     // node-postgres / postgres.js surface SQLSTATE codes as 5-char strings
-    // (e.g. 23503 foreign_key_violation) and connection failures as named codes.
+    // (e.g. 23503 foreign_key_violation). Postgres.js deliberately forwards
+    // native runtime DNS/socket failures unchanged, so keep those codes out of
+    // the postgresCode field and expose their actual provenance instead.
+    if (code !== undefined && isNetworkError(error, code)) {
+      return persistenceError(
+        `postgres backend connection failed: ${error.message}`,
+        "postgres_backend_connection_error",
+        {
+          message: error.message,
+          networkCode: code,
+        },
+        error
+      );
+    }
+
+    if (code !== undefined && POSTGRES_JS_CONNECTION_ERROR_CODES.has(code)) {
+      return persistenceError(
+        `postgres backend connection failed: ${error.message}`,
+        "postgres_backend_connection_error",
+        {
+          driverCode: code,
+          message: error.message,
+        },
+        error
+      );
+    }
+
     if (code !== undefined && isPostgresEngineError(error, code)) {
       return persistenceError(
         `postgres backend engine operation failed: ${error.message}`,

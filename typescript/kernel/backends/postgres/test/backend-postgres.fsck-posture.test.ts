@@ -42,6 +42,7 @@ const RELATIONAL_INDEXES_MISSING_ERROR_PATTERN =
 const RELATIONAL_COLLATION_INVALID_ERROR_PATTERN = /must use COLLATE "C"/u;
 const RELATIONAL_FKS_NOT_DEFERRABLE_ERROR_PATTERN =
   /DEFERRABLE INITIALLY DEFERRED/u;
+const RELATIONAL_FKS_MISSING_ERROR_PATTERN = /foreign keys are missing/u;
 
 beforeAll(async () => {
   await assertDevenvPostgresReady();
@@ -175,6 +176,57 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
       expect(health.ok).toBe(false);
       expect(health.ok === false ? health.reason : undefined).toMatch(
         RELATIONAL_FKS_NOT_DEFERRABLE_ERROR_PATTERN
+      );
+    } finally {
+      await backend.destroy({ dropSchema: true });
+    }
+  });
+
+  test("health() reports a posture failure when a required foreign key is dropped", async () => {
+    let simulatedNowMs = Date.now();
+    const options = createPostgresTestBackendOptions({
+      postureNow: () => simulatedNowMs,
+    });
+    const backend = createPostgresBackend(options);
+    const schemaName = options.schemaName ?? "public";
+
+    try {
+      const baseline = await backend.health();
+      expect(baseline.ok).toBe(true);
+
+      const admin = createAdminClient(options);
+      try {
+        const turnTreesTable = qualifyIdentifier(schemaName, "turn_trees");
+        const constraints = await admin.unsafe<Array<{ conname: string }>>(
+          `SELECT con.conname
+             FROM pg_constraint con
+             JOIN pg_class cls ON cls.oid = con.conrelid
+             JOIN pg_namespace ns ON ns.oid = cls.relnamespace
+            WHERE ns.nspname = $1
+              AND cls.relname = 'turn_trees'
+              AND con.contype = 'f'`,
+          [schemaName]
+        );
+        const [constraint] = constraints;
+        if (constraint === undefined) {
+          throw new Error(
+            "expected turn_trees to have at least one foreign key"
+          );
+        }
+
+        await admin.unsafe(
+          `ALTER TABLE ${turnTreesTable}
+             DROP CONSTRAINT ${quoteIdentifier(constraint.conname)}`
+        );
+      } finally {
+        await admin.end({ timeout: 0 });
+      }
+
+      simulatedNowMs += 60_001;
+      const health = await backend.health();
+      expect(health.ok).toBe(false);
+      expect(health.ok === false ? health.reason : undefined).toMatch(
+        RELATIONAL_FKS_MISSING_ERROR_PATTERN
       );
     } finally {
       await backend.destroy({ dropSchema: true });
