@@ -78,6 +78,8 @@ const CYCLIC_LINEAGE_ERROR_PATTERN =
   /must not traverse a cyclic turn node lineage/u;
 const THREAD_LINEAGE_MISMATCH_ERROR_PATTERN =
   /must belong to the referenced thread by lineage walk/u;
+const OBSERVE_ANNOTATION_RUN_ERROR_PATTERN =
+  /observeAnnotation\.runId must reference an existing run/u;
 
 /** The real lineage/run-invariant helpers `sqlite-backend.ts` injects into `validateCommittedState`. */
 const VALIDATION_HELPERS = {
@@ -95,6 +97,42 @@ const VALIDATION_HELPERS = {
 };
 
 describe("@tuvren/backend-sqlite invariants", () => {
+  test("fsck() rejects an observe annotation whose run is missing", async () => {
+    const seeded = await seedCorruptionDatabase();
+    const probe = new Database(seeded.databasePath);
+    probe.pragma("foreign_keys = OFF");
+    probe
+      .prepare(
+        `INSERT INTO observe_annotations (
+           record_key,
+           run_id,
+           annotation_hash,
+           turn_node_hash,
+           annotation_cbor,
+           created_at_ms
+         ) VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        "dangling_annotation",
+        "missing_run",
+        createHashFromIndex(2000),
+        null,
+        Buffer.from(encodeDeterministicKernelRecord({ kind: "test" })),
+        10
+      );
+    probe.close();
+
+    const backend = createSqliteBackend({
+      databasePath: seeded.databasePath,
+    });
+    const fsck = await backend.fsck();
+    deepStrictEqual(fsck.ok, false);
+    if (fsck.ok) {
+      throw new Error("expected unhealthy status");
+    }
+    strictEqual(OBSERVE_ANNOTATION_RUN_ERROR_PATTERN.test(fsck.reason), true);
+  });
+
   // Issue #108 M5: committed-state invariant corruption (as opposed to
   // migration/schema corruption) is invisible to the lightweight health()
   // probe by design -- it is only ever caught by the fsck() maintenance
