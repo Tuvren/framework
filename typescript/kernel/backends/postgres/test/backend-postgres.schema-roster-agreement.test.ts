@@ -38,10 +38,12 @@ import { persistenceError } from "../src/lib/postgres-errors.js";
 import {
   listMigrationFiles,
   MIGRATIONS_TABLE,
+  RELATIONAL_REQUIRED_COLUMNS,
   RELATIONAL_REQUIRED_FOREIGN_KEYS,
   RELATIONAL_REQUIRED_INDEXES,
   RELATIONAL_REQUIRED_TABLES,
   readMigrationSql,
+  relationalColumnSignature,
   relationalForeignKeySignature,
   resolveMigrationDirectory,
 } from "../src/lib/postgres-schema.js";
@@ -61,6 +63,8 @@ const CREATE_INDEX_PATTERN = /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(\w+)\s+ON/g;
 const CREATE_TABLE_BODY_PATTERN = /CREATE TABLE\s+(\w+)\s*\(([\s\S]*?)\n\);/g;
 const FOREIGN_KEY_PATTERN =
   /FOREIGN KEY\s*\(([^)]+)\)\s+REFERENCES\s+(\w+)\s*\(([^)]+)\)/g;
+const COLUMN_DEFINITION_PATTERN =
+  /^\s*(\w+)\s+(TEXT|BYTEA|BIGINT|INTEGER)(?:\s+COLLATE\s+"C")?\s+(NOT NULL|NULL),?\s*$/gm;
 
 // The migration ledger table must be created via `CREATE TABLE IF NOT
 // EXISTS` bound to the `migrationsTable` identifier (derived from
@@ -131,6 +135,38 @@ function extractForeignKeySignatures(sql: string): string[] {
   return signatures;
 }
 
+function extractColumnSignatures(sql: string): string[] {
+  const signatures: string[] = [];
+  for (const tableMatch of sql.matchAll(CREATE_TABLE_BODY_PATTERN)) {
+    const tableName = tableMatch[1];
+    const tableBody = tableMatch[2];
+    if (tableName === undefined || tableBody === undefined) {
+      throw new Error("CREATE TABLE match omitted its table name or body");
+    }
+    for (const columnMatch of tableBody.matchAll(COLUMN_DEFINITION_PATTERN)) {
+      const columnName = columnMatch[1];
+      const dataType = columnMatch[2];
+      const nullability = columnMatch[3];
+      if (
+        columnName === undefined ||
+        dataType === undefined ||
+        nullability === undefined
+      ) {
+        throw new Error("column definition omitted structural fields");
+      }
+      signatures.push(
+        relationalColumnSignature(
+          tableName,
+          columnName,
+          dataType.toLowerCase(),
+          nullability === "NULL"
+        )
+      );
+    }
+  }
+  return signatures;
+}
+
 function formatSetDiff(missing: string[], extra: string[]): string {
   const parts: string[] = [];
   if (missing.length > 0) {
@@ -181,6 +217,15 @@ describe("relational Postgres schema DDL <-> roster agreement", () => {
     );
 
     assertSetsEqual(ddlIndexNames, RELATIONAL_REQUIRED_INDEXES);
+  });
+
+  test("every column across all migration files matches RELATIONAL_REQUIRED_COLUMNS exactly", () => {
+    const migrations = loadAllMigrationSql();
+    const ddlColumns = migrations.flatMap(({ sql }) =>
+      extractColumnSignatures(sql)
+    );
+
+    assertSetsEqual(ddlColumns, RELATIONAL_REQUIRED_COLUMNS);
   });
 
   test("every FOREIGN KEY across all migration files matches RELATIONAL_REQUIRED_FOREIGN_KEYS exactly", () => {

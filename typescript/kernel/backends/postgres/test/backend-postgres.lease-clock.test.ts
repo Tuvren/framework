@@ -266,4 +266,27 @@ describe("createPostgresBackend backend-authoritative lease clock", () => {
       await fixture.backend.destroy({ dropSchema: true });
     }
   });
+
+  test("stores a long unindexed preemption reason", async () => {
+    const fixture = await createLeaseClockFixture(1000);
+    const reason = `recovery-detail:${"r".repeat(1024)}`;
+
+    try {
+      const run = await createLeasedRun(fixture, 50);
+      fixture.setBackendNow(1051);
+      await fixture.kernel.runLiveness.preemptExpired(
+        run.runId,
+        "owner-beta",
+        0,
+        reason
+      );
+
+      const storedRun = await fixture.backend.transact((tx) =>
+        tx.runs.get(run.runId)
+      );
+      expect(storedRun?.preemptionReason).toBe(reason);
+    } finally {
+      await fixture.backend.destroy({ dropSchema: true });
+    }
+  });
 });

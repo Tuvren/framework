@@ -36,6 +36,7 @@ import { persistenceError } from "./postgres-errors.js";
 import { decodeThreadRow, type PostgresThreadRow } from "./postgres-records.js";
 import type { DbSql } from "./postgres-sql.js";
 import {
+  assertPostgresIndexedText,
   assertPostgresStorableText,
   assertPostgresWellFormedText,
   qualifyIdentifier,
@@ -232,7 +233,7 @@ export function createSupportRepositories(
       async set(record) {
         assertTransactionActive();
         assertStoredObserveAnnotation(record, "record");
-        assertPostgresStorableText(record.runId, "record.runId");
+        assertPostgresIndexedText(record.runId, "record.runId");
         await helpers.ensureRunExistsInDatabase(
           sql,
           schemaName,
@@ -377,7 +378,7 @@ export function createSupportRepositories(
       async put(record) {
         assertTransactionActive();
         assertStoredSchema(record, "record");
-        assertPostgresStorableText(record.schemaId, "record.schemaId");
+        assertPostgresIndexedText(record.schemaId, "record.schemaId");
         const existing = await helpers.selectSchema(
           sql,
           schemaName,
@@ -408,7 +409,7 @@ export function createSupportRepositories(
     stagedResults: {
       async clearRun(runId) {
         assertTransactionActive();
-        assertPostgresStorableText(runId, "runId");
+        assertPostgresIndexedText(runId, "runId");
         const table = qualifyIdentifier(schemaName, "staged_results");
         const result = await sql.unsafe(
           `DELETE FROM ${table} WHERE scope = $1 AND run_id = $2`,
@@ -447,8 +448,8 @@ export function createSupportRepositories(
       async set(record) {
         assertTransactionActive();
         assertStoredStagedResult(record, "record");
-        assertPostgresStorableText(record.runId, "record.runId");
-        assertPostgresStorableText(record.taskId, "record.taskId");
+        assertPostgresIndexedText(record.runId, "record.runId");
+        assertPostgresIndexedText(record.taskId, "record.taskId");
         assertPostgresStorableText(record.objectType, "record.objectType");
         await helpers.ensureRunExistsInDatabase(
           sql,
@@ -527,8 +528,8 @@ export function createSupportRepositories(
       async put(record) {
         assertTransactionActive();
         assertStoredThread(record, "record");
-        assertPostgresStorableText(record.threadId, "record.threadId");
-        assertPostgresStorableText(record.schemaId, "record.schemaId");
+        assertPostgresIndexedText(record.threadId, "record.threadId");
+        assertPostgresIndexedText(record.schemaId, "record.schemaId");
         await helpers.ensureSchemaExistsInDatabase(
           sql,
           schemaName,
