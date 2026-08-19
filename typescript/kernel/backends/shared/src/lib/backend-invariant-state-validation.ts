@@ -629,6 +629,7 @@ export function createBackendInvariantStateValidation(
   const {
     ensureObjectExists,
     ensureOrderedPathChunkExists,
+    ensureRunExists,
     ensureSchemaRecordExists,
     ensureTurnNodeExists,
     ensureTurnTreeExists,
@@ -664,6 +665,24 @@ export function createBackendInvariantStateValidation(
     validateTurnInvariants(state, helpers, lineageIndex);
     validateRunInvariants(state, helpers, lineageIndex);
     validateTurnTreePathInvariants(state, helpers);
+    validateObserveAnnotationInvariants(state);
+  }
+
+  /** Every annotation must reference its owning run and optional turn node. */
+  function validateObserveAnnotationInvariants(state: BackendState): void {
+    for (const [runId, annotations] of state.observeAnnotations) {
+      ensureRunExists(state, runId, "observeAnnotation.runId");
+
+      for (const annotation of annotations) {
+        if (annotation.turnNodeHash !== null) {
+          ensureTurnNodeExists(
+            state,
+            annotation.turnNodeHash,
+            "observeAnnotation.turnNodeHash"
+          );
+        }
+      }
+    }
   }
 
   /** Every stored thread's root turn node is a genesis node and unique. */
