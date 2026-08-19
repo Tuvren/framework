@@ -148,18 +148,7 @@ const MAX_STORABLE_TEXT_BYTES = 512;
  *   `value`'s UTF-8 byte length exceeds {@link MAX_STORABLE_TEXT_BYTES}.
  */
 export function assertPostgresStorableText(value: string, label: string): void {
-  // PostgreSQL stores Unicode scalar values, while JavaScript strings may
-  // contain lone UTF-16 surrogates. The runtime/driver replacement-encodes
-  // those invalid sequences as U+FFFD, which can collapse two distinct Scope
-  // or record identities onto the same durable key. Reject before hashing or
-  // binding instead of silently changing caller-supplied identity.
-  if (!value.isWellFormed()) {
-    throw persistenceError(
-      `postgres backend cannot store ${label}: value is not a well-formed UTF-16 string`,
-      "postgres_backend_unstorable_text",
-      { label }
-    );
-  }
+  assertPostgresWellFormedText(value, label);
 
   if (value.includes(NUL_CODE_POINT)) {
     throw persistenceError(
@@ -178,6 +167,30 @@ export function assertPostgresStorableText(value: string, label: string): void {
         "2704-byte btree index-row limit",
       "postgres_backend_text_too_long",
       { actualBytes: byteLength, label, maxBytes: MAX_STORABLE_TEXT_BYTES }
+    );
+  }
+}
+
+/**
+ * Rejects ill-formed UTF-16 before a value is bound as a query parameter.
+ * This narrower read-side guard intentionally does not apply the write-only
+ * NUL and btree-length constraints: it exists solely to prevent the runtime
+ * from replacement-encoding distinct lookup identities to the same text.
+ */
+export function assertPostgresWellFormedText(
+  value: string,
+  label: string
+): void {
+  // PostgreSQL stores Unicode scalar values, while JavaScript strings may
+  // contain lone UTF-16 surrogates. The runtime/driver replacement-encodes
+  // those invalid sequences as U+FFFD, which can collapse two distinct Scope
+  // or record identities onto the same durable key. Reject before hashing or
+  // binding instead of silently changing caller-supplied identity.
+  if (!value.isWellFormed()) {
+    throw persistenceError(
+      `postgres backend cannot bind ${label}: value is not a well-formed UTF-16 string`,
+      "postgres_backend_unstorable_text",
+      { label }
     );
   }
 }

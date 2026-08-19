@@ -24,7 +24,7 @@ const NETWORK_SYSCALLS = new Set(["connect", "getaddrinfo", "read", "write"]);
 
 /** TLS verification failures surfaced by Node-compatible runtimes. */
 const TLS_ERROR_CODE =
-  /^(?:CERT_|DEPTH_ZERO_SELF_SIGNED_CERT$|ERR_TLS_|SELF_SIGNED_CERT_IN_CHAIN$|UNABLE_TO_)/u;
+  /^(?:CERT_|DEPTH_ZERO_SELF_SIGNED_CERT$|ERR_SSL_|ERR_TLS_|SELF_SIGNED_CERT_IN_CHAIN$|UNABLE_TO_)/u;
 
 /** Connection-lifecycle codes created by Postgres.js itself. */
 const POSTGRES_JS_CONNECTION_ERROR_CODES = new Set([
@@ -32,6 +32,7 @@ const POSTGRES_JS_CONNECTION_ERROR_CODES = new Set([
   "CONNECTION_DESTROYED",
   "CONNECTION_ENDED",
   "CONNECT_TIMEOUT",
+  "SASL_SIGNATURE_MISMATCH",
 ]);
 
 /** True for a runtime error raised by DNS lookup or socket I/O. */

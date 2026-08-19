@@ -33,9 +33,11 @@ import {
   type StoredTurnNode,
 } from "@tuvren/kernel-protocol";
 import { persistenceError } from "./postgres-errors.js";
+import { decodeThreadRow, type PostgresThreadRow } from "./postgres-records.js";
 import type { DbSql } from "./postgres-sql.js";
 import {
   assertPostgresStorableText,
+  assertPostgresWellFormedText,
   qualifyIdentifier,
 } from "./postgres-sql.js";
 import type { TransactionWriteTracker } from "./postgres-write-tracker.js";
@@ -217,6 +219,7 @@ export function createSupportRepositories(
     observeAnnotations: {
       async listByRun(runId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(runId, "runId");
         const records = await helpers.selectObserveAnnotationsByRun(
           sql,
           schemaName,
@@ -282,11 +285,13 @@ export function createSupportRepositories(
     objects: {
       async get(hash) {
         assertTransactionActive();
+        assertPostgresWellFormedText(hash, "hash");
         const record = await helpers.selectObject(sql, schemaName, scope, hash);
         return record === null ? null : helpers.cloneStoredObject(record);
       },
       async has(hash) {
         assertTransactionActive();
+        assertPostgresWellFormedText(hash, "hash");
         return (
           (await helpers.selectObject(sql, schemaName, scope, hash)) !== null
         );
@@ -339,6 +344,7 @@ export function createSupportRepositories(
     orderedPathChunks: {
       async get(chunkHash) {
         assertTransactionActive();
+        assertPostgresWellFormedText(chunkHash, "chunkHash");
         const record = await helpers.selectOrderedPathChunk(
           sql,
           schemaName,
@@ -359,6 +365,7 @@ export function createSupportRepositories(
     schemas: {
       async get(schemaId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(schemaId, "schemaId");
         const record = await helpers.selectSchema(
           sql,
           schemaName,
@@ -414,6 +421,8 @@ export function createSupportRepositories(
       },
       async get(runId, taskId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(runId, "runId");
+        assertPostgresWellFormedText(taskId, "taskId");
         const record = await helpers.selectStagedResult(
           sql,
           schemaName,
@@ -425,6 +434,7 @@ export function createSupportRepositories(
       },
       async listByRun(runId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(runId, "runId");
         const stagedResults = await helpers.selectStagedResultsByRun(
           sql,
           schemaName,
@@ -505,6 +515,7 @@ export function createSupportRepositories(
     threads: {
       async get(threadId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(threadId, "threadId");
         const record = await helpers.selectThread(
           sql,
           schemaName,
@@ -577,6 +588,10 @@ export function createSupportRepositories(
 
         if (options?.cursor !== undefined) {
           const { lastCreatedAtMs, lastThreadId } = options.cursor;
+          assertPostgresWellFormedText(
+            lastThreadId,
+            "options.cursor.lastThreadId"
+          );
           conditions.push(
             `(created_at_ms > $${params.length + 1} OR (created_at_ms = $${params.length + 2} AND thread_id > $${params.length + 3}))`
           );
@@ -584,6 +599,10 @@ export function createSupportRepositories(
         }
 
         if (options?.filter?.schemaId !== undefined) {
+          assertPostgresWellFormedText(
+            options.filter.schemaId,
+            "options.filter.schemaId"
+          );
           conditions.push(`schema_id = $${params.length + 1}`);
           params.push(options.filter.schemaId);
         }
@@ -602,14 +621,7 @@ export function createSupportRepositories(
         }
 
         const table = qualifyIdentifier(schemaName, "threads");
-        const rows = await sql.unsafe<
-          Array<{
-            thread_id: string;
-            schema_id: string;
-            root_turn_node_hash: string;
-            created_at_ms: number | string | bigint;
-          }>
-        >(
+        const rows = await sql.unsafe<PostgresThreadRow[]>(
           `SELECT thread_id, schema_id, root_turn_node_hash, created_at_ms
              FROM ${table}
              ${where}
@@ -618,12 +630,7 @@ export function createSupportRepositories(
           params
         );
 
-        let threads: StoredThread[] = rows.map((row) => ({
-          threadId: row.thread_id,
-          schemaId: row.schema_id,
-          rootTurnNodeHash: row.root_turn_node_hash,
-          createdAtMs: Number(row.created_at_ms) as StoredThread["createdAtMs"],
-        }));
+        let threads: StoredThread[] = rows.map(decodeThreadRow);
 
         let nextCursor: ListThreadsCursorPayload | undefined;
         if (limit !== undefined && threads.length > limit) {

@@ -66,6 +66,22 @@ export function registerBackendInvariantArchiveCases(
       }),
       TuvrenPersistenceError
     );
+
+    await rejects(
+      backend.transact(async (tx) => {
+        const forgedArchive: StoredBranch = {
+          archivedFromBranchId: branch.branchId,
+          branchId: "branch_forged_archive_double_write",
+          createdAtMs: 10,
+          headTurnNodeHash: middleNode.hash,
+          threadId: thread.threadId,
+          updatedAtMs: 10,
+        };
+        await tx.branches.set(forgedArchive);
+        await tx.branches.set({ ...forgedArchive, updatedAtMs: 11 });
+      }),
+      TuvrenPersistenceError
+    );
   });
 
   options.testApi.test("rejects stale archival rollback state", async () => {

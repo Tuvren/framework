@@ -198,6 +198,7 @@ export function createBackendInvariantReclamationValidation(
     assertSurvivingTurnReferences(state);
     assertSurvivingRunReferences(state);
     assertSurvivingStagedResultReferences(state);
+    assertSurvivingObserveAnnotationReferences(state);
     assertSurvivingTurnTreePathReferences(state);
   }
 
@@ -323,6 +324,24 @@ export function createBackendInvariantReclamationValidation(
           stagedResult.objectHash,
           "stagedResult.objectHash"
         );
+      }
+    }
+  }
+
+  /** Surviving annotations must retain both their owning run and linked node. */
+  function assertSurvivingObserveAnnotationReferences(
+    state: BackendState
+  ): void {
+    for (const annotations of state.observeAnnotations.values()) {
+      for (const annotation of annotations) {
+        ensureRunExists(state, annotation.runId, "observeAnnotation.runId");
+        if (annotation.turnNodeHash !== null) {
+          ensureTurnNodeExists(
+            state,
+            annotation.turnNodeHash,
+            "observeAnnotation.turnNodeHash"
+          );
+        }
       }
     }
   }

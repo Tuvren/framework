@@ -23,6 +23,7 @@ describe("@tuvren/backend-postgres connection error normalization", () => {
   test.each([
     { code: "EACCES", syscall: "connect" },
     { code: "ERR_TLS_CERT_ALTNAME_INVALID" },
+    { code: "ERR_SSL_SSLV3_ALERT_HANDSHAKE_FAILURE" },
   ])("wraps native $code connection failures", ({ code, syscall }) => {
     const nativeError = Object.assign(new Error(`native ${code} failure`), {
       code,
@@ -42,6 +43,24 @@ describe("@tuvren/backend-postgres connection error normalization", () => {
       networkCode: code,
     });
     expect(normalized.details).not.toHaveProperty("postgresCode");
+  });
+
+  test("wraps Postgres.js SASL signature failures as typed connection errors", () => {
+    const driverError = Object.assign(new Error("SASL signature mismatch"), {
+      code: "SASL_SIGNATURE_MISMATCH",
+    });
+
+    const normalized = normalizeBackendError(driverError);
+
+    expect(normalized).toBeInstanceOf(TuvrenPersistenceError);
+    if (!(normalized instanceof TuvrenPersistenceError)) {
+      throw new Error("expected a TuvrenPersistenceError");
+    }
+    expect(normalized.code).toBe("postgres_backend_connection_error");
+    expect(normalized.details).toEqual({
+      driverCode: "SASL_SIGNATURE_MISMATCH",
+      message: driverError.message,
+    });
   });
 
   test("transact wraps a forwarded DNS failure without labeling it as a PostgreSQL SQLSTATE", async () => {

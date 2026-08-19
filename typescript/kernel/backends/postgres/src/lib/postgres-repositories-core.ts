@@ -34,6 +34,7 @@ import { persistenceError } from "./postgres-errors.js";
 import type { DbSql } from "./postgres-sql.js";
 import {
   assertPostgresStorableText,
+  assertPostgresWellFormedText,
   qualifyIdentifier,
 } from "./postgres-sql.js";
 import type { TransactionWriteTracker } from "./postgres-write-tracker.js";
@@ -284,6 +285,7 @@ export function createCoreRepositories(
     branches: {
       async get(branchId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(branchId, "branchId");
         const record = await helpers.selectBranch(
           sql,
           schemaName,
@@ -294,6 +296,7 @@ export function createCoreRepositories(
       },
       async listByThread(threadId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(threadId, "threadId");
         const branches = await helpers.selectBranchesByThread(
           sql,
           schemaName,
@@ -417,11 +420,13 @@ export function createCoreRepositories(
     runs: {
       async get(runId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(runId, "runId");
         const record = await helpers.selectRun(sql, schemaName, scope, runId);
         return record === null ? null : helpers.cloneStoredRun(record);
       },
       async listByBranch(branchId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(branchId, "branchId");
         const runs = await helpers.selectRunsByBranch(
           sql,
           schemaName,
@@ -585,6 +590,7 @@ export function createCoreRepositories(
     turnNodes: {
       async get(hash) {
         assertTransactionActive();
+        assertPostgresWellFormedText(hash, "hash");
         const record = await helpers.selectTurnNode(
           sql,
           schemaName,
@@ -677,6 +683,8 @@ export function createCoreRepositories(
     turnTreePaths: {
       async get(turnTreeHash, path) {
         assertTransactionActive();
+        assertPostgresWellFormedText(turnTreeHash, "turnTreeHash");
+        assertPostgresWellFormedText(path, "path");
         const record = await helpers.selectTurnTreePath(
           sql,
           schemaName,
@@ -688,6 +696,7 @@ export function createCoreRepositories(
       },
       async listByTurnTree(turnTreeHash) {
         assertTransactionActive();
+        assertPostgresWellFormedText(turnTreeHash, "turnTreeHash");
         const records = await helpers.selectTurnTreePathsByTurnTree(
           sql,
           schemaName,
@@ -826,6 +835,7 @@ export function createCoreRepositories(
     turnTrees: {
       async get(hash) {
         assertTransactionActive();
+        assertPostgresWellFormedText(hash, "hash");
         const record = await helpers.selectTurnTree(
           sql,
           schemaName,
@@ -888,11 +898,13 @@ export function createCoreRepositories(
     turns: {
       async get(turnId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(turnId, "turnId");
         const record = await helpers.selectTurn(sql, schemaName, scope, turnId);
         return record === null ? null : helpers.cloneStoredTurn(record);
       },
       async listByThread(threadId) {
         assertTransactionActive();
+        assertPostgresWellFormedText(threadId, "threadId");
         const turns = await helpers.selectTurnsByThread(
           sql,
           schemaName,

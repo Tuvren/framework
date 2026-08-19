@@ -98,8 +98,60 @@ export function reclaimBackendState(
     leaselessRunExpiryMs
   );
   const keep = computeKeepClosure(state, graceHorizonMs, deps);
-  const keepTurnIds = collectKeptTurnIds(state, keep.turnNodes);
+  let keepTurnIds = collectKeptTurnIds(state, keep.turnNodes);
+  const annotationSeededRunIds = new Set<string>();
+
+  while (true) {
+    const turnNodeStack = collectSurvivingRunAnnotationRoots(
+      state,
+      keep,
+      keepTurnIds,
+      annotationSeededRunIds,
+      deps
+    );
+    if (turnNodeStack.length === 0) {
+      break;
+    }
+    const turnTreeStack: string[] = [];
+    closeTurnNodeReachability(state, keep, turnNodeStack, turnTreeStack, deps);
+    closeTurnTreeReachability(state, keep, turnTreeStack, deps);
+    keepTurnIds = collectKeptTurnIds(state, keep.turnNodes);
+  }
+
   return sweep(state, keep, keepTurnIds, graceHorizonMs, deps);
+}
+
+/**
+ * Adds annotation-linked turn nodes as roots only for runs the current keep
+ * closure will retain. The caller repeats this to a fixed point because one
+ * annotation root can retain a turn that makes another run survivable.
+ */
+function collectSurvivingRunAnnotationRoots(
+  state: BackendState,
+  keep: KeepClosure,
+  keepTurnIds: Set<string>,
+  seededRunIds: Set<string>,
+  deps: BackendInvariantReclamationDeps
+): string[] {
+  const roots: string[] = [];
+  for (const [runId, annotations] of state.observeAnnotations) {
+    const run = state.runs.get(runId);
+    if (
+      run === undefined ||
+      seededRunIds.has(runId) ||
+      !isRunRetained(run, keep.turnNodes, keepTurnIds, deps)
+    ) {
+      continue;
+    }
+
+    seededRunIds.add(runId);
+    for (const annotation of annotations) {
+      if (annotation.turnNodeHash !== null) {
+        roots.push(annotation.turnNodeHash);
+      }
+    }
+  }
+  return roots;
 }
 
 /**
@@ -393,14 +445,7 @@ function sweepRuns(
 ): number {
   let released = 0;
   for (const [runId, run] of [...state.runs]) {
-    const runTurnNodeHashes = [
-      run.startTurnNodeHash,
-      ...deps.decodeRunCreatedTurnNodeHashes(run),
-    ];
-    const retained =
-      keepTurnIds.has(run.turnId) &&
-      runTurnNodeHashes.every((hash) => keepTurnNodes.has(hash));
-    if (!retained) {
+    if (!isRunRetained(run, keepTurnNodes, keepTurnIds, deps)) {
       state.runs.delete(runId);
       state.stagedResults.delete(runId);
       state.observeAnnotations.delete(runId);
@@ -408,6 +453,22 @@ function sweepRuns(
     }
   }
   return released;
+}
+
+function isRunRetained(
+  run: StoredRun,
+  keepTurnNodes: Set<string>,
+  keepTurnIds: Set<string>,
+  deps: BackendInvariantReclamationDeps
+): boolean {
+  const runTurnNodeHashes = [
+    run.startTurnNodeHash,
+    ...deps.decodeRunCreatedTurnNodeHashes(run),
+  ];
+  return (
+    keepTurnIds.has(run.turnId) &&
+    runTurnNodeHashes.every((hash) => keepTurnNodes.has(hash))
+  );
 }
 
 function sweepTurns(state: BackendState, keepTurnIds: Set<string>): number {
