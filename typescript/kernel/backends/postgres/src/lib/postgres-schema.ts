@@ -87,6 +87,50 @@ export const RELATIONAL_REQUIRED_INDEXES = [
   "idx_turn_node_lineage_roots_scope_root_depth",
 ] as const;
 
+/**
+ * Structural signatures of every foreign key created by the relational DDL.
+ * Names are deliberately excluded because PostgreSQL generates them; source
+ * and target tables plus ordered column tuples are the durable semantics.
+ */
+export const RELATIONAL_REQUIRED_FOREIGN_KEYS = [
+  "turn_trees(scope,schema_id)->schemas(scope,schema_id)",
+  "turn_tree_paths(scope,turn_tree_hash)->turn_trees(scope,hash)",
+  "turn_nodes(scope,previous_turn_node_hash)->turn_nodes(scope,hash)",
+  "turn_nodes(scope,turn_tree_hash)->turn_trees(scope,hash)",
+  "turn_nodes(scope,schema_id)->schemas(scope,schema_id)",
+  "turn_nodes(scope,event_hash)->objects(scope,hash)",
+  "threads(scope,schema_id)->schemas(scope,schema_id)",
+  "threads(scope,root_turn_node_hash)->turn_nodes(scope,hash)",
+  "branches(scope,thread_id)->threads(scope,thread_id)",
+  "branches(scope,head_turn_node_hash)->turn_nodes(scope,hash)",
+  "branches(scope,archived_from_branch_id)->branches(scope,branch_id)",
+  "turns(scope,thread_id)->threads(scope,thread_id)",
+  "turns(scope,branch_id)->branches(scope,branch_id)",
+  "turns(scope,parent_turn_id)->turns(scope,turn_id)",
+  "turns(scope,start_turn_node_hash)->turn_nodes(scope,hash)",
+  "turns(scope,head_turn_node_hash)->turn_nodes(scope,hash)",
+  "runs(scope,turn_id)->turns(scope,turn_id)",
+  "runs(scope,branch_id)->branches(scope,branch_id)",
+  "runs(scope,schema_id)->schemas(scope,schema_id)",
+  "runs(scope,start_turn_node_hash)->turn_nodes(scope,hash)",
+  "staged_results(scope,run_id)->runs(scope,run_id)",
+  "staged_results(scope,object_hash)->objects(scope,hash)",
+  "observe_annotations(scope,run_id)->runs(scope,run_id)",
+  "observe_annotations(scope,turn_node_hash)->turn_nodes(scope,hash)",
+  "turn_node_lineage_roots(scope,turn_node_hash)->turn_nodes(scope,hash)",
+  "turn_node_lineage_roots(scope,root_turn_node_hash)->turn_nodes(scope,hash)",
+] as const;
+
+/** Produces the canonical structural signature used by the FK roster. */
+export function relationalForeignKeySignature(
+  sourceTable: string,
+  sourceColumns: readonly string[],
+  targetTable: string,
+  targetColumns: readonly string[]
+): string {
+  return `${sourceTable}(${sourceColumns.join(",")})->${targetTable}(${targetColumns.join(",")})`;
+}
+
 /** Legacy blob table retired by the open-time migrator (issue #110). */
 export const LEGACY_SNAPSHOTS_TABLE = "backend_postgres_snapshots";
 

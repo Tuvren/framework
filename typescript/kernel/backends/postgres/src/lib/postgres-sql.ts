@@ -28,7 +28,7 @@ export type DbSql = Sql | TransactionSql<Record<string, never>>;
 /** Conservative unquoted-identifier alphabet (letters, digits, `_`, `-`). */
 const SAFE_SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_-]*$/;
 
-/** The one code point PostgreSQL `TEXT`/`VARCHAR` columns cannot encode. */
+/** The one well-formed Unicode code point PostgreSQL text cannot encode. */
 const NUL_CODE_POINT = "\u0000";
 
 /**
@@ -109,8 +109,9 @@ export function quoteIdentifier(identifier: string): string {
 const MAX_STORABLE_TEXT_BYTES = 512;
 
 /**
- * Rejects a caller-supplied identifier/text value that contains U+0000
- * (NUL). Every affected field here now lands directly in a relational `TEXT`
+ * Rejects a caller-supplied identifier/text value that is not well-formed
+ * UTF-16 or contains U+0000 (NUL). Every affected field here now lands
+ * directly in a relational `TEXT`
  * column (ADR-067 moved it out of a CBOR blob, where an embedded NUL byte
  * round-tripped without complaint); PostgreSQL's wire protocol cannot encode
  * NUL in `text`/`varchar` and rejects it with SQLSTATE 22021
@@ -135,17 +136,31 @@ const MAX_STORABLE_TEXT_BYTES = 512;
  * a working constraint: real kernel identifiers are hashes/UUIDs well under
  * 100 bytes.
  *
- * The NUL check runs first and keeps its own distinct error code: a value
+ * The representability checks run before the byte-length check and keep their
+ * own distinct error code: a value
  * that is both too long and NUL-containing is reported as unstorable text,
  * not as merely too long, since the NUL is the more fundamental encoding
  * failure (PostgreSQL cannot represent it at any length).
  *
  * @throws TuvrenPersistenceError `postgres_backend_unstorable_text` when
- *   `value` contains U+0000.
+ *   `value` is not well-formed UTF-16 or contains U+0000.
  * @throws TuvrenPersistenceError `postgres_backend_text_too_long` when
  *   `value`'s UTF-8 byte length exceeds {@link MAX_STORABLE_TEXT_BYTES}.
  */
 export function assertPostgresStorableText(value: string, label: string): void {
+  // PostgreSQL stores Unicode scalar values, while JavaScript strings may
+  // contain lone UTF-16 surrogates. The runtime/driver replacement-encodes
+  // those invalid sequences as U+FFFD, which can collapse two distinct Scope
+  // or record identities onto the same durable key. Reject before hashing or
+  // binding instead of silently changing caller-supplied identity.
+  if (!value.isWellFormed()) {
+    throw persistenceError(
+      `postgres backend cannot store ${label}: value is not a well-formed UTF-16 string`,
+      "postgres_backend_unstorable_text",
+      { label }
+    );
+  }
+
   if (value.includes(NUL_CODE_POINT)) {
     throw persistenceError(
       `postgres backend cannot store ${label}: PostgreSQL TEXT columns cannot encode a U+0000 (NUL) code point`,

@@ -27,10 +27,12 @@ import {
   LEGACY_SNAPSHOTS_TABLE,
   listMigrationFiles,
   MIGRATIONS_TABLE,
+  RELATIONAL_REQUIRED_FOREIGN_KEYS,
   RELATIONAL_REQUIRED_INDEXES,
   RELATIONAL_REQUIRED_TABLES,
   RELATIONAL_SCHEMA_MIGRATION_NAME,
   readMigrationSql,
+  relationalForeignKeySignature,
   resolveMigrationDirectory,
 } from "./postgres-schema.js";
 import {
@@ -41,6 +43,18 @@ import {
 } from "./postgres-sql.js";
 
 type Tx = TransactionSql<Record<string, never>>;
+
+interface ForeignKeyPostureRow {
+  constraint_name: string;
+  deferrable: boolean;
+  initially_deferred: boolean;
+  source_columns: string[];
+  source_table: string;
+  target_columns: string[];
+  target_schema: string;
+  target_table: string;
+  validated: boolean;
+}
 
 /**
  * Memoized `(migrationDirectory, migrationFiles)` pair, computed at most
@@ -189,8 +203,9 @@ export async function ensurePostgresRelationalSchemaInitialized(
  * package version does not recognize (legacy blob-era ledger names are
  * expected on migrated databases), every required family table and index
  * exists, every `TEXT` column on those tables still carries the byte-wise
- * `COLLATE "C"` the migration created it with, and every foreign key among
- * those tables is still `DEFERRABLE INITIALLY DEFERRED`. This is the
+ * `COLLATE "C"` the migration created it with, and the exact foreign-key
+ * roster still exists with every constraint validated and
+ * `DEFERRABLE INITIALLY DEFERRED`. This is the
  * coherence half of `health()` — the relational equivalent of the SQLite
  * backend's `validateMigrationState` — and it is also the first step of
  * `loadValidatedState`, so `fsck()`/`reclaim()` catch the same drift (e.g. an
@@ -206,7 +221,10 @@ export async function ensurePostgresRelationalSchemaInitialized(
  *   `postgres_backend_relational_schema_missing`,
  *   `postgres_backend_relational_tables_missing`,
  *   `postgres_backend_relational_indexes_missing`,
- *   `postgres_backend_relational_collation_invalid`, or
+ *   `postgres_backend_relational_collation_invalid`,
+ *   `postgres_backend_relational_fks_missing`,
+ *   `postgres_backend_relational_fks_unexpected`,
+ *   `postgres_backend_relational_fks_not_validated`, or
  *   `postgres_backend_relational_fks_not_deferrable` naming what is wrong.
  */
 export async function validateRelationalSchemaPosture(
@@ -311,18 +329,98 @@ export async function validateRelationalSchemaPosture(
     );
   }
 
-  const nonDeferrableForeignKeys = await sql.unsafe<
-    Array<{ constraint_name: string; table_name: string }>
-  >(
-    `SELECT cls.relname AS table_name, con.conname AS constraint_name
+  const foreignKeys = await sql.unsafe<ForeignKeyPostureRow[]>(
+    `SELECT con.conname AS constraint_name,
+            con.condeferrable AS deferrable,
+            con.condeferred AS initially_deferred,
+            con.convalidated AS validated,
+            source.relname AS source_table,
+            target_ns.nspname AS target_schema,
+            target.relname AS target_table,
+            ARRAY(
+              SELECT attr.attname
+                FROM unnest(con.conkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute attr
+                  ON attr.attrelid = con.conrelid
+                 AND attr.attnum = key.attnum
+               ORDER BY key.position
+            ) AS source_columns,
+            ARRAY(
+              SELECT attr.attname
+                FROM unnest(con.confkey) WITH ORDINALITY AS key(attnum, position)
+                JOIN pg_attribute attr
+                  ON attr.attrelid = con.confrelid
+                 AND attr.attnum = key.attnum
+               ORDER BY key.position
+            ) AS target_columns
        FROM pg_constraint con
-       JOIN pg_class cls ON cls.oid = con.conrelid
-       JOIN pg_namespace ns ON ns.oid = cls.relnamespace
+       JOIN pg_class source ON source.oid = con.conrelid
+       JOIN pg_class target ON target.oid = con.confrelid
+       JOIN pg_namespace ns ON ns.oid = source.relnamespace
+       JOIN pg_namespace target_ns ON target_ns.oid = target.relnamespace
       WHERE ns.nspname = $1
-        AND cls.relname = ANY($2::text[])
-        AND con.contype = 'f'
-        AND NOT (con.condeferrable AND con.condeferred)`,
+        AND source.relname = ANY($2::text[])
+        AND con.contype = 'f'`,
     [schemaName, [...RELATIONAL_REQUIRED_TABLES]]
+  );
+
+  const liveForeignKeySignatures = new Set(
+    foreignKeys.map((row) => {
+      const signature = relationalForeignKeySignature(
+        row.source_table,
+        row.source_columns,
+        row.target_table,
+        row.target_columns
+      );
+      return row.target_schema === schemaName
+        ? signature
+        : `${signature}@${row.target_schema}`;
+    })
+  );
+  const requiredForeignKeySignatures = new Set<string>(
+    RELATIONAL_REQUIRED_FOREIGN_KEYS
+  );
+  const missingForeignKeys = RELATIONAL_REQUIRED_FOREIGN_KEYS.filter(
+    (signature) => !liveForeignKeySignatures.has(signature)
+  );
+
+  if (missingForeignKeys.length > 0) {
+    throw persistenceError(
+      "postgres backend relational foreign keys are missing",
+      "postgres_backend_relational_fks_missing",
+      { missingForeignKeys, schemaName }
+    );
+  }
+
+  const unexpectedForeignKeys = [...liveForeignKeySignatures].filter(
+    (signature) => !requiredForeignKeySignatures.has(signature)
+  );
+
+  if (unexpectedForeignKeys.length > 0) {
+    throw persistenceError(
+      "postgres backend relational foreign keys differ from the required roster",
+      "postgres_backend_relational_fks_unexpected",
+      { schemaName, unexpectedForeignKeys }
+    );
+  }
+
+  const unvalidatedForeignKeys = foreignKeys.filter((row) => !row.validated);
+
+  if (unvalidatedForeignKeys.length > 0) {
+    throw persistenceError(
+      "postgres backend relational foreign keys must be validated",
+      "postgres_backend_relational_fks_not_validated",
+      {
+        constraints: unvalidatedForeignKeys.map(
+          (row) => `${row.source_table}.${row.constraint_name}`
+        ),
+        schemaName,
+      }
+    );
+  }
+
+  const nonDeferrableForeignKeys = foreignKeys.filter(
+    (row) => !(row.deferrable && row.initially_deferred)
   );
 
   if (nonDeferrableForeignKeys.length > 0) {
@@ -331,7 +429,7 @@ export async function validateRelationalSchemaPosture(
       "postgres_backend_relational_fks_not_deferrable",
       {
         constraints: nonDeferrableForeignKeys.map(
-          (row) => `${row.table_name}.${row.constraint_name}`
+          (row) => `${row.source_table}.${row.constraint_name}`
         ),
         schemaName,
       }
