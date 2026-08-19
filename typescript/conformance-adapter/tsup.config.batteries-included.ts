@@ -20,11 +20,16 @@ import { defineConfig } from "tsup";
 
 const configDir = dirname(fileURLToPath(import.meta.url));
 
-// Absolute path to SQLite migrations — copied alongside the bundle so that
-// import.meta.url-relative resolution inside bundled @tuvren/backend-sqlite
-// finds ./migrations next to batteries-included-node-host.mjs.
-const MIGRATIONS_SRC = join(configDir, "../kernel/backends/sqlite/migrations");
-const MIGRATIONS_DEST = join(configDir, "dist/migrations");
+const SQLITE_MIGRATIONS_SRC = join(
+  configDir,
+  "../kernel/backends/sqlite/migrations"
+);
+const SQLITE_MIGRATIONS_DEST = join(configDir, "dist/sqlite-migrations");
+const POSTGRES_MIGRATIONS_SRC = join(
+  configDir,
+  "../kernel/backends/postgres/migrations"
+);
+const POSTGRES_MIGRATIONS_DEST = join(configDir, "dist/postgres-migrations");
 
 export default defineConfig({
   banner: {
@@ -36,7 +41,7 @@ export default defineConfig({
   external: ["better-sqlite3"],
   format: ["esm"],
   noExternal: [/^@tuvren\//],
-  onSuccess: `rm -rf "${MIGRATIONS_DEST}" && cp -r "${MIGRATIONS_SRC}" "${MIGRATIONS_DEST}"`,
+  onSuccess: `rm -rf "${SQLITE_MIGRATIONS_DEST}" "${POSTGRES_MIGRATIONS_DEST}" && cp -r "${SQLITE_MIGRATIONS_SRC}" "${SQLITE_MIGRATIONS_DEST}" && cp -r "${POSTGRES_MIGRATIONS_SRC}" "${POSTGRES_MIGRATIONS_DEST}"`,
   outDir: "dist",
   platform: "node",
   sourcemap: false,
