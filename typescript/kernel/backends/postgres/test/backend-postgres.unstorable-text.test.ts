@@ -123,6 +123,29 @@ describe("@tuvren/backend-postgres NUL-identifier boundary validation", () => {
     }
   });
 
+  test("rejects an ill-formed thread lookup before it can alias a stored identifier", async () => {
+    const options = createPostgresTestBackendOptions();
+    const backend = createPostgresBackend(options);
+
+    try {
+      const kernel = createRuntimeKernel({ backend });
+      const schemaId = await kernel.schema.register(TEST_SCHEMA);
+      await kernel.thread.create("thread", schemaId, "branch_read_identity");
+
+      let caughtError: unknown;
+      try {
+        await backend.transact((tx) => tx.threads.get("thread\uD800"));
+      } catch (error: unknown) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toBeInstanceOf(Error);
+      expect(readErrorCode(caughtError)).toBe(UNSTORABLE_TEXT_CODE);
+    } finally {
+      await backend.destroy({ dropSchema: true });
+    }
+  });
+
   test("rejects tx.objects.put's mediaType containing U+0000 with a typed error, not the raw engine error", async () => {
     const options = createPostgresTestBackendOptions();
     const backend = createPostgresBackend(options);

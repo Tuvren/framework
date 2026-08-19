@@ -23,7 +23,9 @@ import {
   reclaimBackendState,
 } from "@tuvren/backend-shared";
 import type {
+  StoredBranch,
   StoredObject,
+  StoredObserveAnnotation,
   StoredRun,
   StoredTurn,
   StoredTurnNode,
@@ -206,6 +208,53 @@ describe("@tuvren/backend-shared isExpiredLeaselessRunningRun", () => {
 });
 
 describe("@tuvren/backend-shared reclaimBackendState leaseless-run horizon exclusion", () => {
+  test("retains turn-node closure referenced by annotations on surviving runs", () => {
+    const state = makeEmptyState();
+    const liveNode = makeTurnNode({ hash: "hash_live" });
+    const annotatedNode = makeTurnNode({
+      createdAtMs: -1,
+      hash: "hash_annotation",
+    });
+    const turn = makeTurn({
+      headTurnNodeHash: liveNode.hash,
+      startTurnNodeHash: liveNode.hash,
+      turnId: "turn_live",
+    });
+    const run = makeRun({
+      runId: "run_completed",
+      startTurnNodeHash: liveNode.hash,
+      status: "completed",
+      turnId: turn.turnId,
+    });
+    const branch: StoredBranch = {
+      branchId: turn.branchId,
+      createdAtMs: 0,
+      headTurnNodeHash: liveNode.hash,
+      threadId: turn.threadId,
+      updatedAtMs: 0,
+    };
+    const annotation: StoredObserveAnnotation = {
+      annotationCbor: new Uint8Array(),
+      annotationHash: "annotation_hash",
+      createdAtMs: 0,
+      runId: run.runId,
+      turnNodeHash: annotatedNode.hash,
+    };
+
+    state.branches.set(branch.branchId, branch);
+    state.turnNodes.set(liveNode.hash, liveNode);
+    state.turnNodes.set(annotatedNode.hash, annotatedNode);
+    state.turns.set(turn.turnId, turn);
+    state.runs.set(run.runId, run);
+    state.observeAnnotations.set(run.runId, [annotation]);
+
+    reclaimBackendState(state, NO_OP_DEPS, 100);
+
+    expect(state.runs.has(run.runId)).toBe(true);
+    expect(state.turnNodes.has(annotatedNode.hash)).toBe(true);
+    expect(state.observeAnnotations.get(run.runId)).toEqual([annotation]);
+  });
+
   test("an expired leaseless run is excluded from pinning the grace horizon, releasing a later unreachable object", () => {
     const state = makeEmptyState();
     state.runs.set(

@@ -88,11 +88,13 @@ export class TransactionWriteTracker {
    */
   recordBranchSet(before: StoredBranch | null, after: StoredBranch): void {
     const existing = this.branchWrites.get(after.branchId);
+    let originalBefore = existing?.before;
+    if (existing === undefined) {
+      originalBefore = before === null ? null : cloneStoredBranch(before);
+    }
     this.branchWrites.set(after.branchId, {
       after: cloneStoredBranch(after),
-      before:
-        existing?.before ??
-        (before === null ? null : cloneStoredBranch(before)),
+      before: originalBefore ?? null,
     });
     this.branchIdsForActiveRunValidation.add(after.branchId);
 
