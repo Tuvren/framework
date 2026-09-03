@@ -91,10 +91,8 @@ tickets:
           - tools/scripts/verify.ts
           - tsconfig.base.json
           - tsconfig.json
-          - each backend's package.json
-          - and each backend's tsconfig.dts.json/tsconfig.lib.json (plus memory's tsconfig.typecheck.json
-          - its only local paths override); additionally
-          - typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts.
+          - package.json
+          - typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts
         justification: "The ticket's Scope explicitly authorized creating a new shared-core package (\"a new typescript/kernel/backends/core/ package if cross-package reuse requires it\"). A new Nx/Bun-workspace package cannot build, link, or typecheck without workspace-manifest wiring: bun.lock records the new package's install graph, tsconfig.base.json/tsconfig.json register its project reference, tools/scripts/verify.ts registers it in WORKSPACE_TEST_PROJECTS/WORKSPACE_BUILD_PROJECTS so bun run check's workspace-coverage gate doesn't fail on an unregistered project, and each consuming backend's package.json/tsconfig.dts.json/tsconfig.lib.json add the new @tuvren/backend-shared dependency edge. These are necessary, mechanical consequences of the pre-authorized new package, not scope creep — behavior of the extracted logic itself is unchanged (verified: bun run verify:kernel conformance counts identical pre/post at memory 64/68, sqlite 67/68, postgres 68/68)"
   - id: KRT-BK002
     title: "Reclamation Horizon: Leaseless-Run Expiry Path"
@@ -147,7 +145,6 @@ tickets:
           - typescript/kernel/backends/memory/src/lib/memory-backend.ts
           - typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts
           - typescript/kernel/backends/postgres/src/lib/postgres-backend.ts
-          - typescript/kernel/backends/postgres/src/lib/memory-backend-reclamation.ts
           - typescript/kernel/backends/shared/src/index.ts
           - typescript/kernel/backends/shared/src/lib/backend-invariant-record-utils.ts
           - typescript/kernel/backends/shared/test/backend-invariant-reclamation.leaseless-expiry.test.ts
@@ -191,8 +188,7 @@ tickets:
     status: done
     deviations:
       - files:
-          - typescript/kernel/backends/memory/test/backend-memory.scope-store-concurrency.test.ts (new file
-          - not the Gherkin-named backend-memory.purge-scope.test.ts).
+          - typescript/kernel/backends/memory/test/backend-memory.scope-store-concurrency.test.ts
         justification: "The new test targets MemoryScopeStore's internal runExclusive/dropScope serialization primitive directly (three racing actors sequenced via hand-rolled deferreds, no timers), a different concern than backend-memory.purge-scope.test.ts's existing black-box purgeScope() behavior tests. The substantive Gherkin criterion — a purge-vs-transact race test exists under bun run nx run backend-memory:test (actual Nx project name; the ticket's cited kernel-backend-memory does not exist) and asserts no concurrent window opens — is met in a differently-named file. Achieved a genuine red-then-green TDD cycle: the test failed against unmodified source with the exact predicted ordering violation (D-ran before B-done) before the fix was applied"
   - id: KRT-BK004
     title: Provider-Bridge Secret Screening at the Seam (ADR-044/058)
@@ -239,11 +235,11 @@ tickets:
     status: done
     deviations:
       - files:
-          - typescript/core/src/lib/secret-pattern-screening.ts (new)
-          - typescript/core/src/security/index.ts (new)
+          - typescript/core/src/lib/secret-pattern-screening.ts
+          - typescript/core/src/security/index.ts
           - typescript/core/package.json
           - typescript/core/tsup.config.ts
-          - typescript/core/test/secret-pattern-screening.test.ts (new)
+          - typescript/core/test/secret-pattern-screening.test.ts
           - tsconfig.base.json
           - typescript/runtime/tsconfig.typecheck.json
           - typescript/runtime/tsconfig.dts.json
@@ -251,7 +247,7 @@ tickets:
           - typescript/providers/bridge-ai-sdk/tsconfig.dts.json
           - typescript/providers/certification/tsconfig.typecheck.json
           - typescript/runners/react/tsconfig.typecheck.json
-          - typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-secret-screening.test.ts (new)
+          - typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-secret-screening.test.ts
           - tools/conformance/plan-compiler/index.ts
           - tools/schemas/conformance-plan.schema.json
           - tools/conformance/harness/secret-absence/index.ts
@@ -261,7 +257,7 @@ tickets:
           - typescript/conformance-adapter/src/framework-adapter.ts
           - spec/conformance/telemetry/plans/framework-operational-telemetry.json
           - spec/core/authority-packet.json
-          - spec/providers/authority-packet.json.
+          - spec/providers/authority-packet.json
         justification: Three groups of out-of-scope touches, each necessary to satisfy the ticket's own Description/Gherkin without weakening screening semantics
   - id: KRT-BK005
     title: Guardrail Gate Command Execution Hardening
@@ -355,8 +351,8 @@ tickets:
     status: done
     deviations:
       - files:
-          - typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts (new)
-          - rust/kernel-grpc-service/tests/resource_caps.rs (new)
+          - typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts
+          - rust/kernel-grpc-service/tests/resource_caps.rs
         justification: "The ticket's declared Scope (In-Scope Files) names only the two source files (with line ranges) and does not list a test directory for either language, unlike some sibling tickets. Both fixes are behavior-bearing (Security category) and are only meaningfully provable with dedicated tests: the sqlite-side test asserts the Number.isSafeInteger/non-negative guard rejects before touching SQL and that pagination still works after parameterizing LIMIT ?; the Rust-side test spins up a real server via serve_kernel_grpc itself (rather than interop_smoke.rs's separate spawn_kernel_server helper, which has its own builder chain and would not exercise this change at all) to prove the 16 MiB decode-size ceiling is genuinely raised past tonic's unconfigured 4 MiB default. Both are new files in the conventional per-package test location for their language, following the same low-risk precedent already used across this epic"
   - id: KRT-BK007
     title: Persistence-Model Benchmark Spike
@@ -395,32 +391,7 @@ tickets:
     status: done
     spike: SPK-KRT-BK007
     deviations:
-      - files:
-          - src/**
-          - typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts
-          - typescript/kernel/backends/postgres/project.json
-          - typescript/kernel/backends/postgres/tsconfig.typecheck.json
-          - bench/**/*.ts
-          - typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts
-          - typescript/kernel/backends/sqlite/project.json
-          - .constitution/spikes/SPK-KRT-BK007.md
-          - postgres-backend-persistence.ts
-          - sqlite-backend.ts
-          - bench/
-          - spec/
-          - typescript/runtime/bench/runtime-boundary.bench.ts
-          - typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts
-          - " targets before this ticket) — new dev/measurement scripts and their Nx wiring are not \"production source\" for the purposes of Gherkin Scenario 2, matching this repo's own architecture-first placement rules ("
-          - package.json
-          - project.json
-          - tsconfig.typecheck.json
-          - SPK-KRT-BK007.md
-          - src/
-          - " all pass (postgres: 47/47 tests; sqlite: 99/99 tests, including all pre-existing suites, confirming the "
-          - sqlite-load-cost.bench.ts
-          - " growth was stated with more confidence than 4 data points at 5 samples each (where p95 is mathematically indistinguishable from max) actually support, given the decisive 1,000→10,000 jump is a single interval and a memory/GC/allocation effect around the ~20k in-memory-record mark was never ruled out. The spec review separately confirmed Gherkin Scenarios 1 and 2 both pass and raised only two minor general-feedback notes (no per-sample "
-          - " retained; the sqlite table's \"DB size (turn nodes)\" axis label under-counts total loaded rows by the equal-sized orphan batch), with no P0/P1/P2 from either axis. Per this epic's practice of proactively fixing cheap, clearly-correct non-blocking findings: reworded "
-          - " §2/§3/§4 (the four passages the standards reviewer cited) to present the SQLite top-of-range growth jump as a hypothesis warranting its own follow-up investigation — explicitly naming the sample-size, p95-at-n=5, and memory/GC-confound caveats — rather than as a settled algorithmic-complexity conclusion, and clarified that the primary Option-B recommendation does not depend on that secondary claim (it holds under the best-case/minimum sample at every tier for both backends). Also added the spec review's suggested axis-label clarification to the SQLite results table. No script or Nx-target change was needed — both bench scripts' own logic was independently confirmed correct by both reviewers (live re-execution, cross-checked against the actual "
+      - files: []
         justification: |-
           - **Touched Files (all tooling, zero `src/**` diffs):**
             - `typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts` (new)
@@ -471,30 +442,7 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files:
-          - typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts
-          - typescript/kernel/runtime/src/lib/runtime-kernel.ts
-          - tree.incorporate
-          - tree.create
-          - thread.create
-          - "{ ...baseManifest, ...changes }"
-          - typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts
-          - runtime-kernel-storage.chunk-constant-agreement.test.ts
-          - runtime-kernel.turn-tree-chunking.test.ts
-          - runtime-kernel-lineage.apply-staged-results.test.ts
-          - runtime-kernel-test-helpers.ts
-          - typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts
-          - typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts
-          - kernel-runtime/test
-          - "@tuvren/kernel-runtime"
-          - " declarations — memory, postgres, sqlite-backend.ts, sqlite-integrity-assertions.ts, and the new runtime one — per ADR-011's \"implementation constant, not protocol constant\" framing) and deliberately does not live under "
-          - bun.lock
-          - "@tuvren/kernel-testkit"
-          - "@tuvren/backend-shared"
-          - package.json
-          - " invocation whose delta spans more than one new chunk (i.e., the "
-          - " 56/56 pass, "
-          - Promise.all
+      - files: []
         justification: |-
           - **Touched Files (anticipated call-site threading):**
             - `typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts` — `createTurnTree` gained an optional `priorTurnTreeHash` parameter; `createIncorporatedTree` threads its own `baseTurnTreeHash` through it.
@@ -588,64 +536,7 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files:
-          - rust/kernel/src/types.rs
-          - rust/kernel/src/memory.rs
-          - rust/kernel/tests/kernel_baseline.rs
-          - rust/kernel-conformance-adapter/src/main.rs
-          - rust/kernel-conformance-adapter/Cargo.toml
-          - Cargo.lock
-          - reports/compatibility/evidence/certification-harness.kernel-rust-certification.json
-          - reports/compatibility/evidence/certification-harness.framework-typescript-certification.json
-          - reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json
-          - reports/compatibility/evidence/certification-harness.framework-rust-certification.json
-          - memory.rs
-          - maintenance.reclaim()
-          - kernel.run-liveness
-          - kernel.reclamation
-          - typescript/kernel/backends/shared/src/lib/backend-invariant-reclamation.ts
-          - identity.rs
-          - kernel.protocol.deterministic_hashing
-          - kernel_baseline.rs
-          - reports/compatibility/compatibility-matrix.json
-          - spec/conformance/kernel/plans/kernel-run-liveness.json
-          - kernel-restart-af.expired-running-requires-preemption
-          - kernel-restart-af.paused-run-excluded-from-stale-preemption
-          - kernel.run-liveness.stale-preemption
-          - tools/conformance/harness/run.ts
-          - kernel-restart-recovery.close_reopen_checkpoint
-          - kernel.persistence.durable
-          - spec/conformance/interop/rust-kernel/spec/authority-packet.json
-          - tuvren.framework.kernel-interop-smoke
-          - kernel.protocol
-          - spec/kernel/authority-packet.json
-          - '"rust": "rust/kernel"'
-          - kernel.reclamation.erasure-probe
-          - spec/conformance/kernel/plans/kernel-reclamation.json
-          - typescript/kernel/conformance-adapter/src/host.ts
-          - " confirmed the crypto is entirely host/adapter-side (the kernel only ever sees opaque ciphertext bytes via "
-          - aes-gcm = "0.11"
-          - rust/kernel
-          - kernel.scope-isolation.*
-          - .constitution/tasks/critical-path.md
-          - " (13 unit + 40 integration tests, including 5 new reclamation/lease unit tests) and "
-          - bun tools/conformance/harness/run.ts --adapter rust/kernel-conformance-adapter/adapter.json
-          - secret-isolation.provider-bridge-request-and-headers
-          - |2-
-             (the lane flagged as known-red after KRT-BK008) and confirmed it now passes cleanly — the regeneration resolved that stale-evidence drift rather than entangling with or worsening it.
-            - **Post-review fix (dual-axis standards + spec review, one mandatory P1 plus non-blocking P2/Investigate findings fixed before the next milestone):**
-              - **Standards P1 (mandatory):** 
-          - key.is_none()
-          - |-
-            . Reordered to check lease-presence first, matching both.
-              - **Standards P2 (fixed):** the new lease state machine and reclamation sweep paths had thin unit-test coverage (only the orphan-object sweep and reclamation grace-horizon cases were tested; the lease error branches and the turn/turn-node/archived-branch sweep paths had none). Added 14 unit tests in 
-          - "'s inclusion/exclusion rules, and "
-          - |-
-            's archived-branch/turn sweep plus the invariant that a live branch head is never swept regardless of age.
-              - **Standards P2 (logged, not fixed):** minor duplicated setup code across the reclamation/leaseless probe scenarios and the three run-liveness probe functions in 
-          - |-
-            . Left as-is — this is test/adapter probe code already verified passing; a DRY refactor there trades a style improvement for real risk of disturbing already-correct, review-verified scenario construction, which CLAUDE.md's "no speculative abstraction" guidance weighs against for a non-blocking finding.
-              - **Spec P2 (fixed):** correction 4 above (the scope-isolation deferral) originally framed the gap as the Rust kernel being unable to "express scope-confinement," and claimed a follow-up ticket "is filed" when none existed. Reworded to state plainly that the capability is expressible in principle (proven by the TypeScript in-memory reference already passing it) but structurally unbuilt in Rust, and pointed at a corrected, concrete tracking location — 
+      - files: []
         justification: |-
           - **Touched Files (beyond declared Scope):** `rust/kernel/src/types.rs`, `rust/kernel/src/memory.rs`, `rust/kernel/tests/kernel_baseline.rs`, `rust/kernel-conformance-adapter/src/main.rs`, `rust/kernel-conformance-adapter/Cargo.toml`, `Cargo.lock`, `reports/compatibility/evidence/certification-harness.kernel-rust-certification.json`, `reports/compatibility/evidence/certification-harness.framework-typescript-certification.json`, `reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json`, `reports/compatibility/evidence/certification-harness.framework-rust-certification.json`.
           - **Justification:** The ticket's declared Scope anticipated only adapter/plan/matrix files, on the assumption that the Rust kernel already had the state and logic these checks probe. Reading `rust/kernel/src/types.rs` and `memory.rs` directly (before writing any code) showed `RunRecord` had no lease fields at all and `InMemoryKernel` had no `maintenance.reclaim()` primitive — unlike the matrix/adapter/capability files, there was no existing behavior to "just wire up." Promoting `kernel.run-liveness` and `kernel.reclamation` required adding the lease-aware run-liveness API (`run_liveness_create_leased_run`/`renew_lease`/`list_expired`/`preempt_expired`) and a faithful Rust port of the shared TS reachability-reclamation algorithm (`typescript/kernel/backends/shared/src/lib/backend-invariant-reclamation.ts`) directly onto `InMemoryKernel`, plus `created_at_ms` timestamps on `TurnNode`/`ObjectRecord`/`StoredTurnTree` and an `archived_from_branch_id` marker on `BranchRecord` (verified safe against `identity.rs`'s hand-built hash records before adding — none of the new fields participate in content-addressed hashing, so `kernel.protocol.deterministic_hashing`/`schema_roundtrip` are unaffected). `kernel_baseline.rs` needed one `created_at_ms: 0` added to its one direct `TurnNode` literal to keep compiling. The four evidence files changed because `reports/compatibility/compatibility-matrix.json` is a generated, not hand-edited, artifact (per its own declared Scope) — regenerating it via `bun run nx run compatibility-reporting:evidence-refresh` regenerates all adapters' evidence in the same pass, not just rust-kernel's.

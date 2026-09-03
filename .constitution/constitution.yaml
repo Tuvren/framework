@@ -22,5 +22,3 @@ default_branch: master
 exceptions:
   - rule: STR-002
     reason: Four generated gate artifacts (epic-ad-normative-docs-claim-inventory.json, epic-ad-docs-to-authority-coverage-matrix.json, epic-af-conformance-gap-plan.json, epic-al-portability-inventory.json) and their markdown companions are written and re-read from hard-coded .constitution/reports/ paths by tools/scripts/docs-authority-freeze-gate.ts, tools/scripts/epic-af-conformance-gap-plan.ts, and tools/scripts/portability-gate.ts, which bun run check and bun run verify both enforce. Relocating them outside .constitution/ is a code change those scripts own, not a documentation move; this exception holds until an epic repoints them.
-  - rule: GLS-001
-    reason: The restored domain bans intentionally overlap immutable API identifiers and canonical domain labels in descriptive pointer documentation; the migrated markdown cannot be mechanically rewritten without corrupting those identifiers. The banned terms remain governed for authoring outside this historical pointer documentation.

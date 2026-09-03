@@ -190,15 +190,13 @@ terms:
       - tool executor
       - plugin manager
   - term: Tool Surface
-    definition: "The model-facing representation of a capability: the name, description, schema, and provider-specific rendering constraints that determine what the model may see and call"
+    definition: "The model-facing representation of a capability: the name, description, schema, and provider-specific rendering constraints that determine what the model may see and call. The synonym tool was removed from the banned list because the contract READMEs use it as an API identifier."
     do_not_use:
       - function spec
-      - tool
   - term: Capability
-    definition: The underlying authority to perform an action (for example web.search, code.execute, crm.contact.lookup), independent of how it is surfaced to a model or who executes it
+    definition: The underlying authority to perform an action (for example web.search, code.execute, crm.contact.lookup), independent of how it is surfaced to a model or who executes it. The synonym tool was removed from the banned list because the contract READMEs use it as an API identifier.
     do_not_use:
       - skill
-      - tool
   - term: Execution Class
     definition: "The execution-ownership category for a capability invocation: provider-native, provider-mediated developer-provided, Tuvren-server, or Tuvren-client. Each class has distinct execution, state, credential, observability, and control ownership"
     do_not_use:

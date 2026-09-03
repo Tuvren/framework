@@ -68,8 +68,8 @@ tickets:
     status: done
     deviations:
       - files:
-          - tools/scripts/lib/api-freeze-model.ts (new)
-          - tools/scripts/lib/api-freeze-model.test.ts (new)
+          - tools/scripts/lib/api-freeze-model.ts
+          - tools/scripts/lib/api-freeze-model.test.ts
           - tools/scripts/check.ts
           - tools/scripts/verify.ts
         justification: The ticket scope names tools/scripts/api-freeze-gate.ts and "package.json (check/verify script wiring)". (1) The ADR-056 diff table was extracted into a pure lib/ module with a bun-test file so the classification semantics are unit-testable independently of compiler extraction — the same split KRT-BK005 used (lib/regenerate-command-argv.ts + test); it is part of the named tool, not a second tool. (2) Since Epic BK, the canonical gate lists live in tools/scripts/verify.ts (AUTHORITY_GATE_STEPS) and tools/scripts/check.ts (INNER_LOOP_AUTHORITY_GATE_IDS), not in package.json command strings; wiring the gate into the check/verify path therefore requires those two files. package.json gained only the api-freeze / api-freeze:check script entries the ticket anticipated
@@ -101,9 +101,12 @@ tickets:
     status: done
     deviations:
       - files:
-          - .changeset/config.json; typescript/kernel/protocol/package.json
+          - .changeset/config.json
+          - typescript/kernel/protocol/package.json
           - typescript/kernel/runtime/package.json
-          - typescript/providers/provider-api/package.json (private→published-internal flips); every workspace package.json version field + generated CHANGELOG.md files (changeset lane output); new LICENSE/README.md files in all 19 publishable package directories; bun.lock
+          - typescript/providers/provider-api/package.json
+          - package.json
+          - bun.lock
         justification: "All six KRT-BL001 §5 publish-blocking hand-offs land here, and each names files beyond the ticket's literal list. (1) The access: \"restricted\" → \"public\" flip is the recorded BJ008 hand-off. (2) ADR-057 item 5's published-internal treatment must extend beyond @tuvren/runtime to kernel-protocol, kernel-runtime, and provider-api (KRT-BL001 §5.1): they are regular dependencies of the published set, and leaving them private makes every registry install unresolvable. provider-api additionally reclassifies its @tuvren/core edge from dependencies to peerDependencies — as a published package, a regular dep would bundle a second core instance in consumer trees, violating ADR-037's single-instance guarantee. (3) Version fields move 0.0.0 → 0.1.0 through the KRT-BJ008 release lane (fixed lockstep group); the lane initially computed 1.0.0, rewritten to 0.1.0 per the operator's explicit launch-version decision (2026-07-11) — the ADR-054 semver discipline and the KRT-BL002 gate apply identically at 0.x. (4) LICENSE/README tarball completeness is KRT-BL001 §5.3 (npm includes both regardless of the files allowlist). All manifest edits stay within the ticket's own subject matter (publication readiness of the curated package set); no runtime/source behavior changed"
   - id: KRT-BL004
     title: Adopter Onboarding for the Stable/Experimental Boundary
