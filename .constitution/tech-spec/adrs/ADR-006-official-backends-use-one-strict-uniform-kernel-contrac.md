@@ -1,3 +1,10 @@
+---
+id: ADR-0006
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-006 Official Backends Use One Strict Uniform Kernel Contract
 
 - **Status:** accepted

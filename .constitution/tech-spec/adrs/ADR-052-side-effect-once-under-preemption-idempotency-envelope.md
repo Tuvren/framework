@@ -1,3 +1,10 @@
+---
+id: ADR-0052
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-052 Side-Effect-Once Under Preemption via an Idempotency Envelope
 
 - **Status:** accepted; §1 amended by **ADR-065**. The identity is derived from `(turnId, callId)`, not `(runId, callId, fencingToken)`. The original triple could not satisfy this ADR's own "same identity for the same logical call" promise, because a Run is one execution *attempt* (freshly minted per ReAct iteration, per approval resume, and per recovery) and the fencing token rotates on every lease renewal. §2 and §3 are unchanged.

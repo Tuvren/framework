@@ -1,3 +1,7 @@
+---
+owner: migrate
+date: "2026-09-03"
+---
 # KRT-BH005 — Bridge `providerExecuted`/`dynamic` Fidelity Audit
 
 > **Path/terminology note (2026-07, epic #87, M10.3b):** This is a historical diagnostic report; its body is preserved verbatim below and is not rewritten. At the time of this audit, `@tuvren/provider-bridge-ai-sdk` lived at `boundaries/providers/implementations/typescript/bridge-ai-sdk/`; epic #87 relocated it to `typescript/providers/bridge-ai-sdk/`. The audited package identity and findings are unaffected by the move.

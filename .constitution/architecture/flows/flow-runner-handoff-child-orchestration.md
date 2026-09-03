@@ -1,3 +1,11 @@
+---
+job: JOB-06
+capabilities: [CAP-023, CAP-026, CAP-027, CAP-029, CAP-033]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.4 Runner Handoff and Documented Child Orchestration
 
 - **Maps to PRD capability:** CAP-P0-023, CAP-P0-026, CAP-P0-027, CAP-P1-029, CAP-P0-033

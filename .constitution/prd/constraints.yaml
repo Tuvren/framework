@@ -1,0 +1,96 @@
+constraints:
+  - id: NFC-01
+    legacy_id: "Reliability"
+    class: reliability
+    statement: "An interruption at any point must resolve either to resumption of the unfinished work from the last durable checkpoint or to a clean failure, with no partial, torn, or corrupt lineage left behind. Checkpoint commits are atomic and lineage stays consistent under concurrent writers."
+    scale: "Share of injected mid-turn interruptions that resolve to resume-or-fail-clean with intact lineage, across every supported persistent storage substrate plus the in-process atomicity and concurrency invariants for non-persistent backends"
+    meter: "The fault-injection and crash-recovery conformance lanes in bun run verify, with the recorded compatibility evidence they refresh"
+    goal: "100%"
+    fail: "any injected interruption that leaves partial, torn, or corrupt lineage, or that neither resumes nor fails cleanly"
+    certainty: assumed
+    assumption: "Migrated from prd/constraints.md, which stated the guarantee in prose without naming a threshold; the 100% goal is the restated absolute, not a measured result."
+  - id: NFC-02
+    legacy_id: "Security & Privacy — approval gates"
+    class: security
+    statement: "Approval gates are non-bypassable: work that requires approval cannot proceed without an explicit decision."
+    scale: "Number of execution paths that can complete an approval-gated tool action without a recorded approval decision"
+    meter: "The approval and trust-boundary conformance check sets exercised by bun run conformance"
+    goal: 0
+    fail: "any path that completes an approval-gated action without an explicit decision"
+    certainty: assumed
+    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+  - id: NFC-03
+    legacy_id: "Security & Privacy — secret isolation"
+    class: privacy
+    statement: "Sensitive credentials and provider secrets must be isolated from durable state, operational telemetry, and transcripts, and must remain confined to the execution edge that needs them."
+    scale: "Number of secrets or provider credentials observable in durable history, operational telemetry, or a captured transcript"
+    meter: "The secret-isolation screening lanes wired into bun run verify"
+    goal: 0
+    fail: "any credential or provider secret reaching durable state, telemetry, or a transcript"
+    certainty: assumed
+    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+  - id: NFC-04
+    legacy_id: "Security & Privacy — untrusted edges and bounded execution"
+    class: security
+    statement: "External tool sources and tool inputs are untrusted boundaries: data crossing a process or network boundary is validated and surfaced as an agent-visible result, and a single turn cannot drive unbounded iterations, tool calls, or resource consumption."
+    scale: "Number of turns that exceed a configured execution bound without stopping safely, and number of unvalidated payloads accepted from an untrusted edge"
+    meter: "The execution-bounds and trust-boundary conformance check sets exercised by bun run conformance"
+    goal: 0
+    fail: "any unbounded turn, or any untrusted payload accepted without validation"
+    certainty: assumed
+    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+  - id: NFC-05
+    legacy_id: "Data Funnel Separation"
+    class: reliability
+    statement: "Session correctness, continuity, and recovery must never depend on the telemetry funnel, and a telemetry-destination failure must not fail, block, or corrupt a content-funnel commit."
+    scale: "Number of content-funnel commits failed, blocked, or corrupted by an unreachable or failing telemetry destination"
+    meter: "The two-funnel routing conformance scenarios, including the telemetry-destination-failure scenario"
+    goal: 0
+    fail: "any session behavior change caused by the telemetry destination"
+    certainty: assumed
+    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+  - id: NFC-06
+    legacy_id: "Tenancy & Isolation"
+    class: security
+    statement: "Isolation is by construction: durable identity is resolved within a scope, so no scope can read, enumerate, or probe the existence of another scope's content, and a durable read never returns state outside the scope it was issued against."
+    scale: "Number of cross-scope reads, enumerations, or existence probes that succeed"
+    meter: "The scope-isolation test suites of every kernel backend plus the durable-read scope-isolation suite"
+    goal: 0
+    fail: "any successful cross-scope read, enumeration, or existence probe"
+    certainty: assumed
+    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+  - id: NFC-07
+    legacy_id: "Data Lifecycle & Erasure"
+    class: privacy
+    statement: "Reclamation must never release state still reachable from a live branch and must not corrupt lineage or race active execution; erasure must render a sensitive payload unrecoverable while leaving the lineage hash structure intact, with erasure keys held by the host."
+    scale: "Number of reclamation runs that release reachable state or disturb lineage, and number of erased payloads that remain recoverable"
+    meter: "The reclamation invariant and crypto-shredding test suites across the kernel backends"
+    goal: 0
+    fail: "any reachable state released, any lineage corruption, or any erased payload that remains recoverable"
+    certainty: assumed
+    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+  - id: NFC-08
+    legacy_id: "Execution Sovereignty"
+    class: reliability
+    statement: "Recovery of a stale execution must not cause a non-idempotent external side effect to occur more than once. In a shared-backend, multi-worker deployment the shared backend's own clock decides lease expiry, and a worker relinquishes execution authority before the backend considers its lease preemptable."
+    scale: "Number of duplicated non-idempotent side effects observed under preemption, and number of lease decisions taken from a worker's wall clock rather than the backend's"
+    meter: "The lease-clock and side-effect-once conformance scenarios across the persistent backends"
+    goal: 0
+    fail: "any duplicated non-idempotent side effect, or any lease expiry decided by a worker clock"
+    certainty: assumed
+    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+  - id: NFC-09
+    legacy_id: "Distribution & API Stability"
+    class: compatibility
+    statement: "The curated host-facing SDK exposes a versioned, stable public contract published through the standard package registry under semantic versioning, with every not-yet-stable surface explicitly separated and marked experimental. The curated boundary is the only supported host-facing surface."
+    scale: "Number of published stable-surface symbols that are unmarked but still in flux, and number of first-party host imports that reach below the curated SDK boundary"
+    meter: "bun run api-freeze:check and bun run host-boundary:check in the canonical verification path"
+    goal: 0
+    fail: "any unstable surface published inside the stability guarantee, or any first-party host import below the curated boundary"
+    certainty: assumed
+    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+deferred:
+  - class: performance
+    risk: "prd/constraints.md asks that long-lived sessions stay usable and that routine context decisions avoid full-history rescans, but names no latency, throughput, or memory numbers. Without a meter, a regression in context assembly or durable-read paging can ship unnoticed, and the near-term roadmap already lists performance characterization with regression budgets as a named but undecomposed theme."
+  - class: operability
+    risk: "The embeddability, real-time observation, control-point, and telemetry-export obligations are stated qualitatively. Without a meter, telemetry completeness and the usefulness of the control points for incident response cannot be judged except by opinion."

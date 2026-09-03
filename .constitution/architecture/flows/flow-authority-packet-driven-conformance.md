@@ -1,3 +1,11 @@
+---
+job: JOB-07
+capabilities: [CAP-037, CAP-038, CAP-035, CAP-036]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.6 Authority-Packet-Driven Conformance Validation
 
 - **Maps to PRD capability:** CAP-P0-037, CAP-P1-038, CAP-P1-035, CAP-P1-036

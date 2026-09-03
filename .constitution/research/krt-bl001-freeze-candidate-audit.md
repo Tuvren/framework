@@ -1,3 +1,7 @@
+---
+owner: migrate
+date: "2026-09-03"
+---
 # KRT-BL001 — Public-Surface Freeze-Candidate Audit (2026-07-11)
 
 **Ticket:** KRT-BL001 (Epic BL — SDK Freeze and Registry Publication).

@@ -1,3 +1,10 @@
+---
+id: ADR-0015
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-015 Semantic Authority Flows from Human Specs into Boundary-Owned Machine Artifacts
 
 - **Status:** accepted

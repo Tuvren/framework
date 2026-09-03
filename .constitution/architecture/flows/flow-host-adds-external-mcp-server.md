@@ -1,3 +1,11 @@
+---
+job: JOB-04
+capabilities: [CAP-041, CAP-040]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.9 Host Adds an External MCP Server as a Tool Source
 
 - **Maps to PRD capability:** CAP-P0-041

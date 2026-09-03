@@ -1,3 +1,10 @@
+---
+id: ADR-0007
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-007 Memory and SQLite Are the Official Initial Backends
 
 - **Status:** accepted

@@ -1,3 +1,10 @@
+---
+id: ADR-0003
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-003 Ship as a Modular Monorepo of Boundary-Owned Projects, Not as Multiple Services
 
 - **Status:** accepted

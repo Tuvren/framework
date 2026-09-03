@@ -1,3 +1,7 @@
+---
+decision: deferred
+date: "2026-09-03"
+---
 # Anti-Scope Database
 
 Concepts explicitly rejected or deferred at the product layer. Migrated verbatim from the consolidated PRD §6 "Out of Scope" list; split into per-concept files when a rejection needs detailed rationale.

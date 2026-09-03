@@ -1,3 +1,11 @@
+---
+job: JOB-03
+capabilities: [CAP-039, CAP-043, CAP-044, CAP-045, CAP-046, CAP-047]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.8 Host Lists Threads and Reads State at a Chosen TurnNode
 
 - **Maps to PRD capability:** CAP-P0-039, CAP-P0-043, CAP-P0-044, CAP-P0-045, CAP-P0-046, CAP-P0-047

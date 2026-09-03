@@ -1,3 +1,10 @@
+---
+id: ADR-0002
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-002 TypeScript Is the First Authoritative Implementation, Not the Long-Term Kernel Monopoly
 
 - **Status:** accepted

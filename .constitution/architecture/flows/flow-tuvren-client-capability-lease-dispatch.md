@@ -1,3 +1,11 @@
+---
+job: JOB-09
+capabilities: [CAP-063, CAP-061]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.16 Tuvren-Client Capability Lease and Dispatch
 
 - **Maps to PRD capability:** CAP-P1-063, CAP-P0-061

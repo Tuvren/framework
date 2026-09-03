@@ -1,3 +1,10 @@
+---
+id: ADR-0010
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-010 Core Kernel Records Use a Restricted Integer-Oriented Data Model
 
 - **Status:** accepted

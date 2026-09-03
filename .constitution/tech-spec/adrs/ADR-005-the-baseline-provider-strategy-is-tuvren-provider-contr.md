@@ -1,3 +1,10 @@
+---
+id: ADR-0005
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-005 The Baseline Provider Strategy Is Tuvren Provider Contract Plus AI SDK Providers Bridge
 
 - **Status:** accepted (extended by ADR-053 conversation-state ownership and ADR-055 native-provider deferral trigger)

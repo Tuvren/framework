@@ -1,3 +1,11 @@
+---
+job: JOB-09
+capabilities: [CAP-056, CAP-059, CAP-060]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.14 Exposure-Time Tool-Surface Planning and Policy
 
 - **Maps to PRD capability:** CAP-P0-056, CAP-P0-059, CAP-P0-060

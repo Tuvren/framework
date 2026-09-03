@@ -1,3 +1,10 @@
+---
+id: ADR-0001
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-001 The Kernel Boundary Is Protocol-First and Data-Only
 
 - **Status:** accepted

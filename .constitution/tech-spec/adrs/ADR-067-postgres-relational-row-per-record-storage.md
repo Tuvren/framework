@@ -1,3 +1,10 @@
+---
+id: ADR-0067
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-067 PostgreSQL Backend Storage Is Relational Row-Per-Record (Postgres-Only Supersession of ADR-066's Blob Retention)
 
 - **Status:** accepted.

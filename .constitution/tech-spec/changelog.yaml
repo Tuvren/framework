@@ -1,0 +1,21 @@
+entries:
+  - version: v0.1.0
+    date: 2026-09-03
+    by: migrate
+    upstream:
+      prd: v0.1.0
+      architecture: v0.1.0
+    added:
+      - "tech-spec/stack.yaml: 37 bill-of-materials rows recovered from the former stack.md, each reconciled against bun.lock, Cargo.lock, or the devenv.lock nixpkgs revision, plus the pinning rule and the upgrade boundaries that need an ADR."
+      - "tech-spec/guidelines.md front matter: 32 verification commands covering the lane ladder and the narrow lanes archived tickets quote, fifteen layout entries, the Conventional Commits convention, and the untrusted-edge safety standard."
+    fixed:
+      - "tech-spec/adrs: every ADR carried the literal id ADR-ADR-; ids are now ADR-0001 to ADR-0067, taken from each file name."
+    changed:
+      - "tech-spec/contracts and tech-spec/data-models sidecars: both pointer indexes now list the flows they serve, and the contracts index is typed as a library surface rather than other."
+  - version: v0.0.1
+    date: 2026-09-03
+    added: ["History before migration; the markdown changelog is in git"]
+    by: migrate
+    upstream:
+      prd: v0.0.1
+      architecture: v0.0.1

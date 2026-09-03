@@ -1,3 +1,11 @@
+---
+job: JOB-01
+capabilities: [CAP-005, CAP-006]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.11 Crash Mid-Checkpoint and Clean Recovery (Fault-Injection-Verified)
 
 - **Maps to PRD capability:** CAP-P0-005, CAP-P0-006 (and the sharpened Reliability NFR: resume-or-fail-clean under fault injection)

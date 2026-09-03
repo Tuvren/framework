@@ -1,3 +1,11 @@
+---
+job: JOB-09
+capabilities: [CAP-057, CAP-058, CAP-061, CAP-062]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.15 Invocation-Time Binding, Policy, and Provider-Native Attribution
 
 - **Maps to PRD capability:** CAP-P0-057, CAP-P0-058, CAP-P0-061, CAP-P1-062

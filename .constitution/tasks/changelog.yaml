@@ -1,0 +1,19 @@
+entries:
+  - version: v0.1.0
+    date: 2026-09-03
+    by: migrate
+    upstream:
+      prd: v0.1.0
+      architecture: v0.1.0
+      tech-spec: v0.1.0
+    changed:
+      - "The four migrated epic files under tasks/completed/ are unchanged. There is no active epic and no epic dependency cycle to break: EPIC-BJ, BK, BL, and BM are all archived with every ticket done, and tasks/epics/ is empty."
+      - "The narrow verification commands the archived tickets quote (Nx project typecheck, test, and build lanes, the release-check script, and the CI workflow file) are now declared in tech-spec/guidelines.md, which is where a ticket must quote them from."
+  - version: v0.0.1
+    date: 2026-09-03
+    added: ["History before migration; the markdown changelog is in git"]
+    by: migrate
+    upstream:
+      prd: v0.0.1
+      architecture: v0.0.1
+      tech-spec: v0.0.1

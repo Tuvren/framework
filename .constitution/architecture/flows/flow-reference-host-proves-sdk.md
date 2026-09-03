@@ -1,3 +1,11 @@
+---
+job: JOB-02
+capabilities: [CAP-005, CAP-010, CAP-016, CAP-019, CAP-020, CAP-023, CAP-026, CAP-027, CAP-042, CAP-043, CAP-044, CAP-045, CAP-046, CAP-047, CAP-048, CAP-049, CAP-022, CAP-024, CAP-003, CAP-070]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.7 Reference Host Proves the SDK End to End Without Private Seams
 
 - **Maps to PRD capability:** CAP-P0-005, CAP-P0-010, CAP-P0-016, CAP-P0-019, CAP-P0-020, CAP-P0-023, CAP-P0-026, CAP-P0-027, CAP-P0-042, CAP-P0-043, CAP-P0-044, CAP-P0-045, CAP-P0-046, CAP-P0-047, CAP-P0-048, CAP-P0-049, CAP-P1-022, CAP-P1-024

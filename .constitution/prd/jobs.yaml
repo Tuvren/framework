@@ -1,0 +1,111 @@
+jobs:
+  - id: JOB-01
+    actor: Runtime Integrator
+    statement: "Embed a durable execution substrate in an agentic product so a long-running turn's progress, lineage, and recovery survive interruption without inventing bespoke persistence, pause/resume, or replay semantics."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/kernel/runtime
+      date: "2026-09-03"
+      note: "The kernel runtime commits turns, runs, TurnNodes, and TurnTrees durably and serves recovery."
+  - id: JOB-02
+    actor: Host Application Developer
+    statement: "Reach a first Turn from one curated, batteries-included SDK entrypoint and then start, stream, steer, await, and cancel executions through that same host-facing boundary rather than composing internal runtime machinery."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/sdk/src/lib/create-tuvren.ts
+      date: "2026-09-03"
+      note: "createTuvren assembles kernel, backend, runner registry, and runtime behind the curated SDK boundary."
+  - id: JOB-03
+    actor: Host Application Developer
+    statement: "Inspect, enumerate, and replay the durable state the host owns — threads, branches, state at a chosen TurnNode, turn history, and branch messages — through the host-facing SDK alone."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/runtime/src/lib/durable-reads.ts
+      date: "2026-09-03"
+      note: "The durable-read surface backs thread listing, branch listing, state at a TurnNode, history walking, and branch messages."
+  - id: JOB-04
+    actor: Extension and Tool Author
+    statement: "Add tools, external tool sources, and cross-cutting policy around execution — with the schema toolkit of their choice — without breaking the runtime's durability, approval, or observability guarantees."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/tools/mcp-client
+      date: "2026-09-03"
+      note: "The MCP client container consumes external tool servers as first-class Tuvren tool definitions; schema-agnostic authoring lives in typescript/sdk/src/lib/schema-authoring.ts."
+  - id: JOB-05
+    actor: Human Approver or Supervisor
+    statement: "Pause a turn on a sensitive action, review what the runtime is asking to do, approve, edit, or reject it, and resume the exact remaining work without duplicating or losing a side effect."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/core/src/lib/runtime-content-approval-predicates.ts
+      date: "2026-09-03"
+      note: "Approval-gated tool execution with partial completion before pause and exact continuation after the decision."
+  - id: JOB-06
+    actor: Multi-Agent Workflow Designer
+    statement: "Delegate subtasks to workers and hand off active control between agent configurations while keeping delegation, handoff, and sequence progression distinguishable in both behavior and observable events."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/runtime/src/lib/orchestration-runtime.ts
+      date: "2026-09-03"
+      note: "Worker delegation, handoff, and pipeline orchestration are modeled as distinct first-class patterns."
+  - id: JOB-07
+    actor: Runtime Implementation Maintainer
+    statement: "Build and judge a new implementation line strictly from boundary-owned machine authority, generated artifacts, and executable conformance evidence, without treating another language's source, a generic runner, or a prose document as the oracle."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: tools/conformance/harness/run.ts
+      date: "2026-09-03"
+      note: "The shared semantic conformance engine consumes conformance plans plus per-language adapters under spec/conformance/."
+  - id: JOB-08
+    actor: Reference-Host Operator and Test Author
+    statement: "Drive the runtime end to end through the reference host — interactively or headlessly over stdin — and capture an on-disk transcript that can be replayed for postmortems and regressions."
+    priority: P1
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/host/repl/src/lib/repl-headless-mode.ts
+      date: "2026-09-03"
+      note: "Headless stdin-driven mode plus transcript capture and replay in typescript/host/repl/src/lib/repl-transcript.ts."
+  - id: JOB-09
+    actor: Capability and Endpoint Integrator
+    statement: "Decide which tool surfaces a model may see, which capabilities back them, and which execution class and endpoint owns each invocation, with policy applied before exposure and before invocation and honest per-class observation and control limits."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/runtime/src/lib/capability-policy-engine.ts
+      date: "2026-09-03"
+      note: "Binding resolution and per-class attribution live beside it in binding-resolver.ts and capability-attribution.ts."
+  - id: JOB-10
+    actor: Host Operator
+    statement: "Run the runtime as a multi-tenant SaaS substrate in the topology of their choice: bind a scope per tenant with isolation by construction, satisfy retention and right-to-erasure, keep side effects once-only across workers, and route the content and telemetry funnels independently."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/core/src/lib/scope.ts
+      date: "2026-09-03"
+      note: "Scope-seam identity resolved at construction; reclamation, crypto-shredding, and lease-clock behavior are exercised under the kernel backend test suites."
+  - id: JOB-11
+    actor: Host Operator
+    statement: "Operate and debug the runtime in production: reconstruct what a turn did through a first-class operational telemetry surface, export it to vendor-neutral tooling, keep untrusted edges validated and bounded, and keep credentials out of durable state, telemetry, and transcripts."
+    priority: P0
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: typescript/telemetry/otel
+      date: "2026-09-03"
+      note: "Vendor-neutral telemetry export; execution bounds and secret screening live in typescript/runtime/src/lib/runtime-core-bounds.ts and telemetry-secret-screening.ts."

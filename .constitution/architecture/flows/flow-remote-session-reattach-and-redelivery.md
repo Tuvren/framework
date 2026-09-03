@@ -1,3 +1,11 @@
+---
+job: JOB-02
+capabilities: [CAP-019, CAP-061, CAP-063, CAP-055]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.22 Remote Session Reattach, Invocation Redelivery, and Result Sanitization
 
 - **Maps to PRD capability:** CAP-P0-019, CAP-P0-061, CAP-P1-063, CAP-P0-055

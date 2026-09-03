@@ -1,3 +1,10 @@
+---
+id: ADR-0032
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-032 The First Product-Depth Host Is a Serious REPL CLI Built on the High-Level SDK
 
 - **Status:** accepted

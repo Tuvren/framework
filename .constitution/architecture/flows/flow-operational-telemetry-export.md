@@ -1,3 +1,11 @@
+---
+job: JOB-11
+capabilities: [CAP-052, CAP-053]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.12 Operational Telemetry Capture and Vendor-Neutral Export
 
 - **Maps to PRD capability:** CAP-P0-052, CAP-P1-053

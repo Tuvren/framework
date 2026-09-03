@@ -1,3 +1,10 @@
+---
+id: ADR-0020
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-020 TypeScript Must Adopt the Final Artifact and Conformance Structure First
 
 - **Status:** accepted

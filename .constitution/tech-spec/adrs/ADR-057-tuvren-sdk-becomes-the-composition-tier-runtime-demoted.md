@@ -1,3 +1,10 @@
+---
+id: ADR-0057
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-057 `@tuvren/sdk` Becomes the Slim Convenience/Composition Tier; `@tuvren/runtime` Is Demoted to Internal Engine (Amends ADR-037/040/054)
 
 - **Status:** accepted. Amends ADR-037's "`@tuvren/runtime` becomes the slim convenience package with one root export exposing `createTuvren({...})`", ADR-040's "Add `createTuvren({...})` as the sole root export of `@tuvren/runtime`", and ADR-054's stable-core enumeration ("`@tuvren/core` primitives ... the `ExecutionHandle`/`awaitResult` surface, `createTuvren`, and the published leaf packages"). Those ADRs remain accepted for everything else they decided: `@tuvren/core`'s subpath export map (ADR-037), the `CreateTuvrenOptions` lifecycle including `[Symbol.asyncDispose]` (ADR-040), and the freeze sequencing after tenancy/data-lifecycle work (ADR-054).

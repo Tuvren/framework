@@ -1,3 +1,10 @@
+---
+id: ADR-0028
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-028 Forbidden Implementation Vocabulary in Authority Sources
 
 - **Status:** accepted

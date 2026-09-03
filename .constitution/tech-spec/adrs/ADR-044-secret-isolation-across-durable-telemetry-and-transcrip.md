@@ -1,3 +1,10 @@
+---
+id: ADR-0044
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-044 Secret Isolation Across Durable, Telemetry, and Transcript Surfaces
 
 - **Status:** accepted

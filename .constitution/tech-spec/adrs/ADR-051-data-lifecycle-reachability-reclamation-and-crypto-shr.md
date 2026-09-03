@@ -1,3 +1,10 @@
+---
+id: ADR-0051
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-051 Data Lifecycle: Reachability Reclamation Primitive Plus Crypto-Shredding Erasure
 
 - **Status:** accepted

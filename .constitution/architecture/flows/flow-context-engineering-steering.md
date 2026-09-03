@@ -1,3 +1,11 @@
+---
+job: JOB-02
+capabilities: [CAP-010, CAP-019, CAP-022]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.3 Context Engineering and Steering Between Iterations
 
 - **Maps to PRD capability:** CAP-P0-010, CAP-P0-019, CAP-P1-022

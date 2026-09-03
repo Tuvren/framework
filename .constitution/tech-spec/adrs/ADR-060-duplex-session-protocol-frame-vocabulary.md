@@ -1,3 +1,10 @@
+---
+id: ADR-0060
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-060 Duplex Session Protocol: a Session-Frame Vocabulary Above the Canonical Stream
 
 - **Status:** accepted.

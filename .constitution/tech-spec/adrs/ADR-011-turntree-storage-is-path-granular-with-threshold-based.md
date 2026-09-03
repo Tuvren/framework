@@ -1,3 +1,10 @@
+---
+id: ADR-0011
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-011 TurnTree Storage Is Path-Granular with Threshold-Based Chunking for Ordered Paths
 
 - **Status:** accepted

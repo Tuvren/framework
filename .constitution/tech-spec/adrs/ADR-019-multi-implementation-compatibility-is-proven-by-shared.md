@@ -1,3 +1,10 @@
+---
+id: ADR-0019
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-019 Multi-Implementation Compatibility Is Proven by Shared Suites and a Generated Ledger
 
 - **Status:** accepted

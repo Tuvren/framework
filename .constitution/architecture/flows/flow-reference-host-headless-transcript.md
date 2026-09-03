@@ -1,3 +1,11 @@
+---
+job: JOB-08
+capabilities: [CAP-050, CAP-051]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.10 Reference Host Runs Headlessly and Captures a Transcript
 
 - **Maps to PRD capability:** CAP-P1-050, CAP-P1-051

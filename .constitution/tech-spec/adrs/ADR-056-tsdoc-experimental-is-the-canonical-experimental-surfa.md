@@ -1,3 +1,10 @@
+---
+id: ADR-0056
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-056 TSDoc `@experimental` Is the Canonical Experimental-Surface Marker, Enforced by the API-Snapshot Gate
 
 - **Status:** accepted

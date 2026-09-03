@@ -1,0 +1,19 @@
+entries:
+  - version: v0.1.0
+    date: 2026-09-03
+    by: migrate
+    upstream:
+      prd: v0.1.0
+    added:
+      - "architecture/boundaries.yaml: the 29 system containers of containers.md as BND-01 to BND-29 with their logical type, responsibility, inputs, outputs, and dependencies, and the 68 edges of the Communication Relationships section with a protocol category on each."
+      - "trust_boundary marked on the five containers the Boundary Notes call untrusted edges: Host Integration, Provider Gateway, Tool Execution Gateway, MCP Client Container, and Client Endpoint Boundary."
+    changed:
+      - "architecture/flows: each flow's front matter now carries the real capability ids from its own mapping line and the one job whose story it tells, replacing the CAP-000 and JOB-01 placeholders the conversion wrote."
+    removed:
+      - "architecture/flows/README.md: a directory note the loader read as a flow with no job, no capability, and no story."
+  - version: v0.0.1
+    date: 2026-09-03
+    added: ["History before migration; the markdown changelog is in git"]
+    by: migrate
+    upstream:
+      prd: v0.0.1

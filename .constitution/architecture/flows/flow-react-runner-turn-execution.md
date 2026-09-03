@@ -1,3 +1,11 @@
+---
+job: JOB-01
+capabilities: [CAP-001, CAP-002, CAP-004, CAP-006, CAP-007, CAP-008, CAP-012, CAP-019, CAP-020, CAP-030, CAP-033, CAP-069]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.1 ReAct Runner Turn Execution with Durable Checkpointing
 
 - **Maps to PRD capability:** CAP-P0-001, CAP-P0-002, CAP-P0-004, CAP-P0-006, CAP-P0-007, CAP-P0-008, CAP-P0-012, CAP-P0-019, CAP-P0-020, CAP-P0-030, CAP-P0-033

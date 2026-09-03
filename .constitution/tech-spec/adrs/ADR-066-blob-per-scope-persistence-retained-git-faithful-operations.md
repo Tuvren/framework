@@ -1,3 +1,10 @@
+---
+id: ADR-0066
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-066 Blob-Per-Scope Persistence Retained; the Operational Layer Around It Is Now Git-Faithful
 
 - **Status:** accepted.

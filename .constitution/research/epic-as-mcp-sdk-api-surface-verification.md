@@ -1,3 +1,7 @@
+---
+owner: migrate
+date: "2026-09-03"
+---
 # Epic AS MCP SDK API Surface Verification
 
 This is the KRT-AS001 live support artifact for the MCP Client Container.

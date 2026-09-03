@@ -1,3 +1,11 @@
+---
+job: JOB-11
+capabilities: [CAP-054]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.13 Bounded Execution Stops a Runaway Turn Safely
 
 - **Maps to PRD capability:** CAP-P0-054 (and the Security / Reliability NFRs on bounded execution)

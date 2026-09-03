@@ -1,3 +1,7 @@
+---
+owner: migrate
+date: "2026-09-03"
+---
 # KRT-AY001 — Provider-Native & Provider-Mediated Surface Matrix
 
 **Status:** closed (spike completed)

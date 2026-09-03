@@ -1,3 +1,11 @@
+---
+job: JOB-02
+capabilities: [CAP-019, CAP-020, CAP-021]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.21 Stream Resume and WebSocket Carriage
 
 - **Maps to PRD capability:** CAP-P0-019, CAP-P0-020, CAP-P1-021

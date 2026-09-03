@@ -1,0 +1,240 @@
+id: BK
+name: Kernel Substrate Hardening (KRT)
+kind: product
+capabilities: []
+depends_on: []
+scope:
+  paths: [typescript/kernel/backends/postgres/src/lib/memory-backend-reclamation.ts, typescript/kernel/backends/memory/src/lib/memory-backend-reclamation.ts, typescript/kernel/backends/postgres/src/lib/memory-backend-record-utils.ts, typescript/kernel/backends/memory/src/lib/memory-backend-record-utils.ts, typescript/kernel/backends/postgres/src/lib/memory-backend-run-logic.ts, typescript/kernel/backends/memory/src/lib/memory-backend-run-logic.ts, typescript/kernel/backends/sqlite/src/lib/sqlite-reclamation.ts, typescript/kernel/backends/postgres/src/lib, typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts, spec/kernel/authority-packet.json, spec/conformance/kernel/plans/kernel-reclamation.json, typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts, typescript/kernel/backends/memory/test/backend-memory.purge-scope.test.ts, typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-utils.ts, typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-generate.ts, typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-stream.ts, typescript/runtime/src/lib/telemetry-secret-screening.ts, typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts, spec/conformance/providers/fixtures/secret-isolation-fixtures.json, tools/scripts/authority-guardrails/authority-guardrails.ts, typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-support.ts, rust/kernel-grpc-service/src/lib.rs, typescript/kernel/backends/postgres/src/lib/postgres-backend-persistence.ts, typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts, ".constitution/spikes/SPK-BK007.md", typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts, typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts, typescript/kernel/backends/sqlite/test, reports/compatibility/compatibility-matrix.json, spec/conformance/interop/rust-kernel/spec/authority-packet.json, rust/kernel-conformance-adapter, typescript/kernel/backends/postgres/test]
+  tech_spec_patchable: []
+estimated_diff_lines: 0
+tickets:
+  - id: KRT-BK001
+    title: Extract the Shared Kernel-Backend Invariant Core
+    type: Chore
+    effort: 5
+    depends_on: []
+    category: Tech-Debt
+    scope:
+      in: [typescript/kernel/backends/postgres/src/lib/memory-backend-reclamation.ts, typescript/kernel/backends/memory/src/lib/memory-backend-reclamation.ts, typescript/kernel/backends/postgres/src/lib/memory-backend-record-utils.ts, typescript/kernel/backends/memory/src/lib/memory-backend-record-utils.ts, typescript/kernel/backends/postgres/src/lib/memory-backend-run-logic.ts, typescript/kernel/backends/memory/src/lib/memory-backend-run-logic.ts, typescript/kernel/backends/sqlite/src/lib/sqlite-reclamation.ts, typescript/kernel/backends/postgres/src/lib]
+    verification:
+      command: "bun run verify:kernel"
+      expected: exit 0
+    description: "Extract one shared internal module implementing the reclamation keep-closure (which state is reachable and must survive a reclaim pass), run-transition legality (which RunStatus transitions are valid and under what lease/fencing preconditions), and committed-state immutability checks, parameterized only by an error-code prefix per backend. All three backends (memory, postgres, sqlite) consume this module instead of hand-copying or re-implementing the logic. The extraction must be behavior-preserving: no backend's observable reclamation, transition-legality, or immutability behavior changes, only its source of truth for that behavior"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [bun.lock, tools/scripts/verify.ts, tsconfig.base.json, tsconfig.json, "each backend's package.json", "and each backend's tsconfig.dts.json/tsconfig.lib.json (plus memory's tsconfig.typecheck.json", "its only local paths override); additionally", typescript/kernel/backends/sqlite/src/lib/sqlite-run-invariants.ts.]
+        justification: "The ticket's Scope explicitly authorized creating a new shared-core package (\"a new typescript/kernel/backends/core/ package if cross-package reuse requires it\"). A new Nx/Bun-workspace package cannot build, link, or typecheck without workspace-manifest wiring: bun.lock records the new package's install graph, tsconfig.base.json/tsconfig.json register its project reference, tools/scripts/verify.ts registers it in WORKSPACE_TEST_PROJECTS/WORKSPACE_BUILD_PROJECTS so bun run check's workspace-coverage gate doesn't fail on an unregistered project, and each consuming backend's package.json/tsconfig.dts.json/tsconfig.lib.json add the new @tuvren/backend-shared dependency edge. These are necessary, mechanical consequences of the pre-authorized new package, not scope creep — behavior of the extracted logic itself is unchanged (verified: bun run verify:kernel conformance counts identical pre/post at memory 64/68, sqlite 67/68, postgres 68/68)"
+  - id: KRT-BK002
+    title: "Reclamation Horizon: Leaseless-Run Expiry Path"
+    type: Feature
+    effort: 3
+    depends_on: [KRT-BK001]
+    category: Correctness
+    scope:
+      in: [typescript/kernel/backends/memory/src/lib/memory-backend-reclamation.ts, typescript/kernel/backends/memory/src/lib/memory-backend-record-utils.ts, typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts, typescript/kernel/backends/sqlite/src/lib/sqlite-reclamation.ts, spec/kernel/authority-packet.json, spec/conformance/kernel/plans/kernel-reclamation.json]
+    verification:
+      command: "bun run verify:kernel"
+      expected: exit 0
+    description: "Today computeGraceHorizonMs pins the reclamation grace horizon to min(createdAtMs) over all active runs, and a run.create call with no executionOwnerId/fencingToken/leaseExpiresAtMs produces a leaseless running run that isExpiredLeasedRunningRun can never classify as expired — so a crashed owner of a leaseless run blocks reclamation of everything created after it, forever. Define and implement an explicit expiry rule for leaseless runs (either an administrative timeout/expiry path independent of lease fields, or a policy requiring leases on every abandonable run) inside the shared invariant core from KRT-BK001, and update the kernel authority packet and the reclamation conformance plan in the same change so the new rule is authoritative, not implicit"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [typescript/kernel/backends/memory/src/lib/memory-backend.ts, typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts, typescript/kernel/backends/postgres/src/lib/postgres-backend.ts, typescript/kernel/backends/postgres/src/lib/memory-backend-reclamation.ts, typescript/kernel/backends/shared/src/index.ts, typescript/kernel/backends/shared/src/lib/backend-invariant-record-utils.ts, typescript/kernel/backends/shared/test/backend-invariant-reclamation.leaseless-expiry.test.ts, typescript/kernel/conformance-adapter/src/host.ts, typescript/kernel/protocol/src/lib/kernel-types.ts]
+        justification: "The leaseless-expiry rule needs a wall-clock reference (nowMs) inside reclaimBackendState, which the protocol layer already anticipated: ReclamationOptions.nowMs and the maintenance.reclaim() kernel-level wrapper already threaded a clock through to backend.reclaim() before this ticket, but all three backends' reclaim() methods silently discarded it. Wiring it up required each backend's reclaim() call site (memory-backend.ts, sqlite-backend.ts, postgres-backend.ts) to pass options?.nowMs ?? this.now() through to the shared core, plus postgres's own copy of the reclamation shim (memory-backend-reclamation.ts) to accept and forward it. Postgres is outside this ticket's required Gherkin proof (only memory and sqlite are asserted against), but leaving its already-injectable this.now() clock unconsumed while memory/sqlite consume theirs would silently break parity across the shared-core backends established in KRT-BK001 — postgres's own leaseless runs would simply never expire. The new isExpiredLeaselessRunningRun predicate and its LEASELESS_RUN_EXPIRY_MS default land in backend-invariant-record-utils.ts (the post-KRT-BK001 shared-core successor to the ticket-listed memory-backend-record-utils.ts, per the parenthetical already granted for the sibling reclamation file), with its own dedicated unit-test file; backend-shared/src/index.ts gained two new exports (isExpiredLeaselessRunningRun, LEASELESS_RUN_EXPIRY_MS) so both are consumable outside the package. kernel-types.ts's ReclamationOptions.nowMs JSDoc explicitly claimed \"the reference memory backend... does not consult nowMs\" — now false, so the comment was corrected (no interface shape change). host.ts gained two new probe blocks so the ticket's own Gherkin Scenario 3 (\"the leaseless-expiry check passes... bun run verify:kernel\") has a live conformance operation to assert against, per the plan's two new kernel-reclamation.json checks. Separately, typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts (create, line ~273) was declared in-scope anticipating a possible lease-requirement policy change to the run-creation call shape; the team resolved the ticket's own STOP condition by choosing the administrative-timeout expiry path over requiring leases on every abandonable run, which needs no change to create()'s existing call shape — so this file carries zero diff by design, not by omission"
+  - id: KRT-BK003
+    title: Purge/Transact Serialization Race Fix
+    type: Chore
+    effort: 2
+    depends_on: []
+    category: Correctness
+    scope:
+      in: [typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts, typescript/kernel/backends/memory/test/backend-memory.purge-scope.test.ts]
+    verification:
+      command: "bun run nx run backend-memory:test"
+      expected: exit 0
+    description: "dropScope deletes the per-scope queue entry (this.scopeQueues.delete(scope)) from inside the same call that also deletes committed state, without checking whether a later caller has already chained a new continuation onto that scope's queue. A caller arriving after the deletion chains onto a fresh Promise.resolve() instead of the true prior continuation, letting it run concurrently with a transaction still in flight — bypassing the single-writer-per-scope guarantee during tenant purge. Fix by not unconditionally deleting the queue entry while continuations may still be chained (a resolved sentinel value, or a conditional delete that only removes the map entry if it still holds the value this call installed), then add the purge-vs-concurrent-transact race regression test that does not exist today in backend-memory.purge-scope.test.ts"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [typescript/kernel/backends/memory/test/backend-memory.scope-store-concurrency.test.ts (new file, not the Gherkin-named backend-memory.purge-scope.test.ts).]
+        justification: "The new test targets MemoryScopeStore's internal runExclusive/dropScope serialization primitive directly (three racing actors sequenced via hand-rolled deferreds, no timers), a different concern than backend-memory.purge-scope.test.ts's existing black-box purgeScope() behavior tests. The substantive Gherkin criterion — a purge-vs-transact race test exists under bun run nx run backend-memory:test (actual Nx project name; the ticket's cited kernel-backend-memory does not exist) and asserts no concurrent window opens — is met in a differently-named file. Achieved a genuine red-then-green TDD cycle: the test failed against unmodified source with the exact predicted ordering violation (D-ran before B-done) before the fix was applied"
+  - id: KRT-BK004
+    title: Provider-Bridge Secret Screening at the Seam (ADR-044/058)
+    type: Security
+    effort: 3
+    depends_on: []
+    category: Security
+    scope:
+      in: [typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-utils.ts, typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-generate.ts, typescript/providers/bridge-ai-sdk/src/lib/ai-sdk-provider-bridge-stream.ts, typescript/runtime/src/lib/telemetry-secret-screening.ts, typescript/conformance-adapter/src/framework-adapter-secret-isolation.ts, spec/conformance/providers/fixtures/secret-isolation-fixtures.json]
+    verification:
+      command: bun run conformance
+      expected: exit 0
+    description: "requestBody and response-header values captured into bridgeExtras currently pass only through sanitizeMetadataValue, which performs JSON-safety normalization (stringifying Date/URL/Uint8Array/Error, recursing into plain objects and arrays) with no pattern-based secret detection, unlike the dedicated telemetry-secret-screening.ts module used elsewhere in the runtime. These values flow through buildProviderMetadata into tool_call.done canonical events and durable run records, both of which ADR-044 names as credential-free zones. Apply the shared secret-screening module at the bridge seam before values enter provider metadata, and extend the secret-isolation conformance fixture with a pattern-shaped assertion (detecting secret-shaped values structurally) rather than only the existing value-equality assertion against configured secrets"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [typescript/core/src/lib/secret-pattern-screening.ts (new), typescript/core/src/security/index.ts (new), typescript/core/package.json, typescript/core/tsup.config.ts, typescript/core/test/secret-pattern-screening.test.ts (new), tsconfig.base.json, typescript/runtime/tsconfig.typecheck.json, typescript/runtime/tsconfig.dts.json, typescript/providers/bridge-ai-sdk/tsconfig.typecheck.json, typescript/providers/bridge-ai-sdk/tsconfig.dts.json, typescript/providers/certification/tsconfig.typecheck.json, typescript/runners/react/tsconfig.typecheck.json, typescript/providers/bridge-ai-sdk/test/ai-sdk-provider-bridge-secret-screening.test.ts (new), tools/conformance/plan-compiler/index.ts, tools/schemas/conformance-plan.schema.json, tools/conformance/harness/secret-absence/index.ts, tools/conformance/harness/test/secret-absence.test.ts, tools/conformance/harness/assertion-engine/index.ts, tools/conformance/harness/test/assertion-engine.test.ts, typescript/conformance-adapter/src/framework-adapter.ts, spec/conformance/telemetry/plans/framework-operational-telemetry.json, spec/core/authority-packet.json, spec/providers/authority-packet.json.]
+        justification: "Three groups of out-of-scope touches, each necessary to satisfy the ticket's own Description/Gherkin without weakening screening semantics"
+  - id: KRT-BK005
+    title: Guardrail Gate Command Execution Hardening
+    type: Security
+    effort: 2
+    depends_on: []
+    category: Security
+    scope:
+      in: [tools/scripts/authority-guardrails/authority-guardrails.ts, spec/kernel/authority-packet.json]
+    verification:
+      command: bun run check
+      expected: exit 0
+    description: "runRegenerateCommand currently executes manifest-owned regenerateCommand strings via spawn(command, { shell: true }), validated only for non-emptiness, inside bun run check/verify on every contributor machine and in CI. A pull request editing a checked-in JSON manifest field can execute arbitrary shell with metacharacter interpretation. Replace shell-string execution with argv-array execution (parsing the manifest command into a program plus arguments, no shell interpretation) restricted to an allowlisted command-prefix set, preserving every legitimate multi-word regenerate command already declared in the repo's authority packets"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [tools/scripts/authority-packet/validate-authority-packets.ts, tools/scripts/lib/regenerate-command-argv.ts, tools/scripts/lib/regenerate-command-argv.test.ts]
+        justification: "The new argv-parsing/allowlist logic needed a single shared home so authority-guardrails.ts's runtime execution and validate-authority-packets.ts's static declaration check enforce identical rules instead of two hand-maintained copies. Extracting it into tools/scripts/lib/regenerate-command-argv.ts and reusing it from validate-authority-packets.ts moves the allowlist guarantee into bun run check's fast static-validation lane (a bad regenerateCommand now fails at validation time, not only at execution time), which is a strictly stronger, lower-risk version of the ticket's intent. This deviation was pre-declared in the approved execution plan before implementation began"
+  - id: KRT-BK006
+    title: "Kernel Input Hardening: LIMIT Guard + Interop Resource Caps"
+    type: Security
+    effort: 2
+    depends_on: []
+    category: Security
+    scope:
+      in: [typescript/kernel/backends/sqlite/src/lib/sqlite-repositories-support.ts, rust/kernel-grpc-service/src/lib.rs]
+    verification:
+      command: "bun run verify:kernel"
+      expected: exit 0
+    description: "(a) sqlite-repositories-support.ts interpolates LIMIT ${fetchLimit} directly into a SQL string with no runtime numeric guard anywhere upstream in the call chain; add a Number.isSafeInteger (non-negative) runtime guard and switch to a parameterized LIMIT ? clause. (b) rust/kernel-grpc-service's serve_kernel_grpc registers the full kernel gRPC surface with no message-decode-size ceiling, no per-RPC timeout, and no concurrency limit, and node_walk_back has no recursion/iteration depth cap; add .max_decoding_message_size, .timeout, and .concurrency_limit_per_connection to the Server::builder() chain and a depth cap to node_walk_back, documenting the loopback-only default this seam relies on today. No proto or wire-format change"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [typescript/kernel/backends/sqlite/test/backend-sqlite.thread-list-limit-guard.test.ts (new), rust/kernel-grpc-service/tests/resource_caps.rs (new)]
+        justification: "The ticket's declared Scope (In-Scope Files) names only the two source files (with line ranges) and does not list a test directory for either language, unlike some sibling tickets. Both fixes are behavior-bearing (Security category) and are only meaningfully provable with dedicated tests: the sqlite-side test asserts the Number.isSafeInteger/non-negative guard rejects before touching SQL and that pagination still works after parameterizing LIMIT ?; the Rust-side test spins up a real server via serve_kernel_grpc itself (rather than interop_smoke.rs's separate spawn_kernel_server helper, which has its own builder chain and would not exercise this change at all) to prove the 16 MiB decode-size ceiling is genuinely raised past tonic's unconfigured 4 MiB default. Both are new files in the conventional per-package test location for their language, following the same low-risk precedent already used across this epic"
+  - id: KRT-BK007
+    title: Persistence-Model Benchmark Spike
+    type: Spike
+    effort: 3
+    depends_on: []
+    category: Perf
+    scope:
+      in: [typescript/kernel/backends/postgres/src/lib/postgres-backend-persistence.ts, typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts, ".constitution/spikes/SPK-BK007.md"]
+    verification:
+      command: "bun run verify:kernel"
+      expected: exit 0
+    description: "Measure write latency as a function of scope size for the postgres whole-blob-per-write persistence model, and measure the cost of sqlite's full-database loads inside health() and reclaim() (the latter loads the database twice). Complete .constitution/spikes/SPK-BK007.md following the existing spike-report format, recommending either accept-with-documented-bounds or a path-granular/row-per-record persistence redesign, to feed a future ADR alongside the existing ADR-006/048/049/050/051 set that currently does not address this trade-off. No production code changes are in scope for this ticket"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+    spike: SPK-KRT-BK007
+  - id: KRT-BK008
+    title: TurnTree Caller-Side Chunk-Aware Writes (ADR-011)
+    type: Feature
+    effort: 3
+    depends_on: []
+    category: Perf
+    scope:
+      in: [typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts, typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts]
+    verification:
+      command: "bun run verify:kernel"
+      expected: exit 0
+    description: "toStoredTurnTreePath always resubmits the full flat items array with orderedEncoding: \"flat\", regardless of collection size, so once an ordered TurnTree path crosses the ADR-011 chunking threshold, every subsequent append re-chunks and re-hashes the entire collection at the caller — O(collection size) CPU per append even though content-addressing already dedupes the storage. Teach the runtime caller to submit already-chunked records or deltas once the threshold is crossed, matching the chunk-aware shape (orderedEncoding: \"chunked\", chunkHashes) that backends already accept per the existing normalize logic, so appends past the threshold cost work proportional to the delta, not the whole collection"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+  - id: KRT-BK009
+    title: SQLite Rollback-Path Error Normalization Fix
+    type: Chore
+    effort: 2
+    depends_on: []
+    category: Correctness
+    scope:
+      in: [typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts, typescript/kernel/backends/sqlite/test]
+    verification:
+      command: "bun run nx run backend-sqlite:test"
+      expected: exit 0
+    description: "SqliteBackend.transact has a nested try/catch structure where an inner catch block normalizes a thrown error and rethrows, and an outer catch block normalizes that already-normalized error again, double-wrapping errors on the rollback path. Collapse this into a single normalization point so an error thrown during a transaction is normalized exactly once regardless of which catch block ultimately handles the rollback, and add a test asserting the resulting error shape (no double-wrapping, correct cause/message/code)"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [typescript/kernel/backends/sqlite/project.json]
+        justification: "The Gherkin's \"that test fails if double-normalization is reintroduced\" criterion cannot be satisfied by shape-only assertions, since normalizeBackendError is idempotent and a single vs. double call produces a byte-identical result (proven empirically during milestone review by reintroducing the double call and observing all shape-based tests stay green). Satisfying the criterion for real required a call-count spy on normalizeBackendError via node:test's mock.module, which requires the --experimental-test-module-mocks Node flag; this was added to the package's test Nx target in project.json. Low-risk, dev-tooling-only, and the change that actually made the ticket's own written acceptance criterion true rather than merely apparently true"
+  - id: KRT-BK010
+    title: Promote In-Memory-Expressible Kernel Checks to the Rust Lane
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BK002]
+    category: Feature-Evolution
+    scope:
+      in: [reports/compatibility/compatibility-matrix.json, spec/conformance/kernel/plans/kernel-reclamation.json, spec/conformance/interop/rust-kernel/spec/authority-packet.json, rust/kernel-conformance-adapter]
+    verification:
+      command: bun run conformance
+      expected: exit 0
+    description: "The compatibility matrix currently shows rust-kernel passing 42 of the 68 checks typescript-kernel-postgres runs, entirely omitting the kernel.reclamation.*, kernel.scope-isolation.*, and kernel.run-liveness.{clock_skew_preemption, expired_listing, lease_renewal, stale_preemption} families — precisely the ADR-048–052 surfaces. Promote the subset of these checks that are expressible against an in-memory backend (not dependent on process restart or crash recovery) into the Rust conformance lane, selected by the capability/surface each check declares, consistent with the repo's standing rule that promotion is never keyed to language or implementation identity. Checks requiring restart/crash-recovery remain excluded and explicitly deferred to the Rust persistence epic (Epic BN)"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+  - id: KRT-BK011
+    title: Backend-Specific Storage Test Uplift
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BK001]
+    category: Correctness
+    scope:
+      in: [typescript/kernel/backends/sqlite/test, typescript/kernel/backends/postgres/test]
+    verification:
+      command: "bun run nx run backend-sqlite:test"
+      expected: exit 0
+    description: "The audit found postgres at a 0.27 and sqlite at a 0.25 test:src ratio, the thinnest in the repo, with the shared testkit carrying cross-backend semantics but backend-specific behavior (SQL edge cases, WAL/locking under sqlite's single-connection-per-file model, max: 1 connection-pool and FOR UPDATE row-contention behavior under postgres) left thinly covered. Add targeted backend-local tests for this backend-specific behavior without duplicating suites the shared testkit already exercises against all backends uniformly"
+    acceptance:
+      mode: gherkin
+      evidence: TODO
+    flows: []
+    certainty: assumed
+    status: done
+closeout:
+  tickets_completed: [KRT-BK001, KRT-BK002, KRT-BK003, KRT-BK004, KRT-BK005, KRT-BK006, KRT-BK007, KRT-BK008, KRT-BK009, KRT-BK010, KRT-BK011]
+  tickets_deferred: []
+  points_completed: 31
+  spec_patches: []
+  changelog_entries: []
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups: []
+  settled: []

@@ -1,3 +1,11 @@
+---
+job: JOB-07
+capabilities: [CAP-035, CAP-036]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.5 Multi-Implementation Conformance and Compatibility Validation
 
 - **Maps to PRD capability:** CAP-P1-035, CAP-P1-036

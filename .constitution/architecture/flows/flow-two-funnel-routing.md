@@ -1,3 +1,11 @@
+---
+job: JOB-10
+capabilities: [CAP-071, CAP-072, CAP-073]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.19 Two-Funnel Emission and Construction-Time Routing (Split Topology, Telemetry-Destination Failure)
 
 - **Maps to PRD capability:** CAP-P0-071, CAP-P0-072 (contract), CAP-P1-073 (destination realizations, deferred)

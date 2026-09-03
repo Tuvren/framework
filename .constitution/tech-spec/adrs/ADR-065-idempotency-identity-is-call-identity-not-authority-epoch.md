@@ -1,3 +1,10 @@
+---
+id: ADR-0065
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-065 The Idempotency Identity Is the Logical Call Identity, Not the Execution Attempt
 
 - **Status:** accepted. Amends ADR-052 §1.

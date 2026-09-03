@@ -1,0 +1,15 @@
+entries:
+  - version: v0.1.0
+    date: 2026-09-03
+    by: migrate
+    added:
+      - "prd/jobs.yaml: eleven jobs to be done derived from the seven personas in actors.md and the jobs and success criteria in vision.md, each settled against a repository path that delivers it."
+      - "prd/capabilities.yaml: the 73 capabilities of the former capabilities.md, renumbered CAP-001 to CAP-073 with the old identifier kept as legacy_id, each grouped, prioritized, and mapped to at least one job."
+      - "prd/constraints.yaml: nine Planguage meters restated from the absolutes in the former constraints.md, plus performance and operability recorded as deferred classes with the risk of deferring named."
+    changed:
+      - "prd/glossary.yaml: banned-synonym lists pruned to domain synonyms only. Removed the generic English and technical words that either collided with a canonical term or matched on a declared surface: engine, wrapper, kernel, step, turn, transaction, callback, summary, cancel, tool call, handoff, adapter, transport, helper, validator, bridge, proxy, server, README, logs, the event stream, tool, route, guard, trace, cleanup, delete, and implementation detail."
+      - "constitution.yaml: archetype set to Library/SDK with CLI/Tooling secondary, from the target archetype and posture in vision.md; default branch corrected to master; diff exclusions widened to the Go, Python, Bazel, and devenv lockfiles."
+  - version: v0.0.1
+    date: 2026-09-03
+    added: ["History before migration; the markdown changelog is in git"]
+    by: migrate

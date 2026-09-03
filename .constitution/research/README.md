@@ -1,3 +1,7 @@
+---
+owner: migrate
+date: "2026-09-03"
+---
 # Live Support Artifacts
 
 This directory contains checked-in generated support artifacts that remain

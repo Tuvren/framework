@@ -1,3 +1,10 @@
+---
+id: ADR-0059
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-059 Advanced Composition Surface (`@tuvren/sdk/advanced`) and the `@tuvren/kernel-grpc-client` Leaf; Host Import Contract Extended (Amends ADR-057)
 
 - **Status:** accepted. Amends ADR-057 §3 (host import contract) and §6 (Reference Host re-point). ADR-057 remains accepted for everything else it decided (the `createTuvren` home and instances-only signature, the `@tuvren/runtime` demotion, the amended ADR-054 stable-core enumeration). This ADR is a narrowing correction discovered while executing KRT-BJ002, not a reversal.

@@ -1,3 +1,11 @@
+---
+job: JOB-10
+capabilities: [CAP-066, CAP-067, CAP-064, CAP-065]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.17 Tenant Offboarding and Right-to-Erasure (Crypto-Shredding + Reclamation)
 
 - **Maps to PRD capability:** CAP-P0-066 (reachability-based reclamation mechanism), CAP-P0-067 (crypto-shredding erasure of sensitive untrusted-edge payloads), in service of CAP-P0-064/CAP-P0-065 (scope + isolation-by-construction)

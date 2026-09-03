@@ -1,0 +1,27 @@
+artifact: README.md
+surface: data-model
+flows:
+    - flow-authority-packet-driven-conformance
+    - flow-bounded-execution-runaway-turn
+    - flow-context-engineering-steering
+    - flow-crash-mid-checkpoint-recovery
+    - flow-duplex-session-inbound-routing
+    - flow-exposure-time-tool-surface-policy
+    - flow-host-adds-external-mcp-server
+    - flow-host-lists-threads-reads-state
+    - flow-invocation-time-binding-policy-attribution
+    - flow-multi-implementation-conformance-compatibility
+    - flow-operational-telemetry-export
+    - flow-preemption-idempotent-side-effect
+    - flow-react-runner-turn-execution
+    - flow-reference-host-headless-transcript
+    - flow-reference-host-proves-sdk
+    - flow-remote-session-reattach-and-redelivery
+    - flow-runner-handoff-child-orchestration
+    - flow-stream-resume-and-ws-transport
+    - flow-tenant-offboarding-erasure
+    - flow-tool-approval-pause-resume
+    - flow-tuvren-client-capability-lease-dispatch
+    - flow-two-funnel-routing
+certainty: assumed
+assumption: "This file is a pointer index over the canonical record profile, entity shapes, backend schemas, cursor, transcript, telemetry, bounds, capability, and session frame shapes; §3.1 to §3.16 together cover every critical flow, so every flow is listed. The index itself carries no conformance evidence — the CDDL, TypeSpec, and JSON Schema artifacts under spec/ do."

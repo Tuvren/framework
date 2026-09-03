@@ -1,3 +1,7 @@
+---
+owner: migrate
+date: "2026-09-03"
+---
 # Issue #108 — Make the blob-per-scope persistence path Git-faithful
 
 > **Status:** complete. Evidence/completion report for GitHub issue #108,

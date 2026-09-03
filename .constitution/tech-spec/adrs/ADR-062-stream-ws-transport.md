@@ -1,3 +1,10 @@
+---
+id: ADR-0062
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-062 @tuvren/stream-ws: a Runtime-Agnostic WebSocket Binding for the Duplex Session Protocol
 
 - **Status:** accepted.

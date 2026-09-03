@@ -1,3 +1,11 @@
+---
+job: JOB-02
+capabilities: [CAP-019, CAP-022, CAP-061, CAP-063]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.20 Duplex Session Inbound Routing and Rejection
 
 - **Maps to PRD capability:** CAP-P0-019, CAP-P1-022, CAP-P0-061, CAP-P1-063

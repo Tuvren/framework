@@ -1,3 +1,10 @@
+---
+id: ADR-0038
+status: accepted
+date: 2026-09-03
+certainty: assumed
+assumption: "Migrated; the decision's ruling reference was not found in the status line."
+---
 ### ADR-038 Schema Authoring Helper: `FlexibleSchema` + `defineTool`
 
 - **Status:** accepted

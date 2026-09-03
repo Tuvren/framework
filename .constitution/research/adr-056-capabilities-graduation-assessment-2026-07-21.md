@@ -1,3 +1,7 @@
+---
+owner: migrate
+date: "2026-09-03"
+---
 # ADR-056 `@tuvren/core/capabilities` Graduation Assessment (Post-#102/#104 Run)
 
 - This is a planning/diagnostic artifact under `.constitution/reports/`. It does

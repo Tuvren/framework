@@ -1,3 +1,11 @@
+---
+job: JOB-05
+capabilities: [CAP-005, CAP-008, CAP-013, CAP-014, CAP-016, CAP-017, CAP-019]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.2 Tool Approval Pause and Exact Resume
 
 - **Maps to PRD capability:** CAP-P0-005, CAP-P0-008, CAP-P0-013, CAP-P0-014, CAP-P0-016, CAP-P0-017, CAP-P0-019

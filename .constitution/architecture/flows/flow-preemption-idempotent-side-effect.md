@@ -1,3 +1,11 @@
+---
+job: JOB-10
+capabilities: [CAP-068]
+boundaries: []
+view: sequence
+certainty: assumed
+assumption: "Migrated from markdown; not yet exercised by an integration test."
+---
 ### 4.18 Stale-Execution Preemption Without a Duplicated Side Effect
 
 - **Maps to PRD capability:** CAP-P0-068 (side-effect-once under preemption), supported by the Backend-Authoritative Lease Clock Model and the Side-Effect-Once Under Preemption Model
