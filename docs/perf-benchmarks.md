@@ -107,5 +107,5 @@ conformance phase across repeated runs.
 
 Persistence-path (kernel backend read/write) benchmarks are a different
 subsystem and are not covered by this file at all; see
-`.constitution/reports/108-git-faithful-blob-persistence.md` for the
+`.constitution/research/108-git-faithful-blob-persistence.md` for the
 postgres/sqlite blob-persistence measurements.

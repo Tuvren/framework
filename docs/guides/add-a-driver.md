@@ -6,7 +6,7 @@ In this repo, **"driver" means a resource adapter**: an integration to an extern
 
 **"Runner" means an execution strategy** — the thing that drives turn/step execution around a model (ReAct today: `typescript/runners/react`, `@tuvren/runner-react`, authority at `spec/runners/`). If you're trying to add a new execution strategy, not a new resource integration, this is the wrong guide — read `docs/guides/add-a-runner.md` instead.
 
-This is an inversion of older naming in this codebase's history: what used to be called "Driver Runtime" / "ReAct Driver" is now "Runner Runtime" / "ReAct Runner" (see `.constitution/architecture/changelog.md`'s v0.11.0 entry). Resource-adapter "driver" usage (tty/output drivers, syslog driver, bus-driver, provider drivers) is the surviving sense of the word and is what this guide covers.
+This is an inversion of older naming in this codebase's history: what used to be called "Driver Runtime" / "ReAct Driver" is now "Runner Runtime" / "ReAct Runner" (see `.constitution/architecture/changelog.yaml`'s v0.0.1 entry ("History before migration; the markdown changelog is in git")). Resource-adapter "driver" usage (tty/output drivers, syslog driver, bus-driver, provider drivers) is the surviving sense of the word and is what this guide covers.
 
 ## 1. Decide the package home
 
