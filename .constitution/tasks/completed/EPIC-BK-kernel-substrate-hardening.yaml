@@ -391,7 +391,13 @@ tickets:
     status: done
     spike: SPK-KRT-BK007
     deviations:
-      - files: []
+      - files:
+          - typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts
+          - typescript/kernel/backends/postgres/project.json
+          - typescript/kernel/backends/postgres/tsconfig.typecheck.json
+          - typescript/kernel/backends/sqlite/bench/sqlite-load-cost.bench.ts
+          - typescript/kernel/backends/sqlite/project.json
+          - .constitution/spikes/SPK-BK007.md
         justification: |-
           - **Touched Files (all tooling, zero `src/**` diffs):**
             - `typescript/kernel/backends/postgres/bench/postgres-write-latency.bench.ts` (new)
@@ -442,7 +448,17 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts
+          - typescript/kernel/runtime/src/lib/runtime-kernel.ts
+          - typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts
+          - typescript/kernel/runtime/test/runtime-kernel-storage.chunk-constant-agreement.test.ts
+          - typescript/kernel/runtime/test/runtime-kernel.turn-tree-chunking.test.ts
+          - typescript/kernel/runtime/test/runtime-kernel-lineage.apply-staged-results.test.ts
+          - typescript/kernel/runtime/test/runtime-kernel-test-helpers.ts
+          - typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts
+          - typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts
+          - bun.lock
         justification: |-
           - **Touched Files (anticipated call-site threading):**
             - `typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts` — `createTurnTree` gained an optional `priorTurnTreeHash` parameter; `createIncorporatedTree` threads its own `baseTurnTreeHash` through it.
@@ -536,7 +552,17 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - rust/kernel/src/types.rs
+          - rust/kernel/src/memory.rs
+          - rust/kernel/tests/kernel_baseline.rs
+          - rust/kernel-conformance-adapter/src/main.rs
+          - rust/kernel-conformance-adapter/Cargo.toml
+          - Cargo.lock
+          - reports/compatibility/evidence/certification-harness.kernel-rust-certification.json
+          - reports/compatibility/evidence/certification-harness.framework-typescript-certification.json
+          - reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json
+          - reports/compatibility/evidence/certification-harness.framework-rust-certification.json
         justification: |-
           - **Touched Files (beyond declared Scope):** `rust/kernel/src/types.rs`, `rust/kernel/src/memory.rs`, `rust/kernel/tests/kernel_baseline.rs`, `rust/kernel-conformance-adapter/src/main.rs`, `rust/kernel-conformance-adapter/Cargo.toml`, `Cargo.lock`, `reports/compatibility/evidence/certification-harness.kernel-rust-certification.json`, `reports/compatibility/evidence/certification-harness.framework-typescript-certification.json`, `reports/compatibility/evidence/certification-harness.framework-batteries-included-certification.json`, `reports/compatibility/evidence/certification-harness.framework-rust-certification.json`.
           - **Justification:** The ticket's declared Scope anticipated only adapter/plan/matrix files, on the assumption that the Rust kernel already had the state and logic these checks probe. Reading `rust/kernel/src/types.rs` and `memory.rs` directly (before writing any code) showed `RunRecord` had no lease fields at all and `InMemoryKernel` had no `maintenance.reclaim()` primitive — unlike the matrix/adapter/capability files, there was no existing behavior to "just wire up." Promoting `kernel.run-liveness` and `kernel.reclamation` required adding the lease-aware run-liveness API (`run_liveness_create_leased_run`/`renew_lease`/`list_expired`/`preempt_expired`) and a faithful Rust port of the shared TS reachability-reclamation algorithm (`typescript/kernel/backends/shared/src/lib/backend-invariant-reclamation.ts`) directly onto `InMemoryKernel`, plus `created_at_ms` timestamps on `TurnNode`/`ObjectRecord`/`StoredTurnTree` and an `archived_from_branch_id` marker on `BranchRecord` (verified safe against `identity.rs`'s hand-built hash records before adding — none of the new fields participate in content-addressed hashing, so `kernel.protocol.deterministic_hashing`/`schema_roundtrip` are unaffected). `kernel_baseline.rs` needed one `created_at_ms: 0` added to its one direct `TurnNode` literal to keep compiling. The four evidence files changed because `reports/compatibility/compatibility-matrix.json` is a generated, not hand-edited, artifact (per its own declared Scope) — regenerating it via `bun run nx run compatibility-reporting:evidence-refresh` regenerates all adapters' evidence in the same pass, not just rust-kernel's.

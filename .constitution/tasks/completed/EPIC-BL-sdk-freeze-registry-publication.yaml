@@ -24,7 +24,7 @@ tickets:
     verification:
       command: bun run check
       expected: exit 0
-    description: "Re-run the public-surface audit against the ADR-057-amended stable-core enumeration: @tuvren/core (root plus subpaths) minus the @experimental-tagged @tuvren/core/capabilities surface, @tuvren/sdk (including its now-hosted createTuvren root export), the Durable-Read Surface, the ExecutionHandle/awaitResult surface, and the published leaf packages. Confirm the 2026-07-04 finding of zero Kraken* leaks still holds, confirm no read signature demands a scope argument, and confirm the ADR-058 funnel-routing seam (telemetry accepting TuvrenTelemetrySink | TelemetryDestination | { sink?; destination? }) is present on CreateTuvrenOptions before the surface is declared frozen-ready. Record the audited surface as the freeze candidate that KRT-BL002 snapshots"
+    description: "Re-run the public-surface audit against the ADR-057-amended stable-core enumeration: @tuvren/core (root plus subpaths) minus the @experimental-tagged @tuvren/core/capabilities surface, @tuvren/sdk (including its now-hosted createTuvren root export), the Durable-Read Surface, the ExecutionHandle/awaitResult surface, and the published leaf packages. Confirm the 2026-07-04 finding of zero Kraken* leaks still holds, confirm no read signature demands a scope argument, and confirm the ADR-058 funnel-routing seam (telemetry accepting TuvrenTelemetrySink | TelemetryDestination | { sink?; destination? }) is present on CreateTuvrenOptions before the surface is declared frozen-ready. Record the audited surface as the freeze candidate that KRT-BL002 snapshots. The old plan depended on cross-epic tickets KRT-BJ003, KRT-BJ005, KRT-BJ006, KRT-BJ008, KRT-BK002, KRT-BK004, and KRT-BK006."
     acceptance:
       mode: gherkin
       evidence: |-
@@ -121,7 +121,7 @@ tickets:
     verification:
       command: bun run nx run host-repl:test
       expected: exit 0
-    description: "Write adopter-facing onboarding documenting: the stable core vs. @experimental-tagged surfaces and what the badge means for upgrade safety (ADR-056); the host import contract of {@tuvren/core, @tuvren/sdk, chosen leaf adapters} and the explicit prohibition on importing @tuvren/runtime or kernel packages directly (ADR-057 item 3); the three ADR-058 funnel-routing topologies (split, unified, mixed-substrate) with one createTuvren({ telemetry }) example per topology; and an install-plus-first-Turn walkthrough verified against the packages actually published in KRT-BL003. Cite the re-pointed Reference Host (typescript/host/repl, once KRT-BJ002 lands) as the living example a reader can clone and run"
+    description: "Write adopter-facing onboarding documenting: the stable core vs. @experimental-tagged surfaces and what the badge means for upgrade safety (ADR-056); the host import contract of {@tuvren/core, @tuvren/sdk, chosen leaf adapters} and the explicit prohibition on importing @tuvren/runtime or kernel packages directly (ADR-057 item 3); the three ADR-058 funnel-routing topologies (split, unified, mixed-substrate) with one createTuvren({ telemetry }) example per topology; and an install-plus-first-Turn walkthrough verified against the packages actually published in KRT-BL003. Cite the re-pointed Reference Host (typescript/host/repl, once KRT-BJ002 lands) as the living example a reader can clone and run. The old plan also depended on cross-epic ticket KRT-BJ002."
     acceptance:
       mode: gherkin
       evidence: |-

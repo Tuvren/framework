@@ -96,7 +96,22 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - typescript/core/src/lib/payload-codec.ts
+          - typescript/core/src/lifecycle/index.ts
+          - typescript/sdk/src/lib/payload-codec.ts
+          - typescript/runtime/src/lib/runtime-core.ts
+          - typescript/runtime/src/lib/payload-codec-seam.ts
+          - typescript/conformance-adapter/src/framework-adapter-batteries-included.ts
+          - typescript/runtime/smoke/package-exports.ts
+          - typescript/runtime/package.json
+          - typescript/sdk/package.json
+          - typescript/runtime/test/durable-reads.test.ts
+          - typescript/runtime/test/durable-reads.scope-isolation.test.ts
+          - typescript/sdk/test/tenant-offboarding.test.ts
+          - typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts
+          - typescript/sdk/test/payload-codec.crypto-shredding.test.ts
+          - typescript/sdk/test/conversation-state.shreddable-continuity.test.ts
         justification: |-
           - **Touched Files (out of the declared In-Scope list):**
             - `typescript/core/src/lib/payload-codec.ts`, `typescript/core/src/lifecycle/index.ts` — relocated `IDENTITY_PAYLOAD_CODEC`, `createIdentityPayloadCodec`, `ENVELOPE_MAGIC`, and `isPayloadEnvelope` down into `@tuvren/core` (re-exported via `@tuvren/core/lifecycle`).
@@ -155,7 +170,42 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - typescript/kernel/grpc-client/src/index.ts
+          - typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts
+          - typescript/kernel/grpc-client/src/lib/grpc-kernel-client-codec.ts
+          - typescript/kernel/grpc-client/package.json
+          - typescript/kernel/grpc-client/project.json
+          - typescript/kernel/grpc-client/tsup.config.ts
+          - typescript/kernel/grpc-client/tsconfig.json
+          - typescript/kernel/grpc-client/tsconfig.lib.json
+          - typescript/kernel/grpc-client/tsconfig.tsup.json
+          - typescript/kernel/grpc-client/tsconfig.dts.json
+          - typescript/kernel/grpc-client/tsconfig.kernel-interop.generated.json
+          - buf.gen.yaml
+          - tools/scripts/kernel-interop-governance.ts
+          - spec/interop/project.json
+          - spec/interop/authority-packet.json
+          - nx.json
+          - .gitignore
+          - tsconfig.base.json
+          - typescript/sdk/src/advanced.ts
+          - typescript/sdk/package.json
+          - typescript/sdk/tsup.config.ts
+          - typescript/sdk/src/index.ts
+          - typescript/runtime/src/index.ts
+          - typescript/runtime/project.json
+          - typescript/runtime/package.json
+          - typescript/runtime/smoke/package-exports.ts
+          - typescript/host/repl/test/repl-test-helpers.ts
+          - typescript/host/repl/test/repl.test.ts
+          - typescript/host/repl/tsconfig.lib.json
+          - typescript/host/repl/tsconfig.dts.json
+          - typescript/host/repl/tsconfig.typecheck.json
+          - .constitution/tech-spec/adrs/ADR-059-sdk-advanced-composition-surface-and-kernel-grpc-client-leaf.md
+          - .constitution/tech-spec/changelog.md
+          - .constitution/tech-spec/guidelines.md
+          - .constitution/tech-spec/stack.md
         justification: |-
           - **Blocker discovered during execution → ADR-059.** ADR-057 §6 assumed the re-point was "import `createTuvren` + primitives from sdk/core + leaf instances," because its grounding audit checked host-facing *types* only. Execution found the Reference Host also consumes engine *factory functions* from `@tuvren/runtime` with no `@tuvren/sdk`/`@tuvren/core` or leaf home: `createOrchestrationRuntime` (multi-agent — `createTuvren` is single-agent and cannot express it), `createRunnerRegistry`, `createTuvrenRuntime` (the primary *synchronous* `createReplHost` path), `createGrpcRuntimeKernel` (rust-grpc mode, runtime-only), and `createRuntimeKernel` (kernel-runtime, also forbidden by §3). This tripped BJ002's STOP condition. Resolution (user decision, recorded as **ADR-059**, amends ADR-057 §3/§6): dedicated homes — a new opt-in `@tuvren/sdk/advanced` subpath for the four composition/local-kernel factories, and a new published leaf `@tuvren/kernel-grpc-client` for the gRPC kernel; the host contract is extended to allow both. The host re-points with no behavior change.
           - **Touched files beyond the declared In-Scope list (the 14 host `src/` files + host `package.json`):**
@@ -200,7 +250,19 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - tools/scripts/host-boundary-gate.ts
+          - tools/scripts/check.ts
+          - tools/scripts/verify.ts
+          - package.json
+          - spec/host/client-endpoint-integration.md
+          - typescript/sdk/src/index.ts
+          - typescript/sdk/test/payload-codec.test.ts
+          - typescript/sdk/test/payload-codec.crypto-shredding.test.ts
+          - typescript/sdk/test/payload-codec.context-engineering-rewrite.test.ts
+          - typescript/sdk/test/conversation-state.shreddable-continuity.test.ts
+          - typescript/kernel/grpc-client/test/grpc-kernel-client-codec.test.ts
+          - typescript/kernel/grpc-client/tsconfig.typecheck.json
         justification: |-
           - **Gate design (in-scope, as specified):** `tools/scripts/host-boundary-gate.ts` recursively walks `typescript/host/**` (skipping `dist`/`node_modules`/`generated`/`coverage`/`.tmp*`) and extracts module specifiers from a **real TypeScript parse** (the compiler AST via `typescript`), inspecting only genuine import positions — static `import`/`export … from`, side-effect `import "x"`, `import x = require("x")`, and dynamic `import("x")`/`require("x")` calls (both quoted-string and no-substitution-template specifiers). It fails loud with `file:line:specifier` + `process.exitCode = 1`. A specifier is forbidden when it equals or is a subpath of `@tuvren/runtime`, `@tuvren/kernel-protocol`, or `@tuvren/kernel-runtime`; the prefix rule intentionally lets the ADR-059 leaf `@tuvren/kernel-grpc-client` and the `@tuvren/sdk/advanced` subpath through. Wired into `AUTHORITY_GATE_STEPS` (verify.ts, id `ADR-057 host import boundary gate`), `INNER_LOOP_AUTHORITY_GATE_IDS` (check.ts), and a root `host-boundary:check` script. Proven both ways: green on the clean tree (26 files) and fail-loud against a temporary probe carrying exact/subpath/type-only/`export *`/dynamic-`import()`/template-literal/multi-line/`require()` violations while ignoring the allowed leaf/subpath, comment mentions, transcript payload strings, and import-shaped string literals.
           - **Post-review hardening (round 1, P1 + P2s — CONFIRMED):** the milestone review found the first cut (a hand-rolled line-based comment-stripper + specifier regex) had a real false-negative class — a string literal containing a `/*`-looking fragment (e.g. `"/* not a comment"`) flipped block-comment state and silently swallowed subsequent real forbidden imports (P1) — plus template-literal-specifier and multi-line-`from` evasions and an import-shaped-string false positive (P2). All four share one root cause: text heuristics instead of a parse. Replaced the tokenizer with the TypeScript compiler AST (above), which resolves every case structurally: string/comment contents can never be mistaken for imports, a real import can never be hidden by an adjacent string/comment or by line-wrapping, and template specifiers are handled. Re-proven against a probe reproducing each review case.
@@ -245,7 +307,11 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - typescript/runtime/src/lib/runtime-core.ts
+          - typescript/sdk/src/lib/create-tuvren.ts
+          - typescript/sdk/tsconfig.typecheck.json
+          - typescript/runtime/test/runtime-core.telemetry.test.ts
         justification: |-
           - **Touched Files (out-of-scope):**
             - `typescript/runtime/src/lib/runtime-core.ts`
@@ -292,7 +358,9 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - typescript/conformance-adapter/src/framework-adapter-runtime-scenarios.ts
+          - spec/core/authority-packet.json
         justification: |-
           - **In-scope design outcome:** the three ADR-058 §5 checks (`runtime-api-operational-telemetry.destination-health-equivalence`, `.content-funnel-isolation`, `.destination-failure-signal`) were fully expressible with the existing shared-runner assertion kinds — `resultField` (with `equalsPath` cross-referencing `$.result.funnel.healthy.*` for destination-health equivalence, plus `equals`/`contains` anti-vacuity guards) and `secretAbsence` (content markers as the "secrets" scanned against the raw telemetry surface) — so the in-scope-listed `tools/conformance/harness/run.ts` was deliberately **not touched** (the ticket sanctions a new assertion kind only if existing kinds cannot express the checks; they can). TDD evidence: the plan/scenario edits landed first and `bun run conformance` failed with exactly the three new checks red (assertion + required-evidence failures) before any adapter change; green after.
           - **Touched Files (out-of-scope):**
@@ -332,7 +400,9 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - typescript/core/src/capabilities/index.ts
+          - spec/core/authority-packet.json
         justification: |-
           - **No out-of-scope files touched** — the milestone lands exactly in the two In-Scope files.
           - **STOP-condition near-miss, resolved without escalation:** the ticket's STOP condition (an export that cannot carry an individual `@experimental` tag without restructuring the barrel) was nearly tripped by tooling rather than syntax: the barrel's original single grouped `export type { …22 types… }` only admits one whole-statement TSDoc comment, so the tags required a one-export-per-statement layout — and Biome's default-on `assist/source/organizeImports` action then *merged the 22 individual statements back into one grouped export*, silently stripping the per-export tags on the first `--write` pass. Resolved with a file-level `// biome-ignore-all assist/source/organizeImports` suppression (with an ADR-056 reason string) — the same mechanism the file already uses for `lint/performance/noBarrelFile` — rather than restructuring the barrel or escalating, since the re-export syntax itself supports individual tags once one-per-statement. Verified stable: `biome check --write` now reports no fixes and the file retains 22 statements with 22 tags.
@@ -381,7 +451,8 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - typescript/kernel/grpc-client/package.json
         justification: |-
           - **STOP condition 1 (directory names) honored by verification, not guessing:** the full `typescript/**/package.json` set was enumerated before editing. The ticket's `typescript/backend-{memory,postgres,sqlite}/package.json` paths do not exist; the real homes are `typescript/kernel/backends/{memory,postgres,sqlite}/package.json` (workspace names `@tuvren/backend-*` are unchanged). All other ticket paths matched reality.
           - **Touched Files (out-of-scope):** `typescript/kernel/grpc-client/package.json` — not in the ticket's In-Scope list because the package did not exist when the ticket was written; ADR-059 §4 (accepted during KRT-BJ002) explicitly adds `@tuvren/kernel-grpc-client` to the publishable leaf set "in scope for KRT-BJ007 publication metadata", so it receives the same four fields as the other 13 publishable manifests.
@@ -427,7 +498,10 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files: []
+      - files:
+          - bun.lock
+          - package.json
+          - .changeset/README.md
         justification: |-
           - **Tool choice and STOP condition 1 (single-core-version model):** `@changesets/cli` (2.31.0) is the changeset-class tool, scaffolded with its own CLI (`bun add -d @changesets/cli` + `bunx changeset init` — no hand-rolled config). Its default independent-versioning model would indeed allow leaves to drift onto divergent `@tuvren/core` versions, so the STOP condition is resolved **by configuration**: `.changeset/config.json` declares a `fixed: [["@tuvren/*"]]` group, forcing every `@tuvren` workspace package (publishable and private) to version in lockstep — exactly ADR-037's single-instance model — plus `baseBranch: "master"` and `privatePackages: { version: true, tag: false }` (private manifests stay coherent with the lockstep line, keeping the KRT-BJ007 private-dep topology resolvable in Epic BL, but are never tagged for publish).
           - **`release-lane.ts` design:** consumes pending changesets, runs `changeset version`, then independently **re-proves the ADR-037 invariant after the bump** (all `@tuvren` workspace manifests share exactly one version; every in-repo `@tuvren/*` dependency/peerDependency range is workspace-protocol or resolves to that single version) and fails loud on violation. It fails loud when no changesets are pending, and never invokes a publish (STOP condition 2: no `changeset publish`, no registry or credential wiring anywhere).
