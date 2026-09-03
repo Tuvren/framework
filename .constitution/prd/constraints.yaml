@@ -1,96 +1,303 @@
 constraints:
   - id: NFC-01
-    legacy_id: "Reliability"
+    legacy_id: Reliability
     class: reliability
-    statement: "An interruption at any point must resolve either to resumption of the unfinished work from the last durable checkpoint or to a clean failure, with no partial, torn, or corrupt lineage left behind. Checkpoint commits are atomic and lineage stays consistent under concurrent writers."
-    scale: "Share of injected mid-turn interruptions that resolve to resume-or-fail-clean with intact lineage, across every supported persistent storage substrate plus the in-process atomicity and concurrency invariants for non-persistent backends"
-    meter: "The fault-injection and crash-recovery conformance lanes in bun run verify, with the recorded compatibility evidence they refresh"
-    goal: "100%"
-    fail: "any injected interruption that leaves partial, torn, or corrupt lineage, or that neither resumes nor fails cleanly"
+    statement: An interruption at any point must resolve either to resumption of the unfinished work from the last durable checkpoint or to a clean failure, with no partial, torn, or corrupt lineage left behind. Checkpoint commits are atomic and lineage stays consistent under concurrent writers. Headless reference-host mode and transcript replay must produce deterministic outputs for the same inputs whenever the underlying runtime is itself deterministic.
+    scale: Share of injected mid-turn interruptions that resolve to resume-or-fail-clean with intact lineage, across every supported persistent storage substrate plus the in-process atomicity and concurrency invariants for non-persistent backends
+    meter: The fault-injection and crash-recovery conformance lanes in bun run verify, with the recorded compatibility evidence they refresh
+    goal: 100%
+    fail: any injected interruption that leaves partial, torn, or corrupt lineage, or that neither resumes nor fails cleanly
     certainty: assumed
-    assumption: "Migrated from prd/constraints.md, which stated the guarantee in prose without naming a threshold; the 100% goal is the restated absolute, not a measured result."
+    assumption: Migrated from prd/constraints.md, which stated the guarantee in prose without naming a threshold; the 100% goal is the restated absolute, not a measured result.
   - id: NFC-02
-    legacy_id: "Security & Privacy — approval gates"
+    legacy_id: Security & Privacy — approval gates
     class: security
     statement: "Approval gates are non-bypassable: work that requires approval cannot proceed without an explicit decision."
-    scale: "Number of execution paths that can complete an approval-gated tool action without a recorded approval decision"
-    meter: "The approval and trust-boundary conformance check sets exercised by bun run conformance"
+    scale: Number of execution paths that can complete an approval-gated tool action without a recorded approval decision
+    meter: The approval and trust-boundary conformance check sets exercised by bun run conformance
     goal: 0
-    fail: "any path that completes an approval-gated action without an explicit decision"
+    fail: any path that completes an approval-gated action without an explicit decision
     certainty: assumed
-    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+    assumption: Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over.
   - id: NFC-03
-    legacy_id: "Security & Privacy — secret isolation"
+    legacy_id: Security & Privacy — secret isolation
     class: privacy
-    statement: "Sensitive credentials and provider secrets must be isolated from durable state, operational telemetry, and transcripts, and must remain confined to the execution edge that needs them."
-    scale: "Number of secrets or provider credentials observable in durable history, operational telemetry, or a captured transcript"
-    meter: "The secret-isolation screening lanes wired into bun run verify"
+    statement: Sensitive credentials and provider secrets must be isolated from durable state, operational telemetry, and transcripts, and must remain confined to the execution edge that needs them. Provider-specific continuity artifacts must be preserved only as required for correct operation, and sensitive credentials or secrets must be isolated from durable state, operational telemetry, and transcripts. Runtime state and event surfaces must remain inspectable enough for supervision and audit without becoming a channel for secret leakage.
+    scale: Number of secrets or provider credentials observable in durable history, operational telemetry, or a captured transcript
+    meter: The secret-isolation screening lanes wired into bun run verify
     goal: 0
-    fail: "any credential or provider secret reaching durable state, telemetry, or a transcript"
+    fail: any credential or provider secret reaching durable state, telemetry, or a transcript
     certainty: assumed
-    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+    assumption: Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over.
   - id: NFC-04
-    legacy_id: "Security & Privacy — untrusted edges and bounded execution"
+    legacy_id: Security & Privacy — untrusted edges and bounded execution
     class: security
-    statement: "External tool sources and tool inputs are untrusted boundaries: data crossing a process or network boundary is validated and surfaced as an agent-visible result, and a single turn cannot drive unbounded iterations, tool calls, or resource consumption."
-    scale: "Number of turns that exceed a configured execution bound without stopping safely, and number of unvalidated payloads accepted from an untrusted edge"
-    meter: "The execution-bounds and trust-boundary conformance check sets exercised by bun run conformance"
+    statement: "External tool sources and tool inputs are untrusted boundaries: data crossing a process or network boundary is validated and surfaced as an agent-visible result, and a single turn cannot drive unbounded iterations, tool calls, or resource consumption. Capabilities executed by a provider or a client environment must be represented with explicit observation and control limits; the runtime must not imply that it can cancel, retry, or audit an invocation it does not own."
+    scale: Number of turns that exceed a configured execution bound without stopping safely, and number of unvalidated payloads accepted from an untrusted edge
+    meter: The execution-bounds and trust-boundary conformance check sets exercised by bun run conformance
     goal: 0
-    fail: "any unbounded turn, or any untrusted payload accepted without validation"
+    fail: any unbounded turn, or any untrusted payload accepted without validation
     certainty: assumed
-    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+    assumption: Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over.
   - id: NFC-05
-    legacy_id: "Data Funnel Separation"
+    legacy_id: Data Funnel Separation
     class: reliability
-    statement: "Session correctness, continuity, and recovery must never depend on the telemetry funnel, and a telemetry-destination failure must not fail, block, or corrupt a content-funnel commit."
-    scale: "Number of content-funnel commits failed, blocked, or corrupted by an unreachable or failing telemetry destination"
-    meter: "The two-funnel routing conformance scenarios, including the telemetry-destination-failure scenario"
+    statement: Session correctness, continuity, and recovery must never depend on the telemetry funnel, and a telemetry-destination failure must not fail, block, or corrupt a content-funnel commit.
+    scale: Number of content-funnel commits failed, blocked, or corrupted by an unreachable or failing telemetry destination
+    meter: The two-funnel routing conformance scenarios, including the telemetry-destination-failure scenario
     goal: 0
-    fail: "any session behavior change caused by the telemetry destination"
+    fail: any session behavior change caused by the telemetry destination
     certainty: assumed
-    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+    assumption: Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over.
   - id: NFC-06
-    legacy_id: "Tenancy & Isolation"
+    legacy_id: Tenancy & Isolation
     class: security
     statement: "Isolation is by construction: durable identity is resolved within a scope, so no scope can read, enumerate, or probe the existence of another scope's content, and a durable read never returns state outside the scope it was issued against."
-    scale: "Number of cross-scope reads, enumerations, or existence probes that succeed"
-    meter: "The scope-isolation test suites of every kernel backend plus the durable-read scope-isolation suite"
+    scale: Number of cross-scope reads, enumerations, or existence probes that succeed
+    meter: The scope-isolation test suites of every kernel backend plus the durable-read scope-isolation suite
     goal: 0
-    fail: "any successful cross-scope read, enumeration, or existence probe"
+    fail: any successful cross-scope read, enumeration, or existence probe
     certainty: assumed
-    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+    assumption: Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over.
   - id: NFC-07
-    legacy_id: "Data Lifecycle & Erasure"
+    legacy_id: Data Lifecycle & Erasure
     class: privacy
-    statement: "Reclamation must never release state still reachable from a live branch and must not corrupt lineage or race active execution; erasure must render a sensitive payload unrecoverable while leaving the lineage hash structure intact, with erasure keys held by the host."
-    scale: "Number of reclamation runs that release reachable state or disturb lineage, and number of erased payloads that remain recoverable"
-    meter: "The reclamation invariant and crypto-shredding test suites across the kernel backends"
+    statement: Reclamation must never release state still reachable from a live branch and must not corrupt lineage or race active execution; erasure must render a sensitive payload unrecoverable while leaving the lineage hash structure intact, with erasure keys held by the host.
+    scale: Number of reclamation runs that release reachable state or disturb lineage, and number of erased payloads that remain recoverable
+    meter: The reclamation invariant and crypto-shredding test suites across the kernel backends
     goal: 0
-    fail: "any reachable state released, any lineage corruption, or any erased payload that remains recoverable"
+    fail: any reachable state released, any lineage corruption, or any erased payload that remains recoverable
     certainty: assumed
-    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+    assumption: Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over.
   - id: NFC-08
-    legacy_id: "Execution Sovereignty"
+    legacy_id: Execution Sovereignty
     class: reliability
-    statement: "Recovery of a stale execution must not cause a non-idempotent external side effect to occur more than once. In a shared-backend, multi-worker deployment the shared backend's own clock decides lease expiry, and a worker relinquishes execution authority before the backend considers its lease preemptable."
-    scale: "Number of duplicated non-idempotent side effects observed under preemption, and number of lease decisions taken from a worker's wall clock rather than the backend's"
-    meter: "The lease-clock and side-effect-once conformance scenarios across the persistent backends"
+    statement: Recovery of a stale execution must not cause a non-idempotent external side effect to occur more than once. In a shared-backend, multi-worker deployment the shared backend's own clock decides lease expiry, and a worker relinquishes execution authority before the backend considers its lease preemptable.
+    scale: Number of duplicated non-idempotent side effects observed under preemption, and number of lease decisions taken from a worker's wall clock rather than the backend's
+    meter: The lease-clock and side-effect-once conformance scenarios across the persistent backends
     goal: 0
-    fail: "any duplicated non-idempotent side effect, or any lease expiry decided by a worker clock"
+    fail: any duplicated non-idempotent side effect, or any lease expiry decided by a worker clock
     certainty: assumed
-    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+    assumption: Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over.
   - id: NFC-09
-    legacy_id: "Distribution & API Stability"
+    legacy_id: Distribution & API Stability
     class: compatibility
-    statement: "The curated host-facing SDK exposes a versioned, stable public contract published through the standard package registry under semantic versioning, with every not-yet-stable surface explicitly separated and marked experimental. The curated boundary is the only supported host-facing surface."
-    scale: "Number of published stable-surface symbols that are unmarked but still in flux, and number of first-party host imports that reach below the curated SDK boundary"
-    meter: "bun run api-freeze:check and bun run host-boundary:check in the canonical verification path"
+    statement: The curated host-facing SDK exposes a versioned, stable public contract published through the standard package registry under semantic versioning, with every not-yet-stable surface explicitly separated and marked experimental. The curated boundary is the only supported host-facing surface.
+    scale: Number of published stable-surface symbols that are unmarked but still in flux, and number of first-party host imports that reach below the curated SDK boundary
+    meter: bun run api-freeze:check and bun run host-boundary:check in the canonical verification path
     goal: 0
-    fail: "any unstable surface published inside the stability guarantee, or any first-party host import below the curated boundary"
+    fail: any unstable surface published inside the stability guarantee, or any first-party host import below the curated boundary
     certainty: assumed
-    assumption: "Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over."
+    assumption: Migrated from prd/constraints.md; the prose states the absolute, and no measurement record was carried over.
+  - id: NFC-10
+    class: archetype
+    statement: The product must not depend on provider-native content or tool-call shapes as its canonical internal model.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-11
+    class: reliability
+    statement: The product must not require the core runtime to call back into higher layers in order to satisfy its own durability or recovery obligations.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-12
+    class: archetype
+    statement: The product must not treat destructive deletion of prior committed history as the normal way to correct or redirect work.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-13
+    class: reliability
+    statement: The product must not collapse delegation, handoff, approval, and cancellation into one generic control concept.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-14
+    class: compatibility
+    statement: The product must not let any implementation language file, generic runner source file, or human-prose document act as the authoritative source of a cross-implementation semantic.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-15
+    class: compatibility
+    statement: The product must not satisfy a portability or compatibility claim through smoke success, object existence, or runner-internal assertions alone; every such claim must trace to an authority packet plus measured evidence.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-16
+    class: compatibility
+    statement: The product must not let the first-party reference host depend on any private seam that downstream hosts cannot use; durable-read needs that today justify a private inspector must instead be promoted onto the host-facing SDK boundary.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-17
+    class: compatibility
+    statement: The product must not lock tool authoring into a single schema validator; the tool-authoring helper must accept multiple schema shapes without breaking the underlying boundary contract.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-18
+    class: security
+    statement: The product must not expose cross-tenant search, indexed querying, or multi-tenant access-control *policy* through the embeddable SDK; those concerns belong to the host or a separately-scoped future hosted/server projection. The tenancy-agnostic scope seam and isolation-by-construction mechanism the host binds against are in scope.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-19
+    class: security
+    statement: The product must not resolve durable identity (content addressing) globally across scopes, because a shared identity space lets one scope probe the existence of another scope's content.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-20
+    class: archetype
+    statement: The product must not depend on any provider-managed conversation state or stateful provider API for correctness; provider server-side state and continuity artifacts may be carried only as reconstructable optimizations.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-21
+    class: privacy
+    statement: The product must not store sensitive untrusted-edge payloads (provider, client, MCP, tool results, carried continuity artifacts) in a form that cannot be erased without rewriting committed lineage.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-22
+    class: reliability
+    statement: The product must not let recovery of a stale execution re-run an in-flight non-idempotent side effect, and must not let a stale or late client-reported result mutate committed history.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-23
+    class: compatibility
+    statement: The product must not publish an unstable surface as part of the SDK stability guarantee; surfaces still in flux must be explicitly marked experimental.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-24
+    class: compatibility
+    statement: The product must not let the curated SDK surface split shared primitives into multiple separately-versioned packages; primitives ship under one shared package so leaf packages can peer-depend on a single primitive instance.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-25
+    class: reliability
+    statement: The product must not claim crash-safe recovery or durability guarantees that are not backed by reproducible fault-injection and crash-recovery evidence; design-time assertion alone is not sufficient proof for a first-class durability promise.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-26
+    class: reliability
+    statement: The product must not allow a single turn to run unbounded iterations, tool calls, or resource consumption without enforced limits and a safe, observable stop.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-27
+    class: privacy
+    statement: The product must not allow approval gates to be bypassed, and must not let sensitive credentials or secrets reach durable history, operational telemetry, or transcripts.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-28
+    class: reliability
+    statement: The product must not make session correctness, continuity, or recovery depend on the telemetry funnel, and must not commingle one funnel's data into the other funnel's destination except through the host's explicit funnel-routing decision.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-29
+    class: archetype
+    statement: The product must not represent execution-class differences with a single `origin` field on a tool, nor with a rigid tool subclass taxonomy that hard-codes current deployment patterns; the model must be compositional (tool surface, capability, binding, endpoint, policy, observation).
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-30
+    class: archetype
+    statement: The product must not model provider-native tools as locally executable functions, nor model client-side capabilities as ordinary server functions.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-31
+    class: archetype
+    statement: The product must not treat MCP as a top-level execution class; its execution class depends on who invokes or runs the MCP server.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
+  - id: NFC-32
+    class: archetype
+    statement: The product must not imply stronger observation or control over an invocation than its execution class actually grants.
+    scale: "binary: the prohibition holds or it does not"
+    meter: review of the affected boundary against this record
+    goal: holds
+    fail: any violation
+    certainty: assumed
+    assumption: Migrated verbatim from the Prohibited Patterns section of prd/constraints.md; no measurement evidence was carried over.
 deferred:
   - class: performance
-    risk: "prd/constraints.md asks that long-lived sessions stay usable and that routine context decisions avoid full-history rescans, but names no latency, throughput, or memory numbers. Without a meter, a regression in context assembly or durable-read paging can ship unnoticed, and the near-term roadmap already lists performance characterization with regression budgets as a named but undecomposed theme."
+    risk: prd/constraints.md asks that long-lived sessions stay usable and that routine context decisions avoid full-history rescans, but names no latency, throughput, or memory numbers. Without a meter, a regression in context assembly or durable-read paging can ship unnoticed, and the near-term roadmap already lists performance characterization with regression budgets as a named but undecomposed theme.
   - class: operability
-    risk: "The embeddability, real-time observation, control-point, and telemetry-export obligations are stated qualitatively. Without a meter, telemetry completeness and the usefulness of the control points for incident response cannot be judged except by opinion."
+    risk: The embeddability, real-time observation, control-point, and telemetry-export obligations are stated qualitatively. Without a meter, telemetry completeness and the usefulness of the control points for incident response cannot be judged except by opinion.

@@ -1,7 +1,7 @@
 ---
 id: ADR-0059
 status: accepted
-date: 2026-09-03
+date: 2026-07-05
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---

@@ -7,7 +7,7 @@ date: "2026-09-03"
 > **Status:** complete. Evidence/completion report for GitHub issue #108,
 > closed out with [`ADR-066`](../tech-spec/adrs/ADR-066-blob-per-scope-persistence-retained-git-faithful-operations.md)
 > (accepted).
-> **Origin:** [`SPK-BK007`](../spikes/SPK-BK007.md) · audit finding `[C-01]`
+> **Origin:** [`SPK-BK007`](../spikes/SPK-KRT-BK007.md) · audit finding `[C-01]`
 > (`audit-2026-07-04-170703-post-epic-87-baseline.md`) · `.constitution/tech-spec/changelog.md`
 > v0.32.0 (persistence-model decision deferred as evidence-gated).
 >
@@ -2133,7 +2133,7 @@ that the outcome looks the same either way") and proves the wiring directly.
   (new) — the D1 throughput/scaling measurement.
 - `typescript/kernel/backends/postgres/project.json` — adds the
   `bench-cross-scope-throughput` Nx target.
-- `.constitution/reports/108-git-faithful-blob-persistence.md` — this
+- `.constitution/research/108-git-faithful-blob-persistence.md` — this
   section.
 
 ### Validation performed for M7

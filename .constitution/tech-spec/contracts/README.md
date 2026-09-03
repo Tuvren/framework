@@ -1839,7 +1839,7 @@ export interface TuvrenTelemetrySink {
 export declare const NoopTelemetrySink: TuvrenTelemetrySink;
 ```
 
-- The runtime emits to the configured sink at: turn/run start and end, iteration boundaries, model request/response, tool call start/end and approval transitions, checkpoint commit, recovery resume-or-fail, bounded-execution stop (ADR-043), and errors. Emission reuses the canonical event vocabulary so the telemetry surface and the event stream cannot diverge.
+- The runtime emits to the configured sink at: turn/run start and end, iteration boundaries, model request/response, tool call start/end and approval transitions, checkpoint commit, recovery resume-or-fail, bounded-execution stop (ADR-043), and errors. Emission reuses the canonical event vocabulary so the telemetry surface and the real-time host stream cannot diverge.
 - `createTuvren({ telemetry })` accepts a sink; when omitted the runtime uses `NoopTelemetrySink`. The structured-logger hook (§5.2) is separate: logs are operator-facing text, telemetry is structured spans/events.
 - `TuvrenTelemetrySink` is a synchronous, host-owned callback surface. The runtime isolates throwers but does not flush or dispose sinks; any buffering/export lifecycle contract belongs to the sink implementation or host wrapper rather than to `TuvrenInstance[Symbol.asyncDispose]()`.
 - `@tuvren/telemetry-otel` exports `createOtelTelemetrySink(options): TuvrenTelemetrySink`, mapping records onto OpenTelemetry spans/events with the authored semconv attributes and emitting through the OpenTelemetry SDK. Exact `@opentelemetry/*` versions are pinned in the activation epic.

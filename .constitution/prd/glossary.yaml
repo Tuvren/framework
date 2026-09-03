@@ -1,166 +1,256 @@
 terms:
   - term: Tuvren
-    definition: "The company brand and product name for the overall product surface that enables durable, stateful agent execution and orchestration; re-centered away from the prior \"Tuvren Runtime\" naming per issue #87 §14 (M10.3a)"
-    do_not_use: [Tuvren Runtime, bot framework]
+    definition: 'The company brand and product name for the overall product surface that enables durable, stateful agent execution and orchestration; re-centered away from the prior "Tuvren Runtime" naming per issue #87 §14 (M10.3a)'
+    do_not_use:
+      - Tuvren Runtime
+      - bot framework
   - term: Kernel
-    definition: "The mechanism-focused layer that owns durable storage, structural state, lineage, and recovery primitives"
-    do_not_use: [framework core, agent brain]
+    definition: The mechanism-focused layer that owns durable storage, structural state, lineage, and recovery primitives
+    do_not_use:
+      - framework core
+      - agent brain
   - term: Framework
-    definition: "The shared runtime layer built on the kernel that provides common contracts, services, and integration surfaces used by one or more runners"
-    do_not_use: [single agent loop]
+    definition: The shared runtime layer built on the kernel that provides common contracts, services, and integration surfaces used by one or more runners
+    do_not_use:
+      - single agent loop
   - term: Runner
     definition: A concrete execution model built on the shared framework and kernel primitives
-    do_not_use: [workflow preset]
+    do_not_use:
+      - workflow preset
   - term: ReAct Runner
-    definition: "The initial Kraken runner centered on iterative model reasoning, tool use, and runtime feedback within one ongoing turn"
-    do_not_use: [the whole framework, generic agent]
+    definition: The initial Kraken runner centered on iterative model reasoning, tool use, and runtime feedback within one ongoing turn
+    do_not_use:
+      - the whole framework
+      - generic agent
   - term: Thread
     definition: The long-lived container for one continuing line of work or conversation
-    do_not_use: [session log, chat room]
+    do_not_use:
+      - session log
+      - chat room
   - term: Branch
     definition: A named continuation within a thread representing one active path through history
-    do_not_use: [forked chat, duplicate thread]
+    do_not_use:
+      - forked chat
+      - duplicate thread
   - term: Turn
     definition: One user-visible interaction span within a thread
-    do_not_use: [request packet]
+    do_not_use:
+      - request packet
   - term: Run
     definition: One concrete execution attempt serving part or all of a turn
     do_not_use: []
   - term: Step
     definition: A declared unit of work inside a run boundary
-    do_not_use: [stage magic]
+    do_not_use:
+      - stage magic
   - term: TurnNode
     definition: A durable checkpoint in execution history that captures resulting state and lineage
-    do_not_use: [savepoint, mutable snapshot]
+    do_not_use:
+      - savepoint
+      - mutable snapshot
   - term: TurnTree
     definition: The structured runtime state visible at a TurnNode
-    do_not_use: [cache blob, transcript only]
+    do_not_use:
+      - cache blob
+      - transcript only
   - term: Staged Result
     definition: Durable work product recorded before it is committed into history
-    do_not_use: [temp output, ephemeral result]
+    do_not_use:
+      - temp output
+      - ephemeral result
   - term: Context Manifest
     definition: The lightweight structural index used to reason about active context without rescanning full history
-    do_not_use: [prompt cache]
+    do_not_use:
+      - prompt cache
   - term: Context Engineering
     definition: Intentional reshaping of active context while preserving historical auditability
-    do_not_use: [deleting history, prompt trimming]
+    do_not_use:
+      - deleting history
+      - prompt trimming
   - term: Structured Output
-    definition: "Assistant-authored schema-constrained data produced as content, not as a tool call or side effect"
-    do_not_use: [JSON mode, fake tool call]
+    definition: Assistant-authored schema-constrained data produced as content, not as a tool call or side effect
+    do_not_use:
+      - JSON mode
+      - fake tool call
   - term: Steering
     definition: Host-supplied user input injected between iterations of a running turn
-    do_not_use: [edit-in-place]
+    do_not_use:
+      - edit-in-place
   - term: Approval
     definition: Human review required before executing one or more sensitive tool actions
-    do_not_use: [pause forever, manual override only]
+    do_not_use:
+      - pause forever
+      - manual override only
   - term: Extension
-    definition: "A composable policy or behavior unit that can observe, influence, or wrap execution"
-    do_not_use: [plugin blob, middleware soup]
+    definition: A composable policy or behavior unit that can observe, influence, or wrap execution
+    do_not_use:
+      - plugin blob
+      - middleware soup
   - term: Handoff
     definition: A controlled transfer of active execution responsibility from one agent configuration to another
-    do_not_use: [worker result]
+    do_not_use:
+      - worker result
   - term: Worker
     definition: A subordinate agent execution used to perform delegated work and return results
-    do_not_use: [branch clone]
+    do_not_use:
+      - branch clone
   - term: ExecutionHandle
-    definition: "The host-facing control surface for consuming events, awaiting a terminal value, and issuing runtime controls"
+    definition: The host-facing control surface for consuming events, awaiting a terminal value, and issuing runtime controls
     do_not_use: []
   - term: Execution Result
     definition: The terminal-value surface a host receives when an execution reaches a completed or failed phase
-    do_not_use: [last event, raw status]
+    do_not_use:
+      - last event
+      - raw status
   - term: Batteries-Included Entrypoint
-    definition: "The single curated factory that assembles kernel, backend, runner registry, and runtime so a host can issue a Turn without composing lower-level primitives by hand"
-    do_not_use: [scaffold]
+    definition: The single curated factory that assembles kernel, backend, runner registry, and runtime so a host can issue a Turn without composing lower-level primitives by hand
+    do_not_use:
+      - scaffold
   - term: Durable-Read Surface
-    definition: "The host-facing SDK capability set that lists threads, lists branches, reads state at a TurnNode, walks turn history, and reads durable messages on a branch"
-    do_not_use: [inspector, internal API]
+    definition: The host-facing SDK capability set that lists threads, lists branches, reads state at a TurnNode, walks turn history, and reads durable messages on a branch
+    do_not_use:
+      - inspector
+      - internal API
   - term: Schema Adapter
-    definition: "A normalization wrapper that lets the tool-authoring helper accept Zod, Standard Schema, wrapped JSON Schema, or future schema kinds while preserving type inference and provider-wire JSON Schema"
-    do_not_use: [schema lib]
+    definition: A normalization wrapper that lets the tool-authoring helper accept Zod, Standard Schema, wrapped JSON Schema, or future schema kinds while preserving type inference and provider-wire JSON Schema
+    do_not_use:
+      - schema lib
   - term: MCP Tool Source
     definition: A first-class tool source that connects to an external Model Context Protocol server and exposes its tools as Tuvren tool definitions
     do_not_use: []
   - term: Headless Host Mode
-    definition: "The non-interactive operating mode of the reference host that consumes line-delimited input on stdin and emits structured output, intended for tests and scripts"
-    do_not_use: [daemon]
+    definition: The non-interactive operating mode of the reference host that consumes line-delimited input on stdin and emits structured output, intended for tests and scripts
+    do_not_use:
+      - daemon
   - term: Transcript
     definition: A durable on-disk capture of a reference-host session that can later be replayed for postmortems or regression tests
-    do_not_use: [log file, history dump]
+    do_not_use:
+      - log file
+      - history dump
   - term: Curated SDK Surface
-    definition: "The single host-facing SDK boundary composed of @tuvren/core (subpath-exported primitives) and @tuvren/runtime (slim convenience entrypoint), with leaf packages peer-depending on @tuvren/core for version-skew safety"
-    do_not_use: [barrel, megapackage]
+    definition: The single host-facing SDK boundary composed of @tuvren/core (subpath-exported primitives) and @tuvren/runtime (slim convenience entrypoint), with leaf packages peer-depending on @tuvren/core for version-skew safety
+    do_not_use:
+      - barrel
+      - megapackage
   - term: Authority Packet
-    definition: "A boundary-owned bundle that names the machine-readable sources, generated artifacts, conformance evidence, and binding projections that together carry one cross-implementation semantic surface"
-    do_not_use: [spec doc, schema folder]
+    definition: A boundary-owned bundle that names the machine-readable sources, generated artifacts, conformance evidence, and binding projections that together carry one cross-implementation semantic surface
+    do_not_use:
+      - spec doc
+      - schema folder
   - term: Conformance Plan
-    definition: "An executable, data-owned description of the named semantic checks, fixtures, scenarios, assertions, and required evidence that an implementation must satisfy for a given authority packet"
-    do_not_use: [test suite, runner script]
+    definition: An executable, data-owned description of the named semantic checks, fixtures, scenarios, assertions, and required evidence that an implementation must satisfy for a given authority packet
+    do_not_use:
+      - test suite
+      - runner script
   - term: Implementation Adapter
-    definition: "The language-specific seam that exposes a particular implementation to a generic conformance runner over a neutral operation, event, cancellation, error, and state-inspection surface"
-    do_not_use: [bespoke test harness, fixture loader]
+    definition: The language-specific seam that exposes a particular implementation to a generic conformance runner over a neutral operation, event, cancellation, error, and state-inspection surface
+    do_not_use:
+      - bespoke test harness
+      - fixture loader
   - term: Generic Runner
-    definition: "An implementation-agnostic process that consumes a conformance plan plus an implementation adapter and produces evidence; never the home of product semantics itself"
-    do_not_use: [reference implementation, oracle test]
+    definition: An implementation-agnostic process that consumes a conformance plan plus an implementation adapter and produces evidence; never the home of product semantics itself
+    do_not_use:
+      - reference implementation
+      - oracle test
   - term: Operational Telemetry
-    definition: "The first-class, structured, correlated record of what a turn did (model interactions, tool calls, checkpoints, approvals, recovery events, errors), keyed to runtime lineage concepts, used for operating and debugging the runtime in production and distinct from the real-time host event stream"
-    do_not_use: [metrics blob]
+    definition: The first-class, structured, correlated record of what a turn did (model interactions, tool calls, checkpoints, approvals, recovery events, errors), keyed to runtime lineage concepts, used for operating and debugging the runtime in production and distinct from the real-time host event stream
+    do_not_use:
+      - metrics blob
+      - the event stream
   - term: Content Funnel
-    definition: "The runtime-originated stream of durable session data — lineage, messages, state — that a session requires to be correct, continuable, and recoverable; in a multi-tenant topology it is tenant-owned"
-    do_not_use: [user data blob, primary database, data plane]
+    definition: The runtime-originated stream of durable session data — lineage, messages, state — that a session requires to be correct, continuable, and recoverable; in a multi-tenant topology it is tenant-owned
+    do_not_use:
+      - user data blob
+      - primary database
+      - data plane
   - term: Telemetry Funnel
-    definition: "The runtime-originated stream of operational telemetry describing usage and behavior; never required for session correctness or recovery, and separable from the content funnel at persistence time"
-    do_not_use: [metrics pipeline, logs channel, control plane]
+    definition: The runtime-originated stream of operational telemetry describing usage and behavior; never required for session correctness or recovery, and separable from the content funnel at persistence time
+    do_not_use:
+      - metrics pipeline
+      - logs channel
+      - control plane
   - term: Funnel Routing
     definition: "The host's construction-time decision of where each funnel persists: split destinations, one unified store, or mixed storage substrates"
-    do_not_use: [sink wiring, persistence config]
+    do_not_use:
+      - sink wiring
+      - persistence config
   - term: Execution Bound
-    definition: "A configured limit on a single turn's iterations, tool calls, or resource consumption that, when reached, makes the runtime stop safely and surface the outcome rather than looping or exhausting resources"
-    do_not_use: [timeout hack, kill switch]
+    definition: A configured limit on a single turn's iterations, tool calls, or resource consumption that, when reached, makes the runtime stop safely and surface the outcome rather than looping or exhausting resources
+    do_not_use:
+      - timeout hack
+      - kill switch
   - term: Secret Isolation
-    definition: "The guarantee that sensitive credentials and provider secrets used transiently during execution never reach durable history, operational telemetry, or transcripts"
-    do_not_use: [redaction afterthought, masking only]
+    definition: The guarantee that sensitive credentials and provider secrets used transiently during execution never reach durable history, operational telemetry, or transcripts
+    do_not_use:
+      - redaction afterthought
+      - masking only
   - term: Capability Orchestration
-    definition: "The runtime responsibility of deciding which tool surfaces are exposed to a model, which capabilities back them, which execution class and endpoint owns each invocation, which policies apply before exposure and before invocation, and what the runtime can observe or control for that invocation"
-    do_not_use: [tool executor, plugin manager]
+    definition: The runtime responsibility of deciding which tool surfaces are exposed to a model, which capabilities back them, which execution class and endpoint owns each invocation, which policies apply before exposure and before invocation, and what the runtime can observe or control for that invocation
+    do_not_use:
+      - tool executor
+      - plugin manager
   - term: Tool Surface
     definition: "The model-facing representation of a capability: the name, description, schema, and provider-specific rendering constraints that determine what the model may see and call"
-    do_not_use: [function spec]
+    do_not_use:
+      - function spec
+      - tool
   - term: Capability
-    definition: "The underlying authority to perform an action (for example web.search, code.execute, crm.contact.lookup), independent of how it is surfaced to a model or who executes it"
-    do_not_use: [skill]
+    definition: The underlying authority to perform an action (for example web.search, code.execute, crm.contact.lookup), independent of how it is surfaced to a model or who executes it
+    do_not_use:
+      - skill
+      - tool
   - term: Execution Class
     definition: "The execution-ownership category for a capability invocation: provider-native, provider-mediated developer-provided, Tuvren-server, or Tuvren-client. Each class has distinct execution, state, credential, observability, and control ownership"
-    do_not_use: [tool type, origin flag]
+    do_not_use:
+      - tool type
+      - origin flag
   - term: Binding
-    definition: "The relationship that ties a capability to a specific execution class and endpoint in a given context, answering where and by whom the capability is executed"
+    definition: The relationship that ties a capability to a specific execution class and endpoint in a given context, answering where and by whom the capability is executed
     do_not_use: []
   - term: Endpoint
     definition: "The concrete execution target for a binding: provider runtime, a Tuvren host/server/worker/sandbox, a client endpoint, or a local or remote MCP server"
     do_not_use: []
   - term: Capability Policy
-    definition: "The rules that decide whether a tool surface may be exposed and whether a capability may be invoked, covering provider/model compatibility, permissions, approval, data residency, endpoint availability, presence, credential boundaries, idempotency/retry, and risk classification"
-    do_not_use: [config flag]
+    definition: The rules that decide whether a tool surface may be exposed and whether a capability may be invoked, covering provider/model compatibility, permissions, approval, data residency, endpoint availability, presence, credential boundaries, idempotency/retry, and risk classification
+    do_not_use:
+      - config flag
   - term: Capability Observation
-    definition: "The level of visibility the runtime has into an invocation — what it can know, persist, resume, cancel, retry, or audit — which differs by execution class"
-    do_not_use: [log level]
+    definition: The level of visibility the runtime has into an invocation — what it can know, persist, resume, cancel, retry, or audit — which differs by execution class
+    do_not_use:
+      - log level
   - term: Scope
-    definition: "The host-bound partition identity, established when a runtime or backend is constructed, that isolates one slice of durable state. The product never defines or routes scopes; the host binds them to its tenancy model"
-    do_not_use: [tenant, namespace blob]
+    definition: The host-bound partition identity, established when a runtime or backend is constructed, that isolates one slice of durable state. The product never defines or routes scopes; the host binds them to its tenancy model
+    do_not_use:
+      - tenant
+      - namespace blob
   - term: Isolation-by-Construction
-    definition: "The property that durable identity (content addressing) is resolved within a scope, so identical content in two scopes is stored independently and no scope can observe another scope's content"
-    do_not_use: [tenant filter, access check]
+    definition: The property that durable identity (content addressing) is resolved within a scope, so identical content in two scopes is stored independently and no scope can observe another scope's content
+    do_not_use:
+      - tenant filter
+      - access check
   - term: Reclamation
     definition: The mechanism that identifies durable state no longer reachable from live lineage and releases it safely without disturbing reachable state or active execution
-    do_not_use: [cache eviction, gc policy]
+    do_not_use:
+      - cache eviction
+      - gc policy
   - term: Crypto-Shredding
     definition: Rendering a sensitive payload unrecoverable by destroying its host-held encryption key while leaving the lineage hash structure intact
-    do_not_use: [redact-after, scrub]
+    do_not_use:
+      - redact-after
+      - scrub
   - term: Erasure
-    definition: "The host-driven removal of a subject's recoverable data through crypto-shredding, satisfying retention limits and right-to-erasure without rewriting committed history"
-    do_not_use: [hard delete, purge, tombstone]
+    definition: The host-driven removal of a subject's recoverable data through crypto-shredding, satisfying retention limits and right-to-erasure without rewriting committed history
+    do_not_use:
+      - hard delete
+      - purge
+      - tombstone
   - term: Idempotency Envelope
-    definition: "The dispatch metadata (run, call, and fencing identity) carried with a side-effecting invocation so an external system can deduplicate an effect retried after preemption"
-    do_not_use: [retry id, nonce blob]
+    definition: The dispatch metadata (run, call, and fencing identity) carried with a side-effecting invocation so an external system can deduplicate an effect retried after preemption
+    do_not_use:
+      - retry id
+      - nonce blob
   - term: Conversation-State Ownership
-    definition: "The guarantee that the durable lineage is the unconditional source of truth for a provider request, with provider server-side state and continuity artifacts treated as reconstructable optimizations only"
-    do_not_use: [provider memory, server-side thread]
+    definition: The guarantee that the durable lineage is the unconditional source of truth for a provider request, with provider server-side state and continuity artifacts treated as reconstructable optimizations only
+    do_not_use:
+      - provider memory
+      - server-side thread

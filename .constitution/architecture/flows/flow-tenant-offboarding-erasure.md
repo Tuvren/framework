@@ -1,10 +1,10 @@
 ---
 job: JOB-10
 capabilities: [CAP-066, CAP-067, CAP-064, CAP-065]
-boundaries: []
+boundaries: [BND-03, BND-17, BND-18]
 view: sequence
-certainty: assumed
-assumption: "Migrated from markdown; not yet exercised by an integration test."
+certainty: open
+decision: OD-03
 ---
 ### 4.17 Tenant Offboarding and Right-to-Erasure (Crypto-Shredding + Reclamation)
 

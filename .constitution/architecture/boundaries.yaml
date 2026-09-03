@@ -1,903 +1,876 @@
 boundaries:
   - id: BND-01
-    legacy_id: "Host Integration Boundary"
-    name: "Host Integration Boundary"
+    legacy_id: Host Integration Boundary
+    name: Host Integration Boundary
     kind: container
-    type: "External boundary adapter"
+    type: External boundary adapter
     responsibility: "Expose Tuvren to embedding environments, initiate turns, await terminal execution results, consume event streams, list and read durable state through the host-facing Durable-Read Surface, surface status, deliver steering, route approvals, and trigger cancellation. The first product-depth proof host is a serious REPL CLI built against this same boundary rather than a privileged internal harness, with both an interactive operating mode and a headless stdin-driven mode. This boundary also owns the duplex session seam: the framework-defined wire vocabulary through which a remote session peer consumes the outbound stream and submits inbound control frames (client results, approval responses, steering, cancellation) that a session binding routes to the held execution handle and the Client Endpoint Boundary. A WebSocket carriage binding may implement this seam over a single bidirectional connection: it owns handshake, heartbeat, close-code vocabulary, and bounded outbound backpressure only, carrying the Event Stream Adapter Layer's resume cursor on its handshake and outbound event frames without owning cursor or replay semantics itself. Between the session binding and any carriage binding sits a session-lifecycle seam that keeps one session alive across a link that can drop: it holds the session's single outbound claim, owns the one sequencer and one replay window the Event Stream Adapter Layer's wiring rule requires, admits at most one live carriage at a time, replays the sequenced event stream from a cursor on reattach, re-presents client invocations still awaiting a result, and converts a lost link or an unresponsive peer into typed capability results rather than a hung invocation. Session identity — which live session a reconnecting peer is asking for — stays host application state alongside authentication and tenancy, never framework state."
     inputs:
-      - "User or system signals"
-      - "approval responses"
-      - "steering signals"
-      - "cancellation requests"
-      - "runtime events"
-      - "durable-read queries (list threads, list branches, get state at TurnNode, walk turn history, read branch messages)"
-      - "inbound session frames from remote session peers"
-      - "carriage attach and detach transitions"
+      - User or system signals
+      - approval responses
+      - steering signals
+      - cancellation requests
+      - runtime events
+      - durable-read queries (list threads, list branches, get state at TurnNode, walk turn history, read branch messages)
+      - inbound session frames from remote session peers
+      - carriage attach and detach transitions
     outputs:
-      - "Turn-start requests"
-      - "control signals"
-      - "terminal execution results"
-      - "translated protocol events"
-      - "host-visible execution status"
-      - "durable-read responses"
-      - "captured transcript artifacts"
-      - "session frames (wrapped canonical events, client-invocation dispatches, session rejections)"
+      - Turn-start requests
+      - control signals
+      - terminal execution results
+      - translated protocol events
+      - host-visible execution status
+      - durable-read responses
+      - captured transcript artifacts
+      - session frames (wrapped canonical events, client-invocation dispatches, session rejections)
     depends_on:
-      - "BND-03"
-      - "BND-19"
+      - BND-03
+      - BND-19
     trust_boundary: true
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-02
-    legacy_id: "Curated Host-Facing SDK Surface"
-    name: "Curated Host-Facing SDK Surface"
+    legacy_id: Curated Host-Facing SDK Surface
+    name: Curated Host-Facing SDK Surface
     kind: container
-    type: "Host-developer ergonomics boundary"
+    type: Host-developer ergonomics boundary
     responsibility: "Compose the underlying runtime containers into one curated host-facing surface that a host developer consumes. This is a logical boundary, not a single physical artifact: it groups a Shared Primitive Container (subpath-exported primitives covering messages, tools, events, errors, execution, runner contracts, provider contracts, and extensions) and a Slim Convenience Container (re-exports the curated primitives and exposes the Batteries-Included Composition entrypoint that assembles kernel, backend, runner registry, and framework runtime from one factory call). Leaf integration containers (backends, stream adapters, runners, provider bridges, MCP Client Container, Schema Authoring Helper, Tool Source Container) peer-depend on the Shared Primitive Container so that one runtime instance always sees one primitive instance."
     inputs:
       - "Host-developer composition requests (which backend, which runner, which provider, which tools, and funnel routing — where the content funnel and the telemetry funnel each persist: split, unified, or mixed substrates)"
-      - "leaf integration container choices"
-      - "primitive imports from subpaths"
+      - leaf integration container choices
+      - primitive imports from subpaths
     outputs:
-      - "A wired-up Framework Shared Services instance the host can drive through the Host Integration Boundary; curated primitive exports consumable by hosts"
-      - "extensions"
-      - "and downstream packages"
+      - A wired-up Framework Shared Services instance the host can drive through the Host Integration Boundary; curated primitive exports consumable by hosts
+      - extensions and downstream packages
     depends_on:
-      - "Shared Primitive Container"
-      - "Slim Convenience Container"
-      - "BND-03"
-      - "BND-17"
-      - "BND-18"
-      - "BND-04"
-      - "BND-07"
-      - "BND-08"
-      - "BND-09"
-      - "BND-11"
+      - Shared Primitive Container
+      - Slim Convenience Container
+      - BND-03
+      - BND-17
+      - BND-18
+      - BND-04
+      - BND-07
+      - BND-08
+      - BND-09
+      - BND-11
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-03
-    legacy_id: "Framework Shared Services"
-    name: "Framework Shared Services"
+    legacy_id: Framework Shared Services
+    name: Framework Shared Services
     kind: container
-    type: "Application service layer"
+    type: Application service layer
     responsibility: "Own the stable framework contracts and shared runtime services above the kernel, including execution-handle lifecycle, turn/run orchestration shell, context manifest maintenance, event publication, extension coordination, runner selection, terminal-value resolution on every execution handle (the unified `awaitResult` surface), and the Durable-Read Surface. The Durable-Read Surface composes existing kernel structural primitives (`branch.list`, `node.get`, `node.walkBack`, `tree.resolve`, `tree.manifest`, `store.get`) and the new kernel `thread.list` primitive into host-facing operations: list threads owned by the runtime instance (with cursor-based pagination and optional filters), list branches inside a thread, read structured runtime state at any TurnNode, walk turn history of a branch as an async iterator with a cursor (newest-first), and read durable conversational messages on a branch without requiring the host to reconstruct messages from TurnTree references and the content-addressed object store by hand. Framework Shared Services also owns Execution Bound enforcement: it caps per-turn iterations, tool calls, and resource budget above runner discretion, and when a configured bound is reached it forces a safe terminal outcome (a typed bounded-execution result) rather than allowing an unbounded loop. It emits canonical runtime activity to the Telemetry & Observability Boundary in the same vocabulary it publishes to the Event Stream Adapter Layer."
     inputs:
-      - "Host commands"
-      - "execution state from durable history"
-      - "extension contributions"
-      - "runner-emitted control outcomes"
-      - "provider and tool gateway results"
-      - "durable-read queries from hosts"
-      - "execution-bound configuration"
+      - Host commands
+      - execution state from durable history
+      - extension contributions
+      - runner-emitted control outcomes
+      - provider and tool gateway results
+      - durable-read queries from hosts
+      - execution-bound configuration
     outputs:
-      - "Runner invocation requests"
-      - "kernel syscalls (read and write)"
-      - "runtime status transitions"
-      - "event publication"
-      - "approval state"
-      - "steering incorporation"
-      - "host-visible execution handles with terminal-value resolution"
-      - "host-facing durable-read responses"
+      - Runner invocation requests
+      - kernel syscalls (read and write)
+      - runtime status transitions
+      - event publication
+      - approval state
+      - steering incorporation
+      - host-visible execution handles with terminal-value resolution
+      - host-facing durable-read responses
     depends_on:
-      - "BND-04"
-      - "BND-05"
-      - "BND-06"
-      - "BND-16"
-      - "BND-17"
-      - "BND-19"
+      - BND-04
+      - BND-05
+      - BND-06
+      - BND-16
+      - BND-17
+      - BND-19
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-04
-    legacy_id: "Runner Runtime"
-    name: "Runner Runtime"
+    legacy_id: Runner Runtime
+    name: Runner Runtime
     kind: container
-    type: "Execution strategy boundary"
-    responsibility: "Implement one concrete execution model over shared framework primitives. The initial baseline is the ReAct Runner, which renders prompts, interprets provider responses, evaluates loop decisions, and determines when to continue, pause, hand off, fail, or end a turn."
+    type: Execution strategy boundary
+    responsibility: Implement one concrete execution model over shared framework primitives. The initial baseline is the ReAct Runner, which renders prompts, interprets provider responses, evaluates loop decisions, and determines when to continue, pause, hand off, fail, or end a turn.
     inputs:
-      - "Active context"
-      - "runner configuration"
-      - "provider responses"
-      - "tool results"
-      - "extension verdicts"
-      - "steering state"
-      - "and framework-owned control constraints"
+      - Active context
+      - runner configuration
+      - provider responses
+      - tool results
+      - extension verdicts
+      - steering state and framework-owned control constraints
     outputs:
-      - "Canonical assistant messages"
-      - "tool batches"
-      - "runtime resolutions"
-      - "runner-specific state transitions"
-      - "and context-engineering or orchestration intents"
+      - Canonical assistant messages
+      - tool batches
+      - runtime resolutions
+      - runner-specific state transitions and context-engineering or orchestration intents
     depends_on:
-      - "BND-07"
-      - "BND-08"
-      - "BND-06"
-      - "BND-05"
+      - BND-07
+      - BND-08
+      - BND-06
+      - BND-05
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-05
-    legacy_id: "Context Assembly and Engineering"
-    name: "Context Assembly and Engineering"
+    legacy_id: Context Assembly and Engineering
+    name: Context Assembly and Engineering
     kind: container
-    type: "Domain service layer"
-    responsibility: "Build the active working context from durable history, maintain the context manifest, and execute explicit context reshaping actions such as reduction, compaction, substitution, or handoff context rewrites."
+    type: Domain service layer
+    responsibility: Build the active working context from durable history, maintain the context manifest, and execute explicit context reshaping actions such as reduction, compaction, substitution, or handoff context rewrites.
     inputs:
-      - "TurnTree state"
-      - "message lineage"
-      - "context policies"
-      - "extension-generated context plans"
-      - "handoff intents"
-      - "steering signals"
-      - "and runner requests"
+      - TurnTree state
+      - message lineage
+      - context policies
+      - extension-generated context plans
+      - handoff intents
+      - steering signals and runner requests
     outputs:
-      - "Active message sets"
-      - "rebuilt manifests"
-      - "replacement message collections"
-      - "and context-engineering actions for checkpointing"
+      - Active message sets
+      - rebuilt manifests
+      - replacement message collections and context-engineering actions for checkpointing
     depends_on:
-      - "BND-17"
+      - BND-17
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-06
-    legacy_id: "Extension Runtime"
-    name: "Extension Runtime"
+    legacy_id: Extension Runtime
+    name: Extension Runtime
     kind: container
-    type: "Policy composition boundary"
-    responsibility: "Host lifecycle hooks, around-model wrappers, around-tool wrappers, system prompt contributions, extension-owned state updates, and declared shared exports within bounded contracts."
+    type: Policy composition boundary
+    responsibility: Host lifecycle hooks, around-model wrappers, around-tool wrappers, system prompt contributions, extension-owned state updates, and declared shared exports within bounded contracts.
     inputs:
-      - "Execution context"
-      - "manifests"
-      - "prompts"
-      - "tool calls"
-      - "model responses"
-      - "tool results"
-      - "iteration outcomes"
+      - Execution context
+      - manifests
+      - prompts
+      - tool calls
+      - model responses
+      - tool results
+      - iteration outcomes
     outputs:
-      - "Verdicts"
-      - "state updates"
-      - "custom events"
-      - "prompt contributions"
-      - "pause requests"
-      - "and wrapped execution behavior"
+      - Verdicts
+      - state updates
+      - custom events
+      - prompt contributions
+      - pause requests and wrapped execution behavior
     depends_on:
-      - "BND-03"
-      - "BND-04"
-      - "BND-19"
+      - BND-03
+      - BND-04
+      - BND-19
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-07
-    legacy_id: "Provider Gateway"
-    name: "Provider Gateway"
+    legacy_id: Provider Gateway
+    name: Provider Gateway
     kind: container
-    type: "External integration boundary"
+    type: External integration boundary
     responsibility: "Translate canonical prompts to provider-facing requests and translate provider outputs and streams back into canonical Kraken representations while preserving provider continuity artifacts without promoting provider-specific ontology inward. Provider credentials are held only at this edge for the duration of a request and are excluded from durable lineage, operational telemetry, and transcripts; opaque provider continuity artifacts that must persist for correct multi-turn operation are not credentials and must not carry secret material. The durable lineage is the unconditional source of truth for a provider request: the gateway must always be able to reconstruct the request from lineage, so provider-managed server-side conversation state and continuity artifacts are reconstructable optimizations only — carried when useful, never required for correctness — and provider-side caching stays correctness-neutral. Carried continuity artifacts are sensitive untrusted-edge payloads subject to the Secret Isolation and erasure rules. Within the capability-orchestration model this gateway also owns provider-native capabilities (the provider executes the tool; Tuvren enables/configures the surface and records only provider-exposed tool events and results) and provider-mediated developer-provided capabilities (the provider invokes a developer endpoint; Tuvren configures the mediated relationship and records what the provider/tool protocol exposes). For these classes Tuvren does not assume full invocation-lifecycle control."
     inputs:
-      - "Canonical prompt"
-      - "rendered tool definitions"
-      - "structured-output requests"
-      - "model configuration"
+      - Canonical prompt
+      - rendered tool definitions
+      - structured-output requests
+      - model configuration
     outputs:
-      - "Canonical model responses"
-      - "normalized stream chunks"
-      - "continuity artifacts"
-      - "and provider failure signals"
+      - Canonical model responses
+      - normalized stream chunks
+      - continuity artifacts and provider failure signals
     depends_on:
-      - "External Model Providers"
+      - External Model Providers
     trust_boundary: true
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-08
-    legacy_id: "Tool Execution Gateway"
-    name: "Tool Execution Gateway"
+    legacy_id: Tool Execution Gateway
+    name: Tool Execution Gateway
     kind: container
-    type: "External integration boundary"
+    type: External integration boundary
     responsibility: "Resolve tools, validate inputs, apply approval gating, execute tool work, stage tool results incrementally, return canonical tool result messages to the runtime, and integrate multiple Tool Source Containers (including built-in registries and the MCP Client Container) into one unified tool resolution surface for the active agent segment. Tool definitions consumed by this gateway adhere to the boundary CustomSchema contract; the Schema Authoring Helper normalizes richer authoring shapes into that contract upstream of this gateway. Within the capability-orchestration model this gateway is the Tuvren-server execution class: it owns the full invocation lifecycle (validate, dispatch, stage, retry or cancel where supported, audit) for capabilities the Binding & Endpoint Resolver bound to server-side execution. Today's developer-defined runtime-executed tools resolve here unchanged; capabilities bound to provider-native, provider-mediated, or Tuvren-client execution are not executed here. Result staging is also the single point at which an optional host-supplied sanitization policy is applied: because staging and canonical result emission share one chokepoint, a host policy installed there is guaranteed to run before a result becomes durable and before any consumer observes it, for every execution class and every error path. The framework guarantees the seam and its ordering only — it performs no content inspection of its own, which remains distinct from the credential isolation the framework does enforce on surfaces it populates itself."
     inputs:
-      - "Canonical tool calls"
-      - "tool registry definitions drawn from one or more Tool Source Containers"
-      - "approval decisions"
-      - "tool execution context"
-      - "optional host-supplied result sanitization policy"
+      - Canonical tool calls
+      - tool registry definitions drawn from one or more Tool Source Containers
+      - approval decisions
+      - tool execution context
+      - optional host-supplied result sanitization policy
     outputs:
-      - "Canonical tool results"
-      - "approval requests"
-      - "partial batch completion state"
-      - "and tool-related events"
+      - Canonical tool results
+      - approval requests
+      - partial batch completion state and tool-related events
     depends_on:
-      - "External Tools and Systems"
-      - "BND-10"
-      - "BND-06"
-      - "BND-17"
+      - External Tools and Systems
+      - BND-10
+      - BND-06
+      - BND-17
     trust_boundary: true
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-09
-    legacy_id: "Schema Authoring Helper"
-    name: "Schema Authoring Helper"
+    legacy_id: Schema Authoring Helper
+    name: Schema Authoring Helper
     kind: container
-    type: "Host-facing authoring boundary"
+    type: Host-facing authoring boundary
     responsibility: "Expose a schema-agnostic tool-authoring entrypoint that accepts multiple schema authoring styles (Zod v3 and v4, Standard Schema-compliant schemas, wrapped JSON Schema, and lazy wrappers around any of those) while preserving strict TypeScript inference for the execute callback's input parameter. Normalize all accepted authoring shapes into a single boundary-stable representation that satisfies the existing CustomSchema contract (a tool definition the Tool Execution Gateway can resolve). The normalization surface is centralized: one detection routine routes each schema kind to its adapter, and one schema-conversion pipeline produces the JSON Schema artifact used for provider-wire rendering. Bare JSON Schema and the existing CustomSchema interop shape remain legal at the boundary contract; this container only adds ergonomics on top."
     inputs:
-      - "Host-developer tool authoring calls carrying any accepted schema shape; the input/output type parameters the host intends to flow through inference"
+      - Host-developer tool authoring calls carrying any accepted schema shape; the input/output type parameters the host intends to flow through inference
     outputs:
-      - "Tool definitions matching the boundary CustomSchema contract"
-      - "with the original authoring schema's TypeScript input type preserved on the execute callback signature"
+      - Tool definitions matching the boundary CustomSchema contract
+      - with the original authoring schema's TypeScript input type preserved on the execute callback signature
     depends_on:
-      - "Shared Primitive Container"
-      - "the host's chosen schema toolkit"
+      - Shared Primitive Container
+      - the host's chosen schema toolkit
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-10
-    legacy_id: "Tool Source Container"
-    name: "Tool Source Container"
+    legacy_id: Tool Source Container
+    name: Tool Source Container
     kind: container
-    type: "Tool-discovery integration boundary"
+    type: Tool-discovery integration boundary
     responsibility: "Provide one source of tool definitions to the Tool Execution Gateway. Multiple Tool Source Containers may exist concurrently for one active agent segment (for example: a built-in static registry, an extension-contributed registry, and one or more MCP Client Containers). Each source is responsible for translating its native tool advertisement format into Tuvren tool definitions matching the boundary CustomSchema contract before they reach the Tool Execution Gateway. Within the capability-orchestration model a tool source contributes capabilities and their model-facing tool surfaces to the Capability Registry; the Binding & Endpoint Resolver then decides which execution class and endpoint serves each one."
     inputs:
-      - "Source-specific tool advertisements (static definitions, MCP server tool lists, extension contributions)"
+      - Source-specific tool advertisements (static definitions, MCP server tool lists, extension contributions)
     outputs:
-      - "Tuvren tool definitions registered with the Tool Execution Gateway"
+      - Tuvren tool definitions registered with the Tool Execution Gateway
     depends_on:
-      - "Shared Primitive Container"
-      - "source-specific upstream systems"
+      - Shared Primitive Container
+      - source-specific upstream systems
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-11
-    legacy_id: "MCP Client Container"
-    name: "MCP Client Container"
+    legacy_id: MCP Client Container
+    name: MCP Client Container
     kind: container
-    type: "External tool-ecosystem integration boundary"
+    type: External tool-ecosystem integration boundary
     responsibility: "Implement the Model Context Protocol client side over both stdio and HTTP/SSE transports as one unified client interface. Establish and maintain the MCP session lifecycle (initialization handshake, tool list discovery, tool invocation, tool result reception, transport-level error handling, session shutdown). Translate MCP tool advertisements into Tuvren tool definitions (an MCP-flavored Tool Source Container). Treat the external MCP server as an untrusted boundary: validate tool inputs against the advertised schema before sending across the transport and validate tool outputs against the advertised result shape before surfacing them as agent-visible results. The MCP server-side projection (exposing Tuvren itself as an MCP server) is explicitly out of scope; only the client side is in this container. External MCP server credentials (transport auth, headers, tokens) are held only at this edge and are excluded from durable lineage, operational telemetry, and transcripts. Within the capability-orchestration model MCP is a binding mechanism, not an execution class: an MCP server may be invoked by the provider (provider-mediated, configured through the Provider Gateway), by Tuvren server-side (Tuvren-server, this container), or by a client endpoint (Tuvren-client, run through the Client Endpoint Boundary). Execution class is determined by who invokes or runs the server, not by the protocol."
     inputs:
-      - "External MCP server endpoint specifications (transport choice, command or URL)"
-      - "MCP protocol messages from the server"
-      - "tool invocations from the Tool Execution Gateway"
+      - External MCP server endpoint specifications (transport choice, command or URL)
+      - MCP protocol messages from the server
+      - tool invocations from the Tool Execution Gateway
     outputs:
-      - "Tuvren tool definitions for each MCP-advertised tool; canonical tool results from MCP tool invocations; MCP session lifecycle events translated into runtime events"
+      - Tuvren tool definitions for each MCP-advertised tool; canonical tool results from MCP tool invocations; MCP session lifecycle events translated into runtime events
     depends_on:
-      - "External MCP Servers"
-      - "BND-10"
-      - "Shared Primitive Container"
-      - "BND-06"
+      - External MCP Servers
+      - BND-10
+      - Shared Primitive Container
+      - BND-06
     trust_boundary: true
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-12
-    legacy_id: "Capability Registry"
-    name: "Capability Registry"
+    legacy_id: Capability Registry
+    name: Capability Registry
     kind: container
-    type: "Capability composition boundary"
-    responsibility: "Hold the capabilities a runtime instance may use and the model-facing tool surfaces that present them, drawn from one or more Tool Source Containers and from provider-native and provider-mediated declarations. Decide which tool surfaces are eligible to be exposed for a given agent segment before policy is applied. Keep the model-facing Tool Surface distinct from the underlying Capability so one capability can back multiple surfaces and one surface can resolve to different capabilities across providers."
+    type: Capability composition boundary
+    responsibility: Hold the capabilities a runtime instance may use and the model-facing tool surfaces that present them, drawn from one or more Tool Source Containers and from provider-native and provider-mediated declarations. Decide which tool surfaces are eligible to be exposed for a given agent segment before policy is applied. Keep the model-facing Tool Surface distinct from the underlying Capability so one capability can back multiple surfaces and one surface can resolve to different capabilities across providers.
     inputs:
-      - "Capability and tool-surface contributions from Tool Source Containers"
-      - "provider-native tool declarations"
-      - "provider-mediated tool configurations"
-      - "agent-segment configuration"
+      - Capability and tool-surface contributions from Tool Source Containers
+      - provider-native tool declarations
+      - provider-mediated tool configurations
+      - agent-segment configuration
     outputs:
-      - "The candidate set of capabilities and tool surfaces for an agent segment"
+      - The candidate set of capabilities and tool surfaces for an agent segment
     depends_on:
-      - "BND-10"
-      - "BND-07"
-      - "Shared Primitive Container"
+      - BND-10
+      - BND-07
+      - Shared Primitive Container
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-13
-    legacy_id: "Binding & Endpoint Resolver"
-    name: "Binding & Endpoint Resolver"
+    legacy_id: Binding & Endpoint Resolver
+    name: Binding & Endpoint Resolver
     kind: container
-    type: "Capability routing boundary"
-    responsibility: "Resolve each capability to a binding — one execution class (provider-native, provider-mediated developer-provided, Tuvren-server, or Tuvren-client) and one concrete Endpoint (provider runtime, a Tuvren host/server/worker/sandbox, a client endpoint, or a local/remote MCP server) — based on provider, model, policy, endpoint availability, and product configuration. Allow one logical capability to have multiple possible bindings and select or admit the binding for the active context. Classify MCP bindings by who invokes or runs the server."
+    type: Capability routing boundary
+    responsibility: Resolve each capability to a binding — one execution class (provider-native, provider-mediated developer-provided, Tuvren-server, or Tuvren-client) and one concrete Endpoint (provider runtime, a Tuvren host/server/worker/sandbox, a client endpoint, or a local/remote MCP server) — based on provider, model, policy, endpoint availability, and product configuration. Allow one logical capability to have multiple possible bindings and select or admit the binding for the active context. Classify MCP bindings by who invokes or runs the server.
     inputs:
-      - "Candidate capabilities and tool surfaces"
-      - "active provider and model"
-      - "endpoint availability"
-      - "product configuration"
-      - "policy outcomes"
+      - Candidate capabilities and tool surfaces
+      - active provider and model
+      - endpoint availability
+      - product configuration
+      - policy outcomes
     outputs:
-      - "A resolved binding per capability (execution class + endpoint)"
-      - "or a typed unavailable-binding outcome"
+      - A resolved binding per capability (execution class + endpoint)
+      - or a typed unavailable-binding outcome
     depends_on:
-      - "BND-12"
-      - "BND-14"
-      - "BND-07"
-      - "BND-08"
-      - "BND-15"
-      - "BND-11"
+      - BND-12
+      - BND-14
+      - BND-07
+      - BND-08
+      - BND-15
+      - BND-11
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-14
-    legacy_id: "Capability Policy Engine"
-    name: "Capability Policy Engine"
+    legacy_id: Capability Policy Engine
+    name: Capability Policy Engine
     kind: container
-    type: "Policy decision boundary"
+    type: Policy decision boundary
     responsibility: "Evaluate policy at two distinct decision points: exposure-time (whether a tool surface may be exposed to the model for the active provider, model, permissions, data-residency, and endpoint-availability constraints) and invocation-time (whether a resolved capability may actually run, covering approval requirements, credential boundaries, user-presence, idempotency/retry, and risk classification). Policy outcomes gate the Capability Registry's exposed set and the Binding & Endpoint Resolver's admitted invocations."
     inputs:
-      - "Candidate tool surfaces and resolved bindings; provider"
-      - "model"
-      - "permission"
-      - "residency"
-      - "and presence context; approval state"
+      - Candidate tool surfaces and resolved bindings; provider
+      - model
+      - permission
+      - residency and presence context; approval state
     outputs:
-      - "Exposure decisions over tool surfaces"
-      - "invocation decisions over bindings"
-      - "and typed policy-denied outcomes"
+      - Exposure decisions over tool surfaces
+      - invocation decisions over bindings and typed policy-denied outcomes
     depends_on:
-      - "BND-12"
-      - "BND-13"
-      - "BND-06"
-      - "BND-03"
+      - BND-12
+      - BND-13
+      - BND-06
+      - BND-03
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-15
-    legacy_id: "Client Endpoint Boundary"
-    name: "Client Endpoint Boundary"
+    legacy_id: Client Endpoint Boundary
+    name: Client Endpoint Boundary
     kind: container
-    type: "Leased client-execution integration boundary"
+    type: Leased client-execution integration boundary
     responsibility: "Realize the Tuvren-client execution class. Orchestrate capability invocations whose execution happens inside an attached, leased client endpoint (browser extension, desktop app, device agent, or client-side MCP). Lease and track endpoint availability, dispatch an invocation envelope to the attached endpoint, receive the client-reported result, and handle unavailability, late completion, and stale responses. The runtime owns orchestration and policy; the client endpoint owns environmental execution, may hold authority the server does not, and provides only partial observability. A client-reported result is a proposal: it becomes durable state only through a runtime commit performed under valid execution authority (the run lease's fencing identity), so a stale or late client report can never mutate committed history. The dispatch envelope carries an idempotency identity (run, call, and fencing identity) so a client environment can deduplicate a side effect it re-executes after a reconnect, and the two leases compose with distinct roles — the run execution lease is write authority, the client endpoint lease is availability/staleness only. The endpoint lease counter is deliberately process-local: its staleness job is to reject a result produced for a superseded dispatch within one process, and the one cross-restart collision this admits concerns the same logical invocation, whose side-effect-once guarantee belongs to the idempotency envelope rather than to the lease. That envelope's identity is the logical call identity and deliberately excludes the rotating authority epoch, so it stays stable across exactly the recoveries and reconnects it exists to survive. When the attached endpoint is reached over a droppable link, the availability signals this boundary consumes are produced by the Host Integration Boundary's session-lifecycle seam, which distinguishes a lost link from an accepted-but-unanswered invocation and reports each as a distinct typed result."
     inputs:
-      - "Resolved Tuvren-client bindings"
-      - "attached client-endpoint leases"
-      - "client-reported results and lifecycle signals"
+      - Resolved Tuvren-client bindings
+      - attached client-endpoint leases
+      - client-reported results and lifecycle signals
     outputs:
-      - "Canonical capability results from client-reported outcomes"
-      - "dispatch/result envelopes"
-      - "and availability/staleness signals"
+      - Canonical capability results from client-reported outcomes
+      - dispatch/result envelopes and availability/staleness signals
     depends_on:
-      - "BND-13"
-      - "External Client Endpoints"
-      - "BND-06"
-      - "Shared Primitive Container"
+      - BND-13
+      - External Client Endpoints
+      - BND-06
+      - Shared Primitive Container
     trust_boundary: true
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-16
-    legacy_id: "Orchestration Runtime"
-    name: "Orchestration Runtime"
+    legacy_id: Orchestration Runtime
+    name: Orchestration Runtime
     kind: container
-    type: "Coordination service"
-    responsibility: "Provide the documented handle/tree-based orchestration primitives for child execution, descendant event aggregation, parent-child execution coordination, handoff continuity, execution inheritance, and nested attribution without creating ambiguous control ownership."
+    type: Coordination service
+    responsibility: Provide the documented handle/tree-based orchestration primitives for child execution, descendant event aggregation, parent-child execution coordination, handoff continuity, execution inheritance, and nested attribution without creating ambiguous control ownership.
     inputs:
-      - "Child launch requests"
-      - "child completion signals"
-      - "parent execution status"
-      - "and child subtree events"
+      - Child launch requests
+      - child completion signals
+      - parent execution status and child subtree events
     outputs:
-      - "New execution handles for children"
-      - "descendant-attributed event streams"
-      - "and child completion access"
+      - New execution handles for children
+      - descendant-attributed event streams and child completion access
     depends_on:
-      - "BND-03"
-      - "BND-05"
-      - "BND-19"
-      - "BND-01"
+      - BND-03
+      - BND-05
+      - BND-19
+      - BND-01
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-17
-    legacy_id: "Kernel Boundary"
-    name: "Kernel Boundary"
+    legacy_id: Kernel Boundary
+    name: Kernel Boundary
     kind: container
-    type: "Mechanism core boundary"
+    type: Mechanism core boundary
     responsibility: "Own durable objects, TurnTree construction, TurnNode lineage, staging, run lifecycle operations, thread and branch containment, checkpoint atomicity, structural enumeration primitives, and a reachability-based reclamation primitive. Structural enumeration includes the existing `branch.list(threadId)` primitive and the new `thread.list(options?)` primitive: both are mechanism-not-policy and provide pure structural reads with no semantic interpretation. The new `thread.list` primitive is backend-advertised: backends declare whether they support efficient thread enumeration through a capability bit, and substrates that cannot enumerate efficiently (object-store-style backends) may advertise non-support and remain conformant. The reclamation primitive is mechanism, not retention policy: it marks durable state reachable from live lineage roots (non-archived branch heads, thread roots, and active-run staged work), sweeps only unreachable state, and is grace-windowed so it never races an active execution lease. The kernel does not decide which threads or scopes are still wanted (that is host policy) and does not own erasure keys (those are host-held). The Scope a host binds at the Durable State Boundary is honored by the kernel's durable operations, but it is not a syscall argument — the kernel protocol and its cross-language interop remain scope-free."
     inputs:
-      - "Explicit framework requests for storage"
-      - "staging"
-      - "tree construction"
-      - "run lifecycle"
-      - "thread lifecycle"
-      - "branch movement"
-      - "turn head updates"
-      - "structural enumeration (branches in a thread; threads in the runtime instance, subject to backend capability)"
+      - Explicit framework requests for storage
+      - staging
+      - tree construction
+      - run lifecycle
+      - thread lifecycle
+      - branch movement
+      - turn head updates
+      - structural enumeration (branches in a thread; threads in the runtime instance, subject to backend capability)
     outputs:
-      - "Durable identities"
-      - "recovered state"
-      - "structural diffs"
-      - "validated lineage relationships"
-      - "committed history points"
-      - "enumerated branch and thread identifiers"
+      - Durable identities
+      - recovered state
+      - structural diffs
+      - validated lineage relationships
+      - committed history points
+      - enumerated branch and thread identifiers
     depends_on:
-      - "BND-18"
+      - BND-18
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-18
-    legacy_id: "Durable State Boundary"
-    name: "Durable State Boundary"
+    legacy_id: Durable State Boundary
+    name: Durable State Boundary
     kind: container
-    type: "Persistence boundary"
+    type: Persistence boundary
     responsibility: "Provide the atomic durable storage substrate required for immutable objects, staging durability, checkpoint transactions, and read-after-write consistency. This boundary realizes the **content funnel**: the session-critical durable data a session needs to be correct, continuable, and recoverable, tenant-owned in multi-tenant topologies. It never depends on the telemetry funnel, and a content-funnel commit must never be failed, blocked, or corrupted by the state of any telemetry destination. A Scope — a host-bound partition identity supplied when the backend (or its connection) is constructed — bounds every operation, so durable identity is resolved within the Scope and no operation can read, enumerate, or probe content outside it (isolation-by-construction). Scope is a construction-time binding the host maps onto its tenancy model (shared store with row-level isolation, store-per-tenant, or decentralized); the backend realizes the isolation, the kernel syscall surface stays scope-free. Each concrete backend advertises a capability descriptor that includes whether thread enumeration is supported efficiently, whether it can serve as the authoritative lease clock for shared multi-worker access, and whether it supports reclamation/erasure reclaim. When the backend is the shared rendezvous for more than one worker, it owns the authoritative clock used to decide lease expiry. Backends that cannot enumerate, cannot serve as a shared lease clock, or cannot reclaim must still satisfy every other Storage Contract guarantee."
     inputs:
-      - "Object writes"
-      - "structured state writes"
-      - "transaction requests"
-      - "recovery reads"
-      - "structural enumeration queries (within advertised capabilities)"
+      - Object writes
+      - structured state writes
+      - transaction requests
+      - recovery reads
+      - structural enumeration queries (within advertised capabilities)
     outputs:
-      - "Durable committed records"
-      - "structural state retrieval"
-      - "existence checks"
-      - "transaction success or failure"
-      - "enumerated thread identifiers when capability is advertised"
+      - Durable committed records
+      - structural state retrieval
+      - existence checks
+      - transaction success or failure
+      - enumerated thread identifiers when capability is advertised
     depends_on: []
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-19
-    legacy_id: "Event Stream Adapter Layer"
-    name: "Event Stream Adapter Layer"
+    legacy_id: Event Stream Adapter Layer
+    name: Event Stream Adapter Layer
     kind: container
-    type: "Outbound protocol adaptation boundary"
+    type: Outbound protocol adaptation boundary
     responsibility: "Convert canonical Kraken runtime events into host-facing protocol shapes while preserving source attribution, execution ordering, and runner/runtime distinctions. Canonical events and SSE are core portable surfaces; ecosystem-specific adapters are downstream projections. This layer also owns wire-level stream resumability: it sequences each event per turn, mints an opaque resume cursor anchored to durable kernel checkpoint history when available, and retains sequenced frames in a bounded host-owned replay window so a reconnecting transport can resume from the last observed position or fall back to snapshot semantics (durable kernel state as truth) when a position is evicted, its anchor lineage is unretained, or the turn is unknown — this sequencing wraps events at the wire and never extends the canonical event vocabulary itself."
     inputs:
-      - "Canonical runtime events"
-      - "custom events"
-      - "worker-forwarded events"
-      - "and runner-attributed event metadata"
+      - Canonical runtime events
+      - custom events
+      - worker-forwarded events and runner-attributed event metadata
     outputs:
-      - "Protocol-ready event streams for host consumers"
+      - Protocol-ready event streams for host consumers
     depends_on:
-      - "BND-03"
-      - "BND-06"
-      - "BND-16"
+      - BND-03
+      - BND-06
+      - BND-16
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-20
-    legacy_id: "Telemetry & Observability Boundary"
-    name: "Telemetry & Observability Boundary"
+    legacy_id: Telemetry & Observability Boundary
+    name: Telemetry & Observability Boundary
     kind: container
-    type: "Outbound operational-telemetry adaptation boundary"
+    type: Outbound operational-telemetry adaptation boundary
     responsibility: "Observe canonical runtime activity and produce correlated operational telemetry — structured records of turns, runs, model interactions, tool calls, checkpoints, approvals, steering, recovery events, and errors — keyed to runtime lineage concepts (thread, branch, turn, run, TurnNode) so an operator can reconstruct what a turn did after the fact. This surface is distinct from the Event Stream Adapter Layer: the event stream serves a host UI consuming one live turn, while operational telemetry serves monitoring, postmortems, performance investigation, and incident response, and may correlate across turns and runs. The canonical telemetry vocabulary is boundary-owned portable authority; a vendor-neutral export edge projects that vocabulary into standard observability tooling without coupling the runtime to any one vendor or wire format. The boundary must never emit secrets (see the Secret Isolation Model in §5). This boundary realizes the **telemetry funnel**: it is never load-bearing for session correctness, continuity, or recovery, and it delivers records to a host-selected **telemetry destination** — which may be a destination separate from the content funnel's store, the same unified store, or a different storage substrate entirely. The destination choice is supplied at construction through funnel routing (see §5 Data Funnel Separation Model); the boundary owns the separation mechanism, the host owns the destination policy. Delivery to the destination is failure-isolated: an unreachable or failing telemetry destination degrades telemetry (dropped or bounded-buffered records, surfaced as an operational signal), never the session."
     inputs:
-      - "Canonical runtime activity signals from Framework Shared Services"
-      - "Runner Runtime"
-      - "Tool Execution Gateway"
-      - "and Orchestration Runtime"
-      - "including checkpoint and recovery telemetry derived by framework/runtime observation of kernel outcomes rather than by direct kernel-owned emission; telemetry configuration (sampling, redaction, export target selection); construction-time funnel-routing configuration (telemetry destination selection)"
+      - Canonical runtime activity signals from Framework Shared Services
+      - Runner Runtime
+      - Tool Execution Gateway and Orchestration Runtime
+      - including checkpoint and recovery telemetry derived by framework/runtime observation of kernel outcomes rather than by direct kernel-owned emission; telemetry configuration (sampling, redaction, export target selection); construction-time funnel-routing configuration (telemetry destination selection)
     outputs:
-      - "Correlated operational telemetry records in the canonical telemetry vocabulary; vendor-neutral telemetry exports for external observability tooling; telemetry records delivered to the host-selected telemetry destination"
+      - Correlated operational telemetry records in the canonical telemetry vocabulary; vendor-neutral telemetry exports for external observability tooling; telemetry records delivered to the host-selected telemetry destination
     depends_on:
-      - "BND-03"
-      - "BND-04"
-      - "BND-08"
-      - "BND-16"
+      - BND-03
+      - BND-04
+      - BND-08
+      - BND-16
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-21
-    legacy_id: "Reference Host"
-    name: "Reference Host"
+    legacy_id: Reference Host
+    name: Reference Host
     kind: container
-    type: "First-party proving host (a concrete instance of the Host Integration Boundary)"
+    type: First-party proving host (a concrete instance of the Host Integration Boundary)
     responsibility: "Exercise every host-facing capability the SDK exposes (durable threads, branching, streaming, approvals, steering, orchestration, extension behavior, persistence, durable reads, transcript capture and replay) as one coherent operator experience, in two modes: an interactive readline mode for human operators and a headless stdin-driven mode for tests, scripts, and operations tooling. Both modes share the same package, command surface, and execution path. The headless mode consumes line-delimited input on stdin and emits structured output (one record per line); it does not consume external script files or define an out-of-band scripting language. The reference host MUST consume only the host-facing SDK boundary; no private seams, no kernel inspectors, no backend-direct reads. Transcript capture writes a durable on-disk record of one session for postmortems; transcript replay drives a fresh runtime instance from a captured transcript to reproduce session behavior for regression tests. Target-state Epic AT retirement removes the historical playground host so the reference host is the sole first-party proving host."
     inputs:
-      - "Operator input (interactive readline or stdin line-delimited)"
-      - "command tree invocations"
-      - "transcript file paths (for replay)"
+      - Operator input (interactive readline or stdin line-delimited)
+      - command tree invocations
+      - transcript file paths (for replay)
     outputs:
-      - "Operator-visible session interactions (interactive) or structured records (headless)"
-      - "captured transcript artifacts"
-      - "exit codes and structured failure reports for headless runs"
+      - Operator-visible session interactions (interactive) or structured records (headless)
+      - captured transcript artifacts
+      - exit codes and structured failure reports for headless runs
     depends_on:
-      - "BND-02"
+      - BND-02
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-22
-    legacy_id: "Contract Authority Assets"
-    name: "Contract Authority Assets"
+    legacy_id: Contract Authority Assets
+    name: Contract Authority Assets
     kind: container
-    type: "Boundary-owned specification surface"
-    responsibility: "Capture machine-readable shape contracts owned by a boundary, including public payload shapes, protocol grammars, and reviewed generated artifacts derived from authored sources."
+    type: Boundary-owned specification surface
+    responsibility: Capture machine-readable shape contracts owned by a boundary, including public payload shapes, protocol grammars, and reviewed generated artifacts derived from authored sources.
     inputs:
-      - "Human-approved semantic changes from the docs and constitution"
-      - "boundary-owned schema sources"
-      - "and implementation feedback when promoting a shape to normative status"
+      - Human-approved semantic changes from the docs and constitution
+      - boundary-owned schema sources and implementation feedback when promoting a shape to normative status
     outputs:
-      - "Machine-readable contract artifacts consumed by validation"
-      - "code generation"
-      - "and later implementation lines"
+      - Machine-readable contract artifacts consumed by validation
+      - code generation and later implementation lines
     depends_on: []
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-23
-    legacy_id: "Behavioral Conformance Assets"
-    name: "Behavioral Conformance Assets"
+    legacy_id: Behavioral Conformance Assets
+    name: Behavioral Conformance Assets
     kind: container
-    type: "Boundary-owned behavior corpus"
-    responsibility: "Capture versioned fixtures, schemas, and scenario definitions that express observable behavior independently of any single implementation."
+    type: Boundary-owned behavior corpus
+    responsibility: Capture versioned fixtures, schemas, and scenario definitions that express observable behavior independently of any single implementation.
     inputs:
-      - "Human-approved behavioral expectations"
-      - "boundary-owned fixture definitions"
-      - "and implementation evidence when promoting a behavior to normative status"
+      - Human-approved behavioral expectations
+      - boundary-owned fixture definitions and implementation evidence when promoting a behavior to normative status
     outputs:
-      - "Shared conformance suites consumed by language-specific runners and compatibility reporting"
+      - Shared conformance suites consumed by language-specific runners and compatibility reporting
     depends_on:
-      - "BND-22"
+      - BND-22
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-24
-    legacy_id: "Interop Transport Boundary"
-    name: "Interop Transport Boundary"
+    legacy_id: Interop Transport Boundary
+    name: Interop Transport Boundary
     kind: container
-    type: "Cross-process boundary contract"
-    responsibility: "Define the narrow transport surface used when kernel or other runtime boundaries cross process and language seams. Includes the gRPC projection of the kernel syscall surface; the new `thread.list` kernel primitive extends this projection with one additional RPC."
+    type: Cross-process boundary contract
+    responsibility: Define the narrow transport surface used when kernel or other runtime boundaries cross process and language seams. Includes the gRPC projection of the kernel syscall surface; the new `thread.list` kernel primitive extends this projection with one additional RPC.
     inputs:
-      - "Canonical boundary operations"
-      - "stable event and error envelopes"
-      - "and host/runtime control requirements"
+      - Canonical boundary operations
+      - stable event and error envelopes and host/runtime control requirements
     outputs:
-      - "Versioned transport exchanges and implementation-facing transport contracts"
+      - Versioned transport exchanges and implementation-facing transport contracts
     depends_on:
-      - "BND-17"
-      - "BND-22"
+      - BND-17
+      - BND-22
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-25
-    legacy_id: "Compatibility Reporting Boundary"
-    name: "Compatibility Reporting Boundary"
+    legacy_id: Compatibility Reporting Boundary
+    name: Compatibility Reporting Boundary
     kind: container
-    type: "Generated evidence boundary"
-    responsibility: "Aggregate conformance and interop results into machine-readable compatibility reports without becoming semantic authority itself."
+    type: Generated evidence boundary
+    responsibility: Aggregate conformance and interop results into machine-readable compatibility reports without becoming semantic authority itself.
     inputs:
-      - "Language-specific runner results"
-      - "interop smoke results"
-      - "and suite metadata"
+      - Language-specific runner results
+      - interop smoke results and suite metadata
     outputs:
-      - "Compatibility matrices and health reports for maintainers and CI"
+      - Compatibility matrices and health reports for maintainers and CI
     depends_on:
-      - "BND-23"
-      - "BND-24"
+      - BND-23
+      - BND-24
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-26
-    legacy_id: "Authority Packet Surface"
-    name: "Authority Packet Surface"
+    legacy_id: Authority Packet Surface
+    name: Authority Packet Surface
     kind: container
-    type: "Boundary-owned authority manifest"
-    responsibility: "For each cross-implementation semantic surface, declare exactly which Contract Authority Assets, Behavioral Conformance Assets, Interop Transport Boundary entries, generated artifacts, conformance plans, and language-binding projections together carry that semantic; declare the forbidden authority sources for the same surface; and declare freshness and compatibility checks the surface must satisfy. The packet is a meta-container whose authority is the act of declaration; it does not host new semantics by itself. The new kernel `thread.list` syscall, the new Framework Shared Services Durable-Read Surface, and the unified `awaitResult` execution-handle terminal-value surface require corresponding entries in their relevant authority packets."
+    type: Boundary-owned authority manifest
+    responsibility: For each cross-implementation semantic surface, declare exactly which Contract Authority Assets, Behavioral Conformance Assets, Interop Transport Boundary entries, generated artifacts, conformance plans, and language-binding projections together carry that semantic; declare the forbidden authority sources for the same surface; and declare freshness and compatibility checks the surface must satisfy. The packet is a meta-container whose authority is the act of declaration; it does not host new semantics by itself. The new kernel `thread.list` syscall, the new Framework Shared Services Durable-Read Surface, and the unified `awaitResult` execution-handle terminal-value surface require corresponding entries in their relevant authority packets.
     inputs:
-      - "Approved promotions of contract sources"
-      - "conformance plans"
-      - "transport projections"
-      - "telemetry vocabulary"
-      - "and binding projections; review decisions about what may and may not act as authority for the surface"
+      - Approved promotions of contract sources
+      - conformance plans
+      - transport projections
+      - telemetry vocabulary and binding projections; review decisions about what may and may not act as authority for the surface
     outputs:
-      - "A single boundary-owned manifest per surface that names authoritative sources"
-      - "generated artifacts"
-      - "allowed binding appendices"
-      - "forbidden authority sources"
-      - "and required executable verification paths"
+      - A single boundary-owned manifest per surface that names authoritative sources
+      - generated artifacts
+      - allowed binding appendices
+      - forbidden authority sources and required executable verification paths
     depends_on:
-      - "BND-22"
-      - "BND-23"
-      - "BND-24"
-      - "BND-27"
+      - BND-22
+      - BND-23
+      - BND-24
+      - BND-27
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-27
-    legacy_id: "Conformance Plan Authority"
-    name: "Conformance Plan Authority"
+    legacy_id: Conformance Plan Authority
+    name: Conformance Plan Authority
     kind: container
-    type: "Boundary-owned executable behavior surface"
-    responsibility: "Express named semantic checks, fixtures, scenarios, assertions, evidence requirements, and runner applicability as data-owned artifacts that any generic runner can consume. Carry behavior assertions that exceed shape grammar (event ordering, terminality, lifecycle transitions, recovery state, approval pause/resume continuity, structured-output validation, durable-read result shapes, thread enumeration semantics, terminal-value resolution on every handle) without delegating that authority to runner code."
+    type: Boundary-owned executable behavior surface
+    responsibility: Express named semantic checks, fixtures, scenarios, assertions, evidence requirements, and runner applicability as data-owned artifacts that any generic runner can consume. Carry behavior assertions that exceed shape grammar (event ordering, terminality, lifecycle transitions, recovery state, approval pause/resume continuity, structured-output validation, durable-read result shapes, thread enumeration semantics, terminal-value resolution on every handle) without delegating that authority to runner code.
     inputs:
-      - "Approved behavior promotions from human authority"
-      - "fixture and scenario sources"
-      - "schema references"
-      - "and evidence-shape definitions"
+      - Approved behavior promotions from human authority
+      - fixture and scenario sources
+      - schema references and evidence-shape definitions
     outputs:
-      - "Versioned conformance plans referenced by Authority Packet manifests and consumed by Generic Conformance Runner over Implementation Adapter Boundary instances"
+      - Versioned conformance plans referenced by Authority Packet manifests and consumed by Generic Conformance Runner over Implementation Adapter Boundary instances
     depends_on:
-      - "BND-22"
-      - "BND-23"
+      - BND-22
+      - BND-23
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-28
-    legacy_id: "Implementation Adapter Boundary"
-    name: "Implementation Adapter Boundary"
+    legacy_id: Implementation Adapter Boundary
+    name: Implementation Adapter Boundary
     kind: container
-    type: "Language-specific executable seam"
-    responsibility: "Expose a particular implementation to a Generic Conformance Runner through a neutral surface for operation dispatch, ordered event consumption, cancellation and deadline control, error envelopes, and where applicable durable-state inspection. Each implementation language provides at least one adapter per authority packet it claims to support."
+    type: Language-specific executable seam
+    responsibility: Expose a particular implementation to a Generic Conformance Runner through a neutral surface for operation dispatch, ordered event consumption, cancellation and deadline control, error envelopes, and where applicable durable-state inspection. Each implementation language provides at least one adapter per authority packet it claims to support.
     inputs:
-      - "Generic runner invocations driven by a conformance plan; implementation under test; language-binding projections from the relevant authority packet"
+      - Generic runner invocations driven by a conformance plan; implementation under test; language-binding projections from the relevant authority packet
     outputs:
-      - "Operation results"
-      - "ordered event streams"
-      - "error envelopes"
-      - "evidence emissions"
-      - "and adapter lifecycle signals consumed by the Generic Conformance Runner"
+      - Operation results
+      - ordered event streams
+      - error envelopes
+      - evidence emissions and adapter lifecycle signals consumed by the Generic Conformance Runner
     depends_on:
-      - "The implementation under test"
-      - "the relevant Authority Packet Surface"
-      - "and the language-binding projections it declares"
+      - The implementation under test
+      - the relevant Authority Packet Surface and the language-binding projections it declares
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
   - id: BND-29
-    legacy_id: "Generic Conformance Runner"
-    name: "Generic Conformance Runner"
+    legacy_id: Generic Conformance Runner
+    name: Generic Conformance Runner
     kind: container
-    type: "Implementation-agnostic verification process"
-    responsibility: "Load a conformance plan, drive an Implementation Adapter Boundary, validate operation results and event streams against schemas and assertions named in the plan, and emit evidence for the Compatibility Reporting Boundary. The runner owns generic mechanics (adapter startup, dispatch, schema validation, generic assertion operators, ordered-channel consumption, cancellation injection, timeout control, evidence emission) and never hard-codes product semantics, expected event sequences, expected check IDs, or expected error codes outside what the plan supplies."
+    type: Implementation-agnostic verification process
+    responsibility: Load a conformance plan, drive an Implementation Adapter Boundary, validate operation results and event streams against schemas and assertions named in the plan, and emit evidence for the Compatibility Reporting Boundary. The runner owns generic mechanics (adapter startup, dispatch, schema validation, generic assertion operators, ordered-channel consumption, cancellation injection, timeout control, evidence emission) and never hard-codes product semantics, expected event sequences, expected check IDs, or expected error codes outside what the plan supplies.
     inputs:
-      - "A conformance plan version"
-      - "an Implementation Adapter Boundary instance"
-      - "fixtures and scenarios named by the plan"
-      - "and evidence shape definitions"
+      - A conformance plan version
+      - an Implementation Adapter Boundary instance
+      - fixtures and scenarios named by the plan and evidence shape definitions
     outputs:
-      - "Per-check pass/fail results"
-      - "captured evidence artifacts"
-      - "and structured run summaries forwarded to the Compatibility Reporting Boundary"
+      - Per-check pass/fail results
+      - captured evidence artifacts and structured run summaries forwarded to the Compatibility Reporting Boundary
     depends_on:
-      - "BND-27"
-      - "BND-28"
-      - "BND-23"
+      - BND-27
+      - BND-28
+      - BND-23
     certainty: assumed
-    assumption: "Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check."
+    assumption: Migrated from architecture/containers.md; the boundary has not been tied to a named code path or conformance check.
 edges:
-  - from: "BND-01"
-    to: "BND-03"
+  - from: BND-01
+    to: BND-03
     protocol: request-response
-    note: "synchronous execution commands, control signals, and durable-read queries"
-  - from: "BND-03"
-    to: "BND-04"
+    note: synchronous execution commands, control signals, and durable-read queries
+  - from: BND-03
+    to: BND-04
     protocol: in-process
-    note: "in-process execution strategy invocation"
-  - from: "BND-03"
-    to: "BND-17"
+    note: in-process execution strategy invocation
+  - from: BND-03
+    to: BND-17
     protocol: request-response
-    note: "synchronous runtime syscalls (read and write), checkpoint orchestration, and structural enumeration"
-  - from: "BND-03"
-    to: "BND-05"
+    note: synchronous runtime syscalls (read and write), checkpoint orchestration, and structural enumeration
+  - from: BND-03
+    to: BND-05
     protocol: in-process
-    note: "in-process context reads and explicit context rewrite actions"
-  - from: "BND-05"
-    to: "BND-03"
+    note: in-process context reads and explicit context rewrite actions
+  - from: BND-05
+    to: BND-03
     protocol: in-process
-    note: "in-process context reads and explicit context rewrite actions"
-  - from: "BND-04"
-    to: "BND-07"
+    note: in-process context reads and explicit context rewrite actions
+  - from: BND-04
+    to: BND-07
     protocol: request-response
-    note: "synchronous request / streaming response interaction"
-  - from: "BND-04"
-    to: "BND-08"
+    note: synchronous request / streaming response interaction
+  - from: BND-04
+    to: BND-08
     protocol: request-response
-    note: "synchronous or batched tool dispatch"
-  - from: "BND-04"
-    to: "BND-06"
+    note: synchronous or batched tool dispatch
+  - from: BND-04
+    to: BND-06
     protocol: in-process
-    note: "in-process lifecycle callbacks and wrapper invocation"
-  - from: "BND-06"
-    to: "BND-04"
+    note: in-process lifecycle callbacks and wrapper invocation
+  - from: BND-06
+    to: BND-04
     protocol: in-process
-    note: "in-process lifecycle callbacks and wrapper invocation"
-  - from: "BND-08"
-    to: "BND-10"
+    note: in-process lifecycle callbacks and wrapper invocation
+  - from: BND-08
+    to: BND-10
     protocol: in-process
-    note: "tool resolution and tool-set composition for the active agent segment"
-  - from: "BND-10"
-    to: "BND-08"
+    note: tool resolution and tool-set composition for the active agent segment
+  - from: BND-10
+    to: BND-08
     protocol: in-process
-    note: "tool resolution and tool-set composition for the active agent segment"
-  - from: "BND-09"
-    to: "BND-10"
+    note: tool resolution and tool-set composition for the active agent segment
+  - from: BND-09
+    to: BND-10
     protocol: in-process
-    note: "registers tool definitions whose original authoring schema has been normalized to the boundary CustomSchema contract"
-  - from: "BND-11"
-    to: "External MCP Servers"
+    note: registers tool definitions whose original authoring schema has been normalized to the boundary CustomSchema contract
+  - from: BND-11
+    to: External MCP Servers
     protocol: ipc
-    note: "protocol-bound tool advertisement, invocation, and result exchange over stdio or HTTP/SSE"
-  - from: "External MCP Servers"
-    to: "BND-11"
+    note: protocol-bound tool advertisement, invocation, and result exchange over stdio or HTTP/SSE
+  - from: External MCP Servers
+    to: BND-11
     protocol: ipc
-    note: "protocol-bound tool advertisement, invocation, and result exchange over stdio or HTTP/SSE"
-  - from: "BND-11"
-    to: "BND-10"
+    note: protocol-bound tool advertisement, invocation, and result exchange over stdio or HTTP/SSE
+  - from: BND-11
+    to: BND-10
     protocol: in-process
-    note: "contributes MCP-advertised tools as Tuvren tool definitions"
-  - from: "BND-04"
-    to: "BND-12"
+    note: contributes MCP-advertised tools as Tuvren tool definitions
+  - from: BND-04
+    to: BND-12
     protocol: in-process
-    note: "request which tool surfaces are exposed and resolve which execution class and endpoint owns each capability invocation"
-  - from: "BND-04"
-    to: "BND-13"
+    note: request which tool surfaces are exposed and resolve which execution class and endpoint owns each capability invocation
+  - from: BND-04
+    to: BND-13
     protocol: in-process
-    note: "request which tool surfaces are exposed and resolve which execution class and endpoint owns each capability invocation"
-  - from: "BND-04"
-    to: "BND-14"
+    note: request which tool surfaces are exposed and resolve which execution class and endpoint owns each capability invocation
+  - from: BND-04
+    to: BND-14
     protocol: in-process
-    note: "request which tool surfaces are exposed and resolve which execution class and endpoint owns each capability invocation"
-  - from: "BND-10"
-    to: "BND-12"
+    note: request which tool surfaces are exposed and resolve which execution class and endpoint owns each capability invocation
+  - from: BND-10
+    to: BND-12
     protocol: in-process
-    note: "contribute capabilities and tool surfaces (built-in, MCP-advertised, provider-native, provider-mediated)"
-  - from: "BND-07"
-    to: "BND-12"
+    note: contribute capabilities and tool surfaces (built-in, MCP-advertised, provider-native, provider-mediated)
+  - from: BND-07
+    to: BND-12
     protocol: in-process
-    note: "contribute capabilities and tool surfaces (built-in, MCP-advertised, provider-native, provider-mediated)"
-  - from: "BND-13"
-    to: "BND-07"
+    note: contribute capabilities and tool surfaces (built-in, MCP-advertised, provider-native, provider-mediated)
+  - from: BND-13
+    to: BND-07
     protocol: in-process
-    note: "route a resolved capability invocation to its execution-class endpoint"
-  - from: "BND-13"
-    to: "BND-08"
+    note: route a resolved capability invocation to its execution-class endpoint
+  - from: BND-13
+    to: BND-08
     protocol: in-process
-    note: "route a resolved capability invocation to its execution-class endpoint"
-  - from: "BND-13"
-    to: "BND-15"
+    note: route a resolved capability invocation to its execution-class endpoint
+  - from: BND-13
+    to: BND-15
     protocol: in-process
-    note: "route a resolved capability invocation to its execution-class endpoint"
-  - from: "BND-13"
-    to: "BND-11"
+    note: route a resolved capability invocation to its execution-class endpoint
+  - from: BND-13
+    to: BND-11
     protocol: in-process
-    note: "route a resolved capability invocation to its execution-class endpoint"
-  - from: "BND-14"
-    to: "BND-12"
+    note: route a resolved capability invocation to its execution-class endpoint
+  - from: BND-14
+    to: BND-12
     protocol: in-process
-    note: "exposure-time and invocation-time policy decisions"
-  - from: "BND-12"
-    to: "BND-14"
+    note: exposure-time and invocation-time policy decisions
+  - from: BND-12
+    to: BND-14
     protocol: in-process
-    note: "exposure-time and invocation-time policy decisions"
-  - from: "BND-14"
-    to: "BND-13"
+    note: exposure-time and invocation-time policy decisions
+  - from: BND-14
+    to: BND-13
     protocol: in-process
-    note: "exposure-time and invocation-time policy decisions"
-  - from: "BND-13"
-    to: "BND-14"
+    note: exposure-time and invocation-time policy decisions
+  - from: BND-13
+    to: BND-14
     protocol: in-process
-    note: "exposure-time and invocation-time policy decisions"
-  - from: "BND-15"
-    to: "External Client Endpoints"
+    note: exposure-time and invocation-time policy decisions
+  - from: BND-15
+    to: External Client Endpoints
     protocol: request-response
-    note: "lease, dispatch an invocation envelope, and receive a client-reported result under partial observability"
-  - from: "External Client Endpoints"
-    to: "BND-15"
+    note: lease, dispatch an invocation envelope, and receive a client-reported result under partial observability
+  - from: External Client Endpoints
+    to: BND-15
     protocol: request-response
-    note: "lease, dispatch an invocation envelope, and receive a client-reported result under partial observability"
-  - from: "BND-02"
-    to: "BND-03"
+    note: lease, dispatch an invocation envelope, and receive a client-reported result under partial observability
+  - from: BND-02
+    to: BND-03
     protocol: in-process
-    note: "assembles these containers through the Batteries-Included Composition for one runtime instance per host"
-  - from: "BND-02"
-    to: "BND-17"
+    note: assembles these containers through the Batteries-Included Composition for one runtime instance per host
+  - from: BND-02
+    to: BND-17
     protocol: in-process
-    note: "assembles these containers through the Batteries-Included Composition for one runtime instance per host"
-  - from: "BND-02"
-    to: "BND-18"
+    note: assembles these containers through the Batteries-Included Composition for one runtime instance per host
+  - from: BND-02
+    to: BND-18
     protocol: in-process
-    note: "assembles these containers through the Batteries-Included Composition for one runtime instance per host"
-  - from: "BND-02"
-    to: "BND-04"
+    note: assembles these containers through the Batteries-Included Composition for one runtime instance per host
+  - from: BND-02
+    to: BND-04
     protocol: in-process
-    note: "assembles these containers through the Batteries-Included Composition for one runtime instance per host"
-  - from: "BND-02"
-    to: "BND-07"
+    note: assembles these containers through the Batteries-Included Composition for one runtime instance per host
+  - from: BND-02
+    to: BND-07
     protocol: in-process
-    note: "assembles these containers through the Batteries-Included Composition for one runtime instance per host"
-  - from: "BND-02"
-    to: "BND-08"
+    note: assembles these containers through the Batteries-Included Composition for one runtime instance per host
+  - from: BND-02
+    to: BND-08
     protocol: in-process
-    note: "assembles these containers through the Batteries-Included Composition for one runtime instance per host"
-  - from: "BND-02"
-    to: "BND-09"
+    note: assembles these containers through the Batteries-Included Composition for one runtime instance per host
+  - from: BND-02
+    to: BND-09
     protocol: in-process
-    note: "assembles these containers through the Batteries-Included Composition for one runtime instance per host"
-  - from: "BND-02"
-    to: "BND-11"
+    note: assembles these containers through the Batteries-Included Composition for one runtime instance per host
+  - from: BND-02
+    to: BND-11
     protocol: in-process
-    note: "assembles these containers through the Batteries-Included Composition for one runtime instance per host"
-  - from: "BND-21"
-    to: "BND-02"
+    note: assembles these containers through the Batteries-Included Composition for one runtime instance per host
+  - from: BND-21
+    to: BND-02
     protocol: in-process
-    note: "consumes the host-facing SDK exclusively, in both interactive and headless modes"
-  - from: "BND-16"
-    to: "BND-03"
+    note: consumes the host-facing SDK exclusively, in both interactive and headless modes
+  - from: BND-16
+    to: BND-03
     protocol: in-process
-    note: "in-process worker launch, handoff, and resume coordination"
-  - from: "BND-03"
-    to: "BND-16"
+    note: in-process worker launch, handoff, and resume coordination
+  - from: BND-03
+    to: BND-16
     protocol: in-process
-    note: "in-process worker launch, handoff, and resume coordination"
-  - from: "BND-17"
-    to: "BND-18"
+    note: in-process worker launch, handoff, and resume coordination
+  - from: BND-17
+    to: BND-18
     protocol: shared-storage
-    note: "atomic persistence transactions and structural enumeration (subject to backend capability)"
-  - from: "BND-03"
-    to: "BND-19"
+    note: atomic persistence transactions and structural enumeration (subject to backend capability)
+  - from: BND-03
+    to: BND-19
     protocol: event
-    note: "canonical event publication"
-  - from: "BND-16"
-    to: "BND-19"
+    note: canonical event publication
+  - from: BND-16
+    to: BND-19
     protocol: event
-    note: "canonical event publication"
-  - from: "BND-06"
-    to: "BND-19"
+    note: canonical event publication
+  - from: BND-06
+    to: BND-19
     protocol: event
-    note: "canonical event publication"
-  - from: "BND-03"
-    to: "BND-20"
+    note: canonical event publication
+  - from: BND-03
+    to: BND-20
     protocol: event
-    note: "canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)"
-  - from: "BND-04"
-    to: "BND-20"
+    note: canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)
+  - from: BND-04
+    to: BND-20
     protocol: event
-    note: "canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)"
-  - from: "BND-08"
-    to: "BND-20"
+    note: canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)
+  - from: BND-08
+    to: BND-20
     protocol: event
-    note: "canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)"
-  - from: "BND-16"
-    to: "BND-20"
+    note: canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)
+  - from: BND-16
+    to: BND-20
     protocol: event
-    note: "canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)"
-  - from: "BND-20"
-    to: "External Observability Tooling"
+    note: canonical operational-telemetry signal emission (including checkpoint and recovery events derived from kernel outcomes)
+  - from: BND-20
+    to: External Observability Tooling
     protocol: request-response
-    note: "vendor-neutral operational-telemetry export"
-  - from: "BND-03"
-    to: "BND-22"
+    note: vendor-neutral operational-telemetry export
+  - from: BND-03
+    to: BND-22
     protocol: file-handoff
-    note: "consume boundary-owned machine-readable shapes for validation and generated support"
-  - from: "BND-07"
-    to: "BND-22"
+    note: consume boundary-owned machine-readable shapes for validation and generated support
+  - from: BND-07
+    to: BND-22
     protocol: file-handoff
-    note: "consume boundary-owned machine-readable shapes for validation and generated support"
-  - from: "BND-17"
-    to: "BND-22"
+    note: consume boundary-owned machine-readable shapes for validation and generated support
+  - from: BND-17
+    to: BND-22
     protocol: file-handoff
-    note: "consume boundary-owned machine-readable shapes for validation and generated support"
-  - from: "Language-specific runners"
-    to: "BND-23"
+    note: consume boundary-owned machine-readable shapes for validation and generated support
+  - from: Language-specific runners
+    to: BND-23
     protocol: file-handoff
-    note: "execute shared suites without redefining semantics locally"
-  - from: "BND-01"
-    to: "BND-24"
+    note: execute shared suites without redefining semantics locally
+  - from: BND-01
+    to: BND-24
     protocol: ipc
-    note: "use transport contracts when a runtime boundary spans processes or languages"
-  - from: "BND-24"
-    to: "BND-01"
+    note: use transport contracts when a runtime boundary spans processes or languages
+  - from: BND-24
+    to: BND-01
     protocol: ipc
-    note: "use transport contracts when a runtime boundary spans processes or languages"
-  - from: "BND-03"
-    to: "BND-24"
+    note: use transport contracts when a runtime boundary spans processes or languages
+  - from: BND-03
+    to: BND-24
     protocol: ipc
-    note: "use transport contracts when a runtime boundary spans processes or languages"
-  - from: "BND-24"
-    to: "BND-03"
+    note: use transport contracts when a runtime boundary spans processes or languages
+  - from: BND-24
+    to: BND-03
     protocol: ipc
-    note: "use transport contracts when a runtime boundary spans processes or languages"
-  - from: "BND-23"
-    to: "BND-25"
+    note: use transport contracts when a runtime boundary spans processes or languages
+  - from: BND-23
+    to: BND-25
     protocol: file-handoff
-    note: "publish suite and interop results for implementation parity reporting"
-  - from: "BND-24"
-    to: "BND-25"
+    note: publish suite and interop results for implementation parity reporting
+  - from: BND-24
+    to: BND-25
     protocol: file-handoff
-    note: "publish suite and interop results for implementation parity reporting"
-  - from: "BND-26"
-    to: "BND-22"
+    note: publish suite and interop results for implementation parity reporting
+  - from: BND-26
+    to: BND-22
     protocol: file-handoff
-    note: "declare which sources, plans, and projections together carry one cross-implementation semantic and which sources are forbidden authority for that surface"
-  - from: "BND-26"
-    to: "BND-23"
+    note: declare which sources, plans, and projections together carry one cross-implementation semantic and which sources are forbidden authority for that surface
+  - from: BND-26
+    to: BND-23
     protocol: file-handoff
-    note: "declare which sources, plans, and projections together carry one cross-implementation semantic and which sources are forbidden authority for that surface"
-  - from: "BND-26"
-    to: "BND-24"
+    note: declare which sources, plans, and projections together carry one cross-implementation semantic and which sources are forbidden authority for that surface
+  - from: BND-26
+    to: BND-24
     protocol: file-handoff
-    note: "declare which sources, plans, and projections together carry one cross-implementation semantic and which sources are forbidden authority for that surface"
-  - from: "BND-26"
-    to: "BND-27"
+    note: declare which sources, plans, and projections together carry one cross-implementation semantic and which sources are forbidden authority for that surface
+  - from: BND-26
+    to: BND-27
     protocol: file-handoff
-    note: "declare which sources, plans, and projections together carry one cross-implementation semantic and which sources are forbidden authority for that surface"
-  - from: "BND-27"
-    to: "BND-29"
+    note: declare which sources, plans, and projections together carry one cross-implementation semantic and which sources are forbidden authority for that surface
+  - from: BND-27
+    to: BND-29
     protocol: file-handoff
-    note: "deliver versioned, data-owned conformance plans that drive verification mechanics"
-  - from: "BND-29"
-    to: "BND-28"
+    note: deliver versioned, data-owned conformance plans that drive verification mechanics
+  - from: BND-29
+    to: BND-28
     protocol: request-response
-    note: "dispatch neutral operations, consume ordered event channels, inject cancellation and deadlines, and collect error envelopes and evidence for one implementation under test"
-  - from: "BND-28"
-    to: "BND-29"
+    note: dispatch neutral operations, consume ordered event channels, inject cancellation and deadlines, and collect error envelopes and evidence for one implementation under test
+  - from: BND-28
+    to: BND-29
     protocol: request-response
-    note: "dispatch neutral operations, consume ordered event channels, inject cancellation and deadlines, and collect error envelopes and evidence for one implementation under test"
-  - from: "BND-29"
-    to: "BND-25"
+    note: dispatch neutral operations, consume ordered event channels, inject cancellation and deadlines, and collect error envelopes and evidence for one implementation under test
+  - from: BND-29
+    to: BND-25
     protocol: file-handoff
-    note: "emit per-check evidence keyed by authority packet, conformance plan version, and adapter identity"
+    note: emit per-check evidence keyed by authority packet, conformance plan version, and adapter identity

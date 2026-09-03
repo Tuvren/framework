@@ -1,14 +1,11 @@
----
-owner: migrate
-date: "2026-09-03"
----
-# Live Support Artifacts
+# Research records
 
-This directory contains checked-in generated support artifacts that remain
-consumed by docs portability classification or canonical verification.
+This directory contains the seven checked-in research records that preserve investigations and assessments outside the live constitutional authority chain.
 
-- These files support the live constitutional documents, but they do not extend
-  the live constitutional authority chain beyond `PRD.md`, `Architecture.md`,
-  `TechSpec.md`, and `Tasks.md`.
-- Update these artifacts only through their owning generator scripts unless a
-  live constitutional document explicitly says otherwise.
+- `epic-al-rust-re-entry-gate-reassessment.md`
+- `krt-bl001-freeze-candidate-audit.md`
+- `epic-as-mcp-sdk-api-surface-verification.md`
+- `adr-056-capabilities-graduation-assessment-2026-07-21.md`
+- `bh005-bridge-provider-executed-fidelity-audit.md`
+- `ay001-provider-surface-matrix.md`
+- `108-git-faithful-blob-persistence.md`

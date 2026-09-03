@@ -1,10 +1,14 @@
 id: BL
 name: SDK Freeze and Registry Publication (KRT)
 kind: product
-capabilities: []
-depends_on: [BJ, BK]
+capabilities:
+  - CAP-070
+depends_on:
+  - BJ
+  - BK
 scope:
-  paths: [TODO]
+  paths:
+    - TODO
   tech_spec_patchable: []
 estimated_diff_lines: 0
 tickets:
@@ -15,14 +19,21 @@ tickets:
     depends_on: []
     category: Feature-Evolution
     scope:
-      in: [TODO]
+      in:
+        - TODO
     verification:
       command: bun run check
       expected: exit 0
     description: "Re-run the public-surface audit against the ADR-057-amended stable-core enumeration: @tuvren/core (root plus subpaths) minus the @experimental-tagged @tuvren/core/capabilities surface, @tuvren/sdk (including its now-hosted createTuvren root export), the Durable-Read Surface, the ExecutionHandle/awaitResult surface, and the published leaf packages. Confirm the 2026-07-04 finding of zero Kraken* leaks still holds, confirm no read signature demands a scope argument, and confirm the ADR-058 funnel-routing seam (telemetry accepting TuvrenTelemetrySink | TelemetryDestination | { sink?; destination? }) is present on CreateTuvrenOptions before the surface is declared frozen-ready. Record the audited surface as the freeze candidate that KRT-BL002 snapshots"
     acceptance:
       mode: gherkin
-      evidence: TODO
+      evidence: |-
+        Given the ADR-057-amended stable-core enumeration audited after Epics BJ and BK land
+        When the freeze-candidate audit runs across @tuvren/core, @tuvren/sdk, the Durable-Read Surface, and ExecutionHandle/awaitResult
+        Then no Kraken* internal type is reachable from the audited public surface
+        And no audited read signature requires a caller-supplied scope parameter
+        And the createTuvren telemetry option is confirmed to accept the ADR-058 funnel-routing union
+        And the audited surface is recorded as the freeze candidate for the snapshot gate
     flows: []
     certainty: assumed
     status: done
@@ -30,64 +41,103 @@ tickets:
     title: API-Surface Snapshot / Freeze Gate
     type: Feature
     effort: 5
-    depends_on: [KRT-BL001]
+    depends_on:
+      - KRT-BL001
     category: Feature-Evolution
     scope:
-      in: [TODO]
+      in:
+        - TODO
     verification:
       command: bun run check
       expected: exit 0
-    description: "Choose and implement the TSDoc-aware API-surface extraction tool (api-extractor-class vs. a custom tsc/.d.ts-type-checker-driven walker), implement the ADR-056 diff table exactly (@experimental gained on a previously-untagged export blocks; @experimental removed is allowed and recorded as semver-minor; signature changes on @experimental exports are unguarded; signature changes on untagged exports are blocked unless declared semver-major), enforce the ADR-056 consistency floor for any subpath declared wholly experimental, and wire the resulting gate into the canonical bun run check/bun run verify path. The snapshot targets @tuvren/sdk and @tuvren/core only, per ADR-057's amendment that @tuvren/runtime is no longer a semver-guaranteed surface"
+    description: Choose and implement the TSDoc-aware API-surface extraction tool (api-extractor-class vs. a custom tsc/.d.ts-type-checker-driven walker), implement the ADR-056 diff table exactly (@experimental gained on a previously-untagged export blocks; @experimental removed is allowed and recorded as semver-minor; signature changes on @experimental exports are unguarded; signature changes on untagged exports are blocked unless declared semver-major), enforce the ADR-056 consistency floor for any subpath declared wholly experimental, and wire the resulting gate into the canonical bun run check/bun run verify path. The snapshot targets @tuvren/sdk and @tuvren/core only, per ADR-057's amendment that @tuvren/runtime is no longer a semver-guaranteed surface
     acceptance:
       mode: gherkin
-      evidence: TODO
+      evidence: |-
+        Given the frozen @tuvren/sdk and @tuvren/core surface snapshot from KRT-BL001's audited candidate
+        When a change removes the @experimental tag from a previously tagged export
+        Then the gate allows the change and records it as semver-minor
+        When a change alters the signature of an untagged (stable) export without a declared semver-major
+        Then the gate fails the verification path
+        When a change alters the signature of an @experimental-tagged export
+        Then the gate does not block the change
+        When an export under a subpath declared wholly experimental lacks the @experimental tag
+        Then the gate fails the build under the ADR-056 consistency floor
     flows: []
     certainty: assumed
     status: done
     deviations:
-      - files: [tools/scripts/lib/api-freeze-model.ts (new), tools/scripts/lib/api-freeze-model.test.ts (new), tools/scripts/check.ts, tools/scripts/verify.ts]
-        justification: "The ticket scope names tools/scripts/api-freeze-gate.ts and \"package.json (check/verify script wiring)\". (1) The ADR-056 diff table was extracted into a pure lib/ module with a bun-test file so the classification semantics are unit-testable independently of compiler extraction — the same split KRT-BK005 used (lib/regenerate-command-argv.ts + test); it is part of the named tool, not a second tool. (2) Since Epic BK, the canonical gate lists live in tools/scripts/verify.ts (AUTHORITY_GATE_STEPS) and tools/scripts/check.ts (INNER_LOOP_AUTHORITY_GATE_IDS), not in package.json command strings; wiring the gate into the check/verify path therefore requires those two files. package.json gained only the api-freeze / api-freeze:check script entries the ticket anticipated"
+      - files:
+          - tools/scripts/lib/api-freeze-model.ts (new)
+          - tools/scripts/lib/api-freeze-model.test.ts (new)
+          - tools/scripts/check.ts
+          - tools/scripts/verify.ts
+        justification: The ticket scope names tools/scripts/api-freeze-gate.ts and "package.json (check/verify script wiring)". (1) The ADR-056 diff table was extracted into a pure lib/ module with a bun-test file so the classification semantics are unit-testable independently of compiler extraction — the same split KRT-BK005 used (lib/regenerate-command-argv.ts + test); it is part of the named tool, not a second tool. (2) Since Epic BK, the canonical gate lists live in tools/scripts/verify.ts (AUTHORITY_GATE_STEPS) and tools/scripts/check.ts (INNER_LOOP_AUTHORITY_GATE_IDS), not in package.json command strings; wiring the gate into the check/verify path therefore requires those two files. package.json gained only the api-freeze / api-freeze:check script entries the ticket anticipated
   - id: KRT-BL003
     title: Registry Publication Pipeline + First Publish
     type: Feature
     effort: 5
-    depends_on: [KRT-BL002]
+    depends_on:
+      - KRT-BL002
     category: Feature-Evolution
     scope:
-      in: [TODO]
+      in:
+        - TODO
     verification:
       command: bun run verify
       expected: exit 0
-    description: "Using the release tooling established by KRT-BJ008, build provenance-carrying publication of the curated package set (@tuvren/core, @tuvren/sdk, published leaf packages, and @tuvren/runtime as an internal transitive dependency only) to the public registry. Leaf packages peer-depend on a single @tuvren/core version using the ADR-037 tilde range. Execute the first real publish and verify a consumer can install the published packages fresh and issue a first Turn by calling createTuvren from the published @tuvren/sdk root export (ADR-057 item 1)"
+    description: Using the release tooling established by KRT-BJ008, build provenance-carrying publication of the curated package set (@tuvren/core, @tuvren/sdk, published leaf packages, and @tuvren/runtime as an internal transitive dependency only) to the public registry. Leaf packages peer-depend on a single @tuvren/core version using the ADR-037 tilde range. Execute the first real publish and verify a consumer can install the published packages fresh and issue a first Turn by calling createTuvren from the published @tuvren/sdk root export (ADR-057 item 1)
     acceptance:
       mode: gherkin
-      evidence: TODO
+      evidence: |-
+        Given the frozen @tuvren/sdk and @tuvren/core surface and the registry publication pipeline
+        When the curated package set is published to the registry
+        Then leaf packages peer-depend on a single @tuvren/core version using the ADR-037 tilde range
+        And published artifacts carry provenance
+        And @tuvren/runtime is published only as a transitive dependency, never documented as host-installable
+        And a consumer installing the published packages fresh can issue a first Turn via createTuvren imported from @tuvren/sdk
     flows: []
     certainty: assumed
     status: done
     deviations:
-      - files: [".changeset/config.json; typescript/kernel/protocol/package.json", typescript/kernel/runtime/package.json, "typescript/providers/provider-api/package.json (private→published-internal flips); every workspace package.json version field + generated CHANGELOG.md files (changeset lane output); new LICENSE/README.md files in all 19 publishable package directories; bun.lock"]
+      - files:
+          - .changeset/config.json; typescript/kernel/protocol/package.json
+          - typescript/kernel/runtime/package.json
+          - typescript/providers/provider-api/package.json (private→published-internal flips); every workspace package.json version field + generated CHANGELOG.md files (changeset lane output); new LICENSE/README.md files in all 19 publishable package directories; bun.lock
         justification: "All six KRT-BL001 §5 publish-blocking hand-offs land here, and each names files beyond the ticket's literal list. (1) The access: \"restricted\" → \"public\" flip is the recorded BJ008 hand-off. (2) ADR-057 item 5's published-internal treatment must extend beyond @tuvren/runtime to kernel-protocol, kernel-runtime, and provider-api (KRT-BL001 §5.1): they are regular dependencies of the published set, and leaving them private makes every registry install unresolvable. provider-api additionally reclassifies its @tuvren/core edge from dependencies to peerDependencies — as a published package, a regular dep would bundle a second core instance in consumer trees, violating ADR-037's single-instance guarantee. (3) Version fields move 0.0.0 → 0.1.0 through the KRT-BJ008 release lane (fixed lockstep group); the lane initially computed 1.0.0, rewritten to 0.1.0 per the operator's explicit launch-version decision (2026-07-11) — the ADR-054 semver discipline and the KRT-BL002 gate apply identically at 0.x. (4) LICENSE/README tarball completeness is KRT-BL001 §5.3 (npm includes both regardless of the files allowlist). All manifest edits stay within the ticket's own subject matter (publication readiness of the curated package set); no runtime/source behavior changed"
   - id: KRT-BL004
     title: Adopter Onboarding for the Stable/Experimental Boundary
     type: Chore
     effort: 3
-    depends_on: [KRT-BL003]
+    depends_on:
+      - KRT-BL003
     category: Docs
     scope:
-      in: [TODO]
+      in:
+        - TODO
     verification:
-      command: "bun run nx run host-repl:test"
+      command: bun run nx run host-repl:test
       expected: exit 0
     description: "Write adopter-facing onboarding documenting: the stable core vs. @experimental-tagged surfaces and what the badge means for upgrade safety (ADR-056); the host import contract of {@tuvren/core, @tuvren/sdk, chosen leaf adapters} and the explicit prohibition on importing @tuvren/runtime or kernel packages directly (ADR-057 item 3); the three ADR-058 funnel-routing topologies (split, unified, mixed-substrate) with one createTuvren({ telemetry }) example per topology; and an install-plus-first-Turn walkthrough verified against the packages actually published in KRT-BL003. Cite the re-pointed Reference Host (typescript/host/repl, once KRT-BJ002 lands) as the living example a reader can clone and run"
     acceptance:
       mode: gherkin
-      evidence: TODO
+      evidence: |-
+        Given the packages published in KRT-BL003 and the re-pointed Reference Host from KRT-BJ002
+        When an adopter follows the onboarding guide
+        Then the stable core and @experimental surfaces are delineated using the ADR-056 badge semantics
+        And the host import contract shown never imports @tuvren/runtime or a kernel package directly
+        And all three ADR-058 funnel-routing topologies (split, unified, mixed) appear with a working createTuvren example
+        And the documented install-and-first-Turn path succeeds against the actually-published registry packages
+        And the Reference Host is cited as a runnable example of the documented contract
     flows: []
     certainty: assumed
     status: done
 closeout:
-  tickets_completed: [KRT-BL001, KRT-BL002, KRT-BL003, KRT-BL004]
+  tickets_completed:
+    - KRT-BL001
+    - KRT-BL002
+    - KRT-BL003
+    - KRT-BL004
   tickets_deferred: []
   points_completed: 16
   spec_patches: []

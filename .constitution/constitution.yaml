@@ -2,12 +2,27 @@ schema_version: 1
 acronym: KRT
 archetype:
   primary: Library/SDK
-  secondary: [CLI/Tooling]
+  secondary:
+    - CLI/Tooling
   confidence: high
   rationale: "vision.md names the target archetype as an embeddable stateful agent and workflow runtime kernel plus a runner-oriented framework/SDK: the product is consumed as a library by host applications and is never a hosted service. The reference host is a serious REPL CLI that proves the SDK, which makes CLI/Tooling a secondary archetype rather than the primary one."
-surfaces: [".constitution/tech-spec/contracts/**", ".constitution/tech-spec/data-models/**"]
-diff_exclusions: ["**/Cargo.lock", "**/bun.lock", "**/pubspec.lock", "**/*.snap", "**/go.sum", "**/uv.lock", "**/MODULE.bazel.lock", "**/devenv.lock"]
+surfaces:
+  - .constitution/tech-spec/contracts/**
+  - .constitution/tech-spec/data-models/**
+diff_exclusions:
+  - "**/Cargo.lock"
+  - "**/bun.lock"
+  - "**/pubspec.lock"
+  - "**/*.snap"
+  - "**/go.sum"
+  - "**/uv.lock"
+  - "**/MODULE.bazel.lock"
+  - "**/devenv.lock"
 default_branch: master
 exceptions:
   - rule: STR-002
-    reason: "Four generated gate artifacts (epic-ad-normative-docs-claim-inventory.json, epic-ad-docs-to-authority-coverage-matrix.json, epic-af-conformance-gap-plan.json, epic-al-portability-inventory.json) and their markdown companions are written and re-read from hard-coded .constitution/reports/ paths by tools/scripts/docs-authority-freeze-gate.ts, tools/scripts/epic-af-conformance-gap-plan.ts, and tools/scripts/portability-gate.ts, which bun run check and bun run verify both enforce. Relocating them outside .constitution/ is a code change those scripts own, not a documentation move; this exception holds until an epic repoints them."
+    reason: Four generated gate artifacts (epic-ad-normative-docs-claim-inventory.json, epic-ad-docs-to-authority-coverage-matrix.json, epic-af-conformance-gap-plan.json, epic-al-portability-inventory.json) and their markdown companions are written and re-read from hard-coded .constitution/reports/ paths by tools/scripts/docs-authority-freeze-gate.ts, tools/scripts/epic-af-conformance-gap-plan.ts, and tools/scripts/portability-gate.ts, which bun run check and bun run verify both enforce. Relocating them outside .constitution/ is a code change those scripts own, not a documentation move; this exception holds until an epic repoints them.
+  - rule: GLS-001
+    reason: The restored domain bans intentionally overlap immutable API identifiers and canonical domain labels in descriptive pointer documentation; the migrated markdown cannot be mechanically rewritten without corrupting those identifiers. The banned terms remain governed for authoring outside this historical pointer documentation.
+  - rule: SCH-001
+    reason: The migration review requires the two README sidecars to omit their synthetic all-flow lists, while the installed schema still requires the field. The empty lists preserve the schema only until the tooling schema accepts omitted flow coverage.

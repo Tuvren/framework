@@ -99,3 +99,8 @@ CapabilityPolicy --> "*" ToolSurface : gates exposure of
 CapabilityPolicy --> "*" Binding : gates invocation of
 ```
 
+
+
+## Domain rules
+
+The product must preserve a clear separation between low-level runtime mechanism and higher-level agent policy; the canonical runtime language must remain provider-neutral; history-preserving correction must be preferred over destructive overwrite; active-context reshaping must never imply that prior committed history ceased to exist; future implementation languages must prove parity against shared semantic assets rather than reinterpret the product independently; the first-party reference host must consume only the same host-facing SDK boundary that downstream hosts use; and the runtime must not collapse provider-native, provider-mediated, server-side, and client-side execution into one tool abstraction, keeping the model-facing tool surface distinct from the underlying capability.
