@@ -340,6 +340,7 @@ bill_of_materials:
       kind: repository
       ref: devenv.lock
       date: 2026-09-03
+      note: "SemVer: 1.3.10 (provisioned by devenv pkgs.bun)"
   - name: buf
     role: tooling
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
@@ -351,6 +352,7 @@ bill_of_materials:
       kind: repository
       ref: devenv.lock
       date: 2026-09-03
+      note: "SemVer: 1.66.1 (provisioned by devenv pkgs.buf)"
   - name: protobuf
     role: tooling
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
@@ -362,6 +364,31 @@ bill_of_materials:
       kind: repository
       ref: devenv.lock
       date: 2026-09-03
+      note: "SemVer: 33.5 (libprotoc provisioned by devenv pkgs.protobuf)"
+  - name: protoc-gen-es
+    role: tooling
+    version: 2.11.0
+    ecosystem: nix
+    justification: Protoc plugin for current kernel interop TypeScript binding generation; provisioned by devenv and aligned with @bufbuild/protobuf@2.11.0.
+    radar: adopt
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: devenv.lock
+      date: 2026-09-03
+      note: "SemVer: 2.11.0 (pkgs.protoc-gen-es provisioned via devenv)"
+  - name: weaver
+    role: tooling
+    version: 0.21.2
+    ecosystem: nix
+    justification: OpenTelemetry semantic-convention code generator CLI for cross-language telemetry vocabulary; provisioned by devenv.
+    radar: adopt
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: devenv.lock
+      date: 2026-09-03
+      note: "SemVer: 0.21.2 (pkgs.weaver provisioned via devenv)"
   - name: go
     role: language
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
@@ -373,6 +400,7 @@ bill_of_materials:
       kind: repository
       ref: devenv.lock
       date: 2026-09-03
+      note: "SemVer: 1.25.7 (provisioned by devenv languages.go)"
   - name: python
     role: language
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
@@ -384,6 +412,7 @@ bill_of_materials:
       kind: repository
       ref: devenv.lock
       date: 2026-09-03
+      note: "SemVer: 3.13.12 (provisioned by devenv languages.python)"
   - name: dart
     role: language
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
@@ -395,6 +424,7 @@ bill_of_materials:
       kind: repository
       ref: devenv.lock
       date: 2026-09-03
+      note: "SemVer: 3.11.0 (provisioned by devenv languages.dart)"
   - name: postgresql
     role: persistence
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
@@ -406,6 +436,7 @@ bill_of_materials:
       kind: repository
       ref: devenv.lock
       date: 2026-09-03
+      note: "SemVer: 17.9 (provisioned by devenv services.postgres)"
   - name: better-sqlite3
     role: library
     version: 12.8.0

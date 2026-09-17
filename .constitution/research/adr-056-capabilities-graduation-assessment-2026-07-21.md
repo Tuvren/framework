@@ -24,7 +24,7 @@ date: "2026-09-03"
 
 ## 1. What the ADR-056 gate actually asks for
 
-ADR-056 (`.constitution/tech-spec/adrs/ADR-056-*.md`) marks
+ADR-056 (`.constitution/tech-spec/adrs/ADR-0056-*.md`) marks
 `@tuvren/core/capabilities` wholly `@experimental` and excludes it from the
 ADR-054 semver freeze. The gate this run's evidence is measured against is the
 one ADR-063 itself names: **network evidence** — proof that the capability
@@ -41,7 +41,7 @@ public surface under semver) that this assessment does not execute.
 | Real-socket reconnect-redelivery e2e | A killed raw socket with an unanswered `client_invocation` in flight, followed by client reconnect-with-cursor, causes exactly one handler execution and one effects-log line — genuine server-side redelivery is structurally required for the test to pass (the handler answers before the drop, so client-side dedup alone cannot fake it). | `typescript/host/repl/test/repl-serve-ws.e2e.test.ts` (M6, hardened by the M6 review's `a7bc4ab`); driven through `Bun.serve` WebSockets and the headless `@tuvren/session-client` peer (`scripts/ws-peer.ts`). |
 | SIGKILL process-kill durability proof | A completed turn's tool result is read back by a **fully separate reader runtime** after the serving process is SIGKILLed, against disposable PostgreSQL — proving durable commit survives real process death, not just simulated backend failure. | Same e2e file, `process-kill durability` case. |
 | Seven promoted conformance checks | Turns this run's semantics into shared, implementation-neutral, plan-graded authority rather than private test assertions: four ADR-063 session-lifecycle checks (exactly-once redelivery, grace-window-expiry settlement, dispatch-timeout settlement with a clock armed only while attached, gapless cross-sink cursor-resumed sequencing) on `host-session.json` (0.2.0 -> 0.3.0); a network-evidence lane (reconnect-redelivery dedup, kill-durability recovery) on `tuvren-client-execution-class.json` (0.2.0 -> 0.3.0), scoped honestly to what an in-process harness can prove; and the ADR-064 sanitize-seam check on `runtime-api-callables-extended.json` (0.7.0 -> 0.8.0). | `spec/conformance/engine/plans/host-session.json`, `spec/conformance/tools/plans/tuvren-client-execution-class.json`, `spec/conformance/engine/plans/runtime-api-callables-extended.json` (not modified by this assessment; cited as evidence only). |
-| ADR-065 idempotency-identity correction | Closes a defect that would have undermined every graduation claim resting on redelivery dedup: the idempotency identity is now `(turnId, callId)`, genuinely stable across retry, iteration re-dispatch, approval resume, and ADR-063 redelivery — not the old `(runId, callId, fencingToken)` triple, which churned in a healthy loop. | `.constitution/tech-spec/adrs/ADR-065-*.md`; `typescript/runtime/src/lib/idempotency-identity.ts`. |
+| ADR-065 idempotency-identity correction | Closes a defect that would have undermined every graduation claim resting on redelivery dedup: the idempotency identity is now `(turnId, callId)`, genuinely stable across retry, iteration re-dispatch, approval resume, and ADR-063 redelivery — not the old `(runId, callId, fencingToken)` triple, which churned in a healthy loop. | `.constitution/tech-spec/adrs/ADR-0065-*.md`; `typescript/runtime/src/lib/idempotency-identity.ts`. |
 | Portability inventory bump | Records the three plan bumps above as required authority and the session-client real-socket obligation as a standing, named row rather than a silent gap. | `.constitution/reports/epic-al-portability-inventory.json` (0.9.0 -> 0.10.0). |
 
 ## 3. The honest boundary: what this evidence does *not* establish
@@ -74,6 +74,6 @@ public surface under semver) that this assessment does not execute.
 - `spec/conformance/tools/plans/tuvren-client-execution-class.json` (0.2.0 -> 0.3.0)
 - `spec/conformance/engine/plans/runtime-api-callables-extended.json` (0.7.0 -> 0.8.0)
 - `.constitution/reports/epic-al-portability-inventory.json` (0.9.0 -> 0.10.0)
-- `.constitution/tech-spec/adrs/ADR-063-host-owned-reattachable-remote-client-session.md` (§6 Consequences, the graduation deferral)
-- `.constitution/tech-spec/adrs/ADR-065-idempotency-identity-is-call-identity-not-authority-epoch.md` (§ Consequences, the two open obligations)
+- `.constitution/tech-spec/adrs/ADR-0063-host-owned-reattachable-remote-client-session.md` (§6 Consequences, the graduation deferral)
+- `.constitution/tech-spec/adrs/ADR-0065-idempotency-identity-is-call-identity-not-authority-epoch.md` (§ Consequences, the two open obligations)
 - `typescript/runtime/src/lib/idempotency-identity.ts`
