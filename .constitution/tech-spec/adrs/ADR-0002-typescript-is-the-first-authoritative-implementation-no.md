@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-002 TypeScript Is the First Authoritative Implementation, Not the Long-Term Kernel Monopoly
+### ADR-0002 TypeScript Is the First Authoritative Implementation, Not the Long-Term Kernel Monopoly
 
 - **Status:** accepted
 - **Context:** The project needs a fast path to validating the kernel and framework semantics, but the protocol must remain suitable for future Rust, Wasm, or other implementations.

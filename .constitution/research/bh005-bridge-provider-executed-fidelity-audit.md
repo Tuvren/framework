@@ -8,7 +8,7 @@ date: "2026-09-03"
 
 **Status:** closed (audit completed; one defect found and fixed)
 **Epic:** BH — Conversation-State Ownership Hardening (KRT)
-**Authority:** TechSpec ADR-055 (bridge fidelity audit); ADR-005 (baseline bridge); AY002/AY004 (provider-native/mediated execution classes)
+**Authority:** TechSpec ADR-0055 (bridge fidelity audit); ADR-0005 (baseline bridge); AY002/AY004 (provider-native/mediated execution classes)
 **Audited surface:** `ai@6.0.142` / `@ai-sdk/provider@3.0.8` bridge (`@tuvren/provider-bridge-ai-sdk`)
 **Landmine of record:** [vercel/ai #10888](https://github.com/vercel/ai/issues/10888) — `parseToolCall` validates provider-executed tools against the user tool map and injects spurious "invalid tool" errors.
 
@@ -16,7 +16,7 @@ date: "2026-09-03"
 
 ## Audit Scope
 
-ADR-055 requires, before any native-client work, an audit of the baseline AI SDK bridge's `providerExecuted`/`dynamic` round-trip fidelity against the `parseToolCall` landmine:
+ADR-0055 requires, before any native-client work, an audit of the baseline AI SDK bridge's `providerExecuted`/`dynamic` round-trip fidelity against the `parseToolCall` landmine:
 
 1. provider-executed tool calls/results are attributed to the **provider-native** execution class;
 2. **no spurious validation error** is injected; and
@@ -38,7 +38,7 @@ The audit test (`ai-sdk-provider-bridge-provider-executed-fidelity.test.ts`) and
 
 Before this milestone, `rejectUnsupportedProviderOwnedToolPart` rejected **every** `tool-call` part with `providerExecuted: true` or `dynamic: true` with `unsupported_ai_sdk_content` / `provider_owned_tool_execution_unsupported`, regardless of whether the host had declared that tool as provider-native/mediated. Because real providers emit the inline provider-executed `tool-call` part **before** its `tool-result` (verified above), a realistic provider-executed round-trip aborted at the call part — the `tool-result` (which the bridge *does* attribute to `provider-native` via the declared lookup) was never reached.
 
-This was a genuine fidelity gap against ADR-055 criterion (1): the prior tests for provider-native/mediated tools only exercised result-only content, never the call+result shape a live provider produces.
+This was a genuine fidelity gap against ADR-0055 criterion (1): the prior tests for provider-native/mediated tools only exercised result-only content, never the call+result shape a live provider produces.
 
 **Fix (minimal, behaviour-preserving for the baseline boundary):** a provider-executed/`dynamic` tool the host **declared** provider-native/mediated is now **skipped** at the bridge across its whole streamed lifecycle — the matching `tool-result` carries the provider-native attribution (AY002/AY004), and the call does not contaminate the client-facing `parts`/stream with a function `tool_call` (or its incremental input deltas) the runtime would attempt to execute. An **undeclared** provider-owned tool is still rejected (baseline protection unchanged). Touched:
 
@@ -48,7 +48,7 @@ This was a genuine fidelity gap against ADR-055 criterion (1): the prior tests f
 
 Scope note (corrected after milestone review): an earlier draft of this fix left the `tool-input-start` path unconditionally strict, on the mistaken premise that providers never stream provider-executed tool inputs incrementally. That premise is **false** — `@ai-sdk/openai@3.0.53` streams every Responses server tool (and MCP) as `tool-input-start { providerExecuted: true }` first (see Audit Scope), so a declared provider-executed tool would have aborted at `tool-input-start` before the fixed terminal `tool-call` was ever reached. The streaming fix therefore covers the incremental prelude as described above. The fix is provider-agnostic — it keys off the `providerExecuted`/`dynamic` flags plus the declared lookup — so it covers the same incremental shape from Anthropic server tool use / Google and any MCP round-trip, not only OpenAI.
 
-Orphan-call boundary (made explicit after milestone review): skipping a declared provider-executed `tool-call` rests on the matching `tool-result` carrying the attribution. The bridge does **not** assume the result always arrives — it simply treats the call as the provider's own bookkeeping. The **result** is the attributable observation (independently mapped to `provider-native` via the declared lookup, whether or not a preceding call was seen); the **call** carries no observation of its own. So a declared provider-executed call whose result never arrives this turn (truncated/interrupted/multi-step response) yields **no provider-native record and no client-facing function `tool_call`**, and — critically — does **not** throw the way the prior over-broad rejection did. This is pinned by tests (`a DECLARED provider-executed tool-call with no matching result …`, generate + stream). Consistent with the `tool-input-start` minimalism above, the bridge does not add skip-tracking state to emit a degraded/diagnostic record for an orphan call; that is deferred to the ADR-055 native-client phases, where a richer provider-execution lifecycle is in scope. For the baseline bridge the durable-lineage posture (ADR-053) governs: lineage records what actually arrived, and an orphan call contributes nothing to attribute.
+Orphan-call boundary (made explicit after milestone review): skipping a declared provider-executed `tool-call` rests on the matching `tool-result` carrying the attribution. The bridge does **not** assume the result always arrives — it simply treats the call as the provider's own bookkeeping. The **result** is the attributable observation (independently mapped to `provider-native` via the declared lookup, whether or not a preceding call was seen); the **call** carries no observation of its own. So a declared provider-executed call whose result never arrives this turn (truncated/interrupted/multi-step response) yields **no provider-native record and no client-facing function `tool_call`**, and — critically — does **not** throw the way the prior over-broad rejection did. This is pinned by tests (`a DECLARED provider-executed tool-call with no matching result …`, generate + stream). Consistent with the `tool-input-start` minimalism above, the bridge does not add skip-tracking state to emit a degraded/diagnostic record for an orphan call; that is deferred to the ADR-0055 native-client phases, where a richer provider-execution lifecycle is in scope. For the baseline bridge the durable-lineage posture (ADR-0053) governs: lineage records what actually arrived, and an orphan call contributes nothing to attribute.
 
 ---
 
@@ -64,7 +64,7 @@ Issue #10888 remains **open**. The proposed upstream fix is to have `parseToolCa
 
 ## Version Confirmation
 
-`ai@6.0.142` and `@ai-sdk/provider@3.0.8` are the locked versions (`boundaries/providers/implementations/typescript/bridge-ai-sdk/package.json`), matching ADR-055's recorded surface. No version drift; the audit's behavioral assertions are valid against the shipped stack.
+`ai@6.0.142` and `@ai-sdk/provider@3.0.8` are the locked versions (`boundaries/providers/implementations/typescript/bridge-ai-sdk/package.json`), matching ADR-0055's recorded surface. No version drift; the audit's behavioral assertions are valid against the shipped stack.
 
 ---
 

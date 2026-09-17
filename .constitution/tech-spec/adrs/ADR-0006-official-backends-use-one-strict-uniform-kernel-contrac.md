@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-006 Official Backends Use One Strict Uniform Kernel Contract
+### ADR-0006 Official Backends Use One Strict Uniform Kernel Contract
 
 - **Status:** accepted
 - **Context:** Tuvren Runtime is a framework product, not a storage product. Developers must be able to move between backends without kernel-semantic drift.

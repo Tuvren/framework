@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-031 Raw Compatibility Status Uses Four Truthful States
+### ADR-0031 Raw Compatibility Status Uses Four Truthful States
 
 - **Status:** accepted
 - **Context:** Treating unsupported or non-applicable suites as `pass`, especially with `applicableChecks === 0`, makes compatibility evidence overstate readiness and hides whether a suite actually exercised a boundary.

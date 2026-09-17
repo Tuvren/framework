@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-032 The First Product-Depth Host Is a Serious REPL CLI Built on the High-Level SDK
+### ADR-0032 The First Product-Depth Host Is a Serious REPL CLI Built on the High-Level SDK
 
 - **Status:** accepted
 - **Context:** The project needs a product-depth proof that host developers can build serious operator-facing tools on Tuvren Runtime without private seams. The current playground harness proves many behaviors, but it is explicitly a local host harness rather than the lasting proving bar for the SDK surface.

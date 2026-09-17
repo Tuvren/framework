@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-015 Semantic Authority Flows from Human Specs into Boundary-Owned Machine Artifacts
+### ADR-0015 Semantic Authority Flows from Human Specs into Boundary-Owned Machine Artifacts
 
 - **Status:** accepted
 - **Context:** The multi-language transition needs machine-readable contract, conformance, and interop assets, but those assets cannot become an unreviewed parallel spec.

@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-016 Shape Contracts, Behavioral Conformance, and Interop Transport Stay Separate
+### ADR-0016 Shape Contracts, Behavioral Conformance, and Interop Transport Stay Separate
 
 - **Status:** accepted
 - **Context:** A single technology cannot cleanly express every kind of runtime authority Tuvren needs across framework contracts, kernel records, behavior fixtures, and cross-process transport.

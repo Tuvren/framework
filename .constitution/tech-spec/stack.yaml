@@ -69,7 +69,7 @@ bill_of_materials:
     role: tooling
     version: 2.4.10
     ecosystem: bun
-    justification: Formatting and linting for the TypeScript line (ADR-012).
+    justification: Formatting and linting for the TypeScript line (ADR-0012).
     radar: adopt
     certainty: settled
     evidence:
@@ -80,7 +80,7 @@ bill_of_materials:
     role: tooling
     version: 8.5.1
     ecosystem: bun
-    justification: Package builds for the TypeScript line (ADR-012).
+    justification: Package builds for the TypeScript line (ADR-0012).
     radar: adopt
     certainty: settled
     evidence:
@@ -190,7 +190,7 @@ bill_of_materials:
     role: tooling
     version: 22.6.3
     ecosystem: bun
-    justification: Target routing and developer ergonomics over the native toolchains (ADR-013).
+    justification: Target routing and developer ergonomics over the native toolchains (ADR-0013).
     radar: adopt
     certainty: settled
     evidence:
@@ -245,7 +245,7 @@ bill_of_materials:
     role: framework
     version: 0.14.5
     ecosystem: cargo
-    justification: gRPC server and client for the Rust kernel process boundary (ADR-018).
+    justification: gRPC server and client for the Rust kernel process boundary (ADR-0018).
     radar: adopt
     certainty: settled
     evidence:
@@ -322,7 +322,7 @@ bill_of_materials:
     role: language
     version: 1.95.0
     ecosystem: system
-    justification: Kernel-first implementation line through the root Cargo workspace (ADR-018).
+    justification: Kernel-first implementation line through the root Cargo workspace (ADR-0018).
     radar: adopt
     certainty: settled
     evidence:

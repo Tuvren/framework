@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-036 `TuvrenRuntime` Durable-Read Surface
+### ADR-0036 `TuvrenRuntime` Durable-Read Surface
 
 - **Status:** accepted
 - **Context:** PRD v0.7.0 CAP-P0-043 through CAP-P0-047 require the host-facing SDK to expose first-party durable reads for thread listing, branch listing, state at a chosen TurnNode, turn history walking, and durable branch messages. Architecture v0.7.0 places this surface on Framework Shared Services as the Durable-Read Surface responsibility. The current `createPlaygroundKernelInspector` in `@tuvren/repl-host` pierces the SDK boundary to read kernel state directly; that smell is the architectural justification for promoting reads onto `TuvrenRuntime`. PRD §1.3 and Architecture §1.4 explicitly forbid hosts from coupling to kernel internals.

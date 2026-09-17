@@ -10,7 +10,7 @@ assumption: "Migrated from markdown; not yet exercised by an integration test."
 
 - **Maps to PRD capability:** CAP-P0-019, CAP-P0-061, CAP-P1-063, CAP-P0-055
 
-> The CAP-P0-055 trace covers the sanitization step's *placement* — that nothing sensitive reaches durable state, telemetry, or transcripts — not its mechanism. CAP-P0-055 and ADR-044 govern credentials the framework itself handles and enforces; the seam shown below is host-authored payload policy the framework only orders (ADR-064 §1). The two are deliberately distinct and share a capability only because they defend the same surfaces.
+> The CAP-P0-055 trace covers the sanitization step's *placement* — that nothing sensitive reaches durable state, telemetry, or transcripts — not its mechanism. CAP-P0-055 and ADR-0044 govern credentials the framework itself handles and enforces; the seam shown below is host-authored payload policy the framework only orders (ADR-0064 §1). The two are deliberately distinct and share a capability only because they defend the same surfaces.
 
 ```mermaid
 sequenceDiagram

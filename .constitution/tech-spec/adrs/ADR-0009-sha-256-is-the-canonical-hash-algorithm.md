@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-009 SHA-256 Is the Canonical Hash Algorithm
+### ADR-0009 SHA-256 Is the Canonical Hash Algorithm
 
 - **Status:** accepted
 - **Context:** Durable identity must work cleanly across TypeScript, Python, Go, Rust, Bun, Node.js, Deno, and edge/Wasm-friendly environments with minimal dependency friction.

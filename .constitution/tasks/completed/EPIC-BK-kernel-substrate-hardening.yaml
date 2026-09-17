@@ -133,7 +133,7 @@ tickets:
         justification: "The new test targets `MemoryScopeStore`'s internal `runExclusive`/`dropScope` serialization primitive directly (three racing actors sequenced via hand-rolled deferreds, no timers), a different concern than `backend-memory.purge-scope.test.ts`'s existing black-box `purgeScope()` behavior tests. The substantive Gherkin criterion — a purge-vs-transact race test exists under `bun run nx run backend-memory:test` (actual Nx project name; the ticket's cited `kernel-backend-memory` does not exist) and asserts no concurrent window opens — is met in a differently-named file. Achieved a genuine red-then-green TDD cycle: the test failed against unmodified source with the exact predicted ordering violation (`D-ran` before `B-done`) before the fix was applied."
     stop_conditions: ["STOP if a sentinel/conditional-delete fix cannot preserve the documented \"distinct Scopes never contend\" guarantee under the added test — escalate instead of shipping a partial fix."]
   - id: KRT-BK004
-    title: Provider-Bridge Secret Screening at the Seam (ADR-044/058)
+    title: Provider-Bridge Secret Screening at the Seam (ADR-0044/ADR-0058)
     type: Security
     effort: 3
     depends_on: []
@@ -144,7 +144,7 @@ tickets:
     verification:
       command: bun run conformance
       expected: exit 0
-    description: "requestBody and response-header values captured into bridgeExtras currently pass only through sanitizeMetadataValue, which performs JSON-safety normalization (stringifying Date/URL/Uint8Array/Error, recursing into plain objects and arrays) with no pattern-based secret detection, unlike the dedicated telemetry-secret-screening.ts module used elsewhere in the runtime. These values flow through buildProviderMetadata into tool_call.done canonical events and durable run records, both of which ADR-044 names as credential-free zones. Apply the shared secret-screening module at the bridge seam before values enter provider metadata, and extend the secret-isolation conformance fixture with a pattern-shaped assertion (detecting secret-shaped values structurally) rather than only the existing value-equality assertion against configured secrets"
+    description: "requestBody and response-header values captured into bridgeExtras currently pass only through sanitizeMetadataValue, which performs JSON-safety normalization (stringifying Date/URL/Uint8Array/Error, recursing into plain objects and arrays) with no pattern-based secret detection, unlike the dedicated telemetry-secret-screening.ts module used elsewhere in the runtime. These values flow through buildProviderMetadata into tool_call.done canonical events and durable run records, both of which ADR-0044 names as credential-free zones. Apply the shared secret-screening module at the bridge seam before values enter provider metadata, and extend the secret-isolation conformance fixture with a pattern-shaped assertion (detecting secret-shaped values structurally) rather than only the existing value-equality assertion against configured secrets"
     acceptance:
       mode: gherkin
       evidence: |
@@ -276,7 +276,7 @@ tickets:
     verification:
       command: "bun run verify:kernel"
       expected: exit 0
-    description: "Measure write latency as a function of scope size for the postgres whole-blob-per-write persistence model, and measure the cost of sqlite's full-database loads inside health() and reclaim() (the latter loads the database twice). Complete .constitution/spikes/SPK-KRT-BK007.md following the existing spike-report format, recommending either accept-with-documented-bounds or a path-granular/row-per-record persistence redesign, to feed a future ADR alongside the existing ADR-006/048/049/050/051 set that currently does not address this trade-off. No production code changes are in scope for this ticket"
+    description: "Measure write latency as a function of scope size for the postgres whole-blob-per-write persistence model, and measure the cost of sqlite's full-database loads inside health() and reclaim() (the latter loads the database twice). Complete .constitution/spikes/SPK-KRT-BK007.md following the existing spike-report format, recommending either accept-with-documented-bounds or a path-granular/row-per-record persistence redesign, to feed a future ADR alongside the existing ADR-0006/ADR-0048/ADR-0049/ADR-0050/ADR-0051 set that currently does not address this trade-off. No production code changes are in scope for this ticket"
     acceptance:
       mode: gherkin
       evidence: |
@@ -314,7 +314,7 @@ tickets:
           **Post-review fix (dual-axis standards + spec review, non-blocking Investigate finding, fixed before the next milestone):** The standards-review agent live-re-ran the committed `sqlite-load-cost.bench.ts` script and reproduced an increasing-multiplier growth trend but with different intermediate values (~4.0x, ~10.9x through 10→100→1,000) than the committed report's (3.43x, 9.58x), and flagged that the report's "accelerating / worse-than-O(n)" framing for SQLite's `health()`/`reclaim()` growth was stated with more confidence than 4 data points at 5 samples each (where p95 is mathematically indistinguishable from max) actually support, given the decisive 1,000→10,000 jump is a single interval and a memory/GC/allocation effect around the ~20k in-memory-record mark was never ruled out. The spec review separately confirmed Gherkin Scenarios 1 and 2 both pass and raised only two minor general-feedback notes (no per-sample `releasedObjectCount` retained; the sqlite table's "DB size (turn nodes)" axis label under-counts total loaded rows by the equal-sized orphan batch), with no P0/P1/P2 from either axis. Per this epic's practice of proactively fixing cheap, clearly-correct non-blocking findings: reworded `SPK-KRT-BK007.md` §2/§3/§4 (the four passages the standards reviewer cited) to present the SQLite top-of-range growth jump as a hypothesis warranting its own follow-up investigation — explicitly naming the sample-size, p95-at-n=5, and memory/GC-confound caveats — rather than as a settled algorithmic-complexity conclusion, and clarified that the primary Option-B recommendation does not depend on that secondary claim (it holds under the best-case/minimum sample at every tier for both backends). Also added the spec review's suggested axis-label clarification to the SQLite results table. No script or Nx-target change was needed — both bench scripts' own logic was independently confirmed correct by both reviewers (live re-execution, cross-checked against the actual `postgres-backend-persistence.ts`/`sqlite-backend.ts` code paths); only the spike report's prose was overclaiming relative to its own evidence. Re-verified: no residual placeholder text, both Gherkin scenarios still satisfied, zero `src/**` diffs unchanged.
     stop_conditions: ["STOP and do not write any production code under this ticket — it is measurement-only. STOP if a representative benchmark cannot be constructed without touching production source; escalate instead of adding instrumentation to the measured files."]
   - id: KRT-BK008
-    title: TurnTree Caller-Side Chunk-Aware Writes (ADR-011)
+    title: TurnTree Caller-Side Chunk-Aware Writes (ADR-0011)
     type: Feature
     effort: 3
     depends_on: []
@@ -325,20 +325,20 @@ tickets:
     verification:
       command: "bun run verify:kernel"
       expected: exit 0
-    description: "toStoredTurnTreePath always resubmits the full flat items array with orderedEncoding: \"flat\", regardless of collection size, so once an ordered TurnTree path crosses the ADR-011 chunking threshold, every subsequent append re-chunks and re-hashes the entire collection at the caller — O(collection size) CPU per append even though content-addressing already dedupes the storage. Teach the runtime caller to submit already-chunked records or deltas once the threshold is crossed, matching the chunk-aware shape (orderedEncoding: \"chunked\", chunkHashes) that backends already accept per the existing normalize logic, so appends past the threshold cost work proportional to the delta, not the whole collection"
+    description: "toStoredTurnTreePath always resubmits the full flat items array with orderedEncoding: \"flat\", regardless of collection size, so once an ordered TurnTree path crosses the ADR-0011 chunking threshold, every subsequent append re-chunks and re-hashes the entire collection at the caller — O(collection size) CPU per append even though content-addressing already dedupes the storage. Teach the runtime caller to submit already-chunked records or deltas once the threshold is crossed, matching the chunk-aware shape (orderedEncoding: \"chunked\", chunkHashes) that backends already accept per the existing normalize logic, so appends past the threshold cost work proportional to the delta, not the whole collection"
     acceptance:
       mode: gherkin
       evidence: |
         Feature: Chunk-aware TurnTree caller writes
         
           Scenario: Appends past the chunking threshold do not re-hash the full collection
-            Given an ordered TurnTree path already past the ADR-011 chunking threshold
+            Given an ordered TurnTree path already past the ADR-0011 chunking threshold
             When the runtime appends one additional item to that path
             Then the caller submits a chunked delta rather than the full flat items array
             And the CPU cost of the append is proportional to the new chunk, not the full collection
         
           Scenario: Collections below the threshold are unaffected
-            Given an ordered TurnTree path below the ADR-011 chunking threshold
+            Given an ordered TurnTree path below the ADR-0011 chunking threshold
             When the runtime writes to that path
             Then the caller continues to submit the flat encoding exactly as before
         
@@ -359,7 +359,7 @@ tickets:
           - **Touched Files (new tests, exceeding the ticket's declared Scope):**
             - `typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts`, `runtime-kernel-storage.chunk-constant-agreement.test.ts`, `runtime-kernel.turn-tree-chunking.test.ts`, `runtime-kernel-lineage.apply-staged-results.test.ts`, and an additive `backend?: RuntimeBackend` override parameter on `runtime-kernel-test-helpers.ts`'s `createThreadFixture`.
             - `typescript/kernel/backends/sqlite/test/backend-sqlite.turn-tree-chunk-aware-writes.test.ts` and `typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts` — cross-backend parity proof for the same optimization.
-            - **Justification:** TDD test strategy per the epic's testing rules. The sqlite/postgres parity tests live in those packages (not `kernel-runtime/test`) because both already devDepend on `@tuvren/kernel-runtime` for their own kernel-level tests — adding the reverse edge would create a real Nx project-graph cycle, confirmed empirically. The constant-agreement test is a same-repo source-text invariant guard (5 independent `ORDERED_PATH_CHUNK_THRESHOLD`/`SIZE` declarations — memory, postgres, sqlite-backend.ts, sqlite-integrity-assertions.ts, and the new runtime one — per ADR-011's "implementation constant, not protocol constant" framing) and deliberately does not live under `tools/conformance/`, since that machinery is reserved for cross-implementation adapter behavior, not same-language source-constant hygiene.
+            - **Justification:** TDD test strategy per the epic's testing rules. The sqlite/postgres parity tests live in those packages (not `kernel-runtime/test`) because both already devDepend on `@tuvren/kernel-runtime` for their own kernel-level tests — adding the reverse edge would create a real Nx project-graph cycle, confirmed empirically. The constant-agreement test is a same-repo source-text invariant guard (5 independent `ORDERED_PATH_CHUNK_THRESHOLD`/`SIZE` declarations — memory, postgres, sqlite-backend.ts, sqlite-integrity-assertions.ts, and the new runtime one — per ADR-0011's "implementation constant, not protocol constant" framing) and deliberately does not live under `tools/conformance/`, since that machinery is reserved for cross-implementation adapter behavior, not same-language source-constant hygiene.
           - **Touched Files (incidental):** `bun.lock` — a 3-line diff removing a stale `@tuvren/kernel-testkit` devDependency lockfile entry for `@tuvren/backend-shared`, whose `package.json` has not declared that dependency since before this ticket began. Confirmed via `git stash` that this drift already existed at this branch's HEAD; a routine `bun install` during implementation regenerated the lockfile and incidentally corrected it. No functional effect.
           - **Pre-existing, unrelated gate failure noted (not fixed here):** `bun run verify:kernel`'s final `workspace compatibility evidence check` step (`bun run compatibility:check`) fails with "compatibility matrix typescript-framework checkIds do not match live conformance plan topology" plus related `nonApplicableCheckIds` mismatches for several `*-certification` evidence files. Independently reproduced via `git stash` against this branch's clean HEAD (commit `4381273d`) with KRT-BK008's changes fully removed — confirms this is pre-existing drift orthogonal to TurnTree chunking (most likely from KRT-BK004's conformance plan `planVersion` bump not yet reflected via `bun run compatibility:evidence`), not a regression introduced by this ticket. Flagged here for resolution before the epic's final closing `bun run verify` gate.
           
@@ -413,7 +413,7 @@ tickets:
     verification:
       command: bun run conformance
       expected: exit 0
-    description: "The compatibility matrix currently shows rust-kernel passing 42 of the 68 checks typescript-kernel-postgres runs, entirely omitting the kernel.reclamation.*, kernel.scope-isolation.*, and kernel.run-liveness.{clock_skew_preemption, expired_listing, lease_renewal, stale_preemption} families — precisely the ADR-048–052 surfaces. Promote the subset of these checks that are expressible against an in-memory backend (not dependent on process restart or crash recovery) into the Rust conformance lane, selected by the capability/surface each check declares, consistent with the repo's standing rule that promotion is never keyed to language or implementation identity. Checks requiring restart/crash-recovery remain excluded and explicitly deferred to the Rust persistence epic (Epic BN)"
+    description: "The compatibility matrix currently shows rust-kernel passing 42 of the 68 checks typescript-kernel-postgres runs, entirely omitting the kernel.reclamation.*, kernel.scope-isolation.*, and kernel.run-liveness.{clock_skew_preemption, expired_listing, lease_renewal, stale_preemption} families — precisely the ADR-0048–ADR-0052 surfaces. Promote the subset of these checks that are expressible against an in-memory backend (not dependent on process restart or crash recovery) into the Rust conformance lane, selected by the capability/surface each check declares, consistent with the repo's standing rule that promotion is never keyed to language or implementation identity. Checks requiring restart/crash-recovery remain excluded and explicitly deferred to the Rust persistence epic (Epic BN)"
     acceptance:
       mode: gherkin
       evidence: |

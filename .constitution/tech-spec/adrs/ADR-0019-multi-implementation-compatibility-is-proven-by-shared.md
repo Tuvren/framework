@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-019 Multi-Implementation Compatibility Is Proven by Shared Suites and a Generated Ledger
+### ADR-0019 Multi-Implementation Compatibility Is Proven by Shared Suites and a Generated Ledger
 
 - **Status:** accepted
 - **Context:** Comparing TypeScript and Rust directly would make the first implementation the oracle and hide which semantic surfaces actually pass or fail.
