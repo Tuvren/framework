@@ -4,7 +4,7 @@ The engine package `@tuvren/runtime` (which absorbed the retired
 `@tuvren/runtime-core` shim) and the `@tuvren/core` type subpaths are the
 TypeScript binding projections for the neutral host contract (the
 `messages`, `events`, `execution`, `tools`, `provider`, and `extensions`
-binding sections of `tuvren.shared.core` per ADR-037). The former
+binding sections of `tuvren.shared.core` per ADR-0037). The former
 `@tuvren/runtime-api` shim was retired at 87-M9.2 — it never had a
 standalone authority packet, and its type surface lives on as
 `@tuvren/core` subpath exports. TypeScript function signatures,
@@ -30,7 +30,7 @@ type ExecutionResult =
   | { status: "failed"; error: TuvrenError; executionStatus: ExecutionStatus };
 ```
 
-ADR-035 semantics for `awaitResult()`:
+ADR-0035 semantics for `awaitResult()`:
 
 - `status: "completed"` — the turn ended normally; `finalAssistantMessage` is
   the last assistant message emitted by the runner, or `undefined` when the

@@ -1,12 +1,12 @@
 ### Epic BH — Conversation-State Ownership Hardening (KRT)
 
-**Status:** Active. Fourth epic of the SaaS-Readiness block. Realizes ADR-053 (Tuvren is the unconditional conversation-state owner) for PRD CAP-P0-069, and delivers the ADR-055 baseline-bridge `providerExecuted`/`dynamic` fidelity audit. Depends on Epic BF for the shreddable payload envelope. Mostly internal behavior plus the bridge audit; sized at the lower end of the epic heuristic.
+**Status:** Active. Fourth epic of the SaaS-Readiness block. Realizes ADR-0053 (Tuvren is the unconditional conversation-state owner) for PRD CAP-P0-069, and delivers the ADR-0055 baseline-bridge `providerExecuted`/`dynamic` fidelity audit. Depends on Epic BF for the shreddable payload envelope. Mostly internal behavior plus the bridge audit; sized at the lower end of the epic heuristic.
 
 **KRT-BH001 Authority Alignment for Conversation-State Ownership**
 - **Type:** Chore
 - **Effort:** 2
 - **Dependencies:** KRT-BE001
-- **Capability / Contract Mapping:** PRD `CAP-P0-069`; TechSpec ADR-053; `docs/KrakenFrameworkSpecification.md` conversation-state-ownership note
+- **Capability / Contract Mapping:** PRD `CAP-P0-069`; TechSpec ADR-0053; `docs/KrakenFrameworkSpecification.md` conversation-state-ownership note
 - **Description:** Classify the framework conversation-state-ownership spec note in the coverage matrix and reference it from the provider-api authority packet with its conformance entry.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -20,7 +20,7 @@ And the provider-api authority packet references the conversation-state-ownershi
 - **Type:** Feature
 - **Effort:** 5
 - **Dependencies:** KRT-BH001, KRT-BF005
-- **Capability / Contract Mapping:** PRD `CAP-P0-069`; TechSpec ADR-053, ADR-051
+- **Capability / Contract Mapping:** PRD `CAP-P0-069`; TechSpec ADR-0053, ADR-0051
 - **Description:** Prove the Provider Gateway reconstructs a provider request from durable lineage alone, and store carried continuity artifacts as shreddable host-key-encrypted references (reuse the BF005 envelope), never depending on provider-held state.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -48,7 +48,7 @@ And a multi-turn test asserts the round-trip end to end
 - **Type:** Feature
 - **Effort:** 3
 - **Dependencies:** KRT-BH002
-- **Capability / Contract Mapping:** PRD `CAP-P0-069`; TechSpec ADR-053
+- **Capability / Contract Mapping:** PRD `CAP-P0-069`; TechSpec ADR-0053
 - **Description:** Prove provider-side caching is correctness-neutral: a cache miss changes cost, not outcome; the reconstructable request and the canonical result are identical with or without a cache hit.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -62,7 +62,7 @@ And only cost or latency differs
 - **Type:** Chore
 - **Effort:** 3
 - **Dependencies:** KRT-BH001
-- **Capability / Contract Mapping:** TechSpec ADR-055; provider-native execution class
+- **Capability / Contract Mapping:** TechSpec ADR-0055; provider-native execution class
 - **Description:** Audit the AI SDK bridge's `providerExecuted`/`dynamic` round-trip against the `parseToolCall` landmine (vercel/ai #10888): confirm provider-executed tool calls and results attribute to the provider-native execution class without spurious validation errors and that per-class observation limits hold; record findings and apply any fix or guard.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin

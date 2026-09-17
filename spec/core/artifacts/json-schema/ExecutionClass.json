@@ -8,5 +8,5 @@
     "tuvren-server",
     "tuvren-client"
   ],
-  "description": "The execution-ownership category for a capability invocation. Closed set per ADR-046."
+  "description": "The execution-ownership category for a capability invocation. Closed set per ADR-0046."
 }

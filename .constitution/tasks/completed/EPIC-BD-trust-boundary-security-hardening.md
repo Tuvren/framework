@@ -1,12 +1,12 @@
 ### Epic BD — Trust-Boundary Security Hardening (KRT)
 
-**Status:** Active, sequenced after the Tooling block. Realizes ADR-043 (execution bounds) and ADR-044 (secret isolation), plus verification of the approval/input trust boundaries the PRD elevated. `KRT-BD001` is complete as the telemetry secret-screening prerequisite consumed by closed Epic AV.
+**Status:** Active, sequenced after the Tooling block. Realizes ADR-0043 (execution bounds) and ADR-0044 (secret isolation), plus verification of the approval/input trust boundaries the PRD elevated. `KRT-BD001` is complete as the telemetry secret-screening prerequisite consumed by closed Epic AV.
 
 **KRT-BD001 Telemetry Secret-Screening Helpers**
 - **Type:** Security
 - **Effort:** 3
 - **Dependencies:** None
-- **Capability / Contract Mapping:** PRD `CAP-P0-055`; TechSpec ADR-044, §5.6.3
+- **Capability / Contract Mapping:** PRD `CAP-P0-055`; TechSpec ADR-0044, §5.6.3
 - **Status:** Complete — closed with Epic AV because AV002 consumes the helpers.
 - **Description:** Implement the telemetry secret-screening helpers consumed by `KRT-AV002`'s emission path: an attribute allowlist keyed only to `telemetry/semconv/tuvren-runtime.yaml` (reject or drop credential-shaped keys such as `authorization`, `token`, `password`, `api-key`, `secret`, and drop or sanitize secret-like values on otherwise allowed keys) plus a telemetry-error-summary sanitizer that strips raw provider, MCP, backend, and transport error text down to a runtime-safe summary with no secret-bearing values. If operational telemetry needs a new canonical attribute, update the semconv source in the same change before the allowlist admits it.
 - **Acceptance Criteria (Gherkin):**
@@ -26,7 +26,7 @@ And unit tests cover allowed and denied keys and sanitized error summaries
 - **Type:** Security
 - **Effort:** 5
 - **Dependencies:** None
-- **Capability / Contract Mapping:** PRD `CAP-P0-055`; TechSpec ADR-044, §3.9, §5.6.3
+- **Capability / Contract Mapping:** PRD `CAP-P0-055`; TechSpec ADR-0044, §3.9, §5.6.3
 - **Description:** Add a backend-options redactor and a non-secret backend identity descriptor to `@tuvren/repl-host`'s `repl-transcript.ts`. Mask PostgreSQL `connectionString` / `password` and any credential-shaped backend option in the transcript header `config.backend.options`. Ensure replay reconstructs the backend from non-secret options plus environment-supplied credentials, never from transcript-embedded secrets. This is a §3.9 transcript-format constraint addition (format `v: 1` compatible).
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -42,11 +42,11 @@ And a transcript recorded before redaction remains replayable
 - **Type:** Security
 - **Effort:** 2
 - **Dependencies:** None
-- **Capability / Contract Mapping:** PRD `CAP-P0-055`; TechSpec ADR-044, §5.6.3
+- **Capability / Contract Mapping:** PRD `CAP-P0-055`; TechSpec ADR-0044, §5.6.3
 - **Description:** Document the edge-confinement rule in `@tuvren/mcp-client` and `@tuvren/provider-bridge-ai-sdk` READMEs and add reusable fixture inputs that carry representative provider credentials and MCP auth values for the later secret-isolation assertions in `KRT-BD004`.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
-Given the Secret Isolation Model from ADR-044
+Given the Secret Isolation Model from ADR-0044
 When edge-confinement is documented and fixtured in @tuvren/mcp-client and @tuvren/provider-bridge-ai-sdk
 Then each package README states that credentials are confined to the integration edge
 And the fixtures stage representative provider keys and MCP auth values for later secret-isolation checks
@@ -57,7 +57,7 @@ And the cross-surface absence assertions remain the responsibility of KRT-BD004
 - **Type:** Security
 - **Effort:** 5
 - **Dependencies:** `KRT-BD001`, `KRT-BD002`, `KRT-BD003`, `KRT-AV004`
-- **Capability / Contract Mapping:** PRD `CAP-P0-055`; TechSpec ADR-044, §5.6.3
+- **Capability / Contract Mapping:** PRD `CAP-P0-055`; TechSpec ADR-0044, §5.6.3
 - **Description:** Add a `secret-isolation` check set to `providers-mcp-client.json`, `framework-operational-telemetry.json`, and `runtime-api-callables-extended.json`. The fixture configures a provider key plus MCP bearer-auth and header-auth secrets, runs a turn that persists state, emits canonical stream events and telemetry, and records a transcript, then uses a shared runner-owned secret-absence helper to recursively scan those surfaces and assert none of the configured secret values or their common encoded variants appear in persisted kernel records, captured canonical stream events, captured telemetry attributes or error summaries, or the recorded transcript.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -77,7 +77,7 @@ And bun run conformance includes the new check set automatically
 - **Type:** Feature
 - **Effort:** 3
 - **Dependencies:** None
-- **Capability / Contract Mapping:** PRD `CAP-P0-054`; TechSpec ADR-043, §3.11, §4.19
+- **Capability / Contract Mapping:** PRD `CAP-P0-054`; TechSpec ADR-0043, §3.11, §4.19
 - **Description:** Add `ExecutionBounds` and `ExecutionBoundExceededDetails` to the shared core execution contracts, and add the cooperative provider-cancellation surface needed by `maxWallClockMs` (including `TuvrenPrompt.signal`) to the provider contract authority owned by `boundaries/providers/contracts/provider-api/` as well as the host-facing `@tuvren/core/provider` export surface. Document the stable `execution_bound_exceeded` `TuvrenRuntimeError` code in `@tuvren/core/errors`. Update the shared core execution machine-readable sources, generated artifacts, and merged core authority packet, plus the provider-api machine-readable sources, generated artifacts, and authority packet, for the new cancellation-aware contract.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -95,7 +95,7 @@ And typecheck passes
 - **Type:** Feature
 - **Effort:** 8
 - **Dependencies:** `KRT-BD005`, `KRT-AV002`
-- **Capability / Contract Mapping:** PRD `CAP-P0-054`; TechSpec ADR-043, §4.19, §5.6.4
+- **Capability / Contract Mapping:** PRD `CAP-P0-054`; TechSpec ADR-0043, §4.19, §5.6.4
 - **Note:** When this guard is implemented, wire the `"ignored"` value of `InvocationLifecycleState` (`@tuvren/core/capabilities`) to the bounds-exceeded terminal path. The value is forward-declared in Epic BA with no observable event anchor until this ticket lands.
 - **Description:** Implement the framework bounds guard in `@tuvren/runtime`'s turn/run orchestration shell. Enforce `maxIterations` and `maxToolCalls` at iteration and tool-batch boundaries above the driver's `LoopPolicy`, clamp `AgentConfig.maxIterations` by `bounds.maxIterations`, enforce `maxWallClockMs` as an end-to-end deadline that propagates abort signals into in-flight model/tool work, update the owned provider bridge and owned tool paths to forward and honor those signals, and enforce `maxConcurrentToolCalls` by throttling tool concurrency to the configured cap. On breach of a hard-stop bound, stop the loop, checkpoint a safe terminal outcome, finalize the turn as a `failed` `ExecutionResult` with `TuvrenRuntimeError` code `execution_bound_exceeded` and `details: ExecutionBoundExceededDetails`, emit a fatal canonical `error` event carrying the same code/details, let the canonical `turn.end` event mark the failed terminal state, and emit a bounded-execution telemetry event when a sink is configured. Add `bounds?: ExecutionBounds` to `CreateTuvrenOptions` and `RuntimeCoreOptions` with the §3.11 safe defaults, and reject invalid non-integer, non-finite, or non-positive bound values at construction time. A driver cannot raise or disable a bound.
 - **Acceptance Criteria (Gherkin):**
@@ -123,7 +123,7 @@ And a driver that always requests continue cannot exceed the framework bound
 - **Type:** Feature
 - **Effort:** 5
 - **Dependencies:** `KRT-BD006`, `KRT-AV004`
-- **Capability / Contract Mapping:** PRD `CAP-P0-054`; TechSpec ADR-043, §5.6.4
+- **Capability / Contract Mapping:** PRD `CAP-P0-054`; TechSpec ADR-0043, §5.6.4
 - **Description:** Add the `runtime-api-execution-bounds` check set to `runtime-api-callables-extended.json` using a runaway aimock driver fixture that always requests continue. Assert each hard-stop bound's breach yields a `failed` result with code `execution_bound_exceeded` and the correct `details`, that the canonical stream emits the matching fatal `error` event before the failed `turn.end`, that a configured capture sink observes the `execution.bounded` telemetry event, that `AgentConfig.maxIterations` is clamped by `bounds.maxIterations`, that `maxConcurrentToolCalls` is enforced by throttling parallel tool execution to the configured cap, that invalid non-integer, non-finite, or non-positive bound configuration is rejected, and that a within-bounds control turn completes normally.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -145,7 +145,7 @@ And bun run conformance includes the new check set automatically
 - **Type:** Chore
 - **Effort:** 2
 - **Dependencies:** `KRT-BD007`
-- **Capability / Contract Mapping:** TechSpec ADR-043, §5.6.4
+- **Capability / Contract Mapping:** TechSpec ADR-0043, §5.6.4
 - **Description:** Add a normative "Execution Bounds" section to `docs/KrakenFrameworkSpecification.md` (minor bump) describing the framework-owned guard so future drivers inherit it. Run `bun run verify` from a clean checkout; capture fresh evidence.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -160,7 +160,7 @@ And fresh compatibility evidence reflects the execution-bounds lane
 - **Type:** Security
 - **Effort:** 3
 - **Dependencies:** None
-- **Capability / Contract Mapping:** PRD `CAP-P0-016`, `CAP-P0-017`, `CAP-P1-015`, Security NFR; TechSpec ADR-039, ADR-044
+- **Capability / Contract Mapping:** PRD `CAP-P0-016`, `CAP-P0-017`, `CAP-P1-015`, Security NFR; TechSpec ADR-0039, ADR-0044
 - **Description:** Add a `trust-boundary` security check set to `boundaries/framework/conformance/plans/runtime-api-callables-extended.json` and `boundaries/providers/conformance/plans/providers-mcp-client.json`, asserting the existing trust-boundary guarantees the PRD elevated: approval-gated tool work cannot proceed without an explicit decision (non-bypassable), and untrusted MCP/tool inputs are validated against their declared schema before execution with canonical error results rather than implicit trust. Pin the result semantics the runner will assert: local tool-contract validation failures surface as `tool.result` with `isError: true` carrying `TuvrenValidationError` code `tool_input_validation_failed`, while MCP-advertised input validation failures surface as `tool.result` with `isError: true` carrying `TuvrenProviderError` code `mcp_tool_input_invalid`. This is an independent required close-condition lane; any gap the check set exposes is fixed under this ticket.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin

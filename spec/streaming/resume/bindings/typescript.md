@@ -10,7 +10,7 @@ Binding projection: `typescript/streaming/core` (`@tuvren/stream-core`).
 | `ResumeCursorPayload` | internal payload of `encodeResumeCursor` / `decodeResumeCursor` |
 | `ReplayStatus` / `ReplayResult` | `ReplayResult` union returned by `ReplayBuffer.replayFrom` |
 
-Exports (all `@experimental`, ADR-056 posture):
+Exports (all `@experimental`, ADR-0056 posture):
 
 - `createSequencedTuvrenStreamEvents(events: AsyncIterable<TuvrenStreamEvent>): AsyncIterable<SequencedTuvrenStreamEvent>` — wraps the canonical stream in the wire-level sequencing envelope. Tracks `turnId` from `turn.start` (sequence resets to `0` there), and the latest `state.checkpoint.turnNodeHash` when state observability is enabled. The canonical events themselves are never mutated.
 - `encodeResumeCursor(payload)` / `decodeResumeCursor(token)` — opaque base64url-JSON token round-trip. Decode failure is reported as absence, which replay maps to `out-of-window` (snapshot fallback), never a thrown error on the wire path.
@@ -35,5 +35,5 @@ Exports (all `@experimental`, ADR-056 posture):
 ## Transport projections
 
 - **SSE** (`@tuvren/stream-sse`): `toResumableSseFrames` places `cursor` in the SSE frame `id` field, so WHATWG `Last-Event-ID` reconnection carries the cursor natively.
-- **WebSocket** (`@tuvren/stream-ws`, packet `tuvren.framework.event-stream-ws`): the cursor rides the transport's outer message envelope for `kind: "event"` session frames; the ADR-060 session-frame vocabulary itself is unchanged.
+- **WebSocket** (`@tuvren/stream-ws`, packet `tuvren.framework.event-stream-ws`): the cursor rides the transport's outer message envelope for `kind: "event"` session frames; the ADR-0060 session-frame vocabulary itself is unchanged.
 - `TurnStartEvent.resumedFrom` (kernel-level turn resume) is a distinct concept and is not part of this surface.

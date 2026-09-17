@@ -182,7 +182,7 @@ strongest position is still not putting the secret in the message. Sanitize
 because error paths are hard to fully enumerate, not because the endpoint may
 be careless.
 
-See ADR-064 for the decision record, and ADR-044 for the separate,
+See ADR-0064 for the decision record, and ADR-0044 for the separate,
 framework-*enforced* secret isolation that covers credentials the framework
 itself introduces (provider keys, MCP auth, backend connection strings).
 
@@ -202,7 +202,7 @@ process holds the `AttachedClientEndpoint` object and the runtime calls its
 `dispatch` directly. When the client is a *remote* peer (browser extension,
 mobile client, any process reached over a wire), the framework-owned wire
 form of this same exchange is the duplex session sub-surface at
-`spec/host/session/` (packet `tuvren.framework.host-session`, ADR-060): the
+`spec/host/session/` (packet `tuvren.framework.host-session`, ADR-0060): the
 runtime's dispatch becomes an outbound `client_invocation` frame carrying
 the `ClientInvocationEnvelope`, and the client's report becomes an inbound
 `client_result` frame. The lease semantics documented here are unchanged —
@@ -211,7 +211,7 @@ check (a `client_result` matching no pending dispatch), while the
 per-dispatch `leaseToken` echo check remains the boundary's own. The
 TypeScript reference binding is `@tuvren/host-session`
 (`typescript/host/session`). Network timeout and disconnect policy are
-settled by ADR-063: `@tuvren/remote-session` owns the session lifecycle
+settled by ADR-0063: `@tuvren/remote-session` owns the session lifecycle
 (disconnect grace window, per-dispatch timeout, redelivery), `@tuvren/stream-ws`
 carries it over WebSocket, and session identity (which `sessionId` maps to
 which live session) remains host application state.

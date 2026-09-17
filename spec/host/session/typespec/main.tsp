@@ -164,7 +164,7 @@ model ApprovalResponse {
 
 /**
  * The invocation envelope the runtime dispatches to an attached client
- * endpoint when it executes a tuvren-client capability (ADR-052, §4.21 /
+ * endpoint when it executes a tuvren-client capability (ADR-0052, §4.21 /
  * KRT-AZ001). Contains everything the client needs to execute the
  * capability. Credentials and environment secrets are never included — they
  * are owned by the client edge and MUST NOT appear on this envelope.
@@ -182,8 +182,8 @@ model ClientInvocationEnvelope {
   capabilityId: NonEmptyString;
 
   /**
-   * Side-effect-once idempotency identity for this invocation (ADR-052 as
-   * amended by ADR-065).
+   * Side-effect-once idempotency identity for this invocation (ADR-0052 as
+   * amended by ADR-0065).
    *
    * A deterministic identity derived from the turn id and call id — the
    * logical call identity. The client environment can present it to the
@@ -216,7 +216,7 @@ model ClientInvocationEnvelope {
  * The result a client endpoint reports back after executing a tuvren-client
  * capability. The client owns environmental execution; this value is a
  * proposal only — it enters durable run lineage exclusively when the
- * runtime's active run authority accepts it (fencing/leasing per ADR-052).
+ * runtime's active run authority accepts it (fencing/leasing per ADR-0052).
  *
  * The `leaseToken` MUST match the corresponding invocation envelope's
  * `leaseToken`. A mismatch signals a stale late-completion that the runtime

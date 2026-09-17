@@ -2,7 +2,7 @@
 
 `@tuvren/core/runner` is the TypeScript binding projection for the neutral
 execution-model contract (the `runner` binding section of `tuvren.shared.core`
-per ADR-037; the deprecated `@tuvren/driver-api` re-export shim was retired at
+per ADR-0037; the deprecated `@tuvren/driver-api` re-export shim was retired at
 87-M6.1c). Concrete runner factories, callable hooks,
 `Promise`, and `AbortSignal` are binding conveniences only. ReAct-specific
 behavior is covered by the separate `tuvren.framework.react-runner` packet.

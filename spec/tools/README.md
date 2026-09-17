@@ -17,7 +17,7 @@ consolidated `tuvren.shared.core` packet (`spec/core/authority-packet.json`,
 `tools` binding section). The engine-facing vocabulary remains
 `@tuvren/core/tools` and `@tuvren/core/capabilities`.
 
-The capability surface (execution classes, binding, policy — ADR-046)
+The capability surface (execution classes, binding, policy — ADR-0046)
 is also `tuvren.shared.core` authority: its hand-authored JSON Schemas
 live at `spec/core/artifacts/json-schema/` alongside the core artifacts
 until TypeSpec coverage is promoted; they deliberately do not move here.

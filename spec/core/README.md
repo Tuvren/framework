@@ -15,7 +15,7 @@ surfaces.
 - `bindings/` — language-binding appendices.
 - `artifacts/` — the reviewed JSON Schema outputs generated from the
   TypeSpec source, plus the hand-authored capability schemas kept here
-  until TypeSpec coverage is promoted (ADR-046).
+  until TypeSpec coverage is promoted (ADR-0046).
 
 There is no `spec/conformance/core/` lane: core vocabulary is exercised
 through the consuming ports' plans (engine, kernel, providers, tools,

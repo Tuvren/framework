@@ -30,7 +30,7 @@ groups:
         requirement_level: recommended
       - id: tuvren.runtime.scope.id
         type: string
-        brief: The host-bound Scope (tenancy partition identity, ADR-048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument.
+        brief: The host-bound Scope (tenancy partition identity, ADR-0048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument.
         examples: ["tuvren.scope.default", "tenant-a"]
         stability: development
         requirement_level: recommended
@@ -93,19 +93,19 @@ groups:
         requirement_level: opt_in
       - id: tuvren.runtime.capability.execution_class
         type: string
-        brief: The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client).
+        brief: The execution class of the capability invocation per ADR-0046 (tuvren-server, provider-native, provider-mediated, tuvren-client).
         examples: ["tuvren-server", "provider-native"]
         stability: development
         requirement_level: opt_in
       - id: tuvren.runtime.capability.owner
         type: string
-        brief: The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-046 AW006.
+        brief: The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-0046 AW006.
         examples: ["tuvren", "provider"]
         stability: development
         requirement_level: opt_in
   - id: tuvren.runtime.bounds
     type: attribute_group
-    brief: Framework-enforced execution-bounds attributes carried by the execution.bounded telemetry event (ADR-043, KRT-BD006).
+    brief: Framework-enforced execution-bounds attributes carried by the execution.bounded telemetry event (ADR-0043, KRT-BD006).
     stability: development
     attributes:
       - id: tuvren.runtime.bound

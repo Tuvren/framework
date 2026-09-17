@@ -22,7 +22,7 @@ And bun run conformance includes the new integration check set automatically
 - **Type:** Chore
 - **Effort:** 3
 - **Dependencies:** `KRT-BC001`
-- **Capability / Contract Mapping:** TechSpec ADR-046, §5.7.1
+- **Capability / Contract Mapping:** TechSpec ADR-0046, §5.7.1
 - **Description:** Add a normative "Capability Orchestration" section to `docs/KrakenFrameworkSpecification.md` (minor bump) describing the model (Tool Surface vs Capability, the four execution classes, bindings and endpoints, exposure-time and invocation-time policy, per-class observation limits, MCP-as-binding, and the conceptual invariant) so future drivers inherit it.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin

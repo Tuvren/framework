@@ -18,7 +18,7 @@ roots' READMEs into this file):
 
 **The neutral execution-model contract has no packet of its own.** It is
 `tuvren.shared.core` authority (`spec/core/authority-packet.json`,
-`runner` binding section, ADR-037). The old `boundaries/framework/contracts/driver-api/`
+`runner` binding section, ADR-0037). The old `boundaries/framework/contracts/driver-api/`
 READMEs claimed a standalone `tuvren.framework.driver-api` packet existed;
 that claim was stale and is not carried over here — do not reintroduce it.
 

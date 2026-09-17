@@ -13,7 +13,7 @@
     },
     "idempotencyKey": {
       "type": "string",
-      "description": "Side-effect-once idempotency identity for this invocation (ADR-052 as\namended by ADR-065).\n\nA deterministic identity derived from the turn id and call id — the\nlogical call identity. The client environment can present it to the\nexternal system it drives so a dispatch it has already seen is\ndeduplicated: every dispatch of one logical call presents an identical\nkey, across framework retries, approval resume, and redelivery after a\nreconnect. The run id and the run fencing token are deliberately\nexcluded — a Run is one execution attempt and the fencing token rotates\nper lease renewal, so either would make the identity churn under the\nvery conditions it must survive. Distinct from `leaseToken`: the lease\ntoken guards staleness of *this* dispatch and is echoed back, while the\nidempotency key dedupes the *external effect* and is never echoed."
+      "description": "Side-effect-once idempotency identity for this invocation (ADR-0052 as\namended by ADR-0065).\n\nA deterministic identity derived from the turn id and call id — the\nlogical call identity. The client environment can present it to the\nexternal system it drives so a dispatch it has already seen is\ndeduplicated: every dispatch of one logical call presents an identical\nkey, across framework retries, approval resume, and redelivery after a\nreconnect. The run id and the run fencing token are deliberately\nexcluded — a Run is one execution attempt and the fencing token rotates\nper lease renewal, so either would make the identity churn under the\nvery conditions it must survive. Distinct from `leaseToken`: the lease\ntoken guards staleness of *this* dispatch and is echoed back, while the\nidempotency key dedupes the *external effect* and is never echoed."
     },
     "input": {
       "description": "Capability input payload, opaque to this packet."
@@ -27,5 +27,5 @@
   "unevaluatedProperties": {
     "not": {}
   },
-  "description": "The invocation envelope the runtime dispatches to an attached client\nendpoint when it executes a tuvren-client capability (ADR-052, §4.21 /\nKRT-AZ001). Contains everything the client needs to execute the\ncapability. Credentials and environment secrets are never included — they\nare owned by the client edge and MUST NOT appear on this envelope."
+  "description": "The invocation envelope the runtime dispatches to an attached client\nendpoint when it executes a tuvren-client capability (ADR-0052, §4.21 /\nKRT-AZ001). Contains everything the client needs to execute the\ncapability. Credentials and environment secrets are never included — they\nare owned by the client edge and MUST NOT appear on this envelope."
 }
