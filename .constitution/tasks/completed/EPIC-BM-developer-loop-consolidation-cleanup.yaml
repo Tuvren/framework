@@ -25,19 +25,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: CI caching and shared setup
-        
+
           Scenario: Repeated pushes reuse cached dependencies
             Given a second CI run on the same branch with unchanged lockfiles
             When the "verify" and "bazel" jobs execute
             Then the Nix/bun/cargo cache steps report a cache hit
             And overall job wall-clock is measurably shorter than the cold-cache run
-        
+
           Scenario: A lockfile change still forces a fresh resolution
             Given Cargo.lock or bun.lock changes on a branch
             When CI runs
             Then the corresponding cache key misses and dependencies are re-resolved
             And the gate does not silently pass with stale dependency state
-        
+
           Scenario: Shared setup step stays single-sourced
             Given the composite setup action changes the devenv version pin
             When both the "verify" and "bazel" jobs run
@@ -64,19 +64,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Single phase engine for all verification lanes
-        
+
           Scenario: check and verify-kernel run independent steps concurrently
             Given "bun run check" or "bun run verify:kernel" executes
             When two of its steps have no shared output or ordering dependency
             Then both steps run within the same non-serial phase
             And the command still exits 0 on a clean worktree
-        
+
           Scenario: codegen reuses the shared gate-step list
             Given "bun run codegen" executes
             When it runs the authority validators
             Then it runs the exact same validator set and order package.json's previous inline chain ran
             And it exits 0 on a clean worktree, non-zero if any validator fails
-        
+
           Scenario: A genuinely ordered pair stays serial
             Given two steps where one step's output is read by the other
             When the phase engine is configured
@@ -103,18 +103,18 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Kernel project lists stay drift-guarded
-        
+
           Scenario: A valid kernel project list passes
             Given KERNEL_TYPECHECK_PROJECTS and KERNEL_CONFORMANCE_PROJECTS name only real Nx projects that declare the matching target
             When "bun run verify:kernel" executes
             Then it exits 0
-        
+
           Scenario: A renamed or removed kernel project fails loud
             Given a project name in either list no longer exists in the Nx graph
             When "bun run verify:kernel" executes
             Then it exits non-zero with an error naming the unknown project
             And it does not silently skip that project's checks
-        
+
           Scenario: A kernel project that dropped its target fails loud
             Given a listed project exists but no longer declares the target it is listed under (typecheck or conformance)
             When "bun run verify:kernel" executes
@@ -140,19 +140,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Schema validators are memoized
-        
+
           Scenario: Repeated schemaValid assertions reuse a compiled validator
             Given two conformance checks both assert schemaValid against the same schema
             When the assertion engine evaluates both
             Then Ajv compiles that schema only once for the process
             And both assertions still produce correct pass/fail results
-        
+
           Scenario: The plan schema is read and compiled once per process
             Given multiple conformance plan files are loaded in one process
             When loadConformancePlan runs for each plan file
             Then the plan schema file is read from disk and compiled only once
             And every plan is still validated against the same schema correctly
-        
+
           Scenario: Distinct schemas never collide in the cache
             Given two different schemas that could share a naive cache key
             When both are compiled through the memoized path
@@ -182,19 +182,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Portability checks run with bounded concurrency
-        
+
           Scenario: All surfaces are still checked
             Given the configured PORTABLE_PACKAGE_SURFACES list
             When portability-check.ts runs
             Then every surface is checked under both Bun and Node
             And the process exits 0 only if every check passed
-        
+
           Scenario: Concurrent output stays attributable
             Given multiple import checks run concurrently
             When their output is printed to the console
             Then each check's output block is printed as one atomic, unscrambled unit
             And no line from one check's output is interleaved with another's
-        
+
           Scenario: A single surface failure still fails the whole gate
             Given one surface fails its Bun or Node import check
             When portability-check.ts finishes running all checks
@@ -221,19 +221,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: The core-types shim package is removed cleanly
-        
+
           Scenario: The package and its registrations are gone
             Given typescript/core-types has been deleted
             When searching the workspace for "@tuvren/core-types" or "shared-core-types"
             Then no package.json, tsconfig, or project.json references remain
             And "bun run verify" still exits 0
-        
+
           Scenario: The one real fixture importer is preserved
             Given kernel-contract-deterministic.test.ts previously imported kernel-record-fixtures.ts from core-types/test
             When the core-types package is removed
             Then the fixture the test depends on still exists at a resolvable location
             And that test still passes
-        
+
           Scenario: Workspace coverage gates do not reference the deleted project
             Given "shared-core-types" is removed from WORKSPACE_TEST_PROJECTS and WORKSPACE_BUILD_PROJECTS
             When "bun run verify" runs its workspace-coverage validation
@@ -259,7 +259,7 @@ tickets:
       expected: exit 0 for each command listed.
     description: |
       (a) Extract the shared tsc --project <tsconfig> && mkdir -p <dir>/migrations && cp migrations/*.sql <dir>/migrations/ pipeline out of backend-sqlite's build, bench, retention-dry-run, and test target command strings into one tools/scripts/ helper script parameterized by target output dir and tsconfig, per the repo rule to keep shared command logic in scripts rather than duplicating shell snippets across project.json files. (b) Confirm and, if needed, correct @tuvren/runner-react's placement in typescript/providers/bridge-ai-sdk/package.json (test-only usage belongs in devDependencies). (c) Align typescript/sdk/package.json's zod peer range with the exact-pin convention (4.4.3) used by sibling packages, or explicitly document why the SDK surface needs a caret range if that turns out to be intentional
-      
+
       Resolution Notes:
       (a) The duplicated compile+copy-migrations pipeline across backend-sqlite's `build`/`bench`/`bench-load-cost`/`retention-dry-run`/`test` targets now routes through `tools/scripts/compile-with-migrations.ts` (parameterized by `--tsconfig`, `--out`, optional `--clean`). `bench-load-cost` was included because it carried the identical inline pipeline the audit flagged on its four named siblings.
       (b) Closed as already-resolved: `@tuvren/runner-react` was verified to already sit under `devDependencies` in `typescript/providers/bridge-ai-sdk/package.json` (line 31) before this epic — the audit finding was stale against the live file; no change made, per the ticket's STOP condition.
@@ -268,19 +268,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Workspace manifests avoid duplicated pipelines and inconsistent pins
-        
+
           Scenario: sqlite backend targets share one migrations-copy helper
             Given backend-sqlite's build, bench, retention-dry-run, and test targets
             When their project.json command strings are inspected
             Then the compile+copy-migrations logic is invoked via one shared script
             And each target still produces its migrations directory correctly
-        
+
           Scenario: runner-react dependency placement matches its usage
             Given @tuvren/runner-react is used only by bridge-ai-sdk's tests
             When typescript/providers/bridge-ai-sdk/package.json is inspected
             Then @tuvren/runner-react appears under devDependencies, not dependencies
             And "bun run nx run providers-bridge-ai-sdk:build" still exits 0
-        
+
           Scenario: zod peer range matches the workspace pin convention
             Given sibling packages pin "zod" to an exact version
             When typescript/sdk/package.json's zod peerDependency is inspected
@@ -306,18 +306,18 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Kraken-only naming stays internal and enforced
-        
+
           Scenario: Runtime source no longer locally aliases public types to Kraken names
             Given typescript/runtime/src/lib/runner-registry.ts and its sibling files
             When their import statements are inspected
             Then no "as Kraken*" local alias remains for a publicly-named type
             And "bun run nx run framework-runtime:typecheck" still exits 0
-        
+
           Scenario: The public-surface guard catches a reintroduced Kraken export
             Given a package's public index.ts is modified to export a Kraken*-named symbol
             When the lint guard runs
             Then it fails loudly, naming the offending package and export
-        
+
           Scenario: The public-surface guard passes on the current, clean surface
             Given the current state of every package's public index.ts
             When the lint guard runs
@@ -343,32 +343,32 @@ tickets:
       expected: "exit 0 for bun run lint; the services-up-then-verify-kernel sequence completes without a \"connection refused\"/\"database not ready\" failure."
     description: |
       (a) Add a doc comment on detachPromise (runtime-core-shared.ts:149) stating explicitly that callers/callees must route their own errors — this function intentionally swallows the promise's rejection to prevent an unhandled-rejection crash, and is not itself an error-handling mechanism. (b) Add the two-line Nix/direnv prerequisite step to README.md's Quickstart, ahead of today's step 1 (direnv allow), mirroring what ci.yml:119-134 does explicitly (install Nix, then install devenv) for a reader who has neither installed yet. (c) Verify whether docs/perf-benchmarks.md's only retired-name reference (framework-runtime-core, lines 51-55) is already adequately annotated as historical; if so, close this sub-item as already-resolved, otherwise fix whatever unannotated stale name is actually found. (d) Add a Postgres readiness wait (e.g. a bounded pg_isready-style poll) to tools/scripts/services-up.sh after devenv up -d succeeds, so the script itself does not return until the database is ready to accept connections, without violating the "never embed in Nx targets/runners" constraint already documented in the script's own header comment
-      
+
       Resolution Notes:
       (c) Closed as already-resolved per the ticket's STOP condition: `docs/perf-benchmarks.md`'s only retired-name reference (`framework-runtime-core`, lines 51-55) is already a deliberate, self-annotating historical footnote ("left as originally recorded rather than fabricating a re-run"); no unannotated stale name was found elsewhere in the file, so the passage was preserved as-is.
     acceptance:
       mode: gherkin
       evidence: |
         Feature: Small documentation and readiness findings are resolved
-        
+
           Scenario: detachPromise's contract is documented
             Given runtime-core-shared.ts's detachPromise function
             When its doc comment is read
             Then it states the callee must route its own errors
             And this documents existing behavior with no functional change
-        
+
           Scenario: README quickstart includes the Nix/direnv prerequisite
             Given a reader with neither Nix nor direnv installed
             When they follow README.md's Quickstart from the top
             Then they are told how to install Nix and direnv before "direnv allow"
             And the steps mirror what ci.yml's setup steps perform
-        
+
           Scenario: perf-benchmarks.md's retired-name reference is resolved or confirmed
             Given docs/perf-benchmarks.md's historical footnote on framework-runtime-core
             When the file is reviewed against the audit's "one retired package name" finding
             Then either the footnote is confirmed as already sufficient and closed as-is
             Or the actually-stale unannotated reference is corrected
-        
+
           Scenario: services:up waits for Postgres readiness
             Given "bun run services:up" has just reported success
             When a Postgres-backed command runs immediately afterward

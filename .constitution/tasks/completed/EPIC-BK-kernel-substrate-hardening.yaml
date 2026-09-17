@@ -25,19 +25,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Shared kernel-backend invariant core
-        
+
           Scenario: Postgres backend no longer hand-copies memory-backend reclamation logic
             Given the shared invariant-core module exists and is imported by all three backends
             When I diff the postgres backend's reclamation logic file against its pre-extraction copy
             Then the postgres backend file re-exports or delegates to the shared module
             And no independent copy of the reclamation keep-closure remains in the postgres backend
-        
+
           Scenario: Behavior is preserved across all three backends
             Given the pre-extraction kernel conformance baseline for memory, sqlite, and postgres backends
             When I run "bun run verify:kernel" after the extraction
             Then every previously-passing reclamation, run-transition, and immutability check still passes
             And no check's asserted error code or outcome differs from the pre-extraction baseline
-        
+
           Scenario: Error-code prefixes remain backend-distinguishable
             Given a run-transition-legality violation is triggered against each backend independently
             When the shared module raises the invariant error
@@ -67,21 +67,21 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Leaseless-run reclamation expiry
-        
+
           Scenario: A leaseless run with a crashed owner eventually becomes reclaimable
             Given a run created via "run.create" with no executionOwnerId, fencingToken, or leaseExpiresAtMs
             And the run's creator never transitions it out of "running"
             When the kernel's defined leaseless-expiry horizon elapses
             Then the run is classified as expired by the reclamation pass
             And state created after that run's creation becomes reclaimable
-        
+
           Scenario: Reclamation horizon is no longer pinned indefinitely by one abandoned leaseless run
             Given one leaseless running run older than the expiry horizon
             And other active runs created after it
             When "computeGraceHorizonMs" is evaluated
             Then the horizon advances past the abandoned leaseless run
             And unrelated live runs remain unaffected
-        
+
           Scenario: The authority packet and conformance plan encode the new rule
             Given the updated "spec/kernel/authority-packet.json" and "spec/conformance/kernel/plans/kernel-reclamation.json"
             When "bun run verify:kernel" runs
@@ -111,7 +111,7 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Purge-scope serialization safety
-        
+
           Scenario: A transaction racing a concurrent scope purge does not bypass the single-writer guarantee
             Given a Scope with an in-flight transaction queued via "runExclusive"
             And a concurrent caller invokes "dropScope" on the same Scope
@@ -119,7 +119,7 @@ tickets:
             When all three operations are allowed to interleave
             Then the third caller's transaction does not execute concurrently with the still-in-flight transaction
             And the store's single-writer-per-scope guarantee holds throughout
-        
+
           Scenario: Purge-vs-transact race test exists and passes
             Given "backend-memory.purge-scope.test.ts"
             When "bun run nx run backend-memory:test" runs
@@ -149,19 +149,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Provider-bridge secret screening
-        
+
           Scenario: Request-body secrets are screened before entering durable state
             Given a provider response whose captured requestBody contains a credential-shaped value not equal to any configured secret
             When the AI SDK provider bridge builds bridgeExtras and provider metadata
             Then the credential-shaped value is screened out or redacted before reaching "tool_call.done" event payloads
             And it is screened out or redacted before reaching durable run records
-        
+
           Scenario: Response headers carrying signed URLs or tokens are screened
             Given a provider response with a header value shaped like a signed URL or bearer token
             When the bridge captures response headers into bridgeExtras
             Then the shared telemetry-secret-screening module is applied to that value
             And the screened output contains no raw credential-shaped substring
-        
+
           Scenario: Pattern-shaped secret-isolation conformance passes
             Given the extended "spec/conformance/providers/fixtures/secret-isolation-fixtures.json" with a pattern-shaped (non-value-equality) fixture
             When "bun run conformance" runs
@@ -191,19 +191,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Guardrail regenerate-command hardening
-        
+
           Scenario: Regenerate commands execute without shell interpretation
             Given an authority packet declares a "regenerateCommand" such as "bun run codegen:kernel"
             When the guardrail gate runs that freshness check
             Then the command executes via argv-array spawn with no shell involved
             And shell metacharacters in an untrusted string have no special effect
-        
+
           Scenario: Allowlist rejects unrecognized command prefixes
             Given a manifest "regenerateCommand" whose program is not in the allowlisted prefix set
             When the guardrail gate attempts to run it
             Then the gate fails loud with an explicit allowlist-violation error
             And it does not fall back to shell execution
-        
+
           Scenario: Every existing authority-packet regenerateCommand still runs
             Given every "regenerateCommand" declared across "spec/**/authority-packet.json" today
             When "bun run check" runs the guardrail gate
@@ -233,25 +233,25 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Kernel input hardening
-        
+
           Scenario: SQLite LIMIT clause rejects unsafe values
             Given a caller supplies a non-safe-integer or negative value as a list-options limit
             When the sqlite repository builds its query
             Then the query construction fails loud before reaching SQL
             And a safe-integer limit is parameterized rather than string-interpolated
-        
+
           Scenario: gRPC service enforces a message-decode-size ceiling
             Given a client sends a request exceeding the configured max decode size
             When the request reaches the kernel gRPC service
             Then the server rejects it with an out-of-range error (tonic's real status for an over-ceiling decode; verified against tonic 0.14.5's `codec/decode.rs`)
             And it does not attempt to decode the full oversized payload
-        
+
           Scenario: gRPC service enforces a per-RPC timeout and connection concurrency limit
             Given a client opens more concurrent requests than the configured per-connection limit
             When those requests are issued against the kernel gRPC service
             Then requests beyond the limit are bounded or rejected per the configured policy
             And a long-running RPC beyond the configured timeout is terminated
-        
+
           Scenario: node_walk_back has a depth cap
             Given a pathologically deep turn-node lineage
             When "node_walk_back" traverses it
@@ -281,14 +281,14 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Persistence-model benchmark spike
-        
+
           Scenario: The spike report exists and names a recommendation
             Given the spike work is complete
             When I read ".constitution/spikes/SPK-KRT-BK007.md"
             Then it contains measured write-latency-vs-scope-size data for the postgres backend
             And it contains measured load-cost data for sqlite "health()" and "reclaim()"
             And it explicitly names a recommendation: accept-with-bounds or path-granular persistence
-        
+
           Scenario: No production code changed
             Given the spike is complete
             When I diff the working tree against the epic's starting commit
@@ -310,7 +310,7 @@ tickets:
             - `.constitution/spikes/SPK-KRT-BK007.md` (declared in-scope; filled in per the ticket description)
           - **Justification:** The ticket's own STOP condition forbids production code changes and forbids instrumenting the measured files (`postgres-backend-persistence.ts`, `sqlite-backend.ts`) directly, which means the only way to measure their behavior is black-box, through each backend's public `RuntimeBackend` surface (`transact`/`health`/`reclaim`), from new benchmark scripts. `bench/` is an established, precedented non-`spec/` tooling directory in this repo (`typescript/runtime/bench/runtime-boundary.bench.ts`, `typescript/kernel/backends/sqlite/bench/sqlite-hot-path.bench.ts`, both already existed with their own Nx `bench` targets before this ticket) — new dev/measurement scripts and their Nx wiring are not "production source" for the purposes of Gherkin Scenario 2, matching this repo's own architecture-first placement rules (`spec/` vs. language-specific dirs) and the pre-approved execution plan's explicit pre-declaration of this exact deviation class ("each backend's `package.json`/`project.json` gets a `bench` Nx target — tooling-only, precedented"). The `tsconfig.typecheck.json` edit was not separately pre-declared in the plan but follows the same tooling-only reasoning and an existing same-repo precedent (`backend-sqlite`'s own `tsconfig.typecheck.json` already includes `bench/**/*.ts`); its necessity and effect were verified directly — a deliberately introduced type error in the new postgres bench file caused `bun run nx run backend-postgres:typecheck` to fail only after this include was added, confirming the file is genuinely checked, not silently skipped.
           - **Verification performed:** Both new bench scripts were executed directly by the implementer against live infrastructure (`bun run nx run backend-postgres:bench` against a live devenv PostgreSQL instance; `bun run nx run backend-sqlite:bench-load-cost` against a real temp-file SQLite database) — the numbers recorded in `SPK-KRT-BK007.md` are taken verbatim from those runs. `git status`/`git diff` confirmed zero changes under either backend's `src/` directory. `bun run nx run backend-{postgres,sqlite}:{lint,typecheck,test}` all pass (postgres: 47/47 tests; sqlite: 99/99 tests, including all pre-existing suites, confirming the `project.json`/`tsconfig.typecheck.json` edits didn't regress anything already in place).
-          
+
           **Post-review fix (dual-axis standards + spec review, non-blocking Investigate finding, fixed before the next milestone):** The standards-review agent live-re-ran the committed `sqlite-load-cost.bench.ts` script and reproduced an increasing-multiplier growth trend but with different intermediate values (~4.0x, ~10.9x through 10→100→1,000) than the committed report's (3.43x, 9.58x), and flagged that the report's "accelerating / worse-than-O(n)" framing for SQLite's `health()`/`reclaim()` growth was stated with more confidence than 4 data points at 5 samples each (where p95 is mathematically indistinguishable from max) actually support, given the decisive 1,000→10,000 jump is a single interval and a memory/GC/allocation effect around the ~20k in-memory-record mark was never ruled out. The spec review separately confirmed Gherkin Scenarios 1 and 2 both pass and raised only two minor general-feedback notes (no per-sample `releasedObjectCount` retained; the sqlite table's "DB size (turn nodes)" axis label under-counts total loaded rows by the equal-sized orphan batch), with no P0/P1/P2 from either axis. Per this epic's practice of proactively fixing cheap, clearly-correct non-blocking findings: reworded `SPK-KRT-BK007.md` §2/§3/§4 (the four passages the standards reviewer cited) to present the SQLite top-of-range growth jump as a hypothesis warranting its own follow-up investigation — explicitly naming the sample-size, p95-at-n=5, and memory/GC-confound caveats — rather than as a settled algorithmic-complexity conclusion, and clarified that the primary Option-B recommendation does not depend on that secondary claim (it holds under the best-case/minimum sample at every tier for both backends). Also added the spec review's suggested axis-label clarification to the SQLite results table. No script or Nx-target change was needed — both bench scripts' own logic was independently confirmed correct by both reviewers (live re-execution, cross-checked against the actual `postgres-backend-persistence.ts`/`sqlite-backend.ts` code paths); only the spike report's prose was overclaiming relative to its own evidence. Re-verified: no residual placeholder text, both Gherkin scenarios still satisfied, zero `src/**` diffs unchanged.
     stop_conditions: ["STOP and do not write any production code under this ticket — it is measurement-only. STOP if a representative benchmark cannot be constructed without touching production source; escalate instead of adding instrumentation to the measured files."]
   - id: KRT-BK008
@@ -330,18 +330,18 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Chunk-aware TurnTree caller writes
-        
+
           Scenario: Appends past the chunking threshold do not re-hash the full collection
             Given an ordered TurnTree path already past the ADR-0011 chunking threshold
             When the runtime appends one additional item to that path
             Then the caller submits a chunked delta rather than the full flat items array
             And the CPU cost of the append is proportional to the new chunk, not the full collection
-        
+
           Scenario: Collections below the threshold are unaffected
             Given an ordered TurnTree path below the ADR-0011 chunking threshold
             When the runtime writes to that path
             Then the caller continues to submit the flat encoding exactly as before
-        
+
           Scenario: Existing chunked-path conformance is preserved
             Given the existing kernel protocol conformance suite covering TurnTree chunking
             When "bun run verify:kernel" runs after this change
@@ -362,7 +362,7 @@ tickets:
             - **Justification:** TDD test strategy per the epic's testing rules. The sqlite/postgres parity tests live in those packages (not `kernel-runtime/test`) because both already devDepend on `@tuvren/kernel-runtime` for their own kernel-level tests — adding the reverse edge would create a real Nx project-graph cycle, confirmed empirically. The constant-agreement test is a same-repo source-text invariant guard (5 independent `ORDERED_PATH_CHUNK_THRESHOLD`/`SIZE` declarations — memory, postgres, sqlite-backend.ts, sqlite-integrity-assertions.ts, and the new runtime one — per ADR-0011's "implementation constant, not protocol constant" framing) and deliberately does not live under `tools/conformance/`, since that machinery is reserved for cross-implementation adapter behavior, not same-language source-constant hygiene.
           - **Touched Files (incidental):** `bun.lock` — a 3-line diff removing a stale `@tuvren/kernel-testkit` devDependency lockfile entry for `@tuvren/backend-shared`, whose `package.json` has not declared that dependency since before this ticket began. Confirmed via `git stash` that this drift already existed at this branch's HEAD; a routine `bun install` during implementation regenerated the lockfile and incidentally corrected it. No functional effect.
           - **Pre-existing, unrelated gate failure noted (not fixed here):** `bun run verify:kernel`'s final `workspace compatibility evidence check` step (`bun run compatibility:check`) fails with "compatibility matrix typescript-framework checkIds do not match live conformance plan topology" plus related `nonApplicableCheckIds` mismatches for several `*-certification` evidence files. Independently reproduced via `git stash` against this branch's clean HEAD (commit `4381273d`) with KRT-BK008's changes fully removed — confirms this is pre-existing drift orthogonal to TurnTree chunking (most likely from KRT-BK004's conformance plan `planVersion` bump not yet reflected via `bun run compatibility:evidence`), not a regression introduced by this ticket. Flagged here for resolution before the epic's final closing `bun run verify` gate.
-          
+
           **Post-review fix (dual-axis standards + spec review, non-blocking P2, fixed before the next milestone):** the spec reviewer flagged that only single-item appends were tested — `applyStagedResultsToManifest`/`createTurnTree` both support staging multiple results in one call, and no test exercised a single `toStoredTurnTreePathChunkAware` invocation whose delta spans more than one new chunk (i.e., the `for` loop computing >1 new chunk per call was inspected but not executed by any test). Added `runtime-kernel.turn-tree-chunking.test.ts`'s "a single batched incorporate call spanning more than one new chunk resolves correctly" test: grows a prior to a partial-second-chunk state (40 items) via single appends, then incorporates 30 staged results in one call (delta 40→70, spanning the existing partial chunk plus a new one), asserting correct resolution against the unoptimized `tree.create` baseline. Mutation-verified this test is non-redundant: temporarily forced the new-chunk loop to compute a single oversized chunk instead of respecting `RUNTIME_ORDERED_PATH_CHUNK_SIZE`; confirmed this new test — and only this one — failed (the other three chunk-aware tests, which never exceed a 32-item delta, stayed green), then reverted and confirmed byte-identical restoration and all green. Re-verified: `kernel-runtime:test` 56/56 pass, `kernel-runtime:typecheck`/`:lint` clean. The standards review's remaining general-feedback notes (a `Promise.all`-over-tx concurrency pattern observation, and acknowledged/justified duplication between the caller's chunk loop and the backends' normalize loops) were confirmed non-issues and require no code change.
     stop_conditions: [STOP if backends do not uniformly accept caller-submitted chunked records/deltas across memory, sqlite, "and postgres — the audit verified this only for the memory backend's normalize logic; confirm sqlite/postgres parity before shipping caller-side chunking", or scope this ticket to memory-backend-verified paths only and file a follow-up for the others.]
   - id: KRT-BK009
@@ -382,13 +382,13 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: SQLite rollback error normalization
-        
+
           Scenario: A transaction error is normalized exactly once
             Given a sqlite transaction whose work function throws during execution
             When "transact" handles the rollback
             Then the resulting error has been normalized exactly once
             And it is not double-wrapped by both the inner and outer catch blocks
-        
+
           Scenario: Rollback error shape is asserted by a test
             Given the collapsed single-normalization rollback path
             When "bun run nx run backend-sqlite:test" runs
@@ -418,19 +418,19 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Rust kernel conformance promotion
-        
+
           Scenario: In-memory-expressible reclamation and scope-isolation checks run against rust-kernel
             Given the reclamation and scope-isolation checks that do not require process restart or crash recovery
             When "bun run conformance" runs against the rust-kernel implementation
             Then those checks execute and report a pass/fail outcome for rust-kernel
             And they were selected by declared capability, not by implementation ID or language
-        
+
           Scenario: Restart/crash-recovery checks remain excluded
             Given the "kernel-restart-af.*" and "kernel-restart-recovery.close_reopen_checkpoint" checks
             When the promoted check set is computed
             Then those checks are not included in the rust-kernel lane
             And the compatibility matrix documents them as deferred to the Rust persistence epic
-        
+
           Scenario: The compatibility matrix reflects the expanded coverage
             Given the promoted checks now run against rust-kernel
             When "reports/compatibility/compatibility-matrix.json" is regenerated
@@ -476,17 +476,17 @@ tickets:
       mode: gherkin
       evidence: |
         Feature: Backend-specific storage test uplift
-        
+
           Scenario: SQLite WAL/locking behavior is covered by a backend-local test
             Given two concurrent connections attempt writes against the same sqlite scope file
             When the backend-local locking test runs
             Then it asserts the observed serialization/locking behavior specific to sqlite's connection model
-        
+
           Scenario: Postgres connection-pool contention behavior is covered by a backend-local test
             Given multiple concurrent transactions target the same postgres scope under the "max: 1" pool
             When the backend-local pool-contention test runs
             Then it asserts the observed queuing/contention behavior specific to postgres's "FOR UPDATE" row-lock model
-        
+
           Scenario: New tests do not duplicate shared testkit coverage
             Given the shared testkit's existing cross-backend semantic suites
             When the new backend-local tests are reviewed
