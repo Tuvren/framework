@@ -572,7 +572,7 @@ describe("createRemoteClientSession", () => {
     // binding rejects it as session_frame_invalid without settling anything.
     // If the session treated it as settleable it would delete the pending
     // entry and its timer, leaving the dispatch owed by no one — the hung
-    // tool call ADR-062 §6 exists to eliminate.
+    // tool call ADR-0062 §6 exists to eliminate.
     session.dispatchInbound({
       correlationId: "corr-malformed",
       kind: "client_result",
@@ -659,7 +659,7 @@ describe("createRemoteClientSession", () => {
     );
   });
 
-  test("reattach ordering: replayed events arrive before the redelivered client_invocation, which arrives before live forwarding resumes (ADR-063 §2/§3)", async () => {
+  test("reattach ordering: replayed events arrive before the redelivered client_invocation, which arrives before live forwarding resumes (ADR-0063 §2/§3)", async () => {
     const { binding, events, session } = setup();
     const sink1 = createFakeSink();
     session.attach(sink1);

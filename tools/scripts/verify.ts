@@ -101,7 +101,7 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "sdk",
   "kernel-contract-protocol",
   "kernel-runtime",
-  // @tuvren/kernel-grpc-client leaf (ADR-059 / KRT-BJ002): owns the relocated
+  // @tuvren/kernel-grpc-client leaf (ADR-0059 / KRT-BJ002): owns the relocated
   // gRPC transport codec, whose round-trip tests run only in this lane.
   "kernel-grpc-client",
   // backend-shared (@tuvren/backend-shared, KRT-BK001): the shared
@@ -139,10 +139,10 @@ export const WORKSPACE_TEST_PROJECTS: readonly string[] = [
   "framework-runtime",
   "runner-react",
   "host-repl",
-  // @tuvren/host-session (issue #99 / ADR-060): the duplex session frame
+  // @tuvren/host-session (issue #99 / ADR-0060): the duplex session frame
   // binding's routing tests run only in this lane.
   "host-session",
-  // @tuvren/remote-session (ADR-063): the reattach/redelivery/grace/dispatch-
+  // @tuvren/remote-session (ADR-0063): the reattach/redelivery/grace/dispatch-
   // timeout session-lifecycle seam's tests run only in this lane.
   "remote-session",
   // @tuvren/session-client (M5): the thin, zero-dependency reference remote
@@ -186,7 +186,7 @@ export const WORKSPACE_BUILD_PROJECTS: readonly string[] = [
   "telemetry-semconv",
   "host-repl",
   "host-session",
-  // @tuvren/remote-session (ADR-063): builds above host-session and
+  // @tuvren/remote-session (ADR-0063): builds above host-session and
   // stream-core, so its lane must run alongside them.
   "remote-session",
   // @tuvren/session-client (M5): zero-dependency remote-peer package; builds
@@ -216,7 +216,7 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "telemetry-semconv",
   "host-repl",
   "host-session",
-  // @tuvren/remote-session (ADR-063): package-exports smoke for the
+  // @tuvren/remote-session (ADR-0063): package-exports smoke for the
   // reattachable session-lifecycle seam.
   "remote-session",
   // @tuvren/session-client (M5): package-exports smoke for the
@@ -241,7 +241,7 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
   },
   {
     command: ["bun", "run", "host-boundary:check"],
-    id: "ADR-057 host import boundary gate",
+    id: "ADR-0057 host import boundary gate",
   },
   {
     // Routed through the cached Nx target (inputs: workspace sources +
@@ -249,7 +249,7 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
     // surfaces replay from cache; `bun run api-freeze:check` is the same gate
     // uncached for manual runs.
     command: ["bunx", "nx", "run", "shared-core:api-freeze-check"],
-    id: "ADR-054/056 API-surface freeze gate",
+    id: "ADR-0054/0056 API-surface freeze gate",
   },
   {
     command: ["bun", "run", "docs:af-gap-plan:check"],

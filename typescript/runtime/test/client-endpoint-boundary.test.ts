@@ -373,7 +373,7 @@ describe("ClientEndpointBoundary — staleness handling (KRT-AZ003)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// KRT-BG003: Side-effect-once idempotency envelope (ADR-052)
+// KRT-BG003: Side-effect-once idempotency envelope (ADR-0052)
 // ---------------------------------------------------------------------------
 
 describe("ClientEndpointBoundary — idempotency envelope (KRT-BG003)", () => {

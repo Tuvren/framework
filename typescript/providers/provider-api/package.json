@@ -11,7 +11,7 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "description": "Internal Tuvren provider-integration helpers (ADR-057) — an engine dependency of the runner and provider-bridge packages, not a host-facing API. Not semver-guaranteed.",
+  "description": "Internal Tuvren provider-integration helpers (ADR-0057) — an engine dependency of the runner and provider-bridge packages, not a host-facing API. Not semver-guaranteed.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

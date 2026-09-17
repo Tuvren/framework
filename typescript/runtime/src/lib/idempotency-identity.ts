@@ -18,14 +18,14 @@ import { createHash } from "node:crypto";
 
 /**
  * Derive the side-effect-once idempotency identity for a tool invocation
- * (ADR-052 as amended by ADR-065, KRT-BG003).
+ * (ADR-0052 as amended by ADR-0065, KRT-BG003).
  *
  * A side-effecting invocation carries an idempotency identity derived from the
  * **logical call identity** `(turnId, callId)` so the external system or client
  * environment that actually performs the effect can deduplicate a dispatch it
  * has already seen. Every dispatch of one logical call — the first attempt, a
  * framework retry, a re-dispatch after an approval resume or a preemption
- * recovery, and a redelivery after a reconnect (ADR-063) — therefore presents
+ * recovery, and a redelivery after a reconnect (ADR-0063) — therefore presents
  * an identical key.
  *
  * Both components are stable by construction, and this pairing is the minimal
@@ -40,7 +40,7 @@ import { createHash } from "node:crypto";
  *   committed or staged state — a stability skip-completed-by-`callId` recovery
  *   already depends on (framework spec §4.9, §8.6).
  *
- * Two identifiers ADR-052 originally specified are deliberately **excluded**,
+ * Two identifiers ADR-0052 originally specified are deliberately **excluded**,
  * because neither is stable for one logical call:
  * - The run **fencing token** rotates on every lease renewal.
  * - The **`runId`** is fresher still: a Run is one execution *attempt*, and the
@@ -49,7 +49,7 @@ import { createHash } from "node:crypto";
  *   §5.2). Keying on it made the identity churn even in a healthy loop.
  *
  * Fencing answers "may I commit this?" (still enforced, at the staging fence,
- * ADR-052 §3); this key answers "which logical call is this?". Conflating the
+ * ADR-0052 §3); this key answers "which logical call is this?". Conflating the
  * two made the second unstable for precisely as long as the first was doing its
  * job.
  *

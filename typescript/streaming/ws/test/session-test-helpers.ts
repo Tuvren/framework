@@ -15,7 +15,7 @@
  */
 
 /**
- * Shared structural fakes for the `@tuvren/stream-ws` test suite (ADR-063
+ * Shared structural fakes for the `@tuvren/stream-ws` test suite (ADR-0063
  * composition: `binding → session → transport → socket`). These are plain
  * structural doubles, not `bun:test` test files — nothing here is a `test()`
  * or `describe()` block.

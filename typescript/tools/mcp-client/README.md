@@ -4,7 +4,7 @@ A first-class Model Context Protocol (MCP) tool source for the Tuvren runtime. I
 connects to an MCP server over `stdio` or `http-sse`, lists the server's tools,
 and exposes them as Tuvren tool definitions the runtime can invoke.
 
-## Secret Isolation — Edge Confinement (ADR-044)
+## Secret Isolation — Edge Confinement (ADR-0044)
 
 MCP credentials are **confined to the integration edge**. They live only inside
 this package's transport and are never copied onto any runtime surface that can

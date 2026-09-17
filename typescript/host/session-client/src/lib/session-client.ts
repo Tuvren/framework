@@ -77,7 +77,7 @@ export interface SessionClientCapabilityContext {
   /** The capability identifier this envelope dispatched to. */
   capabilityId: string;
   /**
-   * Side-effect-once idempotency identity (ADR-052 as amended by ADR-065). A
+   * Side-effect-once idempotency identity (ADR-0052 as amended by ADR-0065). A
    * handler that drives an external system with a non-idempotent effect
    * should present this key to that system so a redelivered invocation (same
    * `callId`, same key) after a reconnect does not double the effect.
@@ -446,7 +446,7 @@ export function createSessionClient(
       // than let the throw propagate: it will flush after the next
       // handshake_ack, which is exactly the redelivery-recovery story this
       // client already relies on for `client_result` frames sent under
-      // ADR-063 redelivery.
+      // ADR-0063 redelivery.
       outboundQueue.push(frame);
     }
   }
@@ -506,7 +506,7 @@ export function createSessionClient(
     if (existing !== undefined) {
       if (existing.status === "answered") {
         // The server redelivered a client_invocation whose original result it
-        // never received (ADR-063 §3). Re-send the recorded result rather
+        // never received (ADR-0063 §3). Re-send the recorded result rather
         // than re-run the handler — the handler already produced this
         // answer, and re-executing it could double a non-idempotent effect
         // the idempotencyKey contract exists precisely to avoid.

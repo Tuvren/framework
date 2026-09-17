@@ -282,7 +282,7 @@ export interface TuvrenPrompt {
   responseFormat?: StructuredOutputRequest;
   /**
    * Cooperative cancellation signal threaded into the provider call so the
-   * framework-enforced execution bounds guard (ADR-043) can abort an in-flight
+   * framework-enforced execution bounds guard (ADR-0043) can abort an in-flight
    * model request when `maxWallClockMs` is reached. Non-secret and
    * non-serializable: it is carried out-of-band by the TypeScript binding and
    * never appears in the JSON payload. Owned bridges must forward it to the
@@ -847,7 +847,7 @@ export interface MessageDoneEvent {
  * requested the tool (that is `tool_call.done`).
  */
 export interface ToolStartEvent {
-  /** Additive per ADR-046 AW006: execution-class and owner attribution. */
+  /** Additive per ADR-0046 AW006: execution-class and owner attribution. */
   attribution?: CapabilityInvocationAttribution;
   callId: string;
   input: unknown;
@@ -862,7 +862,7 @@ export interface ToolStartEvent {
  * invocation, emitted after the aroundTool chain returns for that call.
  */
 export interface ToolResultEvent {
-  /** Additive per ADR-046 AW006: execution-class and owner attribution. */
+  /** Additive per ADR-0046 AW006: execution-class and owner attribution. */
   attribution?: CapabilityInvocationAttribution;
   callId: string;
   isError?: boolean;
@@ -1075,8 +1075,8 @@ export interface ToolExecutionContext {
   emit?: (event: { name: string; data: unknown }) => void;
   forward?: (event: TuvrenStreamEvent, source: EventSource) => void;
   /**
-   * Side-effect-once idempotency identity for this invocation (ADR-052 as
-   * amended by ADR-065).
+   * Side-effect-once idempotency identity for this invocation (ADR-0052 as
+   * amended by ADR-0065).
    *
    * A deterministic identity derived from the turn id and this call id — the
    * logical call identity. A tool that performs a non-idempotent external side
@@ -1613,7 +1613,7 @@ export interface CapabilityPolicyContextInputs {
  * binding was resolved (`tuvren-server`, `tuvren-client`, `provider-native`,
  * `provider-mediated`) — it is absent for outcomes decided before dispatch
  * (unknown tool, input-validation failure, policy denial, resume rejection),
- * per ADR-064 §3: those genuinely have no execution class, and a guessed one
+ * per ADR-0064 §3: those genuinely have no execution class, and a guessed one
  * would be worse than none. A policy scoped to remote-peer content branches
  * on `executionClass === "tuvren-client"`; a deny-by-default policy should
  * branch on absence explicitly rather than relying on a negative equality
@@ -1636,7 +1636,7 @@ export interface SanitizeToolResultContext {
  * Named once here so both sites (and any local variable that holds the
  * resolved hook) share a single alias instead of repeating the inline
  * function type. See {@link AgentConfig.sanitizeToolResult} for the full
- * contract (ADR-064).
+ * contract (ADR-0064).
  */
 export type SanitizeToolResultHook = (
   result: ToolResultPart,
@@ -1647,14 +1647,14 @@ export type SanitizeToolResultHook = (
  * The static, per-agent configuration for a Turn
  * (KrakenFrameworkSpecification §10.1): model, system prompt, tools,
  * extensions, the pluggable policy contracts, capability-orchestration
- * inputs (Epics AX/AY/BB, ADR-046, KRT-AZ001/AZ003), and execution limits.
+ * inputs (Epics AX/AY/BB, ADR-0046, KRT-AZ001/AZ003), and execution limits.
  * Agent configs are static for the lifetime of the orchestration; on
  * handoff the framework swaps the active config and rebuilds the active
  * tool registry, extension composition, and renderer inputs from it.
  */
 export interface AgentConfig {
   /**
-   * Optional capability policy engine per ADR-046 §4.21. When set, the
+   * Optional capability policy engine per ADR-0046 §4.21. When set, the
    * framework evaluates exposure-time and invocation-time policy; denied
    * invocations surface as `tool.result` with `isError: true`. When absent,
    * all invocations are admitted. Exposure filtering is active in Epic BB.
@@ -1753,7 +1753,7 @@ export interface AgentConfig {
   >;
   /**
    * Host sanitization seam for tool-result content, ordered before durability
-   * (ADR-064). Applied inside `stageAndEmitResult` — the single chokepoint
+   * (ADR-0064). Applied inside `stageAndEmitResult` — the single chokepoint
    * shared by every execution class and every error path, including the
    * thrown-`err.message` conversion at the client-endpoint boundary — so the
    * value this hook returns is what is durably staged into kernel history
@@ -1777,7 +1777,7 @@ export interface AgentConfig {
    * `output.code: "tool_result_sanitization_failed"`, and the turn continues.
    *
    * See `spec/host/client-endpoint-integration.md` ("Durable Lineage Is
-   * Forever") and ADR-064 for the full decision record.
+   * Forever") and ADR-0064 for the full decision record.
    */
   sanitizeToolResult?: SanitizeToolResultHook;
   /**
@@ -1792,7 +1792,7 @@ export interface AgentConfig {
 /**
  * The hard-stop execution bounds whose breach finalizes a turn as `failed`.
  * `maxConcurrentToolCalls` is intentionally excluded: it is a concurrency
- * throttle, not a terminal bound. (ADR-043 §3.11)
+ * throttle, not a terminal bound. (ADR-0043 §3.11)
  */
 export type ExecutionBoundKind =
   | "maxIterations"
@@ -1800,7 +1800,7 @@ export type ExecutionBoundKind =
   | "maxWallClockMs";
 
 /**
- * Framework-enforced per-turn execution bounds (ADR-043 §3.11), applied above
+ * Framework-enforced per-turn execution bounds (ADR-0043 §3.11), applied above
  * the runner's own loop policy so a misbehaving or adversarial runner cannot
  * run a turn unbounded. Configured per runtime instance via
  * `createTuvren({ bounds })` / `RuntimeCoreOptions.bounds`. Unset fields take
@@ -1821,7 +1821,7 @@ export interface ExecutionBounds {
 /**
  * Details carried by the `execution_bound_exceeded` `TuvrenRuntimeError`, the
  * fatal canonical `error` event, and the bounded-execution telemetry event when
- * a hard-stop bound is breached. (ADR-043)
+ * a hard-stop bound is breached. (ADR-0043)
  */
 export interface ExecutionBoundExceededDetails {
   /** Which hard-stop bound was breached. */
@@ -1935,9 +1935,9 @@ export interface OrchestrationRuntime {
   }): OrchestrationHandle;
 }
 
-// ── Durable-Read Return Types (ADR-036) ─────────────────────────────────────
+// ── Durable-Read Return Types (ADR-0036) ─────────────────────────────────────
 
-/** A summary entry returned by {@link TuvrenRuntime.listThreads} (ADR-036). */
+/** A summary entry returned by {@link TuvrenRuntime.listThreads} (ADR-0036). */
 export interface ThreadSummary {
   createdAtMs: EpochMs;
   rootTurnNodeHash: HashString;
@@ -1945,7 +1945,7 @@ export interface ThreadSummary {
   threadId: string;
 }
 
-/** A summary entry returned by {@link TuvrenRuntime.listBranches} (ADR-036). */
+/** A summary entry returned by {@link TuvrenRuntime.listBranches} (ADR-0036). */
 export interface BranchSummary {
   branchId: string;
   headTurnNodeHash: HashString;
@@ -1955,7 +1955,7 @@ export interface BranchSummary {
 /**
  * A point-in-time view of a Turn's durable state, returned by
  * {@link TuvrenRuntime.getTurnState} and iterated by
- * {@link TuvrenRuntime.getTurnHistory} (ADR-036). `paths` projects the
+ * {@link TuvrenRuntime.getTurnHistory} (ADR-0036). `paths` projects the
  * schema's state paths (messages, manifest, etc.) at this TurnNode;
  * `previousTurnNodeHash` is `null` for the root Turn.
  */
@@ -1969,11 +1969,11 @@ export interface TurnSnapshot {
   turnTreeHash: HashString;
 }
 
-/** Opaque pagination cursor for {@link TuvrenRuntime.listThreads} (ADR-036). */
+/** Opaque pagination cursor for {@link TuvrenRuntime.listThreads} (ADR-0036). */
 export type ListThreadsCursor = string; // opaque to host; see TechSpec §3.8
-/** Opaque pagination cursor for {@link TuvrenRuntime.getTurnHistory} (ADR-036). */
+/** Opaque pagination cursor for {@link TuvrenRuntime.getTurnHistory} (ADR-0036). */
 export type TurnHistoryCursor = string; // opaque to host; see TechSpec §3.8
-/** Opaque pagination cursor for {@link TuvrenRuntime.readBranchMessages} (ADR-036). */
+/** Opaque pagination cursor for {@link TuvrenRuntime.readBranchMessages} (ADR-0036). */
 export type BranchMessagesCursor = string; // opaque to host; see TechSpec §3.8
 
 /**
@@ -1995,7 +1995,7 @@ export interface ReclamationSummary {
 }
 
 /**
- * Host-facing data-lifecycle maintenance surface (ADR-051; architecture flow
+ * Host-facing data-lifecycle maintenance surface (ADR-0051; architecture flow
  * §4.17). The runtime owns the mechanism only; the host owns retention policy
  * and key custody. Erasure (right-to-erasure / crypto-shredding) is the host
  * destroying a Scope's payload-encryption keys on its own keyring — never a
@@ -2029,9 +2029,9 @@ export interface RuntimeMaintenance {
 /**
  * The framework's host-facing runtime surface: Thread/Branch lifecycle
  * (`createThread`, `createBranch`, `setBranchHead`), Turn execution
- * (`executeTurn`), the ADR-036 durable-read surface (`listThreads`,
+ * (`executeTurn`), the ADR-0036 durable-read surface (`listThreads`,
  * `listBranches`, `getThread`, `getTurnState`, `getTurnHistory`,
- * `readBranchMessages`), and the ADR-051 data-lifecycle `maintenance`
+ * `readBranchMessages`), and the ADR-0051 data-lifecycle `maintenance`
  * surface. This is the top-level seam a host embeds to expose Kraken to
  * external consumers (APIs, UIs, protocol endpoints).
  */
@@ -2086,19 +2086,19 @@ export interface TuvrenRuntime {
   // by O(1) active divergence paths in v1 and kernel.branch.list is unpaginated.
   listBranches(input: { threadId: string }): Promise<BranchSummary[]>;
 
-  // ── Durable-Read Surface (ADR-036) ──────────────────────────────────────
+  // ── Durable-Read Surface (ADR-0036) ──────────────────────────────────────
   listThreads(options?: {
     limit?: number;
     cursor?: ListThreadsCursor;
     filter?: { schemaId?: string };
   }): Promise<{ threads: ThreadSummary[]; nextCursor?: ListThreadsCursor }>;
 
-  // ── Data-Lifecycle Maintenance Surface (ADR-051, §4.17) ─────────────────
+  // ── Data-Lifecycle Maintenance Surface (ADR-0051, §4.17) ─────────────────
   // Host-facing reclamation + tenant-offboarding mechanism. Retention policy
   // and key custody stay host-owned.
   maintenance: RuntimeMaintenance;
 
-  // A reclaimed/crypto-shredded message (ADR-051, KRT-BF005) surfaces as a typed
+  // A reclaimed/crypto-shredded message (ADR-0051, KRT-BF005) surfaces as a typed
   // `ErasedPayload` marker (distinguished by `kind: "erased"`) instead of a
   // decoded message, so the read stays total and the lineage hash structure
   // referencing it is unchanged.

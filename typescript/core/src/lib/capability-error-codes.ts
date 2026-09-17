@@ -73,13 +73,13 @@ export const CAPABILITY_RESULT_STALE = "capability_result_stale" as const;
  * the endpoint *is* attached and accepted the work but went quiet; the two
  * budgets are deliberately independent so a peer given a fresh chance after
  * reconnecting is never handed a deadline that expired while it was
- * unreachable. Owned by `@tuvren/remote-session` (ADR-063 §5).
+ * unreachable. Owned by `@tuvren/remote-session` (ADR-0063 §5).
  */
 export const CAPABILITY_DISPATCH_TIMEOUT =
   "capability_dispatch_timeout" as const;
 
 /**
- * Stable code emitted when {@link AgentConfig.sanitizeToolResult} (ADR-064)
+ * Stable code emitted when {@link AgentConfig.sanitizeToolResult} (ADR-0064)
  * throws instead of returning a sanitized `ToolResultPart`. The runtime does
  * not swallow the throw into a scrubbed-by-default result — silently
  * substituting content the host did not author would be a worse failure than
@@ -98,6 +98,6 @@ export const TOOL_RESULT_SANITIZATION_FAILED =
  * checkpoints a safe terminal outcome, and finalizes the turn as a `failed`
  * `ExecutionResult` carrying this code with `details: ExecutionBoundExceededDetails`,
  * plus a fatal canonical `error` event with the same code/details. The runner
- * cannot raise or disable a bound. (ADR-043 §3.11, KRT-BD005)
+ * cannot raise or disable a bound. (ADR-0043 §3.11, KRT-BD005)
  */
 export const EXECUTION_BOUND_EXCEEDED = "execution_bound_exceeded" as const;

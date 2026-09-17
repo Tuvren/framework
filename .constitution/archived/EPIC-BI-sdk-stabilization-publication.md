@@ -1,14 +1,14 @@
 ### Epic BI — SDK Stabilization + npm Publication (KRT)
 
-> **Superseded (2026-07-04, tasks v0.39.0):** Retired unexecuted and replaced by the BJ/BK/BL/BM block. The 2026-07-04 constitutional audit (`.constitution/reports/audit-2026-07-04-170703-post-epic-87-baseline.md`) showed this epic's starting assumption — packages nearly publishable — was wrong (zero publishing infrastructure existed), and the pre-freeze interview added scope this epic never carried (ADR-056/057/058: experimental markers, sdk-as-composition, funnel routing). Its five tickets' intent is absorbed: KRT-BI001→KRT-BL001, KRT-BI002→KRT-BJ006, KRT-BI003→KRT-BL002, KRT-BI004→KRT-BJ007/BJ008/BL003, KRT-BI005→KRT-BL004. No KRT-BI ticket was started; nothing to carry over. Historical record below preserved verbatim.
+> **Superseded (2026-07-04, tasks v0.39.0):** Retired unexecuted and replaced by the BJ/BK/BL/BM block. The 2026-07-04 constitutional audit (`.constitution/reports/audit-2026-07-04-170703-post-epic-87-baseline.md`) showed this epic's starting assumption — packages nearly publishable — was wrong (zero publishing infrastructure existed), and the pre-freeze interview added scope this epic never carried (ADR-0056/0057/0058: experimental markers, sdk-as-composition, funnel routing). Its five tickets' intent is absorbed: KRT-BI001→KRT-BL001, KRT-BI002→KRT-BJ006, KRT-BI003→KRT-BL002, KRT-BI004→KRT-BJ007/BJ008/BL003, KRT-BI005→KRT-BL004. No KRT-BI ticket was started; nothing to carry over. Historical record below preserved verbatim.
 
-**Status:** Active. Fifth epic of the SaaS-Readiness block. Realizes ADR-054 (public SDK API stability + registry publication; experimental capabilities subpath) for PRD CAP-P0-070. **Gated to run after Epics BE and BF** so the frozen public surface already accounts for scope binding and erasure (freeze-after-tenancy+GC, resolved fork Q3). Mostly tooling, config, and docs; sized at the lower end of the epic heuristic.
+**Status:** Active. Fifth epic of the SaaS-Readiness block. Realizes ADR-0054 (public SDK API stability + registry publication; experimental capabilities subpath) for PRD CAP-P0-070. **Gated to run after Epics BE and BF** so the frozen public surface already accounts for scope binding and erasure (freeze-after-tenancy+GC, resolved fork Q3). Mostly tooling, config, and docs; sized at the lower end of the epic heuristic.
 
 **KRT-BI001 Public-Surface API Audit of the Stable Core**
 - **Type:** Chore
 - **Effort:** 5
 - **Dependencies:** KRT-BE006, KRT-BF006
-- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-054
+- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-0054
 - **Description:** Audit the public surface of the stable core (`@tuvren/core` subpaths, the Durable-Read Surface, `ExecutionHandle`/`awaitResult`, `createTuvren`, and the published leaf packages) after tenancy and data-lifecycle land; confirm no `Kraken*` internal type leaks and that the construction-time scope binding requires no public read-signature change.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -23,7 +23,7 @@ And the audited surface is recorded as the freeze candidate
 - **Type:** Chore
 - **Effort:** 3
 - **Dependencies:** KRT-BI001
-- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-054
+- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-0054
 - **Description:** Mark the `@tuvren/core/capabilities` advanced classes as experimental in types and documentation and exclude them from the stability guarantee.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -37,7 +37,7 @@ And they are excluded from the semver stability guarantee
 - **Type:** Chore
 - **Effort:** 5
 - **Dependencies:** KRT-BI002
-- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-054
+- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-0054
 - **Description:** Freeze the stable-core public API under semantic versioning and add an API-surface snapshot/diff guard to the canonical verification path so an unintended breaking change to the stable core fails CI while experimental-surface changes do not.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -51,7 +51,7 @@ And a change confined to the experimental surface does not trip the gate
 - **Type:** Chore
 - **Effort:** 5
 - **Dependencies:** KRT-BI003
-- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-054, ADR-037 (peer-dep version-skew safety)
+- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-0054, ADR-0037 (peer-dep version-skew safety)
 - **Description:** Establish the registry publication pipeline (versioning, peer-dependency version-skew safety, provenance) and publish the curated packages to the public registry.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin
@@ -66,7 +66,7 @@ And a consumer can install and issue a first Turn from the published packages
 - **Type:** Chore
 - **Effort:** 3
 - **Dependencies:** KRT-BI004
-- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-054
+- **Capability / Contract Mapping:** PRD `CAP-P0-070`; TechSpec ADR-0054
 - **Description:** Provide adopter-facing onboarding that documents the stable core, the experimental boundary, and the install plus first-Turn path against the published packages.
 - **Acceptance Criteria (Gherkin):**
 ```gherkin

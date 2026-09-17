@@ -107,7 +107,7 @@ export class ToolPauseSignal extends Error {
  * Once the fence aborts, `publishEvent`, `publishCustom`, and
  * `reportSoftError` become silent no-ops, and `stageResult` throws the abort
  * reason both before and after the underlying staging call — the
- * commit-under-valid-authority gate of ADR-052 / KRT-BG004: a result produced
+ * commit-under-valid-authority gate of ADR-0052 / KRT-BG004: a result produced
  * after execution authority is lost (lease loss, cancellation, wall-clock
  * deadline, or sibling batch failure) is never committed to durable history
  * under the dead owner.
@@ -158,7 +158,7 @@ export function createBatchScopedEnvironment(
     },
     signal: fenceSignal,
     async stageResult(result, orderIndex) {
-      // Commit-under-valid-authority gate (ADR-052: a result becomes durable
+      // Commit-under-valid-authority gate (ADR-0052: a result becomes durable
       // state only through a commit performed while the run still holds write
       // authority). The fence signal aborts on lease loss, cancellation, or the
       // wall-clock deadline, so a result produced after authority is lost is not
@@ -180,8 +180,8 @@ export function createBatchScopedEnvironment(
  * `idempotencyKey` is derived from `(turnId, callId)` — the logical call
  * identity, which survives retries, approval resumes, and recovery — so
  * external systems can deduplicate a side effect re-dispatched under a new
- * Run or a new execution owner (ADR-052 side-effect-once as amended by
- * ADR-065; see `deriveIdempotencyKey` in idempotency-identity.ts). Tool
+ * Run or a new execution owner (ADR-0052 side-effect-once as amended by
+ * ADR-0065; see `deriveIdempotencyKey` in idempotency-identity.ts). Tool
  * `metadata` is
  * deep-cloned (preserving functions) so the tool cannot mutate the registry's
  * definition, and `signal` falls back to the batch signal when no per-call
@@ -756,7 +756,7 @@ function createApprovalResultMetadata(
  *
  * Waits on the wave's start barrier first, enforcing the §6.4 invariant that
  * no `tool.result` of a wave is emitted before every `tool.start` of that
- * wave. `environment.sanitizeToolResult` (ADR-064), when configured, is
+ * wave. `environment.sanitizeToolResult` (ADR-0064), when configured, is
  * applied here before either durable staging or event emission — this is the
  * single chokepoint for both, so the scrubbed form is what lands in kernel
  * history *and* what the canonical `tool.result` event carries; the
@@ -768,7 +768,7 @@ function createApprovalResultMetadata(
  *   key.
  * @param executionClass - The result's resolved execution class, when known;
  *   absent for outcomes decided before a binding was resolved (unknown tool,
- *   input-validation failure, policy denial, resume rejection) per ADR-064 §3.
+ *   input-validation failure, policy denial, resume rejection) per ADR-0064 §3.
  * @returns The staged (sanitized) result paired with its content hash. The
  *   returned `result` — not the caller's input — is what was durably staged
  *   and emitted; callers must thread it into every in-memory downstream
@@ -827,7 +827,7 @@ export async function stageAndEmitResults(
 
 /**
  * Applies the host's {@link ToolBatchEnvironment.sanitizeToolResult} hook
- * (ADR-064) to a would-be-staged result, if one is configured.
+ * (ADR-0064) to a would-be-staged result, if one is configured.
  *
  * A no-op when the hook is absent — byte-identical behavior to today.
  * Delegates the actual hook application (context construction, identity
@@ -835,7 +835,7 @@ export async function stageAndEmitResults(
  * pure helper the pre-staged-provider staging path in
  * `runtime-core-iteration.ts` uses — one shared implementation, two
  * application sites (the Tool Execution Gateway chokepoint here, and the
- * AY003 pre-staged provider message path), per ADR-064 §3.
+ * AY003 pre-staged provider message path), per ADR-0064 §3.
  */
 function applySanitizeToolResult(
   environment: ToolBatchEnvironment,
@@ -852,7 +852,7 @@ function applySanitizeToolResult(
 }
 
 /**
- * Pure application of the ADR-064 host sanitization hook to a single
+ * Pure application of the ADR-0064 host sanitization hook to a single
  * {@link ToolResultPart}: builds the {@link SanitizeToolResultContext},
  * invokes the hook, and re-stamps `callId`/`name`/`type` onto whatever the
  * hook returns.

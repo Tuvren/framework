@@ -112,7 +112,7 @@ const MAX_STORABLE_TEXT_BYTES = 512;
  * Rejects a caller-supplied identifier/text value that is not well-formed
  * UTF-16 or contains U+0000 (NUL). Every affected field here now lands
  * directly in a relational `TEXT`
- * column (ADR-067 moved it out of a CBOR blob, where an embedded NUL byte
+ * column (ADR-0067 moved it out of a CBOR blob, where an embedded NUL byte
  * round-tripped without complaint); PostgreSQL's wire protocol cannot encode
  * NUL in `text`/`varchar` and rejects it with SQLSTATE 22021
  * (`invalid_text_representation`) deep inside the driver. Calling this at the

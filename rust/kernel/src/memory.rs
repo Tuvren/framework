@@ -29,7 +29,7 @@ use crate::types::{
 const MIN_SAFE_EPOCH_MS: EpochMs = -9_007_199_254_740_991;
 const MAX_SAFE_EPOCH_MS: EpochMs = 9_007_199_254_740_991;
 
-/// KRT-BK002/ADR-050/ADR-051: a leaseless running run whose `updated_at_ms`
+/// KRT-BK002/ADR-0050/ADR-0051: a leaseless running run whose `updated_at_ms`
 /// has gone quiet for at least this long is treated as abandoned by a
 /// crashed/disconnected creator and excluded from pinning the reclamation
 /// grace horizon. Mirrors the TypeScript `LEASELESS_RUN_EXPIRY_MS` (24h).
@@ -69,13 +69,13 @@ struct KeepClosure {
     turn_trees: HashSet<HashString>,
 }
 
-/// ADR-034: capability descriptor returned by InMemoryKernel::capabilities().
+/// ADR-0034: capability descriptor returned by InMemoryKernel::capabilities().
 #[derive(Clone, Debug)]
 pub struct BackendCapability {
     pub thread_enumeration: bool,
 }
 
-/// ADR-034: options for thread_list.
+/// ADR-0034: options for thread_list.
 #[derive(Clone, Debug, Default)]
 pub struct ThreadListOptions {
     pub limit: Option<usize>,
@@ -86,7 +86,7 @@ pub struct ThreadListOptions {
 
 pub type ThreadListResult = KernelResult<(Vec<StoredThreadEntry>, Option<(EpochMs, String)>)>;
 
-/// ADR-034: a stored thread record with creation timestamp for enumeration.
+/// ADR-0034: a stored thread record with creation timestamp for enumeration.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StoredThreadEntry {
     pub thread_id: String,
@@ -430,14 +430,14 @@ impl InMemoryKernel {
         })
     }
 
-    /// ADR-034: returns the capability descriptor for this backend.
+    /// ADR-0034: returns the capability descriptor for this backend.
     pub fn capabilities(&self) -> BackendCapability {
         BackendCapability {
             thread_enumeration: true,
         }
     }
 
-    /// ADR-034: list threads sorted by (created_at_ms ASC, thread_id ASC).
+    /// ADR-0034: list threads sorted by (created_at_ms ASC, thread_id ASC).
     /// Supports cursor-based pagination and optional schemaId filter.
     pub fn thread_list(&self, options: ThreadListOptions) -> ThreadListResult {
         let state = self.lock_state()?;
@@ -1136,7 +1136,7 @@ impl InMemoryKernel {
         })
     }
 
-    /// ADR-034/KRT-BK010: fetches a run by id without altering its state.
+    /// ADR-0034/KRT-BK010: fetches a run by id without altering its state.
     pub fn run_get(&self, run_id: &str) -> KernelResult<Option<RunRecord>> {
         validate_id(run_id, "invalid_run_id", "run id must not be empty")?;
         let state = self.lock_state()?;

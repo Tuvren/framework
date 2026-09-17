@@ -39,9 +39,9 @@ import {
 } from "./ws-close-codes.js";
 import { type ParsedWsMessage, parseWsMessage } from "./ws-messages.js";
 
-/** Standard WebSocket normal-closure code (RFC 6455 §7.4.1), not part of ADR-062's 4000-range application vocabulary. */
+/** Standard WebSocket normal-closure code (RFC 6455 §7.4.1), not part of ADR-0062's 4000-range application vocabulary. */
 const WS_CLOSE_CODE_NORMAL = 1000;
-/** Standard WebSocket internal-error code (RFC 6455 §7.4.1), used when a heartbeat ping cannot be sent — not part of ADR-062's 4000-range application vocabulary. */
+/** Standard WebSocket internal-error code (RFC 6455 §7.4.1), used when a heartbeat ping cannot be sent — not part of ADR-0062's 4000-range application vocabulary. */
 const WS_CLOSE_CODE_INTERNAL_ERROR = 1011;
 const SUPPORTED_PROTOCOL_VERSION = "1";
 
@@ -72,7 +72,7 @@ export interface WsSocketSink {
 /**
  * Options accepted by {@link createWsSessionTransport}.
  *
- * ADR-063 moved sequencing and replay ownership host-side into
+ * ADR-0063 moved sequencing and replay ownership host-side into
  * `@tuvren/remote-session`: this transport no longer takes a
  * `DuplexSessionBinding` or a replay buffer, only the {@link RemoteClientSession}
  * it attaches beneath. A host composes `binding → session → transport →
@@ -97,7 +97,7 @@ export interface WsSessionTransportOptions {
    * the transport reads `sink.bufferedAmount()`; when it exceeds
    * `maxBufferedBytes` the transport reports a
    * `ws_transport_backpressure_exceeded` warning and closes with
-   * `WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED` instead of sending. ADR-062
+   * `WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED` instead of sending. ADR-0062
    * forbids a silent drop here: a dropped `event` frame would create a
    * sequence gap the resume cursor could neither explain nor repair, while
    * the close converts overflow into an honest reconnect-with-cursor —
@@ -130,7 +130,7 @@ export interface WsSessionTransportOptions {
   /** Receives non-fatal transport-level observations, deduplicated by warning code. */
   onWarning?: (warning: StreamAdapterWarning) => void;
   /**
-   * The host-owned, reattachable session (ADR-063, `@tuvren/remote-session`)
+   * The host-owned, reattachable session (ADR-0063, `@tuvren/remote-session`)
    * this transport attaches beneath on a successful handshake and detaches
    * from on close. The session — not this transport — owns sequencing, the
    * replay window, and unanswered-`client_invocation` redelivery, so the
@@ -144,7 +144,7 @@ export interface WsSessionTransportOptions {
 }
 
 /**
- * A running WebSocket session transport (ADR-062, as amended by ADR-063).
+ * A running WebSocket session transport (ADR-0062, as amended by ADR-0063).
  *
  * @experimental
  */
@@ -170,7 +170,7 @@ export interface WsSessionTransport {
 
 /**
  * Creates a server-side WebSocket session transport over a
- * {@link RemoteClientSession} (ADR-062 as amended by ADR-063,
+ * {@link RemoteClientSession} (ADR-0062 as amended by ADR-0063,
  * `spec/streaming/ws/typespec/main.tsp`).
  *
  * This is pure carriage: the transport owns only the WebSocket-level
@@ -206,7 +206,7 @@ export interface WsSessionTransport {
  * message text; see `isSinkAlreadyAttachedError` below. An attach failure
  * carrying neither code is an unexpected internal error and closes `1011`.
  *
- * Per ADR-062, frame-level and unrecognized-message problems never close the
+ * Per ADR-0062, frame-level and unrecognized-message problems never close the
  * socket — only handshake failures and the transport's own heartbeat/
  * backpressure policy do. On any close, if this transport's handshake had
  * already attached a sink, the transport calls `session.detach(reason)` —
@@ -281,7 +281,7 @@ export function createWsSessionTransport(
     closed = true;
     clearHeartbeatTimers();
 
-    // The transport never ends or closes the session (ADR-063): a dropped
+    // The transport never ends or closes the session (ADR-0063): a dropped
     // link, a heartbeat half-open close, or a backpressure overflow only
     // detaches this sink, starting (or leaving running) the session's own
     // disconnectGraceMs window so a later transport can still reattach and
@@ -364,7 +364,7 @@ export function createWsSessionTransport(
    * `options.backpressure` and the sink's optional `bufferedAmount()`
    * capability are present and the buffered amount exceeds the configured
    * budget. Callers must not send the pending frame when this returns
-   * `true` — ADR-062 forbids a silent drop.
+   * `true` — ADR-0062 forbids a silent drop.
    */
   function enforceBackpressure(): boolean {
     if (options.backpressure === undefined) {
@@ -449,7 +449,7 @@ export function createWsSessionTransport(
    * wire; `release()` (called right after the `handshake_ack` is sent) flushes
    * the queue in order, and every `send()` after that point goes straight to
    * the wire. This is what keeps the wire order `handshake_ack`, then
-   * replay/redelivery, then live frames — the same order ADR-062 always
+   * replay/redelivery, then live frames — the same order ADR-0062 always
    * guaranteed, now produced by a session whose replay/redelivery burst is
    * not paced one frame at a time by this transport's own pump.
    */
@@ -597,7 +597,7 @@ export function createWsSessionTransport(
     }
 
     // Heartbeat pings start only once the handshake has fully completed
-    // (ack plus any replay/redelivery burst sent), per ADR-062 §6.
+    // (ack plus any replay/redelivery burst sent), per ADR-0062 §6.
     startHeartbeat();
   }
 
@@ -676,7 +676,7 @@ export function createWsSessionTransport(
       }
       case "handshake": {
         // A stray post-handshake handshake message is not a transport
-        // concern (ADR-062: frame-level and unrecognized-message problems
+        // concern (ADR-0062: frame-level and unrecognized-message problems
         // never close the socket) — forward it so the binding's schema
         // validation turns it into a session_rejection.
         dispatchInboundSafely(parsed.message);
@@ -747,7 +747,7 @@ export function createWsSessionTransport(
       started = true;
       // Nothing to claim eagerly: options.session claims its underlying
       // binding's outbound() stream lazily, on its own first attach() call
-      // (ADR-063), which this transport triggers only once a valid
+      // (ADR-0063), which this transport triggers only once a valid
       // handshake is ingested. The transport is in the awaiting-handshake
       // state until then — nothing is sent.
     },

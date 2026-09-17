@@ -233,7 +233,7 @@ function defaultCapabilities(
       "kernel.logical",
       "kernel.run-liveness",
       // Shared multi-owner rendezvous: PostgreSQL is the only backend that
-      // advertises an authoritative shared lease clock (ADR-050, BackendCapability
+      // advertises an authoritative shared lease clock (ADR-0050, BackendCapability
       // shared-lease-clock). The clock-skew preemption check is gated on this
       // capability so it runs only where backend-time lease judgment applies;
       // single-writer embedded backends keep the in-process clock and are excluded.
@@ -718,8 +718,8 @@ async function runReclamationProbe(): Promise<Record<string, unknown>> {
   // KRT-BK002 leaseless-expiry probes. A leaseless running run (no
   // executionOwnerId/fencingToken/leaseExpiresAtMs at all) whose creator
   // crashes must eventually stop pinning the grace horizon, or an unrelated
-  // orphan created after it would never become reclaimable (ADR-050/
-  // ADR-051). Two phases mirror grace-window discipline: (A) a leaseless
+  // orphan created after it would never become reclaimable (ADR-0050/
+  // ADR-0051). Two phases mirror grace-window discipline: (A) a leaseless
   // running run whose updatedAtMs has gone quiet past the 24h default
   // administrative expiry horizon is excluded from pinning, so a
   // subsequently-created orphan is released; (B) the same shape, but with
@@ -1469,7 +1469,7 @@ async function runLeaseRenewal(): Promise<Record<string, unknown>> {
       });
     },
     // Align the backend's authoritative lease clock with the kernel clock so the
-    // backend-time re-base (ADR-050) is a no-op for shared-lease-clock backends
+    // backend-time re-base (ADR-0050) is a no-op for shared-lease-clock backends
     // and the deterministic expected lease values hold across all backends.
     { now: () => 10 }
   );
@@ -1572,7 +1572,7 @@ async function runExpiredListing(): Promise<Record<string, unknown>> {
       });
     },
     // Align the backend's authoritative lease clock with the kernel clock so the
-    // backend-time re-base (ADR-050) is a no-op for shared-lease-clock backends
+    // backend-time re-base (ADR-0050) is a no-op for shared-lease-clock backends
     // and the deterministic expected lease values hold across all backends.
     { now: () => 10 }
   );
@@ -1655,7 +1655,7 @@ async function runStalePreemption(): Promise<Record<string, unknown>> {
       });
     },
     // Align the backend's authoritative lease clock with the kernel clock so the
-    // backend-time re-base (ADR-050) is a no-op for shared-lease-clock backends
+    // backend-time re-base (ADR-0050) is a no-op for shared-lease-clock backends
     // and the deterministic expected lease values hold across all backends.
     { now: () => 10 }
   );
@@ -1663,7 +1663,7 @@ async function runStalePreemption(): Promise<Record<string, unknown>> {
 
 /**
  * Preemption under worker clock skew against a backend-authoritative lease clock
- * (KRT-BG005; ADR-050 composed with ADR-052 side-effect-once).
+ * (KRT-BG005; ADR-0050 composed with ADR-0052 side-effect-once).
  *
  * Two execution owners share one backend. owner-secondary's wall clock runs
  * ahead of the backend's own clock, the scenario the SaaS-readiness lease model
@@ -1687,7 +1687,7 @@ async function runStalePreemption(): Promise<Record<string, unknown>> {
  */
 async function runClockSkewPreemption(): Promise<Record<string, unknown>> {
   const schema = await loadCanonicalSchema();
-  // Backend-authoritative clock (ADR-050), mutable so the probe can advance the
+  // Backend-authoritative clock (ADR-0050), mutable so the probe can advance the
   // backend's own clock between phases without relying on wall-clock sleeps.
   let backendClockMs = 1000;
   const backendNow = () => backendClockMs;
@@ -1701,7 +1701,7 @@ async function runClockSkewPreemption(): Promise<Record<string, unknown>> {
     ADAPTER_CONFIG,
     async (backend) => {
       // owner-primary's wall clock is aligned with the backend at grant time, so
-      // the ADR-050 re-base is a no-op and the stored expiry is 1100 in backend
+      // the ADR-0050 re-base is a no-op and the stored expiry is 1100 in backend
       // time (supplied 1100 - primary now 1000 = 100ms duration; 1000 + 100).
       const primaryKernel = createRuntimeKernel({ backend, now: () => 1000 });
       await primaryKernel.schema.register(schema);

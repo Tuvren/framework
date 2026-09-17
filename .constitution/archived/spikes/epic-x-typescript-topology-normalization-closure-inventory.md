@@ -53,7 +53,7 @@ deferred, and where the new authority now lives.
 
 - Root operating guidance: `AGENTS.md`
 - Logical-risk mitigation note: `constitution/Architecture.md` section `6`
-- Physical rule and ADR: `constitution/TechSpec.md` ADR-022 and the Epic X
+- Physical rule and ADR: `constitution/TechSpec.md` ADR-0022 and the Epic X
   status sections
 
 ## Deferred Gap

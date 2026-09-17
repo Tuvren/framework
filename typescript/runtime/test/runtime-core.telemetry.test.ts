@@ -241,7 +241,7 @@ describe("runtime operational telemetry", () => {
     expect(handle.status().phase).toBe("completed");
   });
 
-  test("routes every telemetry record to a bare destination (ADR-058)", async () => {
+  test("routes every telemetry record to a bare destination (ADR-0058)", async () => {
     const capture = createDestinationCapture();
     const { phase } = await runTelemetryTurn(capture.destination);
 
@@ -257,7 +257,7 @@ describe("runtime operational telemetry", () => {
     expect(capture.signals).toHaveLength(0);
   });
 
-  test("threads a route object to both the sink and the destination (ADR-058 §2)", async () => {
+  test("threads a route object to both the sink and the destination (ADR-0058 §2)", async () => {
     const sinkCapture = createTelemetryCapture();
     const destinationCapture = createDestinationCapture();
     const route: TelemetryRoute = {
@@ -276,7 +276,7 @@ describe("runtime operational telemetry", () => {
     );
   });
 
-  test("isolates a throwing destination and surfaces an operational signal (ADR-058 §3)", async () => {
+  test("isolates a throwing destination and surfaces an operational signal (ADR-0058 §3)", async () => {
     const capture = createDestinationCapture({ failDelivery: true });
     const { phase } = await runTelemetryTurn(capture.destination);
 
@@ -290,7 +290,7 @@ describe("runtime operational telemetry", () => {
     ).toBe(true);
   });
 
-  test("routes a sink failure to the destination operational-signal channel (ADR-058 §1)", async () => {
+  test("routes a sink failure to the destination operational-signal channel (ADR-0058 §1)", async () => {
     const destinationCapture = createDestinationCapture();
     const route: TelemetryRoute = {
       destination: destinationCapture.destination,
@@ -317,7 +317,7 @@ describe("runtime operational telemetry", () => {
     ).toBe(true);
   });
 
-  test("produces an identical session result whether the destination is healthy or unavailable (ADR-058 §5a)", async () => {
+  test("produces an identical session result whether the destination is healthy or unavailable (ADR-0058 §5a)", async () => {
     const healthy = await runTelemetryTurn(
       createDestinationCapture().destination
     );
@@ -331,7 +331,7 @@ describe("runtime operational telemetry", () => {
     );
   });
 
-  test("contains a pathological non-coercible destination throw at the boundary (ADR-058 §3)", async () => {
+  test("contains a pathological non-coercible destination throw at the boundary (ADR-0058 §3)", async () => {
     const signals: TelemetryOperationalSignal[] = [];
     const destination: TelemetryDestination = {
       deliver() {
@@ -354,7 +354,7 @@ describe("runtime operational telemetry", () => {
     );
   });
 
-  test("falls back to a one-shot warning when a failing destination has no signal callback (ADR-058 §1)", async () => {
+  test("falls back to a one-shot warning when a failing destination has no signal callback (ADR-0058 §1)", async () => {
     const warn = spyOn(console, "warn").mockImplementation(() => {
       /* silence the last-resort warning in test output */
     });
@@ -376,14 +376,14 @@ describe("runtime operational telemetry", () => {
     }
   });
 
-  test("degrades to the last-resort warning when the signal callback itself throws (ADR-058 §1)", async () => {
+  test("degrades to the last-resort warning when the signal callback itself throws (ADR-0058 §1)", async () => {
     const warn = spyOn(console, "warn").mockImplementation(() => {
       /* silence the last-resort warning in test output */
     });
     try {
       const destination: TelemetryDestination = {
         deliver() {
-          // biome-ignore lint/style/useThrowOnlyError: a non-Error throw whose string coercion itself throws is the regression under test (ADR-058 §3 boundary hardening)
+          // biome-ignore lint/style/useThrowOnlyError: a non-Error throw whose string coercion itself throws is the regression under test (ADR-0058 §3 boundary hardening)
           throw {
             toString() {
               throw new Error("uncoercible");

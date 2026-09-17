@@ -24,7 +24,7 @@
 /// trees walked through their manifests) unioned with everything durable
 /// created at or after the grace horizon -- the oldest active run's
 /// `createdAtMs`, excluding any leaseless running run that has gone quiet
-/// past the 24h admin-expiry window (ADR-050/ADR-051). Only durable state
+/// past the 24h admin-expiry window (ADR-0050/ADR-0051). Only durable state
 /// outside both the keep closure and the grace window is released.
 library;
 
@@ -32,7 +32,7 @@ import 'backend.dart';
 import 'validate.dart';
 
 /// The default administrative expiry horizon (kernel spec §9.4 rationale,
-/// ADR-050/ADR-051) past which a leaseless running run (`hasLease ==
+/// ADR-0050/ADR-0051) past which a leaseless running run (`hasLease ==
 /// false`) that has gone quiet -- `nowMs - run.updatedAtMs` at or beyond
 /// this many milliseconds -- stops pinning the reclamation grace horizon.
 /// 24 hours.
@@ -70,7 +70,7 @@ bool _isActiveRunStatus(RunStatus status) =>
 
 /// Reports whether [run] is a leaseless (`hasLease == false`),
 /// currently-running run whose `updatedAtMs` has gone quiet at or past
-/// [leaselessRunExpiryMs] relative to [nowMs] -- the ADR-050/ADR-051
+/// [leaselessRunExpiryMs] relative to [nowMs] -- the ADR-0050/ADR-0051
 /// condition that excludes such a run from pinning the reclamation grace
 /// horizon, since its creator has presumably crashed without ever
 /// transitioning it out of "running".

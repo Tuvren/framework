@@ -16,9 +16,9 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
-// KRT-BH002 — Shreddable continuity artifacts (ADR-053 + ADR-051).
+// KRT-BH002 — Shreddable continuity artifacts (ADR-0053 + ADR-0051).
 //
-// ADR-053 makes the durable lineage the unconditional source of truth for a
+// ADR-0053 makes the durable lineage the unconditional source of truth for a
 // provider request: provider server-side state and carried continuity artifacts
 // are reconstructable optimizations, never a correctness dependency, and must
 // stay inside the tenant's erasure reach. There is no separate continuity

@@ -243,7 +243,7 @@ func observeReclaimGraceWindow() (map[string]any, error) {
 // observeLeaselessRunPastAdminExpiry proves a leaseless (no execution
 // lease ever acquired) running run whose creator has effectively crashed
 // stops pinning the grace horizon once it has gone quiet past the 24h
-// admin-expiry window (ADR-050/ADR-051), so a later orphan becomes
+// admin-expiry window (ADR-0050/ADR-0051), so a later orphan becomes
 // reclaimable.
 func observeLeaselessRunPastAdminExpiry() (map[string]any, error) {
 	k, clock := newManualClockRuntimeKernel(0)

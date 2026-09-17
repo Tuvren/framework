@@ -16,7 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Mock AI SDK model hooks intentionally preserve async provider signatures.
 
-// KRT-BH005 — Bridge providerExecuted/dynamic fidelity audit (ADR-055).
+// KRT-BH005 — Bridge providerExecuted/dynamic fidelity audit (ADR-0055).
 //
 // AI SDK v6 (ai@6.0.142) models a provider-executed tool round-trip as a
 // `tool-call` content/stream part carrying `providerExecuted: true` (and, for
@@ -176,7 +176,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
           // client-facing function tool_call the runtime would execute. It must
           // NOT throw (the prior over-broad rejection did), and assistant text
           // still flows. An orphan call simply yields no observation; a degraded
-          // diagnostic record is deferred to the ADR-055 native-client phases.
+          // diagnostic record is deferred to the ADR-0055 native-client phases.
           return createGenerateResult({
             content: [
               {

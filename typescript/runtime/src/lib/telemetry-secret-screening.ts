@@ -25,7 +25,7 @@ import { TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS } from "@tuvren/telemetry-semco
 // The regex-based structural secret-pattern primitives (secret-key-shaped
 // names, URL-embedded credentials, connection strings, auth headers,
 // credential assignments, JWTs, long-secretish tokens) live in
-// @tuvren/core/security (ADR-044, KRT-BK004) so the AI SDK provider bridge can
+// @tuvren/core/security (ADR-0044, KRT-BK004) so the AI SDK provider bridge can
 // share them without depending on @tuvren/runtime. This module keeps its own,
 // telemetry-attribute-specific policy — the allowlist, and the canonical-hash
 // / UUID exemptions below — layered on top of those shared primitives.

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-// KRT-BL003 (ADR-054, ADR-057, ADR-037): the registry publication pipeline.
+// KRT-BL003 (ADR-0054, ADR-0057, ADR-0037): the registry publication pipeline.
 // Publishes the curated Tuvren package set — the frozen stable core
 // (`@tuvren/core`, `@tuvren/sdk`), the published leaf packages, and the
 // published-INTERNAL engine tier (`@tuvren/runtime`, `@tuvren/kernel-protocol`,
 // `@tuvren/kernel-runtime`, `@tuvren/provider-api`, `@tuvren/telemetry-semconv`)
-// that exists on the registry only for dependency resolution (ADR-057 item 5,
+// that exists on the registry only for dependency resolution (ADR-0057 item 5,
 // KRT-BL001 §2.6/§5) — with npm provenance.
 //
 // Modes:
@@ -33,10 +33,10 @@
 //   --verify-consumer   post-publish acceptance: fresh temp-dir install of the
 //                       PUBLISHED packages from the registry and a first Turn
 //                       through `createTuvren` imported from @tuvren/sdk
-//                       (ADR-057 item 1)
+//                       (ADR-0057 item 1)
 //
 // Workspace-protocol materialization is done HERE, deliberately, instead of
-// delegating to a package manager's publish command: the ADR-037 tilde range
+// delegating to a package manager's publish command: the ADR-0037 tilde range
 // on every `@tuvren/core` peer dependency is a STOP condition of this ticket,
 // so the transform that produces it is explicit, asserted, and testable —
 // `workspace:~` → `~<version>`, `workspace:*` → `<version>` (exact, safe under
@@ -76,7 +76,7 @@ interface PackageManifest {
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../");
 
-// The published-internal engine tier (ADR-057 item 5; KRT-BL001 §2.6 and §5.1):
+// The published-internal engine tier (ADR-0057 item 5; KRT-BL001 §2.6 and §5.1):
 // on the registry solely so the host-facing packages resolve, never
 // host-installable, never semver-guaranteed. Preflight enforces that each one
 // declares that posture in its manifest description and README.
@@ -92,7 +92,7 @@ const INTERNAL_PUBLISHED_PACKAGES: readonly string[] = [
  * Single owner of the workspace-protocol range vocabulary: preflight accepts
  * exactly the ranges this table can materialize, so the STOP-condition
  * predicate and the publish-time transform cannot drift apart.
- * `workspace:~` → `~<version>` (the ADR-037 tilde range), `workspace:*` →
+ * `workspace:~` → `~<version>` (the ADR-0037 tilde range), `workspace:*` →
  * `<version>` (exact pin, safe under the fixed `["@tuvren/*"]` group).
  * Declared above the top-level `await main()` — anything below it is in the
  * temporal dead zone while main runs.
@@ -108,7 +108,7 @@ const PLACEHOLDER_VERSION = "0.0.0";
 const INTERNAL_POSTURE_PATTERN = /[Ii]nternal/;
 
 // The consumer program exercises only the published host import contract
-// (ADR-057 item 3): @tuvren/sdk root, @tuvren/core types, and the two chosen
+// (ADR-0057 item 3): @tuvren/sdk root, @tuvren/core types, and the two chosen
 // leaf packages. It never imports @tuvren/runtime or a kernel package.
 const FIRST_TURN_SOURCE = `import { createMemoryBackend } from "@tuvren/backend-memory";
 import type { TuvrenModelResponse, TuvrenProvider } from "@tuvren/core/provider";
@@ -138,7 +138,7 @@ await using instance = await createTuvren({
 
 const thread = await instance.runtime.createThread({});
 // The orchestration tier carries createTuvren's default agent config, which
-// is where the construction-time provider is bound (ADR-040/057).
+// is where the construction-time provider is bound (ADR-0040/0057).
 const handle = instance.orchestration.executeTurn({
   agent: "agent",
   branchId: thread.branchId,
@@ -278,7 +278,7 @@ async function runPreflight(): Promise<WorkspacePackage[]> {
 
   if (freezeGate.status !== 0) {
     failures.push(
-      `the ADR-054/056 freeze gate does not pass on this commit:\n${freezeGate.stdout ?? ""}${freezeGate.stderr ?? ""}`
+      `the ADR-0054/0056 freeze gate does not pass on this commit:\n${freezeGate.stdout ?? ""}${freezeGate.stderr ?? ""}`
     );
   }
 
@@ -286,7 +286,7 @@ async function runPreflight(): Promise<WorkspacePackage[]> {
 
   if (versions.size !== 1) {
     failures.push(
-      `ADR-037 lockstep violated: publishable packages carry ${versions.size} distinct versions (${[...versions].join(", ")})`
+      `ADR-0037 lockstep violated: publishable packages carry ${versions.size} distinct versions (${[...versions].join(", ")})`
     );
   }
 
@@ -303,7 +303,7 @@ async function runPreflight(): Promise<WorkspacePackage[]> {
   for (const name of INTERNAL_PUBLISHED_PACKAGES) {
     if (!publishableNames.has(name)) {
       failures.push(
-        `${name} must be publishable (it is a registry dependency of the published set, ADR-057 item 5) but is marked private`
+        `${name} must be publishable (it is a registry dependency of the published set, ADR-0057 item 5) but is marked private`
       );
     }
   }
@@ -371,7 +371,7 @@ async function validatePackage(
   return failures;
 }
 
-/** ADR-057 item 5 / KRT-BL001 §5.6: the internal tier must self-describe. */
+/** ADR-0057 item 5 / KRT-BL001 §5.6: the internal tier must self-describe. */
 async function validateInternalPosture(
   pkg: WorkspacePackage
 ): Promise<string[]> {
@@ -409,24 +409,24 @@ function validateDependencyRanges(
   const { manifest, name } = pkg;
 
   // KRT-BL003 STOP: every @tuvren/core peer dependency must materialize as
-  // the ADR-037 tilde range — `workspace:~` is the only accepted in-tree form.
+  // the ADR-0037 tilde range — `workspace:~` is the only accepted in-tree form.
   const corePeer = manifest.peerDependencies?.["@tuvren/core"];
 
   if (corePeer !== undefined && corePeer !== "workspace:~") {
     failures.push(
-      `${name}: @tuvren/core peer range is "${corePeer}" — ADR-037 requires the tilde range ("workspace:~") at publish time (STOP condition)`
+      `${name}: @tuvren/core peer range is "${corePeer}" — ADR-0037 requires the tilde range ("workspace:~") at publish time (STOP condition)`
     );
   }
 
   // The classification itself is also load-bearing: a package that references
   // @tuvren/core in dependencies/optionalDependencies would bundle a second
-  // core instance in consumer trees, defeating ADR-037's single-instance
+  // core instance in consumer trees, defeating ADR-0037's single-instance
   // guarantee even with a correct range (the reason provider-api was
   // reclassified to a peer in KRT-BL003).
   for (const section of ["dependencies", "optionalDependencies"] as const) {
     if (manifest[section]?.["@tuvren/core"] !== undefined) {
       failures.push(
-        `${name}: @tuvren/core appears in ${section} — ADR-037 requires it as a peerDependency (single shared instance) on every published package`
+        `${name}: @tuvren/core appears in ${section} — ADR-0037 requires it as a peerDependency (single shared instance) on every published package`
       );
     }
   }

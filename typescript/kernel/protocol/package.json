@@ -22,7 +22,7 @@
       "optional": false
     }
   },
-  "description": "Internal Tuvren kernel protocol contracts (ADR-057) — an engine dependency of @tuvren/sdk and the backend packages, not a host-facing API. Hosts type kernel instances via @tuvren/sdk re-exports; this package is not semver-guaranteed.",
+  "description": "Internal Tuvren kernel protocol contracts (ADR-0057) — an engine dependency of @tuvren/sdk and the backend packages, not a host-facing API. Hosts type kernel instances via @tuvren/sdk re-exports; this package is not semver-guaranteed.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

@@ -16,7 +16,7 @@
 
 /**
  * Batteries-included implementations of the host-key-encrypted untrusted-edge
- * payload codec contract (ADR-051, SPK-BF002). The contract itself —
+ * payload codec contract (ADR-0051, SPK-BF002). The contract itself —
  * {@link PayloadCodec}, {@link PayloadCodecContext},
  * {@link PayloadDecryptResult}, `ErasedPayload`, `isErasedPayload` — is owned
  * by `@tuvren/core/lifecycle`; this module ships the identity (plaintext
@@ -39,7 +39,7 @@ import {
 } from "@tuvren/core/lifecycle";
 
 // The behavior-free identity codec and the envelope discriminant now live on the
-// `@tuvren/core` ABI tier (ADR-057, breaking the sdk⇄runtime cycle). The public
+// `@tuvren/core` ABI tier (ADR-0057, breaking the sdk⇄runtime cycle). The public
 // `@tuvren/sdk` surface re-publishes the identity helpers straight from
 // `@tuvren/core/lifecycle` in the package barrel (`src/index.ts`) rather than
 // funnelling them through this implementation module, which keeps this file a

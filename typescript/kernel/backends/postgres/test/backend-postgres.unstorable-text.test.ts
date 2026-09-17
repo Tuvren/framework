@@ -16,7 +16,7 @@
 
 // Round-3 review P1 — NUL-identifier boundary validation: caller-supplied
 // identifier/text fields now land directly in a relational TEXT column
-// (ADR-067 moved them out of a CBOR blob, where an embedded U+0000 byte
+// (ADR-0067 moved them out of a CBOR blob, where an embedded U+0000 byte
 // round-tripped without complaint). PostgreSQL's wire protocol cannot encode
 // NUL in text/varchar and previously surfaced as a raw SQLSTATE 22021
 // `postgres_backend_engine_error` deep in the driver. This suite proves the

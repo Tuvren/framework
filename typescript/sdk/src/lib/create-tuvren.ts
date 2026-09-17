@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-// The batteries-included composition entrypoint (ADR-040, retargeted by
-// ADR-057). It lives on `@tuvren/sdk`, the host-facing composition tier: it
+// The batteries-included composition entrypoint (ADR-0040, retargeted by
+// ADR-0057). It lives on `@tuvren/sdk`, the host-facing composition tier: it
 // composes the internal `@tuvren/runtime` engine with host-constructed leaf
-// instances (backend, runner, provider, tools). Per ADR-057 §2 the options are
+// instances (backend, runner, provider, tools). Per ADR-0057 §2 the options are
 // instances-only — the kind-tagged string shorthands (`"memory"`, `"react"`,
 // …) are retired, so this file carries no backend/runner/provider dependency;
 // the host constructs those from the leaf packages it chose and passes them in.
@@ -75,15 +75,15 @@ export interface McpToolSource {
 
 /**
  * Options for {@link createTuvren}, the batteries-included composition
- * entrypoint (ADR-040, ADR-057).
+ * entrypoint (ADR-0040, ADR-0057).
  *
- * Per ADR-057 §2 the options are instances-only: the host constructs the
+ * Per ADR-0057 §2 the options are instances-only: the host constructs the
  * backend, runner, and provider from the leaf packages it chose and passes
  * the instances in — there are no kind-tagged string shorthands.
  */
 export interface CreateTuvrenOptions {
   /**
-   * Pre-built durable backend instance (ADR-057: instances only — no
+   * Pre-built durable backend instance (ADR-0057: instances only — no
    * `"memory"`/`"sqlite"`/`"postgres"` string shorthand). Construct it from the
    * leaf package you chose — `createMemoryBackend()`, `createSqliteBackend({
    * databasePath })`, `createPostgresBackend({ ... })` — and pass the instance.
@@ -93,7 +93,7 @@ export interface CreateTuvrenOptions {
    */
   backend: RuntimeBackend;
   /**
-   * Framework-enforced per-turn execution bounds (ADR-043, KRT-BD006). Supply
+   * Framework-enforced per-turn execution bounds (ADR-0043, KRT-BD006). Supply
    * at the top level or via `runtimeOptions.bounds`, but not both. Unset fields
    * take the §3.11 safe defaults; a runner cannot raise or disable a bound.
    */
@@ -108,7 +108,7 @@ export interface CreateTuvrenOptions {
    */
   kernel?: RuntimeKernel;
   /**
-   * Opt-in crypto-shredding codec (ADR-051, KRT-BF005). Supply at the top level
+   * Opt-in crypto-shredding codec (ADR-0051, KRT-BF005). Supply at the top level
    * or via `runtimeOptions.payloadCodec`, but not both. Unset defaults to a
    * plaintext identity codec, leaving existing hosts unchanged. Use
    * `createAesGcmPayloadCodec({ keyring })` from `@tuvren/sdk` for the
@@ -124,7 +124,7 @@ export interface CreateTuvrenOptions {
    */
   provider?: TuvrenProvider;
   /**
-   * Pre-built runner factory instance (ADR-057: instances only — no `"react"`
+   * Pre-built runner factory instance (ADR-0057: instances only — no `"react"`
    * string shorthand and no implicit default). Construct it from the leaf
    * package you chose, e.g. `createReActRunner()` from `@tuvren/runner-react`,
    * and pass the instance.
@@ -143,8 +143,8 @@ export interface CreateTuvrenOptions {
     "defaultRunnerId" | "runnerRegistry" | "kernel"
   >;
   /**
-   * Construction-time telemetry funnel routing (ADR-058). Accepts a bare
-   * `TuvrenTelemetrySink` (ADR-042, backward-compatible), a bare
+   * Construction-time telemetry funnel routing (ADR-0058). Accepts a bare
+   * `TuvrenTelemetrySink` (ADR-0042, backward-compatible), a bare
    * `TelemetryDestination`, or a `TelemetryRoute` combining both — the seam a
    * host uses to choose split, unified, or mixed-substrate topologies without
    * changing session behavior.
@@ -190,7 +190,7 @@ export interface TuvrenInstance {
 
 /**
  * Composes a ready-to-use Tuvren framework instance from host-constructed
- * leaf instances (ADR-040, retargeted by ADR-057).
+ * leaf instances (ADR-0040, retargeted by ADR-0057).
  *
  * Builds a kernel over the supplied backend (unless a pre-built `kernel` is
  * given), registers the supplied runner as the default, flattens plain tools
@@ -342,7 +342,7 @@ function resolveKernelAndDispose(options: CreateTuvrenOptions): {
   return {
     kernel: createRuntimeKernel({ backend }),
     disposeBackend: tryCloseBackend(backend),
-    // Surface the substrate partition-drop (ADR-051, §4.17) only when the owned
+    // Surface the substrate partition-drop (ADR-0051, §4.17) only when the owned
     // backend implements it; otherwise the runtime maintenance surface reports
     // it as unsupported.
     ...(typeof backend.purgeScope === "function"

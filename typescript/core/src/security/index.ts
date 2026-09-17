@@ -18,7 +18,7 @@
 
 /**
  * `@tuvren/core/security` — shared structural secret-pattern screening
- * (ADR-044, KRT-BK004): the named secret-shape regexes, the `REDACTED`
+ * (ADR-0044, KRT-BK004): the named secret-shape regexes, the `REDACTED`
  * sentinel, and the key/value screening helpers. Kept as its own focused
  * subpath so any `@tuvren/core` consumer can screen values for
  * secret-shaped substrings without pulling in the rest of the core

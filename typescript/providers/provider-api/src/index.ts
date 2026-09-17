@@ -23,7 +23,7 @@
 /**
  * `@tuvren/provider-api` — re-export barrel over the `TuvrenProvider` family.
  *
- * A published-internal package (ADR-057 item 5): it exists on the registry
+ * A published-internal package (ADR-0057 item 5): it exists on the registry
  * only so host-facing packages' dependency graphs resolve on a fresh install,
  * is not semver-guaranteed, and can change shape without a major bump. It is
  * an engine dependency of the runner and provider-bridge packages, not a

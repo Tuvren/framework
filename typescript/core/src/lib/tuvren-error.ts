@@ -63,7 +63,7 @@ export function assertTuvrenErrorCode(
 
 /**
  * Abstract base of the Tuvren error family (re-exported at the package root
- * per ADR-037).
+ * per ADR-0037).
  *
  * Every Tuvren error carries a validated stable {@link TuvrenErrorCode}, an
  * optional `details` diagnostic payload, and an optional `cause`. The

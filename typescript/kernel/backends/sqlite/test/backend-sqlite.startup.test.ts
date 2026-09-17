@@ -44,7 +44,7 @@ describe("@tuvren/backend-sqlite startup", () => {
   test("advertises non-support for the shared lease clock", () => {
     // The single-file embedded backend is a single writer with no cross-owner
     // contention, so it keeps the in-process clock instead of serving as an
-    // authoritative shared lease clock (ADR-050, kernel spec §5.2).
+    // authoritative shared lease clock (ADR-0050, kernel spec §5.2).
     const backend = createSqliteBackend({
       databasePath: createTempDatabasePath(),
     });

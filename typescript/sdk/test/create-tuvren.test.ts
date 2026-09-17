@@ -28,7 +28,7 @@ import {
   type TuvrenInstance,
 } from "../src/index.js";
 
-// ADR-057: `createTuvren` accepts constructed instances only — no string-kind
+// ADR-0057: `createTuvren` accepts constructed instances only — no string-kind
 // backend/runner shorthands and no implicit default runner. These tests exercise
 // that instances-only contract on the @tuvren/sdk composition surface.
 

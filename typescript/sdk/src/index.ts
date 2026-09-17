@@ -17,7 +17,7 @@
 // biome-ignore-all lint/performance/noBarrelFile: This package root is the intentional SDK surface.
 
 /**
- * `@tuvren/sdk` — the host-facing composition tier (ADR-057).
+ * `@tuvren/sdk` — the host-facing composition tier (ADR-0057).
  *
  * This is the single curated surface a host imports alongside `@tuvren/core`
  * and the leaf packages it chose. It provides:
@@ -91,7 +91,7 @@ export type {
 } from "@tuvren/core/execution";
 export { assertExecutionStatus } from "@tuvren/core/execution";
 export type { TuvrenExtension } from "@tuvren/core/extensions";
-// Data-lifecycle crypto-shredding payload codec contract (ADR-051, KRT-BF005):
+// Data-lifecycle crypto-shredding payload codec contract (ADR-0051, KRT-BF005):
 // the contract lives in @tuvren/core/lifecycle; the batteries-included codec
 // implementations are re-exported further below from ./lib/payload-codec.js.
 export type {
@@ -101,7 +101,7 @@ export type {
   PayloadDecryptResult,
 } from "@tuvren/core/lifecycle";
 // The identity codec and envelope discriminant relocated to the @tuvren/core ABI
-// tier (ADR-057, sdk⇄runtime cycle break); re-publish them on the sdk surface
+// tier (ADR-0057, sdk⇄runtime cycle break); re-publish them on the sdk surface
 // directly from their new home so existing @tuvren/sdk importers are unaffected.
 export {
   createIdentityPayloadCodec,
@@ -161,7 +161,7 @@ export {
 // ── Host-facing kernel-protocol contract types ────────────────────────────────
 // Re-exported so a host can type the backend/kernel instances it constructs and
 // passes into `createTuvren` without importing `@tuvren/kernel-protocol`
-// directly (ADR-057 §3 host import contract).
+// directly (ADR-0057 §3 host import contract).
 export type {
   RuntimeBackend,
   RuntimeKernel,
@@ -173,7 +173,7 @@ export {
   encodeDeterministicKernelRecord,
   hashKernelRecord,
 } from "@tuvren/kernel-protocol";
-// ── Batteries-included composition entrypoint (ADR-040 / ADR-057) ─────────────
+// ── Batteries-included composition entrypoint (ADR-0040 / ADR-0057) ─────────────
 export {
   type CreateTuvrenOptions,
   createTuvren,

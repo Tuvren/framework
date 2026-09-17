@@ -159,7 +159,7 @@ class _InjectedClock:
     """A mutable, adapter-controlled `RuntimeBackend.now()` clock.
 
     Every run-liveness/restart-recovery/reclamation scenario needs precise
-    control over the backend-authoritative clock (ADR-050: lease math is
+    control over the backend-authoritative clock (ADR-0050: lease math is
     always computed from `RuntimeBackend.now()`, never a caller-supplied
     value) to land on a conformance plan's literal expected numbers -- e.g.
     `renewal.renewedLeaseExpiresAtMs == 40`. This is that seam: a plain

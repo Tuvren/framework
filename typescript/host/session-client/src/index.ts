@@ -15,7 +15,7 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
-// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-056 requires.
+// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.
 
 /**
  * @packageDocumentation
@@ -26,7 +26,7 @@
  * the wire vocabulary a host server exposes by composing
  * `DuplexSessionBinding -> RemoteClientSession -> createWsSessionTransport`
  * (`@tuvren/host-session` + `@tuvren/remote-session` + `@tuvren/stream-ws`,
- * ADR-060/ADR-061/ADR-062/ADR-063).
+ * ADR-0060/ADR-0061/ADR-0062/ADR-0063).
  *
  * **Zero runtime dependencies.** This package has no `dependencies`,
  * `peerDependencies`, or `devDependencies` at all — it uses only the
@@ -48,7 +48,7 @@
  * `spec/streaming/ws/typespec/main.tsp`. Every mirrored type carries a
  * doc-comment pointer back to the authority model it mirrors.
  *
- * Every export is tagged `@experimental` per ADR-056 — the whole package is
+ * Every export is tagged `@experimental` per ADR-0056 — the whole package is
  * still settling, and signatures may change without a major version bump
  * until an export graduates by losing its tag.
  *
@@ -57,7 +57,7 @@
  * no eviction. The duplex session protocol has no result-ack frame, so there
  * is no wire signal telling this client when it is safe to forget an answered
  * call; an LRU or other size-bounded cache would silently weaken the
- * redelivery-dedup guarantee ADR-063 depends on. See the `capabilities` option
+ * redelivery-dedup guarantee ADR-0063 depends on. See the `capabilities` option
  * doc comment on {@link SessionClientOptions} for the full rationale.
  */
 

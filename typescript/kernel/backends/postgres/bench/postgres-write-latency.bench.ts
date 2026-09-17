@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Issue #110 / ADR-067 regression baseline: per-write latency of the
+// Issue #110 / ADR-0067 regression baseline: per-write latency of the
 // relational Postgres backend as accumulated Scope size grows. Under the
 // pre-#110 blob-per-scope model a single-object `transact()` re-encoded the
 // entire Scope (~248ms warm best-case at 10k objects). The relational path

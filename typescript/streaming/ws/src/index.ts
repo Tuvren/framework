@@ -18,9 +18,9 @@
  * @packageDocumentation
  *
  * `@tuvren/stream-ws` is the runtime-agnostic WebSocket carriage binding for
- * the duplex session protocol (ADR-060, `spec/host/session/`) and the
- * event-stream resume cursor (ADR-061, `spec/streaming/resume/`), per
- * ADR-062 (`spec/streaming/ws/`, packet `tuvren.framework.event-stream-ws`,
+ * the duplex session protocol (ADR-0060, `spec/host/session/`) and the
+ * event-stream resume cursor (ADR-0061, `spec/streaming/resume/`), per
+ * ADR-0062 (`spec/streaming/ws/`, packet `tuvren.framework.event-stream-ws`,
  * issue #100). It owns carriage only — handshake, heartbeat, close codes,
  * and bounded outbound queueing — never frame or cursor semantics.
  *

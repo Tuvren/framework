@@ -16,7 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
-// KRT-BF005 — Host-Key-Encrypted Untrusted-Edge Payload Envelope (ADR-051).
+// KRT-BF005 — Host-Key-Encrypted Untrusted-Edge Payload Envelope (ADR-0051).
 //
 // End-to-end proof of crypto-shredding over a real memory backend: a provider
 // (and user) message produced during a turn is encrypted under a host-held key

@@ -325,7 +325,7 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
   });
 
   test("migrates a legacy blob-per-scope snapshot into relational family rows without data loss", async () => {
-    // Issue #110 / ADR-067: seed a pre-relational database shape (migrations
+    // Issue #110 / ADR-0067: seed a pre-relational database shape (migrations
     // ledger + backend_postgres_snapshots with one CBOR blob), then open the
     // relational backend and prove the blob is exploded into objects rows and
     // the snapshots table is retired.

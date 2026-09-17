@@ -2,7 +2,7 @@
 
 This guide is for a **host developer** adopting the published `@tuvren/*` packages from the public npm registry: what to install, what the stable guarantee covers, which packages you must never import directly, how to route the telemetry funnel at construction time, and a first-Turn program you can paste and run.
 
-This document is a pointer, not an oracle: the normative authority for everything here lives in the tech-spec ADRs it cites (ADR-054, ADR-056, ADR-057, ADR-058) and in the machine-readable authority packets under `spec/`. If this guide and an ADR ever disagree, the ADR wins.
+This document is a pointer, not an oracle: the normative authority for everything here lives in the tech-spec ADRs it cites (ADR-0054, ADR-0056, ADR-0057, ADR-0058) and in the machine-readable authority packets under `spec/`. If this guide and an ADR ever disagree, the ADR wins.
 
 ## 1. What is published, and what the tiers mean
 
@@ -11,14 +11,14 @@ One release of the framework publishes a curated, version-lockstepped package se
 **Host-facing (stable, semver-guaranteed):**
 
 - `@tuvren/core` — the behavior-free ABI: types, contracts, and assertion helpers, exposed through subpaths (`/provider`, `/telemetry`, `/tools`, `/capabilities`, …).
-- `@tuvren/sdk` — the composition tier (ADR-057): the batteries-included `createTuvren` entrypoint, curated `@tuvren/core` re-exports, developer helpers, and the `@tuvren/sdk/advanced` composition surface.
+- `@tuvren/sdk` — the composition tier (ADR-0057): the batteries-included `createTuvren` entrypoint, curated `@tuvren/core` re-exports, developer helpers, and the `@tuvren/sdk/advanced` composition surface.
 - The **leaf adapters** you choose: backends (`@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/backend-postgres` — plus `@tuvren/backend-shared`, their shared support package, which arrives transitively rather than being chosen), the runner (`@tuvren/runner-react`), the provider bridge (`@tuvren/provider-bridge-ai-sdk`), stream adapters (`@tuvren/stream-core`, `@tuvren/stream-sse`, `@tuvren/stream-agui`), the MCP client (`@tuvren/mcp-client`), the OTel telemetry adapter (`@tuvren/telemetry-otel`), and the remote-kernel client (`@tuvren/kernel-grpc-client`).
 
 **Published-internal (visible on the registry, NOT host-facing):**
 
-- `@tuvren/runtime`, `@tuvren/kernel-protocol`, `@tuvren/kernel-runtime`, `@tuvren/provider-api`, and `@tuvren/telemetry-semconv` exist on the registry only so the host-facing packages' own dependency graphs resolve on a fresh install (ADR-057 item 5). They are marked internal, are not semver-guaranteed, and can change shape without a major bump. Do not install them, do not import them — section 4 spells out the contract.
+- `@tuvren/runtime`, `@tuvren/kernel-protocol`, `@tuvren/kernel-runtime`, `@tuvren/provider-api`, and `@tuvren/telemetry-semconv` exist on the registry only so the host-facing packages' own dependency graphs resolve on a fresh install (ADR-0057 item 5). They are marked internal, are not semver-guaranteed, and can change shape without a major bump. Do not install them, do not import them — section 4 spells out the contract.
 
-Every leaf adapter peer-depends on a single `@tuvren/core` instance using a tilde range (`~<version>`, ADR-037), so your package manager resolves exactly one copy of the ABI per application tree.
+Every leaf adapter peer-depends on a single `@tuvren/core` instance using a tilde range (`~<version>`, ADR-0037), so your package manager resolves exactly one copy of the ABI per application tree.
 
 ## 2. Install and run a first Turn
 
@@ -92,11 +92,11 @@ console.log(`first turn completed with ${read.messages.length} durable message(s
 
 Three things to know about this shape:
 
-- `createTuvren` accepts **constructed instances only** — you build the backend and runner from their leaf packages and pass them in; there are no `"memory"` / `"react"` string shorthands (ADR-057 §2).
+- `createTuvren` accepts **constructed instances only** — you build the backend and runner from their leaf packages and pass them in; there are no `"memory"` / `"react"` string shorthands (ADR-0057 §2).
 - The construction-time `provider` binds to `createTuvren`'s default agent configuration, addressed as `agent: "agent"` on the orchestration tier.
 - `await using` disposes the instance when the scope exits; on runtimes without explicit-resource-management, call the disposer manually.
 
-## 3. Stable core vs. `@experimental` surfaces (ADR-056)
+## 3. Stable core vs. `@experimental` surfaces (ADR-0056)
 
 The stable guarantee does not cover every export equally. The canonical experimental marker is the TSDoc **`@experimental`** release tag on an individual export — you will see it in your editor's hover docs and in generated documentation, in the same place you see the type signature.
 
@@ -109,7 +109,7 @@ What the badge means for upgrade safety:
 
 One whole subpath is declared experimental today: **all exports of `@tuvren/core/capabilities`** (the advanced capability-orchestration classes) carry the tag, and the freeze gate enforces that declaration as a consistency floor. Everything else you reach through `@tuvren/core`, `@tuvren/sdk`, and the leaf adapters is stable unless its docs show the badge.
 
-## 4. The host import contract (ADR-057)
+## 4. The host import contract (ADR-0057)
 
 A host application imports exactly three kinds of packages:
 
@@ -121,7 +121,7 @@ A host application imports exactly three kinds of packages:
 
 (`@tuvren/kernel-grpc-client` is the one kernel-named package that *is* host-facing: it is the leaf adapter you install to point an instance at a remote kernel service instead of an in-process one.)
 
-## 5. Routing the telemetry funnel (ADR-058)
+## 5. Routing the telemetry funnel (ADR-0058)
 
 One Turn emits two data funnels: the **content funnel** (durable, session-critical state, routed by the `backend` option) and the **telemetry funnel** (operational metadata, routed by the `telemetry` option). You decide how each is persisted once, at construction time — the topology never changes session behavior, and a telemetry failure can only ever degrade telemetry, never a content-funnel commit.
 

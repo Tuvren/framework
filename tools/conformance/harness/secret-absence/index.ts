@@ -16,7 +16,7 @@
 
 /**
  * Shared, runner-owned secret-absence scanner for the `secret-isolation` check
- * set (ADR-044, KRT-BD004). It recursively flattens an observation surface
+ * set (ADR-0044, KRT-BD004). It recursively flattens an observation surface
  * (persisted kernel records, captured canonical stream events, captured
  * telemetry, or a recorded transcript) into searchable text and asserts that
  * none of the configured secrets — or their common derived leak forms — appear.
@@ -135,7 +135,7 @@ export function hasSecretPatternResidue(surface: unknown): boolean {
   return findSecretPatternLeaks(surface).length > 0;
 }
 
-/** The covered derived leak forms per ADR-044 §4 (KRT-BD004). */
+/** The covered derived leak forms per ADR-0044 §4 (KRT-BD004). */
 function secretVariants(
   secret: string
 ): [variant: string, value: string, caseInsensitive: boolean][] {

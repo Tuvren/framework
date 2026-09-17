@@ -17,7 +17,7 @@
 /**
  * Conformance adapter operations for the runtime-api-execution-bounds check set
  * (KRT-BD007). Each operation drives a real runtime over the framework bounds
- * guard (ADR-043) and returns raw observational data — captured stream events,
+ * guard (ADR-0043) and returns raw observational data — captured stream events,
  * the settled ExecutionResult summary, and captured telemetry — for the shared
  * certification harness to grade.
  *

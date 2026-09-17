@@ -16,7 +16,7 @@
 
 /**
  * Wire message shapes for the `tuvren.framework.event-stream-ws` authority
- * packet (`spec/streaming/ws/typespec/main.tsp`, ADR-062) and a pure,
+ * packet (`spec/streaming/ws/typespec/main.tsp`, ADR-0062) and a pure,
  * throw-free structural parser for them.
  *
  * Every wire message is a JSON text frame discriminated by `kind`. This

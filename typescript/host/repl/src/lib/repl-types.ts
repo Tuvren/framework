@@ -64,7 +64,7 @@ export interface ReplConfig {
   providerMode: ReplProviderMode;
   scenario: ReplScenarioName;
   /**
-   * Host-bound tenancy partition identity (ADR-048, KRT-BE008). When set, the
+   * Host-bound tenancy partition identity (ADR-0048, KRT-BE008). When set, the
    * host constructs both the durable backend and the runtime against this Scope,
    * so durable state is isolated and operational telemetry plus the recorded
    * transcript are correlated to it. Defaults to the single-tenant default Scope.

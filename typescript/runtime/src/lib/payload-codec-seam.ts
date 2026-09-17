@@ -15,7 +15,7 @@
  */
 
 /**
- * The single shared crypto-shredding seam (ADR-051, SPK-BF002 / KRT-BF005).
+ * The single shared crypto-shredding seam (ADR-0051, SPK-BF002 / KRT-BF005).
  *
  * Untrusted-edge results (provider, tool, MCP, and client-endpoint outputs) all
  * materialize as durable `TuvrenMessage` records. This helper wraps the host

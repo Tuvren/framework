@@ -15,7 +15,7 @@
  */
 
 // Round-5 review P1 — `normalizeSchemaName` used to default an unset
-// `schemaName` to `"public"`. Since this PR's relational rewrite (ADR-067)
+// `schemaName` to `"public"`. Since this PR's relational rewrite (ADR-0067)
 // replaced the two well-namespaced blob-era tables with thirteen generic,
 // unprefixed family tables (`objects`, `schemas`, `threads`, `branches`,
 // `turns`, `runs`, `staged_results`, …) plus twenty-one `idx_*` indexes, a

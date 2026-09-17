@@ -32,7 +32,7 @@ import {
 import { createSqliteBackend } from "../../kernel/backends/sqlite/src/index.ts";
 import type { RuntimeBackend } from "../../kernel/protocol/src/index.ts";
 import { createReActRunner } from "../../runners/react/src/index.ts";
-// ADR-057: createTuvren is now the @tuvren/sdk composition entrypoint, and it
+// ADR-0057: createTuvren is now the @tuvren/sdk composition entrypoint, and it
 // accepts constructed instances only. The adapter — not createTuvren — owns the
 // plan's string backend selector → instance mapping.
 import { createTuvren } from "../../sdk/src/index.ts";

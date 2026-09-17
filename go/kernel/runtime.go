@@ -230,7 +230,7 @@ type Run struct {
 	PendingCheckpointKind PendingCheckpointKind
 
 	// --- run execution lease (kernel spec §5.2 Run Execution Leases,
-	// ADR-050: backend-authoritative clock, lease tokens, renewal, expiry,
+	// ADR-0050: backend-authoritative clock, lease tokens, renewal, expiry,
 	// preemption; capability kernel.run-liveness) ---
 
 	HasLease         bool
@@ -246,7 +246,7 @@ type Run struct {
 	// grace horizon (kernel spec §9.4) is the oldest active (running or
 	// paused) run's CreatedAtMs, and a leaseless running run stops pinning
 	// that horizon once nowMs - UpdatedAtMs crosses the 24h admin-expiry
-	// window (ADR-050/ADR-051).
+	// window (ADR-0050/ADR-0051).
 	CreatedAtMs int64
 	UpdatedAtMs int64
 }

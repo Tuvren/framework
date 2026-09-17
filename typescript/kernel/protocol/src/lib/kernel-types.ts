@@ -768,7 +768,7 @@ export interface ObserveAnnotationRepository {
 }
 
 /**
- * ADR-034: internal cursor payload shape for thread.list pagination.
+ * ADR-0034: internal cursor payload shape for thread.list pagination.
  * Backends that implement ThreadRepository.list encode and decode this
  * structure. It is not exposed to kernel callers; callers see only the
  * opaque KernelThreadListCursor string.
@@ -789,7 +789,7 @@ export interface ListThreadsCursorPayload {
 export interface ThreadRepository {
   get(threadId: string): Promise<StoredThread | null>;
   /**
-   * ADR-034: optional per BackendCapability descriptor. Backends that
+   * ADR-0034: optional per BackendCapability descriptor. Backends that
    * advertise thread.enumeration:true MUST implement this method. Ordering
    * is (createdAtMs ASC, threadId ASC). The cursor resumes strictly after
    * the (lastCreatedAtMs, lastThreadId) pair. filter.schemaId restricts
@@ -866,7 +866,7 @@ export interface RuntimeBackendTx {
    * Per-transaction authoritative clock (epoch ms). Backends that advertise the
    * `shared-lease-clock` BackendCapability expose the backend's own clock here so
    * the kernel can stamp and compare run-lease expiry in backend time within the
-   * transaction (ADR-050, kernel spec §5.2). Backends that do not advertise
+   * transaction (ADR-0050, kernel spec §5.2). Backends that do not advertise
    * shared-lease-clock MAY omit it; the kernel falls back to its injected clock
    * for those backends.
    */
@@ -885,7 +885,7 @@ export interface RuntimeBackendTx {
 }
 
 /**
- * ADR-034: per-backend capability descriptor. Each backend advertises which
+ * ADR-0034: per-backend capability descriptor. Each backend advertises which
  * optional kernel-level structural enumerations it supports efficiently so
  * the kernel can reject unsupported syscalls with a typed error rather than
  * degrading silently. See KrakenKernelSpecification §9.
@@ -906,7 +906,7 @@ export interface BackendCapability {
   readonly "maintenance.reclamation"?: boolean;
   /**
    * Backend can serve as the authoritative shared lease clock for a deployment
-   * with more than one execution owner (ADR-050, KrakenKernelSpecification
+   * with more than one execution owner (ADR-0050, KrakenKernelSpecification
    * §5.2). When `true`, the kernel stamps and compares run-lease expiry against
    * the backend's own per-transaction clock (exposed via `RuntimeBackendTx.now`)
    * instead of an execution owner's wall clock, eliminating split-brain
@@ -938,7 +938,7 @@ export interface ReclamationOptions {
    * horizon. `nowMs` is consulted only to decide whether a leaseless running
    * run (no executionOwnerId/fencingToken/leaseExpiresAtMs) whose updatedAtMs
    * has gone quiet for at least the administrative leaseless-expiry horizon
-   * (KRT-BK002, ADR-050/ADR-051) should be excluded from pinning the grace
+   * (KRT-BK002, ADR-0050/ADR-0051) should be excluded from pinning the grace
    * horizon — treating it as abandoned by a crashed/disconnected creator so it
    * no longer blocks reclamation of state created after it. That run's own
    * reachable lineage stays fully protected regardless, via the independent
@@ -1031,7 +1031,7 @@ export interface RuntimeBackend {
 }
 
 /**
- * ADR-034: opaque cursor token for thread.list pagination at the kernel
+ * ADR-0034: opaque cursor token for thread.list pagination at the kernel
  * protocol level. Internally encodes (lastCreatedAtMs, lastThreadId) as a
  * URL-safe base64 JSON payload; callers treat it as an opaque string.
  */
@@ -1155,7 +1155,7 @@ export interface RuntimeKernel {
   };
   /**
    * Thread bootstrap and lookup (kernel spec §4.1), plus capability-gated
-   * enumeration (ADR-034, §9.2). `create` atomically registers the Thread, builds
+   * enumeration (ADR-0034, §9.2). `create` atomically registers the Thread, builds
    * the empty root TurnTree, creates the genesis TurnNode, and creates the initial
    * Branch pointing at it.
    */
@@ -1167,7 +1167,7 @@ export interface RuntimeKernel {
     ): Promise<ThreadCreateResult>;
     get(threadId: string): Promise<ThreadRecord | null>;
     /**
-     * ADR-034: capability-gated thread enumeration. Rejects with
+     * ADR-0034: capability-gated thread enumeration. Rejects with
      * TuvrenPersistenceError code "kernel_capability_unsupported" when the
      * backend does not advertise thread.enumeration.
      */

@@ -158,14 +158,14 @@ export interface MemoryBackendOptions {
    */
   now?: () => EpochMs;
   /**
-   * Host-bound partition identity for this backend (ADR-048). All of this
+   * Host-bound partition identity for this backend (ADR-0048). All of this
    * backend's stores resolve within this Scope, so content stored here is never
    * observable through a backend bound to a different Scope. Defaults to
    * `DEFAULT_SCOPE` (single-tenant behavior).
    */
   scope?: Scope;
   /**
-   * Shared scope-keyed substrate (ADR-049). Pass the same store to multiple
+   * Shared scope-keyed substrate (ADR-0049). Pass the same store to multiple
    * `createMemoryBackend` calls to isolate distinct Scopes by construction while
    * letting backends bound to the same Scope share that Scope's durable state.
    * Defaults to a private store owned solely by this backend.
@@ -182,7 +182,7 @@ const MEMORY_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
   // Single-writer in-process reference backend: no cross-owner contention, so it
   // keeps the in-process clock and advertises non-support for the shared lease
-  // clock (ADR-050, kernel spec §5.2).
+  // clock (ADR-0050, kernel spec §5.2).
   "shared-lease-clock": false,
   "thread.enumeration": true,
 };
@@ -202,7 +202,7 @@ const FAULT_INJECTION_CONTROL = Symbol(
  * Concurrency model: all work for the bound Scope — transactions, reclamation,
  * and scope purges — is serialized through the scope store's per-Scope
  * exclusive lock, across every backend instance sharing the same store
- * (ADR-049). Distinct Scopes never contend.
+ * (ADR-0049). Distinct Scopes never contend.
  *
  * Transaction model: each transaction runs against a deep clone of the
  * committed state (copy-on-write). The draft is validated against the full
@@ -316,7 +316,7 @@ class MemoryBackend implements KrakenBackend {
 
     // Per-Scope serialization lives in the store, so every transaction for this
     // Scope is serialized across all backend instances sharing the store while
-    // distinct Scopes never contend (ADR-049 scope-keyed substrate).
+    // distinct Scopes never contend (ADR-0049 scope-keyed substrate).
     return this.store.runExclusive(this.scope, async () => {
       const baseState = this.store.getState(this.scope);
       const draftState = cloneState(baseState);

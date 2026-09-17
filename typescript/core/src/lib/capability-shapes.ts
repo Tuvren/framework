@@ -15,7 +15,7 @@
  */
 
 /**
- * Capability Orchestration concept shapes per TechSpec §3.13 / ADR-046.
+ * Capability Orchestration concept shapes per TechSpec §3.13 / ADR-0046.
  *
  * These are runtime/configuration types, not kernel record state. The
  * conceptual invariant: every model-visible tool call resolves to exactly one
@@ -29,7 +29,7 @@ import type { TuvrenJsonSchema } from "./runtime-contract-shapes.js";
 // ---------------------------------------------------------------------------
 
 /**
- * Uniform cross-class invocation lifecycle states per KRT-BA001 / ADR-046
+ * Uniform cross-class invocation lifecycle states per KRT-BA001 / ADR-0046
  * §4.21. Every model-visible tool call flows through this lifecycle regardless
  * of execution class. The conceptual invariant: every invocation resolves to
  * exactly one ExecutionClass and terminates at one of the terminal states.
@@ -60,7 +60,7 @@ export type InvocationLifecycleState =
   | "failed"
   | "ignored";
 
-/** Who owns a capability invocation. Closed set per ADR-046. */
+/** Who owns a capability invocation. Closed set per ADR-0046. */
 export type ExecutionClass =
   | "provider-native"
   | "provider-mediated"
@@ -293,7 +293,7 @@ export interface TuvrenSandboxExecutor {
 }
 
 /**
- * Two-decision-point framework-owned policy gate per ADR-046 §4.21.
+ * Two-decision-point framework-owned policy gate per ADR-0046 §4.21.
  * The implementation lives in @tuvren/runtime; the interface here so hosts
  * can configure and AgentConfig can type it without a circular dependency.
  */
@@ -353,8 +353,8 @@ export interface ClientInvocationEnvelope {
   callId: string;
   capabilityId: string;
   /**
-   * Side-effect-once idempotency identity for this invocation (ADR-052 as
-   * amended by ADR-065).
+   * Side-effect-once idempotency identity for this invocation (ADR-0052 as
+   * amended by ADR-0065).
    *
    * A deterministic identity derived from the turn id and call id — the logical
    * call identity. The client environment can present it to the external system
@@ -437,8 +437,8 @@ export interface ClientEndpointBoundary {
    * null when the result is stale. Throws capability_binding_unavailable when
    * no endpoint is attached for the capability.
    *
-   * `idempotencyKey` is the optional side-effect-once identity (ADR-052 as
-   * amended by ADR-065 — the `(turnId, callId)` logical call identity) placed
+   * `idempotencyKey` is the optional side-effect-once identity (ADR-0052 as
+   * amended by ADR-0065 — the `(turnId, callId)` logical call identity) placed
    * on the dispatch envelope so the client environment can deduplicate a
    * retried external effect.
    */

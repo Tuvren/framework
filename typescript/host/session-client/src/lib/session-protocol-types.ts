@@ -16,9 +16,9 @@
 
 /**
  * Local, hand-authored structural mirror of the `tuvren.framework.host-session`
- * frame vocabulary (`spec/host/session/typespec/main.tsp`, ADR-060) and the
+ * frame vocabulary (`spec/host/session/typespec/main.tsp`, ADR-0060) and the
  * `tuvren.framework.event-stream-ws` carriage vocabulary
- * (`spec/streaming/ws/typespec/main.tsp`, ADR-062/ADR-063).
+ * (`spec/streaming/ws/typespec/main.tsp`, ADR-0062/ADR-0063).
  *
  * `@tuvren/session-client` is a deliberately zero-dependency package (see the
  * package-level doc comment in `../index.ts`): every other TypeScript
@@ -132,7 +132,7 @@ export interface SessionClientApprovalResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Duplex session frame vocabulary (spec/host/session, ADR-060)
+// Duplex session frame vocabulary (spec/host/session, ADR-0060)
 // ---------------------------------------------------------------------------
 
 /** Mirrors `ClientInvocationEnvelope`. @experimental */
@@ -239,7 +239,7 @@ export type SessionClientInboundFrame =
   | SessionClientCancelFrame;
 
 // ---------------------------------------------------------------------------
-// WS carriage envelope (spec/streaming/ws, ADR-062/ADR-063)
+// WS carriage envelope (spec/streaming/ws, ADR-0062/ADR-0063)
 // ---------------------------------------------------------------------------
 
 /** Mirrors `WsHandshakeRequest`. @experimental */

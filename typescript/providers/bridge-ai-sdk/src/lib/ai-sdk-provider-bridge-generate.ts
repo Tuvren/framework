@@ -276,7 +276,7 @@ function appendGenerateTextPart(
  * Maps a tool-call content part to a client `tool_call` response part with a
  * fresh `callId`, parsing the call input as JSON. Declared provider-owned
  * calls are skipped (their attribution flows through the matching
- * tool-result — see the inline KRT-BH005 / ADR-055 note); undeclared
+ * tool-result — see the inline KRT-BH005 / ADR-0055 note); undeclared
  * provider-owned calls are rejected.
  */
 function mapGeneratedToolCallPart(
@@ -289,7 +289,7 @@ function mapGeneratedToolCallPart(
 ):
   | Extract<TuvrenModelResponse["parts"][number], { type: "tool_call" }>
   | undefined {
-  // KRT-BH005 / ADR-055: a provider-executed (providerExecuted/dynamic) tool-call
+  // KRT-BH005 / ADR-0055: a provider-executed (providerExecuted/dynamic) tool-call
   // is the provider's own record of a tool IT ran. When the host declared that
   // tool as provider-native/mediated, skip the call here — the matching
   // tool-result carries the provider-native attribution (AY002/AY004) and the
@@ -443,7 +443,7 @@ function isAnthropicRedactedReasoningPart(
 /**
  * Aggregates the generate call's raw usage, request body, response metadata,
  * sources, and warnings into the response's provider metadata. Bridge extras
- * are secret-screened inside {@link buildProviderMetadata} (ADR-044).
+ * are secret-screened inside {@link buildProviderMetadata} (ADR-0044).
  */
 function buildGenerateProviderMetadata(
   result: LanguageModelV3GenerateResult,

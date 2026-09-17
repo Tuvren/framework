@@ -18,7 +18,7 @@
 // writers bound to DIFFERENT scopes? Architecturally no — each instance
 // binds one Scope (`options.scope`), owns its own pool/queue, and same-
 // scope serialization is a transaction-scoped advisory lock keyed by
-// (schemaName, scope) only (ADR-067). N instances on N scopes running
+// (schemaName, scope) only (ADR-0067). N instances on N scopes running
 // concurrent writes should scale near-linearly vs the same total write
 // count run serially. Same-scope lock contention is covered by
 // `backend-postgres.pool-contention.test.ts`; isolation correctness by

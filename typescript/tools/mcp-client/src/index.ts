@@ -29,7 +29,7 @@
  * MCP credentials (`McpAuth`, transport `headers`/`env`) are confined to the
  * transport edge and never reach any observable, persisted, or replayed
  * runtime surface — see this package's README ("Secret Isolation — Edge
- * Confinement", ADR-044) and the `secret-isolation` conformance check set
+ * Confinement", ADR-0044) and the `secret-isolation` conformance check set
  * (KRT-BD004).
  *
  * @packageDocumentation

@@ -168,7 +168,7 @@ describe("jsonSchema()", () => {
   });
 });
 
-// ── asSchema() — ADR-038 branch precedence ────────────────────────────────────
+// ── asSchema() — ADR-0038 branch precedence ────────────────────────────────────
 
 describe("asSchema() — branch 1: already-wrapped Schema", () => {
   test("returns the same Schema object identity", () => {

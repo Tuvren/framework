@@ -105,7 +105,7 @@ export interface BackendClockOptions {
 // Two distinct, non-default Scopes bound to one shared substrate so the
 // cross-scope isolation probe (KRT-BE007) can prove a co-tenant scope observes
 // none of the constructing scope's content. The host supplies the Scope at
-// construction (ADR-048); the kernel syscall surface never sees it.
+// construction (ADR-0048); the kernel syscall surface never sees it.
 const CONFORMANCE_SCOPE_A = "tuvren.scope.conformance-a";
 const CONFORMANCE_SCOPE_B = "tuvren.scope.conformance-b";
 

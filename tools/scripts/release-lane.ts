@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-// KRT-BJ008 (ADR-037, ADR-057): the release versioning lane. Consumes the
+// KRT-BJ008 (ADR-0037, ADR-0057): the release versioning lane. Consumes the
 // pending changesets under .changeset/, computes version bumps, and applies
-// the manifest updates — then re-proves the ADR-037 single-instance invariant
+// the manifest updates — then re-proves the ADR-0037 single-instance invariant
 // (every @tuvren package resolves to exactly one version across the release,
 // enforced by the config's fixed ["@tuvren/*"] group) before reporting.
 //
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
     }
 
     console.error(
-      "[release-lane] ADR-037 single-version invariant violated after version computation; do not release this state"
+      "[release-lane] ADR-0037 single-version invariant violated after version computation; do not release this state"
     );
     process.exitCode = 1;
     return;
@@ -196,7 +196,7 @@ async function readManifest(
   };
 }
 
-// ADR-037: leaf packages peer-depend on @tuvren/core so a host resolves
+// ADR-0037: leaf packages peer-depend on @tuvren/core so a host resolves
 // exactly one core instance; the release model therefore versions every
 // @tuvren package in lockstep (the changeset config's fixed group) and every
 // in-repo cross-package range stays on the workspace protocol (replaced with

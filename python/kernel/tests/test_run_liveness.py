@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Milestone M3 coverage: run execution leases (Section 5.2 / ADR-050) and
+"""Milestone M3 coverage: run execution leases (Section 5.2 / ADR-0050) and
 Section 5.5 checkpoint crash-recovery (`tuvren_kernel.fault_injection`).
 
 Mirrors the exact scenario shapes the Python conformance adapter's
@@ -142,7 +142,7 @@ def test_run_lease_renewal_rejects_stale_token() -> None:
 
 
 def test_run_lease_renewal_rejects_an_already_expired_lease() -> None:
-    """Section 5.2/ADR-050 fencing hazard: a stale owner whose lease has
+    """Section 5.2/ADR-0050 fencing hazard: a stale owner whose lease has
     already expired must not be able to silently renew and resurrect
     itself. The expiry guard fires before the owner/token checks -- even
     the *correct* owner presenting the *correct* token cannot renew past

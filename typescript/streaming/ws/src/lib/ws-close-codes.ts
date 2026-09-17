@@ -17,7 +17,7 @@
 /**
  * The host rejected the opaque `authToken`.
  *
- * @experimental ADR-056 posture: `0.x`, subject to change before graduation.
+ * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
 export const WS_CLOSE_CODE_AUTH_REJECTED = 4003;
 
@@ -27,20 +27,20 @@ export const WS_CLOSE_CODE_AUTH_REJECTED = 4003;
  * cursor could neither explain nor repair; a close converts overflow into
  * an honest reconnect-with-cursor.
  *
- * @experimental ADR-056 posture: `0.x`, subject to change before graduation.
+ * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
 export const WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED = 4005;
 
 /**
  * The first client message was not a schema-valid handshake. Also reused
- * (ADR-063) for a schema-valid handshake this transport still cannot honor
+ * (ADR-0063) for a schema-valid handshake this transport still cannot honor
  * because the target `RemoteClientSession` already has another sink live —
  * a concurrent second attach is refused rather than silently displacing the
  * first connection, and this is the closest existing code to "this
  * handshake cannot be accepted as presented" rather than inventing a new
  * one.
  *
- * @experimental ADR-056 posture: `0.x`, subject to change before graduation.
+ * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
 export const WS_CLOSE_CODE_HANDSHAKE_INVALID = 4000;
 
@@ -49,26 +49,26 @@ export const WS_CLOSE_CODE_HANDSHAKE_INVALID = 4000;
  * configured timeout window after a `ping` was sent. `pong` is the answer of
  * last resort — any inbound message counts as liveness.
  *
- * @experimental ADR-056 posture: `0.x`, subject to change before graduation.
+ * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
 export const WS_CLOSE_CODE_HEARTBEAT_TIMEOUT = 4004;
 
 /**
  * The handshake presented an unsupported `protocolVersion` literal.
  *
- * @experimental ADR-056 posture: `0.x`, subject to change before graduation.
+ * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
 export const WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED = 4001;
 
 /**
  * The presented `sessionId` does not match the bound session. Also reused
- * (ADR-063) for a handshake presented against a `RemoteClientSession` that
+ * (ADR-0063) for a handshake presented against a `RemoteClientSession` that
  * has already permanently ended (explicit `close()` or disconnect-grace
  * expiry) — there is no live session left for the presented identity to
  * bind to, which is the same "no session here" condition this code already
  * names.
  *
- * @experimental ADR-056 posture: `0.x`, subject to change before graduation.
+ * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
 export const WS_CLOSE_CODE_SESSION_NOT_FOUND = 4002;
 
@@ -80,7 +80,7 @@ export const WS_CLOSE_CODE_SESSION_NOT_FOUND = 4002;
  * is the standard WebSocket normal-closure code and carries no
  * transport-specific meaning.
  *
- * @experimental ADR-056 posture: `0.x`, subject to change before graduation.
+ * @experimental ADR-0056 posture: `0.x`, subject to change before graduation.
  */
 export type WsCloseCode =
   | typeof WS_CLOSE_CODE_AUTH_REJECTED

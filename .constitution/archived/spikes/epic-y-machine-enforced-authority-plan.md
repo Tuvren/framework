@@ -21,8 +21,8 @@ semantic runners into one shared semantic runner plus language adapter hosts.
   principle), `1.4` (forbidden-authority-source and generated-artifact-
   staleness failure classes), and the new logical containers Authority Packet
   Surface, Conformance Plan Authority, Implementation Adapter Boundary, and
-  Generic Conformance Runner; TechSpec ADR-023, ADR-024, ADR-025, ADR-026,
-  ADR-027, ADR-028 plus the new §4.11 Authority Packet Manifest, §4.12
+  Generic Conformance Runner; TechSpec ADR-0023, ADR-0024, ADR-0025, ADR-0026,
+  ADR-0027, ADR-0028 plus the new §4.11 Authority Packet Manifest, §4.12
   Conformance Plan, and §4.13 Implementation Adapter Protocol contracts.
 - Epic W and Epic X are closed. Epic Y is the authority-closure follow-up to
   Epic W's semantic maturity work and Epic X's topology normalization, not a
@@ -39,7 +39,7 @@ conformance plan, and either pass or fail.
 A cross-implementation semantic is binding only when it exists in a
 boundary-owned machine authority packet (TechSpec §4.11) and has at least one
 executable verification path (TechSpec §4.12 conformance plan or
-§ADR-027 freshness check).
+§ADR-0027 freshness check).
 
 ## Suspected Authority Leaks
 
@@ -52,7 +52,7 @@ handoff that opened Epic Y, not measured findings.
 TechSpec `4.1` currently records: "`@tuvren/runtime-api` is the semantic
 anchor for shared framework types and the host-facing runtime surface." That
 phrasing makes a TypeScript package the authority for a cross-implementation
-surface. Per ADR-023 a TypeScript package may be a binding projection but not
+surface. Per ADR-0023 a TypeScript package may be a binding projection but not
 an anchor; the anchor must be the runtime-api authority packet (KRT-Y005).
 
 ### Leak B — TypeScript primitives in cross-language signatures
@@ -60,7 +60,7 @@ an anchor; the anchor must be the runtime-api authority packet (KRT-Y005).
 TechSpec `4.1`, `4.2`, `4.6`, and `4.7` express runtime, kernel, driver, and
 adapter semantics through TypeScript primitives: `Promise`, `AsyncIterable`,
 `AbortSignal`, `Uint8Array`, `unknown`, `Record<string, unknown>`, callable
-signatures, and language-native `Error`. Per ADR-028 these belong only inside
+signatures, and language-native `Error`. Per ADR-0028 these belong only inside
 binding-specific appendices declared by the relevant authority packet;
 authority sources and authority prose must use the neutral vocabulary.
 
@@ -72,7 +72,7 @@ authority sources and authority prose must use the neutral vocabulary.
 `boundaries/shared/contracts/core-types/README.md` (and their
 `spec/README.md` siblings) currently exist as placeholders that name the
 TypeScript implementation under `implementations/typescript/` or the human
-spec under `docs/` as the source of truth. Per ADR-024 a README cannot be
+spec under `docs/` as the source of truth. Per ADR-0024 a README cannot be
 authority for a cross-implementation semantic; the authority is the packet
 manifest (KRT-Y003..Y006).
 
@@ -82,7 +82,7 @@ Various TechSpec sections imply that callable seams (provider invoke,
 provider stream, tool execute, approval resolve, validation failure,
 structured output, timeout, retry, cancellation, idempotency, driver hook)
 are TypeScript-shaped at the contract level rather than at the binding level.
-Per ADR-023 and KRT-Y007 each callable resolves to a neutral operation in the
+Per ADR-0023 and KRT-Y007 each callable resolves to a neutral operation in the
 runtime-api or driver-api authority packet, with at least one conformance
 plan check; TypeScript and Rust shapes live only in the binding appendices.
 
@@ -91,7 +91,7 @@ plan check; TypeScript and Rust shapes live only in the binding appendices.
 The existing TypeScript and Rust conformance runners under
 `boundaries/<area>/implementations/<lang>/conformance-runner/` may encode
 expected event sequences, expected error codes, expected check IDs, or
-expected lifecycle transitions in source code. Per ADR-025 those semantics
+expected lifecycle transitions in source code. Per ADR-0025 those semantics
 must arrive only from a §4.12 conformance plan referenced by an authority
 packet; runner source may host only generic mechanics. KRT-Y011 wires the
 guardrail that rejects product-semantic literals in runner source.
@@ -101,7 +101,7 @@ guardrail that rejects product-semantic literals in runner source.
 `reports/compatibility/compatibility-matrix.json` and the prose around it
 describe conformance and interop status in language that may imply pass/fail
 binds at the prose level rather than at the per-check evidence level. Per
-ADR-024 the binding evidence is the per-check entry plus its `evidencePath`;
+ADR-0024 the binding evidence is the per-check entry plus its `evidencePath`;
 prose summaries are review aids, not authority.
 
 KRT-Y001 will close or reclassify each of the above against current repo

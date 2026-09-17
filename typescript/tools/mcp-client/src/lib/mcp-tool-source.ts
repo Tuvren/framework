@@ -42,7 +42,7 @@ export type McpTransport = "stdio" | "http-sse";
  * Credential material for an `http-sse` transport connection. Confined to
  * this package's transport edge — never copied onto a runtime surface that
  * can be observed, persisted, or replayed (README "Secret Isolation — Edge
- * Confinement", ADR-044).
+ * Confinement", ADR-0044).
  */
 export type McpAuth =
   | { kind: "bearer"; token: string }

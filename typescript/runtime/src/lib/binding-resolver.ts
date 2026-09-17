@@ -32,7 +32,7 @@ export const TUVREN_SANDBOX_ENDPOINT_ID_PREFIX = "sandbox:";
 /**
  * Resolves capabilities to their Binding (execution class + endpoint).
  *
- * ADR-047 back-compat rules:
+ * ADR-0047 back-compat rules:
  * - A `TuvrenToolDefinition` with `execute` is a `tuvren-server` binding to
  *   the in-process endpoint (`endpoint.kind === "tuvren-in-process"`).
  * - An MCP-advertised tool (detected via `metadata.mcp.serverName`) is a

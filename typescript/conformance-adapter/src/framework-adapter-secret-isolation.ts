@@ -16,7 +16,7 @@
 
 /**
  * Conformance adapter operations for the framework `secret-isolation` check set
- * (ADR-044, KRT-BD004). Each operation configures representative secrets at the
+ * (ADR-0044, KRT-BD004). Each operation configures representative secrets at the
  * integration edge, drives a real runtime, and returns the RAW observation
  * surfaces (persisted kernel records, captured canonical stream events,
  * captured telemetry, and an in-process recorded transcript) plus the configured
@@ -430,7 +430,7 @@ export async function runSecretIsolationProviderBridge(
 // ---------------------------------------------------------------------------
 // Operation: runtime.scope-isolation.surfaces
 //
-// Constructs two runtimes bound to distinct Scopes (ADR-048, KRT-BE008), drives
+// Constructs two runtimes bound to distinct Scopes (ADR-0048, KRT-BE008), drives
 // a turn under each, and records a transcript per Scope. Returns the RAW
 // telemetry and transcript surfaces for both Scopes plus the distinct Scope
 // identifiers observed on each surface. The plan owns the verdict: each Scope's
@@ -592,7 +592,7 @@ export async function runScopeIsolationSurfaces(
 // ---------------------------------------------------------------------------
 // Operation: runtime.sanitize-seam.tool-result
 //
-// ADR-064 §4, following ADR-044 §4's precedent ("absence of secret material
+// ADR-0064 §4, following ADR-0044 §4's precedent ("absence of secret material
 // is asserted by conformance ... never by trusting that the hook was
 // called"): a tuvren-client capability reports an error result whose content
 // embeds the fixture's `sanitizeSeamMarker`. `AgentConfig.sanitizeToolResult`

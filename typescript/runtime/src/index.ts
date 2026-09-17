@@ -17,7 +17,7 @@
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional internal-engine surface.
 
 /**
- * `@tuvren/runtime` — the internal orchestration engine (ADR-057).
+ * `@tuvren/runtime` — the internal orchestration engine (ADR-0057).
  *
  * This is NOT a host-facing package: hosts compose the framework through
  * `@tuvren/sdk` (`createTuvren` + the curated `@tuvren/core` re-exports) and

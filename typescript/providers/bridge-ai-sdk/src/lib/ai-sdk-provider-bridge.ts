@@ -138,7 +138,7 @@ export interface AiSdkProviderBridgeFromProviderOptions
  * `TuvrenProvider` adapter over a single AI SDK `LanguageModelV3`.
  *
  * The bridge is the baseline provider adapter of the framework's adapter
- * strategy (KrakenFrameworkSpecification §3.4; ADR-055 defers native provider
+ * strategy (KrakenFrameworkSpecification §3.4; ADR-0055 defers native provider
  * clients behind this seam). It translates the Tuvren prompt/response
  * vocabulary to `doGenerate`/`doStream` calls and normalizes every failure
  * into a `TuvrenProviderError` with a stable machine-readable `code`.
@@ -381,7 +381,7 @@ function assertProviderMediatedToolsSupported(
  * Cross-checks the prompt's requested `config.model` / `config.provider`
  * against the bound model, rejects `responseFormat.strict` (native strict
  * structured output is unsupported by the bridge baseline), forwards the
- * cooperative cancellation signal (ADR-043), and merges headers and
+ * cooperative cancellation signal (ADR-0043), and merges headers and
  * provider options (defaults < providerContinuity < per-prompt settings).
  *
  * @throws TuvrenProviderError with code `invalid_ai_sdk_bridge_config` when
@@ -463,7 +463,7 @@ function createCallOptions(input: {
   return {
     // Forward the framework's cooperative cancellation signal so the underlying
     // provider request is actually aborted (full resource containment) when the
-    // execution-bounds guard stops awaiting at a bound. (ADR-043, KRT-BD006)
+    // execution-bounds guard stops awaiting at a bound. (ADR-0043, KRT-BD006)
     ...(input.prompt.signal === undefined
       ? {}
       : {

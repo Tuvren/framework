@@ -99,7 +99,7 @@ async function ensureInteropArtifacts(): Promise<void> {
   // `E2BIG` once Bun's accumulated spawn state reached the host-repl tsup;
   // the Nx executor isolates each underlying tsup call inside its own fresh
   // subprocess and removes that environmental sensitivity. `--skipNxCache`
-  // keeps the smoke's evidence freshly measured per ADR-033 rather than
+  // keeps the smoke's evidence freshly measured per ADR-0033 rather than
   // accepting whatever the local Nx cache already retained.
   await runRequiredCommand([
     "bun",

@@ -20,7 +20,7 @@ import process from "node:process";
  * Named phases of the row-per-record persistence paths (issues #108/#110)
  * that a backend can attribute cost to. The SQLite and PostgreSQL backends
  * emit the same phase vocabulary since the relational Postgres redesign
- * (ADR-067) ported SQLite's row-per-table shape:
+ * (ADR-0067) ported SQLite's row-per-table shape:
  *
  * `lock-wait` covers both waiting on the in-process transaction queue and
  * waiting on a database-level lock (SQLite's busy handler, Postgres's

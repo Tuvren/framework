@@ -535,7 +535,7 @@ export async function runTuvrenClientNetworkReconnectRedelivery(): Promise<Adapt
   const midCursor = firstFrames.at(-1)?.cursor as string | undefined;
 
   // Simulated socket drop, not session.close(): detaches this sink from the
-  // still-alive session (ADR-063 decision 4). The reply is still withheld.
+  // still-alive session (ADR-0063 decision 4). The reply is still withheld.
   firstTransport.close();
 
   const secondSink = createNetworkPeerRecordingSink(handlePeerMessage);

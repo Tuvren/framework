@@ -134,7 +134,7 @@ describe("createWsSessionTransport: claim and lifecycle", () => {
 
     expect(sink.closes).toEqual([{ code: 1000, reason: undefined }]);
     // detach() starts the grace window rather than ending the session
-    // outright (ADR-063 decision 4) — the transport must never end/close
+    // outright (ADR-0063 decision 4) — the transport must never end/close
     // the session itself.
     expect(session.isEnded()).toBe(false);
 
@@ -218,7 +218,7 @@ describe("createWsSessionTransport: happy path", () => {
   });
 
   test("the underlying session ending closes the currently attached socket: a host-composition responsibility via onEnded", async () => {
-    // ADR-063: the transport no longer owns the outbound pump, so it has no
+    // ADR-0063: the transport no longer owns the outbound pump, so it has no
     // intrinsic signal for "the turn is over, close the socket normally".
     // That signal is now RemoteClientSessionOptions.onEnded, and it is the
     // HOST's job (not the transport's) to close whichever transport is
@@ -315,7 +315,7 @@ describe("createWsSessionTransport: resume and redelivery across a reconnect", (
     replayedMessages.forEach((message, index) => {
       // Continuous numbering: the replayed sequence on the SECOND socket
       // picks up exactly where the FIRST socket's own cursors left off —
-      // there is only ever one sequencer (ADR-063), owned by the session,
+      // there is only ever one sequencer (ADR-0063), owned by the session,
       // not recreated per transport.
       expect(decodeResumeCursor(message.cursor)?.sequence).toBe(
         decodeResumeCursor(expectedTail[index]?.cursor as string)?.sequence

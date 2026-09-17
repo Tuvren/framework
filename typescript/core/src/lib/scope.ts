@@ -15,7 +15,7 @@
  */
 
 /**
- * A Scope is a host-bound partition identity (ADR-048/049). The host binds a
+ * A Scope is a host-bound partition identity (ADR-0048/0049). The host binds a
  * Scope when it constructs a backend/connection; the kernel never defines,
  * authenticates, routes, or discovers tenants and the kernel syscall surface
  * stays scope-free. Durable identity is resolved *within* a Scope, so identical

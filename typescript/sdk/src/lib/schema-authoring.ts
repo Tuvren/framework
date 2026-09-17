@@ -36,7 +36,7 @@ import type {
  */
 export const schemaSymbol = Symbol.for("tuvren.schema");
 
-// ── Schema types (ADR-038) ─────────────────────────────────────────────────
+// ── Schema types (ADR-0038) ─────────────────────────────────────────────────
 
 /** Normalized schema wrapper carrying JSON schema + optional validate. */
 export interface Schema<T = unknown> {
@@ -179,12 +179,12 @@ export function standardSchema<T>(schema: StandardSchema<T>): Schema<T> {
   return buildStandardSchema<T>(schema);
 }
 
-// ── asSchema — centralized 6-branch normalizer (ADR-038) ──────────────────
+// ── asSchema — centralized 6-branch normalizer (ADR-0038) ──────────────────
 
 /**
  * Normalizes any `FlexibleSchema<T>` into a branded `Schema<T>`.
  *
- * Precedence (ADR-038):
+ * Precedence (ADR-0038):
  *   1. Already-wrapped   — schemaSymbol in schema
  *   2. Zod v4            — _zod in schema
  *   3. Standard non-zod  — ~standard in schema && vendor !== "zod"

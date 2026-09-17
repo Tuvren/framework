@@ -66,7 +66,7 @@ _ACTIVE_RUN_STATUSES = {"running", "paused"}
 # never mention leases at all.
 _DEFAULT_LEASE_DURATION_MS = 60_000
 
-# Section 9.4 / ADR-050 / ADR-051 leaseless-run admin-expiry horizon: a
+# Section 9.4 / ADR-0050 / ADR-0051 leaseless-run admin-expiry horizon: a
 # `"running"` run with no lease at all (`run.create(...,
 # lease_duration_ms=None)`) is presumed abandoned by a crashed/disconnected
 # creator once it has gone quiet for at least this long, and stops pinning
@@ -675,7 +675,7 @@ class RunOps:
             )
 
         now = self._kernel.backend.now()
-        # Section 9.4 / ADR-050/051: a caller that omits a lease altogether
+        # Section 9.4 / ADR-0050/0051: a caller that omits a lease altogether
         # (`lease_duration_ms=None`) gets a genuinely leaseless run -- not a
         # run with an immediately-expired lease -- so
         # `MaintenanceOps._is_expired_leaseless_running_run` can tell "no
@@ -718,7 +718,7 @@ class RunOps:
     def renew_lease(
         self, run_id: str, owner_id: str, token: str, lease_duration_ms: int
     ) -> dict[str, Any]:
-        """Section 5.2 / ADR-050 lease renewal.
+        """Section 5.2 / ADR-0050 lease renewal.
 
         Mirrors the TS reference's guard ladder (`runtime-kernel-runs.ts`
         `renewLease`) in order: lease present
@@ -729,7 +729,7 @@ class RunOps:
         -> token mismatch (`run_lease_token_mismatch`). The expiry check
         comes before the owner/token checks so a stale owner whose lease has
         already expired can never silently renew and resurrect itself --
-        the exact Section 5.2/ADR-050 fencing hazard leases exist to
+        the exact Section 5.2/ADR-0050 fencing hazard leases exist to
         prevent; a caller that is still within the lease window is rejected
         on ownership/token grounds, never on expiry.
 
@@ -854,7 +854,7 @@ class RunOps:
             )
         # Section 5.2 makes preemption explicitly guarded: the run must still
         # hold a lease and that lease must have expired as of the
-        # backend-authoritative clock (ADR-050) -- a live, healthy owner must
+        # backend-authoritative clock (ADR-0050) -- a live, healthy owner must
         # never be preemptable by a peer.
         lease = run.get("lease")
         if lease is None:

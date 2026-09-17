@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-// @tuvren/runtime is the internal engine (ADR-057): its package root exposes the
+// @tuvren/runtime is the internal engine (ADR-0057): its package root exposes the
 // engine factories, NOT the curated host-facing surface. The host-facing
 // re-exports (createTuvren, TuvrenError, NoopTelemetrySink, telemetry-semconv,
 // createRuntimeKernel, …) now live on @tuvren/sdk / @tuvren/core / the leaf
@@ -43,7 +43,7 @@ describe("runtime package exports", () => {
     expect(DEFAULT_AGENT_SCHEMA_ID.length > 0).toBe(true);
   });
 
-  test("do not re-export the host-facing curated surface (ADR-057)", async () => {
+  test("do not re-export the host-facing curated surface (ADR-0057)", async () => {
     const runtime = (await import("@tuvren/runtime")) as Record<
       string,
       unknown

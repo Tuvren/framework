@@ -30,7 +30,7 @@
  *
  * BA004 does not require new semconv attributes: the existing
  * tuvren.runtime.capability.execution_class and
- * tuvren.runtime.capability.owner attributes (added in Epic AW / ADR-046
+ * tuvren.runtime.capability.owner attributes (added in Epic AW / ADR-0046
  * and now wired for all four classes after BA002) fully cover the lifecycle
  * taxonomy. No extension to spec/telemetry/semconv/tuvren-runtime.yaml was needed.
  */

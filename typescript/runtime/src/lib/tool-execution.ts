@@ -96,7 +96,7 @@ import { resolveToolDefinition } from "./tool-registry.js";
  * publication seam (`publishEvent` / `publishCustom`), abort and lease
  * fencing (`signal`), and the optional capability-orchestration seams
  * (policy engine, server rate limiter, sandbox executors) defined by
- * ADR-046 / framework spec §4.21.
+ * ADR-0046 / framework spec §4.21.
  */
 export interface ToolBatchEnvironment {
   /** Name of the active agent whose iteration requested this tool batch. */
@@ -104,7 +104,7 @@ export interface ToolBatchEnvironment {
   /** Kernel branch that owns the batch's durable writes. */
   branchId: string;
   /**
-   * Optional invocation-time policy engine per ADR-046 §4.21.
+   * Optional invocation-time policy engine per ADR-0046 §4.21.
    * When present, every tool invocation is checked before dispatch. A denied
    * invocation surfaces as `tool.result` with `isError: true` rather than
    * being executed. When absent, all invocations are admitted (default).
@@ -174,7 +174,7 @@ export interface ToolBatchEnvironment {
   runId: string;
   /**
    * Host sanitization seam threaded from `AgentConfig.sanitizeToolResult`
-   * (ADR-064). Applied inside `stageAndEmitResult` before both durable
+   * (ADR-0064). Applied inside `stageAndEmitResult` before both durable
    * staging and `tool.result` event emission — see that function's doc for
    * the full ordering guarantee.
    */
@@ -189,7 +189,7 @@ export interface ToolBatchEnvironment {
    * Batch-level abort signal. It aborts on turn cancellation, on loss of the
    * run-liveness lease, and on the wall-clock deadline; once aborted, no
    * further retry attempt starts and the batch-scoped staging fence refuses
-   * to commit results under the dead owner (ADR-052 / KRT-BG004).
+   * to commit results under the dead owner (ADR-0052 / KRT-BG004).
    */
   signal?: AbortSignal;
   /**
@@ -371,7 +371,7 @@ export type SingleToolOutcome =
   | {
       approval: ApprovalRequest;
       /**
-       * The staged (sanitized, ADR-064) forms of the sibling results that
+       * The staged (sanitized, ADR-0064) forms of the sibling results that
        * completed before the pause, paired with their durable hashes. Carried
        * as pairs — not bare hashes — so downstream in-memory consumers see
        * exactly what was durably staged, never the pre-sanitization parts
@@ -414,7 +414,7 @@ type ResolvedToolBatchStep =
  * Execution Gateway entry point for a fresh batch.
  *
  * Each call is first resolved through the gateway pipeline (registry lookup,
- * input validation, invocation-time capability policy per ADR-046 §4.21,
+ * input validation, invocation-time capability policy per ADR-0046 §4.21,
  * server-execution rate limit, sandbox-executor resolution, declarative
  * approval policy), then executed under the chosen mode:
  *
@@ -738,7 +738,7 @@ function buildToolBatchOutcome(
  * Runs the gateway admission pipeline for one freshly requested call and
  * classifies it as executable, pending approval, or immediately decided.
  *
- * Pipeline order (framework spec §8.6 steps 1-3, extended by ADR-046 §4.21):
+ * Pipeline order (framework spec §8.6 steps 1-3, extended by ADR-0046 §4.21):
  *
  * 1. Registry lookup — unknown tool becomes an error result.
  * 2. Input validation against `inputSchema` — failure becomes a
@@ -806,7 +806,7 @@ async function resolveExecutableToolCall(
     };
   }
 
-  // Invocation-time policy check per ADR-046 §4.21 (Epic BB: context populated).
+  // Invocation-time policy check per ADR-0046 §4.21 (Epic BB: context populated).
   if (environment.capabilityPolicyEngine !== undefined) {
     const resolver = createBindingResolver();
     const binding = resolver.resolveFromToolDefinition(tool);
@@ -843,7 +843,7 @@ async function resolveExecutableToolCall(
     // BB002: risk-based approval gate. When the policy engine signals that
     // this capability requires explicit approval (e.g. high-risk class), gate
     // execution through the existing pending-approval flow. The framework
-    // owns this decision above runner discretion per §4.21 / ADR-046.
+    // owns this decision above runner discretion per §4.21 / ADR-0046.
     if (decision.requiresApproval === true) {
       return {
         pendingToolCall: createPendingToolCall(
@@ -1145,7 +1145,7 @@ function resolveResumeDecision(
  * declares `idempotent: true` and is not marked `nonRetryable` (AX002/BB004);
  * everything else gets exactly one attempt. Retries stop immediately once
  * `environment.signal` aborts (lease loss, cancellation, deadline —
- * KRT-BG004 / ADR-052), and each attempt after the first emits a
+ * KRT-BG004 / ADR-0052), and each attempt after the first emits a
  * `retry_attempt` audit event (non-client tools only).
  *
  * Outcome handling:
@@ -1191,13 +1191,13 @@ async function executeSingleTool(
   // settled (registry lookup, input validation, policy admission, approval
   // all cleared), so every result this call produces — success, approval
   // pause, or execution failure — carries a known execution class into the
-  // sanitization seam (ADR-064), unlike stageImmediateResults' pre-binding
+  // sanitization seam (ADR-0064), unlike stageImmediateResults' pre-binding
   // outcomes.
   const executionClass = buildToolAttribution(toolCall.tool).executionClass;
   // Idempotent retry per §4.21 / AX002. Non-idempotent tools are never
   // retried. maxRetries defaults to 1 when idempotent is true and unset.
   // BB004: nonRetryable overrides idempotent: true — policy governs retry.
-  // KRT-BG004 (ADR-052): on loss of execution authority an in-flight invocation
+  // KRT-BG004 (ADR-0052): on loss of execution authority an in-flight invocation
   // marked nonRetryable is never re-run under the dead owner — its budget is
   // structurally one attempt, and a recovering owner picks up only durably
   // staged completed results by callId (§4.9). The abort-break below additionally
@@ -1213,7 +1213,7 @@ async function executeSingleTool(
     // Do not retry when the environment signal is already aborted. Loss of
     // execution authority (run lease lost via createRunLeaseLostError), turn
     // cancellation, and the wall-clock deadline all abort this signal, so no
-    // further attempt runs under a dead owner. (KRT-BG004 / ADR-052; §4.9)
+    // further attempt runs under a dead owner. (KRT-BG004 / ADR-0052; §4.9)
     if (attempt > 0 && environment.signal?.aborted) {
       break;
     }
@@ -1457,7 +1457,7 @@ type OutputValidationResult =
 
 /**
  * Validates a tool's raw `execute` output against its `outputSchema` when one
- * is declared (AX001, ADR-046 §4.21).
+ * is declared (AX001, ADR-0046 §4.21).
  *
  * Tools without an `outputSchema` pass through untouched, as do direct
  * `ToolResultPart` returns flagged `isError: true` (error payloads are not

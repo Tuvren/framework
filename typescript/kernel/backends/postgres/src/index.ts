@@ -19,9 +19,9 @@
  *
  * {@link createPostgresBackend} builds a `RuntimeBackend` that persists all
  * durable state in a PostgreSQL database as a relational, row-per-record
- * schema (ADR-067 / issue #110): one table per record family, one row per
+ * schema (ADR-0067 / issue #110): one table per record family, one row per
  * item, foreign keys deferred until commit, and Scope isolation via a
- * `scope` column on every key (ADR-048/049 row-level isolation in a shared
+ * `scope` column on every key (ADR-0048/0049 row-level isolation in a shared
  * host schema). Transactions apply targeted SQL for only the rows they
  * touch and re-validate the write set before `COMMIT`.
  * {@link destroyPostgresBackend} drops a throwaway schema entirely, for

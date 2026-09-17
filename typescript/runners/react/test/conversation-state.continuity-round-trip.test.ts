@@ -16,7 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.
 
-// KRT-BH003 — AY005 multi-turn continuity round-trip, end to end (ADR-053).
+// KRT-BH003 — AY005 multi-turn continuity round-trip, end to end (ADR-0053).
 //
 // AY005 wired `TuvrenPrompt.providerContinuity` into the provider call and
 // persisted a response's continuity onto the durable assistant message, but the
@@ -60,7 +60,7 @@ import { textSignal } from "./react-runner-test-helpers.ts";
 
 // A provider-namespaced continuity token carried back on turn 1's response as
 // message-level metadata — modelled on an OpenAI Responses continuation id, the
-// kind of server-side-state handle ADR-053 keeps reconstructable rather than
+// kind of server-side-state handle ADR-0053 keeps reconstructable rather than
 // authoritative. From the framework's view it is an opaque blob: this test only
 // asserts the runtime durably carries it into the next turn's reconstructed
 // prompt. See the layering note above — this exact token would NOT be re-injected

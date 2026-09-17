@@ -21,7 +21,7 @@ import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 
-// KRT-BK008 (ADR-011): proves the runtime's chunk-aware TurnTree caller
+// KRT-BK008 (ADR-0011): proves the runtime's chunk-aware TurnTree caller
 // writes (typescript/kernel/runtime's toStoredTurnTreePathChunkAware) resolve
 // identically against the sqlite backend to the deterministic expected value,
 // the same proof kernel-runtime/test/runtime-kernel.turn-tree-chunking.test.ts
@@ -61,7 +61,7 @@ async function seededHashes(count: number, seed: string): Promise<string[]> {
 }
 
 describe("createSqliteBackend chunk-aware TurnTree caller writes (KRT-BK008)", () => {
-  test("resolves the expected manifest after growing an ordered path past the ADR-011 chunking threshold", async () => {
+  test("resolves the expected manifest after growing an ordered path past the ADR-0011 chunking threshold", async () => {
     const backend = createSqliteBackend({
       databasePath: createTempDatabasePath(),
     });

@@ -16,7 +16,7 @@
 
 /**
  * Conformance adapter operations for the `tuvren.framework.host-session`
- * duplex session frame vocabulary (issue #99, ADR-060). Each operation
+ * duplex session frame vocabulary (issue #99, ADR-0060). Each operation
  * drives a real `@tuvren/runtime` turn through `createDuplexSessionBinding`
  * (`@tuvren/host-session`) and returns structured evidence that the shared
  * certification harness asserts against `host-session.json`'s checks.
@@ -718,7 +718,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 // ---------------------------------------------------------------------------
-// ADR-063 session-lifecycle conformance: reattach redelivery, grace-window
+// ADR-0063 session-lifecycle conformance: reattach redelivery, grace-window
 // expiry, dispatch timeout, and sequence continuity across two sinks.
 //
 // Each operation below drives a REAL `@tuvren/runtime` turn through
@@ -863,7 +863,7 @@ const SESSION_LIFECYCLE_REPLAY_CAPACITY = 200;
 // ---------------------------------------------------------------------------
 // Operation: host-session.reattach-redelivery
 //
-// ADR-063 decision 3: an unanswered client_invocation is redelivered to the
+// ADR-0063 decision 3: an unanswered client_invocation is redelivered to the
 // next attached sink after a detach, with its original callId, leaseToken,
 // and idempotencyKey preserved (redelivery is safe because the correlation
 // handles already in the wire vocabulary make it safe, not because of a new
@@ -982,7 +982,7 @@ export async function runReattachRedelivery(): Promise<AdapterProjection> {
 // ---------------------------------------------------------------------------
 // Operation: host-session.grace-window-expiry
 //
-// ADR-063 decision 4: detach starts a disconnectGraceMs timer instead of
+// ADR-0063 decision 4: detach starts a disconnectGraceMs timer instead of
 // failing in-flight dispatches immediately; expiry settles every pending
 // dispatch with capability_binding_unavailable and permanently ends the
 // session. Verified against the persisted kernel record read back after the
@@ -1082,7 +1082,7 @@ export async function runGraceWindowExpiry(): Promise<AdapterProjection> {
 // ---------------------------------------------------------------------------
 // Operation: host-session.dispatch-timeout
 //
-// ADR-063 decision 5: the dispatch clock measures peer responsiveness only,
+// ADR-0063 decision 5: the dispatch clock measures peer responsiveness only,
 // so it is suspended while detached and restarted (full budget) for any
 // invocation redelivered on reattach. Timer-pending counts observed at each
 // step mirror `remote-client-session.test.ts`'s own dispatch-timeout test;
@@ -1155,7 +1155,7 @@ export async function runDispatchTimeout(): Promise<AdapterProjection> {
 
   session.detach();
   const pendingTimersAfterDetach = fakeClock.pendingCount();
-  // Proves the dispatch timer was actually suspended on detach (ADR-063
+  // Proves the dispatch timer was actually suspended on detach (ADR-0063
   // decision 5), not merely that some timer count stayed steady — the
   // pending set right after detach must contain zero timers scheduled for
   // the dispatch duration.
@@ -1201,7 +1201,7 @@ export async function runDispatchTimeout(): Promise<AdapterProjection> {
 // ---------------------------------------------------------------------------
 // Operation: host-session.sequence-continuity
 //
-// ADR-063 decision 2: one sequencer, one replay buffer, for the session's
+// ADR-0063 decision 2: one sequencer, one replay buffer, for the session's
 // whole life, so sequence numbering never restarts across a reattach and a
 // replay window is never fed by two independent numberings. Mirrors the
 // event-stream-ws adapter's `reconnect-with-cursor` operation (same
@@ -1287,7 +1287,7 @@ export async function runSequenceContinuity(): Promise<AdapterProjection> {
       : decodeResumeCursor(cursorAtFirstEvent)?.sequence;
 
   // Simulated drop, not session.close(): detaches this sink without ending
-  // the still-running turn (ADR-063 decision 4). The pump keeps recording
+  // the still-running turn (ADR-0063 decision 4). The pump keeps recording
   // further sequenced events into the shared replay buffer regardless of
   // attachment.
   session.detach();

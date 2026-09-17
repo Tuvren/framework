@@ -15,7 +15,7 @@
  */
 
 /**
- * Shared, structural secret-pattern detection primitives (ADR-044, KRT-BK004).
+ * Shared, structural secret-pattern detection primitives (ADR-0044, KRT-BK004).
  *
  * These regexes and the `sanitizeSecretLikeText`/`isSecretLikeKey` helpers
  * originated in `@tuvren/runtime`'s telemetry-attribute screen

@@ -17,7 +17,7 @@
 // biome-ignore-all lint/performance/noBarrelFile: This subpath entrypoint is the intentional advanced composition surface.
 
 /**
- * `@tuvren/sdk/advanced` — the advanced composition surface (ADR-057 addendum).
+ * `@tuvren/sdk/advanced` — the advanced composition surface (ADR-0057 addendum).
  *
  * Low-level factories for hosts that build multi-agent orchestration, custom
  * runner registries, or a bespoke kernel, beyond the batteries-included

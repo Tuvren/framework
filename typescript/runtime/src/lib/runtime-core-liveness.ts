@@ -344,7 +344,7 @@ export function stopRunLeaseLoop(
 }
 
 /**
- * Background lease-renewal loop (see the ADR-050 comment inside for the
+ * Background lease-renewal loop (see the ADR-0050 comment inside for the
  * clock-skew reasoning).
  *
  * Each cycle waits out the local lease window (`leaseDurationMs -
@@ -371,7 +371,7 @@ async function runLeaseLoop(
   }
 
   while (!input.signal.aborted) {
-    // Backend-authoritative lease clock (ADR-050): schedule renewal by the
+    // Backend-authoritative lease clock (ADR-0050): schedule renewal by the
     // elapsed local lease window (leaseDurationMs - renewBeforeMs) rather than by
     // comparing a backend-time lease expiry against this worker's wall clock.
     // The window is a clock-agnostic duration, so the owner relinquishes

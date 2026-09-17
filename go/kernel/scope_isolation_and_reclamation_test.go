@@ -447,7 +447,7 @@ func TestReclamation_UnsupportedBackendRejectsWithCapabilityError(t *testing.T) 
 // CreatedTurnNodes and has not yet become the branch head, so it hung off
 // nothing but the run's PendingCheckpointHash marker. A leaseless running
 // run is deliberately excluded from pinning the grace horizon once it has
-// gone quiet past LeaselessRunExpiryMs (ADR-050/ADR-051) — so before the
+// gone quiet past LeaselessRunExpiryMs (ADR-0050/ADR-0051) — so before the
 // fix, once that admin-expiry window passed, Reclaim swept the pending
 // node out from under a run that still needed it, and ReconcileRun could
 // never fold the torn checkpoint back onto the lineage again

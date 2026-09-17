@@ -20,7 +20,7 @@ import postgres, { type Sql } from "postgres";
 import { persistenceError } from "./postgres-errors.js";
 
 /**
- * Backend-owned schema name used when a host does not supply one (ADR-067 /
+ * Backend-owned schema name used when a host does not supply one (ADR-0067 /
  * issue #110). See {@link normalizeSchemaName} for why this can never be
  * `"public"`.
  */
@@ -53,7 +53,7 @@ export interface PostgresBackendPersistenceOptions {
   password?: string;
   /**
    * Phase-attribution seam (issue #108) for the relational persistence
-   * path's per-transaction costs (ADR-067), sharing the same
+   * path's per-transaction costs (ADR-0067), sharing the same
    * {@link PersistencePhase} vocabulary as the SQLite backend: `lock-wait`
    * covers both waiting on the in-process transaction queue and waiting on
    * the database-level same-scope advisory lock (there are no row locks to
@@ -76,11 +76,11 @@ export interface PostgresBackendPersistenceOptions {
   port?: number;
   schemaName?: string;
   /**
-   * Host-supplied partition identity bound at construction (ADR-048).
+   * Host-supplied partition identity bound at construction (ADR-0048).
    *
    * Isolation is realized as a `scope` column on every family table's primary
-   * and foreign keys (ADR-067's one-table-per-record-family relational
-   * schema), giving row-level isolation in a shared schema (ADR-049). Two
+   * and foreign keys (ADR-0067's one-table-per-record-family relational
+   * schema), giving row-level isolation in a shared schema (ADR-0049). Two
    * backends sharing a schema (the same database) but bound to different
    * Scopes therefore read and write disjoint rows across every table and can
    * never observe each other's state, with no cross-scope dedup. When
@@ -98,7 +98,7 @@ export interface PostgresBackendPersistenceOptions {
  * the discrete fields.
  *
  * `max: 1` is load-bearing: the backend's in-process transaction queue
- * (ADR-067) already serializes every `transact`/`reclaim` call onto a single
+ * (ADR-0067) already serializes every `transact`/`reclaim` call onto a single
  * logical writer, so a single physical connection is enough and avoids paying
  * for a pool the backend never uses concurrently. `prepare: false` keeps the
  * client compatible with transaction-mode connection poolers (which cannot
@@ -166,7 +166,7 @@ const MAX_SCHEMA_NAME_BYTES = 63;
  * unparameterized DDL identifiers and will not be truncated by PostgreSQL's
  * `NAMEDATALEN` limit.
  *
- * The default is deliberately not `"public"`. This PR (ADR-067 / issue #110)
+ * The default is deliberately not `"public"`. This PR (ADR-0067 / issue #110)
  * replaced the two well-namespaced blob-era tables with thirteen generic,
  * unprefixed family tables (`objects`, `schemas`, `threads`, `branches`,
  * `turns`, `runs`, `staged_results`, …) plus twenty-one `idx_*` indexes,

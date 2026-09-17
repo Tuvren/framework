@@ -15,7 +15,7 @@
  */
 
 /**
- * Framework-enforced execution bounds guard (ADR-043, KRT-BD006).
+ * Framework-enforced execution bounds guard (ADR-0043, KRT-BD006).
  *
  * These helpers resolve and validate the per-runtime {@link ExecutionBounds} and
  * build the stable `execution_bound_exceeded` terminal error. The guard lives

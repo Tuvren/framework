@@ -15,10 +15,10 @@
  */
 
 /**
- * KRT-BG003 — side-effect-once idempotency envelope (ADR-052 as amended by
- * ADR-065).
+ * KRT-BG003 — side-effect-once idempotency envelope (ADR-0052 as amended by
+ * ADR-0065).
  *
- * These tests assert the *contract* ADR-052 §1 states — that every dispatch of
+ * These tests assert the *contract* ADR-0052 §1 states — that every dispatch of
  * one logical call presents an identical identity — rather than the weaker
  * property that the helper is a pure function of its arguments. The distinction
  * is what the previous version of this file got wrong: it asserted that a
@@ -71,7 +71,7 @@ function makeEnvironment(turnId: string, runId: string): ToolBatchEnvironment {
   } as unknown as ToolBatchEnvironment;
 }
 
-describe("deriveIdempotencyKey (ADR-052/ADR-065 / KRT-BG003)", () => {
+describe("deriveIdempotencyKey (ADR-0052/ADR-0065 / KRT-BG003)", () => {
   test("is a deterministic function of the logical call identity", () => {
     expect(deriveIdempotencyKey("turn-1", "call-1")).toBe(
       deriveIdempotencyKey("turn-1", "call-1")
@@ -107,7 +107,7 @@ describe("createToolExecutionContext idempotency identity (KRT-BG003)", () => {
   });
 
   test("is stable across a new Run serving the same Turn", () => {
-    // This is ADR-052 §1's actual promise. A Turn is served by many Runs
+    // This is ADR-0052 §1's actual promise. A Turn is served by many Runs
     // (kernel §5.3): the framework mints a fresh runId per ReAct iteration,
     // per approval resume, and per recovery, and the fencing token rotates on
     // every lease renewal. A re-dispatch of the same logical call therefore

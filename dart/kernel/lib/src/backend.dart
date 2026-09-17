@@ -249,7 +249,7 @@ final class Run {
   /// always set and cleared together.
   PendingCheckpointKind? pendingCheckpointKind;
 
-  // --- run execution lease (kernel spec §5.2, ADR-050) ---
+  // --- run execution lease (kernel spec §5.2, ADR-0050) ---
 
   bool hasLease;
   String leaseOwnerId;
@@ -264,7 +264,7 @@ final class Run {
   /// is the oldest active (running or paused) run's [createdAtMs], and a
   /// leaseless running run stops pinning that horizon once
   /// `nowMs - updatedAtMs` crosses the 24h admin-expiry window
-  /// (ADR-050/ADR-051).
+  /// (ADR-0050/ADR-0051).
   final int createdAtMs;
   int updatedAtMs;
 

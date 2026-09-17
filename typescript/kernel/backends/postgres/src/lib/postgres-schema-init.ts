@@ -99,7 +99,7 @@ function resolveMigrationFileListing(): {
 
 /**
  * Idempotently provisions a host PostgreSQL schema for the relational
- * backend (ADR-067 / issue #110): creates the schema and migration ledger,
+ * backend (ADR-0067 / issue #110): creates the schema and migration ledger,
  * applies checked-in SQL migrations, and runs the open-time blob→row
  * explode when a legacy `backend_postgres_snapshots` table is present.
  *

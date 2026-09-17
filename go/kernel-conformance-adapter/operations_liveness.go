@@ -29,7 +29,7 @@ import (
 // newManualClockRuntimeKernel builds a fresh Kernel over a fresh
 // InMemoryBackend driven by a kernel.ManualClock pinned at startMs, so a
 // run-liveness or restart-recovery scenario can advance the
-// backend-authoritative clock to exact instants (kernel spec §5.2 ADR-050)
+// backend-authoritative clock to exact instants (kernel spec §5.2 ADR-0050)
 // instead of relying on wall-clock or auto-increment timing.
 func newManualClockRuntimeKernel(startMs int64) (*kernel.Kernel, *kernel.ManualClock) {
 	clock := kernel.NewManualClock(startMs)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// ADR-011 frames the ordered-path chunking threshold/size as an
+// ADR-0011 frames the ordered-path chunking threshold/size as an
 // implementation constant, not a protocol constant, so each storage-owning
 // module declares its own copy rather than importing a shared one (see
 // runtime-kernel-storage.ts's RUNTIME_ORDERED_PATH_CHUNK_THRESHOLD /
@@ -79,7 +79,7 @@ describe("ORDERED_PATH_CHUNK_THRESHOLD/SIZE cross-module agreement", () => {
     const declarations = extractDeclaredValues("ORDERED_PATH_CHUNK_THRESHOLD");
 
     // backend-invariant-integrity-assertions.ts intentionally declares only
-    // the size constant (per ADR-011's per-module framing), so the threshold
+    // the size constant (per ADR-0011's per-module framing), so the threshold
     // is expected in the other 4 files.
     expect(declarations.length).toBe(4);
 
@@ -110,7 +110,7 @@ describe("ORDERED_PATH_CHUNK_THRESHOLD/SIZE cross-module agreement", () => {
     // Threshold and size no longer always coexist in one file (postgres
     // splits them between postgres-backend.ts and the shared module), so
     // cross-agreement is asserted globally: every declaration of either
-    // constant carries the same ADR-011 value.
+    // constant carries the same ADR-0011 value.
     const thresholds = extractDeclaredValues("ORDERED_PATH_CHUNK_THRESHOLD");
     const sizes = extractDeclaredValues("ORDERED_PATH_CHUNK_SIZE");
     const [firstThreshold] = thresholds;
