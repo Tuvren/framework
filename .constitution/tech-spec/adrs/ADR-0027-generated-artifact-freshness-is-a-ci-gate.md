@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-027 Generated Artifact Freshness Is a CI Gate
+### ADR-0027 Generated Artifact Freshness Is a CI Gate
 
 - **Status:** accepted
 - **Context:** Generated JSON Schema, OpenAPI, Protobuf descriptors and bindings, CDDL-derived validators, conformance plans, compatibility schemas, and telemetry outputs are functionally an authority change when they drift from their authority sources. Today drift is caught only by ad hoc review.

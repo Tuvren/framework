@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-018 Rust Enters Through a Kernel-Only Process Boundary, Not FFI
+### ADR-0018 Rust Enters Through a Kernel-Only Process Boundary, Not FFI
 
 - **Status:** accepted
 - **Context:** The first non-TypeScript implementation needs a durable, inspectable, versioned seam that can later serve more than one language pair. FFI would couple early Rust work to the current embedding model and make versioning, observability, and process isolation harder.

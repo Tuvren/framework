@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-011 TurnTree Storage Is Path-Granular with Threshold-Based Chunking for Ordered Paths
+### ADR-0011 TurnTree Storage Is Path-Granular with Threshold-Based Chunking for Ordered Paths
 
 - **Status:** accepted
 - **Context:** The kernel contract is expressed in path values, not in generic subtree fragments. Ordered paths such as `messages` can grow large enough that flat rewrites become expensive, but a fully generic Merkle-fragment engine would overfit the problem.

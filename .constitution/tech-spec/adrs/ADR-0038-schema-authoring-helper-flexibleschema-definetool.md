@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-038 Schema Authoring Helper: `FlexibleSchema` + `defineTool`
+### ADR-0038 Schema Authoring Helper: `FlexibleSchema` + `defineTool`
 
 - **Status:** accepted
 - **Context:** PRD v0.7.0 CAP-P0-040 requires a schema-agnostic tool-authoring helper that accepts Zod (v3 and v4), Standard Schema, and wrapped JSON Schema with strict TypeScript inference, while preserving the existing `CustomSchema` boundary contract for raw JSON Schema. Architecture v0.7.0 establishes the Schema Authoring Helper as a host-facing authoring boundary that normalizes authoring shapes into the boundary contract through a centralized detection routine with explicit precedence. The Vercel AI SDK's `tool()` + `FlexibleSchema` + `asSchema()` pattern is the proven precedent and aligns directly with this requirement.

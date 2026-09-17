@@ -88,7 +88,7 @@ Provider-mediated tools are those where the **developer supplies an endpoint** a
 
 OpenAI's MCP tool is configured as a `LanguageModelV3ProviderTool` with `server_url` (or `connector_id`) in `args`. The provider discovers and invokes the MCP server's tools without Tuvren's Tool Execution Gateway being involved. Returned results carry `dynamic: true` to signal provider-invoked dynamic tool execution.
 
-**Provider-mediated MCP classified as**: MCP binding (`endpoint.kind === "mcp-server"`) under the `provider-mediated` execution class. This is consistent with ADR-046: MCP is a binding mechanism whose execution class depends on who invokes/runs the server; here the provider invokes it, so the class is `provider-mediated`.
+**Provider-mediated MCP classified as**: MCP binding (`endpoint.kind === "mcp-server"`) under the `provider-mediated` execution class. This is consistent with ADR-0046: MCP is a binding mechanism whose execution class depends on who invokes/runs the server; here the provider invokes it, so the class is `provider-mediated`.
 
 ### Observable Fields on Provider-Mediated Results
 

@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-010 Core Kernel Records Use a Restricted Integer-Oriented Data Model
+### ADR-0010 Core Kernel Records Use a Restricted Integer-Oriented Data Model
 
 - **Status:** accepted
 - **Context:** Cross-language deterministic encoding gets riskier when floats, tags, and broad dynamic types are allowed into core kernel records.

@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-001 The Kernel Boundary Is Protocol-First and Data-Only
+### ADR-0001 The Kernel Boundary Is Protocol-First and Data-Only
 
 - **Status:** accepted
 - **Context:** The frozen kernel specification explicitly defines the kernel-framework boundary as a protocol where everything crossing the boundary is serializable data. Future multi-language SDKs and future non-TypeScript kernel implementations depend on preserving this narrow waist.

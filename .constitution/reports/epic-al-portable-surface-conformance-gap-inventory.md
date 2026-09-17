@@ -28,7 +28,7 @@ authoritative behavioral specs are not authority for any cross-language semantic
 - Live constitutional documents:
   - `.constitution/prd/` (capability scope: CAP-P0-037, CAP-P1-035, CAP-P1-036, CAP-P1-038, CAP-P1-032)
   - `.constitution/architecture/`
-  - `.constitution/tech-spec/` (`§2.1`, `§3.1`, `§4.6`, `§4.11`, `§4.12`, `§4.13`, `§5.4`, ADR-023-033)
+  - `.constitution/tech-spec/` (`§2.1`, `§3.1`, `§4.6`, `§4.11`, `§4.12`, `§4.13`, `§5.4`, ADR-0023-ADR-0033)
   - `.constitution/tasks/` (Epic AL definition, build order, DoD)
 - Behavioral authority:
   - `docs/KrakenKernelSpecification.md`
@@ -65,7 +65,7 @@ authoritative behavioral specs are not authority for any cross-language semantic
 
 | Code | Meaning |
 | --- | --- |
-| `portable` | Surface owns an Authority Packet manifest, at least one referenced Conformance Plan, and at least one runner-observed decisive assertion per ADR-030. Adapter evidence is diagnostic only. |
+| `portable` | Surface owns an Authority Packet manifest, at least one referenced Conformance Plan, and at least one runner-observed decisive assertion per ADR-0030. Adapter evidence is diagnostic only. |
 | `exception:ag-ui` | Standing implementation-specific projection. Allowed by Tasks.md §1 and §4. TypeScript-only by intent until a new explicit decision changes that rule. |
 | `exception:ai-sdk-bridge` | Standing implementation-specific provider bridge. TypeScript-only by intent until a new explicit decision changes that rule. |
 | `exception:telemetry-otel` | Standing implementation-specific observability projection. The canonical telemetry sink and semantic vocabulary remain portable authority; OTel export is TypeScript implementation scope unless later promoted. |
@@ -80,19 +80,19 @@ the surface's current decisive-assertion coverage.
 
 | Surface | Packet | Plans | Decisive coverage | Notes |
 | --- | --- | --- | --- | --- |
-| Shared core primitives + capability-orchestration surface | `tuvren.shared.core` (`spec/core/authority-packet.json`) | `runtime-api-lifecycle{,-extended}`, `runtime-api-callables{,-extended}`, `runtime-api-orchestration`, `runtime-api-batteries-included`, `event-stream-core`, `event-stream-extended`, `runner-api-core`, `runner-api-extended`, `tool-contracts-extended`, `framework-operational-telemetry`, `tuvren-server-execution-class`, `tuvren-client-execution-class`, `invocation-lifecycle-observation`, `capability-policy`, `capability-orchestration-integration` | `resultField`, `stateField`, `eventSequence`, `terminalEvent`, `noEvent`, `errorEnvelope` per plan inspection | Epic AP absorbed the former `core-types`, `runtime-api`, `event-stream`, `driver-api`, and `tool-contracts` packets into one consolidated core packet with binding sections for the eight `@tuvren/core/*` subpaths. Epics AW–BC (Tooling block) added the capability-orchestration surface: four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, and the cross-class integration check set (`capability-orchestration-integration.json`, KRT-BC001). The integration plan is now a required authoritative source for `tuvren.shared.core` in the portability inventory (v0.4.0). M8 (issues #102/#104) added two further required-authority plan bumps under this packet: `runtime-api-callables-extended.json` (0.7.0 -> 0.8.0) gained the `sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces` check (ADR-064 §4, following ADR-044 §4's precedent — asserts the scrubbed form and marker absence against both the persisted kernel `tool_result` record and the captured canonical `tool.result` event, never against the hook's return value), and `tuvren-client-execution-class.json` (0.2.0 -> 0.3.0) gained the `az.az006.network-reconnect-redelivery-dedup` / `az.az006.result-durability-recovered` checks, the strongest in-process-provable equivalent of M6's real-socket e2e (see the Duplex session frame vocabulary row and §5). |
+| Shared core primitives + capability-orchestration surface | `tuvren.shared.core` (`spec/core/authority-packet.json`) | `runtime-api-lifecycle{,-extended}`, `runtime-api-callables{,-extended}`, `runtime-api-orchestration`, `runtime-api-batteries-included`, `event-stream-core`, `event-stream-extended`, `runner-api-core`, `runner-api-extended`, `tool-contracts-extended`, `framework-operational-telemetry`, `tuvren-server-execution-class`, `tuvren-client-execution-class`, `invocation-lifecycle-observation`, `capability-policy`, `capability-orchestration-integration` | `resultField`, `stateField`, `eventSequence`, `terminalEvent`, `noEvent`, `errorEnvelope` per plan inspection | Epic AP absorbed the former `core-types`, `runtime-api`, `event-stream`, `driver-api`, and `tool-contracts` packets into one consolidated core packet with binding sections for the eight `@tuvren/core/*` subpaths. Epics AW–BC (Tooling block) added the capability-orchestration surface: four execution classes, MCP-as-binding, exposure/invocation policy, per-class observation limits, and the cross-class integration check set (`capability-orchestration-integration.json`, KRT-BC001). The integration plan is now a required authoritative source for `tuvren.shared.core` in the portability inventory (v0.4.0). M8 (issues #102/#104) added two further required-authority plan bumps under this packet: `runtime-api-callables-extended.json` (0.7.0 -> 0.8.0) gained the `sanitize-seam.tool-result-scrubbed-in-durable-and-stream-surfaces` check (ADR-0064 §4, following ADR-0044 §4's precedent — asserts the scrubbed form and marker absence against both the persisted kernel `tool_result` record and the captured canonical `tool.result` event, never against the hook's return value), and `tuvren-client-execution-class.json` (0.2.0 -> 0.3.0) gained the `az.az006.network-reconnect-redelivery-dedup` / `az.az006.result-durability-recovered` checks, the strongest in-process-provable equivalent of M6's real-socket e2e (see the Duplex session frame vocabulary row and §5). |
 | Kernel protocol semantics | `tuvren.kernel.protocol` (`spec/kernel/authority-packet.json`) | `kernel-protocol-core`, `kernel-protocol-extended`, `kernel-run-liveness`, `kernel-restart-recovery` | `resultField`, `stateField`, `eventSequence` per plan inspection | Records appendix matrix and recovery edges promoted by AF KRT-AF006 are runner-observed. KRT-AL002 registered `spec/cddl/kernel-records.cddl` as a CDDL authoritative source on the packet. |
 | Framework SSE projection | `tuvren.framework.event-stream-sse` (`spec/streaming/sse/authority-packet.json`) | `event-stream-sse` | `eventSequence`, `resultField`, `ordering`, `errorEnvelope` per plan inspection | KRT-AL002/AL003 promoted the EventSource-compatible wire projection through TypeSpec, byte-trace fixtures, and WHATWG-conformant adapter decoding. |
-| Framework event-stream resume vocabulary | `tuvren.framework.event-stream-resume` (`spec/streaming/resume/authority-packet.json`) | _(plan lands with issue #101's conformance milestone)_ | — | ADR-061 / issue #101 promotes the wire-level sequencing envelope, opaque resume-cursor payload, and bounded replay-window outcome vocabulary as an experimental (`0.x`, ADR-056) sub-surface packet under the streaming port. TypeScript (`@tuvren/stream-core`) is the only advertising implementation today. |
-| Framework WebSocket transport vocabulary | `tuvren.framework.event-stream-ws` (`spec/streaming/ws/authority-packet.json`) | _(plan lands with issue #100's conformance milestone)_ | — | ADR-062 / issue #100 promotes the WebSocket carriage vocabulary (handshake, frame envelopes, close codes, heartbeat) as an experimental (`0.x`, ADR-056) sub-surface packet under the streaming port. Frame semantics stay owned by the host-session packet and cursor semantics by the event-stream-resume packet. TypeScript (`@tuvren/stream-ws`) is the only advertising implementation today. |
-| Framework ReAct runner behavior | `tuvren.framework.react-runner` (`spec/runners/react/authority-packet.json`) | `react-runner-callables`, `react-runner-extended` | `eventSequence`, `stateField`, `noEvent` per plan inspection | No TypeSpec; data-owned per ADR-025. AF promoted hook ordering, around-hook nesting, after-iteration terminality, and live/durable aroundModel reconciliation. |
+| Framework event-stream resume vocabulary | `tuvren.framework.event-stream-resume` (`spec/streaming/resume/authority-packet.json`) | _(plan lands with issue #101's conformance milestone)_ | — | ADR-0061 / issue #101 promotes the wire-level sequencing envelope, opaque resume-cursor payload, and bounded replay-window outcome vocabulary as an experimental (`0.x`, ADR-0056) sub-surface packet under the streaming port. TypeScript (`@tuvren/stream-core`) is the only advertising implementation today. |
+| Framework WebSocket transport vocabulary | `tuvren.framework.event-stream-ws` (`spec/streaming/ws/authority-packet.json`) | _(plan lands with issue #100's conformance milestone)_ | — | ADR-0062 / issue #100 promotes the WebSocket carriage vocabulary (handshake, frame envelopes, close codes, heartbeat) as an experimental (`0.x`, ADR-0056) sub-surface packet under the streaming port. Frame semantics stay owned by the host-session packet and cursor semantics by the event-stream-resume packet. TypeScript (`@tuvren/stream-ws`) is the only advertising implementation today. |
+| Framework ReAct runner behavior | `tuvren.framework.react-runner` (`spec/runners/react/authority-packet.json`) | `react-runner-callables`, `react-runner-extended` | `eventSequence`, `stateField`, `noEvent` per plan inspection | No TypeSpec; data-owned per ADR-0025. AF promoted hook ordering, around-hook nesting, after-iteration terminality, and live/durable aroundModel reconciliation. |
 | Provider bridge contract | `tuvren.providers.provider-api` (`spec/providers/authority-packet.json`) | `provider-api-bridge`, `provider-api-bridge-extended` | `resultField`, `eventSequence`, `errorEnvelope` per plan inspection | The provider-neutral contract is portable. The `bridge-ai-sdk` projection (TS implementation that adapts the AI SDK to this contract) is a standing exception — see §4. |
 | MCP Client Container translation contract | `tuvren.providers.mcp` (`spec/tools/mcp/authority-packet.json`) | `providers-mcp-client` | `resultField` per plan inspection | Epic AS promotes the Tuvren-owned translation, validation, auth-header, and transport-parity rules for `@tuvren/mcp-client`. The upstream MCP wire protocol remains owned by the official `@modelcontextprotocol/sdk`; Tuvren's authority packet covers the tool-source projection only. |
-| Duplex session frame vocabulary | `tuvren.framework.host-session` (`spec/host/session/authority-packet.json`) | `host-session` | `resultField`, `eventSequence`, `ordering` per plan inspection | ADR-060 / issue #99 promotes the transport-agnostic duplex session vocabulary (wrapped canonical events, `client_invocation` dispatch, `session_rejection`, and the inbound `client_result`/`approval_response`/`steer`/`cancel` family) as an experimental (`0.x`, ADR-056) sub-surface packet under the host port. TypeScript is the only advertising implementation today; the capability-selected checks make other ports non-applicable until they attach a session binding. ADR-063 (issue #102, M8) added `@tuvren/remote-session` (`typescript/host/remote-session`) as the reattachable session-lifecycle seam above this binding and below carriage; the `host-session` plan's 0.3.0 bump adds four checks realized against a real `@tuvren/runtime` turn: reattach redelivery (unanswered `client_invocation` re-sent with identical `callId`/`leaseToken`/`idempotencyKey`), grace-window expiry (settles pending dispatch with `capability_binding_unavailable`), dispatch timeout (settles with `capability_dispatch_timeout` while attached, clock suspended across a detach), and sequence continuity across two sinks (no restart, gapless replay). No new packet: the seam is TypeScript-only session-lifecycle mechanics riding on the same wire vocabulary, not new cross-language protocol authority. |
+| Duplex session frame vocabulary | `tuvren.framework.host-session` (`spec/host/session/authority-packet.json`) | `host-session` | `resultField`, `eventSequence`, `ordering` per plan inspection | ADR-0060 / issue #99 promotes the transport-agnostic duplex session vocabulary (wrapped canonical events, `client_invocation` dispatch, `session_rejection`, and the inbound `client_result`/`approval_response`/`steer`/`cancel` family) as an experimental (`0.x`, ADR-0056) sub-surface packet under the host port. TypeScript is the only advertising implementation today; the capability-selected checks make other ports non-applicable until they attach a session binding. ADR-0063 (issue #102, M8) added `@tuvren/remote-session` (`typescript/host/remote-session`) as the reattachable session-lifecycle seam above this binding and below carriage; the `host-session` plan's 0.3.0 bump adds four checks realized against a real `@tuvren/runtime` turn: reattach redelivery (unanswered `client_invocation` re-sent with identical `callId`/`leaseToken`/`idempotencyKey`), grace-window expiry (settles pending dispatch with `capability_binding_unavailable`), dispatch timeout (settles with `capability_dispatch_timeout` while attached, clock suspended across a detach), and sequence continuity across two sinks (no restart, gapless replay). No new packet: the seam is TypeScript-only session-lifecycle mechanics riding on the same wire vocabulary, not new cross-language protocol authority. |
 
 ## 4. Standing implementation-specific exceptions
 
-Per Tasks.md and ADR-033/ADR-042, exactly three surfaces are allowed to remain
+Per Tasks.md and ADR-0033/ADR-0042, exactly three surfaces are allowed to remain
 implementation-specific. Each exception is named, scoped, and documented so it does
 not silently grow into a portability obligation.
 
@@ -136,7 +136,7 @@ not silently grow into a portability obligation.
 - Why allowed: the portable surface is the `@tuvren/core/telemetry` sink contract
   and the authored semantic convention vocabulary. The OTel package projects that
   canonical surface onto the TypeScript OpenTelemetry API and is implementation-
-  specific by ADR-042.
+  specific by ADR-0042.
 - What still covers it: `@tuvren/telemetry-otel` unit tests and export smoke tests,
   plus the portable `framework-operational-telemetry.json` conformance plan over
   the canonical sink records.
@@ -290,7 +290,7 @@ artifacts landed.
   matches what packets already use), or the schema file removes the kind and
   provider-api migrates to `schema-validation` over the OpenAPI artifact.
 - **Hand-off to AL002**: small TechSpec §4.11 edit to add `openapi-validation` to
-  the documented enum, with a one-line ADR-027 reaffirmation that the schema file
+  the documented enum, with a one-line ADR-0027 reaffirmation that the schema file
   remains the executable contract.
 
 ### G8. Canonical verification still treats `docs:af-gap-plan:check` as the portability proxy
@@ -317,7 +317,7 @@ artifacts landed.
   `verify.ts`. No `boundaries/hosts/contracts/<surface>/spec/authority-packet.json`
   exists.
 - **AL001 decision**: do **not** open a `hosts` portable surface in Epic AL. The
-  proving-host is, per ADR-032, a TypeScript-line product-proof artifact rather
+  proving-host is, per ADR-0032, a TypeScript-line product-proof artifact rather
   than a cross-language portability target. Operator command surface is not a
   required portable runtime semantic under the active scope.
 - **Recorded as proving-only**: the proving-host product obligation lives in §5
@@ -339,10 +339,10 @@ portability surfaces:
 - **Workspace tooling** (`devenv.nix`, `nx.json`, `tsup`, Biome configuration, the
   `bun2nix` build path). Implementation logistics, not runtime semantics.
 - **Compatibility ledger presentation** (`reportStatus` strings, table layout in
-  `reports/compatibility/`). The ledger is measured evidence under ADR-031; raw
+  `reports/compatibility/`). The ledger is measured evidence under ADR-0031; raw
   `status` is the contracted surface, not the presentation.
 - **REPL host command names, prompt strings, scripted-scenario file format**. Proving
-  artifacts under ADR-032; not a cross-language portability target.
+  artifacts under ADR-0032; not a cross-language portability target.
 - **`@tuvren/stream-agui` event union details beyond the AG-UI projection contract
   the upstream library defines.** AG-UI is explicitly an exception per §4.1.
 - **AI SDK provider catalogue and per-provider quirks.** The bridge sits on the
@@ -350,7 +350,7 @@ portability surfaces:
   TypeScript line.
 - **Documentation prose under `docs/` and `.constitution/` themselves.** These are
   human authority refs per `§4.11`; they cannot be authoritative sources for any
-  packet by ADR-023 / ADR-024.
+  packet by ADR-0023 / ADR-0024.
 
 ## 8. Expert-grade observations for future productization
 
@@ -363,7 +363,7 @@ marked `[blocking AL002]`, `[non-blocking AL002]`, or `[future epic]`.
   set at `version 0.1.0` and `planVersion 0.1.0`. `§2.1` defines semver semantics
   for packets, but no packet had yet been promoted to a stability tier. Recommend
   future packet work explicitly decide whether an additive surface expansion graduates
-  a packet to `0.2.0` or to a higher tier per ADR-033 once the portability gate passes.
+  a packet to `0.2.0` or to a higher tier per ADR-0033 once the portability gate passes.
   `[non-blocking AL002]`
 - **E2. Error envelope universe.** Conformance plans assert error codes via
   `equals` (`approval_pause_phase_mismatch`, `orchestration_parent_not_started`,
@@ -449,7 +449,7 @@ These guardrails mirror the AF gap plan and apply to KRT-AL002.
 - Capability selection in plans must not name implementation IDs, language names,
   runner names, or adapter names.
 - Unsupported implementations remain non-applicable through capability selection per
-  ADR-031. No AL check may target an implementation ID directly.
+  ADR-0031. No AL check may target an implementation ID directly.
 - Excluded surfaces in §7 stay excluded until a later TechSpec/Tasks revision
   explicitly promotes them.
 - Standing exceptions in §4 stay exceptions until a later TechSpec/Tasks revision
@@ -575,7 +575,7 @@ pre-closure recommendations when package consolidation changed the landing shape
 Historical estimated artifact footprint for AL002:
 
 - 4 new authority packet files (G3, G4, G5, G6) plus the consolidated-core packet
-  edit that absorbed G1 after ADR-037 / Epic AP
+  edit that absorbed G1 after ADR-0037 / Epic AP
 - 1 packet edit (G2)
 - 2-3 new conformance plan files (G1, G3, optional G6 fixture set)
 - 1 TypeSpec source (G3 SSE projection), optionally 1 fixture set (G3 byte traces)

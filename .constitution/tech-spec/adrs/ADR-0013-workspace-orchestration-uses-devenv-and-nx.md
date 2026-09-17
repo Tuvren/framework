@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-013 Workspace Orchestration Uses devenv and Nx
+### ADR-0013 Workspace Orchestration Uses devenv and Nx
 
 - **Status:** accepted
 - **Context:** The project explicitly fixed `devenv + nx` as non-negotiable workspace tooling and the repository now uses a boundary-grouped architecture-first layout.

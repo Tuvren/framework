@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-020 TypeScript Must Adopt the Final Artifact and Conformance Structure First
+### ADR-0020 TypeScript Must Adopt the Final Artifact and Conformance Structure First
 
 - **Status:** accepted
 - **Context:** The current repository still contains TypeScript-first structural shortcuts such as testkit packages standing in for a future language-neutral conformance system.

@@ -7,7 +7,7 @@ date: "2026-09-03"
 > **Path/terminology note (2026-07, epic #87, M10.3b):** This is a historical diagnostic report; its body is preserved verbatim below and is not rewritten. At the time of this reassessment, `@tuvren/stream-agui` lived at `boundaries/framework/implementations/typescript/stream-agui/` (now `typescript/streaming/agui/`) and `@tuvren/provider-bridge-ai-sdk` lived at `boundaries/providers/implementations/typescript/bridge-ai-sdk/` (now `typescript/providers/bridge-ai-sdk/`); this record's "driver"/"driver families" language predates epic #87's driver→runner rename (e.g. "Rust driver" below means a hypothetical Rust-implemented execution runner, and "additional driver families" means additional runner families). None of these terminology/location shifts change the gate posture or findings recorded below.
 
 This record is the KRT-AL003 output. It restates the staged-gate posture from
-ADR-033 and TechSpec §5.4 against fresh evidence produced by the canonical
+ADR-0033 and TechSpec §5.4 against fresh evidence produced by the canonical
 verification path on the AL closure branch, names the exact evidence each gate
 relies on, names the remaining productization blockers the staged gates do not
 purport to cover, and states plainly whether Rust framework/product work may
@@ -26,7 +26,7 @@ resume.
 
 ## 1. Staged-gate definitions under reassessment
 
-Per ADR-033 and `§5.4`, three gates govern whether the TypeScript line is
+Per ADR-0033 and `§5.4`, three gates govern whether the TypeScript line is
 productized enough and whether a non-TypeScript framework/product implementation
 line may resume:
 
@@ -73,7 +73,7 @@ are covered by the proving-host scenario lanes and the
 | --- | --- | --- | --- |
 | `Epic AL portability gate` | `bun run portability:check` → `tools/scripts/portability-gate.ts` | Nine expected packets enforced after Epic AS (`shared-core`, kernel-protocol, kernel-interop-grpc, framework-event-stream-sse, framework-react-driver, framework-interop-rust-kernel, providers-provider-api, providers-mcp, telemetry-semconv) plus two standing exceptions (AG-UI projection, AI SDK bridge), and eleven required authoritative sources (kernel CDDL, consolidated core TypeSpec, SSE TypeSpec, SSE fixtures, SSE conformance plan, MCP conformance plan, kernel interop services proto, kernel interop types proto, framework rust-kernel interop suite manifest, framework rust-kernel interop suite schema, telemetry semconv YAML). | Replaces the AF gap plan freshness check as the canonical portability proxy. |
 | `authority packet validation` | `tools/scripts/authority-packet/validate-authority-packets.ts` | Nine packets validate against `tools/schemas/authority-packet.schema.json`; the `telemetry` boundary added in AL002 is enforced; every packet has an executable verification path (`schema-validation`, `openapi-validation`, `conformance-plan`, `interop-smoke`, or `vocabulary-check`). | The §4.11 manifest contract now reads as enforced rather than aspirational. |
-| `conformance plan validation` | `tools/conformance/plan-compiler/validate-plans.ts` | Nineteen conformance plans validated against `tools/conformance/plan-compiler/conformance-plan.schema.json`, including `tool-contracts-extended.json` (now referenced through the consolidated core packet) and `event-stream-sse.json`. | ADR-030 decisive-assertion guarantee remains intact: `evidenceField` cannot be the only decisive assertion. |
+| `conformance plan validation` | `tools/conformance/plan-compiler/validate-plans.ts` | Nineteen conformance plans validated against `tools/conformance/plan-compiler/conformance-plan.schema.json`, including `tool-contracts-extended.json` (now referenced through the consolidated core packet) and `event-stream-sse.json`. | ADR-0030 decisive-assertion guarantee remains intact: `evidenceField` cannot be the only decisive assertion. |
 | `adapter protocol validation` | `tools/conformance/adapter-protocol/validate-adapter-protocol.ts` | Implementation adapter JSON-RPC manifests including the AL002 update that wires the framework adapters to the tool-contracts surface now carried by the consolidated core packet. | §4.13 contract intact. |
 | `shared conformance runner meta-conformance` | `tools/conformance/meta-conformance/run.ts` | Meta-conformance runs the shared assertion-evaluator against curated golden traces — twenty-one plans plus one thousand scripted golden cases. | Guards the runner against assertion-evaluator regressions that would otherwise mask conformance drift. |
 | `vocabulary-check verification` | `tools/conformance/vocabulary/validate-vocabulary.ts` | The telemetry semconv attribute identifiers in the resolved `otel-attributes.json` match the source IDs in `telemetry/semconv/tuvren-runtime.yaml`. | New AL002 runner. The `vocabulary-check` verification path kind is now genuinely runnable, not just declared. |
@@ -91,7 +91,7 @@ and is the literal artifact this assessment depends on.
 
 ## 3. Standing exceptions confirmed unchanged
 
-The standing exceptions from ADR-033 and Tasks.md remain narrowly scoped to two
+The standing exceptions from ADR-0033 and Tasks.md remain narrowly scoped to two
 named TypeScript implementation surfaces and are enforced by the portability
 gate:
 
@@ -130,7 +130,7 @@ gates or for blockers of the existing staged gates:
   `$.events` in a way that allows a decisive completeness check.
 - **§8.E1, E2, E7, E9, E11 future productization items** — Recorded in
   `.constitution/reports/epic-al-portable-surface-conformance-gap-inventory.md`
-  §8 as expert-grade observations. None are gate-blocking under ADR-033 and
+  §8 as expert-grade observations. None are gate-blocking under ADR-0033 and
   none belong to AL002's promotion scope.
 - **Pre-existing latent lint and typecheck issues from Epic AK** — AL003
   surfaced five post-AK issues during fresh canonical-lane execution and
@@ -178,7 +178,7 @@ Under the fresh evidence captured by `bun run verify` on the AL closure branch:
   consumes this gate as the decisive portability proxy in place of the
   historical `docs:af-gap-plan:check` proxy.
 
-The combined verdict matches ADR-033's reopening condition: Rust framework and
+The combined verdict matches ADR-0033's reopening condition: Rust framework and
 Rust product-line work may resume **only** through a new epic that explicitly
 reopens that scope, names the line, preserves the staged gates as prerequisites
 under fresh evidence, and adds only the line-specific evidence that goes
@@ -187,7 +187,7 @@ does not assert that the existing Rust kernel and Rust framework-conformance
 adapters cover a Rust framework product line, and does not authorize a Rust
 provider, Rust driver, Rust backend, Rust host, or additional host protocol.
 
-Per ADR-033 and `§5.4`, the next planning step that reopens Rust framework or
+Per ADR-0033 and `§5.4`, the next planning step that reopens Rust framework or
 product work is a fresh epic decision. AL003 closes the staged-gate
 preconditions; it does not preempt the planning decision that would actually
 schedule that work.

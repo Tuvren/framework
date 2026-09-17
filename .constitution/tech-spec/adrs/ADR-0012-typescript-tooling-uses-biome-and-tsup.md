@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-012 TypeScript Tooling Uses Biome and tsup
+### ADR-0012 TypeScript Tooling Uses Biome and tsup
 
 - **Status:** accepted
 - **Context:** The project explicitly prefers Bun-based workflows, Biome, and `tsup`.

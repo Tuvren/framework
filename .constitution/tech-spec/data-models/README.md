@@ -1,6 +1,6 @@
 # Data Models
 
-> **Authority note:** This file is descriptive documentation migrated verbatim from `TechSpec.md §3`. The authoritative durable-state schemas are boundary-owned (kernel CBOR record profile, the official SQLite/PostgreSQL backend schemas, and the capability concept JSON schemas under `spec/core/artifacts/json-schema/`). Per ADR-023/024/025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation schema oracle — it points to boundary authority rather than duplicating raw schema files.
+> **Authority note:** This file is descriptive documentation migrated verbatim from `TechSpec.md §3`. The authoritative durable-state schemas are boundary-owned (kernel CBOR record profile, the official SQLite/PostgreSQL backend schemas, and the capability concept JSON schemas under `spec/core/artifacts/json-schema/`). Per ADR-0023/ADR-0024/ADR-0025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation schema oracle — it points to boundary authority rather than duplicating raw schema files.
 
 ## 3. State & Data Modeling
 
@@ -207,7 +207,7 @@ erDiagram
   - Full persisted-state validation belongs to an explicit maintenance path
     (each backend's `fsck()`), not the hot read path. `health()` is a
     lightweight liveness/coherence probe (connectivity plus schema/migration
-    checks) with no whole-state load or validation, per issue #108/ADR-066;
+    checks) with no whole-state load or validation, per issue #108/ADR-0066;
     the full load-and-validate pass it used to run on every call is one
     `fsck()` call away.
   - SQLite may maintain backend-local validation indexes such as TurnNode lineage root/depth metadata; those indexes do not change canonical kernel record shapes.
@@ -272,11 +272,11 @@ erDiagram
 #### PostgreSQL Backend Schema
 
 - **Purpose:** Specify the service-backed PostgreSQL backend concretely enough to implement, verify, and operate without weakening the shared kernel contract.
-- **Storage Shape:** PostgreSQL schema-local storage using Postgres.js, a host-chosen `schemaName` shared by every backend instance constructed against that schema, a forward-only migration ledger, and a relational row-per-record family schema (ADR-067 / issue #110). Multiple backend instances bound to different Scopes routinely share one schema; the host-supplied Scope is bound at construction (ADR-048) and realized as row-level isolation (ADR-049), not schema-per-instance: every family table includes `scope` in its primary key and foreign keys so backends sharing one schema never observe each other's rows. Leaf record values remain deterministic-CBOR-encoded per row (ADR-008/010/011); there is no live whole-Scope `snapshot_cbor` cell after the open-time blob→relational migrator has run.
+- **Storage Shape:** PostgreSQL schema-local storage using Postgres.js, a host-chosen `schemaName` shared by every backend instance constructed against that schema, a forward-only migration ledger, and a relational row-per-record family schema (ADR-0067 / issue #110). Multiple backend instances bound to different Scopes routinely share one schema; the host-supplied Scope is bound at construction (ADR-0048) and realized as row-level isolation (ADR-0049), not schema-per-instance: every family table includes `scope` in its primary key and foreign keys so backends sharing one schema never observe each other's rows. Leaf record values remain deterministic-CBOR-encoded per row (ADR-0008/ADR-0010/ADR-0011); there is no live whole-Scope `snapshot_cbor` cell after the open-time blob→relational migrator has run.
 - **Constraints / Invariants:**
   - Development and CI standardize on `devenv`-managed `services.postgres`; the backend itself accepts normal PostgreSQL connection settings such as `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, and `PGDATABASE`.
   - Kernel writes run inside PostgreSQL transactions and take a transaction-scoped `pg_advisory_xact_lock` keyed on `(schemaName, scope)` — a SHA-256-derived bigint, see `acquireScopeTransactionLock` and `deriveAdvisoryLockKey` in `typescript/kernel/backends/postgres/src/lib/postgres-backend.ts` and `postgres-sql.ts` — before mutating state, so writers on the same constructing Scope serialize without ever locking a row.
-  - The PostgreSQL backend implementation issues targeted per-record SQL against only the touched family tables and re-validates the write set against the shared kernel-visible invariants before `COMMIT` (ADR-067 decision 3); there is no in-memory whole-state clone per transaction, no whole-Scope re-encode, and no atomic snapshot-row rewrite.
+  - The PostgreSQL backend implementation issues targeted per-record SQL against only the touched family tables and re-validates the write set against the shared kernel-visible invariants before `COMMIT` (ADR-0067 decision 3); there is no in-memory whole-state clone per transaction, no whole-Scope re-encode, and no atomic snapshot-row rewrite.
   - Scope isolation is row-level: `scope` is part of the primary key and every foreign key on every family table, so two backends sharing a schema but bound to different Scopes never observe each other's rows, with no cross-scope dedup. There is no snapshot row to provision, so a first-seen Scope needs no initialization step at all — its rows simply do not exist until the first write creates them. The kernel syscall surface carries no scope argument; the discriminator is supplied at construction only.
   - Nested backend transactions are forbidden.
   - Backend-owned PostgreSQL schema names are validated and may be disposable per proving-host or conformance run.
@@ -286,14 +286,14 @@ erDiagram
 - **Indexes / Access Paths:**
   - `backend_postgres_migrations(name)` primary key for forward-only backend migration tracking
   - Family tables (`objects`, `schemas`, `turn_trees`, `turn_tree_paths`, `ordered_path_chunks`, `turn_nodes`, `threads`, `branches`, `turns`, `runs`, `staged_results`, `observe_annotations`, `turn_node_lineage_roots`) each keyed by `(scope, …)` with deferred foreign keys
-- **Migration Notes:** `@tuvren/backend-postgres` owns schema initialization and forward-only migration names. `0001_relational_schema.sql` creates the family schema (ADR-067). Opening a pre-#110 database that still has `backend_postgres_snapshots` explodes each Scope's blob into relational rows once under an advisory lock and retires the blob table; leaf hashes are preserved. Downgrade is not supported.
+- **Migration Notes:** `@tuvren/backend-postgres` owns schema initialization and forward-only migration names. `0001_relational_schema.sql` creates the family schema (ADR-0067). Opening a pre-#110 database that still has `backend_postgres_snapshots` explodes each Scope's blob into relational rows once under an advisory lock and retires the blob table; leaf hashes are preserved. Downgrade is not supported.
 
 ##### PostgreSQL Tables
 
 This is a pointer index, not the column-level oracle (per this constitution's Authority rule: data-models docs point at boundary-owned authority, they do not restate it). The column-level authority is `typescript/kernel/backends/postgres/migrations/0001_relational_schema.sql`; `backend-postgres.schema-roster-agreement.test.ts` is the drift guard that keeps the roster consumed by posture validation and `purgeScope` in agreement with that migration.
 
 - **Family + support tables (13):** `objects`, `schemas`, `turn_trees`, `turn_tree_paths`, `ordered_path_chunks`, `turn_nodes`, `threads`, `branches`, `turns`, `runs`, `staged_results`, `observe_annotations`, `turn_node_lineage_roots` (the last is a backend-local validation index, not a canonical kernel record, mirroring the SQLite table of the same name). Each mirrors its SQLite family shape (§ SQLite Tables above) with four systematic differences from that shape:
-  - Every table carries a leading `scope TEXT COLLATE "C" NOT NULL` column that is part of its primary key and part of every foreign key (ADR-048/049 row-level isolation in a shared schema).
+  - Every table carries a leading `scope TEXT COLLATE "C" NOT NULL` column that is part of its primary key and part of every foreign key (ADR-0048/ADR-0049 row-level isolation in a shared schema).
   - Every TEXT column is declared `COLLATE "C"` so ordering and range comparisons are byte-wise and match SQLite's BINARY collation instead of the database's locale-dependent default. Most repository list surfaces already agree across backends on their own (`turnTreePaths.listByTurnTree` re-sorts via `localeCompare`, and `observeAnnotations`/`stagedResults`/`branches`/`runs`/`turns` re-sort via comparator helpers, all in JS and independent of SQL collation); `COLLATE "C"` is load-bearing specifically for SQL-only ordered surfaces such as `thread.list`'s `ORDER BY created_at_ms, thread_id` keyset pagination, and for deployment-independent SQL-level range comparisons and index usability.
   - Every foreign key is declared `DEFERRABLE INITIALLY DEFERRED` (the Postgres equivalent of SQLite's `defer_foreign_keys` pragma), letting batched writes and reclamation deletes run in any table order within one transaction and be checked only at `COMMIT`.
   - The greenfield Postgres `runs` table omits `last_step_annotations_cbor`, a column SQLite's `runs` table still carries from its migration history (`typescript/kernel/backends/sqlite/migrations/0003_pending_signals_and_annotations.sql`) but never writes to on any live path; the relational Postgres schema simply never introduced that residue column.
@@ -325,17 +325,17 @@ This is a pointer index, not the column-level oracle (per this constitution's Au
   - by repo-global generated outputs: `reports/compatibility/...`
   - by repo-global observability conventions: `spec/telemetry/semconv/...` and `typescript/telemetry/...`
 - **Migration Notes:** Existing TypeScript testkit packages remain implementation-local helper/facade packages under `typescript/<area>/testkit/` (there is also a shared top-level `typescript/testkit/` for the framework-wide testkit). Promoted compatibility evidence now flows through the shared semantic runner and implementation adapter hosts, not implementation-specific semantic runners. Epics AD through AG are archived historical context only; the live readiness baseline is the current staged-gate model plus fresh build-sequence evidence. Historical closure inventories may inform future maintenance, but current readiness claims must be generated from live checks or removed.
-- **Authority packet membership (Epic Y):** Per ADR-026, every cross-implementation semantic surface owns exactly one Authority Packet manifest at the surface's `spec/<port>/authority-packet.json`. The manifest names which boundary-owned contract sources, conformance plans, transport projections, and binding projections together carry that surface and which sources are forbidden authority for it. A cross-implementation semantic claim that is not declared in such a manifest is not authoritative. Epic Y has completed: every cross-implementation semantic surface now owns an authority packet, including the surfaces formerly tracked as `runtime-api`, `event-stream`, and callable seams (absorbed into `@tuvren/core`'s authority packet at `spec/core/authority-packet.json`) and the runner surface formerly named `driver-api` (now `@tuvren/core/runner`, also carried by `spec/core/authority-packet.json`). The `core-types` re-export shim completed its deprecation window and was removed (KRT-BM006); its surface is fully carried by `@tuvren/core` under the same packet.
+- **Authority packet membership (Epic Y):** Per ADR-0026, every cross-implementation semantic surface owns exactly one Authority Packet manifest at the surface's `spec/<port>/authority-packet.json`. The manifest names which boundary-owned contract sources, conformance plans, transport projections, and binding projections together carry that surface and which sources are forbidden authority for it. A cross-implementation semantic claim that is not declared in such a manifest is not authoritative. Epic Y has completed: every cross-implementation semantic surface now owns an authority packet, including the surfaces formerly tracked as `runtime-api`, `event-stream`, and callable seams (absorbed into `@tuvren/core`'s authority packet at `spec/core/authority-packet.json`) and the runner surface formerly named `driver-api` (now `@tuvren/core/runner`, also carried by `spec/core/authority-packet.json`). The `core-types` re-export shim completed its deprecation window and was removed (KRT-BM006); its surface is fully carried by `@tuvren/core` under the same packet.
 
 ### 3.7 BackendCapability Descriptor
 
-- **Purpose:** Per ADR-034, each `RuntimeBackend` advertises which optional kernel-level structural enumerations it supports efficiently so the kernel can reject unsupported syscalls with a typed error rather than degrading silently.
+- **Purpose:** Per ADR-0034, each `RuntimeBackend` advertises which optional kernel-level structural enumerations it supports efficiently so the kernel can reject unsupported syscalls with a typed error rather than degrading silently.
 - **Storage Shape:** Static descriptor returned synchronously by `backend.capabilities()`. Not persisted; recomputed on backend construction. Carried into the kernel by `createRuntimeKernel({ backend })` and consulted on the dispatch path of capability-gated syscalls.
 - **Constraints / Invariants:**
   - The descriptor must be honest. A backend that advertises `thread.enumeration: true` must implement `ThreadRepository.list(options?)` with consistent ordering, durable cursor stability under concurrent inserts, and read-after-write consistency for newly-created threads.
   - A backend that advertises `thread.enumeration: false` does not implement `ThreadRepository.list`; the kernel never invokes it on that backend.
   - Adding a new capability bit is semver-minor for the backend contract. Removing or repurposing a capability bit is semver-major.
-  - Conformance plans evaluate capability-gated checks per-backend: a backend that does not advertise a capability is `not_applicable` for that check set, not `unsupported` (per ADR-031's truthful-states rule, where `not_applicable` means the check set does not target the backend's advertised capability surface).
+  - Conformance plans evaluate capability-gated checks per-backend: a backend that does not advertise a capability is `not_applicable` for that check set, not `unsupported` (per ADR-0031's truthful-states rule, where `not_applicable` means the check set does not target the backend's advertised capability surface).
 - **Indexes / Access Paths:** Direct accessor on `RuntimeBackend.capabilities()`; surfaced in `health()` output for diagnostics.
 - **Migration Notes:** Existing backends (`memory`, `sqlite`, `postgres`) all advertise `thread.enumeration: true` in their initial implementation of this descriptor; the capability machinery exists to keep the kernel contract honest for future object-store-style backends.
 
@@ -364,7 +364,7 @@ export interface RuntimeBackend {
 
 ### 3.8 Durable-Read Cursor Shapes
 
-- **Purpose:** Per ADR-036, the `TuvrenRuntime` durable-read surface uses cursor-based pagination. Cursors are opaque to host developers, but their internal shape must be specified for runtime implementers and for conformance.
+- **Purpose:** Per ADR-0036, the `TuvrenRuntime` durable-read surface uses cursor-based pagination. Cursors are opaque to host developers, but their internal shape must be specified for runtime implementers and for conformance.
 - **Storage Shape:** Cursors are URL-safe base64-encoded JSON strings carrying a stable structure per cursor kind. Hosts treat them as opaque tokens and pass them back unchanged. The runtime decodes, validates, and uses the structured payload to resume enumeration.
 - **Constraints / Invariants:**
   - Cursors are stable across process restarts when the underlying durable state has not changed.
@@ -421,7 +421,7 @@ interface BranchMessagesCursorPayload {
 
 ### 3.9 Reference Host Transcript File Format
 
-- **Purpose:** Per ADR-041, the Reference Host can capture a session transcript to durable on-disk storage and replay it against a fresh runtime instance.
+- **Purpose:** Per ADR-0041, the Reference Host can capture a session transcript to durable on-disk storage and replay it against a fresh runtime instance.
 - **Storage Shape:** JSON Lines (JSONL) file: UTF-8 encoded, newline-terminated, one JSON object per line. The first line is always a `header` record; all subsequent lines are `entry` records. The file is append-only during recording.
 - **Constraints / Invariants:**
   - Field ordering within each record is alphabetical to support deterministic textual comparison across recordings.
@@ -502,11 +502,11 @@ type TranscriptFile = [TranscriptHeader, ...TranscriptEntry[]];
 
 ### 3.10 Operational Telemetry Record Model
 
-- **Purpose:** Per ADR-042, the operational telemetry surface emits structured, lineage-correlated records an operator can use to reconstruct what a turn did. The vocabulary is the authored OpenTelemetry semantic convention at `spec/telemetry/semconv/tuvren-runtime.yaml`; this section defines the TypeScript record shape the sink receives.
+- **Purpose:** Per ADR-0042, the operational telemetry surface emits structured, lineage-correlated records an operator can use to reconstruct what a turn did. The vocabulary is the authored OpenTelemetry semantic convention at `spec/telemetry/semconv/tuvren-runtime.yaml`; this section defines the TypeScript record shape the sink receives.
 - **Storage Shape:** Not persisted by the runtime; handed to the configured `TuvrenTelemetrySink` (§4.18) for the sink to export, buffer, or drop. Records are plain serializable objects keyed by runtime lineage.
 - **Constraints / Invariants:**
   - Every record carries the lineage correlation keys it can know: `threadId`, `branchId`, `turnId`, `runId`, and where relevant `turnNodeHash`. Attribute keys come from the semconv source (run id, turn id, branch id, runner id, tool call id, checkpoint hash, parent checkpoint hash, resumed-from hash, backend id, provider id).
-  - Records carry no secret material (ADR-044); attributes pass through the allowlist before reaching the sink, and any telemetry error summary is sanitized before emission.
+  - Records carry no secret material (ADR-0044); attributes pass through the allowlist before reaching the sink, and any telemetry error summary is sanitized before emission.
   - Timestamps are `EpochMs`; durations are integer milliseconds.
   - A telemetry record is informative, never authoritative: dropping all telemetry must not change durable execution outcomes.
 - **Record shape:**
@@ -552,9 +552,9 @@ export interface TelemetryEvent {
 
 ### 3.11 Execution Bounds and Bounded-Execution Result
 
-- **Purpose:** Per ADR-043, the framework enforces hard per-turn bounds above runner discretion and surfaces a typed terminal outcome when a bound is reached.
-- **Storage Shape:** `ExecutionBounds` is runtime configuration (not persisted as kernel record state); the bounded-execution outcome is surfaced as a `failed` `ExecutionResult` (ADR-035), as a fatal canonical `error` event followed by a failed `turn.end` event on the canonical stream, and as a bounded-execution telemetry event. The bound metadata itself lives on the `ExecutionResult`, the canonical `error` event details, and the telemetry record, not on the canonical `turn.end` event shape.
-- **Host-visible result rule:** The framework reuses ADR-035's normal terminal-result channel for bounded stops: `ExecutionHandle.awaitResult()` (and `OrchestrationHandle.awaitResult()` for orchestration) resolves to that failed `ExecutionResult`, while live stream consumers observe the fatal `error` event plus the failed `turn.end`; there is no separate bounded-only result variant.
+- **Purpose:** Per ADR-0043, the framework enforces hard per-turn bounds above runner discretion and surfaces a typed terminal outcome when a bound is reached.
+- **Storage Shape:** `ExecutionBounds` is runtime configuration (not persisted as kernel record state); the bounded-execution outcome is surfaced as a `failed` `ExecutionResult` (ADR-0035), as a fatal canonical `error` event followed by a failed `turn.end` event on the canonical stream, and as a bounded-execution telemetry event. The bound metadata itself lives on the `ExecutionResult`, the canonical `error` event details, and the telemetry record, not on the canonical `turn.end` event shape.
+- **Host-visible result rule:** The framework reuses ADR-0035's normal terminal-result channel for bounded stops: `ExecutionHandle.awaitResult()` (and `OrchestrationHandle.awaitResult()` for orchestration) resolves to that failed `ExecutionResult`, while live stream consumers observe the fatal `error` event plus the failed `turn.end`; there is no separate bounded-only result variant.
 - **Constraints / Invariants:**
   - Unset bound fields take the documented safe defaults; the guard is always active and there is no "disable all bounds" mode.
   - Each configured bound must be a finite positive integer; `Infinity`, `NaN`, zero, and negative values are invalid configuration.
@@ -582,7 +582,7 @@ export interface ExecutionBoundExceededDetails {
 
 ### 3.12 Fault-Injection Plan (Test-Only)
 
-- **Purpose:** Per ADR-045, a test-only seam interrupts persistence at controlled points so crash-recovery and concurrency invariants can be verified. This shape lives in `@tuvren/kernel-testkit` and is never reachable from production packages.
+- **Purpose:** Per ADR-0045, a test-only seam interrupts persistence at controlled points so crash-recovery and concurrency invariants can be verified. This shape lives in `@tuvren/kernel-testkit` and is never reachable from production packages.
 - **Storage Shape:** In-memory test configuration consumed by `createFaultInjectingBackend`; never persisted.
 - **Constraints / Invariants:**
   - The seam is testkit-only: no production package, backend, runtime, host, or runner may import or expose it.
@@ -613,7 +613,7 @@ export declare function createFaultInjectingBackend(
 
 ### 3.13 Capability Orchestration Concept Shapes
 
-- **Purpose:** Per ADR-046, the runtime represents tools as a composition of Tool Surface, Capability, Execution Class, Binding, Endpoint, Policy, and Observation rather than a single `execute`-shaped tool. These shapes are owned by `@tuvren/core/capabilities`; they are runtime/configuration types, not new kernel record state.
+- **Purpose:** Per ADR-0046, the runtime represents tools as a composition of Tool Surface, Capability, Execution Class, Binding, Endpoint, Policy, and Observation rather than a single `execute`-shaped tool. These shapes are owned by `@tuvren/core/capabilities`; they are runtime/configuration types, not new kernel record state.
 - **Storage Shape:** Not persisted as kernel records. Capability invocations are observed on the canonical event stream (§4.5) and operational telemetry (§3.10) with an execution-class attribution; durable lineage records the invocation result the way it already records tool results, with no secret material and no provider/client-owned execution internals.
 - **Constraints / Invariants:**
   - Every model-visible tool call resolves to exactly one Capability invocation against exactly one Execution Class (the conceptual invariant); there is no unclassified tool call.
@@ -621,7 +621,7 @@ export declare function createFaultInjectingBackend(
   - A Binding names exactly one Execution Class and one Endpoint; a Capability may carry multiple candidate Bindings, and the resolver selects/admits one per context.
   - `ExecutionClass` is a closed set: `provider-native | provider-mediated | tuvren-server | tuvren-client`. MCP is never an execution class; it is an Endpoint/binding mechanism classified by who invokes or runs the server (`endpoint.kind === "mcp-server"`).
   - Observation limits are per class and the runtime must not claim control it lacks: only `tuvren-server` has full lifecycle control; `provider-native`/`provider-mediated` are observed from provider-exposed events/results; `tuvren-client` is observed through the dispatch/result envelope plus client-reported details.
-  - A `TuvrenToolDefinition` with `execute` (ADR-038) is exactly a Capability with a `tuvren-server` Binding to the in-process Endpoint (back-compat; no host change).
+  - A `TuvrenToolDefinition` with `execute` (ADR-0038) is exactly a Capability with a `tuvren-server` Binding to the in-process Endpoint (back-compat; no host change).
 - **Shapes:**
 
 ```ts
@@ -706,14 +706,14 @@ export interface CapabilityInvocationAttribution {
 
 ### 3.14 Duplex Session Frame Shapes
 
-- **Purpose:** Per ADR-060, a remote session peer that cannot hold an in-process `ExecutionHandle` needs a framework-owned wire vocabulary for the same four client-to-agent interactions the handle already exposes in-process (`resolveApproval`, `steer`, `cancel`) plus a Tuvren-client capability's dispatch/result exchange (§3.13, §4.21). These shapes are owned by `spec/host/session/` (packet `tuvren.framework.host-session`); `ClientInvocationEnvelope` and `ClientReportedResult` are owned by `@tuvren/core/capabilities` and are documented here because §3.13's prose references them without ever spelling out their fields.
+- **Purpose:** Per ADR-0060, a remote session peer that cannot hold an in-process `ExecutionHandle` needs a framework-owned wire vocabulary for the same four client-to-agent interactions the handle already exposes in-process (`resolveApproval`, `steer`, `cancel`) plus a Tuvren-client capability's dispatch/result exchange (§3.13, §4.21). These shapes are owned by `spec/host/session/` (packet `tuvren.framework.host-session`); `ClientInvocationEnvelope` and `ClientReportedResult` are owned by `@tuvren/core/capabilities` and are documented here because §3.13's prose references them without ever spelling out their fields.
 - **Storage Shape:** Not persisted. Frames are transport ephemera that exist only on the wire between a session binding and a remote session peer; durable meaning enters the system only through the existing handle/boundary paths a frame is routed to (a `client_result` frame becomes a canonical capability result through the Client Endpoint Boundary exactly as an in-process `AttachedClientEndpoint` result would; an `approval_response` frame becomes a `resolveApproval` call with the same kernel checkpoint/replacement-Run consequences as §4.2).
 - **Constraints / Invariants:**
   - `sessionId` is stable across a `resolveApproval` handle replacement — it identifies the session, not the current internal `ExecutionHandle` instance, so a remote peer never needs to detect or react to handle churn.
   - `correlationId` is always client-generated on an inbound frame and always echoed back on any resulting `session_rejection`, so a client can match a rejection to the frame that caused it without a server-assigned identity round trip.
   - No inbound frame is ever silently dropped: every inbound frame produces either a routed effect on the held handle or exactly one `session_rejection` naming a `SessionRejectionCode`.
-  - `leaseToken` on `ClientInvocationEnvelope`/`ClientReportedResult` is confined to the session channel between the runtime and the executing client endpoint; it is never broadcast on the canonical event stream (§4.5), which is the rationale ADR-060 records for session-frame-only promotion rather than extending `TuvrenStreamEvent`.
-  - `idempotencyKey` and `leaseToken` are distinct on `ClientInvocationEnvelope`: `leaseToken` guards staleness of *this* dispatch and is echoed back by the client; `idempotencyKey` (ADR-052, amended by ADR-065) dedupes the *external side effect* the client environment may re-issue after a preemption recovery or an ADR-063 redelivery, is derived from `(turnId, callId)` so it is stable across those recoveries, and is not echoed.
+  - `leaseToken` on `ClientInvocationEnvelope`/`ClientReportedResult` is confined to the session channel between the runtime and the executing client endpoint; it is never broadcast on the canonical event stream (§4.5), which is the rationale ADR-0060 records for session-frame-only promotion rather than extending `TuvrenStreamEvent`.
+  - `idempotencyKey` and `leaseToken` are distinct on `ClientInvocationEnvelope`: `leaseToken` guards staleness of *this* dispatch and is echoed back by the client; `idempotencyKey` (ADR-0052, amended by ADR-0065) dedupes the *external side effect* the client environment may re-issue after a preemption recovery or an ADR-0063 redelivery, is derived from `(turnId, callId)` so it is stable across those recoveries, and is not echoed.
 - **Shapes:**
 
 ```ts
@@ -777,13 +777,13 @@ export interface ClientInvocationEnvelope {
   callId: string;
   capabilityId: string;
   /**
-   * Side-effect-once idempotency identity for this invocation (ADR-052, as
-   * amended by ADR-065).
+   * Side-effect-once idempotency identity for this invocation (ADR-0052, as
+   * amended by ADR-0065).
    *
    * A deterministic identity derived from the turn id and call id — the logical
    * call identity. The client environment can present it to the external system
    * it drives so a dispatch retried, re-issued after an approval resume or a
-   * preemption recovery, or redelivered after a reconnect (ADR-063) is
+   * preemption recovery, or redelivered after a reconnect (ADR-0063) is
    * deduplicated; every such dispatch of one logical call presents an identical
    * key. Distinct from `leaseToken`: the lease token guards staleness of *this*
    * dispatch (and is echoed back), while the idempotency key dedupes the
@@ -792,7 +792,7 @@ export interface ClientInvocationEnvelope {
    * iteration, per resume, and per recovery) and the fencing token rotates on
    * every lease renewal, so either would make the identity unstable across
    * exactly the retries and recoveries it exists to survive; fencing remains
-   * write authority only (ADR-052 §3).
+   * write authority only (ADR-0052 §3).
    */
   idempotencyKey?: string;
   input: unknown;
@@ -822,7 +822,7 @@ export interface ClientReportedResult {
 
 ### 3.15 Event-Stream Resume Shapes
 
-- **Purpose:** Per ADR-061, a reconnecting stream client needs a position vocabulary the framework owns: a monotonic per-turn sequence and an opaque resume cursor anchored to kernel history. Owned by `spec/streaming/resume/` (packet `tuvren.framework.event-stream-resume`); projected by `@tuvren/stream-core`.
+- **Purpose:** Per ADR-0061, a reconnecting stream client needs a position vocabulary the framework owns: a monotonic per-turn sequence and an opaque resume cursor anchored to kernel history. Owned by `spec/streaming/resume/` (packet `tuvren.framework.event-stream-resume`); projected by `@tuvren/stream-core`.
 - **Storage Shape:** Not persisted. Sequencing envelopes and cursors are wire ephemera; the bounded replay window is an in-memory host-owned ring buffer. Durable truth stays in kernel history — `turnNodeHash` in the cursor references it but the kernel never stores or re-projects fine-grained stream events.
 - **Constraints / Invariants:**
   - `sequence` starts at 0 at each `turn.start` and increments by exactly 1 per sequenced event within the turn.
@@ -856,7 +856,7 @@ export type ReplayResult =
 
 ### 3.16 WebSocket Carriage Shapes
 
-- **Purpose:** Per ADR-062, a WebSocket transport carrying the §3.14 duplex session frames and the §3.15 resume cursor over one bidirectional connection needs its own carriage-level wire vocabulary: a handshake pair, an outer frame envelope, a heartbeat ping/pong pair, and a connection-level close-code vocabulary. Owned by `spec/streaming/ws/` (packet `tuvren.framework.event-stream-ws`); projected by `@tuvren/stream-ws`. This module validates only the carriage fields it reads — the `kind` discriminator, handshake fields, and the `cursor` string — and never the inner `frame` payload, which stays owned and validated by the `tuvren.framework.host-session` binding.
+- **Purpose:** Per ADR-0062, a WebSocket transport carrying the §3.14 duplex session frames and the §3.15 resume cursor over one bidirectional connection needs its own carriage-level wire vocabulary: a handshake pair, an outer frame envelope, a heartbeat ping/pong pair, and a connection-level close-code vocabulary. Owned by `spec/streaming/ws/` (packet `tuvren.framework.event-stream-ws`); projected by `@tuvren/stream-ws`. This module validates only the carriage fields it reads — the `kind` discriminator, handshake fields, and the `cursor` string — and never the inner `frame` payload, which stays owned and validated by the `tuvren.framework.host-session` binding.
 - **Storage Shape:** Not persisted. Every shape below is wire ephemera exchanged between a session binding and a remote session peer over a single socket; no shape here is written to durable state.
 - **Constraints / Invariants:**
   - Handshake-first: the first message a client sends must be a schema-valid `WsHandshakeRequest`, and the first message a server sends must be a `WsHandshakeAck`; anything else on the first exchange is `handshake_invalid` (close `4000`).

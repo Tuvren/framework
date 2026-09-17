@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-017 Native Toolchains Remain Authoritative Inside Each Implementation Tree
+### ADR-0017 Native Toolchains Remain Authoritative Inside Each Implementation Tree
 
 - **Status:** accepted
 - **Context:** A language-neutral runtime does not imply a fake universal toolchain. TypeScript, Rust, and later languages each have real package, build, and test workflows that must stay first-class if the repo is to remain honest and maintainable.

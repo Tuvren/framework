@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-007 Memory and SQLite Are the Official Initial Backends
+### ADR-0007 Memory and SQLite Are the Official Initial Backends
 
 - **Status:** accepted
 - **Context:** The project needs a usable development backend immediately and a usable persistent backend package without pretending that one backend defines Kraken’s ontology.

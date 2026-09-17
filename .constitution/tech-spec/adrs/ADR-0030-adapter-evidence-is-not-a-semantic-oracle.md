@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-030 Adapter Evidence Is Not a Semantic Oracle
+### ADR-0030 Adapter Evidence Is Not a Semantic Oracle
 
 - **Status:** accepted
 - **Context:** Promoted checks can appear to pass while relying on adapter-provided `evidence` fields, implementation-local verifier helpers, fake-kernel harness output, or check-result proxy fields. That recreates an implementation oracle inside the adapter even when the shared runner owns formal pass/fail mechanics.

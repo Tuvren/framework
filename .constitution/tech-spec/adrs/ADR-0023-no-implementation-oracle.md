@@ -5,12 +5,12 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-023 No Implementation Oracle
+### ADR-0023 No Implementation Oracle
 
 > **Path/terminology note (2026-07, epic #87, M10.3b):** This ADR is a historical decision record; its body below is preserved verbatim and is not rewritten. Epic #87 renamed "driver" → "runner" repo-wide (e.g. the ReAct Driver → the ReAct Runner, `@tuvren/driver-api` → the `@tuvren/core/runner` subpath, `driverId`/`DriverKind` → `runnerId`/`RunnerKind`) and relocated `boundaries/<area>/...` paths into `spec/<port>/...` (language-neutral authority) plus `typescript/<area>/...` / `rust/<area>/...` (language-specific implementations); `implementations/<lang>/` subtrees moved to top-level `typescript/`/`rust/` trees. Any `driver` term or `boundaries/`-rooted path below reflects the pre-epic-#87 name or location as of this decision's date; see `.constitution/tech-spec/guidelines.md` and `.constitution/tech-spec/stack.md` for the current map. This note does not change the decision recorded below.
 
 - **Status:** accepted
 - **Context:** Several deferred shared contract surfaces (`runtime-api`, `driver-api`, `event-stream`, `core-types`, callable seams) still describe their cross-language meaning by pointing at a TypeScript or Rust implementation file. That posture turns the implementation language into the silent oracle, which is exactly the failure mode CAP-P0-037 forbids.
 - **Decision:** No cross-implementation semantic claim, conformance assertion, or compatibility claim may cite any file under `boundaries/<area>/contracts/<surface>/implementations/<lang>/`, `boundaries/<area>/implementations/<lang>/`, or any other implementation-language source tree as authority. Implementation-language files may host bindings, adapters, generated projections, local tests, and optimization logic; they may not define portable truth.
-- **Consequences:** Every surface that currently relies on a TypeScript or Rust file as authority must promote to a boundary-owned authority packet (ADR-026) or be explicitly classified as implementation-specific in the Epic Y inventory. Existing `@tuvren/runtime-api` and other facade packages remain valid binding projections, but the phrase "semantic anchor" no longer attaches to any TypeScript package; the anchor is the authority packet manifest.
+- **Consequences:** Every surface that currently relies on a TypeScript or Rust file as authority must promote to a boundary-owned authority packet (ADR-0026) or be explicitly classified as implementation-specific in the Epic Y inventory. Existing `@tuvren/runtime-api` and other facade packages remain valid binding projections, but the phrase "semantic anchor" no longer attaches to any TypeScript package; the anchor is the authority packet manifest.
 

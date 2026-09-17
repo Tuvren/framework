@@ -5,7 +5,7 @@ date: 2026-06-12
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
-### ADR-028 Forbidden Implementation Vocabulary in Authority Sources
+### ADR-0028 Forbidden Implementation Vocabulary in Authority Sources
 
 - **Status:** accepted
 - **Context:** TypeScript primitives (`Promise`, `AsyncIterable`, `AbortSignal`, `Uint8Array`, `Buffer`, language-native `Error`, `unknown`, `Record<string, unknown>`, callable signatures, Node/Bun/Deno runtime assumptions) and Rust ownership/lifetime vocabulary are convenient at the implementation layer but are not portable cross-language semantics. Allowing them inside authority sources lets the implementation language quietly leak into the contract.

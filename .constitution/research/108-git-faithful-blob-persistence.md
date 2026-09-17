@@ -5,7 +5,7 @@ date: "2026-09-03"
 # Issue #108 — Make the blob-per-scope persistence path Git-faithful
 
 > **Status:** complete. Evidence/completion report for GitHub issue #108,
-> closed out with [`ADR-066`](../tech-spec/adrs/ADR-0066-blob-per-scope-persistence-retained-git-faithful-operations.md)
+> closed out with [`ADR-0066`](../tech-spec/adrs/ADR-0066-blob-per-scope-persistence-retained-git-faithful-operations.md)
 > (accepted).
 > **Origin:** [`SPK-BK007`](../spikes/SPK-KRT-BK007.md) · audit finding `[C-01]`
 > (`audit-2026-07-04-170703-post-epic-87-baseline.md`) · `.constitution/tech-spec/changelog.md`
@@ -19,7 +19,7 @@ date: "2026-09-03"
 > the end of this report is the final milestone: an executive summary of every
 > area's disposition and the written recommendation issue #108 asked for,
 > feeding — not making — the separate Option-B storage-shape decision per
-> ADR-066.
+> ADR-0066.
 
 ## M1 — Phase-attributed baseline
 
@@ -682,11 +682,11 @@ digest (`node:crypto` `createHash("sha256")`, synchronous — chosen over the
 kernel-protocol `hashOpaqueObjectBytes` helper specifically because that
 helper is `async` (WebCrypto) and this runs on the hot load/write path; the
 digest is an internal cache-validity key only, never persisted, never
-compared cross-process, and unrelated to any ADR-008 canonical
+compared cross-process, and unrelated to any ADR-0008 canonical
 content-address) of the last `snapshot_cbor` bytes this instance itself
 saw, and that snapshot's already-decoded `BackendState`. One entry per
 instance is correct because one `PostgresBackend` instance is bound to
-exactly one Scope's row (ADR-048/ADR-049).
+exactly one Scope's row (ADR-0048/ADR-0049).
 
 - **Read side** (`loadPersistedStateForUpdate`,
   `postgres-backend-persistence.ts`): the `SELECT ... FOR UPDATE` row lock
@@ -954,7 +954,7 @@ the next candidate in the M1/M2 narrative).
   Scope's row, is exactly the shape that produces a 100% hit rate. Two
   realistic deployment shapes get little or none of this speedup:
   - **A host that constructs a fresh `PostgresBackend` per request** (a
-    reasonable reading of the ADR-048 per-request-scoped-backend pattern)
+    reasonable reading of the ADR-0048 per-request-scoped-backend pattern)
     never reuses an instance's cache across requests — every request's
     first (and often only) `transact()` is a cache miss, so write latency
     stays at the pre-M3 baseline. The cache only helps a host that keeps a
@@ -1050,7 +1050,7 @@ arrays feeding that blob are derived, and reducing it would require
 changing blob granularity (splitting the canonical encoding unit below
 "the whole Scope"), which issue #108 marks a hard non-goal for this area
 and reserves for the separate Option-B storage-shape decision (feeding
-ADR-066).
+ADR-0066).
 
 **Review debt (M5 follow-up):** the ad-hoc script that produced the
 7.237 ms/14.250 ms numbers above was not committed at M4 time (see "What
@@ -1093,11 +1093,11 @@ record; none of this is part of the committed change):
 - Both caches were promoted together, from the same `draftState`, only
   after the same successful `COMMIT`, mirroring M3's rollback-safety
   argument exactly.
-- **The mandatory byte-identity gate (ADR-008 proof):** a seeded-RNG
+- **The mandatory byte-identity gate (ADR-0008 proof):** a seeded-RNG
   (mulberry32, seed `0x5eed1234`, logged at test start) sequence of 30
   randomized single- and multi-family mutation steps was run through the
   public `transact()` surface on a warm-cached instance. After **every**
-  commit (setup + 39 deterministic ADR-011 chunk-growth steps + 30
+  commit (setup + 39 deterministic ADR-0011 chunk-growth steps + 30
   randomized steps = **70 total comparison points**, exceeding the ≥25
   minimum), the persisted `snapshot_cbor` was compared byte-for-byte
   against a fresh, cache-less `PostgresBackend` instance replaying the
@@ -1105,7 +1105,7 @@ record; none of this is part of the committed change):
   once the design was correct.
 - **The fuzz test earned its keep during development — it caught a real
   bug, not a hypothetical one.** Before a fix, at the step where an ordered
-  turn-tree path first crossed the ADR-011 chunking threshold, the
+  turn-tree path first crossed the ADR-0011 chunking threshold, the
   warm-cached instance's persisted bytes were missing the
   newly-materialized `StoredOrderedPathChunk` entirely: `turnTreePaths.putMany`
   can transitively mutate `state.orderedPathChunks` as a side effect
@@ -1199,7 +1199,7 @@ made larger without changing what it targets. The residual ~90–96% cost —
 canonical CBOR serialization of the entire composed snapshot on every
 write — is a property of the current one-blob-per-Scope storage shape, not
 of family-level derivation, so no per-family caching strategy can reduce it
-by design. This is the concrete evidence that feeds the ADR-066
+by design. This is the concrete evidence that feeds the ADR-0066
 residual-curve question: the curve is not flat because A1/A2 "didn't
 work" — it is flat because the next bottleneck downstream (canonical
 serialization of the full composed value) sits entirely outside what A1/A2
@@ -2186,9 +2186,9 @@ that the outcome looks the same either way") and proves the wiring directly.
 This section closes out issue #108: an executive summary of every area's
 disposition, and the written recommendation the issue asked for — grounded
 in the measured data above, not asserted independently of it. It is
-accompanied by [`ADR-066`](../tech-spec/adrs/ADR-0066-blob-per-scope-persistence-retained-git-faithful-operations.md)
+accompanied by [`ADR-0066`](../tech-spec/adrs/ADR-0066-blob-per-scope-persistence-retained-git-faithful-operations.md)
 (accepted), which records the architectural decision this report's evidence
-supports; this report remains the evidentiary record ADR-066 cites rather
+supports; this report remains the evidentiary record ADR-0066 cites rather
 than restates.
 
 ### Executive summary
@@ -2219,7 +2219,7 @@ paying to remove (B2, D1). Every disposition in this issue rests on a
 committed, reproducible bench — none on assertion.
 
 **The residual curve.** With health/validation and reclaim structurally
-fixed, what remains is exactly what ADR-066 records as irreducible at this
+fixed, what remains is exactly what ADR-0066 records as irreducible at this
 storage shape:
 
 - **Postgres write is O(blob).** `encodeDeterministicKernelRecord`'s
@@ -2271,7 +2271,7 @@ current shipped baseline since M4 was not landed):
 
 **The verdict.** The row-per-record/path-granular redesign (Option B,
 SPK-BK007) **remains justified at scale**, and this report — together with
-ADR-066 — is the evidence that decides *at what scale*, not whether. Issue
+ADR-0066 — is the evidence that decides *at what scale*, not whether. Issue
 #108 has already extracted essentially all of the available in-place gain:
 A1/A2's negative result (a correct, fully proven mechanism that still could
 not clear the landing bar) and B2's Amdahl-bounded closure (validation's own
@@ -2289,10 +2289,10 @@ O(N) full-validation floor on a path meant to be occasional — has exhausted
 what this issue's operational optimizations can buy it and is the concrete
 trigger condition for opening the Option-B redesign epic (Epic BQ), using
 this report's committed bench scripts and numbers as the regression
-baseline that redesign must beat, per ADR-066.
+baseline that redesign must beat, per ADR-0066.
 
 ### Validation performed for the closing summary
 
 - No production code changed in this milestone; only this report,
-  `ADR-066`, and constitution reconciliation edits.
+  `ADR-0066`, and constitution reconciliation edits.
 - `git diff | grep '\[DEBUG-'` — no matches outside this report's own prose.
