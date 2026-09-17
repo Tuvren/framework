@@ -367,7 +367,7 @@ bill_of_materials:
       note: "SemVer: 33.5 (libprotoc provisioned by devenv pkgs.protobuf)"
   - name: protoc-gen-es
     role: tooling
-    version: 2.11.0
+    version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
     justification: Protoc plugin for current kernel interop TypeScript binding generation; provisioned by devenv and aligned with @bufbuild/protobuf@2.11.0.
     radar: adopt
@@ -379,7 +379,7 @@ bill_of_materials:
       note: "SemVer: 2.11.0 (pkgs.protoc-gen-es provisioned via devenv)"
   - name: weaver
     role: tooling
-    version: 0.21.2
+    version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
     justification: OpenTelemetry semantic-convention code generator CLI for cross-language telemetry vocabulary; provisioned by devenv.
     radar: adopt

@@ -62,5 +62,3 @@
 - **Context:** Deploys, operates, and scales Tuvren inside multi-tenant production infrastructure or enterprise environments, managing storage substrates, tenancy boundaries, data lifecycles, and operational observability.
 - **Goals:** Embed Tuvren as an isolated multi-tenant SaaS substrate in any topology; enforce tenant isolation-by-construction; satisfy data retention and right-to-erasure via reachability reclamation and crypto-shredding; decouple the operational telemetry funnel from the load-bearing session content funnel; and ensure multi-worker execution never permits split-brain preemption or side-effect re-execution.
 - **Frictions:** Multi-tenant substrates often leak state across tenants through global caches or shared addressing; un-erasable history prevents enterprise compliance; telemetry backpressure or destination outages frequently cascade into core session failures; and distributed worker restarts risk duplicate side effects without strict backend-authoritative lease clocks and idempotency identity.
-
-
