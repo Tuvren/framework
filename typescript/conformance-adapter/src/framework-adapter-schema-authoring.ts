@@ -115,7 +115,7 @@ function runSchemaAuthoringDefineTool(
   });
 }
 
-// ── Branch schema factory (ADR-038 ordering) ──────────────────────────────────
+// ── Branch schema factory (ADR-0038 ordering) ──────────────────────────────────
 
 function buildBranchSchema(branch: string): FlexibleSchema<unknown> {
   switch (branch) {
@@ -146,7 +146,7 @@ function buildBranchSchema(branch: string): FlexibleSchema<unknown> {
         },
       } as unknown as FlexibleSchema<unknown>;
 
-    // Branch 4: Zod v3 compat — ADR-038 ambiguous case.
+    // Branch 4: Zod v3 compat — ADR-0038 ambiguous case.
     // ~standard.validate is rigged to fail; safeParse succeeds.
     // Correct routing via the Zod path (safeParse) produces validateSuccess: true.
     // Incorrect routing via Standard path would produce validateSuccess: false.

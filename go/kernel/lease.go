@@ -14,7 +14,7 @@
 
 // This file implements the M3 run-liveness capability (kernel.run-liveness):
 // run execution leases as described by docs/KrakenKernelSpecification.md
-// §5.2 Run Execution Leases (ADR-050). The backend-authoritative clock
+// §5.2 Run Execution Leases (ADR-0050). The backend-authoritative clock
 // requirement means every timestamp here comes from k.Clock (the same clock
 // the Backend was constructed with), never from wall-clock time read
 // directly — this is what lets a deterministic test clock (ManualClock,

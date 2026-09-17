@@ -17,7 +17,7 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
- * KRT-BG004 — No-retry-on-authority-loss + client-result-as-proposal (ADR-052).
+ * KRT-BG004 — No-retry-on-authority-loss + client-result-as-proposal (ADR-0052).
  *
  * Acceptance criteria (Gherkin):
  *   Given a worker loses its run lease while a nonRetryable invocation is in flight

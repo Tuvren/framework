@@ -25,7 +25,7 @@ import {
 } from "../src/lib/ws-close-codes.js";
 
 describe("ws close codes", () => {
-  test("match the ADR-062 §5 close-code vocabulary", () => {
+  test("match the ADR-0062 §5 close-code vocabulary", () => {
     expect(WS_CLOSE_CODE_HANDSHAKE_INVALID).toBe(4000);
     expect(WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED).toBe(4001);
     expect(WS_CLOSE_CODE_SESSION_NOT_FOUND).toBe(4002);

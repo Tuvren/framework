@@ -27,7 +27,7 @@ export type PostgresPersistenceErrorFactory = (
   context?: Record<string, unknown>
 ) => Error;
 
-/** Checked-in relational migration (issue #110 / ADR-067). */
+/** Checked-in relational migration (issue #110 / ADR-0067). */
 export const RELATIONAL_SCHEMA_MIGRATION_NAME = "0001_relational_schema.sql";
 
 /**

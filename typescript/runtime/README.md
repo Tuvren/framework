@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0.
 
 # @tuvren/runtime — internal orchestration engine
 
-> **Internal package. Not a host-facing API.** (ADR-057)
+> **Internal package. Not a host-facing API.** (ADR-0057)
 
 `@tuvren/runtime` is the internal orchestration engine that drives a Tuvren
 turn: the runtime core loop, orchestration runtime, runner registry, capability
@@ -28,7 +28,7 @@ A host composes the framework through the **curated host-facing SDK boundary**:
 
 `createTuvren` (from `@tuvren/sdk`) accepts **constructed instances only** — you
 build the backend and runner from their leaf packages and pass them in; there
-are no `"memory"` / `"react"` string shorthands (ADR-057 §2).
+are no `"memory"` / `"react"` string shorthands (ADR-0057 §2).
 
 An automated boundary check in the canonical verification path fails if a file
 under `typescript/host/**` imports `@tuvren/runtime` (or a kernel package).
@@ -36,7 +36,7 @@ under `typescript/host/**` imports `@tuvren/runtime` (or a kernel package).
 ## Stability
 
 This package **remains published for transparency but is marked internal and is
-not semver-guaranteed** (ADR-057 §5). Its surface can change without a major
+not semver-guaranteed** (ADR-0057 §5). Its surface can change without a major
 version bump. Depend on `@tuvren/core` + `@tuvren/sdk` + leaf packages instead;
 those carry the stable, semver-guaranteed host-facing contract.
 

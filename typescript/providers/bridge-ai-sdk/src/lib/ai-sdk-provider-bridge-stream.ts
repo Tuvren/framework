@@ -348,7 +348,7 @@ function createReasoningDeltaChunk(
  * sequence; declared provider-native/mediated tool results become
  * `provider_tool_result` chunks; undeclared provider-owned activity and
  * `file` / `tool-approval-request` parts are rejected (baseline protection,
- * KRT-BH005 / ADR-055). Returns `undefined` when the part is not a tool part.
+ * KRT-BH005 / ADR-0055). Returns `undefined` when the part is not a tool part.
  */
 function handleToolStreamPart(
   part: LanguageModelV3StreamPart,
@@ -417,7 +417,7 @@ function handleToolInputStartPart(
   part: Extract<LanguageModelV3StreamPart, { type: "tool-input-start" }>,
   state: StreamMappingState
 ): ProviderStreamChunk[] {
-  // KRT-BH005 / ADR-055: real providers stream a provider-executed
+  // KRT-BH005 / ADR-0055: real providers stream a provider-executed
   // (providerExecuted/dynamic) tool as tool-input-start → tool-input-delta →
   // tool-input-end → tool-call → tool-result (e.g. @ai-sdk/openai Responses
   // web_search / code_interpreter). Only tool-input-start carries the
@@ -528,7 +528,7 @@ function handleToolInputEndPart(
 /**
  * Maps a complete `tool-call` part. Declared provider-owned calls are
  * skipped (their attribution comes from the matching `tool-result`; see the
- * inline KRT-BH005 / ADR-055 note); client calls are correlated against any
+ * inline KRT-BH005 / ADR-0055 note); client calls are correlated against any
  * incremental tool-input state, then emit the missing prelude chunks and a
  * `tool_call_done` exactly once per provider call id.
  */
@@ -536,7 +536,7 @@ function handleToolCallStreamPart(
   part: Extract<LanguageModelV3StreamPart, { type: "tool-call" }>,
   state: StreamMappingState
 ): ProviderStreamChunk[] {
-  // KRT-BH005 / ADR-055: a provider-executed (providerExecuted/dynamic) tool-call
+  // KRT-BH005 / ADR-0055: a provider-executed (providerExecuted/dynamic) tool-call
   // declared as provider-native/mediated is the provider's own executed call;
   // skip it (the matching tool-result yields the provider_tool_result attribution
   // — AY002/AY004) and emit no client-facing tool_call chunk. A tool-state already
@@ -877,7 +877,7 @@ function flushCompletedToolCalls(
  * Aggregates everything captured during the stream (raw parts, usage,
  * request body, response headers/metadata, sources, per-part metadata,
  * warnings) into the finish chunk's provider metadata. Bridge-captured
- * extras are secret-screened inside {@link buildProviderMetadata} (ADR-044).
+ * extras are secret-screened inside {@link buildProviderMetadata} (ADR-0044).
  */
 function buildStreamFinishProviderMetadata(
   providerMetadata: Record<string, unknown> | undefined,

@@ -957,7 +957,7 @@ export async function createTurnTree(
     now: () => EpochMs;
     /**
      * Base tree this write is a structurally-guaranteed append-only
-     * extension of (KRT-BK008, ADR-011). Only pass this when `changes` was
+     * extension of (KRT-BK008, ADR-0011). Only pass this when `changes` was
      * produced by `applyStagedResultsToManifest` against the manifest at
      * this exact hash — an arbitrary/overwritten `changes` set must omit it,
      * since the chunk-aware caller trusts append-only-ness structurally

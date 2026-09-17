@@ -4,7 +4,7 @@ Bridges a [Vercel AI SDK](https://sdk.vercel.ai) `LanguageModelV3` into a Tuvren
 `TuvrenProvider`, so the runtime's runner can call any AI-SDK-backed model
 through the neutral provider contract (`generate` / `stream`).
 
-## Secret Isolation — Edge Confinement (ADR-044)
+## Secret Isolation — Edge Confinement (ADR-0044)
 
 Provider credentials are **confined to the integration edge**. They are accepted
 only by the provider bridge (and the underlying AI SDK model) at request time and
@@ -23,7 +23,7 @@ These values authenticate the model request and nothing else. They are **never**
 - placed on `TelemetrySpan` / `TelemetryEvent` attributes, or
 - serialized into REPL transcripts.
 
-Provider continuity artifacts (ADR-005; opaque continuation tokens) are non-secret
+Provider continuity artifacts (ADR-0005; opaque continuation tokens) are non-secret
 by contract and must not carry credential material. The Kernel Boundary, Durable
 State Boundary, Telemetry & Observability Boundary, canonical event stream, and
 transcript surfaces are credential-free zones.

@@ -11,7 +11,7 @@ and your chosen leaf adapters (a backend such as
 a runner such as
 [`@tuvren/runner-react`](https://www.npmjs.com/package/@tuvren/runner-react),
 a provider bridge, stream adapters, …). This package peer-depends on a
-single shared `@tuvren/core` instance (ADR-037).
+single shared `@tuvren/core` instance (ADR-0037).
 
 Its dependency graph includes internal engine packages (`@tuvren/runtime`
 and kernel packages) that are published only for dependency resolution —

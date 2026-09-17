@@ -59,7 +59,7 @@ export function createReplHost(config: ReplConfig): ReplHost {
       }),
     ]),
     kernel,
-    // Correlate operational telemetry to the host-bound Scope (ADR-048,
+    // Correlate operational telemetry to the host-bound Scope (ADR-0048,
     // KRT-BE008). The Scope never crosses the kernel transport seam; it only
     // tags telemetry and (via the transcript header) the recorded session.
     ...(config.scope === undefined ? {} : { scope: config.scope }),
@@ -87,7 +87,7 @@ export async function createReplHostUsingCreateTuvren(
       providerCallMode: "stream",
     }),
     provider,
-    // Bind operational telemetry to the host's Scope (ADR-048, KRT-BE008); the
+    // Bind operational telemetry to the host's Scope (ADR-0048, KRT-BE008); the
     // durable backend is bound to the same Scope via createBackend.
     ...(config.scope === undefined
       ? {}
@@ -215,7 +215,7 @@ function createKernel(config: ReplConfig) {
 }
 
 function createBackend(config: ReplConfig): RuntimeBackend {
-  // The host binds every durable backend to its Scope (ADR-048/049, KRT-BE008),
+  // The host binds every durable backend to its Scope (ADR-0048/0049, KRT-BE008),
   // so a `--scope` REPL session isolates durable state by construction; an
   // unset Scope falls through to the single-tenant default each backend applies.
   const scopeOption = config.scope === undefined ? {} : { scope: config.scope };

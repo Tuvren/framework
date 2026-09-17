@@ -52,7 +52,7 @@ import {
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
-// ADR-011 frames the ordered-path chunking threshold/size as an
+// ADR-0011 frames the ordered-path chunking threshold/size as an
 // implementation constant, not a protocol constant, so each storage-owning
 // module (memory/postgres/sqlite backends, and this runtime caller) declares
 // its own copy rather than importing a shared one. Kept in sync across all
@@ -170,7 +170,7 @@ export function toStoredTurnTreePath(
 }
 
 /**
- * Chunk-aware counterpart to `toStoredTurnTreePath` (ADR-011, KRT-BK008).
+ * Chunk-aware counterpart to `toStoredTurnTreePath` (ADR-0011, KRT-BK008).
  * Callers that can prove `value` is a strict append onto `priorTurnTreeHash`'s
  * already-chunked prior value for `path` reuse that prior's stable (full)
  * chunks verbatim and only hash/store the new tail, instead of re-flattening

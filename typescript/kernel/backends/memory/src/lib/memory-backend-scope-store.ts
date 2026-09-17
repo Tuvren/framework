@@ -19,8 +19,8 @@ import { createEmptyState } from "./memory-backend-state.js";
 import type { BackendState } from "./memory-backend-types.js";
 
 /**
- * Shared in-memory substrate that keys every kernel store by Scope (ADR-048
- * scope-keyed map realization; ADR-049 scope-resolved identity). Each Scope owns
+ * Shared in-memory substrate that keys every kernel store by Scope (ADR-0048
+ * scope-keyed map realization; ADR-0049 scope-resolved identity). Each Scope owns
  * an independent `BackendState`, so two memory backends bound to different Scopes
  * but sharing one store never observe each other's objects, trees, nodes,
  * schemas, staging, or enumerations. Two backends bound to the *same* Scope and

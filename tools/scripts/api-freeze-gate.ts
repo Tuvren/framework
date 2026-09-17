@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-// KRT-BL002 (ADR-054, ADR-056, ADR-057): the API-surface snapshot / freeze
+// KRT-BL002 (ADR-0054, ADR-0056, ADR-0057): the API-surface snapshot / freeze
 // gate. Extracts the public surface of the freeze targets — `@tuvren/core`
 // (root + every export-map subpath) and `@tuvren/sdk` (root) — with the
 // TypeScript compiler API, classifies each export as stable or `@experimental`
 // from its TSDoc release tag, and diffs the result against the committed
-// snapshot under tools/scripts/__snapshots__/api-surface/ using the ADR-056
+// snapshot under tools/scripts/__snapshots__/api-surface/ using the ADR-0056
 // diff table (implemented and self-tested in ./lib/api-freeze-model.ts).
 //
-// Tool choice (ADR-056 left it to execution): a custom source-barrel walker,
+// Tool choice (ADR-0056 left it to execution): a custom source-barrel walker,
 // NOT api-extractor. The KRT-BJ006 review proved the `@experimental` tags live
 // on the barrel re-export statements (typescript/core/src/capabilities/
 // index.ts), while api-extractor reads release tags from a symbol's canonical
@@ -31,8 +31,8 @@
 // walker reads tags from the barrel statement first and the resolved
 // declaration second, so either placement counts.
 //
-// `@tuvren/runtime` is never snapshotted (ADR-057 item 5: internal engine,
-// not semver-guaranteed). `@tuvren/sdk`'s `./advanced` subpath (ADR-059
+// `@tuvren/runtime` is never snapshotted (ADR-0057 item 5: internal engine,
+// not semver-guaranteed). `@tuvren/sdk`'s `./advanced` subpath (ADR-0059
 // escape hatch) and the leaf packages are outside the snapshot per the
 // KRT-BL001 freeze-candidate record (.constitution/reports/
 // krt-bl001-freeze-candidate-audit.md §3).
@@ -40,7 +40,7 @@
 // Modes:
 //   --check   (gate; wired into `bun run check` / `bun run verify`): fails on
 //             any drift from the committed snapshot. Blocked drift explains
-//             the ADR-056 rule it violates; allowed drift instructs the
+//             the ADR-0056 rule it violates; allowed drift instructs the
 //             operator to record it with `bun run api-freeze`.
 //   --update  (write; root script `api-freeze`): refreshes the snapshot.
 //             Refuses blocked drift unless --major declares the semver-major.
@@ -82,7 +82,7 @@ const CORE_AUTHORITY_PACKET = path.join(
 );
 
 // The authored source for the wholly-experimental declaration is the core
-// authority packet's surface listing (ADR-056 decision 3; recorded by
+// authority packet's surface listing (ADR-0056 decision 3; recorded by
 // KRT-BJ006). The gate re-asserts the declaration is still present at run
 // time so this constant cannot silently outlive the authority that backs it.
 const WHOLLY_EXPERIMENTAL_ENTRYPOINTS = ["@tuvren/core/capabilities"] as const;
@@ -135,7 +135,7 @@ async function main(): Promise<void> {
   if (selfTestFailures.length > 0) {
     for (const failure of selfTestFailures) {
       console.error(
-        `[api-freeze-gate] ADR-056 diff-table self-test: ${failure}`
+        `[api-freeze-gate] ADR-0056 diff-table self-test: ${failure}`
       );
     }
     process.exitCode = 1;
@@ -188,13 +188,13 @@ async function main(): Promise<void> {
   }
 
   if (checkMode) {
-    // ADR-056: a signature change on an @experimental export is "ALLOWED,
+    // ADR-0056: a signature change on an @experimental export is "ALLOWED,
     // not gated" — when drift is exclusively that class, the verification
     // path stays green and the snapshot refreshes opportunistically on the
     // next `bun run api-freeze` run.
     if (diff.impliedBump === "experimental-only") {
       console.log(
-        "[api-freeze-gate] experimental-only drift — not gated (ADR-056); refresh the snapshot opportunistically with `bun run api-freeze`"
+        "[api-freeze-gate] experimental-only drift — not gated (ADR-0056); refresh the snapshot opportunistically with `bun run api-freeze`"
       );
       return;
     }
@@ -207,11 +207,11 @@ async function main(): Promise<void> {
   await recordDrift(diff, live, declaredMajor);
 }
 
-/** Returns true when ADR-056 consistency-floor violations exist (never overridable). */
+/** Returns true when ADR-0056 consistency-floor violations exist (never overridable). */
 function reportFloorViolations(diff: SurfaceDiff): boolean {
   for (const violation of diff.floorViolations) {
     console.error(
-      `[api-freeze-gate] ADR-056 consistency floor: ${violation.entrypoint} export "${violation.exportName}" lacks the @experimental tag under a subpath the authority declares wholly experimental — tag it in the barrel; this is a documentation defect, never overridable`
+      `[api-freeze-gate] ADR-0056 consistency floor: ${violation.entrypoint} export "${violation.exportName}" lacks the @experimental tag under a subpath the authority declares wholly experimental — tag it in the barrel; this is a documentation defect, never overridable`
     );
   }
 
@@ -221,7 +221,7 @@ function reportFloorViolations(diff: SurfaceDiff): boolean {
 function reportCheckModeDrift(diff: SurfaceDiff): void {
   if (diff.blocked.length > 0) {
     console.error(
-      "[api-freeze-gate] blocked drift on the frozen surface (ADR-056). If this breaking change is intentional, declare the semver-major explicitly: `bun run api-freeze --major`, then commit the refreshed snapshot"
+      "[api-freeze-gate] blocked drift on the frozen surface (ADR-0056). If this breaking change is intentional, declare the semver-major explicitly: `bun run api-freeze --major`, then commit the refreshed snapshot"
     );
   } else {
     console.error(
@@ -237,7 +237,7 @@ async function recordDrift(
 ): Promise<void> {
   if (diff.blocked.length > 0 && !declaredMajor) {
     console.error(
-      "[api-freeze-gate] refusing to absorb blocked (breaking) drift without an explicit semver-major declaration — re-run as `bun run api-freeze --major` if the break is intentional (ADR-054 semver-major with migration window)"
+      "[api-freeze-gate] refusing to absorb blocked (breaking) drift without an explicit semver-major declaration — re-run as `bun run api-freeze --major` if the break is intentional (ADR-0054 semver-major with migration window)"
     );
     process.exitCode = 1;
     return;
@@ -298,7 +298,7 @@ async function resolveEntrypointTargets(): Promise<EntrypointTarget[]> {
     });
   }
 
-  // @tuvren/sdk root only: ./advanced (ADR-059 escape hatch) and the leaf
+  // @tuvren/sdk root only: ./advanced (ADR-0059 escape hatch) and the leaf
   // packages are outside the snapshot per the KRT-BL001 freeze record.
   targets.push({
     sourceFile: path.join(REPO_ROOT, SDK_PACKAGE_DIR, "src/index.ts"),
@@ -610,8 +610,8 @@ async function writeSnapshot(
   const previous = await readSnapshot();
   const snapshot: SnapshotFile = {
     $description:
-      "ADR-054/056 frozen public API surface of @tuvren/core (root + subpaths) and @tuvren/sdk (root). Generated by tools/scripts/api-freeze-gate.ts; refresh with `bun run api-freeze` (allowed drift) or `bun run api-freeze --major` (declared breaking change). Do not edit by hand.",
-    authority: ["ADR-054", "ADR-056", "ADR-057"],
+      "ADR-0054/0056 frozen public API surface of @tuvren/core (root + subpaths) and @tuvren/sdk (root). Generated by tools/scripts/api-freeze-gate.ts; refresh with `bun run api-freeze` (allowed drift) or `bun run api-freeze --major` (declared breaking change). Do not edit by hand.",
+    authority: ["ADR-0054", "ADR-0056", "ADR-0057"],
     entrypoints: live,
     ledger: [
       ...(previous?.ledger ?? []),

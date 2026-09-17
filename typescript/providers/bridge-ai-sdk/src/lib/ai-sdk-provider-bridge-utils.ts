@@ -64,7 +64,7 @@ export interface StreamToolState {
    * `tool-call` → `tool-result`; only `tool-input-start` carries the
    * `providerExecuted`/`dynamic` flags, so the marker is seeded there and read by
    * the later input parts to keep them out of the client tool_call stream
-   * (KRT-BH005 / ADR-055).
+   * (KRT-BH005 / ADR-0055).
    */
   providerOwned?: boolean;
   started: boolean;
@@ -394,7 +394,7 @@ export function sanitizeResponseMetadata(
  * under an `aiSdkBridge` key.
  *
  * Only the bridge extras are screened for secret-shaped substrings before
- * they can reach event payloads and durable run records (ADR-044); the
+ * they can reach event payloads and durable run records (ADR-0044); the
  * provider namespaces are left intact because reasoning-signature strings
  * would otherwise trip the screening (see the inline note).
  */
@@ -413,7 +413,7 @@ export function buildProviderMetadata(input: {
   if (extras !== undefined) {
     // Screen only the bridge's own captured extras (raw requestBody, response
     // headers, warnings, ...) for secret-shaped substrings before they reach
-    // "tool_call.done" event payloads and durable run records (ADR-044,
+    // "tool_call.done" event payloads and durable run records (ADR-0044,
     // KRT-BK004). `providerMetadata` above is deliberately left untouched:
     // `readReasoningStreamSignature` reads long opaque reasoning-signature
     // strings out of it (anthropic.signature, google/vertex.thoughtSignature),

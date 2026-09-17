@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Issue #108 M5 — health()/fsck() split under the relational schema (ADR-067):
+// Issue #108 M5 — health()/fsck() split under the relational schema (ADR-0067):
 // `health()` is a lightweight liveness/coherence probe; `fsck()` runs full
 // committed-state validation. Corruption is injected via direct SQL against
 // family tables (not the retired snapshot_cbor blob).
@@ -55,7 +55,7 @@ afterAll(async () => {
   await cleanupAllocatedSchemas();
 });
 
-describe("@tuvren/backend-postgres health()/fsck() split (ADR-067 relational persistence)", () => {
+describe("@tuvren/backend-postgres health()/fsck() split (ADR-0067 relational persistence)", () => {
   test("keeps an active-run/branch-head misalignment invisible to health() but reports it through fsck()", async () => {
     const options = createPostgresTestBackendOptions();
     const backend = createPostgresBackend(options);
@@ -127,7 +127,7 @@ describe("@tuvren/backend-postgres health()/fsck() split (ADR-067 relational per
   test("reports a posture failure through health() when a required relational index is dropped", async () => {
     // health() memoizes a successful posture validation for
     // POSTURE_REVALIDATION_INTERVAL_MS (60s), keyed on `postureNow` (a wall
-    // clock independent of the injectable ADR-050 domain clock `now`, which
+    // clock independent of the injectable ADR-0050 domain clock `now`, which
     // only governs lease/reclaim semantics). Advance `postureNow` past that
     // window before the post-tamper probe so the memo does not mask the
     // drift this test injects.

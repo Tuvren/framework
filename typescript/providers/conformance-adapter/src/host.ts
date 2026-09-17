@@ -240,7 +240,7 @@ async function streamMetadataContinuity(): Promise<Record<string, unknown>> {
 // ---------------------------------------------------------------------------
 // Operation: providers.conversation-state.continuity-carriage
 //
-// ADR-053 (Tuvren is the unconditional conversation-state owner): provider
+// ADR-0053 (Tuvren is the unconditional conversation-state owner): provider
 // continuity artifacts are carried into the next provider request as opaque,
 // provider-namespaced optimizations — never a correctness dependency. Exercises
 // the bridge directly with a carried continuity token and projects observable
@@ -285,7 +285,7 @@ async function conversationStateContinuityCarriage(): Promise<
 
 // KRT-BH002: a carried continuity artifact persisted on a prior assistant
 // message is reconstructed from durable history and replayed into the next
-// provider request's providerOptions — the bridge-level expression of ADR-053's
+// provider request's providerOptions — the bridge-level expression of ADR-0053's
 // "the next provider request is rebuilt from durable lineage, not provider-held
 // state". The continuity rides only on the supplied prompt; the bridge consults
 // no out-of-band provider session.
@@ -362,7 +362,7 @@ function extractReplayedThoughtSignature(prompt: unknown): string | undefined {
 // two real bridge calls: turn 1's model issues a continuity artifact on its
 // reasoning output; that assistant output becomes part of turn 2's history; and
 // the bridge replays it into turn 2's request providerOptions. The continuity
-// rides only through the reconstructed history (ADR-053 source of truth).
+// rides only through the reconstructed history (ADR-0053 source of truth).
 async function conversationStateContinuityRoundTrip(): Promise<
   Record<string, unknown>
 > {
@@ -423,7 +423,7 @@ async function conversationStateContinuityRoundTrip(): Promise<
 
 // Operation: providers.conversation-state.cache-correctness-neutral
 //
-// ADR-053 (provider-side caching is correctness-neutral): a provider cache miss
+// ADR-0053 (provider-side caching is correctness-neutral): a provider cache miss
 // and a cache hit for the same request must produce an identical model-facing
 // result; only the reported cost may differ. This drives two real bridge calls
 // with an identical request — identical messages and an identical opaque cache
@@ -512,7 +512,7 @@ function extractBridgeCacheRead(metadata: unknown): unknown {
 async function conversationStateProviderExecutedFidelity(): Promise<
   Record<string, unknown>
 > {
-  // ADR-055 / KRT-BH005: a realistic AI SDK v6 provider-executed round-trip — a
+  // ADR-0055 / KRT-BH005: a realistic AI SDK v6 provider-executed round-trip — a
   // tool-call carrying providerExecuted + dynamic (the exact vercel/ai #10888
   // shape) FOLLOWED BY its tool-result — declared to Tuvren as a provider-native
   // tool. The user function tool map deliberately omits the provider-executed
@@ -1043,7 +1043,7 @@ async function mcpClientAuthHeaders(): Promise<Record<string, unknown>> {
 // Operation: providers.mcp-client.secret-isolation
 //
 // Configures bearer-auth and header-auth credentials at the MCP transport edge
-// (ADR-044, KRT-BD004). The mock server requires the credentials, so the
+// (ADR-0044, KRT-BD004). The mock server requires the credentials, so the
 // session only succeeds because they reached the transport. The op then
 // captures the TRANSLATED tool surface — the credential-free zone that flows
 // into the runtime and model: tool names, descriptions, input schemas,
@@ -1138,7 +1138,7 @@ function readToolInputJsonSchema(schema: unknown): unknown {
 // Operation: providers.mcp-client.trust-boundary
 //
 // An MCP-advertised tool input that violates its declared schema (KRT-BD009,
-// ADR-039/ADR-044) must be rejected BEFORE transport invocation and surfaced as
+// ADR-0039/ADR-0044) must be rejected BEFORE transport invocation and surfaced as
 // a tool result with `isError: true` carrying `mcp_tool_input_invalid`. The
 // transport-counting client records how many times `invokeTool` was actually
 // called; a count of zero proves the rejection happened pre-transport rather

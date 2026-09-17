@@ -182,7 +182,7 @@ const RECLAMATION_DELETE_BATCH_SIZE = 500;
 /**
  * Minimum interval between `health()`'s catalog-driven posture revalidations,
  * measured against the instance's `postureNow` wall clock (see
- * {@link PostgresBackendOptions.postureNow}), not the injectable ADR-050
+ * {@link PostgresBackendOptions.postureNow}), not the injectable ADR-0050
  * domain clock. Drift is still detected within a minute; the per-poll
  * catalog query cost is not paid on every probe. A failed validation is
  * never memoized (only a successful one advances the memo), and
@@ -231,7 +231,7 @@ export type PostgresBackendOptions = PostgresBackendPersistenceOptions & {
   /**
    * Undocumented test-only seam for `health()`'s posture-revalidation memo
    * (see {@link POSTURE_REVALIDATION_INTERVAL_MS}). Defaults to `Date.now`.
-   * Kept separate from the public, injectable ADR-050 domain clock (`now`)
+   * Kept separate from the public, injectable ADR-0050 domain clock (`now`)
    * so a host that legitimately freezes or coarsens `now` for lease/reclaim
    * determinism cannot also freeze how often `health()` revalidates schema
    * posture; only tests need to steer this wall clock independently.
@@ -243,7 +243,7 @@ const POSTGRES_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
   // Shared rendezvous for more than one execution owner: the kernel defers to
   // this backend's own per-transaction clock for run-lease stamping and expiry
-  // comparison (ADR-050, kernel spec §5.2), exposed via RuntimeBackendTx.now.
+  // comparison (ADR-0050, kernel spec §5.2), exposed via RuntimeBackendTx.now.
   "shared-lease-clock": true,
   "thread.enumeration": true,
 };
@@ -253,8 +253,8 @@ const FAULT_INJECTION_CONTROL = Symbol(
 
 /**
  * `RuntimeBackend` implementation over a relational PostgreSQL schema
- * (ADR-067 / issue #110): one table per record family, one row per item,
- * Scope isolation via a `scope` column on every key (ADR-048/049). Mutating
+ * (ADR-0067 / issue #110): one table per record family, one row per item,
+ * Scope isolation via a `scope` column on every key (ADR-0048/0049). Mutating
  * operations serialize on this instance's in-process `transactionQueue` and
  * then take a reserved connection with `BEGIN`/`COMMIT`, so same-process
  * contention is ordered by the queue while multi-worker contention is
@@ -306,7 +306,7 @@ class PostgresBackend implements KrakenBackend {
     assertScope(this.scope);
     // assertScope only rejects an empty string; a scope carrying U+0000
     // would otherwise reach every family table's `scope` column as a
-    // caller-supplied TEXT value (ADR-048/049), so it needs the same
+    // caller-supplied TEXT value (ADR-0048/0049), so it needs the same
     // boundary check every other caller-supplied identifier field gets.
     assertPostgresIndexedText(this.scope, "scope");
     this.scopeLockKey = deriveAdvisoryLockKey(
@@ -319,7 +319,7 @@ class PostgresBackend implements KrakenBackend {
     this.now = resolvedOptions.now ?? Date.now;
     // Track whether a clock was explicitly injected so the per-transaction
     // authoritative lease clock can fall back to the PostgreSQL server clock in
-    // production while staying deterministic under an injected clock (ADR-050).
+    // production while staying deterministic under an injected clock (ADR-0050).
     this.injectedNow = resolvedOptions.now;
     // health()'s posture memo is keyed on its own wall clock, independent of
     // the injectable domain clock above: `now` may be frozen/coarsened by a
@@ -342,7 +342,7 @@ class PostgresBackend implements KrakenBackend {
    *
    * The posture-revalidation memo ({@link POSTURE_REVALIDATION_INTERVAL_MS})
    * is keyed on `postureNow`, a dedicated wall clock that defaults to
-   * `Date.now` and is never the injectable ADR-050 domain clock (`now`): a
+   * `Date.now` and is never the injectable ADR-0050 domain clock (`now`): a
    * host may legitimately freeze or coarsen `now` for lease/reclaim
    * determinism, and keying this memo on it would validate posture at most
    * once per instance lifetime instead of within roughly a minute of drift,
@@ -490,7 +490,7 @@ class PostgresBackend implements KrakenBackend {
    * touches; after `work` resolves, the tracked write set is re-validated
    * against the database before `COMMIT`. The transaction's `now` is a single
    * authoritative timestamp captured once at the start (the injected clock
-   * under test, otherwise the PostgreSQL server clock — ADR-050).
+   * under test, otherwise the PostgreSQL server clock — ADR-0050).
    *
    * @throws TuvrenPersistenceError `postgres_backend_nested_transaction` when
    *   called from inside another transaction on this instance.
@@ -510,7 +510,7 @@ class PostgresBackend implements KrakenBackend {
       try {
         await reserved.unsafe("BEGIN");
         inTransaction = true;
-        // Same-scope multi-instance serialization (ADR-067 v1): transaction-
+        // Same-scope multi-instance serialization (ADR-0067 v1): transaction-
         // scoped advisory lock keyed by (schemaName, scope). Replaces the
         // blob-era `SELECT ... FOR UPDATE` on the single snapshot row so two
         // independent backend instances still cannot interleave writes to
@@ -518,7 +518,7 @@ class PostgresBackend implements KrakenBackend {
         // scope until a later multi-writer design).
         await this.acquireScopeTransactionLock(reserved);
 
-        // Backend-authoritative lease clock (ADR-050): capture one authoritative
+        // Backend-authoritative lease clock (ADR-0050): capture one authoritative
         // timestamp per transaction — the injected clock when supplied
         // (tests/conformance), else the PostgreSQL server clock.
         const txNow = await this.resolveTransactionNow(reserved);
@@ -639,7 +639,7 @@ class PostgresBackend implements KrakenBackend {
         // mutates the in-memory projection so the surviving key sets reveal
         // exactly what to delete. The clock argument lets a leaseless running
         // run whose updatedAtMs has gone quiet past the administrative expiry
-        // horizon (KRT-BK002, ADR-050/ADR-051) be excluded from pinning that
+        // horizon (KRT-BK002, ADR-0050/ADR-0051) be excluded from pinning that
         // horizon.
         const summary = reclaimBackendState(
           state,
@@ -828,7 +828,7 @@ class PostgresBackend implements KrakenBackend {
   /**
    * Resolves the single authoritative clock reading for a transaction: the
    * injected clock when one was supplied at construction, otherwise the
-   * live PostgreSQL server clock (ADR-050 shared-rendezvous clock for a
+   * live PostgreSQL server clock (ADR-0050 shared-rendezvous clock for a
    * multi-worker deployment).
    */
   private async resolveTransactionNow(reserved: Sql): Promise<number> {
@@ -1456,7 +1456,7 @@ function encodeHashStringArray(hashes: string[]): Uint8Array {
 
 /**
  * Reads the PostgreSQL server's current wall-clock time (`clock_timestamp()`)
- * as epoch milliseconds, once per transaction, for the ADR-050 shared
+ * as epoch milliseconds, once per transaction, for the ADR-0050 shared
  * rendezvous clock.
  */
 async function readBackendClockMs(reserved: Sql): Promise<number> {

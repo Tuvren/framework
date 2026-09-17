@@ -2281,7 +2281,7 @@ This specification does not define:
 
 ## 11. Capability Orchestration
 
-The capability-orchestration model (ADR-046, §3.13, §4.21) classifies every model-visible tool call as a **capability invocation** against a known **execution class**, governed by a two-stage policy gate and carried by attribution metadata on every event. This section is normative: any future Kraken runner built on the shared framework inherits the model and must honour all invariants described here.
+The capability-orchestration model (ADR-0046, §3.13, §4.21) classifies every model-visible tool call as a **capability invocation** against a known **execution class**, governed by a two-stage policy gate and carried by attribution metadata on every event. This section is normative: any future Kraken runner built on the shared framework inherits the model and must honour all invariants described here.
 
 ### 11.1 Tool Surface vs. Capability
 

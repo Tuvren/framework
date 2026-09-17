@@ -531,7 +531,7 @@ function emitProviderToolAttributionEvents(
 }
 
 /**
- * Applies the host's `sanitizeToolResult` hook (ADR-064) to every pre-staged
+ * Applies the host's `sanitizeToolResult` hook (ADR-0064) to every pre-staged
  * provider tool-role message's parts (AY003) before those messages are
  * durably staged and before {@link emitProviderToolAttributionEvents} reads
  * them. Pre-staged provider results never pass through
@@ -766,7 +766,7 @@ export async function executeIterationPhase(
     synthesizedAssistantEvents
   );
 
-  // ADR-064 §3: pre-staged provider tool messages (AY003) never pass through
+  // ADR-0064 §3: pre-staged provider tool messages (AY003) never pass through
   // stageAndEmitResult, so the host sanitize hook is applied here — before
   // durable staging and before attribution events are read — so the scrubbed
   // form is what lands in kernel history, on the canonical tool.result event,

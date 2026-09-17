@@ -16,7 +16,7 @@
 
 /**
  * Conformance adapter operations for the framework `trust-boundary` check set
- * (ADR-039 / ADR-044, KRT-BD009). Each operation drives the real runtime across
+ * (ADR-0039 / ADR-0044, KRT-BD009). Each operation drives the real runtime across
  * a trust boundary the PRD elevated and returns the RAW observation surfaces
  * (paused phase, executed tool names, persisted tool results) plus enough
  * context for the shared runner-owned plan assertions to grade the guarantee.

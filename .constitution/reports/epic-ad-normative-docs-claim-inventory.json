@@ -3794,8 +3794,8 @@
     {
       "affectedBoundary": "framework",
       "adapterCapability": "framework.runtime-api",
-      "claimFingerprint": "1840d41cfca34aa2cb40785461ca453b142ba7aa59c5a1680438be7f3e66f995",
-      "claimId": "FWK-1840D41CFCA3",
+      "claimFingerprint": "ef1fd494540793be65d59c1d6372ba0e6f9bc338883d78b1bfb23bbf5bf68fa8",
+      "claimId": "FWK-EF1FD4945407",
       "duplicateOf": null,
       "line": 2284,
       "rationaleContext": "normative",
@@ -3804,7 +3804,7 @@
       "sectionKey": "11",
       "sourceFile": "docs/KrakenFrameworkSpecification.md",
       "surface": "capability orchestration",
-      "text": "The capability-orchestration model (ADR-046, §3.13, §4.21) classifies every model-visible tool call as a **capability invocation** against a known **execution class**, governed by a two-stage policy gate and carried by attribution metadata on every event. This section is normative: any future Kraken runner built on the shared framework inherits the model and must honour all invariants described here."
+      "text": "The capability-orchestration model (ADR-0046, §3.13, §4.21) classifies every model-visible tool call as a **capability invocation** against a known **execution class**, governed by a two-stage policy gate and carried by attribution metadata on every event. This section is normative: any future Kraken runner built on the shared framework inherits the model and must honour all invariants described here."
     },
     {
       "affectedBoundary": "framework",

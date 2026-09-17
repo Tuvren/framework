@@ -15,13 +15,13 @@
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
-// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-056 requires.
+// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.
 
 /**
  * @packageDocumentation
  *
  * `@tuvren/remote-session` is the host-owned, reattachable remote client
- * session lifecycle seam (ADR-063): it sits above `@tuvren/host-session`'s
+ * session lifecycle seam (ADR-0063): it sits above `@tuvren/host-session`'s
  * `DuplexSessionBinding` and below any carriage (WebSocket, SSE-plus-inbound,
  * IPC, or an in-memory test harness), holding the binding's single
  * `outbound()` claim, one `createSequencedTuvrenStreamEvents` instance, and

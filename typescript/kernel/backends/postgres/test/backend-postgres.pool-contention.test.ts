@@ -29,7 +29,7 @@ import {
  *
  * `createPostgresClient` hardcodes `max: 1` on every `postgres.js` client, so
  * each `PostgresBackend` instance owns exactly one physical connection. Under
- * ADR-067, same-scope multi-instance serialization uses a transaction-scoped
+ * ADR-0067, same-scope multi-instance serialization uses a transaction-scoped
  * advisory lock keyed by `(schemaName, scope)` at the start of every
  * `transact()`/`reclaim()`/`purgeScope()` — the relational replacement for
  * the blob-era `SELECT ... FOR UPDATE` on the single snapshot row.
@@ -199,7 +199,7 @@ describe("@tuvren/backend-postgres pool contention (KRT-BK011)", () => {
     // The two tests above prove the lock genuinely blocks a concurrent
     // same-scope transact(), releasing the hold well inside
     // SCOPE_LOCK_TIMEOUT_MS (5000ms) so the blocked call always resumes
-    // normally. This test proves the other half of ADR-067's contract: the
+    // normally. This test proves the other half of ADR-0067's contract: the
     // `SET LOCAL lock_timeout = '5000ms'` guard that precedes
     // `pg_advisory_xact_lock` actually fires when the wait is *not*
     // released in time, so a second instance fails fast with a normalized

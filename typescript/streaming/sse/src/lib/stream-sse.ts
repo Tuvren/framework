@@ -68,7 +68,7 @@ export function toSseFrames(
 }
 
 /**
- * Maps a sequenced stream (ADR-061, `createSequencedTuvrenStreamEvents` from
+ * Maps a sequenced stream (ADR-0061, `createSequencedTuvrenStreamEvents` from
  * `@tuvren/stream-core`) to {@link TuvrenSseFrame}s exactly like
  * {@link toSseFrames}, additionally populating each frame's `id` with the
  * envelope's opaque resume cursor — so WHATWG `Last-Event-ID` reconnection

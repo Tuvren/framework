@@ -374,7 +374,7 @@ export function createFrameworkAdapterRecoveryScenarios(
 
   /**
    * Client-result-as-proposal under loss of execution authority (KRT-BG005;
-   * ADR-052 decision 3). A side-effecting client-endpoint dispatch is in flight
+   * ADR-0052 decision 3). A side-effecting client-endpoint dispatch is in flight
    * when the worker loses its run lease (renewal is preempted by a peer). The
    * client still performs the effect and reports a result, but because the run
    * lost write authority the reported result is a stale proposal: it must never

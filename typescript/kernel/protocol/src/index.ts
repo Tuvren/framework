@@ -33,7 +33,7 @@
  * binding projection of that packet.
  *
  * `@tuvren/kernel-protocol` is published-internal: it exists on the registry
- * so host-facing packages' dependency graphs resolve (ADR-057), is not
+ * so host-facing packages' dependency graphs resolve (ADR-0057), is not
  * semver-guaranteed for hosts, and should not be imported directly by
  * applications (see docs/guides/publishing-and-adopter-onboarding.md).
  *

@@ -124,7 +124,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
   test('health() reports a posture failure when a required TEXT column\'s collation drifts away from "C"', async () => {
     // health() memoizes a successful posture validation for
     // POSTURE_REVALIDATION_INTERVAL_MS (60s), keyed on `postureNow` (a wall
-    // clock independent of the injectable ADR-050 domain clock `now`, which
+    // clock independent of the injectable ADR-0050 domain clock `now`, which
     // only governs lease/reclaim semantics). Advance `postureNow` past that
     // window before the post-tamper probe so the memo does not mask the
     // drift this test injects.

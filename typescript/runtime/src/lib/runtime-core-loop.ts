@@ -182,7 +182,7 @@ export interface RuntimeCoreLoopHost {
  * produced.
  *
  * Each pass through the loop enforces the framework execution bounds before
- * anything else (ADR-043, BD006), in this order:
+ * anything else (ADR-0043, BD006), in this order:
  *
  * 1. Wall-clock deadline (`maxWallClockMs`) — a deterministic backstop for
  *    the out-of-band abort timer; exceeding it fails the turn hard.
@@ -191,7 +191,7 @@ export interface RuntimeCoreLoopHost {
  * 3. The agent's own `maxIterations` — a graceful cap that ends the turn
  *    with an `end_turn` resolution instead of failing it.
  * 4. Cumulative `maxToolCalls`, evaluated AFTER each tool batch completes
- *    (ADR-043/§4.12): a single over-cap batch runs to completion and the cap
+ *    (ADR-0043/§4.12): a single over-cap batch runs to completion and the cap
  *    stops the next batch.
  *
  * Cancellation is checkpointed at iteration entry, after the iteration
@@ -227,7 +227,7 @@ export async function runExecutionLoop(
   while (true) {
     const currentIterationCount = handle.status().iterationCount;
 
-    // Framework execution-bounds guard (ADR-043, BD006), enforced above the
+    // Framework execution-bounds guard (ADR-0043, BD006), enforced above the
     // runner's loop policy. The wall-clock deadline is also enforced by an
     // out-of-band abort timer; this boundary check is the deterministic backstop.
     if (now() >= host.boundsDeadlineMs(handle)) {
@@ -312,11 +312,11 @@ export async function runExecutionLoop(
     }
 
     // Cumulative tool-call hard-stop bound, checked at the tool-batch boundary
-    // above runner discretion. Per ADR-043/§4.12 this caps the cumulative calls
+    // above runner discretion. Per ADR-0043/§4.12 this caps the cumulative calls
     // *executed* across the Turn and is evaluated AFTER each batch completes: a
     // single over-cap batch runs to completion (parallelism-bounded by
     // maxConcurrentToolCalls) and the cap then stops the next batch. The
-    // per-instant resource ceiling is maxConcurrentToolCalls, not this. (ADR-043, BD006)
+    // per-instant resource ceiling is maxConcurrentToolCalls, not this. (ADR-0043, BD006)
     const cumulativeToolCalls = host.recordBoundsToolCalls(
       handle,
       phaseResult.result.requestedToolCalls.length

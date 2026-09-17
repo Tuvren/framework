@@ -75,7 +75,7 @@ interface RuntimeKernelRunsDependencies {
 /**
  * Resolves the clock the kernel uses for durable timestamp and lease-expiry
  * writes within a transaction. For a backend that advertises `shared-lease-clock`
- * (ADR-050, kernel spec §5.2) this is the backend's own per-transaction clock
+ * (ADR-0050, kernel spec §5.2) this is the backend's own per-transaction clock
  * (`tx.now`), so stamping and expiry comparison happen in backend time and stay
  * monotonic across execution owners. Every other backend keeps the kernel's
  * injected clock, preserving single-writer behavior exactly.
@@ -97,7 +97,7 @@ function resolveTransactionClock(
 /**
  * Re-bases an owner-supplied absolute lease expiry into the backend clock for a
  * shared-lease-clock backend by preserving the owner's intended lease duration
- * (`suppliedExpiry - ownerNow`) and adding it to the backend clock (ADR-050).
+ * (`suppliedExpiry - ownerNow`) and adding it to the backend clock (ADR-0050).
  * When the owner clock and backend clock agree (single process, or no skew) this
  * is exactly `suppliedExpiry`, so existing behavior and conformance are
  * unchanged; under skew it translates the expiry into the authoritative clock.

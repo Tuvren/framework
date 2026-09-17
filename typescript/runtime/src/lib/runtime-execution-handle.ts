@@ -292,7 +292,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
     // Terminal late-completion guard: once the result is settled, a model/tool
     // completion that lost the race to a bounded (or cancelled) abort is ignored
     // — its invocation reaches the "ignored" InvocationLifecycleState and cannot
-    // reopen or mutate the turn. (ADR-043, KRT-BD006)
+    // reopen or mutate the turn. (ADR-0043, KRT-BD006)
     if (turnEndStatus === "paused" || this.resultSettled) {
       return;
     }
@@ -308,7 +308,7 @@ export class RuntimeExecutionHandle implements ExecutionHandle {
 
     // A wall-clock bound abort is authoritative: the failed result carries the
     // execution_bound_exceeded error and its details regardless of whatever was
-    // thrown by the interrupted in-flight model/tool work. (ADR-043, BD006)
+    // thrown by the interrupted in-flight model/tool work. (ADR-0043, BD006)
     if (turnEndStatus === "failed" && isBoundExceededError(reason)) {
       this.resultResolve({ error: reason, executionStatus, status: "failed" });
       return;

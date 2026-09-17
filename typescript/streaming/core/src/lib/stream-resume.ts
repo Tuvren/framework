@@ -37,7 +37,7 @@ const RESUME_CURSOR_VERSION = 1;
  * (authority: `spec/streaming/resume/`, packet
  * `tuvren.framework.event-stream-resume`, model `SequencedStreamFrame`).
  *
- * Sequencing is wire-level and additive per ADR-061: the canonical event is
+ * Sequencing is wire-level and additive per ADR-0061: the canonical event is
  * carried unmodified, and in-process consumers of the canonical stream never
  * see this envelope.
  *
@@ -152,7 +152,7 @@ export function decodeResumeCursor(
 
 /**
  * Wraps a canonical `TuvrenStreamEvent` stream in the wire-level sequencing
- * envelope (ADR-061): each event is stamped with its Turn identity, a
+ * envelope (ADR-0061): each event is stamped with its Turn identity, a
  * monotonic intra-turn sequence (reset to 0 at each `turn.start`), and an
  * opaque resume-cursor token positioned at that event. The latest
  * `state.checkpoint.turnNodeHash` observed within the current turn rides the
@@ -254,7 +254,7 @@ export type ReplayResult =
   | { status: "unknown-turn" };
 
 /**
- * Bounded, host-owned replay window over sequenced stream events (ADR-061).
+ * Bounded, host-owned replay window over sequenced stream events (ADR-0061).
  *
  * @experimental
  */

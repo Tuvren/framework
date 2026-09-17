@@ -17,7 +17,7 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
 /**
- * Integration tests for the ADR-064 host sanitization seam
+ * Integration tests for the ADR-0064 host sanitization seam
  * (`AgentConfig.sanitizeToolResult`).
  *
  * These drive a real in-memory runtime and assert against externally
@@ -25,7 +25,7 @@
  * `readBranchMessages` and captured `tool.result` stream events — never
  * against the hook's return value directly. A test that only asserted the
  * hook was invoked would pass against an implementation that applied the
- * hook after staging, which is exactly the bug ADR-064 §4 requires
+ * hook after staging, which is exactly the bug ADR-0064 §4 requires
  * conformance to rule out.
  */
 
@@ -157,7 +157,7 @@ function makeProviderRunner(
   };
 }
 
-describe("host sanitization seam (ADR-064): stageAndEmitResult chokepoint", () => {
+describe("host sanitization seam (ADR-0064): stageAndEmitResult chokepoint", () => {
   test("the scrubbed form — not the original — lands in durable kernel history", async () => {
     const harness = createFakeKernelHarness();
     const runtime = createTuvrenRuntime({
@@ -197,7 +197,7 @@ describe("host sanitization seam (ADR-064): stageAndEmitResult chokepoint", () =
     expect(staged).toHaveLength(1);
     expect(staged[0]?.output).toEqual({ text: SCRUBBED });
     // The original marker must be nowhere in durable lineage — content-addressed
-    // kernel history is immutable, so this is the permanence ADR-064 addresses.
+    // kernel history is immutable, so this is the permanence ADR-0064 addresses.
     expect(JSON.stringify(staged)).not.toContain(MARKER);
   });
 
@@ -542,7 +542,7 @@ describe("host sanitization seam (ADR-064): stageAndEmitResult chokepoint", () =
   });
 });
 
-describe("host sanitization seam (ADR-064): pre-staged provider tool messages (AY003)", () => {
+describe("host sanitization seam (ADR-0064): pre-staged provider tool messages (AY003)", () => {
   test("scrubs a provider-mediated pre-staged result on both durable state and the tool.result event", async () => {
     const harness = createFakeKernelHarness();
     const recordedContexts: SanitizeToolResultContext[] = [];

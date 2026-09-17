@@ -19,7 +19,7 @@
  *
  * {@link createSqliteBackend} builds a `RuntimeBackend` that persists all
  * durable state in a WAL-mode SQLite database file, one file per Scope
- * (ADR-049 file-per-scope isolation). It is the embedded single-writer
+ * (ADR-0049 file-per-scope isolation). It is the embedded single-writer
  * persistence baseline: transactions serialize on a single connection under
  * `BEGIN IMMEDIATE`, checked-in migrations govern the schema, write-time
  * invariants run inside the repositories, and each transaction's write set is

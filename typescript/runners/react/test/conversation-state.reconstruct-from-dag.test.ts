@@ -16,9 +16,9 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Mock async provider interfaces intentionally preserve promise-based signatures.
 
-// KRT-BH002 — Reconstruct-from-DAG proof (ADR-053).
+// KRT-BH002 — Reconstruct-from-DAG proof (ADR-0053).
 //
-// ADR-053 makes the durable lineage the unconditional source of truth: the
+// ADR-0053 makes the durable lineage the unconditional source of truth: the
 // provider request for the next turn must be reconstructable from durable
 // lineage alone, never depending on any provider-held server-side state. This
 // test drives the real ReAct runner through the runtime for two turns against a

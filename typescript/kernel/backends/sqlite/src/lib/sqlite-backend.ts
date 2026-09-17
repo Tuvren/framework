@@ -243,9 +243,9 @@ export interface SqliteBackendOptions {
    */
   phaseObserver?: PhaseObserver;
   /**
-   * Host-supplied partition identity bound at construction (ADR-048).
+   * Host-supplied partition identity bound at construction (ADR-0048).
    *
-   * Isolation is realized as file-per-scope (ADR-049): the default Scope maps to
+   * Isolation is realized as file-per-scope (ADR-0049): the default Scope maps to
    * `databasePath` verbatim — so existing single-scope databases keep working
    * unchanged — while any other Scope derives a deterministic sibling file from
    * the same base path. Two backends sharing a `databasePath` but bound to
@@ -265,7 +265,7 @@ const SQLITE_BACKEND_CAPABILITIES: BackendCapability = {
   "maintenance.reclamation": true,
   // Single-file embedded backend: a single writer with no cross-owner
   // contention, so it keeps the in-process clock and advertises non-support for
-  // the shared lease clock (ADR-050, kernel spec §5.2).
+  // the shared lease clock (ADR-0050, kernel spec §5.2).
   "shared-lease-clock": false,
   "thread.enumeration": true,
 };
@@ -286,7 +286,7 @@ const RECLAMATION_DELETE_BATCH_SIZE = 500;
  * `BEGIN IMMEDIATE` in WAL mode. Nested transactions are rejected and
  * repository handles are invalidated once their transaction settles.
  *
- * Isolation model: file-per-scope (ADR-049). The constructor resolves the
+ * Isolation model: file-per-scope (ADR-0049). The constructor resolves the
  * bound Scope to its own database file, so backends sharing a base path but
  * bound to different Scopes never observe each other's rows.
  *
@@ -314,7 +314,7 @@ class SqliteBackend implements KrakenBackend {
   private readonly phaseObserver: PhaseObserver;
   /**
    * The concrete per-Scope database file backing this backend (file-per-scope
-   * isolation, ADR-049). Retained so `purgeScope` can drop the partition by
+   * isolation, ADR-0049). Retained so `purgeScope` can drop the partition by
    * removing exactly this Scope's file and its WAL/SHM sidecars.
    */
   private readonly scopedDatabasePath: string;
@@ -472,7 +472,7 @@ class SqliteBackend implements KrakenBackend {
     }
 
     // Full tenant offboarding (§9.4): the Scope is realized as its own database
-    // file (file-per-scope, ADR-049), so dropping the partition is closing the
+    // file (file-per-scope, ADR-0049), so dropping the partition is closing the
     // handle and removing that file plus its WAL/SHM sidecars. Other Scopes live
     // in sibling files and are untouched. The backend is unusable afterward,
     // exactly like `close`.
@@ -638,7 +638,7 @@ class SqliteBackend implements KrakenBackend {
         // mutates the in-memory projection so the surviving key sets reveal
         // exactly what to delete. The clock argument lets a leaseless running
         // run whose updatedAtMs has gone quiet past the administrative expiry
-        // horizon (KRT-BK002, ADR-050/ADR-051) be excluded from pinning that
+        // horizon (KRT-BK002, ADR-0050/ADR-0051) be excluded from pinning that
         // horizon.
         const summary = reclaimBackendState(
           state,
@@ -1004,7 +1004,7 @@ function openConfiguredDatabase(scopedDatabasePath: string): Database.Database {
 
 /**
  * Derives the concrete per-Scope database file from the host-supplied base path
- * (ADR-048 construction-bound Scope; ADR-049 scope-per-file isolation). The
+ * (ADR-0048 construction-bound Scope; ADR-0049 scope-per-file isolation). The
  * default Scope maps to the base path verbatim so existing single-scope
  * databases keep working unchanged; any other Scope derives a deterministic
  * sibling file, so two backends sharing a base path but bound to different

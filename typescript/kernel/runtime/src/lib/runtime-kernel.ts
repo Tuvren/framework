@@ -84,7 +84,7 @@ import {
 } from "./runtime-kernel-storage.js";
 
 /**
- * Encodes a `thread.list` cursor payload (ADR-034) as the opaque
+ * Encodes a `thread.list` cursor payload (ADR-0034) as the opaque
  * {@link KernelThreadListCursor} string callers pass back on the next page
  * request: JSON, then URL-safe base64.
  */

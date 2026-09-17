@@ -140,7 +140,7 @@ class BasicClientEndpointBoundary implements ClientEndpointBoundary {
       reported = await entry.endpoint.dispatch({
         callId,
         capabilityId,
-        // Side-effect-once identity (ADR-052): carried on the envelope so the
+        // Side-effect-once identity (ADR-0052): carried on the envelope so the
         // client environment can deduplicate a retried external effect. Omitted
         // from the field set when absent so the envelope stays minimal.
         ...(idempotencyKey === undefined ? {} : { idempotencyKey }),

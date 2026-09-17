@@ -10,7 +10,7 @@ This document is a pointer, not an oracle: where it disagrees with `spec/core/au
 
 ## 0. Orient yourself in the authority chain
 
-The neutral execution-model contract — what *every* runner must satisfy — has no packet of its own. It is part of `tuvren.shared.core` authority (`spec/core/authority-packet.json`), specifically its `runner` binding section, per ADR-037. Read, in order:
+The neutral execution-model contract — what *every* runner must satisfy — has no packet of its own. It is part of `tuvren.shared.core` authority (`spec/core/authority-packet.json`), specifically its `runner` binding section, per ADR-0037. Read, in order:
 
 - `spec/runners/README.md` — the runner port's directory map and history.
 - `spec/runners/typespec/main.tsp` — the neutral, serializable runner operation/payload surface (`RunnerExecutionContext`, `RunnerExecutionResult`, the resolution union, the `runner.*` operation names). Note that this TypeSpec models only the portable subset: fields whose live TypeScript shape includes callables or `AbortSignal` (e.g. `AgentConfig`, `HandoffContextPlan`) remain packet-level opaque metadata, refined by the binding contract plus its runtime validators.
@@ -72,11 +72,11 @@ Prefer returning `{ resolution: { type: "fail", error, fatality: "hard" } }` ove
 
 New runners live under `typescript/runners/<name>/` (there is no Rust runner home yet — `spec/runners/bindings/rust.md` records that Rust runner bindings are not implemented; read `docs/guides/add-a-language.md` first if you're bringing a runner in a new language). Match `typescript/runners/react`'s shape:
 
-- `package.json`: `"name": "@tuvren/runner-<name>"`, `"type": "module"`, an `exports["."]` map pointing at `./dist/index.d.ts` / `./dist/index.js`, and `@tuvren/core` as a **peerDependency** (`"workspace:~"`), never a bundled dependency — every runner shares the host's single `@tuvren/core` instance (ADR-037). Bundle real dependencies only for genuinely embedded libraries (react-runner bundles `ajv` for structured-output validation).
+- `package.json`: `"name": "@tuvren/runner-<name>"`, `"type": "module"`, an `exports["."]` map pointing at `./dist/index.d.ts` / `./dist/index.js`, and `@tuvren/core` as a **peerDependency** (`"workspace:~"`), never a bundled dependency — every runner shares the host's single `@tuvren/core` instance (ADR-0037). Bundle real dependencies only for genuinely embedded libraries (react-runner bundles `ajv` for structured-output validation).
 - `project.json`: `name: "runner-<name>"`, `projectType: "library"`, `tags: ["boundary:framework", "layer:implementation"]` — note there is no `layer:certification` tag on a runner package; certification rides the framework adapter (§6). Targets: `build` (tsup + `tsc --project tsconfig.dts.json` + a smoke import), `test` (`bun test`), `typecheck` (`bun tools/scripts/typecheck-project.ts typescript/runners/<name>`), `lint` (biome).
 - The five tsconfig files (`tsconfig.json`, `tsconfig.lib.json`, `tsconfig.dts.json`, `tsconfig.tsup.json`, `tsconfig.typecheck.json`) — copy react-runner's set rather than improvising. Any package whose typecheck config needs to resolve `@tuvren/runner-<name>` must add a `paths` entry for it, following the existing `"@tuvren/runner-react": ["../../runners/react/src/index.ts"]` pattern.
 - Keep the entrypoint small and explicit (`CLAUDE.md`): react-runner's entire `src/index.ts` is two export statements — the factory (`createReActRunner`), the id constant (`REACT_RUNNER_ID`), and the option types.
-- Export a factory function returning `RuntimeRunnerFactory` — `create<Name>Runner(options?): RuntimeRunnerFactory` — not a bare class. Hosts pass the factory instance into `createTuvren({ runner: ... })`; per ADR-057 there is no `"react"`-style kind-string shorthand and no implicit default runner, so the factory is your public API.
+- Export a factory function returning `RuntimeRunnerFactory` — `create<Name>Runner(options?): RuntimeRunnerFactory` — not a bare class. Hosts pass the factory instance into `createTuvren({ runner: ... })`; per ADR-0057 there is no `"react"`-style kind-string shorthand and no implicit default runner, so the factory is your public API.
 - Optionally a `BUILD.bazel` shim (`native_binary` wrapping `tools/bazel/nx-run.sh`), copied from react-runner's.
 
 ## 3. Honor the event-emission contract
@@ -121,7 +121,7 @@ Whichever path you take, adapter discipline applies unchanged: the adapter never
 
 ## 7. Wire it into a host
 
-Hosts select runners explicitly, by instance (ADR-057 — instances only, no string shorthand):
+Hosts select runners explicitly, by instance (ADR-0057 — instances only, no string shorthand):
 
 ```ts
 import { createTuvren } from "@tuvren/sdk";

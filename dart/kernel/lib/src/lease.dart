@@ -14,7 +14,7 @@
 
 /// The M3 run-liveness capability (`kernel.run-liveness`): run execution
 /// leases as described by `docs/KrakenKernelSpecification.md` §5.2 Run
-/// Execution Leases (ADR-050), mirroring `go/kernel/lease.go`. The
+/// Execution Leases (ADR-0050), mirroring `go/kernel/lease.go`. The
 /// backend-authoritative clock requirement means every timestamp here
 /// comes from `Kernel.clock` (the same clock the backend was constructed
 /// with), never from wall-clock time directly -- this is what lets a

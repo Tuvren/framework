@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ADR-057 host import boundary gate (KRT-BJ003).
+ * ADR-0057 host import boundary gate (KRT-BJ003).
  *
- * Enforces the normative host import contract from ADR-057 §3, as amended by
- * ADR-059 §3: a Tuvren host composes the runtime from the curated tier only.
+ * Enforces the normative host import contract from ADR-0057 §3, as amended by
+ * ADR-0059 §3: a Tuvren host composes the runtime from the curated tier only.
  * It may import `@tuvren/core`, `@tuvren/sdk` (including the `@tuvren/sdk/advanced`
- * composition subpath added by ADR-059), and chosen leaf packages such as
+ * composition subpath added by ADR-0059), and chosen leaf packages such as
  * `@tuvren/kernel-grpc-client`. It must NEVER reach past that seam into the
  * internal engine surfaces:
  *
- *   - `@tuvren/runtime`         (demoted to internal engine by ADR-057)
+ *   - `@tuvren/runtime`         (demoted to internal engine by ADR-0057)
  *   - `@tuvren/kernel-protocol` (kernel transport wire types)
  *   - `@tuvren/kernel-runtime`  (kernel runtime construction internals)
  *
@@ -31,7 +31,7 @@
  * and specifier. When no such import exists it passes with exit 0, and it runs
  * inside `bun run check` (inner-loop authority gate) and `bun run verify`.
  *
- * Scoping (ADR-059-aware):
+ * Scoping (ADR-0059-aware):
  *  - `@tuvren/kernel-grpc-client` is an allowed leaf: it is neither
  *    `@tuvren/kernel-runtime` nor a subpath of it, so the prefix rule below
  *    passes it through by construction.
@@ -75,8 +75,8 @@ interface FoundSpecifier {
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const HOST_ROOT = resolve(REPO_ROOT, "typescript/host");
 
-// Engine-tier specifiers a host must never import directly (ADR-057 §3,
-// ADR-059 §3). A specifier violates the boundary when it equals one of these
+// Engine-tier specifiers a host must never import directly (ADR-0057 §3,
+// ADR-0059 §3). A specifier violates the boundary when it equals one of these
 // exactly or is a subpath of it (`<pkg>/...`). The prefix form is what keeps
 // the allowed `@tuvren/kernel-grpc-client` leaf from colliding with the
 // forbidden `@tuvren/kernel-runtime` engine package.
@@ -137,7 +137,9 @@ async function main(): Promise<void> {
   }
 
   if (violations.length > 0) {
-    console.error("host import boundary gate failed (ADR-057 §3, ADR-059 §3):");
+    console.error(
+      "host import boundary gate failed (ADR-0057 §3, ADR-0059 §3):"
+    );
     for (const violation of violations) {
       console.error(
         `  [host-import-boundary] ${violation.relativePath}:${violation.line} imports forbidden engine specifier "${violation.specifier}"`

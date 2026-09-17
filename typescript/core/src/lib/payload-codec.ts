@@ -15,7 +15,7 @@
  */
 
 /**
- * Host-key-encrypted untrusted-edge payload envelope (ADR-051, SPK-BF002).
+ * Host-key-encrypted untrusted-edge payload envelope (ADR-0051, SPK-BF002).
  *
  * Crypto-shredding lets a host satisfy right-to-erasure on a content-addressed,
  * immutable Merkle-lineage runtime *without rewriting committed history*: the
@@ -54,7 +54,7 @@ export interface PayloadCodecContext {
    */
   edge: string;
   /**
-   * The host-bound Scope (ADR-048/049) the payload belongs to. Bound into AAD
+   * The host-bound Scope (ADR-0048/0049) the payload belongs to. Bound into AAD
    * and used as the default `keyRef` by `@tuvren/sdk`'s `createAesGcmPayloadCodec`, so a
    * per-Scope key composes directly with tenant offboarding (destroy the Scope
    * key → every untrusted-edge payload in that Scope is shredded).
@@ -132,7 +132,7 @@ export interface PayloadCodec {
  * an unset seam. It lives on `@tuvren/core` (the ABI tier) — not `@tuvren/sdk` —
  * so the runtime can reference it without importing the composition tier, which
  * would otherwise create a `@tuvren/sdk ⇄ @tuvren/runtime` dependency cycle
- * (ADR-057). The batteries-included AES-256-GCM codec stays in `@tuvren/sdk`.
+ * (ADR-0057). The batteries-included AES-256-GCM codec stays in `@tuvren/sdk`.
  */
 export const IDENTITY_PAYLOAD_CODEC: PayloadCodec = {
   decrypt(stored) {

@@ -69,7 +69,7 @@ import { qualifyIdentifier } from "./postgres-sql.js";
 // created-at/key order); `ensure*InDatabase` variants raise a
 // `postgres_backend_missing_*_reference` persistence error instead of
 // returning null, for referential-integrity checks at write time.
-// Every query is scoped by ADR-048/049 `scope` and schema-qualified tables.
+// Every query is scoped by ADR-0048/0049 `scope` and schema-qualified tables.
 
 async function selectOne<T>(
   sql: DbSql,

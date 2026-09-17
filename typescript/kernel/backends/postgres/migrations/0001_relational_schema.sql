@@ -1,6 +1,6 @@
--- Relational row-per-record schema for @tuvren/backend-postgres (issue #110 / ADR-067).
+-- Relational row-per-record schema for @tuvren/backend-postgres (issue #110 / ADR-0067).
 -- Mirrors the post-#108 SQLite family shape (migrations 0001–0006 consolidated), with:
---   * scope TEXT on every table for ADR-048/049 row-level isolation in a shared schema
+--   * scope TEXT on every table for ADR-0048/0049 row-level isolation in a shared schema
 --   * BYTEA / BIGINT for Postgres types
 --   * DEFERRABLE INITIALLY DEFERRED foreign keys (SQLite reclaim's defer_foreign_keys equivalent)
 --   * COLLATE "C" on every TEXT column so ordering and range comparisons are

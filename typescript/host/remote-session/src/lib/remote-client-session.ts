@@ -43,7 +43,7 @@ const PROTOCOL_VERSION = "1";
 /**
  * Stable code carried by the `TuvrenRuntimeError` thrown when
  * {@link RemoteClientSession.attach} is called while another sink is still
- * attached — ADR-063 decision 2's at-most-one-sink rule surfacing a
+ * attached — ADR-0063 decision 2's at-most-one-sink rule surfacing a
  * concurrent second attach as a programming error rather than a silent
  * second consumer. Transports branch on this code (never on message text)
  * to refuse the *new* connection while leaving the live one untouched.
@@ -90,12 +90,12 @@ const globalClock: RemoteSessionClock = {
 
 /**
  * The carriage-facing push seam a transport attaches beneath a
- * {@link RemoteClientSession}. Transport-agnostic by design (ADR-063): a
+ * {@link RemoteClientSession}. Transport-agnostic by design (ADR-0063): a
  * WebSocket, SSE-plus-inbound-channel, IPC, or in-memory test harness all
  * implement the same one-method shape.
  *
  * `cursor` is present only for `event` frames — the sequenced, replayable
- * channel (ADR-061) — and is `undefined` for `client_invocation` and
+ * channel (ADR-0061) — and is `undefined` for `client_invocation` and
  * `session_rejection` frames, which are never replayable.
  *
  * @experimental
@@ -125,7 +125,7 @@ export type RemoteClientSessionResumeStatus =
  * @experimental
  */
 export interface RemoteClientSessionAttachOptions {
-  /** Resume-cursor token (ADR-061) carried by a reattaching peer's handshake. Omit for a fresh connection. */
+  /** Resume-cursor token (ADR-0061) carried by a reattaching peer's handshake. Omit for a fresh connection. */
   cursor?: string;
 }
 
@@ -148,7 +148,7 @@ export interface RemoteClientSessionAttachResult {
 export interface RemoteClientSessionOptions {
   /**
    * The single duplex session binding this session owns for its whole life
-   * (ADR-063 decision 2). Its `outbound()` stream is claimed exactly once, on
+   * (ADR-0063 decision 2). Its `outbound()` stream is claimed exactly once, on
    * first {@link RemoteClientSession.attach}, never at construction.
    */
   binding: DuplexSessionBinding;
@@ -156,13 +156,13 @@ export interface RemoteClientSessionOptions {
   clock?: RemoteSessionClock;
   /**
    * How long a detached session waits for a reattach before treating the
-   * link as permanently gone (ADR-063 decision 4). `0` reproduces
+   * link as permanently gone (ADR-0063 decision 4). `0` reproduces
    * immediate-detach semantics. Must be a finite number `>= 0`.
    */
   disconnectGraceMs: number;
   /**
    * How long a dispatched `client_invocation` may go unanswered while a sink
-   * is attached before it is treated as an unresponsive peer (ADR-063
+   * is attached before it is treated as an unresponsive peer (ADR-0063
    * decision 5). Suspended while detached, and restarted in full for any
    * invocation redelivered on reattach. Must be a finite number `> 0`.
    */
@@ -182,7 +182,7 @@ export interface RemoteClientSessionOptions {
 }
 
 /**
- * A host-owned, reattachable remote client session (ADR-063): the
+ * A host-owned, reattachable remote client session (ADR-0063): the
  * transport-agnostic lifecycle seam that keeps one {@link DuplexSessionBinding}
  * alive across a link that can drop, above the frame binding and below
  * carriage.
@@ -373,7 +373,7 @@ function extractSettleableClientResultCallId(
 }
 
 /**
- * Creates the transport-agnostic session-lifecycle seam ADR-063 describes:
+ * Creates the transport-agnostic session-lifecycle seam ADR-0063 describes:
  * one {@link DuplexSessionBinding.outbound} claim, one `createSequencedTuvrenStreamEvents`
  * instance, and one shared `createReplayBuffer`, all held for this session's
  * whole life regardless of how many sinks attach and detach beneath it.
@@ -508,7 +508,7 @@ export function createRemoteClientSession(
   function startGraceTimer(reason: string | undefined): void {
     if (options.disconnectGraceMs <= 0) {
       // A zero-length grace window reproduces immediate-detach semantics
-      // (ADR-063 decision 4): there is nothing to wait for.
+      // (ADR-0063 decision 4): there is nothing to wait for.
       endSession(
         reason ??
           "disconnectGraceMs is 0; detach reproduces immediate-detach semantics"
@@ -545,7 +545,7 @@ export function createRemoteClientSession(
       // The session already ended (grace expiry, explicit close, or a prior
       // binding termination that raced this frame) but the binding somehow
       // still produced a fresh dispatch; refuse it rather than deliver it
-      // into a dead link — mirrors ADR-063 decision 4's "subsequent
+      // into a dead link — mirrors ADR-0063 decision 4's "subsequent
       // invocations are refused" outcome without requiring a
       // ClientEndpointBoundary reference, which this package deliberately
       // does not depend on.
@@ -660,7 +660,7 @@ export function createRemoteClientSession(
 
     // Claims binding.outbound() exactly once, on this session's first
     // attach — never at construction — preserving the runtime's lazy-start
-    // contract (ADR-063 decision 2).
+    // contract (ADR-0063 decision 2).
     if (!started) {
       claimAndStartPump();
     }
@@ -686,11 +686,11 @@ export function createRemoteClientSession(
     }
 
     // Redeliver unanswered client_invocation frames after replay, before
-    // live forwarding resumes (ADR-063 decision 3): each redelivery reuses
+    // live forwarding resumes (ADR-0063 decision 3): each redelivery reuses
     // its original callId/leaseToken and re-arms a fresh full-budget dispatch
     // timer, since a peer just handed the work again deserves the full
     // dispatchTimeoutMs rather than a deadline that ran out while it was gone
-    // (ADR-063 decision 5).
+    // (ADR-0063 decision 5).
     for (const pending of pendingInvocations.values()) {
       sink.send(makeInvocationFrame(pending.envelope, sessionId), undefined);
       pending.dispatchTimer = armDispatchTimer(pending.envelope.callId);
@@ -707,7 +707,7 @@ export function createRemoteClientSession(
     attachedSink = undefined;
 
     // The dispatch clock measures reachable-peer responsiveness only
-    // (ADR-063 decision 5): suspend every in-flight timer rather than let it
+    // (ADR-0063 decision 5): suspend every in-flight timer rather than let it
     // keep running against a peer that just vanished.
     for (const pending of pendingInvocations.values()) {
       if (pending.dispatchTimer !== undefined) {

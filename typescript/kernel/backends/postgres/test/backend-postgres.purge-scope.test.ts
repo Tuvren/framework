@@ -17,7 +17,7 @@
 // KRT-BF006 — substrate partition drop for full tenant offboarding (kernel spec
 // §9.4). The PostgreSQL backend realizes a Scope partition as a `scope`
 // column on every family table's rows under the row-level isolation model
-// (ADR-049/ADR-067), so dropping it deletes every row tagged with that scope
+// (ADR-0049/ADR-0067), so dropping it deletes every row tagged with that scope
 // across every family table while every co-tenant Scope's rows in the shared
 // schema are left intact.
 

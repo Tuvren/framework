@@ -81,7 +81,7 @@ export interface BackendInvariantReclamationDeps {
  * horizon), so every retained record only references other retained records
  * and the committed-state invariants hold after deletion.
  *
- * `nowMs` is the caller-supplied wall-clock reference (ADR-050/ADR-051,
+ * `nowMs` is the caller-supplied wall-clock reference (ADR-0050/ADR-0051,
  * KRT-BK002) used only to decide whether a leaseless running run has gone
  * quiet long enough to be excluded from pinning the grace horizon; it never
  * changes which records are reachable.

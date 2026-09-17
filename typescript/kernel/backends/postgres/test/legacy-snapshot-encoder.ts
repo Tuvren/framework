@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Test-only legacy blob-per-scope snapshot encoder (ADR-067 / issue #110).
+// Test-only legacy blob-per-scope snapshot encoder (ADR-0067 / issue #110).
 // `encodeSnapshot` used to live in production source (postgres-backend-
 // persistence.ts) so the relational backend could write the same wire
 // format it read; the relational rewrite retired every production writer

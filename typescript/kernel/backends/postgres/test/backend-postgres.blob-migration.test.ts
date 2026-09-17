@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Issue #110 / ADR-067 coverage gaps closed here:
+// Issue #110 / ADR-0067 coverage gaps closed here:
 //
 // 1. The scope-isolation suite's blob-migration test seeds only a single
 //    `objects` row, so it never proves the open-time migration explodes every
@@ -75,7 +75,7 @@ const TEST_SCHEMA = {
   schemaId: "schema_postgres_blob_migration",
 } satisfies TurnTreeSchema;
 
-// The ADR-011 chunk-aware ordered-path threshold (mirrors
+// The ADR-0011 chunk-aware ordered-path threshold (mirrors
 // backend-postgres.turn-tree-chunk-aware-writes.test.ts): growing an ordered
 // collection past this many entries flips its storage from a flat inline
 // encoding to chunked `ordered_path_chunks` rows.
@@ -307,7 +307,7 @@ afterAll(async () => {
   await cleanupAllocatedSchemas();
 });
 
-describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR-067)", () => {
+describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR-0067)", () => {
   test("migrates a legacy blob snapshot spanning every record family, including duplicate observe-annotation identity and chunked ordered paths, without data loss", async () => {
     // --- Build a realistic multi-family scope through a real kernel over a
     // real backend, touching every persisted record family. ---
@@ -407,7 +407,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
     );
 
     // A second thread whose ordered "messages" path is grown past the
-    // ADR-011 chunking threshold, to cover ordered_path_chunks rows and a
+    // ADR-0011 chunking threshold, to cover ordered_path_chunks rows and a
     // chunked turn_tree_paths variant alongside the first thread's flat one.
     const threadId2 = "thread_migration_chunked";
     const branchId2 = "branch_migration_chunked";
@@ -800,7 +800,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
 describe("@tuvren/backend-postgres blob->row migration multi-scope coverage", () => {
   test("migrates two distinct scopes from the same legacy blob table without cross-scope leakage", async () => {
     // Two backend instances bound to different Scopes but sharing one
-    // schema (ADR-048/049) build genuinely distinct family content: the
+    // schema (ADR-0048/0049) build genuinely distinct family content: the
     // scope-isolation suite's original blob-migration coverage only ever
     // seeded one scope, so the per-scope loop, per-scope blob fetch, and
     // per-scope error attribution in `explodeLegacyBlobSnapshots` had no

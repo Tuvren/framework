@@ -19,8 +19,8 @@
 /**
  * `@tuvren/core` root entrypoint: kernel primitive types (`HashString`,
  * `EpochMs`, the `KernelRecord` family) with their guards, the host-bound
- * tenancy `Scope` seam (ADR-048/049), and the `TuvrenError` family
- * re-exported for convenience per ADR-037.
+ * tenancy `Scope` seam (ADR-0048/0049), and the `TuvrenError` family
+ * re-exported for convenience per ADR-0037.
  *
  * Most imports should go through the focused subpaths (`/errors`,
  * `/messages`, `/events`, `/execution`, `/tools`, `/runner`, `/provider`,
@@ -45,11 +45,11 @@ export {
   isHashString,
   isKernelRecord,
 } from "./lib/kernel-records.js";
-// Tenancy scope seam (ADR-048/049): a host-bound partition identity bound at
+// Tenancy scope seam (ADR-0048/0049): a host-bound partition identity bound at
 // backend construction. The kernel syscall surface stays scope-free.
 export type { Scope } from "./lib/scope.js";
 export { assertScope, DEFAULT_SCOPE, isScope } from "./lib/scope.js";
-// Re-export error family at root for convenience per ADR-037.
+// Re-export error family at root for convenience per ADR-0037.
 export type {
   TuvrenErrorCode,
   TuvrenErrorOptions,

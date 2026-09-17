@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/remote-session",
   "private": true,
-  "description": "Host-owned reattachable remote client session lifecycle seam (ADR-063): keeps a duplex session binding alive across a link that can drop, above the frame vocabulary and below carriage.",
+  "description": "Host-owned reattachable remote client session lifecycle seam (ADR-0063): keeps a duplex session binding alive across a link that can drop, above the frame vocabulary and below carriage.",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "repository": {

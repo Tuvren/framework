@@ -63,7 +63,7 @@ export interface BufferedAssistantSequence {
 
 /**
  * Clone the prompt for the provider call and attach the cooperative
- * cancellation signal out-of-band (ADR-043, KRT-BD006). The signal is attached
+ * cancellation signal out-of-band (ADR-0043, KRT-BD006). The signal is attached
  * after `cloneValue` because an `AbortSignal` is not structured-cloneable;
  * owned bridges forward it to the underlying provider request for full resource
  * containment when the framework stops awaiting at a bound.
@@ -110,7 +110,7 @@ export async function executeGenerateCall(input: {
  * while a {@link StreamAccumulator} absorbs the same chunks into a complete
  * `TuvrenModelResponse` for the durable path.
  *
- * On cooperative cancellation mid-stream (ADR-043, KRT-BD006), the provider
+ * On cooperative cancellation mid-stream (ADR-0043, KRT-BD006), the provider
  * iterator is closed, the accumulator is finalized with `finishReason:
  * "error"` and `partial: true`, and any still-missing terminal events are
  * emitted before returning a `cancelled: true` sequence with whatever

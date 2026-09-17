@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Telemetry-funnel destination contract (ADR-058).
+ * Telemetry-funnel destination contract (ADR-0058).
  *
- * `TuvrenTelemetrySink` (in `./index.ts`, ADR-042) is a push-based, fire-and-
+ * `TuvrenTelemetrySink` (in `./index.ts`, ADR-0042) is a push-based, fire-and-
  * forget *emission* interface. It is not a durable *destination*: it has no
  * delivery contract, no buffering/backpressure semantics, and no channel to
- * surface a delivery failure. ADR-058 adds the missing half so the two-funnel
+ * surface a delivery failure. ADR-0058 adds the missing half so the two-funnel
  * routing decision (CAP-P0-072) has a construction-time seam to bind to, and so
  * the deferred ready-made destination adapters (CAP-P1-073) have a stable
- * contract to implement against before the SDK freeze (ADR-054).
+ * contract to implement against before the SDK freeze (ADR-0054).
  *
  * The one-directional failure-isolation invariant (Architecture v0.12.0 Data
- * Funnel Separation Model; ADR-058 §3) is enforced at the runtime telemetry
+ * Funnel Separation Model; ADR-0058 §3) is enforced at the runtime telemetry
  * boundary (`@tuvren/runtime` `runtime-core-telemetry.ts`), not here: a
  * `deliver` throw is caught there, converted to a {@link
  * TelemetryOperationalSignal}, and can never fail, block, or delay a
@@ -41,7 +41,7 @@ import type {
 
 /**
  * How a destination bounds and sheds telemetry records when it cannot keep up.
- * Owned and declared by the destination adapter (ADR-058 §1) — the runtime does
+ * Owned and declared by the destination adapter (ADR-0058 §1) — the runtime does
  * not enforce it; it is a descriptor an operator can inspect to reason about
  * funnel health. A destination that never buffers omits this field.
  */
@@ -75,7 +75,7 @@ export type TelemetryOperationalSignalKind =
 /**
  * Telemetry-about-telemetry: an operator-observable notice that funnel health
  * degraded. It is never an input to session correctness, continuity, or
- * recovery (ADR-058 §3). `error` reuses the already-secret-screened
+ * recovery (ADR-0058 §3). `error` reuses the already-secret-screened
  * {@link TelemetrySpanError} shape and is absent for non-exceptional signals
  * such as `buffer_overflow`.
  */
@@ -85,7 +85,7 @@ export interface TelemetryOperationalSignal {
 }
 
 /**
- * A durable delivery target for telemetry-funnel records (ADR-058 §1), distinct
+ * A durable delivery target for telemetry-funnel records (ADR-0058 §1), distinct
  * from {@link TuvrenTelemetrySink}. Records arrive in the existing canonical
  * vocabulary and lineage keys, already secret-screened by the runtime.
  */
@@ -114,7 +114,7 @@ export interface TelemetryDestination {
 }
 
 /**
- * Construction-time funnel-routing seam (ADR-058 §2). Combines an emission
+ * Construction-time funnel-routing seam (ADR-0058 §2). Combines an emission
  * {@link TuvrenTelemetrySink} and/or a durable {@link TelemetryDestination};
  * both are optional so a host can route to either, both, or (degenerately)
  * neither. Passed as the `telemetry` option to `createTuvren`, alongside the
@@ -127,7 +127,7 @@ export interface TelemetryRoute {
 }
 
 /**
- * The full construction-time `telemetry` option: a bare sink (ADR-042,
+ * The full construction-time `telemetry` option: a bare sink (ADR-0042,
  * backward-compatible), a bare destination, or a route combining both.
  */
 export type TelemetryRouting =

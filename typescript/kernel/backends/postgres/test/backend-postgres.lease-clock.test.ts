@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// KRT-BG002 — backend-authoritative lease clock (ADR-050, kernel spec §5.2).
+// KRT-BG002 — backend-authoritative lease clock (ADR-0050, kernel spec §5.2).
 // These tests prove that for the shared multi-worker PostgreSQL backend the run
 // lease is stamped and judged against the backend's own clock, not the execution
 // owner's wall clock. Skew is simulated deterministically by injecting one clock

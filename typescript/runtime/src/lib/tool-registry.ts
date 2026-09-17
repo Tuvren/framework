@@ -302,7 +302,7 @@ export function buildClientEndpointTools(
             return makeUnavailableResult(context.callId, capabilityId);
           }
 
-          // Client-result-as-proposal (ADR-052; framework spec "Running Lease
+          // Client-result-as-proposal (ADR-0052; framework spec "Running Lease
           // Ownership"): a client-reported result becomes committed history only
           // through a runtime commit performed under a valid run fencing token.
           // If the run lost execution authority while the client was producing

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-// KRT-BL002 (ADR-054, ADR-056): the pure API-freeze diff model. This module
-// owns the ADR-056 diff table and consistency floor as data-in/data-out logic
+// KRT-BL002 (ADR-0054, ADR-0056): the pure API-freeze diff model. This module
+// owns the ADR-0056 diff table and consistency floor as data-in/data-out logic
 // with no compiler or filesystem access, so the classification semantics can
 // be unit-tested independently of surface extraction. The CLI entry point
 // (tools/scripts/api-freeze-gate.ts) extracts the live surface, feeds it here,
 // and acts on the returned findings.
 
-/** Stability classification derived solely from the TSDoc `@experimental` tag (ADR-056). */
+/** Stability classification derived solely from the TSDoc `@experimental` tag (ADR-0056). */
 export type ExportStability = "experimental" | "stable";
 
 export interface ExportRecord {
@@ -39,7 +39,7 @@ export type EntrypointSurface = Record<string, ExportRecord>;
 export type ApiSurface = Record<string, EntrypointSurface>;
 
 /**
- * The ADR-056 diff table, one row per changed export:
+ * The ADR-0056 diff table, one row per changed export:
  *
  *   export gains @experimental (was untagged/stable)  => BLOCKED (removes a stable guarantee)
  *   export loses @experimental (was tagged)           => ALLOWED, recorded as semver-minor
@@ -77,10 +77,10 @@ export interface FloorViolation {
 export interface SurfaceDiff {
   /** Allowed findings; `semverMinor` marks the subset recorded as semver-minor. */
   allowed: DiffFinding[];
-  /** Blocked findings under the ADR-056 table (overridable only by a declared semver-major). */
+  /** Blocked findings under the ADR-0056 table (overridable only by a declared semver-major). */
   blocked: DiffFinding[];
   /**
-   * ADR-056 consistency-floor violations: untagged exports under a subpath the
+   * ADR-0056 consistency-floor violations: untagged exports under a subpath the
    * authority declares wholly experimental. Never overridable — an untagged
    * export there is a documentation defect, not a silent stable promotion.
    */
@@ -99,10 +99,10 @@ const SEMVER_MINOR_CLASSES: readonly DiffClass[] = [
 
 /**
  * Classify the drift between the committed snapshot surface and the live
- * surface under the ADR-056 diff table. Pure function: no I/O.
+ * surface under the ADR-0056 diff table. Pure function: no I/O.
  *
  * `whollyExperimentalEntrypoints` lists the subpaths the authority declares
- * wholly experimental (ADR-056 consistency floor); the floor is evaluated on
+ * wholly experimental (ADR-0056 consistency floor); the floor is evaluated on
  * the live surface regardless of drift.
  */
 export function classifySurfaceDiff(
@@ -152,7 +152,7 @@ export function classifySurfaceDiff(
   };
 }
 
-/** ADR-056 consistency floor, evaluated on the live surface regardless of drift. */
+/** ADR-0056 consistency floor, evaluated on the live surface regardless of drift. */
 function collectFloorViolations(
   live: ApiSurface,
   whollyExperimentalEntrypoints: readonly string[]
@@ -172,7 +172,7 @@ function collectFloorViolations(
   return floorViolations;
 }
 
-/** One export's row in the ADR-056 diff table; undefined means no change. */
+/** One export's row in the ADR-0056 diff table; undefined means no change. */
 function classifyExportChange(
   entrypoint: string,
   exportName: string,
@@ -194,7 +194,7 @@ function classifyExportChange(
       return {
         class: "stable-export-removed",
         detail:
-          "removing a stable export removes a semver guarantee (ADR-056); blocked unless the change is declared semver-major",
+          "removing a stable export removes a semver guarantee (ADR-0056); blocked unless the change is declared semver-major",
         entrypoint,
         exportName,
         verdict: "blocked",
@@ -219,7 +219,7 @@ function classifyExportChange(
     return {
       class: "experimental-tag-gained",
       detail:
-        "a previously-untagged (stable) export gained @experimental — this removes a stable guarantee (ADR-056); blocked unless declared semver-major",
+        "a previously-untagged (stable) export gained @experimental — this removes a stable guarantee (ADR-0056); blocked unless declared semver-major",
       entrypoint,
       exportName,
       verdict: "blocked",
@@ -232,7 +232,7 @@ function classifyExportChange(
     return {
       class: "experimental-tag-removed",
       detail:
-        "@experimental removed — the export graduates to the stable snapshot (ADR-056 graduation rule); recorded as semver-minor",
+        "@experimental removed — the export graduates to the stable snapshot (ADR-0056 graduation rule); recorded as semver-minor",
       entrypoint,
       exportName,
       verdict: "allowed",
@@ -247,7 +247,7 @@ function classifyExportChange(
     return {
       class: "experimental-signature-changed",
       detail:
-        "signature change on an @experimental export (ADR-056: not gated)",
+        "signature change on an @experimental export (ADR-0056: not gated)",
       entrypoint,
       exportName,
       verdict: "allowed",
@@ -257,7 +257,7 @@ function classifyExportChange(
   return {
     class: "stable-signature-changed",
     detail:
-      "signature change on an untagged (stable) export (ADR-056); blocked unless the change is declared semver-major",
+      "signature change on an untagged (stable) export (ADR-0056); blocked unless the change is declared semver-major",
     entrypoint,
     exportName,
     verdict: "blocked",
@@ -282,7 +282,7 @@ function computeImpliedBump(
 /**
  * The four KRT-BL002 acceptance scenarios as executable fixtures. The gate CLI
  * runs these on every invocation before touching the real surface, so the
- * ADR-056 table cannot silently regress between snapshot runs. Returns the
+ * ADR-0056 table cannot silently regress between snapshot runs. Returns the
  * list of scenario failures (empty means the table behaves as specified).
  */
 export function runDiffTableSelfTest(): string[] {

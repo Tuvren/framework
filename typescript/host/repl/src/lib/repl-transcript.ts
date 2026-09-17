@@ -32,7 +32,7 @@ export interface ReplTranscriptHeader {
     providerMode: string;
     scenario?: string;
     /**
-     * Host-bound tenancy partition identity the session ran under (ADR-048,
+     * Host-bound tenancy partition identity the session ran under (ADR-0048,
      * KRT-BE008). Recorded as correlation context only — never a credential and
      * never a kernel argument. Optional so transcripts authored before scope
      * correlation existed remain readable and replayable.
@@ -111,7 +111,7 @@ const TRANSCRIPT_DURABLE_READ_OPERATIONS = new Set([
   "readBranchMessages",
 ]);
 
-// §3.9 transcript-format constraint (ADR-044, KRT-BD002): the transcript header's
+// §3.9 transcript-format constraint (ADR-0044, KRT-BD002): the transcript header's
 // config.backend.options is a credential-free zone. Backend options are masked
 // to a non-secret backend identity descriptor (kind plus replay-topology fields
 // such as database / schemaName / databasePath) sufficient for replay but not

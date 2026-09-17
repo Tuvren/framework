@@ -48,7 +48,7 @@ interface LegacySnapshotBlobRow {
  * lock transaction; the whole explode is charged to the `blob-migration`
  * phase so a slow first open of a legacy database is attributable.
  *
- * The migration is one-way (ADR-067: downgrade is not supported) and
+ * The migration is one-way (ADR-0067: downgrade is not supported) and
  * all-or-nothing: any failure rolls back the enclosing schema-init
  * transaction, leaving the legacy table intact for the next attempt.
  */
@@ -99,7 +99,7 @@ export async function explodeLegacyBlobSnapshots(
 
       // The legacy primary key was (snapshot_id, scope): the legacy writer
       // only ever wrote snapshot_id = 1, so exactly one row per scope is the
-      // load-bearing assumption `blobs[0]` below relies on. ADR-067 decision
+      // load-bearing assumption `blobs[0]` below relies on. ADR-0067 decision
       // 5 forbids losing any committed logical state, so a second row for
       // the same scope — which `blobs[0]` would otherwise silently drop —
       // must fail loudly instead of being ignored.

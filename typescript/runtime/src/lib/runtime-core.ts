@@ -258,7 +258,7 @@ export const DEFAULT_AGENT_SCHEMA: TurnTreeSchema = {
  */
 export interface RuntimeCoreOptions {
   /**
-   * Framework-enforced per-turn execution bounds (ADR-043, KRT-BD006). Applied
+   * Framework-enforced per-turn execution bounds (ADR-0043, KRT-BD006). Applied
    * above the runner's loop policy; unset fields take the §3.11 safe defaults
    * and every configured bound must be a finite positive integer.
    */
@@ -310,7 +310,7 @@ export interface RuntimeCoreOptions {
    * manifest extension-state budget warning). */
   onWarning?: (warning: RuntimeWarning) => void;
   /**
-   * Opt-in crypto-shredding codec (ADR-051, KRT-BF005). When supplied, durable
+   * Opt-in crypto-shredding codec (ADR-0051, KRT-BF005). When supplied, durable
    * untrusted-edge message payloads are encrypted under host-held keys before
    * `store.put`/`staging.stage` and decrypted on durable read; destroying a key
    * renders the payload unrecoverable while leaving the lineage hash structure
@@ -318,7 +318,7 @@ export interface RuntimeCoreOptions {
    */
   payloadCodec?: PayloadCodec;
   /**
-   * Substrate partition-drop callback for full tenant offboarding (ADR-051,
+   * Substrate partition-drop callback for full tenant offboarding (ADR-0051,
    * §4.17). Wired by `createTuvren` from the owned backend's `purgeScope`; left
    * unset when the runtime is constructed against an externally-supplied kernel
    * (no owned substrate), in which case `maintenance.purgeScope()` rejects.
@@ -352,7 +352,7 @@ export interface RuntimeCoreOptions {
    */
   runnerRegistry?: RunnerRegistry;
   /**
-   * The host-bound Scope this runtime is constructed against (ADR-048). It is
+   * The host-bound Scope this runtime is constructed against (ADR-0048). It is
    * correlation context for operational telemetry and transcripts only — never
    * a kernel syscall argument — and should match the Scope the host bound to
    * the durable backend. Defaults to the single-tenant default Scope.
@@ -450,7 +450,7 @@ type IterationPhaseResult =
     };
 
 /**
- * Per-logical-turn execution-bounds accounting (ADR-043, KRT-BD006), keyed by
+ * Per-logical-turn execution-bounds accounting (ADR-0043, KRT-BD006), keyed by
  * execution handle and carried across approval pauses so a resume never
  * resets the wall-clock deadline or the cumulative tool-call count.
  */
@@ -837,10 +837,10 @@ class RuntimeCore implements TuvrenRuntime {
     return listBranches(this.options.kernel, input);
   }
 
-  // ── Data-Lifecycle Maintenance Surface (ADR-051, §4.17) ────────────────
+  // ── Data-Lifecycle Maintenance Surface (ADR-0051, §4.17) ────────────────
 
   /**
-   * The data-lifecycle maintenance surface (ADR-051, §4.17): `reclaim`
+   * The data-lifecycle maintenance surface (ADR-0051, §4.17): `reclaim`
    * forwards to the kernel's reclamation mechanism, and `purgeScope` drops
    * the bound Scope's substrate partition when the runtime owns a backend
    * that supports it (rejecting with `scope_purge_unsupported` otherwise).
@@ -979,7 +979,7 @@ class RuntimeCore implements TuvrenRuntime {
     // turn, so carry the cumulative tool-call count and the end-to-end wall-clock
     // deadline forward; otherwise a runner could reset two hard-stop budgets on
     // every approval pause. The per-loop-run abort timer is re-armed against the
-    // carried deadline when the resumed loop enters. (ADR-043, BD006)
+    // carried deadline when the resumed loop enters. (ADR-0043, BD006)
     const previousBounds = this.boundsTurnStates.get(previousHandle);
     if (previousBounds !== undefined) {
       this.boundsTurnStates.set(resumedHandle, {
@@ -1367,7 +1367,7 @@ class RuntimeCore implements TuvrenRuntime {
     return { codec: this.options.payloadCodec, scope: this.options.scope };
   }
 
-  // ── Execution Bounds (ADR-043, KRT-BD006) ───────────────────────────────
+  // ── Execution Bounds (ADR-0043, KRT-BD006) ───────────────────────────────
 
   /**
    * Returns the per-turn bounds state for a handle, initializing the
@@ -1496,7 +1496,7 @@ class RuntimeCore implements TuvrenRuntime {
     );
     // A fatal bounds error anchors the terminal bounded-execution path: emit the
     // execution.bounded telemetry event alongside the fatal error event (before
-    // the failed turn.end), exactly once per handle. (ADR-043, BD006)
+    // the failed turn.end), exactly once per handle. (ADR-0043, BD006)
     if (fatal && isBoundExceededError(error)) {
       this.emitBoundedTelemetryIfNeeded(handle, error, loopState);
     }

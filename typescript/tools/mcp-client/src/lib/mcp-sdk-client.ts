@@ -191,7 +191,7 @@ function createTransport(config: McpTransportConfig): Transport {
  * (bearer becomes an `Authorization` header; header-auth sets the named
  * header directly). This is the one place `McpAuth` material is turned into
  * wire-format request headers, confined to the transport edge (README
- * "Secret Isolation — Edge Confinement", ADR-044).
+ * "Secret Isolation — Edge Confinement", ADR-0044).
  */
 function createHttpHeaders(
   config: Extract<McpTransportConfig, { transport: "http-sse" }>

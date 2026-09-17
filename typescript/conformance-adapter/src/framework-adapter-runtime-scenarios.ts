@@ -249,7 +249,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     );
     const scenarioCase = dependencies.readRecordString(scenario, "case");
 
-    // ADR-058 §5 funnel-isolation scenarios (KRT-BJ005): these cases construct
+    // ADR-0058 §5 funnel-isolation scenarios (KRT-BJ005): these cases construct
     // their own telemetry routing, so they branch before the push-based sink
     // capture the remaining cases share.
     if (scenarioCase === "destination-health") {
@@ -464,7 +464,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     };
   }
 
-  // ADR-058 §5a/§5c (KRT-BJ005): run the same deterministic turn against a
+  // ADR-0058 §5a/§5c (KRT-BJ005): run the same deterministic turn against a
   // telemetry destination, reporting the implementation-observed session event
   // types, terminal phase, delivered telemetry record kinds, and
   // operational-signal kinds. This function only measures; the shared
@@ -539,7 +539,7 @@ export function createFrameworkAdapterRuntimeScenarios(
     };
   }
 
-  // ADR-058 §5b (KRT-BJ005): run a turn whose input signal and assistant reply
+  // ADR-0058 §5b (KRT-BJ005): run a turn whose input signal and assistant reply
   // carry the scenario-owned content markers under default push-based routing,
   // and report both funnels' surfaces — the content-funnel message texts and
   // the raw telemetry records — so the shared plan can grade content-payload
@@ -1890,7 +1890,7 @@ function createTelemetryCapture(): {
 }
 
 // The content funnel's assistant-text surface: `text.done` stream events carry
-// the full message text the session emitted (ADR-058 §5b evidence source).
+// the full message text the session emitted (ADR-0058 §5b evidence source).
 function readTextDoneTexts(events: readonly TuvrenStreamEvent[]): string[] {
   return events.flatMap((event) =>
     event.type === "text.done" ? [event.text] : []

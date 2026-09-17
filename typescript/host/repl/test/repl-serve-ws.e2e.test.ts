@@ -36,7 +36,7 @@
  * This test proves two variants, not the single "kill -9 the server and
  * resume the exact same in-flight redelivery loop" scenario the milestone
  * text opens with — see below for why that stronger claim is not honestly
- * provable with this runtime today, and which ADR-065 obligation is the
+ * provable with this runtime today, and which ADR-0065 obligation is the
  * blocker.
  *
  * Variant A (fully proven): reconnect-redelivery, restructured so redelivery
@@ -56,7 +56,7 @@
  * to force a real reconnect. The server's `RemoteClientSession` never
  * observed a settling `client_result`, so its `pendingInvocations` entry for
  * that `callId` survives the reconnect untouched; on reattach it redelivers
- * the still-unanswered `client_invocation` (ADR-063 decision 3). The peer's
+ * the still-unanswered `client_invocation` (ADR-0063 decision 3). The peer's
  * `callState` for that `callId` is now `"answered"` (the handler already
  * ran), so `handleInvocation` takes the redelivery branch that RE-SENDS the
  * recorded result rather than re-running the handler — and this time the
@@ -84,10 +84,10 @@
  * asserts the committed capability result survived intact. It does NOT
  * attempt to reconnect that sessionId to a newly spawned server and assert
  * "resumed": `RemoteClientSession`/replay-buffer state is in-memory and
- * process-local (ADR-063), so a new server process treats an unknown
+ * process-local (ADR-0063), so a new server process treats an unknown
  * sessionId as a fresh turn, and cold recovery of an in-flight turn
  * re-invokes the model and mints a fresh callId rather than re-presenting
- * the staged result — ADR-065 obligation 1
+ * the staged result — ADR-0065 obligation 1
  * (`typescript/runtime/src/lib/idempotency-identity.ts`'s own doc comment,
  * "Recovery re-presents [callId] from committed or staged state", describes
  * the target design; staged-result re-presentation across a cold restart is

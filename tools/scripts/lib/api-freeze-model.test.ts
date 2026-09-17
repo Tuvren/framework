@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// KRT-BL002: unit coverage for the ADR-056 diff table beyond the four
+// KRT-BL002: unit coverage for the ADR-0056 diff table beyond the four
 // acceptance fixtures the gate self-tests on every run.
 
 import { describe, expect, test } from "bun:test";
@@ -43,7 +43,7 @@ function surface(records: Record<string, Partial<ExportRecord>>): ApiSurface {
   };
 }
 
-describe("classifySurfaceDiff (ADR-056 diff table)", () => {
+describe("classifySurfaceDiff (ADR-0056 diff table)", () => {
   test("identical surfaces produce no drift", () => {
     const diff = classifySurfaceDiff(
       surface({ A: {} }),

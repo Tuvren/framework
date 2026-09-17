@@ -214,7 +214,7 @@ const EVIDENCE = {
     generatedArtifact:
       "N/A - kernel protocol behavior is fixture/conformance-backed; grammar source is spec/kernel/cddl/kernel-records.cddl",
   },
-  // Scope-resolved object identity (kernel spec §2.3, ADR-048/049). KRT-BE001
+  // Scope-resolved object identity (kernel spec §2.3, ADR-0048/0049). KRT-BE001
   // declared the surface and its conformance-plan reference in the
   // kernel-protocol authority packet (bindingSections.scope-isolation), with the
   // cross-scope isolation conformance contract at kernel-scope-isolation.json.
@@ -235,7 +235,7 @@ const EVIDENCE = {
       "N/A - scope isolation is conformance-plan authority without generated schema artifacts",
   },
   // Data-lifecycle reclamation + crypto-shredding erasure (kernel spec §9.4,
-  // ADR-051). KRT-BF001 declared the maintenance.reclamation surface and its
+  // ADR-0051). KRT-BF001 declared the maintenance.reclamation surface and its
   // conformance-plan reference; KRT-BF003/BF004 realize the primitive across the
   // memory, SQLite, and PostgreSQL backends. KRT-BF007 promoted the plan to
   // runnable, registered, evidence-backed conformance: the plan is registered in
@@ -264,7 +264,7 @@ const EVIDENCE = {
     generatedArtifact:
       "spec/providers/artifacts/json-schema; spec/providers/artifacts/openapi",
   },
-  // Conversation-state ownership (framework spec §1.1 v0.21 note, ADR-053,
+  // Conversation-state ownership (framework spec §1.1 v0.21 note, ADR-0053,
   // PRD CAP-P0-069). The durable lineage is the unconditional source of truth
   // for a provider request; provider server-side state, carried continuity
   // artifacts, and provider-side caching are reconstructable optimizations,
@@ -337,9 +337,9 @@ const EVIDENCE = {
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact: "spec/host/artifacts/json-schema",
   },
-  // Backend-authoritative execution-lease clock (kernel spec §5.2, ADR-050)
+  // Backend-authoritative execution-lease clock (kernel spec §5.2, ADR-0050)
   // composed with side-effect-once under preemption (framework spec "Running
-  // Lease Ownership", ADR-052). KRT-BG001 declared the surface and its
+  // Lease Ownership", ADR-0052). KRT-BG001 declared the surface and its
   // conformance-plan reference; KRT-BG002/BG003/BG004 realized the backend-time
   // lease clock, the idempotency envelope, the no-retry-on-authority-loss
   // guarantee, and the client-result-as-proposal invariant. KRT-BG005 promoted
@@ -375,7 +375,7 @@ const EVIDENCE = {
     generatedArtifact:
       "N/A - restart recovery is conformance-plan authority without generated schema artifacts",
   },
-  // KRT-BC001/BC002: capability-orchestration model (ADR-046) — four
+  // KRT-BC001/BC002: capability-orchestration model (ADR-0046) — four
   // execution classes, MCP-as-binding, exposure/invocation policy, and
   // per-class observation limits. All §11 normative claims are backed by
   // the cross-class integration conformance plan plus the per-class plans
@@ -390,7 +390,7 @@ const EVIDENCE = {
     fixture: "spec/conformance/engine/scenarios/runtime-api-scenarios.json",
     generatedArtifact: "spec/core/artifacts/json-schema",
   },
-  // KRT-BD008: §4.12 Execution Bounds (ADR-043) — the framework-owned hard-stop
+  // KRT-BD008: §4.12 Execution Bounds (ADR-0043) — the framework-owned hard-stop
   // guard above runner LoopPolicy. All §4.12 normative claims are backed by the
   // runtime-api execution-bounds checks promoted into
   // `runtime-api-callables-extended.json` (KRT-BD007) and the ExecutionBounds /
@@ -1039,7 +1039,7 @@ function classifySaaSReadinessTargetClaim(
     // side-effecting call is incorporated by callId so the effect is driven at
     // most once, and the framework client-result-as-proposal check proves a
     // client result returning after authority loss is never committed, so the
-    // claim is authority-backed-conformance-covered. (ADR-065 replaced the
+    // claim is authority-backed-conformance-covered. (ADR-0065 replaced the
     // original (runId, callId, fencingToken) triple with the (turnId, callId)
     // logical call identity: runId is per-attempt and the fencing token rotates
     // per renewal, so the old key churned on retry, resume, and recovery. The
@@ -1078,10 +1078,10 @@ function classifySaaSReadinessTargetClaim(
   // runs against capability-bearing backends; it does NOT exercise the §9.4
   // `false` non-support row (a backend advertising maintenance.reclamation=false
   // rejecting with the `kernel_capability_unsupported` typed error). That row is
-  // governed by the capability-gate contract (ADR-034), not the reclamation
+  // governed by the capability-gate contract (ADR-0034), not the reclamation
   // mechanism, so it is deliberately excluded here and left to the canonical
   // capability-gating classifier (classifyKernelCoreSection, §9 → KRT-AM010).
-  // Letting the single ADR-034 rule own that decision keeps this branch from
+  // Letting the single ADR-0034 rule own that decision keeps this branch from
   // re-asserting coverage the capable-path evidence never produced. The
   // discriminator is the `kernel_capability_unsupported` typed-error code — a
   // stable contract token (kernel-types.ts / the kernel-protocol authority
@@ -1111,7 +1111,7 @@ function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
   }
 
   // KRT-BD008: §4.12 Execution Bounds is the framework-owned guard above
-  // LoopPolicy (ADR-043). Route every §4.12 claim deterministically to the
+  // LoopPolicy (ADR-0043). Route every §4.12 claim deterministically to the
   // execution-bounds authority so incidental keywords (e.g. "tool", "cancel")
   // cannot misroute it through the control-surface or runtime classifiers.
   if (isSection(section, "4.12")) {
@@ -1766,7 +1766,7 @@ function classifyKernelCoreSection(
       "kernel capability-gated syscalls",
       EVIDENCE.kernelProtocol,
       "KRT-AM010",
-      "ADR-034 capability gate semantics are authority-backed; conformance plans gain thread.enumeration check sets in KRT-AM010."
+      "ADR-0034 capability gate semantics are authority-backed; conformance plans gain thread.enumeration check sets in KRT-AM010."
     );
   }
 

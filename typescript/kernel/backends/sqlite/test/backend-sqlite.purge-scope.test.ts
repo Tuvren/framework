@@ -16,7 +16,7 @@
 
 // KRT-BF006 — substrate partition drop for full tenant offboarding (kernel spec
 // §9.4). The SQLite backend realizes a Scope partition as its own database file
-// (file-per-scope, ADR-049), so dropping it removes that file while every
+// (file-per-scope, ADR-0049), so dropping it removes that file while every
 // co-tenant Scope's sibling file is left intact.
 
 import { ok, strictEqual } from "node:assert/strict";

@@ -40,7 +40,7 @@ const HASH_A = "a".repeat(64);
 const HASH_B = "b".repeat(64);
 
 // The relocated gRPC transport codec (moved from `@tuvren/runtime` into this leaf
-// by ADR-059 / KRT-BJ002) carried no package-local coverage. These tests pin the
+// by ADR-0059 / KRT-BJ002) carried no package-local coverage. These tests pin the
 // pure domain<->proto transforms it owns: every `toProto*` must round-trip through
 // its matching `require*`/`from*` decoder, and the error/enum helpers must keep
 // their documented contracts. No live gRPC channel is involved.

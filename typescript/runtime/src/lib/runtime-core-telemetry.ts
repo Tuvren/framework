@@ -57,12 +57,12 @@ interface TimedSpanStart {
  * All emission paths are throw-proof toward the caller: sink or destination
  * failures are converted into operational signals (or a single last-resort
  * console warning) and never propagate back into the execution path
- * (ADR-058 §3).
+ * (ADR-0058 §3).
  */
 export interface RuntimeTelemetryEmitter {
   /**
    * Emit the bounded-execution telemetry event when a hard-stop execution bound
-   * is breached (ADR-043, KRT-BD006). The authoritative integer limit/observed
+   * is breached (ADR-0043, KRT-BD006). The authoritative integer limit/observed
    * values also live on the failed `ExecutionResult` and the canonical `error`
    * event details; the telemetry attributes carry decimal-string encodings.
    */
@@ -119,12 +119,12 @@ export interface RuntimeTelemetryEmitter {
  * Creates the {@link RuntimeTelemetryEmitter} for one runtime instance.
  *
  * The `telemetry` routing union (bare sink, bare destination, or route
- * object) is normalized once at construction (ADR-058 §2); a missing sink
+ * object) is normalized once at construction (ADR-0058 §2); a missing sink
  * falls back to `NoopTelemetrySink`. Every record fans out to both the sink
  * and, when routed, the durable destination. Failures on either channel are
  * reported through the destination's operational-signal callback, degrading
  * to a single last-resort `console.warn` when that channel is absent or
- * itself throws — telemetry can never fail or delay execution (ADR-058
+ * itself throws — telemetry can never fail or delay execution (ADR-0058
  * §1/§3). Attributes are secret-screened before emission.
  *
  * @param input.now - Clock used for span end times and event timestamps not
@@ -136,7 +136,7 @@ export function createRuntimeTelemetryEmitter(input: {
   scope: string;
   telemetry?: TelemetryRouting;
 }): RuntimeTelemetryEmitter {
-  // ADR-058 §2: normalize the construction-time routing union (bare sink, bare
+  // ADR-0058 §2: normalize the construction-time routing union (bare sink, bare
   // destination, or a route object) once into its sink + destination channels.
   const { sink: routedSink, destination } = normalizeTelemetryRouting(
     input.telemetry
@@ -150,7 +150,7 @@ export function createRuntimeTelemetryEmitter(input: {
     Map<string, TimedSpanStart>
   >();
 
-  // ADR-058 §1/§3: the operational-signal channel is the destination's
+  // ADR-0058 §1/§3: the operational-signal channel is the destination's
   // callback. When present it is invoked for every funnel-health event (never
   // one-shot, so an operator sees each failure); when absent, or when the
   // callback itself throws, the runtime falls back to a single last-resort
@@ -197,7 +197,7 @@ export function createRuntimeTelemetryEmitter(input: {
     }
   };
 
-  // ADR-058 §3: one-directional failure isolation. A sink or destination throw
+  // ADR-0058 §3: one-directional failure isolation. A sink or destination throw
   // is caught here at the telemetry boundary, converted to an operational
   // signal, and can never fail, block, or delay a kernel checkpoint or a
   // content-funnel commit. Every runtime telemetry record fans out to both the
@@ -606,7 +606,7 @@ function createSpanError(error: unknown): TelemetrySpanError | undefined {
 
 // A host can throw a value whose string coercion itself throws (a null-prototype
 // object, a throwing `toString`). The telemetry boundary must stay throw-proof
-// even while describing such a value (ADR-058 §3), so the coercion is guarded.
+// even while describing such a value (ADR-0058 §3), so the coercion is guarded.
 function coerceThrownToMessage(thrown: unknown): string {
   try {
     return String(thrown);
@@ -615,7 +615,7 @@ function coerceThrownToMessage(thrown: unknown): string {
   }
 }
 
-// ADR-058 §2: resolve the construction-time `telemetry` routing union into its
+// ADR-0058 §2: resolve the construction-time `telemetry` routing union into its
 // sink + destination channels. Detection is structural because the route object
 // (`{ sink?; destination? }`) has all-optional members and would otherwise
 // subsume the bare-sink/bare-destination forms: a value exposing `event`+`span`
@@ -653,9 +653,9 @@ function normalizeTelemetryRouting(telemetry: TelemetryRouting | undefined): {
 }
 
 // Project a caught throw into the already-secret-screened operational-signal
-// error shape (ADR-058 §1 reuses `TelemetrySpanError`), applying the same
+// error shape (ADR-0058 §1 reuses `TelemetrySpanError`), applying the same
 // summary sanitization the span emitter uses so a delivery failure cannot leak
-// credential-shaped text onto the telemetry funnel (ADR-044).
+// credential-shaped text onto the telemetry funnel (ADR-0044).
 function toOperationalSignalError(
   error: unknown
 ): TelemetrySpanError | undefined {

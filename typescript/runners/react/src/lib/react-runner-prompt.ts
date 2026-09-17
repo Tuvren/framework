@@ -105,7 +105,7 @@ export function createAroundModelContextSnapshot(input: {
  * Assembles the {@link PreparedPromptState} for one iteration: collects
  * extension/config system messages ahead of conversation history, resolves
  * the provider-facing model config, and admits provider-native/mediated
- * tools through invocation-time capability policy (ADR-046 §4.21).
+ * tools through invocation-time capability policy (ADR-0046 §4.21).
  */
 export function preparePromptState(input: {
   config: Readonly<AgentConfig>;
@@ -470,7 +470,7 @@ function surfacesMatch(left: unknown, right: unknown): boolean {
 /**
  * Filters `AgentConfig.providerNativeTools`/`providerMediatedTools` through
  * the invocation-time capability policy engine, when one is configured
- * (ADR-046 §4.21). A tool is admitted when there is no policy engine, or
+ * (ADR-0046 §4.21). A tool is admitted when there is no policy engine, or
  * when the engine's `evaluateInvocation` decision for its binding admits it;
  * denied tools are dropped from the prompt entirely rather than surfaced to
  * the model. Bindings are constructed inline (rather than via the shared
@@ -494,7 +494,7 @@ function admitProviderTools<
     const capabilityId =
       (tool as { capabilityId?: string }).capabilityId ?? tool.name;
 
-    // Invocation-time policy check per ADR-046 §4.21. When no engine is
+    // Invocation-time policy check per ADR-0046 §4.21. When no engine is
     // configured, all provider tools are admitted. Construct the binding
     // inline — the resolver factory lives in @tuvren/runtime which would
     // create a circular dependency here.

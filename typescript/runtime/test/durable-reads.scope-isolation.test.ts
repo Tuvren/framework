@@ -18,11 +18,11 @@
 //
 // The Durable-Read Surface (listThreads, listBranches, state-at-TurnNode,
 // history walk, branch messages, store.has/store.get) is backend-agnostic
-// framework composition over kernel structural primitives (ADR-036). This suite
+// framework composition over kernel structural primitives (ADR-0036). This suite
 // is the authoritative proof of that composition: constructed over a scope-bound
 // backend, every surface operation returns only the constructing scope's state,
 // and identical content under two scopes is two independent durable objects with
-// no cross-scope dedup (ADR-049).
+// no cross-scope dedup (ADR-0049).
 //
 // The composition has no backend-specific branch, so the in-memory backend is
 // the canonical substrate here (and the only one the framework's Bun test runner

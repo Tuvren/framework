@@ -15,7 +15,7 @@
  */
 
 // Issue #108 / #110: validates the postgres backend's PhaseObserver seam is
-// behavior-neutral under the relational write path (ADR-067): a
+// behavior-neutral under the relational write path (ADR-0067): a
 // RecordingPhaseObserver must leave durable rows identical to NOOP /
 // omitted observers, and must capture the phases the relational transact()
 // path actually runs (lock-wait → validate-write-set → write) rather than
@@ -121,7 +121,7 @@ afterAll(async () => {
   await cleanupAllocatedSchemas();
 });
 
-describe("@tuvren/backend-postgres phase observer seam (ADR-067 relational persistence)", () => {
+describe("@tuvren/backend-postgres phase observer seam (ADR-0067 relational persistence)", () => {
   test("omitting phaseObserver, NOOP_PHASE_OBSERVER, and an active RecordingPhaseObserver all persist identical records", async () => {
     // A fixed clock is load-bearing here: created_at_ms is part of the
     // row-for-row comparison below, so every construction must stamp the

@@ -16,7 +16,7 @@
 
 /**
  * Conformance adapter operations for the `tuvren.framework.event-stream-ws`
- * WebSocket carriage packet (ADR-062, `spec/streaming/ws/`). Two families:
+ * WebSocket carriage packet (ADR-0062, `spec/streaming/ws/`). Two families:
  * pure decode-trace checks over `parseWsMessage` (no runtime involved), and
  * live-session checks that drive a real `@tuvren/runtime` turn through
  * `createDuplexSessionBinding` + `createWsSessionTransport`, mirroring the
@@ -159,7 +159,7 @@ function assertNeverParsed(value: never): never {
 }
 
 // ---------------------------------------------------------------------------
-// ADR-063 composition helper: binding → session → transport → socket.
+// ADR-0063 composition helper: binding → session → transport → socket.
 //
 // @tuvren/stream-ws no longer takes a DuplexSessionBinding or a replay
 // buffer; it attaches beneath a @tuvren/remote-session RemoteClientSession,
@@ -290,13 +290,13 @@ async function runSessionRoundtrip(): Promise<AdapterProjection> {
 // ---------------------------------------------------------------------------
 // Operation: reconnect with cursor
 //
-// ADR-063: sequencer and replay-buffer ownership moved host-side into
+// ADR-0063: sequencer and replay-buffer ownership moved host-side into
 // @tuvren/remote-session, so a real cross-socket reconnect over the SAME
 // session (not a second, independently-claimed binding) is now possible and
 // is exactly what this operation exercises. A first transport observes a
 // few sequenced frames from a real runtime turn, is then closed early
 // (simulating a dropped link — this only detaches the sink from the
-// session, per ADR-063 decision 4, it does not end the session), and a
+// session, per ADR-0063 decision 4, it does not end the session), and a
 // second transport attaches to the SAME session with a cursor captured from
 // the first frame it ever saw. Because the underlying turn may still be
 // producing further events at the moment of reconnect, this operation
@@ -374,7 +374,7 @@ async function runReconnectWithCursor(): Promise<AdapterProjection> {
   const midCursor = firstFrames[0]?.cursor as string;
   const midSequence = decodeResumeCursor(midCursor)?.sequence;
 
-  // Simulated drop: detaches this sink from the session (ADR-063 decision
+  // Simulated drop: detaches this sink from the session (ADR-0063 decision
   // 4) without ending it — the underlying turn keeps running.
   firstTransport.close();
 

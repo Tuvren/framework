@@ -25,7 +25,7 @@
  * writes are never observable.
  *
  * {@link createMemoryScopeStore} builds the shared scope-keyed substrate
- * (ADR-049): passing one store to several `createMemoryBackend` calls lets
+ * (ADR-0049): passing one store to several `createMemoryBackend` calls lets
  * backends bound to the same Scope share durable state while distinct Scopes
  * stay isolated by construction.
  *

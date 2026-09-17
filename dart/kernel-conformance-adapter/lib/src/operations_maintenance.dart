@@ -225,7 +225,7 @@ Map<String, Object?> _observeReclaimGraceWindow() {
 
 /// Proves a leaseless (no execution lease ever acquired) running run whose
 /// creator has effectively crashed stops pinning the grace horizon once it
-/// has gone quiet past the 24h admin-expiry window (ADR-050/ADR-051), so a
+/// has gone quiet past the 24h admin-expiry window (ADR-0050/ADR-0051), so a
 /// later orphan becomes reclaimable.
 Map<String, Object?> _observeLeaselessRunPastAdminExpiry() {
   final (k, clock) = newManualClockRuntimeKernel(0);

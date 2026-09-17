@@ -16,7 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 
-// KRT-BF006 — Framework Maintenance Surface + Tenant-Offboarding Flow (ADR-051,
+// KRT-BF006 — Framework Maintenance Surface + Tenant-Offboarding Flow (ADR-0051,
 // architecture flow §4.17).
 //
 // End-to-end proof over real memory backends sharing one scope-keyed substrate:
@@ -56,7 +56,7 @@ import {
 const SCOPE_A = "tenant.A";
 const SCOPE_B = "tenant.B";
 
-// ADR-057: createTuvren requires a constructed runner factory instance. These
+// ADR-0057: createTuvren requires a constructed runner factory instance. These
 // maintenance-surface tests never execute a turn, so a minimal end-turn factory
 // suffices — the runner is registered but never invoked.
 function offboardingRunnerFactory(): RuntimeRunnerFactory {

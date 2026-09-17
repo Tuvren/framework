@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Provider-bridge secret screening at the seam (ADR-044/058, KRT-BK004).
+// Provider-bridge secret screening at the seam (ADR-0044/0058, KRT-BK004).
 // `requestBody` and response-header values captured into `bridgeExtras`
 // previously passed only through `sanitizeMetadataValue` (JSON-safety
 // normalization, no pattern-based secret detection) before reaching

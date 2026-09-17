@@ -23,7 +23,7 @@ import type { TuvrenToolDefinition } from "@tuvren/core/tools";
 import { createBindingResolver } from "./binding-resolver.js";
 
 /**
- * Standard per-class CapabilityObservation limits per §3.13 / ADR-046.
+ * Standard per-class CapabilityObservation limits per §3.13 / ADR-0046.
  *
  * - tuvren-server: full lifecycle control.
  * - provider-native / provider-mediated: observation from provider-exposed

@@ -15,7 +15,7 @@
  */
 
 /**
- * Retired blob-era snapshot decode surface (ADR-067 / issue #110). This
+ * Retired blob-era snapshot decode surface (ADR-0067 / issue #110). This
  * module's only production reader is the one-time open-time migration in
  * `postgres-blob-migration.ts`, which lazily imports it (via
  * `postgres-schema-init.ts`'s `migrateLegacyBlobSnapshotsIfPresent`) to
@@ -85,7 +85,7 @@ export const CURRENT_SNAPSHOT_VERSION = 1;
  * exercise this decode path directly do so against a snapshot payload built
  * by the test-only `encodeSnapshot` in `test/legacy-snapshot-encoder.ts` (the
  * writer side of this wire format retired from production source once
- * ADR-067's relational schema replaced blob-per-scope persistence).
+ * ADR-0067's relational schema replaced blob-per-scope persistence).
  *
  * @throws TuvrenPersistenceError with code `postgres_backend_snapshot_payload_invalid`
  *   when the payload or a field's shape is malformed, or

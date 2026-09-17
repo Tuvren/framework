@@ -29,7 +29,7 @@
  * `spec/host/client-endpoint-integration.md` and
  * `spec/streaming/ws/bindings/typescript.md`:
  *
- * - a `sessionId -> RemoteClientSession` registry is host state (ADR-063
+ * - a `sessionId -> RemoteClientSession` registry is host state (ADR-0063
  *   consequences) — this module owns it;
  * - `RemoteClientSessionOptions.onEnded` is wired to close whichever
  *   transport is currently attached with code `1000`, then the registry
@@ -247,9 +247,9 @@ export interface ReplWsSessionCreatedInfo {
 
 /** Options accepted by {@link createReplWsSessionRegistry}. */
 export interface ReplWsSessionRegistryOptions {
-  /** How long a detached session waits for a reattach (ADR-063 decision 4). */
+  /** How long a detached session waits for a reattach (ADR-0063 decision 4). */
   disconnectGraceMs: number;
-  /** How long a dispatched client_invocation may go unanswered while attached (ADR-063 decision 5). */
+  /** How long a dispatched client_invocation may go unanswered while attached (ADR-0063 decision 5). */
   dispatchTimeoutMs: number;
   /**
    * Observability hook invoked once per freshly created demo turn (never on
@@ -260,7 +260,7 @@ export interface ReplWsSessionRegistryOptions {
   onSessionCreated?: (info: ReplWsSessionCreatedInfo) => void;
   /** Provider driving each session's single demo turn. Defaults to {@link createServeWsDemoProvider}. */
   provider?: TuvrenProvider;
-  /** Capacity of each session's replay window (ADR-061). */
+  /** Capacity of each session's replay window (ADR-0061). */
   replayBufferCapacity: number;
   /** The runtime backing every session's demo turn. */
   runtime: TuvrenRuntime;
@@ -269,7 +269,7 @@ export interface ReplWsSessionRegistryOptions {
 }
 
 /**
- * Host-owned `sessionId -> RemoteClientSession` registry (ADR-063
+ * Host-owned `sessionId -> RemoteClientSession` registry (ADR-0063
  * consequences): the state a `--serve-ws` process must keep so a reconnect
  * with a known `sessionId` can reattach to the *same* session rather than
  * starting a new turn.
@@ -357,7 +357,7 @@ export function createReplWsSessionRegistry(
       disconnectGraceMs: options.disconnectGraceMs,
       dispatchTimeoutMs: options.dispatchTimeoutMs,
       onEnded: () => {
-        // ADR-063/spec/streaming/ws/bindings/typescript.md host obligation:
+        // ADR-0063/spec/streaming/ws/bindings/typescript.md host obligation:
         // wire onEnded to close whichever transport currently owns this
         // session with the normal-closure code, then release the registry
         // slot so a later handshake for the same sessionId mints a fresh

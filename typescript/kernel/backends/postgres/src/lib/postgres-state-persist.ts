@@ -47,7 +47,7 @@ const MAX_PARAMETERS_PER_STATEMENT = 20_000;
  * earlier in the same transaction — so the inserts are deliberately strict:
  * a key conflict can only mean a genuine anomaly (e.g. a duplicate
  * record-key derivation) and must abort the migration transaction rather
- * than silently drop a row (ADR-067 decision 5: no committed logical state
+ * than silently drop a row (ADR-0067 decision 5: no committed logical state
  * may be lost).
  *
  * Foreign keys are DEFERRABLE INITIALLY DEFERRED, so insert order is

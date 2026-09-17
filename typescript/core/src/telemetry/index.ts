@@ -18,7 +18,7 @@
  * `@tuvren/core/telemetry` — the host-facing telemetry contract: the
  * span/event vocabulary with its lineage correlation context, the
  * `TuvrenTelemetrySink` seam with its behavior-free `NoopTelemetrySink`
- * default, and the telemetry-funnel destination/routing contract (ADR-058)
+ * default, and the telemetry-funnel destination/routing contract (ADR-0058)
  * re-published from the sibling `telemetry-destination` module.
  *
  * @packageDocumentation
@@ -35,7 +35,7 @@ export interface TelemetryLineage {
   branchId: string;
   runId?: string;
   /**
-   * The host-bound Scope (tenancy partition identity, ADR-048) the runtime is
+   * The host-bound Scope (tenancy partition identity, ADR-0048) the runtime is
    * constructed against. Correlation context only; it is never a kernel syscall
    * argument. Single-tenant hosts carry the default Scope.
    */
@@ -122,7 +122,7 @@ export const NoopTelemetrySink: TuvrenTelemetrySink = Object.freeze({
   span: () => undefined,
 });
 
-// ── Telemetry-funnel destination contract (ADR-058) ───────────────────────────
+// ── Telemetry-funnel destination contract (ADR-0058) ───────────────────────────
 // The durable-destination half of the two-funnel routing seam lives in a
 // sibling module to keep the frozen sink/span/event block above untouched; it is
 // re-published here so `@tuvren/core/telemetry` remains the single import site.

@@ -224,7 +224,7 @@ const TUVREN_MODEL_RESPONSE_KEYS = new Set([
  * attribution record: non-empty `capabilityId`, a known `executionClass`
  * (`provider-native` | `provider-mediated` | `tuvren-server` |
  * `tuvren-client`), a known `owner` (`provider` | `tuvren`), and a plain
- * `observation` object. Additive optional field per ADR-046 AW006.
+ * `observation` object. Additive optional field per ADR-0046 AW006.
  */
 function isOptionalCapabilityAttribution(
   parent: Record<string, unknown>
@@ -601,7 +601,7 @@ export function assertProviderStreamChunk(
  *    status enums, serializable `input`/`output`/`data`, valid nested
  *    approval request/response, manifest, or error projection, and the
  *    additive optional `attribution` on `tool.start`/`tool.result` per
- *    ADR-046 AW006).
+ *    ADR-0046 AW006).
  *
  * Never throws; probe failures collapse to `false`.
  *
@@ -768,7 +768,7 @@ function hasValidStreamEventPayload(
     case "tool.start":
       return matchesStreamEventVariant(
         value,
-        // "attribution" is an additive optional field per ADR-046 AW006
+        // "attribution" is an additive optional field per ADR-0046 AW006
         ["callId", "name", "input", "attribution"],
         () =>
           isNonEmptyStringProperty(value, "callId") &&
@@ -780,7 +780,7 @@ function hasValidStreamEventPayload(
     case "tool.result":
       return matchesStreamEventVariant(
         value,
-        // "attribution" is an additive optional field per ADR-046 AW006
+        // "attribution" is an additive optional field per ADR-0046 AW006
         ["callId", "name", "output", "isError", "attribution"],
         () =>
           isNonEmptyStringProperty(value, "callId") &&
