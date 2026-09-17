@@ -226,7 +226,7 @@ message BranchHeadListEntry {
   string head_turn_node_hash = 2;
 }
 
-// ADR-034: thread list entry including creation timestamp for cursor construction.
+// ADR-0034: thread list entry including creation timestamp for cursor construction.
 message StoredThreadEntry {
   string thread_id = 1;
   string schema_id = 2;

@@ -18,7 +18,7 @@ roots' READMEs into this file):
 
 **The neutral stream-event contract has no packet of its own.** It is
 `tuvren.shared.core` authority (`spec/core/authority-packet.json`,
-`events` binding section, ADR-037). The old
+`events` binding section, ADR-0037). The old
 `boundaries/framework/contracts/event-stream/README.md` claimed the
 cross-implementation authority was `spec/authority-packet.json`; that
 file never existed and the claim was stale — do not reintroduce it. Only

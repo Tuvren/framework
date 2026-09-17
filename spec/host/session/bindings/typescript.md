@@ -15,7 +15,7 @@ contract.
 - Bundler: `tsup` per the existing package convention (see
   `typescript/streaming/sse` and `typescript/host/repl` for the sibling
   project layout this package mirrors)
-- Release posture: every export is tagged `@experimental` per ADR-056 — the
+- Release posture: every export is tagged `@experimental` per ADR-0056 — the
   whole package is still settling, and signatures may change without a major
   version bump until an export graduates by losing its tag
 
@@ -41,7 +41,7 @@ owned elsewhere:
   `@tuvren/core/execution`.
 - `ClientInvocationEnvelope`, `ClientReportedResult`,
   `AttachedClientEndpoint`, and `ClientEndpointCapabilityAdvertisement` come
-  from `@tuvren/core/capabilities` (ADR-046/ADR-047).
+  from `@tuvren/core/capabilities` (ADR-0046/ADR-0047).
 
 Only the frame envelopes themselves — transport-only wrappers around those
 shared payloads — are declared in this package.
@@ -63,7 +63,7 @@ way `ExecutionHandle` method signatures are binding-only per
   the internal frame buffer is unbounded while the consumer lags;
   backpressure and connection-lifecycle policy belong to the transport
   layer (issues #100/#102). The outbound consumer — a transport directly, or
-  `@tuvren/remote-session` on its behalf (ADR-063) — must claim `outbound()`
+  `@tuvren/remote-session` on its behalf (ADR-0063) — must claim `outbound()`
   before any inbound frame is routed: pre-claim inbound routing is undefined
   ordering — rejection frames would buffer unseen and a pre-claim `cancel` can
   terminate a never-started handle whose terminal then has no stream to
@@ -177,14 +177,14 @@ inside this binding. A frame that fails this structural guard produces a
 `resolveApproval`/the client-result pending-call table; the binding remains
 fully functional for subsequent valid frames afterward.
 
-## Session lifecycle over a droppable link (ADR-063)
+## Session lifecycle over a droppable link (ADR-0063)
 
 Everything above describes a binding whose outbound stream is claimed once and
 consumed to termination — the shape a same-process host or a connection that
 never drops sees. When the consumer is a *remote* peer whose link can fail
 mid-session, the lifecycle concerns (which socket is live, what has to be
 re-sent, how long to wait) do **not** belong to this package. They belong to
-`@tuvren/remote-session` (`typescript/host/remote-session`, ADR-063), which
+`@tuvren/remote-session` (`typescript/host/remote-session`, ADR-0063), which
 composes above this binding and below any transport:
 
 - It takes this binding's **single** `outbound()` claim and holds it for the
@@ -195,7 +195,7 @@ composes above this binding and below any transport:
   construction, preserving the lazy-start contract, and routes no inbound frame
   while unattached.
 - It owns the one `createSequencedTuvrenStreamEvents` instance and the one
-  `createReplayBuffer` for the session, satisfying ADR-061's normative
+  `createReplayBuffer` for the session, satisfying ADR-0061's normative
   one-sequencer wiring rule across reconnects rather than only within a single
   connection.
 - It re-sends unanswered `client_invocation` frames on reattach. That
@@ -211,7 +211,7 @@ composes above this binding and below any transport:
   dispatch promise reject, which would take the code-less thrown path
   `spec/host/client-endpoint-integration.md` warns hosts away from.
 
-This binding is unchanged by ADR-063; the note above exists so a maintainer
+This binding is unchanged by ADR-0063; the note above exists so a maintainer
 reading the deferrals in the `outbound()` bullet above ("backpressure and
 connection-lifecycle policy belong to the transport layer (issues #100/#102)")
 and in `dispatchInbound` ("connection-lifecycle policy beyond that
@@ -220,7 +220,7 @@ actually landed. The corresponding source comment on
 `DuplexSessionBinding.outbound()` in
 `typescript/host/session/src/lib/duplex-session-binding.ts` says only
 "backpressure and connection lifecycle policy belong to the transport layer
-above this binding" without naming an issue; ADR-063 is the answer to it.
+above this binding" without naming an issue; ADR-0063 is the answer to it.
 
 ## Conformance adapter status
 

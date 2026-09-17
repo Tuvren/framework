@@ -57,13 +57,13 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: Readonly<
     type: "string",
   },
   "tuvren.runtime.capability.execution_class": {
-    brief: "The execution class of the capability invocation per ADR-046 (tuvren-server, provider-native, provider-mediated, tuvren-client).",
+    brief: "The execution class of the capability invocation per ADR-0046 (tuvren-server, provider-native, provider-mediated, tuvren-client).",
     examples: ["tuvren-server","provider-native"],
     stability: "development",
     type: "string",
   },
   "tuvren.runtime.capability.owner": {
-    brief: "The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-046 AW006.",
+    brief: "The owner dimension of the capability invocation (tuvren or provider). Added additively per ADR-0046 AW006.",
     examples: ["tuvren","provider"],
     stability: "development",
     type: "string",
@@ -111,7 +111,7 @@ export const TUVREN_RUNTIME_TELEMETRY_ATTRIBUTES: Readonly<
     type: "string",
   },
   "tuvren.runtime.scope.id": {
-    brief: "The host-bound Scope (tenancy partition identity, ADR-048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument.",
+    brief: "The host-bound Scope (tenancy partition identity, ADR-0048) the runtime is constructed against. Correlation context only; the kernel syscall surface stays scope-free and the Scope is never a syscall argument.",
     examples: ["tuvren.scope.default","tenant-a"],
     stability: "development",
     type: "string",

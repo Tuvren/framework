@@ -23,5 +23,5 @@
   "unevaluatedProperties": {
     "not": {}
   },
-  "description": "Details carried by the execution_bound_exceeded error, the fatal canonical error event, and the bounded-execution telemetry event when a hard-stop bound is breached. (ADR-043)"
+  "description": "Details carried by the execution_bound_exceeded error, the fatal canonical error event, and the bounded-execution telemetry event when a hard-stop bound is breached. (ADR-0043)"
 }

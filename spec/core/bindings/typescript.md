@@ -9,7 +9,7 @@ inheritance are binding conveniences only.
 Where the packet carries portable file/media payloads, TypeScript `Uint8Array`
 values are projected as `uint8[]` JSON arrays in emitted artifacts.
 
-## Telemetry funnel-routing (ADR-058)
+## Telemetry funnel-routing (ADR-0058)
 
 The `telemetry` binding section projects the construction-time funnel-routing
 contract (KRT-BJ004) to TypeScript as `@tuvren/core/telemetry` interfaces:

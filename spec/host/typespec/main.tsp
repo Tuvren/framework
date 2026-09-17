@@ -289,7 +289,7 @@ enum RuntimeOperationName {
   orchestrationExecutionInheritance:
     "runtime.orchestration.execution-inheritance",
   orchestrationNestedAttribution: "runtime.orchestration.nested-attribution",
-  // KRT-AO003–AO005 durable-read surface (ADR-036)
+  // KRT-AO003–AO005 durable-read surface (ADR-0036)
   durableReadListThreads: "runtime.durable-read.list-threads",
   durableReadListThreadsPaginate: "runtime.durable-read.list-threads-paginate",
   durableReadListThreadsCapabilityRejected:

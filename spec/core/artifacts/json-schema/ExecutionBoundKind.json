@@ -15,5 +15,5 @@
       "const": "maxWallClockMs"
     }
   ],
-  "description": "Hard-stop execution bound whose breach finalizes a turn as failed. maxConcurrentToolCalls is excluded because it is a concurrency throttle, not a terminal bound. (ADR-043 §3.11)"
+  "description": "Hard-stop execution bound whose breach finalizes a turn as failed. maxConcurrentToolCalls is excluded because it is a concurrency throttle, not a terminal bound. (ADR-0043 §3.11)"
 }

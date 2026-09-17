@@ -10,5 +10,5 @@
     "failed",
     "ignored"
   ],
-  "description": "Uniform cross-class invocation lifecycle state per KRT-BA001 / ADR-046 §4.21. Every model-visible tool call flows through this lifecycle regardless of execution class."
+  "description": "Uniform cross-class invocation lifecycle state per KRT-BA001 / ADR-0046 §4.21. Every model-visible tool call flows through this lifecycle regardless of execution class."
 }

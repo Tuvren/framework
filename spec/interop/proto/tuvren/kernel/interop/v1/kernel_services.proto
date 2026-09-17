@@ -33,7 +33,7 @@ service KernelNodeService {
 service KernelThreadService {
   rpc ThreadCreate(ThreadCreateRequest) returns (ThreadCreateResponse);
   rpc ThreadGet(ThreadGetRequest) returns (ThreadGetResponse);
-  // ADR-034: capability-gated thread enumeration. The remote kernel returns a
+  // ADR-0034: capability-gated thread enumeration. The remote kernel returns a
   // typed kernel_capability_unsupported error envelope when the underlying
   // backend does not advertise thread.enumeration.
   rpc ThreadList(ThreadListRequest) returns (ThreadListResponse);

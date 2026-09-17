@@ -207,7 +207,7 @@ model StructuredOutputRequest {
 
 @TypeSpec.JsonSchema.extension(
   "$comment",
-  "The TypeScript binding additionally carries a non-serializable cooperative-cancellation `signal` out-of-band so the framework execution-bounds guard (ADR-043) can abort an in-flight model request at maxWallClockMs. It is intentionally absent from this JSON payload schema; owned bridges forward it to the underlying provider call."
+  "The TypeScript binding additionally carries a non-serializable cooperative-cancellation `signal` out-of-band so the framework execution-bounds guard (ADR-0043) can abort an in-flight model request at maxWallClockMs. It is intentionally absent from this JSON payload schema; owned bridges forward it to the underlying provider call."
 )
 model TuvrenPrompt {
   messages: TuvrenMessage[];
