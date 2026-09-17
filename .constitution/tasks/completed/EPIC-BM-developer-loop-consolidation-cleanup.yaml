@@ -4,8 +4,7 @@ kind: product
 capabilities: []
 depends_on: []
 scope:
-  paths:
-    - TODO
+  paths: [".github/workflows/ci.yml", ".github/actions/setup-toolchain/action.yml", tools/scripts/verify.ts, runVerification, runVerificationPhases, AUTHORITY_GATE_STEPS, DEFAULT_VERIFICATION_PHASES, tools/scripts/verify-kernel.ts, tools/scripts/check.ts, tools/scripts/codegen.ts, package.json, codegen, tools/conformance/harness/assertion-engine/index.ts, tools/conformance/plan-compiler/index.ts, tools/scripts/portability-check.ts, typescript/core-types, tsconfig.json, tsconfig.base.json, "@tuvren/core-types", "\"shared-core-types\"", WORKSPACE_TEST_PROJECTS, WORKSPACE_BUILD_PROJECTS, "typescript/kernel/testkit/package.json:16", "typescript/kernel/certification/package.json:9", "typescript/providers/certification/package.json:9", "tsconfig.*.json", "../../core-types/*", "typescript/streaming/{agui,core}", "typescript/providers/{bridge-ai-sdk,provider-api,certification,testkit}", "typescript/kernel/{protocol,testkit,certification,backends/{postgres,sqlite,memory},runtime}", typescript/runners/react, typescript/runtime, typescript/testkit, typescript/kernel/backends/sqlite/project.json, tools/scripts, typescript/providers/bridge-ai-sdk/package.json, typescript/sdk/package.json, typescript/runtime/src/lib/runner-registry.ts, "typescript/runtime/src/**", typescript/runtime/test/fake-kernel.ts, index.ts, "Kraken*", typescript/runtime/src/lib/runtime-core-shared.ts, README.md, docs/perf-benchmarks.md, tools/scripts/services-up.sh]
   tech_spec_patchable: []
 estimated_diff_lines: 0
 tickets:
@@ -16,29 +15,29 @@ tickets:
     depends_on: []
     category: DX
     scope:
-      in:
-        - TODO
+      in: [".github/workflows/ci.yml", ".github/actions/setup-toolchain/action.yml"]
+      out: [devenv.nix, devenv.lock, tools/scripts/verify.ts, tools/scripts/verify-kernel.ts, tools/scripts/check.ts]
     verification:
-      command: .github/workflows/ci.yml
-      expected: Both jobs report exit 0/success in the Actions run, with cache-hit steps visible in the job logs on the second run of the same branch.
-    description: Add actions/cache (or equivalent) for the Nix store/profile, bun install's cache, and Cargo's registry/target dirs, scoped by lockfile hashes (bun.lock, Cargo.lock, devenv.lock). Extract the duplicated Nix-installer + devenv-install steps (ci.yml:119-134 and 173-185) into one composite action both jobs call, so the pin (devenv 2.1.2, nix-installer-action@v22) lives in exactly one place
+      command: ".github/workflows/ci.yml"
+      expected: "Both jobs report exit 0/success in the Actions run, with cache-hit steps visible in the job logs on the second run of the same branch."
+    description: "Add actions/cache (or equivalent) for the Nix store/profile, bun install's cache, and Cargo's registry/target dirs, scoped by lockfile hashes (bun.lock, Cargo.lock, devenv.lock). Extract the duplicated Nix-installer + devenv-install steps (ci.yml:119-134 and 173-185) into one composite action both jobs call, so the pin (devenv 2.1.2, nix-installer-action@v22) lives in exactly one place"
     acceptance:
       mode: gherkin
-      evidence: |-
+      evidence: |
         Feature: CI caching and shared setup
-
+        
           Scenario: Repeated pushes reuse cached dependencies
             Given a second CI run on the same branch with unchanged lockfiles
             When the "verify" and "bazel" jobs execute
             Then the Nix/bun/cargo cache steps report a cache hit
             And overall job wall-clock is measurably shorter than the cold-cache run
-
+        
           Scenario: A lockfile change still forces a fresh resolution
             Given Cargo.lock or bun.lock changes on a branch
             When CI runs
             Then the corresponding cache key misses and dependencies are re-resolved
             And the gate does not silently pass with stale dependency state
-
+        
           Scenario: Shared setup step stays single-sourced
             Given the composite setup action changes the devenv version pin
             When both the "verify" and "bazel" jobs run
@@ -47,6 +46,7 @@ tickets:
     flows: []
     certainty: assumed
     status: done
+    stop_conditions: [verify, bazel]
   - id: KRT-BM002
     title: Verification Phase-Engine Consolidation
     type: Chore
@@ -54,29 +54,29 @@ tickets:
     depends_on: []
     category: DX
     scope:
-      in:
-        - TODO
+      in: [tools/scripts/verify.ts, runVerification, runVerificationPhases, AUTHORITY_GATE_STEPS, DEFAULT_VERIFICATION_PHASES, tools/scripts/verify-kernel.ts, tools/scripts/check.ts, tools/scripts/codegen.ts, package.json, codegen]
+      out: [tools/scripts/verify-kernel.ts, KERNEL_TYPECHECK_PROJECTS, KERNEL_CONFORMANCE_PROJECTS, "tools/conformance/**"]
     verification:
-      command: bun run verify:kernel
+      command: "bun run verify:kernel"
       expected: "exit 0 for each of the three commands, with verify-kernel/check logs showing independent validator steps executing inside a shared, non-concurrency: 1 phase where their underlying commands have no ordering dependency on each other."
     description: "Make runVerificationPhases (already used by DEFAULT_VERIFICATION_PHASES) the single phase-engine entry point for all four lanes. Group verify-kernel's and check's currently-serial, independent steps into shared phases with real concurrency instead of one-step concurrency: 1 phases. Create tools/scripts/codegen.ts that imports AUTHORITY_GATE_STEPS (or an equivalent exported subset) from verify.ts and runs it through runVerificationPhases, then point package.json's codegen script at the new script instead of its inline && chain"
     acceptance:
       mode: gherkin
-      evidence: |-
+      evidence: |
         Feature: Single phase engine for all verification lanes
-
+        
           Scenario: check and verify-kernel run independent steps concurrently
             Given "bun run check" or "bun run verify:kernel" executes
             When two of its steps have no shared output or ordering dependency
             Then both steps run within the same non-serial phase
             And the command still exits 0 on a clean worktree
-
+        
           Scenario: codegen reuses the shared gate-step list
             Given "bun run codegen" executes
             When it runs the authority validators
             Then it runs the exact same validator set and order package.json's previous inline chain ran
             And it exits 0 on a clean worktree, non-zero if any validator fails
-
+        
           Scenario: A genuinely ordered pair stays serial
             Given two steps where one step's output is read by the other
             When the phase engine is configured
@@ -85,6 +85,7 @@ tickets:
     flows: []
     certainty: assumed
     status: done
+    stop_conditions: [codegen.ts, "package.json:28"]
   - id: KRT-BM003
     title: Drift-Guarded Kernel Project Lists
     type: Chore
@@ -92,28 +93,28 @@ tickets:
     depends_on: []
     category: DX
     scope:
-      in:
-        - TODO
+      in: [tools/scripts/verify-kernel.ts]
+      out: [tools/scripts/verify.ts, CODEGEN_PROJECTS, tools/scripts/lib/nx-projects.ts]
     verification:
-      command: bun run verify:kernel
-      expected: exit 0 on a clean worktree; renaming or removing one of the listed kernel projects in project.json (locally, not committed) causes verify-kernel to fail loudly with an "unknown Nx project" or "project no longer declares target" error instead of silently skipping it.
-    description: Using verify.ts:33-70's pattern (loadNxProjectFiles, validate each name exists, validate it still declares the target it's listed for) as the precedent, derive or validate KERNEL_TYPECHECK_PROJECTS against the live Nx project graph checking each declares a typecheck target, and KERNEL_CONFORMANCE_PROJECTS checking each declares a conformance target. Fail loud at script start if any listed project is missing or targetless, exactly as verify.ts already does for the codegen list
+      command: "bun run verify:kernel"
+      expected: "exit 0 on a clean worktree; renaming or removing one of the listed kernel projects in project.json (locally, not committed) causes verify-kernel to fail loudly with an \"unknown Nx project\" or \"project no longer declares target\" error instead of silently skipping it."
+    description: "Using verify.ts:33-70's pattern (loadNxProjectFiles, validate each name exists, validate it still declares the target it's listed for) as the precedent, derive or validate KERNEL_TYPECHECK_PROJECTS against the live Nx project graph checking each declares a typecheck target, and KERNEL_CONFORMANCE_PROJECTS checking each declares a conformance target. Fail loud at script start if any listed project is missing or targetless, exactly as verify.ts already does for the codegen list"
     acceptance:
       mode: gherkin
-      evidence: |-
+      evidence: |
         Feature: Kernel project lists stay drift-guarded
-
+        
           Scenario: A valid kernel project list passes
             Given KERNEL_TYPECHECK_PROJECTS and KERNEL_CONFORMANCE_PROJECTS name only real Nx projects that declare the matching target
             When "bun run verify:kernel" executes
             Then it exits 0
-
+        
           Scenario: A renamed or removed kernel project fails loud
             Given a project name in either list no longer exists in the Nx graph
             When "bun run verify:kernel" executes
             Then it exits non-zero with an error naming the unknown project
             And it does not silently skip that project's checks
-
+        
           Scenario: A kernel project that dropped its target fails loud
             Given a listed project exists but no longer declares the target it is listed under (typecheck or conformance)
             When "bun run verify:kernel" executes
@@ -121,6 +122,7 @@ tickets:
     flows: []
     certainty: assumed
     status: done
+    stop_conditions: [typecheck, conformance]
   - id: KRT-BM004
     title: Conformance-Tooling Validator Caches
     type: Chore
@@ -128,29 +130,29 @@ tickets:
     depends_on: []
     category: Perf
     scope:
-      in:
-        - TODO
+      in: [tools/conformance/harness/assertion-engine/index.ts, tools/conformance/plan-compiler/index.ts]
+      out: [tools/conformance/harness/run.ts, dispatch, events, inspectState, spec/conformance]
     verification:
       command: bun run conformance
-      expected: exit 0, with no regression in check/assertion pass/fail outcomes versus the pre-change baseline (identical evidence status per check).
+      expected: "exit 0, with no regression in check/assertion pass/fail outcomes versus the pre-change baseline (identical evidence status per check)."
     description: "Add a module-level cache mapping schema identity (a stable key: $id if present, else a content hash of the schema JSON) to a compiled Ajv ValidateFunction, so assertSchemaValid and createPlanValidator compile each distinct schema once per process instead of once per assertion/plan-file invocation. Mirror the memoization approach already used in tool-execution-helpers.ts:925-941"
     acceptance:
       mode: gherkin
-      evidence: |-
+      evidence: |
         Feature: Schema validators are memoized
-
+        
           Scenario: Repeated schemaValid assertions reuse a compiled validator
             Given two conformance checks both assert schemaValid against the same schema
             When the assertion engine evaluates both
             Then Ajv compiles that schema only once for the process
             And both assertions still produce correct pass/fail results
-
+        
           Scenario: The plan schema is read and compiled once per process
             Given multiple conformance plan files are loaded in one process
             When loadConformancePlan runs for each plan file
             Then the plan schema file is read from disk and compiled only once
             And every plan is still validated against the same schema correctly
-
+        
           Scenario: Distinct schemas never collide in the cache
             Given two different schemas that could share a naive cache key
             When both are compiled through the memoized path
@@ -160,9 +162,9 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files:
-          - tools/conformance/harness/test/assertion-engine.test.ts
-        justification: The independent spec review found the sorted-key canonicalizer silently dropped literal "__proto__" schema properties (assignment through the inherited setter), which is exactly the collision class the ticket's STOP condition names. The fix (null-prototype accumulator) plus the repo rule "give every claimed scenario matrix an automated check path" required regression tests for the memoization identity, distinct-schema separation, and the `__proto__` collision case; they were colocated with the existing assertion-engine suite.
+      - files: [tools/conformance/harness/test/assertion-engine.test.ts]
+        justification: "The independent spec review found the sorted-key canonicalizer silently dropped literal \"__proto__\" schema properties (assignment through the inherited setter), which is exactly the collision class the ticket's STOP condition names. The fix (null-prototype accumulator) plus the repo rule \"give every claimed scenario matrix an automated check path\" required regression tests for the memoization identity, distinct-schema separation, and the `__proto__` collision case; they were colocated with the existing assertion-engine suite."
+    stop_conditions: ["$id"]
   - id: KRT-BM005
     title: Portability-Check Bounded Concurrency
     type: Chore
@@ -170,29 +172,29 @@ tickets:
     depends_on: []
     category: Perf
     scope:
-      in:
-        - TODO
+      in: [tools/scripts/portability-check.ts]
+      out: [PORTABLE_PACKAGE_SURFACES, DOCUMENTED_PACKAGE_SURFACES]
     verification:
       command: bun run codegen
-      expected: exit 0, with the "Epic Q portability matrix" console output and per-surface pass/fail lines still fully readable and attributable to the correct surface (no interleaved/garbled output from concurrent child processes).
-    description: Replace the sequential per-surface await runImportCheck(...) loop with a bounded-concurrency pool (e.g. a small worker-pool helper capping in-flight spawns at a fixed number such as 4-6), buffering each check's stdout/stderr and printing it atomically per completed check so concurrent output never interleaves mid-line
+      expected: "exit 0, with the \"Epic Q portability matrix\" console output and per-surface pass/fail lines still fully readable and attributable to the correct surface (no interleaved/garbled output from concurrent child processes)."
+    description: "Replace the sequential per-surface await runImportCheck(...) loop with a bounded-concurrency pool (e.g. a small worker-pool helper capping in-flight spawns at a fixed number such as 4-6), buffering each check's stdout/stderr and printing it atomically per completed check so concurrent output never interleaves mid-line"
     acceptance:
       mode: gherkin
-      evidence: |-
+      evidence: |
         Feature: Portability checks run with bounded concurrency
-
+        
           Scenario: All surfaces are still checked
             Given the configured PORTABLE_PACKAGE_SURFACES list
             When portability-check.ts runs
             Then every surface is checked under both Bun and Node
             And the process exits 0 only if every check passed
-
+        
           Scenario: Concurrent output stays attributable
             Given multiple import checks run concurrently
             When their output is printed to the console
             Then each check's output block is printed as one atomic, unscrambled unit
             And no line from one check's output is interleaved with another's
-
+        
           Scenario: A single surface failure still fails the whole gate
             Given one surface fails its Bun or Node import check
             When portability-check.ts finishes running all checks
@@ -201,6 +203,7 @@ tickets:
     flows: []
     certainty: assumed
     status: done
+    stop_conditions: ["STOP if unbounded or high concurrency causes flaky failures from resource contention (e.g. Bun/Node startup under memory pressure) on the CI runner class this targets — record the observed flake and lower the pool size rather than shipping a concurrency level that trades determinism for speed."]
   - id: KRT-BM006
     title: Remove the @tuvren/core-types Shim
     type: Chore
@@ -208,29 +211,29 @@ tickets:
     depends_on: []
     category: Tech-Debt
     scope:
-      in:
-        - TODO
+      in: [typescript/core-types, tsconfig.json, tsconfig.base.json, "@tuvren/core-types", tools/scripts/verify.ts, "\"shared-core-types\"", WORKSPACE_TEST_PROJECTS, WORKSPACE_BUILD_PROJECTS, tools/scripts/portability-check.ts, "typescript/kernel/testkit/package.json:16", "typescript/kernel/certification/package.json:9", "typescript/providers/certification/package.json:9", "tsconfig.*.json", "../../core-types/*", "typescript/streaming/{agui,core}", "typescript/providers/{bridge-ai-sdk,provider-api,certification,testkit}", "typescript/kernel/{protocol,testkit,certification,backends/{postgres,sqlite,memory},runtime}", typescript/runners/react, typescript/runtime, typescript/testkit]
+      out: ["typescript/kernel/protocol/test/kernel-contract-deterministic.test.ts:19", "../../../core-types/test/kernel-record-fixtures.js", "@tuvren/core-types"]
     verification:
       command: bun run verify
-      expected: exit 0; a workspace-wide grep -rn "core-types" (excluding spec/core/artifacts/json-schema/* unrelated JSON Schema hits and this ticket's own historical git log) returns no remaining references.
-    description: typescript/core-types is a deprecated shim (self-declared at src/index.ts:18-22) duplicating two files already owned by @tuvren/core. Delete the package and sweep every workspace/Nx/tsconfig/certification registration that names it — the Nx project name is shared-core-types (typescript/core-types/project.json:2), which appears in verify.ts's WORKSPACE_TEST_PROJECTS (line 106) and WORKSPACE_BUILD_PROJECTS (line 141-142) lists and must be removed from both so the workspace-coverage gate does not expect a target from a project that no longer exists. Before deleting, resolve the one real relative-path importer of core-types/test/kernel-record-fixtures.ts from kernel/protocol's test suite
+      expected: "exit 0; a workspace-wide grep -rn \"core-types\" (excluding spec/core/artifacts/json-schema/* unrelated JSON Schema hits and this ticket's own historical git log) returns no remaining references."
+    description: "typescript/core-types is a deprecated shim (self-declared at src/index.ts:18-22) duplicating two files already owned by @tuvren/core. Delete the package and sweep every workspace/Nx/tsconfig/certification registration that names it — the Nx project name is shared-core-types (typescript/core-types/project.json:2), which appears in verify.ts's WORKSPACE_TEST_PROJECTS (line 106) and WORKSPACE_BUILD_PROJECTS (line 141-142) lists and must be removed from both so the workspace-coverage gate does not expect a target from a project that no longer exists. Before deleting, resolve the one real relative-path importer of core-types/test/kernel-record-fixtures.ts from kernel/protocol's test suite"
     acceptance:
       mode: gherkin
-      evidence: |-
+      evidence: |
         Feature: The core-types shim package is removed cleanly
-
+        
           Scenario: The package and its registrations are gone
             Given typescript/core-types has been deleted
             When searching the workspace for "@tuvren/core-types" or "shared-core-types"
             Then no package.json, tsconfig, or project.json references remain
             And "bun run verify" still exits 0
-
+        
           Scenario: The one real fixture importer is preserved
             Given kernel-contract-deterministic.test.ts previously imported kernel-record-fixtures.ts from core-types/test
             When the core-types package is removed
             Then the fixture the test depends on still exists at a resolvable location
             And that test still passes
-
+        
           Scenario: Workspace coverage gates do not reference the deleted project
             Given "shared-core-types" is removed from WORKSPACE_TEST_PROJECTS and WORKSPACE_BUILD_PROJECTS
             When "bun run verify" runs its workspace-coverage validation
@@ -239,18 +242,9 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files:
-          - spec/core/authority-packet.json
-          - spec/core/bindings/typescript.md
-          - .constitution/tech-spec/stack.md
-          - .constitution/tech-spec/guidelines.md
-          - .constitution/tech-spec/contracts/README.md
-          - .constitution/tech-spec/data-models/README.md
-          - typescript/kernel/protocol/test/kernel-records.test.ts
-          - docs/KrakenFrameworkSpecification.md
-          - docs/KrakenFrameworkDesignRationale.md
-          - bun.lock
-        justification: The repo rule "keep contracts, conformance, and constitution aligned when semantics change" and the skill's keep-the-spec-folders-honest step require the machine authority and live constitution to stop describing a package that no longer exists. `kernel-records.test.ts` covers real `@tuvren/core` assertion/predicate behavior with the same fixture the protocol suite uses, so it moved with the fixture into `typescript/kernel/protocol/test/` rather than silently dropping coverage.
+      - files: [spec/core/authority-packet.json, spec/core/bindings/typescript.md, ".constitution/tech-spec/stack.md", ".constitution/tech-spec/guidelines.md", ".constitution/tech-spec/contracts/README.md", ".constitution/tech-spec/data-models/README.md", typescript/kernel/protocol/test/kernel-records.test.ts, docs/KrakenFrameworkSpecification.md, docs/KrakenFrameworkDesignRationale.md, bun.lock]
+        justification: "The repo rule \"keep contracts, conformance, and constitution aligned when semantics change\" and the skill's keep-the-spec-folders-honest step require the machine authority and live constitution to stop describing a package that no longer exists. `kernel-records.test.ts` covers real `@tuvren/core` assertion/predicate behavior with the same fixture the protocol suite uses, so it moved with the fixture into `typescript/kernel/protocol/test/` rather than silently dropping coverage."
+    stop_conditions: [typescript/kernel/protocol/test/kernel-contract-deterministic.test.ts, "../../../core-types/test/kernel-record-fixtures.js", kernel-record-fixtures.ts]
   - id: KRT-BM007
     title: Workspace Manifest Hygiene
     type: Chore
@@ -258,35 +252,35 @@ tickets:
     depends_on: []
     category: Tech-Debt
     scope:
-      in:
-        - TODO
+      in: [typescript/kernel/backends/sqlite/project.json, tools/scripts, typescript/providers/bridge-ai-sdk/package.json, typescript/sdk/package.json]
+      out: [typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts, normalizeBackendError, zod]
     verification:
-      command: bun run nx run backend-sqlite:build
+      command: "bun run nx run backend-sqlite:build"
       expected: exit 0 for each command listed.
-    description: |-
+    description: |
       (a) Extract the shared tsc --project <tsconfig> && mkdir -p <dir>/migrations && cp migrations/*.sql <dir>/migrations/ pipeline out of backend-sqlite's build, bench, retention-dry-run, and test target command strings into one tools/scripts/ helper script parameterized by target output dir and tsconfig, per the repo rule to keep shared command logic in scripts rather than duplicating shell snippets across project.json files. (b) Confirm and, if needed, correct @tuvren/runner-react's placement in typescript/providers/bridge-ai-sdk/package.json (test-only usage belongs in devDependencies). (c) Align typescript/sdk/package.json's zod peer range with the exact-pin convention (4.4.3) used by sibling packages, or explicitly document why the SDK surface needs a caret range if that turns out to be intentional
-
+      
       Resolution Notes:
       (a) The duplicated compile+copy-migrations pipeline across backend-sqlite's `build`/`bench`/`bench-load-cost`/`retention-dry-run`/`test` targets now routes through `tools/scripts/compile-with-migrations.ts` (parameterized by `--tsconfig`, `--out`, optional `--clean`). `bench-load-cost` was included because it carried the identical inline pipeline the audit flagged on its four named siblings.
       (b) Closed as already-resolved: `@tuvren/runner-react` was verified to already sit under `devDependencies` in `typescript/providers/bridge-ai-sdk/package.json` (line 31) before this epic — the audit finding was stale against the live file; no change made, per the ticket's STOP condition.
       (c) Closed as intentional, per STOP-condition review: `typescript/sdk`'s `"zod": "^4.4.3"` stays a caret range. It is an OPTIONAL peerDependency whose coupling is type-only (`import("zod/v3")`/`import("zod/v4")` type positions; runtime dispatch is duck-typed through the Standard Schema `~standard.vendor` protocol), so an exact peer pin would break every host on a routine zod patch bump for zero correctness benefit. The sibling "exact pin" precedents (`providers/testkit`, `tools/mcp-client`) are regular `dependencies` — a different declaration class; no exact-pin *peer* precedent exists in the workspace.
     acceptance:
       mode: gherkin
-      evidence: |-
+      evidence: |
         Feature: Workspace manifests avoid duplicated pipelines and inconsistent pins
-
+        
           Scenario: sqlite backend targets share one migrations-copy helper
             Given backend-sqlite's build, bench, retention-dry-run, and test targets
             When their project.json command strings are inspected
             Then the compile+copy-migrations logic is invoked via one shared script
             And each target still produces its migrations directory correctly
-
+        
           Scenario: runner-react dependency placement matches its usage
             Given @tuvren/runner-react is used only by bridge-ai-sdk's tests
             When typescript/providers/bridge-ai-sdk/package.json is inspected
             Then @tuvren/runner-react appears under devDependencies, not dependencies
             And "bun run nx run providers-bridge-ai-sdk:build" still exits 0
-
+        
           Scenario: zod peer range matches the workspace pin convention
             Given sibling packages pin "zod" to an exact version
             When typescript/sdk/package.json's zod peerDependency is inspected
@@ -294,6 +288,7 @@ tickets:
     flows: []
     certainty: assumed
     status: done
+    stop_conditions: ["@tuvren/runner-react", typescript/providers/bridge-ai-sdk/package.json, devDependencies, typescript/sdk]
   - id: KRT-BM008
     title: Kraken-Alias Cleanup + Public-Surface Lint Guard
     type: Chore
@@ -301,28 +296,28 @@ tickets:
     depends_on: []
     category: Tech-Debt
     scope:
-      in:
-        - TODO
+      in: [typescript/runtime/src/lib/runner-registry.ts, "typescript/runtime/src/**", typescript/runtime/test/fake-kernel.ts, tools/scripts, index.ts, "Kraken*"]
+      out: ["Kraken*"]
     verification:
-      command: bun run nx run framework-runtime:typecheck
-      expected: exit 0 for all three; the new lint guard, when temporarily pointed at a deliberately reintroduced Kraken* public export in a scratch/local test, fails loudly (confirmed during implementation, not shipped).
-    description: Drop the local as Kraken* import aliases across typescript/runtime/src/ and its test helpers, using the underlying public names (RuntimeRunner, RuntimeRunnerFactory, RuntimeKernel, etc.) directly. Add an automated guard (lint rule or a small validation script wired into bun run lint or bun run codegen) that scans each package's public index.ts/entrypoint exports and fails if any exported symbol name contains Kraken, keeping the public-surface cleanliness the audit found today permanent rather than incidental
+      command: "bun run nx run framework-runtime:typecheck"
+      expected: "exit 0 for all three; the new lint guard, when temporarily pointed at a deliberately reintroduced Kraken* public export in a scratch/local test, fails loudly (confirmed during implementation, not shipped)."
+    description: "Drop the local as Kraken* import aliases across typescript/runtime/src/ and its test helpers, using the underlying public names (RuntimeRunner, RuntimeRunnerFactory, RuntimeKernel, etc.) directly. Add an automated guard (lint rule or a small validation script wired into bun run lint or bun run codegen) that scans each package's public index.ts/entrypoint exports and fails if any exported symbol name contains Kraken, keeping the public-surface cleanliness the audit found today permanent rather than incidental"
     acceptance:
       mode: gherkin
-      evidence: |-
+      evidence: |
         Feature: Kraken-only naming stays internal and enforced
-
+        
           Scenario: Runtime source no longer locally aliases public types to Kraken names
             Given typescript/runtime/src/lib/runner-registry.ts and its sibling files
             When their import statements are inspected
             Then no "as Kraken*" local alias remains for a publicly-named type
             And "bun run nx run framework-runtime:typecheck" still exits 0
-
+        
           Scenario: The public-surface guard catches a reintroduced Kraken export
             Given a package's public index.ts is modified to export a Kraken*-named symbol
             When the lint guard runs
             Then it fails loudly, naming the offending package and export
-
+        
           Scenario: The public-surface guard passes on the current, clean surface
             Given the current state of every package's public index.ts
             When the lint guard runs
@@ -331,10 +326,9 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files:
-          - package.json
-          - tools/scripts/kraken-surface-gate.ts
-        justification: The ticket's description requires the guard be "wired into `bun run lint` or `bun run codegen`"; wiring into `bun run lint` necessarily edits the root lint script entry. Locally-defined internal helper names (`decodeKrakenMessageRecord`, `toKrakenMessages`, `isKrakenRunnerFactory`) were left untouched per the ticket's out-of-scope clause for intentional internal `Kraken*` naming at definition sites.
+      - files: [package.json, tools/scripts/kraken-surface-gate.ts]
+        justification: "The ticket's description requires the guard be \"wired into `bun run lint` or `bun run codegen`\"; wiring into `bun run lint` necessarily edits the root lint script entry. Locally-defined internal helper names (`decodeKrakenMessageRecord`, `toKrakenMessages`, `isKrakenRunnerFactory`) were left untouched per the ticket's out-of-scope clause for intentional internal `Kraken*` naming at definition sites."
+    stop_conditions: ["Kraken*"]
   - id: KRT-BM009
     title: Small-Findings Sweep
     type: Chore
@@ -342,35 +336,39 @@ tickets:
     depends_on: []
     category: Docs
     scope:
-      in:
-        - TODO
+      in: [typescript/runtime/src/lib/runtime-core-shared.ts, README.md, docs/perf-benchmarks.md, tools/scripts/services-up.sh]
+      out: [typescript/runtime/src/lib/runtime-core-shared.ts, detachPromise, ".github/workflows/ci.yml"]
     verification:
       command: bun run lint
-      expected: exit 0 for bun run lint; the services-up-then-verify-kernel sequence completes without a "connection refused"/"database not ready" failure.
-    description: "(a) Add a doc comment on detachPromise (runtime-core-shared.ts:149) stating explicitly that callers/callees must route their own errors — this function intentionally swallows the promise's rejection to prevent an unhandled-rejection crash, and is not itself an error-handling mechanism. (b) Add the two-line Nix/direnv prerequisite step to README.md's Quickstart, ahead of today's step 1 (direnv allow), mirroring what ci.yml:119-134 does explicitly (install Nix, then install devenv) for a reader who has neither installed yet. (c) Verify whether docs/perf-benchmarks.md's only retired-name reference (framework-runtime-core, lines 51-55) is already adequately annotated as historical; if so, close this sub-item as already-resolved, otherwise fix whatever unannotated stale name is actually found. (d) Add a Postgres readiness wait (e.g. a bounded pg_isready-style poll) to tools/scripts/services-up.sh after devenv up -d succeeds, so the script itself does not return until the database is ready to accept connections, without violating the \"never embed in Nx targets/runners\" constraint already documented in the script's own header comment\n\nResolution Notes:\n(c) Closed as already-resolved per the ticket's STOP condition: `docs/perf-benchmarks.md`'s only retired-name reference (`framework-runtime-core`, lines 51-55) is already a deliberate, self-annotating historical footnote (\"left as originally recorded rather than fabricating a re-run\"); no unannotated stale name was found elsewhere in the file, so the passage was preserved as-is."
+      expected: "exit 0 for bun run lint; the services-up-then-verify-kernel sequence completes without a \"connection refused\"/\"database not ready\" failure."
+    description: |
+      (a) Add a doc comment on detachPromise (runtime-core-shared.ts:149) stating explicitly that callers/callees must route their own errors — this function intentionally swallows the promise's rejection to prevent an unhandled-rejection crash, and is not itself an error-handling mechanism. (b) Add the two-line Nix/direnv prerequisite step to README.md's Quickstart, ahead of today's step 1 (direnv allow), mirroring what ci.yml:119-134 does explicitly (install Nix, then install devenv) for a reader who has neither installed yet. (c) Verify whether docs/perf-benchmarks.md's only retired-name reference (framework-runtime-core, lines 51-55) is already adequately annotated as historical; if so, close this sub-item as already-resolved, otherwise fix whatever unannotated stale name is actually found. (d) Add a Postgres readiness wait (e.g. a bounded pg_isready-style poll) to tools/scripts/services-up.sh after devenv up -d succeeds, so the script itself does not return until the database is ready to accept connections, without violating the "never embed in Nx targets/runners" constraint already documented in the script's own header comment
+      
+      Resolution Notes:
+      (c) Closed as already-resolved per the ticket's STOP condition: `docs/perf-benchmarks.md`'s only retired-name reference (`framework-runtime-core`, lines 51-55) is already a deliberate, self-annotating historical footnote ("left as originally recorded rather than fabricating a re-run"); no unannotated stale name was found elsewhere in the file, so the passage was preserved as-is.
     acceptance:
       mode: gherkin
-      evidence: |-
+      evidence: |
         Feature: Small documentation and readiness findings are resolved
-
+        
           Scenario: detachPromise's contract is documented
             Given runtime-core-shared.ts's detachPromise function
             When its doc comment is read
             Then it states the callee must route its own errors
             And this documents existing behavior with no functional change
-
+        
           Scenario: README quickstart includes the Nix/direnv prerequisite
             Given a reader with neither Nix nor direnv installed
             When they follow README.md's Quickstart from the top
             Then they are told how to install Nix and direnv before "direnv allow"
             And the steps mirror what ci.yml's setup steps perform
-
+        
           Scenario: perf-benchmarks.md's retired-name reference is resolved or confirmed
             Given docs/perf-benchmarks.md's historical footnote on framework-runtime-core
             When the file is reviewed against the audit's "one retired package name" finding
             Then either the footnote is confirmed as already sufficient and closed as-is
             Or the actually-stale unannotated reference is corrected
-
+        
           Scenario: services:up waits for Postgres readiness
             Given "bun run services:up" has just reported success
             When a Postgres-backed command runs immediately afterward
@@ -379,17 +377,16 @@ tickets:
     flows: []
     certainty: assumed
     status: done
+    stop_conditions: [docs/perf-benchmarks.md, services-up.sh]
+    deviations:
+      - files: [tools/conformance/harness/test/assertion-engine.test.ts]
+        justification: "The independent spec review found the sorted-key canonicalizer silently dropped literal `\"__proto__\"` schema properties (assignment through the inherited setter), which is exactly the collision class the ticket's STOP condition names. The fix (null-prototype accumulator) plus the repo rule \"give every claimed scenario matrix an automated check path\" required regression tests for the memoization identity, distinct-schema separation, and the `__proto__` collision case; they were colocated with the existing assertion-engine suite."
+      - files: [spec/core/authority-packet.json, spec/core/bindings/typescript.md, ".constitution/tech-spec/{stack.md", guidelines.md, contracts/README.md, "data-models/README.md}", typescript/kernel/protocol/test/kernel-records.test.ts, docs/KrakenFrameworkSpecification.md, bun.lock]
+        justification: "The repo rule \"keep contracts, conformance, and constitution aligned when semantics change\" and the skill's keep-the-spec-folders-honest step require the machine authority and live constitution to stop describing a package that no longer exists. `kernel-records.test.ts` covers real `@tuvren/core` assertion/predicate behavior with the same fixture the protocol suite uses, so it moved with the fixture into `typescript/kernel/protocol/test/` rather than silently dropping coverage."
+      - files: [package.json, tools/scripts/kraken-surface-gate.ts]
+        justification: "The ticket's description requires the guard be \"wired into `bun run lint` or `bun run codegen`\"; wiring into `bun run lint` necessarily edits the root lint script entry. Locally-defined internal helper names (`decodeKrakenMessageRecord`, `toKrakenMessages`, `isKrakenRunnerFactory`) were left untouched per the ticket's out-of-scope clause for intentional internal `Kraken*` naming at definition sites."
 closeout:
-  tickets_completed:
-    - KRT-BM001
-    - KRT-BM002
-    - KRT-BM003
-    - KRT-BM004
-    - KRT-BM005
-    - KRT-BM006
-    - KRT-BM007
-    - KRT-BM008
-    - KRT-BM009
+  tickets_completed: [KRT-BM001, KRT-BM002, KRT-BM003, KRT-BM004, KRT-BM005, KRT-BM006, KRT-BM007, KRT-BM008, KRT-BM009]
   tickets_deferred: []
   points_completed: 18
   spec_patches: []

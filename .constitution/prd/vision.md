@@ -74,6 +74,15 @@ v0.12.0 — current local Stage 1 SemVer; full history in `changelog.md`.
 - **MCP as binding vs. execution class:** The Model Context Protocol is a binding/protocol mechanism that can appear under provider-mediated, Tuvren-server, or Tuvren-client execution; it is classified by who invokes or runs the MCP server, not treated as a top-level execution class.
 - **Provider-native tools vs. local functions:** Provider-native tools are configured and exposed by Tuvren and executed by the provider; they are not modeled as locally executable functions, and Tuvren records only provider-exposed events and results for them.
 - **Tuvren-client capabilities vs. server functions:** Client-side capabilities are leased endpoint capabilities executed in a client environment that may hold authority the server does not; they are not ordinary server functions and carry availability, lease, staleness, and partial-observability properties.
+- **Content funnel vs. telemetry funnel:** Both are born at the runtime during the same execution, but only the content funnel is load-bearing for session correctness, continuity, and recovery; telemetry describes the execution without being required by it.
+- **Exposure-time policy vs. invocation-time policy:** Distinct decisions: one decides whether the model ever sees a surface, the other decides whether a resolved capability may actually run.
+- **Tenancy mechanism vs. tenancy policy:** The product owns the scope seam and isolation-by-construction (mechanism); the host owns what a tenant is, how tenants authenticate, how scopes map to stores, and cross-tenant discovery (policy).
+- **Scoped vs. global content addressing:** Durable identity is resolved within a scope, so the same content in two scopes is two durable objects and existence is never observable across scopes; this is deliberate, not a deduplication regression.
+- **Reclamation mechanism vs. retention policy:** The runtime can identify and release unreferenced durable state; the host decides which threads, branches, or scopes are still wanted and when.
+- **Erasure vs. deletion:** Erasure makes a sensitive payload unrecoverable by destroying its host-held key while preserving the lineage hash structure; it is not destructive editing of committed history.
+- **Provider state as cache vs. source of truth:** Provider server-side state and continuity artifacts are reconstructable optimizations the runtime may carry but never depends on; the durable lineage is always authoritative.
+- **Stable SDK core vs. experimental surface:** The published, versioned host-facing contract is the stable core; surfaces still in flux are explicitly marked experimental and excluded from the stability guarantee.
+- **Client-reported result as proposal vs. committed state:** A client-executed capability returns a proposal that becomes durable state only through a runtime commit under valid execution authority; a stale or late client report can never mutate committed history.
 
 ### 1.4 Strategic Direction (Near-Term)
 

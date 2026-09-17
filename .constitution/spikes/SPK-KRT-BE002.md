@@ -8,7 +8,7 @@
 > The location shift changes nothing in the spike's findings.
 
 ## 1. Context & Objective
-- **Triggering upstream file/section:** `.constitution/tech-spec/adrs/ADR-048-tenancy-agnostic-scope-seam-bound-at-construction.md`; `.constitution/tech-spec/adrs/ADR-049-isolation-by-construction-scope-resolved-content-addr.md`; `docs/KrakenKernelSpecification.md` §2.3
+- **Triggering upstream file/section:** `.constitution/tech-spec/adrs/ADR-0048-tenancy-agnostic-scope-seam-bound-at-construction.md`; `.constitution/tech-spec/adrs/ADR-0049-isolation-by-construction-scope-resolved-content-addr.md`; `docs/KrakenKernelSpecification.md` §2.3
 - **Target:** The concrete per-backend realization of a construction-bound Scope (memory, SQLite, PostgreSQL) that confines every read, write, and enumeration to the constructing scope **without changing the kernel syscall surface** (ADR-048). Isolation lives entirely at the substrate; the kernel's hashing and canonical-blob identity are untouched (ADR-049).
 
 ## 2. Codebase Baseline

@@ -7,8 +7,8 @@
   "humanAuthorityRefs": [
     "docs/KrakenKernelSpecification.md",
     "docs/KrakenFrameworkSpecification.md",
-    ".constitution/tech-spec/adrs/ADR-037-consolidate-shared-primitives-into-tuvren-core-with-sub.md",
-    ".constitution/tech-spec/adrs/ADR-046-capability-orchestration-model-tool-surface-vs-capabili.md",
+    ".constitution/tech-spec/adrs/ADR-0037-consolidate-shared-primitives-into-tuvren-core-with-sub.md",
+    ".constitution/tech-spec/adrs/ADR-0046-capability-orchestration-model-tool-surface-vs-capabili.md",
     ".constitution/tech-spec/data-models/README.md#313-capability-orchestration-concept-shapes"
   ],
   "authoritativeSources": [

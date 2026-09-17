@@ -5,7 +5,7 @@ date: "2026-09-03"
 # Issue #108 — Make the blob-per-scope persistence path Git-faithful
 
 > **Status:** complete. Evidence/completion report for GitHub issue #108,
-> closed out with [`ADR-066`](../tech-spec/adrs/ADR-066-blob-per-scope-persistence-retained-git-faithful-operations.md)
+> closed out with [`ADR-066`](../tech-spec/adrs/ADR-0066-blob-per-scope-persistence-retained-git-faithful-operations.md)
 > (accepted).
 > **Origin:** [`SPK-BK007`](../spikes/SPK-KRT-BK007.md) · audit finding `[C-01]`
 > (`audit-2026-07-04-170703-post-epic-87-baseline.md`) · `.constitution/tech-spec/changelog.md`
@@ -2186,7 +2186,7 @@ that the outcome looks the same either way") and proves the wiring directly.
 This section closes out issue #108: an executive summary of every area's
 disposition, and the written recommendation the issue asked for — grounded
 in the measured data above, not asserted independently of it. It is
-accompanied by [`ADR-066`](../tech-spec/adrs/ADR-066-blob-per-scope-persistence-retained-git-faithful-operations.md)
+accompanied by [`ADR-066`](../tech-spec/adrs/ADR-0066-blob-per-scope-persistence-retained-git-faithful-operations.md)
 (accepted), which records the architectural decision this report's evidence
 supports; this report remains the evidentiary record ADR-066 cites rather
 than restates.

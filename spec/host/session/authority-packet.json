@@ -5,7 +5,7 @@
   "surface": "host-session",
   "humanAuthorityRefs": [
     "docs/KrakenFrameworkSpecification.md#7-host-contract",
-    ".constitution/tech-spec/adrs/ADR-060-duplex-session-protocol-frame-vocabulary.md",
+    ".constitution/tech-spec/adrs/ADR-0060-duplex-session-protocol-frame-vocabulary.md",
     ".constitution/architecture/flows/flow-duplex-session-inbound-routing.md"
   ],
   "authoritativeSources": [

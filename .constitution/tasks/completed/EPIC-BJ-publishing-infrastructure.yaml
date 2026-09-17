@@ -202,7 +202,7 @@ tickets:
           - typescript/host/repl/tsconfig.lib.json
           - typescript/host/repl/tsconfig.dts.json
           - typescript/host/repl/tsconfig.typecheck.json
-          - .constitution/tech-spec/adrs/ADR-059-sdk-advanced-composition-surface-and-kernel-grpc-client-leaf.md
+          - .constitution/tech-spec/adrs/ADR-0059-sdk-advanced-composition-surface-and-kernel-grpc-client-leaf.md
           - .constitution/tech-spec/changelog.md
           - .constitution/tech-spec/guidelines.md
           - .constitution/tech-spec/stack.md
@@ -214,7 +214,7 @@ tickets:
             - **New subpath `@tuvren/sdk/advanced`**: `typescript/sdk/src/advanced.ts`; `typescript/sdk/package.json` (`./advanced` export); `typescript/sdk/tsup.config.ts` (entry); `typescript/sdk/src/index.ts` (biome re-ordering only).
             - **`@tuvren/runtime` reductions**: `src/index.ts` (drop gRPC re-exports), `project.json` (drop the `kernel-interop-grpc` codegen `dependsOn`), `package.json` (drop `@connectrpc/connect`, `@connectrpc/connect-node`, `@bufbuild/protobuf`), `smoke/package-exports.ts` (assert gRPC factory absent).
             - **Host beyond the 14 src files**: `test/repl-test-helpers.ts` + `test/repl.test.ts` (same `@tuvren/runtime`→`@tuvren/sdk`/`@tuvren/telemetry-semconv` repoint), `tsconfig.{lib,dts,typecheck}.json` (swap the runtime reference for the new deps); `package.json` also gained `@tuvren/mcp-client` + `@tuvren/telemetry-semconv` (leaf symbols the host imports directly). `repl-host.ts`: the broken (post-BJ001) `createReplHostUsingCreateTuvren` fixed to instances-only, and the now-duplicate `createTuvrenBackendConfig` folded into `createBackend`.
-            - **Authority**: `.constitution/tech-spec/adrs/ADR-059-*.md` (new), plus `tech-spec/changelog.md` (v0.33.0), `guidelines.md` (§5.8.2 items 4/5/7 + package tree), `stack.md` (target-state posture).
+            - **Authority**: `.constitution/tech-spec/adrs/ADR-0059-*.md` (new), plus `tech-spec/changelog.md` (v0.33.0), `guidelines.md` (§5.8.2 items 4/5/7 + package tree), `stack.md` (target-state posture).
           - **Justification:** All out-of-scope touches are the mechanical realization of the ADR-059 decision (new homes + codegen relocation + host re-point) plus the correctness ripple it forces (authority-packet + tsconfig + nx.json path retargeting; host test/tsconfig files that import the same surface). None reintroduces a forbidden host→`@tuvren/runtime`/kernel-package import; the host→sdk→runtime edge keeps `@tuvren/runtime` internal.
           - **Forward ripple recorded:** `@tuvren/kernel-grpc-client` is a new **publishable** leaf, so KRT-BJ007 (publication metadata) and KRT-BJ008 (release tooling) must include it, and the KRT-BJ003 host-boundary gate must **allow** `@tuvren/sdk/advanced` + `@tuvren/kernel-grpc-client` while blocking `@tuvren/runtime`/`@tuvren/kernel-protocol`/`@tuvren/kernel-runtime`.
   - id: KRT-BJ003
