@@ -1,0 +1,12 @@
+artifact_path: "spec/kernel/authority-packet.json"
+surface: "other"
+flows:
+  - flow-crash-mid-checkpoint-recovery
+  - flow-preemption-idempotent-side-effect
+  - flow-tenant-offboarding-erasure
+boundaries:
+  - BND-17
+companion: "README.md"
+certainty: "assumed"
+assumption: "The kernel syscall surface is declared by spec/kernel/authority-packet.json, whose authoritative source is the CDDL record grammar. No single host-facing library file is that contract."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

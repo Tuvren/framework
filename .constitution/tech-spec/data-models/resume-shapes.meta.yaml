@@ -1,0 +1,11 @@
+artifact_path: "spec/streaming/resume/artifacts/json-schema"
+surface: "data-model"
+flows:
+  - flow-stream-resume-and-ws-transport
+  - flow-remote-session-reattach-and-redelivery
+boundaries:
+  - BND-19
+companion: "README.md"
+certainty: "assumed"
+assumption: "Resume cursor and sequenced-frame schemas live under spec/streaming/resume/artifacts/json-schema. The TypeSpec sidecar owns the contract; this sidecar owns the durable shape."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

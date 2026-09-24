@@ -1,0 +1,14 @@
+artifact_path: "spec/core/artifacts/json-schema"
+surface: "data-model"
+flows:
+  - flow-exposure-time-tool-surface-policy
+  - flow-invocation-time-binding-policy-attribution
+  - flow-tuvren-client-capability-lease-dispatch
+boundaries:
+  - BND-12
+  - BND-13
+  - BND-14
+companion: "README.md"
+certainty: "assumed"
+assumption: "Capability orchestration shapes are the JSON Schema directory generated from the core TypeSpec. The companion section 3.13 states the invariants the schemas do not."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

@@ -1,4 +1,0 @@
-artifact: README.md
-surface: library
-certainty: assumed
-assumption: "This file is a pointer index over the boundary-owned interface contracts under spec/, not a raw artifact; §4.0 to §4.27 together cover every critical flow, and intentionally declares no direct flow coverage. The index itself carries no conformance evidence — the authority packets and conformance plans under spec/ do."

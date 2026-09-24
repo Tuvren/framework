@@ -1,0 +1,11 @@
+artifact_path: "spec/streaming/resume/typespec/main.tsp"
+surface: "json"
+flows:
+  - flow-stream-resume-and-ws-transport
+  - flow-remote-session-reattach-and-redelivery
+boundaries:
+  - BND-19
+companion: "README.md"
+certainty: "assumed"
+assumption: "The resume cursor and sequenced-frame envelope are spec/streaming/resume/typespec/main.tsp. Replay semantics stay in that contract, not in the WebSocket carriage."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

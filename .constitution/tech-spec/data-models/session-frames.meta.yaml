@@ -1,0 +1,12 @@
+artifact_path: "spec/host/session/artifacts/json-schema"
+surface: "data-model"
+flows:
+  - flow-duplex-session-inbound-routing
+  - flow-remote-session-reattach-and-redelivery
+boundaries:
+  - BND-01
+  - BND-15
+companion: "README.md"
+certainty: "assumed"
+assumption: "Session frame schemas are the JSON Schema directory under spec/host/session/artifacts/json-schema. Field meaning is in the companion section 3.14."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

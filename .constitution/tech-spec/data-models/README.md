@@ -1,6 +1,6 @@
 # Data Models
 
-> **Authority note:** This file is descriptive documentation migrated verbatim from `TechSpec.md §3`. The authoritative durable-state schemas are boundary-owned (kernel CBOR record profile, the official SQLite/PostgreSQL backend schemas, and the capability concept JSON schemas under `spec/core/artifacts/json-schema/`). Per ADR-0023/ADR-0024/ADR-0025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation schema oracle — it points to boundary authority rather than duplicating raw schema files.
+> **Authority note:** This file is the companion index for the sidecars in this directory, migrated from `TechSpec.md §3`. It states purpose, invariants, and migration notes. It is not a schema artifact. Each sidecar's `artifact_path` points at the boundary-owned shape (the kernel CDDL profile, the official SQLite and PostgreSQL migration directories, and the JSON Schema or semantic-convention files under `spec/`). Per ADR-0023/ADR-0024/ADR-0025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation schema oracle.
 
 ## 3. State & Data Modeling
 

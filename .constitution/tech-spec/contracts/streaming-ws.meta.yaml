@@ -1,0 +1,11 @@
+artifact_path: "spec/streaming/ws/typespec/main.tsp"
+surface: "async"
+flows:
+  - flow-stream-resume-and-ws-transport
+boundaries:
+  - BND-01
+  - BND-19
+companion: "README.md"
+certainty: "assumed"
+assumption: "The WebSocket carriage contract is spec/streaming/ws/typespec/main.tsp. It carries session frames and the resume cursor; it does not own either shape."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

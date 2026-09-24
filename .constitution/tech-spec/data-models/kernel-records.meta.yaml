@@ -1,0 +1,15 @@
+artifact_path: "spec/kernel/cddl/kernel-records.cddl"
+surface: "data-model"
+flows:
+  - flow-crash-mid-checkpoint-recovery
+  - flow-host-lists-threads-reads-state
+  - flow-preemption-idempotent-side-effect
+  - flow-tenant-offboarding-erasure
+  - flow-two-funnel-routing
+boundaries:
+  - BND-17
+  - BND-18
+companion: "README.md"
+certainty: "assumed"
+assumption: "The canonical kernel record profile is spec/kernel/cddl/kernel-records.cddl. Backend SQL is a projection, not a second definition of the logical records."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

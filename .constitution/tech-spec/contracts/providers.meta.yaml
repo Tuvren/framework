@@ -1,0 +1,10 @@
+artifact_path: "spec/providers/typespec/main.tsp"
+surface: "library"
+flows:
+  - flow-react-runner-turn-execution
+boundaries:
+  - BND-07
+companion: "README.md"
+certainty: "assumed"
+assumption: "The provider bridge contract is the TypeSpec at spec/providers/typespec/main.tsp. The authority packet names that file as its authoritative source."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

@@ -1,0 +1,10 @@
+artifact_path: "spec/streaming/ws/artifacts/json-schema"
+surface: "data-model"
+flows:
+  - flow-stream-resume-and-ws-transport
+boundaries:
+  - BND-01
+companion: "README.md"
+certainty: "assumed"
+assumption: "WebSocket carriage schemas live under spec/streaming/ws/artifacts/json-schema. They validate carriage fields only, not the inner session frame."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

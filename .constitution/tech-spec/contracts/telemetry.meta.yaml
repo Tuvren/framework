@@ -1,0 +1,11 @@
+artifact_path: "spec/telemetry/authority-packet.json"
+surface: "other"
+flows:
+  - flow-operational-telemetry-export
+  - flow-two-funnel-routing
+boundaries:
+  - BND-20
+companion: "README.md"
+certainty: "assumed"
+assumption: "The telemetry surface manifest is spec/telemetry/authority-packet.json. The record vocabulary it names lives in the data-model sidecar for the semantic-convention file."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."
