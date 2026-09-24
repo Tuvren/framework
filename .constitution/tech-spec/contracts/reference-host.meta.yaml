@@ -1,4 +1,4 @@
-artifact_path: "spec/host/typespec/main.tsp"
+artifact_path: "typescript/host/repl/src/cli.ts"
 surface: "cli"
 flows:
   - flow-reference-host-headless-transcript
@@ -7,5 +7,5 @@ boundaries:
   - BND-21
 companion: "README.md"
 certainty: "assumed"
-assumption: "No parseable command-tree artifact exists for the reference host. This sidecar points at the host TypeSpec the CLI drives. The headless command grammar remains in the companion, section 4.17."
+assumption: "The reference-host flags and headless entry live in typescript/host/repl/src/cli.ts. There is no language-neutral command-tree artifact. Companion section 4.17 states the protocol. This file is not the runtime API in spec/host/typespec/main.tsp."
 settles_when: "A live-verification recipe drives the headless host and a closeout cites that run as evidence."

@@ -5,8 +5,8 @@ entries:
     upstream:
       prd: v0.13.0
       architecture: v0.16.0
-      tech-spec: v0.45.0
-    changed: ["Re-read tech-spec v0.45.0. The sidecar move does not add an epic, change scope paths, or rename a patchable file. tasks/epics/ stays empty."]
+      tech-spec: v0.45.1
+    changed: ["Re-read tech-spec v0.45.1. No epic was added and tasks/epics/ stays empty. render regenerated critical-path.md wording only; the wave table did not change."]
   - version: v0.45.0
     date: 2026-09-03
     by: migrate
