@@ -5,7 +5,7 @@ entries:
     upstream:
       prd: v0.13.0
       architecture: v0.16.0
-    added: ["Two live-verification recipes that resolve today: sdk-memory-scenario for the library surface, and reference-host-headless-sqlite for the reference-host CLI. Guidelines §5.9 says why PostgreSQL, kernel gRPC, MCP, and the remote WebSocket session have no recipe, and why no contract is pinned while no epic is active."]
+    added: ["Four live-verification recipes that resolve today: reference-host-memory-scenario and reference-host-headless-sqlite for the reference host, and kernel-grpc-interop-smoke plus mcp-stdio-smoke for the proving-host interop script. Guidelines §5.9 says the memory scenario does not call createTuvren, why that entrypoint has no recipe, and why PostgreSQL and the remote WebSocket session are omitted because they need a service a dark-factory run cannot assume is up."]
   - version: v0.45.2
     date: 2026-09-24
     by: patch-lane
