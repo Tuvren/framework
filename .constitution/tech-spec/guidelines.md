@@ -176,7 +176,6 @@ live_verification:
     evidence:
       kind: log_line
       ref: "headless sqlite scenario passed"
-    cleanup: "rm -f /tmp/tuvren-live-recipe-reload.sqlite /tmp/tuvren-live-recipe-reload.sqlite-wal /tmp/tuvren-live-recipe-reload.sqlite-shm /tmp/tuvren-live-recipe-headless.sqlite /tmp/tuvren-live-recipe-headless.sqlite-wal /tmp/tuvren-live-recipe-headless.sqlite-shm"
     exists: true
   - name: kernel-grpc-interop-smoke
     surface: rpc
@@ -779,7 +778,7 @@ Sequencing for ADR-0056/ADR-0057/ADR-0058 lives in the execution plan (the const
 
 `reference-host-memory-scenario` builds the reference host and runs `--scenario streaming` through `createReplHost`, which calls `createTuvrenRuntime`. It does not call `createTuvren`. That entrypoint is used by transcript replay (`createReplHostUsingCreateTuvren`), and replay has no package script: it needs a transcript file. There is no active ticket that could own an `exists: false` recipe, so the curated library entrypoint has no recipe. Do not cite the memory scenario as proof of `createTuvren`.
 
-`reference-host-headless-sqlite` is the CLI recipe. It runs `proving-host:scenario-sqlite-pinned`, whose assert helper writes nothing when it passes, then prints `headless sqlite scenario passed`. The reload half writes `/tmp/tuvren-live-recipe-reload.sqlite` and the headless half writes `/tmp/tuvren-live-recipe-headless.sqlite`. They do not share a file, so this recipe is not a reload proof. Cleanup deletes only those two files and their SQLite sidecars. It does not stop a service, because none is left running.
+`reference-host-headless-sqlite` is the CLI recipe. It runs `proving-host:scenario-sqlite-pinned`, then prints `headless sqlite scenario passed` only if that script exits 0. The script gives the run a private temp directory and deletes that directory on exit, including failure, so it cannot remove another run's database. `pipefail` keeps a failing CLI from being hidden by the assert helper. The helper only checks that the JSONL is nonempty and has no error record, so the script also requires a `text.delta` event from the turn. The two halves do not share a file, so this recipe is not a reload proof. It does not leave a service running.
 
 `kernel-grpc-interop-smoke` and `mcp-stdio-smoke` are the same drive: `bun run proving-host:interop-smoke`. That script builds the host, starts the Rust kernel gRPC service, and feeds headless stdin that includes `.mcp smoke` against the mock stdio server. It stops the service in a `finally` block. One command covers both seams; the two recipes name which line to capture.
 
