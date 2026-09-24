@@ -1,4 +1,12 @@
 entries:
+  - version: v0.45.1
+    date: 2026-09-24
+    by: patch-lane
+    upstream:
+      prd: v0.13.0
+      architecture: v0.16.0
+      tech-spec: v0.45.0
+    changed: ["Re-read tech-spec v0.45.0. The sidecar move does not add an epic, change scope paths, or rename a patchable file. tasks/epics/ stays empty."]
   - version: v0.45.0
     date: 2026-09-03
     by: migrate

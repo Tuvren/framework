@@ -1,0 +1,12 @@
+artifact_path: "spec/tools/typespec/main.tsp"
+surface: "library"
+flows:
+  - flow-exposure-time-tool-surface-policy
+  - flow-tool-approval-pause-resume
+boundaries:
+  - BND-08
+  - BND-10
+companion: "README.md"
+certainty: "assumed"
+assumption: "Tool and capability call shapes shared by runners are spec/tools/typespec/main.tsp. The MCP client is a separate surface."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

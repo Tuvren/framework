@@ -1,0 +1,10 @@
+artifact_path: "tools/schemas/authority-packet.schema.json"
+surface: "json"
+flows:
+  - flow-authority-packet-driven-conformance
+boundaries:
+  - BND-26
+companion: "README.md"
+certainty: "assumed"
+assumption: "Every authority packet validates against tools/schemas/authority-packet.schema.json. The packets themselves are the instances, not this schema."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

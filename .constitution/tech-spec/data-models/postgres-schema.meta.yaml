@@ -1,0 +1,12 @@
+artifact_path: "typescript/kernel/backends/postgres/migrations"
+surface: "data-model"
+flows:
+  - flow-crash-mid-checkpoint-recovery
+  - flow-host-lists-threads-reads-state
+  - flow-tenant-offboarding-erasure
+boundaries:
+  - BND-18
+companion: "README.md"
+certainty: "assumed"
+assumption: "The official PostgreSQL schema is the migration directory the backend applies. Column-level authority is 0001_relational_schema.sql in that directory."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

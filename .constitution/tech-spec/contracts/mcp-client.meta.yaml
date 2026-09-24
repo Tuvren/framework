@@ -1,0 +1,10 @@
+artifact_path: "spec/tools/mcp/authority-packet.json"
+surface: "other"
+flows:
+  - flow-host-adds-external-mcp-server
+boundaries:
+  - BND-11
+companion: "README.md"
+certainty: "assumed"
+assumption: "The MCP client surface is declared by spec/tools/mcp/authority-packet.json. Its authoritative source today is a conformance plan, not a TypeSpec file of its own."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

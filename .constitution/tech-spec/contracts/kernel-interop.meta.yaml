@@ -1,0 +1,10 @@
+artifact_path: "spec/interop/proto/tuvren/kernel/interop/v1/kernel_services.proto"
+surface: "rpc"
+flows:
+  - flow-multi-implementation-conformance-compatibility
+boundaries:
+  - BND-24
+companion: "README.md"
+certainty: "assumed"
+assumption: "Cross-language kernel calls are the gRPC service in kernel_services.proto. kernel_types.proto is the companion message file in the same package, not a second surface."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

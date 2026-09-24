@@ -1,0 +1,11 @@
+artifact_path: "spec/host/typespec/main.tsp"
+surface: "cli"
+flows:
+  - flow-reference-host-headless-transcript
+  - flow-reference-host-proves-sdk
+boundaries:
+  - BND-21
+companion: "README.md"
+certainty: "assumed"
+assumption: "No parseable command-tree artifact exists for the reference host. This sidecar points at the host TypeSpec the CLI drives. The headless command grammar remains in the companion, section 4.17."
+settles_when: "A live-verification recipe drives the headless host and a closeout cites that run as evidence."

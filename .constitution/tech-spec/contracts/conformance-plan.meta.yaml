@@ -1,0 +1,12 @@
+artifact_path: "tools/schemas/conformance-plan.schema.json"
+surface: "json"
+flows:
+  - flow-authority-packet-driven-conformance
+  - flow-multi-implementation-conformance-compatibility
+boundaries:
+  - BND-23
+  - BND-27
+companion: "README.md"
+certainty: "assumed"
+assumption: "Conformance plans are data, validated by tools/schemas/conformance-plan.schema.json. Plans under spec/conformance/ are instances of this schema."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

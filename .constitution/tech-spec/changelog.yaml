@@ -1,4 +1,13 @@
 entries:
+  - version: v0.45.0
+    date: 2026-09-24
+    by: patch-lane
+    upstream:
+      prd: v0.13.0
+      architecture: v0.16.0
+    changed: ["Contract and data-model sidecars no longer use the legacy artifact field. Each shipped surface has its own sidecar whose artifact_path points at the boundary-owned file or directory in the code. The two README indexes stay as companion markdown, because they state invariants and authority packets cite them as human references."]
+    fixed: ["Every architecture flow is named on at least one sidecar. The v0.44.0 entry said the index sidecars listed flows; the files did not."]
+    added: ["constitution.yaml surfaces now follow the artifact paths that are glossary-clean, and still include the tech-spec companion directories. spec/telemetry/semconv/tuvren-runtime.yaml is pointed at by the telemetry-records sidecar but is not a surface yet: its prose still says Tuvren Runtime and uses tenant in an example, and rewording it would regenerate checked-in bindings."]
   - version: v0.44.0
     date: 2026-09-03
     by: migrate

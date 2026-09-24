@@ -1,4 +1,0 @@
-artifact: README.md
-surface: data-model
-certainty: assumed
-assumption: "This file is a pointer index over the canonical record profile, entity shapes, backend schemas, cursor, transcript, telemetry, bounds, capability, and session frame shapes; §3.1 to §3.16 together cover every critical flow, and intentionally declares no direct flow coverage. The index itself carries no conformance evidence — the CDDL, TypeSpec, and JSON Schema artifacts under spec/ do."

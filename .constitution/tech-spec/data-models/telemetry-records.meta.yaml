@@ -1,0 +1,11 @@
+artifact_path: "spec/telemetry/semconv/tuvren-runtime.yaml"
+surface: "data-model"
+flows:
+  - flow-operational-telemetry-export
+  - flow-two-funnel-routing
+boundaries:
+  - BND-20
+companion: "README.md"
+certainty: "assumed"
+assumption: "Operational telemetry records are the authored semantic conventions in spec/telemetry/semconv/tuvren-runtime.yaml. That file is not on the glossary surface yet because its prose still uses banned synonyms."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

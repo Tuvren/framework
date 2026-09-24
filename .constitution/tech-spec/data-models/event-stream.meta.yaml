@@ -1,0 +1,11 @@
+artifact_path: "spec/streaming/artifacts/json-schema"
+surface: "data-model"
+flows:
+  - flow-tool-approval-pause-resume
+  - flow-react-runner-turn-execution
+boundaries:
+  - BND-19
+companion: "README.md"
+certainty: "assumed"
+assumption: "Canonical stream event schemas live under spec/streaming/artifacts/json-schema. Carriage and resume schemas are separate sidecars."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

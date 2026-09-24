@@ -1,0 +1,10 @@
+artifact_path: "spec/streaming/sse/typespec/main.tsp"
+surface: "http"
+flows:
+  - flow-stream-resume-and-ws-transport
+boundaries:
+  - BND-19
+companion: "README.md"
+certainty: "assumed"
+assumption: "SSE is an HTTP carriage of the canonical event stream. Its TypeSpec is the contract; the JSON Schema under artifacts/ is generated from it."
+settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

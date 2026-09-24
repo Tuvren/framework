@@ -9,6 +9,32 @@ archetype:
 surfaces:
   - .constitution/tech-spec/contracts/**
   - .constitution/tech-spec/data-models/**
+  - spec/core/typespec/main.tsp
+  - spec/core/artifacts/json-schema
+  - spec/kernel/cddl/kernel-records.cddl
+  - spec/kernel/authority-packet.json
+  - spec/interop/proto/tuvren/kernel/interop/v1/kernel_services.proto
+  - spec/interop/proto/tuvren/kernel/interop/v1/kernel_types.proto
+  - spec/providers/typespec/main.tsp
+  - spec/runners/typespec/main.tsp
+  - spec/streaming/typespec/main.tsp
+  - spec/streaming/artifacts/json-schema
+  - spec/streaming/sse/typespec/main.tsp
+  - spec/streaming/sse/artifacts/json-schema
+  - spec/streaming/ws/typespec/main.tsp
+  - spec/streaming/ws/artifacts/json-schema
+  - spec/streaming/resume/typespec/main.tsp
+  - spec/streaming/resume/artifacts/json-schema
+  - spec/tools/typespec/main.tsp
+  - spec/tools/mcp/authority-packet.json
+  - spec/host/typespec/main.tsp
+  - spec/host/session/typespec/main.tsp
+  - spec/host/session/artifacts/json-schema
+  - spec/telemetry/authority-packet.json
+  - tools/schemas/authority-packet.schema.json
+  - tools/schemas/conformance-plan.schema.json
+  - typescript/kernel/backends/sqlite/migrations
+  - typescript/kernel/backends/postgres/migrations
 diff_exclusions:
   - "**/Cargo.lock"
   - "**/bun.lock"

@@ -26,9 +26,11 @@ An epic joins a wave when every dependency sits in an earlier wave and it is sco
 flowchart LR
 ```
 
-An arrow means depends on.
+An arrow points from a prerequisite to the epic that depends on it, so it reads in the order work flows, the same direction as the longest chain above.
 
 ## Ticket order inside each epic
+
+A dependency-respecting listing, not a chain: `needs` names a ticket's own `depends_on` inside its epic, and a ticket without one has no in-epic dependency. Readiness is epic-level: a ticket finished on an unmerged branch satisfies no other epic's dependency until the containing PR merges.
 
 - none
 
