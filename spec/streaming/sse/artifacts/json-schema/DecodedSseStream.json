@@ -11,7 +11,7 @@
     },
     "lastEventId": {
       "type": "string",
-      "description": "Last event identifier observed across the full stream. Equal to the most\nrecent decoded `id:` value (or absent when no valid `id:` field was seen).\nDecoders MUST send this value back via the `Last-Event-ID` HTTP header on\nautomatic reconnection."
+      "description": "Latest streamed-event identifier observed across the full stream. Equal to the most\nrecent decoded `id:` value (or absent when no valid `id:` field was seen).\nDecoders MUST send this value back via the `Last-Event-ID` HTTP header on\nautomatic reconnection."
     },
     "reconnectDelayMs": {
       "$ref": "https://tuvren.dev/schemas/framework/event-stream-sse/NonNegativeSafeInt.json",

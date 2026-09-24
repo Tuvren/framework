@@ -156,7 +156,7 @@ model ApprovalResponse {
 // ---------------------------------------------------------------------------
 //
 // The models below are this packet's own authority: the duplex session wire
-// vocabulary exchanged between a Tuvren runtime and an attached client
+// vocabulary exchanged between a Tuvren host and an attached client
 // endpoint over a bidirectional session channel. The vocabulary is
 // transport-agnostic — SSE, WebSocket, and stdio bindings each carry these
 // frames over their own wire encoding, and binding that encoding is a

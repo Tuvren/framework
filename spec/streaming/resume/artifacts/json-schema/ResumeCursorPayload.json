@@ -18,7 +18,7 @@
     },
     "sequence": {
       "$ref": "https://tuvren.dev/schemas/framework/event-stream-resume/NonNegativeSafeInt.json",
-      "description": "Monotonic intra-turn offset of the last event the client observed.\nSequence numbers start at 0 at each `turn.start` and increase by exactly\n1 per sequenced event within the Turn."
+      "description": "Monotonic intra-turn offset of the latest streamed event the client observed.\nSequence numbers start at 0 at each `turn.start` and increase by exactly\n1 per sequenced event within the Turn."
     }
   },
   "required": ["v", "turnId", "sequence"],
