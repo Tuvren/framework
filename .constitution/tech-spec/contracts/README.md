@@ -1,6 +1,6 @@
 # Interface Contracts
 
-> **Authority note:** This file is the companion index for the sidecars in this directory, migrated from `TechSpec.md §4`. It states purpose and invariants. It is not a contract artifact. Each sidecar's `artifact_path` points at the boundary-owned source (TypeSpec `main.tsp`, generated JSON Schema, `.proto`, or an authority-packet manifest under `spec/<port>/`) or, where no language-neutral file exists, at the TypeScript module that owns the command or record grammar. The authority-packet and conformance-plan schemas live under `tools/schemas/`. Per ADR-0023/ADR-0024/ADR-0025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation contract oracle.
+> **Authority note:** This file is the companion index for the sidecars in this directory, migrated from `TechSpec.md §4`. It states purpose and invariants. It is not a contract artifact. Each sidecar's `artifact_path` points at the boundary-owned source (TypeSpec `main.tsp`, generated JSON Schema, `.proto`, or an authority-packet manifest under `spec/<port>/`) or, where no language-neutral command grammar exists, at the TypeScript module that owns the reference-host flags. Record types are data-model sidecars, not contract sidecars. The authority-packet and conformance-plan schemas live under `tools/schemas/`. Per ADR-0023/ADR-0024/ADR-0025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation contract oracle.
 
 ## 4. Interface Contract
 

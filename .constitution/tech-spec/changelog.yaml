@@ -1,4 +1,11 @@
 entries:
+  - version: v0.45.2
+    date: 2026-09-24
+    by: patch-lane
+    upstream:
+      prd: v0.13.0
+      architecture: v0.16.0
+    fixed: ["The data-model index now says the transcript and cursor sidecars point at TypeScript modules. The reference-host assumption names the flag split between cli.ts and repl-config.ts. The transcript companion no longer claims section 3.9 matches the module."]
   - version: v0.45.1
     date: 2026-09-24
     by: patch-lane
