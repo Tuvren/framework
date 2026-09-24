@@ -1,6 +1,6 @@
 # Data Models
 
-> **Authority note:** This file is the companion index for the sidecars in this directory, migrated from `TechSpec.md §3`. It states purpose, invariants, and migration notes. It is not a schema artifact. Each sidecar's `artifact_path` points at the boundary-owned shape (the kernel CDDL profile, the official SQLite and PostgreSQL migration directories, and the JSON Schema or semantic-convention files under `spec/`). Per ADR-0023/ADR-0024/ADR-0025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation schema oracle.
+> **Authority note:** This file is the companion index for the sidecars in this directory, migrated from `TechSpec.md §3`. It states purpose, invariants, and migration notes. It is not a schema artifact. Each sidecar's `artifact_path` points at the boundary-owned shape (the kernel CDDL profile, the official SQLite and PostgreSQL migration directories, and the JSON Schema or semantic-convention files under `spec/`). Where no language-neutral schema exists, the sidecar points at the TypeScript module that defines the shape: transcript records in `typescript/host/repl/src/lib/repl-transcript.ts`, and durable-read cursor payloads in `typescript/runtime/src/lib/durable-reads.ts`. Per ADR-0023/ADR-0024/ADR-0025 and the authority-packet `forbiddenAuthoritySources`, the constitution is never the cross-implementation schema oracle.
 
 ## 3. State & Data Modeling
 
@@ -420,6 +420,8 @@ interface BranchMessagesCursorPayload {
 ```
 
 ### 3.9 Reference Host Transcript File Format
+
+The record types in `typescript/host/repl/src/lib/repl-transcript.ts` are the definition. This sketch has drifted from that module: it still shows `config.backend.credentialSource`, which the module does not have, and it omits `config.scope`, which the module records.
 
 - **Purpose:** Per ADR-0041, the Reference Host can capture a session transcript to durable on-disk storage and replay it against a fresh runtime instance.
 - **Storage Shape:** JSON Lines (JSONL) file: UTF-8 encoded, newline-terminated, one JSON object per line. The first line is always a `header` record; all subsequent lines are `entry` records. The file is append-only during recording.

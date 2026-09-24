@@ -6,5 +6,5 @@ boundaries:
   - BND-21
 companion: "README.md"
 certainty: "assumed"
-assumption: "Transcript record types live in typescript/host/repl/src/lib/repl-transcript.ts. No spec/ schema exists for this format. Companion section 3.9 states the file invariants."
+assumption: "Transcript record types live in typescript/host/repl/src/lib/repl-transcript.ts. No spec/ schema exists for this format. Companion section 3.9 is a migrated sketch and has drifted: it still shows credentialSource, which this module does not have, and it omits config.scope, which this module records."
 settles_when: "A package test that writes and reads a transcript file is cited as repository evidence by a closeout."

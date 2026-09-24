@@ -7,5 +7,5 @@ boundaries:
   - BND-21
 companion: "README.md"
 certainty: "assumed"
-assumption: "The reference-host flags and headless entry live in typescript/host/repl/src/cli.ts. There is no language-neutral command-tree artifact. Companion section 4.17 states the protocol. This file is not the runtime API in spec/host/typespec/main.tsp."
+assumption: "typescript/host/repl/src/cli.ts parses the headless, record, replay, and serve-ws flags. typescript/host/repl/src/lib/repl-config.ts parses --backend, --scenario, and --sqlite-path from the remaining arguments. There is no language-neutral command-tree artifact. Companion section 4.17 states the protocol. Neither file is the runtime API in spec/host/typespec/main.tsp."
 settles_when: "A live-verification recipe drives the headless host and a closeout cites that run as evidence."
