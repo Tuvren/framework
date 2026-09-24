@@ -1,4 +1,11 @@
 entries:
+  - version: v0.45.3
+    date: 2026-09-24
+    by: stage
+    upstream:
+      prd: v0.13.0
+      architecture: v0.16.0
+    added: ["Two live-verification recipes that resolve today: sdk-memory-scenario for the library surface, and reference-host-headless-sqlite for the reference-host CLI. Guidelines §5.9 says why PostgreSQL, kernel gRPC, MCP, and the remote WebSocket session have no recipe, and why no contract is pinned while no epic is active."]
   - version: v0.45.2
     date: 2026-09-24
     by: patch-lane

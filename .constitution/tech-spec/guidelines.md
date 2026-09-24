@@ -156,6 +156,27 @@ layout:
     purpose: "CI lanes that run the same gates as the local lane ladder."
   - path: .constitution
     purpose: "The staged constitution: prd, architecture, tech-spec, and tasks, plus reports, research, spikes, and evidence."
+live_verification:
+  - name: sdk-memory-scenario
+    surface: library
+    launch: "bun run nx run host-repl:build"
+    doctor: "bun -e \"require('node:fs').accessSync('typescript/host/repl/dist/cli.js')\""
+    drive: "bun run nx run host-repl:scenario"
+    drive_kind: command
+    evidence:
+      kind: log_line
+      ref: "scenario streaming"
+    exists: true
+  - name: reference-host-headless-sqlite
+    surface: cli
+    launch: "bun run nx run host-repl:build"
+    doctor: "bun -e \"require('node:fs').accessSync('typescript/host/repl/dist/cli.js')\""
+    drive: "bun run proving-host:scenario-sqlite"
+    drive_kind: command
+    evidence:
+      kind: log_line
+      ref: "headless JSONL record"
+    exists: true
 commit_convention: "Conventional Commits with a scope naming the ticket, epic, or area: feat(BJ004), fix(kernel-protocol), chore(constitution), docs(tsdoc). The subject stays imperative and under about 72 characters; the body explains what changed and why."
 safety_standard: "Untrusted edges — provider responses, MCP servers, tool inputs, and client-reported results — are validated at the boundary and surfaced as agent-visible results rather than trusted. Every turn runs under a configured execution bound. Credentials never reach durable state, operational telemetry, or a transcript."
 ---
@@ -733,6 +754,17 @@ Sequencing for ADR-0056/ADR-0057/ADR-0058 lives in the execution plan (the const
 4. Add the funnel-isolation conformance check set (destination healthy-vs-unavailable session equivalence; no content payload on the telemetry funnel under default routing; failure-to-signal mapping). No proto change: kernel interop stays funnel-unaware.
 5. Official destination adapter packages are deferred per CAP-P1-073 and ship additively post-freeze.
 
+### 5.9 Live verification
+
+The primary archetype is a library. `sdk-memory-scenario` builds the reference host and drives one in-memory streaming turn through `createTuvren` with the fixture provider. That is the local proof a host developer can run without a database.
+
+The secondary archetype is a CLI. `reference-host-headless-sqlite` builds the same host, then runs the headless stdin scenario against the SQLite backend. The scenario chooses its own database path (`--sqlite-path auto`) and does not leave a service running, so the recipe has no cleanup command.
+
+PostgreSQL is the same headless drive with `bun run proving-host:scenario-postgres`. It is not a separate recipe: a dark-factory run cannot assume the devenv service is up. Start it with `bun run services:up` when that backend is the thing under test.
+
+Kernel gRPC, the MCP client, and the remote WebSocket session are integration seams. No single local command starts the peer and the client together. They have no recipe until an epic owns that launcher. Do not mark a recipe `exists: false` for them while no ticket can own it.
+
+No contract is pinned. There is no active epic, so no shape is shared by a wave. The next wave's step 0 should consider pinning the kernel record profile, the core TypeSpec, the authority-packet schema, and the duplex session frames.
 
 ## 1. Stack Specification (Bill of Materials)
 
