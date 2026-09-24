@@ -47,7 +47,7 @@ model ResumeCursorPayload {
   turnNodeHash?: NonEmptyString;
 
   /**
-   * Monotonic intra-turn offset of the last event the client observed.
+   * Monotonic intra-turn offset of the latest streamed event the client observed.
    * Sequence numbers start at 0 at each `turn.start` and increase by exactly
    * 1 per sequenced event within the Turn.
    */

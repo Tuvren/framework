@@ -59,7 +59,7 @@ model DecodedSseStream {
   events: DecodedSseEvent[];
 
   /**
-   * Last event identifier observed across the full stream. Equal to the most
+   * Latest streamed-event identifier observed across the full stream. Equal to the most
    * recent decoded `id:` value (or absent when no valid `id:` field was seen).
    * Decoders MUST send this value back via the `Last-Event-ID` HTTP header on
    * automatic reconnection.
