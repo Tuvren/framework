@@ -570,7 +570,7 @@ function createTranscriptHeader(config: ReplConfig): ReplTranscriptHeader {
       scenario: config.scenario,
       // Record the resolved Scope the runtime actually bound (ADR-0048,
       // KRT-BE008) so the transcript is honestly correlated even when the host
-      // left the Scope unset and fell back to the single-tenant default.
+      // left the Scope unset and fell back to the single-scope default.
       scope: config.scope ?? DEFAULT_SCOPE,
       systemPrompt: config.systemPrompt,
     },
