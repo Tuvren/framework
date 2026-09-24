@@ -29,6 +29,7 @@
     "interop-smoke": "bun run nx run-many -t interop-smoke -p kernel-interop-grpc,kernel-rust-grpc-service,host-repl --parallel=1",
     "proving-host:interop-smoke": "bun run nx run host-repl:interop-smoke --skipNxCache --excludeTaskDependencies",
     "proving-host:scenario-sqlite": "bun run nx run host-repl:scenario-sqlite",
+    "proving-host:scenario-sqlite-pinned": "bash -lc 'cd typescript/host/repl && node dist/cli.js --scenario reload --backend sqlite --provider fixture --sqlite-path /tmp/tuvren-live-recipe-reload.sqlite && printf \".status\\n.turn start streaming\\n.turn await\\n.exit\\n\" | node dist/cli.js --headless --stream-jsonl --backend sqlite --provider fixture --sqlite-path /tmp/tuvren-live-recipe-headless.sqlite | bun smoke/assert-headless-jsonl.ts'",
     "proving-host:scenario-postgres": "bun run nx run host-repl:scenario-postgres",
     "docs:authority-freeze": "bun tools/scripts/docs-authority-freeze-gate.ts",
     "docs:authority-freeze:check": "bun tools/scripts/docs-authority-freeze-gate.ts --check",
