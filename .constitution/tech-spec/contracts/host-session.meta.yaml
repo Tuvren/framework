@@ -4,6 +4,7 @@ flows:
   - flow-duplex-session-inbound-routing
   - flow-remote-session-reattach-and-redelivery
   - flow-tuvren-client-capability-lease-dispatch
+  - flow-context-engineering-steering
 boundaries:
   - BND-01
   - BND-15

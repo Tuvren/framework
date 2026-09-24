@@ -29,6 +29,9 @@ surfaces:
   - spec/tools/mcp/authority-packet.json
   - spec/host/typespec/main.tsp
   - spec/host/session/typespec/main.tsp
+  - typescript/host/repl/src/cli.ts
+  - typescript/host/repl/src/lib/repl-transcript.ts
+  - typescript/runtime/src/lib/durable-reads.ts
   - spec/host/session/artifacts/json-schema
   - spec/telemetry/authority-packet.json
   - tools/schemas/authority-packet.schema.json

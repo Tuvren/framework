@@ -1,0 +1,10 @@
+artifact_path: "typescript/host/repl/src/lib/repl-transcript.ts"
+surface: "data-model"
+flows:
+  - flow-reference-host-headless-transcript
+boundaries:
+  - BND-21
+companion: "README.md"
+certainty: "assumed"
+assumption: "Transcript record types live in typescript/host/repl/src/lib/repl-transcript.ts. No spec/ schema exists for this format. Companion section 3.9 states the file invariants."
+settles_when: "A package test that writes and reads a transcript file is cited as repository evidence by a closeout."

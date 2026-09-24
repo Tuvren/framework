@@ -1,0 +1,10 @@
+artifact_path: "typescript/runtime/src/lib/durable-reads.ts"
+surface: "data-model"
+flows:
+  - flow-host-lists-threads-reads-state
+boundaries:
+  - BND-03
+companion: "README.md"
+certainty: "assumed"
+assumption: "Cursor payload shapes are implemented in typescript/runtime/src/lib/durable-reads.ts. The host TypeSpec declares the operations and not the cursor payloads. Companion section 3.8 states the invariants."
+settles_when: "A package test that decodes a durable-read cursor is cited as repository evidence by a closeout."

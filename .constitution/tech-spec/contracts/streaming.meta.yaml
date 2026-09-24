@@ -4,6 +4,7 @@ flows:
   - flow-tool-approval-pause-resume
   - flow-stream-resume-and-ws-transport
   - flow-reference-host-proves-sdk
+  - flow-context-engineering-steering
 boundaries:
   - BND-19
 companion: "README.md"

@@ -10,5 +10,5 @@ boundaries:
   - BND-14
 companion: "README.md"
 certainty: "assumed"
-assumption: "Capability orchestration shapes are the JSON Schema directory generated from the core TypeSpec. The companion section 3.13 states the invariants the schemas do not."
+assumption: "spec/core/artifacts/json-schema holds the shared core JSON Schemas, including message, telemetry, and execution-bounds files. The capability files in that directory are hand-authored beside the TypeScript source per ADR-0046. spec/core/typespec/main.tsp has no Capability model, so those files are not generated from it. Companion section 3.13 states the capability invariants."
 settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

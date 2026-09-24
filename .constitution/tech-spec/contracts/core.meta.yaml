@@ -2,18 +2,13 @@ artifact_path: "spec/core/typespec/main.tsp"
 surface: "library"
 flows:
   - flow-bounded-execution-runaway-turn
-  - flow-context-engineering-steering
-  - flow-host-lists-threads-reads-state
   - flow-react-runner-turn-execution
   - flow-reference-host-proves-sdk
-  - flow-tool-approval-pause-resume
   - flow-two-funnel-routing
-  - flow-invocation-time-binding-policy-attribution
-  - flow-tuvren-client-capability-lease-dispatch
 boundaries:
   - BND-02
   - BND-03
 companion: "README.md"
 certainty: "assumed"
-assumption: "spec/core/typespec/main.tsp is the authored host-facing framework contract. The contracts README is the companion index, not the oracle."
+assumption: "spec/core/typespec/main.tsp is the shared shape contract: errors, messages, and execution bounds. It is not the host-facing operation surface. That surface is spec/host/typespec/main.tsp."
 settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."

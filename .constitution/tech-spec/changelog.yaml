@@ -1,4 +1,11 @@
 entries:
+  - version: v0.45.1
+    date: 2026-09-24
+    by: patch-lane
+    upstream:
+      prd: v0.13.0
+      architecture: v0.16.0
+    fixed: ["The reference-host sidecar no longer points at the runtime TypeSpec. That file has its own host-runtime sidecar. Steering is named on the streaming and host-session sidecars, which define those shapes, not only on the shared core shapes. Transcript records and durable-read cursor payloads have sidecars. The capability-shapes assumption no longer calls hand-authored schemas generated TypeSpec."]
   - version: v0.45.0
     date: 2026-09-24
     by: patch-lane
