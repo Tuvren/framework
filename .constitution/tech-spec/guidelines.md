@@ -157,25 +157,46 @@ layout:
   - path: .constitution
     purpose: "The staged constitution: prd, architecture, tech-spec, and tasks, plus reports, research, spikes, and evidence."
 live_verification:
-  - name: sdk-memory-scenario
-    surface: library
+  - name: reference-host-memory-scenario
+    surface: cli
     launch: "bun run nx run host-repl:build"
-    doctor: "bun -e \"require('node:fs').accessSync('typescript/host/repl/dist/cli.js')\""
+    doctor: "python3 -c 'raise SystemExit(0 if __import__(\"os\").path.isfile(\"typescript/host/repl/dist/cli.js\") else 1)'"
     drive: "bun run nx run host-repl:scenario"
     drive_kind: command
     evidence:
       kind: log_line
-      ref: "scenario streaming"
+      ref: "\"scenario\": \"streaming\""
     exists: true
   - name: reference-host-headless-sqlite
     surface: cli
     launch: "bun run nx run host-repl:build"
-    doctor: "bun -e \"require('node:fs').accessSync('typescript/host/repl/dist/cli.js')\""
-    drive: "bun run proving-host:scenario-sqlite"
+    doctor: "python3 -c 'raise SystemExit(0 if __import__(\"os\").path.isfile(\"typescript/host/repl/dist/cli.js\") else 1)'"
+    drive: "bun run proving-host:scenario-sqlite && bun -e 'console.log(\"headless sqlite scenario passed\")'"
     drive_kind: command
     evidence:
       kind: log_line
-      ref: "headless JSONL record"
+      ref: "headless sqlite scenario passed"
+    cleanup: "find /tmp -name tuvren-repl-*.sqlite -delete"
+    exists: true
+  - name: kernel-grpc-interop-smoke
+    surface: rpc
+    launch: "bun run nx run host-repl:build"
+    doctor: "cargo --version"
+    drive: "bun run proving-host:interop-smoke"
+    drive_kind: command
+    evidence:
+      kind: log_line
+      ref: "headlessInteropSmoke"
+    exists: true
+  - name: mcp-stdio-smoke
+    surface: other
+    launch: "bun run nx run host-repl:build"
+    doctor: "cargo --version"
+    drive: "bun run proving-host:interop-smoke"
+    drive_kind: command
+    evidence:
+      kind: log_line
+      ref: "mcpOutputSeen"
     exists: true
 commit_convention: "Conventional Commits with a scope naming the ticket, epic, or area: feat(BJ004), fix(kernel-protocol), chore(constitution), docs(tsdoc). The subject stays imperative and under about 72 characters; the body explains what changed and why."
 safety_standard: "Untrusted edges — provider responses, MCP servers, tool inputs, and client-reported results — are validated at the boundary and surfaced as agent-visible results rather than trusted. Every turn runs under a configured execution bound. Credentials never reach durable state, operational telemetry, or a transcript."
@@ -756,13 +777,13 @@ Sequencing for ADR-0056/ADR-0057/ADR-0058 lives in the execution plan (the const
 
 ### 5.9 Live verification
 
-The primary archetype is a library. `sdk-memory-scenario` builds the reference host and drives one in-memory streaming turn through `createTuvren` with the fixture provider. That is the local proof a host developer can run without a database.
+`reference-host-memory-scenario` builds the reference host and runs `--scenario streaming` through `createReplHost`, which calls `createTuvrenRuntime`. It does not call `createTuvren`. That entrypoint is used by transcript replay (`createReplHostUsingCreateTuvren`), and replay has no package script: it needs a transcript file. There is no active ticket that could own an `exists: false` recipe, so the curated library entrypoint has no recipe. Do not cite the memory scenario as proof of `createTuvren`.
 
-The secondary archetype is a CLI. `reference-host-headless-sqlite` builds the same host, then runs the headless stdin scenario against the SQLite backend. The scenario chooses its own database path (`--sqlite-path auto`) and does not leave a service running, so the recipe has no cleanup command.
+`reference-host-headless-sqlite` is the CLI recipe. It runs the packaged SQLite scenario, whose assert helper writes nothing when it passes, then prints `headless sqlite scenario passed`. `--sqlite-path auto` creates a new `tuvren-repl-<uuid>.sqlite` under `/tmp` for each process. The reload half and the headless half do not share a file, so this recipe is not a reload proof. Cleanup deletes those temp files. It does not stop a service, because none is left running.
 
-PostgreSQL is the same headless drive with `bun run proving-host:scenario-postgres`. It is not a separate recipe: a dark-factory run cannot assume the devenv service is up. Start it with `bun run services:up` when that backend is the thing under test.
+`kernel-grpc-interop-smoke` and `mcp-stdio-smoke` are the same drive: `bun run proving-host:interop-smoke`. That script builds the host, starts the Rust kernel gRPC service, and feeds headless stdin that includes `.mcp smoke` against the mock stdio server. It stops the service in a `finally` block. One command covers both seams; the two recipes name which line to capture.
 
-Kernel gRPC, the MCP client, and the remote WebSocket session are integration seams. No single local command starts the peer and the client together. They have no recipe until an epic owns that launcher. Do not mark a recipe `exists: false` for them while no ticket can own it.
+PostgreSQL is `bun run proving-host:scenario-postgres` after `bun run services:up`. It is not a recipe, because a dark-factory run cannot assume the service is up. The remote WebSocket session has a local launcher (`--serve-ws` plus `typescript/host/repl/scripts/ws-peer.ts`, covered by `repl-serve-ws.e2e.test.ts`), and that test needs the same PostgreSQL service. It is omitted for the same reason, not because no command exists.
 
 No contract is pinned. There is no active epic, so no shape is shared by a wave. The next wave's step 0 should consider pinning the kernel record profile, the core TypeSpec, the authority-packet schema, and the duplex session frames.
 
