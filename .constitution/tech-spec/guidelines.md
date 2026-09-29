@@ -1,68 +1,68 @@
 ---
 verification_commands:
   - name: other
-    label: "Inner loop"
-    command: "bun run check"
+    label: Inner loop
+    command: bun run check
     exists: true
   - name: lint
-    command: "bun run lint"
+    command: bun run lint
     exists: true
   - name: format
-    command: "bun run format"
+    command: bun run format
     exists: true
   - name: typecheck
-    command: "bun run typecheck"
+    command: bun run typecheck
     exists: true
   - name: test
-    label: "All TypeScript project tests"
-    command: "bun run nx run-many -t test"
+    label: All TypeScript project tests
+    command: bun run nx run-many -t test
     exists: true
   - name: build
-    label: "All TypeScript project builds"
-    command: "bun run nx run-many -t build"
+    label: All TypeScript project builds
+    command: bun run nx run-many -t build
     exists: true
   - name: other
-    label: "Kernel boundary gate"
+    label: Kernel boundary gate
     command: "bun run verify:kernel"
     exists: true
   - name: other
-    label: "Full release gate"
-    command: "bun run verify"
+    label: Full release gate
+    command: bun run verify
     exists: true
   - name: other
-    label: "Semantic conformance lanes"
-    command: "bun run conformance"
+    label: Semantic conformance lanes
+    command: bun run conformance
     exists: true
   - name: other
-    label: "Generated artifact freshness"
-    command: "bun run codegen"
+    label: Generated artifact freshness
+    command: bun run codegen
     exists: true
   - name: other
-    label: "Cross-language interop smoke"
-    command: "bun run interop-smoke"
+    label: Cross-language interop smoke
+    command: bun run interop-smoke
     exists: true
   - name: other
-    label: "Portability gate"
+    label: Portability gate
     command: "bun run portability:check"
     exists: true
   - name: other
-    label: "Host import-boundary gate"
+    label: Host import-boundary gate
     command: "bun run host-boundary:check"
     exists: true
   - name: other
-    label: "Public API freeze gate"
+    label: Public API freeze gate
     command: "bun run api-freeze:check"
     exists: true
   - name: other
-    label: "Compatibility evidence freshness"
+    label: Compatibility evidence freshness
     command: "bun run compatibility:check"
     exists: true
   - name: docs
-    label: "Docs-to-authority freeze gate"
+    label: Docs-to-authority freeze gate
     command: "bun run docs:authority-freeze:check"
     exists: true
   - name: docs
-    label: "Conformance gap plan freshness"
+    label: Conformance gap plan freshness
     command: "bun run docs:af-gap-plan:check"
     exists: true
   - name: probe
@@ -74,72 +74,71 @@ verification_commands:
     command: "bun run proving-host:scenario-postgres"
     exists: true
   - name: other
-    label: "Release readiness"
-    command: "bun run release-check"
+    label: Release readiness
+    command: bun run release-check
     exists: true
   - name: other
-    label: "Registry publish preflight"
+    label: Registry publish preflight
     command: "bun run publish:preflight"
     exists: true
   - name: other
-    label: "Registry publish dry run"
+    label: Registry publish dry run
     command: "bun run publish:dry-run"
     exists: true
   - name: other
-    label: "Changesets version-only release lane"
-    command: "bun run release"
+    label: Changesets version-only release lane
+    command: bun run release
     exists: true
   - name: other
-    label: "Changeset presence gate"
+    label: Changeset presence gate
     command: "bun run changeset:check"
-    exists: false
-    owner: KRT-BN003
+    exists: true
   - name: typecheck
-    label: "Narrow lane quoted by archived ticket KRT-BJ001"
+    label: Narrow lane quoted by archived ticket KRT-BJ001
     command: "bun run nx run sdk:typecheck && bun run nx run framework-runtime:typecheck && bun run conformance"
     exists: true
   - name: typecheck
-    label: "Narrow lane quoted by archived ticket KRT-BJ002"
+    label: Narrow lane quoted by archived ticket KRT-BJ002
     command: "bun run nx run host-repl:typecheck && bun run nx run host-repl:test"
     exists: true
   - name: typecheck
-    label: "Narrow lane quoted by archived ticket KRT-BJ004"
+    label: Narrow lane quoted by archived ticket KRT-BJ004
     command: "bun run nx run shared-core:typecheck && bun run nx run sdk:typecheck && bun run nx run framework-runtime:typecheck"
     exists: true
   - name: typecheck
-    label: "Narrow lane quoted by archived ticket KRT-BJ006"
+    label: Narrow lane quoted by archived ticket KRT-BJ006
     command: "bun run nx run shared-core:typecheck && bun run lint"
     exists: true
   - name: lint
-    label: "Narrow lane quoted by archived ticket KRT-BJ007"
+    label: Narrow lane quoted by archived ticket KRT-BJ007
     command: "bun run lint && bun run nx run shared-core:typecheck"
     exists: true
   - name: other
-    label: "Narrow lane quoted by archived ticket KRT-BJ008"
+    label: Narrow lane quoted by archived ticket KRT-BJ008
     command: "bun run nx run shared-core:typecheck && bun tools/scripts/release-check.ts"
     exists: true
   - name: test
-    label: "Narrow lane quoted by archived ticket KRT-BK003"
+    label: Narrow lane quoted by archived ticket KRT-BK003
     command: "bun run nx run backend-memory:test"
     exists: true
   - name: test
-    label: "Narrow lane quoted by archived tickets KRT-BK009 and KRT-BK011"
+    label: Narrow lane quoted by archived tickets KRT-BK009 and KRT-BK011
     command: "bun run nx run backend-sqlite:test"
     exists: true
   - name: test
-    label: "Narrow lane quoted by archived ticket KRT-BL004"
+    label: Narrow lane quoted by archived ticket KRT-BL004
     command: "bun run nx run host-repl:test"
     exists: true
   - name: build
-    label: "Narrow lane quoted by archived ticket KRT-BM007"
+    label: Narrow lane quoted by archived ticket KRT-BM007
     command: "bun run nx run backend-sqlite:build"
     exists: true
   - name: typecheck
-    label: "Narrow lane quoted by archived ticket KRT-BM008"
+    label: Narrow lane quoted by archived ticket KRT-BM008
     command: "bun run nx run framework-runtime:typecheck"
     exists: true
   - name: other
-    label: "CI workflow definition quoted as the verification artifact by archived ticket KRT-BM001"
+    label: CI workflow definition quoted as the verification artifact by archived ticket KRT-BM001
     command: ".github/workflows/ci.yml"
     exists: true
 layout:
@@ -150,28 +149,28 @@ layout:
   - path: rust
     purpose: "The Rust kernel-port line, including the kernel gRPC service and its conformance adapter."
   - path: go
-    purpose: "The Go kernel-port line as flat modules under the root go.work."
+    purpose: The Go kernel-port line as flat modules under the root go.work.
   - path: python
-    purpose: "The Python kernel-port line as uv workspace members under the root pyproject.toml."
+    purpose: The Python kernel-port line as uv workspace members under the root pyproject.toml.
   - path: dart
-    purpose: "The Dart kernel-port line as pub workspace members under the root pubspec.yaml."
+    purpose: The Dart kernel-port line as pub workspace members under the root pubspec.yaml.
   - path: tools/conformance/harness
-    purpose: "The shared semantic conformance engine that every implementation adapter runs against."
+    purpose: The shared semantic conformance engine that every implementation adapter runs against.
   - path: tools/scripts
     purpose: "Repository gates invoked through Nx and bun scripts: freeze, portability, host boundary, API freeze, verify, and release lanes."
   - path: tools/generators
     purpose: "Artifact generators for the TypeSpec, protobuf, and semantic-convention families."
   - path: tools/nx
-    purpose: "Nx target routing helpers shared across the language lines."
+    purpose: Nx target routing helpers shared across the language lines.
   - path: docs
     purpose: "The human semantic layer: the Kraken kernel and framework specifications the authority gates classify."
   - path: tests
-    purpose: "Cross-cutting repository tests that sit above any single language package."
+    purpose: Cross-cutting repository tests that sit above any single language package.
   - path: reports/compatibility
     purpose: "Checked-in compatibility evidence refreshed by bun run compatibility:evidence."
-  - path: .github/workflows
-    purpose: "CI lanes that run the same gates as the local lane ladder."
-  - path: .constitution
+  - path: ".github/workflows"
+    purpose: CI lanes that run the same gates as the local lane ladder.
+  - path: ".constitution"
     purpose: "The staged constitution: prd, architecture, tech-spec, and tasks, plus reports, research, spikes, and evidence."
 live_verification:
   - name: reference-host-memory-scenario
@@ -192,27 +191,27 @@ live_verification:
     drive_kind: command
     evidence:
       kind: log_line
-      ref: "headless sqlite scenario passed"
+      ref: headless sqlite scenario passed
     exists: true
   - name: kernel-grpc-interop-smoke
     surface: rpc
     launch: "bun run nx run host-repl:build"
-    doctor: "cargo --version"
+    doctor: cargo --version
     drive: "bun run proving-host:interop-smoke"
     drive_kind: command
     evidence:
       kind: log_line
-      ref: "headlessInteropSmoke"
+      ref: headlessInteropSmoke
     exists: true
   - name: mcp-stdio-smoke
     surface: other
     launch: "bun run nx run host-repl:build"
-    doctor: "cargo --version"
+    doctor: cargo --version
     drive: "bun run proving-host:interop-smoke"
     drive_kind: command
     evidence:
       kind: log_line
-      ref: "mcpOutputSeen"
+      ref: mcpOutputSeen
     exists: true
 commit_convention: "Conventional Commits with a scope naming the ticket, epic, or area: feat(BJ004), fix(kernel-protocol), chore(constitution), docs(tsdoc). The subject stays imperative and under about 72 characters; the body explains what changed and why."
 safety_standard: "Untrusted edges — provider responses, MCP servers, tool inputs, and client-reported results — are validated at the boundary and surfaced as agent-visible results rather than trusted. Every turn runs under a configured execution bound. Credentials never reach durable state, operational telemetry, or a transcript."

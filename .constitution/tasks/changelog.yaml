@@ -1,4 +1,14 @@
 entries:
+  - version: v0.46.1
+    date: 2026-09-29
+    changed: ["Epic BN completed six release-readiness tickets (23 points): private session publication closure, direct changeset coverage and exact consumed-release replay, historical release classification, native 0.2.0 generation and 19-package registry dry run, bounded dependency updates, and authority-backed adopter guidance. BN001 is deferred to scoped Bun/Weaver compatibility work.", "KRT-BN001 deferred to tech-spec and tasks: scoped Bun 1.4.2 compatibility work: Bun 1.4.2 fails 3 of 77 backend-memory tests while identical worktree/dependencies pass with Bun 1.3.10; the full Nix refresh also fails Weaver registry compatibility. Both fixes exceed BN001 scope.", "EPIC-BN Public release readiness archived: 6 tickets, 23 points, 8596 diff lines, 2 review rounds"]
+    added: ["Follow-up from EPIC-BN: Owner handoff after merge, in order: dispatch .github/workflows/release.yml with dry_run true, then false; run bun tools/scripts/publish-registry.ts --verify-consumer 0.2.0; create and push v0.2.0; create a GitHub Release from the generated Changesets changelogs; require verify (primary semantic gate — bun run verify) and bazel (standing hermetic gate — rust/kernel build+test, TS shim build only) in master protection; set the repository description. This run ends at the green dry run and performs none of these owner actions.", "Follow-up from EPIC-BN: Repository owner rules proposed OD-04 after merge: independent BN002–BN007 proceeded on the verified retained Bun 1.3.10 toolchain; the Bun 1.4.2 target remains deferred.", "Follow-up from EPIC-BN: Paired pin-transition workflow deviation: prepare and validate M5a plus SP2 together, commit code-only 5153936 then immediately spec-only 56250e7, preserve the intermediate TS-004 P1, and close it with separately reviewed final-head verification before generation. Separate commit authority is preserved; no intermediate validation pass is claimed.", "Follow-up from EPIC-BN: Document a supported paired code/spec pin transition in constitution-tooling; exact TS004 matching and separate commits currently force temporary historical pin drift. This run preserves separate commits, explicit expected failure and final-head closure.", "Follow-up from EPIC-BN: Consider extracting pure package/diff and intent-classification functions from Git/filesystem orchestration in a separately scoped tooling change; current PR fixes the concrete intent-discovery defects within its two owned checker files.", "Follow-up from EPIC-BN: PR119 bounded gate fixes passed preserved test-first controls and the final 33-fixture/196-assertion suite, including per-package freshness, quoted historical paths, native prerelease errors, obsolete private history, and both move endpoints. Earlier fixture records remain labeled by their producing commits. Current-manifest publication authority and private-package exemptions remain as ruled."]
+    by: reconcile
+    fast_lane_through: 4077137365163842cf25a324e5a6c009ea0a9583
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.46.1
   - version: v0.46.0
     date: 2026-09-29
     by: stage
@@ -6,11 +16,8 @@ entries:
       prd: v0.13.1
       architecture: v0.16.0
       tech-spec: v0.46.0
-    added:
-      - "EPIC-BN Public release readiness plans KRT-BN001–KRT-BN007: Bun toolchain alignment, private session carriage, public changeset gate and release notes, versioned dry run, Dependabot, and adopter-facing documentation."
-    changed:
-      - "The 850-line estimated diff is intentionally below the usual 10,000–15,000-line review band because this is a bounded out-of-band release-readiness epic, with generated lockfiles excluded from diff accounting."
-      - "Calibration has no observed ratio yet (INFO-CAL: 0 eligible, 4 excluded); estimates use relative scope and explicit uncertainty rather than historical diff-lines-per-point or review-rounds-per-point ratios."
+    added: ["EPIC-BN Public release readiness plans KRT-BN001–KRT-BN007: Bun toolchain alignment, private session carriage, public changeset gate and release notes, versioned dry run, Dependabot, and adopter-facing documentation."]
+    changed: ["The 850-line estimated diff is intentionally below the usual 10,000–15,000-line review band because this is a bounded out-of-band release-readiness epic, with generated lockfiles excluded from diff accounting.", "Calibration has no observed ratio yet (INFO-CAL: 0 eligible, 4 excluded); estimates use relative scope and explicit uncertainty rather than historical diff-lines-per-point or review-rounds-per-point ratios."]
   - version: v0.45.1
     date: 2026-09-24
     by: patch-lane

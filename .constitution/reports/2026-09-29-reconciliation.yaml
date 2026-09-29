@@ -1,0 +1,46 @@
+date: 2026-09-29
+commit: "4077137"
+epics: [BN]
+routed:
+  - stage: tech-spec
+    item: "Plan the scoped Bun 1.4.2 compatibility fix from BN001 measured Weaver registry and backend-memory failures; preserve the pending target and PostgreSQL major guard. Evidence: .constitution/evidence/KRT-BN001/."
+    from: BN
+  - stage: tasks
+    item: "Create bounded follow-up tickets for deferred BN001 and align the dependent ticket graph with proposed OD-04 after the owner ruling; no Bun 1.4 acceptance is claimed."
+    from: BN
+  - stage: tech-spec
+    item: "Define package retirement/removal governance for packages absent or renamed away from the current publishable inventory; native Changesets rejects names absent from the workspace. Preserve ADR-0069's explicit private-package exemption and ADR-0068's never-published session withdrawal. This policy extension was a Consider finding in PR119 round 1, not silently added to the checker."
+    from: BN
+  - stage: tech-spec
+    item: "code decision (convention): Direct changeset coverage requires a new or updated matching release declaration or nonempty note compared with the exact base, using current publishable package paths rather than fixed-group propagation. [tools/scripts/changeset-check.ts, tools/scripts/changeset-check.test.ts, .github/workflows/ci.yml] at 5855e53b306abe0aba73e0773b0ad1b190d4039e"
+    from: BN
+  - stage: tech-spec
+    item: "code decision (pattern): Consumed release-only changesets are verified by replaying installed Changesets in a disposable Git worktree from the latest pending snapshot and matching generated public manifests/changelogs. [tools/scripts/changeset-check.ts, tools/scripts/changeset-check.test.ts] at 5855e53b306abe0aba73e0773b0ad1b190d4039e"
+    from: BN
+  - stage: tech-spec
+    item: "code decision (pattern): Resolve native frontmatter parsing through installed Changesets CLI/read dependencies, validate workspace membership, and exclude native-valid none from public release coverage. [tools/scripts/changeset-check.ts, tools/scripts/changeset-check.test.ts] at 5b10fb15f341dff19581cb7d2c267be11ca3dcca"
+    from: BN
+  - stage: tech-spec
+    item: "code decision (pattern): The preserved release acceptance audit derives the exact published-baseline stable snapshot delta and uses scoped input-path overrides with disposable mutation controls to prove note and compatibility checks reject omissions. [.constitution/evidence/KRT-BN004/release-classification-audit.mjs, .constitution/evidence/KRT-BN004/run-negative-controls.mjs] at 409b97408390970e6e65814ed1ec2cbf41f8c342"
+    from: BN
+  - stage: tech-spec
+    item: "code decision (convention): Wildcard semver-major ignores accompany weekly ecosystem-local minor/patch Dependabot groups for Bun, Cargo, and GitHub Actions, as selected by the user in step 0. [.github/dependabot.yml] at b7ea90d3cb283705fb8974c873eda31470ae72b0"
+    from: BN
+  - stage: tech-spec
+    item: "code decision (dependency): Pin development Changesets CLI 3.0.3 and its config 4.0.1 schema so native planner 7.0.0 preserves the settled 0.x minor and fixed-group policy with tilde peers; application declarations and release-lane source are unchanged. [package.json, bun.lock, .changeset/config.json] at 5153936731db9994cf75d720bf97494837d3e91f"
+    from: BN
+  - stage: tech-spec
+    item: "code decision (pattern): Hold a generated-release replay worktree through awaited asynchronous byte comparison before cleanup; preserve exact native artifact checks. [tools/scripts/changeset-check.ts] at e5354f861c4bc8bb645ec5f72926ed6b3ca88b83"
+    from: BN
+  - stage: tech-spec
+    item: "code decision (pattern): Compare changed release intent semantically against all base pending notes, mirror installed Changesets reader filename filtering in current and historical discovery, and include Git type changes in coverage/history diffs. This preserves fresh direct intent independently of filenames and matches native discovery. [tools/scripts/changeset-check.ts, tools/scripts/changeset-check.test.ts] at d70abad1767015c5c000850f6c64b3837127f53a"
+    from: BN
+  - stage: tech-spec
+    item: "code decision (pattern): Disable Git rename folding in current and historical package-path diffs so source moves inspect both deletion origin and addition destination. A still-public package requires fresh direct intent when its source moves into a private package or the repository root. [tools/scripts/changeset-check.ts, tools/scripts/changeset-check.test.ts] at 73906bdb5b93ccec40e4e5344d6a6db49d4bca7e"
+    from: BN
+  - stage: tech-spec
+    item: "code decision (pattern): Determine direct intent freshness per covered package, preserving declaration changes and updated nonempty summaries while blocking unrelated entries from refreshing public intent. Read Git history with NUL delimiters, ignore only native ENOENT for absent prerelease metadata, and parse past notes without imposing current workspace membership; current pending-note names remain strict. [tools/scripts/changeset-check.ts, tools/scripts/changeset-check.test.ts] at d49de00a7d5c974166f128f2efb38f45f83cf575"
+    from: BN
+proposed_decisions: [OD-04]
+candidate_terms: []
+stale_owners: [".constitution/evidence/KRT-BN007/manifest.yaml: KRT-BN007", ".constitution/evidence/KRT-BN004/manifest.yaml: KRT-BN004", ".constitution/evidence/KRT-BN002/manifest.yaml: KRT-BN002", ".constitution/evidence/KRT-BN003/manifest.yaml: KRT-BN003", ".constitution/evidence/KRT-BN001/manifest.yaml: KRT-BN001", ".constitution/evidence/KRT-BN006/manifest.yaml: KRT-BN006", ".constitution/evidence/KRT-BN005/manifest.yaml: KRT-BN005"]

@@ -1,72 +1,74 @@
 decisions:
   - id: OD-01
-    question: Should Tuvren support merging two divergent Branch histories into one canonical history?
-    blocks:
-      - prd/capabilities.yaml#CAP-003
-      - architecture/flows/flow-tenant-offboarding-erasure.md
+    question: "Should Tuvren support merging two divergent Branch histories into one canonical history?"
+    blocks: [prd/capabilities.yaml#CAP-003, architecture/flows/flow-tenant-offboarding-erasure.md]
     options:
       - name: Defer canonical Branch merge
-        pros:
-          - Preserves separate histories without inventing a conflict or provenance model.
-        cons:
-          - Does not support durable convergence of independent lineage yet.
+        pros: [Preserves separate histories without inventing a conflict or provenance model.]
+        cons: [Does not support durable convergence of independent lineage yet.]
       - name: Add canonical Branch merge
-        pros:
-          - Could serve a future workflow that requires durable convergence.
-        cons:
-          - The framework lacks an agreed conflict, provenance, durability, and runner-neutral merge model.
+        pros: [Could serve a future workflow that requires durable convergence.]
+        cons: ["The framework lacks an agreed conflict, provenance, durability, and runner-neutral merge model."]
     recommendation: Defer canonical Branch merge
     closure: ruling
-    ruler: User, 2026-08-19 Realign interview
+    ruler: "User, 2026-08-19 Realign interview"
     status: open
     asked:
       date: 2026-08-19
-      in: .constitution/reports/2026-08-19-interview-realign.md
+      in: ".constitution/reports/2026-08-19-interview-realign.md"
   - id: OD-02
-    question: Should parallel worker executions with an aggregation Step become the supported model for ephemeral multi-agent work?
-    blocks:
-      - prd/capabilities.yaml#CAP-026
-      - prd/capabilities.yaml#CAP-027
-      - prd/capabilities.yaml#CAP-028
-      - prd/capabilities.yaml#CAP-029
-      - architecture/flows/flow-runner-handoff-child-orchestration.md
+    question: "Should parallel worker executions with an aggregation Step become the supported model for ephemeral multi-agent work?"
+    blocks: [prd/capabilities.yaml#CAP-026, prd/capabilities.yaml#CAP-027, prd/capabilities.yaml#CAP-028, prd/capabilities.yaml#CAP-029, architecture/flows/flow-runner-handoff-child-orchestration.md]
     options:
       - name: Defer generalized fan-out and aggregation
-        pros:
-          - Preserves proven handoff and worker behavior without generalizing it.
-        cons:
-          - Does not establish a supported parallel child-execution model.
+        pros: [Preserves proven handoff and worker behavior without generalizing it.]
+        cons: [Does not establish a supported parallel child-execution model.]
       - name: Support parallel fan-out and aggregation
-        pros:
-          - Could satisfy an adopter workflow or benchmark requiring durable aggregation.
-        cons:
-          - Isolation, persistence, aggregation, cancellation, partial-failure, and parent-child semantics have not been established.
+        pros: [Could satisfy an adopter workflow or benchmark requiring durable aggregation.]
+        cons: ["Isolation, persistence, aggregation, cancellation, partial-failure, and parent-child semantics have not been established."]
     recommendation: Defer generalized fan-out and aggregation
     closure: ruling
-    ruler: User, 2026-08-19 Realign interview
+    ruler: "User, 2026-08-19 Realign interview"
     status: open
     asked:
       date: 2026-08-19
-      in: .constitution/reports/2026-08-19-interview-realign.md
+      in: ".constitution/reports/2026-08-19-interview-realign.md"
   - id: OD-03
-    question: Should Tuvren provide managed erasure for one subject inside a shared Scope, or limit its guarantee to Scope-level erasure?
-    blocks:
-      - architecture/flows/flow-tenant-offboarding-erasure.md
+    question: "Should Tuvren provide managed erasure for one subject inside a shared Scope, or limit its guarantee to Scope-level erasure?"
+    blocks: [architecture/flows/flow-tenant-offboarding-erasure.md]
     options:
       - name: Guarantee Scope-level erasure
-        pros:
-          - Hosts can choose finer Scope granularity and compose identifiers to match their ownership model.
-        cons:
-          - Does not provide managed erasure for one subject inside an active shared Scope.
+        pros: [Hosts can choose finer Scope granularity and compose identifiers to match their ownership model.]
+        cons: [Does not provide managed erasure for one subject inside an active shared Scope.]
       - name: Provide managed intra-Scope subject erasure
-        pros:
-          - Could meet a concrete adopter need that Scope design cannot meet.
-        cons:
-          - Tuvren has no subject identity, subject-to-record index, or per-subject lifecycle contract.
+        pros: [Could meet a concrete adopter need that Scope design cannot meet.]
+        cons: ["Tuvren has no subject identity, subject-to-record index, or per-subject lifecycle contract."]
     recommendation: Guarantee Scope-level erasure
     closure: ruling
-    ruler: User, 2026-08-19 Realign interview
+    ruler: "User, 2026-08-19 Realign interview"
     status: open
     asked:
       date: 2026-08-19
-      in: .constitution/reports/2026-08-19-interview-realign.md
+      in: ".constitution/reports/2026-08-19-interview-realign.md"
+  - id: OD-04
+    question: "Should the deferred Bun upgrade block the independent public release readiness work?"
+    blocks: [KRT-BN002, KRT-BN003, KRT-BN004, KRT-BN005, KRT-BN006, KRT-BN007]
+    options:
+      - name: Continue independent release work on the retained toolchain
+        pros: ["Preserves the working release gate while correcting publication closure, release discipline, and adopter guidance.", Keeps the Bun upgrade visibly deferred rather than claiming its unmet acceptance criteria passed.]
+        cons: [The release preparation runs on Bun 1.3.10 while the user-ruled Bun 1.4.2 target remains pending., Requires later Stage 4 alignment of dependencies that were broader than the implementation prerequisites.]
+      - name: Defer all release work until Bun 1.4.2 is compatible
+        pros: [Preserves a strict completion interpretation of the existing ticket dependency graph.]
+        cons: [Leaves independent publication and release-policy defects unresolved despite a working baseline toolchain.]
+    recommendation: Continue independent release work on the retained toolchain
+    closure: ruling
+    ruler: Repository owner after Epic BN merge
+    waiting_on: Bun 1.4.2 regression evidence and retained-toolchain verification in .constitution/evidence/KRT-BN001/
+    interim:
+      assumption: "BN002 through BN007 require the reviewed working toolchain but no Bun 1.4-specific feature; execute them in their existing order after BN001's reviewed deferral."
+      applied_by: [KRT-BN002, KRT-BN003, KRT-BN004, KRT-BN005, KRT-BN006, KRT-BN007, package.json, devenv.nix]
+    status: proposed
+    asked:
+      date: 2026-09-29
+      in: EPIC-BN
+    proposed_by: EPIC-BN @ 4077137

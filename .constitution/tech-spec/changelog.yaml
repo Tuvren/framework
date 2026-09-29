@@ -1,17 +1,17 @@
 entries:
+  - version: v0.46.1
+    date: 2026-09-29
+    by: reconcile
+    changed: ["Epic BN records the measured Bun 1.4.2 deferral with the retained toolchain/PostgreSQL 17 guard and aligns the exact Changesets CLI 3.0.3 pin with verified native 0.x release planning; code and physical patches were separately committed and reviewed.", ".constitution/tech-spec/stack.yaml: Record the measured Bun1.4.2 deferral and retained PostgreSQL17 environment without changing the target or original acceptance. (da6b5b156d9736179531d6c2cd8d0b866d5b6172, EPIC-BN)", ".constitution/tech-spec/guidelines.md: Record the measured Bun1.4.2 deferral and retained PostgreSQL17 environment without changing the target or original acceptance. (da6b5b156d9736179531d6c2cd8d0b866d5b6172, EPIC-BN)", ".constitution/tech-spec/stack.yaml: Align the measured Changesets CLI 3.0.3 pin with the native planner that generates the required 0.x minor; this separate spec commit closes the paired transition's historical TS-004 failure. (56250e7af547a2197f73fa55cf36751522404c07, EPIC-BN)"]
+    added: ["Verification command bun run changeset:check now exists (KRT-BN001)"]
   - version: v0.46.0
     date: 2026-09-29
     by: stage
     upstream:
       prd: v0.13.1
       architecture: v0.16.0
-    added:
-      - "ADR-0068 records that @tuvren/stream-ws and the other session-carriage packages remain private until a later ADR defines a public session API; protocol and carriage semantics remain unchanged."
-      - "ADR-0069 records changeset coverage, fixed public versioning, the 0.x stable-export SemVer rule, owner-gated registry publishing and repository settings, and bounded Dependabot updates."
-      - "tech-spec/stack.yaml adds the locked @changesets/cli 2.31.0 tool pin and tech-spec/guidelines.md adds registry preflight, dry-run, and planned changeset-presence verification commands."
-    changed:
-      - "tech-spec/stack.yaml updates the existing Bun runtime entry to the assumed 1.4.2 target, pending a devenv nixpkgs lock refresh and packageManager alignment; tech-spec/guidelines.md records its verification condition."
-      - "tech-spec/guidelines.md clarifies the 0.x public API rule and @tuvren/stream-ws's private publication status under ADR-0068 and ADR-0069."
+    added: ["ADR-0068 records that @tuvren/stream-ws and the other session-carriage packages remain private until a later ADR defines a public session API; protocol and carriage semantics remain unchanged.", "ADR-0069 records changeset coverage, fixed public versioning, the 0.x stable-export SemVer rule, owner-gated registry publishing and repository settings, and bounded Dependabot updates.", "tech-spec/stack.yaml adds the locked @changesets/cli 2.31.0 tool pin and tech-spec/guidelines.md adds registry preflight, dry-run, and planned changeset-presence verification commands."]
+    changed: ["tech-spec/stack.yaml updates the existing Bun runtime entry to the assumed 1.4.2 target, pending a devenv nixpkgs lock refresh and packageManager alignment; tech-spec/guidelines.md records its verification condition.", "tech-spec/guidelines.md clarifies the 0.x public API rule and @tuvren/stream-ws's private publication status under ADR-0068 and ADR-0069."]
   - version: v0.45.3
     date: 2026-09-24
     by: stage
@@ -25,7 +25,7 @@ entries:
     upstream:
       prd: v0.13.0
       architecture: v0.16.0
-    fixed: ["The data-model index now says the transcript and cursor sidecars point at TypeScript modules. The reference-host assumption names the flag split between cli.ts and repl-config.ts. The transcript companion no longer claims section 3.9 matches the module."]
+    fixed: [The data-model index now says the transcript and cursor sidecars point at TypeScript modules. The reference-host assumption names the flag split between cli.ts and repl-config.ts. The transcript companion no longer claims section 3.9 matches the module.]
   - version: v0.45.1
     date: 2026-09-24
     by: patch-lane
