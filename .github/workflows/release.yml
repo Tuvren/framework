@@ -7,14 +7,19 @@
 # Operator flow:
 #   1. Land the release commit (versions computed by `bun run release`,
 #      release gate green).
-#   2. Configure the `NPM_TOKEN` repository secret (granular automation token
-#      with publish rights for the @tuvren scope; minimal scope + short
-#      expiry). The token is needed only for the FIRST publish of each
-#      package: npm's January 2027 change ends direct publishing with
-#      2FA-bypass tokens (github.blog changelog 2026-07-08), so once the
-#      packages exist, configure GitHub Actions trusted publishing (OIDC) for
-#      all of them on npmjs.com and delete this secret — the workflow already
-#      carries `id-token: write` and needs no changes for that switch.
+#   2. Authentication is npm trusted publishing (OIDC); there is no token or
+#      repository secret. Every published package must have a trusted publisher
+#      on npmjs.com (Settings → Trusted publishing → GitHub Actions) set to
+#      organization `Tuvren`, repository `framework`, workflow filename
+#      `release.yml` (case-sensitive, extension included), no environment, and
+#      "Allow npm publish" checked. npm matches on that filename, so renaming
+#      this file breaks publishing until each package is reconfigured, and a
+#      saved connection cannot be edited — delete and re-add it. npm's
+#      January 2027 change ends direct publishing with 2FA-bypass tokens
+#      (github.blog changelog 2026-07-08), which is why no token is used. A
+#      package added to the published set needs its trusted publisher
+#      configured before its first release; publishing needs npm 11.5.1+ and
+#      Node 22.14+, and the devenv toolchain provides both.
 #   3. Trigger this workflow (workflow_dispatch). Leave `dry_run: true` for a
 #      full rehearsal; set it to `false` for the real publish.
 #   4. After a real publish, run the acceptance check locally:
@@ -63,20 +68,12 @@ jobs:
           nix profile install github:NixOS/nixpkgs/1c0fc59a961424afd95e00966e6b6021b65ef605#devenv
           devenv version | grep -F "devenv 2.1.2"
 
-      # setup-node writes the registry + auth stanza (reading the token from
-      # $NODE_AUTH_TOKEN) into a user-level .npmrc it points $NPM_CONFIG_USERCONFIG
-      # at. Both env vars survive into the `devenv shell` subshell below, so the
-      # devenv-provided npm resolves the same auth — nothing here depends on the
-      # runner's own node/npm being the one that publishes.
-      - name: Set up npm auth
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-
+      # No npm auth step on purpose: the devenv-provided npm exchanges the job's
+      # OIDC token (`id-token: write`) with the registry for a short-lived
+      # publish credential. actions/setup-node with `registry-url` must not be
+      # added back — it exports a placeholder NODE_AUTH_TOKEN and writes an
+      # .npmrc auth stanza that npm would use instead of the OIDC exchange.
       - name: Build, preflight, publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           devenv shell -- bash -c '
             set -euo pipefail
