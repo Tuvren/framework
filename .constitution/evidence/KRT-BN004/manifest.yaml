@@ -66,8 +66,8 @@ files:
     bytes: 3114
     role: transcript
   - path: provenance.md
-    sha256: ac494aa811ce54a40a66f836a8050f66cd4ff902a1cdc1879592c63d2eb1e88a
-    bytes: 3626
+    sha256: 750f8bdbb93c70e38e518127de2d22fba567d7ff0432102342ec400c4b88179e
+    bytes: 3972
     role: transcript
   - path: published-stable-snapshot-comparison.json
     sha256: 7b776c37b7fa7fca7e9ed0c33b4924efc26eb5ce6cff18f48be0c240a0df550b

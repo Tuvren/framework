@@ -1,0 +1,336 @@
+{
+  "changesets": [
+    {
+      "releases": [
+        {
+          "name": "@tuvren/core",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/sdk",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/backend-memory",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/backend-postgres",
+          "type": "minor"
+        },
+        {
+          "name": "@tuvren/backend-shared",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/backend-sqlite",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/kernel-grpc-client",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/kernel-protocol",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/kernel-runtime",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/provider-api",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/provider-bridge-ai-sdk",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/runner-react",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/runtime",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/stream-agui",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/stream-core",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/stream-sse",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/telemetry-otel",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/telemetry-semconv",
+          "type": "patch"
+        },
+        {
+          "name": "@tuvren/mcp-client",
+          "type": "patch"
+        }
+      ],
+      "summary": "Record public package changes since 0.1.0. `@tuvren/core` and `@tuvren/sdk`\nadd the optional `AgentConfig` sanitization hook and error codes.\n`@tuvren/backend-postgres` replaces blob-per-scope persistence with\nrelational row-per-record storage and changes the default schema from\n`public` to `tuvren_kernel`. Existing default-schema hosts must pass\n`schemaName: \"public\"`; a selected legacy schema migrates on first open.\nDowngrades aren't supported. The remaining package entries cover additions,\nfixes, and internal updates.",
+      "id": "cool-papayas-bathe"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@tuvren/core",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/sdk",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/backend-memory",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/backend-postgres",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/backend-shared",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/backend-sqlite",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/kernel-grpc-client",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/kernel-protocol",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/kernel-runtime",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/provider-api",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/provider-bridge-ai-sdk",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/runner-react",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/runtime",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/stream-agui",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/stream-core",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/stream-sse",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/telemetry-otel",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/telemetry-semconv",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/mcp-client",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "cool-papayas-bathe"
+      ],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/repl-host",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/kernel-testkit",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/provider-testkit",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/framework-testkit",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/kernel-typescript-certification",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/providers-typescript-certification",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/framework-typescript-certification",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/remote-session",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/stream-ws",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/host-session",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    },
+    {
+      "name": "@tuvren/session-client",
+      "type": "minor",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.2.0"
+    }
+  ]
+}

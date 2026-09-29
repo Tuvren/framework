@@ -1,0 +1,437 @@
+{
+  "added": [
+    {
+      "key": "@changesets/apply-release-plan/jsonc-parser",
+      "version": "jsonc-parser@3.3.1"
+    },
+    {
+      "key": "@changesets/config/picomatch",
+      "version": "picomatch@4.0.7"
+    },
+    {
+      "key": "@changesets/format",
+      "version": "@changesets/format@0.1.2"
+    },
+    {
+      "key": "@changesets/git/picomatch",
+      "version": "picomatch@4.0.7"
+    },
+    {
+      "key": "@inquirer/core/signal-exit",
+      "version": "signal-exit@4.1.0"
+    },
+    {
+      "key": "@manypkg/tools",
+      "version": "@manypkg/tools@2.1.2"
+    },
+    {
+      "key": "@nx/devkit/semver",
+      "version": "semver@7.7.4"
+    },
+    {
+      "key": "@nx/js/semver",
+      "version": "semver@7.7.4"
+    },
+    {
+      "key": "@nx/workspace/semver",
+      "version": "semver@7.7.4"
+    },
+    {
+      "key": "@pnpm/deps.graph-sequencer",
+      "version": "@pnpm/deps.graph-sequencer@1100.0.1"
+    },
+    {
+      "key": "@typespec/compiler/semver",
+      "version": "semver@7.7.4"
+    },
+    {
+      "key": "import-meta-resolve",
+      "version": "import-meta-resolve@4.2.0"
+    },
+    {
+      "key": "jju",
+      "version": "jju@1.4.0"
+    },
+    {
+      "key": "launch-editor",
+      "version": "launch-editor@2.14.1"
+    },
+    {
+      "key": "node-abi/semver",
+      "version": "semver@7.7.4"
+    },
+    {
+      "key": "nx/semver",
+      "version": "semver@7.7.4"
+    },
+    {
+      "key": "shell-quote",
+      "version": "shell-quote@1.11.0"
+    },
+    {
+      "key": "tsup/cac",
+      "version": "cac@6.7.14"
+    },
+    {
+      "key": "tsup/tinyexec",
+      "version": "tinyexec@0.3.2"
+    },
+    {
+      "key": "ultracite/@clack/prompts",
+      "version": "@clack/prompts@1.2.0"
+    },
+    {
+      "key": "ultracite/@clack/prompts/@clack/core",
+      "version": "@clack/core@1.2.0"
+    },
+    {
+      "key": "ultracite/@clack/prompts/fast-string-width",
+      "version": "fast-string-width@1.1.0"
+    },
+    {
+      "key": "ultracite/@clack/prompts/fast-string-width/fast-string-truncated-width",
+      "version": "fast-string-truncated-width@1.2.1"
+    },
+    {
+      "key": "ultracite/@clack/prompts/fast-wrap-ansi",
+      "version": "fast-wrap-ansi@0.1.6"
+    }
+  ],
+  "removed": [
+    {
+      "key": "@changesets/apply-release-plan/prettier",
+      "version": "prettier@2.8.8"
+    },
+    {
+      "key": "@changesets/get-release-plan",
+      "version": "@changesets/get-release-plan@4.0.16"
+    },
+    {
+      "key": "@changesets/get-version-range-type",
+      "version": "@changesets/get-version-range-type@0.4.0"
+    },
+    {
+      "key": "@changesets/logger",
+      "version": "@changesets/logger@0.1.1"
+    },
+    {
+      "key": "@changesets/parse/js-yaml",
+      "version": "js-yaml@4.3.0"
+    },
+    {
+      "key": "@changesets/write/prettier",
+      "version": "prettier@2.8.8"
+    },
+    {
+      "key": "@inquirer/core/fast-wrap-ansi",
+      "version": "fast-wrap-ansi@0.2.0"
+    },
+    {
+      "key": "@inquirer/core/fast-wrap-ansi/fast-string-width",
+      "version": "fast-string-width@3.0.2"
+    },
+    {
+      "key": "@inquirer/core/fast-wrap-ansi/fast-string-width/fast-string-truncated-width",
+      "version": "fast-string-truncated-width@3.0.3"
+    },
+    {
+      "key": "@inquirer/editor/@inquirer/external-editor",
+      "version": "@inquirer/external-editor@3.0.0"
+    },
+    {
+      "key": "@manypkg/find-root/@types/node",
+      "version": "@types/node@12.20.55"
+    },
+    {
+      "key": "@manypkg/find-root/fs-extra",
+      "version": "fs-extra@8.1.0"
+    },
+    {
+      "key": "@manypkg/get-packages/@changesets/types",
+      "version": "@changesets/types@4.1.0"
+    },
+    {
+      "key": "@manypkg/get-packages/fs-extra",
+      "version": "fs-extra@8.1.0"
+    },
+    {
+      "key": "@manypkg/get-packages/globby",
+      "version": "globby@11.1.0"
+    },
+    {
+      "key": "@manypkg/get-packages/globby/slash",
+      "version": "slash@3.0.0"
+    },
+    {
+      "key": "@nx/devkit/enquirer",
+      "version": "enquirer@2.3.6"
+    },
+    {
+      "key": "@nx/workspace/enquirer",
+      "version": "enquirer@2.3.6"
+    },
+    {
+      "key": "array-union",
+      "version": "array-union@2.1.0"
+    },
+    {
+      "key": "better-path-resolve",
+      "version": "better-path-resolve@1.0.0"
+    },
+    {
+      "key": "detect-indent",
+      "version": "detect-indent@6.1.0"
+    },
+    {
+      "key": "dir-glob",
+      "version": "dir-glob@3.0.1"
+    },
+    {
+      "key": "extendable-error",
+      "version": "extendable-error@0.1.7"
+    },
+    {
+      "key": "find-up",
+      "version": "find-up@4.1.0"
+    },
+    {
+      "key": "fs-extra",
+      "version": "fs-extra@7.0.1"
+    },
+    {
+      "key": "graceful-fs",
+      "version": "graceful-fs@4.2.11"
+    },
+    {
+      "key": "is-subdir",
+      "version": "is-subdir@1.2.0"
+    },
+    {
+      "key": "is-windows",
+      "version": "is-windows@1.0.2"
+    },
+    {
+      "key": "jsonfile",
+      "version": "jsonfile@4.0.0"
+    },
+    {
+      "key": "locate-path",
+      "version": "locate-path@5.0.0"
+    },
+    {
+      "key": "lodash.startcase",
+      "version": "lodash.startcase@4.4.0"
+    },
+    {
+      "key": "mri",
+      "version": "mri@1.2.0"
+    },
+    {
+      "key": "nx/enquirer",
+      "version": "enquirer@2.3.6"
+    },
+    {
+      "key": "outdent",
+      "version": "outdent@0.5.0"
+    },
+    {
+      "key": "p-filter",
+      "version": "p-filter@2.1.0"
+    },
+    {
+      "key": "p-limit",
+      "version": "p-limit@2.3.0"
+    },
+    {
+      "key": "p-locate",
+      "version": "p-locate@4.1.0"
+    },
+    {
+      "key": "p-map",
+      "version": "p-map@2.1.0"
+    },
+    {
+      "key": "p-try",
+      "version": "p-try@2.2.0"
+    },
+    {
+      "key": "path-exists",
+      "version": "path-exists@4.0.0"
+    },
+    {
+      "key": "pify",
+      "version": "pify@4.0.1"
+    },
+    {
+      "key": "quansync",
+      "version": "quansync@0.2.11"
+    },
+    {
+      "key": "read-yaml-file",
+      "version": "read-yaml-file@1.1.0"
+    },
+    {
+      "key": "restore-cursor/signal-exit",
+      "version": "signal-exit@3.0.7"
+    },
+    {
+      "key": "spawndamnit",
+      "version": "spawndamnit@3.0.1"
+    },
+    {
+      "key": "term-size",
+      "version": "term-size@2.2.1"
+    },
+    {
+      "key": "universalify",
+      "version": "universalify@0.1.2"
+    }
+  ],
+  "changed": [
+    {
+      "key": "@changesets/apply-release-plan",
+      "before": "@changesets/apply-release-plan@7.1.1",
+      "after": "@changesets/apply-release-plan@8.1.1"
+    },
+    {
+      "key": "@changesets/assemble-release-plan",
+      "before": "@changesets/assemble-release-plan@6.0.10",
+      "after": "@changesets/assemble-release-plan@7.0.0"
+    },
+    {
+      "key": "@changesets/changelog-git",
+      "before": "@changesets/changelog-git@0.2.1",
+      "after": "@changesets/changelog-git@1.0.0"
+    },
+    {
+      "key": "@changesets/cli",
+      "before": "@changesets/cli@2.31.0",
+      "after": "@changesets/cli@3.0.3"
+    },
+    {
+      "key": "@changesets/config",
+      "before": "@changesets/config@3.1.4",
+      "after": "@changesets/config@4.0.1"
+    },
+    {
+      "key": "@changesets/errors",
+      "before": "@changesets/errors@0.2.0",
+      "after": "@changesets/errors@1.0.0"
+    },
+    {
+      "key": "@changesets/get-dependents-graph",
+      "before": "@changesets/get-dependents-graph@2.1.4",
+      "after": "@changesets/get-dependents-graph@3.0.0"
+    },
+    {
+      "key": "@changesets/git",
+      "before": "@changesets/git@3.0.4",
+      "after": "@changesets/git@4.0.1"
+    },
+    {
+      "key": "@changesets/parse",
+      "before": "@changesets/parse@0.4.3",
+      "after": "@changesets/parse@1.0.0"
+    },
+    {
+      "key": "@changesets/pre",
+      "before": "@changesets/pre@2.0.2",
+      "after": "@changesets/pre@3.0.0"
+    },
+    {
+      "key": "@changesets/read",
+      "before": "@changesets/read@0.6.7",
+      "after": "@changesets/read@1.0.1"
+    },
+    {
+      "key": "@changesets/should-skip-package",
+      "before": "@changesets/should-skip-package@0.1.2",
+      "after": "@changesets/should-skip-package@1.0.0"
+    },
+    {
+      "key": "@changesets/types",
+      "before": "@changesets/types@6.1.0",
+      "after": "@changesets/types@7.0.0"
+    },
+    {
+      "key": "@changesets/write",
+      "before": "@changesets/write@0.4.0",
+      "after": "@changesets/write@1.0.1"
+    },
+    {
+      "key": "@clack/core",
+      "before": "@clack/core@1.2.0",
+      "after": "@clack/core@1.5.1"
+    },
+    {
+      "key": "@clack/prompts",
+      "before": "@clack/prompts@1.2.0",
+      "after": "@clack/prompts@1.8.1"
+    },
+    {
+      "key": "@inquirer/external-editor",
+      "before": "@inquirer/external-editor@1.0.3",
+      "after": "@inquirer/external-editor@3.0.0"
+    },
+    {
+      "key": "@manypkg/find-root",
+      "before": "@manypkg/find-root@1.1.0",
+      "after": "@manypkg/find-root@3.1.0"
+    },
+    {
+      "key": "@manypkg/get-packages",
+      "before": "@manypkg/get-packages@1.1.3",
+      "after": "@manypkg/get-packages@3.1.0"
+    },
+    {
+      "key": "cac",
+      "before": "cac@6.7.14",
+      "after": "cac@7.0.0"
+    },
+    {
+      "key": "enquirer",
+      "before": "enquirer@2.4.1",
+      "after": "enquirer@2.3.6"
+    },
+    {
+      "key": "fast-string-truncated-width",
+      "before": "fast-string-truncated-width@1.2.1",
+      "after": "fast-string-truncated-width@3.0.3"
+    },
+    {
+      "key": "fast-string-width",
+      "before": "fast-string-width@1.1.0",
+      "after": "fast-string-width@3.0.2"
+    },
+    {
+      "key": "fast-wrap-ansi",
+      "before": "fast-wrap-ansi@0.1.6",
+      "after": "fast-wrap-ansi@0.2.0"
+    },
+    {
+      "key": "package-manager-detector",
+      "before": "package-manager-detector@0.2.11",
+      "after": "package-manager-detector@1.8.0"
+    },
+    {
+      "key": "semver",
+      "before": "semver@7.7.4",
+      "after": "semver@7.8.5"
+    },
+    {
+      "key": "signal-exit",
+      "before": "signal-exit@4.1.0",
+      "after": "signal-exit@3.0.7"
+    },
+    {
+      "key": "tinyexec",
+      "before": "tinyexec@0.3.2",
+      "after": "tinyexec@1.3.1"
+    }
+  ],
+  "counts": {
+    "added": 24,
+    "removed": 47,
+    "changed": 28
+  }
+}

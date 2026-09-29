@@ -1,0 +1,26 @@
+M5a parent: 5616aa60faf5029354a4d9aedae2fe7a4a4f6d2d
+Root dependency/config/lock and the proposed SP2 stack pin were working-tree
+changes. Code and physical spec are committed separately. validate was run
+against their intended combined state; the intermediate code commit has known
+TS-004 pin drift until the immediately following SP2 commit. No validation
+pass is claimed for that intermediate historical tree.
+
+From repository root with prepared Bun1.3.10 and LC_ALL=C:
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun add --dev --exact @changesets/cli@3.0.3
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun install --frozen-lockfile
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bunx --bun changeset status --output=/tmp/KRT-BN005-tooling/lead-native-status.json
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun test tools/scripts/changeset-check.test.ts
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun .constitution/evidence/KRT-BN005/tooling-contract.mjs
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun run changeset:check
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun run changeset:check --base=b2244918fbc3cef0ed81cec78fddd686ac0a0427
+
+The worker ran the declaration and both pending gates; the lead repeated frozen
+install, native status, all twenty fixtures, and saved contract. All exited0.
+Native output is archived exactly as tooling-native-plan.json.txt. This is a
+pre-version snapshot: its oldVersion0.1.0 and newVersion0.2.0 remain historical
+when the following milestone generates the release.
+
+The contract probe's native formatter is part of its preservation procedure:
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bunx --bun @biomejs/biome check --write .constitution/evidence/KRT-BN005/tooling-contract.mjs
+Raw metadata and native archives are never formatted. Main artifacts are
+hashed only after source/behavior checks and formatting.

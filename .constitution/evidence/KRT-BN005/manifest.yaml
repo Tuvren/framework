@@ -1,0 +1,56 @@
+owner: KRT-BN005
+mode: contract_test
+produced:
+  date: 2026-09-29
+  commit: 5616aa60faf5029354a4d9aedae2fe7a4a4f6d2d
+  command: "M5a retained-Bun tooling proof: frozen install, native pre-version0.2 plan, twenty fixtures, actual-artifact contract. Combined code/SP2 state validated; expected intermediate TS-004 is explicit in tooling-command.txt."
+files:
+  - path: assemble-release-plan-7.0.0.metadata.json.txt
+    sha256: 0154306aa19380223bfdad8a222bb604ef9c0d1ef11bb2bca67d8b3a3d921335
+    bytes: 2049
+    role: data
+  - path: changesets-license.txt
+    sha256: e39132f5537ddee680881e318c4d2b34b44077f2db24fdd5d437a9c3095c376f
+    bytes: 1068
+    role: transcript
+  - path: cli-3.0.3.metadata.json.txt
+    sha256: d751f649b9c0d695a4e2cab4d3877376fa07f5cb189d6c31a448bae382793553
+    bytes: 2899
+    role: data
+  - path: config-4.0.1.metadata.json.txt
+    sha256: 949dc28bcdd4d3b01d5550f5bfa14d6d47b791f65d1f0c1bba8cad6bdae9d302
+    bytes: 2173
+    role: data
+  - path: tooling-command.txt
+    sha256: 8b4054aad61d3213cd01f65f494641571833e502713070207ee9c9e21cc0daf1
+    bytes: 1878
+    role: transcript
+  - path: tooling-contract.log
+    sha256: e5bde26b69ebe0a51822a81629ef81ed40edcca2ffad2cf053e60a394f5333a0
+    bytes: 124
+    role: log
+  - path: tooling-contract.mjs
+    sha256: 9fcb70adef9f97a689ed5514828fb3ea4a7b99ab8e389e8204840709946e967a
+    bytes: 2695
+    role: transcript
+  - path: tooling-fixtures.log
+    sha256: 1f063b0b8d247c650af2c9fd8c2cbc3ab36da684927517bd33f9369b2b3eafeb
+    bytes: 807
+    role: log
+  - path: tooling-frozen-install.log
+    sha256: efe60847e18e275a94c3d5a36b16942825d0b1046b24c142c8456cd38a08cd04
+    bytes: 96
+    role: log
+  - path: tooling-lock-resolver-diff.json.txt
+    sha256: b40de7ffd6b7afb667b502765fbfefd506b6e85fb73c4e974c13e4d85d3d31e6
+    bytes: 10137
+    role: data
+  - path: tooling-native-plan.json.txt
+    sha256: 046ac4e6aba977fc9aec75999c36485c014cd341386a0f1621c6172e08b491b6
+    bytes: 7791
+    role: data
+  - path: tooling-provenance.md
+    sha256: 1c6f27b00d09658159c5472e3e6a28efaba37d67c2f956ab882caa52e814d830
+    bytes: 2743
+    role: transcript
+pass_criteria: "Exact CLI3.0.3/config4.0.1 on Bun1.3.10; frozen install and twenty fixtures pass; native plan is thirty minor0.2.0 releases, nineteen public, valid direct intent and public runtime closure. This tooling milestone does not yet claim final release-check, generated main artifacts, or registry dry-run acceptance."
