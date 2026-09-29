@@ -1,0 +1,30 @@
+Historical producer checkout: /home/oscar/GitHub/Tuvren/framework-bn
+Inspected parent: 5b10fb15f341dff19581cb7d2c267be11ca3dcca
+Pending intent was a working-tree change. Toolchain: prepared Bun1.3.10,
+Changesets CLI2.31.0, assemble-release-plan6.0.10; worktree PostgreSQL services
+already running. The recorded source translation commands inherited locale;
+lead commands below explicitly use LC_ALL=C.
+
+Run from the repository root; replace $EVIDENCE with the current evidence path:
+EVIDENCE=.constitution/evidence/KRT-BN004
+git diff --name-only 1aa55b7aa44c956a085f36b29c8575419c3334c0 b2244918fbc3cef0ed81cec78fddd686ac0a0427 -- typescript
+git diff --exit-code 1aa55b7aa44c956a085f36b29c8575419c3334c0 b2244918fbc3cef0ed81cec78fddd686ac0a0427 -- 'typescript/**/src/**'
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun "$EVIDENCE/package-coverage.mjs"
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun "$EVIDENCE/release-classification-audit.mjs"
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun run changeset:check --base=b2244918fbc3cef0ed81cec78fddd686ac0a0427
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bunx --bun changeset status --output=/tmp/KRT-BN004/lead-native-plan.json
+devenv shell -- zsh -c 'LC_ALL=C bun test typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts'
+
+All producing commands exited0. Native status exit0 means the intent parsed,
+not that the generated version fits ADR-0069. lead-native-plan.json records
+the incompatible1.0.0 result; native-blocker-summary.json derives its precise
+public subset from the current workspace manifests. Do not run version or
+publish from that plan. package-coverage.mjs verifies exact set equality and
+direct declared classes; the snapshot comparison preserves exact signatures.
+
+Original canonical metadata retrieval (responses retained exactly):
+curl -fsSL https://registry.npmjs.org/%40tuvren%2Fcore/0.1.0
+curl -fsSL https://registry.npmjs.org/%40tuvren%2Fsdk/0.1.0
+curl -fsSL https://registry.npmjs.org/%40tuvren%2Fbackend-postgres/0.1.0
+
+These responses are dated registry observations, not immutable source files.

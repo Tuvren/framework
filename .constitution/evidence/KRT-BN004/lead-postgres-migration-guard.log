@@ -1,0 +1,10 @@
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 17.7ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 16.7ms
+bun test v1.3.10 (30e609e0)
+
+ 3 pass
+ 0 fail
+ 8 expect() calls
+Ran 3 tests across 1 file. [250.00ms]
