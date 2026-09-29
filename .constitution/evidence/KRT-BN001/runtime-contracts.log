@@ -1,0 +1,35 @@
+## Historical baseline-contract
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 32.1ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 32.1ms
+manifest=bun@1.3.11
+bun=1.3.10
+postgres=psql (PostgreSQL) 17.9
+exit=1
+
+## Historical updated-runtime-contract
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 68.1ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 51.3ms
+manifest=bun@1.4.2
+bun=1.4.2
+postgres=psql (PostgreSQL) 17.11
+
+## Historical fallback-runtime-contract
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 92.9ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 95.5ms
+bun=1.4.2
+postgres=psql (PostgreSQL) 17.9
+
+## Historical retained-pg-runtime-contract
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 77.5ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 66.5ms
+bun=1.3.10
+postgres=psql (PostgreSQL) 17.9
+packageManager=bun@1.3.11
