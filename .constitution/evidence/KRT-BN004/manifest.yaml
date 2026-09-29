@@ -2,10 +2,10 @@ owner: KRT-BN004
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: 915ece53aace586eafe800a342a5658e7ebee4d3
-  command: "Review fix: exact stable API audit, ten disposable negative controls, public coverage and seven real blob-migration tests; working-tree evidence changes. Earlier native/provenance producers remain labeled in command.txt."
+  commit: 36169026ccfcd71f36f0f73db633998cb16c2cf6
+  command: "Evidence-only lint fix: lead repeated actual artifact probes on Bun1.3.10 and scoped Biome2.4.10. Prior producers remain labeled in command.txt; raw archives retain original bytes."
 files:
-  - path: backend-postgres-0.1.0.json
+  - path: backend-postgres-0.1.0.json.txt
     sha256: e8cf6db801d3cffad83d748eccdd747d1d5917c908a0b866288d7352367812c6
     bytes: 1953
     role: data
@@ -18,10 +18,10 @@ files:
     bytes: 111
     role: log
   - path: command.txt
-    sha256: 8d086cdc99a52a0eac938ad227dc0c6fd37319cf2c9ad4aadc55fa83ed4b2f73
-    bytes: 3191
+    sha256: 183c0c1ccf3566fd1b7253f237ae833d57539d1511227982782aa0301958d708
+    bytes: 4241
     role: transcript
-  - path: core-0.1.0.json
+  - path: core-0.1.0.json.txt
     sha256: 019abaf81f5971b7f7c529d4aee544986d449486d0a58aee059f6a286bfb4ef0
     bytes: 3235
     role: data
@@ -41,7 +41,7 @@ files:
     sha256: 917f14a520d7bde9ef69404bb7410fd2d4dcefe2661e5a1a9015eac6752cdc07
     bytes: 169
     role: log
-  - path: lead-native-plan.json
+  - path: lead-native-plan.json.txt
     sha256: 027a070698961ed47d3cc95c68fefba342ffc7e0d07bb1b85fae795e26b0f884
     bytes: 7791
     role: data
@@ -62,16 +62,16 @@ files:
     bytes: 469
     role: log
   - path: package-coverage.mjs
-    sha256: 9eebb82ed4b46c376b1cac06863403ac97791248fc994c4b10d629b4d76e8046
-    bytes: 2979
+    sha256: 456d62a46efb74322c0790efabb0aec004cac8ab0537a392654d5e6ddcffa579
+    bytes: 3114
     role: transcript
   - path: provenance.md
-    sha256: 922018bee09f3c2da4eb9068826f1f43d78066d850021d428f6317d76ae55f2e
-    bytes: 3319
+    sha256: ac494aa811ce54a40a66f836a8050f66cd4ff902a1cdc1879592c63d2eb1e88a
+    bytes: 3626
     role: transcript
   - path: published-stable-snapshot-comparison.json
-    sha256: 750f71e3846afdb1ea1bdcfb9c6c6c50474ed01173315f3fa72068553a3f6409
-    bytes: 4976
+    sha256: 7b776c37b7fa7fca7e9ed0c33b4924efc26eb5ce6cff18f48be0c240a0df550b
+    bytes: 4944
     role: data
   - path: release-classification-audit.mjs
     sha256: 47fc5b78da54ac98159103ed07e5ea25f3ed5663637856b78006407f08fdfabb
@@ -81,7 +81,7 @@ files:
     sha256: 5392b5e1ebe1e09b4fc861d37bce9b37eaad5978bf0d8c1868cc10c0dbe62908
     bytes: 5581
     role: transcript
-  - path: sdk-0.1.0.json
+  - path: sdk-0.1.0.json.txt
     sha256: f16e331625639c3803a2bbe8955ee1761e7e4a747121fc386150f51a3c4164e2
     bytes: 2210
     role: data

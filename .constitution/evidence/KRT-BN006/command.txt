@@ -24,3 +24,9 @@ claimed by this evidence.
 
 The historical Biome diagnostic has ANSI/trailing whitespace normalized for
 repository storage; its outcome and wording are preserved.
+
+Evidence-lint fix parent: 36169026ccfcd71f36f0f73db633998cb16c2cf6.
+The probe was formatted by the existing Biome2.4.10 CLI, then rerun by the
+lead on prepared Bun1.3.10 with the same complete YAML contract result.
+Regeneration selects only this owned probe before re-digesting:
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bunx --bun @biomejs/biome check --write .constitution/evidence/KRT-BN006/dependabot-contract-probe.mjs

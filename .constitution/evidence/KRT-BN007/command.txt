@@ -26,3 +26,9 @@ attempt is not called a pass.
 The consumer version0.1.0 is already published. The proof observes a fresh
 registry install, real first-Turn completion, and two durable messages. It is
 not a verification claim for a generated or published0.2.0 release.
+
+Evidence-lint fix parent: 36169026ccfcd71f36f0f73db633998cb16c2cf6.
+The probe uses the measured Bun module file export, with fixed regex constants
+and braces matching repository lint rules. Lead execution on prepared Bun1.3.10
+passes. Format only this owned probe before re-digesting:
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bunx --bun @biomejs/biome check --write .constitution/evidence/KRT-BN007/contract-probe.ts
