@@ -96,7 +96,7 @@ tickets:
       evidence: "Test a public source change without a changeset as a failure, the same change with a matching changeset as a pass, a private-only package change as a pass, a root-only change as a pass, and a fixed-group/privatePackages.version fixture that proves private versioning does not create a false public requirement. Assert CI runs the command against the intended base revision."
     flows: [flow-reference-host-proves-sdk]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-BN004
     title: Record public changes since the registry baseline
     type: Chore
