@@ -1,0 +1,38 @@
+Lead command: devenv shell -- zsh -c 'LC_ALL=C bun run verify'
+Producer e5354f8 with generated0.2 working tree; second final attempt. Exit0.
+Exact final summary excerpt; full historical log /tmp/EPIC-BN-final-verify-2.log
+
+Transition verification summary
+- workspace lint: pass in 2226ms
+- Rust workspace formatting: pass in 310ms
+- docs-to-authority freeze gate: pass in 335ms
+- Epic AL portability gate: pass in 311ms
+- ADR-0057 host import boundary gate: pass in 2121ms
+- ADR-0054/0056 API-surface freeze gate: pass in 1409ms
+- Epic AF conformance gap plan freshness: pass in 99ms
+- authority packet validation: pass in 488ms
+- conformance plan validation: pass in 723ms
+- adapter protocol validation: pass in 974ms
+- certification discovery parity: pass in 145ms
+- workspace test-lane coverage: pass in 269ms
+- certification harness meta-conformance: pass in 921ms
+- vocabulary-check verification: pass in 609ms
+- machine authority guardrails: pass in 6038ms
+- Rust workspace lint: pass in 1615ms
+- Rust workspace tests: pass in 3676ms
+- Rust kernel certification: pass in 1831ms
+- Rust kernel gRPC interop smoke: pass in 2307ms
+- Go kernel certification: pass in 901ms
+- Python kernel certification: pass in 954ms
+- Dart kernel certification: pass in 2333ms
+- telemetry, compatibility, and interop code generation: pass in 4973ms
+- kernel interop governance smoke: pass in 3164ms
+- workspace typecheck: pass in 799ms
+- transition-line targeted builds: pass in 870ms
+- transition-line targeted tests: pass in 1275ms
+- boundary-owned conformance suites: pass in 1746ms
+- cross-language proving-host interactive/headless interop smoke: pass in 71794ms
+- package export smoke tests: pass in 1332ms
+- Bun and Node portability import checks: pass in 745ms
+- Node-backed proving-host SQLite interactive/headless scenario: pass in 2397ms
+- PostgreSQL-backed proving-host interactive/headless scenario: pass in 16512ms

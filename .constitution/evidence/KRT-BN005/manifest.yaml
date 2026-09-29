@@ -2,8 +2,8 @@ owner: KRT-BN005
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: 5616aa60faf5029354a4d9aedae2fe7a4a4f6d2d
-  command: "M5a retained-Bun tooling proof: frozen install, native pre-version0.2 plan, twenty fixtures, actual-artifact contract. Combined code/SP2 state validated; expected intermediate TS-004 is explicit in tooling-command.txt."
+  commit: e5354f861c4bc8bb645ec5f72926ed6b3ca88b83
+  command: "Native generated0.2 working-tree release: worker release-check/build/preflight/dryrun and lead independent dryrun/fullverify/artifact contract. Original tooling producer is separately labeled in tooling-command.txt."
 files:
   - path: assemble-release-plan-7.0.0.metadata.json.txt
     sha256: 0154306aa19380223bfdad8a222bb604ef9c0d1ef11bb2bca67d8b3a3d921335
@@ -21,6 +21,42 @@ files:
     sha256: 949dc28bcdd4d3b01d5550f5bfa14d6d47b791f65d1f0c1bba8cad6bdae9d302
     bytes: 2173
     role: data
+  - path: consumed-intent.md
+    sha256: bf15ba7801f40f58c951ff5cff50fdac2e5542c86a08d978832cfd20d67d90c8
+    bytes: 1116
+    role: transcript
+  - path: final-verify-summary.log
+    sha256: 301bbd33ead3d5768d6aea6a1d5296e95e814e322c2dd509c6d3128e8f9f54d4
+    bytes: 1915
+    role: log
+  - path: publish-dry-run-summary.log
+    sha256: 1954b79349999630f71e2fe3e67b95e4635d680340513ecb58067d394c73b945
+    bytes: 1888
+    role: log
+  - path: publish-preflight.log
+    sha256: 333af078d781cae596a9113676ede484a09a61c0b36d519402155a43498e796b
+    bytes: 600
+    role: log
+  - path: release-check-summary.log
+    sha256: 239e589943f29e9538b15650e5df671689ebf6ae01516d4f4913487f767863ac
+    bytes: 2022
+    role: log
+  - path: release-command.txt
+    sha256: 66aa21bb847f094cac8bf235d29c50625690c3c65e28e5a726e674a461f17896
+    bytes: 2527
+    role: transcript
+  - path: release-contract.log
+    sha256: bb395008392dd1c15c3ff01b4c682af355fdd817c2d6fe6c42803793bde810b4
+    bytes: 401
+    role: log
+  - path: release-contract.mjs
+    sha256: 35bc009ca943769ba960e4cbb4bb40eca5a5dc3b755315a168275dff63137ced
+    bytes: 12488
+    role: transcript
+  - path: release-negative-control.log
+    sha256: bc8b733b034c05efa032051568e99404165a70718b8e88d22fac4f0f129e1c89
+    bytes: 423
+    role: log
   - path: tooling-command.txt
     sha256: 8b4054aad61d3213cd01f65f494641571833e502713070207ee9c9e21cc0daf1
     bytes: 1878
@@ -53,4 +89,4 @@ files:
     sha256: 1c6f27b00d09658159c5472e3e6a28efaba37d67c2f956ab882caa52e814d830
     bytes: 2743
     role: transcript
-pass_criteria: "Exact CLI3.0.3/config4.0.1 on Bun1.3.10; frozen install and twenty fixtures pass; native plan is thirty minor0.2.0 releases, nineteen public, valid direct intent and public runtime closure. This tooling milestone does not yet claim final release-check, generated main artifacts, or registry dry-run acceptance."
+pass_criteria: "Native generation yields exactly thirty0.2.0 fixed members with nineteen public and eleven private; changelogs and valid dependency ranges match archived intent and consumed replay; private sessions excluded and runtime closure clean; source hashes unchanged; frozen install, full release-check and independent final verify pass; curated build/preflight and nineteen-package registry dryrun pass with no mutation."

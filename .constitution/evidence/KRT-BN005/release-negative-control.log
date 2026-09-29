@@ -1,0 +1,5 @@
+command: /home/oscar/GitHub/Tuvren/framework-bn/.devenv/profile/bin/bun /tmp/KRT-BN005-release/release-contract.mjs /tmp/KRT-BN005-release/consumed-changeset.md
+release-contract: negative control rejected stale internal reference
+release-contract: historical generated scope is 58 tracked + 3 untracked artifacts
+release-contract: OK — 30 packages at 0.2.0; 19 public, 11 private; generated release scope is clean
+exit=0

@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/backend-postgres",
   "description": "Tuvren PostgreSQL backend leaf: durable session persistence on Postgres with a relational row-per-record schema (ADR-0067), constructed by the host and passed into createTuvren.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
