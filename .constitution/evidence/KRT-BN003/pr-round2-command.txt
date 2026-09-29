@@ -1,0 +1,49 @@
+Producer parent: 4423c2cb5def7b3a89855e6f2aadbfb5c5fec778.
+PR119 round-two correction, 2026-09-29. Prepared Bun 1.3.10,
+Changesets CLI 3.0.3/read 1.0.1/parse 1.0.0; Git 2.55.0; LC_ALL=C.
+
+Preserved failing-first suite: 28 pass, 5 fail, 193 assertions across 33
+tests. The controls expose unrelated declarations refreshing public intent,
+invalid pre-directory handling, quoted historical path loss, and obsolete
+private history being checked against current membership. The full raw
+stdout is pr-round2-failing-fixtures.log.gz, with a byte-identical round trip.
+
+Final behavior: determine freshness separately for each changed public
+package; accept a new/changed matching declaration or changed nonempty note;
+ignore only ENOENT when pre is absent; discover historical notes with NUL
+Git output; parse historical native syntax without current membership while
+keeping current pending-note unknown-name validation strict. Existing Git
+type/move endpoint, private exemption, native parser and exact replay checks
+remain intact. Positive controls cover updated declarations/summaries and
+fresh public intent after obsolete private removal.
+
+Final native parity uses installed readChangesets(rootDirectory), resolved
+through the actual CLI dependency, and verifies ENOTDIR on regular-file pre.
+The earlier CLI stderr-string diagnostic did not expose ENOTDIR text; the
+direct reader assertion establishes the error code without altering rules.
+That diagnostic is retained in pr-round2-native-parity-diagnostic.log.gz.
+All retries under /tmp/EPIC-BN-pr-r2-fix are distinct; no log was overwritten.
+
+Worker final commands (14 through 18 logs in that temporary directory):
+bun test tools/scripts/changeset-check.test.ts
+bunx --bun tsc --ignoreConfig --noEmit --target esnext --module esnext --moduleResolution bundler --types bun --strict --skipLibCheck --noUncheckedIndexedAccess --allowImportingTsExtensions tools/scripts/changeset-check.ts tools/scripts/changeset-check.test.ts
+bunx --bun @biomejs/biome check tools/scripts/changeset-check.ts tools/scripts/changeset-check.test.ts
+bun run changeset:check --base=master
+bun run check --base=master
+All final checks exited 0. Final suite: 33 pass, 0 fail, 196 assertions.
+
+The lead independently ran the same final suite, strict source types,
+targeted Biome, and actual consumed gate; all exited 0. Full fixture and gate
+outputs are pr-round2-final-fixtures.log and pr-round2-consumed-gate.log.
+Constitution validation and diff checks passed before commit. Historical
+20/24/26-fixture records retain their original producer context.
+
+Both required CI checks passed at producer head4423c2c in run36581467909:
+https://github.com/Tuvren/framework/actions/runs/36581467909
+This closes the old runtime timeout at that head. Forthcoming code fixes
+still require green CI at their own reviewed head. No runtime, dependency,
+release artifact, publication policy, or owner action changed here.
+
+Archived raw stdout:
+pr-round2-failing-fixtures.log.gz: raw SHA-256 2ba92920886f038108e51f56da79178dbe0115eb6f4e401d5979e6a299f3fd28, 4805 bytes; gzip -dc decompresses it.
+pr-round2-native-parity-diagnostic.log.gz: raw SHA-256 d0d3864906a3c6495ed27375a2321fc2c72517849bf98c9cbd8706b4ebe152dd, 2254 bytes; gzip -dc decompresses it.

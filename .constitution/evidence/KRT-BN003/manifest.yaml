@@ -2,8 +2,8 @@ owner: KRT-BN003
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: d70abad1767015c5c000850f6c64b3837127f53a
-  command: "Latest PR119 source-move correction: preserved two-failure controls, final26fixtures/155assertions, both Git endpoints in current/history coverage, strictTS6/Biome, actual consumed replay, and inner-loop check. Earlier producer results and original-head CI investigation remain historical."
+  commit: 4423c2cb5def7b3a89855e6f2aadbfb5c5fec778
+  command: "PR119 round-two per-package freshness and historical-context corrections: preserved five-failure controls and parity diagnostic, final33fixtures/196assertions, strictTS6/Biome, actual consumed gate, and inner-loop check. Earlier producers and green CI at4423c2c are separately labeled."
 files:
   - path: coverage.md
     sha256: 90b039f714db74e5a045a7eaa29e162434823d39a83350f287a86388729f2567
@@ -56,6 +56,26 @@ files:
   - path: pr-round1-source-moves-fixtures.log
     sha256: d7e94cfe642b1686e0d511a2d7effa0cb199be91d6aa5dc77c5f0bb1b525246e
     bytes: 1184
+    role: log
+  - path: pr-round2-command.txt
+    sha256: d997b0c56baf212c62bdfb0c487908b2677a4bb4334582e2ef561d0c25955a97
+    bytes: 3260
+    role: transcript
+  - path: pr-round2-consumed-gate.log
+    sha256: 1f7c82144dc1a80c64e39572c22098d4edb1e5e2fe1e19411cef310041dcd014
+    bytes: 138
+    role: log
+  - path: pr-round2-failing-fixtures.log.gz
+    sha256: ce782278bd10ec6b8aeb591b5bfee3da3d48c7326cdd7ca4412d07dbd866a3a7
+    bytes: 1060
+    role: log
+  - path: pr-round2-final-fixtures.log
+    sha256: c1755dc28d33764b809367fb83900d3ce4adba42c7852f493bc66d47b247e9d1
+    bytes: 1561
+    role: log
+  - path: pr-round2-native-parity-diagnostic.log.gz
+    sha256: 4d4206b2e09c8342bf06afbe222b3e9e1ed4d753b91e3836a7e1bd84e7d81569
+    bytes: 604
     role: log
   - path: replay-lifecycle-current-gate.log
     sha256: 70bd50ed00beafa0f21050df5caa8b0ada45b8b1f1332e96f438ebfc2f0a4d00
