@@ -1,0 +1,106 @@
+id: CP
+name: Bazel affected selection CI and release rehearsal
+kind: tooling
+capabilities: []
+depends_on: [CO]
+scope:
+  paths:
+    - tools/bazel/affected-selection
+    - tools/scripts/publish-registry.ts
+    - tools/scripts/release-check.ts
+    - tools/scripts/release-lane.ts
+    - ".github/workflows/ci.yml"
+    - ".github/workflows/release.yml"
+    - ".github/dependabot.yml"
+    - package.json
+    - bun.lock
+  tech_spec_patchable: []
+estimated_diff_lines: 7000
+estimate_source: planned
+tickets:
+  - id: KRT-CP001
+    title: Measure affected-detection cost before choosing
+    type: Spike
+    effort: 5
+    depends_on: []
+    scope:
+      in: [".constitution/spikes/SPK-KRT-CP001.md"]
+    verification:
+      command: bun run check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if neither candidate is correct or a selection cannot be justified from measured cost occurs; do not improvise."
+    description: "ADR-0071 decision 6. Compare bazel-diff and target-determinator on the same graph and change corpus. Measure cold and cached computation cost, result correctness, toolchain/generated-input edits and target coverage. Produce only the spike report; keep CI full-suite until a recommendation is accepted. Route any departure from the two approved candidates to Stage 3. Assumption: Neither approved affected tool has measured selection cost or correctness on the complete ported graph."
+    acceptance:
+      mode: runbook_probe
+      evidence: "Runbook: capture command, commit, changed-file corpus and results for both candidates. Pass criteria are exact inclusion of all affected failing targets, reproducible selection and a documented measured-cost recommendation. Output SPK-KRT-CP001.md; no implementation or spec edits belong to this spike."
+    flows: []
+    certainty: assumed
+    status: planned
+    spike: SPK-KRT-CP001
+  - id: KRT-CP002
+    title: Adopt the measured selector and persist safe CI caches
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CP001]
+    scope:
+      in:
+        - tools/bazel/affected-selection
+        - ".github/workflows/ci.yml"
+        - package.json
+        - bun.lock
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the selector omits a required gate or a pull request can save the shared CI caches occurs; do not improvise."
+    description: "ADR-0071 decisions 4, 6, 8 and 10. Adopt the spike-selected approved tool, retaining a full-suite fallback for ambiguous selection. Persist disk and repository caches through actions/cache, with cache saving off on pull requests. Preserve explicit linux-sandbox coverage and add a post-suite git diff --exit-code purity check. Assumption: The selector recommended by CP001 integrates with complete CI change detection."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert selected targets match the reviewed spike corpus and fallback runs all targets. Pull requests restore caches without saving; trusted branches can save. Repeated runs hit caches and undeclared worktree writes fail purity checks."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-CP003
+    title: Build release artifacts with Bazel and stage the dry run
+    type: Chore
+    effort: 8
+    depends_on: [KRT-CP002]
+    scope:
+      in:
+        - tools/scripts/publish-registry.ts
+        - tools/scripts/release-check.ts
+        - tools/scripts/release-lane.ts
+        - ".github/workflows/release.yml"
+        - package.json
+    verification:
+      command: "bun run publish:dry-run"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if staging differs from publication authority or rehearsal would require a real publish occurs; do not improvise."
+    description: "ADR-0071 decision 12 and ADR-0069 decision 4. Build through Bazel and copy publishable artifacts from bazel-bin into a release staging directory. Expose publish-registry git work outside the sandbox. Keep release.yml, provenance, curated publication closure and the human-gated real publish path. Rehearse both local and workflow dry_run true before Nx removal. Assumption: Bazel outputs can reproduce the curated registry staging and dry-run contract."
+    acceptance:
+      mode: runbook_probe
+      evidence: "Apply bun run publish:dry-run and release.yml dry_run true from Bazel-built staging artifacts. Probe package contents and an isolated staged consumer. Expect the same curated public packages, successful dependency closure and provenance configuration, with no real publish, tag or release."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-CP004
+    title: Update Dependabot for Bazel dependency governance
+    type: Chore
+    effort: 3
+    depends_on: [KRT-CP003]
+    scope:
+      in: [".github/dependabot.yml"]
+    verification:
+      command: bun run check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: ADR-0071 decision 14 and ADR-0069. Add the bazel ecosystem and remove the nx-toolchain update group. Preserve the remaining approved ecosystem grouping and both completed Bun and ultracite hold removals.
+    acceptance:
+      mode: contract_test
+      evidence: "Assert Dependabot config includes Bazel, excludes the retired Nx group, retains the bounded existing ecosystem policy and does not restore either completed upgrade ignore."
+    flows: []
+    certainty: settled
+    status: planned

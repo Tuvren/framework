@@ -1,0 +1,81 @@
+id: CK
+name: Staged TypeScript remaining packages
+kind: tooling
+capabilities: []
+depends_on: [CD]
+scope:
+  paths:
+    - typescript/sdk/BUILD.bazel
+    - typescript/providers/provider-api/BUILD.bazel
+    - typescript/providers/bridge-ai-sdk/BUILD.bazel
+    - typescript/providers/testkit/BUILD.bazel
+    - typescript/providers/certification/BUILD.bazel
+    - typescript/runners/react/BUILD.bazel
+    - typescript/streaming/core/BUILD.bazel
+    - typescript/streaming/sse/BUILD.bazel
+    - typescript/streaming/ws/BUILD.bazel
+    - typescript/streaming/agui/BUILD.bazel
+    - typescript/tools/mcp-client/BUILD.bazel
+    - typescript/testkit/BUILD.bazel
+    - typescript/telemetry/otel/BUILD.bazel
+    - typescript/telemetry/semconv/BUILD.bazel
+    - typescript/certification/BUILD.bazel
+    - typescript/certification-batteries-included/BUILD.bazel
+  tech_spec_patchable: []
+estimated_diff_lines: 12500
+estimate_source: planned
+tickets:
+  - id: KRT-CK001
+    title: Port staged package targets group 1
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - typescript/sdk/BUILD.bazel
+        - typescript/providers/provider-api/BUILD.bazel
+        - typescript/providers/bridge-ai-sdk/BUILD.bazel
+        - typescript/providers/testkit/BUILD.bazel
+        - typescript/providers/certification/BUILD.bazel
+        - typescript/runners/react/BUILD.bazel
+        - typescript/streaming/core/BUILD.bazel
+        - typescript/streaming/sse/BUILD.bazel
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a package needs in-tree state, undeclared inputs, or a source-only declaration build occurs; do not improvise."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CK002
+    title: Port staged package targets group 2
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CK001]
+    scope:
+      in:
+        - typescript/streaming/ws/BUILD.bazel
+        - typescript/streaming/agui/BUILD.bazel
+        - typescript/tools/mcp-client/BUILD.bazel
+        - typescript/testkit/BUILD.bazel
+        - typescript/telemetry/otel/BUILD.bazel
+        - typescript/telemetry/semconv/BUILD.bazel
+        - typescript/certification/BUILD.bazel
+        - typescript/certification-batteries-included/BUILD.bazel
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a package needs in-tree state, undeclared inputs, or a source-only declaration build occurs; do not improvise."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes."
+    flows: []
+    certainty: settled
+    status: planned

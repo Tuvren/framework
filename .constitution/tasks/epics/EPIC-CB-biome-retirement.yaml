@@ -1,0 +1,129 @@
+id: CB
+name: Retire Biome after all directory gates
+kind: tooling
+capabilities: []
+depends_on: [BR, BS, BT, BU, BV, BW, BX, BY, BZ, CA]
+scope:
+  paths:
+    - package.json
+    - bun.lock
+    - biome.jsonc
+    - nx.json
+    - ".github/dependabot.yml"
+    - devenv.nix
+    - oxlint.config.ts
+    - oxfmt.config.ts
+    - typescript
+    - spec
+    - tools
+    - ".constitution/tech-spec/stack.yaml"
+    - ".git-blame-ignore-revs"
+  tech_spec_patchable: [".constitution/tech-spec/stack.yaml"]
+estimated_diff_lines: 2500
+estimate_source: planned
+tickets:
+  - id: KRT-CB001
+    title: Close the directory and suppression inventory
+    type: Chore
+    effort: 3
+    depends_on: []
+    scope:
+      in: [typescript, spec, tools, oxlint.config.ts, oxfmt.config.ts]
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if an unmigrated project or unexplained suppression remains occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Confirm every project directory has completed the ratchet, including JSON-only spec targets, configuration scripts and root tooling. Aggregate the suppression inventory and account for all 82 surviving and 62 dead directives."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert all 41 former Biome project targets have a clean replacement, zero biome-ignore directives remain, and the 144 original directives have an evidence-backed disposition. Confirm generated and constitution ignores remain as ruled."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CB002
+    title: Remove Biome and enforce unused-disable reporting
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CB001]
+    scope:
+      in:
+        - package.json
+        - bun.lock
+        - biome.jsonc
+        - nx.json
+        - tools
+        - spec
+        - typescript
+        - oxlint.config.ts
+        - oxfmt.config.ts
+        - devenv.nix
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if any directory still needs Biome or a rule override occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Remove biome.jsonc, @biomejs/biome and the Nx lint input. Replace root lint and format scripts and every residual formatter/lint caller with direct OXC binaries. Enable --report-unused-disable-directives and --type-aware across the completed gate."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert no executable Biome reference remains, the unchanged shipped preset is used, root lint and format succeed, second generation is clean and unused directives fail the gate."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CB003
+    title: Refresh ultracite manually at the completed cut-over
+    type: Chore
+    effort: 3
+    depends_on: [KRT-CB002]
+    scope:
+      in: [package.json, bun.lock, ".github/dependabot.yml"]
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the latest preset adds unplanned cleanup or loses the required exports occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Recheck ultracite latest by hand after all directories are clean and keep it config-only. Ensure the temporary ignore above 7.4.2 is absent. If its exports or shipped rule set changed, stop for owner review rather than silently adding overrides."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the installed latest ultracite exports load, lint remains clean with the shipped preset, and Dependabot no longer holds it above 7.4.2."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CB004
+    title: Record completed OXC stack state separately
+    type: Chore
+    effort: 3
+    depends_on: [KRT-CB003]
+    scope:
+      in: [".constitution/tech-spec/stack.yaml"]
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. In a spec-only commit, settle installed OXC and ultracite pins and remove the retired Biome stack record. Cite the full ratchet and freshness evidence; do not edit code in this patch."
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: only the installed OXC toolchain owns lint and format and stack equals bun.lock. Checker: bun run verify and constitution pin validation."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CB005
+    title: Record the merged mechanical commit SHA
+    type: Chore
+    effort: 1
+    depends_on: []
+    scope:
+      in: [".git-blame-ignore-revs"]
+    verification:
+      command: bun run check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the merged mechanical SHA is unavailable or the commit contains semantic changes occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. After the mechanical commit has its merged SHA, add that exact SHA in a separate follow-up commit. Preserve the mechanical commit independently so git blame can ignore precisely that change."
+    acceptance:
+      mode: contract_test
+      evidence: Assert the ignore-revs entry resolves to the actual merged mechanical-only commit and excludes every semantic or generator implementation commit.
+    flows: []
+    certainty: settled
+    status: planned

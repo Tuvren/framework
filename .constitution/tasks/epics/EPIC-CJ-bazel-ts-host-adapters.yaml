@@ -1,0 +1,63 @@
+id: CJ
+name: Staged TypeScript host and adapter rollout
+kind: tooling
+capabilities: []
+depends_on: [CD]
+scope:
+  paths:
+    - typescript/host/repl/BUILD.bazel
+    - typescript/host/session/BUILD.bazel
+    - typescript/host/session-client/BUILD.bazel
+    - typescript/host/remote-session/BUILD.bazel
+    - typescript/conformance-adapter/BUILD.bazel
+    - typescript/kernel/conformance-adapter/BUILD.bazel
+    - typescript/providers/conformance-adapter/BUILD.bazel
+  tech_spec_patchable: []
+estimated_diff_lines: 10000
+estimate_source: planned
+tickets:
+  - id: KRT-CJ001
+    title: Port staged package targets group 1
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - typescript/host/repl/BUILD.bazel
+        - typescript/host/session/BUILD.bazel
+        - typescript/host/session-client/BUILD.bazel
+        - typescript/host/remote-session/BUILD.bazel
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a package needs in-tree state, undeclared inputs, or a source-only declaration build occurs; do not improvise."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CJ002
+    title: Port staged package targets group 2
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CJ001]
+    scope:
+      in:
+        - typescript/conformance-adapter/BUILD.bazel
+        - typescript/kernel/conformance-adapter/BUILD.bazel
+        - typescript/providers/conformance-adapter/BUILD.bazel
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a package needs in-tree state, undeclared inputs, or a source-only declaration build occurs; do not improvise."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes."
+    flows: []
+    certainty: settled
+    status: planned

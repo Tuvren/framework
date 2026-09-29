@@ -1,0 +1,102 @@
+id: BY
+name: Conformance adapter lint ratchet
+kind: tooling
+capabilities: []
+depends_on: [BQ]
+scope:
+  paths:
+    - typescript/conformance-adapter
+    - typescript/kernel/conformance-adapter
+    - typescript/providers/conformance-adapter
+  tech_spec_patchable: []
+estimated_diff_lines: 14000
+estimate_source: planned
+tickets:
+  - id: KRT-BY001
+    title: Apply safe fixes and preserve types per directory
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - typescript/conformance-adapter
+        - typescript/kernel/conformance-adapter
+        - typescript/providers/conformance-adapter
+    verification:
+      command: bun run typecheck
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Run safe --fix one project at a time and immediately typecheck that project. Repair the 19 measured autofix failure classes, including required undefined arguments and readonly array to Set rewrites. Adapter syntactic diagnostics were about 1401; the measured 5797 type-aware upper bound included unresolved-type noise. Use the resolved-project count from BP and split module fixes without changing shared grading. Do not switch lint targets yet."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-BY002
+    title: Migrate live suppressions and delete dead ones
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BY001]
+    scope:
+      in:
+        - typescript/conformance-adapter
+        - typescript/kernel/conformance-adapter
+        - typescript/providers/conformance-adapter
+    verification:
+      command: bun run typecheck
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a suppression hides a new semantic failure instead of an equivalent measured diagnostic occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Migrate only directives whose equivalent OXC rule still fires, with their reasons preserved. Delete dead Biome directives. Contribute this directory inventory to the measured repository total of 82 survivors and 62 dead directives; do not manufacture replacement suppressions."
+    acceptance:
+      mode: contract_test
+      evidence: Assert each replacement suppresses a reproduced equivalent diagnostic and each deleted directive has no active equivalent. Check the directory has no biome-ignore comments and retain its share of the 144-directive inventory.
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-BY003
+    title: Reorder definitions without initialization regressions
+    type: Chore
+    effort: 8
+    depends_on: [KRT-BY002]
+    scope:
+      in:
+        - typescript/conformance-adapter
+        - typescript/kernel/conformance-adapter
+        - typescript/providers/conformance-adapter
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a runtime or conformance regression follows reordering; return the rule pair to the owner without overrides occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Convert func-style declarations and reorder no-use-before-define definitions in bounded reviewable module batches. Preserve exports, initialization order and observable execution. The merged kernel pilot is the prerequisite; apply its proven ordering method."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-BY004
+    title: Clear remaining rules and switch clean project targets
+    type: Chore
+    effort: 8
+    depends_on: [KRT-BY003]
+    scope:
+      in:
+        - typescript/conformance-adapter
+        - typescript/kernel/conformance-adapter
+        - typescript/providers/conformance-adapter
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a project switches before it is clean or type-aware lint silently skips rules occurs; do not improvise."
+    description: ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics followed by type-aware diagnostics with the preset unchanged. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Switch each project lint target from Biome to oxlint --type-aware only after that directory is clean.
+    acceptance:
+      mode: contract_test
+      evidence: "Assert scoped oxlint --type-aware reports zero errors with all 54 type-aware rules enabled and no overrides. Every scoped project lint target uses OXC, unswitched projects retain Biome, scoped tests pass and the full lint gate remains usable."
+    flows: []
+    certainty: settled
+    status: planned

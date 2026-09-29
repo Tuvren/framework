@@ -1,0 +1,105 @@
+id: CM
+name: Bazel TypeSpec and telemetry freshness
+kind: tooling
+capabilities: []
+depends_on: [CL]
+scope:
+  paths:
+    - tools/bazel/source-codegen.bzl
+    - tools/bazel/source-codegen-runner.sh
+    - tools/scripts/codegen.ts
+    - tools/scripts/telemetry-codegen.ts
+    - tools/generators
+    - spec/core
+    - spec/providers
+    - spec/runners
+    - spec/tools
+    - spec/host
+    - spec/streaming
+    - spec/telemetry
+    - typescript/telemetry/semconv/src/lib/generated
+    - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
+  tech_spec_patchable: []
+estimated_diff_lines: 10000
+estimate_source: planned
+tickets:
+  - id: KRT-CM001
+    title: Build TypeSpec outputs and diff their checked artifacts
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - tools/bazel/source-codegen.bzl
+        - tools/bazel/source-codegen-runner.sh
+        - tools/scripts/codegen.ts
+        - spec/core
+        - spec/providers
+        - spec/runners
+        - spec/tools
+        - spec/host
+        - spec/streaming
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 decision 9 and amended ADR-0027. Model TypeSpec artifact families as declared Bazel actions, checked-file diff tests and update targets. Produce gitignored prerequisites as outputs. Keep the old codegen lane working while families are transferred."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert differing or missing generated artifacts and missing declared sources fail freshness; restored outputs pass. A second update is clean and parsed schemas/OpenAPI preserve authority. No action writes directly into the checkout."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CM002
+    title: Build Weaver telemetry outputs and diff them
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CM001]
+    scope:
+      in:
+        - tools/bazel/source-codegen.bzl
+        - tools/bazel/source-codegen-runner.sh
+        - tools/scripts/telemetry-codegen.ts
+        - tools/generators
+        - spec/telemetry
+        - typescript/telemetry/semconv/src/lib/generated
+        - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: ADR-0071 decision 9 and amended ADR-0027. Model the refreshed Weaver manifest and templates as inputs producing all four telemetry outputs. Compare checked files and provide an explicit update target. Preserve OXC formatter exclusions and native Rust formatting.
+    acceptance:
+      mode: contract_test
+      evidence: "Assert template or manifest changes invalidate generated actions, stale outputs fail freshness and repeated updates are clean. The TypeScript and Rust telemetry helpers agree with the generated attribute registry."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CM003
+    title: Point source authority packets at Bazel update targets
+    type: Chore
+    effort: 3
+    depends_on: [KRT-CM002]
+    scope:
+      in:
+        - spec/core
+        - spec/providers
+        - spec/runners
+        - spec/tools
+        - spec/host
+        - spec/streaming
+        - spec/telemetry
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a packet needs a command outside the reviewed allowlist occurs; do not improvise."
+    description: "ADR-0071 decision 9 and amended ADR-0027. Rewrite this family regenerateCommand fields to the implemented Bazel update targets. Depend on the command-allowlist bridge from CN through epic ordering before these packets switch; do not introduce unsupported executable commands."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every changed authority packet command resolves to its update target, is accepted by the regenerate-command validator and produces declared outputs without changing authority semantics."
+    flows: []
+    certainty: settled
+    status: planned

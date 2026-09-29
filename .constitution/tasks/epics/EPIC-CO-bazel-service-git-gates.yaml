@@ -1,0 +1,98 @@
+id: CO
+name: Bazel external suites and git-aware gates
+kind: tooling
+capabilities: []
+depends_on: [CE, CF, CG, CH, CI, CJ, CK, CM, CN]
+scope:
+  paths:
+    - tools/bazel/service-tests.bzl
+    - tools/bazel/service-test-runner.sh
+    - tools/bazel/git-gates.bzl
+    - tools/conformance
+    - tools/scripts/conformance.ts
+    - tools/scripts/lib/worktree-guard.ts
+    - tools/scripts/changeset-check.ts
+    - tools/scripts/changeset-check.test.ts
+    - tools/scripts/check.ts
+    - tools/scripts/kernel-interop-governance.ts
+    - tools/scripts/repl-host-interop-smoke.ts
+    - tools/scripts/proving-host-sqlite-pinned.sh
+    - BUILD.bazel
+  tech_spec_patchable: []
+estimated_diff_lines: 10000
+estimate_source: planned
+tickets:
+  - id: KRT-CO001
+    title: Route service checks through named external suites
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - tools/bazel/service-tests.bzl
+        - tools/bazel/service-test-runner.sh
+        - tools/conformance
+        - tools/scripts/conformance.ts
+        - tools/scripts/repl-host-interop-smoke.ts
+        - tools/scripts/proving-host-sqlite-pinned.sh
+        - BUILD.bazel
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a target starts services or a suite silently omits an external check occurs; do not improvise."
+    description: "ADR-0071 decision 5. Tag Postgres tests, gRPC smoke, SQLite/Postgres scenarios and Gemini scenario manual and external, and include them in named suites. Pass credentials and connection strings through --test_env. Keep services:up manual and never start services in a target."
+    acceptance:
+      mode: runbook_probe
+      evidence: "Apply suites after the caller starts services. Probe SQLite, Postgres, gRPC and configured Gemini separately; expect real missing-environment failures, no service startup side effects and no secret output. Run declared host recipes and retain their visible scenario success lines."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CO002
+    title: Expose git-reading gates outside test sandboxes
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CO001]
+    scope:
+      in:
+        - tools/bazel/git-gates.bzl
+        - tools/scripts/lib/worktree-guard.ts
+        - tools/scripts/changeset-check.ts
+        - tools/scripts/changeset-check.test.ts
+        - tools/scripts/check.ts
+        - tools/scripts/kernel-interop-governance.ts
+        - BUILD.bazel
+    verification:
+      command: "bun run changeset:check"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a sandboxed test reads git or affected selection is silently chosen before its spike occurs; do not improvise."
+    description: "ADR-0071 decision 8. Expose worktree-guard, changeset-check, check and kernel-interop-governance as bazel run targets or explicit CI steps. Preserve full-suite behavior until the affected-selection spike is adopted. Keep publishing git reads in the CP release target."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert changed public sources without a changeset fail, worktree mutation is detected after a suite, and git-dependent gates read the actual checkout outside the sandbox. Intentional red fixtures retain their expected result."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CO003
+    title: Define lane suites and measure same-commit parity
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CO002]
+    scope:
+      in:
+        - BUILD.bazel
+        - tools/bazel/service-tests.bzl
+        - tools/bazel/git-gates.bzl
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a former lane check is omitted or the same-commit outcomes differ occurs; do not improvise."
+    description: "ADR-0071 decisions 3 and 13. Choose named suites covering the former inner-loop, kernel and full lanes. Compare Nx and Bazel on the same commit, including test inventories, authority gates, codegen freshness, lint, build outputs and manual external suites. Keep Nx enabled until release rehearsal and parity evidence are green."
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: every former lane check has a named Bazel equivalent and matching pass/fail behavior on the same commit. Checker: bun run verify plus the side-by-side suite matrix; report target counts and any intentional red lanes explicitly."
+    flows: []
+    certainty: settled
+    status: planned

@@ -1,0 +1,144 @@
+id: CC
+name: Bazel shared toolchain bootstrap
+kind: tooling
+capabilities: []
+depends_on: [CB]
+scope:
+  paths:
+    - MODULE.bazel
+    - MODULE.bazel.lock
+    - ".bazelversion"
+    - ".bazelrc"
+    - ".bazelignore"
+    - devenv.nix
+    - devenv.lock
+    - ".gitignore"
+    - user.bazelrc
+    - go.work
+    - tools/bazel/toolchain-sync.ts
+    - tools/bazel/toolchain-sync.test.ts
+    - tools/bazel/toolchain-sync.bzl
+    - tools/bazel/BUILD.bazel
+    - ".constitution/tech-spec/stack.yaml"
+    - go/kernel/BUILD.bazel
+    - go/kernel-conformance-adapter/BUILD.bazel
+    - go/kernel-certification/BUILD.bazel
+    - tools/bazel/python-requirements.txt
+  tech_spec_patchable: [".constitution/tech-spec/stack.yaml"]
+estimated_diff_lines: 5500
+estimate_source: planned
+tickets:
+  - id: KRT-CC001
+    title: Seed lock-derived inputs before native module analysis
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - go/kernel/BUILD.bazel
+        - go/kernel-conformance-adapter/BUILD.bazel
+        - go/kernel-certification/BUILD.bazel
+        - tools/bazel/python-requirements.txt
+    verification:
+      command: bun run check
+      expected: "Exit 0; every Go module has its BUILD seed and frozen uv export matches the approved lock before module extensions consume them."
+    stop_conditions:
+      - "STOP if a module needs an unapproved dependency or uv export cannot represent the authoritative lock occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Seed BUILD files in each of the three Go modules before go_deps is wired. Export Python requirements with uv export --frozen before pip.parse is wired. This prepares only lock-derived graph inputs; package tests and final drift enforcement remain in the language epics."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every Go module contains its required BUILD seed, Python requirements reproduce frozen uv.lock, and no native dependency lock changes. Module extensions must consume these checked inputs after this ticket."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CC002
+    title: Register pinned native rules and hermetic C tools
+    type: Chore
+    effort: 8
+    depends_on: [KRT-CC001]
+    scope:
+      in:
+        - MODULE.bazel
+        - MODULE.bazel.lock
+        - ".bazelversion"
+        - tools/bazel/BUILD.bazel
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if module resolution needs a carried ruleset patch or host gcc occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Register rules_rust 0.74.0, rules_go 0.63.0, gazelle 0.54.0, rules_python 2.3.4, rules_buf 0.5.4 and aspect_rules_lint 2.9.1. Mirror Rust 1.95.0, Go 1.25.7, Python 3.13 and ruff 0.15.21 pins. Register a hermetic C toolchain, protobuf 33.4 and prefer_prebuilt_protoc. Retain Nx while targets are ported. Assumption: The combined module graph and selected hermetic C registration retain the isolated spike results. Complete the native language extension wiring over the Go BUILD seeds and exported Python requirements prepared by CC001, so later language epics never race to edit MODULE.bazel."
+    acceptance:
+      mode: runbook_probe
+      evidence: "Apply module resolution with a scrubbed host PATH and on ubuntu. Probe C compiler selection and prebuilt protoc authenticity. Expect analysis without host gcc and exact ruleset/toolchain pins, with native locks unchanged."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-CC003
+    title: Pin Bazel action PATH through devenv
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CC002]
+    scope:
+      in:
+        - ".bazelrc"
+        - devenv.nix
+        - devenv.lock
+        - ".gitignore"
+        - user.bazelrc
+        - ".bazelignore"
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the workaround requires machine configuration or weakens ubuntu sandbox isolation occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Generate user.bazelrc from one stable devenv PATH and enable --incompatible_strict_action_env. Remove shell PATH passthrough. Record processwrapper sandbox on NixOS and linux-sandbox on ubuntu. Measure a repository-local flag accommodation for fixed-path protoc and ruff actions; do not assume services.envfs works or change machine settings. Assumption: Repository-local configuration can accommodate fixed-PATH NixOS actions without machine settings."
+    acceptance:
+      mode: runbook_probe
+      evidence: "Apply two shells with different ambient PATH values and repeat actions; expect stable action keys and runnable Bash/coreutils. Probe protoc and ruff under scrubbed PATH. Document any still-unproven NixOS accommodation as a Stage 3 blocker before native rollout."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-CC004
+    title: Gate toolchain drift against native authorities
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CC003]
+    scope:
+      in:
+        - tools/bazel/toolchain-sync.ts
+        - tools/bazel/toolchain-sync.test.ts
+        - tools/bazel/toolchain-sync.bzl
+        - tools/bazel/BUILD.bazel
+        - go.work
+    verification:
+      command: bun run check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a native authority must change beyond the approved version mirror occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Mirror approved Go 1.25.7 in go.work where gazelle requires it. Add sync checks for MODULE pins against rust-toolchain.toml, go.work, uv.lock and devenv, including ruff. Preserve Cargo.lock and language workspace files as dependency authorities."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert deliberate changes to each mirrored Rust, Go, Python or ruff pin fail the sync gate and restored matching pins pass. The Go workspace minimum is compatible with gazelle 0.54.0 and no third-party dependency is invented."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CC005
+    title: Record installed Bazel rule pins separately
+    type: Chore
+    effort: 3
+    depends_on: [KRT-CC004]
+    scope:
+      in: [".constitution/tech-spec/stack.yaml"]
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Patch the stack in a spec-only commit from resolved module and toolchain evidence. Keep each not-yet-exercised language target assumption visible until its port passes."
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: stack versions match MODULE and the installed Bazel pin without claiming unrun package tests passed. Checker: bun run verify and constitution validation."
+    flows: []
+    certainty: settled
+    status: planned

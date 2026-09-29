@@ -1,0 +1,114 @@
+id: CN
+name: Bazel proto and conformance freshness
+kind: tooling
+capabilities: []
+depends_on: [CL]
+scope:
+  paths:
+    - tools/bazel/interop-codegen.bzl
+    - tools/bazel/interop-codegen-runner.sh
+    - tools/scripts/conformance
+    - tools/scripts/compatibility-report.ts
+    - tools/scripts/api-freeze-gate.ts
+    - tools/scripts/__snapshots__
+    - spec/interop
+    - spec/kernel
+    - spec/conformance
+    - reports/compatibility
+    - typescript/kernel/grpc-client/src/lib/generated/kernel-interop
+  tech_spec_patchable: []
+estimated_diff_lines: 11000
+estimate_source: planned
+tickets:
+  - id: KRT-CN001
+    title: Add native proto and Buf governance targets
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - tools/bazel/interop-codegen.bzl
+        - spec/interop/proto
+        - spec/conformance/kernel/fixtures
+    verification:
+      command: bun run interop-smoke
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Create BUILD.bazel under spec/interop/proto as authorized by ADR-0073, with proto_library and rules_buf lint and breaking targets. Consume protobuf 33.4 with the prebuilt protoc configuration already registered."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert Buf lint and breaking outcomes match the existing interop governance gate, proto sources are declared, and changing a proto invalidates its consumers without host protoc."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CN002
+    title: Check and update checked-in interop bindings
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CN001]
+    scope:
+      in:
+        - tools/bazel/interop-codegen.bzl
+        - tools/bazel/interop-codegen-runner.sh
+        - spec/interop
+        - typescript/kernel/grpc-client/src/lib/generated/kernel-interop
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 decision 9 and amended ADR-0027; ADR-0073 decision 7. Keep protoc-gen-es outputs checked in. Provide declared Bazel generation actions, diff tests and update targets instead of inventing a first-party TypeScript proto rule."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert stale or missing bindings fail diff tests, proto/plugin input changes invalidate generation, and updates match native generation byte-for-byte after the approved formatter."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CN003
+    title: Port conformance and compatibility generated families
+    type: Chore
+    effort: 8
+    depends_on: [KRT-CN002]
+    scope:
+      in:
+        - tools/bazel/interop-codegen.bzl
+        - tools/bazel/interop-codegen-runner.sh
+        - tools/scripts/conformance
+        - tools/scripts/compatibility-report.ts
+        - tools/scripts/api-freeze-gate.ts
+        - tools/scripts/__snapshots__
+        - spec/kernel
+        - spec/conformance
+        - reports/compatibility
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if generation needs a service lifecycle inside a hermetic action or changes required evidence semantics occurs; do not improvise."
+    description: "ADR-0071 decision 9 and amended ADR-0027. Produce CDDL-derived validators, fixture/plan artifacts, compatibility schemas and API snapshots through actions plus diff tests and update targets. Separate service-exercised compatibility runs from deterministic freshness. Preserve intentionally red compatibility evidence and shared grading."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert missing declared sources, stale outputs and missing artifacts fail independently. Repeated generation is clean; intentional red evidence retains its classification and is never converted into a false pass."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CN004
+    title: Point interop authority packets at Bazel update targets
+    type: Chore
+    effort: 3
+    depends_on: [KRT-CN003]
+    scope:
+      in: [spec/interop, spec/kernel, spec/conformance]
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: ADR-0071 decision 9 and amended ADR-0027. Rewrite this family regenerateCommand fields in the same code-only change that enables its reviewed update targets. Consume the merged allowlist bridge from CL and retain old forms until the source family also transfers.
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every changed packet names an implemented Bazel update target accepted by the command validator. Unsupported command forms fail, and a repeated family update produces no diff."
+    flows: []
+    certainty: settled
+    status: planned

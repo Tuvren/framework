@@ -1,0 +1,62 @@
+id: CG
+name: Bazel-native Python workspace
+kind: tooling
+capabilities: []
+depends_on: [CC]
+scope:
+  paths:
+    - python/kernel/BUILD.bazel
+    - python/kernel-conformance-adapter/BUILD.bazel
+    - python/kernel-certification/BUILD.bazel
+    - tools/bazel/python.bzl
+    - tools/bazel/python-requirements.txt
+    - tools/bazel/python-lock-drift.sh
+  tech_spec_patchable: []
+estimated_diff_lines: 5000
+estimate_source: planned
+tickets:
+  - id: KRT-CG001
+    title: Export uv requirements and reject drift
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - tools/bazel/python-requirements.txt
+        - tools/bazel/python-lock-drift.sh
+        - tools/bazel/python.bzl
+    verification:
+      command: bun run check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a lock entry needs an unapproved source build or cannot be represented by the export occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Export a requirements file from uv.lock with uv export --frozen and feed pip.parse. Keep uv.lock authoritative and make drift a gate rather than a second manually maintained lock."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert export equals the checked requirements, a changed uv.lock fails the drift gate until re-exported, and missing requirements fail analysis. Repeated export is byte-identical."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CG002
+    title: Port Python pytest and ruff targets
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CG001]
+    scope:
+      in:
+        - python/kernel/BUILD.bazel
+        - python/kernel-conformance-adapter/BUILD.bazel
+        - python/kernel-certification/BUILD.bazel
+        - tools/bazel/python.bzl
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Run all three Python packages through rules_python 2.3.4 with bootstrap_impl=script and ruff through aspect_rules_lint. Use the mirrored Python 3.13 and ruff pins."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the 289-test spike baseline matches uv on the same commit, including adapters and wrappers, on ubuntu and scrubbed-PATH NixOS. Tests do not depend on an ambient virtualenv."
+    flows: []
+    certainty: settled
+    status: planned

@@ -1,0 +1,82 @@
+id: CL
+name: Bazel project identity and discovery
+kind: tooling
+capabilities: []
+depends_on: [CC]
+scope:
+  paths:
+    - tools/bazel/project-tags.bzl
+    - tools/bazel/project-manifest.bzl
+    - tools/bazel/projects.json
+    - tools/scripts/lib/nx-projects.ts
+    - tools/scripts/validate-workspace-test-coverage.ts
+    - tools/scripts/lib/regenerate-command-argv.ts
+    - tools/scripts/lib/regenerate-command-argv.test.ts
+  tech_spec_patchable: []
+estimated_diff_lines: 5500
+estimate_source: planned
+tickets:
+  - id: KRT-CL001
+    title: Generate project identity and tag metadata
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - tools/bazel/project-tags.bzl
+        - tools/bazel/project-manifest.bzl
+        - tools/bazel/projects.json
+    verification:
+      command: bun run check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 decision 7. Declare boundary and layer tags in a Starlark macro and generate a project manifest that retains all 57 Nx project identities. Export target names, commands and tags needed by discovery consumers; do not use bazel query inside sandboxed tests."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the generated manifest has a one-to-one mapping to the 57 baseline projects, preserves boundary and layer tags, and regenerates deterministically from declared build metadata."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CL002
+    title: Make discovery gates read the generated manifest
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CL001]
+    scope:
+      in:
+        - tools/scripts/lib/nx-projects.ts
+        - tools/scripts/validate-workspace-test-coverage.ts
+    verification:
+      command: bun run check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 decision 7. Replace Nx-file discovery behind the helper with the generated manifest and update its test-coverage consumer. Preserve the compatibility interface during side-by-side execution; verify.ts and verify-kernel.ts callers are ported in the gate and closing epics."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert coverage and project-tag discovery receive the same project identities on the same commit from the manifest and baseline Nx inventory. Missing targets or tags fail; no sandboxed gate shells out to bazel query."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CL003
+    title: Bridge reviewed Bazel regeneration command forms
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CL002]
+    scope:
+      in:
+        - tools/scripts/lib/regenerate-command-argv.ts
+        - tools/scripts/lib/regenerate-command-argv.test.ts
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the bridge requires accepting arbitrary executable or shell syntax occurs; do not improvise."
+    description: "ADR-0071 decision 9 and amended ADR-0027. Support only reviewed Bazel update argv forms before either generated-artifact family switches. Retain accepted old forms until every family transfers. Reject arbitrary executable names, shell syntax and command injection. Family packet rewrites land atomically with their implemented update targets in CM and CN."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert approved Bazel update commands execute the named targets, malformed or injected commands are rejected, and old family commands remain usable until migration completes."
+    flows: []
+    certainty: settled
+    status: planned
