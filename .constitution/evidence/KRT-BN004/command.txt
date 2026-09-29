@@ -28,3 +28,19 @@ curl -fsSL https://registry.npmjs.org/%40tuvren%2Fsdk/0.1.0
 curl -fsSL https://registry.npmjs.org/%40tuvren%2Fbackend-postgres/0.1.0
 
 These responses are dated registry observations, not immutable source files.
+
+Review-fix producer parent: 915ece53aace586eafe800a342a5658e7ebee4d3.
+The audit and its controller were working-tree evidence changes. Earlier
+native plan, registry responses, and guard logs retain their original producer
+and observations above; they were not relabeled as fresh captures.
+
+Current commands (all exit0), from repository root with prepared Bun1.3.10:
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun "$EVIDENCE/release-classification-audit.mjs"
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun "$EVIDENCE/run-negative-controls.mjs"
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun "$EVIDENCE/package-coverage.mjs"
+devenv shell -- zsh -c 'LC_ALL=C bun test typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts'
+
+The controller resolves its sibling audit from import.meta.url, creates all
+mutated fixtures under a disposable temporary directory, and removes them in
+finally. It changes no repository source, intent, or snapshot. Scoped KRT_BN004
+input-path overrides apply only to these acceptance-audit controls.

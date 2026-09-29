@@ -1,3 +1,3 @@
-core/sdk: additive optional AgentConfig hook and preserved SDK re-export (patch)
-backend-postgres: omitted schemaName changes public -> tuvren_kernel (minor)
-backend-postgres: legacy default-schema upgrade requires explicit schema selection
+stable snapshot delta: 2 exact existing signature changes and 4 additive stable exports
+core/sdk AgentConfig: solely adds optional sanitizeToolResult?: SanitizeToolResultHook
+release notes: SDK hook, PostgreSQL relational storage, schema migration, and downgrade support verified

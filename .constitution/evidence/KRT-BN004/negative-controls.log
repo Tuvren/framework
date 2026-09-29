@@ -1,0 +1,10 @@
+note removal: SDK optional hook surface: rejected
+note removal: PostgreSQL relational row-per-record storage: rejected
+note removal: public-to-tuvren_kernel default schema: rejected
+note removal: explicit public schema selection: rejected
+note removal: selected-schema first-open migration: rejected
+note removal: unsupported downgrade: rejected
+extra recorded stable delta: rejected
+stable removal: rejected
+stable downgrade: rejected
+extra stable signature: rejected
