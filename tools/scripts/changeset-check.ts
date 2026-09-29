@@ -9,11 +9,19 @@
  */
 import { spawn } from "node:child_process";
 import type { Dirent } from "node:fs";
-import { access, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import {
+  access,
+  mkdtemp,
+  readdir,
+  readFile,
+  realpath,
+  rm,
+} from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
-import { parseDocument } from "yaml";
+import { pathToFileURL } from "node:url";
 import { walkPackageManifests } from "./lib/walk-package-manifests.js";
 
 interface CommandResult {
@@ -44,11 +52,27 @@ interface ChangesetContents {
   readonly summary: string;
 }
 
+interface NativeChangesetContents {
+  readonly releases: readonly NativeRelease[];
+  readonly summary: string;
+}
+
+interface NativeRelease {
+  readonly name: string;
+  readonly type: string;
+}
+
+type ChangesetParser = (contents: string) => unknown;
+
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../");
 const CHANGESET_DIRECTORY = ".changeset";
 const CHANGESET_METADATA_FILES = new Set(["README.md"]);
-const RELEASE_TYPES = new Set(["major", "minor", "patch"]);
+const CHANGESETS_CLI_PATH = path.join(
+  REPO_ROOT,
+  "node_modules/@changesets/cli/bin.js"
+);
 const FULL_GIT_COMMIT = /^[0-9a-f]{40}$/u;
+let changesetParserPromise: Promise<ChangesetParser> | undefined;
 
 if (import.meta.main) {
   const base = parseBaseArgument(process.argv.slice(2));
@@ -70,6 +94,11 @@ export async function checkChangesetCoverage(
     options.base
   );
   const manifests = await readWorkspaceManifests(options.rootDirectory);
+  const workspaceNames = new Set(manifests.map((manifest) => manifest.name));
+  const changesets = await readPendingChangesets(
+    options.rootDirectory,
+    workspaceNames
+  );
   const changedPaths = await readChangedPaths(
     options.rootDirectory,
     baseRevision
@@ -88,7 +117,6 @@ export async function checkChangesetCoverage(
     return;
   }
 
-  const changesets = await readPendingChangesets(options.rootDirectory);
   const coveredNames = new Set<string>();
 
   for (const changeset of changesets) {
@@ -98,7 +126,8 @@ export async function checkChangesetCoverage(
         (await changesetHasNewOrUpdatedIntent(
           options.rootDirectory,
           baseRevision,
-          changeset
+          changeset,
+          workspaceNames
         ))
       )
     ) {
@@ -343,7 +372,8 @@ async function readJsonFile(filePath: string): Promise<unknown> {
 }
 
 async function readPendingChangesets(
-  rootDirectory: string
+  rootDirectory: string,
+  workspaceNames: ReadonlySet<string>
 ): Promise<PendingChangeset[]> {
   const directory = path.join(rootDirectory, CHANGESET_DIRECTORY);
   let entries: Dirent<string>[];
@@ -367,7 +397,11 @@ async function readPendingChangesets(
     }
 
     changesets.push(
-      await parseChangeset(path.join(directory, entry.name), entry.name)
+      await parseChangeset(
+        path.join(directory, entry.name),
+        entry.name,
+        workspaceNames
+      )
     );
   }
 
@@ -376,10 +410,11 @@ async function readPendingChangesets(
 
 async function parseChangeset(
   filePath: string,
-  filename: string
+  filename: string,
+  workspaceNames: ReadonlySet<string>
 ): Promise<PendingChangeset> {
   const text = await readFile(filePath, "utf8");
-  const contents = parseChangesetContents(text, filename);
+  const contents = await parseChangesetContents(text, filename, workspaceNames);
 
   return {
     relativePath: `${CHANGESET_DIRECTORY}/${filename}`,
@@ -388,55 +423,123 @@ async function parseChangeset(
   };
 }
 
-function parseChangesetContents(
+async function parseChangesetContents(
   text: string,
-  filename: string
-): ChangesetContents {
-  if (!text.startsWith("---\n")) {
-    throw new Error(`.changeset/${filename} must begin with YAML frontmatter`);
+  filename: string,
+  workspaceNames: ReadonlySet<string>
+): Promise<ChangesetContents> {
+  const parse = await getChangesetParser();
+  let parsed: unknown;
+
+  try {
+    parsed = parse(text);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `.changeset/${filename} has invalid frontmatter: ${message}`
+    );
   }
 
-  const closingMarker = text.indexOf("\n---", 4);
-
-  if (closingMarker === -1) {
-    throw new Error(`.changeset/${filename} has unterminated YAML frontmatter`);
-  }
-
-  const frontmatter = text.slice(4, closingMarker);
-  const document = parseDocument(frontmatter);
-
-  if (document.errors.length > 0 || document.warnings.length > 0) {
-    throw new Error(`.changeset/${filename} has invalid YAML frontmatter`);
-  }
-
-  const value: unknown = document.toJS();
-
-  if (!isObject(value)) {
-    throw new Error(`.changeset/${filename} frontmatter must be a mapping`);
+  if (!isNativeChangesetContents(parsed)) {
+    throw new Error(
+      `.changeset/${filename} produced an invalid result from the installed Changesets parser`
+    );
   }
 
   const releaseTypes = new Map<string, string>();
 
-  for (const [packageName, releaseType] of Object.entries(value)) {
-    if (typeof releaseType !== "string" || !RELEASE_TYPES.has(releaseType)) {
+  for (const release of parsed.releases) {
+    if (!workspaceNames.has(release.name)) {
       throw new Error(
-        `.changeset/${filename} has an invalid release type for ${packageName}`
+        `.changeset/${filename} references unknown workspace package ${JSON.stringify(release.name)}`
       );
     }
 
-    releaseTypes.set(packageName, releaseType);
+    releaseTypes.set(release.name, release.type);
   }
 
   return {
     releaseTypes,
-    summary: text.slice(closingMarker + "\n---".length).trim(),
+    summary: parsed.summary,
   };
+}
+
+function getChangesetParser(): Promise<ChangesetParser> {
+  changesetParserPromise ??= loadChangesetParser();
+  return changesetParserPromise;
+}
+
+async function loadChangesetParser(): Promise<ChangesetParser> {
+  let installedCliPath: string;
+
+  try {
+    installedCliPath = await realpath(CHANGESETS_CLI_PATH);
+  } catch {
+    throw new Error("cannot locate the installed Changesets CLI parser");
+  }
+
+  let changesetsReadPath: string;
+  let changesetsParsePath: string;
+
+  try {
+    const cliRequire = createRequire(installedCliPath);
+    changesetsReadPath = cliRequire.resolve("@changesets/read");
+    const readRequire = createRequire(changesetsReadPath);
+    changesetsParsePath = readRequire.resolve("@changesets/parse");
+  } catch {
+    throw new Error(
+      "cannot resolve the installed Changesets frontmatter parser"
+    );
+  }
+
+  let parserModule: unknown;
+
+  try {
+    parserModule = await import(pathToFileURL(changesetsParsePath).href);
+  } catch {
+    throw new Error("cannot load the installed Changesets frontmatter parser");
+  }
+
+  if (!isChangesetParserModule(parserModule)) {
+    throw new Error(
+      "installed Changesets frontmatter parser has an invalid API"
+    );
+  }
+
+  return parserModule.default;
+}
+
+function isChangesetParserModule(
+  value: unknown
+): value is { readonly default: ChangesetParser } {
+  return isObject(value) && typeof value.default === "function";
+}
+
+function isNativeChangesetContents(
+  value: unknown
+): value is NativeChangesetContents {
+  if (!(isObject(value) && typeof value.summary === "string")) {
+    return false;
+  }
+
+  if (!Array.isArray(value.releases)) {
+    return false;
+  }
+
+  return value.releases.every(
+    (release) =>
+      isObject(release) &&
+      typeof release.name === "string" &&
+      release.name.trim().length > 0 &&
+      typeof release.type === "string"
+  );
 }
 
 async function changesetHasNewOrUpdatedIntent(
   rootDirectory: string,
   baseRevision: string,
-  current: PendingChangeset
+  current: PendingChangeset,
+  workspaceNames: ReadonlySet<string>
 ): Promise<boolean> {
   const baseEntry = await runCommand(
     "git",
@@ -462,9 +565,10 @@ async function changesetHasNewOrUpdatedIntent(
     throw new Error(`cannot read base changeset ${current.relativePath}`);
   }
 
-  const baseContentsParsed = parseChangesetContents(
+  const baseContentsParsed = await parseChangesetContents(
     baseContents.stdout,
-    path.basename(current.relativePath)
+    path.basename(current.relativePath),
+    workspaceNames
   );
 
   return (
@@ -545,10 +649,9 @@ async function proveConsumedGeneratedRelease(options: {
       return "could not create the disposable Git worktree needed for release replay";
     }
 
-    const cliPath = path.join(REPO_ROOT, "node_modules/@changesets/cli/bin.js");
     const replay = await runCommand(
       process.execPath,
-      [cliPath, "version"],
+      [CHANGESETS_CLI_PATH, "version"],
       temporaryDirectory
     );
 

@@ -2,23 +2,23 @@ owner: KRT-BN003
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: ec1a2dd79fef2486413cef2cf2664e10a8ca2bcc
-  command: bun test tools/scripts/changeset-check.test.ts; bun run changeset:check --base=master; source-only TypeScript6.0.2 command in verification.log; LC_ALL=C bun run check; targeted Biome. Historical worktree with the new checker based on the recorded commit.
+  commit: 5855e53b306abe0aba73e0773b0ad1b190d4039e
+  command: "Review fix: bun test tools/scripts/changeset-check.test.ts; bun run changeset:check --base=master; exact strict source-only TS6 command in verification.log; targeted Biome; bun run check in the prepared environment. Working-tree parser/Git-state corrections based on recorded commit; historical earlier check summary is labeled separately."
 files:
   - path: fixture-tests.log
-    sha256: 8fd67efec7c351341f1804de088cefea23758f069d55aeab6c82b4c89bfc14a3
-    bytes: 727
+    sha256: 34432401fa6817fac72ad22a04738d07aeec01f439555780d7ddc9bfed03b7ca
+    bytes: 807
     role: log
   - path: current-gate.log
     sha256: be26f3ff67760cc8219b938a80059f786803516928299b80cac473eaa18422e5
     bytes: 116
     role: log
   - path: verification.log
-    sha256: 29424f31c1c2f852adc0f192e5fe82ec920d896cd3a6ab9ea42d69ac00d643ff
-    bytes: 1393
+    sha256: e3efe8b7337b7670ccad105ce6a8357aaf5fc381ee67db82d074f178ac851cc5
+    bytes: 2557
     role: log
   - path: coverage.md
-    sha256: 82b47cce24c938d331d63d89e9b5148161e6932442ae3bd6ee87a1a26e51c3e8
-    bytes: 1011
+    sha256: 6f99f66249786c2729a54a8f79157b11f7be6c9d2a0010c7dc6150f4abfae54e
+    bytes: 1201
     role: transcript
 pass_criteria: All behavior fixtures pass, source-only types and lint pass, current gate exits0, CI passes exact PR base SHA with full history, and normal public changes require direct fresh or updated intent. Release-only consumed intent must reproduce native public artifacts and cannot hide source or unrelated manifest edits.
