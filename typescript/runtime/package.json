@@ -13,7 +13,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "devDependencies": {
-    "@ag-ui/core": "0.0.52",
+    "@ag-ui/core": "0.0.59",
     "@tuvren/backend-memory": "workspace:*",
     "@tuvren/kernel-runtime": "workspace:*",
     "@tuvren/kernel-testkit": "workspace:*"
@@ -21,7 +21,7 @@
   "dependencies": {
     "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/telemetry-semconv": "workspace:*",
-    "ajv": "8.18.0"
+    "ajv": "8.20.0"
   },
   "peerDependencies": {
     "@tuvren/core": "workspace:~"

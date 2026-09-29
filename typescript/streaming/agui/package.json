@@ -22,7 +22,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@ag-ui/core": "0.0.52",
+    "@ag-ui/core": "0.0.59",
     "@tuvren/stream-core": "workspace:*"
   },
   "devDependencies": {
