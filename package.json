@@ -59,7 +59,7 @@
     "@nx/js": "22.7.12",
     "@nx/workspace": "22.7.12",
     "@standard-schema/spec": "1.1.0",
-    "@types/bun": "^1.3.11",
+    "@types/bun": "^1.3.14",
     "@types/node": "^25.5.0",
     "@typespec/compiler": "1.11.0",
     "@typespec/events": "0.81.0",
