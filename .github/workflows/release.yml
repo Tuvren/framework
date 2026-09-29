@@ -22,7 +22,13 @@
 #      Node 22.14+, and the devenv toolchain provides both.
 #   3. Trigger this workflow (workflow_dispatch). Leave `dry_run: true` for a
 #      full rehearsal; set it to `false` for the real publish.
-#   4. After a real publish, run the acceptance check locally:
+#   4. A real publish ends by creating the `v<version>` tag and GitHub release
+#      for the published commit (skipped when the release already exists, so a
+#      re-run after a partial publish is safe). Tags trigger nothing: ci.yml
+#      runs on master/PRs and this workflow only on manual dispatch.
+#   5. After a real publish, run the acceptance check locally once the
+#      registry has propagated (a few minutes; clear `bun pm cache rm` if bun
+#      reports a stale manifest):
 #      `bun tools/scripts/publish-registry.ts --verify-consumer <version>`.
 
 name: release
@@ -50,6 +56,12 @@ jobs:
     name: publish curated package set (${{ inputs.dry_run && 'dry run' || 'REAL' }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Job-level permissions replace the workflow-level block. contents: write is
+    # granted to the whole job (dry runs too) but only the guarded "Tag and
+    # release" step uses it, and only on a real publish.
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -86,3 +98,15 @@ jobs:
               bun tools/scripts/publish-registry.ts --publish
             fi
           '
+
+      - name: Tag and release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(jq -r .version typescript/core/package.json)"
+          if gh release view "v${version}" >/dev/null 2>&1; then
+            echo "release v${version} already exists, skipping"
+          else
+            gh release create "v${version}" --target "${GITHUB_SHA}" --title "v${version}" --generate-notes
+          fi

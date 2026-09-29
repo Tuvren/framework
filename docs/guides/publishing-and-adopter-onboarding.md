@@ -24,7 +24,7 @@ Every leaf adapter peer-depends on a single `@tuvren/core` instance using a tild
 
 ## 2. Install and run a first Turn
 
-The walkthrough below was verified against the actually-published `0.1.0` packages on registry.npmjs.org (a fresh temp-dir install, no workspace links); the same check is automated as `bun tools/scripts/publish-registry.ts --verify-consumer <version>`.
+The walkthrough below was verified against the actually-published `0.2.0` packages on registry.npmjs.org (a fresh temp-dir install, no workspace links); the same check is automated as `bun tools/scripts/publish-registry.ts --verify-consumer <version>`.
 
 Install the SDK, the core ABI, and your chosen leaves:
 
