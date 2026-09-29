@@ -1,0 +1,2 @@
+$ bun tools/scripts/changeset-check.ts "--base=master"
+changeset-check: OK — consumed changesets reproduce the generated public release

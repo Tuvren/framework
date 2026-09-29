@@ -2,8 +2,8 @@ owner: KRT-BN003
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: 934096eaa73d6096216bbb24f4a5037a05347930
-  command: "PR119 round-one fixes: corrected test-first failure proof, final 24 fixtures/131 assertions, native filtering, Git T matrix, semantic base-intent freshness, strict TypeScript/Biome, actual consumed replay, and inner-loop check. Historical producer results and old-head CI investigation are separately labeled."
+  commit: d70abad1767015c5c000850f6c64b3837127f53a
+  command: "Latest PR119 source-move correction: preserved two-failure controls, final26fixtures/155assertions, both Git endpoints in current/history coverage, strictTS6/Biome, actual consumed replay, and inner-loop check. Earlier producer results and original-head CI investigation remain historical."
 files:
   - path: coverage.md
     sha256: 90b039f714db74e5a045a7eaa29e162434823d39a83350f287a86388729f2567
@@ -40,6 +40,22 @@ files:
   - path: pr-round1-final-fixtures.log
     sha256: af79538ec520f92bbae5dbc4000104eab467b556e577719b075a32b764fc0ae7
     bytes: 1026
+    role: log
+  - path: pr-round1-source-moves-command.txt
+    sha256: 0c2cba1e1161c4de8d66eed54a4615bf4627bd1fc29a03315816d81b4f19fd65
+    bytes: 2184
+    role: transcript
+  - path: pr-round1-source-moves-consumed.log
+    sha256: 1f7c82144dc1a80c64e39572c22098d4edb1e5e2fe1e19411cef310041dcd014
+    bytes: 138
+    role: log
+  - path: pr-round1-source-moves-failing.log.gz
+    sha256: 3c45d00360f620d457346b3abc786d1bb948265fa8e3d3e94fd293a19d1652c7
+    bytes: 610
+    role: log
+  - path: pr-round1-source-moves-fixtures.log
+    sha256: d7e94cfe642b1686e0d511a2d7effa0cb199be91d6aa5dc77c5f0bb1b525246e
+    bytes: 1184
     role: log
   - path: replay-lifecycle-current-gate.log
     sha256: 70bd50ed00beafa0f21050df5caa8b0ada45b8b1f1332e96f438ebfc2f0a4d00
