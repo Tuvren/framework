@@ -34,18 +34,14 @@
   "baselineLedger": [
     {
       "bump": "baseline",
-      "changes": [
-        "initial freeze baseline"
-      ],
+      "changes": ["initial freeze baseline"],
       "recordedAt": "2026-07-11T05:05:26.408Z"
     }
   ],
   "currentLedger": [
     {
       "bump": "baseline",
-      "changes": [
-        "initial freeze baseline"
-      ],
+      "changes": ["initial freeze baseline"],
       "recordedAt": "2026-07-11T05:05:26.408Z"
     },
     {

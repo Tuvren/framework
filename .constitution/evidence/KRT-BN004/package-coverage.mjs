@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -26,43 +26,71 @@ const expected = new Map([
   ["@tuvren/mcp-client", "patch"],
 ]);
 
-const run = (...args) => execFileSync(args[0], args.slice(1), { cwd: root, encoding: "utf8" });
-const changedPaths = run("git", "diff", "--name-only", `${baseline}..HEAD`).trim().split("\n");
+const run = (...args) =>
+  execFileSync(args[0], args.slice(1), { cwd: root, encoding: "utf8" });
+const changedPaths = run("git", "diff", "--name-only", `${baseline}..HEAD`)
+  .trim()
+  .split("\n");
 
 function manifests(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.name === "node_modules" || entry.name === ".git") return [];
+    if (entry.name === "node_modules" || entry.name === ".git") {
+      return [];
+    }
     const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) return manifests(entryPath);
+    if (entry.isDirectory()) {
+      return manifests(entryPath);
+    }
     return entry.name === "package.json" ? [entryPath] : [];
   });
 }
 
 const changedPublic = manifests(path.join(root, "typescript"))
   .map((manifestPath) => ({
-    directory: path.relative(root, path.dirname(manifestPath)).split(path.sep).join("/"),
+    directory: path
+      .relative(root, path.dirname(manifestPath))
+      .split(path.sep)
+      .join("/"),
     ...JSON.parse(readFileSync(manifestPath, "utf8")),
   }))
-  .filter((manifest) => !manifest.private && manifest.name.startsWith("@tuvren/"))
-  .filter((manifest) => changedPaths.some((changedPath) => changedPath.startsWith(`${manifest.directory}/`)))
+  .filter(
+    (manifest) => !manifest.private && manifest.name.startsWith("@tuvren/")
+  )
+  .filter((manifest) =>
+    changedPaths.some((changedPath) =>
+      changedPath.startsWith(`${manifest.directory}/`)
+    )
+  )
   .map((manifest) => manifest.name)
   .sort();
 
 const pending = readdirSync(path.join(root, ".changeset"))
   .filter((name) => name.endsWith(".md") && name !== "README.md")
-  .flatMap((name) => [...readFileSync(path.join(root, ".changeset", name), "utf8").matchAll(/^"(@tuvren\/[^\"]+)": (patch|minor|major|none)$/gm)])
+  .flatMap((name) => [
+    ...readFileSync(path.join(root, ".changeset", name), "utf8").matchAll(
+      /^"(@tuvren\/[^"]+)": (patch|minor|major|none)$/gm
+    ),
+  ])
   .reduce((entries, match) => entries.set(match[1], match[2]), new Map());
 
 const expectedNames = [...expected.keys()].sort();
 if (JSON.stringify(changedPublic) !== JSON.stringify(expectedNames)) {
-  throw new Error(`history package set differs: ${JSON.stringify(changedPublic)}`);
+  throw new Error(
+    `history package set differs: ${JSON.stringify(changedPublic)}`
+  );
 }
 if (pending.size !== expected.size) {
-  throw new Error(`pending entry count is ${pending.size}, expected ${expected.size}`);
+  throw new Error(
+    `pending entry count is ${pending.size}, expected ${expected.size}`
+  );
 }
 for (const [name, releaseType] of expected) {
   if (pending.get(name) !== releaseType) {
-    throw new Error(`${name} is ${pending.get(name) ?? "missing"}, expected ${releaseType}`);
+    throw new Error(
+      `${name} is ${pending.get(name) ?? "missing"}, expected ${releaseType}`
+    );
   }
 }
-console.log(`package coverage: ${expected.size} public packages, direct classes verified`);
+console.log(
+  `package coverage: ${expected.size} public packages, direct classes verified`
+);

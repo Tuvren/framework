@@ -2,24 +2,24 @@ owner: KRT-BN006
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: 915ece53aace586eafe800a342a5658e7ebee4d3
-  command: "Lead parsed actual Dependabot YAML and reran bun run check on working-tree configuration; exact commands in command.txt. Worker support retrieval is separately timestamped."
+  commit: 36169026ccfcd71f36f0f73db633998cb16c2cf6
+  command: "Evidence-only lint fix: lead repeated actual artifact probes on Bun1.3.10 and scoped Biome2.4.10. Prior producers remain labeled in command.txt; raw archives retain original bytes."
 files:
   - path: biome-dependabot.log
     sha256: 213d5f00832e2597fba28fdf631ff16b09987d2ef8cf50b3ac32c8b97a37311a
     bytes: 644
     role: log
   - path: command.txt
-    sha256: 917c742a5251a19bf18325cd3632a9f304fe8ccd7c123fa7f7ec66747f034b1b
-    bytes: 1532
+    sha256: 408c256293dbe76db33d0cd8149163b3243542f6512f8af30ac460f39cb3240a
+    bytes: 1962
     role: transcript
   - path: contract-probe.log
     sha256: 8aa4eca3443b185ae1b81ca5b312c68551bf1e38af6679ead338b8913a395744
     bytes: 149
     role: log
   - path: dependabot-contract-probe.mjs
-    sha256: 8381d756c7506dbf111c9de71c89c0d0669a7d322a7989c52e5fce360b30eae2
-    bytes: 1151
+    sha256: 81aecd0db5ebe2a583891cd8b92d72cea477fef1237665108c4e4987d3aad2a5
+    bytes: 1150
     role: transcript
   - path: dependabot-options-reference.excerpt.md
     sha256: b168dcd7886e2d78a6b4b4c9ab8d3c4dc80cf645a8e01d91d4da21f369f8845c

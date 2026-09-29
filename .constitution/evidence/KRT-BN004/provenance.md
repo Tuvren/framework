@@ -17,6 +17,11 @@ https://github.com/Tuvren/framework/blob/1aa55b7aa44c956a085f36b29c8575419c3334c
 That package license declaration is not a separate license claim about the
 registry database.
 
+The three responses and native planner output use .json.txt archive suffixes
+so formatting cannot alter their original bytes. All four hashes remain the
+same as their first captures. Local derived comparison JSON is formatted with
+the existing Biome CLI; its parsed object equals the original observation.
+
 The registry gitHead is outside master's ancestry. Mainline integration
 `b2244918fbc3cef0ed81cec78fddd686ac0a0427` has equivalent TypeScript source;
 the translation diff changes only two README and two Nx project files.

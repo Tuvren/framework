@@ -10,7 +10,7 @@ const document = parseDocument(source, { uniqueKeys: true });
 assert.equal(
   document.errors.length,
   0,
-  `Dependabot YAML must parse without errors: ${document.errors.map(String).join("; ")}`,
+  `Dependabot YAML must parse without errors: ${document.errors.map(String).join("; ")}`
 );
 
 const expectedUpdate = (ecosystem) => ({

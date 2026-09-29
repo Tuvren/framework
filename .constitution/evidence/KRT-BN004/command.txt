@@ -16,7 +16,7 @@ PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bunx --bun changeset status --out
 devenv shell -- zsh -c 'LC_ALL=C bun test typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts'
 
 All producing commands exited0. Native status exit0 means the intent parsed,
-not that the generated version fits ADR-0069. lead-native-plan.json records
+not that the generated version fits ADR-0069. lead-native-plan.json.txt records
 the incompatible1.0.0 result; native-blocker-summary.json derives its precise
 public subset from the current workspace manifests. Do not run version or
 publish from that plan. package-coverage.mjs verifies exact set equality and
@@ -44,3 +44,17 @@ The controller resolves its sibling audit from import.meta.url, creates all
 mutated fixtures under a disposable temporary directory, and removes them in
 finally. It changes no repository source, intent, or snapshot. Scoped KRT_BN004
 input-path overrides apply only to these acceptance-audit controls.
+
+Evidence-lint fix parent: 36169026ccfcd71f36f0f73db633998cb16c2cf6.
+Canonical core/sdk/backend-postgres registry responses and native output are
+retained as .json.txt archives. Renaming preserves every byte and their existing
+digests; the native producing command above still names its original temporary
+output. Generated local comparison JSON and probe code are formatter-clean
+through the pinned Biome2.4.10 CLI before their digests are recomputed.
+
+From repository root, regeneration/formatting selects only authored probes:
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bunx --bun @biomejs/biome check --write .constitution/evidence/KRT-BN004/package-coverage.mjs
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bunx --bun @biomejs/biome format --write .constitution/evidence/KRT-BN004/published-stable-snapshot-comparison.json
+Raw archives are never selected for formatting. The lead reran all three
+ticket probes and scoped Biome on the actual Bun1.3.10 profile. The worker's
+earlier ambient1.4.2 run is not used as target-runtime proof.
