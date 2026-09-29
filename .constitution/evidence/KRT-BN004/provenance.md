@@ -58,3 +58,9 @@ major propagation, which the fixed group spreads again. The supported
 onlyUpdatePeerDependentsWhenOutOfRange flag cannot suppress an actual
 out-of-range minor. Configuration, peers, sources, and versions were preserved.
 BN005 is deferred to scoped Tasks planning and technical tooling alignment.
+
+Resolution: this paragraph records the CLI2.31 inspection, not current branch
+readiness. The published CLI3.0.3 planner has since passed isolated native0.2.0
+generation and replay, and BN005 is active again. See KRT-BN005 tooling evidence
+for the measured upgrade and separately aligned stack pin; the original raw
+1.0.0 plan remains unchanged.

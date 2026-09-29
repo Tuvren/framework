@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.10",
-    "@changesets/cli": "^2.31.0",
+    "@changesets/cli": "3.0.3",
     "@nx/js": "22.6.3",
     "@nx/workspace": "22.6.3",
     "@standard-schema/spec": "1.1.0",

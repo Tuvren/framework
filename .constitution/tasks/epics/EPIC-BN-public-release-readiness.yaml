@@ -138,8 +138,10 @@ tickets:
       evidence: "Assert one version across the publishable set, generated changelogs and manifests matching the pending changesets, no private session package in the publish set, bun run release-check green, and bun run publish:dry-run green with no registry mutation or release artifact created. Record the exact owner hand-off in closeout."
     flows: [flow-reference-host-proves-sdk]
     certainty: assumed
-    status: deferred
-    deferred_to: "tasks: bounded native-release compatibility epic owning Changesets dependencies and release tooling, with tech-spec alignment; installed CLI 2.31.0 propagates the required 0.x minor to 1.0.0 through the fixed peer graph"
+    status: in_progress
+    deviations:
+      - files: [package.json]
+        justification: "The epic already owns this root manifest. A measured dev-tool upgrade to Changesets CLI 3.0.3 is necessary to generate the ruled 0.x minor without old peer-major propagation; isolated Bun 1.3.10, frozen-install, twenty-fixture, native-version and replay proof passed. Application declarations and release-lane source stay unchanged; the tool pin receives a separate physical stack patch."
   - id: KRT-BN006
     title: Configure bounded dependency updates
     type: Chore
