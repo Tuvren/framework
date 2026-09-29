@@ -54,7 +54,7 @@
     "graph": "bun run nx graph"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.10",
+    "@biomejs/biome": "2.5.14",
     "@changesets/cli": "3.0.3",
     "@nx/js": "22.6.3",
     "@nx/workspace": "22.6.3",
@@ -78,7 +78,7 @@
     "nx": "22.6.3",
     "tsup": "8.5.1",
     "typescript": "6.0.2",
-    "ultracite": "7.4.2",
+    "ultracite": "7.12.0",
     "yaml": "^2.9.0",
     "zod": "4.4.3"
   }
