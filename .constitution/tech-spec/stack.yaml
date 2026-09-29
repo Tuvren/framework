@@ -76,6 +76,18 @@ bill_of_materials:
       kind: repository
       ref: bun.lock
       date: 2026-09-03
+  - name: "@changesets/cli"
+    role: tooling
+    version: 2.31.0
+    ecosystem: bun
+    justification: Changeset authoring and fixed-group public release planning; resolved at 2.31.0 in bun.lock from the root package.json devDependency.
+    radar: adopt
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: bun.lock
+      version: 2.31.0
+      date: 2026-09-29
   - name: tsup
     role: tooling
     version: 8.5.1
@@ -331,16 +343,12 @@ bill_of_materials:
       date: 2026-09-03
   - name: bun
     role: runtime
-    version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
+    version: 1.4.2
     ecosystem: nix
-    justification: Preferred local development runtime and package manager; pinned by the devenv nixpkgs revision.
+    justification: User-ruled target for the local runtime and package manager; refresh the devenv nixpkgs lock with devenv update and align package.json packageManager to bun@1.4.2.
     radar: adopt
-    certainty: settled
-    evidence:
-      kind: repository
-      ref: devenv.lock
-      date: 2026-09-03
-      note: "SemVer: 1.3.10 (provisioned by devenv pkgs.bun)"
+    certainty: assumed
+    assumption: "the nixpkgs lock refresh keeps `bun run verify` green and does not change the PostgreSQL major version; otherwise the implementing ticket falls back to a bun-only pin"
   - name: buf
     role: tooling
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
@@ -452,7 +460,7 @@ bill_of_materials:
     certainty: assumed
     assumption: Migrated from the repository lockfile; no separate design ruling was recorded.
 compatibility_policy:
-  pinning: Every dependency is pinned exactly. TypeScript packages carry exact versions in package.json and bun.lock; Rust crates are pinned by Cargo.lock against the rust-toolchain.toml channel; Dart packages are pinned by the committed pubspec.lock; Python packages by uv.lock; Go modules by go.work plus each module go.sum. Toolchains that are not language dependencies (Bun, buf, protobuf, Go, Python, Dart, PostgreSQL) are provisioned by devenv and pinned by the nixpkgs revision in devenv.lock. Versions named here are authoritative for the baseline implementation line and must match the repository manifests.
+  pinning: Every dependency is pinned exactly. TypeScript packages carry exact versions in package.json and bun.lock; Rust crates are pinned by Cargo.lock against the rust-toolchain.toml channel; Dart packages are pinned by the committed pubspec.lock; Python packages by uv.lock; Go modules by go.work plus each module go.sum. Toolchains that are not language dependencies (Bun, buf, protobuf, Go, Python, Dart, PostgreSQL) are provisioned by devenv and pinned by the nixpkgs revision in devenv.lock. Versions named here are authoritative for the baseline implementation line and must match the repository manifests after implementation; the assumed Bun 1.4.2 target is pending its devenv.lock refresh and package.json alignment.
   lockfiles:
     - bun.lock
     - Cargo.lock
