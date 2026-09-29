@@ -218,3 +218,125 @@ decisions:
     asked:
       date: 2026-09-29
       in: EPIC-BN
+closeout:
+  tickets_completed:
+    - KRT-BN002
+    - KRT-BN003
+    - KRT-BN004
+    - KRT-BN005
+    - KRT-BN006
+    - KRT-BN007
+  tickets_deferred:
+    - id: KRT-BN001
+      route: "tech-spec and tasks: scoped Bun 1.4.2 compatibility work"
+      reason: Bun 1.4.2 fails 3 of 77 backend-memory tests while identical worktree/dependencies pass with
+        Bun 1.3.10; the full Nix refresh also fails Weaver registry compatibility. Both fixes exceed
+        BN001 scope.
+  points_completed: 23
+  spec_patches:
+    - path: .constitution/tech-spec/stack.yaml
+      summary: Record the measured Bun1.4.2 deferral and retained PostgreSQL17 environment without
+        changing the target or original acceptance.
+      commit: da6b5b156d9736179531d6c2cd8d0b866d5b6172
+    - path: .constitution/tech-spec/guidelines.md
+      summary: Record the measured Bun1.4.2 deferral and retained PostgreSQL17 environment without
+        changing the target or original acceptance.
+      commit: da6b5b156d9736179531d6c2cd8d0b866d5b6172
+    - path: .constitution/tech-spec/stack.yaml
+      summary: Align the measured Changesets CLI 3.0.3 pin with the native planner that generates the
+        required 0.x minor; this separate spec commit closes the paired transition's historical
+        TS-004 failure.
+      commit: 56250e7af547a2197f73fa55cf36751522404c07
+  changelog_entries:
+    - directory: tech-spec
+      type: changed
+      text: Epic BN records the measured Bun 1.4.2 deferral with the retained toolchain/PostgreSQL 17
+        guard and aligns the exact Changesets CLI 3.0.3 pin with verified native 0.x release
+        planning; code and physical patches were separately committed and reviewed.
+    - directory: tasks
+      type: changed
+      text: "Epic BN completed six release-readiness tickets (23 points): private session publication
+        closure, direct changeset coverage and exact consumed-release replay, historical release
+        classification, native 0.2.0 generation and 19-package registry dry run, bounded dependency
+        updates, and authority-backed adopter guidance. BN001 is deferred to scoped Bun/Weaver
+        compatibility work."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "Plan the scoped Bun 1.4.2 compatibility fix from BN001 measured Weaver registry and
+        backend-memory failures; preserve the pending target and PostgreSQL major guard. Evidence:
+        .constitution/evidence/KRT-BN001/."
+    - stage: tasks
+      item: Create bounded follow-up tickets for deferred BN001 and align the dependent ticket graph with
+        proposed OD-04 after the owner ruling; no Bun 1.4 acceptance is claimed.
+  follow_ups:
+    - "Owner handoff after merge, in order: dispatch .github/workflows/release.yml with dry_run
+      true, then false; run bun tools/scripts/publish-registry.ts --verify-consumer 0.2.0; create
+      and push v0.2.0; create a GitHub Release from the generated Changesets changelogs; require
+      verify (primary semantic gate — bun run verify) and bazel (standing hermetic gate —
+      rust/kernel build+test, TS shim build only) in master protection; set the repository
+      description. This run ends at the green dry run and performs none of these owner actions."
+    - "Repository owner rules proposed OD-04 after merge: independent BN002–BN007 proceeded on the
+      verified retained Bun 1.3.10 toolchain; the Bun 1.4.2 target remains deferred."
+    - "Paired pin-transition workflow deviation: prepare and validate M5a plus SP2 together, commit
+      code-only 5153936 then immediately spec-only 56250e7, preserve the intermediate TS-004 P1, and
+      close it with separately reviewed final-head verification before generation. Separate commit
+      authority is preserved; no intermediate validation pass is claimed."
+    - Document a supported paired code/spec pin transition in constitution-tooling; exact TS004
+      matching and separate commits currently force temporary historical pin drift. This run
+      preserves separate commits, explicit expected failure and final-head closure.
+  code_decisions:
+    - summary: Direct changeset coverage requires a new or updated matching release declaration or
+        nonempty note compared with the exact base, using current publishable package paths rather
+        than fixed-group propagation.
+      kind: convention
+      paths:
+        - tools/scripts/changeset-check.ts
+        - tools/scripts/changeset-check.test.ts
+        - .github/workflows/ci.yml
+      commit: 5855e53b306abe0aba73e0773b0ad1b190d4039e
+    - summary: Consumed release-only changesets are verified by replaying installed Changesets in a
+        disposable Git worktree from the latest pending snapshot and matching generated public
+        manifests/changelogs.
+      kind: pattern
+      paths:
+        - tools/scripts/changeset-check.ts
+        - tools/scripts/changeset-check.test.ts
+      commit: 5855e53b306abe0aba73e0773b0ad1b190d4039e
+    - summary: Resolve native frontmatter parsing through installed Changesets CLI/read dependencies,
+        validate workspace membership, and exclude native-valid none from public release coverage.
+      kind: pattern
+      paths:
+        - tools/scripts/changeset-check.ts
+        - tools/scripts/changeset-check.test.ts
+      commit: 5b10fb15f341dff19581cb7d2c267be11ca3dcca
+    - summary: The preserved release acceptance audit derives the exact published-baseline stable snapshot
+        delta and uses scoped input-path overrides with disposable mutation controls to prove note
+        and compatibility checks reject omissions.
+      kind: pattern
+      paths:
+        - .constitution/evidence/KRT-BN004/release-classification-audit.mjs
+        - .constitution/evidence/KRT-BN004/run-negative-controls.mjs
+      commit: 409b97408390970e6e65814ed1ec2cbf41f8c342
+    - summary: Wildcard semver-major ignores accompany weekly ecosystem-local minor/patch Dependabot
+        groups for Bun, Cargo, and GitHub Actions, as selected by the user in step 0.
+      kind: convention
+      paths:
+        - .github/dependabot.yml
+      commit: b7ea90d3cb283705fb8974c873eda31470ae72b0
+    - summary: Pin development Changesets CLI 3.0.3 and its config 4.0.1 schema so native planner 7.0.0
+        preserves the settled 0.x minor and fixed-group policy with tilde peers; application
+        declarations and release-lane source are unchanged.
+      kind: dependency
+      paths:
+        - package.json
+        - bun.lock
+        - .changeset/config.json
+      commit: 5153936731db9994cf75d720bf97494837d3e91f
+    - summary: Hold a generated-release replay worktree through awaited asynchronous byte comparison
+        before cleanup; preserve exact native artifact checks.
+      kind: pattern
+      paths:
+        - tools/scripts/changeset-check.ts
+      commit: e5354f861c4bc8bb645ec5f72926ed6b3ca88b83
+  settled: []
