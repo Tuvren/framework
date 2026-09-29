@@ -17,6 +17,7 @@ scope:
     - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
     - typescript/kernel/backends/memory/src
     - ".constitution/tech-spec/stack.yaml"
+    - ".changeset/toolchain-bo-bun-refresh.md"
   tech_spec_patchable: [".constitution/tech-spec/stack.yaml"]
 estimated_diff_lines: 4000
 estimate_source: planned
@@ -27,16 +28,18 @@ tickets:
     effort: 5
     depends_on: []
     scope:
-      in: [typescript/kernel/backends/memory/src]
+      in:
+        - typescript/kernel/backends/memory/src
+        - ".changeset/toolchain-bo-bun-refresh.md"
     verification:
       command: "bun run nx run backend-memory:test"
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if unchanged tests fail or record encoding changes occurs; do not improvise."
-    description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. Stored bytes remain owned by the backend. Reads and writes copy buffers so a cbor-x decoder cannot mutate stored records through dataView. Keep all backend tests unchanged."
+    description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. Stored bytes remain owned by the backend. Reads and writes copy buffers so a cbor-x decoder cannot mutate stored records through dataView. Keep all backend tests unchanged. Add or update .changeset/toolchain-bo-bun-refresh.md as a patch changeset with direct coverage for the affected public packages: @tuvren/backend-memory. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert caller-buffer mutation after writing and mutation of a returned buffer cannot alter a later read. All 77 unchanged memory-backend tests pass, including the three Bun 1.4 regression cases."
+      evidence: "Assert caller-buffer mutation after writing and mutation of a returned buffer cannot alter a later read. All 77 unchanged memory-backend tests pass, including the three Bun 1.4 regression cases. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
       supplementary: [live_probe]
       recipe: reference-host-memory-scenario
     flows: []
@@ -55,15 +58,16 @@ tickets:
         - tools/scripts/telemetry-codegen.ts
         - typescript/telemetry/semconv/src/lib/generated
         - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
+        - ".changeset/toolchain-bo-bun-refresh.md"
     verification:
       command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if Weaver cannot read schema_url, PostgreSQL leaves major 17, or full verification fails occurs; do not improvise."
-    description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. The nixpkgs refresh, registry_manifest.yaml to manifest.yaml rename, one schema_url, generator manifest reader, and regeneration of the four telemetry artifacts land in one code-only change. Keep pkgs.postgresql_17 explicit. Prove the refreshed tools through the full lane before aligning Bun; never land the manifest against Weaver 0.21.2. Assumption: The refreshed shared nixpkgs pin preserves all other generator and runtime checks."
+    description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. The nixpkgs refresh, registry_manifest.yaml to manifest.yaml rename, one schema_url, generator manifest reader, and regeneration of the four telemetry artifacts land in one code-only change. Keep pkgs.postgresql_17 explicit. Prove the refreshed tools through the full lane before aligning Bun; never land the manifest against Weaver 0.21.2. Assumption: The refreshed shared nixpkgs pin preserves all other generator and runtime checks. Add or update .changeset/toolchain-bo-bun-refresh.md as a patch changeset with direct coverage for the affected public packages: @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: runbook_probe
-      evidence: "Apply the refreshed environment and run bun run codegen and bun run verify. Probe Weaver manifest resolution and PostgreSQL major 17. Expect stable second regeneration of semantic-conventions.md, otel-attributes.json, the TypeScript helper and Rust helper, and no semantic vocabulary drift."
+      evidence: "Apply the refreshed environment and run bun run codegen and bun run verify. Probe Weaver manifest resolution and PostgreSQL major 17. Expect stable second regeneration of semantic-conventions.md, otel-attributes.json, the TypeScript helper and Rust helper, and no semantic vocabulary drift. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: assumed
     status: planned

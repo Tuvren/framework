@@ -14,6 +14,7 @@ scope:
     - ".github/workflows/ci.yml"
     - MODULE.bazel
     - MODULE.bazel.lock
+    - ".changeset/toolchain-cd-staged-bun-pilot.md"
   tech_spec_patchable: []
 estimated_diff_lines: 7500
 estimate_source: planned
@@ -49,15 +50,16 @@ tickets:
         - typescript/core/BUILD.bazel
         - typescript/kernel/protocol/BUILD.bazel
         - typescript/kernel/runtime/BUILD.bazel
+        - ".changeset/toolchain-cd-staged-bun-pilot.md"
     verification:
       command: "bun run verify:kernel"
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if a cached green result survives a failing declared-input mutation or dts writes into source folders occurs; do not improvise."
-    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Use ts_package and a shared runner for core to kernel/protocol to kernel/runtime. Build actions consume upstream dist; typecheck and test consume declared source. Copy files into a private stage so realpath cannot escape. Use explicit Bun, tsup and tsc paths; never bunx. Declare the backend and spec/kernel non-manifest inputs measured by the spike. Assumption: The staged macro preserves package resolution and action invalidation on the integrated repository graph."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Use ts_package and a shared runner for core to kernel/protocol to kernel/runtime. Build actions consume upstream dist; typecheck and test consume declared source. Copy files into a private stage so realpath cannot escape. Use explicit Bun, tsup and tsc paths; never bunx. Declare the backend and spec/kernel non-manifest inputs measured by the spike. Assumption: The staged macro preserves package resolution and action invalidation on the integrated repository graph. Add or update .changeset/toolchain-cd-staged-bun-pilot.md as a patch changeset with direct coverage for the affected public packages: @tuvren/core, @tuvren/kernel-protocol, @tuvren/kernel-runtime. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert the seven pilot actions resolve to staged paths, deletion of in-tree dist and parent node_modules does not change correct results, comment-only edits cut off byte-identical downstream builds, and omitted inputs fail loudly rather than serving a cached pass. Removing a declared source invalidates its consumers."
+      evidence: "Assert the seven pilot actions resolve to staged paths, deletion of in-tree dist and parent node_modules does not change correct results, comment-only edits cut off byte-identical downstream builds, and omitted inputs fail loudly rather than serving a cached pass. Removing a declared source invalidates its consumers. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: assumed
     status: planned

@@ -1,63 +1,66 @@
 id: CJ
-name: Staged TypeScript host and adapter rollout
+name: Staged TypeScript dependency layer 3
 kind: tooling
 capabilities: []
-depends_on: [CD]
+depends_on: [CI]
 scope:
   paths:
-    - typescript/host/repl/BUILD.bazel
-    - typescript/host/session/BUILD.bazel
-    - typescript/host/session-client/BUILD.bazel
-    - typescript/host/remote-session/BUILD.bazel
-    - typescript/conformance-adapter/BUILD.bazel
-    - typescript/kernel/conformance-adapter/BUILD.bazel
-    - typescript/providers/conformance-adapter/BUILD.bazel
+    - typescript/kernel/backends/memory/BUILD.bazel
+    - typescript/kernel/backends/postgres/BUILD.bazel
+    - typescript/kernel/backends/sqlite/BUILD.bazel
+    - typescript/kernel/testkit/BUILD.bazel
+    - typescript/certification/BUILD.bazel
+    - typescript/sdk/BUILD.bazel
+    - typescript/streaming/ws/BUILD.bazel
+    - ".changeset/toolchain-cj-bazel-ts-host-adapters.md"
   tech_spec_patchable: []
-estimated_diff_lines: 10000
+estimated_diff_lines: 9000
 estimate_source: planned
 tickets:
   - id: KRT-CJ001
-    title: Port staged package targets group 1
+    title: Port layer 3 kernel packages
     type: Chore
     effort: 5
     depends_on: []
     scope:
       in:
-        - typescript/host/repl/BUILD.bazel
-        - typescript/host/session/BUILD.bazel
-        - typescript/host/session-client/BUILD.bazel
-        - typescript/host/remote-session/BUILD.bazel
+        - typescript/kernel/backends/memory/BUILD.bazel
+        - typescript/kernel/backends/postgres/BUILD.bazel
+        - typescript/kernel/backends/sqlite/BUILD.bazel
+        - typescript/kernel/testkit/BUILD.bazel
+        - ".changeset/toolchain-cj-bazel-ts-host-adapters.md"
     verification:
       command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if a package needs in-tree state, undeclared inputs, or a source-only declaration build occurs; do not improvise."
-    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name. Production package layer 3: @tuvren/backend-memory, @tuvren/backend-postgres, @tuvren/backend-sqlite, @tuvren/kernel-testkit. Layering rule: compute complete topological layers from all TypeScript workspace dependencies and peerDependencies, resolving @tuvren/* names and workspace: ranges to their manifests. Prerequisite layers outside this epic must merge in earlier epics; the already-proven core, kernel/protocol and kernel/runtime targets belong to CD. CI completes remaining layers 0 to 2, CJ completes layer 3, and CK completes layers 4 to 5. Within each epic, tickets follow prerequisite layers; adapters follow their package prerequisites and certification wrappers follow their adapters. Workspace devDependencies remain declared source inputs for checks and tests, not declaration-build dist edges. Add or update .changeset/toolchain-cj-bazel-ts-host-adapters.md as a patch changeset with direct coverage for the affected public packages: @tuvren/backend-memory, @tuvren/backend-postgres, @tuvren/backend-sqlite. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes."
+      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes. Assert every production manifest edge resolves to an earlier epic or an earlier dependency layer inside this epic. Complete each layer before its consumers; no rollout package requires a future epic output. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
     status: planned
   - id: KRT-CJ002
-    title: Port staged package targets group 2
+    title: Port layer 3 SDK and streaming packages
     type: Chore
     effort: 5
     depends_on: [KRT-CJ001]
     scope:
       in:
-        - typescript/conformance-adapter/BUILD.bazel
-        - typescript/kernel/conformance-adapter/BUILD.bazel
-        - typescript/providers/conformance-adapter/BUILD.bazel
+        - typescript/certification/BUILD.bazel
+        - typescript/sdk/BUILD.bazel
+        - typescript/streaming/ws/BUILD.bazel
+        - ".changeset/toolchain-cj-bazel-ts-host-adapters.md"
     verification:
       command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if a package needs in-tree state, undeclared inputs, or a source-only declaration build occurs; do not improvise."
-    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name. Production package layer 3: @tuvren/framework-typescript-certification, @tuvren/sdk, @tuvren/stream-ws. Add or update .changeset/toolchain-cj-bazel-ts-host-adapters.md as a patch changeset with direct coverage for the affected public packages: @tuvren/sdk. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes."
+      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
     status: planned

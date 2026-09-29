@@ -18,6 +18,7 @@ scope:
     - tools
     - ".constitution/tech-spec/stack.yaml"
     - ".git-blame-ignore-revs"
+    - ".changeset/toolchain-cb-biome-retirement.md"
   tech_spec_patchable: [".constitution/tech-spec/stack.yaml"]
 estimated_diff_lines: 2500
 estimate_source: planned
@@ -28,21 +29,28 @@ tickets:
     effort: 3
     depends_on: []
     scope:
-      in: [typescript, spec, tools, oxlint.config.ts, oxfmt.config.ts]
+      in:
+        - typescript
+        - spec
+        - tools
+        - oxlint.config.ts
+        - oxfmt.config.ts
+        - tools/biome-coverage
+        - ".changeset/toolchain-cb-biome-retirement.md"
     verification:
       command: bun run lint
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if an unmigrated project or unexplained suppression remains occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Confirm every project directory has completed the ratchet, including JSON-only spec targets, configuration scripts and root tooling. Aggregate the suppression inventory and account for all 82 surviving and 62 dead directives."
+    description: "ADR-0070 and SPK-KRT-OD006. Confirm every project directory has completed the ratchet, including JSON-only spec targets, configuration scripts and root tooling. Aggregate the suppression inventory and account for all 82 surviving and 62 dead directives. Verify all directory coverage lists are empty and transfer residual.json entries to clean OXC coverage before retirement. Add or update .changeset/toolchain-cb-biome-retirement.md as a patch changeset with direct coverage for the affected public packages: @tuvren/backend-memory, @tuvren/backend-postgres, @tuvren/backend-shared, @tuvren/backend-sqlite, @tuvren/core, @tuvren/kernel-grpc-client, @tuvren/kernel-protocol, @tuvren/kernel-runtime, @tuvren/mcp-client, @tuvren/provider-api, @tuvren/provider-bridge-ai-sdk, @tuvren/runner-react, @tuvren/runtime, @tuvren/sdk, @tuvren/stream-agui, @tuvren/stream-core, @tuvren/stream-sse, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert all 41 former Biome project targets have a clean replacement, zero biome-ignore directives remain, and the 144 original directives have an evidence-backed disposition. Confirm generated and constitution ignores remain as ruled."
+      evidence: "Assert all 41 former Biome project targets have a clean replacement, zero biome-ignore directives remain, and the 144 original directives have an evidence-backed disposition. Confirm generated and constitution ignores remain as ruled. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
     status: planned
   - id: KRT-CB002
-    title: Remove Biome and enforce unused-disable reporting
+    title: Remove Biome and its preset alias together
     type: Chore
     effort: 5
     depends_on: [KRT-CB001]
@@ -58,15 +66,16 @@ tickets:
         - oxlint.config.ts
         - oxfmt.config.ts
         - devenv.nix
+        - ".changeset/toolchain-cb-biome-retirement.md"
     verification:
       command: bun run lint
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if any directory still needs Biome or a rule override occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Remove biome.jsonc, @biomejs/biome and the Nx lint input. Replace root lint and format scripts and every residual formatter/lint caller with direct OXC binaries. Enable --report-unused-disable-directives and --type-aware across the completed gate."
+    description: "ADR-0070 and SPK-KRT-OD006. Remove biome.jsonc, @biomejs/biome and ultracite-biome together, along with the selective Biome runner, coverage lists and Nx lint input. Replace root lint and format scripts and every residual formatter/lint caller with direct OXC binaries. Enable --report-unused-disable-directives and --type-aware across the completed gate. Add or update .changeset/toolchain-cb-biome-retirement.md as a patch changeset with direct coverage for the affected public packages: @tuvren/backend-memory, @tuvren/backend-postgres, @tuvren/backend-shared, @tuvren/backend-sqlite, @tuvren/core, @tuvren/kernel-grpc-client, @tuvren/kernel-protocol, @tuvren/kernel-runtime, @tuvren/mcp-client, @tuvren/provider-api, @tuvren/provider-bridge-ai-sdk, @tuvren/runner-react, @tuvren/runtime, @tuvren/sdk, @tuvren/stream-agui, @tuvren/stream-core, @tuvren/stream-sse, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert no executable Biome reference remains, the unchanged shipped preset is used, root lint and format succeed, second generation is clean and unused directives fail the gate."
+      evidence: "Assert no executable Biome reference remains, the unchanged shipped preset is used, root lint and format succeed, second generation is clean and unused directives fail the gate. Assert @biomejs/biome and ultracite-biome are removed together from the manifest and lockfile, with no coverage runner or list left behind. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
     status: planned
@@ -101,7 +110,7 @@ tickets:
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. In a spec-only commit, settle installed OXC and ultracite pins and remove the retired Biome stack record. Cite the full ratchet and freshness evidence; do not edit code in this patch."
+    description: "ADR-0070 and SPK-KRT-OD006. In a spec-only commit, settle installed OXC and ultracite pins and remove the retired Biome and ultracite-biome stack records. Cite the full ratchet and freshness evidence; do not edit code in this patch."
     acceptance:
       mode: invariant
       evidence: "Invariant: only the installed OXC toolchain owns lint and format and stack equals bun.lock. Checker: bun run verify and constitution pin validation."

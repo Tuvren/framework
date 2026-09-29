@@ -19,6 +19,8 @@ scope:
     - spec/telemetry
     - typescript/telemetry/semconv/src/lib/generated
     - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
+    - tools/bazel/source-codegen
+    - ".changeset/toolchain-cm-bazel-source-codegen.md"
   tech_spec_patchable: []
 estimated_diff_lines: 10000
 estimate_source: planned
@@ -39,15 +41,16 @@ tickets:
         - spec/tools
         - spec/host
         - spec/streaming
+        - tools/bazel/source-codegen/BUILD.bazel
     verification:
       command: bun run codegen
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
-    description: "ADR-0071 decision 9 and amended ADR-0027. Model TypeSpec artifact families as declared Bazel actions, checked-file diff tests and update targets. Produce gitignored prerequisites as outputs. Keep the old codegen lane working while families are transferred."
+    description: "ADR-0071 decision 9 and amended ADR-0027. Model TypeSpec artifact families as declared Bazel actions, checked-file diff tests and update targets. Produce gitignored prerequisites as outputs. Keep the old codegen lane working while families are transferred. Create tools/bazel/source-codegen/BUILD.bazel to instantiate this family's generation actions, checked-file diff tests and explicit update targets. Keep source and checked artifacts under spec/ as inputs; create no additional BUILD files there beyond ADR-0073's recorded exceptions."
     acceptance:
       mode: contract_test
-      evidence: "Assert differing or missing generated artifacts and missing declared sources fail freshness; restored outputs pass. A second update is clean and parsed schemas/OpenAPI preserve authority. No action writes directly into the checkout."
+      evidence: "Assert differing or missing generated artifacts and missing declared sources fail freshness; restored outputs pass. A second update is clean and parsed schemas/OpenAPI preserve authority. No action writes directly into the checkout. Assert the targets are instantiated in tools/bazel/source-codegen/BUILD.bazel and resolve from the owned directory without introducing another spec/ BUILD file."
     flows: []
     certainty: settled
     status: planned
@@ -65,15 +68,17 @@ tickets:
         - spec/telemetry
         - typescript/telemetry/semconv/src/lib/generated
         - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
+        - tools/bazel/source-codegen/BUILD.bazel
+        - ".changeset/toolchain-cm-bazel-source-codegen.md"
     verification:
       command: bun run codegen
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
-    description: ADR-0071 decision 9 and amended ADR-0027. Model the refreshed Weaver manifest and templates as inputs producing all four telemetry outputs. Compare checked files and provide an explicit update target. Preserve OXC formatter exclusions and native Rust formatting.
+    description: "ADR-0071 decision 9 and amended ADR-0027. Model the refreshed Weaver manifest and templates as inputs producing all four telemetry outputs. Compare checked files and provide an explicit update target. Preserve OXC formatter exclusions and native Rust formatting. Add or update .changeset/toolchain-cm-bazel-source-codegen.md as a patch changeset with direct coverage for the affected public packages: @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert template or manifest changes invalidate generated actions, stale outputs fail freshness and repeated updates are clean. The TypeScript and Rust telemetry helpers agree with the generated attribute registry."
+      evidence: "Assert template or manifest changes invalidate generated actions, stale outputs fail freshness and repeated updates are clean. The TypeScript and Rust telemetry helpers agree with the generated attribute registry. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
     status: planned
@@ -96,7 +101,7 @@ tickets:
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if a packet needs a command outside the reviewed allowlist occurs; do not improvise."
-    description: "ADR-0071 decision 9 and amended ADR-0027. Rewrite this family regenerateCommand fields to the implemented Bazel update targets. Depend on the command-allowlist bridge from CN through epic ordering before these packets switch; do not introduce unsupported executable commands."
+    description: "ADR-0071 decision 9 and amended ADR-0027. Rewrite this family regenerateCommand fields to the implemented Bazel update targets. Depend on the command-allowlist bridge from KRT-CL003 in EPIC-CL through the existing CM depends_on CL prerequisite before these packets switch; do not introduce unsupported executable commands."
     acceptance:
       mode: contract_test
       evidence: "Assert every changed authority packet command resolves to its update target, is accepted by the regenerate-command validator and produces declared outputs without changing authority semantics."
