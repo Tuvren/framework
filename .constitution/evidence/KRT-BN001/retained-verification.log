@@ -1,6 +1,6 @@
 Historical verification of the retained PostgreSQL17 guard based on commit 6d6f1f31659ccf755e8259d38bbc13f5384bc4ce with the uncommitted one-line guard. This is not Bun1.4.2 acceptance.
 
-Command: LC_ALL=C bun run check. Worker exit: 0.
+Producing command: bun run check (inherited locale). Worker exit: 0.
 Transition verification summary
 - docs-to-authority freeze gate: pass in 406ms
 - Epic AL portability gate: pass in 269ms

@@ -1,5 +1,6 @@
 Historical refreshed-toolchain verification excerpt; terminal color sequences removed.
-Command: LC_ALL=C bun run verify. Exit: 1.
+Producing command: bun run verify (inherited locale). Exit: 1.
+Recommended reproduction: LC_ALL=C bun run verify.
 Source: nixpkgs c2f38fe7f9e04d9aadd354d380f2bd40531d9737, nixpkgs-src c7def046b9a883d46974757852106483d741586f.
 
 $ bun tools/conformance/vocabulary/validate-vocabulary.ts

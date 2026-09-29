@@ -1,5 +1,6 @@
 Historical control against identical checkout and dependencies.
-Command: LC_ALL=C "$BN_CONTROL_BUN" test (from typescript/kernel/backends/memory)
+Historical producing command: PATH="/home/oscar/GitHub/Tuvren/framework-bn/.devenv/profile/bin:$PATH" /home/oscar/GitHub/Tuvren/framework/.devenv/profile/bin/bun test (from typescript/kernel/backends/memory; locale inherited).
+Host-neutral reproduction: LC_ALL=C "$BN_CONTROL_BUN" test
 BN_CONTROL_BUN: immutable Bun1.3.10 binary from the pre-epic project environment. Exit: 0.
 
 bun test v1.3.10 (30e609e0)
