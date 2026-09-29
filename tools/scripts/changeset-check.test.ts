@@ -24,6 +24,7 @@ interface Fixture {
   publicChange(content: string): Promise<void>;
   readonly root: string;
   writeChangeset(filename: string, frontmatter: string): Promise<void>;
+  writeChangesetContents(filename: string, contents: string): Promise<void>;
   writePublicManifest(description: string): Promise<void>;
 }
 
@@ -68,6 +69,66 @@ describe("changeset-check", () => {
     await fixture.commit("change public package with unrelated intent");
 
     await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+  });
+
+  test("rejects every changeset package that native status rejects", async () => {
+    const fixture = await createFixture();
+    await fixture.publicChange("export const changed = true;\n");
+    await fixture.writeChangeset(
+      "unknown-package.md",
+      '"@tuvren/public-a": patch\n"@tuvren/ghost": patch'
+    );
+    await fixture.commit("add an unknown changeset package");
+
+    const status = await run(
+      process.execPath,
+      [CHANGESET_CLI, "status", "--since", "master"],
+      fixture.root
+    );
+
+    expect(status.exitCode).toBe(1);
+    expect(`${status.stdout}${status.stderr}`).toContain(
+      "not in the workspace"
+    );
+    await expect(check(fixture)).rejects.toThrow("@tuvren/ghost");
+  });
+
+  test("rejects malformed delimiters that native status rejects", async () => {
+    const fixture = await createFixture();
+    await fixture.publicChange("export const changed = true;\n");
+    await fixture.writeChangesetContents(
+      "malformed-delimiter.md",
+      '---\n"@tuvren/public-a": patch\n---garbage\n\nFixture release note.\n'
+    );
+    await fixture.commit("add a malformed changeset delimiter");
+
+    const status = await run(
+      process.execPath,
+      [CHANGESET_CLI, "status", "--since", "master"],
+      fixture.root
+    );
+
+    expect(status.exitCode).toBe(1);
+    await expect(check(fixture)).rejects.toThrow("frontmatter");
+  });
+
+  test("accepts delimiter formats supported by the installed parser", async () => {
+    const fixture = await createFixture();
+    await fixture.publicChange("export const changed = true;\n");
+    await fixture.writeChangesetContents(
+      "native-delimiter.md",
+      '---\r\n"@tuvren/public-a": patch\r\n---  \r\n\r\nFixture release note.\r\n'
+    );
+    await fixture.commit("add a native-compatible changeset delimiter");
+
+    const status = await run(
+      process.execPath,
+      [CHANGESET_CLI, "status", "--since", "master"],
+      fixture.root
+    );
+
+    expect(status.exitCode).toBe(0);
+    await expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("does not let an old pending changeset cover a new public change", async () => {
@@ -152,11 +213,38 @@ describe("changeset-check", () => {
   test("covers staged, unstaged, and untracked working-tree changes", async () => {
     const fixture = await createFixture();
     await fixture.publicChange("export const staged = true;\n");
-    await run("git", ["add", "packages/public-a/src.ts"], fixture.root);
+    const stage = await run(
+      "git",
+      ["add", "packages/public-a/src.ts"],
+      fixture.root
+    );
+    expect(stage.exitCode).toBe(0);
+    await fixture.publicChange(
+      "export const staged = true;\nexport const unstaged = true;\n"
+    );
     await fixture.writeChangeset(
       "working-tree.md",
       '"@tuvren/public-a": patch'
     );
+
+    const staged = await run(
+      "git",
+      ["diff", "--cached", "--name-only"],
+      fixture.root
+    );
+    const unstaged = await run("git", ["diff", "--name-only"], fixture.root);
+    const untracked = await run(
+      "git",
+      ["ls-files", "--others", "--exclude-standard"],
+      fixture.root
+    );
+
+    expect(staged.exitCode).toBe(0);
+    expect(staged.stdout).toContain("packages/public-a/src.ts");
+    expect(unstaged.exitCode).toBe(0);
+    expect(unstaged.stdout).toContain("packages/public-a/src.ts");
+    expect(untracked.exitCode).toBe(0);
+    expect(untracked.stdout).toContain(".changeset/working-tree.md");
 
     await expect(check(fixture)).resolves.toBeUndefined();
   });
@@ -351,6 +439,12 @@ async function createFixture(): Promise<Fixture> {
         `.changeset/${filename}`,
         `---\n${frontmatter}\n---\n\nFixture release note.\n`
       );
+    },
+    writeChangesetContents: async (
+      filename: string,
+      contents: string
+    ): Promise<void> => {
+      await writeFixtureFile(root, `.changeset/${filename}`, contents);
     },
     writePublicManifest: async (description: string): Promise<void> => {
       await writeFixtureFile(
