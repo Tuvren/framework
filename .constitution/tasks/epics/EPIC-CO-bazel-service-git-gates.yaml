@@ -2,7 +2,7 @@ id: CO
 name: Bazel external suites and git-aware gates
 kind: tooling
 capabilities: []
-depends_on: [CE, CF, CG, CH, CI, CJ, CK, CM, CN]
+depends_on: [CE, CF, CG, CH, CK, CM, CN]
 scope:
   paths:
     - tools/bazel/service-tests.bzl

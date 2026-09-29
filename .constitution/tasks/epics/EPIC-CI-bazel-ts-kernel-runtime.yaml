@@ -1,69 +1,84 @@
 id: CI
-name: Staged TypeScript kernel and runtime rollout
+name: Staged TypeScript dependency layers 0 to 2
 kind: tooling
 capabilities: []
 depends_on: [CD]
 scope:
   paths:
-    - typescript/kernel/backends/memory/BUILD.bazel
+    - typescript/host/session-client/BUILD.bazel
+    - typescript/telemetry/semconv/BUILD.bazel
+    - typescript/host/session/BUILD.bazel
+    - typescript/providers/provider-api/BUILD.bazel
+    - typescript/streaming/core/BUILD.bazel
+    - typescript/telemetry/otel/BUILD.bazel
+    - typescript/testkit/BUILD.bazel
+    - typescript/host/remote-session/BUILD.bazel
     - typescript/kernel/backends/shared/BUILD.bazel
-    - typescript/kernel/backends/sqlite/BUILD.bazel
-    - typescript/kernel/backends/postgres/BUILD.bazel
     - typescript/kernel/grpc-client/BUILD.bazel
-    - typescript/kernel/testkit/BUILD.bazel
-    - typescript/kernel/certification/BUILD.bazel
-    - typescript/kernel/certification-sqlite/BUILD.bazel
-    - typescript/kernel/certification-postgres/BUILD.bazel
+    - typescript/providers/bridge-ai-sdk/BUILD.bazel
+    - typescript/providers/testkit/BUILD.bazel
+    - typescript/runners/react/BUILD.bazel
     - typescript/runtime/BUILD.bazel
+    - typescript/streaming/agui/BUILD.bazel
+    - typescript/streaming/sse/BUILD.bazel
+    - ".changeset/toolchain-ci-bazel-ts-kernel-runtime.md"
   tech_spec_patchable: []
-estimated_diff_lines: 11500
+estimated_diff_lines: 15000
 estimate_source: planned
 tickets:
   - id: KRT-CI001
-    title: Port staged package targets group 1
+    title: Port complete dependency layers 0 and 1
     type: Chore
     effort: 5
     depends_on: []
     scope:
       in:
-        - typescript/kernel/backends/memory/BUILD.bazel
-        - typescript/kernel/backends/shared/BUILD.bazel
-        - typescript/kernel/backends/sqlite/BUILD.bazel
-        - typescript/kernel/backends/postgres/BUILD.bazel
-        - typescript/kernel/grpc-client/BUILD.bazel
+        - typescript/host/session-client/BUILD.bazel
+        - typescript/telemetry/semconv/BUILD.bazel
+        - typescript/host/session/BUILD.bazel
+        - typescript/providers/provider-api/BUILD.bazel
+        - typescript/streaming/core/BUILD.bazel
+        - typescript/telemetry/otel/BUILD.bazel
+        - typescript/testkit/BUILD.bazel
+        - ".changeset/toolchain-ci-bazel-ts-kernel-runtime.md"
     verification:
       command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if a package needs in-tree state, undeclared inputs, or a source-only declaration build occurs; do not improvise."
-    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name. Production package layers 0 and 1: @tuvren/session-client, @tuvren/telemetry-semconv, @tuvren/host-session, @tuvren/provider-api, @tuvren/stream-core, @tuvren/telemetry-otel, @tuvren/framework-testkit. Layering rule: compute complete topological layers from all TypeScript workspace dependencies and peerDependencies, resolving @tuvren/* names and workspace: ranges to their manifests. Prerequisite layers outside this epic must merge in earlier epics; the already-proven core, kernel/protocol and kernel/runtime targets belong to CD. CI completes remaining layers 0 to 2, CJ completes layer 3, and CK completes layers 4 to 5. Within each epic, tickets follow prerequisite layers; adapters follow their package prerequisites and certification wrappers follow their adapters. Workspace devDependencies remain declared source inputs for checks and tests, not declaration-build dist edges. Add or update .changeset/toolchain-ci-bazel-ts-kernel-runtime.md as a patch changeset with direct coverage for the affected public packages: @tuvren/provider-api, @tuvren/stream-core, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes."
+      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes. Assert every production manifest edge resolves to an earlier epic or an earlier dependency layer inside this epic. Complete each layer before its consumers; no rollout package requires a future epic output. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
     status: planned
   - id: KRT-CI002
-    title: Port staged package targets group 2
+    title: Port complete dependency layer 2
     type: Chore
     effort: 5
     depends_on: [KRT-CI001]
     scope:
       in:
-        - typescript/kernel/testkit/BUILD.bazel
-        - typescript/kernel/certification/BUILD.bazel
-        - typescript/kernel/certification-sqlite/BUILD.bazel
-        - typescript/kernel/certification-postgres/BUILD.bazel
+        - typescript/host/remote-session/BUILD.bazel
+        - typescript/kernel/backends/shared/BUILD.bazel
+        - typescript/kernel/grpc-client/BUILD.bazel
+        - typescript/providers/bridge-ai-sdk/BUILD.bazel
+        - typescript/providers/testkit/BUILD.bazel
+        - typescript/runners/react/BUILD.bazel
         - typescript/runtime/BUILD.bazel
+        - typescript/streaming/agui/BUILD.bazel
+        - typescript/streaming/sse/BUILD.bazel
+        - ".changeset/toolchain-ci-bazel-ts-kernel-runtime.md"
     verification:
       command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if a package needs in-tree state, undeclared inputs, or a source-only declaration build occurs; do not improvise."
-    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Declare ts_package build, typecheck, test and OXC lint targets for each scoped package. Inventory non-manifest source, fixture, smoke and typecheck inputs package by package; preserve build dist edges and check source edges. Keep every existing Nx project name as its target name. Production package layer 2: @tuvren/remote-session, @tuvren/backend-shared, @tuvren/kernel-grpc-client, @tuvren/provider-bridge-ai-sdk, @tuvren/provider-testkit, @tuvren/runner-react, @tuvren/runtime, @tuvren/stream-agui, @tuvren/stream-sse. Add or update .changeset/toolchain-ci-bazel-ts-kernel-runtime.md as a patch changeset with direct coverage for the affected public packages: @tuvren/backend-shared, @tuvren/kernel-grpc-client, @tuvren/provider-bridge-ai-sdk, @tuvren/runner-react, @tuvren/runtime, @tuvren/stream-agui, @tuvren/stream-sse. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes."
+      evidence: "Assert each scoped project has equivalent build, test, typecheck and type-aware lint results on the same commit. Missing non-manifest inputs fail loudly. Removing in-tree dist and node_modules does not permit ancestor tool resolution or stale cache passes. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
     status: planned

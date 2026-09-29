@@ -16,6 +16,8 @@ scope:
     - spec/conformance
     - reports/compatibility
     - typescript/kernel/grpc-client/src/lib/generated/kernel-interop
+    - tools/bazel/interop-codegen
+    - ".changeset/toolchain-cn-bazel-interop-codegen.md"
   tech_spec_patchable: []
 estimated_diff_lines: 11000
 estimate_source: planned
@@ -53,15 +55,17 @@ tickets:
         - tools/bazel/interop-codegen-runner.sh
         - spec/interop
         - typescript/kernel/grpc-client/src/lib/generated/kernel-interop
+        - tools/bazel/interop-codegen/BUILD.bazel
+        - ".changeset/toolchain-cn-bazel-interop-codegen.md"
     verification:
       command: bun run codegen
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
-    description: "ADR-0071 decision 9 and amended ADR-0027; ADR-0073 decision 7. Keep protoc-gen-es outputs checked in. Provide declared Bazel generation actions, diff tests and update targets instead of inventing a first-party TypeScript proto rule."
+    description: "ADR-0071 decision 9 and amended ADR-0027; ADR-0073 decision 7. Keep protoc-gen-es outputs checked in. Provide declared Bazel generation actions, diff tests and update targets instead of inventing a first-party TypeScript proto rule. Create tools/bazel/interop-codegen/BUILD.bazel to instantiate this family's generation actions, checked-file diff tests and explicit update targets. Keep source and checked artifacts under spec/ as inputs; create no additional BUILD files there beyond ADR-0073's recorded exceptions. Add or update .changeset/toolchain-cn-bazel-interop-codegen.md as a patch changeset with direct coverage for the affected public packages: @tuvren/kernel-grpc-client. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert stale or missing bindings fail diff tests, proto/plugin input changes invalidate generation, and updates match native generation byte-for-byte after the approved formatter."
+      evidence: "Assert stale or missing bindings fail diff tests, proto/plugin input changes invalidate generation, and updates match native generation byte-for-byte after the approved formatter. Assert the targets are instantiated in tools/bazel/interop-codegen/BUILD.bazel and resolve from the owned directory without introducing another spec/ BUILD file. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
     status: planned
@@ -81,6 +85,7 @@ tickets:
         - spec/kernel
         - spec/conformance
         - reports/compatibility
+        - tools/bazel/interop-codegen/BUILD.bazel
     verification:
       command: bun run codegen
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."

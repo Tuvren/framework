@@ -32,6 +32,7 @@ scope:
     - ".constitution/tech-spec/guidelines.md"
     - ".constitution/tech-spec/adrs/ADR-0069-public-release-discipline.md"
     - tools/scripts/lib/project-manifest.ts
+    - ".changeset/toolchain-cq-nx-final-cutover.md"
   tech_spec_patchable:
     - ".constitution/tech-spec/stack.yaml"
     - ".constitution/tech-spec/guidelines.md"
@@ -91,15 +92,16 @@ tickets:
         - spec
         - reports/compatibility
         - tools/scripts/lib/project-manifest.ts
+        - ".changeset/toolchain-cq-nx-final-cutover.md"
     verification:
       command: "bun run publish:dry-run"
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if same-commit parity, linux-sandbox evidence, dry-run rehearsal, or the separate specification/meter handoff is missing occurs; do not improvise."
-    description: "ADR-0071 decisions 3, 11, 12 and 13. After same-commit parity, linux-sandbox proof, staged release dry runs and the spec/meter handoff, remove Nx dependencies, nx.json, all 57 project.json files, tools/run-nx.mjs, tools/nx and obsolete shim rules/BUILD stanzas. Preserve real Bazel targets and replace retired lanes with the named suites. Rewrite CLAUDE.md and mirrored AGENTS.md guidance. Rename CI jobs to the single Bazel gate already recorded in the separate ADR patch."
+    description: "ADR-0071 decisions 3, 11, 12 and 13. After same-commit parity, linux-sandbox proof, staged release dry runs and the spec/meter handoff, remove Nx dependencies, nx.json, all 57 project.json files, tools/run-nx.mjs, tools/nx and obsolete shim rules/BUILD stanzas. Preserve real Bazel targets and replace retired lanes with the named suites. Rewrite CLAUDE.md and mirrored AGENTS.md guidance. Rename CI jobs to the single Bazel gate already recorded in the separate ADR patch. Add or update .changeset/toolchain-cq-nx-final-cutover.md as a patch changeset with direct coverage for the affected public packages: @tuvren/backend-memory, @tuvren/backend-postgres, @tuvren/backend-shared, @tuvren/backend-sqlite, @tuvren/core, @tuvren/kernel-grpc-client, @tuvren/kernel-protocol, @tuvren/kernel-runtime, @tuvren/mcp-client, @tuvren/provider-api, @tuvren/provider-bridge-ai-sdk, @tuvren/runner-react, @tuvren/runtime, @tuvren/sdk, @tuvren/stream-agui, @tuvren/stream-core, @tuvren/stream-sse, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
-      evidence: "Assert all 57 legacy project files and executable Nx/shim references are gone, all retained project identities still resolve to real Bazel targets, named suites cover every retired lane, and publish dry run remains green. CI job names equal ADR-0069 and worktree purity succeeds."
+      evidence: "Assert all 57 legacy project files and executable Nx/shim references are gone, all retained project identities still resolve to real Bazel targets, named suites cover every retired lane, and publish dry run remains green. CI job names equal ADR-0069 and worktree purity succeeds. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
     status: planned

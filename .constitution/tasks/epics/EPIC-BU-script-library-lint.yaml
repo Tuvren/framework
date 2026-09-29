@@ -4,7 +4,7 @@ kind: tooling
 capabilities: []
 depends_on: [BQ]
 scope:
-  paths: [tools/scripts/lib]
+  paths: [tools/scripts/lib, tools/biome-coverage/bu.json]
   tech_spec_patchable: []
 estimated_diff_lines: 12000
 estimate_source: planned
@@ -72,16 +72,16 @@ tickets:
     effort: 8
     depends_on: [KRT-BU003]
     scope:
-      in: [tools/scripts/lib]
+      in: [tools/scripts/lib, tools/biome-coverage/bu.json]
     verification:
       command: bun run lint
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if a project switches before it is clean or type-aware lint silently skips rules occurs; do not improvise."
-    description: ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics followed by type-aware diagnostics with the preset unchanged. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Switch each project lint target from Biome to oxlint --type-aware only after that directory is clean.
+    description: "ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics followed by type-aware diagnostics with the preset unchanged. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Switch each project lint target from Biome to oxlint --type-aware only after that directory is clean. In this same lint-target switch, remove each migrated path from the Biome coverage list tools/biome-coverage/bu.json. Leave other lists unchanged; root Biome lint must cover only not-yet-migrated paths."
     acceptance:
       mode: contract_test
-      evidence: "Assert scoped oxlint --type-aware reports zero errors with all 54 type-aware rules enabled and no overrides. Every scoped project lint target uses OXC, unswitched projects retain Biome, scoped tests pass and the full lint gate remains usable."
+      evidence: "Assert scoped oxlint --type-aware reports zero errors with all 54 type-aware rules enabled and no overrides. Every scoped project lint target uses OXC, unswitched projects retain Biome, scoped tests pass and the full lint gate remains usable. Assert migrated paths are absent from tools/biome-coverage/bu.json, OXC covers them, and all remaining Biome entries retain lint-only coverage."
     flows: []
     certainty: settled
     status: planned

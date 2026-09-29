@@ -8,7 +8,7 @@ scope:
     - dart/kernel/BUILD.bazel
     - dart/kernel-conformance-adapter/BUILD.bazel
     - dart/kernel-certification/BUILD.bazel
-    - dart/kernel/test/protocol_test.dart
+    - dart/kernel-conformance-adapter/test/protocol_test.dart
     - tools/bazel/dart.bzl
     - tools/bazel/dart-runner.sh
   tech_spec_patchable: []
@@ -46,7 +46,7 @@ tickets:
     depends_on: [KRT-CH001]
     scope:
       in:
-        - dart/kernel/test/protocol_test.dart
+        - dart/kernel-conformance-adapter/test/protocol_test.dart
         - dart/kernel/BUILD.bazel
         - dart/kernel-conformance-adapter/BUILD.bazel
     verification:
@@ -54,7 +54,7 @@ tickets:
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if the test still requires an undeclared adapter binary or the exception is lifted without the full matrix occurs; do not improvise."
-    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Make protocol_test.dart obtain its adapter binary from runfiles while retaining its existing assertions. Record a follow-up trigger for the exception: a BCR rules_dart release isolates its extension lock, the runfiles test passes, and all 19 targets pass on NixOS and ubuntu without patches. Do not lift the exception in this ticket."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Make dart/kernel-conformance-adapter/test/protocol_test.dart obtain its adapter binary from runfiles while retaining its existing assertions. Record a follow-up trigger for the exception: a BCR rules_dart release isolates its extension lock, the runfiles test passes, and all 19 targets pass on NixOS and ubuntu without patches. Do not lift the exception in this ticket."
     acceptance:
       mode: contract_test
       evidence: Assert protocol tests pass without an in-tree adapter executable and use the declared runfiles binary. The exception remains recorded until every ADR-0073 lifting condition is demonstrated.
