@@ -45,3 +45,30 @@ session-package changelogs are private artifacts, not additions to publication.
 The pending intent is archived byte-for-byte as consumed-intent.md; its direct
 entries remain the source for release-note classification. The count and
 scope describe this generated snapshot, not a future release inventory.
+
+Reusable contract correction after milestone review:
+Producer parent: 9b9173557a1dc8243d123093fcc4ff376e3cba0b. The original
+release-contract.log and release-negative-control.log preserve the pre-commit
+producer observation (58 tracked and 3 untracked release paths). Those dirty
+counts are historical evidence, not a requirement for a committed checkout.
+
+From repository root, the current reusable command is:
+devenv shell -- zsh -c 'LC_ALL=C bun .constitution/evidence/KRT-BN005/release-contract.mjs .constitution/evidence/KRT-BN005/consumed-intent.md'
+
+The corrected probe finds the intent-deletion commit in HEAD ancestry and
+checks its parent diff against exactly 30 manifests, 30 changelogs, the
+consumed intent deletion, and allowed BN005 evidence/epic bookkeeping.
+It accepts a clean current tree or owned evidence changes and rejects
+unowned dirty paths. Version, privacy, closure, range, complete changelog,
+source hash, and stale-version negative-control checks remain required.
+The formatter command is the supported read-only Biome check.
+
+The lead rerun exited 0 with the corrected probe and one owned evidence
+change; its full output is clean-checkout-contract.log. Worker commands and
+results are labeled excerpts in contract-fix-verification.txt. A disposable
+repository with two matching release commits on separate refs demonstrates
+that --all sees two, while HEAD ancestry sees one and the corrected contract
+passes on the clean current branch; see head-ancestry-control.txt.
+The probe uses the historical intent path as its anchor, without hardcoding
+the release commit SHA, so rebase rewrites do not change the procedure.
+No release artifact was changed, regenerated, or published by this correction.
