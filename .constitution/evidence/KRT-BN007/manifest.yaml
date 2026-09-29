@@ -1,0 +1,32 @@
+owner: KRT-BN007
+mode: contract_test
+produced:
+  date: 2026-09-29
+  commit: b7ea90d3cb283705fb8974c873eda31470ae72b0
+  command: "Lead actual-doc probe, strict TypeScript6, docs freeze, and green check retry on working-tree docs; worker historical consumer and interference logs are distinguished in command.txt."
+files:
+  - path: command.txt
+    sha256: 79227e9ec98db58c6632d8a3b97f3a15e25f8c59512120926e056d31a5607ebc
+    bytes: 1927
+    role: transcript
+  - path: contract-probe.log
+    sha256: 7e1310afbf91a4e11745cc94ee32af3c2a8bfaa3eb9a2f79cb1cb602c1976415
+    bytes: 48
+    role: log
+  - path: contract-probe.ts
+    sha256: dbb55542875e8bd2638ab4278c0c4ccb5b9918dbfd84fccd24c0b9e387e74d4c
+    bytes: 6592
+    role: transcript
+  - path: docs-freeze.log
+    sha256: 89c5451febc5379c0d6630eea74f6249281b0b37ac482411c052ee62dc0a89b0
+    bytes: 116
+    role: log
+  - path: repository-check-summary.log
+    sha256: 32232bf31cd0b471118063a5a211fdcd5eb515a7ac1ac8a067b898f6938d8238
+    bytes: 938
+    role: log
+  - path: worker-validation.md
+    sha256: bc1af4b77ad4839ed4ffe3d3ed0c2da459ff6226311ed5a26d8640f14819970f
+    bytes: 2098
+    role: transcript
+pass_criteria: "Actual README puts first Turn before Architecture, states grounded framework/runner/language posture, and links existing authorities; guide names private sessions without installation offers, explains backend topology, preserves verified0.1 walkthrough and original section anchors, and states precise0.x rules. Typed probe, docs freeze and lead repository check all pass; no0.2 publication readiness claimed."

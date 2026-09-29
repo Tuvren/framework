@@ -179,7 +179,7 @@ tickets:
       evidence: "Assert the README presents the first Turn path before architecture, names the accurate language and backend postures, and traces them to existing authority; assert the guide does not offer stream-ws for installation and expresses the 0.x stable-breaking minor and additive/fix patch rule. The docs authority gate and bun run check both pass."
     flows: [flow-reference-host-proves-sdk]
     certainty: settled
-    status: planned
+    status: done
 decisions:
   - id: OD-04
     question: Should the deferred Bun upgrade block the independent public release readiness work?

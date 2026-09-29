@@ -2,7 +2,7 @@
 
 This guide is for a **host developer** adopting the published `@tuvren/*` packages from the public npm registry: what to install, what the stable guarantee covers, which packages you must never import directly, how to route the telemetry funnel at construction time, and a first-Turn program you can paste and run.
 
-This document is a pointer, not an oracle: the normative authority for everything here lives in the tech-spec ADRs it cites (ADR-0054, ADR-0056, ADR-0057, ADR-0058) and in the machine-readable authority packets under `spec/`. If this guide and an ADR ever disagree, the ADR wins.
+This document is a pointer, not an oracle: the normative authority for its claims lives in the linked tech-spec ADRs and the machine-readable authority packets under `spec/`. If this guide and an ADR ever disagree, the ADR wins.
 
 ## 1. What is published, and what the tiers mean
 
@@ -13,6 +13,8 @@ One release of the framework publishes a curated, version-lockstepped package se
 - `@tuvren/core` — the behavior-free ABI: types, contracts, and assertion helpers, exposed through subpaths (`/provider`, `/telemetry`, `/tools`, `/capabilities`, …).
 - `@tuvren/sdk` — the composition tier (ADR-0057): the batteries-included `createTuvren` entrypoint, curated `@tuvren/core` re-exports, developer helpers, and the `@tuvren/sdk/advanced` composition surface.
 - The **leaf adapters** you choose: backends (`@tuvren/backend-memory`, `@tuvren/backend-sqlite`, `@tuvren/backend-postgres` — plus `@tuvren/backend-shared`, their shared support package, which arrives transitively rather than being chosen), the runner (`@tuvren/runner-react`), the provider bridge (`@tuvren/provider-bridge-ai-sdk`), stream adapters (`@tuvren/stream-core`, `@tuvren/stream-sse`, `@tuvren/stream-agui`), the MCP client (`@tuvren/mcp-client`), the OTel telemetry adapter (`@tuvren/telemetry-otel`), and the remote-kernel client (`@tuvren/kernel-grpc-client`).
+
+`@tuvren/stream-ws`, `@tuvren/host-session`, `@tuvren/remote-session`, and `@tuvren/session-client` are private experimental repository packages. Do not install or import them. [ADR-0068](../../.constitution/tech-spec/adrs/ADR-0068-session-carriage-packages-stay-private-until-public-api.md) withholds all four from the published package set.
 
 **Published-internal (visible on the registry, NOT host-facing):**
 
@@ -25,6 +27,8 @@ Every leaf adapter peer-depends on a single `@tuvren/core` instance using a tild
 The walkthrough below was verified against the actually-published `0.1.0` packages on registry.npmjs.org (a fresh temp-dir install, no workspace links); the same check is automated as `bun tools/scripts/publish-registry.ts --verify-consumer <version>`.
 
 Install the SDK, the core ABI, and your chosen leaves:
+
+For backend selection, use SQLite for a local, single-writer deployment. Use PostgreSQL for multi-worker deployments because its shared backend provides the backend-authoritative lease clock. This does not make same-scope writers parallel: the PostgreSQL backend keeps same-scope writers serialized. See [ADR-0050](../../.constitution/tech-spec/adrs/ADR-0050-backend-authoritative-lease-clock-for-shared-backends.md) and [ADR-0067](../../.constitution/tech-spec/adrs/ADR-0067-postgres-relational-row-per-record-storage.md).
 
 ```bash
 bun add @tuvren/core @tuvren/sdk @tuvren/backend-memory @tuvren/runner-react
@@ -100,12 +104,14 @@ Three things to know about this shape:
 
 The stable guarantee does not cover every export equally. The canonical experimental marker is the TSDoc **`@experimental`** release tag on an individual export — you will see it in your editor's hover docs and in generated documentation, in the same place you see the type signature.
 
+During 0.x, [ADR-0069](../../.constitution/tech-spec/adrs/ADR-0069-public-release-discipline.md) defines the release policy.
+
 What the badge means for upgrade safety:
 
-- An **untagged** export is part of the frozen stable snapshot: its signature cannot change without a semver-major release. A CI freeze gate (`tools/scripts/api-freeze-gate.ts`) blocks any commit that breaks it.
-- An **`@experimental`** export can change or disappear in any release, including a patch. Depend on it deliberately, pin accordingly, and expect churn.
-- Graduation is additive: when an export stabilizes, only the tag is deleted — the import path never moves, so absorbing a graduation costs you nothing (semver-minor).
-- Adding `@experimental` to a previously stable export is itself treated as a breaking change, so a surface you depend on cannot silently lose its guarantee.
+- An **untagged** export is part of the frozen stable snapshot. While a public package is at 0.x, a breaking change to an untagged stable or frozen export bumps the MINOR version. A CI freeze gate (`tools/scripts/api-freeze-gate.ts`) blocks any commit that breaks it.
+- An **`@experimental`** export may change in any release, including a patch, or disappear. Depend on it deliberately, pin accordingly, and expect churn.
+- Fixes, additive changes, and graduations bump the PATCH version. When an export stabilizes, only the tag is deleted, and the import path never moves.
+- Adding `@experimental` to a previously stable export is a breaking change. While a public package is at 0.x, it bumps the MINOR version.
 
 One whole subpath is declared experimental today: **all exports of `@tuvren/core/capabilities`** (the advanced capability-orchestration classes) carry the tag, and the freeze gate enforces that declaration as a consistency floor. Everything else you reach through `@tuvren/core`, `@tuvren/sdk`, and the leaf adapters is stable unless its docs show the badge.
 

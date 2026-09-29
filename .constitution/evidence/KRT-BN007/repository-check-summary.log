@@ -1,0 +1,20 @@
+Lead command: devenv shell -- zsh -c 'LC_ALL=C bun run check'
+Parent: b7ea90d3cb283705fb8974c873eda31470ae72b0
+Working-tree docs present; writers had stopped.
+Exit: 0
+Exact final summary excerpt; complete historical temporary log: /tmp/KRT-BN007/lead-check.log
+
+Transition verification summary
+- docs-to-authority freeze gate: pass in 224ms
+- Epic AL portability gate: pass in 170ms
+- ADR-0057 host import boundary gate: pass in 682ms
+- ADR-0054/0056 API-surface freeze gate: pass in 693ms
+- Epic AF conformance gap plan freshness: pass in 104ms
+- authority packet validation: pass in 321ms
+- conformance plan validation: pass in 336ms
+- adapter protocol validation: pass in 335ms
+- certification discovery parity: pass in 79ms
+- workspace test-lane coverage: pass in 110ms
+- certification harness meta-conformance: pass in 296ms
+- vocabulary-check verification: pass in 158ms
+- affected typecheck/test/lint (base master): pass in 1679ms

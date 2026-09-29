@@ -1,6 +1,8 @@
 # Tuvren
 
-Tuvren is a durable, stateful agent-execution framework. It applies the model of content-addressed storage, parent-linked history, and movable references — the way Git tracks source history — to continuous runtime checkpointing, so an agent's execution state survives crashes, restarts, and branching without a separate durability layer bolted on top.
+Tuvren is an embeddable, durable agent framework over a kernel. [The product vision](.constitution/prd/vision.md) and [architecture strategy](.constitution/architecture/strategy.md) define that posture. [ReAct](spec/runners/react/authority-packet.json) is one runner.
+
+It applies the model of content-addressed storage, parent-linked history, and movable references — the way Git tracks source history — to continuous runtime checkpointing, so an agent's execution state survives crashes, restarts, and branching without a separate durability layer bolted on top.
 
 "Kraken" is the engine-internal name for the substrate underneath — durable turn/thread/branch state, deterministic hashing, backend capabilities — and never appears in consumer-facing APIs; host-developer APIs are always `Tuvren*`.
 
@@ -15,6 +17,10 @@ Most agent frameworks treat durability as an afterthought: state lives in proces
 
 Read `docs/KrakenKernelSpecification.md` for the full kernel semantics and `docs/KrakenFrameworkSpecification.md` for the framework/runner layer built on top of it.
 
+## First Turn
+
+Start with [Install and run a first Turn](docs/guides/publishing-and-adopter-onboarding.md#2-install-and-run-a-first-turn).
+
 ## Architecture
 
 Three layers, each with a narrower job than the one above it:
@@ -26,6 +32,8 @@ Three layers, each with a narrower job than the one above it:
 | **Runner** | One concrete execution model over the shared framework and kernel (today: ReAct) | Iterative loop behavior, provider/tool feedback |
 
 Everything crossing the kernel/framework boundary is data — serializable, schema-driven, inspectable. No callbacks from kernel to framework, no framework types leaking into the kernel.
+
+TypeScript is the full framework implementation. Rust, Go, Python, and Dart are kernel ports under the [kernel authority packet](spec/kernel/authority-packet.json) and [implementation-line layout](.constitution/tech-spec/guidelines.md). There is no Rust framework implementation. [ADR-0033](.constitution/tech-spec/adrs/ADR-0033-typescript-freeze-uses-product-proof-platform-and-porta.md) requires an explicit later epic before that work starts.
 
 **What's implemented on top of that, in the TypeScript reference implementation:**
 

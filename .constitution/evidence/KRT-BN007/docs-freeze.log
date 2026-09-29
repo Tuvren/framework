@@ -1,0 +1,2 @@
+$ bun tools/scripts/docs-authority-freeze-gate.ts --check
+docs authority freeze gate verified 264 classified claims

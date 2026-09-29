@@ -1,0 +1,28 @@
+Lead parent: b7ea90d3cb283705fb8974c873eda31470ae72b0
+README and adopter guide were working-tree changes. Prepared Bun1.3.10 and
+installed TypeScript6.0.2 were used; source-only compiler flags were already
+confirmed against this installed compiler. Run from the repository root:
+
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun .constitution/evidence/KRT-BN007/contract-probe.ts
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bunx --bun tsc --ignoreConfig --noEmit --target esnext --module esnext --moduleResolution bundler --types bun --strict --skipLibCheck --noUncheckedIndexedAccess --allowImportingTsExtensions .constitution/evidence/KRT-BN007/contract-probe.ts
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun run docs:authority-freeze:check
+devenv shell -- zsh -c 'LC_ALL=C bun run check'
+git diff --check
+
+All lead commands exited0. The full check ran after writers stopped. Its exact
+final phase summary is retained, with no claim that it is the complete log.
+The docs freeze checks normative specs; the actual-document probe separately
+checks README ordering and wording, guide sections/installation blocks, exact
+0.x qualifiers, preserved0.1 walkthrough, and authority-link target existence.
+Authority content was independently read and cross-checked by the worker/lead.
+
+worker-validation.md preserves the historical worker commands, including its
+failing-first probe and the fresh public-registry0.1.0 consumer proof. Those
+commands inherited locale, as recorded. Its first fullcheck failed only because
+concurrent BN006 evidence normalization tripped the worktree-purity guard.
+The lead retry above is the green verification result; that historical failed
+attempt is not called a pass.
+
+The consumer version0.1.0 is already published. The proof observes a fresh
+registry install, real first-Turn completion, and two durable messages. It is
+not a verification claim for a generated or published0.2.0 release.
