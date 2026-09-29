@@ -78,15 +78,15 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@changesets/cli"
     role: tooling
-    version: 2.31.0
+    version: 3.0.3
     ecosystem: bun
-    justification: Changeset authoring and fixed-group public release planning; resolved at 2.31.0 in bun.lock from the root package.json devDependency.
+    justification: Native fixed-group 0.x minor planning with peer-patch semantics from the measured 7.0 planner.
     radar: adopt
     certainty: settled
     evidence:
       kind: repository
       ref: bun.lock
-      version: 2.31.0
+      version: 3.0.3
       date: 2026-09-29
   - name: tsup
     role: tooling
