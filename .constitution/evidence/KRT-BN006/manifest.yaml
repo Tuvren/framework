@@ -1,0 +1,44 @@
+owner: KRT-BN006
+mode: contract_test
+produced:
+  date: 2026-09-29
+  commit: 915ece53aace586eafe800a342a5658e7ebee4d3
+  command: "Lead parsed actual Dependabot YAML and reran bun run check on working-tree configuration; exact commands in command.txt. Worker support retrieval is separately timestamped."
+files:
+  - path: biome-dependabot.log
+    sha256: 213d5f00832e2597fba28fdf631ff16b09987d2ef8cf50b3ac32c8b97a37311a
+    bytes: 644
+    role: log
+  - path: command.txt
+    sha256: 917c742a5251a19bf18325cd3632a9f304fe8ccd7c123fa7f7ec66747f034b1b
+    bytes: 1532
+    role: transcript
+  - path: contract-probe.log
+    sha256: 8aa4eca3443b185ae1b81ca5b312c68551bf1e38af6679ead338b8913a395744
+    bytes: 149
+    role: log
+  - path: dependabot-contract-probe.mjs
+    sha256: 8381d756c7506dbf111c9de71c89c0d0669a7d322a7989c52e5fce360b30eae2
+    bytes: 1151
+    role: transcript
+  - path: dependabot-options-reference.excerpt.md
+    sha256: b168dcd7886e2d78a6b4b4c9ab8d3c4dc80cf645a8e01d91d4da21f369f8845c
+    bytes: 9483
+    role: transcript
+  - path: github-docs-license.excerpt.md
+    sha256: ca79232b792b84afaa617ce97287424edafaa818fe33e7d38156ea8c82828abc
+    bytes: 861
+    role: transcript
+  - path: repository-check-summary.log
+    sha256: 67a7c0cab8af8ecc1802d1e0960369d059f7299ed5722fdace9e40e01bfdeb8a
+    bytes: 941
+    role: log
+  - path: support-provenance.md
+    sha256: da8fb6f4011b40e62477c97108fd8f2820fd693fb1a9fc31a2288747d05d7b0f
+    bytes: 3859
+    role: transcript
+  - path: support-retrieval.log
+    sha256: 528b3fafd9c453578b70c57696430da2b40c2b89fe1e0fae85531a0392b1119d
+    bytes: 766
+    role: log
+pass_criteria: "Pinned primary documentation supports Bun and every configured key; actual YAML parses without duplicate keys and equals exactly the approved root Bun/Cargo/GitHub Actions weekly minor/patch groups with major ignores; no other ecosystems; repository check exits0. Biome is non-applicable for the ignored .github directory."

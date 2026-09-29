@@ -1,0 +1,14 @@
+Historical worker diagnostic; ANSI and trailing whitespace normalized.
+Checked 0 files in 3ms. No fixes applied.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × No files were processed in the specified paths.
+
+  i Check your biome.json or biome.jsonc to ensure the paths are not ignored by the configuration.
+
+  i These paths were provided but ignored:
+
+  - .github/dependabot.yml
+
+
+exit_status=1

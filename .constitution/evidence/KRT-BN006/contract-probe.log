@@ -1,0 +1,2 @@
+Dependabot contract passed: /home/oscar/GitHub/Tuvren/framework-bn/.github/dependabot.yml
+ecosystems=bun,cargo,github-actions; omitted=gomod,pip,pub
