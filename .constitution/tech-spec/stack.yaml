@@ -69,7 +69,7 @@ bill_of_materials:
     role: tooling
     version: "2.5.14"
     ecosystem: bun
-    justification: "Retired by ADR-0070. Remains the lint and format gate until the last directory switches to oxlint and oxfmt, then is removed."
+    justification: "Retired by ADR-0070. Formatting and import organization switch to oxfmt in the mechanical commit; from then biome lint runs with formatter and assist actions off, only over directories not yet migrated to oxlint. Each migrated directory leaves Biome coverage when its lint target switches. Biome and ultracite-biome are removed together after the last directory switches."
     radar: hold
     certainty: settled
     evidence:
@@ -81,7 +81,7 @@ bill_of_materials:
     role: tooling
     version: "7.4.2"
     ecosystem: bun
-    justification: "Config presets only (ultracite/oxlint/core, ultracite/oxfmt); the Ultracite CLI is not used (ADR-0070). The oxfmt preset export exists from 7.5.0, so the OXC epic bumps it by hand to the latest version and removes the temporary Dependabot ignore above 7.4.2."
+    justification: "Config presets only; the Ultracite CLI is not used (ADR-0070). The oxfmt preset export exists from 7.5.0, so the OXC epic bumps un-aliased ultracite by hand to the latest version for ultracite/oxlint/core and ultracite/oxfmt in the toolchain-and-format milestone and removes the temporary Dependabot ignore above 7.4.2. The temporary ultracite-biome alias retains the Biome preset at 7.4.2 during the lint ratchet."
     radar: adopt
     certainty: settled
     evidence:
@@ -89,6 +89,14 @@ bill_of_materials:
       ref: bun.lock
       version: "7.4.2"
       date: 2026-09-29
+  - name: ultracite-biome
+    role: tooling
+    version: "7.4.2"
+    ecosystem: bun
+    justification: "Keeps the Biome preset stable during the OXC lint ratchet: biome.jsonc extends ultracite-biome/biome/core while un-aliased ultracite supplies OXC presets (ADR-0070). This transition is unmeasured; the epic must verify unchanged Biome lint output after installing the alias and changing the extension path."
+    radar: hold
+    certainty: assumed
+    assumption: "Planned temporary npm alias of ultracite 7.4.2, installed as npm:ultracite@7.4.2 and removed with Biome. It is absent from bun.lock until installed; the resulting TS-004 warning is expected."
   - name: "@changesets/cli"
     role: tooling
     version: "3.0.3"
@@ -275,10 +283,10 @@ bill_of_materials:
     role: tooling
     version: "2.3.4"
     ecosystem: other
-    justification: "Bazel-native Python rules over a requirements file exported from uv.lock with bootstrap_impl=script (ADR-0073)."
+    justification: "Provisional Bazel-native Python rules over a requirements file exported from uv.lock with bootstrap_impl=script (ADR-0073). The Python ticket must demonstrate all 298 tests (289 + 8 + 1 across three packages) under both NixOS devenv and ubuntu CI conditions before adoption; aspect_rules_py is the fallback. The spike demonstrated only 289 tests for rules_python."
     radar: trial
     certainty: assumed
-    assumption: "Adopted by ADR-0071, ADR-0072 or ADR-0073 and proven by SPK-KRT-OD005 or SPK-KRT-OD007 on this repository. The pin enters MODULE.bazel when the Bazel epic lands."
+    assumption: "Provisionally selected by ADR-0073; adoption requires all 298 Python tests under NixOS devenv and ubuntu CI conditions, with aspect_rules_py as fallback. The pin enters MODULE.bazel when the Bazel epic lands."
   - name: rules_buf
     role: tooling
     version: "0.5.4"
