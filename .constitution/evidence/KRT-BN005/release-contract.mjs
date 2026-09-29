@@ -68,8 +68,7 @@ const LEAD_OWNED_BOOKKEEPING = new Set([
   ".constitution/tasks/epics/EPIC-BN-public-release-readiness.yaml",
 ]);
 
-const GENERATED_RELEASE_PATH =
-  /^typescript\/.+\/(package\.json|CHANGELOG\.md)$/u;
+const CONSUMED_INTENT_PATH = ".changeset/cool-papayas-bathe.md";
 
 const repoRoot = process.cwd();
 const intentPath = process.argv[2];
@@ -90,10 +89,11 @@ async function main() {
   await assertNoPendingNotes();
   await assertIntent(intentPath);
   await assertRecordedSourceHashes();
-  await assertGeneratedWorkingScope();
+  await assertCommittedReleaseScope(manifests);
+  await assertCurrentWorkingScope();
   await assertBiomeFormat(manifests);
   console.log(
-    "release-contract: OK — 30 packages at 0.2.0; 19 public, 11 private; generated release scope is clean"
+    "release-contract: OK — 30 packages at 0.2.0; 19 public, 11 private; committed release scope and current tree are clean"
   );
 }
 
@@ -349,43 +349,113 @@ async function assertRecordedSourceHashes() {
   );
 }
 
-async function assertGeneratedWorkingScope() {
-  const statusEntries = await gitStatusEntries();
-  const generatedArtifacts = [];
+async function assertCommittedReleaseScope(manifests) {
+  const candidateCommits = (
+    await gitOutput([
+      "log",
+      "--format=%H",
+      "--no-renames",
+      "--diff-filter=D",
+      "HEAD",
+      "--",
+      CONSUMED_INTENT_PATH,
+    ])
+  )
+    .trim()
+    .split("\n")
+    .filter((commit) => commit.length > 0);
+  const expectedReleasePaths = releasePaths(manifests);
+  const acceptedCommits = [];
+  const rejectedCommits = [];
 
-  for (const entry of statusEntries) {
-    if (isGeneratedReleaseArtifact(entry.path)) {
-      generatedArtifacts.push(entry);
+  for (const commit of candidateCommits) {
+    try {
+      await assertReleaseCommitScope(commit, expectedReleasePaths);
+      acceptedCommits.push(commit);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      rejectedCommits.push(`${commit}: ${message}`);
+    }
+  }
+
+  assert(
+    acceptedCommits.length === 1,
+    `expected one committed release scope anchored by ${CONSUMED_INTENT_PATH}, found ${acceptedCommits.length}; rejected candidates: ${rejectedCommits.join("; ")}`
+  );
+  console.log(
+    `release-contract: committed release scope is ${acceptedCommits[0]} with ${expectedReleasePaths.size} generated manifest and changelog paths`
+  );
+}
+
+async function assertReleaseCommitScope(commit, expectedReleasePaths) {
+  const entries = await gitNameStatusEntries([
+    "diff",
+    "--name-status",
+    "--no-renames",
+    `${commit}^`,
+    commit,
+  ]);
+  const entriesByPath = new Map(entries.map((entry) => [entry.path, entry]));
+  const generatedPaths = new Set(
+    entries
+      .filter((entry) => expectedReleasePaths.has(entry.path))
+      .map((entry) => entry.path)
+  );
+
+  assertSetEquals(
+    generatedPaths,
+    expectedReleasePaths,
+    `committed release ${commit} generated paths`
+  );
+
+  for (const generatedPath of expectedReleasePaths) {
+    const entry = entriesByPath.get(generatedPath);
+    assert(
+      entry !== undefined && entry.status !== "D",
+      `committed release ${commit} removed generated path ${generatedPath}`
+    );
+  }
+
+  assert(
+    entriesByPath.get(CONSUMED_INTENT_PATH)?.status === "D",
+    `committed release ${commit} did not delete ${CONSUMED_INTENT_PATH}`
+  );
+
+  for (const entry of entries) {
+    if (
+      expectedReleasePaths.has(entry.path) ||
+      entry.path === CONSUMED_INTENT_PATH
+    ) {
       continue;
     }
 
     assert(
       isLeadOwnedArtifact(entry.path),
-      `working tree contains non-release artifact ${entry.path}`
+      `committed release ${commit} contains unowned product path ${entry.path}`
     );
   }
-
-  const trackedGeneratedArtifacts = generatedArtifacts.filter(
-    (entry) => entry.status !== "??"
-  );
-  const untrackedGeneratedArtifacts = generatedArtifacts.filter(
-    (entry) => entry.status === "??"
-  );
-
-  assert(
-    trackedGeneratedArtifacts.length === 58 &&
-      untrackedGeneratedArtifacts.length === 3,
-    `historical generated scope changed: expected 58 tracked + 3 untracked, found ${trackedGeneratedArtifacts.length} tracked + ${untrackedGeneratedArtifacts.length} untracked`
-  );
-  console.log(
-    "release-contract: historical generated scope is 58 tracked + 3 untracked artifacts"
-  );
 }
 
-function isGeneratedReleaseArtifact(filePath) {
-  return (
-    filePath === ".changeset/cool-papayas-bathe.md" ||
-    GENERATED_RELEASE_PATH.test(filePath)
+function releasePaths(manifests) {
+  return new Set([
+    ...manifests.map((manifest) => relative(manifest.manifestPath)),
+    ...manifests.map((manifest) =>
+      relative(path.join(manifest.directory, "CHANGELOG.md"))
+    ),
+  ]);
+}
+
+async function assertCurrentWorkingScope() {
+  const statusEntries = await gitStatusEntries();
+
+  for (const entry of statusEntries) {
+    assert(
+      isLeadOwnedArtifact(entry.path),
+      `working tree contains unowned artifact ${entry.path}`
+    );
+  }
+  console.log(
+    `release-contract: current working tree has ${statusEntries.length} owned evidence or bookkeeping entries`
   );
 }
 
@@ -403,10 +473,20 @@ async function assertBiomeFormat(manifests) {
       relative(path.join(manifest.directory, "CHANGELOG.md"))
     ),
   ];
-  const result = await execute("bunx", ["biome", "format", ...generatedPaths], {
-    cwd: repoRoot,
-    env: process.env,
-  });
+  const result = await execute(
+    "bunx",
+    [
+      "--bun",
+      "@biomejs/biome",
+      "check",
+      "--config-path=biome.jsonc",
+      ...generatedPaths,
+    ],
+    {
+      cwd: repoRoot,
+      env: process.env,
+    }
+  );
 
   assert(
     result.stderr.length === 0,
@@ -415,8 +495,28 @@ async function assertBiomeFormat(manifests) {
 }
 
 async function gitLines(args) {
+  return (await gitOutput(args))
+    .split("\0")
+    .filter((value) => value.length > 0);
+}
+
+async function gitNameStatusEntries(args) {
+  return (await gitOutput(args))
+    .split("\n")
+    .filter((line) => line.length > 0)
+    .map((line) => {
+      const [status, filePath] = line.split("\t", 2);
+      assert(
+        status !== undefined && filePath !== undefined,
+        `could not parse git name-status entry ${line}`
+      );
+      return { path: filePath, status };
+    });
+}
+
+async function gitOutput(args) {
   const { stdout } = await execute("git", args, { cwd: repoRoot });
-  return stdout.split("\0").filter((value) => value.length > 0);
+  return stdout;
 }
 
 async function gitStatusEntries() {

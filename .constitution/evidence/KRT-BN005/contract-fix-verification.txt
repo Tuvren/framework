@@ -1,0 +1,15 @@
+# Actual repository verification
+
+This is a short excerpt, not a complete transcript.
+
+Command:
+PATH=/home/oscar/GitHub/Tuvren/framework-bn/.devenv/profile/bin:$PATH LC_ALL=C bunx --bun @biomejs/biome check --config-path=biome.jsonc /tmp/KRT-BN005-contract-fix/release-contract.mjs
+PATH=/home/oscar/GitHub/Tuvren/framework-bn/.devenv/profile/bin:$PATH LC_ALL=C bun /tmp/KRT-BN005-contract-fix/release-contract.mjs /home/oscar/GitHub/Tuvren/framework-bn/.constitution/evidence/KRT-BN005/consumed-intent.md
+
+Observed:
+- Bun version: 1.3.10
+- Biome check exit=0: Checked 1 file in 45ms. No fixes applied.
+- Contract exit=0
+- release-contract: committed release scope is 9b9173557a1dc8243d123093fcc4ff376e3cba0b with 60 generated manifest and changelog paths
+- release-contract: current working tree has 1 owned evidence or bookkeeping entries
+- release-contract: OK — 30 packages at 0.2.0; 19 public, 11 private; committed release scope and current tree are clean

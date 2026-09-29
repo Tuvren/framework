@@ -1,0 +1,8 @@
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 17.4ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 22.1ms
+release-contract: negative control rejected stale internal reference
+release-contract: committed release scope is 9b9173557a1dc8243d123093fcc4ff376e3cba0b with 60 generated manifest and changelog paths
+release-contract: current working tree has 1 owned evidence or bookkeeping entries
+release-contract: OK — 30 packages at 0.2.0; 19 public, 11 private; committed release scope and current tree are clean

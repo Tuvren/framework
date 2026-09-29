@@ -2,8 +2,8 @@ owner: KRT-BN005
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: e5354f861c4bc8bb645ec5f72926ed6b3ca88b83
-  command: "Native generated0.2 working-tree release: worker release-check/build/preflight/dryrun and lead independent dryrun/fullverify/artifact contract. Original tooling producer is separately labeled in tooling-command.txt."
+  commit: 9b9173557a1dc8243d123093fcc4ff376e3cba0b
+  command: "Historical native generation and tooling producers are separately labeled in release-command.txt/tooling-command.txt. Latest evidence-only correction: clean committed-scope contract and duplicate-ref HEAD-ancestry control on Bun 1.3.10."
 files:
   - path: assemble-release-plan-7.0.0.metadata.json.txt
     sha256: 0154306aa19380223bfdad8a222bb604ef9c0d1ef11bb2bca67d8b3a3d921335
@@ -13,6 +13,10 @@ files:
     sha256: e39132f5537ddee680881e318c4d2b34b44077f2db24fdd5d437a9c3095c376f
     bytes: 1068
     role: transcript
+  - path: clean-checkout-contract.log
+    sha256: dbd0f719168e7b451cd4325812d19d3ee5a9b280175f85becd58587bf17dd424
+    bytes: 552
+    role: log
   - path: cli-3.0.3.metadata.json.txt
     sha256: d751f649b9c0d695a4e2cab4d3877376fa07f5cb189d6c31a448bae382793553
     bytes: 2899
@@ -25,10 +29,18 @@ files:
     sha256: bf15ba7801f40f58c951ff5cff50fdac2e5542c86a08d978832cfd20d67d90c8
     bytes: 1116
     role: transcript
+  - path: contract-fix-verification.txt
+    sha256: bd07af2611556010307fdea3b84e5dfbf55ca179e8c0f733b222a2336d17035f
+    bytes: 963
+    role: transcript
   - path: final-verify-summary.log
     sha256: 301bbd33ead3d5768d6aea6a1d5296e95e814e322c2dd509c6d3128e8f9f54d4
     bytes: 1915
     role: log
+  - path: head-ancestry-control.txt
+    sha256: 7501edc8808ef34f25691c2316900ade482c4a3f119c3ca83ba0078a6c6df3fa
+    bytes: 1308
+    role: transcript
   - path: publish-dry-run-summary.log
     sha256: 1954b79349999630f71e2fe3e67b95e4635d680340513ecb58067d394c73b945
     bytes: 1888
@@ -42,16 +54,16 @@ files:
     bytes: 2022
     role: log
   - path: release-command.txt
-    sha256: 66aa21bb847f094cac8bf235d29c50625690c3c65e28e5a726e674a461f17896
-    bytes: 2527
+    sha256: ff8c8254bffaf573130645225dd11f3cb55f84fef1b67be1de50e11945f37c4a
+    bytes: 4252
     role: transcript
   - path: release-contract.log
     sha256: bb395008392dd1c15c3ff01b4c682af355fdd817c2d6fe6c42803793bde810b4
     bytes: 401
     role: log
   - path: release-contract.mjs
-    sha256: 35bc009ca943769ba960e4cbb4bb40eca5a5dc3b755315a168275dff63137ced
-    bytes: 12488
+    sha256: 52004ebee70dfd2f3822f2d6b3a8217238d3510ee1a0e33ec2bdd4c28a83f1df
+    bytes: 14970
     role: transcript
   - path: release-negative-control.log
     sha256: bc8b733b034c05efa032051568e99404165a70718b8e88d22fac4f0f129e1c89
@@ -89,4 +101,4 @@ files:
     sha256: 1c6f27b00d09658159c5472e3e6a28efaba37d67c2f956ab882caa52e814d830
     bytes: 2743
     role: transcript
-pass_criteria: "Native generation yields exactly thirty0.2.0 fixed members with nineteen public and eleven private; changelogs and valid dependency ranges match archived intent and consumed replay; private sessions excluded and runtime closure clean; source hashes unchanged; frozen install, full release-check and independent final verify pass; curated build/preflight and nineteen-package registry dryrun pass with no mutation."
+pass_criteria: Native generation yields exactly thirty0.2.0 fixed members with nineteen public and eleven private; changelogs and valid dependency ranges match archived intent and consumed replay; private sessions excluded and runtime closure clean; source hashes unchanged; frozen install, full release-check and independent final verify pass; curated build/preflight and nineteen-package registry dryrun pass with no mutation.
