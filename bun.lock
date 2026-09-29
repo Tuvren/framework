@@ -5,7 +5,7 @@
     "": {
       "name": "tuvren-runtime",
       "devDependencies": {
-        "@biomejs/biome": "2.4.10",
+        "@biomejs/biome": "2.5.14",
         "@changesets/cli": "3.0.3",
         "@nx/js": "22.6.3",
         "@nx/workspace": "22.6.3",
@@ -36,7 +36,7 @@
     },
     "typescript/certification": {
       "name": "@tuvren/framework-typescript-certification",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@ag-ui/core": "0.0.52",
         "@tuvren/stream-agui": "workspace:*",
@@ -46,11 +46,11 @@
     },
     "typescript/core": {
       "name": "@tuvren/core",
-      "version": "0.1.0",
+      "version": "0.2.0",
     },
     "typescript/host/remote-session": {
       "name": "@tuvren/remote-session",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/host-session": "workspace:*",
         "@tuvren/stream-core": "workspace:*",
@@ -61,7 +61,7 @@
     },
     "typescript/host/repl": {
       "name": "@tuvren/repl-host",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@ag-ui/core": "0.0.52",
         "@ai-sdk/anthropic": "3.0.66",
@@ -93,18 +93,18 @@
     },
     "typescript/host/session": {
       "name": "@tuvren/host-session",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "peerDependencies": {
         "@tuvren/core": "workspace:~",
       },
     },
     "typescript/host/session-client": {
       "name": "@tuvren/session-client",
-      "version": "0.1.0",
+      "version": "0.2.0",
     },
     "typescript/kernel/backends/memory": {
       "name": "@tuvren/backend-memory",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/backend-shared": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
@@ -118,7 +118,7 @@
     },
     "typescript/kernel/backends/postgres": {
       "name": "@tuvren/backend-postgres",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/backend-shared": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
@@ -134,7 +134,7 @@
     },
     "typescript/kernel/backends/shared": {
       "name": "@tuvren/backend-shared",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/kernel-protocol": "workspace:*",
       },
@@ -144,7 +144,7 @@
     },
     "typescript/kernel/backends/sqlite": {
       "name": "@tuvren/backend-sqlite",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/backend-shared": "workspace:*",
         "@tuvren/kernel-protocol": "workspace:*",
@@ -161,7 +161,7 @@
     },
     "typescript/kernel/certification": {
       "name": "@tuvren/kernel-typescript-certification",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/backend-memory": "workspace:*",
         "@tuvren/backend-sqlite": "workspace:*",
@@ -172,7 +172,7 @@
     },
     "typescript/kernel/grpc-client": {
       "name": "@tuvren/kernel-grpc-client",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@bufbuild/protobuf": "2.11.0",
         "@connectrpc/connect": "2.1.1",
@@ -185,7 +185,7 @@
     },
     "typescript/kernel/protocol": {
       "name": "@tuvren/kernel-protocol",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "cbor-x": "1.6.4",
       },
@@ -195,7 +195,7 @@
     },
     "typescript/kernel/runtime": {
       "name": "@tuvren/kernel-runtime",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/kernel-protocol": "workspace:*",
       },
@@ -208,7 +208,7 @@
     },
     "typescript/kernel/testkit": {
       "name": "@tuvren/kernel-testkit",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/backend-shared": "workspace:*",
         "@tuvren/core": "workspace:*",
@@ -218,7 +218,7 @@
     },
     "typescript/providers/bridge-ai-sdk": {
       "name": "@tuvren/provider-bridge-ai-sdk",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@ai-sdk/provider": "3.0.8",
         "@tuvren/provider-api": "workspace:*",
@@ -237,7 +237,7 @@
     },
     "typescript/providers/certification": {
       "name": "@tuvren/providers-typescript-certification",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@ai-sdk/provider": "3.0.8",
         "@tuvren/backend-memory": "workspace:*",
@@ -249,14 +249,14 @@
     },
     "typescript/providers/provider-api": {
       "name": "@tuvren/provider-api",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "peerDependencies": {
         "@tuvren/core": "workspace:~",
       },
     },
     "typescript/providers/testkit": {
       "name": "@tuvren/provider-testkit",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.29.0",
         "@modelcontextprotocol/server-everything": "2026.1.26",
@@ -268,7 +268,7 @@
     },
     "typescript/runners/react": {
       "name": "@tuvren/runner-react",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/provider-api": "workspace:*",
         "ajv": "8.18.0",
@@ -284,7 +284,7 @@
     },
     "typescript/runtime": {
       "name": "@tuvren/runtime",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/telemetry-semconv": "workspace:*",
@@ -302,7 +302,7 @@
     },
     "typescript/sdk": {
       "name": "@tuvren/sdk",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/kernel-protocol": "workspace:*",
         "@tuvren/kernel-runtime": "workspace:*",
@@ -323,7 +323,7 @@
     },
     "typescript/streaming/agui": {
       "name": "@tuvren/stream-agui",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@ag-ui/core": "0.0.52",
         "@tuvren/stream-core": "workspace:*",
@@ -337,7 +337,7 @@
     },
     "typescript/streaming/core": {
       "name": "@tuvren/stream-core",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "devDependencies": {
         "@tuvren/framework-testkit": "workspace:*",
       },
@@ -347,7 +347,7 @@
     },
     "typescript/streaming/sse": {
       "name": "@tuvren/stream-sse",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/stream-core": "workspace:*",
       },
@@ -360,7 +360,7 @@
     },
     "typescript/streaming/ws": {
       "name": "@tuvren/stream-ws",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/host-session": "workspace:*",
         "@tuvren/remote-session": "workspace:*",
@@ -375,7 +375,7 @@
     },
     "typescript/telemetry/otel": {
       "name": "@tuvren/telemetry-otel",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@opentelemetry/api": "1.9.1",
       },
@@ -388,11 +388,11 @@
     },
     "typescript/telemetry/semconv": {
       "name": "@tuvren/telemetry-semconv",
-      "version": "0.1.0",
+      "version": "0.2.0",
     },
     "typescript/testkit": {
       "name": "@tuvren/framework-testkit",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@tuvren/core": "workspace:*",
         "ajv": "8.18.0",
@@ -400,7 +400,7 @@
     },
     "typescript/tools/mcp-client": {
       "name": "@tuvren/mcp-client",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.29.0",
         "ajv": "8.18.0",
@@ -624,23 +624,23 @@
 
     "@babel/types": ["@babel/types@7.29.0", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.28.5" } }, "sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A=="],
 
-    "@biomejs/biome": ["@biomejs/biome@2.4.10", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "2.4.10", "@biomejs/cli-darwin-x64": "2.4.10", "@biomejs/cli-linux-arm64": "2.4.10", "@biomejs/cli-linux-arm64-musl": "2.4.10", "@biomejs/cli-linux-x64": "2.4.10", "@biomejs/cli-linux-x64-musl": "2.4.10", "@biomejs/cli-win32-arm64": "2.4.10", "@biomejs/cli-win32-x64": "2.4.10" }, "bin": { "biome": "bin/biome" } }, "sha512-xxA3AphFQ1geij4JTHXv4EeSTda1IFn22ye9LdyVPoJU19fNVl0uzfEuhsfQ4Yue/0FaLs2/ccVi4UDiE7R30w=="],
+    "@biomejs/biome": ["@biomejs/biome@2.5.14", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "2.5.14", "@biomejs/cli-darwin-x64": "2.5.14", "@biomejs/cli-linux-arm64": "2.5.14", "@biomejs/cli-linux-arm64-musl": "2.5.14", "@biomejs/cli-linux-x64": "2.5.14", "@biomejs/cli-linux-x64-musl": "2.5.14", "@biomejs/cli-win32-arm64": "2.5.14", "@biomejs/cli-win32-x64": "2.5.14" }, "bin": { "biome": "bin/biome" } }, "sha512-0FabLIjd4M/dm8VFI86RMaLLdgepzbdfiAL2R8cr7V81OYYrP1w7Z73KfAwPK5h9SrEBXTzNG2y+mBwPo9xRnw=="],
 
-    "@biomejs/cli-darwin-arm64": ["@biomejs/cli-darwin-arm64@2.4.10", "", { "os": "darwin", "cpu": "arm64" }, "sha512-vuzzI1cWqDVzOMIkYyHbKqp+AkQq4K7k+UCXWpkYcY/HDn1UxdsbsfgtVpa40shem8Kax4TLDLlx8kMAecgqiw=="],
+    "@biomejs/cli-darwin-arm64": ["@biomejs/cli-darwin-arm64@2.5.14", "", { "os": "darwin", "cpu": "arm64" }, "sha512-UnzaXO65L4tsZimFITFP2M121GyhDcWFrT3pL5ZJ5U4XcS/0L5VHYytVohdCf/gnDUFHgl2I9xnt5bV/J1kxHQ=="],
 
-    "@biomejs/cli-darwin-x64": ["@biomejs/cli-darwin-x64@2.4.10", "", { "os": "darwin", "cpu": "x64" }, "sha512-14fzASRo+BPotwp7nWULy2W5xeUyFnTaq1V13Etrrxkrih+ez/2QfgFm5Ehtf5vSjtgx/IJycMMpn5kPd5ZNaA=="],
+    "@biomejs/cli-darwin-x64": ["@biomejs/cli-darwin-x64@2.5.14", "", { "os": "darwin", "cpu": "x64" }, "sha512-kiy8qA16K93J7uvFfWi4LgjqDpnRKyePAna6A0Y4jxyUga35SYpIZ2cNWlhy0lsfgqRenCpfymnJWEZ6mgpRgA=="],
 
-    "@biomejs/cli-linux-arm64": ["@biomejs/cli-linux-arm64@2.4.10", "", { "os": "linux", "cpu": "arm64" }, "sha512-7MH1CMW5uuxQ/s7FLST63qF8B3Hgu2HRdZ7tA1X1+mk+St4JOuIrqdhIBnnyqeyWJNI+Bww7Es5QZ0wIc1Cmkw=="],
+    "@biomejs/cli-linux-arm64": ["@biomejs/cli-linux-arm64@2.5.14", "", { "os": "linux", "cpu": "arm64" }, "sha512-vO/9BaU1n30CiFNLx49gMTMtbCAAqlo/EqFoG0BU3deQInTbJrmXSmTQ9e3FoDZIKQnvSLDVNL4lx1ci7y1T1Q=="],
 
-    "@biomejs/cli-linux-arm64-musl": ["@biomejs/cli-linux-arm64-musl@2.4.10", "", { "os": "linux", "cpu": "arm64" }, "sha512-WrJY6UuiSD/Dh+nwK2qOTu8kdMDlLV3dLMmychIghHPAysWFq1/DGC1pVZx8POE3ZkzKR3PUUnVrtZfMfaJjyQ=="],
+    "@biomejs/cli-linux-arm64-musl": ["@biomejs/cli-linux-arm64-musl@2.5.14", "", { "os": "linux", "cpu": "arm64" }, "sha512-SJ9PrZkBnnH9dHJDnxk34vKs0GB2dbsioaft6/hPhWJ7AHpwYH83Isnhj0FSRpFkGgpVfJ1lds23ApB2czUDLQ=="],
 
-    "@biomejs/cli-linux-x64": ["@biomejs/cli-linux-x64@2.4.10", "", { "os": "linux", "cpu": "x64" }, "sha512-tZLvEEi2u9Xu1zAqRjTcpIDGVtldigVvzug2fTuPG0ME/g8/mXpRPcNgLB22bGn6FvLJpHHnqLnwliOu8xjYrg=="],
+    "@biomejs/cli-linux-x64": ["@biomejs/cli-linux-x64@2.5.14", "", { "os": "linux", "cpu": "x64" }, "sha512-VHZRa7CCQBUWKxNwUvHJeuW03WFRgN5NWO//SDGOitc9QIeNyfA42V9zlKm+x82xFSG9Bzi5fi+hbhm9anO8yA=="],
 
-    "@biomejs/cli-linux-x64-musl": ["@biomejs/cli-linux-x64-musl@2.4.10", "", { "os": "linux", "cpu": "x64" }, "sha512-kDTi3pI6PBN6CiczsWYOyP2zk0IJI08EWEQyDMQWW221rPaaEz6FvjLhnU07KMzLv8q3qSuoB93ua6inSQ55Tw=="],
+    "@biomejs/cli-linux-x64-musl": ["@biomejs/cli-linux-x64-musl@2.5.14", "", { "os": "linux", "cpu": "x64" }, "sha512-2kI5PrMgW5dcEZYrstLPmUmCwkUwZY39rP4BN93Vxbwcs2O57LDQOktUZZYPvvspN5i0mhGr3TJtF5sU26NUWg=="],
 
-    "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.4.10", "", { "os": "win32", "cpu": "arm64" }, "sha512-umwQU6qPzH+ISTf/eHyJ/QoQnJs3V9Vpjz2OjZXe9MVBZ7prgGafMy7yYeRGnlmDAn87AKTF3Q6weLoMGpeqdQ=="],
+    "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.5.14", "", { "os": "win32", "cpu": "arm64" }, "sha512-pHgAFffmZtaYoxavEsWEYNvcA7NwOIjLyqw2HXyLbt16xYryX0L4fMV2u0G9ag6LNYPIoqWaWqzUcnc6rLGGXg=="],
 
-    "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.4.10", "", { "os": "win32", "cpu": "x64" }, "sha512-aW/JU5GuyH4uxMrNYpoC2kjaHlyJGLgIa3XkhPEZI0uKhZhJZU8BuEyJmvgzSPQNGozBwWjC972RaNdcJ9KyJg=="],
+    "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.5.14", "", { "os": "win32", "cpu": "x64" }, "sha512-oJWmBhoHsnhUKIke+0gXDX0mltJrWHA1UyHsrTlXwX0TL64ilVZAo+TYZm97baecV0esBdpzy3k96q+09JaZUQ=="],
 
     "@bufbuild/protobuf": ["@bufbuild/protobuf@2.11.0", "", {}, "sha512-sBXGT13cpmPR5BMgHE6UEEfEaShh5Ror6rfN3yEK5si7QVrtZg8LEPQb0VVhiLRUslD2yLnXtnRzG035J/mZXQ=="],
 
