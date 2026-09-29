@@ -6,6 +6,8 @@ target
 *.tsbuildinfo
 .nx/cache
 .nx/workspace-data
+.nx/polygraph
+.nx/self-healing
 .devenv
 .devenv.flake.nix
 .direnv
