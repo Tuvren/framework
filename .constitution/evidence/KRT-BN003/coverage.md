@@ -11,3 +11,10 @@ synthetic workspace. The empty fixture marker is input to native package
 discovery, not a dependency lock or a versioning oracle. All twenty assertions
 and scenarios remain unchanged and pass on the retained CLI2.31 baseline.
 The prospective CLI3 probe separately verifies that same corpus before adoption.
+
+CLI3.0.3 is now installed and the same twenty cases pass. M3d awaits the full
+asynchronous file comparison before finally removes the replay worktree. The
+unawaited copy failed five of six nineteen-public-package replays because
+expected files disappeared during cleanup; the exact await-only copy passed
+ten consecutive replays. The installed fix passed three consecutive real gates,
+then the lead repeated the actual gate successfully. Comparisons are unchanged.

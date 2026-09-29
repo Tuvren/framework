@@ -1,0 +1,3 @@
+Producer parent56250e7; working-tree await fix plus generated0.2 release; Bun1.3.10/CLI3.0.3.
+$ bun tools/scripts/changeset-check.ts "--base=master"
+changeset-check: OK — consumed changesets reproduce the generated public release

@@ -1,0 +1,20 @@
+Producer parent56250e7; working-tree await fix plus generated0.2 release; Bun1.3.10/CLI3.0.3.
+$ /nix/store/ffgyf7g2n4gbhi1zgbcphssivfah1c4s-bun-1.3.10/bin/bun test tools/scripts/changeset-check.test.ts
+bun test v1.3.10 (30e609e0)
+
+tools/scripts/changeset-check.test.ts:
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — consumed changesets reproduce the generated public release
+changeset-check: OK — consumed changesets reproduce the generated public release
+
+ 20 pass
+ 0 fail
+ 108 expect() calls
+Ran 20 tests across 1 file. [4.97s]
+exit=0

@@ -663,7 +663,8 @@ async function proveConsumedGeneratedRelease(options: {
       return "installed Changesets could not replay the pending release snapshot";
     }
 
-    return compareGeneratedRelease(
+    // Await before finally removes the replay worktree while comparisons read it.
+    return await compareGeneratedRelease(
       options.rootDirectory,
       temporaryDirectory,
       options.manifests
