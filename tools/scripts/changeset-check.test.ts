@@ -131,6 +131,28 @@ describe("changeset-check", () => {
     await expect(check(fixture)).resolves.toBeUndefined();
   });
 
+  test("does not let a native-valid none release cover a public package", async () => {
+    const fixture = await createFixture();
+    await fixture.publicChange("export const changed = true;\n");
+    await fixture.writeChangeset("public-none.md", '"@tuvren/public-a": none');
+    await fixture.commit("change public package with no release intent");
+
+    const outputPath = path.join(fixture.root, "status.json");
+    const status = await run(
+      process.execPath,
+      [CHANGESET_CLI, "status", "--since", "master", "--output", outputPath],
+      fixture.root
+    );
+    const report = JSON.parse(await readFile(outputPath, "utf8")) as unknown;
+
+    expect(status.exitCode).toBe(0);
+    expect(releaseVersion(report, "@tuvren/public-a")).toEqual({
+      newVersion: "1.0.0",
+      oldVersion: "1.0.0",
+    });
+    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+  });
+
   test("does not let an old pending changeset cover a new public change", async () => {
     const fixture = await createFixture();
     await run("git", ["checkout", "master"], fixture.root);
@@ -493,6 +515,33 @@ function releaseNames(value: unknown): string[] {
   }
 
   return names;
+}
+
+function releaseVersion(
+  value: unknown,
+  packageName: string
+): { readonly newVersion: string; readonly oldVersion: string } {
+  if (!(isObject(value) && Array.isArray(value.releases))) {
+    throw new Error("Changesets status did not produce a releases array");
+  }
+
+  const release = value.releases.find(
+    (entry) => isObject(entry) && entry.name === packageName
+  );
+
+  if (
+    !(
+      isObject(release) &&
+      typeof release.oldVersion === "string" &&
+      typeof release.newVersion === "string"
+    )
+  ) {
+    throw new Error(
+      `Changesets status did not produce versions for ${JSON.stringify(packageName)}`
+    );
+  }
+
+  return { newVersion: release.newVersion, oldVersion: release.oldVersion };
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

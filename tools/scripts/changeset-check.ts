@@ -134,8 +134,12 @@ export async function checkChangesetCoverage(
       continue;
     }
 
-    for (const name of changeset.releaseTypes.keys()) {
-      coveredNames.add(name);
+    for (const [name, releaseType] of changeset.releaseTypes) {
+      // Changesets accepts `none` as a valid no-release entry. It cannot
+      // satisfy the required release intent for a changed public package.
+      if (releaseType !== "none") {
+        coveredNames.add(name);
+      }
     }
   }
 

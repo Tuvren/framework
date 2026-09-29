@@ -11,7 +11,7 @@ changeset-check: OK — direct changeset coverage for 1 publishable package(s)
 changeset-check: OK — consumed changesets reproduce the generated public release
 changeset-check: OK — consumed changesets reproduce the generated public release
 
- 19 pass
+ 20 pass
  0 fail
- 103 expect() calls
-Ran 19 tests across 1 file. [6.94s]
+ 108 expect() calls
+Ran 20 tests across 1 file. [7.54s]
