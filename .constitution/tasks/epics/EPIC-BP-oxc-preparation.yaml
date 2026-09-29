@@ -1,0 +1,163 @@
+id: BP
+name: "OXC configuration and formatter preparation; mechanical reformat exempt"
+kind: tooling
+capabilities: []
+depends_on: [BO]
+scope:
+  paths:
+    - package.json
+    - bun.lock
+    - ".github/dependabot.yml"
+    - devenv.nix
+    - oxlint.config.ts
+    - oxfmt.config.ts
+    - tools
+    - typescript
+    - spec
+    - reports/compatibility
+    - tests
+    - tsconfig.base.json
+    - tsconfig.json
+    - biome.jsonc
+    - ".constitution/tech-spec/stack.yaml"
+  tech_spec_patchable: [".constitution/tech-spec/stack.yaml"]
+estimated_diff_lines: 3000
+estimate_source: planned
+tickets:
+  - id: KRT-BP001
+    title: Install OXC and load unchanged config presets
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BP002]
+    scope:
+      in:
+        - package.json
+        - bun.lock
+        - ".github/dependabot.yml"
+        - devenv.nix
+        - oxlint.config.ts
+        - oxfmt.config.ts
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if latest ultracite requires an OXC rule override or breaks the retained Biome gate beyond the measured sorted-key correction occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Install oxlint, oxfmt and oxlint-tsgolint with ultracite latest as a config-only dependency. Run binaries directly. Repeat preset ignorePatterns because extends does not inherit them, and add .constitution/**. Exclude Markdown, YAML and TOML from oxfmt. Remove the temporary ultracite hold with the manual bump. Keep Biome lint green during the ratchet, including the measured new sorted-key diagnostic from the preset bump. Assumption: The installed OXC pins and latest ultracite exports preserve the measured configuration behavior."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert both configs load under Bun, the preset rule set has no local overrides, type-aware backend is installed, .constitution files are untouched, and only TypeScript and JSON are formatted. Biome lint remains a working gate before any directory switches."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-BP002
+    title: Remove the formatter parse blocker
+    type: Chore
+    effort: 2
+    depends_on: []
+    scope:
+      in: [tools/scripts/epic-af-conformance-gap-plan.ts]
+    verification:
+      command: "bun run docs:af-gap-plan:check"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: ADR-0070 and SPK-KRT-OD006. Fix TS1354 at the measured readonly Array declaration around line 497. Preserve the generated gap-plan behavior and close the preset-bump sorted-key diagnostic in this same narrowly scoped script change.
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the script parses, its gap-plan freshness check succeeds, and both retained Biome and OXC can inspect it without grammar failure."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-BP003
+    title: Make generators produce oxfmt-clean artifacts
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BP001, KRT-BP002]
+    scope:
+      in:
+        - tools/scripts/conformance/format-generated-json.ts
+        - tools/scripts/conformance/generate-kernel-plans.ts
+        - tools/scripts/telemetry-codegen.ts
+        - tools/scripts/api-freeze-gate.ts
+        - tools/scripts/compatibility-report.ts
+        - spec
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if regeneration changes authority values or requires weakening the kernel-plan semantic guard occurs; do not improvise."
+    description: ADR-0070 and SPK-KRT-OD006. Swap the four formatter callers and seven spec artifact targets to oxfmt. Extend kernel-plan regeneration so its master guard does not prevent the approved formatter regeneration. Preserve semantic guardrails. Keep a matched JSON path in telemetry formatting so generated-helper ignores do not cause exit 2. Stage outputs for the separate mechanical ticket.
+    acceptance:
+      mode: contract_test
+      evidence: "Assert generator commands use oxfmt, no formatter caller uses Biome, every target still declares its artifact inputs, and regeneration preserves parsed authority. Re-running bun run codegen must be clean after the mechanical output commit."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-BP004
+    title: Land one mechanical format and regeneration commit
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BP003]
+    scope:
+      in:
+        - tools
+        - typescript
+        - spec
+        - reports/compatibility
+        - tests
+        - package.json
+        - tsconfig.base.json
+        - tsconfig.json
+        - biome.jsonc
+        - oxlint.config.ts
+        - oxfmt.config.ts
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if parsed JSON changes or any constitution evidence digest changes occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Apply one mechanical oxfmt pass and re-emit outputs through the changed generators, including compatibility-report outputs not previously exercised end to end. This ticket is alone in one mechanical commit, exempt from the diff budget and excluded from this epic estimated_diff_lines. Never format .constitution or SHA-pinned evidence."
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: parsed generated artifacts and runtime behavior are unchanged; a second generator and formatter pass produces no diff. Checker: bun run codegen plus oxfmt check. Preserve all constitution evidence digests."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-BP005
+    title: Expose full type-aware project coverage
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BP004]
+    scope:
+      in: [typescript, tools]
+    verification:
+      command: bun run typecheck
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if project discovery requires changing public package resolution or generated declarations leak into source occurs; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Add tsconfig.typecheck.json references to the 25 package tsconfigs, the three missing certification-wrapper tsconfigs, and typecheck configs for all three conformance adapters. Cover tests, benches and smoke files. Re-measure the adapter diagnostics after resolution noise disappears."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert all intended files resolve through project references, the measured 2423 then 354 project-resolution errors are eliminated, and type-aware diagnostics are counted from resolved types. Repository typecheck remains source-only; type-aware lint receives declaration prerequisites where required."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-BP006
+    title: Record installed OXC pins in a spec-only patch
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BP005]
+    scope:
+      in: [".constitution/tech-spec/stack.yaml"]
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: ADR-0070 and SPK-KRT-OD006. Record the installed OXC and ultracite pins with lockfile evidence in a separate spec-only commit. Keep Biome declared as the active lint gate until the directory ratchet completes.
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: stack records match the installed manifests and lockfile, and Biome retirement is still conditional on all directory gates. Checker: bun run lint and constitution pin validation."
+    flows: []
+    certainty: settled
+    status: planned

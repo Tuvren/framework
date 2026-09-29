@@ -1,0 +1,82 @@
+id: CD
+name: Staged Bun workspace pilot and CI sandbox gate
+kind: tooling
+capabilities: []
+depends_on: [CC]
+scope:
+  paths:
+    - tools/bazel/bun-workspace.bzl
+    - tools/bazel/ts-package.bzl
+    - tools/bazel/ts-runner.sh
+    - typescript/core/BUILD.bazel
+    - typescript/kernel/protocol/BUILD.bazel
+    - typescript/kernel/runtime/BUILD.bazel
+    - ".github/workflows/ci.yml"
+    - MODULE.bazel
+    - MODULE.bazel.lock
+  tech_spec_patchable: []
+estimated_diff_lines: 7500
+estimate_source: planned
+tickets:
+  - id: KRT-CD001
+    title: Produce the staged install and package graph
+    type: Chore
+    effort: 8
+    depends_on: []
+    scope:
+      in: [tools/bazel/bun-workspace.bzl, MODULE.bazel, MODULE.bazel.lock]
+    verification:
+      command: bun run check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if repository production silently reads a parent checkout or offline installation touches the network occurs; do not improvise."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Build a bun install repository rule over frozen bun.lock and watched workspace manifests. Emit the package graph and content stamp, including Bun version. Stage install contents only through the rule. Exercise offline with a prewarmed cache and prefer-offline otherwise; retain the declared node_modules trust boundary. Assumption: Offline repository production works with the upgraded Bun and the complete workspace graph. Wire the repository rule and generated graph into MODULE.bazel in this code-only change; the shared native module registrations are already complete."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert changing a manifest or bun.lock reruns repository production, identical inputs reuse it, and an offline prewarmed install succeeds without network. An uncached offline package fails loudly. Record that tampering with installed node_modules is outside the stamp trust boundary."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-CD002
+    title: Implement split build and source-check edges
+    type: Chore
+    effort: 8
+    depends_on: [KRT-CD001]
+    scope:
+      in:
+        - tools/bazel/ts-package.bzl
+        - tools/bazel/ts-runner.sh
+        - typescript/core/BUILD.bazel
+        - typescript/kernel/protocol/BUILD.bazel
+        - typescript/kernel/runtime/BUILD.bazel
+    verification:
+      command: "bun run verify:kernel"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if a cached green result survives a failing declared-input mutation or dts writes into source folders occurs; do not improvise."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Use ts_package and a shared runner for core to kernel/protocol to kernel/runtime. Build actions consume upstream dist; typecheck and test consume declared source. Copy files into a private stage so realpath cannot escape. Use explicit Bun, tsup and tsc paths; never bunx. Declare the backend and spec/kernel non-manifest inputs measured by the spike. Assumption: The staged macro preserves package resolution and action invalidation on the integrated repository graph."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the seven pilot actions resolve to staged paths, deletion of in-tree dist and parent node_modules does not change correct results, comment-only edits cut off byte-identical downstream builds, and omitted inputs fail loudly rather than serving a cached pass. Removing a declared source invalidates its consumers."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-CD003
+    title: Prove the pilot under linux-sandbox in CI
+    type: Chore
+    effort: 8
+    depends_on: [KRT-CD002]
+    scope:
+      in: [".github/workflows/ci.yml"]
+    verification:
+      command: "bun run verify:kernel"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if linux-sandbox cannot execute the model without an undeclared mount or host input occurs; do not improvise."
+    description: "ADR-0071 and ADR-0072; SPK-KRT-OD005. Run the staged pilot under ubuntu linux-sandbox while Nx stays the comparison lane. Include missing-input and stale-dist probes on the same commit. Do not treat NixOS processwrapper evidence as filesystem isolation proof. Assumption: The staged repository store is readable through declared paths under linux-sandbox, which the spike could not exercise."
+    acceptance:
+      mode: runbook_probe
+      evidence: "Apply CI linux-sandbox to the seven pilot actions. Probe missing declared inputs, deleted in-tree dist and removed checkout node_modules. Expect correct cold and cached results, no ancestor tool fallback, and Nx/Bazel parity on the same commit before rollout."
+    flows: []
+    certainty: assumed
+    status: planned

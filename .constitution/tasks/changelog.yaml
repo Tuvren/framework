@@ -1,4 +1,49 @@
 entries:
+  - version: v0.47.0
+    date: 2026-09-29
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.0
+    added:
+      - "EPIC-BO Bun refresh and buffer ownership: 5 tickets, 29 points, 4000 estimated diff lines; depends on none."
+      - "EPIC-BP OXC configuration and formatter preparation; mechanical reformat exempt: 6 tickets, 23 points, 3000 estimated diff lines; depends on BO."
+      - "EPIC-BQ Kernel protocol and runtime lint pilot: 4 tickets, 24 points, 12500 estimated diff lines; depends on BP."
+      - "EPIC-BR Kernel backend lint ratchet: 4 tickets, 24 points, 14500 estimated diff lines; depends on BQ."
+      - "EPIC-BS Kernel support lint ratchet: 4 tickets, 24 points, 11500 estimated diff lines; depends on BQ."
+      - "EPIC-BT Framework runtime lint ratchet: 4 tickets, 24 points, 14500 estimated diff lines; depends on BQ."
+      - "EPIC-BU Repository script library lint ratchet: 4 tickets, 24 points, 12000 estimated diff lines; depends on BQ."
+      - "EPIC-BV Repository script gate lint ratchet: 4 tickets, 24 points, 14500 estimated diff lines; depends on BQ."
+      - "EPIC-BW Conformance tooling lint ratchet: 4 tickets, 24 points, 9000 estimated diff lines; depends on BQ."
+      - "EPIC-BX Host package lint ratchet: 4 tickets, 24 points, 12500 estimated diff lines; depends on BQ."
+      - "EPIC-BY Conformance adapter lint ratchet: 4 tickets, 24 points, 14000 estimated diff lines; depends on BQ."
+      - "EPIC-BZ Provider and runner lint ratchet: 4 tickets, 24 points, 14500 estimated diff lines; depends on BQ."
+      - "EPIC-CA Small TypeScript package lint ratchet: 4 tickets, 24 points, 14000 estimated diff lines; depends on BQ."
+      - "EPIC-CB Retire Biome after all directory gates: 5 tickets, 15 points, 2500 estimated diff lines; depends on BR, BS, BT, BU, BV, BW, BX, BY, BZ, CA."
+      - "EPIC-CC Bazel shared toolchain bootstrap: 5 tickets, 26 points, 5500 estimated diff lines; depends on CB."
+      - "EPIC-CD Staged Bun workspace pilot and CI sandbox gate: 3 tickets, 24 points, 7500 estimated diff lines; depends on CC."
+      - "EPIC-CE Bazel-native Rust workspace: 3 tickets, 15 points, 5500 estimated diff lines; depends on CC."
+      - "EPIC-CF Bazel-native Go workspace: 2 tickets, 10 points, 4000 estimated diff lines; depends on CC."
+      - "EPIC-CG Bazel-native Python workspace: 2 tickets, 10 points, 5000 estimated diff lines; depends on CC."
+      - "EPIC-CH Dart native-wrapped Bazel exception: 2 tickets, 13 points, 4500 estimated diff lines; depends on CC."
+      - "EPIC-CI Staged TypeScript kernel and runtime rollout: 2 tickets, 10 points, 11500 estimated diff lines; depends on CD."
+      - "EPIC-CJ Staged TypeScript host and adapter rollout: 2 tickets, 10 points, 10000 estimated diff lines; depends on CD."
+      - "EPIC-CK Staged TypeScript remaining packages: 2 tickets, 10 points, 12500 estimated diff lines; depends on CD."
+      - "EPIC-CL Bazel project identity and discovery: 3 tickets, 15 points, 5500 estimated diff lines; depends on CC."
+      - "EPIC-CM Bazel TypeSpec and telemetry freshness: 3 tickets, 13 points, 10000 estimated diff lines; depends on CL."
+      - "EPIC-CN Bazel proto and conformance freshness: 4 tickets, 21 points, 11000 estimated diff lines; depends on CL."
+      - "EPIC-CO Bazel external suites and git-aware gates: 3 tickets, 15 points, 10000 estimated diff lines; depends on CE, CF, CG, CH, CI, CJ, CK, CM, CN."
+      - "EPIC-CP Bazel affected selection CI and release rehearsal: 4 tickets, 21 points, 7000 estimated diff lines; depends on CO."
+      - "EPIC-CQ Final Nx removal and owner handoff: 4 tickets, 15 points, 6500 estimated diff lines; depends on CP."
+    changed:
+      - "Calibration: INFO-CAL actual/estimate = 10.11 over 1 completed epic; 4 excluded. Actuals ran far above estimates. The newest release closeout reports 8596 diff lines and 2 review rounds for 23 points, about 373.74 diff lines per point and 0.087 review rounds per point. This is one observation, not a reliable conversion of points into diff size."
+      - "Uncertain implementation takes the higher Fibonacci step, with effort capped at 8 and work split by owned paths instead of stacked points. Bun precedes all OXC epics; completed OXC precedes every Bazel epic. The kernel protocol/runtime pilot blocks every later directory ratchet and returns func-style and no-use-before-define to the owner on any runtime or conformance regression."
+      - "The single BP mechanical formatter/regeneration commit is exempt from the review diff budget and excluded from BP estimated_diff_lines. CB records its actual merged SHA in a separate follow-up commit after BP has merged. Other splits widen the post-pilot lint wave or native/package/gate Bazel waves; small shared bootstrap and closing epics are bounded below the usual review band."
+      - "Schema and validator allow multiple tooling epics with empty capabilities and flows; no foundation is required for this tooling-only evolution. Spec-patch tickets declare only stack, guidelines and ADR records and execute separately from code."
+      - "The affected-detection choice stays a planned Spike SPK-KRT-CP001, followed by adoption of the measured approved candidate. TSK-006 currently rejects its missing future report. Stage 4 cannot create a research report before the Spike runs or write spikes/; constitution-tooling owns this planned-Spike validation conflict."
+      - "NFC-01 through NFC-09 replacement commands require a separate Stage 1 patch coordinated with final cut-over. Retain runnable old commands until that handoff is complete. The closing ticket hands renamed check requirements to the repository owner; it never changes branch protection."
+      - "Unrelated release reconciliation follow-ups remain outside this decided toolchain scope. NixOS fixed-PATH accommodations and ubuntu staged-workspace isolation are explicitly assumed proof gates; optional isolatedDeclarations work and lifting the Dart exception are follow-ups, not silent stack choices."
   - version: v0.46.1
     date: 2026-09-29
     changed:

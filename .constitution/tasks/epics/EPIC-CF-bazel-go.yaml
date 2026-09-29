@@ -1,0 +1,61 @@
+id: CF
+name: Bazel-native Go workspace
+kind: tooling
+capabilities: []
+depends_on: [CC]
+scope:
+  paths:
+    - go/kernel/BUILD.bazel
+    - go/kernel-conformance-adapter/BUILD.bazel
+    - go/kernel-certification/BUILD.bazel
+    - tools/bazel/go.bzl
+  tech_spec_patchable: []
+estimated_diff_lines: 4000
+estimate_source: planned
+tickets:
+  - id: KRT-CF001
+    title: Seed module BUILD files and wire gazelle
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - go/kernel/BUILD.bazel
+        - go/kernel-conformance-adapter/BUILD.bazel
+        - go/kernel-certification/BUILD.bazel
+        - tools/bazel/go.bzl
+    verification:
+      command: bun run check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Validate the three module BUILD seeds from CC before invoking go_deps and finish gazelle 0.54.0 generation through rules_go 0.63.0 over go.work. Keep the approved Go 1.25.7 pin; the shared module registrations are already wired."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert all three module imports resolve and repeated gazelle generation is clean. No dependency is selected outside native workspace authority; adding the first third-party go.sum is recorded as a mandatory re-test trigger."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CF002
+    title: Run Go tests and nogo through native Bazel rules
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CF001]
+    scope:
+      in:
+        - go/kernel/BUILD.bazel
+        - go/kernel-conformance-adapter/BUILD.bazel
+        - go/kernel-certification/BUILD.bazel
+        - tools/bazel/go.bzl
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Cover kernel, adapter and certification targets with rules_go and nogo, adding gofmt through the approved lint aspect where useful. Preserve workspace semantics."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the 117-test spike baseline is covered and matches native Go on the same commit in scrubbed-PATH and ubuntu environments. Unchanged inputs cache; an edited package invalidates only its dependents."
+    flows: []
+    certainty: settled
+    status: planned

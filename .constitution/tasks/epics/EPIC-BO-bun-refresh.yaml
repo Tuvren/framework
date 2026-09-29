@@ -1,0 +1,126 @@
+id: BO
+name: Bun refresh and buffer ownership
+kind: tooling
+capabilities: []
+depends_on: []
+scope:
+  paths:
+    - devenv.nix
+    - devenv.lock
+    - package.json
+    - bun.lock
+    - ".github/dependabot.yml"
+    - ".github/workflows"
+    - spec/telemetry
+    - tools/scripts/telemetry-codegen.ts
+    - typescript/telemetry/semconv/src/lib/generated
+    - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
+    - typescript/kernel/backends/memory/src
+    - ".constitution/tech-spec/stack.yaml"
+  tech_spec_patchable: [".constitution/tech-spec/stack.yaml"]
+estimated_diff_lines: 4000
+estimate_source: planned
+tickets:
+  - id: KRT-BO001
+    title: Copy memory backend buffers at both boundaries
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in: [typescript/kernel/backends/memory/src]
+    verification:
+      command: "bun run nx run backend-memory:test"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if unchanged tests fail or record encoding changes occurs; do not improvise."
+    description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. Stored bytes remain owned by the backend. Reads and writes copy buffers so a cbor-x decoder cannot mutate stored records through dataView. Keep all backend tests unchanged."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert caller-buffer mutation after writing and mutation of a returned buffer cannot alter a later read. All 77 unchanged memory-backend tests pass, including the three Bun 1.4 regression cases."
+      supplementary: [live_probe]
+      recipe: reference-host-memory-scenario
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-BO002
+    title: Refresh devenv and migrate Weaver atomically
+    type: Chore
+    effort: 8
+    depends_on: [KRT-BO001]
+    scope:
+      in:
+        - devenv.nix
+        - devenv.lock
+        - spec/telemetry
+        - tools/scripts/telemetry-codegen.ts
+        - typescript/telemetry/semconv/src/lib/generated
+        - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if Weaver cannot read schema_url, PostgreSQL leaves major 17, or full verification fails occurs; do not improvise."
+    description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. The nixpkgs refresh, registry_manifest.yaml to manifest.yaml rename, one schema_url, generator manifest reader, and regeneration of the four telemetry artifacts land in one code-only change. Keep pkgs.postgresql_17 explicit. Prove the refreshed tools through the full lane before aligning Bun; never land the manifest against Weaver 0.21.2. Assumption: The refreshed shared nixpkgs pin preserves all other generator and runtime checks."
+    acceptance:
+      mode: runbook_probe
+      evidence: "Apply the refreshed environment and run bun run codegen and bun run verify. Probe Weaver manifest resolution and PostgreSQL major 17. Expect stable second regeneration of semantic-conventions.md, otel-attributes.json, the TypeScript helper and Rust helper, and no semantic vocabulary drift."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-BO003
+    title: Align Bun and remove the upgrade hold
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BO002]
+    scope:
+      in: [devenv.nix, package.json, bun.lock, ".github/dependabot.yml"]
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the binary differs from packageManager or frozen installation changes the lockfile occurs; do not improvise."
+    description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. Move the runtime to the latest available 1.4.x from the refreshed pin, at least 1.4.1. Align packageManager with the actual binary and remove the >=1.4.0 holds for bun, bun-types and @types/bun. Record any lockfile-format transition without unrelated dependency upgrades. Assumption: The selected 1.4.x binary and lockfile format preserve frozen workspace installs."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert installed Bun and packageManager match, frozen install is repeatable, the three upgrade holds are absent, and the unchanged memory backend suite and full verification pass on that binary."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-BO004
+    title: Measure isolation and credential-scoping behavior
+    type: Chore
+    effort: 8
+    depends_on: [KRT-BO003]
+    scope:
+      in: [package.json, bun.lock, ".github/workflows"]
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if isolation changes semantics beyond runner configuration or credential scoping cannot be proven without publishing occurs; do not improvise."
+    description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. Review all 204 test files for cross-file state against observed Bun 1.4 isolation behavior, including --isolate. Record whether it is the default instead of trusting conflicting notes. Check trustedDependencies and registry-credential scoping against manifests and CI, with bounded fixes only where observed behavior requires them. Assumption: Isolation defaults and scoped trust/auth behavior remain unmeasured on the installed 1.4.x."
+    acceptance:
+      mode: runbook_probe
+      evidence: "Apply the installed Bun test help and compare ordinary and isolated test runs across the 204-file inventory. Probe dependency trust and registry auth without publishing or recording credentials. Expect equivalent test outcomes, authorized installation only, and no credential leakage."
+    flows: []
+    certainty: assumed
+    status: planned
+  - id: KRT-BO005
+    title: Settle the Bun stack pin separately
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BO004]
+    scope:
+      in: [".constitution/tech-spec/stack.yaml"]
+    verification:
+      command: bun run verify
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the preceding measurements do not establish the pins occurs; do not improvise."
+    description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. In a spec-only commit, settle Bun from agreement among the actual devenv binary, lockfiles and packageManager. Record refreshed shared tool pins from the preceding evidence; do not combine this patch with code."
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: stack records equal the observed installed tools and repository pins. Checker: bun run verify with the preceding frozen-install and codegen evidence; constitution validation adds no pin discrepancy."
+    flows: []
+    certainty: settled
+    status: planned

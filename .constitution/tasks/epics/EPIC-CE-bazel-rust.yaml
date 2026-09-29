@@ -1,0 +1,79 @@
+id: CE
+name: Bazel-native Rust workspace
+kind: tooling
+capabilities: []
+depends_on: [CC]
+scope:
+  paths:
+    - rust/kernel/BUILD.bazel
+    - rust/kernel-grpc-service/BUILD.bazel
+    - rust/conformance-adapter/BUILD.bazel
+    - rust/kernel-conformance-adapter/BUILD.bazel
+    - rust/certification/BUILD.bazel
+    - rust/kernel-certification/BUILD.bazel
+    - tools/bazel/rust.bzl
+  tech_spec_patchable: []
+estimated_diff_lines: 5500
+estimate_source: planned
+tickets:
+  - id: KRT-CE001
+    title: Port kernel and restore its missing unit-test target
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in: [rust/kernel/BUILD.bazel, tools/bazel/rust.bzl]
+    verification:
+      command: "bun run verify:kernel"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Use crate_universe over Cargo.lock for the kernel library and unit tests, with rustfmt and Clippy aspects. Restore the 27 kernel tests omitted by the standing Bazel island."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert all 27 kernel unit tests are selected by the Bazel test target and match Cargo on the same commit. A kernel source edit reruns the target, and unchanged inputs cache correctly."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CE002
+    title: Port gRPC service and build-script generation
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CE001]
+    scope:
+      in: [rust/kernel-grpc-service/BUILD.bazel, tools/bazel/rust.bzl]
+    verification:
+      command: bun run interop-smoke
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Run build.rs through cargo_build_script with declared proto inputs and pinned protoc. Preserve generated bindings and Cargo feature selection."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert Cargo and Bazel service outputs agree, build-script proto dependencies invalidate generation, and no action reads an in-tree target directory or host protoc."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CE003
+    title: Port Rust adapters and certification wrappers
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CE002]
+    scope:
+      in:
+        - rust/conformance-adapter/BUILD.bazel
+        - rust/kernel-conformance-adapter/BUILD.bazel
+        - rust/certification/BUILD.bazel
+        - rust/kernel-certification/BUILD.bazel
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: "ADR-0071 and ADR-0073; SPK-KRT-OD007. Finish the remaining four crates so all six Rust workspace crates have build, test and lint targets. Keep certification wrappers distinct from the shared grading engine."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert all six crates have targets and the complete 78-test spike baseline is covered, including the restored kernel tests. Scrubbed-PATH and ubuntu results agree with Cargo on the same commit."
+    flows: []
+    certainty: settled
+    status: planned

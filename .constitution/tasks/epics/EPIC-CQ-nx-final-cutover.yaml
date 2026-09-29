@@ -1,0 +1,146 @@
+id: CQ
+name: Final Nx removal and owner handoff
+kind: tooling
+capabilities: []
+depends_on: [CP]
+scope:
+  paths:
+    - nx.json
+    - package.json
+    - bun.lock
+    - tools/run-nx.mjs
+    - tools/nx
+    - tools/bazel/nx-run.sh
+    - tools/bazel/native_binary.bzl
+    - tools/bazel/BUILD.bazel
+    - tools/scripts/verify.ts
+    - tools/scripts/verify-kernel.ts
+    - tools/scripts/check.ts
+    - tools/scripts/lib/nx-projects.ts
+    - ".github/workflows/ci.yml"
+    - CLAUDE.md
+    - AGENTS.md
+    - BUILD.bazel
+    - typescript
+    - rust
+    - go
+    - python
+    - dart
+    - spec
+    - reports/compatibility
+    - ".constitution/tech-spec/stack.yaml"
+    - ".constitution/tech-spec/guidelines.md"
+    - ".constitution/tech-spec/adrs/ADR-0069-public-release-discipline.md"
+    - tools/scripts/lib/project-manifest.ts
+  tech_spec_patchable:
+    - ".constitution/tech-spec/stack.yaml"
+    - ".constitution/tech-spec/guidelines.md"
+    - ".constitution/tech-spec/adrs/ADR-0069-public-release-discipline.md"
+estimated_diff_lines: 6500
+estimate_source: planned
+tickets:
+  - id: KRT-CQ001
+    title: Prepare specification and meter cut-over separately
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in:
+        - ".constitution/tech-spec/guidelines.md"
+        - ".constitution/tech-spec/adrs/ADR-0069-public-release-discipline.md"
+    verification:
+      command: bun run release-check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the Stage 1 meter rewrite has not landed or any recipe/verification command loses a runnable final-head replacement occurs; do not improvise."
+    description: "ADR-0071 decisions 3, 11 and 13; ADR-0069 amendment. Use a spec-only commit to record the implemented named suites and renamed CI checks in ADR-0069. Rewrite guideline verification commands and live recipes to the proven targets. Retain historical command records with exists false after retirement. Require a separate Stage 1 patch of NFC-01 through NFC-09 before deleting their old runnable commands; this epic cannot patch PRD meters. Review the paired code/spec transition before closing the cut-over."
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: each declared verification command and live recipe resolves at final head; NFC-01 through NFC-09 have runnable commands throughout, verified by the Stage 1 handoff evidence. Checker: bun run release-check and constitution validation. Code and spec are separate commits in the same reviewed change."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CQ002
+    title: Remove Nx only after parity and release rehearsal
+    type: Chore
+    effort: 5
+    depends_on: [KRT-CQ001]
+    scope:
+      in:
+        - nx.json
+        - package.json
+        - bun.lock
+        - tools/run-nx.mjs
+        - tools/nx
+        - tools/bazel/nx-run.sh
+        - tools/bazel/native_binary.bzl
+        - tools/bazel/BUILD.bazel
+        - tools/scripts/verify.ts
+        - tools/scripts/verify-kernel.ts
+        - tools/scripts/check.ts
+        - tools/scripts/lib/nx-projects.ts
+        - ".github/workflows/ci.yml"
+        - CLAUDE.md
+        - AGENTS.md
+        - BUILD.bazel
+        - typescript
+        - rust
+        - go
+        - python
+        - dart
+        - spec
+        - reports/compatibility
+        - tools/scripts/lib/project-manifest.ts
+    verification:
+      command: "bun run publish:dry-run"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if same-commit parity, linux-sandbox evidence, dry-run rehearsal, or the separate specification/meter handoff is missing occurs; do not improvise."
+    description: "ADR-0071 decisions 3, 11, 12 and 13. After same-commit parity, linux-sandbox proof, staged release dry runs and the spec/meter handoff, remove Nx dependencies, nx.json, all 57 project.json files, tools/run-nx.mjs, tools/nx and obsolete shim rules/BUILD stanzas. Preserve real Bazel targets and replace retired lanes with the named suites. Rewrite CLAUDE.md and mirrored AGENTS.md guidance. Rename CI jobs to the single Bazel gate already recorded in the separate ADR patch."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert all 57 legacy project files and executable Nx/shim references are gone, all retained project identities still resolve to real Bazel targets, named suites cover every retired lane, and publish dry run remains green. CI job names equal ADR-0069 and worktree purity succeeds."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CQ003
+    title: Record retired stack state in a spec-only commit
+    type: Chore
+    effort: 3
+    depends_on: [KRT-CQ002]
+    scope:
+      in:
+        - ".constitution/tech-spec/stack.yaml"
+        - ".constitution/tech-spec/guidelines.md"
+        - ".constitution/tech-spec/adrs/ADR-0069-public-release-discipline.md"
+    verification:
+      command: bun run release-check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    description: ADR-0071 and ADR-0073. Remove the retired Nx stack record and settle exercised Bazel rule/toolchain records from port evidence in a separate spec-only commit. Confirm guidelines and ADR-0069 name the actual final targets and CI checks without folding code into the patch.
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: stack equals installed locks/modules, final verification entries match real targets, and the recorded single Bazel CI gate matches workflow jobs. Checker: bun run release-check and constitution validation."
+    flows: []
+    certainty: settled
+    status: planned
+  - id: KRT-CQ004
+    title: Close out with the repository owner handoff
+    type: Chore
+    effort: 2
+    depends_on: [KRT-CQ003]
+    scope:
+      in: [CLAUDE.md]
+    verification:
+      command: bun run release-check
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if owner handoff is represented as an automated settings change or real publish occurs; do not improvise."
+    description: "ADR-0071 decision 11; ADR-0069 decision 5; ADR-0073 decision 6. Record the exact renamed CI check names and ask the repository owner to update branch protection to require them. This is an owner handoff, never an automated repository-settings step. Record Dart exception lifting conditions and the unimplemented optional isolatedDeclarations survey as follow-ups; preserve human-gated release ownership."
+    acceptance:
+      mode: runbook_probe
+      evidence: "Runbook: inspect final workflow check names, ADR-0069, dry-run evidence and repository guidance. Expect one explicit owner checklist for branch protection, with no automated setting mutation or real publish. All required implementation and spec-patch evidence is linked before closeout."
+    flows: []
+    certainty: settled
+    status: planned
