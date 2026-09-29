@@ -53,6 +53,12 @@ updates:
       - dependency-name: "bun"
         versions:
           - ">=1.4.0"
+      # ultracite 7.12 turns on new preset lint rules (about 2960 violations,
+      # PR #127). The lint/format toolchain is being replaced (Biome to OXC) in a
+      # planned epic, so ultracite stays at 7.4.x until that work lands.
+      - dependency-name: "ultracite"
+        versions:
+          - ">7.4.2"
   - package-ecosystem: cargo
     directory: /
     schedule:
