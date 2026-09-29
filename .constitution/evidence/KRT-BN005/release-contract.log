@@ -1,0 +1,7 @@
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 15.1ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 18.8ms
+release-contract: negative control rejected stale internal reference
+release-contract: historical generated scope is 58 tracked + 3 untracked artifacts
+release-contract: OK — 30 packages at 0.2.0; 19 public, 11 private; generated release scope is clean

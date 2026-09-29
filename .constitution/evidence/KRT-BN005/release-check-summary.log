@@ -1,0 +1,41 @@
+Worker command: devenv shell -- zsh -c (absolute prepared Bun1.3.10 +LC_ALL=C) bun run release-check
+Producer code head:e5354f8 with generated0.2 working tree. Exit0.
+Exact final summary excerpt; full historical log /tmp/KRT-BN005-release/12-release-check.log
+
+Transition verification summary
+- workspace lint: pass in 2311ms
+- Rust workspace formatting: pass in 317ms
+- docs-to-authority freeze gate: pass in 323ms
+- Epic AL portability gate: pass in 268ms
+- ADR-0057 host import boundary gate: pass in 2206ms
+- ADR-0054/0056 API-surface freeze gate: pass in 3701ms
+- Epic AF conformance gap plan freshness: pass in 94ms
+- authority packet validation: pass in 657ms
+- conformance plan validation: pass in 815ms
+- adapter protocol validation: pass in 644ms
+- certification discovery parity: pass in 285ms
+- workspace test-lane coverage: pass in 268ms
+- certification harness meta-conformance: pass in 1177ms
+- vocabulary-check verification: pass in 401ms
+- machine authority guardrails: pass in 15064ms
+- Rust workspace lint: pass in 19675ms
+- Rust workspace tests: pass in 19953ms
+- Rust kernel certification: pass in 8494ms
+- Rust kernel gRPC interop smoke: pass in 15278ms
+- Go kernel certification: pass in 947ms
+- Python kernel certification: pass in 1021ms
+- Dart kernel certification: pass in 2439ms
+- telemetry, compatibility, and interop code generation: pass in 5055ms
+- kernel interop governance smoke: pass in 5305ms
+- workspace typecheck: pass in 52992ms
+- transition-line targeted builds: pass in 65456ms
+- transition-line targeted tests: pass in 40338ms
+- boundary-owned conformance suites: pass in 68931ms
+- cross-language proving-host interactive/headless interop smoke: pass in 71704ms
+- package export smoke tests: pass in 1312ms
+- Bun and Node portability import checks: pass in 757ms
+- Node-backed proving-host SQLite interactive/headless scenario: pass in 2266ms
+- PostgreSQL-backed proving-host interactive/headless scenario: pass in 16095ms
+
+Transition release check completed successfully.
+exit=0

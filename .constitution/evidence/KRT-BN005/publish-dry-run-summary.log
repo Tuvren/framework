@@ -1,0 +1,25 @@
+Lead command: devenv shell -- zsh -c 'LC_ALL=C bun run publish:dry-run'
+Producer e5354f8 with generated0.2 working tree. Exit0.
+Exact registry-wrapper outcome lines; npm notices omitted.
+
+[publish-registry] preflight passed: 19 packages at 0.2.0 (publish order: core → kernel-protocol → backend-shared → backend-memory → backend-postgres → backend-sqlite → kernel-grpc-client → kernel-runtime → telemetry-semconv → runtime → sdk → mcp-client → provider-api → provider-bridge-ai-sdk → runner-react → stream-core → stream-agui → stream-sse → telemetry-otel)
+[publish-registry] dry-run verified: @tuvren/core@0.2.0
+[publish-registry] dry-run verified: @tuvren/kernel-protocol@0.2.0
+[publish-registry] dry-run verified: @tuvren/backend-shared@0.2.0
+[publish-registry] dry-run verified: @tuvren/backend-memory@0.2.0
+[publish-registry] dry-run verified: @tuvren/backend-postgres@0.2.0
+[publish-registry] dry-run verified: @tuvren/backend-sqlite@0.2.0
+[publish-registry] dry-run verified: @tuvren/kernel-grpc-client@0.2.0
+[publish-registry] dry-run verified: @tuvren/kernel-runtime@0.2.0
+[publish-registry] dry-run verified: @tuvren/telemetry-semconv@0.2.0
+[publish-registry] dry-run verified: @tuvren/runtime@0.2.0
+[publish-registry] dry-run verified: @tuvren/sdk@0.2.0
+[publish-registry] dry-run verified: @tuvren/mcp-client@0.2.0
+[publish-registry] dry-run verified: @tuvren/provider-api@0.2.0
+[publish-registry] dry-run verified: @tuvren/provider-bridge-ai-sdk@0.2.0
+[publish-registry] dry-run verified: @tuvren/runner-react@0.2.0
+[publish-registry] dry-run verified: @tuvren/stream-core@0.2.0
+[publish-registry] dry-run verified: @tuvren/stream-agui@0.2.0
+[publish-registry] dry-run verified: @tuvren/stream-sse@0.2.0
+[publish-registry] dry-run verified: @tuvren/telemetry-otel@0.2.0
+[publish-registry] dry run complete — no registry mutation occurred
