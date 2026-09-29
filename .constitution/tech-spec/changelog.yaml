@@ -1,4 +1,17 @@
 entries:
+  - version: v0.46.0
+    date: 2026-09-29
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    added:
+      - "ADR-0068 records that @tuvren/stream-ws and the other session-carriage packages remain private until a later ADR defines a public session API; protocol and carriage semantics remain unchanged."
+      - "ADR-0069 records changeset coverage, fixed public versioning, the 0.x stable-export SemVer rule, owner-gated registry publishing and repository settings, and bounded Dependabot updates."
+      - "tech-spec/stack.yaml adds the locked @changesets/cli 2.31.0 tool pin and tech-spec/guidelines.md adds registry preflight, dry-run, and planned changeset-presence verification commands."
+    changed:
+      - "tech-spec/stack.yaml updates the existing Bun runtime entry to the assumed 1.4.2 target, pending a devenv nixpkgs lock refresh and packageManager alignment; tech-spec/guidelines.md records its verification condition."
+      - "tech-spec/guidelines.md clarifies the 0.x public API rule and @tuvren/stream-ws's private publication status under ADR-0068 and ADR-0069."
   - version: v0.45.3
     date: 2026-09-24
     by: stage
