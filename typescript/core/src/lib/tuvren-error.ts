@@ -97,28 +97,32 @@ export abstract class TuvrenError extends Error {
  * `tool_input_validation_failed`).
  */
 export class TuvrenValidationError extends TuvrenError {
-  // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
+  // The shared base constructor is protected, so public subclasses must
+  // re-expose construction intentionally.
   constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }
 /** Raised for durable-storage/persistence failures. */
 export class TuvrenPersistenceError extends TuvrenError {
-  // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
+  // The shared base constructor is protected, so public subclasses must
+  // re-expose construction intentionally.
   constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }
 /** Raised for turn/branch lineage violations (ancestry, containment). */
 export class TuvrenLineageError extends TuvrenError {
-  // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
+  // The shared base constructor is protected, so public subclasses must
+  // re-expose construction intentionally.
   constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }
 /** Raised when crash/interruption recovery cannot restore execution. */
 export class TuvrenRecoveryError extends TuvrenError {
-  // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
+  // The shared base constructor is protected, so public subclasses must
+  // re-expose construction intentionally.
   constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
@@ -128,14 +132,16 @@ export class TuvrenRecoveryError extends TuvrenError {
  * `execution_cancelled` or `execution_bound_exceeded`).
  */
 export class TuvrenRuntimeError extends TuvrenError {
-  // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
+  // The shared base constructor is protected, so public subclasses must
+  // re-expose construction intentionally.
   constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }
 }
 /** Raised for model-provider failures surfaced through the provider seam. */
 export class TuvrenProviderError extends TuvrenError {
-  // biome-ignore lint/complexity/noUselessConstructor: The shared base constructor is protected, so public subclasses must re-expose construction intentionally.
+  // The shared base constructor is protected, so public subclasses must
+  // re-expose construction intentionally.
   constructor(message: string, options: TuvrenErrorOptions) {
     super(message, options);
   }

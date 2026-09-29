@@ -56,20 +56,23 @@ describe("@tuvren/backend-postgres turn-tree path row decoding", () => {
       ordered_inline_cbor: new Uint8Array([0x80]),
       single_hash: null,
     },
-  ] satisfies PostgresTurnTreePathRow[])("rejects contradictory active and inactive variant columns", (row) => {
-    let caughtError: unknown;
-    try {
-      decodeTurnTreePathRow(row);
-    } catch (error: unknown) {
-      caughtError = error;
-    }
+  ] satisfies PostgresTurnTreePathRow[])(
+    "rejects contradictory active and inactive variant columns",
+    (row) => {
+      let caughtError: unknown;
+      try {
+        decodeTurnTreePathRow(row);
+      } catch (error: unknown) {
+        caughtError = error;
+      }
 
-    expect(caughtError).toBeInstanceOf(TuvrenPersistenceError);
-    if (!(caughtError instanceof TuvrenPersistenceError)) {
-      throw new Error("expected a TuvrenPersistenceError");
+      expect(caughtError).toBeInstanceOf(TuvrenPersistenceError);
+      if (!(caughtError instanceof TuvrenPersistenceError)) {
+        throw new Error("expected a TuvrenPersistenceError");
+      }
+      expect(caughtError.code).toBe(
+        "postgres_backend_invalid_turn_tree_path_row"
+      );
     }
-    expect(caughtError.code).toBe(
-      "postgres_backend_invalid_turn_tree_path_row"
-    );
-  });
+  );
 });

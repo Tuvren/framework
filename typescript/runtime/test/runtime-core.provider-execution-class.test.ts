@@ -192,7 +192,10 @@ describe("KRT-AY003 — provider-native attribution events", () => {
     );
 
     expect(providerResult).toBeDefined();
-    const obs = (providerResult?.attribution as Record<string, unknown>)
+    if (providerResult === undefined) {
+      throw new Error("expected a provider-owned tool.result event");
+    }
+    const obs = (providerResult.attribution as Record<string, unknown>)
       .observation as Record<string, unknown>;
     expect(obs.canAudit).toBe(false);
     expect(obs.canCancel).toBe(false);
