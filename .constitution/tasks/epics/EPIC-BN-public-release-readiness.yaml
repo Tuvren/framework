@@ -294,10 +294,11 @@ closeout:
     - Consider extracting pure package/diff and intent-classification functions from Git/filesystem
       orchestration in a separately scoped tooling change; current PR fixes the concrete
       intent-discovery defects within its two owned checker files.
-    - PR119 round-one bounded gate fixes passed preserved test-first controls and the final
-      26-fixture/155-assertion suite, including both source-move endpoints; earlier twenty- and
-      24-fixture records remain labeled by producing commits. Current-manifest publication authority
-      and private-package exemptions remain as ruled.
+    - PR119 bounded gate fixes passed preserved test-first controls and the final
+      33-fixture/196-assertion suite, including per-package freshness, quoted historical paths,
+      native prerelease errors, obsolete private history, and both move endpoints. Earlier fixture
+      records remain labeled by their producing commits. Current-manifest publication authority and
+      private-package exemptions remain as ruled.
   code_decisions:
     - summary: Direct changeset coverage requires a new or updated matching release declaration or
         nonempty note compared with the exact base, using current publishable package paths rather
@@ -369,4 +370,14 @@ closeout:
         - tools/scripts/changeset-check.ts
         - tools/scripts/changeset-check.test.ts
       commit: 73906bdb5b93ccec40e4e5344d6a6db49d4bca7e
+    - summary: Determine direct intent freshness per covered package, preserving declaration changes and
+        updated nonempty summaries while blocking unrelated entries from refreshing public intent.
+        Read Git history with NUL delimiters, ignore only native ENOENT for absent prerelease
+        metadata, and parse past notes without imposing current workspace membership; current
+        pending-note names remain strict.
+      kind: pattern
+      paths:
+        - tools/scripts/changeset-check.ts
+        - tools/scripts/changeset-check.test.ts
+      commit: d49de00a7d5c974166f128f2efb38f45f83cf575
   settled: []
