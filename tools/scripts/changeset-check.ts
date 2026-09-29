@@ -234,16 +234,26 @@ async function readChangedPaths(
   rootDirectory: string,
   baseRevision: string
 ): Promise<ReadonlySet<string>> {
+  // A source move changes both endpoints; retain the current public-package
+  // deletion even when the destination is private or outside any package.
   const commands: ReadonlyArray<readonly string[]> = [
     [
       "diff",
+      "--no-renames",
       "--name-only",
       "-z",
       "--diff-filter=ACDMRT",
       `${baseRevision}...HEAD`,
     ],
-    ["diff", "--name-only", "-z", "--diff-filter=ACDMRT"],
-    ["diff", "--cached", "--name-only", "-z", "--diff-filter=ACDMRT"],
+    ["diff", "--no-renames", "--name-only", "-z", "--diff-filter=ACDMRT"],
+    [
+      "diff",
+      "--cached",
+      "--no-renames",
+      "--name-only",
+      "-z",
+      "--diff-filter=ACDMRT",
+    ],
     ["ls-files", "--others", "--exclude-standard", "-z"],
   ];
   const changedPaths = new Set<string>();
@@ -783,6 +793,7 @@ async function findPublicChangeBetweenRevisions(
     "git",
     [
       "diff",
+      "--no-renames",
       "--name-only",
       "-z",
       "--diff-filter=ACDMRT",

@@ -1,0 +1,36 @@
+Producer parent: d70abad1767015c5c000850f6c64b3837127f53a.
+Follow-up to the accepted source-move P1, 2026-09-29. Prepared Bun 1.3.10,
+Git 2.55.0, Changesets CLI 3.0.3; LC_ALL=C.
+
+The lead and independent Sol review reproduced a staged R100 move from
+packages/public-a/src.ts into a private package. The public manifest remained
+present, but Git --name-only returned only the private destination and the
+checker passed without intent. Native --no-renames emitted both paths.
+This is a source removal inside the current public inventory, distinct from
+the separately routed whole-package retirement policy.
+
+Worker failing-first proof: 24 passed, 2 failed, 139 assertions. Both failures
+reproduced source moves without intent. The full output is preserved byte for
+byte in pr-round1-source-moves-failing.log.gz; no stdout trimming is used.
+
+The fix adds --no-renames to all current package-path and historical package
+diffs, preserving ACDMRT and every native release comparison. Two regressions
+assert real Git R100 for public-source moves to a private package and root,
+require intent while staged and committed, then pass with fresh direct intent.
+
+Worker final checks: 26 passing fixtures, 155 assertions; strict source-only
+TypeScript 6 with --ignoreConfig/noUncheckedIndexedAccess; targeted Biome;
+bun run changeset:check --base=master; bun run check. All exited 0.
+Full worker logs: /tmp/EPIC-BN-pr-rename-fix/.
+
+Lead independently ran the final fixture suite, strict TypeScript with the
+exact bundler command in pr-round1-command.txt, targeted Biome, and the
+--base=master consumed gate. All exited 0. Full fixture/gate outputs are
+pr-round1-source-moves-fixtures.log and pr-round1-source-moves-consumed.log.
+Constitution validation and diff checks passed before commit.
+
+Earlier 24/131 and twenty-test results are historical producer records, not
+the final suite count. Runtime source, release artifacts, dependencies, and
+publication policy were not changed. Required PR CI remains a separate gate.
+
+Original failing stdout SHA-256: e82fc98d2a89ac258492ee94ccf94bbe34faf974602cc994a5e9415e132ab1d2; bytes: 2626. Decompress with gzip -dc pr-round1-source-moves-failing.log.gz.

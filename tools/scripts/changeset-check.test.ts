@@ -21,6 +21,7 @@ interface CommandResult {
 
 interface Fixture {
   commit(message: string): Promise<void>;
+  movePublicSource(destination: string): Promise<void>;
   privateChange(content: string): Promise<void>;
   publicChange(content: string): Promise<void>;
   publicSourceTypeChange(): Promise<void>;
@@ -361,6 +362,16 @@ describe("changeset-check", () => {
     await expect(check(fixture)).resolves.toBeUndefined();
   });
 
+  test("requires direct intent when public source moves to a private package", async () => {
+    await assertPublicSourceMoveRequiresIntent(
+      "packages/private-a/removed-source.ts"
+    );
+  });
+
+  test("requires direct intent when public source moves to the repository root", async () => {
+    await assertPublicSourceMoveRequiresIntent("removed-public-source.ts");
+  });
+
   test("accepts a consumed release only when installed Changesets reproduces it", async () => {
     const fixture = await createGeneratedReleaseFixture();
 
@@ -538,6 +549,14 @@ async function createFixture(): Promise<Fixture> {
       const commit = await run("git", ["commit", "-m", message], root);
       expect(commit.exitCode).toBe(0);
     },
+    movePublicSource: async (destination: string): Promise<void> => {
+      const moved = await run(
+        "git",
+        ["mv", "packages/public-a/src.ts", destination],
+        root
+      );
+      expect(moved.exitCode).toBe(0);
+    },
     publicChange: async (content: string): Promise<void> => {
       await writeFixtureFile(root, "packages/public-a/src.ts", content);
     },
@@ -578,6 +597,42 @@ async function createFixture(): Promise<Fixture> {
       );
     },
   };
+}
+
+async function assertPublicSourceMoveRequiresIntent(
+  destination: string
+): Promise<void> {
+  const fixture = await createFixture();
+  await fixture.movePublicSource(destination);
+
+  const staged = await run(
+    "git",
+    ["diff", "--cached", "--name-status"],
+    fixture.root
+  );
+  expect(staged.exitCode).toBe(0);
+  expect(staged.stdout).toContain(
+    `R100\tpackages/public-a/src.ts\t${destination}`
+  );
+
+  await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+  await fixture.commit("move public source");
+
+  const committed = await run(
+    "git",
+    ["diff", "--name-status", "master...HEAD"],
+    fixture.root
+  );
+  expect(committed.exitCode).toBe(0);
+  expect(committed.stdout).toContain(
+    `R100\tpackages/public-a/src.ts\t${destination}`
+  );
+  await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+
+  await fixture.writeChangeset("source-move.md", '"@tuvren/public-a": patch');
+  await fixture.commit("record source move intent");
+
+  await expect(check(fixture)).resolves.toBeUndefined();
 }
 
 function publicManifest(
