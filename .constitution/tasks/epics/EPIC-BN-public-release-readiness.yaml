@@ -54,7 +54,8 @@ tickets:
       evidence: "Assert that the root packageManager declares bun@1.4.2, the observed Bun version is 1.4.2 in the devenv environment, bun.lock is consistent with the workspace, and PostgreSQL's major version is unchanged by the lock refresh. Run the reference-host-memory-scenario recipe and retain its streaming scenario log line as client-visible proof after the runtime change."
     flows: [flow-reference-host-proves-sdk]
     certainty: assumed
-    status: planned
+    status: deferred
+    deferred_to: "tech-spec and tasks: scoped Bun 1.4.2 compatibility work before accepting the runtime upgrade"
   - id: KRT-BN002
     title: Withhold the WebSocket session carriage package
     type: Chore
@@ -178,3 +179,39 @@ tickets:
     flows: [flow-reference-host-proves-sdk]
     certainty: settled
     status: planned
+decisions:
+  - id: OD-04
+    question: Should the deferred Bun upgrade block the independent public release readiness work?
+    blocks: [KRT-BN002, KRT-BN003, KRT-BN004, KRT-BN005, KRT-BN006, KRT-BN007]
+    options:
+      - name: Continue independent release work on the retained toolchain
+        pros:
+          - Preserves the working release gate while correcting publication closure, release discipline, and adopter guidance.
+          - Keeps the Bun upgrade visibly deferred rather than claiming its unmet acceptance criteria passed.
+        cons:
+          - The release preparation runs on Bun 1.3.10 while the user-ruled Bun 1.4.2 target remains pending.
+          - Requires later Stage 4 alignment of dependencies that were broader than the implementation prerequisites.
+      - name: Defer all release work until Bun 1.4.2 is compatible
+        pros:
+          - Preserves a strict completion interpretation of the existing ticket dependency graph.
+        cons:
+          - Leaves independent publication and release-policy defects unresolved despite a working baseline toolchain.
+    recommendation: Continue independent release work on the retained toolchain
+    closure: ruling
+    ruler: Repository owner after Epic BN merge
+    waiting_on: Bun 1.4.2 regression evidence and retained-toolchain verification in .constitution/evidence/KRT-BN001/
+    interim:
+      assumption: BN002 through BN007 require the reviewed working toolchain but no Bun 1.4-specific feature; execute them in their existing order after BN001's reviewed deferral.
+      applied_by:
+        - KRT-BN002
+        - KRT-BN003
+        - KRT-BN004
+        - KRT-BN005
+        - KRT-BN006
+        - KRT-BN007
+        - package.json
+        - devenv.nix
+    status: proposed
+    asked:
+      date: 2026-09-29
+      in: EPIC-BN

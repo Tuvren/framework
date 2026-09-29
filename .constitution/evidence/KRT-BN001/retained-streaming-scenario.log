@@ -1,0 +1,152 @@
+Historical supplementary reference-host-memory-scenario proof on retained Bun1.3.10, not on the deferred Bun1.4.2 target.
+Launch: LC_ALL=C bun run nx run host-repl:build. Doctor: python3 file-existence command declared in guidelines. Drive: LC_ALL=C bun run nx run host-repl:scenario. All exit: 0.
+
+> nx run host-repl:scenario
+
+host-repl: (node:684603) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+host-repl: (Use `node --trace-warnings ...` to show where the warning was created)
+host-repl: {
+host-repl:   "backend": "memory",
+host-repl:   "checks": {
+host-repl:     "aguiObserved": true,
+host-repl:     "canonicalObserved": true,
+host-repl:     "completed": true,
+host-repl:     "metadataObserved": true,
+host-repl:     "sseObserved": true,
+host-repl:     "extensionEventObserved": true,
+host-repl:     "extensionStatePersisted": true,
+host-repl:     "structuredObserved": true,
+host-repl:     "toolObserved": true,
+host-repl:     "toolHistoryPreserved": true,
+host-repl:     "toolTraceObserved": true
+host-repl:   },
+host-repl:   "events": {
+host-repl:     "aguiTypes": [
+host-repl:       "RUN_STARTED",
+host-repl:       "CUSTOM",
+host-repl:       "STATE_SNAPSHOT",
+host-repl:       "STEP_STARTED",
+host-repl:       "TEXT_MESSAGE_START",
+host-repl:       "TEXT_MESSAGE_CONTENT",
+host-repl:       "TEXT_MESSAGE_END",
+host-repl:       "CUSTOM",
+host-repl:       "CUSTOM",
+host-repl:       "STATE_SNAPSHOT",
+host-repl:       "STEP_FINISHED",
+host-repl:       "CUSTOM",
+host-repl:       "RUN_FINISHED"
+host-repl:     ],
+host-repl:     "canonicalTypes": [
+host-repl:       "turn.start",
+host-repl:       "state.checkpoint",
+host-repl:       "state.snapshot",
+host-repl:       "iteration.start",
+host-repl:       "message.start",
+host-repl:       "text.delta",
+host-repl:       "text.done",
+host-repl:       "message.done",
+host-repl:       "state.checkpoint",
+host-repl:       "state.snapshot",
+host-repl:       "iteration.end",
+host-repl:       "state.checkpoint",
+host-repl:       "turn.end"
+host-repl:     ],
+host-repl:     "sseEvents": [
+host-repl:       "turn.start",
+host-repl:       "state.checkpoint",
+host-repl:       "state.snapshot",
+host-repl:       "iteration.start",
+host-repl:       "message.start",
+host-repl:       "text.delta",
+host-repl:       "text.done",
+host-repl:       "message.done",
+host-repl:       "state.checkpoint",
+host-repl:       "state.snapshot",
+host-repl:       "iteration.end",
+host-repl:       "state.checkpoint",
+host-repl:       "turn.end"
+host-repl:     ]
+host-repl:   },
+host-repl:   "kernelMode": "typescript-local",
+host-repl:   "providerMode": "fixture",
+host-repl:   "scenario": "streaming",
+host-repl:   "status": {
+host-repl:     "activeAgent": "primary",
+host-repl:     "iterationCount": 1,
+host-repl:     "manifest": {
+host-repl:       "byRole": {
+host-repl:         "tool": 0,
+host-repl:         "user": 1,
+host-repl:         "system": 0,
+host-repl:         "assistant": 1
+host-repl:       },
+host-repl:       "toolCalls": {
+host-repl:         "total": 0,
+host-repl:         "byName": {}
+host-repl:       },
+host-repl:       "extensions": {},
+host-repl:       "toolResults": {
+host-repl:         "total": 0,
+host-repl:         "byName": {}
+host-repl:       },
+host-repl:       "messageCount": 2,
+host-repl:       "tokenEstimate": 10,
+host-repl:       "turnBoundaries": [
+host-repl:         0
+host-repl:       ],
+host-repl:       "lastUserMessageIndex": 0,
+host-repl:       "lastAssistantMessageIndex": 1
+host-repl:     },
+host-repl:     "phase": "completed"
+host-repl:   },
+host-repl:   "telemetry": {
+host-repl:     "attributes": {
+host-repl:       "tuvren.runtime.backend.id": "memory",
+host-repl:       "tuvren.runtime.branch.id": "f62e409b-2149-4e71-88e7-027b80cd6457",
+host-repl:       "tuvren.runtime.capability.execution_class": null,
+host-repl:       "tuvren.runtime.capability.owner": null,
+host-repl:       "tuvren.runtime.checkpoint.hash": [
+host-repl:         "94246a770417354a874139ac2680205a4c048788d584c51bc8007cbbfa5ecb2d",
+host-repl:         "4c9c8dbd7bd8f0d663f0bb23eec498e3a988b68e14d5a65de3e89f0ff448ee32",
+host-repl:         "a5d4c8f3cdeb9d915cdc35fae672b31dac9e3b78e6773205a47eb5cc633f5950"
+host-repl:       ],
+host-repl:       "tuvren.runtime.runner.id": "react",
+host-repl:       "tuvren.runtime.error.code": null,
+host-repl:       "tuvren.runtime.parent_checkpoint.hash": [
+host-repl:         "94246a770417354a874139ac2680205a4c048788d584c51bc8007cbbfa5ecb2d",
+host-repl:         "4c9c8dbd7bd8f0d663f0bb23eec498e3a988b68e14d5a65de3e89f0ff448ee32"
+host-repl:       ],
+host-repl:       "tuvren.runtime.provider.id": "fixture",
+host-repl:       "tuvren.runtime.resumed_from.hash": null,
+host-repl:       "tuvren.runtime.run.id": "f17aaf8d-18ab-475a-9938-c52853569ae8",
+host-repl:       "tuvren.runtime.thread.id": "a322b272-e88d-48d4-b33c-33f9117d0ab2",
+host-repl:       "tuvren.runtime.tool_call.id": null,
+host-repl:       "tuvren.runtime.turn.id": "f17aaf8d-18ab-475a-9938-c52853569ae8"
+host-repl:     },
+host-repl:     "observedKeys": [
+host-repl:       "tuvren.runtime.backend.id",
+host-repl:       "tuvren.runtime.branch.id",
+host-repl:       "tuvren.runtime.checkpoint.hash",
+host-repl:       "tuvren.runtime.parent_checkpoint.hash",
+host-repl:       "tuvren.runtime.provider.id",
+host-repl:       "tuvren.runtime.run.id",
+host-repl:       "tuvren.runtime.runner.id",
+host-repl:       "tuvren.runtime.thread.id",
+host-repl:       "tuvren.runtime.turn.id"
+host-repl:     ],
+host-repl:     "schemaUrl": "https://tuvren.dev/schemas/telemetry/0.1.0"
+host-repl:   },
+host-repl:   "thread": {
+host-repl:     "branchId": "f62e409b-2149-4e71-88e7-027b80cd6457",
+host-repl:     "rootTurnNodeHash": "e5a0f3ec6b73e1fac8301236aecf7b5d32ffdfc28cad40f9e0413f83016fa3a8",
+host-repl:     "rootTurnTreeHash": "5ca34d0c570e407cdd1f3d762c72079062275cdfddfbcc5c6cfd591079fbe29b",
+host-repl:     "threadId": "a322b272-e88d-48d4-b33c-33f9117d0ab2",
+host-repl:     "headTurnNodeHash": "a5d4c8f3cdeb9d915cdc35fae672b31dac9e3b78e6773205a47eb5cc633f5950"
+host-repl:   }
+host-repl: }
+
+
+
+ NX   Successfully ran target scenario for project host-repl and 27 tasks it depends on
+
+Nx read the output from the cache instead of running the command for 27 out of 28 tasks.

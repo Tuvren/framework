@@ -1,0 +1,245 @@
+Historical failed fallback transcript; terminal color sequences removed.
+Command: LC_ALL=C bun run nx run backend-memory:test --skipNxCache
+Runtime: project Bun1.4.2 with the original general toolchain lock. Exit: 1.
+
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 32.5ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 27.1ms
+$ bun ./tools/run-nx.mjs run backend-memory:test
+
+> nx run backend-memory:test
+
+backend-memory: bun test v1.4.2 (744846f84)
+backend-memory:
+backend-memory: test/backend-memory.test.ts:
+backend-memory: 194 |           await tx.runs.set(runRecord);
+backend-memory: 195 |           await tx.stagedResults.set(stagedResult);
+backend-memory: 196 |         });
+backend-memory: 197 |
+backend-memory: 198 |         await backend.transact(async (tx) => {
+backend-memory: 199 |           deepStrictEqual(
+backend-memory:                 ^
+backend-memory: AssertionError: Expected values to be strictly deep-equal:
+backend-memory: + actual - expected
+backend-memory:   {
+backend-memory:     consumedStagedResultsCbor: Uint8Array(1) [
+backend-memory:       128,
+backend-memory: -     dataView: DataView {
+backend-memory: -       [buffer]: ArrayBuffer {
+backend-memory: -         [Uint8Contents]: <80>,
+backend-memory: -         [byteLength]: 1
+backend-memory: -       },
+backend-memory: -       [byteLength]: 1,
+backend-memory: -       [byteOffset]: 0
+backend-memory: -     }
+backend-memory:     ],
+backend-memory:     createdAtMs: 103,
+backend-memory:     eventHash: 'e740a6faf2db65f5853148d75d9a335d7c4b94ab106fe5f237bc34fdcfc74584',
+backend-memory:     hash: 'e3c7f4ad75e6d5e49fc4632e673e1124bdff2cdfd92397ebe090ddd5d9cba34f',
+backend-memory:     previousTurnNodeHash: null,
+backend-memory:
+backend-memory:  generatedMessage: true,
+backend-memory:      actual: {
+backend-memory:   consumedStagedResultsCbor: Uint8Array(1) [ 128 ],
+backend-memory:   createdAtMs: 103,
+backend-memory:   eventHash: "e740a6faf2db65f5853148d75d9a335d7c4b94ab106fe5f237bc34fdcfc74584",
+backend-memory:   hash: "e3c7f4ad75e6d5e49fc4632e673e1124bdff2cdfd92397ebe090ddd5d9cba34f",
+backend-memory:   previousTurnNodeHash: null,
+backend-memory:   schemaId: "schema_main",
+backend-memory:   turnTreeHash: "09db4db1da2f6f506f8480b42bb9207d3e02eab4e8cbad48606b42751221d768",
+backend-memory: },
+backend-memory:    expected: {
+backend-memory:   consumedStagedResultsCbor: Uint8Array(1) [ 128 ],
+backend-memory:   createdAtMs: 103,
+backend-memory:   eventHash: "e740a6faf2db65f5853148d75d9a335d7c4b94ab106fe5f237bc34fdcfc74584",
+backend-memory:   hash: "e3c7f4ad75e6d5e49fc4632e673e1124bdff2cdfd92397ebe090ddd5d9cba34f",
+backend-memory:   previousTurnNodeHash: null,
+backend-memory:   schemaId: "schema_main",
+backend-memory:   turnTreeHash: "09db4db1da2f6f506f8480b42bb9207d3e02eab4e8cbad48606b42751221d768",
+backend-memory: },
+backend-memory:    operator: "deepStrictEqual",
+backend-memory:        diff: "simple",
+backend-memory:        code: "ERR_ASSERTION"
+backend-memory:       at /home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/testkit/src/lib/backend-conformance-suite.ts:199:11
+backend-memory:       at /home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/backends/memory/src/lib/memory-backend.ts:332:48
+backend-memory:       at runExclusive (/home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts:97:20)
+backend-memory:       at /home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/testkit/src/lib/backend-conformance-suite.ts:198:23
+backend-memory: (node:575415) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+backend-memory: (Use `bun --trace-warnings ...` to show where the warning was created)
+backend-memory: ✗ @tuvren/backend-memory shared conformance > stores lineage and run-state records with deterministic list and clear helpers [33.78ms]
+backend-memory: 259 |         await backend.transact(async (tx) => {
+backend-memory: 260 |           deepStrictEqual(await tx.turnTrees.get(pausedTurnTree.hash), null);
+backend-memory: 261 |           deepStrictEqual(await tx.turnNodes.get(pausedTurnNode.hash), null);
+backend-memory: 262 |           deepStrictEqual(await tx.branches.get(branch.branchId), branch);
+backend-memory: 263 |           deepStrictEqual(await tx.turns.get(turn.turnId), turn);
+backend-memory: 264 |           deepStrictEqual(await tx.runs.get(initialRun.runId), initialRun);
+backend-memory:                 ^
+backend-memory: AssertionError: Expected values to be strictly deep-equal:
+backend-memory: + actual - expected
+backend-memory: ... Skipped lines
+backend-memory:   {
+backend-memory:     branchId: 'branch_pause_resume',
+backend-memory:     createdAtMs: 7,
+backend-memory:     createdTurnNodesCbor: Uint8Array(1) [
+backend-memory:       128,
+backend-memory: -     dataView: DataView {
+backend-memory: -       [buffer]: ArrayBuffer {
+backend-memory: -         [Uint8Contents]: <80>,
+backend-memory: -         [byteLength]: 1
+backend-memory: -       },
+backend-memory: -       [byteLength]: 1,
+backend-memory: -       [byteOffset]: 0
+backend-memory: -     }
+backend-memory:     ],
+backend-memory:     currentStepIndex: 0,
+backend-memory:     runId: 'run_pause_initial',
+backend-memory:     schemaId: 'schema_main',
+backend-memory:     startTurnNodeHash: '33a65e4a8c0b6b847a9a6658946cd2febe5372e4e926e6627bfc9d8ac2d76db9',
+backend-memory: ...
+backend-memory:       244,
+backend-memory: -     dataView: DataView {
+backend-memory: -       [buffer]: ArrayBuffer {
+backend-memory: -         [Uint8Contents]: <81 a3 62 69 64 6a 6d 6f 64 65 6c 5f 63 61 6c 6c 6b 73 69 64 65 45 66 66 65 63 74 73 f4 6d 64 65 74 65 72 6d 69 6e 69 73 74 69 63 f4>,
+backend-memory: -         [byteLength]: 44
+backend-memory: -       },
+backend-memory: -       [byteLength]: 44,
+backend-memory: -       [byteOffset]: 0
+backend-memory: -     }
+backend-memory:     ],
+backend-memory:     turnId: 'turn_pause_resume',
+backend-memory:     updatedAtMs: 7
+backend-memory:   }
+backend-memory:
+backend-memory:  generatedMessage: true,
+backend-memory:      actual: {
+backend-memory:   branchId: "branch_pause_resume",
+backend-memory:   createdAtMs: 7,
+backend-memory:   createdTurnNodesCbor: Uint8Array(1) [ 128 ],
+backend-memory:   currentStepIndex: 0,
+backend-memory:   runId: "run_pause_initial",
+backend-memory:   schemaId: "schema_main",
+backend-memory:   startTurnNodeHash: "33a65e4a8c0b6b847a9a6658946cd2febe5372e4e926e6627bfc9d8ac2d76db9",
+backend-memory:   status: "running",
+backend-memory:   stepSequenceCbor: Uint8Array(44) [ 129, 163, 98, 105, 100, 106, 109, 111, 100, 101, 108, 95, 99, 97, 108, 108, 107, 115, 105, 100, 101, 69, 102, 102, 101, 99, 116, 115, 244, 109, 100, 101, 116, 101, 114, 109, 105, 110, 105, 115,
+backend-memory: 116, 105, 99, 244 ],
+backend-memory:   turnId: "turn_pause_resume",
+backend-memory:   updatedAtMs: 7,
+backend-memory: },
+backend-memory:    expected: {
+backend-memory:   branchId: "branch_pause_resume",
+backend-memory:   createdAtMs: 7,
+backend-memory:   createdTurnNodesCbor: Uint8Array(1) [ 128 ],
+backend-memory:   currentStepIndex: 0,
+backend-memory:   runId: "run_pause_initial",
+backend-memory:   schemaId: "schema_main",
+backend-memory:   startTurnNodeHash: "33a65e4a8c0b6b847a9a6658946cd2febe5372e4e926e6627bfc9d8ac2d76db9",
+backend-memory:   status: "running",
+backend-memory:   stepSequenceCbor: Uint8Array(44) [ 129, 163, 98, 105, 100, 106, 109, 111, 100, 101, 108, 95, 99, 97, 108, 108, 107, 115, 105, 100, 101, 69, 102, 102, 101, 99, 116, 115, 244, 109, 100, 101, 116, 101, 114, 109, 105, 110, 105, 115, 116, 105, 99, 244 ],
+backend-memory:   turnId: "turn_pause_resume",
+backend-memory:   updatedAtMs: 7,
+backend-memory: },
+backend-memory:    operator: "deepStrictEqual",
+backend-memory:        diff: "simple",
+backend-memory:        code: "ERR_ASSERTION"
+backend-memory:       at /home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/testkit/src/lib/backend-recovery-suite.ts:264:11
+backend-memory:       at /home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/backends/memory/src/lib/memory-backend.ts:332:48
+backend-memory:       at runExclusive (/home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts:97:20)
+backend-memory:       at /home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/testkit/src/lib/backend-recovery-suite.ts:259:23
+backend-memory:       at processTicksAndRejections (native:7:39)
+backend-memory: ✗ @tuvren/backend-memory shared recovery > supports rollback-safe pause and resume checkpoint flows on the same turn [14.44ms]
+backend-memory: 561 |           });
+backend-memory: 562 |           deepStrictEqual(
+backend-memory: 563 |             await tx.branches.get(archiveBranch.branchId),
+backend-memory: 564 |             archiveBranch
+backend-memory: 565 |           );
+backend-memory: 566 |           deepStrictEqual(await tx.runs.get(activeRun.runId), {
+backend-memory:                 ^
+backend-memory: AssertionError: Expected values to be strictly deep-equal:
+backend-memory: + actual - expected
+backend-memory: ... Skipped lines
+backend-memory:   {
+backend-memory:     branchId: 'branch_backward_branch',
+backend-memory:     createdAtMs: 9,
+backend-memory:     createdTurnNodesCbor: Uint8Array(1) [
+backend-memory:       128,
+backend-memory: -     dataView: DataView {
+backend-memory: -       [buffer]: ArrayBuffer {
+backend-memory: -         [Uint8Contents]: <80>,
+backend-memory: -         [byteLength]: 1
+backend-memory: -       },
+backend-memory: -       [byteLength]: 1,
+backend-memory: -       [byteOffset]: 0
+backend-memory: -     }
+backend-memory:     ],
+backend-memory:     currentStepIndex: 0,
+backend-memory:     runId: 'run_backward_branch',
+backend-memory:     schemaId: 'schema_main',
+backend-memory:     startTurnNodeHash: '17341fbad24dd38ecd928281e904674dd07a2d7dabe57b931ad7bfd701fe3537',
+backend-memory: ...
+backend-memory:       244,
+backend-memory: -     dataView: DataView {
+backend-memory: -       [buffer]: ArrayBuffer {
+backend-memory: -         [Uint8Contents]: <81 a3 62 69 64 6a 6d 6f 64 65 6c 5f 63 61 6c 6c 6b 73 69 64 65 45 66 66 65 63 74 73 f4 6d 64 65 74 65 72 6d 69 6e 69 73 74 69 63 f4>,
+backend-memory: -         [byteLength]: 44
+backend-memory: -       },
+backend-memory: -       [byteLength]: 44,
+backend-memory: -       [byteOffset]: 0
+backend-memory: -     }
+backend-memory:     ],
+backend-memory:     turnId: 'turn_backward_branch',
+backend-memory:     updatedAtMs: 10
+backend-memory:   }
+backend-memory:
+backend-memory:  generatedMessage: true,
+backend-memory:      actual: {
+backend-memory:   branchId: "branch_backward_branch",
+backend-memory:   createdAtMs: 9,
+backend-memory:   createdTurnNodesCbor: Uint8Array(1) [ 128 ],
+backend-memory:   currentStepIndex: 0,
+backend-memory:   runId: "run_backward_branch",
+backend-memory:   schemaId: "schema_main",
+backend-memory:   startTurnNodeHash: "17341fbad24dd38ecd928281e904674dd07a2d7dabe57b931ad7bfd701fe3537",
+backend-memory:   status: "failed",
+backend-memory:   stepSequenceCbor: Uint8Array(44) [ 129, 163, 98, 105, 100, 106, 109, 111, 100, 101, 108, 95, 99, 97, 108, 108, 107, 115, 105, 100, 101, 69, 102, 102, 101, 99, 116, 115, 244, 109, 100, 101, 116, 101, 114, 109, 105, 110, 105, 115, 116, 105, 99, 244 ],
+backend-memory:   turnId: "turn_backward_branch",
+backend-memory:   updatedAtMs: 10,
+backend-memory: },
+backend-memory:    expected: {
+backend-memory:   branchId: "branch_backward_branch",
+backend-memory:   createdAtMs: 9,
+backend-memory:   createdTurnNodesCbor: Uint8Array(1) [ 128 ],
+backend-memory:   currentStepIndex: 0,
+backend-memory:   runId: "run_backward_branch",
+backend-memory:   schemaId: "schema_main",
+backend-memory:   startTurnNodeHash: "17341fbad24dd38ecd928281e904674dd07a2d7dabe57b931ad7bfd701fe3537",
+backend-memory:   status: "failed",
+backend-memory:   stepSequenceCbor: Uint8Array(44) [ 129, 163, 98, 105, 100, 106, 109, 111, 100, 101, 108, 95, 99, 97, 108, 108, 107, 115, 105, 100, 101, 69, 102, 102, 101, 99, 116, 115, 244, 109, 100, 101, 116, 101, 114, 109, 105, 110, 105, 115, 116, 105, 99, 244 ],
+backend-memory:   turnId: "turn_backward_branch",
+backend-memory:   updatedAtMs: 10,
+backend-memory: },
+backend-memory:    operator: "deepStrictEqual",
+backend-memory:        diff: "simple",
+backend-memory:        code: "ERR_ASSERTION"
+backend-memory:       at /home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/testkit/src/lib/backend-recovery-suite.ts:566:11
+backend-memory:       at /home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/backends/memory/src/lib/memory-backend.ts:332:48
+backend-memory:       at runExclusive (/home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/backends/memory/src/lib/memory-backend-scope-store.ts:97:20)
+backend-memory:       at /home/oscar/GitHub/Tuvren/framework-bn/typescript/kernel/testkit/src/lib/backend-recovery-suite.ts:556:23
+backend-memory:       at processTicksAndRejections (native:7:39)
+backend-memory: ✗ @tuvren/backend-memory shared recovery > allows backward branch moves when archival rollback semantics are preserved [5.90ms]
+backend-memory:  74 pass
+backend-memory:  3 fail
+backend-memory:  107 expect() calls
+backend-memory: Ran 77 tests across 9 files. [619.00ms]
+
+
+
+ NX   Running target test for project backend-memory failed
+
+Failed tasks:
+
+- backend-memory:test
+
+Hint: run the command with --verbose for more details.
+
+error: script "nx" exited with code 1

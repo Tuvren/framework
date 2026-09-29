@@ -1,0 +1,10 @@
+Historical control against identical checkout and dependencies.
+Command: LC_ALL=C "$BN_CONTROL_BUN" test (from typescript/kernel/backends/memory)
+BN_CONTROL_BUN: immutable Bun1.3.10 binary from the pre-epic project environment. Exit: 0.
+
+bun test v1.3.10 (30e609e0)
+
+ 77 pass
+ 0 fail
+ 107 expect() calls
+Ran 77 tests across 9 files. [867.00ms]

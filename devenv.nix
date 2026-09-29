@@ -25,6 +25,7 @@
 
   services.postgres = {
     enable = true;
+    package = pkgs.postgresql_17;
     initialDatabases = [
       {
         name = "tuvren_runtime";
