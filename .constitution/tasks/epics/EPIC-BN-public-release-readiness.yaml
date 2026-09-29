@@ -269,6 +269,12 @@ closeout:
     - stage: tasks
       item: Create bounded follow-up tickets for deferred BN001 and align the dependent ticket graph with
         proposed OD-04 after the owner ruling; no Bun 1.4 acceptance is claimed.
+    - stage: tech-spec
+      item: Define package retirement/removal governance for packages absent or renamed away from the
+        current publishable inventory; native Changesets rejects names absent from the workspace.
+        Preserve ADR-0069's explicit private-package exemption and ADR-0068's never-published
+        session withdrawal. This policy extension was a Consider finding in PR119 round 1, not
+        silently added to the checker.
   follow_ups:
     - "Owner handoff after merge, in order: dispatch .github/workflows/release.yml with dry_run
       true, then false; run bun tools/scripts/publish-registry.ts --verify-consumer 0.2.0; create
@@ -285,6 +291,13 @@ closeout:
     - Document a supported paired code/spec pin transition in constitution-tooling; exact TS004
       matching and separate commits currently force temporary historical pin drift. This run
       preserves separate commits, explicit expected failure and final-head closure.
+    - Consider extracting pure package/diff and intent-classification functions from Git/filesystem
+      orchestration in a separately scoped tooling change; current PR fixes the concrete
+      intent-discovery defects within its two owned checker files.
+    - PR119 round-one bounded gate fixes passed preserved test-first controls and the final
+      26-fixture/155-assertion suite, including both source-move endpoints; earlier twenty- and
+      24-fixture records remain labeled by producing commits. Current-manifest publication authority
+      and private-package exemptions remain as ruled.
   code_decisions:
     - summary: Direct changeset coverage requires a new or updated matching release declaration or
         nonempty note compared with the exact base, using current publishable package paths rather
@@ -339,4 +352,21 @@ closeout:
       paths:
         - tools/scripts/changeset-check.ts
       commit: e5354f861c4bc8bb645ec5f72926ed6b3ca88b83
+    - summary: Compare changed release intent semantically against all base pending notes, mirror
+        installed Changesets reader filename filtering in current and historical discovery, and
+        include Git type changes in coverage/history diffs. This preserves fresh direct intent
+        independently of filenames and matches native discovery.
+      kind: pattern
+      paths:
+        - tools/scripts/changeset-check.ts
+        - tools/scripts/changeset-check.test.ts
+      commit: d70abad1767015c5c000850f6c64b3837127f53a
+    - summary: Disable Git rename folding in current and historical package-path diffs so source moves
+        inspect both deletion origin and addition destination. A still-public package requires fresh
+        direct intent when its source moves into a private package or the repository root.
+      kind: pattern
+      paths:
+        - tools/scripts/changeset-check.ts
+        - tools/scripts/changeset-check.test.ts
+      commit: 73906bdb5b93ccec40e4e5344d6a6db49d4bca7e
   settled: []
