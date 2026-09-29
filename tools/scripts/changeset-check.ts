@@ -8,7 +8,6 @@
  * and requires a direct, validated changeset entry for each affected package.
  */
 import { spawn } from "node:child_process";
-import type { Dirent } from "node:fs";
 import {
   access,
   mkdtemp,
@@ -66,7 +65,12 @@ type ChangesetParser = (contents: string) => unknown;
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../");
 const CHANGESET_DIRECTORY = ".changeset";
-const CHANGESET_METADATA_FILES = new Set(["README.md"]);
+const CHANGESET_METADATA_FILES = new Set([
+  "AGENTS.md",
+  "CLAUDE.md",
+  "GEMINI.md",
+]);
+const CHANGESET_README_FILE = /^README\.md$/iu;
 const CHANGESETS_CLI_PATH = path.join(
   REPO_ROOT,
   "node_modules/@changesets/cli/bin.js"
@@ -99,12 +103,19 @@ export async function checkChangesetCoverage(
     options.rootDirectory,
     workspaceNames
   );
+  const baseChangesets = await readPendingChangesetsAtRevision(
+    options.rootDirectory,
+    baseRevision,
+    workspaceNames
+  );
   const changedPaths = await readChangedPaths(
     options.rootDirectory,
     baseRevision
   );
   const changedPublicPackages = manifests.filter(
     (manifest) =>
+      // ADR-0069 exempts private packages. Current manifests deliberately
+      // select publishable packages, including ADR-0068's stream-ws exclusion.
       !manifest.private &&
       manifest.name.startsWith("@tuvren/") &&
       [...changedPaths].some((changedPath) =>
@@ -123,12 +134,7 @@ export async function checkChangesetCoverage(
     if (
       !(
         changedPaths.has(changeset.relativePath) &&
-        (await changesetHasNewOrUpdatedIntent(
-          options.rootDirectory,
-          baseRevision,
-          changeset,
-          workspaceNames
-        ))
+        changesetHasNewOrUpdatedIntent(changeset, baseChangesets)
       )
     ) {
       continue;
@@ -233,11 +239,11 @@ async function readChangedPaths(
       "diff",
       "--name-only",
       "-z",
-      "--diff-filter=ACDMR",
+      "--diff-filter=ACDMRT",
       `${baseRevision}...HEAD`,
     ],
-    ["diff", "--name-only", "-z", "--diff-filter=ACDMR"],
-    ["diff", "--cached", "--name-only", "-z", "--diff-filter=ACDMR"],
+    ["diff", "--name-only", "-z", "--diff-filter=ACDMRT"],
+    ["diff", "--cached", "--name-only", "-z", "--diff-filter=ACDMRT"],
     ["ls-files", "--others", "--exclude-standard", "-z"],
   ];
   const changedPaths = new Set<string>();
@@ -379,37 +385,119 @@ async function readPendingChangesets(
   rootDirectory: string,
   workspaceNames: ReadonlySet<string>
 ): Promise<PendingChangeset[]> {
-  const directory = path.join(rootDirectory, CHANGESET_DIRECTORY);
-  let entries: Dirent<string>[];
-
-  try {
-    entries = await readdir(directory, { withFileTypes: true });
-  } catch {
-    throw new Error("cannot read .changeset directory");
-  }
-
   const changesets: PendingChangeset[] = [];
 
-  for (const entry of entries.sort((left, right) =>
-    left.name.localeCompare(right.name)
-  )) {
-    if (
-      !(entry.isFile() && entry.name.endsWith(".md")) ||
-      CHANGESET_METADATA_FILES.has(entry.name)
-    ) {
-      continue;
-    }
-
+  for (const relativePath of await readPendingChangesetPaths(rootDirectory)) {
     changesets.push(
       await parseChangeset(
-        path.join(directory, entry.name),
-        entry.name,
+        path.join(rootDirectory, relativePath),
+        relativePath.slice(`${CHANGESET_DIRECTORY}/`.length),
         workspaceNames
       )
     );
   }
 
   return changesets;
+}
+
+async function readPendingChangesetsAtRevision(
+  rootDirectory: string,
+  revision: string,
+  workspaceNames: ReadonlySet<string>
+): Promise<PendingChangeset[]> {
+  const paths = await readPendingChangesetPathsAtRevision(
+    rootDirectory,
+    revision
+  );
+  const changesets: PendingChangeset[] = [];
+
+  for (const relativePath of paths) {
+    const contents = await runCommand(
+      "git",
+      ["show", `${revision}:${relativePath}`],
+      rootDirectory
+    );
+
+    if (contents.exitCode !== 0) {
+      throw new Error(`cannot read base changeset ${relativePath}`);
+    }
+
+    const parsed = await parseChangesetContents(
+      contents.stdout,
+      relativePath.slice(`${CHANGESET_DIRECTORY}/`.length),
+      workspaceNames
+    );
+    changesets.push({ ...parsed, relativePath });
+  }
+
+  return changesets;
+}
+
+async function readPendingChangesetPaths(
+  rootDirectory: string
+): Promise<string[]> {
+  const paths: string[] = [];
+
+  for (const directory of [CHANGESET_DIRECTORY, `${CHANGESET_DIRECTORY}/pre`]) {
+    let entries: string[];
+
+    try {
+      entries = await readdir(path.join(rootDirectory, directory));
+    } catch {
+      if (directory.endsWith("/pre")) {
+        continue;
+      }
+
+      throw new Error("cannot read .changeset directory");
+    }
+
+    for (const entry of entries) {
+      const relativePath = `${directory}/${entry}`;
+
+      if (isNativeChangesetPath(relativePath)) {
+        paths.push(relativePath);
+      }
+    }
+  }
+
+  return paths.sort((left, right) => left.localeCompare(right));
+}
+
+async function readPendingChangesetPathsAtRevision(
+  rootDirectory: string,
+  revision: string
+): Promise<string[]> {
+  const result = await runCommand(
+    "git",
+    ["ls-tree", "-r", "--name-only", revision, "--", CHANGESET_DIRECTORY],
+    rootDirectory
+  );
+
+  if (result.exitCode !== 0) {
+    throw new Error("cannot inspect .changeset history for a consumed release");
+  }
+
+  return result.stdout
+    .split("\n")
+    .filter((filePath) => isNativeChangesetPath(filePath))
+    .sort();
+}
+
+function isNativeChangesetPath(filePath: string): boolean {
+  const relativePath = filePath.slice(`${CHANGESET_DIRECTORY}/`.length);
+  const isRootFile = !relativePath.includes("/");
+  const isPreFile =
+    relativePath.startsWith("pre/") &&
+    !relativePath.slice("pre/".length).includes("/");
+  const filename = path.posix.basename(filePath);
+
+  return (
+    (isRootFile || isPreFile) &&
+    !filename.startsWith(".") &&
+    filename.endsWith(".md") &&
+    !CHANGESET_README_FILE.test(filename) &&
+    !CHANGESET_METADATA_FILES.has(filename)
+  );
 }
 
 async function parseChangeset(
@@ -539,46 +627,20 @@ function isNativeChangesetContents(
   );
 }
 
-async function changesetHasNewOrUpdatedIntent(
-  rootDirectory: string,
-  baseRevision: string,
+function changesetHasNewOrUpdatedIntent(
   current: PendingChangeset,
-  workspaceNames: ReadonlySet<string>
-): Promise<boolean> {
-  const baseEntry = await runCommand(
-    "git",
-    ["ls-tree", "-z", baseRevision, "--", current.relativePath],
-    rootDirectory
-  );
-
-  if (baseEntry.exitCode !== 0) {
-    throw new Error(`cannot inspect base changeset ${current.relativePath}`);
-  }
-
-  if (baseEntry.stdout.length === 0) {
-    return true;
-  }
-
-  const baseContents = await runCommand(
-    "git",
-    ["show", `${baseRevision}:${current.relativePath}`],
-    rootDirectory
-  );
-
-  if (baseContents.exitCode !== 0) {
-    throw new Error(`cannot read base changeset ${current.relativePath}`);
-  }
-
-  const baseContentsParsed = await parseChangesetContents(
-    baseContents.stdout,
-    path.basename(current.relativePath),
-    workspaceNames
+  baseChangesets: readonly PendingChangeset[]
+): boolean {
+  const baseWithSameDeclarations = baseChangesets.filter((base) =>
+    sameReleaseTypes(base.releaseTypes, current.releaseTypes)
   );
 
   return (
-    !sameReleaseTypes(baseContentsParsed.releaseTypes, current.releaseTypes) ||
+    baseWithSameDeclarations.length === 0 ||
     (current.summary.length > 0 &&
-      current.summary !== baseContentsParsed.summary)
+      !baseWithSameDeclarations.some(
+        (base) => base.summary === current.summary
+      ))
   );
 }
 
@@ -700,25 +762,9 @@ async function findLatestPendingChangesetRevision(
       continue;
     }
 
-    const paths = await runCommand(
-      "git",
-      ["ls-tree", "-r", "--name-only", revision, "--", CHANGESET_DIRECTORY],
-      rootDirectory
-    );
-
-    if (paths.exitCode !== 0) {
-      throw new Error(
-        "cannot inspect .changeset history for a consumed release"
-      );
-    }
-
     if (
-      paths.stdout
-        .split("\n")
-        .some(
-          (filePath) =>
-            filePath.endsWith(".md") && path.basename(filePath) !== "README.md"
-        )
+      (await readPendingChangesetPathsAtRevision(rootDirectory, revision))
+        .length > 0
     ) {
       return revision;
     }
@@ -739,7 +785,7 @@ async function findPublicChangeBetweenRevisions(
       "diff",
       "--name-only",
       "-z",
-      "--diff-filter=ACDMR",
+      "--diff-filter=ACDMRT",
       `${baseRevision}..${candidate}`,
     ],
     rootDirectory

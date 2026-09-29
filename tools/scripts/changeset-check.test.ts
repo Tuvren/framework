@@ -6,6 +6,7 @@ import {
   mkdtemp,
   readFile,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -22,10 +23,11 @@ interface Fixture {
   commit(message: string): Promise<void>;
   privateChange(content: string): Promise<void>;
   publicChange(content: string): Promise<void>;
+  publicSourceTypeChange(): Promise<void>;
   readonly root: string;
   writeChangeset(filename: string, frontmatter: string): Promise<void>;
   writeChangesetContents(filename: string, contents: string): Promise<void>;
-  writePublicManifest(description: string): Promise<void>;
+  writePublicManifest(description: string, isPrivate?: boolean): Promise<void>;
 }
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../");
@@ -183,6 +185,50 @@ describe("changeset-check", () => {
     await expect(check(fixture)).resolves.toBeUndefined();
   });
 
+  test("does not let a renamed unchanged pending intent cover a new public change", async () => {
+    const fixture = await createFixture();
+    await run("git", ["checkout", "master"], fixture.root);
+    await fixture.writeChangeset("old.md", '"@tuvren/public-a": patch');
+    await fixture.commit("record existing intent");
+    await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+    await run("git", ["checkout", "feature"], fixture.root);
+    await fixture.publicChange("export const later = true;\n");
+    await run(
+      "git",
+      ["mv", ".changeset/old.md", ".changeset/renamed.md"],
+      fixture.root
+    );
+    await fixture.commit("change source and rename unchanged intent");
+
+    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+  });
+
+  test("matches native Changesets metadata filtering", async () => {
+    const fixture = await createFixture();
+    await fixture.publicChange("export const changed = true;\n");
+    await fixture.writeChangeset("public.md", '"@tuvren/public-a": patch');
+
+    for (const filename of [
+      ".hidden.md",
+      "rEaDmE.md",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+    ]) {
+      await fixture.writeChangesetContents(filename, "not a changeset\n");
+    }
+    await fixture.commit("add changeset metadata files");
+
+    const status = await run(
+      process.execPath,
+      [CHANGESET_CLI, "status", "--since", "master"],
+      fixture.root
+    );
+
+    expect(status.exitCode).toBe(0);
+    await expect(check(fixture)).resolves.toBeUndefined();
+  });
+
   test("exempts private-only and root-only changes", async () => {
     const privateFixture = await createFixture();
     await privateFixture.privateChange("export const changed = true;\n");
@@ -193,6 +239,14 @@ describe("changeset-check", () => {
     await writeFile(path.join(rootFixture.root, "README.md"), "root only\n");
     await rootFixture.commit("change root file");
     await expect(check(rootFixture)).resolves.toBeUndefined();
+  });
+
+  test("exempts a package made private by its current manifest", async () => {
+    const fixture = await createFixture();
+    await fixture.writePublicManifest("now private", true);
+    await fixture.commit("make package private");
+
+    await expect(check(fixture)).resolves.toBeUndefined();
   });
 
   test("measures Changesets status private/fixed behavior without using it as coverage", async () => {
@@ -267,6 +321,42 @@ describe("changeset-check", () => {
     expect(unstaged.stdout).toContain("packages/public-a/src.ts");
     expect(untracked.exitCode).toBe(0);
     expect(untracked.stdout).toContain(".changeset/working-tree.md");
+
+    await expect(check(fixture)).resolves.toBeUndefined();
+  });
+
+  test("requires intent for public source type changes in each Git state", async () => {
+    const fixture = await createFixture();
+    await fixture.publicSourceTypeChange();
+    const workingTree = await run(
+      "git",
+      ["diff", "--name-status"],
+      fixture.root
+    );
+
+    expect(workingTree.stdout).toContain("T\tpackages/public-a/src.ts");
+
+    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+
+    const stage = await run(
+      "git",
+      ["add", "packages/public-a/src.ts"],
+      fixture.root
+    );
+    expect(stage.exitCode).toBe(0);
+    const staged = await run(
+      "git",
+      ["diff", "--cached", "--name-status"],
+      fixture.root
+    );
+    expect(staged.stdout).toContain("T\tpackages/public-a/src.ts");
+
+    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    await fixture.commit("replace public source with symlink");
+
+    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+    await fixture.writeChangeset("type-change.md", '"@tuvren/public-a": patch');
+    await fixture.commit("record intent for public source type change");
 
     await expect(check(fixture)).resolves.toBeUndefined();
   });
@@ -451,6 +541,13 @@ async function createFixture(): Promise<Fixture> {
     publicChange: async (content: string): Promise<void> => {
       await writeFixtureFile(root, "packages/public-a/src.ts", content);
     },
+    publicSourceTypeChange: async (): Promise<void> => {
+      await rm(path.join(root, "packages/public-a/src.ts"));
+      await symlink(
+        "../private-a/src.ts",
+        path.join(root, "packages/public-a/src.ts")
+      );
+    },
     privateChange: async (content: string): Promise<void> => {
       await writeFixtureFile(root, "packages/private-a/src.ts", content);
     },
@@ -470,18 +567,29 @@ async function createFixture(): Promise<Fixture> {
     ): Promise<void> => {
       await writeFixtureFile(root, `.changeset/${filename}`, contents);
     },
-    writePublicManifest: async (description: string): Promise<void> => {
+    writePublicManifest: async (
+      description: string,
+      isPrivate = false
+    ): Promise<void> => {
       await writeFixtureFile(
         root,
         "packages/public-a/package.json",
-        JSON.stringify(publicManifest(description), null, 2)
+        JSON.stringify(publicManifest(description, isPrivate), null, 2)
       );
     },
   };
 }
 
-function publicManifest(description: string): Record<string, unknown> {
-  return { description, name: "@tuvren/public-a", version: "1.0.0" };
+function publicManifest(
+  description: string,
+  isPrivate = false
+): Record<string, unknown> {
+  return {
+    description,
+    name: "@tuvren/public-a",
+    ...(isPrivate ? { private: true } : {}),
+    version: "1.0.0",
+  };
 }
 
 async function writeFixtureFile(

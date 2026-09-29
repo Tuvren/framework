@@ -1,0 +1,24 @@
+CI investigation at PR head 934096eaa73d6096216bbb24f4a5037a05347930,
+2026-09-29. Runtime source is unchanged by Epic BN.
+
+Required CI run: https://github.com/Tuvren/framework/actions/runs/36575829803
+Bazel passed. Verify failed framework-runtime:test because the first
+KRT-BG004 no-retry-under-lost-authority test timed out at 5000.11 ms.
+The pull-request changeset step was skipped after verify failed.
+The raw failing-job transcript was retrieved with:
+gh run view 36575829803 --repo Tuvren/framework --log-failed
+Full local copy: /tmp/epic-bn-pr119-ci-failure.log.
+
+Lead isolated scenario command, prepared Bun 1.3.10 and LC_ALL=C:
+bun test typescript/runtime/test/server-execution-class.bg004-authority-loss.test.ts
+Result: exit 0, 5 passed, 0 failed, 12 assertions, 296 ms.
+
+Lead uncached whole-runtime command:
+devenv shell -- zsh -c 'LC_ALL=C bun run nx run framework-runtime:test --skip-nx-cache'
+Result: exit 0, 511 passed, 0 failed, 1640 assertions, 58 files, 5.13 s.
+Full local transcript: /tmp/epic-bn-pr119-runtime-recheck.log.
+
+These are labeled result summaries, not complete transcripts. They support
+a timing-sensitive CI diagnosis and do not substitute for required CI.
+The fixed PR head must pass both verify and Bazel before the approved merge.
+No runtime patch, timeout adjustment, or CI bypass was performed.
