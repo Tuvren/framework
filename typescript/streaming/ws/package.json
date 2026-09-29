@@ -36,5 +36,6 @@
     "@tuvren/core": {
       "optional": false
     }
-  }
+  },
+  "private": true
 }

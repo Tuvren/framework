@@ -1,0 +1,11 @@
+{
+  "privateSessionPackages": [
+    "@tuvren/stream-ws",
+    "@tuvren/host-session",
+    "@tuvren/remote-session",
+    "@tuvren/session-client"
+  ],
+  "publicCount": 19,
+  "publicToPrivateEdges": 0,
+  "adopterInstallClaims": 0
+}

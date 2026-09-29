@@ -1,0 +1,2 @@
+$ bun tools/scripts/publish-registry.ts --preflight
+[publish-registry] preflight passed: 19 packages at 0.1.0 (publish order: core → kernel-protocol → backend-shared → backend-memory → backend-postgres → backend-sqlite → kernel-grpc-client → kernel-runtime → telemetry-semconv → runtime → sdk → mcp-client → provider-api → provider-bridge-ai-sdk → runner-react → stream-core → stream-agui → stream-sse → telemetry-otel)
