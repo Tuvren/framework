@@ -345,10 +345,17 @@ bill_of_materials:
     role: runtime
     version: 1.4.2
     ecosystem: nix
-    justification: User-ruled target for the local runtime and package manager; refresh the devenv nixpkgs lock with devenv update and align package.json packageManager to bun@1.4.2.
+    justification: >-
+      User-ruled target for the local runtime and package manager. Both permitted KRT-BN001
+      attempts failed: the Nixpkgs refresh introduced a Weaver registry validation
+      incompatibility, and the Bun-only candidate failed 3 of 77 memory-backend tests.
+      KRT-BN001 is deferred for scoped compatibility work. Bun 1.4.2 remains pending and
+      unaccepted.
     radar: adopt
     certainty: assumed
-    assumption: "the nixpkgs lock refresh keeps `bun run verify` green and does not change the PostgreSQL major version; otherwise the implementing ticket falls back to a bun-only pin"
+    assumption: >-
+      Scoped compatibility work must satisfy the original KRT-BN001 acceptance conditions for
+      the Bun 1.4.2 target.
   - name: buf
     role: tooling
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
@@ -437,7 +444,11 @@ bill_of_materials:
     role: persistence
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
-    justification: Local service lifecycle for the @tuvren/backend-postgres conformance and proving-host lanes.
+    justification: >-
+      Local service lifecycle for the @tuvren/backend-postgres conformance and proving-host
+      lanes. The explicit `services.postgres.package = pkgs.postgresql_17` pin retains
+      PostgreSQL major version 17. The prepared environment verified with this pin uses
+      PostgreSQL 17.9.
     radar: adopt
     certainty: settled
     evidence:
@@ -460,7 +471,19 @@ bill_of_materials:
     certainty: assumed
     assumption: Migrated from the repository lockfile; no separate design ruling was recorded.
 compatibility_policy:
-  pinning: Every dependency is pinned exactly. TypeScript packages carry exact versions in package.json and bun.lock; Rust crates are pinned by Cargo.lock against the rust-toolchain.toml channel; Dart packages are pinned by the committed pubspec.lock; Python packages by uv.lock; Go modules by go.work plus each module go.sum. Toolchains that are not language dependencies (Bun, buf, protobuf, Go, Python, Dart, PostgreSQL) are provisioned by devenv and pinned by the nixpkgs revision in devenv.lock. Versions named here are authoritative for the baseline implementation line and must match the repository manifests after implementation; the assumed Bun 1.4.2 target is pending its devenv.lock refresh and package.json alignment.
+  pinning: >-
+    Every dependency is pinned exactly. TypeScript packages carry exact versions in
+    package.json and bun.lock; Rust crates are pinned by Cargo.lock against the
+    rust-toolchain.toml channel; Dart packages are pinned by the committed pubspec.lock;
+    Python packages by uv.lock; Go modules by go.work plus each module go.sum. Toolchains
+    that are not language dependencies (Bun, buf, protobuf, Go, Python, Dart, PostgreSQL)
+    are provisioned by devenv and pinned by the nixpkgs revision in devenv.lock. Versions
+    named here are authoritative for the baseline implementation line and must match the
+    repository manifests after implementation. KRT-BN001 retains the original devenv.lock
+    and bun.lock, Bun 1.3.10, and the `packageManager` declaration `bun@1.3.11`; the
+    explicit PostgreSQL 17 package pin remains. Both permitted Bun 1.4.2 attempts failed,
+    so the 1.4.2 target has no accepted lock refresh or packageManager alignment. Scoped
+    compatibility work must produce that acceptance.
   lockfiles:
     - bun.lock
     - Cargo.lock
