@@ -2,23 +2,27 @@ owner: KRT-BN003
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: 296ca276b1d61ad76a20cbfcaefed81fbfc16ca9
-  command: "Scoped none-coverage fix: bun test tools/scripts/changeset-check.test.ts; bun run changeset:check --base=master; strict source-only TypeScript6 and targeted Biome. Earlier historical check summaries are labeled in verification.log."
+  commit: fc5bcadb21d841a720c7a952368f0183ae547baf
+  command: "M3c fixture discovery marker: lead twenty-case baseline test on Bun1.3.10/CLI2.31, worker strictTS/Biome/gate. Earlier producers are historical and retain labels in their logs."
 files:
-  - path: fixture-tests.log
-    sha256: dd65fffb2d9e8728637562125b9ca94af9fcbd57cc5f74445f49697dce82aba8
-    bytes: 807
-    role: log
+  - path: coverage.md
+    sha256: 354873455b8b773d63227f270233b3caed539a9f27d2b9bbcc32b4565f73876a
+    bytes: 1673
+    role: transcript
   - path: current-gate.log
     sha256: be26f3ff67760cc8219b938a80059f786803516928299b80cac473eaa18422e5
     bytes: 116
+    role: log
+  - path: fixture-lock-marker-baseline.log
+    sha256: 3477f9c26dd43501cb21cff78287454e72666f37a60913961737f445a2fdc266
+    bytes: 1052
+    role: log
+  - path: fixture-tests.log
+    sha256: dd65fffb2d9e8728637562125b9ca94af9fcbd57cc5f74445f49697dce82aba8
+    bytes: 807
     role: log
   - path: verification.log
     sha256: c6ec877358f82b698ffd7da085763b78062ea9728ac2ec221564dd91abd93d1f
     bytes: 2798
     role: log
-  - path: coverage.md
-    sha256: 2fa612b4f56c8eb7b49ff6a403bc7f08bd861be266df7c744826dabad12b441c
-    bytes: 1292
-    role: transcript
 pass_criteria: All behavior fixtures pass, source-only types and lint pass, current gate exits0, CI passes exact PR base SHA with full history, and normal public changes require direct fresh or updated intent. Release-only consumed intent must reproduce native public artifacts and cannot hide source or unrelated manifest edits.

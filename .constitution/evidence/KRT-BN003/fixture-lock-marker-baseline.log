@@ -1,0 +1,22 @@
+M3c producer parent: fc5bcadb21d841a720c7a952368f0183ae547baf
+Working-tree fixture lock marker; target Bun1.3.10, current CLI2.31.0.
+Command: PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun test tools/scripts/changeset-check.test.ts
+Exit: 0
+
+bun test v1.3.10 (30e609e0)
+
+tools/scripts/changeset-check.test.ts:
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — consumed changesets reproduce the generated public release
+changeset-check: OK — consumed changesets reproduce the generated public release
+
+ 20 pass
+ 0 fail
+ 108 expect() calls
+Ran 20 tests across 1 file. [7.29s]
