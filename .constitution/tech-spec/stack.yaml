@@ -1,7 +1,7 @@
 bill_of_materials:
   - name: typescript
     role: language
-    version: 6.0.2
+    version: "6.0.2"
     ecosystem: bun
     justification: First authoritative implementation language for the framework and the kernel protocol implementation.
     radar: adopt
@@ -12,9 +12,9 @@ bill_of_materials:
       date: 2026-09-03
   - name: ai
     role: library
-    version: 6.0.142
+    version: "6.0.142"
     ecosystem: bun
-    justification: Baseline AI SDK Providers bridge, LanguageModelV3 / ProviderV3 surface only.
+    justification: "Baseline AI SDK Providers bridge, LanguageModelV3 / ProviderV3 surface only."
     radar: adopt
     certainty: settled
     evidence:
@@ -23,7 +23,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@ai-sdk/provider"
     role: library
-    version: 3.0.8
+    version: "3.0.8"
     ecosystem: bun
     justification: Provider contract types consumed by the baseline bridge.
     radar: adopt
@@ -34,7 +34,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@ag-ui/core"
     role: library
-    version: 0.0.52
+    version: "0.0.52"
     ecosystem: bun
     justification: Baseline AG-UI event union and runtime validation surface.
     radar: adopt
@@ -45,7 +45,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: ajv
     role: library
-    version: 8.18.0
+    version: "8.18.0"
     ecosystem: bun
     justification: JSON Schema validation at tool and contract boundaries.
     radar: adopt
@@ -56,7 +56,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: cbor-x
     role: library
-    version: 1.6.4
+    version: "1.6.4"
     ecosystem: bun
     justification: Deterministic CBOR encoding and decoding for kernel records.
     radar: adopt
@@ -67,7 +67,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@biomejs/biome"
     role: tooling
-    version: 2.4.10
+    version: "2.5.14"
     ecosystem: bun
     justification: Formatting and linting for the TypeScript line (ADR-0012).
     radar: adopt
@@ -75,10 +75,11 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: bun.lock
-      date: 2026-09-03
+      date: 2026-09-29
+      version: "2.5.14"
   - name: "@changesets/cli"
     role: tooling
-    version: 3.0.3
+    version: "3.0.3"
     ecosystem: bun
     justification: Native fixed-group 0.x minor planning with peer-patch semantics from the measured 7.0 planner.
     radar: adopt
@@ -86,11 +87,11 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: bun.lock
-      version: 3.0.3
+      version: "3.0.3"
       date: 2026-09-29
   - name: tsup
     role: tooling
-    version: 8.5.1
+    version: "8.5.1"
     ecosystem: bun
     justification: Package builds for the TypeScript line (ADR-0012).
     radar: adopt
@@ -101,7 +102,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@typespec/compiler"
     role: tooling
-    version: 1.11.0
+    version: "1.11.0"
     ecosystem: bun
     justification: TypeSpec contract artifact generation.
     radar: adopt
@@ -112,7 +113,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@typespec/json-schema"
     role: tooling
-    version: 1.11.0
+    version: "1.11.0"
     ecosystem: bun
     justification: JSON Schema emitter for boundary-owned TypeSpec sources.
     radar: adopt
@@ -123,7 +124,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@typespec/openapi3"
     role: tooling
-    version: 1.11.0
+    version: "1.11.0"
     ecosystem: bun
     justification: OpenAPI emitter for boundary-owned TypeSpec sources.
     radar: adopt
@@ -134,7 +135,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: cddl
     role: tooling
-    version: 0.20.1
+    version: "0.20.1"
     ecosystem: bun
     justification: Kernel CDDL grammar validation.
     radar: adopt
@@ -145,7 +146,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@modelcontextprotocol/sdk"
     role: library
-    version: 1.29.0
+    version: "1.29.0"
     ecosystem: bun
     justification: Protocol and transport implementation behind the MCP Tool Source.
     radar: adopt
@@ -156,7 +157,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@modelcontextprotocol/server-everything"
     role: testing
-    version: 2026.1.26
+    version: "2026.1.26"
     ecosystem: bun
     justification: Official MCP fixture server for stdio and Streamable HTTP parity checks.
     radar: adopt
@@ -167,9 +168,9 @@ bill_of_materials:
       date: 2026-09-03
   - name: zod
     role: library
-    version: 4.4.3
+    version: "4.4.3"
     ecosystem: bun
-    justification: Optional peer for the Zod authoring path in the Schema Authoring Helper, and the dependency @modelcontextprotocol/sdk still requires.
+    justification: "Optional peer for the Zod authoring path in the Schema Authoring Helper, and the dependency @modelcontextprotocol/sdk still requires."
     radar: adopt
     certainty: settled
     evidence:
@@ -178,7 +179,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@standard-schema/spec"
     role: library
-    version: 1.1.0
+    version: "1.1.0"
     ecosystem: bun
     justification: Types-only optional peer for the Standard Schema authoring path.
     radar: adopt
@@ -189,7 +190,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@bufbuild/protobuf"
     role: library
-    version: 2.11.0
+    version: "2.11.0"
     ecosystem: bun
     justification: Runtime for the generated TypeScript kernel interop bindings.
     radar: adopt
@@ -200,7 +201,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: nx
     role: tooling
-    version: 22.6.3
+    version: "22.7.12"
     ecosystem: bun
     justification: Target routing and developer ergonomics over the native toolchains (ADR-0013).
     radar: adopt
@@ -208,12 +209,13 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: bun.lock
-      date: 2026-09-03
+      date: 2026-09-29
+      version: "22.7.12"
   - name: "@copilotkit/aimock"
     role: testing
-    version: 1.15.1
+    version: "1.15.1"
     ecosystem: bun
-    justification: Local mock-provider validation for success, control, and provider-failure paths.
+    justification: "Local mock-provider validation for success, control, and provider-failure paths."
     radar: adopt
     certainty: settled
     evidence:
@@ -222,7 +224,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@ai-sdk/openai"
     role: testing
-    version: 3.0.53
+    version: "3.0.53"
     ecosystem: bun
     justification: OpenAI-compatible provider boundary used in bridge contract fixtures.
     radar: adopt
@@ -233,7 +235,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@ai-sdk/anthropic"
     role: testing
-    version: 3.0.66
+    version: "3.0.66"
     ecosystem: bun
     justification: Anthropic-compatible provider boundary used in bridge contract fixtures.
     radar: adopt
@@ -244,7 +246,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: "@ai-sdk/google"
     role: testing
-    version: 3.0.64
+    version: "3.0.64"
     ecosystem: bun
     justification: Gemini-compatible provider boundary used in bridge contract fixtures.
     radar: adopt
@@ -255,7 +257,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: tonic
     role: framework
-    version: 0.14.5
+    version: "0.14.6"
     ecosystem: cargo
     justification: gRPC server and client for the Rust kernel process boundary (ADR-0018).
     radar: adopt
@@ -263,10 +265,11 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: Cargo.lock
-      date: 2026-09-03
+      date: 2026-09-29
+      version: "0.14.6"
   - name: tonic-prost
     role: library
-    version: 0.14.5
+    version: "0.14.6"
     ecosystem: cargo
     justification: Prost codec integration for the tonic services.
     radar: adopt
@@ -274,10 +277,11 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: Cargo.lock
-      date: 2026-09-03
+      date: 2026-09-29
+      version: "0.14.6"
   - name: tonic-prost-build
     role: tooling
-    version: 0.14.5
+    version: "0.14.6"
     ecosystem: cargo
     justification: Build-time generation of the Rust kernel interop bindings.
     radar: adopt
@@ -285,10 +289,11 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: Cargo.lock
-      date: 2026-09-03
+      date: 2026-09-29
+      version: "0.14.6"
   - name: prost
     role: library
-    version: 0.14.3
+    version: "0.14.4"
     ecosystem: cargo
     justification: Protobuf runtime for the Rust kernel line.
     radar: adopt
@@ -296,10 +301,11 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: Cargo.lock
-      date: 2026-09-03
+      date: 2026-09-29
+      version: "0.14.4"
   - name: tokio
     role: runtime
-    version: 1.52.1
+    version: "1.53.1"
     ecosystem: cargo
     justification: Async runtime for the Rust kernel gRPC service.
     radar: adopt
@@ -307,10 +313,11 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: Cargo.lock
-      date: 2026-09-03
+      date: 2026-09-29
+      version: "1.53.1"
   - name: ciborium
     role: library
-    version: 0.2.2
+    version: "0.2.2"
     ecosystem: cargo
     justification: Deterministic CBOR encoding and decoding on the Rust side.
     radar: adopt
@@ -321,7 +328,7 @@ bill_of_materials:
       date: 2026-09-03
   - name: serde
     role: library
-    version: 1.0.228
+    version: "1.0.229"
     ecosystem: cargo
     justification: Serialization framework underneath the Rust kernel record types.
     radar: adopt
@@ -329,10 +336,11 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: Cargo.lock
-      date: 2026-09-03
+      date: 2026-09-29
+      version: "1.0.229"
   - name: rust
     role: language
-    version: 1.95.0
+    version: "1.95.0"
     ecosystem: system
     justification: Kernel-first implementation line through the root Cargo workspace (ADR-0018).
     radar: adopt
@@ -343,24 +351,17 @@ bill_of_materials:
       date: 2026-09-03
   - name: bun
     role: runtime
-    version: 1.4.2
+    version: "1.4.2"
     ecosystem: nix
-    justification: >-
-      User-ruled target for the local runtime and package manager. Both permitted KRT-BN001
-      attempts failed: the Nixpkgs refresh introduced a Weaver registry validation
-      incompatibility, and the Bun-only candidate failed 3 of 77 memory-backend tests.
-      KRT-BN001 is deferred for scoped compatibility work. Bun 1.4.2 remains pending and
-      unaccepted.
+    justification: "User-ruled target for the local runtime and package manager. Both permitted KRT-BN001 attempts failed: the Nixpkgs refresh introduced a Weaver registry validation incompatibility, and the Bun-only candidate failed 3 of 77 memory-backend tests. KRT-BN001 is deferred for scoped compatibility work. Bun 1.4.2 remains pending and unaccepted."
     radar: adopt
     certainty: assumed
-    assumption: >-
-      Scoped compatibility work must satisfy the original KRT-BN001 acceptance conditions for
-      the Bun 1.4.2 target.
+    assumption: Scoped compatibility work must satisfy the original KRT-BN001 acceptance conditions for the Bun 1.4.2 target.
   - name: buf
     role: tooling
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
-    justification: Protobuf governance and breaking-change checks; pinned by the devenv nixpkgs revision.
+    justification: "Protobuf governance and breaking-change checks; pinned by the devenv nixpkgs revision."
     radar: adopt
     certainty: settled
     evidence:
@@ -372,7 +373,7 @@ bill_of_materials:
     role: tooling
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
-    justification: protoc and the generator plugins for kernel interop; pinned by the devenv nixpkgs revision.
+    justification: "protoc and the generator plugins for kernel interop; pinned by the devenv nixpkgs revision."
     radar: adopt
     certainty: settled
     evidence:
@@ -384,7 +385,7 @@ bill_of_materials:
     role: tooling
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
-    justification: Protoc plugin for current kernel interop TypeScript binding generation; provisioned by devenv and aligned with @bufbuild/protobuf@2.11.0.
+    justification: "Protoc plugin for current kernel interop TypeScript binding generation; provisioned by devenv and aligned with @bufbuild/protobuf@2.11.0."
     radar: adopt
     certainty: settled
     evidence:
@@ -396,7 +397,7 @@ bill_of_materials:
     role: tooling
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
-    justification: OpenTelemetry semantic-convention code generator CLI for cross-language telemetry vocabulary; provisioned by devenv.
+    justification: "OpenTelemetry semantic-convention code generator CLI for cross-language telemetry vocabulary; provisioned by devenv."
     radar: adopt
     certainty: settled
     evidence:
@@ -408,7 +409,7 @@ bill_of_materials:
     role: language
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
-    justification: Go kernel-boundary implementation line; rides the nixpkgs default toolchain, with go.work as the module authority.
+    justification: "Go kernel-boundary implementation line; rides the nixpkgs default toolchain, with go.work as the module authority."
     radar: adopt
     certainty: settled
     evidence:
@@ -420,7 +421,7 @@ bill_of_materials:
     role: language
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
-    justification: Python kernel-boundary implementation line; rides the nixpkgs default toolchain, with pyproject.toml plus uv.lock as the dependency authority.
+    justification: "Python kernel-boundary implementation line; rides the nixpkgs default toolchain, with pyproject.toml plus uv.lock as the dependency authority."
     radar: adopt
     certainty: settled
     evidence:
@@ -432,7 +433,7 @@ bill_of_materials:
     role: language
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
-    justification: Dart kernel-boundary implementation line; rides the nixpkgs default SDK, with pubspec.yaml plus pubspec.lock as the dependency authority.
+    justification: "Dart kernel-boundary implementation line; rides the nixpkgs default SDK, with pubspec.yaml plus pubspec.lock as the dependency authority."
     radar: adopt
     certainty: settled
     evidence:
@@ -444,11 +445,7 @@ bill_of_materials:
     role: persistence
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
     ecosystem: nix
-    justification: >-
-      Local service lifecycle for the @tuvren/backend-postgres conformance and proving-host
-      lanes. The explicit `services.postgres.package = pkgs.postgresql_17` pin retains
-      PostgreSQL major version 17. The prepared environment verified with this pin uses
-      PostgreSQL 17.9.
+    justification: "Local service lifecycle for the @tuvren/backend-postgres conformance and proving-host lanes. The explicit `services.postgres.package = pkgs.postgresql_17` pin retains PostgreSQL major version 17. The prepared environment verified with this pin uses PostgreSQL 17.9."
     radar: adopt
     certainty: settled
     evidence:
@@ -458,32 +455,20 @@ bill_of_materials:
       note: "SemVer: 17.9 (provisioned by devenv services.postgres)"
   - name: better-sqlite3
     role: library
-    version: 12.8.0
+    version: "12.8.0"
     ecosystem: bun
     justification: Exact pin recorded in bun.lock for the supported persistence backend implementation.
     certainty: assumed
-    assumption: Migrated from the repository lockfile; no separate design ruling was recorded.
+    assumption: "Migrated from the repository lockfile; no separate design ruling was recorded."
   - name: postgres
     role: library
-    version: 3.4.9
+    version: "3.4.9"
     ecosystem: bun
     justification: Exact pin recorded in bun.lock for the supported persistence backend implementation.
     certainty: assumed
-    assumption: Migrated from the repository lockfile; no separate design ruling was recorded.
+    assumption: "Migrated from the repository lockfile; no separate design ruling was recorded."
 compatibility_policy:
-  pinning: >-
-    Every dependency is pinned exactly. TypeScript packages carry exact versions in
-    package.json and bun.lock; Rust crates are pinned by Cargo.lock against the
-    rust-toolchain.toml channel; Dart packages are pinned by the committed pubspec.lock;
-    Python packages by uv.lock; Go modules by go.work plus each module go.sum. Toolchains
-    that are not language dependencies (Bun, buf, protobuf, Go, Python, Dart, PostgreSQL)
-    are provisioned by devenv and pinned by the nixpkgs revision in devenv.lock. Versions
-    named here are authoritative for the baseline implementation line and must match the
-    repository manifests after implementation. KRT-BN001 retains the original devenv.lock
-    and bun.lock, Bun 1.3.10, and the `packageManager` declaration `bun@1.3.11`; the
-    explicit PostgreSQL 17 package pin remains. Both permitted Bun 1.4.2 attempts failed,
-    so the 1.4.2 target has no accepted lock refresh or packageManager alignment. Scoped
-    compatibility work must produce that acceptance.
+  pinning: "Every dependency is pinned exactly. TypeScript packages carry exact versions in package.json and bun.lock; Rust crates are pinned by Cargo.lock against the rust-toolchain.toml channel; Dart packages are pinned by the committed pubspec.lock; Python packages by uv.lock; Go modules by go.work plus each module go.sum. Toolchains that are not language dependencies (Bun, buf, protobuf, Go, Python, Dart, PostgreSQL) are provisioned by devenv and pinned by the nixpkgs revision in devenv.lock. Versions named here are authoritative for the baseline implementation line and must match the repository manifests after implementation. KRT-BN001 retains the original devenv.lock and bun.lock, Bun 1.3.10, and the `packageManager` declaration `bun@1.3.11`; the explicit PostgreSQL 17 package pin remains. Both permitted Bun 1.4.2 attempts failed, so the 1.4.2 target has no accepted lock refresh or packageManager alignment. Scoped compatibility work must produce that acceptance."
   lockfiles:
     - bun.lock
     - Cargo.lock
@@ -492,4 +477,4 @@ compatibility_policy:
     - go.work
     - devenv.lock
     - MODULE.bazel.lock
-  upgrade_boundaries: Public package APIs follow semantic versioning. A change to kernel record encoding, the hash algorithm, or durable identity rules is semver-major and needs an ADR. Semantic surface versions for the kernel protocol, framework contracts, event vocabulary, error vocabulary, conformance suites, and interop transport are tracked independently of npm package or crate versions. Adding a new implementation language, a new official backend, or a new interop transport needs an ADR before its pins enter this file; a routine patch or minor bump inside an already-approved dependency does not.
+  upgrade_boundaries: "Public package APIs follow semantic versioning. A change to kernel record encoding, the hash algorithm, or durable identity rules is semver-major and needs an ADR. Semantic surface versions for the kernel protocol, framework contracts, event vocabulary, error vocabulary, conformance suites, and interop transport are tracked independently of npm package or crate versions. Adding a new implementation language, a new official backend, or a new interop transport needs an ADR before its pins enter this file; a routine patch or minor bump inside an already-approved dependency does not."
