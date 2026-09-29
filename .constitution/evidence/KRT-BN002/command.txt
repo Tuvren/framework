@@ -1,0 +1,33 @@
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun - > /tmp/KRT-BN002/lead-contract-probe.log <<'BN002_PROBE'
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { walkPackageManifests } from "./tools/scripts/lib/walk-package-manifests.ts";
+const packages=[];
+for(const path of await walkPackageManifests(resolve("typescript"))) {
+ const m=JSON.parse(await readFile(path,"utf8"));
+ if(typeof m.name==="string") packages.push(m);
+}
+const sessions=["@tuvren/stream-ws","@tuvren/host-session","@tuvren/remote-session","@tuvren/session-client"];
+const publicPackages=packages.filter(m=>m.private!==true);
+const publicNames=new Set(publicPackages.map(m=>m.name));
+for(const name of sessions) {
+ const m=packages.find(m=>m.name===name);
+ if(m?.private!==true || publicNames.has(name)) throw new Error("Session package is publishable: "+name);
+}
+for(const m of publicPackages) {
+ for(const field of ["dependencies","optionalDependencies","peerDependencies"]) {
+  for(const name of Object.keys(m[field]??{})) {
+   if(name.startsWith("@tuvren/")&&!publicNames.has(name)) throw new Error(m.name+" depends on private "+name);
+  }
+ }
+}
+const guide=await readFile("docs/guides/publishing-and-adopter-onboarding.md","utf8");
+if(["**Host-facing","**Published-internal","## 2.","## 3."].some(marker=>!guide.includes(marker))) throw new Error("Adopter guide probe anchors missing");
+const hostTier=guide.slice(guide.indexOf("**Host-facing"),guide.indexOf("**Published-internal"));
+const installation=guide.slice(guide.indexOf("## 2."),guide.indexOf("## 3."));
+for(const name of sessions) {
+ if(hostTier.includes(name)) throw new Error("Private package offered as host-facing: "+name);
+ if(installation.split("\n").some(line=>/\bbun add\b/.test(line)&&line.includes(name))) throw new Error("Private package offered in install command: "+name);
+}
+console.log(JSON.stringify({privateSessionPackages:sessions,publicCount:publicPackages.length,publicToPrivateEdges:0,adopterInstallClaims:0},null,2));
+BN002_PROBE

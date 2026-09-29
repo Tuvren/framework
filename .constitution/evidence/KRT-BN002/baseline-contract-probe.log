@@ -1,0 +1,23 @@
+{
+  "publicCount": 20,
+  "publicSessionPackages": [
+    "@tuvren/stream-ws"
+  ],
+  "failures": [
+    "@tuvren/stream-ws must be private",
+    "@tuvren/stream-ws must be omitted from the curated publishable set",
+    "@tuvren/stream-ws has a dependencies dependency on private @tuvren/host-session",
+    "@tuvren/stream-ws has a dependencies dependency on private @tuvren/remote-session"
+  ]
+}
+36 | }
+37 | const guide = await readFile(path.join(process.cwd(), "docs/guides/publishing-and-adopter-onboarding.md"), "utf8");
+38 | const installation = guide.match(/^## 1\.[\s\S]*?(?=^## 3\.)/m)?.[0] ?? "";
+39 | if (installation.includes("@tuvren/stream-ws")) failures.push("guide sections 1 and 2 offer @tuvren/stream-ws");
+40 | console.log(JSON.stringify({ publicCount: publicNames.size, publicSessionPackages: sessionNames.filter((name) => publicNames.has(name)), failures }, null, 2));
+41 | if (failures.length > 0) throw new Error(`KRT-BN002 contract probe failed with ${failures.length} violation(s)`);
+                                        ^
+error: KRT-BN002 contract probe failed with 4 violation(s)
+      at /home/oscar/GitHub/Tuvren/framework-bn/[eval]:41:36
+
+Bun v1.3.10 (Linux x64)

@@ -75,7 +75,7 @@ tickets:
       evidence: "Assert that the stream-ws manifest is private, the curated publishable package list omits it and all other private session packages, registry dependency closure passes preflight, and adopter guide sections 1 and 2 never offer stream-ws as an installable package."
     flows: [flow-reference-host-proves-sdk]
     certainty: settled
-    status: planned
+    status: done
   - id: KRT-BN003
     title: Gate public package changes on a changeset
     type: Chore

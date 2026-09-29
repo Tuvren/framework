@@ -1,0 +1,24 @@
+owner: KRT-BN002
+mode: contract_test
+produced:
+  date: 2026-09-29
+  commit: da6b5b156d9736179531d6c2cd8d0b866d5b6172
+  command: bun contract probe (full lead stdin command recorded in command.txt); bun tools/scripts/publish-registry.ts --build; bun run publish:preflight. Commands run with the working-tree stream-ws privacy change.
+files:
+  - path: baseline-contract-probe.log
+    sha256: 10c79bd88c65b545e0530921f9ac064cb9eb5d310c35aa7e9784918e12e9744b
+    bytes: 1191
+    role: log
+  - path: contract-probe.log
+    sha256: d4a1efecf6d32e723c493a1dc9d13ea0d42fc935bf49921d035e6dad1a9db936
+    bytes: 229
+    role: log
+  - path: publish-preflight.log
+    sha256: a3c9d4a7c766155681279266596f3cd484faf0794535433d526889faeddf92b1
+    bytes: 456
+    role: log
+  - path: command.txt
+    sha256: 1aa4c8b5585f83ad36ca3d3d1e37c68c4d3234ca2ae89e3ac62f1e2aab1a4c5f
+    bytes: 2028
+    role: transcript
+pass_criteria: The four session packages are private booleans and excluded from the public set; every public internal dependency is public; guide host-facing and installation sections omit private session packages; native preflight exits0. The count19 is a recorded inventory at this milestone, not a future fixed cardinality.
