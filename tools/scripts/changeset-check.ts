@@ -105,8 +105,7 @@ export async function checkChangesetCoverage(
   );
   const baseChangesets = await readPendingChangesetsAtRevision(
     options.rootDirectory,
-    baseRevision,
-    workspaceNames
+    baseRevision
   );
   const changedPaths = await readChangedPaths(
     options.rootDirectory,
@@ -130,21 +129,14 @@ export async function checkChangesetCoverage(
 
   const coveredNames = new Set<string>();
 
-  for (const changeset of changesets) {
-    if (
-      !(
+  for (const manifest of changedPublicPackages) {
+    for (const changeset of changesets) {
+      if (
         changedPaths.has(changeset.relativePath) &&
-        changesetHasNewOrUpdatedIntent(changeset, baseChangesets)
-      )
-    ) {
-      continue;
-    }
-
-    for (const [name, releaseType] of changeset.releaseTypes) {
-      // Changesets accepts `none` as a valid no-release entry. It cannot
-      // satisfy the required release intent for a changed public package.
-      if (releaseType !== "none") {
-        coveredNames.add(name);
+        changesetHasNewOrUpdatedIntent(changeset, baseChangesets, manifest.name)
+      ) {
+        coveredNames.add(manifest.name);
+        break;
       }
     }
   }
@@ -412,8 +404,7 @@ async function readPendingChangesets(
 
 async function readPendingChangesetsAtRevision(
   rootDirectory: string,
-  revision: string,
-  workspaceNames: ReadonlySet<string>
+  revision: string
 ): Promise<PendingChangeset[]> {
   const paths = await readPendingChangesetPathsAtRevision(
     rootDirectory,
@@ -432,10 +423,11 @@ async function readPendingChangesetsAtRevision(
       throw new Error(`cannot read base changeset ${relativePath}`);
     }
 
+    // Historical notes establish prior intent. Parse their native syntax and
+    // release types without applying the current workspace membership check.
     const parsed = await parseChangesetContents(
       contents.stdout,
-      relativePath.slice(`${CHANGESET_DIRECTORY}/`.length),
-      workspaceNames
+      relativePath.slice(`${CHANGESET_DIRECTORY}/`.length)
     );
     changesets.push({ ...parsed, relativePath });
   }
@@ -453,12 +445,12 @@ async function readPendingChangesetPaths(
 
     try {
       entries = await readdir(path.join(rootDirectory, directory));
-    } catch {
-      if (directory.endsWith("/pre")) {
+    } catch (error: unknown) {
+      if (directory.endsWith("/pre") && hasErrorCode(error, "ENOENT")) {
         continue;
       }
 
-      throw new Error("cannot read .changeset directory");
+      throw new Error(`cannot read ${directory} directory`);
     }
 
     for (const entry of entries) {
@@ -479,7 +471,7 @@ async function readPendingChangesetPathsAtRevision(
 ): Promise<string[]> {
   const result = await runCommand(
     "git",
-    ["ls-tree", "-r", "--name-only", revision, "--", CHANGESET_DIRECTORY],
+    ["ls-tree", "-r", "--name-only", "-z", revision, "--", CHANGESET_DIRECTORY],
     rootDirectory
   );
 
@@ -488,7 +480,7 @@ async function readPendingChangesetPathsAtRevision(
   }
 
   return result.stdout
-    .split("\n")
+    .split("\0")
     .filter((filePath) => isNativeChangesetPath(filePath))
     .sort();
 }
@@ -528,7 +520,7 @@ async function parseChangeset(
 async function parseChangesetContents(
   text: string,
   filename: string,
-  workspaceNames: ReadonlySet<string>
+  workspaceNames?: ReadonlySet<string>
 ): Promise<ChangesetContents> {
   const parse = await getChangesetParser();
   let parsed: unknown;
@@ -551,7 +543,7 @@ async function parseChangesetContents(
   const releaseTypes = new Map<string, string>();
 
   for (const release of parsed.releases) {
-    if (!workspaceNames.has(release.name)) {
+    if (workspaceNames !== undefined && !workspaceNames.has(release.name)) {
       throw new Error(
         `.changeset/${filename} references unknown workspace package ${JSON.stringify(release.name)}`
       );
@@ -639,36 +631,24 @@ function isNativeChangesetContents(
 
 function changesetHasNewOrUpdatedIntent(
   current: PendingChangeset,
-  baseChangesets: readonly PendingChangeset[]
+  baseChangesets: readonly PendingChangeset[],
+  packageName: string
 ): boolean {
-  const baseWithSameDeclarations = baseChangesets.filter((base) =>
-    sameReleaseTypes(base.releaseTypes, current.releaseTypes)
-  );
+  const currentReleaseType = current.releaseTypes.get(packageName);
 
-  return (
-    baseWithSameDeclarations.length === 0 ||
-    (current.summary.length > 0 &&
-      !baseWithSameDeclarations.some(
-        (base) => base.summary === current.summary
-      ))
-  );
-}
-
-function sameReleaseTypes(
-  left: ReadonlyMap<string, string>,
-  right: ReadonlyMap<string, string>
-): boolean {
-  if (left.size !== right.size) {
+  if (currentReleaseType === undefined || currentReleaseType === "none") {
     return false;
   }
 
-  for (const [packageName, releaseType] of left) {
-    if (right.get(packageName) !== releaseType) {
-      return false;
-    }
-  }
+  const baseWithSameDeclaration = baseChangesets.filter(
+    (base) => base.releaseTypes.get(packageName) === currentReleaseType
+  );
 
-  return true;
+  return (
+    baseWithSameDeclaration.length === 0 ||
+    (current.summary.length > 0 &&
+      !baseWithSameDeclaration.some((base) => base.summary === current.summary))
+  );
 }
 
 async function proveConsumedGeneratedRelease(options: {
@@ -909,6 +889,10 @@ function normalizeGitPath(filePath: string): string {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasErrorCode(error: unknown, code: string): boolean {
+  return isObject(error) && error.code === code;
 }
 
 function formatPackageNames(manifests: readonly PackageManifest[]): string {

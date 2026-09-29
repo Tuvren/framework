@@ -5,12 +5,15 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
   symlink,
   writeFile,
 } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { checkChangesetCoverage } from "./changeset-check.js";
 
 interface CommandResult {
@@ -186,6 +189,37 @@ describe("changeset-check", () => {
     await expect(check(fixture)).resolves.toBeUndefined();
   });
 
+  test("accepts a changed declaration for the covered public package", async () => {
+    const fixture = await createFixture();
+    await run("git", ["checkout", "master"], fixture.root);
+    await fixture.writeChangeset("old.md", '"@tuvren/public-a": patch');
+    await fixture.commit("record existing intent");
+    await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+    await run("git", ["checkout", "feature"], fixture.root);
+    await fixture.publicChange("export const later = true;\n");
+    await fixture.writeChangeset("old.md", '"@tuvren/public-a": minor');
+    await fixture.commit("change source and public declaration");
+
+    await expect(check(fixture)).resolves.toBeUndefined();
+  });
+
+  test("does not let an unrelated declaration refresh an unchanged public intent", async () => {
+    const fixture = await createFixture();
+    await run("git", ["checkout", "master"], fixture.root);
+    await fixture.writeChangeset("old.md", '"@tuvren/public-a": patch');
+    await fixture.commit("record existing intent");
+    await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+    await run("git", ["checkout", "feature"], fixture.root);
+    await fixture.publicChange("export const later = true;\n");
+    await fixture.writeChangeset(
+      "old.md",
+      '"@tuvren/public-a": patch\n"@tuvren/private-a": patch'
+    );
+    await fixture.commit("change source and add unrelated declaration");
+
+    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+  });
+
   test("does not let a renamed unchanged pending intent cover a new public change", async () => {
     const fixture = await createFixture();
     await run("git", ["checkout", "master"], fixture.root);
@@ -230,6 +264,103 @@ describe("changeset-check", () => {
     await expect(check(fixture)).resolves.toBeUndefined();
   });
 
+  test("matches native pre-directory errors while allowing an absent pre directory", async () => {
+    const absentPre = await createFixture();
+    await absentPre.publicChange("export const changed = true;\n");
+    await absentPre.writeChangeset("public.md", '"@tuvren/public-a": patch');
+    await absentPre.commit("change public package without pre directory");
+    const absentStatus = await run(
+      process.execPath,
+      [CHANGESET_CLI, "status", "--since", "master"],
+      absentPre.root
+    );
+
+    expect(absentStatus.exitCode).toBe(0);
+    await expect(check(absentPre)).resolves.toBeUndefined();
+
+    const preFile = await createFixture();
+    await preFile.publicChange("export const changed = true;\n");
+    await preFile.writeChangeset("public.md", '"@tuvren/public-a": patch');
+    await writeFile(
+      path.join(preFile.root, ".changeset/pre"),
+      "not a directory\n"
+    );
+    await preFile.commit("change public package with invalid pre directory");
+    const invalidStatus = await run(
+      process.execPath,
+      [CHANGESET_CLI, "status", "--since", "master"],
+      preFile.root
+    );
+
+    expect(invalidStatus.exitCode).toBe(1);
+    await expect(readNativeChangesets(preFile.root)).rejects.toMatchObject({
+      code: "ENOTDIR",
+    });
+    await expect(check(preFile)).rejects.toThrow(".changeset/pre");
+  });
+
+  test("rejects an unchanged intent renamed from a native-valid quoted Unicode name", async () => {
+    const fixture = await createFixture();
+    const historicalFilename = 'quoted " name\n雪.md';
+    await run("git", ["config", "core.quotePath", "true"], fixture.root);
+    await run("git", ["checkout", "master"], fixture.root);
+    await fixture.writeChangeset(
+      historicalFilename,
+      '"@tuvren/public-a": patch'
+    );
+    await fixture.commit("record quoted Unicode intent");
+    await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+    await run("git", ["checkout", "feature"], fixture.root);
+    await fixture.publicChange("export const later = true;\n");
+    await run(
+      "git",
+      ["mv", `.changeset/${historicalFilename}`, ".changeset/normal.md"],
+      fixture.root
+    );
+    await fixture.commit("change source and rename quoted Unicode intent");
+    const status = await run(
+      process.execPath,
+      [CHANGESET_CLI, "status", "--since", "master"],
+      fixture.root
+    );
+
+    expect(status.exitCode).toBe(0);
+    await expect(check(fixture)).rejects.toThrow("@tuvren/public-a");
+  });
+
+  test("accepts an updated intent renamed from a native-valid quoted Unicode name", async () => {
+    const fixture = await createFixture();
+    const historicalFilename = 'quoted " name\n雪.md';
+    await run("git", ["config", "core.quotePath", "true"], fixture.root);
+    await run("git", ["checkout", "master"], fixture.root);
+    await fixture.writeChangeset(
+      historicalFilename,
+      '"@tuvren/public-a": patch'
+    );
+    await fixture.commit("record quoted Unicode intent");
+    await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+    await run("git", ["checkout", "feature"], fixture.root);
+    await fixture.publicChange("export const later = true;\n");
+    await run(
+      "git",
+      ["mv", `.changeset/${historicalFilename}`, ".changeset/normal.md"],
+      fixture.root
+    );
+    await appendFile(
+      path.join(fixture.root, ".changeset/normal.md"),
+      "Updated release note accompanying the public source change.\n"
+    );
+    await fixture.commit("change source and update quoted Unicode intent");
+    const status = await run(
+      process.execPath,
+      [CHANGESET_CLI, "status", "--since", "master"],
+      fixture.root
+    );
+
+    expect(status.exitCode).toBe(0);
+    await expect(check(fixture)).resolves.toBeUndefined();
+  });
+
   test("exempts private-only and root-only changes", async () => {
     const privateFixture = await createFixture();
     await privateFixture.privateChange("export const changed = true;\n");
@@ -246,6 +377,42 @@ describe("changeset-check", () => {
     const fixture = await createFixture();
     await fixture.writePublicManifest("now private", true);
     await fixture.commit("make package private");
+
+    await expect(check(fixture)).resolves.toBeUndefined();
+  });
+
+  test("exempts removal of a historical private-only intent", async () => {
+    const fixture = await createFixture();
+    await run("git", ["checkout", "master"], fixture.root);
+    await fixture.writeChangeset("private.md", '"@tuvren/private-a": patch');
+    await fixture.commit("record private-only intent");
+    await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+    await run("git", ["checkout", "feature"], fixture.root);
+    await rm(path.join(fixture.root, "packages/private-a"), {
+      force: true,
+      recursive: true,
+    });
+    await rm(path.join(fixture.root, ".changeset/private.md"));
+    await fixture.commit("remove private package and its intent");
+
+    await expect(check(fixture)).resolves.toBeUndefined();
+  });
+
+  test("accepts fresh public intent after removal of a historical private-only intent", async () => {
+    const fixture = await createFixture();
+    await run("git", ["checkout", "master"], fixture.root);
+    await fixture.writeChangeset("private.md", '"@tuvren/private-a": patch');
+    await fixture.commit("record private-only intent");
+    await run("git", ["branch", "-f", "feature", "master"], fixture.root);
+    await run("git", ["checkout", "feature"], fixture.root);
+    await rm(path.join(fixture.root, "packages/private-a"), {
+      force: true,
+      recursive: true,
+    });
+    await rm(path.join(fixture.root, ".changeset/private.md"));
+    await fixture.publicChange("export const later = true;\n");
+    await fixture.writeChangeset("public.md", '"@tuvren/public-a": patch');
+    await fixture.commit("remove private package and change public package");
 
     await expect(check(fixture)).resolves.toBeUndefined();
   });
@@ -662,6 +829,20 @@ function check(fixture: Fixture): Promise<void> {
     base: "master",
     rootDirectory: fixture.root,
   });
+}
+
+async function readNativeChangesets(rootDirectory: string): Promise<void> {
+  const cliRequire = createRequire(await realpath(CHANGESET_CLI));
+  const readerPath = cliRequire.resolve("@changesets/read");
+  const reader = await import(pathToFileURL(readerPath).href);
+
+  if (
+    !("readChangesets" in reader && typeof reader.readChangesets === "function")
+  ) {
+    throw new Error("installed Changesets reader has an invalid API");
+  }
+
+  await reader.readChangesets(rootDirectory);
 }
 
 function releaseNames(value: unknown): string[] {
