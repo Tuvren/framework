@@ -1,4 +1,16 @@
 entries:
+  - version: v0.46.0
+    date: 2026-09-29
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.46.0
+    added:
+      - "EPIC-BN Public release readiness plans KRT-BN001–KRT-BN007: Bun toolchain alignment, private session carriage, public changeset gate and release notes, versioned dry run, Dependabot, and adopter-facing documentation."
+    changed:
+      - "The 850-line estimated diff is intentionally below the usual 10,000–15,000-line review band because this is a bounded out-of-band release-readiness epic, with generated lockfiles excluded from diff accounting."
+      - "Calibration has no observed ratio yet (INFO-CAL: 0 eligible, 4 excluded); estimates use relative scope and explicit uncertainty rather than historical diff-lines-per-point or review-rounds-per-point ratios."
   - version: v0.45.1
     date: 2026-09-24
     by: patch-lane

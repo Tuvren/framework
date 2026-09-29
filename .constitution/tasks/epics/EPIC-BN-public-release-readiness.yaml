@@ -1,0 +1,180 @@
+id: BN
+name: Public release readiness
+kind: out_of_band
+source: "planning session 2026-09-29 (ADR-0068, ADR-0069)"
+capabilities: [CAP-070, CAP-048]
+depends_on: []
+scope:
+  paths:
+    - devenv.nix
+    - devenv.lock
+    - package.json
+    - bun.lock
+    - typescript/streaming/ws/package.json
+    - typescript/**/package.json
+    - typescript/**/CHANGELOG.md
+    - .changeset/**
+    - tools/scripts/changeset-check.ts
+    - tools/scripts/changeset-check.test.ts
+    - .github/workflows/ci.yml
+    - .github/dependabot.yml
+    - README.md
+    - docs/guides/publishing-and-adopter-onboarding.md
+  out_of_scope:
+    - .github/workflows/release.yml
+    - spec/**
+    - typescript/**/src/**
+  tech_spec_patchable:
+    - .constitution/tech-spec/stack.yaml
+    - .constitution/tech-spec/guidelines.md
+    - .constitution/tech-spec/adrs/ADR-0068-session-carriage-packages-stay-private-until-public-api.md
+    - .constitution/tech-spec/adrs/ADR-0069-public-release-discipline.md
+estimated_diff_lines: 850
+estimate_source: planned
+tickets:
+  - id: KRT-BN001
+    title: Align the Bun toolchain to the ruled target
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in: [devenv.nix, devenv.lock, package.json, bun.lock]
+      out: [typescript/**/src/**]
+    verification:
+      command: bun run verify
+      expected: The full release gate passes with the declared Bun 1.4.2 runtime, the refreshed lock, and a consistent workspace lockfile.
+    stop_conditions:
+      - "STOP if the nixpkgs refresh changes the PostgreSQL major version; don't improvise."
+      - "STOP if bun run verify fails for a reason that cannot be fixed within this ticket's scope; don't improvise."
+    description: "Align the devenv-provisioned runtime, root packageManager declaration, and bun.lock with the assumed Bun 1.4.2 stack target before later release work. Refresh the devenv nixpkgs lock only while PostgreSQL stays on its current major version. On either stop condition, fall back to a Bun-only pin as the stack record directs. Assumption: the stack target and refreshed toolchain preserve the full release gate."
+    acceptance:
+      mode: contract_test
+      supplementary: [live_probe]
+      recipe: reference-host-memory-scenario
+      evidence: "Assert that the root packageManager declares bun@1.4.2, the observed Bun version is 1.4.2 in the devenv environment, bun.lock is consistent with the workspace, and PostgreSQL's major version is unchanged by the lock refresh. Run the reference-host-memory-scenario recipe and retain its streaming scenario log line as client-visible proof after the runtime change."
+    flows: [flow-reference-host-proves-sdk]
+    certainty: assumed
+    status: planned
+  - id: KRT-BN002
+    title: Withhold the WebSocket session carriage package
+    type: Chore
+    effort: 2
+    depends_on: [KRT-BN001]
+    scope:
+      in: [typescript/streaming/ws/package.json, docs/guides/publishing-and-adopter-onboarding.md]
+      out: [typescript/streaming/ws/src/**]
+    verification:
+      command: bun run publish:preflight
+      expected: Registry preflight passes with @tuvren/stream-ws excluded from the curated publishable set and no public package depending on a private session package.
+    stop_conditions:
+      - "STOP if excluding @tuvren/stream-ws still leaves a public dependency on a private session package; don't improvise."
+    description: "Apply ADR-0068 by marking @tuvren/stream-ws private alongside the other session packages and remove any adopter-facing claim that it can be installed from the registry. Preserve the repository's experimental session behavior."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert that the stream-ws manifest is private, the curated publishable package list omits it and all other private session packages, registry dependency closure passes preflight, and adopter guide sections 1 and 2 never offer stream-ws as an installable package."
+    flows: [flow-reference-host-proves-sdk]
+    certainty: settled
+    status: planned
+  - id: KRT-BN003
+    title: Gate public package changes on a changeset
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BN002]
+    scope:
+      in: [package.json, tools/scripts/changeset-check.ts, tools/scripts/changeset-check.test.ts, .github/workflows/ci.yml]
+      out: [typescript/**/src/**]
+    verification:
+      command: bun run changeset:check
+      expected: The new gate passes for unchanged packages and public changes with a matching changeset, and fails for a changed publishable package lacking one.
+    stop_conditions:
+      - "STOP if Changesets status cannot distinguish changed publishable packages from private packages under the fixed group and privatePackages.version setting; don't improvise."
+      - "STOP if the base revision or changed-package set cannot be determined reproducibly in CI; don't improvise."
+    description: "Create the guidelines-declared changeset presence command and wire it into the CI workflow for pull requests. Exercise Changesets status against the base revision and the fixed version group before selecting the gate mechanism. Gate only publishable package changes; private package changes remain exempt even though Changesets may version private manifests. Assumption: the unverified Changesets status behavior can support a reproducible public-only gate without changing the ruled release policy."
+    acceptance:
+      mode: contract_test
+      evidence: "Test a public source change without a changeset as a failure, the same change with a matching changeset as a pass, a private-only package change as a pass, a root-only change as a pass, and a fixed-group/privatePackages.version fixture that proves private versioning does not create a false public requirement. Assert CI runs the command against the intended base revision."
+    flows: [flow-reference-host-proves-sdk]
+    certainty: assumed
+    status: planned
+  - id: KRT-BN004
+    title: Record public changes since the registry baseline
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BN003]
+    scope:
+      in: [.changeset/**]
+      out: [typescript/**/src/**]
+    verification:
+      command: bun run changeset:check
+      expected: Every changed publishable package is covered by a valid pending changeset while private-only changes do not require one.
+    stop_conditions:
+      - "STOP if git history cannot establish which public package changes followed the 0.1.0 registry baseline; don't improvise."
+      - "STOP if the stable-export compatibility class cannot be determined from the API freeze authority and release history; don't improvise."
+    description: "Derive the public-package change set from git history after the published 0.1.0 baseline, including ADR-0067 PostgreSQL row-per-record storage and the ADR-0057 SDK composition work, then author one or more changesets covering every affected publishable package. Classify breaking stable or frozen exports as a 0.x minor bump and additive changes or fixes as patch; experimental exports may change in any release. Assumption: history and freeze evidence are sufficient to classify each affected public package without inventing a compatibility claim."
+    acceptance:
+      mode: contract_test
+      evidence: "Compare the public package path history since 0.1.0 with the package lists in pending changesets. Assert all affected publishable packages are covered, private-only packages are not required, release notes name the PostgreSQL storage change and SDK surface changes where relevant, and the highest bump follows ADR-0069's 0.x rule."
+    flows: [flow-reference-host-proves-sdk]
+    certainty: assumed
+    status: planned
+  - id: KRT-BN005
+    title: Version the release and prove a dry run
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BN004]
+    scope:
+      in: [.changeset/**, typescript/**/package.json, typescript/**/CHANGELOG.md, bun.lock]
+      out: [.github/workflows/release.yml]
+    verification:
+      command: bun run publish:dry-run
+      expected: The curated versioned package set builds, passes preflight, and completes the registry dry run without publishing.
+    stop_conditions:
+      - "STOP if the release lane requires a command absent from guidelines verification_commands and its behavior cannot be confirmed against tools/scripts/release-lane.ts; don't improvise."
+      - "STOP if the generated public versions diverge, a public package depends on a private package, or bun run release-check fails; don't improvise."
+    description: "Apply pending changesets through the repository's existing version-only release lane in tools/scripts/release-lane.ts, which invokes Changesets version, updates manifests and changelogs, and enforces one version without registry publication. Confirm bun run release-check and the publish dry run are green. End this ticket at the green dry run; do not publish, tag, create a GitHub Release, or change repository settings. The closeout must hand the owner these separate actions in order: dispatch release.yml with dry_run true and then false; run consumer verification with --verify-consumer <version>; create tag v<version>; create a GitHub Release from the Changesets-generated changelog; require the verify and bazel CI checks in master branch protection; and set the repository description. Assumption: the current release lane and package graph produce a green versioned dry run after the curated set is corrected."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert one version across the publishable set, generated changelogs and manifests matching the pending changesets, no private session package in the publish set, bun run release-check green, and bun run publish:dry-run green with no registry mutation or release artifact created. Record the exact owner hand-off in closeout."
+    flows: [flow-reference-host-proves-sdk]
+    certainty: assumed
+    status: planned
+  - id: KRT-BN006
+    title: Configure bounded dependency updates
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BN001]
+    scope:
+      in: [.github/dependabot.yml]
+      out: [.github/workflows/release.yml]
+    verification:
+      command: bun run check
+      expected: The repository inner-loop gate remains green with the dependency-update configuration present.
+    stop_conditions:
+      - "STOP if Dependabot's bun ecosystem support or accepted configuration shape cannot be verified; don't improvise."
+    description: "Configure Dependabot for the root bun and cargo ecosystems and github-actions, with weekly checks and minor and patch updates grouped within each ecosystem. Defer Go, Python, and Dart ecosystems as ADR-0069 directs. Assumption: Dependabot supports the bun ecosystem in the required configuration shape; confirm that support before treating the file as operative."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the resulting Dependabot configuration matches its supported schema and declares exactly the root bun, root cargo, and github-actions ecosystems, weekly schedules, and ecosystem-local minor/patch groups; assert Go, Python, and Dart are absent. Record the support check and the green repository gate."
+    flows: [flow-reference-host-proves-sdk]
+    certainty: assumed
+    status: planned
+  - id: KRT-BN007
+    title: Put first Turn and release expectations in the adopter path
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BN002, KRT-BN004]
+    scope:
+      in: [README.md, docs/guides/publishing-and-adopter-onboarding.md]
+      out: [spec/**]
+    verification:
+      command: bun run docs:authority-freeze:check
+      expected: The docs-to-authority freeze gate passes with the revised README and adopter guide claims.
+    stop_conditions:
+      - "STOP if a proposed README or guide claim cannot be traced to an ADR, the tech spec, or a declared authority packet; don't improvise."
+    description: "Give README a one-line positioning statement identifying Tuvren as an embeddable durable agent framework over a kernel, with ReAct as one runner; promote the guide's first Turn walkthrough above the architecture section; and state that TypeScript is the full framework while Rust, Go, Python, and Dart are kernel ports, with no Rust framework implementation. Put the SQLite single-writer local and PostgreSQL shared-lease multi-worker topology note beside backend installation guidance. Align adopter guide sections 1 and 2 with ADR-0068's private session packages and section 3 with ADR-0069's precise 0.x minor/patch rule. Cite authority for every new claim rather than inventing product semantics, and confirm bun run check remains green."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the README presents the first Turn path before architecture, names the accurate language and backend postures, and traces them to existing authority; assert the guide does not offer stream-ws for installation and expresses the 0.x stable-breaking minor and additive/fix patch rule. The docs authority gate and bun run check both pass."
+    flows: [flow-reference-host-proves-sdk]
+    certainty: settled
+    status: planned
