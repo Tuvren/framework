@@ -33,6 +33,11 @@ ran the real PostgreSQL regression suite: three tests and eight assertions
 passed. A selected blob schema migrates on first open; downgrades remain
 unsupported, as ADR-0067 records.
 
+The review fix additionally derives the full stable snapshot delta, validates
+the preserved comparison and ledgers, and rejects unsupported note removals or
+stable changes through ten disposable negative controls. The real selected-schema
+blob migration suite also passed seven tests and 106 assertions on retained Bun.
+
 The exact frozen snapshot comparison finds only two existing stable signature
 changes: the optional AgentConfig sanitizer hook and its SDK re-export. They
 are additive and receive patch entries under ADR-0069. The other sixteen

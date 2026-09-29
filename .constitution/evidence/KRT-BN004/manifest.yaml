@@ -2,8 +2,8 @@ owner: KRT-BN004
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: 5b10fb15f341dff19581cb7d2c267be11ca3dcca
-  command: "Lead historical coverage and classification probes, changeset gate, PostgreSQL guard tests, native Changesets status; full commands in command.txt. Pending intent is a working-tree change."
+  commit: 915ece53aace586eafe800a342a5658e7ebee4d3
+  command: "Review fix: exact stable API audit, ten disposable negative controls, public coverage and seven real blob-migration tests; working-tree evidence changes. Earlier native/provenance producers remain labeled in command.txt."
 files:
   - path: backend-postgres-0.1.0.json
     sha256: e8cf6db801d3cffad83d748eccdd747d1d5917c908a0b866288d7352367812c6
@@ -18,8 +18,8 @@ files:
     bytes: 111
     role: log
   - path: command.txt
-    sha256: b8121761668b02b71622f6707b232b5588d5ef981741d468c4570935ca7f755d
-    bytes: 2129
+    sha256: 8d086cdc99a52a0eac938ad227dc0c6fd37319cf2c9ad4aadc55fa83ed4b2f73
+    bytes: 3191
     role: transcript
   - path: core-0.1.0.json
     sha256: 019abaf81f5971b7f7c529d4aee544986d449486d0a58aee059f6a286bfb4ef0
@@ -29,9 +29,13 @@ files:
     sha256: 7ec3fced8ee63881c42780e9574afeab9cf56273ced630ccd29b78c2734412e3
     bytes: 62
     role: log
+  - path: lead-blob-migration.log
+    sha256: 23d83e5cd618e619bd3574fe0e12f24fc00ec1fcbacce874985bfce06d5ed091
+    bytes: 246
+    role: log
   - path: lead-classification.log
-    sha256: 33bab5935328aa3aa50a00d0fc4a130f2a177b0612604c5d42fb354a53733ae3
-    bytes: 241
+    sha256: 53030ca9b7539355260af8d872f4ccc68ef6e9d955cf07498d31ffa08685958a
+    bytes: 280
     role: log
   - path: lead-historical-gate.log
     sha256: 917f14a520d7bde9ef69404bb7410fd2d4dcefe2661e5a1a9015eac6752cdc07
@@ -53,24 +57,32 @@ files:
     sha256: 4c6257620776287be4e0a4c09a97cfce99fd2375981cee902e80e375cb404487
     bytes: 936
     role: data
+  - path: negative-controls.log
+    sha256: 2fda0179b590abfe3e21e05a52188e03bfe8f6688cb9fc24d920c7073d65733e
+    bytes: 469
+    role: log
   - path: package-coverage.mjs
     sha256: 9eebb82ed4b46c376b1cac06863403ac97791248fc994c4b10d629b4d76e8046
     bytes: 2979
     role: transcript
   - path: provenance.md
-    sha256: 6a300e772895f87e1f6a44df9a9c6389b44c445094fd6ac63d68f49bba9ebb5b
-    bytes: 2998
+    sha256: 922018bee09f3c2da4eb9068826f1f43d78066d850021d428f6317d76ae55f2e
+    bytes: 3319
     role: transcript
   - path: published-stable-snapshot-comparison.json
     sha256: 750f71e3846afdb1ea1bdcfb9c6c6c50474ed01173315f3fa72068553a3f6409
     bytes: 4976
     role: data
   - path: release-classification-audit.mjs
-    sha256: 79c6158c0239203a99269dcdee785e6ec9b2501f89b3f4b5ad08d0d7a25cd9bc
-    bytes: 3020
+    sha256: 47fc5b78da54ac98159103ed07e5ea25f3ed5663637856b78006407f08fdfabb
+    bytes: 9496
+    role: transcript
+  - path: run-negative-controls.mjs
+    sha256: 5392b5e1ebe1e09b4fc861d37bce9b37eaad5978bf0d8c1868cc10c0dbe62908
+    bytes: 5581
     role: transcript
   - path: sdk-0.1.0.json
     sha256: f16e331625639c3803a2bbe8955ee1761e7e4a747121fc386150f51a3c4164e2
     bytes: 2210
     role: data
-pass_criteria: "All current changed public packages since the proven published baseline have direct valid entries; PostgreSQL minor and eighteen patch entries follow ADR-0069; migration notes name explicit public-schema selection; coverage/gate and real migration-guard tests pass. Native1.0.0 result is recorded as unmet BN005 acceptance, never as a passed0.2.0 plan."
+pass_criteria: "Exact changed public set has valid direct ADR-0069 classes, exhaustive stable snapshot comparison permits solely optional AgentConfig additions, all required migration/storage/SDK/downgrade notes are asserted, ten negative controls reject missing claims or stable delta drift, historical coverage/gate and real guard/migration tests pass. Native1.0.0 is unmet BN005 acceptance, never a passed0.2.0 plan."
