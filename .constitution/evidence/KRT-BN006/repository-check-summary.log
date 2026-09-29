@@ -1,0 +1,20 @@
+Lead command: devenv shell -- zsh -c 'LC_ALL=C bun run check'
+Inspected HEAD: 915ece53aace586eafe800a342a5658e7ebee4d3
+Working-tree Dependabot configuration present.
+Exit: 0
+Retained exact final phase summary; complete temporary log: /tmp/KRT-BN006/lead-check.log
+
+Transition verification summary
+- docs-to-authority freeze gate: pass in 201ms
+- Epic AL portability gate: pass in 158ms
+- ADR-0057 host import boundary gate: pass in 700ms
+- ADR-0054/0056 API-surface freeze gate: pass in 629ms
+- Epic AF conformance gap plan freshness: pass in 101ms
+- authority packet validation: pass in 323ms
+- conformance plan validation: pass in 337ms
+- adapter protocol validation: pass in 335ms
+- certification discovery parity: pass in 79ms
+- workspace test-lane coverage: pass in 119ms
+- certification harness meta-conformance: pass in 286ms
+- vocabulary-check verification: pass in 173ms
+- affected typecheck/test/lint (base master): pass in 1703ms

@@ -1,0 +1,26 @@
+Lead inspected HEAD: 915ece53aace586eafe800a342a5658e7ebee4d3
+Configuration was a working-tree change. Prepared runtime: Bun1.3.10;
+installed YAML parser: yaml2.9.0. Its parseDocument API and uniqueKeys option
+are declared in the installed package. Support sources and retrieval commands
+are retained in support-retrieval.log and support-provenance.md, pinned to
+github/docs commit f4e8afc6979acd8de6b5da035066281b9a5f4025.
+
+Lead producing commands, from repository root:
+PATH="$PWD/.devenv/profile/bin:$PATH" LC_ALL=C bun .constitution/evidence/KRT-BN006/dependabot-contract-probe.mjs .github/dependabot.yml
+devenv shell -- zsh -c 'LC_ALL=C bun run check'
+git diff --check
+
+All exited0. The repository-check-summary.log is the exact final phase summary
+from the lead gate, not the complete transcript. The complete historical log
+was captured at /tmp/KRT-BN006/lead-check.log. The contract probe evaluates the
+actual product YAML using duplicate-key rejection and exact object equality.
+It fails missing/extra ecosystems and any unsupported or unapproved shape.
+
+The worker's historical Biome attempt exited1 because .github is excluded.
+Its diagnostic is preserved as non-applicability, not a passed format check.
+The pinned official docs, YAML parsing, and contract probe establish supported
+configuration; no live Dependabot scheduling or GitHub setting mutation is
+claimed by this evidence.
+
+The historical Biome diagnostic has ANSI/trailing whitespace normalized for
+repository storage; its outcome and wording are preserved.

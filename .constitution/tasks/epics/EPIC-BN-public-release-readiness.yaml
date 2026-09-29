@@ -159,7 +159,7 @@ tickets:
       evidence: "Assert the resulting Dependabot configuration matches its supported schema and declares exactly the root bun, root cargo, and github-actions ecosystems, weekly schedules, and ecosystem-local minor/patch groups; assert Go, Python, and Dart are absent. Record the support check and the green repository gate."
     flows: [flow-reference-host-proves-sdk]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-BN007
     title: Put first Turn and release expectations in the adopter path
     type: Chore
