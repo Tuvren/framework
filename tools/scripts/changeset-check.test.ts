@@ -387,6 +387,8 @@ async function createFixture(): Promise<Fixture> {
       2
     )
   );
+  // @manypkg/tools detects Bun workspaces from the repository's lockfile.
+  await writeFixtureFile(root, "bun.lock", "");
   await writeFixtureFile(
     root,
     ".changeset/config.json",
