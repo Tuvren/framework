@@ -4,7 +4,33 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # A dependency joins the first group it matches, so the toolchain groups
+    # come before the catch-all group. Each toolchain group gets its own PR
+    # because its bumps can change lint, formatting, task-graph or runtime
+    # behavior across the whole repository.
     groups:
+      biome-toolchain:
+        patterns:
+          - "@biomejs/*"
+          - "ultracite"
+        update-types:
+          - minor
+          - patch
+      nx-toolchain:
+        patterns:
+          - "nx"
+          - "@nx/*"
+        update-types:
+          - minor
+          - patch
+      bun-toolchain:
+        patterns:
+          - "@types/bun"
+          - "bun-types"
+          - "bun"
+        update-types:
+          - minor
+          - patch
       minor-and-patch:
         patterns:
           - "*"
@@ -15,6 +41,18 @@ updates:
       - dependency-name: "*"
         update-types:
           - version-update:semver-major
+      # The Bun 1.4 upgrade is deferred (see .constitution/evidence/KRT-BN001/);
+      # the pinned Bun 1.3 toolchain stays until that work lands, so Bun
+      # type definitions must not move past 1.3.x on their own.
+      - dependency-name: "@types/bun"
+        versions:
+          - ">=1.4.0"
+      - dependency-name: "bun-types"
+        versions:
+          - ">=1.4.0"
+      - dependency-name: "bun"
+        versions:
+          - ">=1.4.0"
   - package-ecosystem: cargo
     directory: /
     schedule:
