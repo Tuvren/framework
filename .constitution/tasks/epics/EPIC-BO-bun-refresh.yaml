@@ -18,8 +18,10 @@ scope:
     - typescript/kernel/backends/memory/src
     - ".constitution/tech-spec/stack.yaml"
     - ".changeset/toolchain-bo-bun-refresh.md"
+    - typescript/host/repl/package.json
+    - typescript/host/repl/test
   tech_spec_patchable: [".constitution/tech-spec/stack.yaml"]
-estimated_diff_lines: 4000
+estimated_diff_lines: 4500
 estimate_source: planned
 tickets:
   - id: KRT-BO001
@@ -127,4 +129,30 @@ tickets:
       evidence: "Invariant: stack records equal the observed installed tools and repository pins. Checker: bun run verify with the preceding frozen-install and codegen evidence; constitution validation adds no pin discrepancy."
     flows: []
     certainty: settled
+    status: planned
+  - id: KRT-BO006
+    title: Upgrade the aimock test double on the Bun 1.4 runtime
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BO004]
+    scope:
+      in:
+        - typescript/host/repl/package.json
+        - typescript/host/repl/test
+        - bun.lock
+        - ".github/dependabot.yml"
+    verification:
+      command: "bun run nx run host-repl:test"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions:
+      - "STOP if an aimock test failure cannot be explained by the KRT-BO004 isolation review or needs a production source change occurs; do not improvise."
+      - "STOP if the fix needs a cast, an any type, a suppression comment or a deleted assertion occurs; do not improvise."
+    description: "Input from the closed Dependabot group pull request 130 and its hold. Move @copilotkit/aimock from 1.15.1 to the latest version on the Bun 1.4.x runtime and remove the aimock ignore entry from the Dependabot config. Measured facts: aimock 1.43.0 cannot be imported on Bun 1.3.10 (SyntaxError: Invalid regular expression: range out of order in character class at dist/files.js:521), so it needs this epic's runtime; the recorded request body type is now JournalBody, so the host-repl test helpers (hasSearchToolContinuation, hasApprovalToolContinuation, assertStructuredResponseFormat and their call sites in repl.aimock-matrix.test.ts and repl.aimock-openai.test.ts) must narrow it with aimock's exported isChatCompletionBody guard while keeping every assertion, including the json_schema response format check. A draft on Bun 1.4.2 typechecked but left seven host-repl tests failing (steering reported invalid_steering_state, approval reported invalid_stream_event, and PostgreSQL-dependent tests); explain each with the KRT-BO004 findings before changing tests, and do not weaken any assertion. host-repl is a private package, so no changeset is needed for its manifest change. Assumption: the failures are caused by isolation, runtime or service-availability differences and not by a defect in the host sources."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the host-repl aimock suites import and run on the installed Bun 1.4.x, the JournalBody helpers reject non-chat bodies explicitly, every previously present assertion remains, the seven draft failures each have a recorded cause, and the Dependabot config no longer ignores aimock."
+      supplementary: [live_probe]
+      recipe: reference-host-memory-scenario
+    flows: []
+    certainty: assumed
     status: planned

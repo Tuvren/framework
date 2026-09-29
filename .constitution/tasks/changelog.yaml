@@ -1,4 +1,13 @@
 entries:
+  - version: v0.47.1
+    date: 2026-09-29
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.0
+    changed:
+      - "EPIC-BO adds KRT-BO006 (5 points): upgrade the @copilotkit/aimock test double on the Bun 1.4 runtime. Dependabot group PR 130 showed that aimock 1.43.0 cannot be imported on Bun 1.3.10, changes the recorded request body type, and left seven host-repl tests failing in a draft on Bun 1.4.2; the ticket records the facts and sequences the upgrade after the KRT-BO004 isolation review. The plan is now 29 epics, 107 tickets and 574 points."
   - version: v0.47.0
     date: 2026-09-29
     by: stage
