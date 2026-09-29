@@ -1,4 +1,20 @@
 entries:
+  - version: v0.47.0
+    date: 2026-09-29
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    added:
+      - "ADR-0070 replaces Biome with oxlint and oxfmt consuming the Ultracite OXC presets as shipped, with type-aware linting, one mechanical reformat commit, and a directory-by-directory lint ratchet whose first directory is a pilot; tsup is retained. Supersedes ADR-0012."
+      - "ADR-0071 makes Bazel the single task graph and removes Nx: retired lane commands, tagged service-dependent tests, generated-artifact freshness as actions plus a diff test, gates that read git outside the sandbox, CI names renamed with ADR-0069 updated, and a side-by-side cut-over. devenv is retained. Supersedes ADR-0013."
+      - "ADR-0072 records the TypeScript execution model under Bazel: a staged Bun workspace built by a bun install repository rule, with a dist edge for build actions and source resolution for typecheck and test (SPK-KRT-OD005)."
+      - "ADR-0073 records Bazel-native rules for Rust, Go and Python with a hermetic C toolchain and pinned toolchains, and Dart as the one native-wrapped exception (SPK-KRT-OD007). Amends ADR-0017."
+      - "ADR-0074 records that the devenv nixpkgs refresh lands atomically with the Weaver manifest migration, PostgreSQL stays on major 17, Bun moves to the latest 1.4.x, and the memory backend stops aliasing stored buffers. Supersedes the KRT-BN001 deferral."
+      - "stack.yaml adds ultracite (config presets only) and planned records for oxlint, oxfmt, oxlint-tsgolint, bazel, rules_rust, rules_go, rules_python, rules_buf and aspect_rules_lint; guidelines.md adds planned layout paths and section 5.2.1."
+    changed:
+      - "ADR-0012 and ADR-0013 are marked superseded; ADR-0017, ADR-0027 and ADR-0069 carry amendment notes pointing at ADR-0071 and ADR-0073."
+      - "stack.yaml marks @biomejs/biome and nx as hold and updates the bun justification and the compatibility policy pinning text; guidelines.md marks the Nx, Biome and Bun-pin statements transitional."
   - version: v0.46.2
     date: 2026-09-29
     changed:

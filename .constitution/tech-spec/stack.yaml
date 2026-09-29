@@ -69,14 +69,26 @@ bill_of_materials:
     role: tooling
     version: "2.5.14"
     ecosystem: bun
-    justification: Formatting and linting for the TypeScript line (ADR-0012).
-    radar: adopt
+    justification: "Retired by ADR-0070. Remains the lint and format gate until the last directory switches to oxlint and oxfmt, then is removed."
+    radar: hold
     certainty: settled
     evidence:
       kind: repository
       ref: bun.lock
       date: 2026-09-29
       version: "2.5.14"
+  - name: ultracite
+    role: tooling
+    version: "7.4.2"
+    ecosystem: bun
+    justification: "Config presets only (ultracite/oxlint/core, ultracite/oxfmt); the Ultracite CLI is not used (ADR-0070). The oxfmt preset export exists from 7.5.0, so the OXC epic bumps it by hand to the latest version and removes the temporary Dependabot ignore above 7.4.2."
+    radar: adopt
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: bun.lock
+      version: "7.4.2"
+      date: 2026-09-29
   - name: "@changesets/cli"
     role: tooling
     version: "3.0.3"
@@ -203,14 +215,86 @@ bill_of_materials:
     role: tooling
     version: "22.7.12"
     ecosystem: bun
-    justification: Target routing and developer ergonomics over the native toolchains (ADR-0013).
-    radar: adopt
+    justification: "Retired by ADR-0071. Runs beside Bazel during the cut-over and is removed, with nx.json, the project.json files and tools/run-nx.mjs, after parity is measured."
+    radar: hold
     certainty: settled
     evidence:
       kind: repository
       ref: bun.lock
       date: 2026-09-29
       version: "22.7.12"
+  - name: oxlint
+    role: tooling
+    version: "1.86.0"
+    ecosystem: bun
+    justification: Native linter run over TypeScript with the Ultracite core preset (ADR-0070).
+    radar: trial
+    certainty: assumed
+    assumption: "Adopted by ADR-0070 and proven by SPK-KRT-OD006 on this repository. The pin enters bun.lock when the OXC epic installs it; the latest version is taken at that time."
+  - name: oxfmt
+    role: tooling
+    version: "0.71.0"
+    ecosystem: bun
+    justification: Native formatter for TypeScript and JSON with the Ultracite preset (ADR-0070). Beta as of 2026-09-29.
+    radar: trial
+    certainty: assumed
+    assumption: "Adopted by ADR-0070 and proven by SPK-KRT-OD006 on this repository. The pin enters bun.lock when the OXC epic installs it; the latest version is taken at that time."
+  - name: oxlint-tsgolint
+    role: tooling
+    version: "7.0.2003"
+    ecosystem: bun
+    justification: "Type-aware lint backend that oxlint --type-aware needs for the preset's 54 type-aware rules (ADR-0070)."
+    radar: trial
+    certainty: assumed
+    assumption: "Adopted by ADR-0070 and proven by SPK-KRT-OD006 on this repository. The pin enters bun.lock when the OXC epic installs it; the latest version is taken at that time."
+  - name: bazel
+    role: tooling
+    version: "9.1.1"
+    ecosystem: other
+    justification: "Single task graph, cache and affected layer, pinned by .bazelversion and provisioned through bazelisk from devenv (ADR-0071)."
+    radar: trial
+    certainty: assumed
+    assumption: "Pinned today by .bazelversion. The latest 9.x patch may be taken by the Bazel epic; Bazel 9 is the Active LTS line as of 2026-09-29."
+  - name: rules_rust
+    role: tooling
+    version: "0.74.0"
+    ecosystem: other
+    justification: "Bazel-native Rust rules with crate_universe over Cargo.lock; MODULE.bazel pins 0.71.2 today (ADR-0073)."
+    radar: trial
+    certainty: assumed
+    assumption: "Adopted by ADR-0071, ADR-0072 or ADR-0073 and proven by SPK-KRT-OD005 or SPK-KRT-OD007 on this repository. The pin enters MODULE.bazel when the Bazel epic lands."
+  - name: rules_go
+    role: tooling
+    version: "0.63.0"
+    ecosystem: other
+    justification: Bazel-native Go rules with gazelle 0.54.0 and nogo (ADR-0073).
+    radar: trial
+    certainty: assumed
+    assumption: "Adopted by ADR-0071, ADR-0072 or ADR-0073 and proven by SPK-KRT-OD005 or SPK-KRT-OD007 on this repository. The pin enters MODULE.bazel when the Bazel epic lands."
+  - name: rules_python
+    role: tooling
+    version: "2.3.4"
+    ecosystem: other
+    justification: "Bazel-native Python rules over a requirements file exported from uv.lock with bootstrap_impl=script (ADR-0073)."
+    radar: trial
+    certainty: assumed
+    assumption: "Adopted by ADR-0071, ADR-0072 or ADR-0073 and proven by SPK-KRT-OD005 or SPK-KRT-OD007 on this repository. The pin enters MODULE.bazel when the Bazel epic lands."
+  - name: rules_buf
+    role: tooling
+    version: "0.5.4"
+    ecosystem: other
+    justification: buf lint and breaking checks under Bazel (ADR-0073).
+    radar: trial
+    certainty: assumed
+    assumption: "Adopted by ADR-0071, ADR-0072 or ADR-0073 and proven by SPK-KRT-OD005 or SPK-KRT-OD007 on this repository. The pin enters MODULE.bazel when the Bazel epic lands."
+  - name: aspect_rules_lint
+    role: tooling
+    version: "2.9.1"
+    ecosystem: other
+    justification: Wires ruff and gofmt into Bazel as lint aspects (ADR-0073).
+    radar: trial
+    certainty: assumed
+    assumption: "Adopted by ADR-0071, ADR-0072 or ADR-0073 and proven by SPK-KRT-OD005 or SPK-KRT-OD007 on this repository. The pin enters MODULE.bazel when the Bazel epic lands."
   - name: "@copilotkit/aimock"
     role: testing
     version: "1.15.1"
@@ -353,10 +437,10 @@ bill_of_materials:
     role: runtime
     version: "1.4.2"
     ecosystem: nix
-    justification: "User-ruled target for the local runtime and package manager. Both permitted KRT-BN001 attempts failed: the Nixpkgs refresh introduced a Weaver registry validation incompatibility, and the Bun-only candidate failed 3 of 77 memory-backend tests. KRT-BN001 is deferred for scoped compatibility work. Bun 1.4.2 remains pending and unaccepted."
+    justification: "Local runtime and package manager, and the executor for TypeScript Bazel actions (ADR-0072). Moves to the latest 1.4.x through the devenv refresh of ADR-0074, which supersedes the KRT-BN001 deferral: the Weaver manifest migration lands atomically with the refresh and the memory backend stops aliasing stored buffers."
     radar: adopt
     certainty: assumed
-    assumption: Scoped compatibility work must satisfy the original KRT-BN001 acceptance conditions for the Bun 1.4.2 target.
+    assumption: "The refreshed devenv pin provides Bun 1.4.x with the explicit PostgreSQL 17 package pin kept, and the full verification lane passes before Bun moves. Unverified: whether bun test --isolate is the default in 1.4 and whether the bun.lock format changes."
   - name: buf
     role: tooling
     version: fa7125ea7f1ae5430010a6e071f68375a39bd24c
@@ -468,7 +552,7 @@ bill_of_materials:
     certainty: assumed
     assumption: "Migrated from the repository lockfile; no separate design ruling was recorded."
 compatibility_policy:
-  pinning: "Every dependency is pinned exactly. TypeScript packages carry exact versions in package.json and bun.lock; Rust crates are pinned by Cargo.lock against the rust-toolchain.toml channel; Dart packages are pinned by the committed pubspec.lock; Python packages by uv.lock; Go modules by go.work plus each module go.sum. Toolchains that are not language dependencies (Bun, buf, protobuf, Go, Python, Dart, PostgreSQL) are provisioned by devenv and pinned by the nixpkgs revision in devenv.lock. Versions named here are authoritative for the baseline implementation line and must match the repository manifests after implementation. KRT-BN001 retains the original devenv.lock and bun.lock, Bun 1.3.10, and the `packageManager` declaration `bun@1.3.11`; the explicit PostgreSQL 17 package pin remains. Both permitted Bun 1.4.2 attempts failed, so the 1.4.2 target has no accepted lock refresh or packageManager alignment. Scoped compatibility work must produce that acceptance."
+  pinning: "Every dependency is pinned exactly. TypeScript packages carry exact versions in package.json and bun.lock; Rust crates are pinned by Cargo.lock against the rust-toolchain.toml channel; Dart packages are pinned by the committed pubspec.lock; Python packages by uv.lock; Go modules by go.work plus each module go.sum. Toolchains that are not language dependencies (Bun, buf, protobuf, Go, Python, Dart, PostgreSQL) are provisioned by devenv and pinned by the nixpkgs revision in devenv.lock. Versions named here are authoritative for the baseline implementation line and must match the repository manifests after implementation. KRT-BN001 retained the original devenv.lock and bun.lock, Bun 1.3.10 and the `packageManager` declaration `bun@1.3.11` with the explicit PostgreSQL 17 package pin; ADR-0074 supersedes that deferral, refreshes the nixpkgs pin together with the Weaver manifest migration, and moves Bun to the latest 1.4.x. Under ADR-0073 the Bazel-managed toolchains (Rust 1.95.0, Go 1.25.7, Python 3.13, ruff 0.15.21) are pinned in MODULE.bazel with sync checks against rust-toolchain.toml, go.work, uv.lock and devenv, and Dart stays pinned by the devenv SDK and pubspec.lock."
   lockfiles:
     - bun.lock
     - Cargo.lock

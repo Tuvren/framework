@@ -1,13 +1,14 @@
 ---
 id: ADR-0012
-status: accepted
+status: superseded
 date: 2026-06-12
+superseded_by: ADR-0070
 certainty: assumed
 assumption: "Migrated; the decision's ruling reference was not found in the status line."
 ---
 ### ADR-0012 TypeScript Tooling Uses Biome and tsup
 
-- **Status:** accepted
+- **Status:** superseded by ADR-0070, which replaces Biome with OXC for linting and formatting and retains `tsup@8.5.1` for package builds.
 - **Context:** The project explicitly prefers Bun-based workflows, Biome, and `tsup`.
 - **Decision:** Use `@biomejs/biome@2.4.10` for linting and formatting and `tsup@8.5.1` for package builds.
 - **Consequences:** The implementation posture is no longer ambiguous or tool-default-driven. Config, scripts, and examples must reflect this choice directly.
