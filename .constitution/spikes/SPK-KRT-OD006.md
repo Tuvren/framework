@@ -240,3 +240,13 @@ Gotcha: the preset ignores `**/generated`, so `typescript/telemetry/semconv/src/
 - **Register entry closed:** OD-06. Chosen option: "Adopt the ultracite oxlint/core and oxfmt presets as shipped".
 - **Tickets to add or split:** split the OXC epic into the four milestone groups above, with lint milestone 3 further split by the listed directories. Add tickets for the type-aware tsconfig prerequisite and the TS1354 parse error. Add a ticket to extend `generate-kernel-plans.ts`, which refuses to regenerate on master, so its output can be re-emitted through oxfmt.
 - **Spec edits required:** Stage 3. Update `.constitution/tech-spec/` for the tooling pins (oxlint, oxfmt, oxlint-tsgolint and ultracite ^7.12.2, replacing Biome) and for any `guidelines.md` verification commands that name Biome. The spike itself makes no spec edits.
+
+## Amendment after review
+
+This amendment supersedes the transition sequencing in the recommendation. It is a design proposal that has not been measured; the measurements remain unchanged.
+
+Formatting switches to oxfmt in the one mechanical commit. At that point, the root Biome gate must stop checking formatting and import-organization assists. It becomes lint-only for directories not yet migrated to oxlint; migrated directories leave the Biome gate as the ratchet advances.
+
+Keep the Biome preset stable during the ratchet through an npm alias dependency, `ultracite-biome`, pinned to `npm:ultracite@7.4.2`. Change `biome.jsonc` to extend `ultracite-biome/biome/core`. The un-aliased `ultracite` moves to the latest version for the OXC presets in the toolchain-and-format milestone. The epic must verify that Biome lint output is unchanged after installing the alias and changing the extension path, before continuing the ratchet.
+
+Remove both `ultracite-biome` and Biome together in the Biome-retirement change, after every directory has migrated to oxlint. This separates the OXC preset upgrade from the retained Biome preset and resolves the conflicting bump instructions.

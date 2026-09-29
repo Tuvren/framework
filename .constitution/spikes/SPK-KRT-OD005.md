@@ -70,7 +70,9 @@ Scratch rules lived in a throwaway worktree and were discarded afterwards. They 
 - **Option C, pure path-to-source with no `dist` between packages:** Not viable for the build. Runtime dts with `@tuvren/*` mapped to upstream `src` produced 14 TS6059 errors (upstream files outside `rootDir`), and it wrote 14 stray `.d.ts` files into `core/src` and `protocol/src`, polluting the upstream source trees. C is already what typecheck and tests do, and tsup does not need `dist`, so C's valid part is the typecheck and test half of the recommendation below.
 - **Variant D, noted for later:** per-package dts through `isolatedDeclarations`, which could remove the dts edge on upstream `dist` entirely. `tsc --isolatedDeclarations` reported 8 TS9xxx errors in `core`, 0 in `protocol`, and 0 in `runtime`. The approach is close but not ready, and the other packages were not surveyed.
 
-### Scaling to the 33 workspace packages
+### Scaling to the 30 workspace packages
+
+The root `package.json` workspace globs match 30 package manifests in the tree, excluding the root package. `git ls-files 'typescript/**/package.json'` also lists 30 manifests.
 
 - **A:** The macro scales, but hand-written `deps` would duplicate `package.json`. The repository rule already reads every workspace `package.json`, so it can also emit a generated `.bzl` that lists `@tuvren/*` dependencies per package. That leaves each BUILD file at about 3 lines, with only the non-manifest test and typecheck inputs (like the backend sources and the `spec/` fixtures above) declared by hand. A's loud ENOENT failures surface every such omission.
 - **Staging cost** grows with transitive source size for typecheck and test actions (the largest here was 126 files), not with the 23,993-file install. The install is linked, never copied.

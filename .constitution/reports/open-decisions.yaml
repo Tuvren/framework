@@ -139,7 +139,7 @@ decisions:
     ruling:
       ref: SPK-KRT-OD005
       date: 2026-09-29
-      summary: "Staged node_modules built by a bun install repository rule, with workspace packages copied from bazel-bin. Build actions use the upstream dist edge; typecheck and test resolve upstream packages to source. It was the only option whose cache never served a wrong result under tampering. PATH is pinned and tools are called by explicit path."
+      summary: "Staged node_modules built by a bun install repository rule, with workspace packages copied from bazel-bin. Build actions use the upstream dist edge; typecheck and test resolve upstream packages to source. It was the only option whose cache stayed sound under the in-workspace tampering probes. The external node_modules contents remain a trust boundary: only the repository-rule stamp is declared, and hiding a package there served a cached PASS despite failing real tests (measurement 4d). PATH is pinned and tools are called by explicit path."
       chosen: Staged node_modules from a bun install repository rule
   - id: OD-06
     question: "What does adopting the ultracite oxlint/core and oxfmt presets as shipped, without parity overrides, cost in violations and reformat size on this repository?"
@@ -202,5 +202,5 @@ decisions:
     ruling:
       ref: SPK-KRT-OD007
       date: 2026-09-29
-      summary: "Rust (rules_rust 0.74.0), Go (rules_go 0.63.0 with gazelle) and Python (rules_python 2.3.4 over a requirements file exported from uv.lock) adopt Bazel-native rules with a hermetic C toolchain and pinned toolchains. Dart is the one recorded native-wrapped exception until rules_dart consumes our pubspec.lock without a carried patch."
+      summary: "Rust (rules_rust 0.74.0) and Go (rules_go 0.63.0 with gazelle) adopt Bazel-native rules with a hermetic C toolchain and pinned toolchains. Python (rules_python 2.3.4 over a requirements file exported from uv.lock) is PROVISIONAL: the spike demonstrates one target with 289 tests, not all three packages. The Python ticket must demonstrate all 298 tests (289 + 8 + 1) under both NixOS devenv and ubuntu CI conditions before adoption; aspect_rules_py is the fallback. Dart is the recorded native-wrapped exception until rules_dart consumes our pubspec.lock without a carried patch."
       chosen: "Bazel-native rules where the spike proves them, native-wrapped actions as recorded exceptions elsewhere"

@@ -217,3 +217,9 @@ For the real repo (6 crates, 3 Go modules, 3 Python packages, 3 Dart packages), 
   9. A Dart native-wrapped action lane, plus a follow-up to make `protocol_test.dart` hermetic.
   10. A re-evaluation trigger for rules_dart when BCR publishes a version that isolates its ext lock.
 - **Spec edits required:** Stage 3 (tech-spec) must record the ADR changes and the new module pins in `stack.yaml`. The structure rule and the recorded "one Bazel file under spec/" disposition need a Stage 3 decision, because proto and buf targets need a `BUILD.bazel` under `spec/interop/proto/`. This spike edited no spec.
+
+## Amendment after review
+
+The selected `rules_python` setup demonstrates one Python test target ("1 of 1"), with 289 tests. Only the `aspect_rules_py` alternative demonstrates all three Python packages, with 289 + 8 + 1 = 298 tests. The measurements remain unchanged.
+
+The `rules_python` verdict is PROVISIONAL until the Python ticket demonstrates all 298 tests across the three packages under both required environments: NixOS devenv and ubuntu CI conditions. This qualification supersedes the Python adoption claims in the verdict table, recommendation, and downstream impact. The fallback is `aspect_rules_py`. Rust and Go remain adopted under their recorded caveats; Dart remains the recorded native-wrapped exception.
