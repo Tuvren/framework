@@ -1,0 +1,23 @@
+Historical working-tree proof at base ec1a2dd79fef2486413cef2cf2664e10a8ca2bcc; project Bun1.3.10, TypeScript6.0.2, Changesets2.31.0.
+
+Lead source-only typecheck exit0:
+PATH="$PWD/.devenv/profile/bin:$PATH" bunx --bun tsc --ignoreConfig --noEmit --target esnext --module esnext --moduleResolution bundler --types bun --strict --skipLibCheck --noUncheckedIndexedAccess --allowImportingTsExtensions tools/scripts/changeset-check.ts tools/scripts/changeset-check.test.ts
+
+Lead check exit0:
+LC_ALL=C bun run check (inside prepared devenv environment)
+Transition verification summary
+- docs-to-authority freeze gate: pass in 205ms
+- Epic AL portability gate: pass in 160ms
+- ADR-0057 host import boundary gate: pass in 708ms
+- ADR-0054/0056 API-surface freeze gate: pass in 724ms
+- Epic AF conformance gap plan freshness: pass in 111ms
+- authority packet validation: pass in 307ms
+- conformance plan validation: pass in 335ms
+- adapter protocol validation: pass in 328ms
+- certification discovery parity: pass in 80ms
+- workspace test-lane coverage: pass in 113ms
+- certification harness meta-conformance: pass in 291ms
+- vocabulary-check verification: pass in 156ms
+- affected typecheck/test/lint (base master): pass in 1586ms
+
+CI environment preservation probe: CHANGESET_BASE=ec1a2dd79fef2486413cef2cf2664e10a8ca2bcc devenv shell -- zsh -c test; the supplied exact SHA remains unchanged. Exit0.

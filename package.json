@@ -47,6 +47,7 @@
     "verify": "bun tools/scripts/verify.ts",
     "release-check": "bun tools/scripts/release-check.ts",
     "release": "bun tools/scripts/release-lane.ts",
+    "changeset:check": "bun tools/scripts/changeset-check.ts",
     "publish:preflight": "bun tools/scripts/publish-registry.ts --preflight",
     "publish:dry-run": "bun tools/scripts/publish-registry.ts --dry-run",
     "publish:registry": "bun tools/scripts/publish-registry.ts --publish",
