@@ -2,12 +2,12 @@ owner: KRT-BN003
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: fc5bcadb21d841a720c7a952368f0183ae547baf
-  command: "M3c fixture discovery marker: lead twenty-case baseline test on Bun1.3.10/CLI2.31, worker strictTS/Biome/gate. Earlier producers are historical and retain labels in their logs."
+  commit: 56250e7af547a2197f73fa55cf36751522404c07
+  command: "M3d await cleanup fix: twenty nativeCLI3 fixtures, strictTS/Biome, repeated actual consumed gates on generated0.2 working-tree artifacts. Earlier producer logs remain historical."
 files:
   - path: coverage.md
-    sha256: 354873455b8b773d63227f270233b3caed539a9f27d2b9bbcc32b4565f73876a
-    bytes: 1673
+    sha256: 90b039f714db74e5a045a7eaa29e162434823d39a83350f287a86388729f2567
+    bytes: 2139
     role: transcript
   - path: current-gate.log
     sha256: be26f3ff67760cc8219b938a80059f786803516928299b80cac473eaa18422e5
@@ -20,6 +20,14 @@ files:
   - path: fixture-tests.log
     sha256: dd65fffb2d9e8728637562125b9ca94af9fcbd57cc5f74445f49697dce82aba8
     bytes: 807
+    role: log
+  - path: replay-lifecycle-current-gate.log
+    sha256: 70bd50ed00beafa0f21050df5caa8b0ada45b8b1f1332e96f438ebfc2f0a4d00
+    bytes: 232
+    role: log
+  - path: replay-lifecycle-fixtures.log
+    sha256: 7c852d6dbf18a79157f6c2eab6fe144728b0236314b167b285d979fd039b1df7
+    bytes: 1016
     role: log
   - path: verification.log
     sha256: c6ec877358f82b698ffd7da085763b78062ea9728ac2ec221564dd91abd93d1f
