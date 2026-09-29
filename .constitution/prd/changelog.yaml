@@ -1,4 +1,8 @@
 entries:
+  - version: v0.13.1
+    date: 2026-09-29
+    by: stage
+    changed: ["prd/glossary.yaml: corrected the Curated SDK Surface definition to reflect the @tuvren/sdk composition tier and internal status of @tuvren/runtime, per ADR-0057."]
   - version: v0.13.0
     date: 2026-09-03
     by: migrate

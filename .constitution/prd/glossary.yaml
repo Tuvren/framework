@@ -128,7 +128,7 @@ terms:
       - log file
       - history dump
   - term: Curated SDK Surface
-    definition: The single host-facing SDK boundary composed of @tuvren/core (subpath-exported primitives) and @tuvren/runtime (slim convenience entrypoint), with leaf packages peer-depending on @tuvren/core for version-skew safety
+    definition: The host-facing SDK surface combines @tuvren/sdk as the composition tier for createTuvren, @tuvren/core subpaths for shared primitives and host-facing contract types, and the leaf adapter packages hosts choose; the SDK and leaf packages peer-depend on @tuvren/core to avoid version skew, while @tuvren/runtime is an internal package and not part of the host-facing surface.
     do_not_use:
       - barrel
       - megapackage
