@@ -1,0 +1,31 @@
+{
+  "inspectedHead": "5b10fb15f341dff19581cb7d2c267be11ca3dcca",
+  "workingTreeIntent": ".changeset/cool-papayas-bathe.md",
+  "intendedHighestDirectClass": "minor",
+  "intendedPublicVersion": "0.2.0",
+  "nativeGeneratedVersion": "1.0.0",
+  "nativeFixedGroupCount": 30,
+  "publicReleaseCount": 19,
+  "publicPackages": [
+    "@tuvren/backend-memory",
+    "@tuvren/backend-postgres",
+    "@tuvren/backend-shared",
+    "@tuvren/backend-sqlite",
+    "@tuvren/core",
+    "@tuvren/kernel-grpc-client",
+    "@tuvren/kernel-protocol",
+    "@tuvren/kernel-runtime",
+    "@tuvren/mcp-client",
+    "@tuvren/provider-api",
+    "@tuvren/provider-bridge-ai-sdk",
+    "@tuvren/runner-react",
+    "@tuvren/runtime",
+    "@tuvren/sdk",
+    "@tuvren/stream-agui",
+    "@tuvren/stream-core",
+    "@tuvren/stream-sse",
+    "@tuvren/telemetry-otel",
+    "@tuvren/telemetry-semconv"
+  ],
+  "result": "BN004 direct intent accepted; BN005 generation blocked"
+}

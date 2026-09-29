@@ -1,0 +1,30 @@
+---
+"@tuvren/core": patch
+"@tuvren/sdk": patch
+"@tuvren/backend-memory": patch
+"@tuvren/backend-postgres": minor
+"@tuvren/backend-shared": patch
+"@tuvren/backend-sqlite": patch
+"@tuvren/kernel-grpc-client": patch
+"@tuvren/kernel-protocol": patch
+"@tuvren/kernel-runtime": patch
+"@tuvren/provider-api": patch
+"@tuvren/provider-bridge-ai-sdk": patch
+"@tuvren/runner-react": patch
+"@tuvren/runtime": patch
+"@tuvren/stream-agui": patch
+"@tuvren/stream-core": patch
+"@tuvren/stream-sse": patch
+"@tuvren/telemetry-otel": patch
+"@tuvren/telemetry-semconv": patch
+"@tuvren/mcp-client": patch
+---
+
+Record public package changes since 0.1.0. `@tuvren/core` and `@tuvren/sdk`
+add the optional `AgentConfig` sanitization hook and error codes.
+`@tuvren/backend-postgres` replaces blob-per-scope persistence with
+relational row-per-record storage and changes the default schema from
+`public` to `tuvren_kernel`. Existing default-schema hosts must pass
+`schemaName: "public"`; a selected legacy schema migrates on first open.
+Downgrades aren't supported. The remaining package entries cover additions,
+fixes, and internal updates.

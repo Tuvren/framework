@@ -117,7 +117,7 @@ tickets:
       evidence: "Compare the public package path history since 0.1.0 with the package lists in pending changesets. Assert all affected publishable packages are covered, private-only packages are not required, release notes name the PostgreSQL storage change and SDK surface changes where relevant, and the highest bump follows ADR-0069's 0.x rule."
     flows: [flow-reference-host-proves-sdk]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-BN005
     title: Version the release and prove a dry run
     type: Chore
@@ -138,7 +138,8 @@ tickets:
       evidence: "Assert one version across the publishable set, generated changelogs and manifests matching the pending changesets, no private session package in the publish set, bun run release-check green, and bun run publish:dry-run green with no registry mutation or release artifact created. Record the exact owner hand-off in closeout."
     flows: [flow-reference-host-proves-sdk]
     certainty: assumed
-    status: planned
+    status: deferred
+    deferred_to: "tasks: bounded native-release compatibility epic owning Changesets dependencies and release tooling, with tech-spec alignment; installed CLI 2.31.0 propagates the required 0.x minor to 1.0.0 through the fixed peer graph"
   - id: KRT-BN006
     title: Configure bounded dependency updates
     type: Chore
