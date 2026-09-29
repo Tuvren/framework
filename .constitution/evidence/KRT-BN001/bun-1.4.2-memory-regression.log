@@ -1,5 +1,6 @@
 Historical failed fallback transcript; terminal color sequences removed.
-Command: LC_ALL=C bun run nx run backend-memory:test --skipNxCache
+Producing command: bun run nx run backend-memory:test (inherited locale).
+Recommended uncached reproduction: LC_ALL=C bun run nx run backend-memory:test --skipNxCache
 Runtime: project Bun1.4.2 with the original general toolchain lock. Exit: 1.
 
 • Running devenv:files:cleanup

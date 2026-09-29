@@ -3,7 +3,7 @@ mode: contract_test
 produced:
   date: 2026-09-29
   commit: 6d6f1f31659ccf755e8259d38bbc13f5384bc4ce
-  command: LC_ALL=C bun run verify; LC_ALL=C bun run nx run backend-memory:test --skipNxCache; LC_ALL=C "$BN_CONTROL_BUN" test; reference-host-memory-scenario (historical candidate and retained environments; see transcripts)
+  command: "Candidate: bun run verify; bun run nx run backend-memory:test. Control: original immutable Bun1.3.10 binary test (see historical transcript). Retained worker: bun run check. Retained lead: LC_ALL=C bun run verify; reference-host-memory-scenario launch/doctor/drive. Reproduction prescriptions are labeled separately."
 files:
   - path: README.md
     sha256: f1a70b4b9ef06f1163624d576cc1b722f80caf41e9e21a81364c940e672fb9a7
@@ -14,20 +14,20 @@ files:
     bytes: 984
     role: log
   - path: bun-1.4.2-memory-regression.log
-    sha256: cbf4b140f3ff16d024f84851672d2d48715682aab9ea05a5253369c330f61c40
-    bytes: 13460
+    sha256: 8d04ef11bc7182737141f4f8accc5911bfff6178431d5efbeb7dbdef945dcc0b
+    bytes: 13560
     role: log
   - path: bun-1.3.10-control.log
-    sha256: 8e3841c64130128c86fa019600420476beedb33d4bd9fb2c457075d2221a1832
-    bytes: 344
+    sha256: b66467ef84f0599fd52d7efd10286e2a821ed0c798e38d3d4345f8e967b69e54
+    bytes: 548
     role: log
   - path: refreshed-toolchain-failure.log
-    sha256: e67b6000c44be030d77c872e0574c6ada22c05ca2a49eec78684d7c378b6e9ee
-    bytes: 4372
+    sha256: 17d71afd77eb206765d9c81b83c580e551ed668a500d61df89c98085704aafda
+    bytes: 4443
     role: log
   - path: retained-verification.log
-    sha256: f87f62aadb3f1e55dc3558de44279006401597e520eba8697355d6856741520f
-    bytes: 2674
+    sha256: ea6e18ceade4cabcac27819c780e235918ad3c27e87ebfa424226d4ffcf81c62
+    bytes: 2694
     role: log
   - path: retained-streaming-scenario.log
     sha256: 066f928af28c1267d3ed652ec5e48e2d296b966e6cb115ba61fa329866103769
