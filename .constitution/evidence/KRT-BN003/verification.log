@@ -39,3 +39,5 @@ Transition verification summary
 - affected typecheck/test/lint (base master): pass in 1668ms
 command: env PATH="$PWD/.devenv/profile/bin:$PATH" bun run check
 exit: 0
+
+Scoped none-coverage fix at base296ca276b1d61ad76a20cbfcaefed81fbfc16ca9: lead20 fixtures and current gate exit0; worker strict source-only TS6 and targeted Biome exit0. Syntax remains native; none is excluded from direct release coverage.
