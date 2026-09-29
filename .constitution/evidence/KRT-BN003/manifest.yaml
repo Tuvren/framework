@@ -2,8 +2,8 @@ owner: KRT-BN003
 mode: contract_test
 produced:
   date: 2026-09-29
-  commit: 56250e7af547a2197f73fa55cf36751522404c07
-  command: "M3d await cleanup fix: twenty nativeCLI3 fixtures, strictTS/Biome, repeated actual consumed gates on generated0.2 working-tree artifacts. Earlier producer logs remain historical."
+  commit: 934096eaa73d6096216bbb24f4a5037a05347930
+  command: "PR119 round-one fixes: corrected test-first failure proof, final 24 fixtures/131 assertions, native filtering, Git T matrix, semantic base-intent freshness, strict TypeScript/Biome, actual consumed replay, and inner-loop check. Historical producer results and old-head CI investigation are separately labeled."
 files:
   - path: coverage.md
     sha256: 90b039f714db74e5a045a7eaa29e162434823d39a83350f287a86388729f2567
@@ -20,6 +20,26 @@ files:
   - path: fixture-tests.log
     sha256: dd65fffb2d9e8728637562125b9ca94af9fcbd57cc5f74445f49697dce82aba8
     bytes: 807
+    role: log
+  - path: pr-round1-ci-recheck.txt
+    sha256: ccb1a0521d6ef8f9793a5043bdaa1cee528674931312673144fbdc8a08a4b859
+    bytes: 1332
+    role: transcript
+  - path: pr-round1-command.txt
+    sha256: f1b56eb0dd9f517d8c0fc7a67ed241b0b578655a7cd1f8dcebefb20417a879fb
+    bytes: 3433
+    role: transcript
+  - path: pr-round1-consumed-gate.log
+    sha256: 1f7c82144dc1a80c64e39572c22098d4edb1e5e2fe1e19411cef310041dcd014
+    bytes: 138
+    role: log
+  - path: pr-round1-failing-fixtures.log.gz
+    sha256: f15f7b6889cc66396aeac831cf13b236ad160e2cfa6b27fe9cbbeba42a52be89
+    bytes: 907
+    role: log
+  - path: pr-round1-final-fixtures.log
+    sha256: af79538ec520f92bbae5dbc4000104eab467b556e577719b075a32b764fc0ae7
+    bytes: 1026
     role: log
   - path: replay-lifecycle-current-gate.log
     sha256: 70bd50ed00beafa0f21050df5caa8b0ada45b8b1f1332e96f438ebfc2f0a4d00

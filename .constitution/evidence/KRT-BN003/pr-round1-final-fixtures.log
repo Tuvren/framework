@@ -1,0 +1,20 @@
+bun test v1.3.10 (30e609e0)
+
+tools/scripts/changeset-check.test.ts:
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — no publishable package paths changed
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — direct changeset coverage for 1 publishable package(s)
+changeset-check: OK — consumed changesets reproduce the generated public release
+changeset-check: OK — consumed changesets reproduce the generated public release
+
+ 24 pass
+ 0 fail
+ 131 expect() calls
+Ran 24 tests across 1 file. [5.98s]

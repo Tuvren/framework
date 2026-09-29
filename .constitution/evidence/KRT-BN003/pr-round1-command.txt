@@ -1,0 +1,51 @@
+Producer parent: 934096eaa73d6096216bbb24f4a5037a05347930.
+PR119 round-one accepted fixes, 2026-09-29; prepared Bun 1.3.10,
+installed Changesets CLI 3.0.3/read 1.0.1/parse 1.0.0; LC_ALL=C.
+
+Corrected test-first controls reproduced three defects in the old checker:
+unchanged intent renamed to a new path, native metadata parsed as intent,
+and a tracked public source replaced by a symlink omitted by the Git filter.
+pr-round1-failing-fixtures.log.gz archives this corrected run, not the first raw
+fixture diagnostic. The worker's first temporary diagnostic used uncommitted
+metadata and zsh's reserved status variable; it was superseded and overwritten
+while correcting the fixture. No result from that diagnostic is claimed as
+passing or as the preserved failure proof.
+
+The fixes compare semantic declarations and nonempty summaries against all
+base pending intents, use ACDMRT for every package/history diff, and mirror
+installed native reader filtering in current and historical discovery.
+The current-manifest private-package exemption follows ADR-0069/ADR-0068
+and has an explicit regression test. Retirement policy is routed separately.
+Application/release artifacts, dependency declarations, and authority are
+unchanged.
+
+Worker final commands (full outputs remain under /tmp/EPIC-BN-pr-r1-fix):
+bun test tools/scripts/changeset-check.test.ts
+bunx --bun @biomejs/biome check tools/scripts/changeset-check.ts tools/scripts/changeset-check.test.ts
+bunx --bun tsc --ignoreConfig --noEmit --strict --target esnext --module nodenext --moduleResolution nodenext --skipLibCheck --types bun tools/scripts/changeset-check.ts tools/scripts/changeset-check.test.ts
+bun run changeset:check --base=master
+bun run check
+All final checks exited 0. The final T matrix separately proves failure
+without intent while unstaged, staged, and committed, then passes with fresh
+committed intent. Final fixture result: 24 pass, 0 fail, 131 assertions.
+Earlier 128-assertion passes remain historical; the initial TS6 invocation
+required --ignoreConfig and its distinct corrected retry passed.
+
+Lead independent final commands:
+bun test tools/scripts/changeset-check.test.ts
+bunx --bun tsc --ignoreConfig --noEmit --target esnext --module esnext --moduleResolution bundler --types bun --strict --skipLibCheck --noUncheckedIndexedAccess --allowImportingTsExtensions tools/scripts/changeset-check.ts tools/scripts/changeset-check.test.ts
+bunx --bun @biomejs/biome check tools/scripts/changeset-check.ts tools/scripts/changeset-check.test.ts
+bun run changeset:check --base=master
+All exited 0; fixture and consumed gate outputs are preserved separately.
+The lead also ran constitution validation before commit and diff checks.
+
+These records do not replace required PR CI. pr-round1-ci-recheck.txt records
+the old-head CI timeout and successful isolated/uncached local runtime checks;
+the fixed head must pass verify and Bazel before merge. Historical twenty-test
+milestone logs preserve their original producing trees and are not rewritten.
+
+The canonical failing stdout contains trailing spaces. The staged whitespace
+check detected them; preserve the original bytes in a gzip -n archive instead
+of editing them. Decompress with gzip -dc pr-round1-failing-fixtures.log.gz.
+Original raw SHA-256: 7b78f9cdad0281fac8505970f72e1dafe1d1c688431b37f76bf79373eac18b28; bytes: 3079.
+The gzip round trip was byte-identical before removing the uncompressed copy.
