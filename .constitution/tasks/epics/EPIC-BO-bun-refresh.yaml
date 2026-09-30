@@ -139,7 +139,7 @@ tickets:
       evidence: "Invariant: stack records equal the observed installed tools and repository pins. Checker: bun run verify with the preceding frozen-install and codegen evidence; constitution validation adds no pin discrepancy."
     flows: []
     certainty: settled
-    status: planned
+    status: done
   - id: KRT-BO006
     title: Upgrade the aimock test double on the Bun 1.4 runtime
     type: Chore
