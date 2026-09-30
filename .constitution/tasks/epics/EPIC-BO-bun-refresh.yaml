@@ -75,7 +75,14 @@ tickets:
       evidence: "Apply the refreshed environment and run bun run codegen and bun run verify. Probe Weaver manifest resolution and PostgreSQL major 17. Expect stable second regeneration of semantic-conventions.md, otel-attributes.json, the TypeScript helper and Rust helper, and no semantic vocabulary drift. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: assumed
-    status: planned
+    status: in_progress
+    deviations:
+      - files:
+          - typescript/runtime/src/lib/runtime-core-recovery.ts
+          - typescript/runtime/test/runtime-core-recovery-comparison.test.ts
+          - typescript/sdk/tsconfig.json
+          - typescript/sdk/test/module-resolution.test.ts
+        justification: "User2026-09-30 authorized a separately reviewed bounded prerequisite and autonomous continuation. A2 records measured Bun1.4 incompatibilities: data-equivalent durable/live JSON prototypes and SDK paths overriding inherited source aliases. Exact changes restore existing behavior, preserve original assertions and public signatures, and add direct runtime/SDK patch coverage. No Biome/core/PostgreSQL source change."
   - id: KRT-BO003
     title: Align Bun and remove the upgrade hold
     type: Chore
