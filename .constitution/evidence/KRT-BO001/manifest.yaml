@@ -6,8 +6,8 @@ produced:
   command: Apply source.patch to the producing parent; inside its devenv environment run LC_ALL=C bun run nx run backend-memory:test, :typecheck, :build, :lint; from the package directory run the pinned Bun 1.4.2 candidate test; run the reference-host-memory-scenario recipe and LC_ALL=C bun run check --base=dff2df9f8dd5dd37fe4054081bcf22479745bd82. Exact historical invocations and exit codes are retained in lead-checks.json.
 files:
   - path: README.md
-    sha256: 9509020194d11dc597a3a89579bc101bf36f5d555d50c59d40b9aea891d3f9c5
-    bytes: 3168
+    sha256: e069f745e860a496d0e980237024d010905475c6c02fe9948109c3344adbd04b
+    bytes: 3173
     role: transcript
   - path: transcript-index.json
     sha256: 653defde91f48485646c270387d665047b479ee16c2f9104424544a614b94874
@@ -17,4 +17,4 @@ files:
     sha256: 6b43a904df29cd4882ab5313bae625eb225af812756a40b8419d8257763768b2
     bytes: 25799
     role: transcript
-pass_criteria: All original77 tests unchanged and passing plus5 ownership tests on Bun1.3.10 and1.4.2; original3 candidate regressions fixed; malformed-write supplementary outcomes identical; all11 lead checks exit0; host drive contains the streaming scenario; direct memory patch coverage; no encoding or API shape changes.
+pass_criteria: All 77 original tests remain unchanged and pass with five added ownership regressions on Bun 1.3.10 and 1.4.2; the three original candidate regressions are fixed. Malformed-write outcomes match; all 11 lead checks exit 0; the live host drive emits the streaming scenario. Direct memory patch coverage is present; stored encoding and public API shape are unchanged.

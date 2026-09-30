@@ -181,7 +181,7 @@ closeout:
   points_completed: 34
   spec_patches:
     - path: tech-spec/stack.yaml
-      summary: Settle Bun1.4.2 and align the eight refreshed Nix tool revision/native-version records with installed tools and retained evidence.
+      summary: Settle Bun 1.4.2 and align the eight refreshed Nix tool revision/native-version records with installed tools and retained evidence.
       commit: 05483e4acf9da9874c69896cc0ab211c9dd7eca3
     - path: tech-spec/stack.yaml
       summary: Align the aimock stack record with the actual host dependency and lock after the separately committed JournalBody guard adaptation.
@@ -189,27 +189,27 @@ closeout:
   changelog_entries:
     - directory: tasks
       type: changed
-      text: "Complete EPIC-BO: isolate memory buffers, refresh the shared devenv toolchain with the Weaver manifest migration, align Bun1.4.2 and Dependabot holds, retain isolation/trust/auth measurements, settle physical pins, and upgrade aimock with preserved assertions and reviewed proofs."
+      text: "Complete EPIC-BO: isolate memory buffers, refresh the shared devenv toolchain with the Weaver manifest migration, align Bun 1.4.2 and Dependabot holds, retain isolation/trust/auth measurements, settle physical pins, and upgrade aimock with preserved assertions and reviewed proofs."
     - directory: tech-spec
       type: changed
-      text: Settle Bun1.4.2 from installed-tool, frozen-install and isolation evidence; align shared Nix tool records and the aimock pin through separately reviewed physical patches.
+      text: Settle Bun 1.4.2 from installed-tool, frozen-install and isolation evidence; align shared Nix tool records and the aimock pin through separately reviewed physical patches.
   candidate_terms: []
   routed_upstream:
     - stage: tech-spec
       item: After BO closes, retire stale guidelines.md:861 pending/unaccepted Bun paragraph; only stack.yaml is patchable within this epic.
     - stage: tech-spec
-      item: Eight existing tools/** test files have no Nx/verify ownership; M4 directly executed all9toolsfiles including CI-owned changeset. Plan later owned tooling-lane wiring without changing this epic scope.
+      item: Eight existing tools/** test files have no Nx/verify ownership; M4 directly executed all 9 tools files including the CI-owned changeset. Plan later owned tooling-lane wiring without changing this epic scope.
     - stage: tech-spec
-      item: Anchor ADR0074 historical204file claim to actualbaseline201atdff; current204 includes3authorizedregressionfiles. M4 settles ordinary default sharing and explicitisolation.
+      item: Anchor the ADR0074 historical 204-file claim to the actual baseline 201 at dff; the M4 snapshot of 204 includes 3 authorized regression files, and the final head after KRT-BO006 tracks 205 files. M4 settles ordinary default sharing and explicit isolation.
     - stage: tech-spec
-      item: ADR-0073 planned Bazel Go1.25.7/Python3.13 now trail measured devenv Go1.26.7/Python3.14.7. Stage3/4 should remeasure synchronization in CC/CF/CG before those implementations; preserve future assumptions now.
+      item: ADR-0073 planned Bazel Go 1.25.7/Python 3.13 now trail measured devenv Go 1.26.7/Python 3.14.7. Stage 3/4 should remeasure synchronization in CC/CF/CG before those implementations; preserve future assumptions now.
     - stage: tech-spec
-      item: guidelines.md:838 restates aimock1.15.1; align current prose with separately reviewed1.43.0 physicalpin afterBO; preserve BO005 historicalmilestone notes.
+      item: guidelines.md:838 restates aimock 1.15.1; align current prose with the separately reviewed 1.43.0 physical pin after BO; preserve BO005 historical milestone notes.
     - stage: tech-spec
-      item: Measured OpenAI3.0.118 parallel tool-start order fails runtime assistant sequence validation in both approval suites; before a future provider bump, review event-order authority/normalization and plan a bounded compatibility fix. BO retains3.0.53; no current sourcefix introduced.
+      item: Measured OpenAI 3.0.118 parallel tool-start order fails runtime assistant sequence validation in both approval suites; before a future provider bump, review event-order authority/normalization and plan a bounded compatibility fix. BO retains 3.0.53; no current source fix is introduced.
   follow_ups:
     - The original seven-test draft, its exact inputs and any seventh identity were not recovered; retain the precise historical-provenance limitation rather than claiming seven explained causes.
-    - Before adopting @ai-sdk/openai3.0.118 or later, resolve/measure parallel tool-start ordering against the runtime per-call validation synthesis; two namedapproval cases reproducibly fail in exactPR130 controls, while BO retains3.0.53.
+    - Before adopting @ai-sdk/openai 3.0.118 or later, resolve/measure parallel tool-start ordering against the runtime per-call validation synthesis; two named approval cases reproducibly fail in exact PR130 controls, while BO retains 3.0.53.
   code_decisions:
     - summary: Copy own Uint8Array fields before memory protocol validation, preserve malformed-input rejection, and decode stored buffers through detached copies.
       kind: pattern
@@ -244,7 +244,7 @@ closeout:
         - tools/scripts/telemetry-codegen.ts
         - devenv.lock
       commit: b318af2c8282d4cb0f0ab74dcd9a28cb3a8850ca
-    - summary: Grade complete outer-file JUnit results and native case counts explicitly, including all 29 project lanes, nine tools files, eight trust scenarios and 14 registry/TLS scenarios; use a scratch CA and shape-only authentication logs.
+    - summary: Grade complete outer-file JUnit results and native case counts explicitly, including all 29 project lanes, nine tools files, eight trust scenarios and 14 registry/TLS scenarios; use a scratch CA and shape-only authentication logs. The archived comparator printed per-file differences without a failing exit status, so a corrected replay grader now grades every one of the 179 files in both modes and exits nonzero on any per-file disagreement.
       kind: convention
       paths:
         - .constitution/evidence/KRT-BO004
