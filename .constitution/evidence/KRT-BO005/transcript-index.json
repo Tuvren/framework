@@ -1,0 +1,119 @@
+{
+  "archive": "transcripts.tar.gz",
+  "members": [
+    {
+      "path": "probe-tools.log",
+      "sha256": "7977e582fb9756f41fe34b37dfcae77fcaf8a76951e63e094a064c4dbfab613d",
+      "bytes": 1985,
+      "role": "log"
+    },
+    {
+      "path": "probe-tools.sh",
+      "sha256": "4a92c0ad7d1d317fe22e6e9cb6bde12fdd8418f78410e28aeb6016ecd4e307f8",
+      "bytes": 1530,
+      "role": "procedure"
+    },
+    {
+      "path": "check-before.txt",
+      "sha256": "8229919907e833df55dcabec6c98969d391a6ded02e6380f6f126aa199988a6a",
+      "bytes": 2384,
+      "role": "negative_control"
+    },
+    {
+      "path": "check-final.txt",
+      "sha256": "815f78686783f054074c239e3edb44c7200dc2eaf4d7d3f2ca9c58fce72a87ec",
+      "bytes": 1331,
+      "role": "log"
+    },
+    {
+      "path": "check-stack-pins.ts",
+      "sha256": "110a4a5178da2939c1ae03a3fb4188c42616c68c1ab017c546dfdc875aa6adab",
+      "bytes": 6172,
+      "role": "procedure"
+    },
+    {
+      "path": "pg-doctor.log",
+      "sha256": "5fee1b94fedd403a9837b1f0a7a2faf2294008a935ca0fd1dc7eb2c0e960f2e3",
+      "bytes": 129,
+      "role": "log"
+    },
+    {
+      "path": "frozen-install.log",
+      "sha256": "ad84f43c4612a2f582bf0550763134ffe2b5eb76bdf75cbaf6dd2dd63a0623a2",
+      "bytes": 77975,
+      "role": "log"
+    },
+    {
+      "path": "verify-final.clean.log",
+      "sha256": "711956443795e81a9608568ce8ed61801037cc634740c5205caffb8551d15458",
+      "bytes": 280126,
+      "role": "log"
+    },
+    {
+      "path": "validate-after.txt",
+      "sha256": "ec33e0dc4a3039736351b318dc4373015d8ae332951c67c919549d036925e9f9",
+      "bytes": 14363,
+      "role": "log"
+    },
+    {
+      "path": "source.patch",
+      "sha256": "544497eb4988bc77b57371ecf958b5ff49458082d1a624d86b2a1055910c5960",
+      "bytes": 10260,
+      "role": "source_patch"
+    },
+    {
+      "path": "lead-pin-check.mjs",
+      "sha256": "baa469e4bec21d09ad64895f81601a641571f41632749545a0af3a99739593e4",
+      "bytes": 3448,
+      "role": "procedure"
+    },
+    {
+      "path": "lead-check-config.json",
+      "sha256": "eaec185d2015d3d9ef974ee02c4f23445ec49665a1e342f774764ec5440e68a0",
+      "bytes": 1203,
+      "role": "procedure"
+    },
+    {
+      "path": "lead-pin-invariant.log",
+      "sha256": "b329b9660129c963fae63afd5ba8197ad8968a0b5e66e46e2afa79c821b90b0f",
+      "bytes": 688,
+      "role": "log"
+    },
+    {
+      "path": "lead-verify.log",
+      "sha256": "b2c0039eb72307419e6b53311723659949429ebbe2c52a367eab4ef666102228",
+      "bytes": 288729,
+      "role": "log"
+    },
+    {
+      "path": "lead-validate.log",
+      "sha256": "ec33e0dc4a3039736351b318dc4373015d8ae332951c67c919549d036925e9f9",
+      "bytes": 14363,
+      "role": "log"
+    },
+    {
+      "path": "lead-scope-and-patch.log",
+      "sha256": "3f23fd89088c6f40f56a4271ac6c0c90202dbc38f4961298deadb7a4947fd3d7",
+      "bytes": 10335,
+      "role": "log"
+    },
+    {
+      "path": "lead-checks.json",
+      "sha256": "41faf58048a478b6147897bbb4b18a5d8166b8b98ffdd03e1bd75b8ece7b186c",
+      "bytes": 1374,
+      "role": "measurement"
+    },
+    {
+      "path": "lock-digests-final.txt",
+      "sha256": "3e38504415c284598191f4969ac72cbc17f4b0511a1ee0195ad4ad763b958152",
+      "bytes": 508,
+      "role": "measurement"
+    },
+    {
+      "path": "derive-after.txt",
+      "sha256": "679baaeee496be67c135ab0f237ac724cd7e599cf284d27e7b15ed18fdd49975",
+      "bytes": 776,
+      "role": "measurement"
+    }
+  ]
+}

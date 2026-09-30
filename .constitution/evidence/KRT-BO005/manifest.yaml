@@ -1,0 +1,20 @@
+owner: KRT-BO005
+mode: invariant
+produced:
+  date: 2026-09-30
+  commit: 2e32938c8fe327cd8e3c9212ae505841ca5acaad
+  command: devenv shell -- bun /home/oscar/.cache/pi-subagent/framework/run-checks.ts /home/oscar/.cache/pi-subagent/framework/wf-bo-m5/lead-check-config.json
+files:
+  - path: README.md
+    sha256: 159fdbc1478a77e4316d88d4e479a95fcfefb1287c9bea18fe751e70db9607c0
+    bytes: 2050
+    role: transcript
+  - path: transcript-index.json
+    sha256: 6f5ea45b9ef9c674770defbd7187f7fe6e966230a492a004a049ffb44a0c6039
+    bytes: 3430
+    role: measurement
+  - path: transcripts.tar.gz
+    sha256: abe3df04dfff4680ef9289be6048018e97a18e1cd52b65b8e25c7a480f2f5802
+    bytes: 91401
+    role: transcript
+pass_criteria: Installed Bun 1.4.2 equals packageManager and the settled stack record; original frozen-install and isolation evidence is preserved in BO003 and BO004. Every refreshed shared Nix tool record uses the actual locked nixpkgs revision and its measured native version; client and running PostgreSQL server retain major 17. All other stack records and compatibility boundaries remain unchanged; only the authorized physical stack patch changes specification. The quoted full verification command exits 0 with all 33 steps passing; constitution validation has zero errors and only the four previously planned OXC warnings.
