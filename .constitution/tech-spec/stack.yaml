@@ -305,7 +305,7 @@ bill_of_materials:
     assumption: "Adopted by ADR-0071, ADR-0072 or ADR-0073 and proven by SPK-KRT-OD005 or SPK-KRT-OD007 on this repository. The pin enters MODULE.bazel when the Bazel epic lands."
   - name: "@copilotkit/aimock"
     role: testing
-    version: "1.15.1"
+    version: "1.43.0"
     ecosystem: bun
     justification: "Local mock-provider validation for success, control, and provider-failure paths."
     radar: adopt
@@ -313,7 +313,9 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: bun.lock
-      date: 2026-09-03
+      version: "1.43.0"
+      date: 2026-09-30
+      note: "Measured from the locked and installed package: the bun.lock entry, the host-repl devDependency, the workspace symlink and the package manifest all resolve to 1.43.0. In the installed declarations `JournalEntry.body` is `JournalBody | null`, where `JournalBody = ChatCompletionRequest | Record<string, unknown>`, and the root entry exports `isChatCompletionBody(body: JournalBody | null | undefined): body is ChatCompletionRequest`, which requires an array `messages` and a string `model`. The host-repl test helpers narrow journal bodies through that exported guard and reject non-chat bodies, and the aimock suites pass on this pin. The guard signature and behavior are measured from this locked install and are not asserted as a published or cross-language contract."
   - name: "@ai-sdk/openai"
     role: testing
     version: "3.0.53"
