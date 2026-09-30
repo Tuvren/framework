@@ -50,6 +50,7 @@ import {
   type StoredThread,
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
+import { isolateRecordBuffers } from "./memory-backend-buffer-isolation.js";
 import {
   assertBranchHeadMoveIsLinear,
   assertRunStartTurnNodeWithinTurnSpan,
@@ -396,7 +397,9 @@ export function createMemoryBackend(
  * its record family (schema shape, referential existence, immutability,
  * monotonic timestamps, lineage legality) before mutating the draft. All
  * records are cloned on the way in and out, so callers can never alias the
- * draft state.
+ * draft state, and every record whose validation decodes CBOR is isolated with
+ * {@link isolateRecordBuffers} first so those validators never touch the
+ * caller's buffers (ADR-0074).
  */
 function createRepositories(
   state: BackendState,
@@ -528,22 +531,23 @@ function createRepositories(
       },
       set(record) {
         assertTransactionActive();
-        assertStoredObserveAnnotation(record, "record");
-        ensureRunExists(state, record.runId, "record.runId");
+        const candidate = isolateRecordBuffers(record);
+        assertStoredObserveAnnotation(candidate, "record");
+        ensureRunExists(state, candidate.runId, "record.runId");
 
-        if (record.turnNodeHash !== null) {
+        if (candidate.turnNodeHash !== null) {
           ensureTurnNodeExists(
             state,
-            record.turnNodeHash,
+            candidate.turnNodeHash,
             "record.turnNodeHash"
           );
         }
 
-        const records = state.observeAnnotations.get(record.runId) ?? [];
+        const records = state.observeAnnotations.get(candidate.runId) ?? [];
         // Observe annotations are append-only evidence, so identical payloads
         // must survive as distinct records instead of being deduplicated.
-        records.push(cloneStoredObserveAnnotation(record));
-        state.observeAnnotations.set(record.runId, records);
+        records.push(cloneStoredObserveAnnotation(candidate));
+        state.observeAnnotations.set(candidate.runId, records);
         return Promise.resolve();
       },
     },
@@ -561,12 +565,13 @@ function createRepositories(
       },
       async put(record) {
         assertTransactionActive();
-        assertStoredObject(record, "record");
-        await assertStoredObjectIdentity(record, "record");
+        const candidate = isolateRecordBuffers(record);
+        assertStoredObject(candidate, "record");
+        await assertStoredObjectIdentity(candidate, "record");
         putImmutableRecord(
           state.objects,
-          record.hash,
-          record,
+          candidate.hash,
+          candidate,
           cloneStoredObject,
           areStoredObjectsEqual,
           "stored object"
@@ -583,12 +588,13 @@ function createRepositories(
       },
       async put(record) {
         assertTransactionActive();
-        assertStoredOrderedPathChunk(record, "record");
-        await assertStoredOrderedPathChunkIdentity(record, "record");
+        const candidate = isolateRecordBuffers(record);
+        assertStoredOrderedPathChunk(candidate, "record");
+        await assertStoredOrderedPathChunkIdentity(candidate, "record");
         putImmutableRecord(
           state.orderedPathChunks,
-          record.chunkHash,
-          record,
+          candidate.chunkHash,
+          candidate,
           cloneStoredOrderedPathChunk,
           areStoredOrderedPathChunksEqual,
           "ordered path chunk"
@@ -631,17 +637,18 @@ function createRepositories(
       },
       set(record) {
         assertTransactionActive();
-        assertStoredRun(record, "record");
+        const candidate = isolateRecordBuffers(record);
+        assertStoredRun(candidate, "record");
         const branch = ensureBranchExists(
           state,
-          record.branchId,
+          candidate.branchId,
           "record.branchId"
         );
-        const turn = ensureTurnExists(state, record.turnId, "record.turnId");
-        ensureSchemaRecordExists(state, record.schemaId, "record.schemaId");
+        const turn = ensureTurnExists(state, candidate.turnId, "record.turnId");
+        ensureSchemaRecordExists(state, candidate.schemaId, "record.schemaId");
         const startTurnNode = ensureTurnNodeExists(
           state,
-          record.startTurnNodeHash,
+          candidate.startTurnNodeHash,
           "record.startTurnNodeHash"
         );
         const thread = ensureThreadExists(
@@ -651,7 +658,7 @@ function createRepositories(
         );
         assertTurnNodeBelongsToThread(
           state,
-          record.startTurnNodeHash,
+          candidate.startTurnNodeHash,
           thread,
           "record.startTurnNodeHash"
         );
@@ -664,13 +671,13 @@ function createRepositories(
           );
         }
 
-        if (startTurnNode.schemaId !== record.schemaId) {
+        if (startTurnNode.schemaId !== candidate.schemaId) {
           throw persistenceError(
             "stored runs must use the schema of their start turn node",
             "memory_backend_run_schema_mismatch",
             {
-              runId: record.runId,
-              runSchemaId: record.schemaId,
+              runId: candidate.runId,
+              runSchemaId: candidate.schemaId,
               startTurnNodeHash: startTurnNode.hash,
               turnNodeSchemaId: startTurnNode.schemaId,
             }
@@ -680,39 +687,39 @@ function createRepositories(
         assertRunStartTurnNodeWithinTurnSpan(
           state,
           turn,
-          record.startTurnNodeHash,
+          candidate.startTurnNodeHash,
           "record.startTurnNodeHash"
         );
 
-        const existingRun = state.runs.get(record.runId);
+        const existingRun = state.runs.get(candidate.runId);
         if (existingRun === undefined) {
-          if (record.status !== "running") {
+          if (candidate.status !== "running") {
             throw persistenceError(
               "stored runs must be created in the running state",
               "memory_backend_run_initial_status_invalid",
               {
-                runId: record.runId,
-                status: record.status,
+                runId: candidate.runId,
+                status: candidate.status,
               }
             );
           }
 
-          if (branch.headTurnNodeHash !== record.startTurnNodeHash) {
+          if (branch.headTurnNodeHash !== candidate.startTurnNodeHash) {
             throw persistenceError(
               "stored runs must start from the current branch head when first created",
               "memory_backend_run_start_turn_node_mismatch",
               {
                 branchHeadTurnNodeHash: branch.headTurnNodeHash,
-                runId: record.runId,
-                startTurnNodeHash: record.startTurnNodeHash,
+                runId: candidate.runId,
+                startTurnNodeHash: candidate.startTurnNodeHash,
               }
             );
           }
         } else {
-          assertRunUpdateIsLegal(existingRun, record);
+          assertRunUpdateIsLegal(existingRun, candidate);
         }
 
-        state.runs.set(record.runId, cloneStoredRun(record));
+        state.runs.set(candidate.runId, cloneStoredRun(candidate));
         return Promise.resolve();
       },
     },
@@ -726,11 +733,12 @@ function createRepositories(
       },
       put(record) {
         assertTransactionActive();
-        assertStoredSchema(record, "record");
+        const candidate = isolateRecordBuffers(record);
+        assertStoredSchema(candidate, "record");
         putImmutableRecord(
           state.schemas,
-          record.schemaId,
-          record,
+          candidate.schemaId,
+          candidate,
           cloneStoredSchema,
           areStoredSchemasEqual,
           "stored schema"
@@ -770,9 +778,10 @@ function createRepositories(
       },
       set(record) {
         assertTransactionActive();
-        assertStoredStagedResult(record, "record");
-        const run = ensureRunExists(state, record.runId, "record.runId");
-        ensureObjectExists(state, record.objectHash, "record.objectHash");
+        const candidate = isolateRecordBuffers(record);
+        assertStoredStagedResult(candidate, "record");
+        const run = ensureRunExists(state, candidate.runId, "record.runId");
+        ensureObjectExists(state, candidate.objectHash, "record.objectHash");
 
         if (run.status !== "running") {
           throw persistenceError(
@@ -786,22 +795,22 @@ function createRepositories(
         }
 
         const runResults =
-          state.stagedResults.get(record.runId) ??
+          state.stagedResults.get(candidate.runId) ??
           new Map<string, StoredStagedResult>();
-        const existingResult = runResults.get(record.taskId);
+        const existingResult = runResults.get(candidate.taskId);
 
         if (existingResult === undefined) {
-          runResults.set(record.taskId, cloneStoredStagedResult(record));
+          runResults.set(candidate.taskId, cloneStoredStagedResult(candidate));
         } else {
           ensureImmutableRecordMatch(
             existingResult,
-            record,
+            candidate,
             areStoredStagedResultsEqual,
             "stored staged result"
           );
         }
 
-        state.stagedResults.set(record.runId, runResults);
+        state.stagedResults.set(candidate.runId, runResults);
         return Promise.resolve();
       },
     },
@@ -902,17 +911,22 @@ function createRepositories(
       },
       async put(record) {
         assertTransactionActive();
-        assertStoredTurnNode(record, "record");
-        await assertStoredTurnNodeIdentity(record, "record");
-        ensureTurnTreeExists(state, record.turnTreeHash, "record.turnTreeHash");
-        ensureSchemaRecordExists(state, record.schemaId, "record.schemaId");
+        const candidate = isolateRecordBuffers(record);
+        assertStoredTurnNode(candidate, "record");
+        await assertStoredTurnNodeIdentity(candidate, "record");
+        ensureTurnTreeExists(
+          state,
+          candidate.turnTreeHash,
+          "record.turnTreeHash"
+        );
+        ensureSchemaRecordExists(state, candidate.schemaId, "record.schemaId");
 
-        if (record.eventHash !== null) {
-          ensureObjectExists(state, record.eventHash, "record.eventHash");
+        if (candidate.eventHash !== null) {
+          ensureObjectExists(state, candidate.eventHash, "record.eventHash");
         }
 
         for (const objectHash of decodeTurnNodeConsumedStagedResultObjectHashes(
-          record
+          candidate
         )) {
           ensureObjectExists(
             state,
@@ -921,18 +935,18 @@ function createRepositories(
           );
         }
 
-        if (record.previousTurnNodeHash !== null) {
+        if (candidate.previousTurnNodeHash !== null) {
           ensureTurnNodeExists(
             state,
-            record.previousTurnNodeHash,
+            candidate.previousTurnNodeHash,
             "record.previousTurnNodeHash"
           );
         }
 
         putImmutableRecord(
           state.turnNodes,
-          record.hash,
-          record,
+          candidate.hash,
+          candidate,
           cloneStoredTurnNode,
           areStoredTurnNodesEqual,
           "stored turn node"
@@ -971,9 +985,10 @@ function createRepositories(
             "record.turnTreeHash"
           );
           const schema = getSchemaForTurnTree(state, turnTree);
-          assertStoredTurnTreePath(record, schema, "record");
+          const candidate = isolateRecordBuffers(record);
+          assertStoredTurnTreePath(candidate, schema, "record");
 
-          const compositeKey = `${record.turnTreeHash}:${record.path}`;
+          const compositeKey = `${candidate.turnTreeHash}:${candidate.path}`;
           if (seenCompositeKeys.has(compositeKey)) {
             throw persistenceError(
               "turn tree path batches must not contain duplicate keys",
@@ -986,7 +1001,7 @@ function createRepositories(
 
           const normalizedRecord = await normalizeStoredTurnTreePath(
             state,
-            record,
+            candidate,
             now
           );
           const treePaths =
@@ -1027,12 +1042,13 @@ function createRepositories(
           record.schemaId,
           "record.schemaId"
         );
-        assertStoredTurnTree(record, schema, "record");
-        await assertStoredTurnTreeIdentity(record, schema, "record");
+        const candidate = isolateRecordBuffers(record);
+        assertStoredTurnTree(candidate, schema, "record");
+        await assertStoredTurnTreeIdentity(candidate, schema, "record");
         putImmutableRecord(
           state.turnTrees,
-          record.hash,
-          record,
+          candidate.hash,
+          candidate,
           cloneStoredTurnTree,
           areStoredTurnTreesEqual,
           "stored turn tree"

@@ -26,7 +26,7 @@ import type {
   StoredTurn,
   StoredTurnNode,
 } from "@tuvren/kernel-protocol";
-import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import { decodeDetachedKernelRecord } from "./memory-backend-buffer-isolation.js";
 import {
   ensureTurnExists,
   ensureTurnNodeExists,
@@ -675,7 +675,9 @@ export function getRunActiveTurnNodeHash(run: StoredRun): string {
 export function decodeTurnNodeConsumedStagedResultObjectHashes(
   turnNode: StoredTurnNode
 ): string[] {
-  const decodedValue = decodeDeterministicKernelRecord(
+  // Decoded through a detached copy so the decoder's `dataView` marker never
+  // lands on a caller-supplied or stored turn node's buffer (ADR-0074).
+  const decodedValue = decodeDetachedKernelRecord(
     turnNode.consumedStagedResultsCbor
   );
 

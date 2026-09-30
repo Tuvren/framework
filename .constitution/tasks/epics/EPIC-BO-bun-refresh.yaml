@@ -46,7 +46,10 @@ tickets:
       recipe: reference-host-memory-scenario
     flows: []
     certainty: settled
-    status: planned
+    status: done
+    deviations:
+      - files: [typescript/kernel/backends/memory/test/buffer-ownership.test.ts]
+        justification: "Step-0 user ruling authorizes this exact new package-local regression file; all 77 pre-existing tests remain unchanged. The original ticket and epic list only src for memory code."
   - id: KRT-BO002
     title: Refresh devenv and migrate Weaver atomically
     type: Chore

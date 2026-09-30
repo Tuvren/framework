@@ -19,7 +19,6 @@ import {
   assertStoredOrderedPathChunk,
   assertStoredOrderedPathChunkIdentity,
   assertTurnTreeSchema,
-  decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
   hashKernelRecord,
   type StoredOrderedPathChunk,
@@ -28,6 +27,7 @@ import {
   type StoredTurnTreePath,
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+import { decodeDetachedKernelRecord } from "./memory-backend-buffer-isolation.js";
 import {
   areStoredOrderedPathChunksEqual,
   cloneStoredObserveAnnotation,
@@ -260,12 +260,14 @@ export function getSchemaForTurnTree(
   return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
 }
 
+// Decoded through a detached copy so the decoder's `dataView` marker never
+// lands on a stored schema, path, or manifest buffer (ADR-0074).
 /** Decodes deterministic-CBOR bytes into a validated `TurnTreeSchema`. */
 export function decodeTurnTreeSchema(
   bytes: Uint8Array,
   label: string
 ): TurnTreeSchema {
-  const decodedValue = decodeDeterministicKernelRecord(bytes);
+  const decodedValue = decodeDetachedKernelRecord(bytes);
   assertTurnTreeSchema(decodedValue, label);
   return decodedValue;
 }
@@ -282,7 +284,7 @@ export function decodeHashStringArray(
   bytes: Uint8Array,
   label: string
 ): string[] {
-  const decodedValue = decodeDeterministicKernelRecord(bytes);
+  const decodedValue = decodeDetachedKernelRecord(bytes);
 
   if (!Array.isArray(decodedValue)) {
     throw persistenceError(
@@ -319,7 +321,7 @@ export function assertTurnTreeManifestMatchesStoredPaths(
   turnTree: StoredTurnTree
 ): void {
   const schema = getSchemaForTurnTree(state, turnTree);
-  const manifestValue = decodeDeterministicKernelRecord(turnTree.manifestCbor);
+  const manifestValue = decodeDetachedKernelRecord(turnTree.manifestCbor);
   const storedPaths = state.turnTreePaths.get(turnTree.hash);
 
   if (
