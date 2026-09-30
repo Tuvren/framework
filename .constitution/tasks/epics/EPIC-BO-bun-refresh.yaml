@@ -75,7 +75,7 @@ tickets:
       evidence: "Apply the refreshed environment and run bun run codegen and bun run verify. Probe Weaver manifest resolution and PostgreSQL major 17. Expect stable second regeneration of semantic-conventions.md, otel-attributes.json, the TypeScript helper and Rust helper, and no semantic vocabulary drift. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: assumed
-    status: in_progress
+    status: done
     deviations:
       - files:
           - typescript/runtime/src/lib/runtime-core-recovery.ts
