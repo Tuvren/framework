@@ -1,0 +1,20 @@
+owner: KRT-BO001
+mode: contract_test
+produced:
+  date: 2026-09-29
+  commit: dff2df9f8dd5dd37fe4054081bcf22479745bd82
+  command: Apply source.patch to the producing parent; inside its devenv environment run LC_ALL=C bun run nx run backend-memory:test, :typecheck, :build, :lint; from the package directory run the pinned Bun 1.4.2 candidate test; run the reference-host-memory-scenario recipe and LC_ALL=C bun run check --base=dff2df9f8dd5dd37fe4054081bcf22479745bd82. Exact historical invocations and exit codes are retained in lead-checks.json.
+files:
+  - path: README.md
+    sha256: 56b03f4c994238e8422aebb199279806615a1ac8093c9a2c4d691b46ad45f29b
+    bytes: 2786
+    role: transcript
+  - path: transcript-index.json
+    sha256: a6d8a42f3826a44bb43a29840a34cddf6e4bf04f31684f06577f862231a4a694
+    bytes: 4373
+    role: measurement
+  - path: transcripts.tar.gz
+    sha256: 3a505f31a085a5a8d96d1f0cce533687bdea115f1f5ec29a43536db42b1fd415
+    bytes: 25739
+    role: transcript
+pass_criteria: All original77 tests unchanged and passing plus5 ownership tests on Bun1.3.10 and1.4.2; original3 candidate regressions fixed; malformed-write supplementary outcomes identical; all11 lead checks exit0; host drive contains the streaming scenario; direct memory patch coverage; no encoding or API shape changes.

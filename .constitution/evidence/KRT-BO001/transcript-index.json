@@ -1,0 +1,149 @@
+{
+  "archive": "transcripts.tar.gz",
+  "members": [
+    {
+      "path": "candidate-baseline.txt",
+      "sha256": "f262699ceef5f34bb55942145ef289270a1ad8c1a3d63a0c073e866321d62e8d",
+      "bytes": 9282,
+      "role": "log"
+    },
+    {
+      "path": "final-candidate-bun-full.txt",
+      "sha256": "9d591ee04ead61ce584799087b39cad9da7a18085ecc7d9cd173dc5103db5643",
+      "bytes": 107,
+      "role": "log"
+    },
+    {
+      "path": "final-inventory-candidate-bun.txt",
+      "sha256": "07f69277ea4fad9e35803ad5ee6d99dfa3ad78858d5217f3d9011181bb294f6f",
+      "bytes": 578,
+      "role": "log"
+    },
+    {
+      "path": "final-inventory-repo-bun.txt",
+      "sha256": "07f69277ea4fad9e35803ad5ee6d99dfa3ad78858d5217f3d9011181bb294f6f",
+      "bytes": 578,
+      "role": "log"
+    },
+    {
+      "path": "final-repo-bun-full.txt",
+      "sha256": "88030d1c3caa2d70953ed14f54bc7d1bdcab9a0ffa13343049c25070ddea5711",
+      "bytes": 107,
+      "role": "log"
+    },
+    {
+      "path": "lead-candidate-memory-tests.log",
+      "sha256": "5af7e705f69d0ec5c5c53d72fb46896f82184526628c9331f724fb54d0ac75e7",
+      "bytes": 107,
+      "role": "log"
+    },
+    {
+      "path": "lead-changeset.log",
+      "sha256": "bb27ed87ea2b00d96b5433124ead95a5af897d0285d59abd31fe2250a9d33417",
+      "bytes": 168,
+      "role": "log"
+    },
+    {
+      "path": "lead-check.log",
+      "sha256": "c3dea0c063e6796e95f61774266da44eb99df471ce7468036372a8eb2e34c453",
+      "bytes": 62023,
+      "role": "log"
+    },
+    {
+      "path": "lead-checks.json",
+      "sha256": "334928fc25787e6208ca467da9fd347f5aa479caf5af6bf685e3d8eedfefd1f2",
+      "bytes": 3507,
+      "role": "measurement"
+    },
+    {
+      "path": "lead-host-doctor.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "role": "log"
+    },
+    {
+      "path": "lead-host-drive.log",
+      "sha256": "b5d1bad8b850609a139d977b88f0a0ec71fd1427e02b27347744056d842b7b39",
+      "bytes": 8867,
+      "role": "log"
+    },
+    {
+      "path": "lead-host-launch.log",
+      "sha256": "992dbec1d6e644ee53849142393b45b841a6cef3a771bdcb70960939d4d915be",
+      "bytes": 3533,
+      "role": "log"
+    },
+    {
+      "path": "lead-memory-build.log",
+      "sha256": "7cbd3a999ed1c938864ae6a9bdba880cd8cc2e197a59a6cd92630159778f8074",
+      "bytes": 1169,
+      "role": "log"
+    },
+    {
+      "path": "lead-memory-lint.log",
+      "sha256": "7c436d3d2c1abac4de98b4eba005f43377a38f795f2cf5d04c2fddbce691498b",
+      "bytes": 397,
+      "role": "log"
+    },
+    {
+      "path": "lead-memory-tests.log",
+      "sha256": "c897603b1cf619a36cf7f51401e5e0c5b6c284d805ddeb12bbea835217c94e83",
+      "bytes": 1610,
+      "role": "log"
+    },
+    {
+      "path": "lead-memory-typecheck.log",
+      "sha256": "a36e1a1f374df0c9a708c22396fd5d8f435997fdbeb0ba415c808804aceb8725",
+      "bytes": 375,
+      "role": "log"
+    },
+    {
+      "path": "lead-original-tests-unchanged.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "role": "log"
+    },
+    {
+      "path": "red-candidate-bun-ownership.txt",
+      "sha256": "4b5b97dcb1b2fa8f909a45b9ba4acfd0493b3fd025e39048e93d75235d51ae1b",
+      "bytes": 3360,
+      "role": "log"
+    },
+    {
+      "path": "red-inventory-candidate-bun.txt",
+      "sha256": "274caf8e1ad63d8b25f33df25d83316d00b967f6f0196637ac73f59d16b5d5ee",
+      "bytes": 605,
+      "role": "log"
+    },
+    {
+      "path": "red-inventory-repo-bun.txt",
+      "sha256": "274caf8e1ad63d8b25f33df25d83316d00b967f6f0196637ac73f59d16b5d5ee",
+      "bytes": 605,
+      "role": "log"
+    },
+    {
+      "path": "red-repo-bun-ownership.txt",
+      "sha256": "c2ce7951e77f11837ef7558e5b656da5d6c9efda5f2a0b8c1504ba14652c66f9",
+      "bytes": 3360,
+      "role": "log"
+    },
+    {
+      "path": "rejection-parity-postfix.txt",
+      "sha256": "32e5805147a5a52de372925ad68da29534eb19976575fde1c8528983203ab6f8",
+      "bytes": 2305,
+      "role": "log"
+    },
+    {
+      "path": "rejection-parity-prefix.txt",
+      "sha256": "32e5805147a5a52de372925ad68da29534eb19976575fde1c8528983203ab6f8",
+      "bytes": 2305,
+      "role": "log"
+    },
+    {
+      "path": "source.patch",
+      "sha256": "f425d8d660c1ad1bb4c230b15d065da6710920d562b35a867a8f2a0cbac8be5f",
+      "bytes": 37007,
+      "role": "baseline"
+    }
+  ]
+}
