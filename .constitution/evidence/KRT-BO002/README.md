@@ -8,4 +8,6 @@ The root codegen refresh also changes ignored derived interop bindings under the
 
 A1 moved the worktree out of the shipped preset's ignored cache root. No Biome configuration or unrelated source was changed; fresh pinned Biome2.5.14 workspace lint passes. Direct changeset coverage includes telemetry-semconv, with memory/runtime/SDK coverage retained from earlier milestones. M1 evidence metadata receives only the independently requested pinned original-test recheck.
 
+Review correction at producing tree b318af2c8282d4cb0f0ab74dcd9a28cb3a8850ca: the original compound-command capture redirected only its final condition, leaving the server log empty. The lead grouped the entire command, reran SHOW server_version and SHOW server_version_num, and captured17.11/170011 with exit0. server-proof-recheck.json retains the exact command and status. This is a durable proof correction, with no environment or product-source change.
+
 Exact native outputs and source patches are retained in transcripts.tar.gz. Extract it in disposable scratch; transcript-index.json pins every member by SHA-256 and byte count. Historical paths remain labeled recorded facts; repeat the prescribed commands in the current repository environment.
