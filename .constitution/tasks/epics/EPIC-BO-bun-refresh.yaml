@@ -101,7 +101,7 @@ tickets:
       evidence: "Assert installed Bun and packageManager match, frozen install is repeatable, the three upgrade holds are absent, and the unchanged memory backend suite and full verification pass on that binary."
     flows: []
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-BO004
     title: Measure isolation and credential-scoping behavior
     type: Chore
