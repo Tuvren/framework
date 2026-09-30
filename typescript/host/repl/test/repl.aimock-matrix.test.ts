@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { LLMock } from "@copilotkit/aimock";
+import { isChatCompletionBody, LLMock } from "@copilotkit/aimock";
 import { runReplScenario } from "@tuvren/repl-host";
 import {
   AIMOCK_PROVIDER_CASES,
@@ -164,7 +164,8 @@ describe("repl host scenarios aimock matrix", () => {
         expect(
           requests.some(
             (request) =>
-              request.body !== null && hasSearchToolContinuation(request.body)
+              isChatCompletionBody(request.body) &&
+              hasSearchToolContinuation(request.body)
           )
         ).toBe(true);
       } finally {
@@ -243,7 +244,8 @@ describe("repl host scenarios aimock matrix", () => {
         expect(
           requests.some(
             (request) =>
-              request.body !== null && hasApprovalToolContinuation(request.body)
+              isChatCompletionBody(request.body) &&
+              hasApprovalToolContinuation(request.body)
           )
         ).toBe(true);
       } finally {

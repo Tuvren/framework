@@ -165,4 +165,7 @@ tickets:
       recipe: reference-host-memory-scenario
     flows: []
     certainty: assumed
-    status: planned
+    status: done
+    deviations:
+      - files: [".constitution/tasks/epics/EPIC-BO-bun-refresh.yaml", ".constitution/evidence/KRT-BO006"]
+        justification: "A4 adopts independent execution judgment for an assumed historical evidence premise. The original description and acceptance clause about seven draft failures remain verbatim. PR130 CI stopped at five JournalBody type errors; its exact recoverable snapshot and clean native Bun controls reproduce two SDK module-identity steering failures, two approval invalid_stream_event failures from the bundled OpenAI 3.0.118 parallel tool-start order, and two additional PostgreSQL setup failures when connection variables are removed. The observed maximum is six, never seven; the original draft, exact inputs and any seventh identity are unavailable. The operational acceptance is causal reproduction of every named category, exact observed counts and explicit disclosure of that limitation, plus unchanged current contract assertions. Native Bun declarations repeat the decisive provider comparison; current BO retains OpenAI 3.0.53 and passes 135 host tests in plain and isolated modes, 79 original assertions, six journal regressions, the full gate and live probe. Independent milestone review must agree with A4 before closure. No product scope, source semantics or public contract changed; future provider compatibility is routed upstream."

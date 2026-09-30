@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { LLMock } from "@copilotkit/aimock";
+import { isChatCompletionBody, LLMock } from "@copilotkit/aimock";
 import { runReplScenario } from "@tuvren/repl-host";
 import {
   assertStructuredResponseFormat,
@@ -78,7 +78,14 @@ describe("repl host scenarios aimock openai", () => {
         ],
       });
       expect(request?.path).toBe("/v1/chat/completions");
-      expect(request?.body?.stream).toBe(true);
+
+      const requestBody = request?.body;
+
+      if (!isChatCompletionBody(requestBody)) {
+        throw new Error("aimock recorded a non-chat-completion request body");
+      }
+
+      expect(requestBody.stream).toBe(true);
       expect(request?.response.status).toBe(200);
       expect(request?.response.fixture === null).toBe(false);
     } finally {
@@ -126,8 +133,14 @@ describe("repl host scenarios aimock openai", () => {
           "turn.end",
         ],
       });
-      expect(request?.body?.response_format?.type).toBe("json_schema");
-      assertStructuredResponseFormat(request?.body?.response_format);
+      const requestBody = request?.body;
+
+      if (!isChatCompletionBody(requestBody)) {
+        throw new Error("aimock recorded a non-chat-completion request body");
+      }
+
+      expect(requestBody.response_format?.type).toBe("json_schema");
+      assertStructuredResponseFormat(requestBody);
       expect(request?.response.status).toBe(200);
     } finally {
       await mock.stop();
@@ -200,13 +213,17 @@ describe("repl host scenarios aimock openai", () => {
         ],
       });
       expect(requests.length).toBe(2);
-      expect(requests.some((request) => request.body?.stream === true)).toBe(
-        true
-      );
       expect(
         requests.some(
           (request) =>
-            request.body !== null && hasSearchToolContinuation(request.body)
+            isChatCompletionBody(request.body) && request.body.stream === true
+        )
+      ).toBe(true);
+      expect(
+        requests.some(
+          (request) =>
+            isChatCompletionBody(request.body) &&
+            hasSearchToolContinuation(request.body)
         )
       ).toBe(true);
     } finally {
@@ -293,7 +310,8 @@ describe("repl host scenarios aimock openai", () => {
       expect(
         requests.some(
           (request) =>
-            request.body !== null && hasApprovalToolContinuation(request.body)
+            isChatCompletionBody(request.body) &&
+            hasApprovalToolContinuation(request.body)
         )
       ).toBe(true);
     } finally {
