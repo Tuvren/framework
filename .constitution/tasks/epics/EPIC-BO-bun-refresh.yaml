@@ -120,7 +120,7 @@ tickets:
       evidence: "Apply the installed Bun test help and compare ordinary and isolated test runs across the 204-file inventory. Probe dependency trust and registry auth without publishing or recording credentials. Expect equivalent test outcomes, authorized installation only, and no credential leakage."
     flows: []
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-BO005
     title: Settle the Bun stack pin separately
     type: Chore
