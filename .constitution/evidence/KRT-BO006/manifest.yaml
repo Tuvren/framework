@@ -1,0 +1,20 @@
+owner: KRT-BO006
+mode: contract_test
+produced:
+  date: 2026-09-30
+  commit: 672711dcb43a1c1059644010b9149b3d09b54ece
+  command: devenv shell -- bun /home/oscar/.cache/pi-subagent/framework/run-checks.ts /home/oscar/.cache/pi-subagent/framework/wf-bo-m6/lead-check-config.json
+files:
+  - path: README.md
+    sha256: 7773dc607c88781485a2284130bded046b9c2f05b8dcd21354c527071b9274b5
+    bytes: 4713
+    role: transcript
+  - path: transcript-index.json
+    sha256: 096a842ba75c04f9916142cda9d323a98493a9b745586db96746743f469d0416
+    bytes: 20370
+    role: measurement
+  - path: transcripts.tar.gz
+    sha256: 5d29063d43e0399c68cdc9b59088338e23251cbdd8288d99baf989d338dca988
+    bytes: 274704
+    role: transcript
+pass_criteria: "Aimock1.43.0 installed/declared/locked/spec pins and exported guard agree; all79old assertions preserved and no new unsafe types/suppressions; six actual journal regressions and135host tests plain/isolate pass; full33gate/live recipe and constitution0errors4existingwarnings pass; only aimock hold removed and unrelated retained resolutions unchanged. A4 historical criterion: causal reproduction of every named category with exact observed counts; originalseven draft/list and any seventh identity explicitly unverified; nativeCLI OpenAI3.0.53/3.0.118/restore pair129/0,127/2,129/0, no seven-cause claim."

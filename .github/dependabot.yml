@@ -47,14 +47,6 @@ updates:
       - dependency-name: "ultracite"
         versions:
           - ">7.4.2"
-      # @copilotkit/aimock 1.43.0 ships a regular expression that Bun 1.3.10 cannot
-      # parse (import fails with "range out of order in character class"), so it
-      # needs the Bun 1.4 upgrade (EPIC-BO); it also changes recorded request body
-      # types and needs the isChatCompletionBody guard in the host-repl test helpers.
-      # Hold it at the current pin until that epic lands, then remove this entry.
-      - dependency-name: "@copilotkit/aimock"
-        versions:
-          - ">1.15.1"
   - package-ecosystem: cargo
     directory: /
     schedule:

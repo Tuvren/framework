@@ -15,7 +15,12 @@
  */
 
 import { expect } from "bun:test";
-import type { ChatCompletionRequest, LLMock } from "@copilotkit/aimock";
+import type {
+  ChatCompletionRequest,
+  JournalBody,
+  LLMock,
+} from "@copilotkit/aimock";
+import { isChatCompletionBody } from "@copilotkit/aimock";
 import type { ReplProviderMode, ReplScenarioReport } from "@tuvren/repl-host";
 import { TuvrenRuntimeError } from "@tuvren/sdk";
 
@@ -160,7 +165,17 @@ export function expectSurfaceCoverage(
   }
 }
 
-export function assertStructuredResponseFormat(value: unknown): void {
+export function assertStructuredResponseFormat(
+  body: JournalBody | null | undefined
+): void {
+  if (!isChatCompletionBody(body)) {
+    throw new Error(
+      "structured response_format requires a chat completion request body"
+    );
+  }
+
+  const value = body.response_format;
+
   if (!isPlainRecord(value)) {
     throw new Error("structured response_format was not an object");
   }
@@ -193,8 +208,12 @@ export function assertStructuredResponseFormat(value: unknown): void {
 }
 
 export function hasSearchToolContinuation(
-  request: ChatCompletionRequest
+  request: JournalBody | null | undefined
 ): boolean {
+  if (!isChatCompletionBody(request)) {
+    return false;
+  }
+
   const assistantToolCall = findAssistantToolCall(request, "search");
   const toolMessage = findToolMessageForCall(
     request,
@@ -224,8 +243,12 @@ export function hasSearchToolContinuation(
 }
 
 export function hasApprovalToolContinuation(
-  request: ChatCompletionRequest
+  request: JournalBody | null | undefined
 ): boolean {
+  if (!isChatCompletionBody(request)) {
+    return false;
+  }
+
   const searchCall = findAssistantToolCall(request, "search");
   const emailCall = findAssistantToolCall(request, "email");
   const searchMessage = findToolMessageForCall(
