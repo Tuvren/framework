@@ -2,19 +2,19 @@ owner: KRT-BO004
 mode: runbook_probe
 produced:
   date: 2026-09-30
-  commit: 782a24b6ade83635b17dadd6b1094abadb88bf78
-  command: "Original observations: source commit 3ec59ce and retained M4 native receipts. PR round-two correction at parent commit 782a24b grades native XML elements with the replay/ CLI procedures. The original 237 members retain their paths and bytes; all 70 round-one correction members retain their bytes under prior-round1/replay/. Current 27-control and exact reviewer-reproduction proof is indexed under replay/ and replay/lead-round2/."
+  commit: 8182f568bc0a5b1a7e52512483b4c5162b5ccc97
+  command: "Original observations: source commit 3ec59ce and retained M4 receipts. PR round-three correction at parent 8182f56 validates the complete execution-element hierarchy with current replay/ procedures. Original 237 members retain paths/bytes; prior 70 round-one and 200 round-two correction members retain bytes under prior-round1/replay/ and prior-round2/replay/. Current 32-control and exact reviewer-reproduction proof is indexed under replay/ and replay/lead-round3/."
 files:
   - path: README.md
-    sha256: 2b648a7a72c33104b1cb02e07312fbe0a3f16f6f4ddc49a19b5a88758d5be2fe
-    bytes: 4685
+    sha256: 51c6dc2677166988c4ab2002c2c99653fc1ab74580e1266cc3ca5cc66d830f85
+    bytes: 4907
     role: transcript
   - path: transcript-index.json
-    sha256: 86433d6f2478fcb2de02f3d658114f602b8bd506ae2c0836aa6495a0c69e45ac
-    bytes: 107019
+    sha256: 0db789d5814a9ef0581f3a2a4ab5d01eb991461aca639b506749939d7212e572
+    bytes: 167047
     role: measurement
   - path: transcripts.tar.gz
-    sha256: f0d351f799a1ed480b595a2773d4c8050101c7f2cfe1af1d9902b03a8a1af90f
-    bytes: 428780
+    sha256: 73e2f19b347efea79cda08ee965350cfe8704d1af3e720d6d762e38d40be6cdd
+    bytes: 639032
     role: transcript
-pass_criteria: The M4 snapshot of 204 test files has canonical or direct checks. Both modes pass 29 Bun projects, 179 files and 1,596 cases, plus nine tools files and 107 cases; SQLite passes 115 cases through Node. Current replay grades actual native XML elements and every Bun project/file, fails on missing or divergent outcomes, unusable report hierarchy or counts, and empty coverage; all 27 controls have expected exits, including comment/CDATA/root negatives and valid fake-tag literals. Ordinary execution shares state and explicit isolation resets it. Eight trust and 14 authentication/TLS scenarios pass with synthetic credentials and no leakage; all 33 original full-gate steps pass; no original product/config/assertion changes; listeners stopped.
+pass_criteria: The M4 snapshot of 204 test files has canonical or direct checks. Both modes pass 29 Bun projects, 179 files and 1,596 cases, plus nine tools files and 107 cases; SQLite passes 115 cases through Node. Current replay grades actual native XML elements and the complete execution hierarchy, including testcase subtrees; every missing/divergent outcome, unusable hierarchy/count and empty coverage fails. All 32 controls have expected exits, including comment/CDATA/root and nested-execution negatives. Ordinary execution shares state and explicit isolation resets it. Eight trust and 14 authentication/TLS scenarios pass with synthetic credentials and no leakage; all 33 original full-gate steps pass; no original product/config/assertion changes; listeners stopped.
