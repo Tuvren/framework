@@ -1,0 +1,143 @@
+{
+  "archive": "transcripts.tar.gz",
+  "members": [
+    {
+      "path": "migration-source.patch",
+      "sha256": "26eab4d725f52f8eb15e4ce1c9f8386a74ec0e0eb47b1e90a3ef883d98c4e706",
+      "bytes": 4676,
+      "role": "log"
+    },
+    {
+      "path": "10-devenv-update-nixpkgs.log",
+      "sha256": "48b843de7de6e6b1df9cec17df8bafea00df9825f089669e61b4bbdaaf1508ab",
+      "bytes": 4071,
+      "role": "log"
+    },
+    {
+      "path": "12-devenv-shell-new-profile-probe.log",
+      "sha256": "9884bc19e6a449e29a9ed67f46d00c95d4eb5ebb8120ee6c2fcb57512f3a88d2",
+      "bytes": 1096,
+      "role": "log"
+    },
+    {
+      "path": "14-pre-migration-weaver-check-new-profile.log",
+      "sha256": "d9c4b5c385c0c7639da2ced150c1425b0e7f661c6a428cb412525320fa1ed88a",
+      "bytes": 866,
+      "role": "log"
+    },
+    {
+      "path": "20-codegen-run1.log",
+      "sha256": "4117a3a699c54022c0f65988e758e83d45b3ad299bd0fcb6d94f63e2f24f33a2",
+      "bytes": 179,
+      "role": "log"
+    },
+    {
+      "path": "22-codegen-run2-skipcache.log",
+      "sha256": "4117a3a699c54022c0f65988e758e83d45b3ad299bd0fcb6d94f63e2f24f33a2",
+      "bytes": 179,
+      "role": "log"
+    },
+    {
+      "path": "24-weaver-manifest-resolution.log",
+      "sha256": "0deb64fd380b031653a1bdc01082873d1974baa722d63935c8006cb0d8234b96",
+      "bytes": 480,
+      "role": "log"
+    },
+    {
+      "path": "31-root-codegen-rerun.exit.txt",
+      "sha256": "418a5c17f33c70e99b0cc0a07fce69191489cfedc94164bfa903785777c5bd4b",
+      "bytes": 7,
+      "role": "log"
+    },
+    {
+      "path": "41-weaver-abi-normalized-compare.txt",
+      "sha256": "430724e467014b287183197dbdb64e08220b5c2a94735ccb0dc30b067697ecd7",
+      "bytes": 404,
+      "role": "log"
+    },
+    {
+      "path": "baseline-artifact-hashes.txt",
+      "sha256": "01b12776dbdbfea57946e1521035034f294467d1433d00b94affaf2c64060344",
+      "bytes": 488,
+      "role": "log"
+    },
+    {
+      "path": "lead-tools-and-pg.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "role": "log"
+    },
+    {
+      "path": "lead-weaver-manifest.log",
+      "sha256": "8ebcef3db36f57dca87ebae78bf6b8e7d19ff943b5777e23cb2ea468d660f5db",
+      "bytes": 210,
+      "role": "log"
+    },
+    {
+      "path": "lead-codegen.log",
+      "sha256": "0ae94f191200323845d4716748d1b95ec252c27fc75c4e84a24125197bbb66e4",
+      "bytes": 302,
+      "role": "log"
+    },
+    {
+      "path": "lead-hashes-first.log",
+      "sha256": "01b12776dbdbfea57946e1521035034f294467d1433d00b94affaf2c64060344",
+      "bytes": 488,
+      "role": "log"
+    },
+    {
+      "path": "lead-codegen-second.log",
+      "sha256": "0aed06a9dcd50afe655486534c3b38052ab6c0238890a5605e3e9da5d120cf9a",
+      "bytes": 170,
+      "role": "log"
+    },
+    {
+      "path": "lead-hashes-second.log",
+      "sha256": "01b12776dbdbfea57946e1521035034f294467d1433d00b94affaf2c64060344",
+      "bytes": 488,
+      "role": "log"
+    },
+    {
+      "path": "lead-idempotence.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "role": "log"
+    },
+    {
+      "path": "lead-baseline-equality.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "role": "log"
+    },
+    {
+      "path": "lead-root-codegen.log",
+      "sha256": "a24c961cf075043d9bac0dbe95a4a04764809d3cdb2e92ca49319bb73a0d0924",
+      "bytes": 8663,
+      "role": "log"
+    },
+    {
+      "path": "lead-changeset.log",
+      "sha256": "bb27ed87ea2b00d96b5433124ead95a5af897d0285d59abd31fe2250a9d33417",
+      "bytes": 168,
+      "role": "log"
+    },
+    {
+      "path": "lead-final-full-verify.log",
+      "sha256": "8f43619aec2506ee9cfdbf1f0415b360c3878f07a16c9610674b5a8df359c84f",
+      "bytes": 288916,
+      "role": "log"
+    },
+    {
+      "path": "compatibility-prerequisite-lead-checks.json",
+      "sha256": "cd4759ca5f3105847bcf10e306ab0adda510ea042dd397f79eba380c74c502fe",
+      "bytes": 2093,
+      "role": "log"
+    },
+    {
+      "path": "fixture-cleanup-final-checks.json",
+      "sha256": "37883ae628509dcba813ea0cfc053419c7637e16351186f15cb9e1c2efd56158",
+      "bytes": 1800,
+      "role": "log"
+    }
+  ]
+}

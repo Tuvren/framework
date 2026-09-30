@@ -55,7 +55,7 @@ const GENERATOR_PLAN_PATH = resolve(
 );
 const REGISTRY_MANIFEST_PATH = resolve(
   REPO_ROOT,
-  "spec/telemetry/semconv/registry_manifest.yaml"
+  "spec/telemetry/semconv/manifest.yaml"
 );
 const MARKDOWN_OUTPUT_PATH = resolve(
   REPO_ROOT,
@@ -220,10 +220,10 @@ async function generateResolvedWeaverRegistry(
   outputDirectory: string,
   schemaUrl: string
 ): Promise<ResolvedTelemetryRegistry> {
-  // Upstream Weaver deprecated `registry resolve`, but the repo-pinned build
-  // in this workspace does not yet ship `registry package`. Epic R therefore
-  // stays on the supported `registry generate` family with a repo-owned target
-  // that emits the resolved-registry JSON we consume below.
+  // Upstream Weaver deprecated `registry resolve` in favor of `registry
+  // generate` and `registry package`. This repo stays on the supported
+  // `registry generate` family with a repo-owned target that emits the
+  // resolved-registry JSON we consume below.
   const result = await runCommand(
     [
       "weaver",
@@ -259,27 +259,20 @@ async function generateResolvedWeaverRegistry(
 
 async function readRegistrySchemaUrl(): Promise<string> {
   const manifestText = await readFile(REGISTRY_MANIFEST_PATH, "utf8");
-  let schemaBaseUrl = "";
-  let semconvVersion = "";
 
   for (const line of manifestText.split(NEWLINE_PATTERN)) {
-    if (line.startsWith("schema_base_url: ")) {
-      schemaBaseUrl = line.slice("schema_base_url: ".length);
-      continue;
-    }
+    if (line.startsWith("schema_url: ")) {
+      const schemaUrl = line.slice("schema_url: ".length);
 
-    if (line.startsWith("semconv_version: ")) {
-      semconvVersion = line.slice("semconv_version: ".length);
+      if (schemaUrl.length === 0) {
+        break;
+      }
+
+      return schemaUrl;
     }
   }
 
-  if (schemaBaseUrl.length === 0 || semconvVersion.length === 0) {
-    throw new Error(
-      "registry_manifest.yaml must define schema_base_url and semconv_version"
-    );
-  }
-
-  return `${schemaBaseUrl}${semconvVersion}`;
+  throw new Error("manifest.yaml must define a non-empty schema_url");
 }
 
 async function formatGeneratedOutputs(

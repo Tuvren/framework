@@ -51,8 +51,8 @@
     },
     {
       "path": "lead-checks.json",
-      "sha256": "334928fc25787e6208ca467da9fd347f5aa479caf5af6bf685e3d8eedfefd1f2",
-      "bytes": 3507,
+      "sha256": "9005d8f5547ba0134a2d82f9257e7354114c359d8e9d2dde6441f3448665ff91",
+      "bytes": 3613,
       "role": "measurement"
     },
     {

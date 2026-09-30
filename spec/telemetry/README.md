@@ -17,7 +17,7 @@ top-level `telemetry/` tree):
 - `authority-packet.json` — the port authority packet (packetId
   `tuvren.telemetry.semconv`).
 - `semconv/` — the authored OpenTelemetry semantic-convention source
-  (`tuvren-runtime.yaml`, `registry_manifest.yaml`) consumed by Weaver.
+  (`tuvren-runtime.yaml`, `manifest.yaml`) consumed by Weaver.
 - `artifacts/` — the reviewed derived outputs regenerated via the
   `telemetry-spec:codegen` target: `otel-attributes.json` and
   `semantic-conventions.md`.

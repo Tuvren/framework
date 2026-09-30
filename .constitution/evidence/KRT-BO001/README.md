@@ -13,3 +13,5 @@ The live recipe passes launch, doctor and drive and captures the exact streaming
 Worker residual claims about backend-shared decoder paths are not adopted here: memory owns its state-validation and run-span implementation, and those two shared decoder functions are not used by the memory call path. No other backend files changed.
 
 To inspect exact retained outputs, run tar -xzf transcripts.tar.gz in a disposable directory. transcript-index.json lists each archive member's original byte count and SHA-256. The source.patch and lead-checks.json discussed above are archive members. The bundle preserves exact outputs while keeping the milestone diff reviewable. The ordinary recipe can be repeated from the repository root; use its prescribed commands rather than historical absolute paths.
+
+Independent milestone review passed on code commit 8f2fbbc550f91a96d069e6541388062fa351ab1c. Following review feedback, the lead reran original-test preservation against pinned producing parent dff2df9f8dd5dd37fe4054081bcf22479745bd82, with exit0. lead-checks.json records that explicit base and the recheck commit, so replay never relies on a moving HEAD. No test source changed.
