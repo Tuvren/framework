@@ -169,3 +169,103 @@ tickets:
     deviations:
       - files: [".constitution/tasks/epics/EPIC-BO-bun-refresh.yaml", ".constitution/evidence/KRT-BO006"]
         justification: "A4 adopts independent execution judgment for an assumed historical evidence premise. The original description and acceptance clause about seven draft failures remain verbatim. PR130 CI stopped at five JournalBody type errors; its exact recoverable snapshot and clean native Bun controls reproduce two SDK module-identity steering failures, two approval invalid_stream_event failures from the bundled OpenAI 3.0.118 parallel tool-start order, and two additional PostgreSQL setup failures when connection variables are removed. The observed maximum is six, never seven; the original draft, exact inputs and any seventh identity are unavailable. The operational acceptance is causal reproduction of every named category, exact observed counts and explicit disclosure of that limitation, plus unchanged current contract assertions. Native Bun declarations repeat the decisive provider comparison; current BO retains OpenAI 3.0.53 and passes 135 host tests in plain and isolated modes, 79 original assertions, six journal regressions, the full gate and live probe. Independent milestone review must agree with A4 before closure. No product scope, source semantics or public contract changed; future provider compatibility is routed upstream."
+closeout:
+  tickets_completed:
+    - KRT-BO001
+    - KRT-BO002
+    - KRT-BO003
+    - KRT-BO004
+    - KRT-BO005
+    - KRT-BO006
+  tickets_deferred: []
+  points_completed: 34
+  spec_patches:
+    - path: tech-spec/stack.yaml
+      summary: Settle Bun1.4.2 and align the eight refreshed Nix tool revision/native-version records with installed tools and retained evidence.
+      commit: 05483e4acf9da9874c69896cc0ab211c9dd7eca3
+    - path: tech-spec/stack.yaml
+      summary: Align the aimock stack record with the actual host dependency and lock after the separately committed JournalBody guard adaptation.
+      commit: 3176aa73ec0f13762d7ea5fff2ff49bb0ab6b0b3
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Complete EPIC-BO: isolate memory buffers, refresh the shared devenv toolchain with the Weaver manifest migration, align Bun1.4.2 and Dependabot holds, retain isolation/trust/auth measurements, settle physical pins, and upgrade aimock with preserved assertions and reviewed proofs."
+    - directory: tech-spec
+      type: changed
+      text: Settle Bun1.4.2 from installed-tool, frozen-install and isolation evidence; align shared Nix tool records and the aimock pin through separately reviewed physical patches.
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: After BO closes, retire stale guidelines.md:861 pending/unaccepted Bun paragraph; only stack.yaml is patchable within this epic.
+    - stage: tech-spec
+      item: Eight existing tools/** test files have no Nx/verify ownership; M4 directly executed all9toolsfiles including CI-owned changeset. Plan later owned tooling-lane wiring without changing this epic scope.
+    - stage: tech-spec
+      item: Anchor ADR0074 historical204file claim to actualbaseline201atdff; current204 includes3authorizedregressionfiles. M4 settles ordinary default sharing and explicitisolation.
+    - stage: tech-spec
+      item: ADR-0073 planned Bazel Go1.25.7/Python3.13 now trail measured devenv Go1.26.7/Python3.14.7. Stage3/4 should remeasure synchronization in CC/CF/CG before those implementations; preserve future assumptions now.
+    - stage: tech-spec
+      item: guidelines.md:838 restates aimock1.15.1; align current prose with separately reviewed1.43.0 physicalpin afterBO; preserve BO005 historicalmilestone notes.
+    - stage: tech-spec
+      item: Measured OpenAI3.0.118 parallel tool-start order fails runtime assistant sequence validation in both approval suites; before a future provider bump, review event-order authority/normalization and plan a bounded compatibility fix. BO retains3.0.53; no current sourcefix introduced.
+  follow_ups:
+    - The original seven-test draft, its exact inputs and any seventh identity were not recovered; retain the precise historical-provenance limitation rather than claiming seven explained causes.
+    - Before adopting @ai-sdk/openai3.0.118 or later, resolve/measure parallel tool-start ordering against the runtime per-call validation synthesis; two namedapproval cases reproducibly fail in exactPR130 controls, while BO retains3.0.53.
+  code_decisions:
+    - summary: Copy own Uint8Array fields before memory protocol validation, preserve malformed-input rejection, and decode stored buffers through detached copies.
+      kind: pattern
+      paths:
+        - typescript/kernel/backends/memory/src/lib/memory-backend-buffer-isolation.ts
+        - typescript/kernel/backends/memory/src/lib/memory-backend.ts
+        - typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts
+        - typescript/kernel/backends/memory/src/lib/memory-backend-lineage.ts
+      commit: 8f2fbbc550f91a96d069e6541388062fa351ab1c
+    - summary: Ownership regression tests record byte-field own keys and snapshots across public writes, reads and rollback; acceptance archives retain complete source patches and native outputs with member digests.
+      kind: convention
+      paths:
+        - typescript/kernel/backends/memory/test/buffer-ownership.test.ts
+        - .constitution/evidence/KRT-BO001
+      commit: 8f2fbbc550f91a96d069e6541388062fa351ab1c
+    - summary: Compare durable and live JSON recovery data with native isDeepStrictEqual skipPrototype on pinned Bun 1.4.2 and Node 24.20.0; remove the unused SDK root path override to inherit source aliases and retain one core error constructor.
+      kind: pattern
+      paths:
+        - typescript/runtime/src/lib/runtime-core-recovery.ts
+        - typescript/sdk/tsconfig.json
+      commit: f804f0f075a2a0c9907e3ba646788f1976a06625
+    - summary: Use real durable CBOR roundtrips with nested and reordered JSON plus changed-value controls, and verify composed SDK/core error identity with suppression-free Promise-returning fixtures.
+      kind: convention
+      paths:
+        - typescript/runtime/test/runtime-core-recovery-comparison.test.ts
+        - typescript/sdk/test/module-resolution.test.ts
+      commit: f804f0f075a2a0c9907e3ba646788f1976a06625
+    - summary: Use Weaver manifest.yaml with a literal schema_url and native registry generation; retain the same four telemetry outputs and 18 attributes while the shared Nix tool family moves together.
+      kind: convention
+      paths:
+        - spec/telemetry/semconv/manifest.yaml
+        - tools/scripts/telemetry-codegen.ts
+        - devenv.lock
+      commit: b318af2c8282d4cb0f0ab74dcd9a28cb3a8850ca
+    - summary: Grade complete outer-file JUnit results and native case counts explicitly, including all 29 project lanes, nine tools files, eight trust scenarios and 14 registry/TLS scenarios; use a scratch CA and shape-only authentication logs.
+      kind: convention
+      paths:
+        - .constitution/evidence/KRT-BO004
+      commit: 2e32938c8fe327cd8e3c9212ae505841ca5acaad
+    - summary: Private host test helpers accept JournalBody, null and undefined, then use the published isChatCompletionBody guard before reading chat fields; structured-format checks take the whole body and retain the original schema assertions.
+      kind: pattern
+      paths:
+        - typescript/host/repl/test/repl-test-helpers.ts
+        - typescript/host/repl/test/repl.aimock-openai.test.ts
+        - typescript/host/repl/test/repl.aimock-matrix.test.ts
+      commit: 320375f0907da51f491cd2b778237ebdf37bf66d
+    - summary: Actual journal integration tests assert recorded paths, payload fields and cap-marker size before rejecting non-chat bodies; absent-entry, absent-body and wrong-payload mutations establish that the checks fail when evidence is missing or incorrect. Independent legacy controls retain exact inputs and native Bun declaration receipts.
+      kind: convention
+      paths:
+        - typescript/host/repl/test/repl.aimock-journal-body.test.ts
+        - .constitution/evidence/KRT-BO006
+      commit: 320375f0907da51f491cd2b778237ebdf37bf66d
+  settled:
+    - record: tech-spec/stack.yaml#bun
+      evidence:
+        kind: repository
+        ref: devenv.lock
+        date: 2026-09-30
+        note: "SemVer: 1.4.2 (provisioned by devenv pkgs.bun). The installed binary, the `packageManager` declaration `bun@1.4.2` and `bun.lock` agree; two frozen installs retained the bun.lock digest, so the text lock format is unchanged. `bun test --isolate` is not the default: ordinary runs share module and global state and explicit `--isolate` resets it (.constitution/evidence/KRT-BO003/, .constitution/evidence/KRT-BO004/)."
