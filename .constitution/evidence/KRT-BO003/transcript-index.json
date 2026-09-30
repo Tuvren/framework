@@ -1,0 +1,95 @@
+{
+  "archive": "transcripts.tar.gz",
+  "members": [
+    {
+      "path": "source.patch",
+      "sha256": "424d58ef54b1a1354a72032c44392dccc01e880a7735eb7daa99f10dd12945e8",
+      "bytes": 1144,
+      "role": "log"
+    },
+    {
+      "path": "00-baseline.txt",
+      "sha256": "026327d828c8bba8174441a16a604799fe79a76747b7aa7bc40de056cb0433c2",
+      "bytes": 532,
+      "role": "log"
+    },
+    {
+      "path": "02-pm-pkg-set.log",
+      "sha256": "d387b2eaa51787e6e4929fb12f9166c84e57ffbb8e3b30a3fa2fe34ef84722eb",
+      "bytes": 49,
+      "role": "log"
+    },
+    {
+      "path": "03-frozen-installs.txt",
+      "sha256": "534a1b2ddd4f2f845b06cd68bc30a3e054e0e3626d5c710093b9674aedad291b",
+      "bytes": 382,
+      "role": "log"
+    },
+    {
+      "path": "05-assertions.log",
+      "sha256": "6051b5ae42ae4e3ba6222809d5eb97046f3d691638110df378e070ff182ce239",
+      "bytes": 487,
+      "role": "log"
+    },
+    {
+      "path": "08-original-77-suite.log",
+      "sha256": "d05fd1b89ec408980904bffa5ff1d01f031711080f940c0e6adc5525e00d9b68",
+      "bytes": 489,
+      "role": "log"
+    },
+    {
+      "path": "10-verify.log",
+      "sha256": "f2850e4a623e297292913e5b93be868c4e83e2cec1bfe8a474913ff7f6f04756",
+      "bytes": 288764,
+      "role": "log"
+    },
+    {
+      "path": "lead-checks.json",
+      "sha256": "35f9111f97a31ecd70fc83a275cc76f759f34dea7234421d4e1bc9562eb817d6",
+      "bytes": 1703,
+      "role": "log"
+    },
+    {
+      "path": "lead-assertions.log",
+      "sha256": "84946ce5e800e51cfd26589a2474ef51cec963dafb65f725428e3666b81be093",
+      "bytes": 281,
+      "role": "log"
+    },
+    {
+      "path": "lead-frozen-one.log",
+      "sha256": "c17b8bb72704266d621c91f5491a98389b0625535d5446dd7dbf5fa9aca1ed2e",
+      "bytes": 246,
+      "role": "log"
+    },
+    {
+      "path": "lead-frozen-two.log",
+      "sha256": "b7eef8f7c5ac2149e5b73638edcf3b044553c7adc3c78b09e2acf10037092011",
+      "bytes": 246,
+      "role": "log"
+    },
+    {
+      "path": "lead-lock-unchanged.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "role": "log"
+    },
+    {
+      "path": "lead-memory-tests.log",
+      "sha256": "63fc366d49214b5f2f558acbdd62cba0f6c1c452b8bf14aebcfb44f06256a265",
+      "bytes": 472,
+      "role": "log"
+    },
+    {
+      "path": "lead-full-verify.log",
+      "sha256": "bd33b446a5c83820ce36de7b9ef56f406dcd6706042c9f8d1ed031f1a937529b",
+      "bytes": 288729,
+      "role": "log"
+    },
+    {
+      "path": "assert-m3-yaml2.ts",
+      "sha256": "71a2561b448f56c931ba70a33b7d7c69b3038f181c68dc14acd30de4121ea356",
+      "bytes": 995,
+      "role": "log"
+    }
+  ]
+}
