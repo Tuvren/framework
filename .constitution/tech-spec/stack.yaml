@@ -567,12 +567,5 @@ bill_of_materials:
     assumption: "Migrated from the repository lockfile; no separate design ruling was recorded."
 compatibility_policy:
   pinning: "Every dependency is pinned exactly. TypeScript packages carry exact versions in package.json and bun.lock; Rust crates are pinned by Cargo.lock against the rust-toolchain.toml channel; Dart packages are pinned by the committed pubspec.lock; Python packages by uv.lock; Go modules by go.work plus each module go.sum. Toolchains that are not language dependencies (Bun, buf, protobuf, Go, Python, Dart, PostgreSQL) are provisioned by devenv and pinned by the nixpkgs revision in devenv.lock. Versions named here are authoritative for the baseline implementation line and must match the repository manifests after implementation. KRT-BN001 retained the original devenv.lock and bun.lock, Bun 1.3.10 and the `packageManager` declaration `bun@1.3.11` with the explicit PostgreSQL 17 package pin; ADR-0074 superseded that deferral and landed with the Weaver manifest migration. The nixpkgs pin is now c2f38fe7f9e04d9aadd354d380f2bd40531d9737 (refresh measurements: `.constitution/evidence/KRT-BO002/`), which provisions Bun 1.4.2, Buf 1.72.0, protobuf 36.1, Weaver 0.25.1, Go 1.26.7, Python 3.14.7, Dart 3.13.0 and PostgreSQL 17.11 under the explicit `pkgs.postgresql_17` major guard; `packageManager` declares `bun@1.4.2`, `bun.lock` keeps its text format and digest across frozen installs, and `bun test --isolate` is not the default. Under ADR-0073 the Bazel-managed toolchains (Rust 1.95.0, Go 1.25.7, Python 3.13, ruff 0.15.21) are pinned in MODULE.bazel with sync checks against rust-toolchain.toml, go.work, uv.lock and devenv, and Dart stays pinned by the devenv SDK and pubspec.lock."
-  lockfiles:
-    - bun.lock
-    - Cargo.lock
-    - pubspec.lock
-    - uv.lock
-    - go.work
-    - devenv.lock
-    - MODULE.bazel.lock
+  lockfiles: [bun.lock, Cargo.lock, pubspec.lock, uv.lock, go.work, devenv.lock, MODULE.bazel.lock]
   upgrade_boundaries: "Public package APIs follow semantic versioning. A change to kernel record encoding, the hash algorithm, or durable identity rules is semver-major and needs an ADR. Semantic surface versions for the kernel protocol, framework contracts, event vocabulary, error vocabulary, conformance suites, and interop transport are tracked independently of npm package or crate versions. Adding a new implementation language, a new official backend, or a new interop transport needs an ADR before its pins enter this file; a routine patch or minor bump inside an already-approved dependency does not."

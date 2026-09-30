@@ -1,18 +1,14 @@
 decisions:
   - id: OD-01
     question: "Should Tuvren support merging two divergent Branch histories into one canonical history?"
-    blocks:
-      - prd/capabilities.yaml#CAP-003
-      - architecture/flows/flow-tenant-offboarding-erasure.md
+    blocks: [prd/capabilities.yaml#CAP-003, architecture/flows/flow-tenant-offboarding-erasure.md]
     options:
       - name: Defer canonical Branch merge
-        pros:
-          - Preserves separate histories without inventing a conflict or provenance model.
+        pros: [Preserves separate histories without inventing a conflict or provenance model.]
         cons: [Does not support durable convergence of independent lineage yet.]
       - name: Add canonical Branch merge
         pros: [Could serve a future workflow that requires durable convergence.]
-        cons:
-          - "The framework lacks an agreed conflict, provenance, durability, and runner-neutral merge model."
+        cons: ["The framework lacks an agreed conflict, provenance, durability, and runner-neutral merge model."]
     recommendation: Defer canonical Branch merge
     closure: ruling
     ruler: "User, 2026-08-19 Realign interview"
@@ -22,22 +18,14 @@ decisions:
       in: ".constitution/reports/2026-08-19-interview-realign.md"
   - id: OD-02
     question: "Should parallel worker executions with an aggregation Step become the supported model for ephemeral multi-agent work?"
-    blocks:
-      - prd/capabilities.yaml#CAP-026
-      - prd/capabilities.yaml#CAP-027
-      - prd/capabilities.yaml#CAP-028
-      - prd/capabilities.yaml#CAP-029
-      - architecture/flows/flow-runner-handoff-child-orchestration.md
+    blocks: [prd/capabilities.yaml#CAP-026, prd/capabilities.yaml#CAP-027, prd/capabilities.yaml#CAP-028, prd/capabilities.yaml#CAP-029, architecture/flows/flow-runner-handoff-child-orchestration.md]
     options:
       - name: Defer generalized fan-out and aggregation
-        pros:
-          - Preserves proven handoff and worker behavior without generalizing it.
+        pros: [Preserves proven handoff and worker behavior without generalizing it.]
         cons: [Does not establish a supported parallel child-execution model.]
       - name: Support parallel fan-out and aggregation
-        pros:
-          - Could satisfy an adopter workflow or benchmark requiring durable aggregation.
-        cons:
-          - "Isolation, persistence, aggregation, cancellation, partial-failure, and parent-child semantics have not been established."
+        pros: [Could satisfy an adopter workflow or benchmark requiring durable aggregation.]
+        cons: ["Isolation, persistence, aggregation, cancellation, partial-failure, and parent-child semantics have not been established."]
     recommendation: Defer generalized fan-out and aggregation
     closure: ruling
     ruler: "User, 2026-08-19 Realign interview"
@@ -50,15 +38,11 @@ decisions:
     blocks: [architecture/flows/flow-tenant-offboarding-erasure.md]
     options:
       - name: Guarantee Scope-level erasure
-        pros:
-          - Hosts can choose finer Scope granularity and compose identifiers to match their ownership model.
-        cons:
-          - Does not provide managed erasure for one subject inside an active shared Scope.
+        pros: [Hosts can choose finer Scope granularity and compose identifiers to match their ownership model.]
+        cons: [Does not provide managed erasure for one subject inside an active shared Scope.]
       - name: Provide managed intra-Scope subject erasure
-        pros:
-          - Could meet a concrete adopter need that Scope design cannot meet.
-        cons:
-          - "Tuvren has no subject identity, subject-to-record index, or per-subject lifecycle contract."
+        pros: [Could meet a concrete adopter need that Scope design cannot meet.]
+        cons: ["Tuvren has no subject identity, subject-to-record index, or per-subject lifecycle contract."]
     recommendation: Guarantee Scope-level erasure
     closure: ruling
     ruler: "User, 2026-08-19 Realign interview"
@@ -71,32 +55,18 @@ decisions:
     blocks: [KRT-BN002, KRT-BN003, KRT-BN004, KRT-BN005, KRT-BN006, KRT-BN007]
     options:
       - name: Continue independent release work on the retained toolchain
-        pros:
-          - "Preserves the working release gate while correcting publication closure, release discipline, and adopter guidance."
-          - Keeps the Bun upgrade visibly deferred rather than claiming its unmet acceptance criteria passed.
-        cons:
-          - The release preparation runs on Bun 1.3.10 while the user-ruled Bun 1.4.2 target remains pending.
-          - Requires later Stage 4 alignment of dependencies that were broader than the implementation prerequisites.
+        pros: ["Preserves the working release gate while correcting publication closure, release discipline, and adopter guidance.", Keeps the Bun upgrade visibly deferred rather than claiming its unmet acceptance criteria passed.]
+        cons: [The release preparation runs on Bun 1.3.10 while the user-ruled Bun 1.4.2 target remains pending., Requires later Stage 4 alignment of dependencies that were broader than the implementation prerequisites.]
       - name: Defer all release work until Bun 1.4.2 is compatible
-        pros:
-          - Preserves a strict completion interpretation of the existing ticket dependency graph.
-        cons:
-          - Leaves independent publication and release-policy defects unresolved despite a working baseline toolchain.
+        pros: [Preserves a strict completion interpretation of the existing ticket dependency graph.]
+        cons: [Leaves independent publication and release-policy defects unresolved despite a working baseline toolchain.]
     recommendation: Continue independent release work on the retained toolchain
     closure: ruling
     ruler: Repository owner after Epic BN merge
     waiting_on: Bun 1.4.2 regression evidence and retained-toolchain verification in .constitution/evidence/KRT-BN001/
     interim:
       assumption: "BN002 through BN007 require the reviewed working toolchain but no Bun 1.4-specific feature; execute them in their existing order after BN001's reviewed deferral."
-      applied_by:
-        - KRT-BN002
-        - KRT-BN003
-        - KRT-BN004
-        - KRT-BN005
-        - KRT-BN006
-        - KRT-BN007
-        - package.json
-        - devenv.nix
+      applied_by: [KRT-BN002, KRT-BN003, KRT-BN004, KRT-BN005, KRT-BN006, KRT-BN007, package.json, devenv.nix]
     status: closed
     asked:
       date: 2026-09-29
@@ -109,26 +79,17 @@ decisions:
       chosen: Continue independent release work on the retained toolchain
   - id: OD-05
     question: "How do TypeScript build, typecheck, and test actions resolve workspace packages and node_modules inside Bazel actions while keeping the cache sound?"
-    blocks:
-      - tech-spec/adrs/ADR-0013-workspace-orchestration-uses-devenv-and-nx.md
-      - tech-spec/adrs/ADR-0017-native-toolchains-remain-authoritative-inside-each-impl.md
+    blocks: [tech-spec/adrs/ADR-0013-workspace-orchestration-uses-devenv-and-nx.md, tech-spec/adrs/ADR-0017-native-toolchains-remain-authoritative-inside-each-impl.md]
     options:
       - name: Staged node_modules from a bun install repository rule
-        pros:
-          - "Sandboxed actions with declared inputs, so the cache is sound."
-          - "Workspace @tuvren/* entries can point at bazel-bin outputs."
-        cons:
-          - Effectively a small bun-flavored rules_js to build and maintain.
-          - bun workspace symlink semantics must be reproduced.
+        pros: ["Sandboxed actions with declared inputs, so the cache is sound.", "Workspace @tuvren/* entries can point at bazel-bin outputs."]
+        cons: [Effectively a small bun-flavored rules_js to build and maintain., bun workspace symlink semantics must be reproduced.]
       - name: In-tree actions with no-sandbox and a declared bun.lock and dist stamp
         pros: ["Closest to today's Nx behavior and least new machinery."]
-        cons:
-          - Undeclared in-tree dist and node_modules reads risk stale cache hits.
-          - "Cache soundness rests on discipline, not enforcement."
+        cons: [Undeclared in-tree dist and node_modules reads risk stale cache hits., "Cache soundness rests on discipline, not enforcement."]
       - name: "tsconfig path-to-source only, no dist between packages"
         pros: [No dist ordering between packages.]
-        cons:
-          - "Changes how packages resolve each other versus published exports; package exports point at dist."
+        cons: ["Changes how packages resolve each other versus published exports; package exports point at dist."]
     recommendation: Staged node_modules from a bun install repository rule
     closure: spike
     spike: SPK-KRT-OD005
@@ -146,17 +107,11 @@ decisions:
     blocks: [tech-spec/adrs/ADR-0012-typescript-tooling-uses-biome-and-tsup.md]
     options:
       - name: Adopt the ultracite oxlint/core and oxfmt presets as shipped
-        pros:
-          - Strictness discourages workarounds in a heavily agent-driven repository.
-          - No repository-local rule policy to maintain.
-        cons:
-          - "The preset sets several rule categories to error, so violation volume may be large."
-          - oxfmt is beta.
+        pros: [Strictness discourages workarounds in a heavily agent-driven repository., No repository-local rule policy to maintain.]
+        cons: ["The preset sets several rule categories to error, so violation volume may be large.", oxfmt is beta.]
       - name: Adopt the presets with repository overrides for Biome parity
         pros: [Smaller first migration.]
-        cons:
-          - Overrides are the kind of workaround the owner wants to avoid.
-          - A repository-local policy to maintain.
+        cons: [Overrides are the kind of workaround the owner wants to avoid., A repository-local policy to maintain.]
     recommendation: Adopt the ultracite oxlint/core and oxfmt presets as shipped
     closure: spike
     spike: SPK-KRT-OD006
@@ -171,27 +126,17 @@ decisions:
       chosen: Adopt the ultracite oxlint/core and oxfmt presets as shipped
   - id: OD-07
     question: "Which Bazel-native ruleset arrangement for Rust, Go, Python, and Dart builds and tests our lockfiles on both a NixOS devenv machine and ubuntu CI, and which languages need a recorded native-wrapped exception?"
-    blocks:
-      - tech-spec/adrs/ADR-0013-workspace-orchestration-uses-devenv-and-nx.md
-      - tech-spec/adrs/ADR-0017-native-toolchains-remain-authoritative-inside-each-impl.md
+    blocks: [tech-spec/adrs/ADR-0013-workspace-orchestration-uses-devenv-and-nx.md, tech-spec/adrs/ADR-0017-native-toolchains-remain-authoritative-inside-each-impl.md]
     options:
       - name: Bazel-native rules for every non-TypeScript language
-        pros:
-          - Uniform hermetic graph with no per-language exceptions.
-          - Native lockfiles stay authoritative.
-        cons:
-          - Dart has only an early-stage single-maintainer ruleset.
-          - Python uv.lock consumption is immature and go.work cross-module imports are fragile.
+        pros: [Uniform hermetic graph with no per-language exceptions., Native lockfiles stay authoritative.]
+        cons: [Dart has only an early-stage single-maintainer ruleset., Python uv.lock consumption is immature and go.work cross-module imports are fragile.]
       - name: "Bazel-native rules where the spike proves them, native-wrapped actions as recorded exceptions elsewhere"
-        pros:
-          - Adopts hermetic rules only where evidence supports them.
-          - Each exception is explicit and revisitable.
+        pros: [Adopts hermetic rules only where evidence supports them., Each exception is explicit and revisitable.]
         cons: [Mixed execution model to document and maintain.]
       - name: Native-wrapped actions for all non-TypeScript languages
         pros: [Lowest migration risk.]
-        cons:
-          - Not Bazel-native as the owner intends.
-          - Gives up hermetic Rust and Go that are already feasible.
+        cons: [Not Bazel-native as the owner intends., Gives up hermetic Rust and Go that are already feasible.]
     recommendation: "Bazel-native rules where the spike proves them, native-wrapped actions as recorded exceptions elsewhere"
     closure: spike
     spike: SPK-KRT-OD007

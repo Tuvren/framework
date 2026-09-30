@@ -4,22 +4,7 @@ kind: tooling
 capabilities: []
 depends_on: []
 scope:
-  paths:
-    - devenv.nix
-    - devenv.lock
-    - package.json
-    - bun.lock
-    - ".github/dependabot.yml"
-    - ".github/workflows"
-    - spec/telemetry
-    - tools/scripts/telemetry-codegen.ts
-    - typescript/telemetry/semconv/src/lib/generated
-    - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
-    - typescript/kernel/backends/memory/src
-    - ".constitution/tech-spec/stack.yaml"
-    - ".changeset/toolchain-bo-bun-refresh.md"
-    - typescript/host/repl/package.json
-    - typescript/host/repl/test
+  paths: [devenv.nix, devenv.lock, package.json, bun.lock, ".github/dependabot.yml", ".github/workflows", spec/telemetry, tools/scripts/telemetry-codegen.ts, typescript/telemetry/semconv/src/lib/generated, rust/kernel/src/generated/tuvren_runtime_telemetry.rs, typescript/kernel/backends/memory/src, ".constitution/tech-spec/stack.yaml", ".changeset/toolchain-bo-bun-refresh.md", typescript/host/repl/package.json, typescript/host/repl/test]
   tech_spec_patchable: [".constitution/tech-spec/stack.yaml"]
 estimated_diff_lines: 4500
 estimate_source: planned
@@ -30,14 +15,11 @@ tickets:
     effort: 5
     depends_on: []
     scope:
-      in:
-        - typescript/kernel/backends/memory/src
-        - ".changeset/toolchain-bo-bun-refresh.md"
+      in: [typescript/kernel/backends/memory/src, ".changeset/toolchain-bo-bun-refresh.md"]
     verification:
       command: "bun run nx run backend-memory:test"
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if unchanged tests fail or record encoding changes occurs; do not improvise."
+    stop_conditions: ["STOP if unchanged tests fail or record encoding changes occurs; do not improvise."]
     description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. Stored bytes remain owned by the backend. Reads and writes copy buffers so a cbor-x decoder cannot mutate stored records through dataView. Keep all backend tests unchanged. Add or update .changeset/toolchain-bo-bun-refresh.md as a patch changeset with direct coverage for the affected public packages: @tuvren/backend-memory. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
@@ -56,19 +38,11 @@ tickets:
     effort: 8
     depends_on: [KRT-BO001]
     scope:
-      in:
-        - devenv.nix
-        - devenv.lock
-        - spec/telemetry
-        - tools/scripts/telemetry-codegen.ts
-        - typescript/telemetry/semconv/src/lib/generated
-        - rust/kernel/src/generated/tuvren_runtime_telemetry.rs
-        - ".changeset/toolchain-bo-bun-refresh.md"
+      in: [devenv.nix, devenv.lock, spec/telemetry, tools/scripts/telemetry-codegen.ts, typescript/telemetry/semconv/src/lib/generated, rust/kernel/src/generated/tuvren_runtime_telemetry.rs, ".changeset/toolchain-bo-bun-refresh.md"]
     verification:
       command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if Weaver cannot read schema_url, PostgreSQL leaves major 17, or full verification fails occurs; do not improvise."
+    stop_conditions: ["STOP if Weaver cannot read schema_url, PostgreSQL leaves major 17, or full verification fails occurs; do not improvise."]
     description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. The nixpkgs refresh, registry_manifest.yaml to manifest.yaml rename, one schema_url, generator manifest reader, and regeneration of the four telemetry artifacts land in one code-only change. Keep pkgs.postgresql_17 explicit. Prove the refreshed tools through the full lane before aligning Bun; never land the manifest against Weaver 0.21.2. Assumption: The refreshed shared nixpkgs pin preserves all other generator and runtime checks. Add or update .changeset/toolchain-bo-bun-refresh.md as a patch changeset with direct coverage for the affected public packages: @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: runbook_probe
@@ -77,11 +51,7 @@ tickets:
     certainty: assumed
     status: done
     deviations:
-      - files:
-          - typescript/runtime/src/lib/runtime-core-recovery.ts
-          - typescript/runtime/test/runtime-core-recovery-comparison.test.ts
-          - typescript/sdk/tsconfig.json
-          - typescript/sdk/test/module-resolution.test.ts
+      - files: [typescript/runtime/src/lib/runtime-core-recovery.ts, typescript/runtime/test/runtime-core-recovery-comparison.test.ts, typescript/sdk/tsconfig.json, typescript/sdk/test/module-resolution.test.ts]
         justification: "User2026-09-30 authorized a separately reviewed bounded prerequisite and autonomous continuation. A2 records measured Bun1.4 incompatibilities: data-equivalent durable/live JSON prototypes and SDK paths overriding inherited source aliases. Exact changes restore existing behavior, preserve original assertions and public signatures, and add direct runtime/SDK patch coverage. No Biome/core/PostgreSQL source change."
   - id: KRT-BO003
     title: Align Bun and remove the upgrade hold
@@ -93,8 +63,7 @@ tickets:
     verification:
       command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if the binary differs from packageManager or frozen installation changes the lockfile occurs; do not improvise."
+    stop_conditions: ["STOP if the binary differs from packageManager or frozen installation changes the lockfile occurs; do not improvise."]
     description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. Move the runtime to the latest available 1.4.x from the refreshed pin, at least 1.4.1. Align packageManager with the actual binary and remove the >=1.4.0 holds for bun, bun-types and @types/bun. Record any lockfile-format transition without unrelated dependency upgrades. Assumption: The selected 1.4.x binary and lockfile format preserve frozen workspace installs."
     acceptance:
       mode: contract_test
@@ -112,8 +81,7 @@ tickets:
     verification:
       command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if isolation changes semantics beyond runner configuration or credential scoping cannot be proven without publishing occurs; do not improvise."
+    stop_conditions: ["STOP if isolation changes semantics beyond runner configuration or credential scoping cannot be proven without publishing occurs; do not improvise."]
     description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. Review all 204 test files for cross-file state against observed Bun 1.4 isolation behavior, including --isolate. Record whether it is the default instead of trusting conflicting notes. Check trustedDependencies and registry-credential scoping against manifests and CI, with bounded fixes only where observed behavior requires them. Assumption: Isolation defaults and scoped trust/auth behavior remain unmeasured on the installed 1.4.x."
     acceptance:
       mode: runbook_probe
@@ -131,8 +99,7 @@ tickets:
     verification:
       command: bun run verify
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if the preceding measurements do not establish the pins occurs; do not improvise."
+    stop_conditions: ["STOP if the preceding measurements do not establish the pins occurs; do not improvise."]
     description: "ADR-0074; regression evidence .constitution/evidence/KRT-BN001/. In a spec-only commit, settle Bun from agreement among the actual devenv binary, lockfiles and packageManager. Record refreshed shared tool pins from the preceding evidence; do not combine this patch with code."
     acceptance:
       mode: invariant
@@ -146,17 +113,11 @@ tickets:
     effort: 5
     depends_on: [KRT-BO004]
     scope:
-      in:
-        - typescript/host/repl/package.json
-        - typescript/host/repl/test
-        - bun.lock
-        - ".github/dependabot.yml"
+      in: [typescript/host/repl/package.json, typescript/host/repl/test, bun.lock, ".github/dependabot.yml"]
     verification:
       command: "bun run nx run host-repl:test"
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if an aimock test failure cannot be explained by the KRT-BO004 isolation review or needs a production source change occurs; do not improvise."
-      - "STOP if the fix needs a cast, an any type, a suppression comment or a deleted assertion occurs; do not improvise."
+    stop_conditions: ["STOP if an aimock test failure cannot be explained by the KRT-BO004 isolation review or needs a production source change occurs; do not improvise.", "STOP if the fix needs a cast, an any type, a suppression comment or a deleted assertion occurs; do not improvise."]
     description: "Input from the closed Dependabot group pull request 130 and its hold. Move @copilotkit/aimock from 1.15.1 to the latest version on the Bun 1.4.x runtime and remove the aimock ignore entry from the Dependabot config. Measured facts: aimock 1.43.0 cannot be imported on Bun 1.3.10 (SyntaxError: Invalid regular expression: range out of order in character class at dist/files.js:521), so it needs this epic's runtime; the recorded request body type is now JournalBody, so the host-repl test helpers (hasSearchToolContinuation, hasApprovalToolContinuation, assertStructuredResponseFormat and their call sites in repl.aimock-matrix.test.ts and repl.aimock-openai.test.ts) must narrow it with aimock's exported isChatCompletionBody guard while keeping every assertion, including the json_schema response format check. A draft on Bun 1.4.2 typechecked but left seven host-repl tests failing (steering reported invalid_steering_state, approval reported invalid_stream_event, and PostgreSQL-dependent tests); explain each with the KRT-BO004 findings before changing tests, and do not weaken any assertion. host-repl is a private package, so no changeset is needed for its manifest change. Assumption: the failures are caused by isolation, runtime or service-availability differences and not by a defect in the host sources."
     acceptance:
       mode: contract_test
@@ -170,13 +131,7 @@ tickets:
       - files: [".constitution/tasks/epics/EPIC-BO-bun-refresh.yaml", ".constitution/evidence/KRT-BO006"]
         justification: "A4 adopts independent execution judgment for an assumed historical evidence premise. The original description and acceptance clause about seven draft failures remain verbatim. PR130 CI stopped at five JournalBody type errors; its exact recoverable snapshot and clean native Bun controls reproduce two SDK module-identity steering failures, two approval invalid_stream_event failures from the bundled OpenAI 3.0.118 parallel tool-start order, and two additional PostgreSQL setup failures when connection variables are removed. The observed maximum is six, never seven; the original draft, exact inputs and any seventh identity are unavailable. The operational acceptance is causal reproduction of every named category, exact observed counts and explicit disclosure of that limitation, plus unchanged current contract assertions. Native Bun declarations repeat the decisive provider comparison; current BO retains OpenAI 3.0.53 and passes 135 host tests in plain and isolated modes, 79 original assertions, six journal regressions, the full gate and live probe. Independent milestone review must agree with A4 before closure. No product scope, source semantics or public contract changed; future provider compatibility is routed upstream."
 closeout:
-  tickets_completed:
-    - KRT-BO001
-    - KRT-BO002
-    - KRT-BO003
-    - KRT-BO004
-    - KRT-BO005
-    - KRT-BO006
+  tickets_completed: [KRT-BO001, KRT-BO002, KRT-BO003, KRT-BO004, KRT-BO005, KRT-BO006]
   tickets_deferred: []
   points_completed: 34
   spec_patches:
@@ -192,75 +147,54 @@ closeout:
       text: "Complete EPIC-BO: isolate memory buffers, refresh the shared devenv toolchain with the Weaver manifest migration, align Bun 1.4.2 and Dependabot holds, retain isolation/trust/auth measurements, settle physical pins, and upgrade aimock with preserved assertions and reviewed proofs."
     - directory: tech-spec
       type: changed
-      text: Settle Bun 1.4.2 from installed-tool, frozen-install and isolation evidence; align shared Nix tool records and the aimock pin through separately reviewed physical patches.
+      text: "Settle Bun 1.4.2 from installed-tool, frozen-install and isolation evidence; align shared Nix tool records and the aimock pin through separately reviewed physical patches."
   candidate_terms: []
   routed_upstream:
     - stage: tech-spec
-      item: After BO closes, retire stale guidelines.md:861 pending/unaccepted Bun paragraph; only stack.yaml is patchable within this epic.
+      item: "After BO closes, retire stale guidelines.md:861 pending/unaccepted Bun paragraph; only stack.yaml is patchable within this epic."
     - stage: tech-spec
-      item: Eight existing tools/** test files have no Nx/verify ownership; M4 directly executed all 9 tools files including the CI-owned changeset. Plan later owned tooling-lane wiring without changing this epic scope.
+      item: "Eight existing tools/** test files have no Nx/verify ownership; M4 directly executed all 9 tools files including the CI-owned changeset. Plan later owned tooling-lane wiring without changing this epic scope."
     - stage: tech-spec
-      item: Anchor the ADR0074 historical 204-file claim to the actual baseline 201 at dff; the M4 snapshot of 204 includes 3 authorized regression files, and the final head after KRT-BO006 tracks 205 files. M4 settles ordinary default sharing and explicit isolation.
+      item: "Anchor the ADR0074 historical 204-file claim to the actual baseline 201 at dff; the M4 snapshot of 204 includes 3 authorized regression files, and the final head after KRT-BO006 tracks 205 files. M4 settles ordinary default sharing and explicit isolation."
     - stage: tech-spec
-      item: ADR-0073 planned Bazel Go 1.25.7/Python 3.13 now trail measured devenv Go 1.26.7/Python 3.14.7. Stage 3/4 should remeasure synchronization in CC/CF/CG before those implementations; preserve future assumptions now.
+      item: "ADR-0073 planned Bazel Go 1.25.7/Python 3.13 now trail measured devenv Go 1.26.7/Python 3.14.7. Stage 3/4 should remeasure synchronization in CC/CF/CG before those implementations; preserve future assumptions now."
     - stage: tech-spec
-      item: guidelines.md:838 restates aimock 1.15.1; align current prose with the separately reviewed 1.43.0 physical pin after BO; preserve BO005 historical milestone notes.
+      item: "guidelines.md:838 restates aimock 1.15.1; align current prose with the separately reviewed 1.43.0 physical pin after BO; preserve BO005 historical milestone notes."
     - stage: tech-spec
-      item: Measured OpenAI 3.0.118 parallel tool-start order fails runtime assistant sequence validation in both approval suites; before a future provider bump, review event-order authority/normalization and plan a bounded compatibility fix. BO retains 3.0.53; no current source fix is introduced.
-  follow_ups:
-    - The original seven-test draft, its exact inputs and any seventh identity were not recovered; retain the precise historical-provenance limitation rather than claiming seven explained causes.
-    - Before adopting @ai-sdk/openai 3.0.118 or later, resolve/measure parallel tool-start ordering against the runtime per-call validation synthesis; two named approval cases reproducibly fail in exact PR130 controls, while BO retains 3.0.53.
+      item: "Measured OpenAI 3.0.118 parallel tool-start order fails runtime assistant sequence validation in both approval suites; before a future provider bump, review event-order authority/normalization and plan a bounded compatibility fix. BO retains 3.0.53; no current source fix is introduced."
+  follow_ups: ["The original seven-test draft, its exact inputs and any seventh identity were not recovered; retain the precise historical-provenance limitation rather than claiming seven explained causes.", "Before adopting @ai-sdk/openai 3.0.118 or later, resolve/measure parallel tool-start ordering against the runtime per-call validation synthesis; two named approval cases reproducibly fail in exact PR130 controls, while BO retains 3.0.53."]
   code_decisions:
-    - summary: Copy own Uint8Array fields before memory protocol validation, preserve malformed-input rejection, and decode stored buffers through detached copies.
+    - summary: "Copy own Uint8Array fields before memory protocol validation, preserve malformed-input rejection, and decode stored buffers through detached copies."
       kind: pattern
-      paths:
-        - typescript/kernel/backends/memory/src/lib/memory-backend-buffer-isolation.ts
-        - typescript/kernel/backends/memory/src/lib/memory-backend.ts
-        - typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts
-        - typescript/kernel/backends/memory/src/lib/memory-backend-lineage.ts
+      paths: [typescript/kernel/backends/memory/src/lib/memory-backend-buffer-isolation.ts, typescript/kernel/backends/memory/src/lib/memory-backend.ts, typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts, typescript/kernel/backends/memory/src/lib/memory-backend-lineage.ts]
       commit: 8f2fbbc550f91a96d069e6541388062fa351ab1c
-    - summary: Ownership regression tests record byte-field own keys and snapshots across public writes, reads and rollback; acceptance archives retain complete source patches and native outputs with member digests.
+    - summary: "Ownership regression tests record byte-field own keys and snapshots across public writes, reads and rollback; acceptance archives retain complete source patches and native outputs with member digests."
       kind: convention
-      paths:
-        - typescript/kernel/backends/memory/test/buffer-ownership.test.ts
-        - .constitution/evidence/KRT-BO001
+      paths: [typescript/kernel/backends/memory/test/buffer-ownership.test.ts, ".constitution/evidence/KRT-BO001"]
       commit: 8f2fbbc550f91a96d069e6541388062fa351ab1c
-    - summary: Compare durable and live JSON recovery data with native isDeepStrictEqual skipPrototype on pinned Bun 1.4.2 and Node 24.20.0; remove the unused SDK root path override to inherit source aliases and retain one core error constructor.
+    - summary: "Compare durable and live JSON recovery data with native isDeepStrictEqual skipPrototype on pinned Bun 1.4.2 and Node 24.20.0; remove the unused SDK root path override to inherit source aliases and retain one core error constructor."
       kind: pattern
-      paths:
-        - typescript/runtime/src/lib/runtime-core-recovery.ts
-        - typescript/sdk/tsconfig.json
+      paths: [typescript/runtime/src/lib/runtime-core-recovery.ts, typescript/sdk/tsconfig.json]
       commit: f804f0f075a2a0c9907e3ba646788f1976a06625
-    - summary: Use real durable CBOR roundtrips with nested and reordered JSON plus changed-value controls, and verify composed SDK/core error identity with suppression-free Promise-returning fixtures.
+    - summary: "Use real durable CBOR roundtrips with nested and reordered JSON plus changed-value controls, and verify composed SDK/core error identity with suppression-free Promise-returning fixtures."
       kind: convention
-      paths:
-        - typescript/runtime/test/runtime-core-recovery-comparison.test.ts
-        - typescript/sdk/test/module-resolution.test.ts
+      paths: [typescript/runtime/test/runtime-core-recovery-comparison.test.ts, typescript/sdk/test/module-resolution.test.ts]
       commit: f804f0f075a2a0c9907e3ba646788f1976a06625
-    - summary: Use Weaver manifest.yaml with a literal schema_url and native registry generation; retain the same four telemetry outputs and 18 attributes while the shared Nix tool family moves together.
+    - summary: "Use Weaver manifest.yaml with a literal schema_url and native registry generation; retain the same four telemetry outputs and 18 attributes while the shared Nix tool family moves together."
       kind: convention
-      paths:
-        - spec/telemetry/semconv/manifest.yaml
-        - tools/scripts/telemetry-codegen.ts
-        - devenv.lock
+      paths: [spec/telemetry/semconv/manifest.yaml, tools/scripts/telemetry-codegen.ts, devenv.lock]
       commit: b318af2c8282d4cb0f0ab74dcd9a28cb3a8850ca
-    - summary: Grade complete outer-file JUnit results and native case counts explicitly, including all 29 project lanes, nine tools files, eight trust scenarios and 14 registry/TLS scenarios; use a scratch CA and shape-only authentication logs. Historical comparators had exit-status, raw-tag-counting and incomplete testcase-traversal gaps; the current replay grades the complete native XML execution hierarchy and every one of the 179 files in both modes, exits nonzero on per-file disagreement or unusable hierarchy, and passes all 32 control expectations while preserving prior procedures and observations.
+    - summary: "Grade complete outer-file JUnit results and native case counts explicitly, including all 29 project lanes, nine tools files, eight trust scenarios and 14 registry/TLS scenarios; use a scratch CA and shape-only authentication logs. Historical comparators had exit-status, raw-tag-counting and incomplete testcase-traversal gaps; the current replay grades the complete native XML execution hierarchy and every one of the 179 files in both modes, exits nonzero on per-file disagreement or unusable hierarchy, and passes all 32 control expectations while preserving prior procedures and observations."
       kind: convention
-      paths:
-        - .constitution/evidence/KRT-BO004
+      paths: [".constitution/evidence/KRT-BO004"]
       commit: 2e32938c8fe327cd8e3c9212ae505841ca5acaad
-    - summary: Private host test helpers accept JournalBody, null and undefined, then use the published isChatCompletionBody guard before reading chat fields; structured-format checks take the whole body and retain the original schema assertions.
+    - summary: "Private host test helpers accept JournalBody, null and undefined, then use the published isChatCompletionBody guard before reading chat fields; structured-format checks take the whole body and retain the original schema assertions."
       kind: pattern
-      paths:
-        - typescript/host/repl/test/repl-test-helpers.ts
-        - typescript/host/repl/test/repl.aimock-openai.test.ts
-        - typescript/host/repl/test/repl.aimock-matrix.test.ts
+      paths: [typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-openai.test.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts]
       commit: 320375f0907da51f491cd2b778237ebdf37bf66d
-    - summary: Actual journal integration tests assert recorded paths, payload fields and cap-marker size before rejecting non-chat bodies; absent-entry, absent-body and wrong-payload mutations establish that the checks fail when evidence is missing or incorrect. Independent legacy controls retain exact inputs and native Bun declaration receipts.
+    - summary: "Actual journal integration tests assert recorded paths, payload fields and cap-marker size before rejecting non-chat bodies; absent-entry, absent-body and wrong-payload mutations establish that the checks fail when evidence is missing or incorrect. Independent legacy controls retain exact inputs and native Bun declaration receipts."
       kind: convention
-      paths:
-        - typescript/host/repl/test/repl.aimock-journal-body.test.ts
-        - .constitution/evidence/KRT-BO006
+      paths: [typescript/host/repl/test/repl.aimock-journal-body.test.ts, ".constitution/evidence/KRT-BO006"]
       commit: 320375f0907da51f491cd2b778237ebdf37bf66d
   settled:
     - record: tech-spec/stack.yaml#bun
@@ -269,3 +203,29 @@ closeout:
         ref: devenv.lock
         date: 2026-09-30
         note: "SemVer: 1.4.2 (provisioned by devenv pkgs.bun). The installed binary, the `packageManager` declaration `bun@1.4.2` and `bun.lock` agree; two frozen installs retained the bun.lock digest, so the text lock format is unchanged. `bun test --isolate` is not the default: ordinary runs share module and global state and explicit `--isolate` resets it (.constitution/evidence/KRT-BO003/, .constitution/evidence/KRT-BO004/)."
+  actuals:
+    diff_lines: 8459
+    files_touched: 52
+    milestones: 13
+    review_rounds: 1
+    per_ticket:
+      - id: KRT-BO001
+        diff_lines: 923
+        review_rounds: 0
+      - id: KRT-BO002
+        diff_lines: 862
+        review_rounds: 0
+      - id: KRT-BO003
+        diff_lines: 138
+        review_rounds: 0
+      - id: KRT-BO004
+        diff_lines: 5197
+        review_rounds: 1
+      - id: KRT-BO005
+        diff_lines: 216
+        review_rounds: 0
+      - id: KRT-BO006
+        diff_lines: 1123
+        review_rounds: 0
+    merged_commit: 5777be3
+    measured_at: 2026-09-30
