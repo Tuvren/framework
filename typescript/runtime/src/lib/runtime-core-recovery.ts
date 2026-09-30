@@ -239,6 +239,13 @@ export function doesSignalMatchRecoveredTurn(
  * Compare the incoming input signal against the most recent user message in
  * a recovered turn's messages.
  *
+ * The recovered message was decoded from a durable kernel record, and the
+ * deterministic decoder materializes every stored map as an
+ * `Object.create(null)` record while the live signal is built from
+ * `Object.prototype` objects. Equality here is about the stored data, not the
+ * container prototypes, so the comparison skips prototype (and constructor)
+ * matching; content, structure, and value types are still compared strictly.
+ *
  * @returns `"missing"` when the recovered turn has no user message,
  *   `"match"` when the last user message's parts deep-equal the signal's
  *   parts, and `"mismatch"` otherwise.
@@ -255,7 +262,9 @@ export function classifyRecoveredTurnSignalState(
     return "missing";
   }
 
-  return isDeepStrictEqual(recoveredUserMessage.parts, signal.parts)
+  return isDeepStrictEqual(recoveredUserMessage.parts, signal.parts, {
+    skipPrototype: true,
+  })
     ? "match"
     : "mismatch";
 }
