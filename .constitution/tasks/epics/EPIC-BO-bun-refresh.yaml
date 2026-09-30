@@ -244,7 +244,7 @@ closeout:
         - tools/scripts/telemetry-codegen.ts
         - devenv.lock
       commit: b318af2c8282d4cb0f0ab74dcd9a28cb3a8850ca
-    - summary: Grade complete outer-file JUnit results and native case counts explicitly, including all 29 project lanes, nine tools files, eight trust scenarios and 14 registry/TLS scenarios; use a scratch CA and shape-only authentication logs. Historical comparators had exit-status and raw-tag-counting gaps; the current replay grades actual native XML elements and every one of the 179 files in both modes, exits nonzero on per-file disagreement or unusable hierarchy, and passes all 27 control expectations while preserving prior procedures and observations.
+    - summary: Grade complete outer-file JUnit results and native case counts explicitly, including all 29 project lanes, nine tools files, eight trust scenarios and 14 registry/TLS scenarios; use a scratch CA and shape-only authentication logs. Historical comparators had exit-status, raw-tag-counting and incomplete testcase-traversal gaps; the current replay grades the complete native XML execution hierarchy and every one of the 179 files in both modes, exits nonzero on per-file disagreement or unusable hierarchy, and passes all 32 control expectations while preserving prior procedures and observations.
       kind: convention
       paths:
         - .constitution/evidence/KRT-BO004
