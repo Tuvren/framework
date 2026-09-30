@@ -63,8 +63,8 @@
     },
     {
       "path": "lead-tools-and-pg.log",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "bytes": 0,
+      "sha256": "aa11fcfe044a0d86b89d195f8883e78462185b1a5afbdfb65ffdade50b858268",
+      "bytes": 61,
       "role": "log"
     },
     {
@@ -137,6 +137,12 @@
       "path": "fixture-cleanup-final-checks.json",
       "sha256": "37883ae628509dcba813ea0cfc053419c7637e16351186f15cb9e1c2efd56158",
       "bytes": 1800,
+      "role": "log"
+    },
+    {
+      "path": "server-proof-recheck.json",
+      "sha256": "b765ba6d7e18f7c8da74d95ab4cab83784ac8ea78d16e82b147c9e57985459b1",
+      "bytes": 485,
       "role": "log"
     }
   ]

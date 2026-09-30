@@ -6,15 +6,15 @@ produced:
   command: Apply migration-source.patch to the producing parent; evaluate devenv, start run-owned services at session level, probe tool/server versions and Weaver manifest, run telemetry codegen twice and compare hashes, LC_ALL=C bun run codegen and LC_ALL=C bun run verify. Historical exact command logs and final full-gate output are retained.
 files:
   - path: README.md
-    sha256: e432a02c879f180bbf8e9d7784242e38ccbf6ec65bcc512cdc3dfb866e317d02
-    bytes: 2067
+    sha256: f30c7e6c8089b6340139d3525a83a03d8151857ad080970acde2f79dbfd28e5d
+    bytes: 2526
     role: transcript
   - path: transcript-index.json
-    sha256: fea8a2ac5b6c8fba75dab064a74e48ef446e0b6a4ff0a4bda343d5845df41d9c
-    bytes: 4244
+    sha256: 6543f543111204971b90d0027b5cbdd9e6d6e7c6e3c81ebc3ecf67dadf5b1f17
+    bytes: 4425
     role: measurement
   - path: transcripts.tar.gz
-    sha256: 74b264cb56baa529e1385f49940c5782ff54f7db1550c1d43eb5b3ca97626950
-    bytes: 40159
+    sha256: 75f75526acfe3d35f59c4e66463e3faffe86651b5195deb908e892a3cea72aea
+    bytes: 40333
     role: transcript
 pass_criteria: Refreshed shared pin and migrated manifest/reader together; actual server major17; Weaver resolves manifest.yaml/schema_url; all4 generated outputs equal baseline and second fresh run; unchanged semantic vocabulary; root codegen/full33-step verification pass; no unowned tracked outputs; direct telemetry-semconv patch coverage.
