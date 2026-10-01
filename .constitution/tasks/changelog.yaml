@@ -1,4 +1,16 @@
 entries:
+  - version: v0.47.4
+    date: 2026-10-01
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.4
+    changed:
+      - "Correct Epics BQ-CA to use live suppression dispositions, dynamic complete as-shipped type-aware preset proof, exact native Nx target shapes, actual Oxlint and JSON selections, and retained Biome ownership for BU/BV/BW until CB's atomic whole-tools admission."
+      - "Complete BV ownership from its live coverage list and correct CB retirement planning for the dynamically discovered target inventory, JSON-only spec and report targets, permanent native admission, contributor guidance, and independent JSON source protection."
+      - "Recognize KRT-CB005 as already done from repository evidence at 3021d23082b1340dff367678f74de0d9556c6d6c. The active graph remains 27 epics; open points move from 507 to 506 solely because that existing one-point result is no longer scheduled."
+      - "Preserve every planned estimate, effort, ticket ID, dependency, and future status. INFO-CAL remains the observed 2.23 actual-to-estimate ratio over three eligible completed epics; this correction introduces no new estimate."
   - version: v0.47.3
     date: 2026-10-01
     changed: ["Complete EPIC-BP's eight tooling tickets and 33 points. Verify retained preset parity, mixed lint coverage, Oxfmt regeneration, source-only project discovery, installed pins, and direct release coverage.", "EPIC-BP OXC configuration and formatter preparation; mechanical reformat exempt archived: 8 tickets, 33 points, 6032 diff lines, 0 review rounds"]
