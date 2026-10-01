@@ -1,0 +1,47 @@
+owner: KRT-BP005
+mode: contract_test
+produced:
+  date: 2026-10-01
+  commit: 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0
+  command: >-
+    flock devenv-bp.lock devenv shell -- bunx --bun oxlint --type-aware
+    --type-check --format=json .; source-only workspace typecheck and focused
+    compiler-parsed discovery tests; summarize the full native raw captures
+  host: Linux x86_64; Bun 1.4.2; TypeScript 6.0.2; Oxlint 1.86.0; tsgolint 7.0.2003
+files:
+  - path: before.json.gz
+    sha256: 4fd1d2673ec4eaaed9bf4b16b239b6fc25110b6e5d0849e867e0f5ed56bc187e
+    bytes: 687691
+    role: baseline
+  - path: after.json.gz
+    sha256: 69d37b0b1eae2a2d41a47d1dcc3027e39ad5249d2a9227f4e00f76dd005b9551
+    bytes: 593835
+    role: measurement
+  - path: summary.json.gz
+    sha256: 28b774a6fe92c3172700332f811fe4cb21084f637589cc7a5b65eb2b98b2e1f5
+    bytes: 892
+    role: measurement
+  - path: summary.txt.gz
+    sha256: 591e4549238bbfae6641312a94ead28b4674eedb5e494b33942201528a889ea6
+    bytes: 444
+    role: measurement
+  - path: versions.txt.gz
+    sha256: afdfe836486d77de4462df8aa2715135d3743bc630d4aa6545f04d2a4695aafa
+    bytes: 345
+    role: log
+  - path: summarize.mjs.gz
+    sha256: cd6296f77acc34c69e50792b4c2f7707cd5606444b1a537d09783e254da3509f
+    bytes: 1677
+    role: checker
+  - path: annotation-fix.md.gz
+    sha256: b6616a0098805791a244f220899fe1e7738465852e3c7747c48af4b949aacde8
+    bytes: 1756
+    role: log
+pass_criteria: >-
+  All 27 package roots and the three wrappers and three adapters resolve through
+  source-only project configurations. Compiler-parsed file sets include every
+  actual package source, test, bench and smoke file and the tooling inventory.
+  Native project-resolution diagnostics are zero, no epic-introduced type
+  diagnostics remain, and adapter type-aware diagnostics use resolved types.
+  Existing rule debt and nine unchanged or intentional-fixture type diagnostics
+  remain explicitly reported for the directory ratchet; no policy is weakened.
