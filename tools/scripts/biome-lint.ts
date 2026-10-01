@@ -42,8 +42,9 @@ import {
 } from "./lib/command-runner.js";
 import {
   loadNxProjectFiles,
-  targetCommandStrings,
+  type NxCommandOptions,
   type NxProjectFile,
+  type NxProjectTarget,
 } from "./lib/nx-projects.js";
 
 export const COVERAGE_LIST_IDS = [
@@ -135,8 +136,33 @@ const BIOME_BIN = path.join(
 );
 const COVERAGE_DIR_RELATIVE = "tools/biome-coverage";
 const SURFACE_GATE_RELATIVE = "tools/scripts/kraken-surface-gate.ts";
-const OXLINT_LINT_MARKER = /\boxlint\b/;
+// The only command that may credit a whole project root to OXC. ADR-0070's
+// directory ratchet switches each project lint target to `oxlint --type-aware`;
+// a partial path (`oxlint src`), an extra ignore/scope flag, a writer flag or a
+// differently-qualified binary must never subtract a project's whole file set
+// from the retained Biome gate. Match the canonical direct `bunx --bun`
+// invocation with an optional single directory operand instead of parsing a
+// general shell command line.
+const OXLINT_PROJECT_WIDE_COMMAND_PATTERN =
+  /^bunx --bun oxlint --type-aware(?: (?<operand>\S+))?$/u;
 const GLOB_METACHARACTER_PATTERN = /[*?[\]{}]/;
+const BACKSLASH_PATTERN = /\\/gu;
+const TRAILING_SLASH_PATTERN = /\/+$/u;
+// The only executor that forwards extra options to its command. A custom
+// executor may carry a canonical-looking `command`, but it does not run the
+// nx:run-commands argument merge this gate models.
+const RUN_COMMANDS_EXECUTOR = "nx:run-commands";
+// nx:run-commands only treats these option keys as inert for the executed
+// command: it reads `command`/`commands` and resolves `cwd`.
+// normalizeOptions appends `options.args`, `options.__unparsed__` and every
+// unrecognized scalar option (`--key=value`) to the command, so crediting a
+// whole project root is safe only for this exact allowlist. Anything else
+// fails closed and keeps the target on the retained Biome gate.
+const SCOPE_SAFE_RUN_COMMANDS_OPTION_KEYS: ReadonlySet<string> = new Set([
+  "command",
+  "commands",
+  "cwd",
+]);
 
 function normalizeEntry(value: string, source: string): string {
   let normalized = value.trim();
@@ -282,6 +308,136 @@ export function resolveCoverage(
   return { duplicates, missing, oxcExcluded, perList };
 }
 
+interface InvokedLintCommand {
+  command: string;
+  cwd: string;
+}
+
+/**
+ * The options `nx run <project>:lint` actually executes: the base `options`
+ * shallow-merged with the target's `defaultConfiguration` override, matching
+ * Nx's combineOptionsForExecutor (the selected configuration wins per option;
+ * an unselected named configuration is never inspected).
+ */
+function selectDefaultTargetOptions(
+  target: NxProjectTarget
+): NxCommandOptions | undefined {
+  const selected =
+    target.defaultConfiguration === undefined
+      ? undefined
+      : target.configurations?.[target.defaultConfiguration];
+  if (target.options === undefined && selected === undefined) {
+    return undefined;
+  }
+  return { ...target.options, ...selected };
+}
+
+/**
+ * Rejects any option the executor could append to the command text. Only the
+ * scope-safe allowlist above is accepted; `args`, `__unparsed__`, a forwarded
+ * `--ignore-pattern`, `forwardAllArgs` and every other key fail closed.
+ */
+function hasOnlyScopeSafeOptions(options: NxCommandOptions): boolean {
+  return Object.keys(options).every((key) =>
+    SCOPE_SAFE_RUN_COMMANDS_OPTION_KEYS.has(key)
+  );
+}
+
+/**
+ * The single command a target runs. `nx:run-commands` ignores `commands` when a
+ * single `command` is set (normalizeOptions), and exactly one command is
+ * required so a target cannot hide a partial scope behind an unrelated primary
+ * command. A `commands` array with zero or several entries is rejected, as is a
+ * command entry object carrying metadata beyond its `command` text.
+ */
+function invokedCommand(
+  options: NxCommandOptions
+): InvokedLintCommand | undefined {
+  let command: string | undefined;
+  if (typeof options.command === "string") {
+    command = options.command;
+  } else {
+    const entries = options.commands ?? [];
+    if (entries.length === 1) {
+      const entry = entries[0];
+      if (typeof entry === "string") {
+        command = entry;
+      } else if (
+        entry !== null &&
+        typeof entry === "object" &&
+        Object.keys(entry).length === 1 &&
+        typeof entry.command === "string"
+      ) {
+        command = entry.command;
+      }
+    }
+  }
+  if (typeof command !== "string") {
+    return undefined;
+  }
+  const cwd = options.cwd;
+  if (cwd !== undefined && typeof cwd !== "string") {
+    return undefined;
+  }
+  return { command, cwd: cwd ?? "." };
+}
+
+// Rejects anything outside the repository-relative directory tree: absolute
+// paths, `..` escapes and globs are not a project-root scope. Returns the
+// normalized POSIX directory, or undefined when the value is unusable.
+function normalizeRepoRelative(value: string): string | undefined {
+  const normalized = value.replace(BACKSLASH_PATTERN, "/");
+  if (
+    normalized.length === 0 ||
+    normalized.startsWith("/") ||
+    GLOB_METACHARACTER_PATTERN.test(normalized)
+  ) {
+    return undefined;
+  }
+  const segments = normalized.split("/");
+  if (segments.includes("..")) {
+    return undefined;
+  }
+  const collapsed = path.posix
+    .normalize(normalized)
+    .replace(TRAILING_SLASH_PATTERN, "");
+  if (collapsed === "" || collapsed === ".." || collapsed.startsWith("../")) {
+    return undefined;
+  }
+  return collapsed;
+}
+
+/**
+ * True only when the invoked command lints exactly the project directory and
+ * nothing narrower: the operand resolved against the working directory must be
+ * the project's own root. `cwd: "."` with the project path and `cwd:
+ * <project>` with `.` (or no operand) both qualify; `cwd: "."` with a bare `.`
+ * is a whole-repository lint and is rejected.
+ */
+function isProjectWideOxlintScope(
+  invoked: InvokedLintCommand,
+  projectRoot: string
+): boolean {
+  const match = OXLINT_PROJECT_WIDE_COMMAND_PATTERN.exec(invoked.command);
+  if (match === null) {
+    return false;
+  }
+  const cwd = normalizeRepoRelative(invoked.cwd);
+  const root = normalizeRepoRelative(projectRoot);
+  if (cwd === undefined || root === undefined) {
+    return false;
+  }
+  const operand = match.groups?.operand;
+  if (operand === undefined) {
+    return cwd === root;
+  }
+  const resolvedOperand = normalizeRepoRelative(operand);
+  if (resolvedOperand === undefined) {
+    return false;
+  }
+  return path.posix.normalize(path.posix.join(cwd, resolvedOperand)) === root;
+}
+
 export function discoverOxcProjects(
   projectFiles: readonly NxProjectFile[]
 ): OxcProject[] {
@@ -291,14 +447,34 @@ export function discoverOxcProjects(
     if (lintTarget === undefined) {
       continue;
     }
-    const commands = targetCommandStrings(lintTarget);
-    if (!commands.some((command) => OXLINT_LINT_MARKER.test(command))) {
+    // Credit only the executor whose forwarding semantics this gate models. A
+    // custom executor with a canonical-looking `command` option must not earn
+    // whole-project coverage.
+    if (lintTarget.executor !== RUN_COMMANDS_EXECUTOR) {
+      continue;
+    }
+    const options = selectDefaultTargetOptions(lintTarget);
+    if (options === undefined) {
+      continue;
+    }
+    // Fail closed on any option that could alter the effective command scope
+    // (explicit args, unparsed args, an unrecognized forwarded option) before
+    // crediting the project root.
+    if (!hasOnlyScopeSafeOptions(options)) {
+      continue;
+    }
+    const invoked = invokedCommand(options);
+    if (invoked === undefined) {
       continue;
     }
     // Every project.json in this repository declares a `root` that equals its
     // own directory; using the path directory keeps the loader unchanged and
     // the value identical.
-    projects.push({ name: file.name, root: path.dirname(file.path) });
+    const root = path.dirname(file.path);
+    if (!isProjectWideOxlintScope(invoked, root)) {
+      continue;
+    }
+    projects.push({ name: file.name, root });
   }
   projects.sort((left, right) => left.name.localeCompare(right.name));
   return projects;
