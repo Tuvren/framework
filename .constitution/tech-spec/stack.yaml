@@ -268,7 +268,7 @@ bill_of_materials:
     role: tooling
     version: "7.0.2003"
     ecosystem: bun
-    justification: "Type-aware lint backend that oxlint --type-aware needs for the preset's 54 type-aware rules (ADR-0070)."
+    justification: "Type-aware lint backend required by oxlint --type-aware for the installed preset's 55 enabled type-aware rules: 474 total rules minus 419 non-type-aware rules. This as-shipped measurement is evidence, not a fixed rule quota (ADR-0070)."
     radar: trial
     certainty: settled
     evidence:

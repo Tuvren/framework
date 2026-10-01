@@ -1,4 +1,21 @@
 entries:
+  - version: v0.47.4
+    date: 2026-10-01
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+    changed:
+      - "ADR-0070 records the owner's OD-08 ruling: the Oxlint config spreads the complete Ultracite core preset verbatim at the root because the installed extends path loses nine rule-option tuples and the browser environment. The binding as-shipped policy remains unchanged, with no local rule, option, severity, or environment override."
+      - "ADR-0070 and guidelines.md replace the unmeasured transition language with repository evidence for the retained Biome alias, native OXC pins, 55 type-aware rules, JSON source integrity, source-only TypeScript discovery, and the conditions that must hold before a directory or the whole workspace leaves Biome."
+      - "guidelines.md records all 13 BP implementation conventions with repository paths: preset and ignore handling, most-specific retained inventory, generator inputs and parsed-value guards, wrapper and adapter configs, package aggregators and reference order, no-emit and declaration prerequisites, tools discovery, testkit self-aliases, active Nx target qualification, and the shared read-only verification lane."
+      - "guidelines.md records native JSON admission, cached coverage requirements, generated kernel-interop bootstrap ordering, seven artifact generators plus separate compatibility refresh, the history-preserving API snapshot writer, and the source-only type-aware coverage proof."
+      - "guidelines.md adds the existing bun run format:check command and aligns active Biome and Nx version statements with stack.yaml and bun.lock. Historical migration narratives remain historical."
+      - "stack.yaml corrects the active oxlint-tsgolint justification from the historical 54-rule count to the installed preset's measured 55 enabled type-aware rules (474 total minus 419 non-type-aware). The exact 7.0.2003 pin and repository evidence remain unchanged, and the measured count is not a future rule quota."
+      - "guidelines.md records the final JSON CLI proof for a nonempty valid source selection with no formatter-selected files and serializes only the mutating machine-authority guardrail freshness probe. Other authority readers remain parallel and read-only; the isolation prevents generator writes from racing formatter, JSON, and schema checks."
+      - "ADR-0070 distinguishes the user-ruled September 29 OXC replacement from the later JSON admission design. It records the two independent read-only session designs, their model and task provenance, their convergence, the Depth Standard and Deletion Test assessment, the accepted Bun diagnostic synthesis, and the separation between design sources and implementation commits."
+      - "guidelines.md aligns the active inventory with the settled stack and repository: Bun 1.4.2, Buf 1.72.0, protoc-gen-es 2.12.0, aimock 1.43.0, and PostgreSQL 17.11 under the major-17 guard. The failed KRT-BN001 candidates remain labeled as history."
+      - "guidelines.md clarifies that the cached lint target has five TypeScript checker helpers plus three configuration and dependency inputs, while the uncached root coverage runner completes admission before dispatching native Nx targets."
   - version: v0.47.3
     date: 2026-10-01
     changed: ["guidelines.md: layout oxlint.config.ts now exists", "guidelines.md: layout oxfmt.config.ts now exists", "guidelines.md: layout .git-blame-ignore-revs now exists"]
