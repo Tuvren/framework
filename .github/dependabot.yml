@@ -12,7 +12,18 @@ updates:
       biome-toolchain:
         patterns:
           - "@biomejs/*"
+        update-types:
+          - minor
+          - patch
+      oxc-toolchain:
+        patterns:
+          - "oxlint"
+          - "oxfmt"
+          - "oxlint-tsgolint"
           - "ultracite"
+          - "@oxlint/*"
+          - "@oxfmt/*"
+          - "@oxlint-tsgolint/*"
         update-types:
           - minor
           - patch
@@ -41,12 +52,10 @@ updates:
       - dependency-name: "*"
         update-types:
           - version-update:semver-major
-      # ultracite 7.12 turns on new preset lint rules (about 2960 violations,
-      # PR #127). The lint/format toolchain is being replaced (Biome to OXC) in a
-      # planned epic, so ultracite stays at 7.4.x until that work lands.
-      - dependency-name: "ultracite"
-        versions:
-          - ">7.4.2"
+      # ultracite-biome is an npm alias holding the Biome preset at exactly
+      # 7.4.2 for the lint ratchet (ADR-0070). It is removed with Biome after
+      # the last directory switches, so Dependabot must not move it.
+      - dependency-name: "ultracite-biome"
   - package-ecosystem: cargo
     directory: /
     schedule:
