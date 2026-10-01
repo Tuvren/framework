@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runCommand } from "../lib/command-runner.ts";
+
+// ADR-0070 / KRT-BP003: generated JSON is normalized through the repository
+// Oxfmt configuration, not Biome. The config is auto-discovered from the
+// repository root, so pin the formatter cwd there instead of inheriting an
+// arbitrary caller cwd.
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 export async function formatGeneratedJson(
   paths: readonly string[]
@@ -24,8 +32,8 @@ export async function formatGeneratedJson(
   }
 
   const result = await runCommand(
-    ["bunx", "--bun", "@biomejs/biome", "format", "--write", ...paths],
-    { captureOutput: true }
+    ["bunx", "--bun", "oxfmt", "--write", ...paths],
+    { captureOutput: true, cwd: REPO_ROOT }
   );
 
   if (result.code !== 0) {

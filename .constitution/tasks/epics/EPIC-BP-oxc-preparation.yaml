@@ -153,7 +153,12 @@ tickets:
       evidence: "Assert generator commands use oxfmt, no formatter caller uses Biome, every target still declares its artifact inputs, and regeneration preserves parsed authority. Re-running bun run codegen must be clean after the mechanical output commit. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: planned
+    status: done
+    deviations:
+      - files: [tools/scripts/generator-oxfmt.test.ts, tools/biome-coverage/bv.json]
+        justification: "Focused acceptance tests verify native formatter callers, artifact inputs, promoted-check preservation and parsed-value guards; the coverage list keeps the new test in the retained lint gate."
+      - files: [reports/compatibility/project.json]
+        justification: "The evidence-refresh target actually invokes the changed compatibility formatter, so it requires the root package and Oxfmt configuration inputs; codegen and check remain check-only."
   - id: KRT-BP004
     title: Land one mechanical format and regeneration commit
     type: Chore

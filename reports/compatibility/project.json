@@ -65,7 +65,9 @@
         "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
         "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
         "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
-        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*"
+        "{workspaceRoot}/dart/kernel-conformance-adapter/**/*",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/oxfmt.config.ts"
       ],
       "outputs": [
         "{workspaceRoot}/reports/compatibility/compatibility-matrix.json",

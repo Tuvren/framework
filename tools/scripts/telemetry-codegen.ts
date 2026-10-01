@@ -279,17 +279,13 @@ async function formatGeneratedOutputs(
   typescriptOutputPath: string,
   rustOutputPath: string | undefined
 ): Promise<void> {
+  // ADR-0070 / KRT-BP003: telemetry generated outputs are normalized through
+  // Oxfmt. Markdown is excluded (the formatter config ignores it), and the
+  // `generated` TypeScript helper is ignored by the shipped preset, so the
+  // JSON artifact is kept in the invocation as a guaranteed match. Without a
+  // matched path Oxfmt exits 2 on an all-ignored set.
   const result = await runCommand(
-    [
-      "bunx",
-      "--bun",
-      "@biomejs/biome",
-      "check",
-      "--write",
-      MARKDOWN_OUTPUT_PATH,
-      JSON_OUTPUT_PATH,
-      typescriptOutputPath,
-    ],
+    ["bunx", "--bun", "oxfmt", "--write", JSON_OUTPUT_PATH, typescriptOutputPath],
     {
       captureOutput: true,
       cwd: REPO_ROOT,
