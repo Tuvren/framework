@@ -20,6 +20,10 @@ import path from "node:path";
 import process from "node:process";
 
 import { runCommand } from "./lib/command-runner.js";
+import {
+  GENERATED_PREREQUISITE_PROJECT,
+  prependGeneratedPrerequisitePhase,
+} from "./lib/generated-prerequisites.js";
 import { loadNxProjectFiles } from "./lib/nx-projects.js";
 import {
   assertWorktreeUnchanged,
@@ -33,8 +37,7 @@ import {
 // constant is now the single source of truth: verify's codegen-freshness
 // phase and the root `codegen` script (tools/scripts/codegen.ts, KRT-BM002)
 // both consume it, so the two lanes cannot drift apart.
-export const CODEGEN_PROJECTS =
-  "core-spec,host-spec,streaming-spec,runners-spec,tools-spec,providers-spec,telemetry-spec,compatibility-reporting,kernel-interop-grpc";
+export const CODEGEN_PROJECTS = `core-spec,host-spec,streaming-spec,runners-spec,tools-spec,providers-spec,telemetry-spec,compatibility-reporting,${GENERATED_PREREQUISITE_PROJECT}`;
 // Validate every name against the real project index, and require each to
 // still DECLARE a codegen target, because run-many exits 0 for projects
 // without the target (the exact 87-M4.2c silent-no-op this guard exists to
@@ -314,16 +317,11 @@ export const FORMAT_CHECK_STEP: VerificationStep = {
   id: "Oxfmt formatting check (read-only)",
 };
 
-// KRT-BP003/B004/B005/B007/B008 acceptance suites: the seven original BP
-// regression suites plus the two round-1 regression suites
-// (biome-oxc-discovery.test.ts and typecheck-source-aliases.test.ts) — nine
-// total. This is an explicit inventory, not a glob: a new BP regression suite
-// must be registered here to join the durable verify/CI lane. The list is
-// validated against the working tree below so a rename cannot silently drop a
-// suite from the lane, and `oxc-preparation.test.ts` pins the exported
-// TOOLING_ACCEPTANCE_STEP command so an omission cannot hide behind a
-// hand-typed path list.
-export const TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
+// KRT-BP003/B004/B005/B007/B008 acceptance suites: the immutable baseline is
+// the seven original BP suites plus the two round-1 suites. Follow-up suites
+// are registered separately so additions cannot weaken the exact-nine baseline
+// proof. Both lists feed one durable verify/CI command.
+export const ORIGINAL_BP_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/scripts/biome-alias.test.ts",
   "tools/scripts/lib/biome-inventory.test.ts",
   "tools/scripts/lib/biome-lint-partition.test.ts",
@@ -333,6 +331,23 @@ export const TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
   "tools/scripts/oxc-preparation.test.ts",
   "tools/scripts/oxc-project-discovery.test.ts",
   "tools/scripts/typecheck-source-aliases.test.ts",
+];
+
+export const FOLLOWUP_TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
+  "tools/conformance/harness/test/run.test.ts",
+  "tools/scripts/api-freeze-gate.test.ts",
+  "tools/scripts/generated-prerequisites.test.ts",
+  "tools/scripts/json-check.test.ts",
+  "tools/scripts/json-source-integrity.test.ts",
+  "tools/scripts/telemetry-codegen.test.ts",
+];
+
+// This remains an explicit inventory rather than a glob. A new follow-up suite
+// must be registered above to join the durable lane, and the existence check
+// below fails loudly if any registered file is renamed or removed.
+export const TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
+  ...ORIGINAL_BP_TOOLING_ACCEPTANCE_TESTS,
+  ...FOLLOWUP_TOOLING_ACCEPTANCE_TESTS,
 ];
 
 export const TOOLING_ACCEPTANCE_STEP: VerificationStep = {
@@ -379,7 +394,7 @@ export function selectAuthorityGateSteps(
   });
 }
 
-export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
+const CORE_VERIFICATION_PHASES: readonly VerificationPhase[] = [
   {
     // Read-only static analysis + the constitutional authority/conformance
     // validators. All independent, so run them concurrently. Note: parallel
@@ -420,7 +435,10 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
         ],
         id: "Rust workspace lint",
       },
-      { command: ["cargo", "test", "--workspace"], id: "Rust workspace tests" },
+      {
+        command: ["cargo", "test", "--workspace"],
+        id: "Rust workspace tests",
+      },
       {
         command: [
           "bun",
@@ -612,6 +630,9 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
     ],
   },
 ];
+
+export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] =
+  prependGeneratedPrerequisitePhase(CORE_VERIFICATION_PHASES, { fresh: false });
 
 /**
  * Runs the full phased verification pipeline (release-check and the `verify`

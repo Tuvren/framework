@@ -24,6 +24,7 @@
 
 import process from "node:process";
 
+import { prependGeneratedPrerequisitePhase } from "./lib/generated-prerequisites.js";
 import {
   CODEGEN_PROJECTS,
   hasVerificationFailure,
@@ -53,39 +54,44 @@ const CODEGEN_VALIDATOR_IDS: readonly string[] = [
   "machine authority guardrails",
 ];
 
-const results = await runVerificationPhases([
-  {
-    id: "codegen authority validators",
-    steps: selectAuthorityGateSteps(CODEGEN_VALIDATOR_IDS, "codegen"),
-  },
-  {
-    // Regeneration runs after the validators, as the old chain did. Cached
-    // Nx execution is intentional here (unlike verify's freshness phase,
-    // which uses --skipNxCache): this lane exists to materialize/refresh
-    // generated artifacts for local work, not to prove uncached freshness.
-    // For the same reason it opts out of the worktree-purity guard —
-    // refreshing stale checked-in artifacts is this phase's job, not a
-    // read-only step gone rogue (the old && chain had no guard either).
-    concurrency: 1,
-    id: "artifact code generation",
-    mutatesWorktree: true,
-    steps: [
+const results = await runVerificationPhases(
+  prependGeneratedPrerequisitePhase(
+    [
       {
-        command: [
-          "bun",
-          "run",
-          "nx",
-          "run-many",
-          "-t",
-          "codegen",
-          "-p",
-          CODEGEN_PROJECTS,
+        id: "codegen authority validators",
+        steps: selectAuthorityGateSteps(CODEGEN_VALIDATOR_IDS, "codegen"),
+      },
+      {
+        // Regeneration runs after the validators, as the old chain did. Cached
+        // Nx execution is intentional here (unlike verify's freshness phase,
+        // which uses --skipNxCache): this lane exists to materialize/refresh
+        // generated artifacts for local work, not to prove uncached freshness.
+        // For the same reason it opts out of the worktree-purity guard —
+        // refreshing stale checked-in artifacts is this phase's job, not a
+        // read-only step gone rogue (the old && chain had no guard either).
+        concurrency: 1,
+        id: "artifact code generation",
+        mutatesWorktree: true,
+        steps: [
+          {
+            command: [
+              "bun",
+              "run",
+              "nx",
+              "run-many",
+              "-t",
+              "codegen",
+              "-p",
+              CODEGEN_PROJECTS,
+            ],
+            id: "telemetry, compatibility, and interop code generation",
+          },
         ],
-        id: "telemetry, compatibility, and interop code generation",
       },
     ],
-  },
-]);
+    { fresh: false }
+  )
+);
 
 printVerificationSummary(results);
 

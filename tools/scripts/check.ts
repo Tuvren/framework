@@ -24,6 +24,7 @@
 import process from "node:process";
 
 import { runCommand } from "./lib/command-runner.js";
+import { prependGeneratedPrerequisitePhase } from "./lib/generated-prerequisites.js";
 import {
   FORMAT_CHECK_STEP,
   hasVerificationFailure,
@@ -77,35 +78,38 @@ const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
 // too (KRT-BM002). The affected lane gets its own phase (Nx parallelizes
 // internally), and the Rust gate stays serial — clippy and cargo test share
 // the target dir and interleaving two large Rust builds helps nothing.
-const phases: VerificationPhase[] = [
-  {
-    id: "inner-loop authority gate",
-    steps: [
-      ...selectAuthorityGateSteps(INNER_LOOP_AUTHORITY_GATE_IDS, "check"),
-      // ADR-0070: the inner loop must not accept a tree the Oxfmt writer would
-      // change, now that Biome's formatter is disabled. Read-only native check.
-      FORMAT_CHECK_STEP,
-    ],
-  },
-  {
-    concurrency: 1,
-    id: `affected typecheck/test/lint (base ${base})`,
-    steps: [
-      {
-        command: [
-          "bun",
-          "run",
-          "nx",
-          "affected",
-          "-t",
-          "typecheck,test,lint",
-          `--base=${base}`,
-        ],
-        id: `affected typecheck/test/lint (base ${base})`,
-      },
-    ],
-  },
-];
+const phases: VerificationPhase[] = prependGeneratedPrerequisitePhase(
+  [
+    {
+      id: "inner-loop authority gate",
+      steps: [
+        ...selectAuthorityGateSteps(INNER_LOOP_AUTHORITY_GATE_IDS, "check"),
+        // ADR-0070: the inner loop must not accept a tree the Oxfmt writer would
+        // change, now that Biome's formatter is disabled. Read-only native check.
+        FORMAT_CHECK_STEP,
+      ],
+    },
+    {
+      concurrency: 1,
+      id: `affected typecheck/test/lint (base ${base})`,
+      steps: [
+        {
+          command: [
+            "bun",
+            "run",
+            "nx",
+            "affected",
+            "-t",
+            "typecheck,test,lint",
+            `--base=${base}`,
+          ],
+          id: `affected typecheck/test/lint (base ${base})`,
+        },
+      ],
+    },
+  ],
+  { fresh: false }
+);
 
 if (await rustChangedSince(base)) {
   phases.push({
