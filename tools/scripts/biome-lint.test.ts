@@ -1,12 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 
 import {
   COVERAGE_LIST_IDS,
-  discoverOxcProjects,
   findDuplicateEntries,
   readCoverageEntries,
   resolveCoverage,
@@ -24,12 +28,20 @@ import {
   selectFormerRootFiles,
 } from "./lib/biome-inventory.js";
 import { runCommand, type RunCommandResult } from "./lib/command-runner.js";
+import { discoverOxcProjects } from "./lib/native-lint-routing.js";
 import { loadNxProjectFiles, type NxProjectFile } from "./lib/nx-projects.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const BIOME_BIN = path.join(REPO_ROOT, "node_modules/@biomejs/biome/bin/biome");
 const BIOME_CONFIG = path.join(REPO_ROOT, "biome.jsonc");
 const COVERAGE_DIR = path.join(REPO_ROOT, "tools/biome-coverage");
+const TEST_TMP_ROOT = "/home/oscar/.cache/tuvren-bp-followups/tmp";
+mkdirSync(TEST_TMP_ROOT, { recursive: true });
+const EMPTY_NATIVE_COVERAGE = {
+  jsonValidatedFiles: [],
+  oxlintFiles: [],
+} as const;
+const TRAILING_SLASH_PATTERN = /\/$/u;
 
 interface JsonDiagnostic {
   category: string;
@@ -129,6 +141,18 @@ function recordingRunCommand(
           : candidates.map((candidate) => `${candidate}\0`).join(""),
       });
     }
+    if (command.includes("--debug=files")) {
+      const typeAwareIndex = command.indexOf("--type-aware");
+      const root = command[typeAwareIndex + 1];
+      return Promise.resolve({
+        code: 0,
+        stderr: "",
+        stdout:
+          root === undefined
+            ? ""
+            : `${root.replace(TRAILING_SLASH_PATTERN, "")}/src/index.ts\n`,
+      });
+    }
     return Promise.resolve({ code: 0, stderr: "", stdout: "" });
   };
 }
@@ -193,7 +217,7 @@ describe("biome coverage inventory", () => {
     const resolution = resolveCoverage(
       ["spec/core/example.ts", "biome.jsonc"],
       entries,
-      []
+      EMPTY_NATIVE_COVERAGE
     );
     expect(resolution.missing).toEqual(["spec/core/example.ts"]);
   });
@@ -207,8 +231,11 @@ describe("biome coverage inventory", () => {
       { lists: ["bq", "bt"], path: "typescript/kernel/runtime" },
     ]);
     expect(
-      resolveCoverage(["typescript/kernel/runtime/src/index.ts"], entries, [])
-        .duplicates
+      resolveCoverage(
+        ["typescript/kernel/runtime/src/index.ts"],
+        entries,
+        EMPTY_NATIVE_COVERAGE
+      ).duplicates
     ).toEqual([{ lists: ["bq", "bt"], path: "typescript/kernel/runtime" }]);
   });
 
@@ -220,7 +247,7 @@ describe("biome coverage inventory", () => {
     const resolution = resolveCoverage(
       ["tools/scripts/lib/a.ts", "tools/scripts/b.ts", "tools/run-nx.mjs"],
       entries,
-      []
+      EMPTY_NATIVE_COVERAGE
     );
     expect(resolution.missing).toEqual([]);
     expect(resolution.duplicates).toEqual([]);
@@ -234,9 +261,9 @@ describe("biome coverage inventory", () => {
   test("editing one list leaves every other list unchanged", async () => {
     const inventory = await collectFormerRootInventory();
     const base = readCoverageEntries(COVERAGE_DIR);
-    const before = resolveCoverage(inventory, base, []);
+    const before = resolveCoverage(inventory, base, EMPTY_NATIVE_COVERAGE);
     const edited = base.filter((entry) => entry.list !== "bq");
-    const after = resolveCoverage(inventory, edited, []);
+    const after = resolveCoverage(inventory, edited, EMPTY_NATIVE_COVERAGE);
 
     for (const id of COVERAGE_LIST_IDS) {
       if (id === "bq") {
@@ -250,7 +277,9 @@ describe("biome coverage inventory", () => {
 
 describe("biome coverage routing", () => {
   test("empty lists skip Biome while the surface gate and switched OXC targets run", async () => {
-    const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-routing-"));
+    const directory = mkdtempSync(
+      path.join(TEST_TMP_ROOT, "biome-lint-routing-")
+    );
     try {
       writeCoverageLists(directory, { bq: [], residual: ["src"] });
       const commands: string[][] = [];
@@ -264,7 +293,14 @@ describe("biome coverage routing", () => {
           ),
         ],
         repoRoot: REPO_ROOT,
-        runCommand: recordingRunCommand(["src/a.ts"], commands),
+        runCommand: recordingRunCommand(
+          [
+            "src/a.ts",
+            "typescript/kernel/grpc-client/tsconfig.kernel-interop.generated.json",
+            "typescript/kernel/protocol/src/index.ts",
+          ],
+          commands
+        ),
       });
 
       expect(result.failed).toBe(false);
@@ -272,6 +308,9 @@ describe("biome coverage routing", () => {
       expect(result.surfaceGateCode).toBe(0);
       expect(result.oxcRuns.map((run) => run.target)).toEqual([
         "kernel-contract-protocol:lint",
+      ]);
+      expect(result.protectedFiles).toEqual([
+        "typescript/kernel/grpc-client/tsconfig.kernel-interop.generated.json",
       ]);
       expect(
         commands.some((command) =>
@@ -297,7 +336,9 @@ describe("biome coverage routing", () => {
   });
 
   test("missing coverage fails before any Biome or surface run", async () => {
-    const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-missing-"));
+    const directory = mkdtempSync(
+      path.join(TEST_TMP_ROOT, "biome-lint-missing-")
+    );
     try {
       writeCoverageLists(directory, {});
       const commands: string[][] = [];
@@ -320,7 +361,9 @@ describe("biome coverage routing", () => {
   });
 
   test("a discovery failure fails the gate before any Biome or surface run", async () => {
-    const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-failed-"));
+    const directory = mkdtempSync(
+      path.join(TEST_TMP_ROOT, "biome-lint-failed-")
+    );
     try {
       writeCoverageLists(directory, { residual: ["src"] });
       const result = await runLintGate({
@@ -350,7 +393,9 @@ describe("biome coverage routing", () => {
   });
 
   test("an empty discovery result fails the gate", async () => {
-    const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-empty-"));
+    const directory = mkdtempSync(
+      path.join(TEST_TMP_ROOT, "biome-lint-empty-")
+    );
     try {
       writeCoverageLists(directory, { residual: ["src"] });
       const result = await runLintGate({
@@ -368,7 +413,7 @@ describe("biome coverage routing", () => {
   });
 
   test("a migrated project never receives retained Biome lint", async () => {
-    const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-oxc-"));
+    const directory = mkdtempSync(path.join(TEST_TMP_ROOT, "biome-lint-oxc-"));
     try {
       writeCoverageLists(directory, { residual: ["src"] });
       const result = await runLintGate({
@@ -388,13 +433,90 @@ describe("biome coverage routing", () => {
       });
 
       expect(result.failed).toBe(false);
-      expect(result.oxcExcluded).toEqual([
+      expect(result.oxlintFiles).toEqual([
         "typescript/kernel/protocol/src/index.ts",
       ]);
       expect(result.missing).toEqual([]);
       expect(result.biomeRuns.flatMap((run) => run.files)).toEqual([
         "src/a.ts",
       ]);
+    } finally {
+      rmSync(directory, { force: true, recursive: true });
+    }
+  });
+
+  test("an empty native Oxlint selection fails before coverage is credited", async () => {
+    const directory = mkdtempSync(
+      path.join(TEST_TMP_ROOT, "biome-lint-oxc-empty-")
+    );
+    try {
+      writeCoverageLists(directory, { bq: ["typescript/kernel/protocol"] });
+      const commands: string[][] = [];
+      const result = await runLintGate({
+        coverageDir: directory,
+        listProjectFiles: () => [
+          projectFile(
+            "kernel-contract-protocol",
+            "typescript/kernel/protocol",
+            "bunx --bun oxlint --type-aware typescript/kernel/protocol"
+          ),
+        ],
+        repoRoot: REPO_ROOT,
+        runCommand: (command) => {
+          commands.push([...command]);
+          if (command[0] === "git") {
+            return Promise.resolve({
+              code: 0,
+              stderr: "",
+              stdout: command.includes("--deleted")
+                ? ""
+                : "typescript/kernel/protocol/src/index.ts\0",
+            });
+          }
+          return Promise.resolve({ code: 0, stderr: "", stdout: "" });
+        },
+      });
+
+      expect(result.failed).toBe(true);
+      expect(result.discoveryError).toContain("Oxlint file selection");
+      expect(commands).toHaveLength(3);
+    } finally {
+      rmSync(directory, { force: true, recursive: true });
+    }
+  });
+
+  test("JSON source and Oxfmt failures both fail the root lint gate", async () => {
+    const directory = mkdtempSync(
+      path.join(TEST_TMP_ROOT, "biome-lint-native-")
+    );
+    try {
+      writeCoverageLists(directory, { residual: ["src"] });
+      const result = await runLintGate({
+        coverageDir: directory,
+        listProjectFiles: () => [],
+        repoRoot: REPO_ROOT,
+        runCommand: (command) => {
+          if (command[0] === "git") {
+            return Promise.resolve({
+              code: 0,
+              stderr: "",
+              stdout: command.includes("--deleted") ? "" : "src/a.ts\0",
+            });
+          }
+          const failed =
+            command.includes("tools/scripts/json-source-check.ts") ||
+            command.includes("format:check");
+          return Promise.resolve({
+            code: failed ? 1 : 0,
+            stderr: "",
+            stdout: "",
+          });
+        },
+      });
+
+      expect(result.failed).toBe(true);
+      expect(result.jsonSourceGateCode).toBe(1);
+      expect(result.formatGateCode).toBe(1);
     } finally {
       rmSync(directory, { force: true, recursive: true });
     }
@@ -417,7 +539,9 @@ describe("biome feature configuration", () => {
   });
 
   test("biome check reports no formatter or assist diagnostics", () => {
-    const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-features-"));
+    const directory = mkdtempSync(
+      path.join(TEST_TMP_ROOT, "biome-lint-features-")
+    );
     try {
       const probe = writeFeatureProbe(directory, false);
       const featureDiagnostics = runBiomeCheck(
@@ -435,7 +559,9 @@ describe("biome feature configuration", () => {
   });
 
   test("mutation control: re-enabling the features reproduces diagnostics", () => {
-    const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-control-"));
+    const directory = mkdtempSync(
+      path.join(TEST_TMP_ROOT, "biome-lint-control-")
+    );
     try {
       const probe = writeFeatureProbe(directory, true);
       const featureDiagnostics = runBiomeCheck(
