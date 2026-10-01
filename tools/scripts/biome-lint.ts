@@ -29,6 +29,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
+import oxfmtConfig from "../../oxfmt.config.js";
 import {
   FORMER_ROOT_DELETED_COMMAND,
   FORMER_ROOT_DISCOVERY_COMMAND,
@@ -40,7 +41,12 @@ import {
   runCommand as runCommandProcess,
   type RunCommandResult,
 } from "./lib/command-runner.js";
-import { isCodeFile, isJsonFile } from "./lib/json-source-integrity.js";
+import {
+  isCodeFile,
+  isJsonFile,
+  JSON_SOURCE_INTEGRITY_EXCLUSIONS,
+  selectJsonInventory,
+} from "./lib/json-source-integrity.js";
 import {
   collectOxlintSelectedFiles,
   discoverNativeLintProjects,
@@ -130,6 +136,18 @@ export interface LintGateResult {
   oxcRuns: OxcRun[];
   protectedFiles: string[];
   surfaceGateCode: number | undefined;
+}
+
+interface NativeJsonProject {
+  jsonOnly: boolean;
+  name: string;
+  root: string;
+}
+
+interface NativeJsonSelection {
+  error: string | undefined;
+  jsonValidatedFiles: string[];
+  protectedFiles: string[];
 }
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
@@ -233,6 +251,7 @@ interface CoverageAccumulator {
   oxlint: ReadonlySet<string>;
   oxlintFiles: string[];
   perList: Map<CoverageListId, string[]>;
+  protected: ReadonlySet<string>;
 }
 
 function assignNativeCoverage(
@@ -247,6 +266,9 @@ function assignNativeCoverage(
   if (state.jsonValidated.has(file)) {
     nativeOwners.push("json-source-check");
   }
+  if (state.protected.has(file)) {
+    nativeOwners.push("json-source-protected");
+  }
   if (nativeOwners.length === 0) {
     return false;
   }
@@ -259,7 +281,7 @@ function assignNativeCoverage(
     });
   } else if (nativeOwners[0] === "oxlint") {
     state.oxlintFiles.push(file);
-  } else {
+  } else if (nativeOwners[0] === "json-source-check") {
     state.jsonValidatedFiles.push(file);
   }
   return true;
@@ -319,6 +341,7 @@ export function resolveCoverage(
     oxlint,
     oxlintFiles,
     perList,
+    protected: new Set(protectedFiles),
   };
 
   for (const file of inventory) {
@@ -363,6 +386,53 @@ function failedDiscovery(message: string): LintGateResult {
     oxcRuns: [],
     protectedFiles: [],
     surfaceGateCode: undefined,
+  };
+}
+
+function collectNativeJsonSelection(
+  candidates: readonly string[],
+  inventory: ReadonlySet<string>,
+  projects: readonly NativeJsonProject[],
+  sourceIgnorePatterns: readonly string[]
+): NativeJsonSelection {
+  const jsonValidated = new Set<string>();
+  const protectedFiles = new Set<string>();
+  for (const project of projects) {
+    const selection = selectJsonInventory(
+      candidates,
+      [project.root],
+      sourceIgnorePatterns,
+      oxfmtConfig.ignorePatterns ?? []
+    );
+    if (project.jsonOnly && selection.codeFiles.length > 0) {
+      return {
+        error: `JSON-only scope contains code: ${selection.codeFiles.join(", ")}`,
+        jsonValidatedFiles: [],
+        protectedFiles: [],
+      };
+    }
+    if (selection.jsonFiles.length === 0) {
+      return {
+        error: `native JSON source selection is empty for ${project.name} (${project.root})`,
+        jsonValidatedFiles: [],
+        protectedFiles: [],
+      };
+    }
+    for (const file of selection.jsonFiles) {
+      if (inventory.has(file)) {
+        jsonValidated.add(file);
+      }
+    }
+    for (const file of selection.protectedFiles) {
+      if (inventory.has(file)) {
+        protectedFiles.add(file);
+      }
+    }
+  }
+  return {
+    error: undefined,
+    jsonValidatedFiles: [...jsonValidated],
+    protectedFiles: [...protectedFiles],
   };
 }
 
@@ -425,23 +495,35 @@ export async function runLintGate(
     );
   }
 
-  const jsonRoots = [
+  const jsonProjects: NativeJsonProject[] = [
     ...nativeProjects.oxcProjects
       .filter((project) => project.jsonCompanion)
-      .map((project) => project.root),
-    ...nativeProjects.jsonOnlyProjects.map((project) => project.root),
+      .map((project) => ({ ...project, jsonOnly: false })),
+    ...nativeProjects.jsonOnlyProjects.map((project) => ({
+      ...project,
+      jsonOnly: true,
+    })),
   ];
-  const jsonValidatedFiles = inventory.filter(
-    (file) => isJsonFile(file) && jsonRoots.some((root) => isWithin(file, root))
+  const nativeJsonSelection = collectNativeJsonSelection(
+    candidates,
+    inventorySet,
+    jsonProjects,
+    JSON_SOURCE_INTEGRITY_EXCLUSIONS
   );
-  const protectedFiles = candidates
-    .filter(
-      (file) =>
-        (isCodeFile(file) || isJsonFile(file)) && !inventorySet.has(file)
-    )
-    .sort((left, right) => left.localeCompare(right));
+  if (nativeJsonSelection.error !== undefined) {
+    return failedDiscovery(nativeJsonSelection.error);
+  }
+  const protectedFiles = [
+    ...new Set([
+      ...nativeJsonSelection.protectedFiles,
+      ...candidates.filter(
+        (file) =>
+          (isCodeFile(file) || isJsonFile(file)) && !inventorySet.has(file)
+      ),
+    ]),
+  ].sort((left, right) => left.localeCompare(right));
   const resolution = resolveCoverage(inventory, entries, {
-    jsonValidatedFiles,
+    jsonValidatedFiles: nativeJsonSelection.jsonValidatedFiles,
     oxlintFiles: oxlintSelected,
     protectedFiles,
   });

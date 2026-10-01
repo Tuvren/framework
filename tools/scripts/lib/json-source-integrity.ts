@@ -48,12 +48,64 @@ const CODE_EXTENSIONS = new Set([
   ".ts",
   ".tsx",
 ]);
-const CONFIG_JSON_PATTERN = /^(?:jsconfig|tsconfig)(?:\.[^.]+)*\.json$/u;
+const CONFIG_JSON_PATTERN = /^(?:jsconfig|tsconfig(?:\.[^.]+)*)\.json$/u;
 const LEADING_BANGS_PATTERN = /^!+/u;
 const GLOB_METACHARACTER_PATTERN = /[*?[\]{}]/u;
 const BACKSLASH_PATTERN = /\\/gu;
 const TRAILING_SLASH_PATTERN = /\/+$/u;
 const LEADING_DOT_SLASH_PATTERN = /^\.\//u;
+
+/**
+ * Repository-owned exclusions from native JSON source validation. This policy
+ * is deliberately independent of formatter configuration: formatter-only
+ * exclusions remain eligible for source-integrity validation.
+ */
+export const JSON_SOURCE_INTEGRITY_EXCLUSIONS = Object.freeze([
+  "**/_generated",
+  "**/*.gen.*",
+  "**/.next",
+  "**/next-env.d.ts",
+  "**/.nuxt",
+  "**/.output",
+  "**/.svelte-kit",
+  "**/.vitepress/cache",
+  "**/.vitepress/dist",
+  "**/dist",
+  "**/build",
+  "**/out",
+  "**/.turbo",
+  "**/.vercel",
+  "**/.netlify",
+  "**/storybook-static",
+  "**/.docusaurus",
+  "**/.cache",
+  "**/public/build",
+  "**/.parcel-cache",
+  "**/.vite",
+  "**/.astro",
+  "**/_astro",
+  "**/coverage",
+  "**/.nyc_output",
+  "**/*.generated.*",
+  "**/*.auto.*",
+  "**/generated",
+  "**/auto-generated",
+  "**/codegen",
+  "**/__generated__",
+  "**/graphql-types.*",
+  "**/schema.d.ts",
+  "**/schema.graphql.d.ts",
+  "**/*.d.ts.map",
+  "**/.expo",
+  "**/.expo-shared",
+  "**/android/build",
+  "**/ios/build",
+  "**/DerivedData/**/*",
+  "target",
+  ".claude",
+  ".dart_tool",
+  ".constitution/**",
+]);
 
 interface GlobMatcher {
   match(value: string): boolean;
@@ -61,8 +113,16 @@ interface GlobMatcher {
 
 export interface JsonInventory {
   codeFiles: string[];
+  formatFiles: string[];
   jsonFiles: string[];
   protectedFiles: string[];
+  protectedReasons: JsonProtectedFile[];
+}
+
+export interface JsonProtectedFile {
+  file: string;
+  pattern: string;
+  reason: "source-integrity-exclusion";
 }
 
 export interface JsonIntegrityIssue {
@@ -81,13 +141,14 @@ export interface JsonDiscoveryRunOptions {
 }
 
 export interface JsonDiscoveryDependencies {
-  ignorePatterns: readonly string[];
+  formatIgnorePatterns: readonly string[];
   repoRoot: string;
   runCommand: (
     command: readonly string[],
     options?: JsonDiscoveryRunOptions
   ) => Promise<RunCommandResult>;
   scopes: readonly string[];
+  sourceIgnorePatterns: readonly string[];
 }
 
 export function parseGitFileList(stdout: string): string[] {
@@ -115,7 +176,11 @@ export function isCodeFile(file: string): boolean {
 }
 
 function normalizeRepoRelative(value: string, source: string): string {
-  const slashNormalized = value.replace(BACKSLASH_PATTERN, "/");
+  // Git's `-z` output is already repository-relative and slash-separated on
+  // Windows. On POSIX, a backslash is a legal filename byte, so only CLI
+  // scopes entered on Windows may reinterpret it as a directory separator.
+  const slashNormalized =
+    path.sep === "\\" ? value.replace(BACKSLASH_PATTERN, "/") : value;
   if (slashNormalized.startsWith("/")) {
     throw new Error(`${source}: scope must be repository-relative: ${value}`);
   }
@@ -162,47 +227,75 @@ function matchesPattern(matcher: GlobMatcher, file: string): boolean {
   return false;
 }
 
-function isProtected(
+function matchingPattern(
   file: string,
-  ignoreMatchers: readonly GlobMatcher[]
-): boolean {
-  return ignoreMatchers.some((matcher) => matchesPattern(matcher, file));
+  ignoreMatchers: readonly { matcher: GlobMatcher; pattern: string }[]
+): string | undefined {
+  return ignoreMatchers.find(({ matcher }) => matchesPattern(matcher, file))
+    ?.pattern;
 }
 
 export function selectJsonInventory(
   candidates: readonly string[],
   scopes: readonly string[],
-  ignorePatterns: readonly string[]
+  sourceIgnorePatterns: readonly string[],
+  formatIgnorePatterns: readonly string[] = []
 ): JsonInventory {
   const normalizedScopes = normalizeJsonScopes(scopes);
-  const ignoreMatchers = ignorePatterns.map(
-    (pattern) => new Glob(pattern.replace(LEADING_BANGS_PATTERN, ""))
-  );
+  const matchers = (patterns: readonly string[]) =>
+    patterns.map((pattern) => ({
+      matcher: new Glob(pattern.replace(LEADING_BANGS_PATTERN, "")),
+      pattern,
+    }));
+  const sourceIgnoreMatchers = matchers(sourceIgnorePatterns);
+  const formatIgnoreMatchers = matchers(formatIgnorePatterns);
   const jsonFiles: string[] = [];
+  const formatFiles: string[] = [];
   const codeFiles: string[] = [];
   const protectedFiles: string[] = [];
+  const protectedReasons: JsonProtectedFile[] = [];
 
   for (const candidate of candidates) {
-    const file = candidate.replace(BACKSLASH_PATTERN, "/");
+    // Candidate paths came from `git ls-files -z`; preserve them byte-for-byte
+    // so a legal POSIX backslash remains part of the filename used for reads.
+    const file = candidate;
     if (!normalizedScopes.some((scope) => isWithinScope(file, scope))) {
       continue;
     }
     if (!(isJsonFile(file) || isCodeFile(file))) {
       continue;
     }
-    if (isProtected(file, ignoreMatchers)) {
-      protectedFiles.push(file);
-    } else if (isJsonFile(file)) {
-      jsonFiles.push(file);
-    } else {
+    if (isCodeFile(file)) {
       codeFiles.push(file);
+      continue;
+    }
+    const sourceIgnorePattern = matchingPattern(file, sourceIgnoreMatchers);
+    if (sourceIgnorePattern !== undefined) {
+      protectedFiles.push(file);
+      protectedReasons.push({
+        file,
+        pattern: sourceIgnorePattern,
+        reason: "source-integrity-exclusion",
+      });
+      continue;
+    }
+    jsonFiles.push(file);
+    if (matchingPattern(file, formatIgnoreMatchers) === undefined) {
+      formatFiles.push(file);
     }
   }
 
-  for (const files of [codeFiles, jsonFiles, protectedFiles]) {
+  for (const files of [codeFiles, formatFiles, jsonFiles, protectedFiles]) {
     files.sort((left, right) => left.localeCompare(right));
   }
-  return { codeFiles, jsonFiles, protectedFiles };
+  protectedReasons.sort((left, right) => left.file.localeCompare(right.file));
+  return {
+    codeFiles,
+    formatFiles,
+    jsonFiles,
+    protectedFiles,
+    protectedReasons,
+  };
 }
 
 export async function discoverJsonInventory(
@@ -228,17 +321,17 @@ export async function discoverJsonInventory(
       parseGitFileList(deletion.stdout)
     ),
     deps.scopes,
-    deps.ignorePatterns
+    deps.sourceIgnorePatterns,
+    deps.formatIgnorePatterns
   );
 }
 
 export function isJsoncProfile(file: string): boolean {
-  const normalized = file.replace(BACKSLASH_PATTERN, "/");
-  const basename = path.posix.basename(normalized);
-  if (normalized.endsWith(".jsonc") || CONFIG_JSON_PATTERN.test(basename)) {
+  const basename = path.posix.basename(file);
+  if (file.endsWith(".jsonc") || CONFIG_JSON_PATTERN.test(basename)) {
     return true;
   }
-  return normalized.split("/").includes(".vscode");
+  return file.split("/").includes(".vscode");
 }
 
 function errorMessage(error: unknown): string {
@@ -285,7 +378,11 @@ export async function validateJsonSources(
     }
     const parseIssue = parseJsonSource(file, source);
     if (parseIssue === undefined) {
-      const buildPath = `${file}.jsonc`;
+      // Keep Git filenames out of Bun's virtual module identifiers. On POSIX,
+      // a literal backslash is valid in a filename but has module-path meaning
+      // to the bundler; a synthetic key preserves exact source lookup while
+      // keeping duplicate-key diagnostics mapped back to the original path.
+      const buildPath = `.tuvren-json-source/${buildable.length}.jsonc`;
       buildable.push(buildPath);
       buildSources[buildPath] = source;
       sourceFiles.set(buildPath, file);

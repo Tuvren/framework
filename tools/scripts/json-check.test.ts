@@ -1,15 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { parseJsonCheckArguments, runJsonCheck } from "./json-check.js";
 import type { RunCommandResult } from "./lib/command-runner.js";
-
-const TEST_TMP_ROOT = "/home/oscar/.cache/tuvren-bp-followups/tmp";
+import { JSON_SOURCE_INTEGRITY_EXCLUSIONS } from "./lib/json-source-integrity.js";
 
 function withScratch<T>(run: (directory: string) => Promise<T>): Promise<T> {
-  mkdirSync(TEST_TMP_ROOT, { recursive: true });
-  const directory = mkdtempSync(path.join(TEST_TMP_ROOT, "json-check-"));
+  const directory = mkdtempSync(path.join(tmpdir(), "json-check-"));
   return run(directory).finally(() => {
     rmSync(directory, { force: true, recursive: true });
   });
@@ -48,7 +47,7 @@ describe("native JSON format gate", () => {
       write(directory, "project/source.ts", "export {};\n");
       const commands: string[][] = [];
       const result = await runJsonCheck({
-        ignorePatterns: [],
+        formatIgnorePatterns: [],
         jsonOnly: false,
         repoRoot: directory,
         runCommand: discoveryAndFormatRunner(
@@ -57,6 +56,7 @@ describe("native JSON format gate", () => {
           commands
         ),
         scopes: ["project"],
+        sourceIgnorePatterns: JSON_SOURCE_INTEGRITY_EXCLUSIONS,
       });
       expect(result.codeFiles).toEqual(["project/source.ts"]);
       expect(result.jsonFiles).toEqual(["project/data.json"]);
@@ -78,7 +78,7 @@ describe("native JSON format gate", () => {
       write(directory, "spec/generated/new.ts", "export {};\n");
       await expect(
         runJsonCheck({
-          ignorePatterns: ["**/generated"],
+          formatIgnorePatterns: ["**/generated"],
           jsonOnly: true,
           repoRoot: directory,
           runCommand: discoveryAndFormatRunner(
@@ -87,8 +87,51 @@ describe("native JSON format gate", () => {
             []
           ),
           scopes: ["spec"],
+          sourceIgnorePatterns: ["**/generated"],
         })
       ).rejects.toThrow("JSON-only scope contains code: spec/generated/new.ts");
+    });
+  });
+
+  test("source-checks formatter-ignored JSON without invoking an unmatched Oxfmt command", async () => {
+    await withScratch(async (directory) => {
+      write(directory, "project/.yarn/config.json", '{"a":1,"a":2}\n');
+      const invalidCommands: string[][] = [];
+      const invalid = await runJsonCheck({
+        formatIgnorePatterns: ["**/.yarn"],
+        jsonOnly: true,
+        repoRoot: directory,
+        runCommand: discoveryAndFormatRunner(
+          ["project/.yarn/config.json"],
+          0,
+          invalidCommands
+        ),
+        scopes: ["project"],
+        sourceIgnorePatterns: JSON_SOURCE_INTEGRITY_EXCLUSIONS,
+      });
+      expect(invalid.jsonFiles).toEqual(["project/.yarn/config.json"]);
+      expect(invalid.formatFiles).toEqual([]);
+      expect(invalid.issues).toHaveLength(1);
+      expect(invalid.formatRun).toBeUndefined();
+      expect(invalidCommands).toHaveLength(2);
+
+      write(directory, "project/.yarn/config.json", '{"a":1}\n');
+      const validCommands: string[][] = [];
+      const valid = await runJsonCheck({
+        formatIgnorePatterns: ["**/.yarn"],
+        jsonOnly: true,
+        repoRoot: directory,
+        runCommand: discoveryAndFormatRunner(
+          ["project/.yarn/config.json"],
+          0,
+          validCommands
+        ),
+        scopes: ["project"],
+        sourceIgnorePatterns: JSON_SOURCE_INTEGRITY_EXCLUSIONS,
+      });
+      expect(valid.issues).toEqual([]);
+      expect(valid.formatRun).toBeUndefined();
+      expect(validCommands).toHaveLength(2);
     });
   });
 
@@ -97,7 +140,7 @@ describe("native JSON format gate", () => {
       write(directory, "bad/data.json", '{"a":1,"a":2}\n');
       const invalidCommands: string[][] = [];
       const invalid = await runJsonCheck({
-        ignorePatterns: [],
+        formatIgnorePatterns: [],
         jsonOnly: false,
         repoRoot: directory,
         runCommand: discoveryAndFormatRunner(
@@ -106,6 +149,7 @@ describe("native JSON format gate", () => {
           invalidCommands
         ),
         scopes: ["bad"],
+        sourceIgnorePatterns: [],
       });
       expect(invalid.issues).toHaveLength(1);
       expect(invalid.formatRun).toBeUndefined();
@@ -114,7 +158,7 @@ describe("native JSON format gate", () => {
       write(directory, "bad/data.json", '{"a":1}\n');
       const formatCommands: string[][] = [];
       const unformatted = await runJsonCheck({
-        ignorePatterns: [],
+        formatIgnorePatterns: [],
         jsonOnly: false,
         repoRoot: directory,
         runCommand: discoveryAndFormatRunner(
@@ -123,6 +167,7 @@ describe("native JSON format gate", () => {
           formatCommands
         ),
         scopes: ["bad"],
+        sourceIgnorePatterns: [],
       });
       expect(unformatted.issues).toEqual([]);
       expect(unformatted.formatRun?.code).toBe(1);

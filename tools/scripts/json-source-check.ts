@@ -17,19 +17,21 @@
 import path from "node:path";
 import process from "node:process";
 
-import oxfmtConfig from "../../oxfmt.config.js";
 import { runCommand } from "./lib/command-runner.js";
 import {
   discoverJsonInventory,
+  JSON_SOURCE_INTEGRITY_EXCLUSIONS,
   validateJsonSources,
   type JsonDiscoveryDependencies,
   type JsonIntegrityIssue,
+  type JsonProtectedFile,
 } from "./lib/json-source-integrity.js";
 
 export interface JsonSourceCheckResult {
   files: string[];
   issues: JsonIntegrityIssue[];
   protectedFiles: string[];
+  protectedReasons: JsonProtectedFile[];
 }
 
 export interface JsonSourceCheckDependencies extends Omit<
@@ -56,6 +58,7 @@ export async function runJsonSourceCheck(
     files: inventory.jsonFiles,
     issues: validation.issues,
     protectedFiles: inventory.protectedFiles,
+    protectedReasons: inventory.protectedReasons,
   };
 }
 
@@ -69,10 +72,11 @@ if (import.meta.main) {
   const repoRoot = path.resolve(import.meta.dirname, "../..");
   try {
     const result = await runJsonSourceCheck({
-      ignorePatterns: oxfmtConfig.ignorePatterns ?? [],
+      formatIgnorePatterns: [],
       repoRoot,
       runCommand,
       scopes: process.argv.slice(2),
+      sourceIgnorePatterns: JSON_SOURCE_INTEGRITY_EXCLUSIONS,
     });
     if (result.issues.length > 0) {
       reportJsonIssues(result.issues);

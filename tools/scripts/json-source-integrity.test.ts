@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -7,26 +8,29 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import { runJsonSourceCheck } from "./json-source-check.js";
-import type { RunCommandResult } from "./lib/command-runner.js";
+import {
+  runCommand as runCommandProcess,
+  type RunCommandResult,
+} from "./lib/command-runner.js";
 import {
   discoverJsonInventory,
   isJsoncProfile,
+  JSON_SOURCE_INTEGRITY_EXCLUSIONS,
   selectJsonInventory,
   validateJsonSources,
 } from "./lib/json-source-integrity.js";
 
-const TEST_TMP_ROOT = "/home/oscar/.cache/tuvren-bp-followups/tmp";
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 
 function withScratch<T>(run: (directory: string) => Promise<T>): Promise<T> {
-  mkdirSync(TEST_TMP_ROOT, { recursive: true });
-  const directory = mkdtempSync(path.join(TEST_TMP_ROOT, "json-integrity-"));
+  const directory = mkdtempSync(path.join(tmpdir(), "json-integrity-"));
   return run(directory).finally(() => {
     rmSync(directory, { force: true, recursive: true });
   });
@@ -65,6 +69,28 @@ describe("native JSON source integrity", () => {
       ];
       expect(files.every((file) => isJsoncProfile(file))).toBe(true);
       expect((await validateJsonSources(files)).issues).toEqual([]);
+    });
+  });
+
+  test("keeps jsconfig variants strict while accepting the established jsconfig.json profile", async () => {
+    await withScratch(async (directory) => {
+      const strictVariant = write(
+        directory,
+        "jsconfig.foo.json",
+        '{/* not an established profile */"a": 1,}\n'
+      );
+      const established = write(
+        directory,
+        "jsconfig.json",
+        '{/* established profile */"a": 1,}\n'
+      );
+
+      expect(isJsoncProfile(strictVariant)).toBe(false);
+      expect(isJsoncProfile(established)).toBe(true);
+      expect((await validateJsonSources([strictVariant])).issues).toHaveLength(
+        1
+      );
+      expect((await validateJsonSources([established])).issues).toEqual([]);
     });
   });
 
@@ -126,6 +152,71 @@ describe("native JSON source integrity", () => {
 });
 
 describe("JSON inventory", () => {
+  test("runs without Biome policy artifacts and preserves source exclusions", async () => {
+    await withScratch(async (directory) => {
+      expect(Object.isFrozen(JSON_SOURCE_INTEGRITY_EXCLUSIONS)).toBe(true);
+      expect(JSON_SOURCE_INTEGRITY_EXCLUSIONS).toHaveLength(44);
+      write(directory, "good.json", '{"valid":true}\n');
+      write(directory, "duplicate.json", '{"key":1,"key":2}\n');
+      write(
+        directory,
+        ".constitution/evidence/pinned.json",
+        '{"protected":1,"protected":2}\n'
+      );
+      write(
+        directory,
+        "generated/derived.json",
+        '{"protected":1,"protected":2}\n'
+      );
+
+      expect(existsSync(path.join(directory, "biome.jsonc"))).toBe(false);
+      expect(
+        existsSync(path.join(directory, "node_modules/ultracite-biome"))
+      ).toBe(false);
+      expect(
+        existsSync(path.join(directory, "tools/scripts/lib/biome-inventory.ts"))
+      ).toBe(false);
+      expect(
+        (await runCommandProcess(["git", "init"], { cwd: directory })).code
+      ).toBe(0);
+      expect(
+        (await runCommandProcess(["git", "add", "--", "."], { cwd: directory }))
+          .code
+      ).toBe(0);
+
+      const result = await runJsonSourceCheck({
+        formatIgnorePatterns: [],
+        repoRoot: directory,
+        runCommand: runCommandProcess,
+        scopes: ["."],
+        sourceIgnorePatterns: JSON_SOURCE_INTEGRITY_EXCLUSIONS,
+      });
+
+      expect(result.files).toEqual(["duplicate.json", "good.json"]);
+      expect(result.issues).toHaveLength(1);
+      expect(result.issues[0]?.file).toBe(
+        path.join(directory, "duplicate.json")
+      );
+      expect(result.issues[0]?.message).toContain("Duplicate key");
+      expect(result.protectedFiles).toEqual([
+        ".constitution/evidence/pinned.json",
+        "generated/derived.json",
+      ]);
+      expect(result.protectedReasons).toEqual([
+        {
+          file: ".constitution/evidence/pinned.json",
+          pattern: ".constitution/**",
+          reason: "source-integrity-exclusion",
+        },
+        {
+          file: "generated/derived.json",
+          pattern: "**/generated",
+          reason: "source-integrity-exclusion",
+        },
+      ]);
+    });
+  });
+
   test("includes untracked files, subtracts deletions and accounts for protected files", async () => {
     const commands: string[][] = [];
     const runCommand = (
@@ -149,15 +240,24 @@ describe("JSON inventory", () => {
       });
     };
     const inventory = await discoverJsonInventory({
-      ignorePatterns: ["**/generated"],
+      formatIgnorePatterns: [],
       repoRoot: "/repo",
       runCommand,
       scopes: ["scope"],
+      sourceIgnorePatterns: ["**/generated"],
     });
     expect(inventory).toEqual({
       codeFiles: ["scope/source.ts"],
+      formatFiles: ["scope/tracked.json", "scope/untracked.jsonc"],
       jsonFiles: ["scope/tracked.json", "scope/untracked.jsonc"],
       protectedFiles: ["scope/generated/data.json"],
+      protectedReasons: [
+        {
+          file: "scope/generated/data.json",
+          pattern: "**/generated",
+          reason: "source-integrity-exclusion",
+        },
+      ],
     });
     expect(commands).toHaveLength(2);
   });
@@ -172,26 +272,93 @@ describe("JSON inventory", () => {
           "package.json",
         ],
         ["."],
-        [".constitution/**", "**/generated"]
+        [".constitution/**", "**/generated"],
+        []
       )
     ).toEqual({
       codeFiles: [],
+      formatFiles: [".vscode/settings.json", "package.json"],
       jsonFiles: [".vscode/settings.json", "package.json"],
       protectedFiles: [".constitution/state.json", "generated/schema.json"],
+      protectedReasons: [
+        {
+          file: ".constitution/state.json",
+          pattern: ".constitution/**",
+          reason: "source-integrity-exclusion",
+        },
+        {
+          file: "generated/schema.json",
+          pattern: "**/generated",
+          reason: "source-integrity-exclusion",
+        },
+      ],
+    });
+  });
+
+  test("keeps formatter-ignored project JSON in the source integrity selection", () => {
+    expect(
+      selectJsonInventory(
+        [
+          "project/.alchemy/config.json",
+          "project/.open-next/config.json",
+          "project/.wrangler/config.json",
+          "project/.yarn/config.json",
+        ],
+        ["project"],
+        [],
+        ["**/.alchemy", "**/.open-next", "**/.wrangler", "**/.yarn"]
+      )
+    ).toMatchObject({
+      formatFiles: [],
+      jsonFiles: [
+        "project/.alchemy/config.json",
+        "project/.open-next/config.json",
+        "project/.wrangler/config.json",
+        "project/.yarn/config.json",
+      ],
+      protectedFiles: [],
+    });
+  });
+
+  test("preserves a literal backslash in a Git-reported POSIX filename", async () => {
+    await withScratch(async (directory) => {
+      const filename = String.raw`literal\name.json`;
+      write(directory, filename, '{"literal":true}\n');
+      expect(
+        (await runCommandProcess(["git", "init"], { cwd: directory })).code
+      ).toBe(0);
+      expect(
+        (
+          await runCommandProcess(["git", "add", "--", filename], {
+            cwd: directory,
+          })
+        ).code
+      ).toBe(0);
+
+      const result = await runJsonSourceCheck({
+        formatIgnorePatterns: [],
+        repoRoot: directory,
+        runCommand: runCommandProcess,
+        scopes: ["."],
+        sourceIgnorePatterns: [],
+      });
+      expect(result.files).toEqual([filename]);
+      expect(result.issues).toEqual([]);
     });
   });
 
   test("empty requested scopes and empty native selections fail", async () => {
-    expect(() => selectJsonInventory([], [], [])).toThrow(
+    expect(() => selectJsonInventory([], [], [], [])).toThrow(
       "at least one JSON scope is required"
     );
     await expect(
       runJsonSourceCheck({
-        ignorePatterns: [],
+        formatIgnorePatterns: [],
         repoRoot: "/repo",
         runCommand: () =>
           Promise.resolve({ code: 0, stderr: "", stdout: "source.ts\0" }),
         scopes: ["scope"],
+        sourceIgnorePatterns: [],
       })
     ).rejects.toThrow("no JSON or JSONC files matched");
   });

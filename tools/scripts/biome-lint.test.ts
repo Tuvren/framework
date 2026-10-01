@@ -1,12 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 import {
@@ -35,8 +30,7 @@ const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const BIOME_BIN = path.join(REPO_ROOT, "node_modules/@biomejs/biome/bin/biome");
 const BIOME_CONFIG = path.join(REPO_ROOT, "biome.jsonc");
 const COVERAGE_DIR = path.join(REPO_ROOT, "tools/biome-coverage");
-const TEST_TMP_ROOT = "/home/oscar/.cache/tuvren-bp-followups/tmp";
-mkdirSync(TEST_TMP_ROOT, { recursive: true });
+const TEST_TMP_ROOT = tmpdir();
 const EMPTY_NATIVE_COVERAGE = {
   jsonValidatedFiles: [],
   oxlintFiles: [],
@@ -256,6 +250,19 @@ describe("biome coverage inventory", () => {
       "tools/run-nx.mjs",
       "tools/scripts/b.ts",
     ]);
+  });
+
+  test("an explicit source protection is accounted without validated credit", () => {
+    const protectedFile = "project/generated/data.json";
+    const resolution = resolveCoverage([protectedFile], [], {
+      jsonValidatedFiles: [],
+      oxlintFiles: [],
+      protectedFiles: [protectedFile],
+    });
+
+    expect(resolution.missing).toEqual([]);
+    expect(resolution.protectedFiles).toEqual([protectedFile]);
+    expect(resolution.jsonValidatedFiles).toEqual([]);
   });
 
   test("editing one list leaves every other list unchanged", async () => {
@@ -522,12 +529,104 @@ describe("biome coverage routing", () => {
     }
   });
 
+  test("formatter-ignored JSON receives native source coverage from the actual selection", async () => {
+    const directory = mkdtempSync(
+      path.join(TEST_TMP_ROOT, "biome-lint-json-selection-")
+    );
+    try {
+      writeCoverageLists(directory, {});
+      const files = [
+        "project/.alchemy/config.json",
+        "project/.open-next/config.json",
+        "project/.wrangler/config.json",
+        "project/.yarn/config.json",
+      ];
+      const result = await runLintGate({
+        coverageDir: directory,
+        listProjectFiles: () => [
+          projectFile(
+            "json-project",
+            "project",
+            "bun tools/scripts/json-check.ts --json-only project"
+          ),
+        ],
+        repoRoot: REPO_ROOT,
+        runCommand: recordingRunCommand(files, []),
+      });
+
+      expect(result.failed).toBe(false);
+      expect(result.jsonValidatedFiles).toEqual(files);
+      expect(result.protectedFiles).toEqual([]);
+      expect(result.missing).toEqual([]);
+    } finally {
+      rmSync(directory, { force: true, recursive: true });
+    }
+  });
+
+  test.each(["dist", "coverage", ".tmp-case"])(
+    "root lint rejects code in a JSON-only project even when Nx default inputs exclude %s",
+    async (excludedDirectory) => {
+      const directory = mkdtempSync(
+        path.join(TEST_TMP_ROOT, "biome-lint-json-code-")
+      );
+      try {
+        writeCoverageLists(directory, {});
+        const codeFile = `spec/${excludedDirectory}/new.ts`;
+        const commands: string[][] = [];
+        const result = await runLintGate({
+          coverageDir: directory,
+          listProjectFiles: () => [
+            projectFile(
+              "spec-json",
+              "spec",
+              "bun tools/scripts/json-check.ts --json-only spec"
+            ),
+          ],
+          repoRoot: REPO_ROOT,
+          runCommand: recordingRunCommand(
+            ["spec/data.json", codeFile],
+            commands
+          ),
+        });
+
+        expect(result.failed).toBe(true);
+        expect(result.discoveryError).toContain(
+          `JSON-only scope contains code: ${codeFile}`
+        );
+        expect(
+          commands.some((command) => command.includes("spec-json:lint"))
+        ).toBe(false);
+      } finally {
+        rmSync(directory, { force: true, recursive: true });
+      }
+    }
+  );
+
   test("real project metadata currently discovers no switched OXC target", () => {
     expect(discoverOxcProjects(loadNxProjectFiles(REPO_ROOT))).toEqual([]);
   });
 });
 
 describe("biome feature configuration", () => {
+  test("cached lint targets include every native JSON checker dependency", () => {
+    const config = parseJson<{
+      targetDefaults?: { lint?: { inputs?: string[] } };
+    }>(readFileSync(path.join(REPO_ROOT, "nx.json"), "utf8"));
+    const inputs = config.targetDefaults?.lint?.inputs ?? [];
+    expect(inputs).toEqual(
+      expect.arrayContaining([
+        "{workspaceRoot}/oxfmt.config.ts",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/bun.lock",
+        "{workspaceRoot}/tools/scripts/json-check.ts",
+        "{workspaceRoot}/tools/scripts/json-source-check.ts",
+        "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+        "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+      ])
+    );
+  });
+
   test("biome.jsonc disables formatter and assist without altering lint rules", () => {
     const config = parseJsonc<Record<string, unknown>>(
       readFileSync(BIOME_CONFIG, "utf8")
