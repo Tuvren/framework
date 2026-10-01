@@ -93,6 +93,11 @@ export interface VerificationPhase {
   steps: readonly VerificationStep[];
 }
 
+export interface VerificationRunOptions {
+  /** Executes the assembled plan without rewriting its phases in regression tests. */
+  executeStep?: (step: VerificationStep) => number | Promise<number>;
+}
+
 // Cap parallel fan-out so a phase with many cheap steps does not oversubscribe a
 // small machine. Set VERIFY_SERIAL=1 to force every phase fully serial, which is
 // useful when bisecting which step mutated the worktree.
@@ -631,8 +636,14 @@ const CORE_VERIFICATION_PHASES: readonly VerificationPhase[] = [
   },
 ];
 
+export function createVerificationPhases(): VerificationPhase[] {
+  return prependGeneratedPrerequisitePhase(CORE_VERIFICATION_PHASES, {
+    fresh: false,
+  });
+}
+
 export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] =
-  prependGeneratedPrerequisitePhase(CORE_VERIFICATION_PHASES, { fresh: false });
+  createVerificationPhases();
 
 /**
  * Runs the full phased verification pipeline (release-check and the `verify`
@@ -645,7 +656,8 @@ export function runVerification(): Promise<VerificationResult[]> {
 }
 
 export async function runVerificationPhases(
-  phases: readonly VerificationPhase[]
+  phases: readonly VerificationPhase[],
+  options: VerificationRunOptions = {}
 ): Promise<VerificationResult[]> {
   const results: VerificationResult[] = [];
 
@@ -653,7 +665,7 @@ export async function runVerificationPhases(
     const before = phase.mutatesWorktree
       ? undefined
       : await readWorktreeSnapshot(process.cwd());
-    const phaseResults = await runPhase(phase);
+    const phaseResults = await runPhase(phase, options);
     results.push(...phaseResults);
 
     if (before !== undefined) {
@@ -694,7 +706,8 @@ interface StepRun extends VerificationResult {
 }
 
 async function runPhase(
-  phase: VerificationPhase
+  phase: VerificationPhase,
+  options: VerificationRunOptions
 ): Promise<VerificationResult[]> {
   const forceSerial = process.env.VERIFY_SERIAL === "1";
   const limit = forceSerial
@@ -703,7 +716,7 @@ async function runPhase(
       Math.min(phase.steps.length, DEFAULT_MAX_CONCURRENCY));
 
   if (limit <= 1) {
-    return runPhaseSerially(phase.steps);
+    return runPhaseSerially(phase.steps, options);
   }
 
   // Capture each step's output so concurrent logs do not interleave; flush them
@@ -714,7 +727,7 @@ async function runPhase(
   // phase ends; run VERIFY_SERIAL=1 for live streaming when diagnosing one. If a
   // chatty step (e.g. a full build) ever moves into a parallel phase, stream it.
   const runs = await mapWithConcurrency(phase.steps, limit, (step) =>
-    runVerificationStep(step, true)
+    runVerificationStep(step, true, options)
   );
 
   for (const run of runs) {
@@ -727,12 +740,13 @@ async function runPhase(
 }
 
 async function runPhaseSerially(
-  steps: readonly VerificationStep[]
+  steps: readonly VerificationStep[],
+  options: VerificationRunOptions
 ): Promise<VerificationResult[]> {
   const results: VerificationResult[] = [];
 
   for (const step of steps) {
-    const run = await runVerificationStep(step, false);
+    const run = await runVerificationStep(step, false, options);
     results.push(toResult(run));
 
     if (run.code !== 0) {
@@ -745,7 +759,8 @@ async function runPhaseSerially(
 
 async function runVerificationStep(
   step: VerificationStep,
-  capture: boolean
+  capture: boolean,
+  options: VerificationRunOptions
 ): Promise<StepRun> {
   const [executable, ...args] = step.command;
 
@@ -755,6 +770,16 @@ async function runVerificationStep(
 
   const startedAt = Date.now();
   const header = `\n==> ${step.id}\n$ ${step.command.join(" ")}\n`;
+
+  if (options.executeStep !== undefined) {
+    const code = await options.executeStep(step);
+    return {
+      code,
+      durationMs: Date.now() - startedAt,
+      id: step.id,
+      output: null,
+    };
+  }
 
   if (!capture) {
     process.stdout.write(header);

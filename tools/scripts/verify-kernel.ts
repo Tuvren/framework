@@ -86,21 +86,6 @@ const KERNEL_CONFORMANCE_PROJECTS = [
 }
 
 const FRESH_FLAG = "--fresh";
-const args = process.argv.slice(2);
-
-if (args.some((arg) => arg !== FRESH_FLAG)) {
-  throw new Error(`usage: bun tools/scripts/verify-kernel.ts [${FRESH_FLAG}]`);
-}
-
-const fresh = args.includes(FRESH_FLAG);
-const results = await runVerificationPhases(
-  createKernelVerificationPhases({ fresh })
-);
-printVerificationSummary(results);
-
-if (hasVerificationFailure(results)) {
-  process.exitCode = 1;
-}
 
 // Independent steps share a concurrent phase instead of one-step serial
 // phases (KRT-BM002). The groupings below are dependency-honest:
@@ -110,7 +95,7 @@ if (hasVerificationFailure(results)) {
 //   evidence, so they run concurrently; Nx serializes its own cache access.
 // - The conformance run-many stays in its own serial phase: it drives real
 //   services (PostgreSQL) and already parallelizes internally.
-function createKernelVerificationPhases(options: {
+export function createKernelVerificationPhases(options: {
   fresh: boolean;
 }): readonly VerificationPhase[] {
   const cacheModeArgs = options.fresh ? ["--skipNxCache"] : [];
@@ -195,4 +180,23 @@ function createKernelVerificationPhases(options: {
     ],
     { fresh: options.fresh }
   );
+}
+
+if (import.meta.main) {
+  const args = process.argv.slice(2);
+
+  if (args.some((arg) => arg !== FRESH_FLAG)) {
+    throw new Error(
+      `usage: bun tools/scripts/verify-kernel.ts [${FRESH_FLAG}]`
+    );
+  }
+
+  const results = await runVerificationPhases(
+    createKernelVerificationPhases({ fresh: args.includes(FRESH_FLAG) })
+  );
+  printVerificationSummary(results);
+
+  if (hasVerificationFailure(results)) {
+    process.exitCode = 1;
+  }
 }

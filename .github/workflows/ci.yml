@@ -159,19 +159,6 @@ jobs:
             set -euo pipefail
             bun install --frozen-lockfile
             bun test tools/scripts/changeset-check.test.ts
-            # Cold-start bootstrap (measured on this workflow first live
-            # run, 28674899850): the kernel-interop generated bindings at
-            # typescript/runtime/src/lib/generated/kernel-interop are
-            # gitignored by design, and verify runs its authority-packet
-            # and guardrails freshness gates BEFORE its own interop-codegen
-            # phase — so a fresh checkout fails those gates on the missing
-            # artifact. The root package.json codegen script cannot serve
-            # as the bootstrap either: it runs the very validators that fail
-            # cold before it generates anything. Generating the one missing
-            # artifact family directly is the minimal honest bootstrap; the
-            # verify-phase-ordering question is recorded as a post-epic
-            # follow-up in the issue 87 closing record.
-            bun run nx run kernel-interop-grpc:codegen
             bun run services:up
             bun run verify
           '
