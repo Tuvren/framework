@@ -126,7 +126,7 @@ if (import.meta.main) {
     if (result.issues.length > 0) {
       reportJsonIssues(result.issues);
       process.exitCode = 1;
-    } else if (result.formatRun?.code !== 0) {
+    } else if (result.formatRun !== undefined && result.formatRun.code !== 0) {
       process.exitCode = 1;
     }
   } catch (error: unknown) {

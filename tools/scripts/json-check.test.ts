@@ -1,11 +1,28 @@
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync, type SpawnSyncReturns } from "node:child_process";
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { parseJsonCheckArguments, runJsonCheck } from "./json-check.js";
 import type { RunCommandResult } from "./lib/command-runner.js";
 import { JSON_SOURCE_INTEGRITY_EXCLUSIONS } from "./lib/json-source-integrity.js";
+
+const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
+const CLI_FIXTURE_SOURCES = [
+  "oxfmt.config.ts",
+  "tools/scripts/json-check.ts",
+  "tools/scripts/json-source-check.ts",
+  "tools/scripts/lib/command-runner.ts",
+  "tools/scripts/lib/json-source-integrity.ts",
+] as const;
 
 function withScratch<T>(run: (directory: string) => Promise<T>): Promise<T> {
   const directory = mkdtempSync(path.join(tmpdir(), "json-check-"));
@@ -18,6 +35,34 @@ function write(directory: string, relative: string, source: string): void {
   const file = path.join(directory, relative);
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, source);
+}
+
+function prepareCliFixture(directory: string): void {
+  for (const relative of CLI_FIXTURE_SOURCES) {
+    const destination = path.join(directory, relative);
+    mkdirSync(path.dirname(destination), { recursive: true });
+    copyFileSync(path.join(REPO_ROOT, relative), destination);
+  }
+  symlinkSync(
+    path.join(REPO_ROOT, "node_modules"),
+    path.join(directory, "node_modules"),
+    process.platform === "win32" ? "junction" : "dir"
+  );
+  const initialized = spawnSync("git", ["init", "--quiet"], {
+    cwd: directory,
+    encoding: "utf8",
+  });
+  if (initialized.status !== 0) {
+    throw new Error(`git init failed: ${initialized.stderr}`);
+  }
+}
+
+function runCli(directory: string): SpawnSyncReturns<string> {
+  return spawnSync(
+    process.execPath,
+    ["tools/scripts/json-check.ts", "--json-only", "project"],
+    { cwd: directory, encoding: "utf8" }
+  );
 }
 
 function discoveryAndFormatRunner(
@@ -132,6 +177,31 @@ describe("native JSON format gate", () => {
       expect(valid.issues).toEqual([]);
       expect(valid.formatRun).toBeUndefined();
       expect(validCommands).toHaveLength(2);
+    });
+  });
+
+  test("CLI exits zero when valid source-checked JSON is entirely formatter-ignored", async () => {
+    await withScratch((directory) => {
+      prepareCliFixture(directory);
+      write(directory, "project/.yarn/config.json", '{"a":1}\n');
+
+      const result = runCli(directory);
+
+      expect(result.status, `${result.stdout}${result.stderr}`).toBe(0);
+      return Promise.resolve();
+    });
+  });
+
+  test("CLI exits nonzero for duplicate keys in formatter-ignored JSON", async () => {
+    await withScratch((directory) => {
+      prepareCliFixture(directory);
+      write(directory, "project/.yarn/config.json", '{"a":1,"a":2}\n');
+
+      const result = runCli(directory);
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("project/.yarn/config.json");
+      return Promise.resolve();
     });
   });
 
