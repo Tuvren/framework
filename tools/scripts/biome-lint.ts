@@ -29,6 +29,11 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import {
+  FORMER_ROOT_DISCOVERY_COMMAND,
+  parseGitFileList,
+  selectFormerRootFiles,
+} from "./lib/biome-inventory.js";
+import {
   runCommand as runCommandProcess,
   type RunCommandResult,
 } from "./lib/command-runner.js";
@@ -105,6 +110,8 @@ export interface OxcRun {
 
 export interface LintGateResult {
   biomeRuns: BiomeRun[];
+  /** Set when former-root discovery could not produce a trusted inventory. */
+  discoveryError: string | undefined;
   duplicates: DuplicateAssignment[];
   failed: boolean;
   inventorySize: number;
@@ -127,18 +134,6 @@ const COVERAGE_DIR_RELATIVE = "tools/biome-coverage";
 const SURFACE_GATE_RELATIVE = "tools/scripts/kraken-surface-gate.ts";
 const OXLINT_LINT_MARKER = /\boxlint\b/;
 const GLOB_METACHARACTER_PATTERN = /[*?[\]{}]/;
-const VERBOSE_FILE_LINE_PATTERN = /^\s*-\s+(.+?)\s*$/;
-const BIOME_INVENTORY_ARGS = [
-  "lint",
-  ".",
-  "--verbose",
-  "--max-diagnostics=0",
-  "--colors=off",
-] as const;
-
-function biomeInventoryCommand(): string[] {
-  return [process.execPath, BIOME_BIN, ...BIOME_INVENTORY_ARGS];
-}
 
 function normalizeEntry(value: string, source: string): string {
   let normalized = value.trim();
@@ -284,37 +279,6 @@ export function resolveCoverage(
   return { duplicates, missing, oxcExcluded, perList };
 }
 
-export function parseBiomeInventory(verboseOutput: string): string[] {
-  const files: string[] = [];
-  let collecting = false;
-  for (const line of verboseOutput.split("\n")) {
-    if (line.includes("Files processed:")) {
-      collecting = true;
-      continue;
-    }
-    if (line.includes("Files fixed:")) {
-      collecting = false;
-      continue;
-    }
-    if (!collecting) {
-      continue;
-    }
-    const match = VERBOSE_FILE_LINE_PATTERN.exec(line);
-    if (match?.[1] !== undefined) {
-      files.push(match[1]);
-    }
-  }
-  return files;
-}
-
-export async function readBiomeInventory(repoRoot: string): Promise<string[]> {
-  const result = await runCommandProcess(biomeInventoryCommand(), {
-    captureOutput: true,
-    cwd: repoRoot,
-  });
-  return parseBiomeInventory(result.stdout);
-}
-
 export function discoverOxcProjects(
   projectFiles: readonly NxProjectFile[]
 ): OxcProject[] {
@@ -337,15 +301,44 @@ export function discoverOxcProjects(
   return projects;
 }
 
+function failedDiscovery(message: string): LintGateResult {
+  return {
+    biomeRuns: [],
+    discoveryError: `former-root discovery failed: ${message}`,
+    duplicates: [],
+    failed: true,
+    inventorySize: 0,
+    missing: [],
+    oxcExcluded: [],
+    oxcRuns: [],
+    surfaceGateCode: undefined,
+  };
+}
+
 export async function runLintGate(
   deps: LintGateDependencies
 ): Promise<LintGateResult> {
   const entries = readCoverageEntries(deps.coverageDir);
-  const inventoryResult = await deps.runCommand(biomeInventoryCommand(), {
-    captureOutput: true,
-    cwd: deps.repoRoot,
-  });
-  const inventory = parseBiomeInventory(inventoryResult.stdout);
+
+  let inventory: string[];
+  try {
+    const discovery = await deps.runCommand(FORMER_ROOT_DISCOVERY_COMMAND, {
+      captureOutput: true,
+      cwd: deps.repoRoot,
+    });
+    if (discovery.code !== 0) {
+      return failedDiscovery(`command exited with code ${discovery.code}`);
+    }
+    inventory = selectFormerRootFiles(
+      deps.repoRoot,
+      parseGitFileList(discovery.stdout)
+    );
+  } catch (error: unknown) {
+    return failedDiscovery(
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+
   const oxcProjects = discoverOxcProjects(
     deps.listProjectFiles(deps.repoRoot)
   );
@@ -365,6 +358,8 @@ export async function runLintGate(
   ) {
     return {
       biomeRuns,
+      discoveryError:
+        inventory.length === 0 ? "former-root inventory is empty" : undefined,
       duplicates: resolution.duplicates,
       failed: true,
       inventorySize: inventory.length,
@@ -409,6 +404,7 @@ export async function runLintGate(
 
   return {
     biomeRuns,
+    discoveryError: undefined,
     duplicates: resolution.duplicates,
     failed,
     inventorySize: inventory.length,
@@ -420,9 +416,11 @@ export async function runLintGate(
 }
 
 function reportFailure(result: LintGateResult): void {
-  if (result.inventorySize === 0) {
+  if (result.discoveryError !== undefined) {
+    console.error(`biome-lint: ${result.discoveryError}`);
+  } else if (result.inventorySize === 0) {
     console.error(
-      "biome-lint: Biome reported no files; refusing to treat an empty inventory as complete coverage."
+      "biome-lint: no former-root files were discovered; refusing to treat an empty inventory as complete coverage."
     );
   }
   for (const file of result.missing) {
