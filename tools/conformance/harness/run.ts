@@ -19,7 +19,7 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-import type { ValidateFunction } from "ajv";
+import type { AnySchema, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import {
@@ -789,11 +789,20 @@ async function readAuthorityPacket(
 async function createAdapterManifestValidator(): Promise<
   ValidateFunction<unknown>
 > {
-  const schema = JSON.parse(
-    await readFile(ADAPTER_MANIFEST_SCHEMA_PATH, "utf8")
-  ) as unknown;
+  const schema = readJsonSchema(
+    JSON.parse(await readFile(ADAPTER_MANIFEST_SCHEMA_PATH, "utf8")) as unknown,
+    ADAPTER_MANIFEST_SCHEMA_PATH
+  );
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   return ajv.compile(schema);
+}
+
+function readJsonSchema(value: unknown, label: string): AnySchema {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error(`${label} must contain a JSON Schema object or boolean`);
 }
 
 function parseArgs(args: readonly string[]): CliOptions {
