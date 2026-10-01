@@ -15,16 +15,30 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { createCheckPhases } from "./check.js";
+import { createCodegenPhases } from "./codegen.js";
 import {
   createGeneratedPrerequisitePhase,
   GENERATED_PREREQUISITE_PROJECT,
   prependGeneratedPrerequisitePhase,
 } from "./lib/generated-prerequisites.js";
-import { runVerificationPhases, type VerificationPhase } from "./verify.js";
+import { createKernelVerificationPhases } from "./verify-kernel.js";
+import {
+  createVerificationPhases,
+  runVerificationPhases,
+  type VerificationPhase,
+  type VerificationStep,
+} from "./verify.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const scratchDirectories: string[] = [];
@@ -75,50 +89,94 @@ describe("generated prerequisite phase", () => {
     ]);
   });
 
-  test("every documented lane prepends the shared prerequisite", () => {
-    for (const relative of [
-      "tools/scripts/codegen.ts",
-      "tools/scripts/check.ts",
-      "tools/scripts/verify-kernel.ts",
-      "tools/scripts/verify.ts",
-    ]) {
-      const source = readFileSync(path.join(REPO_ROOT, relative), "utf8");
-      expect(source, relative).toContain("prependGeneratedPrerequisitePhase(");
+  test("every executable lane factory prepends the shared cached prerequisite", () => {
+    const expected = createGeneratedPrerequisitePhase({ fresh: false });
+    const plans: readonly [string, readonly VerificationPhase[]][] = [
+      [
+        "check",
+        createCheckPhases({
+          base: "generated-prerequisite-test",
+          includeRust: false,
+        }),
+      ],
+      ["codegen", createCodegenPhases()],
+      ["verify-kernel", createKernelVerificationPhases({ fresh: false })],
+      ["verify", createVerificationPhases()],
+    ];
+
+    for (const [lane, phases] of plans) {
+      expect(phases[0], lane).toEqual(expected);
     }
   });
 
-  test("materializes a missing output before validation", async () => {
+  test("the actual kernel lane factory forwards fresh mode to its prerequisite", () => {
+    expect(createKernelVerificationPhases({ fresh: true })[0]).toEqual(
+      createGeneratedPrerequisitePhase({ fresh: true })
+    );
+  });
+
+  test("the actual check plan materializes a missing output before validation", async () => {
     const scratch = createScratchDirectory();
     const generatedDirectory = path.join(
       scratch,
       "generated",
       "kernel-interop"
     );
-    const generationScript = `import { mkdirSync } from "node:fs"; mkdirSync(${JSON.stringify(generatedDirectory)}, { recursive: true })`;
-    const validationScript = `import { existsSync } from "node:fs"; process.exit(existsSync(${JSON.stringify(generatedDirectory)}) ? 0 : 41)`;
+    const phases = createCheckPhases({
+      base: "generated-prerequisite-test",
+      includeRust: false,
+    }).slice(0, 2);
+    const executed: string[] = [];
+    const results = await runVerificationPhases(phases, {
+      executeStep: (step) => {
+        executed.push(step.id);
+        if (step.id === "kernel interop generated prerequisite") {
+          mkdirSync(generatedDirectory, { recursive: true });
+          return 0;
+        }
+        return existsSync(generatedDirectory) ? 0 : 41;
+      },
+    });
 
-    const results = await runVerificationPhases([
-      executablePhase("generated prerequisites", generationScript),
-      executablePhase("authority validation", validationScript),
+    expect(phases.map((phase) => phase.id)).toEqual([
+      "generated prerequisites",
+      "inner-loop authority gate",
     ]);
-
-    expect(results.map((result) => result.code)).toEqual([0, 0]);
+    expect(results.every((result) => result.code === 0)).toBe(true);
+    expect(executed[0]).toBe("kernel interop generated prerequisite");
     expect(existsSync(generatedDirectory)).toBe(true);
   });
 
-  test("does not run authority validation after generation fails", async () => {
-    const scratch = createScratchDirectory();
-    const marker = path.join(scratch, "authority-ran");
-    const markerScript = `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(marker)}, "ran")`;
-
-    const results = await runVerificationPhases([
-      executablePhase("generated prerequisites", "process.exit(23)"),
-      executablePhase("authority validation", markerScript),
-    ]);
+  test("the actual check plan does not validate after generation fails", async () => {
+    const phases = createCheckPhases({
+      base: "generated-prerequisite-test",
+      includeRust: false,
+    }).slice(0, 2);
+    const executed: VerificationStep[] = [];
+    const results = await runVerificationPhases(phases, {
+      executeStep: (step) => {
+        executed.push(step);
+        return step.id === "kernel interop generated prerequisite" ? 23 : 0;
+      },
+    });
 
     expect(results).toHaveLength(1);
     expect(results[0]?.code).toBe(23);
-    expect(existsSync(marker)).toBe(false);
+    expect(executed.map((step) => step.id)).toEqual([
+      "kernel interop generated prerequisite",
+    ]);
+  });
+
+  test("the cached prerequisite target declares its generated bindings output", () => {
+    const projectPath = path.join(REPO_ROOT, "spec/interop/project.json");
+    const parsed: unknown = JSON.parse(readFileSync(projectPath, "utf8"));
+    const project = requireObject(parsed, projectPath);
+    const targets = requireObject(project.targets, `${projectPath}#targets`);
+    const codegen = requireObject(targets.codegen, `${projectPath}#codegen`);
+
+    expect(codegen.outputs).toEqual([
+      "{workspaceRoot}/typescript/kernel/grpc-client/src/lib/generated/kernel-interop",
+    ]);
   });
 });
 
@@ -130,19 +188,13 @@ function createScratchDirectory(): string {
   return directory;
 }
 
-function executablePhase(id: string, script: string): VerificationPhase {
-  return {
-    concurrency: 1,
-    id,
-    // The test commands write only under the explicitly scoped scratch root.
-    // Skipping the repository purity snapshot keeps this unit test focused on
-    // phase ordering and failure propagation.
-    mutatesWorktree: true,
-    steps: [
-      {
-        command: [process.execPath, "-e", script],
-        id,
-      },
-    ],
-  };
+function requireObject(value: unknown, label: string): Record<string, unknown> {
+  if (!isUnknownRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+  return value;
+}
+
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }

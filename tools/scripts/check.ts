@@ -69,78 +69,93 @@ const INNER_LOOP_AUTHORITY_GATE_IDS: readonly string[] = [
   "vocabulary-check verification",
 ];
 
-const args = process.argv.slice(2);
-const baseArg = args.find((arg) => arg.startsWith(BASE_FLAG));
-const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
-
 // The authority validators are the same independent family verify's first
 // phase already runs concurrently, so they share one concurrent phase here
 // too (KRT-BM002). The affected lane gets its own phase (Nx parallelizes
 // internally), and the Rust gate stays serial — clippy and cargo test share
 // the target dir and interleaving two large Rust builds helps nothing.
-const phases: VerificationPhase[] = prependGeneratedPrerequisitePhase(
-  [
-    {
-      id: "inner-loop authority gate",
-      steps: [
-        ...selectAuthorityGateSteps(INNER_LOOP_AUTHORITY_GATE_IDS, "check"),
-        // ADR-0070: the inner loop must not accept a tree the Oxfmt writer would
-        // change, now that Biome's formatter is disabled. Read-only native check.
-        FORMAT_CHECK_STEP,
-      ],
-    },
-    {
+export interface CheckPhaseOptions {
+  base: string;
+  includeRust: boolean;
+}
+
+export function createCheckPhases(
+  options: CheckPhaseOptions
+): VerificationPhase[] {
+  const phases = prependGeneratedPrerequisitePhase(
+    [
+      {
+        id: "inner-loop authority gate",
+        steps: [
+          ...selectAuthorityGateSteps(INNER_LOOP_AUTHORITY_GATE_IDS, "check"),
+          // ADR-0070: the inner loop must not accept a tree the Oxfmt writer would
+          // change, now that Biome's formatter is disabled. Read-only native check.
+          FORMAT_CHECK_STEP,
+        ],
+      },
+      {
+        concurrency: 1,
+        id: `affected typecheck/test/lint (base ${options.base})`,
+        steps: [
+          {
+            command: [
+              "bun",
+              "run",
+              "nx",
+              "affected",
+              "-t",
+              "typecheck,test,lint",
+              `--base=${options.base}`,
+            ],
+            id: `affected typecheck/test/lint (base ${options.base})`,
+          },
+        ],
+      },
+    ],
+    { fresh: false }
+  );
+
+  if (options.includeRust) {
+    phases.push({
       concurrency: 1,
-      id: `affected typecheck/test/lint (base ${base})`,
+      id: "Rust workspace gate (rust files changed)",
       steps: [
         {
           command: [
-            "bun",
-            "run",
-            "nx",
-            "affected",
-            "-t",
-            "typecheck,test,lint",
-            `--base=${base}`,
+            "cargo",
+            "clippy",
+            "--workspace",
+            "--all-targets",
+            "--",
+            "-D",
+            "warnings",
           ],
-          id: `affected typecheck/test/lint (base ${base})`,
+          id: "Rust workspace lint (rust files changed)",
+        },
+        {
+          command: ["cargo", "test", "--workspace"],
+          id: "Rust workspace tests (rust files changed)",
         },
       ],
-    },
-  ],
-  { fresh: false }
-);
+    });
+  }
 
-if (await rustChangedSince(base)) {
-  phases.push({
-    concurrency: 1,
-    id: "Rust workspace gate (rust files changed)",
-    steps: [
-      {
-        command: [
-          "cargo",
-          "clippy",
-          "--workspace",
-          "--all-targets",
-          "--",
-          "-D",
-          "warnings",
-        ],
-        id: "Rust workspace lint (rust files changed)",
-      },
-      {
-        command: ["cargo", "test", "--workspace"],
-        id: "Rust workspace tests (rust files changed)",
-      },
-    ],
-  });
+  return phases;
 }
 
-const results = await runVerificationPhases(phases);
-printVerificationSummary(results);
+async function runCheckCli(args: readonly string[]): Promise<void> {
+  const baseArg = args.find((arg) => arg.startsWith(BASE_FLAG));
+  const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
+  const phases = createCheckPhases({
+    base,
+    includeRust: await rustChangedSince(base),
+  });
+  const results = await runVerificationPhases(phases);
+  printVerificationSummary(results);
 
-if (hasVerificationFailure(results)) {
-  process.exitCode = 1;
+  if (hasVerificationFailure(results)) {
+    process.exitCode = 1;
+  }
 }
 
 async function rustChangedSince(ref: string): Promise<boolean> {
@@ -191,4 +206,8 @@ async function gitLines(
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+}
+
+if (import.meta.main) {
+  await runCheckCli(process.argv.slice(2));
 }

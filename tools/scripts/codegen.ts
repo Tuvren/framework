@@ -31,6 +31,7 @@ import {
   printVerificationSummary,
   runVerificationPhases,
   selectAuthorityGateSteps,
+  type VerificationPhase,
 } from "./verify.js";
 
 // The exact validator subset (and order) package.json's previous inline
@@ -54,8 +55,8 @@ const CODEGEN_VALIDATOR_IDS: readonly string[] = [
   "machine authority guardrails",
 ];
 
-const results = await runVerificationPhases(
-  prependGeneratedPrerequisitePhase(
+export function createCodegenPhases(): VerificationPhase[] {
+  return prependGeneratedPrerequisitePhase(
     [
       {
         id: "codegen authority validators",
@@ -90,11 +91,14 @@ const results = await runVerificationPhases(
       },
     ],
     { fresh: false }
-  )
-);
+  );
+}
 
-printVerificationSummary(results);
+if (import.meta.main) {
+  const results = await runVerificationPhases(createCodegenPhases());
+  printVerificationSummary(results);
 
-if (hasVerificationFailure(results)) {
-  process.exitCode = 1;
+  if (hasVerificationFailure(results)) {
+    process.exitCode = 1;
+  }
 }
