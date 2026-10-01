@@ -33,10 +33,32 @@ import { join, relative } from "node:path";
 export interface NxCommandOptions {
   command?: string;
   commands?: (string | { command?: string })[];
+  cwd?: string;
+  // `nx:run-commands` appends these to the executed command
+  // (normalizeOptions + interpolateArgsIntoCommand). They are declared so the
+  // lint-scope gate can reject any invocation whose effective scope differs
+  // from its literal command text instead of crediting the project root.
+  args?: string | string[];
+  __unparsed__?: string[];
+  forwardAllArgs?: boolean;
+  /**
+   * Nx forwards every unrecognized scalar option as `--<key>=<value>` on the
+   * executed command, so the scope gate treats an extra key as
+   * scope-affecting and refuses whole-root credit.
+   */
+  [option: string]: unknown;
 }
 
 export interface NxProjectTarget {
   configurations?: Record<string, NxCommandOptions>;
+  // Nx selects this configuration for an unqualified `nx run project:target`
+  // (create-task-graph resolveConfiguration). Gates that model the invoked
+  // command must apply it, not every named configuration.
+  defaultConfiguration?: string;
+  // The executor that actually runs the target. Only `nx:run-commands` appends
+  // forwarded args; a custom executor that merely accepts a command-shaped
+  // `options` object must never earn lint coverage.
+  executor?: string;
   options?: NxCommandOptions;
 }
 

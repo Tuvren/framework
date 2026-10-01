@@ -41,7 +41,7 @@ import { loadNxProjectFiles, type NxProjectFile } from "./nx-projects.js";
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const COVERAGE_DIR = path.join(REPO_ROOT, "tools/biome-coverage");
 const BQ_PROJECTS = new Set(["kernel-contract-protocol", "kernel-runtime"]);
-const OXLINT_COMMAND = "bunx --bun oxlint --type-aware .";
+const OXLINT_COMMAND_PREFIX = "bunx --bun oxlint --type-aware";
 
 let inventoryCache: Promise<string[]> | undefined;
 
@@ -75,13 +75,20 @@ function switchBqProjectsToOxc(
     if (!BQ_PROJECTS.has(file.name)) {
       return file;
     }
+    // The canonical whole-project switch (ADR-0070): run from the workspace
+    // root and point Oxlint at exactly the project directory. A bare `.` here
+    // would lint the whole repository and must not count as project scope.
+    const root = path.dirname(file.path);
     return {
       ...file,
       project: {
         ...file.project,
         targets: {
           ...file.project.targets,
-          lint: { options: { command: OXLINT_COMMAND } },
+          lint: {
+            executor: "nx:run-commands",
+            options: { command: `${OXLINT_COMMAND_PREFIX} ${root}`, cwd: "." },
+          },
         },
       },
     };

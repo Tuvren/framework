@@ -104,7 +104,12 @@ function projectFile(
   const project = {
     name,
     root,
-    targets: { lint: { options: { command: lintCommand } } },
+    targets: {
+      lint: {
+        executor: "nx:run-commands",
+        options: { command: lintCommand },
+      },
+    },
   };
   return { name, path: `${root}/project.json`, project };
 }
@@ -372,7 +377,7 @@ describe("biome coverage routing", () => {
           projectFile(
             "kernel-contract-protocol",
             "typescript/kernel/protocol",
-            "bunx --bun oxlint --type-aware ."
+            "bunx --bun oxlint --type-aware typescript/kernel/protocol"
           ),
         ],
         repoRoot: REPO_ROOT,
