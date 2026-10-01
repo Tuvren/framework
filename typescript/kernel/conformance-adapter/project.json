@@ -24,6 +24,13 @@
         "cwd": ".",
         "command": "bunx --bun @biomejs/biome check typescript/kernel/conformance-adapter"
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/kernel/conformance-adapter"
+      }
     }
   }
 }

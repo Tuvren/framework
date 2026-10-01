@@ -44,6 +44,21 @@ function parseJson<T>(text: string): T {
   return JSON.parse(text) as T;
 }
 
+// biome.jsonc is a JSONC artifact: M6's Oxfmt output emits trailing commas,
+// which strict JSON.parse rejects. Read only that artifact with the runtime
+// JSONC parser; every other read in this file stays strict JSON.
+function parseJsonc<T>(text: string): T {
+  const bun = (
+    globalThis as {
+      Bun?: { JSONC?: { parse: (value: string) => unknown } };
+    }
+  ).Bun;
+  if (!bun?.JSONC) {
+    throw new Error("Bun.JSONC is unavailable in this runtime");
+  }
+  return bun.JSONC.parse(text) as T;
+}
+
 let inventoryCache: Promise<string[]> | undefined;
 
 async function collectFormerRootInventory(): Promise<string[]> {
@@ -387,7 +402,7 @@ describe("biome coverage routing", () => {
 
 describe("biome feature configuration", () => {
   test("biome.jsonc disables formatter and assist without altering lint rules", () => {
-    const config = parseJson<Record<string, unknown>>(
+    const config = parseJsonc<Record<string, unknown>>(
       readFileSync(BIOME_CONFIG, "utf8")
     );
     expect(config.formatter).toEqual({ enabled: false });

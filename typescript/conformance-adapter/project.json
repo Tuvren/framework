@@ -33,6 +33,20 @@
         "cwd": ".",
         "command": "bunx --bun @biomejs/biome check typescript/conformance-adapter"
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/conformance-adapter"
+      }
     }
   }
 }
