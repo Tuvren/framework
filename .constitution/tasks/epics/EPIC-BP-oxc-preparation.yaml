@@ -97,6 +97,11 @@ tickets:
     deviations:
       - files: [tools/scripts/oxc-preparation.test.ts]
         justification: "Approved installation/configuration tests also complete OXC inspection for BP002; the adjacent stack-only S1 patch aligns installed pin evidence before the pair is reviewed."
+      - files: [oxfmt.config.ts]
+        justification: >-
+          PR review clarifies the comment to match the approved M3 approach's
+          existing TS/JS/JSON/JSONC inventory. Formatter policy and protected
+          evidence exclusions remain unchanged.
   - id: KRT-BP008
     title: Make the root Biome gate lint-only with selective coverage
     type: Chore
@@ -127,6 +132,18 @@ tickets:
         justification: "The verified inventory derives from Git and owned Biome config with Bun native APIs, avoiding whole-root lint and failing closed on discovery errors; parity and migration tests address the independent P1 findings."
       - files: [tools/scripts/lib/biome-lint-partition.test.ts]
         justification: "A focused native-inventory partition test covers real BQ switch metadata, counting retained and OXC-excluded files together without exceeding the runner test module size limit."
+      - files:
+          - tools/scripts/biome-lint.ts
+          - tools/scripts/biome-lint.test.ts
+          - tools/scripts/lib/nx-projects.ts
+          - tools/scripts/lib/biome-lint-partition.test.ts
+          - tools/scripts/lib/biome-oxc-discovery.test.ts
+        justification: >-
+          PR review validates the active unqualified nx:run-commands lint
+          invocation and its project-wide scope before granting coverage.
+          Partial paths, inactive configurations, forwarded arguments, unknown
+          options, custom executors, and wrong directories receive no whole-root
+          credit. Regression controls preserve the complete lint partition.
   - id: KRT-BP003
     title: Make generators produce oxfmt-clean artifacts
     type: Chore
@@ -193,6 +210,17 @@ tickets:
     deviations:
       - files: [.git-blame-ignore-revs]
         justification: "Approved post-merge exception records the exact merged mechanical SHA after patch-id mapping; release changeset coverage remains separate in M7."
+      - files:
+          - package.json
+          - tools/scripts/check.ts
+          - tools/scripts/verify.ts
+          - tools/scripts/oxc-preparation.test.ts
+        justification: >-
+          PR review restores read-only native formatting enforcement in check
+          and verify. The dedicated post-codegen verification phase runs all
+          seven original BP suites and two added regression suites, with an
+          explicit inventory and the existing worktree-purity guard. CI inherits
+          these checks through verify; the formatter writer remains unchanged.
   - id: KRT-BP005
     title: Expose full type-aware project coverage
     type: Chore
@@ -221,6 +249,18 @@ tickets:
         justification: "Native tooling discovery removes measured TS2591/TS2307 resolution noise while retaining all real sources; typed rule debt remains for the directory ratchet."
       - files: [tools/scripts/generator-oxfmt.test.ts, tools/scripts/oxc-preparation.test.ts]
         justification: "Verified UTF-8 subprocess return annotations remove the six type diagnostics introduced by this epic without changing runtime calls or assertions."
+      - files:
+          - typescript/testkit/tsconfig.typecheck.json
+          - typescript/kernel/testkit/tsconfig.typecheck.json
+          - typescript/providers/testkit/tsconfig.typecheck.json
+          - tools/scripts/typecheck-source-aliases.test.ts
+          - tools/biome-coverage/bv.json
+        justification: >-
+          PR review corrects fresh-checkout smoke compilation by adding each
+          testkit's self-package source alias. Read-only compiler hosts hide all
+          three dist directories, and alias-removal controls reproduce TS2307
+          despite warmed outputs. Existing aliases, references, membership,
+          public resolution, and build prerequisites are preserved.
 
   - id: KRT-BP006
     title: Record installed OXC pins in a spec-only patch
@@ -319,6 +359,12 @@ closeout:
         Retain Biome 2.5.14 and ultracite-biome 7.4.2 until conditional retirement.
         Route measured preset loading, discovery, generator, and verification
         conventions to Stage 3 for alignment.
+    - directory: tasks
+      type: fixed
+      text: >-
+        Correct fresh-checkout testkit smoke resolution and active project-wide
+        mixed-lint coverage. Enforce read-only native formatter validation and
+        execute all nine BP acceptance suites in the release verification lane.
   candidate_terms: []
   routed_upstream:
     - stage: tech-spec
@@ -348,7 +394,8 @@ closeout:
       and Stage 3 aligns ADR-0070's loader wording.
     - >-
       Continue the planned directory migration epics with the unchanged OXC preset.
-      The reviewed native measurement covers 626 files and reports 19,599 diagnostics,
+      The historical M9b native measurement at code commit
+      60f8cb1f8b20cb80057e1c9bf57b62b000d630a0 covers 626 files and reports 19,599 diagnostics,
       including nine unchanged pre-epic tooling or intentionally invalid fixture
       type diagnostics and zero project-resolution errors.
       The remaining type diagnostics occur in tools/conformance/harness/run.ts,
@@ -456,6 +503,42 @@ closeout:
       kind: pattern
       paths: [tools/tsconfig.json, tools/biome-coverage/residual.json]
       commit: 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0
+    - summary: >-
+        Resolve each testkit self-package import to source in its source-only
+        typecheck configuration. Prove resolution with dist hidden and retain
+        controls that reproduce TS2307 when each alias is removed.
+      kind: pattern
+      paths:
+        - typescript/testkit/tsconfig.typecheck.json
+        - typescript/kernel/testkit/tsconfig.typecheck.json
+        - typescript/providers/testkit/tsconfig.typecheck.json
+        - tools/scripts/typecheck-source-aliases.test.ts
+      commit: e28ae522315b463014a44a5a822d0cb444c21c26
+    - summary: >-
+        Credit migrated lint coverage only for the active nx:run-commands
+        target's canonical project-wide Oxlint invocation in the correct
+        directory. Reject partial scope, inactive alternatives, forwarded
+        arguments, unknown options, and custom executors before subtracting
+        retained coverage; preserve the complete partition controls.
+      kind: pattern
+      paths:
+        - tools/scripts/biome-lint.ts
+        - tools/scripts/lib/nx-projects.ts
+        - tools/scripts/lib/biome-oxc-discovery.test.ts
+      commit: c397a11f0a547f7a3929e12e3edc7bb427e58bc3
+    - summary: >-
+        Share the read-only native Oxfmt check across check and verify.
+        Run seven original BP suites and two new regressions through an explicit
+        post-codegen serial verification phase with worktree-purity checks.
+        Pin the exported nine-suite acceptance command and verify malformed
+        formatter probes fail without being rewritten. CI inherits verify.
+      kind: convention
+      paths:
+        - package.json
+        - tools/scripts/check.ts
+        - tools/scripts/verify.ts
+        - tools/scripts/oxc-preparation.test.ts
+      commit: 7f9d6e054c4b705f15d8c61a2d21803efa283e73
   settled:
     - record: "tech-spec/stack.yaml#@biomejs/biome"
       evidence:
