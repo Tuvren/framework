@@ -16,6 +16,7 @@
 
 import process from "node:process";
 
+import { prependGeneratedPrerequisitePhase } from "./lib/generated-prerequisites.js";
 import { loadNxProjectFiles } from "./lib/nx-projects.js";
 import {
   hasVerificationFailure,
@@ -114,78 +115,84 @@ function createKernelVerificationPhases(options: {
 }): readonly VerificationPhase[] {
   const cacheModeArgs = options.fresh ? ["--skipNxCache"] : [];
 
-  return [
-    {
-      id: "kernel authority and conformance-plan validation",
-      steps: [
-        {
-          command: [
-            "bun",
-            "tools/scripts/authority-packet/validate-authority-packets.ts",
-          ],
-          id: "kernel authority packet validation",
-        },
-        {
-          command: ["bun", "tools/conformance/plan-compiler/validate-plans.ts"],
-          id: "kernel conformance plan validation",
-        },
-      ],
-    },
-    {
-      id: "kernel typecheck, testkit tests, and compatibility evidence",
-      steps: [
-        {
-          command: [
-            "bun",
-            "run",
-            "nx",
-            "run-many",
-            "-t",
-            "typecheck",
-            "-p",
-            KERNEL_TYPECHECK_PROJECTS.join(","),
-            "--parallel=4",
-            ...cacheModeArgs,
-          ],
-          id: "kernel TypeScript typecheck",
-        },
-        {
-          command: [
-            "bun",
-            "run",
-            "nx",
-            "run",
-            "kernel-testkit:test",
-            ...cacheModeArgs,
-          ],
-          id: "kernel testkit tests",
-        },
-        {
-          command: ["bun", "run", "compatibility:check"],
-          id: "workspace compatibility evidence check",
-        },
-      ],
-    },
-    {
-      concurrency: 1,
-      id: "kernel conformance",
-      steps: [
-        {
-          command: [
-            "bun",
-            "run",
-            "nx",
-            "run-many",
-            "-t",
-            "conformance",
-            "-p",
-            KERNEL_CONFORMANCE_PROJECTS.join(","),
-            "--parallel=3",
-            ...cacheModeArgs,
-          ],
-          id: "kernel memory, SQLite, and PostgreSQL conformance",
-        },
-      ],
-    },
-  ];
+  return prependGeneratedPrerequisitePhase(
+    [
+      {
+        id: "kernel authority and conformance-plan validation",
+        steps: [
+          {
+            command: [
+              "bun",
+              "tools/scripts/authority-packet/validate-authority-packets.ts",
+            ],
+            id: "kernel authority packet validation",
+          },
+          {
+            command: [
+              "bun",
+              "tools/conformance/plan-compiler/validate-plans.ts",
+            ],
+            id: "kernel conformance plan validation",
+          },
+        ],
+      },
+      {
+        id: "kernel typecheck, testkit tests, and compatibility evidence",
+        steps: [
+          {
+            command: [
+              "bun",
+              "run",
+              "nx",
+              "run-many",
+              "-t",
+              "typecheck",
+              "-p",
+              KERNEL_TYPECHECK_PROJECTS.join(","),
+              "--parallel=4",
+              ...cacheModeArgs,
+            ],
+            id: "kernel TypeScript typecheck",
+          },
+          {
+            command: [
+              "bun",
+              "run",
+              "nx",
+              "run",
+              "kernel-testkit:test",
+              ...cacheModeArgs,
+            ],
+            id: "kernel testkit tests",
+          },
+          {
+            command: ["bun", "run", "compatibility:check"],
+            id: "workspace compatibility evidence check",
+          },
+        ],
+      },
+      {
+        concurrency: 1,
+        id: "kernel conformance",
+        steps: [
+          {
+            command: [
+              "bun",
+              "run",
+              "nx",
+              "run-many",
+              "-t",
+              "conformance",
+              "-p",
+              KERNEL_CONFORMANCE_PROJECTS.join(","),
+              "--parallel=3",
+              ...cacheModeArgs,
+            ],
+            id: "kernel memory, SQLite, and PostgreSQL conformance",
+          },
+        ],
+      },
+    ],
+    { fresh: options.fresh }
+  );
 }

@@ -16,7 +16,11 @@ import { pathToFileURL } from "node:url";
 
 import ts from "typescript";
 
-import { TOOLING_ACCEPTANCE_STEP } from "./verify.js";
+import {
+  ORIGINAL_BP_TOOLING_ACCEPTANCE_TESTS,
+  TOOLING_ACCEPTANCE_STEP,
+  TOOLING_ACCEPTANCE_TESTS,
+} from "./verify.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const GAP_PLAN_SCRIPT = "tools/scripts/epic-af-conformance-gap-plan.ts";
@@ -462,11 +466,10 @@ describe("oxc preparation grammar contract", () => {
 });
 
 describe("durable tooling acceptance lane", () => {
-  // Round-1 finding 4: the seven original BP suites plus the two new regression
-  // suites must all run in the verify/CI lane. Pinning the exported command —
-  // rather than a second hand-typed list — keeps a later edit from silently
-  // dropping one from the durable lane.
-  const REQUIRED_TOOLING_SUITES = [
+  // Round-1 finding 4: preserve the exact nine original and round-1 BP suites.
+  // Follow-up suites extend the durable command through a separate registry,
+  // so future additions cannot make this baseline assertion vacuous.
+  const ORIGINAL_BP_TOOLING_SUITES = [
     "tools/scripts/biome-alias.test.ts",
     "tools/scripts/lib/biome-inventory.test.ts",
     "tools/scripts/lib/biome-lint-partition.test.ts",
@@ -478,12 +481,19 @@ describe("durable tooling acceptance lane", () => {
     "tools/scripts/typecheck-source-aliases.test.ts",
   ];
 
-  test("the exported acceptance command runs all nine required suites", () => {
+  test("the original BP acceptance baseline remains exactly nine suites", () => {
+    expect(ORIGINAL_BP_TOOLING_ACCEPTANCE_TESTS).toEqual(
+      ORIGINAL_BP_TOOLING_SUITES
+    );
+    expect(ORIGINAL_BP_TOOLING_ACCEPTANCE_TESTS).toHaveLength(9);
+  });
+
+  test("the exported acceptance command runs every registered suite", () => {
     const [runtime, subcommand, ...suites] = TOOLING_ACCEPTANCE_STEP.command;
     expect(runtime).toBe("bun");
     expect(subcommand).toBe("test");
-    expect([...suites].sort()).toEqual([...REQUIRED_TOOLING_SUITES].sort());
-    for (const relative of REQUIRED_TOOLING_SUITES) {
+    expect(suites).toEqual([...TOOLING_ACCEPTANCE_TESTS]);
+    for (const relative of TOOLING_ACCEPTANCE_TESTS) {
       expect(existsSync(path.join(REPO_ROOT, relative)), relative).toBe(true);
     }
   });
