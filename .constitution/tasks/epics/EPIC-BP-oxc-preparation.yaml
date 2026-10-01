@@ -240,7 +240,7 @@ tickets:
       evidence: "Invariant: stack records match the installed manifests and lockfile, and Biome retirement is still conditional on all directory gates. Checker: bun run lint and constitution pin validation."
     flows: []
     certainty: settled
-    status: planned
+    status: done
 
 decisions:
   - id: OD-08
@@ -285,3 +285,234 @@ decisions:
       date: 2026-10-01
       in: EPIC-BP
     proposed_by: EPIC-BP
+
+closeout:
+  tickets_completed:
+    - KRT-BP007
+    - KRT-BP002
+    - KRT-BP001
+    - KRT-BP008
+    - KRT-BP003
+    - KRT-BP004
+    - KRT-BP005
+    - KRT-BP006
+  tickets_deferred: []
+  points_completed: 33
+  spec_patches:
+    - path: .constitution/tech-spec/stack.yaml
+      summary: >-
+        Record installed OXC and Ultracite pins with Bun lock evidence.
+        Retain Biome and ultracite-biome until every directory migration gate passes.
+        The final M10 audit found no additional change.
+      commit: 1a1eb537626215dcf91ed19264ea73c502f6b421
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: >-
+        Complete EPIC-BP's eight tooling tickets and 33 points.
+        Verify retained preset parity, mixed lint coverage, Oxfmt regeneration,
+        source-only project discovery, installed pins, and direct release coverage.
+    - directory: tech-spec
+      type: changed
+      text: >-
+        Align the OXC and Ultracite stack pins with installed Bun lock evidence.
+        Retain Biome 2.5.14 and ultracite-biome 7.4.2 until conditional retirement.
+        Route measured preset loading, discovery, generator, and verification
+        conventions to Stage 3 for alignment.
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: >-
+        Align ADR-0070's physical Oxlint configuration wording with the measured
+        verbatim core-preset root spread. OD-08 remains proposed with an interim
+        assumption pending the repository owner's ruling after EPIC-BP merges.
+        The effective configuration preserves shipped rule options and environment;
+        no local policy overrides were added.
+    - stage: tech-spec
+      item: >-
+        Document fresh-worktree bootstrap ordering: kernel-interop-grpc:codegen
+        must materialize gitignored bindings before the authority validators that
+        import them. The generation target already exists; no boundary or
+        generation semantics changed.
+    - stage: tech-spec
+      item: >-
+        Document API formatter verification that preserves the historical ledger.
+        An unchanged surface makes api-freeze --update a no-op.
+        Exercise the unchanged snapshot writer against an isolated copy containing
+        the complete ledger, then verify its expected append and parsed-value guard.
+        Keep the repository snapshot intact.
+  follow_ups:
+    - >-
+      Preserve OD-08 as proposed with its recorded interim assumption.
+      After merge, the repository owner rules on verbatim core-preset root spreading
+      and Stage 3 aligns ADR-0070's loader wording.
+    - >-
+      Continue the planned directory migration epics with the unchanged OXC preset.
+      The reviewed native measurement covers 626 files and reports 19,599 diagnostics,
+      including nine unchanged pre-epic tooling or intentionally invalid fixture
+      type diagnostics and zero project-resolution errors.
+      The remaining type diagnostics occur in tools/conformance/harness/run.ts,
+      tools/scripts/authority-guardrails/__fixtures__/typescript-owned-conformance/source.ts,
+      tools/scripts/portability-gate.ts, tools/scripts/release-check.ts, and
+      tools/scripts/telemetry-codegen.ts. Handle them in the later directory ratchet
+      according to their source, preserving the intentional guardrail fixture.
+    - >-
+      Keep Biome and ultracite-biome active for unmigrated coverage.
+      Retire both together only after all directory gates pass.
+      EPIC-BP completes preparation and makes no full Oxlint-clean claim.
+    - >-
+      After the approved rebase merge, map mechanical commit
+      52a91477571c37b7339b4b53529a7c9dbcd8c17f to its exact merged SHA by patch-id.
+      A fresh approved Pig worker adds that merged SHA to .git-blame-ignore-revs
+      in a separate corrective commit, followed by independent review.
+      Then run the approved reconcile and derive steps in separate commits.
+  code_decisions:
+    - summary: >-
+        Embed the measured immutable Biome preset and diagnostic baseline in the
+        durable alias contract test. Scratch probes extend the resolved preset
+        with discovery settings only.
+      kind: convention
+      paths: [tools/scripts/biome-alias.test.ts]
+      commit: 4a5866fa537285eb9ff194b5255acf5835ca736b
+    - summary: >-
+        Repeat shipped ignore patterns in the OXC TypeScript configurations.
+        Add the declared constitution and language exclusions.
+        Group OXC dependency updates and hold the retained Biome alias explicitly.
+      kind: convention
+      paths: [oxlint.config.ts, oxfmt.config.ts, .github/dependabot.yml]
+      commit: 577e63b2a3684a0a129e4f0e3d417c17e3f774ab
+    - summary: >-
+        Spread the unchanged Ultracite core preset at the Oxlint root because
+        extends drops nine rule-option tuples and the browser environment.
+        Compare the complete effective configuration to the shipped policy.
+      kind: pattern
+      paths: [oxlint.config.ts, tools/scripts/oxc-preparation.test.ts]
+      commit: cf11f81fe4347c1d33be26e7d4ecc654f41fb566
+    - summary: >-
+        Inventory literal retained lint paths with the most specific owner.
+        Discover migrated OXC targets from Nx command metadata.
+        Derive former root coverage from read-only Git and owned Biome includes
+        using Bun APIs, and fail on missing or duplicate coverage.
+      kind: pattern
+      paths:
+        - tools/scripts/biome-lint.ts
+        - tools/scripts/lib/biome-inventory.ts
+        - tools/biome-coverage
+      commit: d16e3e2b6252752833b15f2cfde4a6916586b612
+    - summary: >-
+        Run Oxfmt formatter callers from the repository root.
+        Guard kernel-plan formatting and API snapshot emission with parsed-value
+        checks, and declare formatter configuration inputs on generator targets.
+      kind: convention
+      paths:
+        - tools/scripts/conformance/format-generated-json.ts
+        - tools/scripts/conformance/generate-kernel-plans.ts
+        - tools/scripts/api-freeze-gate.ts
+        - spec/*/project.json
+        - reports/compatibility/project.json
+      commit: 06f589e7254a3b72494cc43784ae8aee7d18af35
+    - summary: >-
+        Expose certification wrappers and adapters through source-only typecheck
+        references. Reuse provider certification aliases for its adapter and
+        declare kernel interop generation on the framework adapter.
+      kind: pattern
+      paths:
+        - typescript/certification/tsconfig.json
+        - typescript/kernel/certification/tsconfig.json
+        - typescript/providers/certification/tsconfig.json
+        - typescript/conformance-adapter/tsconfig.typecheck.json
+        - typescript/kernel/conformance-adapter/tsconfig.typecheck.json
+        - typescript/providers/conformance-adapter/tsconfig.typecheck.json
+      commit: 50b3efbad33ed6519050618a4b259c2c853b2109
+    - summary: >-
+        Introduce source-only aggregator references alongside retained library
+        references. Create the Core aggregator without changing its source-only
+        target, and include actual smoke files in both testkit aggregators.
+        M9b then establishes the measured reference order for all packages.
+      kind: convention
+      paths:
+        - typescript/core/tsconfig.typecheck.json
+        - typescript/kernel/testkit/tsconfig.typecheck.json
+        - typescript/testkit/tsconfig.typecheck.json
+      commit: 3cf948f5dbc3a881e027b73a11eb5d1412a6df11
+    - summary: >-
+        Put source-only aggregator references first in all 27 package root
+        configurations because the installed tsgolint selects the first matching
+        reference. Preserve every library reference and public package resolution.
+      kind: pattern
+      paths: ["typescript/**/tsconfig.json"]
+      commit: 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0
+    - summary: >-
+        Set noEmit explicitly on source-only aggregators that allow TypeScript
+        extension imports. Preserve declaration generation as a build prerequisite
+        for type-aware lint rather than a source-only typecheck prerequisite.
+      kind: convention
+      paths: ["typescript/**/tsconfig.typecheck.json"]
+      commit: 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0
+    - summary: >-
+        Add tools project discovery with Bun and Node types, source-only noEmit,
+        and retained lint coverage. Verify all 68 actual tooling memberships
+        alongside the 491 package file memberships to eliminate resolution noise.
+      kind: pattern
+      paths: [tools/tsconfig.json, tools/biome-coverage/residual.json]
+      commit: 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0
+  settled:
+    - record: "tech-spec/stack.yaml#@biomejs/biome"
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "2.5.14"
+        date: "2026-10-01"
+        note: >-
+          Final M10 audit at 35ea6ed523c693ca2cd6a7781fb4ee5729a0c451
+          matches stack, manifest, lock, and installed metadata.
+          Retained lint passes; removal remains conditional on all directory gates.
+    - record: "tech-spec/stack.yaml#ultracite"
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "7.12.2"
+        date: "2026-10-01"
+        note: >-
+          Final M10 audit matches stack, manifest, lock, and installed metadata.
+          Native OXC preset assertions pass; the Ultracite CLI is not used.
+    - record: "tech-spec/stack.yaml#ultracite-biome"
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "7.4.2"
+        date: "2026-10-01"
+        note: >-
+          The manifest alias npm:ultracite@7.4.2 resolves through the Bun lock alias
+          key to ultracite@7.4.2. Installed metadata and normalized retained
+          Biome diagnostic parity agree. Retire the alias together with Biome.
+    - record: "tech-spec/stack.yaml#oxlint"
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "1.86.0"
+        date: "2026-10-01"
+        note: >-
+          Final M10 audit matches stack, manifest, lock, and installed metadata.
+          Canonical TS-004 rejects the wrong-pin control and passes restored bytes.
+          Native type-aware project-resolution diagnostics are zero.
+    - record: "tech-spec/stack.yaml#oxfmt"
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "0.71.0"
+        date: "2026-10-01"
+        note: >-
+          Final M10 audit matches stack, manifest, lock, and installed metadata.
+          Formatter and generator repeat passes preserve parsed authority values
+          and leave the tracked worktree unchanged.
+    - record: "tech-spec/stack.yaml#oxlint-tsgolint"
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "7.0.2003"
+        date: "2026-10-01"
+        note: >-
+          Final M10 audit matches stack, manifest, lock, and installed metadata.
+          Native type-aware measurement evaluates resolved types with zero
+          project-resolution errors; remaining directory rule debt is recorded.
