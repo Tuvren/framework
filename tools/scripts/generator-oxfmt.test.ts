@@ -25,49 +25,116 @@ const TELEMETRY_CHANGESET_PATTERN = /"@tuvren\/telemetry-semconv":\s*patch/u;
 
 interface ArtifactTarget {
   file: string;
-  // Inputs every artifact target must keep declaring in addition to the new
-  // Oxfmt config and package pins.
+  target: string;
+  // Complete input set the target declared before M5. The Oxfmt switch only
+  // adds inputs, so every pre-M5 value must still be present afterward.
   preservedInputs: string[];
 }
 
 const ARTIFACT_TARGETS: ArtifactTarget[] = [
   {
     file: "spec/core/project.json",
-    preservedInputs: ["{workspaceRoot}/spec/core/typespec/**/*"],
+    target: "codegen",
+    preservedInputs: [
+      "default",
+      "^production",
+      "{workspaceRoot}/spec/core/typespec/**/*",
+      "{workspaceRoot}/spec/core/artifacts/**/*",
+      "{workspaceRoot}/bun.lock",
+    ],
   },
   {
     file: "spec/providers/project.json",
-    preservedInputs: ["{workspaceRoot}/spec/providers/typespec/**/*"],
+    target: "codegen",
+    preservedInputs: [
+      "default",
+      "^production",
+      "{workspaceRoot}/spec/providers/typespec/**/*",
+      "{workspaceRoot}/spec/providers/artifacts/**/*",
+      "{workspaceRoot}/bun.lock",
+    ],
   },
   {
     file: "spec/runners/project.json",
-    preservedInputs: ["{workspaceRoot}/spec/runners/typespec/**/*"],
+    target: "codegen",
+    preservedInputs: [
+      "default",
+      "^production",
+      "{workspaceRoot}/spec/runners/typespec/**/*",
+      "{workspaceRoot}/spec/runners/artifacts/**/*",
+      "{workspaceRoot}/bun.lock",
+    ],
   },
   {
     file: "spec/tools/project.json",
-    preservedInputs: ["{workspaceRoot}/spec/tools/typespec/**/*"],
+    target: "codegen",
+    preservedInputs: [
+      "default",
+      "^production",
+      "{workspaceRoot}/spec/tools/typespec/**/*",
+      "{workspaceRoot}/spec/tools/artifacts/**/*",
+      "{workspaceRoot}/bun.lock",
+    ],
   },
   {
     file: "spec/host/project.json",
+    target: "codegen",
     preservedInputs: [
+      "default",
+      "^production",
       "{workspaceRoot}/spec/host/typespec/**/*",
+      "{workspaceRoot}/spec/host/artifacts/**/*",
       "{workspaceRoot}/spec/host/session/typespec/**/*",
+      "{workspaceRoot}/spec/host/session/artifacts/**/*",
+      "{workspaceRoot}/bun.lock",
     ],
   },
   {
     file: "spec/streaming/project.json",
+    target: "codegen",
     preservedInputs: [
+      "default",
+      "^production",
       "{workspaceRoot}/spec/streaming/typespec/**/*",
+      "{workspaceRoot}/spec/streaming/artifacts/**/*",
       "{workspaceRoot}/spec/streaming/sse/typespec/**/*",
+      "{workspaceRoot}/spec/streaming/sse/artifacts/**/*",
       "{workspaceRoot}/spec/streaming/resume/typespec/**/*",
+      "{workspaceRoot}/spec/streaming/resume/artifacts/**/*",
       "{workspaceRoot}/spec/streaming/ws/typespec/**/*",
+      "{workspaceRoot}/spec/streaming/ws/artifacts/**/*",
+      "{workspaceRoot}/bun.lock",
     ],
   },
   {
     file: "spec/telemetry/project.json",
+    target: "codegen",
     preservedInputs: [
+      "default",
       "{workspaceRoot}/tools/scripts/telemetry-codegen.ts",
+      "{workspaceRoot}/tools/scripts/lib/**/*",
       "{workspaceRoot}/tools/generators/telemetry/**/*",
+    ],
+  },
+  {
+    // Only the evidence-refresh target invokes the changed compatibility
+    // formatter; codegen and check in this project remain check-only.
+    file: "reports/compatibility/project.json",
+    target: "evidence-refresh",
+    preservedInputs: [
+      "default",
+      "^production",
+      "{workspaceRoot}/tools/scripts/**/*",
+      "{workspaceRoot}/tools/conformance/**/*",
+      "{workspaceRoot}/spec/conformance/**/*",
+      "{workspaceRoot}/typescript/conformance-adapter/**/*",
+      "{workspaceRoot}/typescript/kernel/conformance-adapter/**/*",
+      "{workspaceRoot}/typescript/providers/conformance-adapter/**/*",
+      "{workspaceRoot}/rust/conformance-adapter/**/*",
+      "{workspaceRoot}/rust/kernel-conformance-adapter/**/*",
+      "{workspaceRoot}/go/kernel-conformance-adapter/**/*",
+      "{workspaceRoot}/python/kernel-conformance-adapter/**/*",
+      "{workspaceRoot}/dart/kernel-conformance-adapter/**/*",
     ],
   },
 ];
@@ -86,28 +153,37 @@ function read(relativePath: string): string {
   return readFileSync(stdio(relativePath), "utf8");
 }
 
-interface ProjectManifest {
-  targets?: {
-    codegen?: {
-      inputs?: string[];
-      options?: { command?: string };
-    };
-  };
+interface ProjectTarget {
+  inputs?: string[];
+  options?: { command?: string };
 }
 
-function readCodegenTarget(relativePath: string): {
-  command: string;
-  inputs: string[];
-} {
+interface ProjectManifest {
+  targets?: Record<string, ProjectTarget>;
+}
+
+function readTarget(
+  relativePath: string,
+  targetName: string
+): { command: string; inputs: string[] } {
   const manifest = JSON.parse(read(relativePath)) as ProjectManifest;
-  const codegen = manifest.targets?.codegen;
-  const command = codegen?.options?.command;
+  const target = manifest.targets?.[targetName];
+  const command = target?.options?.command;
 
   if (typeof command !== "string") {
-    throw new Error(`${relativePath} does not declare a codegen command`);
+    throw new Error(
+      `${relativePath} does not declare a ${targetName} command`
+    );
   }
 
-  return { command, inputs: codegen?.inputs ?? [] };
+  return { command, inputs: target?.inputs ?? [] };
+}
+
+function missingInputs(
+  inputs: readonly string[],
+  preserved: readonly string[]
+): string[] {
+  return preserved.filter((value) => !inputs.includes(value));
 }
 
 function runGenerator(args: readonly string[]): ReturnType<typeof spawnSync> {
@@ -152,23 +228,19 @@ describe("generator formatter callers", () => {
 });
 
 describe("artifact target configuration", () => {
-  test("codegen commands use Oxfmt and retain their artifact inputs", () => {
+  test("artifact targets use Oxfmt and retain every pre-M5 input", () => {
     for (const target of ARTIFACT_TARGETS) {
-      const { command, inputs } = readCodegenTarget(target.file);
+      const { command, inputs } = readTarget(target.file, target.target);
 
       if (DIRECT_TYPESPEC_TARGETS.has(target.file)) {
         expect(command, target.file).toMatch(OXFMT_PATTERN);
       }
       expect(command, target.file).not.toMatch(BIOME_PACKAGE_PATTERN);
 
-      for (const preserved of target.preservedInputs) {
-        expect(inputs, `${target.file} inputs`).toContain(preserved);
-      }
-      if (DIRECT_TYPESPEC_TARGETS.has(target.file)) {
-        expect(inputs, `${target.file} inputs`).toContain(
-          "{workspaceRoot}/bun.lock"
-        );
-      }
+      expect(
+        missingInputs(inputs, target.preservedInputs),
+        `${target.file} ${target.target} inputs`
+      ).toEqual([]);
       // ADR-0070: the formatter config and its package pin are real inputs so
       // a config or version change invalidates the cached artifact.
       expect(inputs, `${target.file} inputs`).toContain(
@@ -178,6 +250,68 @@ describe("artifact target configuration", () => {
         "{workspaceRoot}/package.json"
       );
     }
+  });
+});
+
+describe("preserved input controls", () => {
+  function targetFor(file: string): ArtifactTarget {
+    const target = ARTIFACT_TARGETS.find((candidate) => candidate.file === file);
+    if (target == null) {
+      throw new Error(`${file} is not a declared artifact target`);
+    }
+    return target;
+  }
+
+  function removalControl(file: string, removed: string): void {
+    const target = targetFor(file);
+    const { inputs } = readTarget(target.file, target.target);
+
+    expect(missingInputs(inputs, target.preservedInputs)).toEqual([]);
+    expect(
+      missingInputs(
+        inputs.filter((value) => value !== removed),
+        target.preservedInputs
+      )
+    ).toEqual([removed]);
+  }
+
+  test("removing a core artifact input fails the check", () => {
+    removalControl(
+      "spec/core/project.json",
+      "{workspaceRoot}/spec/core/artifacts/**/*"
+    );
+  });
+
+  test("removing a host artifact input fails the check", () => {
+    removalControl(
+      "spec/host/project.json",
+      "{workspaceRoot}/spec/host/artifacts/**/*"
+    );
+  });
+
+  test("removing a streaming artifact input fails the check", () => {
+    removalControl(
+      "spec/streaming/project.json",
+      "{workspaceRoot}/spec/streaming/ws/artifacts/**/*"
+    );
+  });
+
+  test("removing the telemetry default input fails the check", () => {
+    removalControl("spec/telemetry/project.json", "default");
+  });
+
+  test("removing the telemetry tooling input fails the check", () => {
+    removalControl(
+      "spec/telemetry/project.json",
+      "{workspaceRoot}/tools/scripts/lib/**/*"
+    );
+  });
+
+  test("removing a compatibility evidence-refresh input fails the check", () => {
+    removalControl(
+      "reports/compatibility/project.json",
+      "{workspaceRoot}/dart/kernel-conformance-adapter/**/*"
+    );
   });
 });
 
