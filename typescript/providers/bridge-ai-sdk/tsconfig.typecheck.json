@@ -2,6 +2,7 @@
   "extends": "./tsconfig.lib.json",
   "compilerOptions": {
     "composite": false,
+    "noEmit": true,
     "rootDir": "../../..",
     "allowImportingTsExtensions": true,
     "types": ["bun"],
@@ -50,6 +51,7 @@
     }
   },
   "include": [
+    "smoke/**/*.ts",
     "src/**/*.ts",
     "test/**/*.ts",
     "../provider-api/src/**/*.ts",

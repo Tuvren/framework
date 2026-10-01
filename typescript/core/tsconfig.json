@@ -9,10 +9,10 @@
   "files": [],
   "references": [
     {
-      "path": "./tsconfig.lib.json"
+      "path": "./tsconfig.typecheck.json"
     },
     {
-      "path": "./tsconfig.typecheck.json"
+      "path": "./tsconfig.lib.json"
     }
   ]
 }
