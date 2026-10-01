@@ -22,10 +22,10 @@
     }
   },
   "dependencies": {
-    "@ai-sdk/provider": "3.0.8",
+    "@ai-sdk/provider": "3.0.18",
     "@tuvren/provider-api": "workspace:*",
-    "ai": "6.0.142",
-    "ajv": "8.18.0"
+    "ai": "6.0.293",
+    "ajv": "8.20.0"
   },
   "devDependencies": {
     "@tuvren/provider-testkit": "workspace:*",
