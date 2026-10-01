@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@ag-ui/core": "0.0.52",
+    "@ag-ui/core": "0.0.59",
     "@tuvren/stream-agui": "workspace:*",
     "@tuvren/stream-core": "workspace:*",
     "@tuvren/stream-sse": "workspace:*"
