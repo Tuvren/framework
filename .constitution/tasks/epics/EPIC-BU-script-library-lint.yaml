@@ -40,10 +40,10 @@ tickets:
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
       - "STOP if a suppression hides a new semantic failure instead of an equivalent measured diagnostic occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Migrate only directives whose equivalent OXC rule still fires, with their reasons preserved. Delete dead Biome directives. Contribute this directory inventory to the measured repository total of 82 survivors and 62 dead directives; do not manufacture replacement suppressions."
+    description: "ADR-0070 and SPK-KRT-OD006. Treat the measured 144-directive inventory as an identification baseline, not a quota. Re-run live Oxlint diagnostics across the owned paths. For every baseline identity and any drift discovered at execution, record its original reason, equivalent rule, and per-directory disposition. Preserve the identity and reason only when the equivalent rule still fires; delete directives with no live equivalent. Do not create suppressions to reproduce the historical 82-live/62-dead classification. Provide the per-directive disposition for CB aggregation."
     acceptance:
       mode: contract_test
-      evidence: Assert each replacement suppresses a reproduced equivalent diagnostic and each deleted directive has no active equivalent. Check the directory has no biome-ignore comments and retain its share of the 144-directive inventory.
+      evidence: Assert every baseline directive identity in the owned paths, plus any measured drift, has an evidence-backed per-directory disposition. Reproduce the equivalent Oxlint diagnostic before preserving a suppression and retain its original reason; prove deleted directives have no live equivalent. Check the owned paths have no biome-ignore comments, manufacture no suppression to meet a historical count, and emit the disposition evidence CB will aggregate.
     flows: []
     certainty: settled
     status: planned
@@ -67,7 +67,7 @@ tickets:
     certainty: settled
     status: planned
   - id: KRT-BU004
-    title: Clear remaining rules and switch clean project targets
+    title: Clear remaining rules and prove native-clean readiness
     type: Chore
     effort: 8
     depends_on: [KRT-BU003]
@@ -77,11 +77,11 @@ tickets:
       command: bun run lint
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
     stop_conditions:
-      - "STOP if a project switches before it is clean or type-aware lint silently skips rules occurs; do not improvise."
-    description: "ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics followed by type-aware diagnostics with the preset unchanged. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Switch each project lint target from Biome to oxlint --type-aware only after that directory is clean. In this same lint-target switch, remove each migrated path from the Biome coverage list tools/biome-coverage/bu.json. Leave other lists unchanged; root Biome lint must cover only not-yet-migrated paths."
+      - "STOP if native-clean proof would require a synthetic or overlapping Nx project, remove retained Biome ownership before CB, or let the type-aware backend skip an installed enabled rule; do not improvise."
+    description: "ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics, then prove native-clean readiness for BU's tools/scripts/lib ownership with the complete effective shipped preset unchanged. Derive the owned code selection from Oxlint's actual --debug=files output and the owned JSON selection from the native source-integrity checker; Oxfmt ignores affect formatting only. Use the established native helpers without adding dependencies or repository-owned lint policy. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. This cleanup region has no independent Nx project root: do not create a synthetic or overlapping project, do not activate a partial target, and do not remove tools/biome-coverage/bu.json. CB, after BU, BV, and BW complete, admits the whole tools root atomically and retires all three retained entries."
     acceptance:
       mode: contract_test
-      evidence: "Assert scoped oxlint --type-aware reports zero errors with all 54 type-aware rules enabled and no overrides. Every scoped project lint target uses OXC, unswitched projects retain Biome, scoped tests pass and the full lint gate remains usable. Assert migrated paths are absent from tools/biome-coverage/bu.json, OXC covers them, and all remaining Biome entries retain lint-only coverage."
+      evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule over the complete owned code selection with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert actual --debug=files and native JSON selections cover the owned files, source-integrity coverage remains independent of formatter ignores, scoped tests and the full lint gate pass, and tools/biome-coverage/bu.json remains unchanged under active Biome ownership pending CB's whole-tools admission."
     flows: []
     certainty: settled
     status: planned
