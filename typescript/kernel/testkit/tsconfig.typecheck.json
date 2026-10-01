@@ -16,7 +16,8 @@
       "@tuvren/core/messages": ["../../core/src/messages/index.ts"],
       "@tuvren/core/provider": ["../../core/src/provider/index.ts"],
       "@tuvren/core/tools": ["../../core/src/tools/index.ts"],
-      "@tuvren/kernel-protocol": ["../protocol/src/index.ts"]
+      "@tuvren/kernel-protocol": ["../protocol/src/index.ts"],
+      "@tuvren/kernel-testkit": ["./src/index.ts"]
     },
     "types": ["bun", "node"]
   },
