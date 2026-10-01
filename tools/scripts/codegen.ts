@@ -28,20 +28,20 @@ import { prependGeneratedPrerequisitePhase } from "./lib/generated-prerequisites
 import {
   CODEGEN_PROJECTS,
   hasVerificationFailure,
+  MACHINE_AUTHORITY_GUARDRAILS_STEP,
   printVerificationSummary,
   runVerificationPhases,
   selectAuthorityGateSteps,
   type VerificationPhase,
 } from "./verify.js";
 
-// The exact validator subset (and order) package.json's previous inline
-// chain ran, selected by ID from verify's shared AUTHORITY_GATE_STEPS so
-// this lane cannot silently diverge from `verify`'s gate: if an ID stops
-// matching a verify step, selectAuthorityGateSteps throws instead of
-// quietly dropping a check. Note this is deliberately NOT all of
-// AUTHORITY_GATE_STEPS — the old chain never ran the host import boundary
-// gate, the API-surface freeze gate, or the workspace test-lane coverage
-// gate, and this migration is a refactor, not a behavior change.
+// The read-only portion of package.json's previous validator chain, in its
+// original order, selected by ID from verify's shared AUTHORITY_GATE_STEPS so
+// this lane cannot silently diverge from `verify`'s gate. The regeneration-
+// backed machine authority guardrail follows in its own phase below. This is
+// deliberately NOT all of AUTHORITY_GATE_STEPS — the old chain never ran the
+// host import boundary gate, the API-surface freeze gate, or the workspace
+// test-lane coverage gate.
 const CODEGEN_VALIDATOR_IDS: readonly string[] = [
   "docs-to-authority freeze gate",
   "Epic AL portability gate",
@@ -52,7 +52,6 @@ const CODEGEN_VALIDATOR_IDS: readonly string[] = [
   "certification discovery parity",
   "certification harness meta-conformance",
   "vocabulary-check verification",
-  "machine authority guardrails",
 ];
 
 export function createCodegenPhases(): VerificationPhase[] {
@@ -61,6 +60,13 @@ export function createCodegenPhases(): VerificationPhase[] {
       {
         id: "codegen authority validators",
         steps: selectAuthorityGateSteps(CODEGEN_VALIDATOR_IDS, "codegen"),
+      },
+      {
+        // This validator proves freshness by running packet-declared codegen.
+        // Isolate its transient writes from the read-only validator phase.
+        concurrency: 1,
+        id: "generated-artifact freshness guardrails",
+        steps: [MACHINE_AUTHORITY_GUARDRAILS_STEP],
       },
       {
         // Regeneration runs after the validators, as the old chain did. Cached
