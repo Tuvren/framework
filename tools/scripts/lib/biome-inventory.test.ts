@@ -21,12 +21,16 @@
 // boundaries the gate must respect.
 
 import { describe, expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import {
+  FORMER_ROOT_DELETED_COMMAND,
   FORMER_ROOT_DISCOVERY_COMMAND,
   parseGitFileList,
   readBiomeIncludes,
+  removeDeletedFiles,
   selectFormerRootFiles,
 } from "./biome-inventory.js";
 import { runCommand } from "./command-runner.js";
@@ -78,7 +82,52 @@ async function readGitCandidates(): Promise<string[]> {
 }
 
 async function readFilesystemInventory(): Promise<string[]> {
-  return selectFormerRootFiles(REPO_ROOT, await readGitCandidates());
+  return selectFormerRootFiles(REPO_ROOT, await readWorkingTreeCandidates());
+}
+
+async function readWorkingTreeCandidates(): Promise<string[]> {
+  const candidates = await readGitCandidates();
+  const deletion = await runCommand(FORMER_ROOT_DELETED_COMMAND, {
+    captureOutput: true,
+    cwd: REPO_ROOT,
+  });
+  expect(deletion.code).toBe(0);
+  return removeDeletedFiles(candidates, parseGitFileList(deletion.stdout));
+}
+
+async function writeGitFixture(): Promise<string> {
+  const root = mkdtempSync(path.join(tmpdir(), "biome-inventory-git-"));
+  writeFileSync(
+    path.join(root, "biome.jsonc"),
+    '{ "files": { "includes": ["**"] } }\n'
+  );
+  mkdirSync(path.join(root, "src"));
+  writeFileSync(path.join(root, "src/kept.ts"), "export const kept = 1;\n");
+  writeFileSync(path.join(root, "src/kept.json"), '{ "kept": true }\n');
+  writeFileSync(
+    path.join(root, "src/deleted.ts"),
+    "export const deleted = 1;\n"
+  );
+  const git = (args: string[]): Promise<unknown> =>
+    runCommand(["git", ...args], { captureOutput: true, cwd: root });
+  await git(["init", "-q", "-b", "main"]);
+  await git(["add", "-A"]);
+  await git([
+    "-c",
+    "user.email=fixture@example.test",
+    "-c",
+    "user.name=fixture",
+    "commit",
+    "-q",
+    "-m",
+    "fixture",
+  ]);
+  rmSync(path.join(root, "src/deleted.ts"));
+  writeFileSync(
+    path.join(root, "src/untracked.ts"),
+    "export const untracked = 1;\n"
+  );
+  return root;
 }
 
 describe("former-root inventory derivation", () => {
@@ -167,6 +216,41 @@ describe("former-root inventory derivation", () => {
       "tools/new-file.ts",
       "tools/new-file.tsx",
     ]);
+  });
+
+  test("a confirmed working-tree deletion is omitted while existing and untracked files remain", async () => {
+    const root = await writeGitFixture();
+    try {
+      const discovery = await runCommand(FORMER_ROOT_DISCOVERY_COMMAND, {
+        captureOutput: true,
+        cwd: root,
+      });
+      expect(discovery.code).toBe(0);
+      const candidates = parseGitFileList(discovery.stdout);
+      // Git still lists the tracked path it no longer finds on disk.
+      expect(candidates).toContain("src/deleted.ts");
+
+      const deletion = await runCommand(FORMER_ROOT_DELETED_COMMAND, {
+        captureOutput: true,
+        cwd: root,
+      });
+      expect(deletion.code).toBe(0);
+      expect(parseGitFileList(deletion.stdout)).toEqual(["src/deleted.ts"]);
+
+      const selected = selectFormerRootFiles(
+        root,
+        removeDeletedFiles(
+          candidates,
+          parseGitFileList(deletion.stdout)
+        )
+      );
+      expect(selected).toContain("src/kept.ts");
+      expect(selected).toContain("src/kept.json");
+      expect(selected).toContain("src/untracked.ts");
+      expect(selected).not.toContain("src/deleted.ts");
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
   });
 
   test("filesystem discovery matches the Biome whole-root control exactly", async () => {

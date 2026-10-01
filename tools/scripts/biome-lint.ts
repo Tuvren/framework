@@ -29,8 +29,10 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import {
+  FORMER_ROOT_DELETED_COMMAND,
   FORMER_ROOT_DISCOVERY_COMMAND,
   parseGitFileList,
+  removeDeletedFiles,
   selectFormerRootFiles,
 } from "./lib/biome-inventory.js";
 import {
@@ -329,9 +331,19 @@ export async function runLintGate(
     if (discovery.code !== 0) {
       return failedDiscovery(`command exited with code ${discovery.code}`);
     }
+    const deletion = await deps.runCommand(FORMER_ROOT_DELETED_COMMAND, {
+      captureOutput: true,
+      cwd: deps.repoRoot,
+    });
+    if (deletion.code !== 0) {
+      return failedDiscovery(`deletion check exited with code ${deletion.code}`);
+    }
     inventory = selectFormerRootFiles(
       deps.repoRoot,
-      parseGitFileList(discovery.stdout)
+      removeDeletedFiles(
+        parseGitFileList(discovery.stdout),
+        parseGitFileList(deletion.stdout)
+      )
     );
   } catch (error: unknown) {
     return failedDiscovery(

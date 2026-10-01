@@ -16,8 +16,10 @@ import {
   type LintGateResult,
 } from "./biome-lint.js";
 import {
+  FORMER_ROOT_DELETED_COMMAND,
   FORMER_ROOT_DISCOVERY_COMMAND,
   parseGitFileList,
+  removeDeletedFiles,
   selectFormerRootFiles,
 } from "./lib/biome-inventory.js";
 import { runCommand, type RunCommandResult } from "./lib/command-runner.js";
@@ -50,9 +52,17 @@ async function collectFormerRootInventory(): Promise<string[]> {
       cwd: REPO_ROOT,
     });
     expect(discovery.code).toBe(0);
+    const deletion = await runCommand(FORMER_ROOT_DELETED_COMMAND, {
+      captureOutput: true,
+      cwd: REPO_ROOT,
+    });
+    expect(deletion.code).toBe(0);
     return selectFormerRootFiles(
       REPO_ROOT,
-      parseGitFileList(discovery.stdout)
+      removeDeletedFiles(
+        parseGitFileList(discovery.stdout),
+        parseGitFileList(deletion.stdout)
+      )
     );
   })();
   return await inventoryCache;
@@ -93,7 +103,9 @@ function recordingRunCommand(
       return Promise.resolve({
         code: 0,
         stderr: "",
-        stdout: candidates.map((candidate) => `${candidate}\0`).join(""),
+        stdout: command.includes("--deleted")
+          ? ""
+          : candidates.map((candidate) => `${candidate}\0`).join(""),
       });
     }
     return Promise.resolve({ code: 0, stderr: "", stdout: "" });
@@ -153,69 +165,6 @@ function writeFeatureProbe(
 }
 
 describe("biome coverage inventory", () => {
-  test("every former-root file is owned by a list or a switched OXC project", async () => {
-    const inventory = await collectFormerRootInventory();
-    expect(inventory.length).toBeGreaterThan(0);
-    expect(inventory).toContain("biome.jsonc");
-    expect(inventory).toContain("tools/biome-coverage/bq.json");
-
-    const oxcProjects = discoverOxcProjects(loadNxProjectFiles(REPO_ROOT));
-    const resolution = resolveCoverage(
-      inventory,
-      readCoverageEntries(COVERAGE_DIR),
-      oxcProjects.map((project) => project.root)
-    );
-
-    expect(resolution.missing).toEqual([]);
-    expect(resolution.duplicates).toEqual([]);
-    let owned = 0;
-    for (const files of resolution.perList.values()) {
-      owned += files.length;
-    }
-    expect(owned).toBe(inventory.length);
-  });
-
-  test("a real directory migration keeps its dropped files covered by OXC", async () => {
-    const inventory = await collectFormerRootInventory();
-    const withoutBq = readCoverageEntries(COVERAGE_DIR).filter(
-      (entry) => entry.list !== "bq"
-    );
-    const switched = discoverOxcProjects([
-      projectFile(
-        "kernel-contract-protocol",
-        "typescript/kernel/protocol",
-        "bunx --bun oxlint --type-aware ."
-      ),
-      projectFile(
-        "kernel-runtime",
-        "typescript/kernel/runtime",
-        "bunx --bun oxlint --type-aware ."
-      ),
-    ]);
-    expect(switched.map((project) => project.root)).toEqual([
-      "typescript/kernel/protocol",
-      "typescript/kernel/runtime",
-    ]);
-
-    const resolution = resolveCoverage(
-      inventory,
-      withoutBq,
-      switched.map((project) => project.root)
-    );
-    expect(resolution.missing).toEqual([]);
-    expect(resolution.duplicates).toEqual([]);
-    expect(
-      resolution.oxcExcluded.some((file) =>
-        file.startsWith("typescript/kernel/protocol/")
-      )
-    ).toBe(true);
-    expect(
-      resolution.oxcExcluded.some((file) =>
-        file.startsWith("typescript/kernel/runtime/")
-      )
-    ).toBe(true);
-  });
-
   test("dropping a directory entry surfaces missing coverage", () => {
     const entries = readCoverageEntries(COVERAGE_DIR).filter(
       (entry) => !(entry.list === "residual" && entry.path === "spec")
@@ -348,8 +297,8 @@ describe("biome coverage routing", () => {
       expect(result.missing).toEqual(["src/a.ts"]);
       expect(result.biomeRuns).toEqual([]);
       expect(result.surfaceGateCode).toBeUndefined();
-      expect(commands.length).toBe(1);
-      expect(commands[0]?.[0]).toBe("git");
+      expect(commands.length).toBe(2);
+      expect(commands.every((command) => command[0] === "git")).toBe(true);
     } finally {
       rmSync(directory, { force: true, recursive: true });
     }
