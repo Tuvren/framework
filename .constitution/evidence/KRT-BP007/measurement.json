@@ -1,0 +1,209 @@
+{
+  "owner": "KRT-BP007",
+  "inventory": {
+    "beforeCount": 1273,
+    "afterCount": 1273,
+    "equal": true,
+    "sha256": "067984ece9232c72b04dd943ed4f3629865403e31dba9ad5cb8be81968ae38c4",
+    "files": ["before-inventory.list.gz", "after-inventory.list.gz"]
+  },
+  "diagnostics": {
+    "before": [],
+    "after": []
+  },
+  "preset": {
+    "equal": true,
+    "files": [
+      "before-preset.normalized.json.gz",
+      "after-preset.normalized.json.gz"
+    ]
+  },
+  "probe": {
+    "before": [
+      {
+        "category": "lint/suspicious/noVar",
+        "message": "Use let or const instead of var.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 1,
+          "column": 18
+        }
+      },
+      {
+        "category": "lint/correctness/noUnusedVariables",
+        "message": "This variable unusedVar is unused.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 1,
+          "column": 5
+        },
+        "end": {
+          "line": 1,
+          "column": 14
+        }
+      },
+      {
+        "category": "lint/suspicious/noDebugger",
+        "message": "This is an unexpected use of the debugger statement.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 3,
+          "column": 3
+        },
+        "end": {
+          "line": 3,
+          "column": 12
+        }
+      },
+      {
+        "category": "lint/suspicious/noExplicitAny",
+        "message": "Unexpected any. Specify a different type.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 5,
+          "column": 10
+        },
+        "end": {
+          "line": 5,
+          "column": 13
+        }
+      }
+    ],
+    "after": [
+      {
+        "category": "lint/suspicious/noVar",
+        "message": "Use let or const instead of var.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 1,
+          "column": 18
+        }
+      },
+      {
+        "category": "lint/correctness/noUnusedVariables",
+        "message": "This variable unusedVar is unused.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 1,
+          "column": 5
+        },
+        "end": {
+          "line": 1,
+          "column": 14
+        }
+      },
+      {
+        "category": "lint/suspicious/noDebugger",
+        "message": "This is an unexpected use of the debugger statement.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 3,
+          "column": 3
+        },
+        "end": {
+          "line": 3,
+          "column": 12
+        }
+      },
+      {
+        "category": "lint/suspicious/noExplicitAny",
+        "message": "Unexpected any. Specify a different type.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 5,
+          "column": 10
+        },
+        "end": {
+          "line": 5,
+          "column": 13
+        }
+      }
+    ],
+    "mutation": [
+      {
+        "category": "lint/suspicious/noVar",
+        "message": "Use let or const instead of var.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 1,
+          "column": 18
+        }
+      },
+      {
+        "category": "lint/correctness/noUnusedVariables",
+        "message": "This variable unusedVar is unused.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 1,
+          "column": 5
+        },
+        "end": {
+          "line": 1,
+          "column": 14
+        }
+      },
+      {
+        "category": "lint/suspicious/noDebugger",
+        "message": "This is an unexpected use of the debugger statement.",
+        "severity": "warning",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 3,
+          "column": 3
+        },
+        "end": {
+          "line": 3,
+          "column": 12
+        }
+      },
+      {
+        "category": "lint/suspicious/noExplicitAny",
+        "message": "Unexpected any. Specify a different type.",
+        "severity": "error",
+        "path": "../../../.cache/pig-subagent/framework/wf-bp/M1/scratch/probe.ts",
+        "start": {
+          "line": 5,
+          "column": 10
+        },
+        "end": {
+          "line": 5,
+          "column": 13
+        }
+      }
+    ]
+  },
+  "testFirst": {
+    "before": "0 pass, 5 fail: alias was not installed",
+    "after": "5 pass, 0 fail"
+  },
+  "commands": [
+    "bun add --dev ultracite-biome@npm:ultracite@7.4.2",
+    "bunx --bun @biomejs/biome lint . --reporter=json --max-diagnostics=none --colors=off",
+    "bunx --bun @biomejs/biome lint . --verbose --colors=off",
+    "bun test tools/scripts/biome-alias.test.ts",
+    "bun run lint"
+  ],
+  "runtime": "All producing commands ran through devenv shell; temporary probe configs changed discovery only, with the severity mutation restricted to a negative control."
+}
