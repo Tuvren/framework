@@ -3,10 +3,14 @@
 // tests, benches and smoke files live only in `tsconfig.typecheck.json`. The
 // certification wrappers lacked a root project config and the conformance
 // adapters lacked both root and typecheck configs, so those source trees never
-// entered the type-aware program.
+// entered the type-aware program. M9a covered the first 14 package roots; M9b
+// covers the remaining 13 and proves the compiler-parsed membership of every
+// intended source file.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+
+import ts from "typescript";
 
 import { loadNxProjectFiles, targetCommandStrings } from "./lib/nx-projects.js";
 
@@ -44,6 +48,33 @@ const M9A_PACKAGE_ROOTS = [
   "typescript/tools/mcp-client",
 ] as const;
 
+// M9b package roots: the host, providers, streaming and telemetry roots. These
+// are the remaining package `tsconfig.json` files that lacked a typecheck
+// reference when M9a landed.
+const M9B_PACKAGE_ROOTS = [
+  "typescript/host/remote-session",
+  "typescript/host/repl",
+  "typescript/host/session",
+  "typescript/host/session-client",
+  "typescript/providers/bridge-ai-sdk",
+  "typescript/providers/provider-api",
+  "typescript/providers/testkit",
+  "typescript/streaming/agui",
+  "typescript/streaming/core",
+  "typescript/streaming/sse",
+  "typescript/streaming/ws",
+  "typescript/telemetry/otel",
+  "typescript/telemetry/semconv",
+] as const;
+
+const PACKAGE_ROOTS = [...M9A_PACKAGE_ROOTS, ...M9B_PACKAGE_ROOTS] as const;
+
+const ALL_PROJECT_ROOTS = [
+  ...PACKAGE_ROOTS,
+  ...CERTIFICATION_WRAPPER_ROOTS,
+  ...CONFORMANCE_ADAPTER_ROOTS,
+] as const;
+
 const LOCAL_SOURCE_DIRS = ["bench", "smoke", "src", "test"] as const;
 
 interface ProjectTsConfig {
@@ -51,6 +82,11 @@ interface ProjectTsConfig {
   files?: unknown[];
   include?: unknown;
   references?: { path?: unknown }[];
+}
+
+interface ParsedProject {
+  errors: string[];
+  fileNames: Set<string>;
 }
 
 function parseJson<T>(text: string): T {
@@ -120,17 +156,55 @@ function compilerFlag(
   return typeof value === "boolean" ? value : undefined;
 }
 
-function hasTypeScriptFiles(directory: string): boolean {
+// The membership proof must read the compiler's parsed file set, including the
+// inherited `include`/`exclude` rules, rather than the raw include strings. The
+// host is `ts.sys` plus the one method the API requires for unrecoverable
+// config diagnostics.
+function parseProjectFiles(relativeConfigPath: string): ParsedProject {
+  const configPath = path.join(REPO_ROOT, relativeConfigPath);
+  const host: ts.ParseConfigFileHost = {
+    ...ts.sys,
+    onUnRecoverableConfigFileDiagnostic: (diagnostic): void => {
+      throw new Error(
+        `${relativeConfigPath}: ${ts.flattenDiagnosticMessageText(
+          diagnostic.messageText,
+          " "
+        )}`
+      );
+    },
+  };
+  const parsed = ts.getParsedCommandLineOfConfigFile(configPath, {}, host);
+  if (parsed === undefined) {
+    throw new Error(`${relativeConfigPath} did not parse`);
+  }
+  const fileNames = new Set(
+    parsed.fileNames.map((fileName) => path.normalize(fileName))
+  );
+  const errors = parsed.errors.map(
+    (diagnostic) =>
+      `TS${diagnostic.code} ${ts.flattenDiagnosticMessageText(
+        diagnostic.messageText,
+        " "
+      )}`
+  );
+  return { errors, fileNames };
+}
+
+function collectTypeScriptFiles(directory: string): string[] {
+  const files: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (hasTypeScriptFiles(path.join(directory, entry.name))) {
-        return true;
-      }
+      files.push(...collectTypeScriptFiles(absolute));
     } else if (entry.isFile() && entry.name.endsWith(".ts")) {
-      return true;
+      files.push(absolute);
     }
   }
-  return false;
+  return files;
+}
+
+function hasTypeScriptFiles(directory: string): boolean {
+  return collectTypeScriptFiles(directory).length > 0;
 }
 
 describe("type-aware project discovery", () => {
@@ -190,8 +264,18 @@ describe("type-aware project discovery", () => {
     }
   });
 
-  test("M9a package roots reference their lib and typecheck aggregators", () => {
-    for (const root of M9A_PACKAGE_ROOTS) {
+  test("all 33 package, wrapper and adapter roots expose a root project config", () => {
+    expect(ALL_PROJECT_ROOTS.length).toBe(33);
+    for (const root of ALL_PROJECT_ROOTS) {
+      expect(
+        existsSync(path.join(REPO_ROOT, root, "tsconfig.json")),
+        `${root} tsconfig.json`
+      ).toBe(true);
+    }
+  });
+
+  test("package roots reference their lib and typecheck aggregators", () => {
+    for (const root of PACKAGE_ROOTS) {
       const rootConfig = readConfigDocument(path.join(root, "tsconfig.json"));
       expect(rootConfig.files, `${root} files`).toEqual([]);
       const references = referencedPaths(rootConfig);
@@ -201,6 +285,12 @@ describe("type-aware project discovery", () => {
       expect(references, `${root} typecheck reference`).toContain(
         "./tsconfig.typecheck.json"
       );
+      // tsgolint selects the first matching project reference, so the
+      // typecheck aggregator must precede the lib project for source files.
+      expect(
+        references.indexOf("./tsconfig.typecheck.json"),
+        `${root} typecheck precedes lib`
+      ).toBeLessThan(references.indexOf("./tsconfig.lib.json"));
 
       const typecheck = readConfigDocument(
         path.join(root, "tsconfig.typecheck.json")
@@ -211,8 +301,8 @@ describe("type-aware project discovery", () => {
     }
   });
 
-  test("M9a typecheck aggregators cover every local TypeScript source directory", () => {
-    for (const root of M9A_PACKAGE_ROOTS) {
+  test("typecheck aggregators cover every local TypeScript source directory", () => {
+    for (const root of PACKAGE_ROOTS) {
       const typecheck = readConfigDocument(
         path.join(root, "tsconfig.typecheck.json")
       );
@@ -224,6 +314,69 @@ describe("type-aware project discovery", () => {
             `${directory}/**/*.ts`
           );
         }
+      }
+    }
+  });
+
+  // tsgolint rejects a referenced project whose `allowImportingTsExtensions`
+  // has no matching no-emit setting with `typescript(tsconfig-error)`. That
+  // surfaced as project-resolution noise after M9a referenced the package
+  // aggregators, so every typecheck config that imports `.ts` extensions must
+  // disable emit.
+  test("type-aware package typecheck configs disable emit at the config level", () => {
+    for (const root of PACKAGE_ROOTS) {
+      const typecheck = readConfigDocument(
+        path.join(root, "tsconfig.typecheck.json")
+      );
+      if (compilerFlag(typecheck, "allowImportingTsExtensions") === true) {
+        expect(compilerFlag(typecheck, "noEmit"), `${root} noEmit`).toBe(true);
+      }
+    }
+  });
+
+  // Full membership proof: resolve the root project's typecheck reference,
+  // parse it with the installed TypeScript compiler, and require every actual
+  // src/test/bench/smoke file to appear in the compiler-parsed file set. This
+  // catches inherited include/exclude rules a string check would miss and stops
+  // files from being dropped to manufacture zero resolution errors.
+  test("every intended package source file resolves through the parsed typecheck project", () => {
+    for (const root of PACKAGE_ROOTS) {
+      const rootConfig = readConfigDocument(path.join(root, "tsconfig.json"));
+      expect(
+        referencedPaths(rootConfig),
+        `${root} typecheck reference`
+      ).toContain("./tsconfig.typecheck.json");
+
+      const parsed = parseProjectFiles(
+        path.join(root, "tsconfig.typecheck.json")
+      );
+      expect(parsed.errors, `${root} config errors`).toEqual([]);
+
+      for (const directory of LOCAL_SOURCE_DIRS) {
+        const absolute = path.join(REPO_ROOT, root, directory);
+        if (!existsSync(absolute)) {
+          continue;
+        }
+        for (const file of collectTypeScriptFiles(absolute)) {
+          expect(
+            parsed.fileNames.has(path.normalize(file)),
+            `${root} missing ${path.relative(REPO_ROOT, file)}`
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  test("the tools discovery config covers its actual TypeScript inventory", () => {
+    const parsed = parseProjectFiles("tools/tsconfig.json");
+    expect(parsed.errors, "tools/tsconfig.json errors").toEqual([]);
+    for (const directory of ["scripts", "conformance"] as const) {
+      const absolute = path.join(REPO_ROOT, "tools", directory);
+      for (const file of collectTypeScriptFiles(absolute)) {
+        expect(
+          parsed.fileNames.has(path.normalize(file)),
+          `tools missing ${path.relative(REPO_ROOT, file)}`
+        ).toBe(true);
       }
     }
   });

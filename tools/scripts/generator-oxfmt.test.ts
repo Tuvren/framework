@@ -2,6 +2,7 @@
 // artifact targets. It runs the real scripts and reads the real target
 // configuration instead of asserting on a mirrored copy of the command lists.
 import { describe, expect, test } from "bun:test";
+import type { SpawnSyncReturns } from "node:child_process";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -186,7 +187,7 @@ function missingInputs(
   return preserved.filter((value) => !inputs.includes(value));
 }
 
-function runGenerator(args: readonly string[]): ReturnType<typeof spawnSync> {
+function runGenerator(args: readonly string[]): SpawnSyncReturns<string> {
   return spawnSync(process.execPath, [KERNEL_PLAN_SCRIPT, ...args], {
     cwd: REPO_ROOT,
     encoding: "utf8",

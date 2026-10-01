@@ -2,9 +2,15 @@
   "extends": "./tsconfig.lib.json",
   "compilerOptions": {
     "composite": false,
+    "noEmit": true,
     "rootDir": "../../..",
     "allowImportingTsExtensions": true,
     "types": ["bun"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "../../core/src/**/*.ts"]
+  "include": [
+    "smoke/**/*.ts",
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "../../core/src/**/*.ts"
+  ]
 }

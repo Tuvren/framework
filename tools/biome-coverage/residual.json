@@ -19,6 +19,7 @@
   "tools/scripts/biome-lint.test.ts",
   "tools/scripts/biome-lint.ts",
   "tools/scripts/oxc-preparation.test.ts",
+  "tools/tsconfig.json",
   "tsconfig.base.json",
   "tsconfig.json"
 ]

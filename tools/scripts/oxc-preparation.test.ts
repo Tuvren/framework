@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import type { SpawnSyncReturns } from "node:child_process";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
@@ -107,7 +108,7 @@ function readonlyArrayGrammarDiagnostics(): GrammarDiagnostic[] {
     });
 }
 
-function runBun(args: string[]): ReturnType<typeof spawnSync> {
+function runBun(args: string[]): SpawnSyncReturns<string> {
   return spawnSync(process.execPath, args, {
     cwd: REPO_ROOT,
     encoding: "utf8",
