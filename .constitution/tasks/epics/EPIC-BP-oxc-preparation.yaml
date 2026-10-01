@@ -43,7 +43,10 @@ tickets:
       evidence: "Assert the manifest and lockfile pin ultracite-biome to npm:ultracite@7.4.2, biome.jsonc extends the alias export, and normalized before/after Biome lint output is identical. Prove this before changing un-aliased ultracite."
     flows: []
     certainty: assumed
-    status: planned
+    status: done
+    deviations:
+      - files: [tools/scripts/biome-alias.test.ts]
+        justification: "Approved acceptance test verifies the retained alias against immutable pre-transition preset and probe diagnostics; it survives the unaliased Ultracite upgrade."
   - id: KRT-BP002
     title: Remove the formatter parse blocker
     type: Chore
