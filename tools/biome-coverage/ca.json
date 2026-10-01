@@ -1,0 +1,11 @@
+[
+  "typescript/core",
+  "typescript/sdk",
+  "typescript/streaming",
+  "typescript/tools",
+  "typescript/testkit",
+  "typescript/telemetry",
+  "typescript/certification",
+  "typescript/certification-batteries-included",
+  "tools/run-nx.mjs"
+]

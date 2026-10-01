@@ -68,6 +68,7 @@
       "inputs": [
         "default",
         "{workspaceRoot}/biome.jsonc",
+        "{workspaceRoot}/oxlint.config.ts",
         "{workspaceRoot}/Cargo.toml",
         "{workspaceRoot}/Cargo.lock",
         "{workspaceRoot}/rust-toolchain.toml"

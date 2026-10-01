@@ -1,0 +1,5 @@
+[
+  "tools/conformance",
+  "tools/scripts/conformance",
+  "tools/generators"
+]
