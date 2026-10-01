@@ -161,7 +161,7 @@ layout:
   - path: tools/generators
     purpose: "Artifact generators for the TypeSpec, protobuf, and semantic-convention families."
   - path: tools/nx
-    purpose: "Nx target routing helpers shared across the language lines. Removed with Nx by the Bazel cut-over (ADR-0071)."
+    purpose: Nx target routing helpers shared across the language lines. Removed with Nx by the Bazel cut-over (ADR-0071).
   - path: MODULE.bazel
     purpose: "Bazel module: pinned Bazel-native rulesets and toolchains for Rust, Go and Python and the staged TypeScript workspace repository rule (ADR-0071, ADR-0072, ADR-0073)."
     exists: true
@@ -173,13 +173,10 @@ layout:
     exists: false
   - path: oxlint.config.ts
     purpose: "oxlint config extending ultracite/oxlint/core with the preset's ignore patterns and .constitution/** (ADR-0070)."
-    exists: false
   - path: oxfmt.config.ts
     purpose: "oxfmt config spreading ultracite/oxfmt, formatting TypeScript and JSON only (ADR-0070)."
-    exists: false
-  - path: .git-blame-ignore-revs
-    purpose: "Lists the merged SHA of the one mechanical oxfmt reformat commit (ADR-0070)."
-    exists: false
+  - path: ".git-blame-ignore-revs"
+    purpose: Lists the merged SHA of the one mechanical oxfmt reformat commit (ADR-0070).
   - path: docs
     purpose: "The human semantic layer: the Kraken kernel and framework specifications the authority gates classify."
   - path: tests

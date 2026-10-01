@@ -1,4 +1,8 @@
 entries:
+  - version: v0.47.3
+    date: 2026-10-01
+    changed: ["guidelines.md: layout oxlint.config.ts now exists", "guidelines.md: layout oxfmt.config.ts now exists", "guidelines.md: layout .git-blame-ignore-revs now exists"]
+    by: derive
   - version: v0.47.2
     date: 2026-10-01
     by: reconcile
