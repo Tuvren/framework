@@ -189,7 +189,10 @@ tickets:
       evidence: "Invariant: parsed generated artifacts and runtime behavior are unchanged; a second generator and formatter pass produces no diff. Checker: bun run codegen plus oxfmt check. Preserve all constitution evidence digests. Root lint accepts the regenerated oxfmt layout, and the exempt mechanical commit contains no changeset or semantic cleanup. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: planned
+    status: in_progress
+    deviations:
+      - files: [.git-blame-ignore-revs]
+        justification: "Approved post-merge exception records the exact merged mechanical SHA after patch-id mapping; release changeset coverage remains separate in M7."
   - id: KRT-BP005
     title: Expose full type-aware project coverage
     type: Chore
@@ -256,8 +259,8 @@ decisions:
     recommendation: Adopt verbatim root spread
     closure: ruling
     ruler: Repository owner after EPIC-BP merge
-    waiting_on: Independent M3 fix review and full effective-config evidence in
-      tools/scripts/oxc-preparation.test.ts
+    waiting_on: Repository owner ruling after merge; independent M3 fix review and
+      full effective-config evidence are complete.
     interim:
       assumption: Verbatim root spreading semantically extends the unchanged shipped
         preset and satisfies ADR-0070's binding policy goal; stale
