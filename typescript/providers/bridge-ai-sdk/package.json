@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/provider-bridge-ai-sdk",
-  "description": "Tuvren provider bridge for the Vercel AI SDK: adapts AI SDK models to the TuvrenProvider contract.",
   "version": "0.2.0",
+  "description": "Tuvren provider bridge for the Vercel AI SDK: adapts AI SDK models to the TuvrenProvider contract.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,6 +12,8 @@
     "dist"
   ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,8 +21,6 @@
       "default": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "@ai-sdk/provider": "3.0.8",
     "@tuvren/provider-api": "workspace:*",
@@ -28,8 +28,8 @@
     "ajv": "8.18.0"
   },
   "devDependencies": {
-    "@tuvren/runner-react": "workspace:*",
     "@tuvren/provider-testkit": "workspace:*",
+    "@tuvren/runner-react": "workspace:*",
     "@tuvren/runtime": "workspace:*",
     "@types/json-schema": "^7.0.15"
   },

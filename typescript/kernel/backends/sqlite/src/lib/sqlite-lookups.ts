@@ -31,6 +31,7 @@ import type {
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import type Database from "better-sqlite3";
+
 import { persistenceError } from "./sqlite-errors.js";
 import {
   decodeBranchRow,
@@ -96,9 +97,9 @@ export function selectTurnTree(
   db: Database.Database,
   hash: string
 ): StoredTurnTree | null {
-  const row = db.prepare("SELECT * FROM turn_trees WHERE hash = ?").get(hash) as
-    | SqliteTurnTreeRow
-    | undefined;
+  const row = db
+    .prepare("SELECT * FROM turn_trees WHERE hash = ?")
+    .get(hash) as SqliteTurnTreeRow | undefined;
   return row === undefined ? null : decodeTurnTreeRow(row);
 }
 
@@ -145,9 +146,9 @@ export function selectTurnNode(
   db: Database.Database,
   hash: string
 ): StoredTurnNode | null {
-  const row = db.prepare("SELECT * FROM turn_nodes WHERE hash = ?").get(hash) as
-    | SqliteTurnNodeRow
-    | undefined;
+  const row = db
+    .prepare("SELECT * FROM turn_nodes WHERE hash = ?")
+    .get(hash) as SqliteTurnNodeRow | undefined;
   return row === undefined ? null : decodeTurnNodeRow(row);
 }
 
@@ -202,9 +203,9 @@ export function selectTurn(
   db: Database.Database,
   turnId: string
 ): StoredTurn | null {
-  const row = db.prepare("SELECT * FROM turns WHERE turn_id = ?").get(turnId) as
-    | SqliteTurnRow
-    | undefined;
+  const row = db
+    .prepare("SELECT * FROM turns WHERE turn_id = ?")
+    .get(turnId) as SqliteTurnRow | undefined;
   return row === undefined ? null : decodeTurnRow(row);
 }
 

@@ -16,8 +16,10 @@
 
 import { notStrictEqual, ok, rejects, strictEqual } from "node:assert/strict";
 import { after, describe, test } from "node:test";
+
 import type { RuntimeBackend, TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 

@@ -16,8 +16,10 @@
 
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
+
 import {
   assertConformanceEvidence,
   assertConformanceSuiteManifest,

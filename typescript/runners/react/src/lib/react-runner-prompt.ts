@@ -15,6 +15,7 @@
  */
 
 import { isDeepStrictEqual } from "node:util";
+
 import type { Binding } from "@tuvren/core/capabilities";
 import type { AgentConfig, ContextManifest } from "@tuvren/core/execution";
 import type {

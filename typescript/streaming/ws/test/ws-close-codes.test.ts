@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import {
   WS_CLOSE_CODE_AUTH_REJECTED,
   WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED,

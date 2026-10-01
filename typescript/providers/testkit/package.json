@@ -1,8 +1,10 @@
 {
   "name": "@tuvren/provider-testkit",
-  "private": true,
   "version": "0.2.0",
+  "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -10,8 +12,6 @@
       "default": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
     "@modelcontextprotocol/server-everything": "2026.1.26",

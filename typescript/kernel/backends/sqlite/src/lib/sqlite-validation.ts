@@ -15,6 +15,7 @@
  */
 
 import type Database from "better-sqlite3";
+
 import {
   type ExpectedSqliteColumnSchema,
   type ExpectedSqliteForeignKeySchema,

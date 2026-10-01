@@ -15,6 +15,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import type { StoredBranch, StoredThread } from "@tuvren/kernel-protocol";
 import {
   createCanonicalKernelTestSchema,
@@ -27,6 +28,7 @@ import {
   registerBackendRecoverySuite,
 } from "@tuvren/kernel-testkit";
 import type { Sql } from "postgres";
+
 import { createPostgresBackend } from "../src/index.js";
 import {
   assertBackwardBranchMoveIsArchived,
@@ -119,8 +121,9 @@ describe("@tuvren/backend-postgres", () => {
   });
 
   test("retries initialization after a transient bootstrap failure", async () => {
-    interface TestablePostgresBackend
-      extends ReturnType<typeof createPostgresBackend> {
+    interface TestablePostgresBackend extends ReturnType<
+      typeof createPostgresBackend
+    > {
       readonly sql: Sql;
     }
 

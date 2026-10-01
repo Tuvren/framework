@@ -32,6 +32,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
+
 import {
   createRecordingPhaseObserver,
   type RecordingPhaseObserver,
@@ -57,6 +58,7 @@ import {
   summarizePhases,
   type TimingStats,
 } from "@tuvren/kernel-testkit";
+
 import { createSqliteBackend } from "../src/index.js";
 
 // Default sample count for the decisive large tiers (1k, 10k): the KRT-BK007

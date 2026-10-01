@@ -17,6 +17,7 @@
 import type { PhaseObserver } from "@tuvren/backend-shared";
 import type { EpochMs, Scope } from "@tuvren/core";
 import postgres, { type Sql } from "postgres";
+
 import { persistenceError } from "./postgres-errors.js";
 
 /**

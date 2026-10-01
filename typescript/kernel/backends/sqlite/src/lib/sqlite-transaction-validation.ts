@@ -20,6 +20,7 @@ import {
 } from "@tuvren/backend-shared";
 import type { StoredBranch } from "@tuvren/kernel-protocol";
 import type Database from "better-sqlite3";
+
 import {
   assertActiveRunHeadAlignmentInDatabase,
   assertBackwardBranchMoveIsArchivedInDatabase,

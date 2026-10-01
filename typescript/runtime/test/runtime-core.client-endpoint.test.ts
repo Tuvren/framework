@@ -28,6 +28,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type {
   AttachedClientEndpoint,
   ClientEndpointBoundary,
@@ -43,6 +44,7 @@ import type {
   RunnerExecutionContext,
   RunnerExecutionResult,
 } from "@tuvren/core/runner";
+
 import { createRunnerRegistry, createTuvrenRuntime } from "../src/index.ts";
 import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";

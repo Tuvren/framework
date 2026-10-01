@@ -37,6 +37,7 @@ import {
   type StoredTurnTreePath,
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+
 import {
   type BackendInvariantRecordUtils,
   type BackendInvariantRecordUtilsConfig,
@@ -77,8 +78,7 @@ function errorCode(errorPrefix: string, suffix: string): string {
  * record-utils error-prefix config plus the backend-owned CBOR decoders this
  * surface needs.
  */
-export interface BackendInvariantStateValidationConfig
-  extends BackendInvariantRecordUtilsConfig {
+export interface BackendInvariantStateValidationConfig extends BackendInvariantRecordUtilsConfig {
   /**
    * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
    * element. This stays backend-owned (each backend has its own records

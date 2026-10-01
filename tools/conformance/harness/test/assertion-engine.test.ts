@@ -15,7 +15,9 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import Ajv2020 from "ajv/dist/2020.js";
+
 import type {
   CompiledConformancePlanCheck,
   ConformancePlanCheck,

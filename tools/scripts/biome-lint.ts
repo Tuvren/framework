@@ -28,6 +28,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+
 import {
   FORMER_ROOT_DELETED_COMMAND,
   FORMER_ROOT_DISCOVERY_COMMAND,
@@ -336,7 +337,9 @@ export async function runLintGate(
       cwd: deps.repoRoot,
     });
     if (deletion.code !== 0) {
-      return failedDiscovery(`deletion check exited with code ${deletion.code}`);
+      return failedDiscovery(
+        `deletion check exited with code ${deletion.code}`
+      );
     }
     inventory = selectFormerRootFiles(
       deps.repoRoot,
@@ -351,9 +354,7 @@ export async function runLintGate(
     );
   }
 
-  const oxcProjects = discoverOxcProjects(
-    deps.listProjectFiles(deps.repoRoot)
-  );
+  const oxcProjects = discoverOxcProjects(deps.listProjectFiles(deps.repoRoot));
   const resolution = resolveCoverage(
     inventory,
     entries,

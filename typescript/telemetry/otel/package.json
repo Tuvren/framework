@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/telemetry-otel",
-  "description": "Tuvren OpenTelemetry sink leaf: createOtelTelemetrySink bridges Tuvren telemetry events and spans onto OpenTelemetry.",
   "version": "0.2.0",
+  "description": "Tuvren OpenTelemetry sink leaf: createOtelTelemetrySink bridges Tuvren telemetry events and spans onto OpenTelemetry.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,6 +12,8 @@
     "dist"
   ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,8 +21,12 @@
       "default": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@opentelemetry/api": "1.9.1"
+  },
+  "devDependencies": {
+    "@opentelemetry/sdk-trace-base": "2.7.1"
+  },
   "peerDependencies": {
     "@tuvren/core": "workspace:~"
   },
@@ -28,11 +34,5 @@
     "@tuvren/core": {
       "optional": false
     }
-  },
-  "dependencies": {
-    "@opentelemetry/api": "1.9.1"
-  },
-  "devDependencies": {
-    "@opentelemetry/sdk-trace-base": "2.7.1"
   }
 }

@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import {
   COVERAGE_LIST_IDS,
   discoverOxcProjects,
@@ -188,9 +189,7 @@ describe("biome coverage inventory", () => {
     expect(
       resolveCoverage(["typescript/kernel/runtime/src/index.ts"], entries, [])
         .duplicates
-    ).toEqual([
-      { lists: ["bq", "bt"], path: "typescript/kernel/runtime" },
-    ]);
+    ).toEqual([{ lists: ["bq", "bt"], path: "typescript/kernel/runtime" }]);
   });
 
   test("a broad residual directory subtracts a narrower group", () => {
@@ -199,11 +198,7 @@ describe("biome coverage inventory", () => {
       { list: "bu", path: "tools/scripts/lib" },
     ];
     const resolution = resolveCoverage(
-      [
-        "tools/scripts/lib/a.ts",
-        "tools/scripts/b.ts",
-        "tools/run-nx.mjs",
-      ],
+      ["tools/scripts/lib/a.ts", "tools/scripts/b.ts", "tools/run-nx.mjs"],
       entries,
       []
     );

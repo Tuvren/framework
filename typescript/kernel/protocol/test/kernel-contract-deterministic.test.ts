@@ -15,7 +15,9 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { TuvrenValidationError } from "@tuvren/core";
+
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,

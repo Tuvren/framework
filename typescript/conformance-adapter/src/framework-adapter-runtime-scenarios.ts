@@ -39,6 +39,7 @@ import {
   createTuvrenRuntime as createTuvrenRuntimeCore,
   DEFAULT_AGENT_SCHEMA,
 } from "@tuvren/runtime";
+
 import { createFrameworkAdapterProviderScenarios } from "./framework-adapter-provider-scenarios.ts";
 import { createFrameworkAdapterRecoveryScenarios } from "./framework-adapter-recovery-scenarios.ts";
 import {
@@ -792,18 +793,16 @@ export function createFrameworkAdapterRuntimeScenarios(
       },
       id: RUNNER_ID,
     } satisfies RuntimeRunner;
-    const tools = calls.map(
-      (call): TuvrenToolDefinition => ({
-        approval: call.requiresApproval,
-        description: `Shared conformance tool ${call.name}`,
-        execute() {
-          executedNames.push(call.name);
-          return call.output;
-        },
-        inputSchema: { type: "object" },
-        name: call.name,
-      })
-    );
+    const tools = calls.map((call): TuvrenToolDefinition => ({
+      approval: call.requiresApproval,
+      description: `Shared conformance tool ${call.name}`,
+      execute() {
+        executedNames.push(call.name);
+        return call.output;
+      },
+      inputSchema: { type: "object" },
+      name: call.name,
+    }));
     const runtime = createTuvrenRuntimeCore({
       createId: createConformanceIdFactory(),
       defaultRunnerId: RUNNER_ID,

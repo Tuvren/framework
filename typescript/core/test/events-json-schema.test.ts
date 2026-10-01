@@ -24,7 +24,9 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import Ajv2020 from "ajv/dist/2020.js";
+
 import type {
   ApprovalResolvedEvent,
   StateCheckpointEvent,

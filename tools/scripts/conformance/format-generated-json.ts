@@ -16,6 +16,7 @@
 
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { runCommand } from "../lib/command-runner.ts";
 
 // ADR-0070 / KRT-BP003: generated JSON is normalized through the repository

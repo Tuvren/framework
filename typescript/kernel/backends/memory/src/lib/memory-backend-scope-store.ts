@@ -15,6 +15,7 @@
  */
 
 import type { Scope } from "@tuvren/core";
+
 import { createEmptyState } from "./memory-backend-state.js";
 import type { BackendState } from "./memory-backend-types.js";
 

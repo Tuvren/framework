@@ -20,6 +20,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
   AttachedClientEndpoint,
@@ -30,6 +31,7 @@ import type {
 } from "@tuvren/core/capabilities";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 import type { ToolExecutionContext } from "@tuvren/core/tools";
+
 import { createClientEndpointBoundary } from "../src/lib/client-endpoint-boundary.ts";
 import { buildClientEndpointTools } from "../src/lib/tool-registry.ts";
 

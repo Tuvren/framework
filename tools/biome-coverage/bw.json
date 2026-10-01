@@ -1,5 +1,1 @@
-[
-  "tools/conformance",
-  "tools/scripts/conformance",
-  "tools/generators"
-]
+["tools/conformance", "tools/scripts/conformance", "tools/generators"]

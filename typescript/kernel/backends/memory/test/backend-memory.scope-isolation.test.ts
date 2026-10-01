@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import {
   createMemoryBackend,
   createMemoryScopeStore,
@@ -32,6 +33,7 @@ import {
   createStoredTurnTreeRecord,
   delay,
 } from "@tuvren/kernel-testkit";
+
 import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
 
 // The full record set the Durable-Read Surface composes over (KRT-BE006): a

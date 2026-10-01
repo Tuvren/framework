@@ -17,7 +17,9 @@
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import Ajv2020 from "ajv/dist/2020.js";
+
 import { type AdapterControls, assertOperationOutcome } from "./index.js";
 import { handleStdioAdapterLine } from "./stdio-host.js";
 

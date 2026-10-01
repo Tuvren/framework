@@ -17,6 +17,7 @@
 // biome-ignore-all lint/performance/noBarrelFile: This focused contract subpath intentionally combines stored validators with delegated turn-tree validators.
 
 import type { KernelRecord } from "@tuvren/core";
+
 import { hashTurnNodeIdentity } from "./kernel-identity.js";
 import type {
   PathDefinition,

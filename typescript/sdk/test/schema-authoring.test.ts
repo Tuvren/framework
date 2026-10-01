@@ -15,10 +15,12 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { TuvrenValidationError } from "@tuvren/core/errors";
 import type { CustomSchema } from "@tuvren/core/tools";
 import { z as z3 } from "zod/v3";
 import { z as z4 } from "zod/v4";
+
 import type { FlexibleSchema, Schema } from "../src/lib/schema-authoring.js";
 import {
   asSchema,

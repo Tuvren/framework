@@ -32,11 +32,13 @@
 // nested JSON signal data.
 
 import { describe, expect, test } from "bun:test";
+
 import type { KernelRecord } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+
 import {
   createRunnerRegistry,
   createTuvrenRuntime,

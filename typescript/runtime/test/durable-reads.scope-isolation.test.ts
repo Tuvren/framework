@@ -32,6 +32,7 @@
 // scope-isolation suite, and cross-backend conformance lands in KRT-BE007.
 
 import { describe, expect, test } from "bun:test";
+
 import {
   createMemoryBackend,
   createMemoryScopeStore,
@@ -60,6 +61,7 @@ import {
   createStoredTurnNodeRecord,
   createStoredTurnTreeRecord,
 } from "@tuvren/kernel-testkit";
+
 import {
   getTurnHistory,
   getTurnState,

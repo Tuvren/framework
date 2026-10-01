@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/sdk",
-  "description": "The Tuvren host-facing composition tier: createTuvren, curated @tuvren/core re-exports, host-facing kernel contract types, developer helpers, and the @tuvren/sdk/advanced composition surface. The single SDK entrypoint a host imports alongside its chosen leaf packages.",
   "version": "0.2.0",
+  "description": "The Tuvren host-facing composition tier: createTuvren, curated @tuvren/core re-exports, host-facing kernel contract types, developer helpers, and the @tuvren/sdk/advanced composition surface. The single SDK entrypoint a host imports alongside its chosen leaf packages.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,6 +12,8 @@
     "dist"
   ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -24,8 +26,6 @@
       "default": "./dist/advanced.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "@tuvren/kernel-protocol": "workspace:*",
     "@tuvren/kernel-runtime": "workspace:*",
@@ -33,6 +33,11 @@
   },
   "devDependencies": {
     "@tuvren/backend-memory": "workspace:*"
+  },
+  "peerDependencies": {
+    "@standard-schema/spec": "^1.1.0",
+    "@tuvren/core": "workspace:~",
+    "zod": "^4.4.3"
   },
   "peerDependenciesMeta": {
     "@tuvren/core": {
@@ -44,10 +49,5 @@
     "@standard-schema/spec": {
       "optional": true
     }
-  },
-  "peerDependencies": {
-    "@tuvren/core": "workspace:~",
-    "zod": "^4.4.3",
-    "@standard-schema/spec": "^1.1.0"
   }
 }

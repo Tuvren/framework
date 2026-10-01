@@ -15,6 +15,7 @@
  */
 
 import { createHash } from "node:crypto";
+
 import {
   assertKernelRecord,
   type HashString,
@@ -25,14 +26,15 @@ import type { AgentConfig, ContextManifest } from "@tuvren/core/execution";
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { ToolRegistry, TuvrenToolDefinition } from "@tuvren/core/tools";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+
 import { createClientEndpointBoundary } from "./client-endpoint-boundary.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
-import type { RuntimeRunLivenessOptions } from "./runtime-core.js";
 import {
   cloneSnapshotPreservingFunctions,
   cloneValue,
   createFrozenSnapshot,
 } from "./runtime-core-shared.js";
+import type { RuntimeRunLivenessOptions } from "./runtime-core.js";
 import {
   buildClientEndpointTools,
   createToolRegistry,

@@ -16,6 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
+
 import type { ToolResultEvent, ToolStartEvent } from "@tuvren/core/events";
 import { isTuvrenStreamEvent } from "@tuvren/core/events";
 import type { RuntimeRunner } from "@tuvren/core/runner";
@@ -24,6 +25,7 @@ import type {
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
+
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,

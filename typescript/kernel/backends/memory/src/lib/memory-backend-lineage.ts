@@ -26,6 +26,7 @@ import type {
   StoredTurn,
   StoredTurnNode,
 } from "@tuvren/kernel-protocol";
+
 import { decodeDetachedKernelRecord } from "./memory-backend-buffer-isolation.js";
 import {
   ensureTurnExists,

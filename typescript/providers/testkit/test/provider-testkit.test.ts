@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import {
   assertProviderChunkTypes,
   assertProviderFinishChunk,

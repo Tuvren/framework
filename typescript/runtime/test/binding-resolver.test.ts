@@ -15,9 +15,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { TuvrenRuntimeError } from "@tuvren/core";
 import { CAPABILITY_BINDING_UNAVAILABLE } from "@tuvren/core/errors";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
+
 import { createBindingResolver } from "../src/lib/binding-resolver.ts";
 
 // ---------------------------------------------------------------------------

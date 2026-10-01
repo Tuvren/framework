@@ -38,6 +38,7 @@ import type {
 import { assertApprovalRequest } from "@tuvren/core/tools";
 import type { ErrorObject, ValidateFunction } from "ajv";
 import Ajv from "ajv";
+
 import { buildToolAttribution } from "./capability-attribution.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { deriveIdempotencyKey } from "./idempotency-identity.js";

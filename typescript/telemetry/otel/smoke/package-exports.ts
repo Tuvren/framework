@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { createOtelTelemetrySink } from "@tuvren/telemetry-otel";
 
 describe("telemetry-otel package exports", () => {

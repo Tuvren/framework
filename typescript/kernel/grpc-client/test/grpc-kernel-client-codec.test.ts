@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
   PathValue,
@@ -22,6 +23,7 @@ import type {
   Verdict,
   VerdictDisposition,
 } from "@tuvren/kernel-protocol";
+
 import { RunCompletionStatus as ProtoRunCompletionStatus } from "../src/lib/generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb.js";
 import {
   createInvalidTransportResponseError,

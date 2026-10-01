@@ -20,6 +20,7 @@ import type {
   StoredRun,
   StoredTurn,
 } from "@tuvren/kernel-protocol";
+
 import {
   type BackendInvariantRecordUtils,
   type BackendInvariantRecordUtilsConfig,
@@ -128,8 +129,7 @@ function assertBackwardBranchMoveIsArchivedCore(
  * record-utils error-prefix config plus the one backend-owned dependency this
  * surface needs.
  */
-export interface BackendInvariantIntegrityAssertionsConfig
-  extends BackendInvariantRecordUtilsConfig {
+export interface BackendInvariantIntegrityAssertionsConfig extends BackendInvariantRecordUtilsConfig {
   /**
    * Resolves a run's active turn node: its most recently created node, or its
    * start turn node when it has created none. This stays backend-owned (each

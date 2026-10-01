@@ -15,6 +15,7 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
+
 import {
   NOOP_PHASE_OBSERVER,
   type PhaseObserver,
@@ -36,6 +37,7 @@ import {
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import type { Sql } from "postgres";
+
 import {
   createPostgresClient,
   normalizeSchemaName,
@@ -88,8 +90,8 @@ import {
   selectTurnTreePath,
   selectTurnTreePathsByTurnTree,
 } from "./postgres-lookups.js";
-import { reclaimBackendState } from "./postgres-reclamation.js";
 import { assertReclamationSurvivorInvariants } from "./postgres-reclamation-validation.js";
+import { reclaimBackendState } from "./postgres-reclamation.js";
 import {
   type BackendState,
   decodeHashStringArray,
@@ -112,13 +114,13 @@ import {
   validateHashString,
 } from "./postgres-run-invariants.js";
 import {
-  RELATIONAL_REQUIRED_TABLES,
-  type RelationalTableName,
-} from "./postgres-schema.js";
-import {
   ensurePostgresRelationalSchemaInitialized,
   validateRelationalSchemaPosture,
 } from "./postgres-schema-init.js";
+import {
+  RELATIONAL_REQUIRED_TABLES,
+  type RelationalTableName,
+} from "./postgres-schema.js";
 import type { DbSql } from "./postgres-sql.js";
 import {
   assertPostgresIndexedText,

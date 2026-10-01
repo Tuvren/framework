@@ -537,8 +537,7 @@ export interface StoredFlatOrderedTurnTreePath extends BaseStoredTurnTreePath {
  * `orderedChunkListCbor` records the ordered chunk hashes; each chunk row is a
  * {@link StoredOrderedPathChunk}.
  */
-export interface StoredChunkedOrderedTurnTreePath
-  extends BaseStoredTurnTreePath {
+export interface StoredChunkedOrderedTurnTreePath extends BaseStoredTurnTreePath {
   collectionKind: "ordered";
   orderedChunkListCbor: Uint8Array;
   orderedCount: number;

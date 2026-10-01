@@ -16,6 +16,7 @@
 
 import { deepStrictEqual, ok, rejects, strictEqual } from "node:assert/strict";
 import { describe, test } from "node:test";
+
 import { TuvrenPersistenceError, TuvrenValidationError } from "@tuvren/core";
 import {
   createCanonicalKernelTestSchema,
@@ -23,6 +24,7 @@ import {
   createStoredSchemaRecord,
 } from "@tuvren/kernel-testkit";
 import Database from "better-sqlite3";
+
 import { createSqliteBackend } from "../src/index.js";
 import { normalizeBackendError } from "../src/lib/sqlite-errors.js";
 import {

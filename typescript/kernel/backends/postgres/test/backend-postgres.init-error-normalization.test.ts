@@ -24,6 +24,7 @@
 // other entry point does.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import { createPostgresBackend } from "../src/index.js";
 import { qualifyIdentifier, quoteIdentifier } from "../src/lib/postgres-sql.js";
 import {

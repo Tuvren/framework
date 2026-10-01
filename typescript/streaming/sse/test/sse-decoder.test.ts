@@ -16,6 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
+
 import {
   decodeSseStream,
   reportSseWireCompliance,

@@ -15,7 +15,9 @@
  */
 
 import { createHash } from "node:crypto";
+
 import type { Sql, TransactionSql } from "postgres";
+
 import { persistenceError } from "./postgres-errors.js";
 import type { RelationalTableName } from "./postgres-schema.js";
 

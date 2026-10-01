@@ -22,6 +22,7 @@
 // workspace-wide cargo gate runs only when Rust sources actually changed.
 
 import process from "node:process";
+
 import { runCommand } from "./lib/command-runner.js";
 import {
   hasVerificationFailure,

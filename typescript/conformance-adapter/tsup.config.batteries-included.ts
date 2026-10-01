@@ -16,6 +16,7 @@
 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { defineConfig } from "tsup";
 
 const configDir = dirname(fileURLToPath(import.meta.url));

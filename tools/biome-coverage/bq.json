@@ -1,4 +1,1 @@
-[
-  "typescript/kernel/protocol",
-  "typescript/kernel/runtime"
-]
+["typescript/kernel/protocol", "typescript/kernel/runtime"]

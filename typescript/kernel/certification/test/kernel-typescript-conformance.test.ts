@@ -18,6 +18,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import {
   assertTurnTreeSchema,
   decodeDeterministicKernelRecord,
@@ -28,6 +29,7 @@ import {
 } from "@tuvren/kernel-protocol";
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
+
 import {
   canonicalKernelTestSchemaFixture,
   type KernelProtocolDeterministicFixtureSet,

@@ -15,9 +15,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+
 import { TEST_SCHEMA } from "./runtime-kernel-test-helpers.ts";
 
 interface ReclamationFixture {

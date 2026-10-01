@@ -15,6 +15,7 @@ import type {
 import Ajv from "ajv";
 import Ajv2019 from "ajv/dist/2019.js";
 import Ajv2020 from "ajv/dist/2020.js";
+
 import {
   mapGenerateResult,
   type ProviderToolClassLookup,
@@ -126,8 +127,10 @@ export interface AiSdkProviderBridgeOptions {
  * the model from an AI SDK `ProviderV3` registry instead of receiving it
  * pre-constructed.
  */
-export interface AiSdkProviderBridgeFromProviderOptions
-  extends Omit<AiSdkProviderBridgeOptions, "model"> {
+export interface AiSdkProviderBridgeFromProviderOptions extends Omit<
+  AiSdkProviderBridgeOptions,
+  "model"
+> {
   /** Model identifier passed to `provider.languageModel(modelId)`. */
   modelId: string;
   /** AI SDK provider used to look up the language model. */

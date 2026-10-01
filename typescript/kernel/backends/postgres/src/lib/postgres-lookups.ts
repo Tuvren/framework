@@ -30,6 +30,7 @@ import type {
   StoredTurnTreePath,
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+
 import { persistenceError } from "./postgres-errors.js";
 import {
   decodeBranchRow,

@@ -27,6 +27,7 @@
 // under concurrent edit and is intentionally left untouched here).
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import { createPostgresBackend } from "../src/index.js";
 import { RELATIONAL_REQUIRED_INDEXES } from "../src/lib/postgres-schema.js";
 import { qualifyIdentifier, quoteIdentifier } from "../src/lib/postgres-sql.js";

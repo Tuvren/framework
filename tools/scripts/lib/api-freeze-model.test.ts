@@ -18,6 +18,7 @@
 // acceptance fixtures the gate self-tests on every run.
 
 import { describe, expect, test } from "bun:test";
+
 import {
   type ApiSurface,
   classifySurfaceDiff,

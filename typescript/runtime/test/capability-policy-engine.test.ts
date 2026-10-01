@@ -16,6 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: test runners intentionally match async contracts
 import { describe, expect, test } from "bun:test";
+
 import type {
   Binding,
   CapabilityPolicyContext,
@@ -23,6 +24,7 @@ import type {
   ToolSurface,
 } from "@tuvren/core/capabilities";
 import type { RuntimeRunner } from "@tuvren/core/runner";
+
 import type { PolicyDimension } from "../src/index.ts";
 import {
   createRunnerRegistry as createBaseRunnerRegistry,

@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { providerTestkitFixtures } from "../src/index.ts";
 
 describe("@tuvren/provider-testkit conformance assets", () => {

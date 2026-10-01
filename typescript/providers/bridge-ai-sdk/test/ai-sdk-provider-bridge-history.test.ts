@@ -15,7 +15,9 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type { LanguageModelV3CallOptions } from "@ai-sdk/provider";
+
 import { createAiSdkProviderBridge } from "../src/index.ts";
 import {
   createGenerateResult,

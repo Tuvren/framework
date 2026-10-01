@@ -36,6 +36,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
 import type {
@@ -43,6 +44,7 @@ import type {
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
 import { TUVREN_RUNTIME_TELEMETRY_ATTRIBUTE_KEYS } from "@tuvren/telemetry-semconv";
+
 import { createRunnerRegistry, createTuvrenRuntime } from "../src/index.ts";
 import { createFakeKernelHarness } from "./fake-kernel.ts";
 import {

@@ -18,6 +18,7 @@ import { describe, expect, test } from "bun:test";
 import { deepStrictEqual, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+
 import type {
   RuntimeBackend,
   RuntimeBackendTx,
@@ -34,6 +35,7 @@ import type {
   StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+
 import {
   createCanonicalKernelTestSchema,
   createCanonicalTurnTreePaths,

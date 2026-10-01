@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type { ExecutionHandle } from "@tuvren/core/execution";
 import type { SessionOutboundFrame } from "@tuvren/host-session";
 import { createDuplexSessionBinding } from "@tuvren/host-session";

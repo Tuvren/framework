@@ -15,6 +15,7 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
+
 import { JsonRpcAdapterClient } from "../adapter-client.ts";
 
 const clients: JsonRpcAdapterClient[] = [];

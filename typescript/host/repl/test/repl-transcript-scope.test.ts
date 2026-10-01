@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { loadReplConfig } from "../src/lib/repl-config.ts";
 import {
   createReplTranscriptWriter,

@@ -15,6 +15,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+
 import {
   type EpochMs,
   TuvrenLineageError,
@@ -38,6 +39,7 @@ import {
   type ThreadCreateResult,
   type TurnTreeManifest,
 } from "@tuvren/kernel-protocol";
+
 import {
   allocateArchiveBranchId,
   applyStagedResultsToManifest,
@@ -216,12 +218,10 @@ export function createRuntimeKernel(
         return await backend.transact(async (tx) => {
           await requireThread(tx, threadId);
           const branches = await tx.branches.listByThread(threadId);
-          return branches.map(
-            (branch): BranchHeadListEntry => [
-              branch.branchId,
-              branch.headTurnNodeHash,
-            ]
-          );
+          return branches.map((branch): BranchHeadListEntry => [
+            branch.branchId,
+            branch.headTurnNodeHash,
+          ]);
         });
       },
 

@@ -15,8 +15,10 @@
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import { createStoredObjectRecord } from "@tuvren/kernel-testkit";
 import type { Sql } from "postgres";
+
 import { createPostgresBackend } from "../src/index.js";
 import { RELATIONAL_REQUIRED_TABLES } from "../src/lib/postgres-schema.js";
 import { quoteIdentifier } from "../src/lib/postgres-sql.js";

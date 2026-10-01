@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type { LanguageModelV3CallOptions } from "@ai-sdk/provider";
 import {
   assertProviderChunkTypes,
@@ -23,6 +24,7 @@ import {
   verifyProviderGenerate,
   verifyProviderStream,
 } from "@tuvren/provider-testkit";
+
 import { createAiSdkProviderBridge } from "../src/index.ts";
 import {
   createGenerateResult,

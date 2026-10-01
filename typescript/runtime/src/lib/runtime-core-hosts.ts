@@ -34,13 +34,14 @@ import type {
   RunCompletionStatus,
   RuntimeKernel,
 } from "@tuvren/kernel-protocol";
+
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import {
   encryptMessageRecord,
   type PayloadCodecBinding,
 } from "./payload-codec-seam.js";
-import type { HelperBundle } from "./runtime-core-context.js";
 import type { RuntimeCoreContextOpsHost } from "./runtime-core-context-ops.js";
+import type { HelperBundle } from "./runtime-core-context.js";
 import type { RuntimeCoreEventsHost } from "./runtime-core-events.js";
 import type { RuntimeCoreExpiredRecoveryHost } from "./runtime-core-expired-recovery.js";
 import type { RuntimeCoreFinalizationHost } from "./runtime-core-finalization.js";

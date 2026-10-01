@@ -40,6 +40,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type {
   AttachedClientEndpoint,
   ClientInvocationEnvelope,
@@ -53,6 +54,7 @@ import type {
 } from "@tuvren/core/events";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { RuntimeRunner } from "@tuvren/core/runner";
+
 import {
   createCapabilityPolicyEngine,
   createClientEndpointBoundary,

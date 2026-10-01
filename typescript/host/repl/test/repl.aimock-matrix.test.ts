@@ -15,8 +15,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { isChatCompletionBody, LLMock } from "@copilotkit/aimock";
 import { runReplScenario } from "@tuvren/repl-host";
+
 import {
   AIMOCK_PROVIDER_CASES,
   createAimockBaseUrl,

@@ -15,6 +15,7 @@
  */
 
 import type { StoredRun } from "@tuvren/kernel-protocol";
+
 import {
   type BackendInvariantRecordUtilsConfig,
   createBackendInvariantRecordUtils,
@@ -25,8 +26,7 @@ import {
  * error-prefix config plus the one backend-owned decoder the run-legality
  * checks need.
  */
-export interface BackendInvariantRunLogicConfig
-  extends BackendInvariantRecordUtilsConfig {
+export interface BackendInvariantRunLogicConfig extends BackendInvariantRecordUtilsConfig {
   /**
    * Decodes a stored run's `createdTurnNodesCbor` into its append-only turn
    * node hash lineage. This stays backend-owned (each backend has its own

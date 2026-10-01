@@ -30,9 +30,11 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
+
 import type { Sql } from "postgres";
-import { LEGACY_SNAPSHOTS_TABLE } from "../src/lib/postgres-schema.js";
+
 import { ensurePostgresRelationalSchemaInitialized } from "../src/lib/postgres-schema-init.js";
+import { LEGACY_SNAPSHOTS_TABLE } from "../src/lib/postgres-schema.js";
 import { quoteIdentifier } from "../src/lib/postgres-sql.js";
 import {
   assertDevenvPostgresReady,

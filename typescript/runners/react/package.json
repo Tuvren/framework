@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/runner-react",
-  "description": "Tuvren ReAct runner leaf: the reason-act agent loop implementation a host constructs and passes into createTuvren.",
   "version": "0.2.0",
+  "description": "Tuvren ReAct runner leaf: the reason-act agent loop implementation a host constructs and passes into createTuvren.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,6 +12,8 @@
     "dist"
   ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,8 +21,6 @@
       "default": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "@tuvren/provider-api": "workspace:*",
     "ajv": "8.18.0"

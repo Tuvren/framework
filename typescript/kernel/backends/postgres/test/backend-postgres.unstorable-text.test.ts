@@ -44,6 +44,7 @@
 // proving the arithmetic left the promised headroom under the btree limit.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import {
   encodeDeterministicKernelRecord,
   hashKernelRecord,
@@ -51,6 +52,7 @@ import {
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+
 import { createPostgresBackend } from "../src/index.js";
 import {
   assertDevenvPostgresReady,

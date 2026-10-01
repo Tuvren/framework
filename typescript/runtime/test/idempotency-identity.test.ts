@@ -38,11 +38,13 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type { ToolCallPart } from "@tuvren/core/messages";
 import type { TuvrenToolDefinition } from "@tuvren/core/tools";
+
 import { deriveIdempotencyKey } from "../src/lib/idempotency-identity.ts";
-import type { ToolBatchEnvironment } from "../src/lib/tool-execution.ts";
 import { createToolExecutionContext } from "../src/lib/tool-execution-helpers.ts";
+import type { ToolBatchEnvironment } from "../src/lib/tool-execution.ts";
 
 function makeToolCall(callId: string): ToolCallPart {
   return { callId, input: {}, name: "side.effect", type: "tool_call" };
