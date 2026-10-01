@@ -47,7 +47,8 @@
     "publish:preflight": "bun tools/scripts/publish-registry.ts --preflight",
     "publish:dry-run": "bun tools/scripts/publish-registry.ts --dry-run",
     "publish:registry": "bun tools/scripts/publish-registry.ts --publish",
-    "graph": "bun run nx graph"
+    "graph": "bun run nx graph",
+    "format:check": "bunx --bun oxfmt --check ."
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

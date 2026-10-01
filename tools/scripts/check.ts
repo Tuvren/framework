@@ -25,6 +25,7 @@ import process from "node:process";
 
 import { runCommand } from "./lib/command-runner.js";
 import {
+  FORMAT_CHECK_STEP,
   hasVerificationFailure,
   printVerificationSummary,
   runVerificationPhases,
@@ -79,7 +80,12 @@ const base = baseArg ? baseArg.slice(BASE_FLAG.length) : DEFAULT_BASE;
 const phases: VerificationPhase[] = [
   {
     id: "inner-loop authority gate",
-    steps: selectAuthorityGateSteps(INNER_LOOP_AUTHORITY_GATE_IDS, "check"),
+    steps: [
+      ...selectAuthorityGateSteps(INNER_LOOP_AUTHORITY_GATE_IDS, "check"),
+      // ADR-0070: the inner loop must not accept a tree the Oxfmt writer would
+      // change, now that Biome's formatter is disabled. Read-only native check.
+      FORMAT_CHECK_STEP,
+    ],
   },
   {
     concurrency: 1,
