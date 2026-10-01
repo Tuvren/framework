@@ -35,6 +35,7 @@ import {
 import { createKernelVerificationPhases } from "./verify-kernel.js";
 import {
   createVerificationPhases,
+  MACHINE_AUTHORITY_GUARDRAILS_STEP,
   runVerificationPhases,
   type VerificationPhase,
   type VerificationStep,
@@ -113,6 +114,50 @@ describe("generated prerequisite phase", () => {
     expect(createKernelVerificationPhases({ fresh: true })[0]).toEqual(
       createGeneratedPrerequisitePhase({ fresh: true })
     );
+  });
+
+  test("artifact-writing freshness guardrails run in isolated phases", () => {
+    const codegenPhases = createCodegenPhases();
+    const verificationPhases = createVerificationPhases();
+    const plans: readonly [string, readonly VerificationPhase[]][] = [
+      ["codegen", codegenPhases],
+      ["verify", verificationPhases],
+    ];
+
+    for (const [lane, phases] of plans) {
+      const containingPhases = phases.filter((phase) =>
+        phase.steps.includes(MACHINE_AUTHORITY_GUARDRAILS_STEP)
+      );
+
+      expect(containingPhases, lane).toHaveLength(1);
+      expect(containingPhases[0], lane).toEqual({
+        concurrency: 1,
+        id: "generated-artifact freshness guardrails",
+        steps: [MACHINE_AUTHORITY_GUARDRAILS_STEP],
+      });
+    }
+
+    expect(verificationPhases.map((phase) => phase.id).slice(1, 3)).toEqual([
+      "static analysis and authority gates",
+      "generated-artifact freshness guardrails",
+    ]);
+    expect(codegenPhases.map((phase) => phase.id).slice(1, 4)).toEqual([
+      "codegen authority validators",
+      "generated-artifact freshness guardrails",
+      "artifact code generation",
+    ]);
+
+    const staticPhase = verificationPhases.find(
+      (phase) => phase.id === "static analysis and authority gates"
+    );
+    expect(staticPhase).toBeDefined();
+    expect(staticPhase?.steps.map((step) => step.id)).toContain(
+      "Oxfmt formatting check (read-only)"
+    );
+    expect(staticPhase?.steps.map((step) => step.id)).toContain(
+      "workspace lint"
+    );
+    expect(staticPhase?.steps).not.toContain(MACHINE_AUTHORITY_GUARDRAILS_STEP);
   });
 
   test("the actual check plan materializes a missing output before validation", async () => {

@@ -235,12 +235,26 @@ export const WORKSPACE_EXPORT_SMOKE_PROJECTS: readonly string[] = [
   "session-client",
 ];
 
-// The read-only constitutional gate: authority/conformance validators that must
-// stay green regardless of which files changed. This is the single source of
-// truth for the gate — the fast `check` inner loop selects a cheap subset of
-// these by ID (see tools/scripts/check.ts), so the two lanes cannot drift
-// apart silently: renaming or removing a step here makes `check`'s subset
-// selection fail loudly instead of quietly dropping a class of drift coverage.
+// The constitutional gate: authority/conformance validators that must stay
+// green regardless of which files changed. This is the single source of truth
+// for the gate — the fast `check` inner loop selects a cheap subset of these by
+// ID (see tools/scripts/check.ts), so the two lanes cannot drift apart silently:
+// renaming or removing a step here makes `check`'s subset selection fail loudly
+// instead of quietly dropping a class of drift coverage.
+//
+// Most steps are read-only. The machine authority guardrail is the exception:
+// its freshness proof runs declared code generators and compares the resulting
+// artifacts with snapshots. Keep that step available to derived lanes here,
+// but execute it in a singleton phase wherever a lane includes it so readers
+// never observe a generator's intermediate, not-yet-formatted output.
+export const MACHINE_AUTHORITY_GUARDRAILS_STEP: VerificationStep = {
+  command: [
+    "bun",
+    "tools/scripts/authority-guardrails/authority-guardrails.ts",
+  ],
+  id: "machine authority guardrails",
+};
+
 export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
   {
     command: ["bun", "run", "docs:authority-freeze:check"],
@@ -303,13 +317,7 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
     command: ["bun", "tools/conformance/vocabulary/validate-vocabulary.ts"],
     id: "vocabulary-check verification",
   },
-  {
-    command: [
-      "bun",
-      "tools/scripts/authority-guardrails/authority-guardrails.ts",
-    ],
-    id: "machine authority guardrails",
-  },
+  MACHINE_AUTHORITY_GUARDRAILS_STEP,
 ];
 
 // ADR-0070 disabled Biome's formatter in the same commit that moved the writer
@@ -415,8 +423,20 @@ const CORE_VERIFICATION_PHASES: readonly VerificationPhase[] = [
         command: ["cargo", "fmt", "--all", "--", "--check"],
         id: "Rust workspace formatting",
       },
-      ...AUTHORITY_GATE_STEPS,
+      ...AUTHORITY_GATE_STEPS.filter(
+        (step) => step !== MACHINE_AUTHORITY_GUARDRAILS_STEP
+      ),
     ],
+  },
+  {
+    // Freshness validation invokes each authority packet's declared codegen
+    // command. Generators write raw artifacts before their final formatter
+    // pass, so overlapping this step with lint or format checks creates a
+    // false failure against those transient bytes. A singleton phase preserves
+    // the drift/worktree guards while making the write/read dependency explicit.
+    concurrency: 1,
+    id: "generated-artifact freshness guardrails",
+    steps: [MACHINE_AUTHORITY_GUARDRAILS_STEP],
   },
   {
     // The Rust Nx wrappers shell out to Cargo-native commands, so keep this
