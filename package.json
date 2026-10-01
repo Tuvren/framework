@@ -76,9 +76,12 @@
     "cbor-x": "1.6.4",
     "cddl": "0.20.1",
     "nx": "22.7.12",
+    "oxfmt": "0.71.0",
+    "oxlint": "1.86.0",
+    "oxlint-tsgolint": "7.0.2003",
     "tsup": "8.5.1",
     "typescript": "6.0.2",
-    "ultracite": "7.4.2",
+    "ultracite": "7.12.2",
     "ultracite-biome": "npm:ultracite@7.4.2",
     "yaml": "^2.9.0",
     "zod": "4.4.3"
