@@ -90,10 +90,14 @@ function readStringProperty(
   value: unknown,
   propertyName: string
 ): string | undefined {
-  if (typeof value !== "object" || value === null || !(propertyName in value)) {
+  if (!isRecord(value)) {
     return undefined;
   }
 
   const propertyValue = value[propertyName];
   return typeof propertyValue === "string" ? propertyValue : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

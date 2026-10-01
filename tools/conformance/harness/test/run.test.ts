@@ -31,6 +31,24 @@ afterEach(async () => {
 });
 
 describe("certification harness state handling", () => {
+  test("rejects an invalid adapter manifest through its JSON Schema", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "tuvren-runner-test-"));
+    tempDirs.push(tempDir);
+
+    const adapterPath = join(tempDir, "adapter.json");
+    await writeFile(adapterPath, "[]\n");
+
+    const result = await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+    ]);
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("failed adapter manifest validation");
+  });
+
   test("keeps dispatch state when inspectState also returns state", async () => {
     const tempDir = await mkdtemp(join(tmpdir(), "tuvren-runner-test-"));
     tempDirs.push(tempDir);

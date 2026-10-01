@@ -68,7 +68,9 @@ const JSON_OUTPUT_PATH = resolve(
 );
 const NEWLINE_PATTERN = /\r?\n/u;
 
-await main();
+if (import.meta.main) {
+  await main();
+}
 
 async function main(): Promise<void> {
   await ensureWeaverIsAvailable();
@@ -326,7 +328,7 @@ async function formatGeneratedOutputs(
   }
 }
 
-function parseResolvedTelemetryRegistry(
+export function parseResolvedTelemetryRegistry(
   jsonText: string,
   schemaUrl: string
 ): ResolvedTelemetryRegistry {
@@ -351,14 +353,16 @@ function parseResolvedTelemetryRegistry(
 }
 
 function normalizeResolvedTelemetryAttribute(
-  value: Partial<ResolvedTelemetryAttribute>
+  value: unknown
 ): ResolvedTelemetryAttribute {
   if (
-    typeof value.key !== "string" ||
+    !isRecord(value) ||
+    typeof value.name !== "string" ||
     typeof value.type !== "string" ||
     typeof value.brief !== "string" ||
     typeof value.stability !== "string" ||
-    !Array.isArray(value.examples)
+    !Array.isArray(value.examples) ||
+    !value.examples.every((example) => typeof example === "string")
   ) {
     throw new Error("resolved telemetry attribute is incomplete");
   }
@@ -366,7 +370,7 @@ function normalizeResolvedTelemetryAttribute(
   return {
     brief: value.brief,
     examples: value.examples,
-    key: value.key,
+    key: value.name,
     stability: value.stability,
     type: value.type,
   };
@@ -395,15 +399,7 @@ function collectResolvedTelemetryAttributes(
         continue;
       }
 
-      attributes.push(
-        normalizeResolvedTelemetryAttribute({
-          brief: attribute.brief,
-          examples: attribute.examples,
-          key: attribute.name,
-          stability: attribute.stability,
-          type: attribute.type,
-        })
-      );
+      attributes.push(normalizeResolvedTelemetryAttribute(attribute));
     }
   }
 

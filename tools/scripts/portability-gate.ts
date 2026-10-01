@@ -840,7 +840,7 @@ async function checkPlanApplicabilityHasAdapter(
       if (advertisingAdapter === undefined) {
         failures.push({
           rule: "plan-applicability-has-adapter",
-          message: `plan ${plan.planId} at ${plan.path} requires applicability capabilities ${planCapabilities.sort().join(", ")} but no ${manifest.boundary}-boundary adapter advertises that full set; the portability promotion of ${manifest.packetId} would record zero applicable evidence`,
+          message: `plan ${plan.planId} at ${plan.path} requires applicability capabilities ${[...planCapabilities].sort().join(", ")} but no ${manifest.boundary}-boundary adapter advertises that full set; the portability promotion of ${manifest.packetId} would record zero applicable evidence`,
         });
       }
     }
