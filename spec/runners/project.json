@@ -12,12 +12,14 @@
         "^production",
         "{workspaceRoot}/spec/runners/typespec/**/*",
         "{workspaceRoot}/spec/runners/artifacts/**/*",
-        "{workspaceRoot}/bun.lock"
+        "{workspaceRoot}/bun.lock",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/oxfmt.config.ts"
       ],
       "outputs": ["{workspaceRoot}/spec/runners/artifacts/json-schema"],
       "options": {
         "cwd": "spec/runners",
-        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts"
+        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun oxfmt --write ./artifacts"
       }
     },
     "lint": {

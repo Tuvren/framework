@@ -12,7 +12,9 @@
         "^production",
         "{workspaceRoot}/spec/tools/typespec/**/*",
         "{workspaceRoot}/spec/tools/artifacts/**/*",
-        "{workspaceRoot}/bun.lock"
+        "{workspaceRoot}/bun.lock",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/oxfmt.config.ts"
       ],
       "outputs": [
         "{workspaceRoot}/spec/tools/artifacts/json-schema",
@@ -20,7 +22,7 @@
       ],
       "options": {
         "cwd": "spec/tools",
-        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun @biomejs/biome check --write ./artifacts"
+        "command": "bunx --bun tsp compile ./typespec --pretty false && bunx --bun oxfmt --write ./artifacts"
       }
     },
     "lint": {

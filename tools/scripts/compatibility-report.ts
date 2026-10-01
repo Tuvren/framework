@@ -2494,8 +2494,7 @@ async function formatGeneratedOutputs(): Promise<void> {
     [
       "bunx",
       "--bun",
-      "@biomejs/biome",
-      "check",
+      "oxfmt",
       "--write",
       COMPATIBILITY_MATRIX_PATH,
       EVIDENCE_DIRECTORY,

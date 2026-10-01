@@ -57,6 +57,7 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { isDeepStrictEqual } from "node:util";
 import ts from "typescript";
 import {
   type ApiSurface,
@@ -628,13 +629,23 @@ async function writeSnapshot(
   // format pass after regeneration.
   const format = spawnSync(
     "bunx",
-    ["--bun", "@biomejs/biome", "format", "--write", SNAPSHOT_PATH],
+    ["--bun", "oxfmt", "--write", SNAPSHOT_PATH],
     { cwd: REPO_ROOT, stdio: ["ignore", "ignore", "pipe"] }
   );
 
   if (format.status !== 0) {
     throw new Error(
       `[api-freeze-gate] formatter pass on the snapshot failed: ${format.stderr?.toString()}`
+    );
+  }
+
+  // The snapshot is reviewed machine authority, so the formatter must never
+  // change its parsed values — only its layout.
+  const formatted = JSON.parse(await readFile(SNAPSHOT_PATH, "utf8"));
+
+  if (!isDeepStrictEqual(formatted, snapshot)) {
+    throw new Error(
+      "[api-freeze-gate] formatter pass altered the parsed API snapshot values"
     );
   }
 }
