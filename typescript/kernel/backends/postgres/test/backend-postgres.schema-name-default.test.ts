@@ -28,6 +28,7 @@
 // string-in/string-out behavior.
 
 import { describe, expect, test } from "bun:test";
+
 import { normalizeSchemaName } from "../src/lib/postgres-backend-persistence.js";
 
 describe("@tuvren/backend-postgres normalizeSchemaName default", () => {

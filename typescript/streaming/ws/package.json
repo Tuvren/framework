@@ -1,7 +1,8 @@
 {
   "name": "@tuvren/stream-ws",
-  "description": "Tuvren WebSocket stream adapter leaf: carries the duplex session protocol (ADR-0060) plus the event-stream resume cursor (ADR-0061) over a runtime-agnostic WebSocket transport per ADR-0062.",
   "version": "0.2.0",
+  "private": true,
+  "description": "Tuvren WebSocket stream adapter leaf: carries the duplex session protocol (ADR-0060) plus the event-stream resume cursor (ADR-0061) over a runtime-agnostic WebSocket transport per ADR-0062.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,6 +13,8 @@
     "dist"
   ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,8 +22,6 @@
       "default": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "@tuvren/host-session": "workspace:*",
     "@tuvren/remote-session": "workspace:*",
@@ -36,6 +37,5 @@
     "@tuvren/core": {
       "optional": false
     }
-  },
-  "private": true
+  }
 }

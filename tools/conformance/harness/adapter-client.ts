@@ -16,6 +16,7 @@
 
 import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import { createInterface, type Interface } from "node:readline";
+
 import type {
   AdapterCapabilities,
   AdapterControls,

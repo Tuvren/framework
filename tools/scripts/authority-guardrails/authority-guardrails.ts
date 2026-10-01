@@ -19,6 +19,7 @@ import { existsSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { parseRegenerateCommandArgv } from "../lib/regenerate-command-argv.js";
 
 interface AuthorityPacketManifest {

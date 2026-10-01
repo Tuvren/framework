@@ -18,8 +18,10 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+
 import type { ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
+
 import {
   type ConformanceCheckResult,
   type ConformanceEvidence,

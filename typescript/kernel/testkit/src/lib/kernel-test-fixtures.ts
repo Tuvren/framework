@@ -31,6 +31,7 @@ import {
   type TurnTreeManifest,
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+
 import { canonicalKernelTestSchemaFixture } from "./kernel-conformance-fixtures.js";
 
 /**

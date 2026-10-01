@@ -15,11 +15,13 @@
  */
 
 import { describe, test } from "node:test";
+
 import {
   registerBackendConformanceSuite,
   registerBackendInvariantSuite,
   registerBackendRecoverySuite,
 } from "@tuvren/kernel-testkit";
+
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 

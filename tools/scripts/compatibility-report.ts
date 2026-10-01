@@ -26,8 +26,10 @@ import {
 import { dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
+
 import { runCommand } from "./lib/command-runner.js";
 import {
   assertConformanceEvidence,

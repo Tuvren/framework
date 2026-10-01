@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/kernel-grpc-client",
-  "description": "Tuvren kernel-transport leaf: createGrpcRuntimeKernel and the generated gRPC client bindings for hosts that talk to a remote Tuvren kernel service, passed into createTuvren's kernel option.",
   "version": "0.2.0",
+  "description": "Tuvren kernel-transport leaf: createGrpcRuntimeKernel and the generated gRPC client bindings for hosts that talk to a remote Tuvren kernel service, passed into createTuvren's kernel option.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,6 +12,8 @@
     "dist"
   ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,8 +21,6 @@
       "default": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "@bufbuild/protobuf": "2.11.0",
     "@connectrpc/connect": "2.1.1",

@@ -1,7 +1,19 @@
 {
   "name": "@tuvren/kernel-runtime",
   "version": "0.2.0",
+  "description": "Internal Tuvren kernel runtime engine (ADR-0057) — an engine dependency of @tuvren/sdk, not a host-facing API. Not semver-guaranteed.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/kernel/runtime"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -9,8 +21,6 @@
       "default": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "@tuvren/kernel-protocol": "workspace:*"
   },
@@ -24,15 +34,5 @@
     "@tuvren/core": {
       "optional": false
     }
-  },
-  "description": "Internal Tuvren kernel runtime engine (ADR-0057) — an engine dependency of @tuvren/sdk, not a host-facing API. Not semver-guaranteed.",
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Tuvren/framework.git",
-    "directory": "typescript/kernel/runtime"
-  },
-  "files": [
-    "dist"
-  ]
+  }
 }

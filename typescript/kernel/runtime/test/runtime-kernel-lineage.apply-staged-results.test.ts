@@ -15,11 +15,13 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type {
   StagedResult,
   TurnTreeManifest,
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+
 import { applyStagedResultsToManifest } from "../src/lib/runtime-kernel-lineage.ts";
 
 const SCHEMA: TurnTreeSchema = {

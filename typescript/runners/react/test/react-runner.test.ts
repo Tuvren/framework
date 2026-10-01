@@ -16,6 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test doubles intentionally match async provider and extension contracts.
 import { describe, expect, test } from "bun:test";
+
 import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type {
@@ -23,6 +24,7 @@ import type {
   TuvrenModelResponse,
   TuvrenProvider,
 } from "@tuvren/core/provider";
+
 import { createReActRunner } from "../src/index.ts";
 import {
   createRunnerExecutionContext,
@@ -830,9 +832,8 @@ describe("runner-react", () => {
     expect(result.messages).toHaveLength(1);
     const toolMessage = result.messages?.[0];
     expect(toolMessage?.role).toBe("tool");
-    const toolResultPart = (toolMessage as { parts?: unknown[] })?.parts?.[0] as
-      | Record<string, unknown>
-      | undefined;
+    const toolResultPart = (toolMessage as { parts?: unknown[] })
+      ?.parts?.[0] as Record<string, unknown> | undefined;
     expect(toolResultPart?.name).toBe("mcp_tool");
     // Canonical attribution fields must survive end-to-end
     const meta = toolResultPart?.providerMetadata as

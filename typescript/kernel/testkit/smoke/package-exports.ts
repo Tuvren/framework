@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { createCanonicalKernelTestSchema } from "@tuvren/kernel-testkit";
 
 describe("@tuvren/kernel-testkit package exports", () => {

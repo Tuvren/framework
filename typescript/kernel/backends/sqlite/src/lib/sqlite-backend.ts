@@ -19,6 +19,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, format, parse } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import {
   NOOP_PHASE_OBSERVER,
   type PhaseObserver,
@@ -46,6 +47,7 @@ import {
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import Database from "better-sqlite3";
+
 import {
   assertBranchHeadMoveIsLinearInDatabase,
   insertTurnNodeLineageMetadata,
@@ -91,8 +93,8 @@ import {
   selectTurnTreePath,
   selectTurnTreePathsByTurnTree,
 } from "./sqlite-lookups.js";
-import { reclaimBackendState } from "./sqlite-reclamation.js";
 import { assertReclamationSurvivorInvariants } from "./sqlite-reclamation-validation.js";
+import { reclaimBackendState } from "./sqlite-reclamation.js";
 import {
   type BackendState,
   decodeHashStringArray,

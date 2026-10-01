@@ -20,6 +20,7 @@ import {
 } from "@tuvren/backend-shared";
 import { assertScope, TuvrenPersistenceError } from "@tuvren/core";
 import type { TransactionSql } from "postgres";
+
 import { persistenceError } from "./postgres-errors.js";
 import {
   CURRENT_SNAPSHOT_VERSION,

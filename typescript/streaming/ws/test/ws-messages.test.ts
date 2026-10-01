@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { parseWsMessage } from "../src/lib/ws-messages.js";
 
 describe("parseWsMessage", () => {

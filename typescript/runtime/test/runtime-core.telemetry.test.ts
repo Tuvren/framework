@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, spyOn, test } from "bun:test";
+
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { RuntimeRunner } from "@tuvren/core/runner";
 import type {
@@ -26,6 +27,7 @@ import type {
   TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
+
 import { createRunnerRegistry, createTuvrenRuntime } from "../src/index.ts";
 import {
   filterTelemetryAttributes,

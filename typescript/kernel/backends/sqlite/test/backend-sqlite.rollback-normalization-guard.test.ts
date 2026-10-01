@@ -19,6 +19,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, mock, test } from "node:test";
+
 import type { normalizeBackendError as NormalizeBackendError } from "../src/lib/sqlite-errors.js";
 
 /**
@@ -77,9 +78,8 @@ describe("@tuvren/backend-sqlite transact rollback normalization call-count guar
     );
 
     try {
-      const { createSqliteBackend } = (await import(
-        "../src/index.js"
-      )) as typeof import("../src/index.js");
+      const { createSqliteBackend } =
+        (await import("../src/index.js")) as typeof import("../src/index.js");
 
       const databasePath = join(tempDirectory, "kraken.db");
       const backend = createSqliteBackend({ databasePath });

@@ -24,6 +24,7 @@ import type {
   StoredTurnTree,
 } from "@tuvren/kernel-protocol";
 import type Database from "better-sqlite3";
+
 import { selectBranch } from "./sqlite-lookups.js";
 
 interface TrackedRecord<T> {

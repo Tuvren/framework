@@ -4,6 +4,6 @@
   "formatter": { "enabled": false },
   "assist": { "enabled": false },
   "files": {
-    "includes": ["!!target", "!.claude", "!.dart_tool"]
-  }
+    "includes": ["!!target", "!.claude", "!.dart_tool"],
+  },
 }

@@ -38,7 +38,9 @@
 // client-facing `parts` with a function tool_call the runtime would try to run.
 
 import { describe, expect, test } from "bun:test";
+
 import { TuvrenProviderError } from "@tuvren/core";
+
 import { createAiSdkProviderBridge } from "../src/index.ts";
 import {
   collectAsyncIterable,

@@ -28,6 +28,7 @@ import {
   decodeDeterministicKernelRecord,
   type RuntimeKernel,
 } from "@tuvren/kernel-protocol";
+
 import { createEmptyContextManifest } from "./context-manifest.js";
 import {
   decryptStoredMessage,

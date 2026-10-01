@@ -25,6 +25,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
+
 import {
   FORMER_ROOT_DELETED_COMMAND,
   FORMER_ROOT_DISCOVERY_COMMAND,
@@ -239,10 +240,7 @@ describe("former-root inventory derivation", () => {
 
       const selected = selectFormerRootFiles(
         root,
-        removeDeletedFiles(
-          candidates,
-          parseGitFileList(deletion.stdout)
-        )
+        removeDeletedFiles(candidates, parseGitFileList(deletion.stdout))
       );
       expect(selected).toContain("src/kept.ts");
       expect(selected).toContain("src/kept.json");

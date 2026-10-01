@@ -1,11 +1,6 @@
 {
   "name": "tuvren-runtime",
   "private": true,
-  "type": "module",
-  "packageManager": "bun@1.4.2",
-  "trustedDependencies": [
-    "better-sqlite3"
-  ],
   "workspaces": [
     "typescript/*",
     "typescript/host/*",
@@ -17,9 +12,10 @@
     "typescript/telemetry/*",
     "typescript/tools/*"
   ],
+  "type": "module",
   "scripts": {
     "lint": "bun tools/scripts/biome-lint.ts",
-    "format": "bunx --bun @biomejs/biome check --write .",
+    "format": "bunx --bun oxfmt --write .",
     "nx": "bun ./tools/run-nx.mjs",
     "typecheck": "bun run nx run-many -t typecheck --parallel=4",
     "conformance": "bun tools/scripts/conformance.ts",
@@ -85,5 +81,9 @@
     "ultracite-biome": "npm:ultracite@7.4.2",
     "yaml": "^2.9.0",
     "zod": "4.4.3"
-  }
+  },
+  "packageManager": "bun@1.4.2",
+  "trustedDependencies": [
+    "better-sqlite3"
+  ]
 }

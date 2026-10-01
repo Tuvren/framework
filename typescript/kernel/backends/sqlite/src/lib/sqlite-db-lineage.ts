@@ -22,6 +22,7 @@ import type {
   StoredTurnNode,
 } from "@tuvren/kernel-protocol";
 import type Database from "better-sqlite3";
+
 import { persistenceError } from "./sqlite-errors.js";
 import {
   ensureTurnExistsInDatabase,

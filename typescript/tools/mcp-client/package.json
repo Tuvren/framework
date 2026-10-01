@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/mcp-client",
-  "description": "Tuvren MCP client leaf: createMcpToolSource for connecting Model Context Protocol servers as Tuvren tool sources.",
   "version": "0.2.0",
+  "description": "Tuvren MCP client leaf: createMcpToolSource for connecting Model Context Protocol servers as Tuvren tool sources.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,21 +12,13 @@
     "dist"
   ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
-    }
-  },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "peerDependenciesMeta": {
-    "@tuvren/core": {
-      "optional": false
-    },
-    "@tuvren/sdk": {
-      "optional": false
     }
   },
   "dependencies": {
@@ -37,5 +29,13 @@
   "peerDependencies": {
     "@tuvren/core": "workspace:~",
     "@tuvren/sdk": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@tuvren/core": {
+      "optional": false
+    },
+    "@tuvren/sdk": {
+      "optional": false
+    }
   }
 }

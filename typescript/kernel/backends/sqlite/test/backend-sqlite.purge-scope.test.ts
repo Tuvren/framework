@@ -22,8 +22,10 @@
 import { ok, strictEqual } from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { after, describe, test } from "node:test";
+
 import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 

@@ -15,8 +15,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type { JournalBody } from "@copilotkit/aimock";
 import { isChatCompletionBody, LLMock } from "@copilotkit/aimock";
+
 import {
   assertStructuredResponseFormat,
   hasApprovalToolContinuation,

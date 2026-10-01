@@ -21,6 +21,7 @@ import {
   type StoredTurn,
   type StoredTurnNode,
 } from "@tuvren/kernel-protocol";
+
 import {
   type BackendInvariantRecordUtilsConfig,
   createBackendInvariantRecordUtils,
@@ -38,8 +39,7 @@ export type TurnNodeRelationship = "backward" | "forward" | "lateral" | "same";
  * Configuration for {@link createBackendInvariantRunSpan}: the record-utils
  * error-prefix config plus the one backend-owned decoder this surface needs.
  */
-export interface BackendInvariantRunSpanConfig
-  extends BackendInvariantRecordUtilsConfig {
+export interface BackendInvariantRunSpanConfig extends BackendInvariantRecordUtilsConfig {
   /**
    * Decodes a stored run's `createdTurnNodesCbor` into its append-only turn
    * node hash lineage. This stays backend-owned (each backend has its own

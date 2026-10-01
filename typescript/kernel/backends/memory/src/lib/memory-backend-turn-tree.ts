@@ -27,6 +27,7 @@ import {
   type StoredTurnTreePath,
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+
 import { decodeDetachedKernelRecord } from "./memory-backend-buffer-isolation.js";
 import {
   areStoredOrderedPathChunksEqual,

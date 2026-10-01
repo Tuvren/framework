@@ -37,6 +37,7 @@ import type {
   StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+
 import { CURRENT_SNAPSHOT_VERSION } from "../src/lib/postgres-legacy-snapshot-decode.js";
 import type { BackendState } from "../src/lib/postgres-records.js";
 import {

@@ -17,6 +17,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
 import {
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
@@ -37,6 +38,7 @@ import {
   createStoredTurnTreeRecord,
 } from "@tuvren/kernel-testkit";
 import Database from "better-sqlite3";
+
 import { createSqliteBackend } from "../src/index.js";
 
 const RETENTION_MESSAGE_COUNT = 40;

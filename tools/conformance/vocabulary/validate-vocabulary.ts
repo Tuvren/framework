@@ -18,6 +18,7 @@ import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import yaml from "yaml";
 
 interface AuthorityPacketManifest {

@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 // @tuvren/runtime is the internal engine (ADR-0057): its package root exposes the
 // engine factories, NOT the curated host-facing surface. The host-facing
 // re-exports (createTuvren, TuvrenError, NoopTelemetrySink, telemetry-semconv,

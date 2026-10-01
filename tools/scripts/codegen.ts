@@ -23,6 +23,7 @@
 // surfaces every failure at once).
 
 import process from "node:process";
+
 import {
   CODEGEN_PROJECTS,
   hasVerificationFailure,

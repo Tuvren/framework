@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import {
   collectTuvrenStreamEvents,

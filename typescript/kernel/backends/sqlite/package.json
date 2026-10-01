@@ -1,7 +1,7 @@
 {
   "name": "@tuvren/backend-sqlite",
-  "description": "Tuvren SQLite backend leaf: durable single-node session persistence, constructed by the host and passed into createTuvren.",
   "version": "0.2.0",
+  "description": "Tuvren SQLite backend leaf: durable single-node session persistence, constructed by the host and passed into createTuvren.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,6 +12,8 @@
     "dist"
   ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,8 +21,6 @@
       "default": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "@tuvren/backend-shared": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",

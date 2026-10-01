@@ -16,7 +16,9 @@ const FORMAT_CALLER_SOURCES = [
   "tools/scripts/compatibility-report.ts",
 ];
 
-const KERNEL_PLAN_PATH = stdio("spec/conformance/kernel/plans/kernel-protocol-extended.json");
+const KERNEL_PLAN_PATH = stdio(
+  "spec/conformance/kernel/plans/kernel-protocol-extended.json"
+);
 const KERNEL_PLAN_SCRIPT = "tools/scripts/conformance/generate-kernel-plans.ts";
 const CHANGESET_PATH = ".changeset/toolchain-bp-oxc-preparation.md";
 const BIOME_PACKAGE_PATTERN = /@biomejs\/biome/u;
@@ -171,9 +173,7 @@ function readTarget(
   const command = target?.options?.command;
 
   if (typeof command !== "string") {
-    throw new Error(
-      `${relativePath} does not declare a ${targetName} command`
-    );
+    throw new Error(`${relativePath} does not declare a ${targetName} command`);
   }
 
   return { command, inputs: target?.inputs ?? [] };
@@ -255,7 +255,9 @@ describe("artifact target configuration", () => {
 
 describe("preserved input controls", () => {
   function targetFor(file: string): ArtifactTarget {
-    const target = ARTIFACT_TARGETS.find((candidate) => candidate.file === file);
+    const target = ARTIFACT_TARGETS.find(
+      (candidate) => candidate.file === file
+    );
     if (target == null) {
       throw new Error(`${file} is not a declared artifact target`);
     }

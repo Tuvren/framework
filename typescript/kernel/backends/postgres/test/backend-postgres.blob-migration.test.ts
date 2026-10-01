@@ -30,6 +30,7 @@
 //    `backend.transact`/`tx.observeAnnotations.set`.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import { DEFAULT_SCOPE } from "@tuvren/core";
 import {
   encodeDeterministicKernelRecord,
@@ -45,6 +46,7 @@ import {
   type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+
 import {
   createPostgresBackend,
   type PostgresBackendOptions,

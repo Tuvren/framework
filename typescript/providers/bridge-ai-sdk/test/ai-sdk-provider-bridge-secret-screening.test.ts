@@ -26,6 +26,7 @@
 // stream bridge paths.
 
 import { describe, expect, test } from "bun:test";
+
 import { createAiSdkProviderBridge } from "../src/index.ts";
 import {
   createGenerateResult,

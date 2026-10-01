@@ -32,7 +32,9 @@
 
 import { appendFile } from "node:fs/promises";
 import process from "node:process";
+
 import { createSessionClient } from "@tuvren/session-client";
+
 import { DEMO_CLIENT_CAPABILITY_ID } from "../src/lib/repl-serve-ws.js";
 
 interface PeerArgs {

@@ -69,6 +69,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+
 import type {
   AttachedClientEndpoint,
   ClientEndpointCapabilityAdvertisement,

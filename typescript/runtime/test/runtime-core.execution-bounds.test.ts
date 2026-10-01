@@ -16,6 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
+
 import type { EpochMs } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
@@ -27,6 +28,7 @@ import type {
   TelemetryEvent,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
+
 import {
   createCapabilityPolicyEngine,
   createRunnerRegistry,

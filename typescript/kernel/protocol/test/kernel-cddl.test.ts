@@ -17,12 +17,14 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
 import {
   assertEpochMs,
   assertHashString,
   assertKernelRecord,
 } from "@tuvren/core";
 import { parse } from "cddl";
+
 import { assertRunRecord, assertTurnTreeSchema } from "../src/index.ts";
 
 const REQUIRED_CDDL_ASSIGNMENTS = [

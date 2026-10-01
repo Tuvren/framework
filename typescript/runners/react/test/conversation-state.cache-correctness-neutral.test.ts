@@ -49,6 +49,7 @@
 // at the bridge seam.)
 
 import { describe, expect, test } from "bun:test";
+
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { TuvrenMessage } from "@tuvren/core/messages";
 import type {
@@ -57,6 +58,7 @@ import type {
   TuvrenPrompt,
   TuvrenProvider,
 } from "@tuvren/core/provider";
+
 import { createRunnerRegistry } from "../../../runtime/src/lib/runner-registry.ts";
 import { createTuvrenRuntime as createTuvrenRuntimeCore } from "../../../runtime/src/lib/runtime-core.ts";
 import { createFakeKernelHarness } from "../../../runtime/test/fake-kernel.ts";

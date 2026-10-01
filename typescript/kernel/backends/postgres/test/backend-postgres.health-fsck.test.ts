@@ -20,8 +20,10 @@
 // family tables (not the retired snapshot_cbor blob).
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+
 import { createPostgresBackend } from "../src/index.js";
 import { RELATIONAL_REQUIRED_INDEXES } from "../src/lib/postgres-schema.js";
 import { quoteIdentifier } from "../src/lib/postgres-sql.js";

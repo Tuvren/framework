@@ -1,16 +1,6 @@
 {
   "name": "@tuvren/provider-api",
   "version": "0.2.0",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    }
-  },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "description": "Internal Tuvren provider-integration helpers (ADR-0057) — an engine dependency of the runner and provider-bridge packages, not a host-facing API. Not semver-guaranteed.",
   "license": "Apache-2.0",
   "repository": {
@@ -21,6 +11,16 @@
   "files": [
     "dist"
   ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "peerDependencies": {
     "@tuvren/core": "workspace:~"
   }

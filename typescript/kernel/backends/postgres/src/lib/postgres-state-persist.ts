@@ -21,6 +21,7 @@ import {
 import type { Scope } from "@tuvren/core";
 import type { StoredTurnTreePath } from "@tuvren/kernel-protocol";
 import type { ParameterOrJSON } from "postgres";
+
 import { persistenceError } from "./postgres-errors.js";
 import type { BackendState } from "./postgres-records.js";
 import type { RelationalTableName } from "./postgres-schema.js";

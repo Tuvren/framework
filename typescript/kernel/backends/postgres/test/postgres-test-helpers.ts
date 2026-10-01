@@ -17,8 +17,10 @@
 import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
+
 import { DEFAULT_SCOPE } from "@tuvren/core";
 import postgres, { type Sql } from "postgres";
+
 import type { PostgresBackendOptions } from "../src/index.js";
 import { quoteIdentifier } from "../src/lib/postgres-sql.js";
 

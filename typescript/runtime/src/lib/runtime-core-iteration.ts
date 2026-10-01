@@ -36,6 +36,7 @@ import type {
   RuntimeRunner,
 } from "@tuvren/core/runner";
 import type { ToolRegistry } from "@tuvren/core/tools";
+
 import { observationForClass } from "./capability-attribution.js";
 import { updateContextManifest } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";

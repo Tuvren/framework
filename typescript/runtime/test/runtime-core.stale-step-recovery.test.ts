@@ -16,6 +16,7 @@
 
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
+
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type {
   RunnerExecutionResult,
@@ -23,6 +24,7 @@ import type {
   RuntimeRunnerFactory,
 } from "@tuvren/core/runner";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,

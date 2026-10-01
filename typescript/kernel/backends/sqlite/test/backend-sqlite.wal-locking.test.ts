@@ -16,11 +16,13 @@
 
 import { deepStrictEqual, ok, rejects, strictEqual } from "node:assert/strict";
 import { describe, test } from "node:test";
+
 import {
   createCanonicalKernelTestSchema,
   createStoredSchemaRecord,
 } from "@tuvren/kernel-testkit";
 import Database from "better-sqlite3";
+
 import { createSqliteBackend } from "../src/index.js";
 import { createTempDatabasePath } from "./backend-sqlite-test-helpers.js";
 

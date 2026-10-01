@@ -15,6 +15,7 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
+
 import {
   assertScope,
   DEFAULT_SCOPE,
@@ -50,6 +51,7 @@ import {
   type StoredThread,
   type StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
+
 import { isolateRecordBuffers } from "./memory-backend-buffer-isolation.js";
 import {
   assertBranchHeadMoveIsLinear,

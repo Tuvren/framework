@@ -15,6 +15,7 @@
  */
 
 import type { KernelRecord } from "@tuvren/core";
+
 import { hashTurnNodeIdentity } from "./kernel-identity.js";
 import type {
   BranchHeadListEntry,

@@ -15,9 +15,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { hashKernelRecord, type RuntimeBackend } from "@tuvren/kernel-protocol";
 import type { createRuntimeKernel } from "@tuvren/kernel-runtime";
+
 import { createThreadFixture } from "./runtime-kernel-test-helpers.ts";
 
 const THRESHOLD = 32;

@@ -1,7 +1,19 @@
 {
   "name": "@tuvren/kernel-protocol",
   "version": "0.2.0",
+  "description": "Internal Tuvren kernel protocol contracts (ADR-0057) — an engine dependency of @tuvren/sdk and the backend packages, not a host-facing API. Hosts type kernel instances via @tuvren/sdk re-exports; this package is not semver-guaranteed.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tuvren/framework.git",
+    "directory": "typescript/kernel/protocol"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -9,8 +21,6 @@
       "default": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "cbor-x": "1.6.4"
   },
@@ -21,15 +31,5 @@
     "@tuvren/core": {
       "optional": false
     }
-  },
-  "description": "Internal Tuvren kernel protocol contracts (ADR-0057) — an engine dependency of @tuvren/sdk and the backend packages, not a host-facing API. Hosts type kernel instances via @tuvren/sdk re-exports; this package is not semver-guaranteed.",
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Tuvren/framework.git",
-    "directory": "typescript/kernel/protocol"
-  },
-  "files": [
-    "dist"
-  ]
+  }
 }

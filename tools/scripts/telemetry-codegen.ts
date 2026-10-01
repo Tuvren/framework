@@ -18,6 +18,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { type RunCommandResult, runCommand } from "./lib/command-runner.js";
 
 interface ResolvedTelemetryAttribute {
@@ -285,7 +286,14 @@ async function formatGeneratedOutputs(
   // JSON artifact is kept in the invocation as a guaranteed match. Without a
   // matched path Oxfmt exits 2 on an all-ignored set.
   const result = await runCommand(
-    ["bunx", "--bun", "oxfmt", "--write", JSON_OUTPUT_PATH, typescriptOutputPath],
+    [
+      "bunx",
+      "--bun",
+      "oxfmt",
+      "--write",
+      JSON_OUTPUT_PATH,
+      typescriptOutputPath,
+    ],
     {
       captureOutput: true,
       cwd: REPO_ROOT,

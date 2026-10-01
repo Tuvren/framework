@@ -17,6 +17,7 @@
 import type { HashString } from "@tuvren/core";
 import type { InputSignal } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+
 import { updateContextManifest } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";

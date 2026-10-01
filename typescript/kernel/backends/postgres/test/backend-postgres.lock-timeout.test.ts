@@ -32,6 +32,7 @@
 // table lock.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import { createPostgresBackend } from "../src/index.js";
 import { createPostgresClient } from "../src/lib/postgres-backend-persistence.js";
 import { qualifyIdentifier } from "../src/lib/postgres-sql.js";

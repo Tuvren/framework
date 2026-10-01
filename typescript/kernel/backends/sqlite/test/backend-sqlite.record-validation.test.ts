@@ -15,9 +15,11 @@
  */
 
 import { describe, test } from "node:test";
+
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 import { createHashFromIndex } from "@tuvren/kernel-testkit";
 import Database from "better-sqlite3";
+
 import {
   BRANCH_ROW_ERROR_PATTERN,
   expectCorruptedStateRejection,

@@ -15,8 +15,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
+
 import {
   createThreadFixture,
   TEST_SCHEMA,

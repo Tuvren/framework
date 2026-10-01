@@ -15,6 +15,7 @@
  */
 
 import { expect } from "bun:test";
+
 import type {
   ChatCompletionRequest,
   JournalBody,

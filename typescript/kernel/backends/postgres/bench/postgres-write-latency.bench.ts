@@ -24,6 +24,7 @@
 
 import { randomUUID } from "node:crypto";
 import process from "node:process";
+
 import { createRecordingPhaseObserver } from "@tuvren/backend-shared";
 import {
   createCanonicalKernelTestSchema,
@@ -37,6 +38,7 @@ import {
   summarizePhases,
   type TimingStats,
 } from "@tuvren/kernel-testkit";
+
 import {
   createPostgresBackend,
   destroyPostgresBackend,

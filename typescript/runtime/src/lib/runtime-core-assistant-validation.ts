@@ -15,6 +15,7 @@
  */
 
 import { isDeepStrictEqual } from "node:util";
+
 import { TuvrenRuntimeError } from "@tuvren/core";
 import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { RuntimeResolution } from "@tuvren/core/execution";
@@ -22,6 +23,7 @@ import type { TuvrenExtension } from "@tuvren/core/extensions";
 import type { ContentPart, TuvrenMessage } from "@tuvren/core/messages";
 import type { TuvrenModelResponse } from "@tuvren/core/provider";
 import type { RunnerAssistantEventReconciliation } from "@tuvren/core/runner";
+
 import {
   assistantSequenceRequestsTools,
   assistantValidationEventsMatch,

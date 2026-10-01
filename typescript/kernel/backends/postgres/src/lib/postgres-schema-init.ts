@@ -20,6 +20,7 @@ import {
 } from "@tuvren/backend-shared";
 import type { EpochMs } from "@tuvren/core";
 import type { Sql, TransactionSql } from "postgres";
+
 import { persistenceError } from "./postgres-errors.js";
 import {
   LEGACY_BLOB_INITIAL_MIGRATION_NAME,
@@ -624,8 +625,7 @@ async function migrateLegacyBlobSnapshotsIfPresent(
   }
 
   // Lazy import so the blob decoder is only pulled when a legacy DB is opened.
-  const { explodeLegacyBlobSnapshots } = await import(
-    "./postgres-blob-migration.js"
-  );
+  const { explodeLegacyBlobSnapshots } =
+    await import("./postgres-blob-migration.js");
   await explodeLegacyBlobSnapshots(tx, schemaName, phaseObserver);
 }

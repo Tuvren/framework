@@ -19,6 +19,7 @@ import type {
   StoredTurnNode,
   StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
+
 import {
   type BackendInvariantRecordUtilsConfig,
   createBackendInvariantRecordUtils,
@@ -34,8 +35,7 @@ import {
  * record-utils error-prefix config plus the backend-owned decoders/resolver
  * this surface needs.
  */
-export interface BackendInvariantReclamationValidationConfig
-  extends BackendInvariantRecordUtilsConfig {
+export interface BackendInvariantReclamationValidationConfig extends BackendInvariantRecordUtilsConfig {
   /** Decodes a deterministically-encoded hash array (e.g. an ordered path chunk's `itemsCbor`). */
   decodeHashStringArray(bytes: Uint8Array, label: string): string[];
   /** Decodes a stored run's `createdTurnNodesCbor` into its append-only turn node hash lineage. */

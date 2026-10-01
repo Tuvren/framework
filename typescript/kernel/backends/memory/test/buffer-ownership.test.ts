@@ -21,6 +21,7 @@
 // validator that runs on a caller-owned or stored buffer would mutate memory
 // the caller still owns. These assertions use the public backend surface only.
 import { describe, expect, test } from "bun:test";
+
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import {
   encodeDeterministicKernelRecord,
@@ -50,6 +51,7 @@ import {
   createStoredTurnNodeRecord as createStoredTurnNode,
   createStoredTurnTreeRecord as createStoredTurnTree,
 } from "@tuvren/kernel-testkit";
+
 import { createCanonicalTurnTreePaths } from "./backend-memory-test-helpers.js";
 
 /**

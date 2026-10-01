@@ -22,6 +22,7 @@
 // the retired blob decode/encode phases.
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import {
   createRecordingPhaseObserver,
   NOOP_PHASE_OBSERVER,
@@ -32,6 +33,7 @@ import {
   createStoredObjectRecord,
   createStoredSchemaRecord,
 } from "@tuvren/kernel-testkit";
+
 import type { PostgresBackendOptions } from "../src/index.js";
 import { createPostgresBackend } from "../src/index.js";
 import { qualifyIdentifier } from "../src/lib/postgres-sql.js";

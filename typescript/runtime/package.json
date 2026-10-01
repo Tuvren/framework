@@ -2,35 +2,6 @@
   "name": "@tuvren/runtime",
   "version": "0.2.0",
   "description": "Internal Tuvren orchestration engine (ADR-0057) — not a host-facing API. Hosts compose the framework through @tuvren/sdk and their chosen leaf packages; this package is not semver-guaranteed.",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    }
-  },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "devDependencies": {
-    "@ag-ui/core": "0.0.52",
-    "@tuvren/backend-memory": "workspace:*",
-    "@tuvren/kernel-runtime": "workspace:*",
-    "@tuvren/kernel-testkit": "workspace:*"
-  },
-  "dependencies": {
-    "@tuvren/kernel-protocol": "workspace:*",
-    "@tuvren/telemetry-semconv": "workspace:*",
-    "ajv": "8.18.0"
-  },
-  "peerDependencies": {
-    "@tuvren/core": "workspace:~"
-  },
-  "peerDependenciesMeta": {
-    "@tuvren/core": {
-      "optional": false
-    }
-  },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -39,5 +10,34 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@tuvren/kernel-protocol": "workspace:*",
+    "@tuvren/telemetry-semconv": "workspace:*",
+    "ajv": "8.18.0"
+  },
+  "devDependencies": {
+    "@ag-ui/core": "0.0.52",
+    "@tuvren/backend-memory": "workspace:*",
+    "@tuvren/kernel-runtime": "workspace:*",
+    "@tuvren/kernel-testkit": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tuvren/core": "workspace:~"
+  },
+  "peerDependenciesMeta": {
+    "@tuvren/core": {
+      "optional": false
+    }
+  }
 }

@@ -36,6 +36,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type {
   AttachedClientEndpoint,
   ClientInvocationEnvelope,
@@ -52,6 +53,7 @@ import type {
   TelemetrySpan,
   TuvrenTelemetrySink,
 } from "@tuvren/core/telemetry";
+
 import {
   createClientEndpointBoundary,
   createRunnerRegistry,

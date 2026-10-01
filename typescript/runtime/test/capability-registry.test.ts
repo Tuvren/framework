@@ -15,7 +15,9 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import type { Capability, ToolSurface } from "@tuvren/core/capabilities";
+
 import { createCapabilityRegistry } from "../src/lib/capability-registry.ts";
 
 // ---------------------------------------------------------------------------

@@ -15,8 +15,10 @@
  */
 
 import { rejects } from "node:assert/strict";
+
 import { TuvrenPersistenceError } from "@tuvren/core";
 import type { StoredBranch, StoredThread } from "@tuvren/kernel-protocol";
+
 import type { BackendConformanceSuiteOptions } from "./backend-test-suite-types.js";
 import {
   createCanonicalKernelTestSchema,

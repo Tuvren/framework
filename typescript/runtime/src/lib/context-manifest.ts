@@ -16,6 +16,7 @@
 
 import type { ContextManifest } from "@tuvren/core/execution";
 import type { TuvrenMessage } from "@tuvren/core/messages";
+
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 
 const TOKEN_ESTIMATE_DIVISOR = 4;

@@ -15,12 +15,14 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import {
   decodeDeterministicKernelRecord,
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
 } from "@tuvren/kernel-protocol";
+
 import {
   canonicalKernelTestSchemaFixture,
   kernelProtocolDeterministicFixtures,

@@ -19,7 +19,9 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 import { pathToFileURL } from "node:url";
+
 import Database from "better-sqlite3";
+
 import { createSqliteBackend } from "../src/index.js";
 import {
   copyCompiledSqliteRuntimeBundle,
@@ -106,71 +108,82 @@ describe("@tuvren/backend-sqlite startup", () => {
     );
   });
 
-  test("normalizes accepted file: paths to filesystem database files", {
-    concurrency: false,
-  }, async () => {
-    const tempDirectory = createTempDirectory("kraken-sqlite-uri-");
-    const originalCwd = process.cwd();
-    const relativeDatabasePath = "file:relative-uri.db";
-    const absoluteDatabasePath = `file:${join(tempDirectory, "absolute-uri.db")}`;
+  test(
+    "normalizes accepted file: paths to filesystem database files",
+    {
+      concurrency: false,
+    },
+    async () => {
+      const tempDirectory = createTempDirectory("kraken-sqlite-uri-");
+      const originalCwd = process.cwd();
+      const relativeDatabasePath = "file:relative-uri.db";
+      const absoluteDatabasePath = `file:${join(tempDirectory, "absolute-uri.db")}`;
 
-    try {
-      process.chdir(tempDirectory);
+      try {
+        process.chdir(tempDirectory);
 
-      const relativeBackend = createSqliteBackend({
-        databasePath: relativeDatabasePath,
-      });
-      const absoluteBackend = createSqliteBackend({
-        databasePath: absoluteDatabasePath,
-      });
+        const relativeBackend = createSqliteBackend({
+          databasePath: relativeDatabasePath,
+        });
+        const absoluteBackend = createSqliteBackend({
+          databasePath: absoluteDatabasePath,
+        });
 
-      deepStrictEqual(await relativeBackend.health(), { ok: true });
-      deepStrictEqual(await absoluteBackend.health(), { ok: true });
+        deepStrictEqual(await relativeBackend.health(), { ok: true });
+        deepStrictEqual(await absoluteBackend.health(), { ok: true });
 
-      strictEqual(existsSync(join(tempDirectory, "relative-uri.db")), true);
-      strictEqual(existsSync(join(tempDirectory, relativeDatabasePath)), false);
-      strictEqual(existsSync(join(tempDirectory, "absolute-uri.db")), true);
-    } finally {
-      process.chdir(originalCwd);
+        strictEqual(existsSync(join(tempDirectory, "relative-uri.db")), true);
+        strictEqual(
+          existsSync(join(tempDirectory, relativeDatabasePath)),
+          false
+        );
+        strictEqual(existsSync(join(tempDirectory, "absolute-uri.db")), true);
+      } finally {
+        process.chdir(originalCwd);
+      }
     }
-  });
+  );
 
-  test("uses package-local migrations when cwd has unrelated SQL files", {
-    concurrency: false,
-  }, () => {
-    const databasePath = createTempDatabasePath();
-    const tempCwd = createTempDirectory("kraken-sqlite-cwd-");
-    const originalCwd = process.cwd();
+  test(
+    "uses package-local migrations when cwd has unrelated SQL files",
+    {
+      concurrency: false,
+    },
+    () => {
+      const databasePath = createTempDatabasePath();
+      const tempCwd = createTempDirectory("kraken-sqlite-cwd-");
+      const originalCwd = process.cwd();
 
-    mkdirSync(join(tempCwd, "migrations"));
-    writeFileSync(
-      join(tempCwd, "migrations", "0001_wrong.sql"),
-      "THIS IS NOT SQL;\n",
-      "utf8"
-    );
+      mkdirSync(join(tempCwd, "migrations"));
+      writeFileSync(
+        join(tempCwd, "migrations", "0001_wrong.sql"),
+        "THIS IS NOT SQL;\n",
+        "utf8"
+      );
 
-    try {
-      process.chdir(tempCwd);
-      createSqliteBackend({ databasePath });
-    } finally {
-      process.chdir(originalCwd);
+      try {
+        process.chdir(tempCwd);
+        createSqliteBackend({ databasePath });
+      } finally {
+        process.chdir(originalCwd);
+      }
+
+      const probe = new Database(databasePath, { readonly: true });
+      const migrationRows = probe
+        .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
+        .all() as Array<{ name: string }>;
+      probe.close();
+
+      deepStrictEqual(migrationRows, [
+        { name: "0001_initial_schema.sql" },
+        { name: "0002_targeted_validation_indexes.sql" },
+        { name: "0003_pending_signals_and_annotations.sql" },
+        { name: "0004_observe_annotations.sql" },
+        { name: "0005_run_liveness.sql" },
+        { name: "0006_thread_enumeration_index.sql" },
+      ]);
     }
-
-    const probe = new Database(databasePath, { readonly: true });
-    const migrationRows = probe
-      .prepare("SELECT name FROM backend_sqlite_migrations ORDER BY name")
-      .all() as Array<{ name: string }>;
-    probe.close();
-
-    deepStrictEqual(migrationRows, [
-      { name: "0001_initial_schema.sql" },
-      { name: "0002_targeted_validation_indexes.sql" },
-      { name: "0003_pending_signals_and_annotations.sql" },
-      { name: "0004_observe_annotations.sql" },
-      { name: "0005_run_liveness.sql" },
-      { name: "0006_thread_enumeration_index.sql" },
-    ]);
-  });
+  );
 
   test("rolls back failed migration files without recording partial success", () => {
     const databasePath = createTempDatabasePath();

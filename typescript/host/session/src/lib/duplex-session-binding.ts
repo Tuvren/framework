@@ -23,6 +23,7 @@ import type {
 } from "@tuvren/core/capabilities";
 import type { ExecutionHandle, InputSignal } from "@tuvren/core/execution";
 import type { ApprovalResponse } from "@tuvren/core/tools";
+
 import type {
   SessionInboundFrame,
   SessionOutboundFrame,
@@ -95,9 +96,7 @@ interface OutboundQueueWaiter {
  * queue only has one producer side and one consumer, so it buffers freely
  * and only needs push/close/fail plus a single async iterator.
  */
-class DuplexSessionOutboundQueue
-  implements AsyncIterable<SessionOutboundFrame>
-{
+class DuplexSessionOutboundQueue implements AsyncIterable<SessionOutboundFrame> {
   private closed = false;
   private failure: { error: unknown } | undefined;
   private readonly items: SessionOutboundFrame[] = [];

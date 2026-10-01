@@ -34,6 +34,7 @@ import { createBackendInvariantRecordUtils } from "@tuvren/backend-shared";
 // which — unlike its four `compareStored*` siblings above — does not
 // delegate to the shared factory; see its own docblock below for why.
 import type { StoredObserveAnnotation } from "@tuvren/kernel-protocol";
+
 import { cloneEncodedBytes } from "./postgres-records.js";
 import type { DbSql } from "./postgres-sql.js";
 import { qualifyIdentifier } from "./postgres-sql.js";

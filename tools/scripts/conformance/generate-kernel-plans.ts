@@ -18,6 +18,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
+
 import { formatGeneratedJson } from "./format-generated-json.ts";
 
 interface FixtureEntry {
@@ -190,9 +191,7 @@ async function formatExistingPlan(filePath: string): Promise<void> {
     );
   }
 
-  process.stdout.write(
-    "formatted kernel-protocol-extended.json in place\n"
-  );
+  process.stdout.write("formatted kernel-protocol-extended.json in place\n");
 }
 
 function buildExtendedProtocolPlan(): {

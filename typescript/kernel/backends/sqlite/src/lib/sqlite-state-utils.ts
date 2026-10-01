@@ -37,6 +37,7 @@ import { createBackendInvariantRecordUtils } from "@tuvren/backend-shared";
 // factory; see its own docblock below for why.
 import type { StoredObserveAnnotation } from "@tuvren/kernel-protocol";
 import type Database from "better-sqlite3";
+
 import { cloneEncodedBytes } from "./sqlite-records.js";
 
 const recordUtils = createBackendInvariantRecordUtils({

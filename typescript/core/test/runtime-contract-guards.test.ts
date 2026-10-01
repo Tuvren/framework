@@ -36,6 +36,7 @@
 //     not any real @tuvren/core logic, so they carry no product coverage.
 
 import { describe, expect, test } from "bun:test";
+
 import {
   assertTuvrenStreamEvent,
   isTuvrenStreamEvent,

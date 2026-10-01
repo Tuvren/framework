@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+
 import { createThreadFixture } from "./runtime-kernel-test-helpers.ts";
 
 describe("createRuntimeKernel turn lineage", () => {

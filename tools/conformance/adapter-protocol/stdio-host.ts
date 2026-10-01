@@ -15,6 +15,7 @@
  */
 
 import { createInterface } from "node:readline";
+
 import type {
   AdapterCapabilities,
   AdapterControls,

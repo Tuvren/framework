@@ -20,6 +20,7 @@
 // the cross-scope isolation Epic BE established, exercised through offboarding.
 
 import { describe, expect, test } from "bun:test";
+
 import {
   createMemoryBackend,
   createMemoryScopeStore,

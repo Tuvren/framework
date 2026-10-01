@@ -15,6 +15,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+
 import {
   assertScope,
   DEFAULT_SCOPE,
@@ -60,6 +61,7 @@ import type {
 import type { TelemetryRouting } from "@tuvren/core/telemetry";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 import type { RuntimeKernel, TurnTreeSchema } from "@tuvren/kernel-protocol";
+
 import {
   getTurnHistory,
   getTurnState,
