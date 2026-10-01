@@ -1,0 +1,80 @@
+owner: KRT-BP004
+mode: invariant
+produced:
+  date: 2026-10-01
+  commit: 52a91477571c37b7339b4b53529a7c9dbcd8c17f
+  command: >-
+    flock devenv-bp.lock devenv shell -- native Oxfmt write/check; cached and
+    uncached Nx codegen; kernel-plan --format-only; API update and isolated
+    unchanged-writer probe; compatibility:evidence twice; retained lint;
+    strict parsed-value/digest and TypeScript syntax comparisons
+  host: Linux x86_64; devenv 2.4.0; Bun 1.4.2; Oxfmt 0.71.0; TypeScript 6.0.2
+files:
+  - path: before.json.gz
+    sha256: d2c5f949273e91af307471464c8f672842a3105c4835ed6586c5917571ae4393
+    bytes: 54055
+    role: baseline
+  - path: after.json.gz
+    sha256: 802977e3a023354cb7cb91c7314fc84c7a41441ed44db5450e959a9d6e0cbc42
+    bytes: 54053
+    role: measurement
+  - path: invariant.json.gz
+    sha256: b46ecf306e1cb47e663041ca465ff38f7498d8b863416f45b052b45f8dc45cb8
+    bytes: 215
+    role: measurement
+  - path: syntax.json.gz
+    sha256: 25cfcc08f9ef0c901f67b67328d9e91fb137066c46a671ee53884d13a93676f4
+    bytes: 1456
+    role: measurement
+  - path: api-writer.json.gz
+    sha256: 34322738c27941ac2611ddd54066a6b8008279a7b383b34b1392551cc6c22f7c
+    bytes: 370
+    role: measurement
+  - path: capture.ts.gz
+    sha256: c0360b2bc35e3064aedd7d91d95bea5721b4df92d7859f848b7e54d4aa6c472a
+    bytes: 1097
+    role: checker
+  - path: invariant-check.ts.gz
+    sha256: 620be5fa534a12705a24fa53458231a6925660a0d1064c8251c914ae9174f14e
+    bytes: 1570
+    role: checker
+  - path: syntax-check.ts.gz
+    sha256: 8d568a21ac4035b46befd50cd3f7e445ab16bcf70fd671542fc6209bfdd6e324
+    bytes: 1664
+    role: checker
+  - path: api-probe.ts.gz
+    sha256: 5893694d3b99ce2e2f80f6d54df11cd33384b085e957fbe49c6ab42c713705fb
+    bytes: 1473
+    role: checker
+  - path: uncached-codegen.log.gz
+    sha256: 8d4d4061f54199eec67d361d34a0a446c03f6f83dda437ea83167e5d9fd490aa
+    bytes: 880
+    role: log
+  - path: compatibility-pass1.log.gz
+    sha256: 34e7967718ccce51376bc4674fe85b1eca960895156928965cb46cbb76f87aa4
+    bytes: 153
+    role: log
+  - path: compatibility-pass2.log.gz
+    sha256: 34e7967718ccce51376bc4674fe85b1eca960895156928965cb46cbb76f87aa4
+    bytes: 153
+    role: log
+  - path: format-before.log.gz
+    sha256: eda7634b789ff78a16bd921858ca91bb66b65695a800064e10809fc1f2b43c3f
+    bytes: 4341
+    role: log
+  - path: format-after.log.gz
+    sha256: 77fe9fe761097388bbf022a96af480c30576d2231ee9af0652588410a789edfe
+    bytes: 112
+    role: log
+  - path: idempotence.json.gz
+    sha256: b76dc46cce6c9c446a6c4dd0054e45d150e2bd7ecf31d8d945b1b3e18762cb18
+    bytes: 342
+    role: measurement
+pass_criteria: >-
+  The mechanical pass preserves all prior parsed authority and evidence bytes,
+  allowing only package.json scripts.format to switch to native Oxfmt. Syntax
+  differences are limited to reviewed import organization. A second actual
+  uncached generator/formatter and compatibility refresh adds no diff. The
+  unchanged API update does not append a ledger entry; its isolated writer
+  preserves the prior ledger and passes the parsed formatter guard. Release
+  coverage is verified separately in M7, outside the mechanical commit.
