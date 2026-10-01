@@ -1,0 +1,7 @@
+[
+  "typescript/providers/provider-api",
+  "typescript/providers/bridge-ai-sdk",
+  "typescript/providers/testkit",
+  "typescript/providers/certification",
+  "typescript/runners"
+]
