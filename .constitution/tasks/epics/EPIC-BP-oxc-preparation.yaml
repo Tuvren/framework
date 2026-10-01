@@ -65,7 +65,10 @@ tickets:
       evidence: "Assert the script parses, its gap-plan freshness check succeeds, and both retained Biome and OXC can inspect it without grammar failure."
     flows: []
     certainty: settled
-    status: planned
+    status: in_progress
+    deviations:
+      - files: [tools/scripts/oxc-preparation.test.ts]
+        justification: "Approved compiler, freshness and retained-Biome acceptance tests; OXC inspection completes in M3 after installation, as the approved plan specifies."
   - id: KRT-BP001
     title: Install OXC and load unchanged config presets
     type: Chore

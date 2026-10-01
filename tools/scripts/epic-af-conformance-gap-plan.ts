@@ -494,7 +494,7 @@ function readCliOptions(args: readonly string[]): CliOptions {
 }
 
 async function checkGeneratedArtifacts(
-  artifacts: readonly Array<{ content: string; path: string }>
+  artifacts: ReadonlyArray<{ content: string; path: string }>
 ): Promise<void> {
   const drifted: string[] = [];
 
