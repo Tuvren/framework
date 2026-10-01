@@ -1,0 +1,34 @@
+owner: KRT-BP007
+mode: contract_test
+produced:
+  date: 2026-10-01
+  commit: 4a5866fa537285eb9ff194b5255acf5835ca736b
+  command: devenv shell -- bun test tools/scripts/biome-alias.test.ts;
+    before/after biome lint . --reporter=json and --verbose plus normalized
+    preset/probe captures
+  host: Linux x86_64; devenv 2.4.0; Bun 1.4.2
+files:
+  - path: after-inventory.list.gz
+    sha256: fc724dd64924ec925e57d0155c714dee8a8585bcec52a693af67398ee096056f
+    bytes: 8516
+    role: baseline
+  - path: after-preset.normalized.json.gz
+    sha256: 72561d6c18ec555724d63f9636a4807e595ab7662c57cc3bc1278aeaf6ef8c90
+    bytes: 3415
+    role: baseline
+  - path: before-inventory.list.gz
+    sha256: fc724dd64924ec925e57d0155c714dee8a8585bcec52a693af67398ee096056f
+    bytes: 8516
+    role: baseline
+  - path: before-preset.normalized.json.gz
+    sha256: 72561d6c18ec555724d63f9636a4807e595ab7662c57cc3bc1278aeaf6ef8c90
+    bytes: 3415
+    role: baseline
+  - path: measurement.json
+    sha256: 3391ac44c7eade060d8df95261ceaa335d0c10130f973b384ff3cb227bf07866
+    bytes: 5800
+    role: measurement
+pass_criteria: The manifest and Bun lock resolve ultracite-biome to
+  npm:ultracite@7.4.2; identical source inventory yields identical retained lint
+  diagnostics and preset rule/severity signatures; invalid-source diagnostics
+  match before/after and a severity mutation is detected.
