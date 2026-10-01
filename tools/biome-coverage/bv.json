@@ -4,6 +4,7 @@
   "tools/scripts/docs-authority-freeze-gate.ts",
   "tools/scripts/changeset-check.test.ts",
   "tools/scripts/generator-oxfmt.test.ts",
+  "tools/scripts/oxc-project-discovery.test.ts",
   "tools/scripts/portability-check.ts",
   "tools/scripts/host-boundary-gate.ts",
   "tools/scripts/changeset-check.ts",

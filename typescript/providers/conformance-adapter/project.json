@@ -1,0 +1,28 @@
+{
+  "name": "providers-typescript-conformance-adapter",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "root": "typescript/providers/conformance-adapter",
+  "sourceRoot": "typescript/providers/conformance-adapter/src",
+  "projectType": "library",
+  "tags": [
+    "boundary:providers",
+    "language:typescript",
+    "layer:conformance-adapter"
+  ],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bunx --bun @biomejs/biome check typescript/providers/conformance-adapter"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/typecheck-project.ts typescript/providers/conformance-adapter"
+      }
+    }
+  }
+}
