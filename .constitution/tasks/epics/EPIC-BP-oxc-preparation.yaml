@@ -119,10 +119,12 @@ tickets:
       evidence: "Assert every former root lint path belongs to a directory coverage list or residual.json. The root gate invokes biome lint only on remaining entries with formatter and assists off, preserves the surface gate, and includes switched OXC targets. Removing one directory entry leaves all other lists intact; an empty list does not run Biome. After the mechanical oxfmt commit, root lint must pass without rejecting formatting or import organization."
     flows: []
     certainty: assumed
-    status: in_progress
+    status: done
     deviations:
       - files: [tools/scripts/biome-lint.test.ts, nx.json]
-        justification: "Approved behavioral tests and narrow Oxlint cache input support the mixed lint runner; full acceptance remains in progress through independent review of inventory and migration routing."
+        justification: "Approved behavioral tests and narrow Oxlint cache input support the mixed lint runner; filesystem parity and migration-aware checks now fail closed and preserve remaining-only Biome lint."
+      - files: [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/biome-inventory.test.ts]
+        justification: "The verified inventory derives from Git and owned Biome config with Bun native APIs, avoiding whole-root lint and failing closed on discovery errors; parity and migration tests address the independent P1 findings."
   - id: KRT-BP003
     title: Make generators produce oxfmt-clean artifacts
     type: Chore

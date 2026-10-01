@@ -7,8 +7,6 @@ import {
   COVERAGE_LIST_IDS,
   discoverOxcProjects,
   findDuplicateEntries,
-  parseBiomeInventory,
-  readBiomeInventory,
   readCoverageEntries,
   resolveCoverage,
   runLintGate,
@@ -17,7 +15,12 @@ import {
   type LintGateDependencies,
   type LintGateResult,
 } from "./biome-lint.js";
-import type { RunCommandResult } from "./lib/command-runner.js";
+import {
+  FORMER_ROOT_DISCOVERY_COMMAND,
+  parseGitFileList,
+  selectFormerRootFiles,
+} from "./lib/biome-inventory.js";
+import { runCommand, type RunCommandResult } from "./lib/command-runner.js";
 import { loadNxProjectFiles, type NxProjectFile } from "./lib/nx-projects.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
@@ -40,8 +43,18 @@ function parseJson<T>(text: string): T {
 
 let inventoryCache: Promise<string[]> | undefined;
 
-async function collectInventory(): Promise<string[]> {
-  inventoryCache ??= readBiomeInventory(REPO_ROOT);
+async function collectFormerRootInventory(): Promise<string[]> {
+  inventoryCache ??= (async () => {
+    const discovery = await runCommand(FORMER_ROOT_DISCOVERY_COMMAND, {
+      captureOutput: true,
+      cwd: REPO_ROOT,
+    });
+    expect(discovery.code).toBe(0);
+    return selectFormerRootFiles(
+      REPO_ROOT,
+      parseGitFileList(discovery.stdout)
+    );
+  })();
   return await inventoryCache;
 }
 
@@ -71,22 +84,16 @@ function projectFile(
 }
 
 function recordingRunCommand(
-  inventory: string[],
+  candidates: string[],
   commands: string[][]
 ): LintGateDependencies["runCommand"] {
   return (command): Promise<RunCommandResult> => {
     commands.push([...command]);
-    if (command.includes("--verbose")) {
+    if (command[0] === "git") {
       return Promise.resolve({
         code: 0,
         stderr: "",
-        stdout: [
-          "  i Files processed:",
-          ...inventory.map((file) => `  - ${file}`),
-          "",
-          "  i Files fixed:",
-          "",
-        ].join("\n"),
+        stdout: candidates.map((candidate) => `${candidate}\0`).join(""),
       });
     }
     return Promise.resolve({ code: 0, stderr: "", stdout: "" });
@@ -146,16 +153,17 @@ function writeFeatureProbe(
 }
 
 describe("biome coverage inventory", () => {
-  test("every retained Biome file is owned by exactly one coverage list", async () => {
-    const inventory = await collectInventory();
+  test("every former-root file is owned by a list or a switched OXC project", async () => {
+    const inventory = await collectFormerRootInventory();
     expect(inventory.length).toBeGreaterThan(0);
     expect(inventory).toContain("biome.jsonc");
     expect(inventory).toContain("tools/biome-coverage/bq.json");
 
+    const oxcProjects = discoverOxcProjects(loadNxProjectFiles(REPO_ROOT));
     const resolution = resolveCoverage(
       inventory,
       readCoverageEntries(COVERAGE_DIR),
-      []
+      oxcProjects.map((project) => project.root)
     );
 
     expect(resolution.missing).toEqual([]);
@@ -165,6 +173,47 @@ describe("biome coverage inventory", () => {
       owned += files.length;
     }
     expect(owned).toBe(inventory.length);
+  });
+
+  test("a real directory migration keeps its dropped files covered by OXC", async () => {
+    const inventory = await collectFormerRootInventory();
+    const withoutBq = readCoverageEntries(COVERAGE_DIR).filter(
+      (entry) => entry.list !== "bq"
+    );
+    const switched = discoverOxcProjects([
+      projectFile(
+        "kernel-contract-protocol",
+        "typescript/kernel/protocol",
+        "bunx --bun oxlint --type-aware ."
+      ),
+      projectFile(
+        "kernel-runtime",
+        "typescript/kernel/runtime",
+        "bunx --bun oxlint --type-aware ."
+      ),
+    ]);
+    expect(switched.map((project) => project.root)).toEqual([
+      "typescript/kernel/protocol",
+      "typescript/kernel/runtime",
+    ]);
+
+    const resolution = resolveCoverage(
+      inventory,
+      withoutBq,
+      switched.map((project) => project.root)
+    );
+    expect(resolution.missing).toEqual([]);
+    expect(resolution.duplicates).toEqual([]);
+    expect(
+      resolution.oxcExcluded.some((file) =>
+        file.startsWith("typescript/kernel/protocol/")
+      )
+    ).toBe(true);
+    expect(
+      resolution.oxcExcluded.some((file) =>
+        file.startsWith("typescript/kernel/runtime/")
+      )
+    ).toBe(true);
   });
 
   test("dropping a directory entry surfaces missing coverage", () => {
@@ -219,7 +268,7 @@ describe("biome coverage inventory", () => {
   });
 
   test("editing one list leaves every other list unchanged", async () => {
-    const inventory = await collectInventory();
+    const inventory = await collectFormerRootInventory();
     const base = readCoverageEntries(COVERAGE_DIR);
     const before = resolveCoverage(inventory, base, []);
     const edited = base.filter((entry) => entry.list !== "bq");
@@ -232,28 +281,6 @@ describe("biome coverage inventory", () => {
       expect(after.perList.get(id), id).toEqual(before.perList.get(id));
     }
     expect(after.missing.length).toBeGreaterThan(0);
-  });
-
-  test("parseBiomeInventory reads only the processed list", () => {
-    const output = [
-      " VERBOSE ━━━",
-      "",
-      "  i Files processed:",
-      "",
-      "  - biome.jsonc",
-      "  - tools/scripts/biome-lint.ts",
-      "",
-      " VERBOSE ━━━",
-      "",
-      "  i Files fixed:",
-      "",
-      "  ! The list is empty.",
-      "",
-    ].join("\n");
-    expect(parseBiomeInventory(output)).toEqual([
-      "biome.jsonc",
-      "tools/scripts/biome-lint.ts",
-    ]);
   });
 });
 
@@ -292,6 +319,14 @@ describe("biome coverage routing", () => {
           command.join(" ").includes("kernel-contract-protocol:lint")
         )
       ).toBe(true);
+      for (const command of commands) {
+        if (!command.includes(BIOME_BIN)) {
+          continue;
+        }
+        const lintIndex = command.indexOf("lint");
+        expect(lintIndex).toBeGreaterThanOrEqual(0);
+        expect(command.slice(lintIndex + 1).length).toBeGreaterThan(0);
+      }
     } finally {
       rmSync(directory, { force: true, recursive: true });
     }
@@ -313,15 +348,62 @@ describe("biome coverage routing", () => {
       expect(result.missing).toEqual(["src/a.ts"]);
       expect(result.biomeRuns).toEqual([]);
       expect(result.surfaceGateCode).toBeUndefined();
-      expect(commands.every((command) => command.includes("--verbose"))).toBe(
-        true
-      );
+      expect(commands.length).toBe(1);
+      expect(commands[0]?.[0]).toBe("git");
     } finally {
       rmSync(directory, { force: true, recursive: true });
     }
   });
 
-  test("a project leaves Biome coverage when its OXC lint target is discovered", async () => {
+  test("a discovery failure fails the gate before any Biome or surface run", async () => {
+    const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-failed-"));
+    try {
+      writeCoverageLists(directory, { residual: ["src"] });
+      const result = await runLintGate({
+        coverageDir: directory,
+        listProjectFiles: () => [],
+        repoRoot: REPO_ROOT,
+        runCommand: (command) => {
+          if (command[0] === "git") {
+            return Promise.resolve({
+              code: 2,
+              stderr: "fatal",
+              stdout: "biome.jsonc\0",
+            });
+          }
+          return Promise.resolve({ code: 0, stderr: "", stdout: "" });
+        },
+      });
+
+      expect(result.failed).toBe(true);
+      expect(result.discoveryError).toContain("exited with code 2");
+      expect(result.inventorySize).toBe(0);
+      expect(result.biomeRuns).toEqual([]);
+      expect(result.surfaceGateCode).toBeUndefined();
+    } finally {
+      rmSync(directory, { force: true, recursive: true });
+    }
+  });
+
+  test("an empty discovery result fails the gate", async () => {
+    const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-empty-"));
+    try {
+      writeCoverageLists(directory, { residual: ["src"] });
+      const result = await runLintGate({
+        coverageDir: directory,
+        listProjectFiles: () => [],
+        repoRoot: REPO_ROOT,
+        runCommand: recordingRunCommand([], []),
+      });
+
+      expect(result.failed).toBe(true);
+      expect(result.discoveryError).toBe("former-root inventory is empty");
+    } finally {
+      rmSync(directory, { force: true, recursive: true });
+    }
+  });
+
+  test("a migrated project never receives retained Biome lint", async () => {
     const directory = mkdtempSync(path.join(tmpdir(), "biome-lint-oxc-"));
     try {
       writeCoverageLists(directory, { residual: ["src"] });
@@ -335,16 +417,10 @@ describe("biome coverage routing", () => {
           ),
         ],
         repoRoot: REPO_ROOT,
-        runCommand: (command) => {
-          if (command.includes("--verbose")) {
-            return Promise.resolve({
-              code: 0,
-              stderr: "",
-              stdout: "  i Files processed:\n  - src/a.ts\n  - typescript/kernel/protocol/src/index.ts\n",
-            });
-          }
-          return Promise.resolve({ code: 0, stderr: "", stdout: "" });
-        },
+        runCommand: recordingRunCommand(
+          ["src/a.ts", "typescript/kernel/protocol/src/index.ts"],
+          []
+        ),
       });
 
       expect(result.failed).toBe(false);
