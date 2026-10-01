@@ -79,24 +79,29 @@ bill_of_materials:
       version: "2.5.14"
   - name: ultracite
     role: tooling
-    version: "7.4.2"
+    version: "7.12.2"
     ecosystem: bun
-    justification: "Config presets only; the Ultracite CLI is not used (ADR-0070). The oxfmt preset export exists from 7.5.0, so the OXC epic bumps un-aliased ultracite by hand to the latest version for ultracite/oxlint/core and ultracite/oxfmt in the toolchain-and-format milestone and removes the temporary Dependabot ignore above 7.4.2. The temporary ultracite-biome alias retains the Biome preset at 7.4.2 during the lint ratchet."
+    justification: "Config presets only; the Ultracite CLI is not used (ADR-0070). The oxfmt preset export exists from 7.5.0, so the OXC epic bumped un-aliased ultracite by hand to the latest version for ultracite/oxlint/core and ultracite/oxfmt in the toolchain-and-format milestone and removed the temporary Dependabot ignore above 7.4.2. The temporary ultracite-biome alias retains the Biome preset at 7.4.2 during the lint ratchet."
     radar: adopt
     certainty: settled
     evidence:
       kind: repository
       ref: bun.lock
-      version: "7.4.2"
-      date: 2026-09-29
+      version: "7.12.2"
+      date: 2026-10-01
   - name: ultracite-biome
     role: tooling
     version: "7.4.2"
     ecosystem: bun
-    justification: "Keeps the Biome preset stable during the OXC lint ratchet: biome.jsonc extends ultracite-biome/biome/core while un-aliased ultracite supplies OXC presets (ADR-0070). This transition is unmeasured; the epic must verify unchanged Biome lint output after installing the alias and changing the extension path."
+    justification: "Keeps the Biome preset stable during the OXC lint ratchet: biome.jsonc extends ultracite-biome/biome/core while un-aliased ultracite supplies OXC presets (ADR-0070). The alias is installed and normalized Biome lint output was verified unchanged against the retained preset (KRT-BP007); the alias stays in place until CB removes it and Biome together."
     radar: hold
-    certainty: assumed
-    assumption: "Planned temporary npm alias of ultracite 7.4.2, installed as npm:ultracite@7.4.2 and removed with Biome. It is absent from bun.lock until installed; the resulting TS-004 warning is expected."
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: bun.lock
+      version: "7.4.2"
+      date: 2026-10-01
+      note: "bun.lock carries the alias key ultracite-biome whose resolution is ultracite@7.4.2; package.json declares ultracite-biome as npm:ultracite@7.4.2."
   - name: "@changesets/cli"
     role: tooling
     version: "3.0.3"
@@ -237,24 +242,36 @@ bill_of_materials:
     ecosystem: bun
     justification: Native linter run over TypeScript with the Ultracite core preset (ADR-0070).
     radar: trial
-    certainty: assumed
-    assumption: "Adopted by ADR-0070 and proven by SPK-KRT-OD006 on this repository. The pin enters bun.lock when the OXC epic installs it; the latest version is taken at that time."
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: bun.lock
+      version: "1.86.0"
+      date: 2026-10-01
   - name: oxfmt
     role: tooling
     version: "0.71.0"
     ecosystem: bun
     justification: Native formatter for TypeScript and JSON with the Ultracite preset (ADR-0070). Beta as of 2026-09-29.
     radar: trial
-    certainty: assumed
-    assumption: "Adopted by ADR-0070 and proven by SPK-KRT-OD006 on this repository. The pin enters bun.lock when the OXC epic installs it; the latest version is taken at that time."
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: bun.lock
+      version: "0.71.0"
+      date: 2026-10-01
   - name: oxlint-tsgolint
     role: tooling
     version: "7.0.2003"
     ecosystem: bun
     justification: "Type-aware lint backend that oxlint --type-aware needs for the preset's 54 type-aware rules (ADR-0070)."
     radar: trial
-    certainty: assumed
-    assumption: "Adopted by ADR-0070 and proven by SPK-KRT-OD006 on this repository. The pin enters bun.lock when the OXC epic installs it; the latest version is taken at that time."
+    certainty: settled
+    evidence:
+      kind: repository
+      ref: bun.lock
+      version: "7.0.2003"
+      date: 2026-10-01
   - name: bazel
     role: tooling
     version: "9.1.1"
