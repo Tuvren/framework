@@ -171,7 +171,7 @@ decisions:
       in: EPIC-BP
     proposed_by: EPIC-BP @ a1d12d0
     ruling:
-      ref: .constitution/reports/2026-10-01-interview-tech-spec-bp-followups.md
+      ref: .constitution/reports/2026-10-01-interview-techspec.md
       date: 2026-10-01
       summary: "The user directed completion of every BP follow-up in this pass and readiness for the next epic without a later patch. The measured implementation makes the recommended option the consistent closure: the verbatim root spread preserves all 536 shipped effective rules, their option tuples, and the browser environment, while the installed extends loader loses nine option tuples and the browser environment. Stage 3 aligns the stale loader wording without changing the accepted as-shipped policy."
       chosen: Adopt verbatim root spread
