@@ -21,6 +21,7 @@
   },
   "include": [
     "src/**/*.ts",
+    "smoke/**/*.ts",
     "test/**/*.ts",
     "../backends/shared/src/**/*.ts",
     "../protocol/src/**/*.ts"
