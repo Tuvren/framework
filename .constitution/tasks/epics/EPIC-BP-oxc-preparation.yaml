@@ -211,12 +211,17 @@ tickets:
       evidence: "Assert all intended files resolve through project references, the measured 2423 then 354 project-resolution errors are eliminated, and type-aware diagnostics are counted from resolved types. Repository typecheck remains source-only; type-aware lint receives declaration prerequisites where required. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: in_progress
+    status: done
     deviations:
       - files: [tools/scripts/oxc-project-discovery.test.ts, tools/biome-coverage/bv.json]
         justification: "Focused source-only discovery assertions and their retained coverage entry verify all three wrappers and adapters without growing the shared OXC test beyond its module limit; package-wide proof follows in M9a and M9b."
       - files: [tools/scripts/biome-lint.test.ts]
         justification: "The verified native JSONC parser repairs the acceptance reader exposed by Oxfmt trailing commas, preserving every existing formatter, assist and lint-policy assertion."
+      - files: [tools/tsconfig.json, tools/biome-coverage/residual.json]
+        justification: "Native tooling discovery removes measured TS2591/TS2307 resolution noise while retaining all real sources; typed rule debt remains for the directory ratchet."
+      - files: [tools/scripts/generator-oxfmt.test.ts, tools/scripts/oxc-preparation.test.ts]
+        justification: "Verified UTF-8 subprocess return annotations remove the six type diagnostics introduced by this epic without changing runtime calls or assertions."
+
   - id: KRT-BP006
     title: Record installed OXC pins in a spec-only patch
     type: Chore
