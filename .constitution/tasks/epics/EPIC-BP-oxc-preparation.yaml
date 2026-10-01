@@ -125,6 +125,8 @@ tickets:
         justification: "Approved behavioral tests and narrow Oxlint cache input support the mixed lint runner; filesystem parity and migration-aware checks now fail closed and preserve remaining-only Biome lint."
       - files: [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/biome-inventory.test.ts]
         justification: "The verified inventory derives from Git and owned Biome config with Bun native APIs, avoiding whole-root lint and failing closed on discovery errors; parity and migration tests address the independent P1 findings."
+      - files: [tools/scripts/lib/biome-lint-partition.test.ts]
+        justification: "A focused native-inventory partition test covers real BQ switch metadata, counting retained and OXC-excluded files together without exceeding the runner test module size limit."
   - id: KRT-BP003
     title: Make generators produce oxfmt-clean artifacts
     type: Chore

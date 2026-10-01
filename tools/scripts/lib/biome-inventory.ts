@@ -21,7 +21,10 @@
 // successful exit. This module derives that inventory from owned state only:
 //
 //   1. Git's own index and ignore handling enumerate the working-tree files
-//      that are tracked or untracked-but-not-ignored (`git ls-files`).
+//      that are tracked or untracked-but-not-ignored (`git ls-files`), and a
+//      native `git ls-files --deleted` enumeration subtracts tracked paths
+//      deleted from the working tree so migration never breaks on a stale
+//      index entry.
 //   2. Biome's `files.includes` include/ignore patterns -- resolved through
 //      `extends` from the owned biome.jsonc and the pinned ultracite preset --
 //      subtract Biome's own exclusions.
@@ -43,6 +46,18 @@ export const FORMER_ROOT_DISCOVERY_COMMAND = [
   "--cached",
   "--others",
   "--exclude-standard",
+] as const;
+
+// `--cached` still lists tracked paths deleted from the working tree, so a
+// native Git enumeration of confirmed deletions lets discovery drop them
+// without an `existsSync` probe that would also swallow permission and I/O
+// failures. Subtracting Git's own answer keeps discovery fail-closed on any
+// real filesystem error while never feeding Biome a missing path.
+export const FORMER_ROOT_DELETED_COMMAND = [
+  "git",
+  "ls-files",
+  "-z",
+  "--deleted",
 ] as const;
 
 // Biome's lint surface for this repository is the JS/TS and JSON/JSONC family.
@@ -89,6 +104,23 @@ const bun = (globalThis as unknown as { Bun: BunRuntime }).Bun;
 /** Decompose NUL-delimited `git ls-files -z` stdout into repo-relative paths. */
 export function parseGitFileList(stdout: string): string[] {
   return stdout.split("\0").filter((entry) => entry.length > 0);
+}
+
+/**
+ * Drop tracked paths Git confirms are deleted from the working tree. The two
+ * sets come from separate `git ls-files` enumerations, so discovery never
+ * trusts the working tree itself and a permission or I/O failure stays fatal
+ * instead of being misread as a deletion.
+ */
+export function removeDeletedFiles(
+  candidates: readonly string[],
+  deleted: readonly string[]
+): string[] {
+  if (deleted.length === 0) {
+    return [...candidates];
+  }
+  const deletedPaths = new Set(deleted);
+  return candidates.filter((file) => !deletedPaths.has(file));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
