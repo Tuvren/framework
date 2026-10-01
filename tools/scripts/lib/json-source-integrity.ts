@@ -326,12 +326,19 @@ export async function discoverJsonInventory(
   );
 }
 
-export function isJsoncProfile(file: string): boolean {
-  const basename = path.posix.basename(file);
-  if (file.endsWith(".jsonc") || CONFIG_JSON_PATTERN.test(basename)) {
+export function isJsoncProfile(
+  file: string,
+  pathSemantics: Pick<typeof path, "basename" | "normalize" | "sep"> = path
+): boolean {
+  // Callers pass native absolute paths. Normalize with the host's path rules so
+  // Windows separators are recognized without reinterpreting valid POSIX
+  // backslashes as directory separators.
+  const normalized = pathSemantics.normalize(file);
+  const basename = pathSemantics.basename(normalized);
+  if (normalized.endsWith(".jsonc") || CONFIG_JSON_PATTERN.test(basename)) {
     return true;
   }
-  return file.split("/").includes(".vscode");
+  return normalized.split(pathSemantics.sep).includes(".vscode");
 }
 
 function errorMessage(error: unknown): string {

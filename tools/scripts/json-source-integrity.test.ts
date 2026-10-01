@@ -72,6 +72,28 @@ describe("native JSON source integrity", () => {
     });
   });
 
+  test("uses native path semantics for Windows profiles and POSIX backslashes", () => {
+    expect(
+      isJsoncProfile(
+        String.raw`C:\repo\typescript\core\tsconfig.src.json`,
+        path.win32
+      )
+    ).toBe(true);
+    expect(
+      isJsoncProfile(String.raw`C:\repo\.vscode\settings.json`, path.win32)
+    ).toBe(true);
+
+    expect(
+      isJsoncProfile(String.raw`/repo/literal\tsconfig.src.json`, path.posix)
+    ).toBe(false);
+    expect(
+      isJsoncProfile(
+        String.raw`/repo/literal\.vscode\settings.json`,
+        path.posix
+      )
+    ).toBe(false);
+  });
+
   test("keeps jsconfig variants strict while accepting the established jsconfig.json profile", async () => {
     await withScratch(async (directory) => {
       const strictVariant = write(

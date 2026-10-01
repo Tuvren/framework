@@ -67,6 +67,8 @@ interface ClassifiedProject {
   oxcProject?: OxcProject;
 }
 
+type NativePathSemantics = Pick<typeof path, "dirname" | "sep">;
+
 export interface OxlintSelectionDependencies {
   repoRoot: string;
   runCommand: (
@@ -207,7 +209,10 @@ function classifySingleCommand(
   return undefined;
 }
 
-function classifyProject(file: NxProjectFile): ClassifiedProject | undefined {
+function classifyProject(
+  file: NxProjectFile,
+  pathSemantics: NativePathSemantics
+): ClassifiedProject | undefined {
   const lintTarget = file.project.targets?.lint;
   if (lintTarget?.executor !== RUN_COMMANDS_EXECUTOR) {
     return undefined;
@@ -220,7 +225,13 @@ function classifyProject(file: NxProjectFile): ClassifiedProject | undefined {
   if (invoked === undefined) {
     return undefined;
   }
-  const root = path.dirname(file.path);
+  const nativeRoot = pathSemantics.dirname(file.path);
+  // Repository inventory and Oxlint debug output use slash-separated paths.
+  // Convert only native Windows separators so POSIX backslashes remain data.
+  const root =
+    pathSemantics.sep === path.win32.sep
+      ? nativeRoot.replace(BACKSLASH_PATTERN, "/")
+      : nativeRoot;
   if (invoked.commands.length === 1) {
     return classifySingleCommand(file, invoked, root);
   }
@@ -250,12 +261,13 @@ function classifyProject(file: NxProjectFile): ClassifiedProject | undefined {
 }
 
 export function discoverNativeLintProjects(
-  projectFiles: readonly NxProjectFile[]
+  projectFiles: readonly NxProjectFile[],
+  pathSemantics: NativePathSemantics = path
 ): NativeLintProjects {
   const jsonOnlyProjects: JsonOnlyProject[] = [];
   const oxcProjects: OxcProject[] = [];
   for (const file of projectFiles) {
-    const classified = classifyProject(file);
+    const classified = classifyProject(file, pathSemantics);
     if (classified?.jsonOnlyProject !== undefined) {
       jsonOnlyProjects.push(classified.jsonOnlyProject);
     }
@@ -269,9 +281,10 @@ export function discoverNativeLintProjects(
 }
 
 export function discoverOxcProjects(
-  projectFiles: readonly NxProjectFile[]
+  projectFiles: readonly NxProjectFile[],
+  pathSemantics: NativePathSemantics = path
 ): OxcProject[] {
-  return discoverNativeLintProjects(projectFiles).oxcProjects;
+  return discoverNativeLintProjects(projectFiles, pathSemantics).oxcProjects;
 }
 
 function parseOxlintSelectedFiles(stdout: string): string[] {

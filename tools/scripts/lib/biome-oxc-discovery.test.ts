@@ -23,8 +23,10 @@
 // executor must leave the project in the retained Biome gate.
 
 import { describe, expect, test } from "bun:test";
+import path from "node:path";
 
 import {
+  collectOxlintSelectedFiles,
   discoverNativeLintProjects,
   discoverOxcProjects,
 } from "./native-lint-routing.js";
@@ -63,6 +65,40 @@ describe("Oxlint project-wide discovery", () => {
         },
       })
     ).toEqual(["kernel-contract-protocol"]);
+  });
+
+  test("canonicalizes a Windows project root before Oxlint selection checks", async () => {
+    const windowsProject = projectFile(
+      "kernel-contract-protocol",
+      PROJECT_ROOT,
+      {
+        options: {
+          command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+          cwd: ".",
+        },
+      }
+    );
+    windowsProject.path = String.raw`typescript\kernel\protocol\project.json`;
+
+    const projects = discoverOxcProjects([windowsProject], path.win32);
+    expect(projects).toEqual([
+      {
+        jsonCompanion: false,
+        name: "kernel-contract-protocol",
+        root: PROJECT_ROOT,
+      },
+    ]);
+    await expect(
+      collectOxlintSelectedFiles(projects, {
+        repoRoot: String.raw`C:\repo`,
+        runCommand: () =>
+          Promise.resolve({
+            code: 0,
+            stderr: "",
+            stdout: "typescript/kernel/protocol/src/index.ts\n",
+          }),
+      })
+    ).resolves.toEqual(["typescript/kernel/protocol/src/index.ts"]);
   });
 
   test("credits a project-root cwd with a bare dot", () => {
