@@ -369,6 +369,14 @@ closeout:
   routed_upstream:
     - stage: tech-spec
       item: >-
+        Clarify the supported JSON and JSONC surface for directory migration and
+        JSON-only target replacement before Biome retirement. Native Oxlint does
+        not lint these formats; Oxfmt checks their formatting. ADR-0070 calls for
+        whole switched directories to leave Biome without parity overrides.
+        BP switches no directories and retains JSON lint here; future coverage
+        statements must not count these files as inspected by Oxlint.
+    - stage: tech-spec
+      item: >-
         Align ADR-0070's physical Oxlint configuration wording with the measured
         verbatim core-preset root spread. OD-08 remains proposed with an interim
         assumption pending the repository owner's ruling after EPIC-BP merges.
@@ -388,6 +396,11 @@ closeout:
         the complete ledger, then verify its expected append and parsed-value guard.
         Keep the repository snapshot intact.
   follow_ups:
+    - >-
+      Resolve the JSON-only replacement expectation in Stage 3 and retirement
+      planning before removing Biome. The final PR panel measured the native
+      file-type boundary and recorded it without changing the approved policy
+      or extending BP into directory migration.
     - >-
       Preserve OD-08 as proposed with its recorded interim assumption.
       After merge, the repository owner rules on verbatim core-preset root spreading
