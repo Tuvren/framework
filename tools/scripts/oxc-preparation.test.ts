@@ -118,10 +118,6 @@ function parseJson<T>(text: string): T {
   return JSON.parse(text) as T;
 }
 
-function severityOf(value: unknown): unknown {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 function printConfig(args: string[]): Record<string, unknown> {
   const result = runBun([OXLINT_BIN, ...args, "--print-config"]);
   expect(result.status, result.stderr).toBe(0);
@@ -228,7 +224,7 @@ describe("oxc toolchain pins", () => {
 });
 
 describe("oxc configuration contract", () => {
-  test("oxlint config extends only the shipped preset with repeated ignores", async () => {
+  test("oxlint config forwards the shipped preset verbatim with declared ignores", async () => {
     const core = (await import("ultracite/oxlint/core")).default as
       | OxlintConfigLike
       | undefined;
@@ -239,9 +235,16 @@ describe("oxc configuration contract", () => {
     ).default;
 
     expect(core).toBeDefined();
-    expect(Object.keys(config).sort()).toEqual(["extends", "ignorePatterns"]);
-    expect(config.extends).toHaveLength(1);
-    expect(config.extends?.[0]).toBe(core);
+    // The preset is inherited verbatim: every key it ships is present at the
+    // root with an identical value, and the only local change is the
+    // repository-only `.constitution/**` ignore addition.
+    expect(Object.keys(config).sort()).toEqual(Object.keys(core ?? {}).sort());
+    for (const key of Object.keys(core ?? {})) {
+      if (key === "ignorePatterns") {
+        continue;
+      }
+      expect(config[key], key).toEqual(core?.[key]);
+    }
     expect(config.ignorePatterns).toEqual([
       ...(core?.ignorePatterns ?? []),
       CONSTITUTION_IGNORE,
@@ -280,28 +283,33 @@ describe("oxc configuration contract", () => {
     }
   });
 
-  test("effective oxlint rules and severities match the shipped preset", async () => {
+  test("the entire effective oxlint config matches the shipped preset", async () => {
     const core = (await import("ultracite/oxlint/core")).default as unknown;
     const scratch = mkdtempSync(path.join(tmpdir(), "oxc-print-config-"));
     try {
       const coreConfigPath = path.join(scratch, "core.json");
       writeFileSync(coreConfigPath, JSON.stringify(core));
 
-      const ours = printConfig([]).rules as Record<string, unknown> | undefined;
-      const reference = printConfig(["-c", coreConfigPath]).rules as
-        | Record<string, unknown>
-        | undefined;
+      const ours = printConfig([]);
+      const reference = printConfig(["-c", coreConfigPath]);
 
-      expect(ours).toBeDefined();
-      expect(reference).toBeDefined();
-      expect(Object.keys(ours ?? {}).sort()).toEqual(
-        Object.keys(reference ?? {}).sort()
-      );
-      for (const rule of Object.keys(reference ?? {})) {
-        expect(severityOf(ours?.[rule]), rule).toEqual(
-          severityOf(reference?.[rule])
-        );
+      // Every effective policy field must be inherited verbatim: full rule
+      // tuples (severity and options), env, plugins, settings, categories,
+      // globals and the preset's own overrides. Only the deliberately added
+      // ignore patterns may differ from a direct load of the preset.
+      const policyKeys = [
+        ...new Set([...Object.keys(reference), ...Object.keys(ours)]),
+      ]
+        .filter((key) => key !== "ignorePatterns")
+        .sort();
+      for (const key of policyKeys) {
+        expect(ours[key], `effective ${key}`).toEqual(reference[key]);
       }
+
+      expect(ours.ignorePatterns).toEqual([
+        ...((reference.ignorePatterns as string[] | undefined) ?? []),
+        CONSTITUTION_IGNORE,
+      ]);
     } finally {
       rmSync(scratch, { force: true, recursive: true });
     }
