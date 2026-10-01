@@ -149,3 +149,25 @@ decisions:
       date: 2026-09-29
       summary: "Rust (rules_rust 0.74.0) and Go (rules_go 0.63.0 with gazelle) adopt Bazel-native rules with a hermetic C toolchain and pinned toolchains. Python (rules_python 2.3.4 over a requirements file exported from uv.lock) is PROVISIONAL: the spike demonstrates one target with 289 tests, not all three packages. The Python ticket must demonstrate all 298 tests (289 + 8 + 1) under both NixOS devenv and ubuntu CI conditions before adoption; aspect_rules_py is the fallback. Dart is the recorded native-wrapped exception until rules_dart consumes our pubspec.lock without a carried patch."
       chosen: "Bazel-native rules where the spike proves them, native-wrapped actions as recorded exceptions elsewhere"
+  - id: OD-08
+    question: "Should Oxlint load the shipped Ultracite preset by verbatim root spread after its extends loader drops rule options and environment?"
+    blocks: [KRT-BP001, ".constitution/tech-spec/adrs/ADR-0070-oxc-replaces-biome-for-typescript-lint-and-format.md"]
+    options:
+      - name: Adopt verbatim root spread
+        pros: [Preserves the complete shipped preset including rule option tuples and environment without policy overrides., The full effective-config comparison and retained Biome checks pass.]
+        cons: ["ADR-0070's physical extends wording requires a Stage 3 alignment pass."]
+      - name: Retain extends and defer OXC preparation
+        pros: [Keeps the recorded physical spelling unchanged.]
+        cons: [Drops nine shipped rule option tuples and changes environment under the installed Oxlint loader., Cannot satisfy the approved as-shipped preset contract and blocks the remaining BP chain.]
+    recommendation: Adopt verbatim root spread
+    closure: ruling
+    ruler: Repository owner after EPIC-BP merge
+    waiting_on: "Repository owner ruling after merge; independent M3 fix review and full effective-config evidence are complete."
+    interim:
+      assumption: "Verbatim root spreading semantically extends the unchanged shipped preset and satisfies ADR-0070's binding policy goal; stale loader-specific wording is routed to Stage 3 without editing undeclared authority during execution."
+      applied_by: [KRT-BP001, oxlint.config.ts, tools/scripts/oxc-preparation.test.ts]
+    status: proposed
+    asked:
+      date: 2026-10-01
+      in: EPIC-BP
+    proposed_by: EPIC-BP @ a1d12d0

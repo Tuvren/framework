@@ -1,0 +1,58 @@
+date: 2026-10-01
+commit: a1d12d0
+epics: [BP]
+routed:
+  - stage: tech-spec
+    item: "Clarify the supported JSON and JSONC surface for directory migration and JSON-only target replacement before Biome retirement. Native Oxlint does not lint these formats; Oxfmt checks their formatting. ADR-0070 calls for whole switched directories to leave Biome without parity overrides. BP switches no directories and retains JSON lint here; future coverage statements must not count these files as inspected by Oxlint."
+    from: BP
+  - stage: tech-spec
+    item: "Align ADR-0070's physical Oxlint configuration wording with the measured verbatim core-preset root spread. OD-08 remains proposed with an interim assumption pending the repository owner's ruling after EPIC-BP merges. The effective configuration preserves shipped rule options and environment; no local policy overrides were added."
+    from: BP
+  - stage: tech-spec
+    item: "Document fresh-worktree bootstrap ordering: kernel-interop-grpc:codegen must materialize gitignored bindings before the authority validators that import them. The generation target already exists; no boundary or generation semantics changed."
+    from: BP
+  - stage: tech-spec
+    item: "Document API formatter verification that preserves the historical ledger. An unchanged surface makes api-freeze --update a no-op. Exercise the unchanged snapshot writer against an isolated copy containing the complete ledger, then verify its expected append and parsed-value guard. Keep the repository snapshot intact."
+    from: BP
+  - stage: tech-spec
+    item: "code decision (convention): Embed the measured immutable Biome preset and diagnostic baseline in the durable alias contract test. Scratch probes extend the resolved preset with discovery settings only. [tools/scripts/biome-alias.test.ts] at 4a5866fa537285eb9ff194b5255acf5835ca736b"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (convention): Repeat shipped ignore patterns in the OXC TypeScript configurations. Add the declared constitution and language exclusions. Group OXC dependency updates and hold the retained Biome alias explicitly. [oxlint.config.ts, oxfmt.config.ts, .github/dependabot.yml] at 577e63b2a3684a0a129e4f0e3d417c17e3f774ab"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (pattern): Spread the unchanged Ultracite core preset at the Oxlint root because extends drops nine rule-option tuples and the browser environment. Compare the complete effective configuration to the shipped policy. [oxlint.config.ts, tools/scripts/oxc-preparation.test.ts] at cf11f81fe4347c1d33be26e7d4ecc654f41fb566"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (pattern): Inventory literal retained lint paths with the most specific owner. Discover migrated OXC targets from Nx command metadata. Derive former root coverage from read-only Git and owned Biome includes using Bun APIs, and fail on missing or duplicate coverage. [tools/scripts/biome-lint.ts, tools/scripts/lib/biome-inventory.ts, tools/biome-coverage] at d16e3e2b6252752833b15f2cfde4a6916586b612"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (convention): Run Oxfmt formatter callers from the repository root. Guard kernel-plan formatting and API snapshot emission with parsed-value checks, and declare formatter configuration inputs on generator targets. [tools/scripts/conformance/format-generated-json.ts, tools/scripts/conformance/generate-kernel-plans.ts, tools/scripts/api-freeze-gate.ts, spec/*/project.json, reports/compatibility/project.json] at 06f589e7254a3b72494cc43784ae8aee7d18af35"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (pattern): Expose certification wrappers and adapters through source-only typecheck references. Reuse provider certification aliases for its adapter and declare kernel interop generation on the framework adapter. [typescript/certification/tsconfig.json, typescript/kernel/certification/tsconfig.json, typescript/providers/certification/tsconfig.json, typescript/conformance-adapter/tsconfig.typecheck.json, typescript/kernel/conformance-adapter/tsconfig.typecheck.json, typescript/providers/conformance-adapter/tsconfig.typecheck.json] at 50b3efbad33ed6519050618a4b259c2c853b2109"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (convention): Introduce source-only aggregator references alongside retained library references. Create the Core aggregator without changing its source-only target, and include actual smoke files in both testkit aggregators. M9b then establishes the measured reference order for all packages. [typescript/core/tsconfig.typecheck.json, typescript/kernel/testkit/tsconfig.typecheck.json, typescript/testkit/tsconfig.typecheck.json] at 3cf948f5dbc3a881e027b73a11eb5d1412a6df11"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (pattern): Put source-only aggregator references first in all 27 package root configurations because the installed tsgolint selects the first matching reference. Preserve every library reference and public package resolution. [typescript/**/tsconfig.json] at 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (convention): Set noEmit explicitly on source-only aggregators that allow TypeScript extension imports. Preserve declaration generation as a build prerequisite for type-aware lint rather than a source-only typecheck prerequisite. [typescript/**/tsconfig.typecheck.json] at 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (pattern): Add tools project discovery with Bun and Node types, source-only noEmit, and retained lint coverage. Verify all 68 actual tooling memberships alongside the 491 package file memberships to eliminate resolution noise. [tools/tsconfig.json, tools/biome-coverage/residual.json] at 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (pattern): Resolve each testkit self-package import to source in its source-only typecheck configuration. Prove resolution with dist hidden and retain controls that reproduce TS2307 when each alias is removed. [typescript/testkit/tsconfig.typecheck.json, typescript/kernel/testkit/tsconfig.typecheck.json, typescript/providers/testkit/tsconfig.typecheck.json, tools/scripts/typecheck-source-aliases.test.ts] at e28ae522315b463014a44a5a822d0cb444c21c26"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (pattern): Credit migrated lint coverage only for the active nx:run-commands target's canonical project-wide Oxlint invocation in the correct directory. Reject partial scope, inactive alternatives, forwarded arguments, unknown options, and custom executors before subtracting retained coverage; preserve the complete partition controls. [tools/scripts/biome-lint.ts, tools/scripts/lib/nx-projects.ts, tools/scripts/lib/biome-oxc-discovery.test.ts] at c397a11f0a547f7a3929e12e3edc7bb427e58bc3"
+    from: BP
+  - stage: tech-spec
+    item: "code decision (convention): Share the read-only native Oxfmt check across check and verify. Run seven original BP suites and two new regressions through an explicit post-codegen serial verification phase with worktree-purity checks. Pin the exported nine-suite acceptance command and verify malformed formatter probes fail without being rewritten. CI inherits verify. [package.json, tools/scripts/check.ts, tools/scripts/verify.ts, tools/scripts/oxc-preparation.test.ts] at 7f9d6e054c4b705f15d8c61a2d21803efa283e73"
+    from: BP
+proposed_decisions: [OD-08]
+candidate_terms: []
+stale_owners: [".constitution/evidence/KRT-BP007/manifest.yaml: KRT-BP007", ".constitution/evidence/KRT-BP004/manifest.yaml: KRT-BP004", ".constitution/evidence/KRT-BP005/manifest.yaml: KRT-BP005"]

@@ -75,8 +75,9 @@ bill_of_materials:
     evidence:
       kind: repository
       ref: bun.lock
-      date: 2026-09-29
       version: "2.5.14"
+      date: 2026-10-01
+      note: "Final M10 audit at 35ea6ed523c693ca2cd6a7781fb4ee5729a0c451 matches stack, manifest, lock, and installed metadata. Retained lint passes; removal remains conditional on all directory gates."
   - name: ultracite
     role: tooling
     version: "7.12.2"
@@ -89,6 +90,7 @@ bill_of_materials:
       ref: bun.lock
       version: "7.12.2"
       date: 2026-10-01
+      note: "Final M10 audit matches stack, manifest, lock, and installed metadata. Native OXC preset assertions pass; the Ultracite CLI is not used."
   - name: ultracite-biome
     role: tooling
     version: "7.4.2"
@@ -101,7 +103,7 @@ bill_of_materials:
       ref: bun.lock
       version: "7.4.2"
       date: 2026-10-01
-      note: "bun.lock carries the alias key ultracite-biome whose resolution is ultracite@7.4.2; package.json declares ultracite-biome as npm:ultracite@7.4.2."
+      note: "The manifest alias npm:ultracite@7.4.2 resolves through the Bun lock alias key to ultracite@7.4.2. Installed metadata and normalized retained Biome diagnostic parity agree. Retire the alias together with Biome."
   - name: "@changesets/cli"
     role: tooling
     version: "3.0.3"
@@ -248,6 +250,7 @@ bill_of_materials:
       ref: bun.lock
       version: "1.86.0"
       date: 2026-10-01
+      note: "Final M10 audit matches stack, manifest, lock, and installed metadata. Canonical TS-004 rejects the wrong-pin control and passes restored bytes. Native type-aware project-resolution diagnostics are zero."
   - name: oxfmt
     role: tooling
     version: "0.71.0"
@@ -260,6 +263,7 @@ bill_of_materials:
       ref: bun.lock
       version: "0.71.0"
       date: 2026-10-01
+      note: "Final M10 audit matches stack, manifest, lock, and installed metadata. Formatter and generator repeat passes preserve parsed authority values and leave the tracked worktree unchanged."
   - name: oxlint-tsgolint
     role: tooling
     version: "7.0.2003"
@@ -272,6 +276,7 @@ bill_of_materials:
       ref: bun.lock
       version: "7.0.2003"
       date: 2026-10-01
+      note: "Final M10 audit matches stack, manifest, lock, and installed metadata. Native type-aware measurement evaluates resolved types with zero project-resolution errors; remaining directory rule debt is recorded."
   - name: bazel
     role: tooling
     version: "9.1.1"

@@ -1,4 +1,8 @@
 entries:
+  - version: v0.47.2
+    date: 2026-10-01
+    by: reconcile
+    changed: ["Align the OXC and Ultracite stack pins with installed Bun lock evidence. Retain Biome 2.5.14 and ultracite-biome 7.4.2 until conditional retirement. Route measured preset loading, discovery, generator, and verification conventions to Stage 3 for alignment.", ".constitution/tech-spec/stack.yaml: Record installed OXC and Ultracite pins with Bun lock evidence. Retain Biome and ultracite-biome until every directory migration gate passes. The final M10 audit found no additional change. (1a1eb537626215dcf91ed19264ea73c502f6b421, EPIC-BP)"]
   - version: v0.47.1
     date: 2026-09-30
     by: reconcile

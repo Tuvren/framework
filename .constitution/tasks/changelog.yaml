@@ -1,4 +1,15 @@
 entries:
+  - version: v0.47.3
+    date: 2026-10-01
+    changed: ["Complete EPIC-BP's eight tooling tickets and 33 points. Verify retained preset parity, mixed lint coverage, Oxfmt regeneration, source-only project discovery, installed pins, and direct release coverage.", "EPIC-BP OXC configuration and formatter preparation; mechanical reformat exempt archived: 8 tickets, 33 points, 6032 diff lines, 0 review rounds"]
+    added: ["Follow-up from EPIC-BP: Resolve the JSON-only replacement expectation in Stage 3 and retirement planning before removing Biome. The final PR panel measured the native file-type boundary and recorded it without changing the approved policy or extending BP into directory migration.", "Follow-up from EPIC-BP: Preserve OD-08 as proposed with its recorded interim assumption. After merge, the repository owner rules on verbatim core-preset root spreading and Stage 3 aligns ADR-0070's loader wording.", "Follow-up from EPIC-BP: Continue the planned directory migration epics with the unchanged OXC preset. The historical M9b native measurement at code commit 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0 covers 626 files and reports 19,599 diagnostics, including nine unchanged pre-epic tooling or intentionally invalid fixture type diagnostics and zero project-resolution errors. The remaining type diagnostics occur in tools/conformance/harness/run.ts, tools/scripts/authority-guardrails/__fixtures__/typescript-owned-conformance/source.ts, tools/scripts/portability-gate.ts, tools/scripts/release-check.ts, and tools/scripts/telemetry-codegen.ts. Handle them in the later directory ratchet according to their source, preserving the intentional guardrail fixture.", "Follow-up from EPIC-BP: Keep Biome and ultracite-biome active for unmigrated coverage. Retire both together only after all directory gates pass. EPIC-BP completes preparation and makes no full Oxlint-clean claim.", "Follow-up from EPIC-BP: After the approved rebase merge, map mechanical commit 52a91477571c37b7339b4b53529a7c9dbcd8c17f to its exact merged SHA by patch-id. A fresh approved Pig worker adds that merged SHA to .git-blame-ignore-revs in a separate corrective commit, followed by independent review. Then run the approved reconcile and derive steps in separate commits."]
+    by: reconcile
+    fixed: [Correct fresh-checkout testkit smoke resolution and active project-wide mixed-lint coverage. Enforce read-only native formatter validation and execute all nine BP acceptance suites in the release verification lane.]
+    fast_lane_through: a1d12d09dc9b48f6abc0edcb9fa52756af50300e
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.2
   - version: v0.47.2
     date: 2026-09-30
     changed: ["Complete EPIC-BO: isolate memory buffers, refresh the shared devenv toolchain with the Weaver manifest migration, align Bun 1.4.2 and Dependabot holds, retain isolation/trust/auth measurements, settle physical pins, and upgrade aimock with preserved assertions and reviewed proofs.", "EPIC-BO Bun refresh and buffer ownership archived: 6 tickets, 34 points, 8459 diff lines, 1 review rounds"]

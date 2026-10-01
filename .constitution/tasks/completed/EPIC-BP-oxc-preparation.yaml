@@ -1,0 +1,353 @@
+id: BP
+name: "OXC configuration and formatter preparation; mechanical reformat exempt"
+kind: tooling
+capabilities: []
+depends_on: [BO]
+scope:
+  paths: [package.json, bun.lock, ".github/dependabot.yml", devenv.nix, oxlint.config.ts, oxfmt.config.ts, tools, typescript, spec, reports/compatibility, tests, tsconfig.base.json, tsconfig.json, biome.jsonc, ".constitution/tech-spec/stack.yaml", ".changeset/toolchain-bp-oxc-preparation.md"]
+  tech_spec_patchable: [".constitution/tech-spec/stack.yaml"]
+estimated_diff_lines: 5000
+estimate_source: planned
+tickets:
+  - id: KRT-BP007
+    title: Pin the retained Biome preset through an npm alias
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in: [package.json, bun.lock, biome.jsonc]
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if alias resolution fails or normalized Biome lint diagnostics differ from the baseline; do not proceed to the OXC install or ratchet."]
+    description: "ADR-0070 and the OD-006 review amendment. Before upgrading un-aliased ultracite, install ultracite-biome pinned to npm:ultracite@7.4.2 with Bun and retarget biome.jsonc extends to ultracite-biome/biome/core. Compare normalized Biome lint diagnostics before and after on the same source tree and identical coverage. Preserve the exact rule set, severities and diagnostics before proceeding. Assumption: The unmeasured alias transition preserves the retained Biome lint output."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the manifest and lockfile pin ultracite-biome to npm:ultracite@7.4.2, biome.jsonc extends the alias export, and normalized before/after Biome lint output is identical. Prove this before changing un-aliased ultracite."
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [tools/scripts/biome-alias.test.ts]
+        justification: "Approved acceptance test verifies the retained alias against immutable pre-transition preset and probe diagnostics; it survives the unaliased Ultracite upgrade."
+  - id: KRT-BP002
+    title: Remove the formatter parse blocker
+    type: Chore
+    effort: 2
+    depends_on: []
+    scope:
+      in: [tools/scripts/epic-af-conformance-gap-plan.ts]
+    verification:
+      command: "bun run docs:af-gap-plan:check"
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."]
+    description: ADR-0070 and SPK-KRT-OD006. Fix TS1354 at the measured readonly Array declaration around line 497. Preserve the generated gap-plan behavior.
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the script parses, its gap-plan freshness check succeeds, and both retained Biome and OXC can inspect it without grammar failure."
+    flows: []
+    certainty: settled
+    status: done
+    deviations:
+      - files: [tools/scripts/oxc-preparation.test.ts]
+        justification: "Approved compiler, freshness and retained-Biome acceptance tests; OXC inspection completes in M3 after installation, as the approved plan specifies."
+  - id: KRT-BP001
+    title: Install OXC and load unchanged config presets
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BP007, KRT-BP002]
+    scope:
+      in: [package.json, bun.lock, ".github/dependabot.yml", devenv.nix, oxlint.config.ts, oxfmt.config.ts]
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if latest ultracite requires an OXC rule override or the retained aliased Biome diagnostics change; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Install oxlint, oxfmt and oxlint-tsgolint with ultracite latest as a config-only dependency. Run binaries directly. Repeat preset ignorePatterns because extends does not inherit them, and add .constitution/**. Exclude Markdown, YAML and TOML from oxfmt. Remove the temporary ultracite hold with the manual bump. Keep Biome lint on the separately pinned ultracite-biome preset; the OXC ultracite upgrade must not change retained Biome diagnostics. Assumption: The installed OXC pins and latest ultracite exports preserve the measured configuration behavior."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert both configs load under Bun, the preset rule set has no local overrides, type-aware backend is installed, .constitution files are untouched, and only TypeScript and JSON are formatted. Biome lint remains a working gate before any directory switches."
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [tools/scripts/oxc-preparation.test.ts]
+        justification: "Approved installation/configuration tests also complete OXC inspection for BP002; the adjacent stack-only S1 patch aligns installed pin evidence before the pair is reviewed."
+      - files: [oxfmt.config.ts]
+        justification: "PR review clarifies the comment to match the approved M3 approach's existing TS/JS/JSON/JSONC inventory. Formatter policy and protected evidence exclusions remain unchanged."
+  - id: KRT-BP008
+    title: Make the root Biome gate lint-only with selective coverage
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BP001]
+    scope:
+      in: [package.json, biome.jsonc, tools/scripts/biome-lint.ts, tools/biome-coverage]
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if a retained lint path loses coverage, an empty list expands to the repository, or formatting/import-organization diagnostics remain in the Biome gate; do not proceed to the reformat."]
+    description: "ADR-0070 and the OD-006 review amendment. Replace root biome check . with biome lint over an explicit list of not-yet-migrated files and directories. Disable Biome formatter and assist actions in biome.jsonc. Preserve the root surface gate and run OXC for migrated targets. Implement a Bun runner reading separate tools/biome-coverage/<epic-id-lowercase>.json lists for BQ through CA plus a residual.json list for root/configuration and other remaining coverage. Initialize every list from the full retained lint inventory; neither omission nor duplicate coverage is allowed. Empty lists skip Biome rather than invoking it without paths. Each directory epic removes only its migrated entries from its own list in the lint-target switch, permitting disjoint parallel edits. Keep the alias pinned. Assumption: Selective lint coverage and mixed OXC/Biome routing preserve complete lint coverage throughout the ratchet."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every former root lint path belongs to a directory coverage list or residual.json. The root gate invokes biome lint only on remaining entries with formatter and assists off, preserves the surface gate, and includes switched OXC targets. Removing one directory entry leaves all other lists intact; an empty list does not run Biome. After the mechanical oxfmt commit, root lint must pass without rejecting formatting or import organization."
+    flows: []
+    certainty: assumed
+    status: done
+    deviations:
+      - files: [tools/scripts/biome-lint.test.ts, nx.json]
+        justification: "Approved behavioral tests and narrow Oxlint cache input support the mixed lint runner; filesystem parity and migration-aware checks now fail closed and preserve remaining-only Biome lint."
+      - files: [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/biome-inventory.test.ts]
+        justification: "The verified inventory derives from Git and owned Biome config with Bun native APIs, avoiding whole-root lint and failing closed on discovery errors; parity and migration tests address the independent P1 findings."
+      - files: [tools/scripts/lib/biome-lint-partition.test.ts]
+        justification: "A focused native-inventory partition test covers real BQ switch metadata, counting retained and OXC-excluded files together without exceeding the runner test module size limit."
+      - files: [tools/scripts/biome-lint.ts, tools/scripts/biome-lint.test.ts, tools/scripts/lib/nx-projects.ts, tools/scripts/lib/biome-lint-partition.test.ts, tools/scripts/lib/biome-oxc-discovery.test.ts]
+        justification: "PR review validates the active unqualified nx:run-commands lint invocation and its project-wide scope before granting coverage. Partial paths, inactive configurations, forwarded arguments, unknown options, custom executors, and wrong directories receive no whole-root credit. Regression controls preserve the complete lint partition."
+  - id: KRT-BP003
+    title: Make generators produce oxfmt-clean artifacts
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BP008, KRT-BP002]
+    scope:
+      in: [tools/scripts/conformance/format-generated-json.ts, tools/scripts/conformance/generate-kernel-plans.ts, tools/scripts/telemetry-codegen.ts, tools/scripts/api-freeze-gate.ts, tools/scripts/compatibility-report.ts, spec, typescript/telemetry/semconv/src/lib/generated, ".changeset/toolchain-bp-oxc-preparation.md"]
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if regeneration changes authority values or requires weakening the kernel-plan semantic guard occurs; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Swap the four formatter callers and seven spec artifact targets to oxfmt. Extend kernel-plan regeneration so its master guard does not prevent the approved formatter regeneration. Preserve semantic guardrails. Keep a matched JSON path in telemetry formatting so generated-helper ignores do not cause exit 2. Stage outputs for the separate mechanical ticket. Add or update .changeset/toolchain-bp-oxc-preparation.md as a patch changeset with direct coverage for the affected public packages: @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert generator commands use oxfmt, no formatter caller uses Biome, every target still declares its artifact inputs, and regeneration preserves parsed authority. Re-running bun run codegen must be clean after the mechanical output commit. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
+    flows: []
+    certainty: settled
+    status: done
+    deviations:
+      - files: [tools/scripts/generator-oxfmt.test.ts, tools/biome-coverage/bv.json]
+        justification: "Focused acceptance tests verify native formatter callers, artifact inputs, promoted-check preservation and parsed-value guards; the coverage list keeps the new test in the retained lint gate."
+      - files: [reports/compatibility/project.json]
+        justification: "The evidence-refresh target actually invokes the changed compatibility formatter, so it requires the root package and Oxfmt configuration inputs; codegen and check remain check-only."
+  - id: KRT-BP004
+    title: Land one mechanical format and regeneration commit
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BP003]
+    scope:
+      in: [tools, typescript, spec, reports/compatibility, tests, package.json, tsconfig.base.json, tsconfig.json, biome.jsonc, oxlint.config.ts, oxfmt.config.ts, ".changeset/toolchain-bp-oxc-preparation.md"]
+    verification:
+      command: bun run codegen
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if parsed JSON changes or any constitution evidence digest changes occurs; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Apply one mechanical oxfmt pass and re-emit outputs through the changed generators, including compatibility-report outputs not previously exercised end to end. This ticket is alone in one mechanical commit, exempt from the diff budget and excluded from this epic estimated_diff_lines. Never format .constitution or SHA-pinned evidence. In this mechanical commit, switch the root format command and import organization to oxfmt; the preceding lint-only Biome gate must accept the result. Add the patch changeset in a separate commit of this same pull request, outside the exempt reformat commit. Add or update .changeset/toolchain-bp-oxc-preparation.md as a patch changeset with direct coverage for the affected public packages: @tuvren/backend-memory, @tuvren/backend-postgres, @tuvren/backend-shared, @tuvren/backend-sqlite, @tuvren/core, @tuvren/kernel-grpc-client, @tuvren/kernel-protocol, @tuvren/kernel-runtime, @tuvren/mcp-client, @tuvren/provider-api, @tuvren/provider-bridge-ai-sdk, @tuvren/runner-react, @tuvren/runtime, @tuvren/sdk, @tuvren/stream-agui, @tuvren/stream-core, @tuvren/stream-sse, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: parsed generated artifacts and runtime behavior are unchanged; a second generator and formatter pass produces no diff. Checker: bun run codegen plus oxfmt check. Preserve all constitution evidence digests. Root lint accepts the regenerated oxfmt layout, and the exempt mechanical commit contains no changeset or semantic cleanup. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
+    flows: []
+    certainty: settled
+    status: done
+    deviations:
+      - files: [".git-blame-ignore-revs"]
+        justification: "Approved post-merge exception records the exact merged mechanical SHA after patch-id mapping; release changeset coverage remains separate in M7."
+      - files: [package.json, tools/scripts/check.ts, tools/scripts/verify.ts, tools/scripts/oxc-preparation.test.ts]
+        justification: "PR review restores read-only native formatting enforcement in check and verify. The dedicated post-codegen verification phase runs all seven original BP suites and two added regression suites, with an explicit inventory and the existing worktree-purity guard. CI inherits these checks through verify; the formatter writer remains unchanged."
+  - id: KRT-BP005
+    title: Expose full type-aware project coverage
+    type: Chore
+    effort: 5
+    depends_on: [KRT-BP004]
+    scope:
+      in: [typescript, tools, ".changeset/toolchain-bp-oxc-preparation.md"]
+    verification:
+      command: bun run typecheck
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if project discovery requires changing public package resolution or generated declarations leak into source occurs; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Add tsconfig.typecheck.json references to the 25 package tsconfigs, the three missing certification-wrapper tsconfigs, and typecheck configs for all three conformance adapters. Cover tests, benches and smoke files. Re-measure the adapter diagnostics after resolution noise disappears. Add or update .changeset/toolchain-bp-oxc-preparation.md as a patch changeset with direct coverage for the affected public packages: @tuvren/backend-memory, @tuvren/backend-postgres, @tuvren/backend-shared, @tuvren/backend-sqlite, @tuvren/core, @tuvren/kernel-grpc-client, @tuvren/kernel-protocol, @tuvren/kernel-runtime, @tuvren/mcp-client, @tuvren/provider-api, @tuvren/provider-bridge-ai-sdk, @tuvren/runner-react, @tuvren/runtime, @tuvren/sdk, @tuvren/stream-agui, @tuvren/stream-core, @tuvren/stream-sse, @tuvren/telemetry-otel, @tuvren/telemetry-semconv. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert all intended files resolve through project references, the measured 2423 then 354 project-resolution errors are eliminated, and type-aware diagnostics are counted from resolved types. Repository typecheck remains source-only; type-aware lint receives declaration prerequisites where required. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
+    flows: []
+    certainty: settled
+    status: done
+    deviations:
+      - files: [tools/scripts/oxc-project-discovery.test.ts, tools/biome-coverage/bv.json]
+        justification: "Focused source-only discovery assertions and their retained coverage entry verify all three wrappers and adapters without growing the shared OXC test beyond its module limit; package-wide proof follows in M9a and M9b."
+      - files: [tools/scripts/biome-lint.test.ts]
+        justification: "The verified native JSONC parser repairs the acceptance reader exposed by Oxfmt trailing commas, preserving every existing formatter, assist and lint-policy assertion."
+      - files: [tools/tsconfig.json, tools/biome-coverage/residual.json]
+        justification: "Native tooling discovery removes measured TS2591/TS2307 resolution noise while retaining all real sources; typed rule debt remains for the directory ratchet."
+      - files: [tools/scripts/generator-oxfmt.test.ts, tools/scripts/oxc-preparation.test.ts]
+        justification: Verified UTF-8 subprocess return annotations remove the six type diagnostics introduced by this epic without changing runtime calls or assertions.
+      - files: [typescript/testkit/tsconfig.typecheck.json, typescript/kernel/testkit/tsconfig.typecheck.json, typescript/providers/testkit/tsconfig.typecheck.json, tools/scripts/typecheck-source-aliases.test.ts, tools/biome-coverage/bv.json]
+        justification: "PR review corrects fresh-checkout smoke compilation by adding each testkit's self-package source alias. Read-only compiler hosts hide all three dist directories, and alias-removal controls reproduce TS2307 despite warmed outputs. Existing aliases, references, membership, public resolution, and build prerequisites are preserved."
+  - id: KRT-BP006
+    title: Record installed OXC pins in a spec-only patch
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BP005]
+    scope:
+      in: [".constitution/tech-spec/stack.yaml"]
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."]
+    description: ADR-0070 and SPK-KRT-OD006. Record the installed OXC and ultracite pins with lockfile evidence in a separate spec-only commit. Keep Biome declared as the active lint gate until the directory ratchet completes. Retain the pinned ultracite-biome alias record alongside Biome until CB retires both.
+    acceptance:
+      mode: invariant
+      evidence: "Invariant: stack records match the installed manifests and lockfile, and Biome retirement is still conditional on all directory gates. Checker: bun run lint and constitution pin validation."
+    flows: []
+    certainty: settled
+    status: done
+closeout:
+  tickets_completed: [KRT-BP007, KRT-BP002, KRT-BP001, KRT-BP008, KRT-BP003, KRT-BP004, KRT-BP005, KRT-BP006]
+  tickets_deferred: []
+  points_completed: 33
+  spec_patches:
+    - path: ".constitution/tech-spec/stack.yaml"
+      summary: Record installed OXC and Ultracite pins with Bun lock evidence. Retain Biome and ultracite-biome until every directory migration gate passes. The final M10 audit found no additional change.
+      commit: 1a1eb537626215dcf91ed19264ea73c502f6b421
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Complete EPIC-BP's eight tooling tickets and 33 points. Verify retained preset parity, mixed lint coverage, Oxfmt regeneration, source-only project discovery, installed pins, and direct release coverage."
+    - directory: tech-spec
+      type: changed
+      text: "Align the OXC and Ultracite stack pins with installed Bun lock evidence. Retain Biome 2.5.14 and ultracite-biome 7.4.2 until conditional retirement. Route measured preset loading, discovery, generator, and verification conventions to Stage 3 for alignment."
+    - directory: tasks
+      type: fixed
+      text: Correct fresh-checkout testkit smoke resolution and active project-wide mixed-lint coverage. Enforce read-only native formatter validation and execute all nine BP acceptance suites in the release verification lane.
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "Clarify the supported JSON and JSONC surface for directory migration and JSON-only target replacement before Biome retirement. Native Oxlint does not lint these formats; Oxfmt checks their formatting. ADR-0070 calls for whole switched directories to leave Biome without parity overrides. BP switches no directories and retains JSON lint here; future coverage statements must not count these files as inspected by Oxlint."
+    - stage: tech-spec
+      item: "Align ADR-0070's physical Oxlint configuration wording with the measured verbatim core-preset root spread. OD-08 remains proposed with an interim assumption pending the repository owner's ruling after EPIC-BP merges. The effective configuration preserves shipped rule options and environment; no local policy overrides were added."
+    - stage: tech-spec
+      item: "Document fresh-worktree bootstrap ordering: kernel-interop-grpc:codegen must materialize gitignored bindings before the authority validators that import them. The generation target already exists; no boundary or generation semantics changed."
+    - stage: tech-spec
+      item: "Document API formatter verification that preserves the historical ledger. An unchanged surface makes api-freeze --update a no-op. Exercise the unchanged snapshot writer against an isolated copy containing the complete ledger, then verify its expected append and parsed-value guard. Keep the repository snapshot intact."
+  follow_ups: [Resolve the JSON-only replacement expectation in Stage 3 and retirement planning before removing Biome. The final PR panel measured the native file-type boundary and recorded it without changing the approved policy or extending BP into directory migration., "Preserve OD-08 as proposed with its recorded interim assumption. After merge, the repository owner rules on verbatim core-preset root spreading and Stage 3 aligns ADR-0070's loader wording.", "Continue the planned directory migration epics with the unchanged OXC preset. The historical M9b native measurement at code commit 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0 covers 626 files and reports 19,599 diagnostics, including nine unchanged pre-epic tooling or intentionally invalid fixture type diagnostics and zero project-resolution errors. The remaining type diagnostics occur in tools/conformance/harness/run.ts, tools/scripts/authority-guardrails/__fixtures__/typescript-owned-conformance/source.ts, tools/scripts/portability-gate.ts, tools/scripts/release-check.ts, and tools/scripts/telemetry-codegen.ts. Handle them in the later directory ratchet according to their source, preserving the intentional guardrail fixture.", Keep Biome and ultracite-biome active for unmigrated coverage. Retire both together only after all directory gates pass. EPIC-BP completes preparation and makes no full Oxlint-clean claim., "After the approved rebase merge, map mechanical commit 52a91477571c37b7339b4b53529a7c9dbcd8c17f to its exact merged SHA by patch-id. A fresh approved Pig worker adds that merged SHA to .git-blame-ignore-revs in a separate corrective commit, followed by independent review. Then run the approved reconcile and derive steps in separate commits."]
+  code_decisions:
+    - summary: Embed the measured immutable Biome preset and diagnostic baseline in the durable alias contract test. Scratch probes extend the resolved preset with discovery settings only.
+      kind: convention
+      paths: [tools/scripts/biome-alias.test.ts]
+      commit: 4a5866fa537285eb9ff194b5255acf5835ca736b
+    - summary: Repeat shipped ignore patterns in the OXC TypeScript configurations. Add the declared constitution and language exclusions. Group OXC dependency updates and hold the retained Biome alias explicitly.
+      kind: convention
+      paths: [oxlint.config.ts, oxfmt.config.ts, ".github/dependabot.yml"]
+      commit: 577e63b2a3684a0a129e4f0e3d417c17e3f774ab
+    - summary: Spread the unchanged Ultracite core preset at the Oxlint root because extends drops nine rule-option tuples and the browser environment. Compare the complete effective configuration to the shipped policy.
+      kind: pattern
+      paths: [oxlint.config.ts, tools/scripts/oxc-preparation.test.ts]
+      commit: cf11f81fe4347c1d33be26e7d4ecc654f41fb566
+    - summary: "Inventory literal retained lint paths with the most specific owner. Discover migrated OXC targets from Nx command metadata. Derive former root coverage from read-only Git and owned Biome includes using Bun APIs, and fail on missing or duplicate coverage."
+      kind: pattern
+      paths: [tools/scripts/biome-lint.ts, tools/scripts/lib/biome-inventory.ts, tools/biome-coverage]
+      commit: d16e3e2b6252752833b15f2cfde4a6916586b612
+    - summary: "Run Oxfmt formatter callers from the repository root. Guard kernel-plan formatting and API snapshot emission with parsed-value checks, and declare formatter configuration inputs on generator targets."
+      kind: convention
+      paths: [tools/scripts/conformance/format-generated-json.ts, tools/scripts/conformance/generate-kernel-plans.ts, tools/scripts/api-freeze-gate.ts, "spec/*/project.json", reports/compatibility/project.json]
+      commit: 06f589e7254a3b72494cc43784ae8aee7d18af35
+    - summary: Expose certification wrappers and adapters through source-only typecheck references. Reuse provider certification aliases for its adapter and declare kernel interop generation on the framework adapter.
+      kind: pattern
+      paths: [typescript/certification/tsconfig.json, typescript/kernel/certification/tsconfig.json, typescript/providers/certification/tsconfig.json, typescript/conformance-adapter/tsconfig.typecheck.json, typescript/kernel/conformance-adapter/tsconfig.typecheck.json, typescript/providers/conformance-adapter/tsconfig.typecheck.json]
+      commit: 50b3efbad33ed6519050618a4b259c2c853b2109
+    - summary: "Introduce source-only aggregator references alongside retained library references. Create the Core aggregator without changing its source-only target, and include actual smoke files in both testkit aggregators. M9b then establishes the measured reference order for all packages."
+      kind: convention
+      paths: [typescript/core/tsconfig.typecheck.json, typescript/kernel/testkit/tsconfig.typecheck.json, typescript/testkit/tsconfig.typecheck.json]
+      commit: 3cf948f5dbc3a881e027b73a11eb5d1412a6df11
+    - summary: Put source-only aggregator references first in all 27 package root configurations because the installed tsgolint selects the first matching reference. Preserve every library reference and public package resolution.
+      kind: pattern
+      paths: ["typescript/**/tsconfig.json"]
+      commit: 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0
+    - summary: Set noEmit explicitly on source-only aggregators that allow TypeScript extension imports. Preserve declaration generation as a build prerequisite for type-aware lint rather than a source-only typecheck prerequisite.
+      kind: convention
+      paths: ["typescript/**/tsconfig.typecheck.json"]
+      commit: 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0
+    - summary: "Add tools project discovery with Bun and Node types, source-only noEmit, and retained lint coverage. Verify all 68 actual tooling memberships alongside the 491 package file memberships to eliminate resolution noise."
+      kind: pattern
+      paths: [tools/tsconfig.json, tools/biome-coverage/residual.json]
+      commit: 60f8cb1f8b20cb80057e1c9bf57b62b000d630a0
+    - summary: Resolve each testkit self-package import to source in its source-only typecheck configuration. Prove resolution with dist hidden and retain controls that reproduce TS2307 when each alias is removed.
+      kind: pattern
+      paths: [typescript/testkit/tsconfig.typecheck.json, typescript/kernel/testkit/tsconfig.typecheck.json, typescript/providers/testkit/tsconfig.typecheck.json, tools/scripts/typecheck-source-aliases.test.ts]
+      commit: e28ae522315b463014a44a5a822d0cb444c21c26
+    - summary: "Credit migrated lint coverage only for the active nx:run-commands target's canonical project-wide Oxlint invocation in the correct directory. Reject partial scope, inactive alternatives, forwarded arguments, unknown options, and custom executors before subtracting retained coverage; preserve the complete partition controls."
+      kind: pattern
+      paths: [tools/scripts/biome-lint.ts, tools/scripts/lib/nx-projects.ts, tools/scripts/lib/biome-oxc-discovery.test.ts]
+      commit: c397a11f0a547f7a3929e12e3edc7bb427e58bc3
+    - summary: Share the read-only native Oxfmt check across check and verify. Run seven original BP suites and two new regressions through an explicit post-codegen serial verification phase with worktree-purity checks. Pin the exported nine-suite acceptance command and verify malformed formatter probes fail without being rewritten. CI inherits verify.
+      kind: convention
+      paths: [package.json, tools/scripts/check.ts, tools/scripts/verify.ts, tools/scripts/oxc-preparation.test.ts]
+      commit: 7f9d6e054c4b705f15d8c61a2d21803efa283e73
+  settled:
+    - record: tech-spec/stack.yaml#@biomejs/biome
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "2.5.14"
+        date: 2026-10-01
+        note: "Final M10 audit at 35ea6ed523c693ca2cd6a7781fb4ee5729a0c451 matches stack, manifest, lock, and installed metadata. Retained lint passes; removal remains conditional on all directory gates."
+    - record: tech-spec/stack.yaml#ultracite
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "7.12.2"
+        date: 2026-10-01
+        note: "Final M10 audit matches stack, manifest, lock, and installed metadata. Native OXC preset assertions pass; the Ultracite CLI is not used."
+    - record: tech-spec/stack.yaml#ultracite-biome
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "7.4.2"
+        date: 2026-10-01
+        note: "The manifest alias npm:ultracite@7.4.2 resolves through the Bun lock alias key to ultracite@7.4.2. Installed metadata and normalized retained Biome diagnostic parity agree. Retire the alias together with Biome."
+    - record: tech-spec/stack.yaml#oxlint
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "1.86.0"
+        date: 2026-10-01
+        note: "Final M10 audit matches stack, manifest, lock, and installed metadata. Canonical TS-004 rejects the wrong-pin control and passes restored bytes. Native type-aware project-resolution diagnostics are zero."
+    - record: tech-spec/stack.yaml#oxfmt
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "0.71.0"
+        date: 2026-10-01
+        note: "Final M10 audit matches stack, manifest, lock, and installed metadata. Formatter and generator repeat passes preserve parsed authority values and leave the tracked worktree unchanged."
+    - record: tech-spec/stack.yaml#oxlint-tsgolint
+      evidence:
+        kind: repository
+        ref: bun.lock
+        version: "7.0.2003"
+        date: 2026-10-01
+        note: "Final M10 audit matches stack, manifest, lock, and installed metadata. Native type-aware measurement evaluates resolved types with zero project-resolution errors; remaining directory rule debt is recorded."
+  actuals:
+    diff_lines: 6032
+    files_touched: 579
+    milestones: 16
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-BP007
+        diff_lines: 597
+        review_rounds: 0
+      - id: KRT-BP002
+        diff_lines: 464
+        review_rounds: 0
+      - id: KRT-BP001
+        diff_lines: 149
+        review_rounds: 0
+      - id: KRT-BP008
+        diff_lines: 2082
+        review_rounds: 0
+      - id: KRT-BP003
+        diff_lines: 574
+        review_rounds: 0
+      - id: KRT-BP004
+        diff_lines: 1385
+        review_rounds: 0
+      - id: KRT-BP005
+        diff_lines: 781
+        review_rounds: 0
+      - id: KRT-BP006
+        diff_lines: 0
+        review_rounds: 0
+    merged_commit: a1d12d0
+    measured_at: 2026-10-01
