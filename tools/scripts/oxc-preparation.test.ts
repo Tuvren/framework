@@ -16,6 +16,8 @@ import { pathToFileURL } from "node:url";
 
 import ts from "typescript";
 
+import { TOOLING_ACCEPTANCE_STEP } from "./verify.js";
+
 const REPO_ROOT = path.resolve(import.meta.dirname, "../..");
 const GAP_PLAN_SCRIPT = "tools/scripts/epic-af-conformance-gap-plan.ts";
 const GAP_PLAN_SCRIPT_PATH = path.join(REPO_ROOT, GAP_PLAN_SCRIPT);
@@ -253,7 +255,7 @@ describe("oxc configuration contract", () => {
     ]);
   });
 
-  test("oxfmt config spreads the shipped preset and excludes non-TS/JSON", async () => {
+  test("oxfmt config spreads the shipped preset and excludes Markdown, YAML and TOML", async () => {
     const preset = (await import("ultracite/oxfmt")).default as
       | OxfmtConfigLike
       | undefined;
@@ -373,6 +375,64 @@ describe("oxc configuration contract", () => {
   });
 });
 
+describe("native read-only formatter check", () => {
+  test("the declared format:check script is the native read-only Oxfmt check", () => {
+    const manifest = parseJson<{ scripts?: Record<string, string> }>(
+      readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")
+    );
+    // ADR-0070: check and verify/CI call this single declared command; a
+    // second formatter or a writing command would be a policy regression.
+    expect(manifest.scripts?.["format:check"]).toBe(
+      "bunx --bun oxfmt --check ."
+    );
+  });
+
+  test("malformed TypeScript and JSON fail the check without being rewritten", () => {
+    const directory = mkdtempSync(path.join(tmpdir(), "oxfmt-check-"));
+    try {
+      const badTypeScript = path.join(directory, "bad.ts");
+      const badJson = path.join(directory, "bad.json");
+      const typeScriptSource =
+        "const   value={a:1,b:2}\nexport default value\n";
+      const jsonSource = '{ "a":1,   "b":2 }\n';
+      writeFileSync(badTypeScript, typeScriptSource);
+      writeFileSync(badJson, jsonSource);
+
+      // The scoped scratch invocation uses the repository's own Oxfmt config
+      // and the same native binary as the whole-tree check.
+      const result = runBun([
+        OXFMT_BIN,
+        "-c",
+        OXFMT_CONFIG,
+        "--check",
+        badTypeScript,
+        badJson,
+      ]);
+
+      expect(result.status, result.stdout).toBe(1);
+      expect(`${result.stdout}${result.stderr}`).toContain(
+        "Format issues found"
+      );
+      // `--check` is read-only: the malformed bytes are untouched.
+      expect(readFileSync(badTypeScript, "utf8")).toBe(typeScriptSource);
+      expect(readFileSync(badJson, "utf8")).toBe(jsonSource);
+
+      const goodTypeScript = path.join(directory, "good.ts");
+      writeFileSync(goodTypeScript, "export const good = 1;\n");
+      const good = runBun([
+        OXFMT_BIN,
+        "-c",
+        OXFMT_CONFIG,
+        "--check",
+        goodTypeScript,
+      ]);
+      expect(good.status, good.stdout).toBe(0);
+    } finally {
+      rmSync(directory, { force: true, recursive: true });
+    }
+  });
+});
+
 describe("oxc preparation grammar contract", () => {
   test("the gap-plan script has no readonly-array grammar error", () => {
     expect(readonlyArrayGrammarDiagnostics()).toEqual([]);
@@ -398,5 +458,33 @@ describe("oxc preparation grammar contract", () => {
     const report = parseJson<{ diagnostics?: unknown[] }>(result.stdout);
     expect(result.status, result.stderr).toBe(0);
     expect(report.diagnostics ?? []).toEqual([]);
+  });
+});
+
+describe("durable tooling acceptance lane", () => {
+  // Round-1 finding 4: the seven original BP suites plus the two new regression
+  // suites must all run in the verify/CI lane. Pinning the exported command —
+  // rather than a second hand-typed list — keeps a later edit from silently
+  // dropping one from the durable lane.
+  const REQUIRED_TOOLING_SUITES = [
+    "tools/scripts/biome-alias.test.ts",
+    "tools/scripts/lib/biome-inventory.test.ts",
+    "tools/scripts/lib/biome-lint-partition.test.ts",
+    "tools/scripts/lib/biome-oxc-discovery.test.ts",
+    "tools/scripts/biome-lint.test.ts",
+    "tools/scripts/generator-oxfmt.test.ts",
+    "tools/scripts/oxc-preparation.test.ts",
+    "tools/scripts/oxc-project-discovery.test.ts",
+    "tools/scripts/typecheck-source-aliases.test.ts",
+  ];
+
+  test("the exported acceptance command runs all nine required suites", () => {
+    const [runtime, subcommand, ...suites] = TOOLING_ACCEPTANCE_STEP.command;
+    expect(runtime).toBe("bun");
+    expect(subcommand).toBe("test");
+    expect([...suites].sort()).toEqual([...REQUIRED_TOOLING_SUITES].sort());
+    for (const relative of REQUIRED_TOOLING_SUITES) {
+      expect(existsSync(path.join(REPO_ROOT, relative)), relative).toBe(true);
+    }
   });
 });

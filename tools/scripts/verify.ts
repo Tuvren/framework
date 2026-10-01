@@ -15,6 +15,8 @@
  */
 
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import process from "node:process";
 
 import { runCommand } from "./lib/command-runner.js";
@@ -302,6 +304,58 @@ export const AUTHORITY_GATE_STEPS: readonly VerificationStep[] = [
   },
 ];
 
+// ADR-0070 disabled Biome's formatter in the same commit that moved the writer
+// to Oxfmt, so a read-only native formatter check is the only thing that keeps
+// the tree Oxfmt-clean. The declared `format:check` script is the single
+// command shared by the `check` inner loop and `verify`/CI lanes; it never
+// writes, never runs Biome, and never invokes the Oxfmt writer.
+export const FORMAT_CHECK_STEP: VerificationStep = {
+  command: ["bun", "run", "format:check"],
+  id: "Oxfmt formatting check (read-only)",
+};
+
+// KRT-BP003/B004/B005/B007/B008 acceptance suites: the seven original BP
+// regression suites plus the two round-1 regression suites
+// (biome-oxc-discovery.test.ts and typecheck-source-aliases.test.ts) — nine
+// total. This is an explicit inventory, not a glob: a new BP regression suite
+// must be registered here to join the durable verify/CI lane. The list is
+// validated against the working tree below so a rename cannot silently drop a
+// suite from the lane, and `oxc-preparation.test.ts` pins the exported
+// TOOLING_ACCEPTANCE_STEP command so an omission cannot hide behind a
+// hand-typed path list.
+export const TOOLING_ACCEPTANCE_TESTS: readonly string[] = [
+  "tools/scripts/biome-alias.test.ts",
+  "tools/scripts/lib/biome-inventory.test.ts",
+  "tools/scripts/lib/biome-lint-partition.test.ts",
+  "tools/scripts/lib/biome-oxc-discovery.test.ts",
+  "tools/scripts/biome-lint.test.ts",
+  "tools/scripts/generator-oxfmt.test.ts",
+  "tools/scripts/oxc-preparation.test.ts",
+  "tools/scripts/oxc-project-discovery.test.ts",
+  "tools/scripts/typecheck-source-aliases.test.ts",
+];
+
+export const TOOLING_ACCEPTANCE_STEP: VerificationStep = {
+  command: ["bun", "test", ...TOOLING_ACCEPTANCE_TESTS],
+  id: "BP tooling acceptance suites",
+};
+
+// The exported arrays above are module-level constants, but the acceptance
+// inventory can drift from the checkout. Fail loud at load time (like the
+// CODEGEN_PROJECTS guard) instead of letting `bun test` skip a missing path.
+{
+  const missing = TOOLING_ACCEPTANCE_TESTS.filter(
+    (relative) => !existsSync(path.join(process.cwd(), relative))
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `verify: TOOLING_ACCEPTANCE_TESTS references missing files (${missing.join(
+        ", "
+      )}) — update tools/scripts/verify.ts`
+    );
+  }
+}
+
 /**
  * Selects steps from AUTHORITY_GATE_STEPS by ID for a derived lane (check's
  * inner loop, the codegen lane). Throws if an ID no longer matches a verify
@@ -336,6 +390,7 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
     id: "static analysis and authority gates",
     steps: [
       { command: ["bun", "run", "lint"], id: "workspace lint" },
+      FORMAT_CHECK_STEP,
       {
         command: ["cargo", "fmt", "--all", "--", "--check"],
         id: "Rust workspace formatting",
@@ -468,6 +523,15 @@ export const DEFAULT_VERIFICATION_PHASES: readonly VerificationPhase[] = [
       },
       { command: ["bun", "run", "typecheck"], id: "workspace typecheck" },
     ],
+  },
+  {
+    // The BP acceptance suites are read-only static contracts. They run after
+    // codegen freshness so generated prerequisites exist, and in a dedicated
+    // serial phase so the worktree-purity guard observes the generator suites'
+    // idempotent rewrites in isolation (they must leave the tree clean).
+    concurrency: 1,
+    id: "tooling acceptance suites",
+    steps: [TOOLING_ACCEPTANCE_STEP],
   },
   {
     // Build before test before conformance; each Nx run-many already
