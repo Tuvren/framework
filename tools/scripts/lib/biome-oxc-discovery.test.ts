@@ -24,7 +24,10 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { discoverOxcProjects } from "../biome-lint.js";
+import {
+  discoverNativeLintProjects,
+  discoverOxcProjects,
+} from "./native-lint-routing.js";
 import type { NxProjectFile, NxProjectTarget } from "./nx-projects.js";
 
 const PROJECT_ROOT = "typescript/kernel/protocol";
@@ -211,6 +214,69 @@ describe("Oxlint project-wide discovery", () => {
           commands: [
             "bunx --bun oxlint --type-aware typescript/kernel/protocol",
             "bunx --bun tsc --noEmit",
+          ],
+          cwd: ".",
+        },
+      })
+    ).toEqual([]);
+  });
+
+  test("credits only the recognized code-plus-JSON composite", () => {
+    const discoveredProjects = discoverNativeLintProjects([
+      projectFile("kernel-contract-protocol", PROJECT_ROOT, {
+        options: {
+          commands: [
+            "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+            "bun tools/scripts/json-check.ts typescript/kernel/protocol",
+          ],
+          cwd: ".",
+        },
+      }),
+    ]);
+    expect(discoveredProjects.oxcProjects).toEqual([
+      {
+        jsonCompanion: true,
+        name: "kernel-contract-protocol",
+        root: PROJECT_ROOT,
+      },
+    ]);
+    expect(discoveredProjects.jsonOnlyProjects).toEqual([]);
+  });
+
+  test("credits the exact JSON-only command without a zero-file Oxlint run", () => {
+    const discoveredProjects = discoverNativeLintProjects([
+      projectFile("kernel-json", PROJECT_ROOT, {
+        options: {
+          command:
+            "bun tools/scripts/json-check.ts --json-only typescript/kernel/protocol",
+          cwd: ".",
+        },
+      }),
+    ]);
+    expect(discoveredProjects.oxcProjects).toEqual([]);
+    expect(discoveredProjects.jsonOnlyProjects).toEqual([
+      { name: "kernel-json", root: PROJECT_ROOT },
+    ]);
+  });
+
+  test("rejects malformed composites and JSON checker scope drift", () => {
+    expect(
+      discovered({
+        options: {
+          commands: [
+            "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+            "bun tools/scripts/json-check.ts typescript/kernel/runtime",
+          ],
+          cwd: ".",
+        },
+      })
+    ).toEqual([]);
+    expect(
+      discovered({
+        options: {
+          commands: [
+            "bun tools/scripts/json-check.ts typescript/kernel/protocol",
+            "bunx --bun oxlint --type-aware typescript/kernel/protocol",
           ],
           cwd: ".",
         },
