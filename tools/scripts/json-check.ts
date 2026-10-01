@@ -22,10 +22,11 @@ import { reportJsonIssues } from "./json-source-check.js";
 import { runCommand as runCommandProcess } from "./lib/command-runner.js";
 import {
   discoverJsonInventory,
-  isCodeFile,
+  JSON_SOURCE_INTEGRITY_EXCLUSIONS,
   validateJsonSources,
   type JsonDiscoveryDependencies,
   type JsonIntegrityIssue,
+  type JsonProtectedFile,
 } from "./lib/json-source-integrity.js";
 
 const JSON_ONLY_FLAG = "--json-only";
@@ -38,10 +39,12 @@ export interface JsonCheckRun {
 
 export interface JsonCheckResult {
   codeFiles: string[];
+  formatFiles: string[];
   formatRun: JsonCheckRun | undefined;
   issues: JsonIntegrityIssue[];
   jsonFiles: string[];
   protectedFiles: string[];
+  protectedReasons: JsonProtectedFile[];
 }
 
 export interface JsonCheckDependencies extends JsonDiscoveryDependencies {
@@ -57,10 +60,7 @@ export async function runJsonCheck(
       `no JSON or JSONC files matched requested scope(s): ${deps.scopes.join(", ")}`
     );
   }
-  const codeFiles = [
-    ...inventory.codeFiles,
-    ...inventory.protectedFiles.filter(isCodeFile),
-  ].sort((left, right) => left.localeCompare(right));
+  const codeFiles = inventory.codeFiles;
   if (deps.jsonOnly && codeFiles.length > 0) {
     throw new Error(`JSON-only scope contains code: ${codeFiles.join(", ")}`);
   }
@@ -70,19 +70,26 @@ export async function runJsonCheck(
   );
   const validation = await validateJsonSources(absoluteFiles);
   let formatRun: JsonCheckRun | undefined;
-  if (validation.issues.length === 0) {
+  if (validation.issues.length === 0 && inventory.formatFiles.length > 0) {
     const format = await deps.runCommand(
-      [process.execPath, OXFMT_BIN_RELATIVE, "--check", ...inventory.jsonFiles],
+      [
+        process.execPath,
+        OXFMT_BIN_RELATIVE,
+        "--check",
+        ...inventory.formatFiles,
+      ],
       { cwd: deps.repoRoot }
     );
-    formatRun = { code: format.code, files: inventory.jsonFiles };
+    formatRun = { code: format.code, files: inventory.formatFiles };
   }
   return {
     codeFiles,
+    formatFiles: inventory.formatFiles,
     formatRun,
     issues: validation.issues,
     jsonFiles: inventory.jsonFiles,
     protectedFiles: inventory.protectedFiles,
+    protectedReasons: inventory.protectedReasons,
   };
 }
 
@@ -109,11 +116,12 @@ if (import.meta.main) {
   try {
     const args = parseJsonCheckArguments(process.argv.slice(2));
     const result = await runJsonCheck({
-      ignorePatterns: oxfmtConfig.ignorePatterns ?? [],
+      formatIgnorePatterns: oxfmtConfig.ignorePatterns ?? [],
       jsonOnly: args.jsonOnly,
       repoRoot,
       runCommand: runCommandProcess,
       scopes: args.scopes,
+      sourceIgnorePatterns: JSON_SOURCE_INTEGRITY_EXCLUSIONS,
     });
     if (result.issues.length > 0) {
       reportJsonIssues(result.issues);
