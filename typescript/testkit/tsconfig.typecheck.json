@@ -18,5 +18,5 @@
     },
     "types": ["bun", "node"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "smoke/**/*.ts", "test/**/*.ts"]
 }
