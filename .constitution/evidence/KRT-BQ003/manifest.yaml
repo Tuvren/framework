@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "734df20a6e0a6d63a58fae2fd81bb3f76032b8d1",
-    "command": "Historical M4-M8R phase proofs; accelerated scoped tests, touched formatting, lint, changeset and constitution gates"
+    "commit": "e3873c3f408fcc30edcace479fe4d71b6dfd38b2",
+    "command": "Historical M4-M9R phase proofs; accelerated scoped tests, touched formatting, lint, changeset and constitution gates"
   },
   "files": [
     {
@@ -380,11 +380,41 @@
       "role": "measurement"
     },
     {
+      "path": "M9R-lead-gates.tar.gz",
+      "sha256": "1fb2421b7ca4df8aeae5d8ceb3e1a2b644fb97579eeda2848000ee184846445c",
+      "bytes": 2234,
+      "role": "measurement"
+    },
+    {
+      "path": "M9R-lead-index.json.gz",
+      "sha256": "14c8ca9a5055733bf6e711491d3029134c6680578a249b5e023c94018df680f0",
+      "bytes": 439,
+      "role": "measurement"
+    },
+    {
+      "path": "M9R-proof-index.json.gz",
+      "sha256": "04f2a370f3e910442d9b4fcb2929ad22d54de58458522bb4d29bda6cc809b6b9",
+      "bytes": 2090,
+      "role": "measurement"
+    },
+    {
+      "path": "M9R-proof.tar.gz",
+      "sha256": "24b044207f7120bb25219be88a4125cbbd29f3dde9d3ba385c35b1487e5a7848",
+      "bytes": 64626,
+      "role": "measurement"
+    },
+    {
+      "path": "M9R-result.json",
+      "sha256": "ec81089d9306d0e6aeacc5b8daaea0bbe9807bf41fc11464d8f0c479e46a111a",
+      "bytes": 6763,
+      "role": "measurement"
+    },
+    {
       "path": "README.md",
       "sha256": "3db2f76f86725ee26a2072b7e4e53ece2e8f93b1c22fae90884cb79608de665f",
       "bytes": 1798,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "All archived members and source hashes validate; targeted rules clear without changing validator bodies, defaults or ordering; scoped behavioral tests pass. Ticket-wide broad completion and native admission are pending."
+  "pass_criteria": "All phase archive members and source hashes validate; targeted conversion rules clear without changing validation bodies, defaults, generic contracts, overloads or ordering; scoped tests pass. Broad ticket completion and native admission remain pending."
 }
