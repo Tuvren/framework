@@ -1,0 +1,105 @@
+{
+  "ticket": "KRT-BQ004",
+  "baseline_commit": "9abbb6b6d70c85672ee2fd0af0b84f2516ea3f44",
+  "native": {
+    "zeroSyntacticAndTypeAwareDiagnosticsBothPackages": true,
+    "selection": {
+      "code": 42,
+      "json": 14,
+      "formatterJson": 14
+    },
+    "allEnabledAsShippedRules": 474,
+    "typeAwareRules": 55,
+    "noBackendSkipsOrResolutionErrorsReported": true,
+    "completeEffectivePolicyEquality": true
+  },
+  "proof_archive": "M15R-proof.tar.gz",
+  "proof_index": "M15R-proof-index.json.gz",
+  "archive_members": 216,
+  "milestone": "M15R-final",
+  "files": [
+    "tools/biome-coverage/bq.json",
+    "tools/scripts/biome-lint.test.ts",
+    "tools/scripts/lib/biome-lint-partition.test.ts",
+    "typescript/kernel/protocol/project.json",
+    "typescript/kernel/protocol/src/index.ts",
+    "typescript/kernel/protocol/src/lib/kernel-identity.ts",
+    "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts",
+    "typescript/kernel/protocol/src/lib/kernel-validation.ts",
+    "typescript/kernel/runtime/project.json",
+    "typescript/kernel/runtime/src/index.ts"
+  ],
+  "source_hashes": {
+    "tools/biome-coverage/bq.json": {
+      "before": "8c53ee68c258704e81054f559d984e67e0eebb068e0c5d023499510a1fef3c2c",
+      "after": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    "tools/scripts/biome-lint.test.ts": {
+      "before": "977d9bf729fe603063ff97885e13ed2d297a7ce06da0a3c1d9e52094848e2e62",
+      "after": "433d400d3445a286fdea860a5e78ac5c8b61ff28788c5973e8c60ea5b15eb60e"
+    },
+    "tools/scripts/lib/biome-lint-partition.test.ts": {
+      "before": "a5dad047950914b2b930d3d835618ed33ff04eca5f036c6c3ff626f4b051934e",
+      "after": "7c5596212e5ad51ee9e97384ab1f71344b24d9a909bfa6c8163fa626167446d6"
+    },
+    "typescript/kernel/protocol/project.json": {
+      "before": "47cbaae876be09270d72af14143109d7acc5109c9ee251bf94f0925da2204433",
+      "after": "dd041aaa13cf0f1d153a5c65f7afce2e54c979b11b0dc077bf64e167d08dad43"
+    },
+    "typescript/kernel/protocol/src/index.ts": {
+      "before": "1ca0e002fd56102ddf7d81964c54f41a267d3f432c1d6b56e1e7e11ce22e20b7",
+      "after": "ff6e38ba99deab549a9f1154d7a6a859425a841699fcb3e56bb6f966117d97a4"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-identity.ts": {
+      "before": "ea4dbae18ebf94139e475016d27b2221a9f20fc9a4a0f5374ea20c44c2184813",
+      "after": "d67d7c501307d2312efe7ac62dac690a872dc77f0afc8e0663d0fca5d80cc955"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts": {
+      "before": "ad9fe8a1913c5d10b36d8d32f90604456b916b24f727a36b60b649c2fb40b9ac",
+      "after": "bc41fcf0d290520f95048f100dbbcab4c8b75bd8fae4b932834a7e8357e2c040"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation.ts": {
+      "before": "d4cc929bc3a70c61473e4ca6ca776742b61d9422e4ff4c9a81401d60e3578198",
+      "after": "de790b008af07e3d994d20b6031c27fc302cf343594d923d6ae3f5104fad9316"
+    },
+    "typescript/kernel/runtime/project.json": {
+      "before": "8727cf0bf50b62b12e518c0af91e90159acf86e4bf0f870a0d3452f4c2afe74e",
+      "after": "defb2ba444ed09e5a14aebce1ee155f7b59e2435171e4e382a05fc6b04059b41"
+    },
+    "typescript/kernel/runtime/src/index.ts": {
+      "before": "3a56151ff4c7bf8f252fe5c4ef99740ac17e29c87f438584b99c97aaf8eb4267",
+      "after": "94fc3e1cf60bfdf33f755ff6336f126a50076d7866f92308510359cfbfc359a7"
+    }
+  },
+  "original_worker_result": "M15R-result.json",
+  "approved_repair_archive": "M15R-approved-repair.tar.gz",
+  "approved_repair_index": "M15R-approved-repair-index.json.gz",
+  "approval_note": "Previously confirmed partition path receives actual native-ownership fixture alignment. Additional routing bootstrap assertion path is a minimal necessary prerequisite adopted under latest autonomous-work instruction while owner is absent; no separate path-confirmation claim. All completeness,missing/duplicate,JSON companion negative controls and suite registrations retained.",
+  "note": "Combined milestone source hashes include separately authored shared-test maintenance. Worker archive and repair archive remain distinct and immutable; scope authorization is described explicitly in approval_note.",
+  "status": "ready-for-independent-review",
+  "final_suppression_ledger": "suppressions.json",
+  "admission_invariants": "M15R-admission-invariants.json",
+  "final_release_ladder": {
+    "check": 0,
+    "verify-kernel": 0,
+    "verify": 0
+  },
+  "initial_guard_failures_preserved": [
+    "Original tooling139pass/2fail obsolete bootstrap assumptions; worker archive immutable.",
+    "Initial lead format/lint failures for unformatted first shared-test repair; repair archive includes original logs.",
+    "Strengthened missing-JSON control2pass/1fail before filtering jsonCompanion, with14wronglycreditedJSON files; passes after correction."
+  ],
+  "lead_final_gates": {
+    "scoped": 0,
+    "typecheck": 0,
+    "format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "check": 0,
+    "verify-kernel": 0,
+    "verify": 0
+  },
+  "lead_gate_archive": "M15R-final-lead-gates.tar.gz",
+  "lead_gate_index": "M15R-final-lead-index.json.gz"
+}

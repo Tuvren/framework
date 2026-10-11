@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This focused contract subpath is the intentional kernel validation surface used by the package entrypoint.
-
 export {
   assertBranchHeadListEntry,
   assertBranchRecord,

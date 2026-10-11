@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This focused contract subpath intentionally re-exports deterministic identity helpers alongside local identity guards.
-
 import type { HashString, KernelRecord } from "@tuvren/core";
 import {
   assertEpochMs,

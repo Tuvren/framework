@@ -22,6 +22,7 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
 
+import oxfmtConfig from "../../../oxfmt.config.js";
 import {
   readCoverageEntries,
   resolveCoverage,
@@ -35,7 +36,15 @@ import {
   selectFormerRootFiles,
 } from "./biome-inventory.js";
 import { runCommand } from "./command-runner.js";
-import { discoverOxcProjects } from "./native-lint-routing.js";
+import {
+  JSON_SOURCE_INTEGRITY_EXCLUSIONS,
+  selectJsonInventory,
+} from "./json-source-integrity.js";
+import {
+  collectOxlintSelectedFiles,
+  discoverNativeLintProjects,
+  discoverOxcProjects,
+} from "./native-lint-routing.js";
 import { loadNxProjectFiles, type NxProjectFile } from "./nx-projects.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
@@ -138,6 +147,44 @@ async function actualOxlintFiles(roots: readonly string[]): Promise<string[]> {
   return files.filter((file) => file.length > 0).sort();
 }
 
+async function actualNativeFiles(
+  inventory: readonly string[],
+  projects: readonly NxProjectFile[]
+): Promise<{ jsonValidatedFiles: string[]; oxlintFiles: string[] }> {
+  const nativeProjects = discoverNativeLintProjects(projects);
+  const oxlintFiles = await collectOxlintSelectedFiles(
+    nativeProjects.oxcProjects,
+    { repoRoot: REPO_ROOT, runCommand }
+  );
+  const jsonValidatedFiles = new Set<string>();
+  const jsonProjects = [
+    ...nativeProjects.oxcProjects
+      .filter((project) => project.jsonCompanion)
+      .map((project) => ({
+        name: project.name,
+        root: project.root,
+      })),
+    ...nativeProjects.jsonOnlyProjects,
+  ];
+  for (const project of jsonProjects) {
+    const selection = selectJsonInventory(
+      inventory,
+      [project.root],
+      JSON_SOURCE_INTEGRITY_EXCLUSIONS,
+      oxfmtConfig.ignorePatterns ?? []
+    );
+    for (const file of selection.jsonFiles) {
+      jsonValidatedFiles.add(file);
+    }
+  }
+  return {
+    jsonValidatedFiles: [...jsonValidatedFiles].sort((left, right) =>
+      left.localeCompare(right)
+    ),
+    oxlintFiles,
+  };
+}
+
 describe("biome coverage partition", () => {
   test("the real inventory partitions completely between owned and OXC-excluded", async () => {
     const inventory = await discoverInventory();
@@ -145,14 +192,20 @@ describe("biome coverage partition", () => {
     expect(inventory).toContain("biome.jsonc");
     expect(inventory).toContain("tools/biome-coverage/bq.json");
 
+    const nativeFiles = await actualNativeFiles(
+      inventory,
+      loadNxProjectFiles(REPO_ROOT)
+    );
     const resolution = resolveCoverage(
       inventory,
       readCoverageEntries(COVERAGE_DIR),
-      { jsonValidatedFiles: [], oxlintFiles: [] }
+      nativeFiles
     );
 
-    expect(resolution.oxlintFiles).toEqual([]);
-    expect(resolution.jsonValidatedFiles).toEqual([]);
+    expect(resolution.oxlintFiles).toEqual(nativeFiles.oxlintFiles);
+    expect(resolution.jsonValidatedFiles).toEqual(
+      nativeFiles.jsonValidatedFiles
+    );
     expectCompletePartition(inventory, resolution);
   });
 
@@ -226,10 +279,11 @@ describe("biome coverage partition", () => {
     const oxlintFiles = await actualOxlintFiles(
       switched.map((project) => project.root)
     );
+    const nativeFiles = await actualNativeFiles(inventory, switchedFiles);
     const resolution = resolveCoverage(
       inventory,
       readCoverageEntries(COVERAGE_DIR).filter((entry) => entry.list !== "bq"),
-      { jsonValidatedFiles: [], oxlintFiles }
+      { ...nativeFiles, oxlintFiles }
     );
 
     expect(resolution.oxlintFiles).toHaveLength(42);

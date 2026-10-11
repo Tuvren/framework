@@ -602,8 +602,21 @@ describe("biome coverage routing", () => {
     }
   );
 
-  test("real project metadata currently discovers no switched OXC target", () => {
-    expect(discoverOxcProjects(loadNxProjectFiles(REPO_ROOT))).toEqual([]);
+  test("real project metadata discovers the admitted kernel OXC targets", () => {
+    expect(discoverOxcProjects(loadNxProjectFiles(REPO_ROOT))).toEqual(
+      expect.arrayContaining([
+        {
+          jsonCompanion: true,
+          name: "kernel-contract-protocol",
+          root: "typescript/kernel/protocol",
+        },
+        {
+          jsonCompanion: true,
+          name: "kernel-runtime",
+          root: "typescript/kernel/runtime",
+        },
+      ])
+    );
   });
 });
 
