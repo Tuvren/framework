@@ -102,6 +102,7 @@ function switchBqProjectsToOxc(
                 `bun tools/scripts/json-check.ts ${root}`,
               ],
               cwd: ".",
+              parallel: false,
             },
           },
         },

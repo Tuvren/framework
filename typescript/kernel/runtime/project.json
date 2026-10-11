@@ -21,7 +21,8 @@
         "commands": [
           "bunx --bun oxlint --type-aware typescript/kernel/runtime",
           "bun tools/scripts/json-check.ts typescript/kernel/runtime"
-        ]
+        ],
+        "parallel": false
       }
     },
     "test": {
