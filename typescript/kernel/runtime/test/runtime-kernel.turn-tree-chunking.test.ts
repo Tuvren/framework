@@ -25,21 +25,21 @@ import { createThreadFixture } from "./runtime-kernel-test-helpers.ts";
 
 const THRESHOLD = 32;
 
-async function seededHashes(count: number, seed: string): Promise<string[]> {
+const seededHashes = async (count: number, seed: string): Promise<string[]> => {
   const hashes: string[] = [];
   for (let index = 0; index < count; index += 1) {
     hashes.push(await hashKernelRecord(`${seed}-${index}`));
   }
   return hashes;
-}
+};
 
-async function incorporateOneMessage(
+const incorporateOneMessage = async (
   kernel: ReturnType<typeof createRuntimeKernel>,
   treeHash: string,
   objectHash: string,
   taskId: string
-): Promise<string> {
-  return await kernel.tree.incorporate(treeHash, [
+): Promise<string> =>
+  await kernel.tree.incorporate(treeHash, [
     {
       objectHash,
       objectType: "message",
@@ -48,13 +48,12 @@ async function incorporateOneMessage(
       timestamp: 1,
     },
   ]);
-}
 
-async function growMessagesOneAtATime(
+const growMessagesOneAtATime = async (
   kernel: ReturnType<typeof createRuntimeKernel>,
   startTreeHash: string,
   hashes: string[]
-): Promise<string> {
+): Promise<string> => {
   let treeHash = startTreeHash;
 
   for (const [index, hash] of hashes.entries()) {
@@ -67,12 +66,12 @@ async function growMessagesOneAtATime(
   }
 
   return treeHash;
-}
+};
 
-async function rootTurnTreeHashOf(
+const rootTurnTreeHashOf = async (
   kernel: ReturnType<typeof createRuntimeKernel>,
   rootTurnNodeHash: string
-): Promise<string> {
+): Promise<string> => {
   const rootNode = await kernel.node.get(rootTurnNodeHash);
 
   if (rootNode === null) {
@@ -80,7 +79,7 @@ async function rootTurnTreeHashOf(
   }
 
   return rootNode.turnTreeHash;
-}
+};
 
 /**
  * Wraps a RuntimeBackend so every RuntimeBackendTx.orderedPathChunks.put call
@@ -91,10 +90,12 @@ async function rootTurnTreeHashOf(
  * write paths under test, and both are optional on RuntimeBackend, so this
  * wrapper only forwards what it needs instead of spreading `inner`.
  */
-function withCountingOrderedPathChunkPuts(inner: RuntimeBackend): {
+const withCountingOrderedPathChunkPuts = (
+  inner: RuntimeBackend
+): {
   backend: RuntimeBackend;
   putCount: () => number;
-} {
+} => {
   let count = 0;
   const backend: RuntimeBackend = {
     capabilities: () => inner.capabilities(),
@@ -114,7 +115,7 @@ function withCountingOrderedPathChunkPuts(inner: RuntimeBackend): {
       ),
   };
   return { backend, putCount: () => count };
-}
+};
 
 describe("createRuntimeKernel chunk-aware TurnTree caller writes", () => {
   test("resolved manifest values match the pre-optimization full-flat-resubmission baseline", async () => {

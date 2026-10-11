@@ -32,9 +32,9 @@ interface ReclamationFixture {
   threadId: string;
 }
 
-async function createReclamationFixture(
+const createReclamationFixture = async (
   initialClock = 1
-): Promise<ReclamationFixture> {
+): Promise<ReclamationFixture> => {
   let clock = initialClock;
   const now = () => clock;
   const backend = createMemoryBackend({ now });
@@ -55,17 +55,17 @@ async function createReclamationFixture(
     },
     threadId: thread.threadId,
   };
-}
+};
 
 /**
  * Runs a single non-deterministic step that checkpoints `eventHash` into the
  * branch head, then completes the run. The resulting checkpoint turn node and
  * its event object are reachable from the (non-archived) branch head.
  */
-async function checkpointEventIntoBranchHead(
+const checkpointEventIntoBranchHead = async (
   fixture: ReclamationFixture,
   input: { eventHash: string; runId: string; turnId: string }
-): Promise<string> {
+): Promise<string> => {
   const turn = await fixture.kernel.turn.create(
     input.turnId,
     fixture.threadId,
@@ -91,7 +91,7 @@ async function checkpointEventIntoBranchHead(
   }
   await fixture.kernel.run.complete(input.runId, "completed");
   return completed.turnNodeHash;
-}
+};
 
 /**
  * Runs a single checkpoint step that stages `messageBytes` as a `message`, so the
@@ -100,7 +100,7 @@ async function checkpointEventIntoBranchHead(
  * turn node, its owning turn id, and the stored message object hash so callers
  * can build genuinely shared objects across divergent lineage.
  */
-async function checkpointMessageIntoBranchHead(
+const checkpointMessageIntoBranchHead = async (
   fixture: ReclamationFixture,
   input: {
     messageBytes: Uint8Array;
@@ -110,7 +110,7 @@ async function checkpointMessageIntoBranchHead(
     taskId: string;
     turnId: string;
   }
-): Promise<{ objectHash: string; turnId: string; turnNodeHash: string }> {
+): Promise<{ objectHash: string; turnId: string; turnNodeHash: string }> => {
   const turn = await fixture.kernel.turn.create(
     input.turnId,
     fixture.threadId,
@@ -147,7 +147,7 @@ async function checkpointMessageIntoBranchHead(
     turnId: turn.turnId,
     turnNodeHash: completed.turnNodeHash,
   };
-}
+};
 
 describe("createRuntimeKernel maintenance.reclamation", () => {
   test("releases objects unreachable from live roots and retains reachable lineage", async () => {

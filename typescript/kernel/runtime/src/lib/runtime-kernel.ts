@@ -90,11 +90,10 @@ import {
  * {@link KernelThreadListCursor} string callers pass back on the next page
  * request: JSON, then URL-safe base64.
  */
-function encodeCursor(
+const encodeCursor = (
   payload: ListThreadsCursorPayload
-): KernelThreadListCursor {
-  return Buffer.from(JSON.stringify(payload), "utf-8").toString("base64url");
-}
+): KernelThreadListCursor =>
+  Buffer.from(JSON.stringify(payload), "utf-8").toString("base64url");
 
 /**
  * Inverse of {@link encodeCursor}: decodes and validates an opaque
@@ -104,9 +103,9 @@ function encodeCursor(
  *   the cursor is not valid base64url, does not decode to JSON, or has an
  *   unexpected shape.
  */
-function decodeCursor(
+const decodeCursor = (
   cursor: KernelThreadListCursor
-): ListThreadsCursorPayload {
+): ListThreadsCursorPayload => {
   let raw: string;
   try {
     raw = Buffer.from(cursor, "base64url").toString("utf-8");
@@ -145,7 +144,7 @@ function decodeCursor(
     );
   }
   return parsed as ListThreadsCursorPayload;
-}
+};
 
 /**
  * Construction options for {@link createRuntimeKernel}.
@@ -181,9 +180,9 @@ export interface RuntimeKernelOptions {
  * {@link RuntimeKernel} and {@link RuntimeKernelRunLiveness} interfaces in
  * `@tuvren/kernel-protocol` for the full per-operation contract.
  */
-export function createRuntimeKernel(
+export const createRuntimeKernel = (
   options: RuntimeKernelOptions
-): RuntimeKernel & RuntimeKernelRunLiveness {
+): RuntimeKernel & RuntimeKernelRunLiveness => {
   const now = options.now ?? (() => Date.now() as EpochMs);
   const { backend } = options;
   const createFencingToken = options.createFencingToken ?? randomUUID;
@@ -767,4 +766,4 @@ export function createRuntimeKernel(
       },
     },
   };
-}
+};

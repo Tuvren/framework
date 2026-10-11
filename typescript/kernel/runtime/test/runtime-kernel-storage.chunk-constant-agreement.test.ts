@@ -49,10 +49,12 @@ const DECLARATION_SOURCES = [
   ),
 ];
 
-function extractDeclaredValues(constantName: string): {
+const extractDeclaredValues = (
+  constantName: string
+): {
   file: string;
   value: number;
-}[] {
+}[] => {
   const pattern = new RegExp(`${constantName}\\s*=\\s*(\\d+)`, "g");
   const found: { file: string; value: number }[] = [];
 
@@ -71,7 +73,7 @@ function extractDeclaredValues(constantName: string): {
   }
 
   return found;
-}
+};
 
 describe("ORDERED_PATH_CHUNK_THRESHOLD/SIZE cross-module agreement", () => {
   test("every ORDERED_PATH_CHUNK_THRESHOLD declaration across all 5 modules agrees", () => {
