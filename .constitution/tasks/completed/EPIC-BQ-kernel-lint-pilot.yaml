@@ -4,16 +4,7 @@ kind: tooling
 capabilities: []
 depends_on: [BP]
 scope:
-  paths:
-    - typescript/kernel/protocol
-    - typescript/kernel/runtime
-    - tools/biome-coverage/bq.json
-    - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
-    - tools/scripts/lib/biome-lint-partition.test.ts
-    - tools/scripts/biome-lint.test.ts
-    - tools/scripts/lib/native-lint-routing.ts
-    - tools/scripts/lib/biome-oxc-discovery.test.ts
-    - ".changeset/toolchain-bq-kernel-lint-pilot.md"
+  paths: [typescript/kernel/protocol, typescript/kernel/runtime, tools/biome-coverage/bq.json, tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json, tools/scripts/lib/biome-lint-partition.test.ts, tools/scripts/biome-lint.test.ts, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts, ".changeset/toolchain-bq-kernel-lint-pilot.md"]
   tech_spec_patchable: []
 estimated_diff_lines: 12500
 estimate_source: planned
@@ -24,15 +15,11 @@ tickets:
     effort: 5
     depends_on: []
     scope:
-      in:
-        - typescript/kernel/protocol
-        - typescript/kernel/runtime
-        - ".changeset/toolchain-bq-kernel-lint-pilot.md"
+      in: [typescript/kernel/protocol, typescript/kernel/runtime, ".changeset/toolchain-bq-kernel-lint-pilot.md"]
     verification:
       command: bun run typecheck
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."
+    stop_conditions: ["STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."]
     description: "ADR-0070 and SPK-KRT-OD006. Run safe --fix one project at a time and immediately typecheck that project. Repair the 19 measured autofix failure classes, including required undefined arguments and readonly array to Set rewrites. Start within typescript/kernel with protocol and runtime, keeping the pilot below the review budget. Do not switch lint targets yet. Add or update .changeset/toolchain-bq-kernel-lint-pilot.md as a patch changeset with direct coverage for the affected public packages: @tuvren/kernel-protocol, @tuvren/kernel-runtime. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
@@ -46,15 +33,11 @@ tickets:
     effort: 3
     depends_on: [KRT-BQ001]
     scope:
-      in:
-        - typescript/kernel/protocol
-        - typescript/kernel/runtime
-        - ".changeset/toolchain-bq-kernel-lint-pilot.md"
+      in: [typescript/kernel/protocol, typescript/kernel/runtime, ".changeset/toolchain-bq-kernel-lint-pilot.md"]
     verification:
       command: bun run typecheck
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a proposed native suppression lacks a fresh equivalent diagnostic, changes the original reason, removes a needed Biome directive before native admission, or introduces a Biome directive; do not improvise."
+    stop_conditions: ["STOP if a proposed native suppression lacks a fresh equivalent diagnostic, changes the original reason, removes a needed Biome directive before native admission, or introduces a Biome directive; do not improvise."]
     description: "ADR-0070 and SPK-KRT-OD006. Treat the measured 144-directive inventory as an identification baseline, not a quota. Re-run live retained-Biome and Oxlint diagnostics across the owned paths. For every baseline identity and any drift discovered at execution, record its original reason, equivalent native rule, retained-checker disposition, and native-admission disposition. While Biome owns a path, preserve each needed original Biome directive and its reason. Remove a directive before admission only after a behavior-preserving code fix proves that the retained Biome diagnostic no longer fires. Do not add Biome directives. Record a native counterpart only when the equivalent native rule actually fires and the original reason remains valid. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Do not create suppressions to reproduce the historical 82-live/62-dead classification. Provide the per-directive disposition ledger for CB aggregation. Add or update .changeset/toolchain-bq-kernel-lint-pilot.md as a patch changeset with direct coverage for the affected public packages: @tuvren/kernel-protocol, @tuvren/kernel-runtime. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
@@ -68,15 +51,11 @@ tickets:
     effort: 8
     depends_on: [KRT-BQ002]
     scope:
-      in:
-        - typescript/kernel/protocol
-        - typescript/kernel/runtime
-        - ".changeset/toolchain-bq-kernel-lint-pilot.md"
+      in: [typescript/kernel/protocol, typescript/kernel/runtime, ".changeset/toolchain-bq-kernel-lint-pilot.md"]
     verification:
       command: bun run conformance
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a runtime or conformance regression follows pilot reordering; return func-style and no-use-before-define to the repository owner and block all later directory epics occurs; do not improvise."
+    stop_conditions: ["STOP if a runtime or conformance regression follows pilot reordering; return func-style and no-use-before-define to the repository owner and block all later directory epics occurs; do not improvise."]
     description: "ADR-0070 and SPK-KRT-OD006. Convert func-style declarations and reorder no-use-before-define definitions in bounded reviewable module batches. Preserve exports, initialization order and observable execution. This first kernel directory is the mandatory pilot. No later directory epic begins until this epic merges with runtime and conformance evidence. A regression stops the work and returns both rules to the owner; never add overrides. Assumption: The first kernel directory can satisfy both rules without a module-initialization regression. Add or update .changeset/toolchain-bq-kernel-lint-pilot.md as a patch changeset with direct coverage for the affected public packages: @tuvren/kernel-protocol, @tuvren/kernel-runtime. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
@@ -90,21 +69,11 @@ tickets:
     effort: 8
     depends_on: [KRT-BQ003]
     scope:
-      in:
-        - typescript/kernel/protocol
-        - typescript/kernel/runtime
-        - tools/biome-coverage/bq.json
-        - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
-        - tools/scripts/lib/biome-lint-partition.test.ts
-        - tools/scripts/biome-lint.test.ts
-        - tools/scripts/lib/native-lint-routing.ts
-        - tools/scripts/lib/biome-oxc-discovery.test.ts
-        - ".changeset/toolchain-bq-kernel-lint-pilot.md"
+      in: [typescript/kernel/protocol, typescript/kernel/runtime, tools/biome-coverage/bq.json, tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json, tools/scripts/lib/biome-lint-partition.test.ts, tools/scripts/biome-lint.test.ts, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts, ".changeset/toolchain-bq-kernel-lint-pilot.md"]
     verification:
       command: bun run lint
       expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
-    stop_conditions:
-      - "STOP if a project isn't clean, type-aware lint skips a rule, or an admitted path loses a needed Biome directive before the same commit switches its lint target and coverage ownership; do not improvise."
+    stop_conditions: ["STOP if a project isn't clean, type-aware lint skips a rule, or an admitted path loses a needed Biome directive before the same commit switches its lint target and coverage ownership; do not improvise."]
     description: "ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics, then run type-aware lint with the complete effective shipped preset unchanged. For every migrated Nx project, use the active default nx:run-commands target with the workspace root as cwd and the exact project-root command pair, in order: bunx --bun oxlint --type-aware PROJECT_ROOT, then bun tools/scripts/json-check.ts PROJECT_ROOT. Use bun tools/scripts/json-check.ts --json-only PROJECT_ROOT only for a JSON-only project whose fresh Git inventory, checked outside the cached Nx result, proves no code files. Reject alternate executors or configurations, partial, glob, or parent operands, extra options, forwarded, unknown, or no-op flags, empty selections, and duplicate checker ownership. Derive code coverage from Oxlint's actual --debug=files selection and JSON coverage from the native source-integrity selection; Oxfmt ignores affect formatting only. Where a project lint target declares inputs and thereby replaces target defaults, include the real native checker helper inputs explicitly. Use the established native helpers without adding dependencies or repository-owned lint policy. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Consume this epic's suppression-disposition ledger and rerun retained-Biome and Oxlint diagnostics on the admission commit. For each admitted path, remove its legacy Biome directives in the same commit that switches its lint target and coverage ownership. The ledger permits earlier removal while Biome owns the path only after a behavior-preserving code fix and fresh retained-Biome proof that the diagnostic is gone. At native admission, remove a legacy Biome directive with no native counterpart when fresh native proof shows that no equivalent diagnostic fires, and record that disposition. If the equivalent native rule fires, keep only a justified measured native counterpart with the original reason or fix the actual native issue. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Remove each admitted migrated path from tools/biome-coverage/bq.json, leave every other list unchanged, and keep Biome responsible for every path not yet natively admitted. Add or update .changeset/toolchain-bq-kernel-lint-pilot.md as a patch changeset with direct coverage for the affected public packages: @tuvren/kernel-protocol, @tuvren/kernel-runtime. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
     acceptance:
       mode: contract_test
@@ -113,21 +82,11 @@ tickets:
     certainty: settled
     status: done
     deviations:
-      - files:
-          - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
-          - tools/scripts/lib/biome-lint-partition.test.ts
-          - .changeset/toolchain-bq-kernel-lint-pilot.md
+      - files: [tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json, tools/scripts/lib/biome-lint-partition.test.ts, ".changeset/toolchain-bq-kernel-lint-pilot.md"]
         justification: "Owner approved both extra paths on 2026-10-11 after reviewing the generated SDK freeze candidate and measured 40-file inventory. SDK re-exports three intentionally tightened kernel interfaces; declare their breaking snapshot update and direct 0.x minor release coverage under ADR-0069. Update the two stale 39-file partition expectations after the earlier initialization test added one code file, preserving coverage and negative controls. M14R adds a sequential-async helper and focused tests inside runtime scope; fresh selection becomes 42 files and the same two approved expectations follow that corpus. The no-adopters ruling permits direct API tightening; required minor bumps supersede the original patch-only assumption, including runtime verdict composition normalizing malformed-input errors to Promise rejection."
-      - files:
-          - tools/scripts/lib/biome-lint-partition.test.ts
-          - tools/scripts/biome-lint.test.ts
+      - files: [tools/scripts/lib/biome-lint-partition.test.ts, tools/scripts/biome-lint.test.ts]
         justification: "Atomic admission exposed two obsolete bootstrap assumptions in the existing 15-suite lane: empty native arrays in the actual partition test and an assertion that real metadata discovers zero native targets. Actual native ownership independently passes 42 code and 14 JSON files without gaps or duplicates. Under the owner's latest instruction to complete work autonomously while absent, extend scope only for necessary test maintenance: use actual native code/JSON selection in the approved partition path, and assert both admitted kernel targets in the additional routing-test path. This additional path was adopted autonomously, not separately confirmed. Preserve completeness assertions, inventories, negative controls, suite registrations and lint policy; retain the original 139-pass/2-fail measurement alongside final passing repair proof."
-      - files:
-          - tools/scripts/lib/native-lint-routing.ts
-          - tools/scripts/lib/biome-oxc-discovery.test.ts
-          - tools/scripts/lib/biome-lint-partition.test.ts
-          - typescript/kernel/protocol/project.json
-          - typescript/kernel/runtime/project.json
+      - files: [tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts, tools/scripts/lib/biome-lint-partition.test.ts, typescript/kernel/protocol/project.json, typescript/kernel/runtime/project.json]
         justification: "PR review measured Nx 22.7.12 command arrays executing in parallel by default, contrary to the required Oxlint-then-JSON order. Under autonomous completion, add only the routing helper and its controls to scope, require literal parallel:false for mixed native targets, and update the two owned targets and canonical test fixture together. Reject missing/true/invalid settings and preserve single-command forms, unknown-option and ownership controls, shipped lint policy and runtime authority. This repairs execution semantics of the existing ordered-pair requirement; it is not a rule override or separately confirmed extra-path approval."
 closeout:
   tickets_completed: [KRT-BQ001, KRT-BQ002, KRT-BQ003, KRT-BQ004]
@@ -201,3 +160,23 @@ closeout:
         version: 2e52a9e
         date: 2026-10-11
         note: "Directly parses spec/kernel/cddl/kernel-records.cddl, names canonical families and checks runtime scalar restrictions; tested in the same source batch."
+  actuals:
+    diff_lines: 20965
+    files_touched: 219
+    milestones: 16
+    review_rounds: 2
+    per_ticket:
+      - id: KRT-BQ001
+        diff_lines: 2796
+        review_rounds: 0
+      - id: KRT-BQ002
+        diff_lines: 1317
+        review_rounds: 0
+      - id: KRT-BQ003
+        diff_lines: 10443
+        review_rounds: 1
+      - id: KRT-BQ004
+        diff_lines: 6409
+        review_rounds: 1
+    merged_commit: 6b99a32
+    measured_at: 2026-10-11

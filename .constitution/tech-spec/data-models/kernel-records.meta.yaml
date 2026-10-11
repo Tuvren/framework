@@ -1,15 +1,12 @@
-artifact_path: "spec/kernel/cddl/kernel-records.cddl"
-surface: "data-model"
-flows:
-  - flow-crash-mid-checkpoint-recovery
-  - flow-host-lists-threads-reads-state
-  - flow-preemption-idempotent-side-effect
-  - flow-tenant-offboarding-erasure
-  - flow-two-funnel-routing
-boundaries:
-  - BND-17
-  - BND-18
-companion: "README.md"
-certainty: "assumed"
-assumption: "The canonical kernel record profile is spec/kernel/cddl/kernel-records.cddl. Backend SQL is a projection, not a second definition of the logical records."
-settles_when: "A conformance plan or package test that exercises this artifact is cited as repository evidence by a closeout."
+artifact_path: spec/kernel/cddl/kernel-records.cddl
+surface: data-model
+flows: [flow-crash-mid-checkpoint-recovery, flow-host-lists-threads-reads-state, flow-preemption-idempotent-side-effect, flow-tenant-offboarding-erasure, flow-two-funnel-routing]
+boundaries: [BND-17, BND-18]
+companion: README.md
+certainty: settled
+evidence:
+  kind: repository
+  ref: typescript/kernel/protocol/test/kernel-cddl.test.ts
+  version: 2e52a9e
+  date: 2026-10-11
+  note: "Directly parses spec/kernel/cddl/kernel-records.cddl, names canonical families and checks runtime scalar restrictions; tested in the same source batch."
