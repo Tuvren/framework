@@ -1,0 +1,254 @@
+{
+  "milestone": "M10R",
+  "ticket": "KRT-BQ003",
+  "baseline_commit": "45f0aa3329d6f896edefd5b1dda7ad7bee390384",
+  "files": [
+    "typescript/kernel/protocol/test/kernel-cddl.test.ts",
+    "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts",
+    "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts"
+  ],
+  "diff": {
+    "files": [
+      {
+        "file": "typescript/kernel/protocol/test/kernel-cddl.test.ts",
+        "added": 265,
+        "removed": 277
+      },
+      {
+        "file": "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts",
+        "added": 3,
+        "removed": 3
+      },
+      {
+        "file": "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts",
+        "added": 2,
+        "removed": 3
+      }
+    ],
+    "added": 270,
+    "removed": 283
+  },
+  "source_hashes": {
+    "typescript/kernel/protocol/test/kernel-cddl.test.ts": {
+      "before": "d28ce3a3d3fc3e73afb4d7002c3ffa7269130b04237ed1e4db22f15d399d5f14",
+      "after": "ddfc721390652bf04f10c602b6c00b6a6ae101f3e551c0b00e8943997a12a3f4"
+    },
+    "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts": {
+      "before": "b7a3bc5caf5f62f2392df65e0ed1ce620dc809b92473f9c1a36c4cc3c981081f",
+      "after": "4c2ae3762a173f135cee9db281107e8c6a9939b2c48ca1a1161706fc21d21ff1"
+    },
+    "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts": {
+      "before": "962ea7991f17507e813774462a121cee4eafc86e0dd97ed878a7fe81208d15b0",
+      "after": "29d317daceacb31b01790516a3f47e4701bc74d28cc18b98346179d98669e945"
+    }
+  },
+  "conversion": {
+    "functions": 18,
+    "assertions": 1,
+    "files": [
+      {
+        "file": "typescript/kernel/protocol/test/kernel-cddl.test.ts",
+        "functions": 16,
+        "assertionFunctions": 1,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "testRegistrationAndAssertionsEqual": true,
+        "fixtureValuesAndPropertyInsertionOrderEqual": true,
+        "pureTablesEqual": [
+          "NON_EMPTY_GROUP_FIELDS",
+          "NON_NEGATIVE_SAFE_INTEGER_FIELDS"
+        ]
+      },
+      {
+        "file": "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts",
+        "functions": 1,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "testRegistrationAndAssertionsEqual": true,
+        "fixtureValuesAndPropertyInsertionOrderEqual": true,
+        "pureTablesEqual": []
+      },
+      {
+        "file": "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts",
+        "functions": 1,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "testRegistrationAndAssertionsEqual": true,
+        "fixtureValuesAndPropertyInsertionOrderEqual": true,
+        "pureTablesEqual": []
+      }
+    ]
+  },
+  "native": {
+    "syntactic": {
+      "before": 190,
+      "after": 142,
+      "numberOfFiles": 23,
+      "numberOfRules": 419,
+      "target": {
+        "before": {
+          "all": 59,
+          "targetRules": 48,
+          "byRule": {
+            "eslint(func-style)": 18,
+            "eslint(no-use-before-define)": 30,
+            "eslint(require-unicode-regexp)": 5,
+            "eslint(sort-keys)": 4,
+            "unicorn(no-immediate-mutation)": 1,
+            "unicorn(no-new-array)": 1
+          },
+          "byFile": {
+            "typescript/kernel/protocol/test/kernel-cddl.test.ts": {
+              "eslint(func-style)": 16,
+              "eslint(no-use-before-define)": 30,
+              "eslint(require-unicode-regexp)": 5
+            },
+            "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts": {
+              "eslint(func-style)": 1,
+              "eslint(sort-keys)": 4,
+              "unicorn(no-immediate-mutation)": 1,
+              "unicorn(no-new-array)": 1
+            },
+            "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts": {
+              "eslint(func-style)": 1
+            }
+          }
+        },
+        "after": {
+          "all": 11,
+          "targetRules": 0,
+          "byRule": {
+            "eslint(require-unicode-regexp)": 5,
+            "eslint(sort-keys)": 4,
+            "unicorn(no-immediate-mutation)": 1,
+            "unicorn(no-new-array)": 1
+          },
+          "byFile": {
+            "typescript/kernel/protocol/test/kernel-cddl.test.ts": {
+              "eslint(require-unicode-regexp)": 5
+            },
+            "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts": {
+              "eslint(sort-keys)": 4,
+              "unicorn(no-immediate-mutation)": 1,
+              "unicorn(no-new-array)": 1
+            },
+            "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts": {}
+          }
+        }
+      },
+      "unrelatedDiagnosticDebtEqual": true
+    },
+    "typeaware": {
+      "before": 448,
+      "after": 400,
+      "numberOfFiles": 23,
+      "numberOfRules": 474,
+      "target": {
+        "before": {
+          "all": 69,
+          "targetRules": 48,
+          "byRule": {
+            "eslint(func-style)": 18,
+            "eslint(no-use-before-define)": 30,
+            "eslint(require-unicode-regexp)": 5,
+            "eslint(sort-keys)": 4,
+            "typescript(no-confusing-void-expression)": 10,
+            "unicorn(no-immediate-mutation)": 1,
+            "unicorn(no-new-array)": 1
+          },
+          "byFile": {
+            "typescript/kernel/protocol/test/kernel-cddl.test.ts": {
+              "eslint(func-style)": 16,
+              "eslint(no-use-before-define)": 30,
+              "eslint(require-unicode-regexp)": 5,
+              "typescript(no-confusing-void-expression)": 10
+            },
+            "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts": {
+              "eslint(func-style)": 1,
+              "eslint(sort-keys)": 4,
+              "unicorn(no-immediate-mutation)": 1,
+              "unicorn(no-new-array)": 1
+            },
+            "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts": {
+              "eslint(func-style)": 1
+            }
+          }
+        },
+        "after": {
+          "all": 21,
+          "targetRules": 0,
+          "byRule": {
+            "eslint(require-unicode-regexp)": 5,
+            "eslint(sort-keys)": 4,
+            "typescript(no-confusing-void-expression)": 10,
+            "unicorn(no-immediate-mutation)": 1,
+            "unicorn(no-new-array)": 1
+          },
+          "byFile": {
+            "typescript/kernel/protocol/test/kernel-cddl.test.ts": {
+              "eslint(require-unicode-regexp)": 5,
+              "typescript(no-confusing-void-expression)": 10
+            },
+            "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts": {
+              "eslint(sort-keys)": 4,
+              "unicorn(no-immediate-mutation)": 1,
+              "unicorn(no-new-array)": 1
+            },
+            "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts": {}
+          }
+        }
+      },
+      "unrelatedDiagnosticDebtEqual": true
+    }
+  },
+  "worker_gates": {
+    "after-changeset": 0,
+    "after-diff-check": 0,
+    "after-format-touched": 0,
+    "after-fresh-process": 0,
+    "after-lint": 0,
+    "after-native-selection": 0,
+    "after-protocol-syntactic": 1,
+    "after-protocol-typeaware": 1,
+    "after-retained-biome": 0,
+    "after-scoped": 0,
+    "before-fresh-process": 0,
+    "before-native-selection": 0,
+    "before-protocol-syntactic": 1,
+    "before-protocol-typeaware": 1,
+    "before-scoped": 0,
+    "structural-proof": 0
+  },
+  "introduced": {
+    "patterns": [],
+    "dependencies": [],
+    "conventions": [],
+    "contract_shapes": []
+  },
+  "proof_archive": "M10R-proof.tar.gz",
+  "proof_index": "M10R-proof-index.json.gz",
+  "archive_members": 55,
+  "note": "User-directed accelerated batch. The archived summary contains full measurement details; no exhaustive hypothetical-adopter compatibility matrix is required.",
+  "lead_final_gates": {
+    "scoped": 0,
+    "touched-format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "diff": 0,
+    "protocol-rules": 0
+  },
+  "lead_gate_archive": "M10R-lead-gates.tar.gz",
+  "lead_gate_index": "M10R-lead-index.json.gz"
+}

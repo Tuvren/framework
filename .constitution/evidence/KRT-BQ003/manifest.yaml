@@ -3,10 +3,46 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "e3873c3f408fcc30edcace479fe4d71b6dfd38b2",
-    "command": "Historical M4-M9R phase proofs; accelerated scoped tests, touched formatting, lint, changeset and constitution gates"
+    "commit": "45f0aa3329d6f896edefd5b1dda7ad7bee390384",
+    "command": "Historical M4-M10R phase proofs; accelerated gates and complete protocol reordering-rule assertion"
   },
   "files": [
+    {
+      "path": "M10R-lead-gates.tar.gz",
+      "sha256": "37927825d443b68097d568c43ac9181eba7fb52d074d51b04863765bb0cbbcdc",
+      "bytes": 2299,
+      "role": "measurement"
+    },
+    {
+      "path": "M10R-lead-index.json.gz",
+      "sha256": "c36571b5a90d9c777116ce1a7839db68d8f55e4df2042edf448b9689d8f60a97",
+      "bytes": 497,
+      "role": "measurement"
+    },
+    {
+      "path": "M10R-proof-index.json.gz",
+      "sha256": "924ec0729e57e35d16854519cf925a27a87cc11833825e7a0e7331f97c7b730b",
+      "bytes": 2299,
+      "role": "measurement"
+    },
+    {
+      "path": "M10R-proof.tar.gz",
+      "sha256": "f23c9a9dcb40dafc209e2857f1214294d8df31a192ee36525990cb9390dd7307",
+      "bytes": 68446,
+      "role": "measurement"
+    },
+    {
+      "path": "M10R-protocol-rules.json",
+      "sha256": "3342ec623e9f0fd4d5e198bc13b1aa7f087cfcb9ebbdb5d35f3e0dbd0917f7e6",
+      "bytes": 143,
+      "role": "measurement"
+    },
+    {
+      "path": "M10R-result.json",
+      "sha256": "22636aafd8e87e89da3bbdd1f62822df6d17f9eadbaeaad2935453af45cd92f8",
+      "bytes": 8815,
+      "role": "measurement"
+    },
     {
       "path": "M4-baseline-module-mirror-proof.json.gz",
       "sha256": "4add766ef3d7d8bf56168c0188062b6adc413cc32ffebb29c7c99db06b82c010",
@@ -416,5 +452,5 @@
       "role": "measurement"
     }
   ],
-  "pass_criteria": "All phase archive members and source hashes validate; targeted conversion rules clear without changing validation bodies, defaults, generic contracts, overloads or ordering; scoped tests pass. Broad ticket completion and native admission remain pending."
+  "pass_criteria": "Phase hashes and archive members validate; both reordering rules have zero findings throughout protocol in both native modes; validator/test/fixture behavior and scoped tests pass. Runtime conversion, broad ticket completion and admission remain pending."
 }

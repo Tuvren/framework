@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-export function restorePrototypeValue(
+export const restorePrototypeValue = (
   target: Record<PropertyKey, unknown>,
   key: PropertyKey,
   hadOwn: boolean,
   originalValue: unknown
-): void {
+): void => {
   if (hadOwn) {
     target[key] = originalValue;
     return;
   }
 
   Reflect.deleteProperty(target, key);
-}
+};

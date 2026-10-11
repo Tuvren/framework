@@ -88,6 +88,271 @@ interface CddlProperty {
   Type: unknown[];
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isCddlAssignment = (value: unknown): value is CddlAssignment =>
+  isRecord(value) &&
+  typeof value.Name === "string" &&
+  typeof value.Type === "string";
+
+const assertCddlAssignments: (
+  value: unknown
+) => asserts value is CddlAssignment[] = (
+  value: unknown
+): asserts value is CddlAssignment[] => {
+  if (!(Array.isArray(value) && value.every(isCddlAssignment))) {
+    throw new Error("Expected cddl.parse to return CDDL assignments");
+  }
+};
+
+const readKernelCddlGrammar = (): {
+  assignments: CddlAssignment[];
+  source: string;
+} => {
+  // The authored CDDL is language-neutral authority; GH issue #87 M1.3
+  // relocated it to root spec/kernel/, and M1.4b relocated this package
+  // implementation to typescript/kernel/protocol/.
+  const cddlPath = fileURLToPath(
+    new URL("../../../../spec/kernel/cddl/kernel-records.cddl", import.meta.url)
+  );
+  const assignments = parse(cddlPath);
+  assertCddlAssignments(assignments);
+
+  return {
+    assignments,
+    source: readFileSync(cddlPath, "utf-8"),
+  };
+};
+
+const isVariableAssignment = (
+  value: unknown
+): value is CddlVariableAssignment =>
+  isCddlAssignment(value) &&
+  isRecord(value) &&
+  Array.isArray(value.PropertyType);
+
+const findVariableAssignment = (
+  assignments: CddlAssignment[],
+  name: string
+): CddlVariableAssignment => {
+  const assignment = assignments.find(
+    (candidate) => candidate.Name === name && candidate.Type === "variable"
+  );
+
+  if (!isVariableAssignment(assignment)) {
+    throw new Error(`Expected CDDL variable assignment "${name}"`);
+  }
+
+  return assignment;
+};
+
+const expectVariableRegexp = (
+  assignments: CddlAssignment[],
+  name: string,
+  pattern: string
+): void => {
+  const assignment = findVariableAssignment(assignments, name);
+
+  expect(assignment.PropertyType).toContainEqual({
+    Operator: {
+      Type: "regexp",
+      Value: {
+        Type: "literal",
+        Unwrapped: false,
+        Value: pattern,
+      },
+    },
+    Type: "tstr",
+  });
+};
+
+const expectVariableRange = (
+  assignments: CddlAssignment[],
+  name: string,
+  min: number,
+  max: number
+): void => {
+  const assignment = findVariableAssignment(assignments, name);
+
+  expect(assignment.PropertyType).toContainEqual({
+    Type: "range",
+    Unwrapped: false,
+    Value: {
+      Inclusive: true,
+      Max: {
+        Type: "literal",
+        Unwrapped: false,
+        Value: max,
+      },
+      Min: {
+        Type: "literal",
+        Unwrapped: false,
+        Value: min,
+      },
+    },
+  });
+};
+
+const expectVariableReferences = (
+  assignments: CddlAssignment[],
+  name: string,
+  referenceName: string
+): void => {
+  const assignment = findVariableAssignment(assignments, name);
+
+  expect(assignment.PropertyType).toContainEqual(
+    GROUP_REFERENCE(referenceName)
+  );
+};
+
+const NON_EMPTY_GROUP_FIELDS = [
+  { fieldName: "mediaType", groupName: "kernel-object" },
+  { fieldName: "path", groupName: "path-definition" },
+  { fieldName: "objectType", groupName: "incorporation-rule" },
+  { fieldName: "targetPath", groupName: "incorporation-rule" },
+  { fieldName: "schemaId", groupName: "turn-tree-schema" },
+  { fieldName: "id", groupName: "step-declaration" },
+  { fieldName: "reason", groupName: "abort-verdict" },
+  { fieldName: "reason", groupName: "pause-verdict" },
+  { fieldName: "taskId", groupName: "base-staged-result" },
+  { fieldName: "objectType", groupName: "base-staged-result" },
+  { fieldName: "schemaId", groupName: "turn-node" },
+  { fieldName: "threadId", groupName: "thread-record" },
+  { fieldName: "schemaId", groupName: "thread-record" },
+  { fieldName: "branchId", groupName: "branch-record" },
+  { fieldName: "threadId", groupName: "branch-record" },
+  { fieldName: "turnId", groupName: "turn-record" },
+  { fieldName: "threadId", groupName: "turn-record" },
+  { fieldName: "branchId", groupName: "turn-record" },
+  { fieldName: "parentTurnId", groupName: "turn-record" },
+  { fieldName: "runId", groupName: "run-record" },
+  { fieldName: "turnId", groupName: "run-record" },
+  { fieldName: "branchId", groupName: "run-record" },
+  { fieldName: "schemaId", groupName: "run-record" },
+  { fieldName: "lastCompletedStepId", groupName: "recovery-state" },
+  { fieldName: "branchId", groupName: "thread-create-result" },
+  { fieldName: "threadId", groupName: "thread-create-result" },
+  { fieldName: "mediaType", groupName: "stored-object" },
+  { fieldName: "schemaId", groupName: "stored-schema" },
+  { fieldName: "schemaId", groupName: "stored-turn-tree" },
+  { fieldName: "path", groupName: "stored-single-turn-tree-path" },
+  { fieldName: "path", groupName: "stored-flat-ordered-turn-tree-path" },
+  { fieldName: "path", groupName: "stored-chunked-ordered-turn-tree-path" },
+  { fieldName: "schemaId", groupName: "stored-turn-node" },
+  { fieldName: "threadId", groupName: "stored-thread" },
+  { fieldName: "schemaId", groupName: "stored-thread" },
+  { fieldName: "branchId", groupName: "stored-branch" },
+  { fieldName: "threadId", groupName: "stored-branch" },
+  { fieldName: "archivedFromBranchId", groupName: "stored-branch" },
+  { fieldName: "turnId", groupName: "stored-turn" },
+  { fieldName: "threadId", groupName: "stored-turn" },
+  { fieldName: "branchId", groupName: "stored-turn" },
+  { fieldName: "parentTurnId", groupName: "stored-turn" },
+  { fieldName: "runId", groupName: "stored-run" },
+  { fieldName: "turnId", groupName: "stored-run" },
+  { fieldName: "branchId", groupName: "stored-run" },
+  { fieldName: "schemaId", groupName: "stored-run" },
+  { fieldName: "runId", groupName: "stored-staged-result" },
+  { fieldName: "taskId", groupName: "stored-staged-result" },
+  { fieldName: "objectType", groupName: "stored-staged-result" },
+] as const;
+
+const isCddlProperty = (value: unknown): value is CddlProperty =>
+  isRecord(value) &&
+  typeof value.Name === "string" &&
+  Array.isArray(value.Type);
+
+const isGroupAssignment = (value: unknown): value is CddlGroupAssignment =>
+  isCddlAssignment(value) &&
+  isRecord(value) &&
+  Array.isArray(value.Properties) &&
+  value.Properties.every(isCddlProperty);
+
+const findGroupField = (
+  assignments: CddlAssignment[],
+  groupName: string,
+  fieldName: string
+): CddlProperty => {
+  const assignment = assignments.find(
+    (candidate) => candidate.Name === groupName && candidate.Type === "group"
+  );
+
+  if (!isGroupAssignment(assignment)) {
+    throw new Error(`Expected CDDL group assignment "${groupName}"`);
+  }
+
+  const field = assignment.Properties.find(
+    (property) => property.Name === fieldName
+  );
+
+  if (field === undefined) {
+    throw new Error(`Expected ${groupName}.${fieldName} in CDDL grammar`);
+  }
+
+  return field;
+};
+
+const expectGroupFieldReferences = (
+  assignments: CddlAssignment[],
+  groupName: string,
+  fieldName: string,
+  referenceName: string
+): void => {
+  const field = findGroupField(assignments, groupName, fieldName);
+
+  expect(field.Type).toContainEqual(GROUP_REFERENCE(referenceName));
+};
+
+const NON_NEGATIVE_SAFE_INTEGER_FIELDS = [
+  { fieldName: "currentStepIndex", groupName: "run-record" },
+  { fieldName: "byteLength", groupName: "stored-object" },
+  {
+    fieldName: "orderedCount",
+    groupName: "stored-flat-ordered-turn-tree-path",
+  },
+  {
+    fieldName: "orderedCount",
+    groupName: "stored-chunked-ordered-turn-tree-path",
+  },
+  { fieldName: "itemCount", groupName: "stored-ordered-path-chunk" },
+  { fieldName: "currentStepIndex", groupName: "stored-run" },
+] as const;
+
+const isArrayAssignment = (value: unknown): value is CddlArrayAssignment =>
+  isCddlAssignment(value) &&
+  isRecord(value) &&
+  Array.isArray(value.Values) &&
+  value.Values.every(isCddlProperty);
+
+const findArrayAssignment = (
+  assignments: CddlAssignment[],
+  name: string
+): CddlArrayAssignment => {
+  const assignment = assignments.find(
+    (candidate) => candidate.Name === name && candidate.Type === "array"
+  );
+
+  if (!isArrayAssignment(assignment)) {
+    throw new Error(`Expected CDDL array assignment "${name}"`);
+  }
+
+  return assignment;
+};
+
+const expectArrayFieldReferences = (
+  assignments: CddlAssignment[],
+  arrayName: string,
+  fieldName: string,
+  referenceName: string
+): void => {
+  const assignment = findArrayAssignment(assignments, arrayName);
+  const field = assignment.Values.find((value) => value.Name === fieldName);
+
+  expect(field).toBeDefined();
+  expect(field?.Type).toContainEqual(GROUP_REFERENCE(referenceName));
+};
+
 describe("kernel CDDL grammar", () => {
   test("parses the authored kernel record grammar and names canonical families", () => {
     const { assignments } = readKernelCddlGrammar();
@@ -200,280 +465,3 @@ describe("kernel CDDL grammar", () => {
     ).toThrow(NON_NEGATIVE_SAFE_INTEGER_ERROR_PATTERN);
   });
 });
-
-const NON_EMPTY_GROUP_FIELDS = [
-  { fieldName: "mediaType", groupName: "kernel-object" },
-  { fieldName: "path", groupName: "path-definition" },
-  { fieldName: "objectType", groupName: "incorporation-rule" },
-  { fieldName: "targetPath", groupName: "incorporation-rule" },
-  { fieldName: "schemaId", groupName: "turn-tree-schema" },
-  { fieldName: "id", groupName: "step-declaration" },
-  { fieldName: "reason", groupName: "abort-verdict" },
-  { fieldName: "reason", groupName: "pause-verdict" },
-  { fieldName: "taskId", groupName: "base-staged-result" },
-  { fieldName: "objectType", groupName: "base-staged-result" },
-  { fieldName: "schemaId", groupName: "turn-node" },
-  { fieldName: "threadId", groupName: "thread-record" },
-  { fieldName: "schemaId", groupName: "thread-record" },
-  { fieldName: "branchId", groupName: "branch-record" },
-  { fieldName: "threadId", groupName: "branch-record" },
-  { fieldName: "turnId", groupName: "turn-record" },
-  { fieldName: "threadId", groupName: "turn-record" },
-  { fieldName: "branchId", groupName: "turn-record" },
-  { fieldName: "parentTurnId", groupName: "turn-record" },
-  { fieldName: "runId", groupName: "run-record" },
-  { fieldName: "turnId", groupName: "run-record" },
-  { fieldName: "branchId", groupName: "run-record" },
-  { fieldName: "schemaId", groupName: "run-record" },
-  { fieldName: "lastCompletedStepId", groupName: "recovery-state" },
-  { fieldName: "branchId", groupName: "thread-create-result" },
-  { fieldName: "threadId", groupName: "thread-create-result" },
-  { fieldName: "mediaType", groupName: "stored-object" },
-  { fieldName: "schemaId", groupName: "stored-schema" },
-  { fieldName: "schemaId", groupName: "stored-turn-tree" },
-  { fieldName: "path", groupName: "stored-single-turn-tree-path" },
-  { fieldName: "path", groupName: "stored-flat-ordered-turn-tree-path" },
-  { fieldName: "path", groupName: "stored-chunked-ordered-turn-tree-path" },
-  { fieldName: "schemaId", groupName: "stored-turn-node" },
-  { fieldName: "threadId", groupName: "stored-thread" },
-  { fieldName: "schemaId", groupName: "stored-thread" },
-  { fieldName: "branchId", groupName: "stored-branch" },
-  { fieldName: "threadId", groupName: "stored-branch" },
-  { fieldName: "archivedFromBranchId", groupName: "stored-branch" },
-  { fieldName: "turnId", groupName: "stored-turn" },
-  { fieldName: "threadId", groupName: "stored-turn" },
-  { fieldName: "branchId", groupName: "stored-turn" },
-  { fieldName: "parentTurnId", groupName: "stored-turn" },
-  { fieldName: "runId", groupName: "stored-run" },
-  { fieldName: "turnId", groupName: "stored-run" },
-  { fieldName: "branchId", groupName: "stored-run" },
-  { fieldName: "schemaId", groupName: "stored-run" },
-  { fieldName: "runId", groupName: "stored-staged-result" },
-  { fieldName: "taskId", groupName: "stored-staged-result" },
-  { fieldName: "objectType", groupName: "stored-staged-result" },
-] as const;
-
-const NON_NEGATIVE_SAFE_INTEGER_FIELDS = [
-  { fieldName: "currentStepIndex", groupName: "run-record" },
-  { fieldName: "byteLength", groupName: "stored-object" },
-  {
-    fieldName: "orderedCount",
-    groupName: "stored-flat-ordered-turn-tree-path",
-  },
-  {
-    fieldName: "orderedCount",
-    groupName: "stored-chunked-ordered-turn-tree-path",
-  },
-  { fieldName: "itemCount", groupName: "stored-ordered-path-chunk" },
-  { fieldName: "currentStepIndex", groupName: "stored-run" },
-] as const;
-
-function readKernelCddlGrammar(): {
-  assignments: CddlAssignment[];
-  source: string;
-} {
-  // The authored CDDL is language-neutral authority; GH issue #87 M1.3
-  // relocated it to root spec/kernel/, and M1.4b relocated this package
-  // implementation to typescript/kernel/protocol/.
-  const cddlPath = fileURLToPath(
-    new URL("../../../../spec/kernel/cddl/kernel-records.cddl", import.meta.url)
-  );
-  const assignments = parse(cddlPath);
-  assertCddlAssignments(assignments);
-
-  return {
-    assignments,
-    source: readFileSync(cddlPath, "utf-8"),
-  };
-}
-
-function expectVariableRegexp(
-  assignments: CddlAssignment[],
-  name: string,
-  pattern: string
-): void {
-  const assignment = findVariableAssignment(assignments, name);
-
-  expect(assignment.PropertyType).toContainEqual({
-    Operator: {
-      Type: "regexp",
-      Value: {
-        Type: "literal",
-        Unwrapped: false,
-        Value: pattern,
-      },
-    },
-    Type: "tstr",
-  });
-}
-
-function expectVariableRange(
-  assignments: CddlAssignment[],
-  name: string,
-  min: number,
-  max: number
-): void {
-  const assignment = findVariableAssignment(assignments, name);
-
-  expect(assignment.PropertyType).toContainEqual({
-    Type: "range",
-    Unwrapped: false,
-    Value: {
-      Inclusive: true,
-      Max: {
-        Type: "literal",
-        Unwrapped: false,
-        Value: max,
-      },
-      Min: {
-        Type: "literal",
-        Unwrapped: false,
-        Value: min,
-      },
-    },
-  });
-}
-
-function expectVariableReferences(
-  assignments: CddlAssignment[],
-  name: string,
-  referenceName: string
-): void {
-  const assignment = findVariableAssignment(assignments, name);
-
-  expect(assignment.PropertyType).toContainEqual(
-    GROUP_REFERENCE(referenceName)
-  );
-}
-
-function expectGroupFieldReferences(
-  assignments: CddlAssignment[],
-  groupName: string,
-  fieldName: string,
-  referenceName: string
-): void {
-  const field = findGroupField(assignments, groupName, fieldName);
-
-  expect(field.Type).toContainEqual(GROUP_REFERENCE(referenceName));
-}
-
-function expectArrayFieldReferences(
-  assignments: CddlAssignment[],
-  arrayName: string,
-  fieldName: string,
-  referenceName: string
-): void {
-  const assignment = findArrayAssignment(assignments, arrayName);
-  const field = assignment.Values.find((value) => value.Name === fieldName);
-
-  expect(field).toBeDefined();
-  expect(field?.Type).toContainEqual(GROUP_REFERENCE(referenceName));
-}
-
-function findVariableAssignment(
-  assignments: CddlAssignment[],
-  name: string
-): CddlVariableAssignment {
-  const assignment = assignments.find(
-    (candidate) => candidate.Name === name && candidate.Type === "variable"
-  );
-
-  if (!isVariableAssignment(assignment)) {
-    throw new Error(`Expected CDDL variable assignment "${name}"`);
-  }
-
-  return assignment;
-}
-
-function findGroupField(
-  assignments: CddlAssignment[],
-  groupName: string,
-  fieldName: string
-): CddlProperty {
-  const assignment = assignments.find(
-    (candidate) => candidate.Name === groupName && candidate.Type === "group"
-  );
-
-  if (!isGroupAssignment(assignment)) {
-    throw new Error(`Expected CDDL group assignment "${groupName}"`);
-  }
-
-  const field = assignment.Properties.find(
-    (property) => property.Name === fieldName
-  );
-
-  if (field === undefined) {
-    throw new Error(`Expected ${groupName}.${fieldName} in CDDL grammar`);
-  }
-
-  return field;
-}
-
-function findArrayAssignment(
-  assignments: CddlAssignment[],
-  name: string
-): CddlArrayAssignment {
-  const assignment = assignments.find(
-    (candidate) => candidate.Name === name && candidate.Type === "array"
-  );
-
-  if (!isArrayAssignment(assignment)) {
-    throw new Error(`Expected CDDL array assignment "${name}"`);
-  }
-
-  return assignment;
-}
-
-function assertCddlAssignments(
-  value: unknown
-): asserts value is CddlAssignment[] {
-  if (!(Array.isArray(value) && value.every(isCddlAssignment))) {
-    throw new Error("Expected cddl.parse to return CDDL assignments");
-  }
-}
-
-function isCddlAssignment(value: unknown): value is CddlAssignment {
-  return (
-    isRecord(value) &&
-    typeof value.Name === "string" &&
-    typeof value.Type === "string"
-  );
-}
-
-function isVariableAssignment(value: unknown): value is CddlVariableAssignment {
-  return (
-    isCddlAssignment(value) &&
-    isRecord(value) &&
-    Array.isArray(value.PropertyType)
-  );
-}
-
-function isGroupAssignment(value: unknown): value is CddlGroupAssignment {
-  return (
-    isCddlAssignment(value) &&
-    isRecord(value) &&
-    Array.isArray(value.Properties) &&
-    value.Properties.every(isCddlProperty)
-  );
-}
-
-function isArrayAssignment(value: unknown): value is CddlArrayAssignment {
-  return (
-    isCddlAssignment(value) &&
-    isRecord(value) &&
-    Array.isArray(value.Values) &&
-    value.Values.every(isCddlProperty)
-  );
-}
-
-function isCddlProperty(value: unknown): value is CddlProperty {
-  return (
-    isRecord(value) &&
-    typeof value.Name === "string" &&
-    Array.isArray(value.Type)
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
