@@ -73,9 +73,9 @@ import {
  * than `"modify"` are ignored — priority ordering against them is handled by
  * the `verdicts.compose` caller.
  */
-export function composeModifyVerdict(
+export const composeModifyVerdict = (
   verdicts: readonly { kind: string; transform?: KernelRecord }[]
-): ModifyVerdict | undefined {
+): ModifyVerdict | undefined => {
   const modifyTransforms = verdicts
     .filter(
       (verdict): verdict is { kind: "modify"; transform: KernelRecord } =>
@@ -98,7 +98,7 @@ export function composeModifyVerdict(
     kind: "modify",
     transform: modifyTransforms,
   };
-}
+};
 
 /**
  * Backs the public `node.walkBack` syscall (kernel spec §3.3): yields
@@ -108,7 +108,7 @@ export function composeModifyVerdict(
  * @throws TuvrenRuntimeError With code `kernel_runtime_missing_turn_node`
  *   when no node exists at `fromHash`.
  */
-export async function* walkBack(
+export const walkBack = async function* walkBack(
   backend: RuntimeBackend,
   fromHash: HashString
 ): AsyncIterable<TurnNode> {
@@ -138,7 +138,7 @@ export async function* walkBack(
     yield node;
     currentHash = node.previousTurnNodeHash;
   }
-}
+};
 
 /**
  * In-transaction counterpart to {@link walkBack}: yields TurnNodes from
@@ -149,7 +149,7 @@ export async function* walkBack(
  * @throws TuvrenRuntimeError With code `kernel_runtime_missing_turn_node`
  *   when the walk reaches a hash with no corresponding node.
  */
-export async function* walkBackFromTx(
+export const walkBackFromTx = async function* walkBackFromTx(
   tx: RuntimeBackendTx,
   fromHash: HashString
 ): AsyncIterable<TurnNode> {
@@ -160,7 +160,7 @@ export async function* walkBackFromTx(
     yield node;
     currentHash = node.previousTurnNodeHash;
   }
-}
+};
 
 /**
  * Classifies a proposed `branch.setHead` move against the TurnNode DAG
@@ -169,11 +169,11 @@ export async function* walkBackFromTx(
  * `currentHead`, and `"lateral"` when neither walk finds the other — a
  * lateral move is always rejected by the caller.
  */
-export async function classifyHeadMovement(
+export const classifyHeadMovement = async (
   tx: RuntimeBackendTx,
   currentHead: HashString,
   targetHash: HashString
-): Promise<"forward" | "backward" | "lateral"> {
+): Promise<"forward" | "backward" | "lateral"> => {
   for await (const node of walkBackFromTx(tx, targetHash)) {
     if (node.hash === currentHead) {
       return "forward";
@@ -187,7 +187,7 @@ export async function classifyHeadMovement(
   }
 
   return "lateral";
-}
+};
 
 /**
  * Asserts `branch` has no `running` or `paused` run before its head is moved
@@ -197,10 +197,10 @@ export async function classifyHeadMovement(
  * @throws TuvrenRuntimeError With code
  *   `kernel_runtime_branch_has_active_run`.
  */
-export async function assertNoActiveBranchRunForForwardHeadMove(
+export const assertNoActiveBranchRunForForwardHeadMove = async (
   tx: RuntimeBackendTx,
   branch: StoredBranch
-): Promise<void> {
+): Promise<void> => {
   const branchRuns = await tx.runs.listByBranch(branch.branchId);
   const activeRun = branchRuns.find(
     (storedRun) =>
@@ -215,7 +215,7 @@ export async function assertNoActiveBranchRunForForwardHeadMove(
     `branch "${branch.branchId}" cannot move head while run "${activeRun.runId}" is active`,
     { code: "kernel_runtime_branch_has_active_run" }
   );
-}
+};
 
 /**
  * Collects the TurnNode hashes between `currentHead` and its ancestor
@@ -226,11 +226,11 @@ export async function assertNoActiveBranchRunForForwardHeadMove(
  *   `kernel_runtime_backward_lineage_mismatch` when `targetHash` is not an
  *   ancestor of `currentHead`.
  */
-export async function collectAbandonedSegmentHashes(
+export const collectAbandonedSegmentHashes = async (
   tx: RuntimeBackendTx,
   currentHead: HashString,
   targetHash: HashString
-): Promise<Set<HashString>> {
+): Promise<Set<HashString>> => {
   const hashes = new Set<HashString>();
 
   for await (const node of walkBackFromTx(tx, currentHead)) {
@@ -245,7 +245,7 @@ export async function collectAbandonedSegmentHashes(
     `target "${targetHash}" is not an ancestor of current head "${currentHead}"`,
     { code: "kernel_runtime_backward_lineage_mismatch" }
   );
-}
+};
 
 /**
  * Allocates a fresh branch id for the archive branch a backward
@@ -253,14 +253,14 @@ export async function collectAbandonedSegmentHashes(
  * `${branchId}-archive-${ordinal}-${currentHead prefix}` starting at
  * `input.initialOrdinal` and incrementing past any collision.
  */
-export async function allocateArchiveBranchId(
+export const allocateArchiveBranchId = async (
   tx: RuntimeBackendTx,
   input: {
     branchId: string;
     currentHead: HashString;
     initialOrdinal: number;
   }
-): Promise<string> {
+): Promise<string> => {
   let ordinal = input.initialOrdinal;
 
   while (true) {
@@ -273,17 +273,17 @@ export async function allocateArchiveBranchId(
 
     ordinal += 1;
   }
-}
+};
 
 /**
  * True when `run`'s start node or any TurnNode it created falls within
  * `segmentHashes` — used to find runs a backward `branch.setHead` move must
  * fail because they touch the abandoned segment.
  */
-export function runTouchesSegment(
+export const runTouchesSegment = (
   run: StoredRun,
   segmentHashes: ReadonlySet<HashString>
-): boolean {
+): boolean => {
   if (segmentHashes.has(run.startTurnNodeHash)) {
     return true;
   }
@@ -295,49 +295,43 @@ export function runTouchesSegment(
   }
 
   return false;
-}
+};
 
 /**
  * The most recent TurnNode a run has produced: its last created TurnNode, or
  * its `startTurnNodeHash` if it has not yet checkpointed.
  */
-export function getLastRunTurnNodeHash(run: RunRecord): HashString {
-  return run.createdTurnNodes.at(-1) ?? run.startTurnNodeHash;
-}
+export const getLastRunTurnNodeHash = (run: RunRecord): HashString =>
+  run.createdTurnNodes.at(-1) ?? run.startTurnNodeHash;
 
 /**
  * {@link getLastRunTurnNodeHash}, operating on a durable {@link StoredRun}
  * row without first decoding it into a {@link RunRecord}.
  */
-export function getLastRunTurnNodeHashFromStoredRun(
+export const getLastRunTurnNodeHashFromStoredRun = (
   run: StoredRun
-): HashString {
-  return (
-    decodeHashArray(run.createdTurnNodesCbor).at(-1) ?? run.startTurnNodeHash
-  );
-}
+): HashString =>
+  decodeHashArray(run.createdTurnNodesCbor).at(-1) ?? run.startTurnNodeHash;
 
 /**
  * True when a lease expiring at `leaseExpiresAtMs` has expired as of
  * `nowMs` (kernel spec §5.2): expiry is inclusive, so a lease expires
  * exactly at its expiry timestamp.
  */
-export function isLeaseExpired(
+export const isLeaseExpired = (
   leaseExpiresAtMs: EpochMs,
   nowMs: EpochMs
-): boolean {
-  return leaseExpiresAtMs <= nowMs;
-}
+): boolean => leaseExpiresAtMs <= nowMs;
 
 /**
  * True when `candidateHash` descends from `ancestorHash` on the TurnNode
  * lineage DAG, walking back from `candidateHash`.
  */
-export async function turnNodeDescendsFrom(
+export const turnNodeDescendsFrom = async (
   tx: RuntimeBackendTx,
   candidateHash: HashString,
   ancestorHash: HashString
-): Promise<boolean> {
+): Promise<boolean> => {
   for await (const node of walkBackFromTx(tx, candidateHash)) {
     if (node.hash === ancestorHash) {
       return true;
@@ -345,7 +339,7 @@ export async function turnNodeDescendsFrom(
   }
 
   return false;
-}
+};
 
 /**
  * Validates a new turn's `parentTurnId` against `turn.create`'s legality
@@ -360,13 +354,13 @@ export async function turnNodeDescendsFrom(
  *   `kernel_runtime_turn_parent_not_immediate_predecessor` depending on
  *   which rule is violated.
  */
-export async function validateTurnParent(
+export const validateTurnParent = async (
   tx: RuntimeBackendTx,
   threadId: string,
   branchId: string,
   parentTurnId: string | null,
   startTurnNodeHash: HashString
-): Promise<void> {
+): Promise<void> => {
   const candidateTurnsAtStart = (await tx.turns.listByThread(threadId)).filter(
     (candidateTurn) => candidateTurn.headTurnNodeHash === startTurnNodeHash
   );
@@ -422,7 +416,7 @@ export async function validateTurnParent(
       { code: "kernel_runtime_turn_parent_not_immediate_predecessor" }
     );
   }
-}
+};
 
 /**
  * Asserts a `turn.updateHead` rewrite does not strand dependents: no active
@@ -434,11 +428,11 @@ export async function validateTurnParent(
  * @throws TuvrenLineageError With code
  *   `kernel_runtime_turn_head_has_dependent_turns`.
  */
-export async function assertTurnHeadRewritePreservesDependents(
+export const assertTurnHeadRewritePreservesDependents = async (
   tx: RuntimeBackendTx,
   turn: TurnRecord,
   nextHeadTurnNodeHash: HashString
-): Promise<void> {
+): Promise<void> => {
   const branchRuns = await tx.runs.listByBranch(turn.branchId);
 
   for (const storedRun of branchRuns) {
@@ -473,7 +467,7 @@ export async function assertTurnHeadRewritePreservesDependents(
       );
     }
   }
-}
+};
 
 /**
  * Declarative checkpoint predicate for `run.completeStep` (kernel spec
@@ -482,32 +476,29 @@ export async function assertTurnHeadRewritePreservesDependents(
  * deterministic, side-effect-free step with nothing staged skips the
  * checkpoint.
  */
-export function stepRequiresCheckpoint(
+export const stepRequiresCheckpoint = (
   step: StepDeclaration,
   stagedResults: StagedResult[],
   treeHash: HashString | undefined
-): boolean {
-  return (
-    treeHash !== undefined ||
-    stagedResults.length > 0 ||
-    !step.deterministic ||
-    step.sideEffects
-  );
-}
+): boolean =>
+  treeHash !== undefined ||
+  stagedResults.length > 0 ||
+  !step.deterministic ||
+  step.sideEffects;
 
 /**
  * Asserts `run` is in `"running"` status.
  *
  * @throws TuvrenRuntimeError With code `kernel_runtime_run_not_running`.
  */
-export function requireRunningRun(run: RunRecord, runId: string): void {
+export const requireRunningRun = (run: RunRecord, runId: string): void => {
   if (run.status !== "running") {
     throw new TuvrenRuntimeError(
       `run "${runId}" is not in running state (status: ${run.status})`,
       { code: "kernel_runtime_run_not_running" }
     );
   }
-}
+};
 
 /**
  * Looks up the run's step at `run.currentStepIndex` and asserts it matches
@@ -517,10 +508,10 @@ export function requireRunningRun(run: RunRecord, runId: string): void {
  * @throws TuvrenRuntimeError With code `kernel_runtime_unexpected_step` when
  *   `stepId` does not match the current step.
  */
-export function requireCurrentStep(
+export const requireCurrentStep = (
   run: RunRecord,
   stepId: string
-): StepDeclaration {
+): StepDeclaration => {
   const step = run.stepSequence[run.currentStepIndex];
 
   if (step === undefined || step.id !== stepId) {
@@ -530,7 +521,7 @@ export function requireCurrentStep(
   }
 
   return step;
-}
+};
 
 /**
  * Asserts an optional `eventHash` already exists in the object store; a
@@ -541,10 +532,10 @@ export function requireCurrentStep(
  *   `kernel_runtime_missing_event_object` when `eventHash` is set but not
  *   found.
  */
-export async function assertEventHashInStore(
+export const assertEventHashInStore = async (
   tx: RuntimeBackendTx,
   eventHash: HashString | undefined
-): Promise<void> {
+): Promise<void> => {
   if (eventHash === undefined) {
     return;
   }
@@ -557,7 +548,7 @@ export async function assertEventHashInStore(
       { code: "kernel_runtime_missing_event_object" }
     );
   }
-}
+};
 
 /**
  * Asserts an optional caller-supplied `treeHash` (from `run.completeStep`)
@@ -568,11 +559,11 @@ export async function assertEventHashInStore(
  *   `treeHash` is set but not found, or
  *   `kernel_runtime_tree_schema_mismatch` when its schema differs.
  */
-export async function assertTreeHashForRun(
+export const assertTreeHashForRun = async (
   tx: RuntimeBackendTx,
   treeHash: HashString | undefined,
   schemaId: string
-): Promise<void> {
+): Promise<void> => {
   if (treeHash === undefined) {
     return;
   }
@@ -591,7 +582,7 @@ export async function assertTreeHashForRun(
       { code: "kernel_runtime_tree_schema_mismatch" }
     );
   }
-}
+};
 
 /**
  * Flattens the `signals` arrays across a step's ObserveResults and
@@ -599,9 +590,9 @@ export async function assertTreeHashForRun(
  * `undefined` when there are no signals to persist (leaving any existing
  * pending signals untouched).
  */
-export function encodeSignalsCborFromObserveResults(
+export const encodeSignalsCborFromObserveResults = (
   observeResults: { signals: KernelRecord[] }[] | undefined
-): Uint8Array | undefined {
+): Uint8Array | undefined => {
   const newSignals: KernelRecord[] =
     observeResults?.flatMap((result) => result.signals) ?? [];
 
@@ -610,7 +601,7 @@ export function encodeSignalsCborFromObserveResults(
   }
 
   return encodeRecord(newSignals);
-}
+};
 
 /**
  * Builds durable observe-annotation records from a step's ObserveResults,
@@ -618,7 +609,7 @@ export function encodeSignalsCborFromObserveResults(
  * there are no annotations, so callers can unconditionally spread the
  * result into `tx.observeAnnotations.set` calls.
  */
-export async function createObserveAnnotationRecords(input: {
+export const createObserveAnnotationRecords = async (input: {
   now: () => EpochMs;
   observeResults: { annotations: KernelObject[] }[] | undefined;
   runId: string;
@@ -631,7 +622,7 @@ export async function createObserveAnnotationRecords(input: {
     runId: string;
     turnNodeHash: HashString | null;
   }[]
-> {
+> => {
   const annotations: KernelObject[] =
     input.observeResults?.flatMap((result) => result.annotations) ?? [];
 
@@ -660,7 +651,7 @@ export async function createObserveAnnotationRecords(input: {
   }
 
   return records;
-}
+};
 
 /**
  * Validates each element of an optional `observeResults` array as a
@@ -669,9 +660,9 @@ export async function createObserveAnnotationRecords(input: {
  *
  * @throws TuvrenValidationError When an element is not a valid ObserveResult.
  */
-export function validateObserveResults(
+export const validateObserveResults = (
   observeResults: unknown[] | undefined
-): void {
+): void => {
   if (observeResults === undefined) {
     return;
   }
@@ -679,7 +670,7 @@ export function validateObserveResults(
   for (const [index, observeResult] of observeResults.entries()) {
     assertObserveResult(observeResult, `observeResults[${index}]`);
   }
-}
+};
 
 /**
  * Validates each of `run.create`'s step declarations and asserts their `id`s
@@ -688,7 +679,7 @@ export function validateObserveResults(
  * @throws TuvrenValidationError With code `kernel_runtime_duplicate_step_id`
  *   when two steps share an `id`.
  */
-export function assertUniqueStepIds(steps: StepDeclaration[]): void {
+export const assertUniqueStepIds = (steps: StepDeclaration[]): void => {
   const seen = new Set<string>();
 
   for (const [index, step] of steps.entries()) {
@@ -703,7 +694,7 @@ export function assertUniqueStepIds(steps: StepDeclaration[]): void {
 
     seen.add(step.id);
   }
-}
+};
 
 /**
  * Validates a caller-supplied {@link TurnTreeChangeSet} against `schema`:
@@ -714,10 +705,10 @@ export function assertUniqueStepIds(steps: StepDeclaration[]): void {
  *   for an undeclared path, or `invalid_path_value_kind` (from
  *   {@link assertPathValueForCollectionKind}) for a mismatched value.
  */
-export function validateTurnTreeChangeSet(
+export const validateTurnTreeChangeSet = (
   schema: TurnTreeSchema,
   changes: TurnTreeChangeSet
-): void {
+): void => {
   const pathsByName = new Map(
     schema.paths.map((pathDefinition) => [pathDefinition.path, pathDefinition])
   );
@@ -738,7 +729,7 @@ export function validateTurnTreeChangeSet(
       `changes.${path}`
     );
   }
-}
+};
 
 /**
  * Validates each staged result and asserts its `objectType` has a matching
@@ -749,10 +740,10 @@ export function validateTurnTreeChangeSet(
  *   `kernel_runtime_unmatched_incorporation_rule` when a result's
  *   `objectType` has no rule.
  */
-export function validateStagedResultsHaveRules(
+export const validateStagedResultsHaveRules = (
   schema: TurnTreeSchema,
   stagedResults: StagedResult[]
-): void {
+): void => {
   const objectTypesWithRules = new Set(
     schema.incorporationRules.map((rule) => rule.objectType)
   );
@@ -767,7 +758,7 @@ export function validateStagedResultsHaveRules(
       );
     }
   }
-}
+};
 
 /**
  * Applies staged results onto `manifest` in place, per `schema`'s
@@ -779,11 +770,11 @@ export function validateStagedResultsHaveRules(
  * @throws TuvrenValidationError With code
  *   `kernel_runtime_unmatched_incorporation_rule`.
  */
-export function applyStagedResultsToManifest(
+export const applyStagedResultsToManifest = (
   schema: TurnTreeSchema,
   manifest: TurnTreeManifest,
   stagedResults: StagedResult[]
-): void {
+): void => {
   const rulesByObjectType = new Map(
     schema.incorporationRules.map((rule) => [rule.objectType, rule])
   );
@@ -813,141 +804,7 @@ export function applyStagedResultsToManifest(
       manifest[rule.targetPath] = stagedResult.objectHash;
     }
   }
-}
-
-/**
- * Reactive checkpoint for `run.complete` (kernel spec §5.8): checkpoints and
- * clears un-anchored staged work only when there is something to anchor
- * (staged results or an event), returning `undefined` and leaving durable
- * state untouched otherwise. Unlike {@link checkpointAndClear}, `treeHash`
- * is always `undefined` here — completion never accepts a caller-supplied
- * tree.
- */
-export async function maybeCheckpoint(
-  tx: RuntimeBackendTx,
-  run: RunRecord,
-  stagedResults: StagedResult[],
-  input: {
-    eventHash: HashString | null;
-    now: () => EpochMs;
-    treeHash: undefined;
-  }
-): Promise<HashString | undefined> {
-  if (stagedResults.length === 0 && input.eventHash === null) {
-    return undefined;
-  }
-
-  const hash = await checkpointRun(tx, { ...input, run, stagedResults });
-  await tx.stagedResults.clearRun(run.runId);
-  return hash;
-}
-
-/**
- * Declarative checkpoint for `run.completeStep` (kernel spec §5.8): always
- * checkpoints (see {@link stepRequiresCheckpoint} for the caller's decision
- * of when to invoke this) and clears the run's staged work. Unlike
- * {@link maybeCheckpoint}, `input.treeHash` may be supplied to check the run
- * into a caller-precomputed tree instead of one derived from its staged
- * results.
- */
-export async function checkpointAndClear(
-  tx: RuntimeBackendTx,
-  run: RunRecord,
-  stagedResults: StagedResult[],
-  input: {
-    eventHash: HashString | null;
-    now: () => EpochMs;
-    treeHash?: HashString;
-  }
-): Promise<HashString> {
-  const hash = await checkpointRun(tx, { ...input, run, stagedResults });
-  await tx.stagedResults.clearRun(run.runId);
-  return hash;
-}
-
-/**
- * Shared checkpoint mechanics behind {@link maybeCheckpoint} and
- * {@link checkpointAndClear}: derives (or accepts) the checkpoint's turn
- * tree, creates a new TurnNode chained onto the branch's current head, and
- * advances both the branch head and the run's turn head to it. Does not
- * clear the run's staged work — callers are responsible for that.
- */
-export async function checkpointRun(
-  tx: RuntimeBackendTx,
-  input: {
-    eventHash: HashString | null;
-    now: () => EpochMs;
-    run: RunRecord;
-    stagedResults: StagedResult[];
-    treeHash?: HashString;
-  }
-): Promise<HashString> {
-  const branch = await requireBranch(tx, input.run.branchId);
-  const baseTurnNode = await requireTurnNode(tx, branch.headTurnNodeHash);
-  const turnTreeHash =
-    input.treeHash ??
-    (await createIncorporatedTree(tx, baseTurnNode.turnTreeHash, input));
-  const turnNodeHash = await createTurnNode(tx, {
-    consumedStagedResults: input.stagedResults,
-    eventHash: input.eventHash,
-    now: input.now,
-    previousTurnNodeHash: branch.headTurnNodeHash,
-    schemaId: input.run.schemaId,
-    turnTreeHash,
-  });
-  await tx.branches.set({
-    ...branch,
-    headTurnNodeHash: turnNodeHash,
-    updatedAtMs: input.now(),
-  });
-  await tx.turns.set({
-    ...(await requireStoredTurn(tx, input.run.turnId)),
-    headTurnNodeHash: turnNodeHash,
-    updatedAtMs: input.now(),
-  });
-  return turnNodeHash;
-}
-
-/**
- * Builds the turn tree a checkpoint anchors to: incorporates `input`'s
- * staged results onto `baseTurnTreeHash`'s manifest per the run's schema
- * incorporation rules, mirroring the public `tree.incorporate` syscall but
- * for the run's own schema and base tree.
- *
- * @throws TuvrenValidationError With code
- *   `kernel_runtime_tree_schema_mismatch` when the base tree's schema
- *   differs from the run's schema.
- */
-export async function createIncorporatedTree(
-  tx: RuntimeBackendTx,
-  baseTurnTreeHash: HashString,
-  input: {
-    now: () => EpochMs;
-    run: RunRecord;
-    stagedResults: StagedResult[];
-  }
-): Promise<HashString> {
-  const baseTree = await requireTurnTree(tx, baseTurnTreeHash);
-  const schema = await requireSchema(tx, input.run.schemaId);
-
-  if (baseTree.schemaId !== input.run.schemaId) {
-    throw new TuvrenValidationError(
-      `base tree schema "${baseTree.schemaId}" does not match run schema "${input.run.schemaId}"`,
-      { code: "kernel_runtime_tree_schema_mismatch" }
-    );
-  }
-
-  validateStagedResultsHaveRules(schema, input.stagedResults);
-  const manifest = await requireTreeManifest(tx, baseTree.hash);
-  applyStagedResultsToManifest(schema, manifest, input.stagedResults);
-
-  return await createTurnTree(tx, {
-    changes: manifest,
-    now: input.now,
-    priorTurnTreeHash: baseTurnTreeHash,
-    schema,
-  });
-}
+};
 
 /**
  * Content-addressed TurnTree write (kernel spec §3.2): normalizes `changes`
@@ -955,7 +812,7 @@ export async function createIncorporatedTree(
  * existing hash unchanged if a tree with that identity is already stored
  * (deduplication), otherwise persisting the manifest and its per-path rows.
  */
-export async function createTurnTree(
+export const createTurnTree = async (
   tx: RuntimeBackendTx,
   input: {
     changes: TurnTreeChangeSet;
@@ -973,7 +830,7 @@ export async function createTurnTree(
     priorTurnTreeHash?: HashString;
     schema: TurnTreeSchema;
   }
-): Promise<HashString> {
+): Promise<HashString> => {
   const manifest = normalizeManifest(input.schema, input.changes);
   const hash = await hashTurnTreeIdentity(
     input.schema.schemaId,
@@ -1008,7 +865,48 @@ export async function createTurnTree(
     )
   );
   return hash;
-}
+};
+
+/**
+ * Builds the turn tree a checkpoint anchors to: incorporates `input`'s
+ * staged results onto `baseTurnTreeHash`'s manifest per the run's schema
+ * incorporation rules, mirroring the public `tree.incorporate` syscall but
+ * for the run's own schema and base tree.
+ *
+ * @throws TuvrenValidationError With code
+ *   `kernel_runtime_tree_schema_mismatch` when the base tree's schema
+ *   differs from the run's schema.
+ */
+export const createIncorporatedTree = async (
+  tx: RuntimeBackendTx,
+  baseTurnTreeHash: HashString,
+  input: {
+    now: () => EpochMs;
+    run: RunRecord;
+    stagedResults: StagedResult[];
+  }
+): Promise<HashString> => {
+  const baseTree = await requireTurnTree(tx, baseTurnTreeHash);
+  const schema = await requireSchema(tx, input.run.schemaId);
+
+  if (baseTree.schemaId !== input.run.schemaId) {
+    throw new TuvrenValidationError(
+      `base tree schema "${baseTree.schemaId}" does not match run schema "${input.run.schemaId}"`,
+      { code: "kernel_runtime_tree_schema_mismatch" }
+    );
+  }
+
+  validateStagedResultsHaveRules(schema, input.stagedResults);
+  const manifest = await requireTreeManifest(tx, baseTree.hash);
+  applyStagedResultsToManifest(schema, manifest, input.stagedResults);
+
+  return await createTurnTree(tx, {
+    changes: manifest,
+    now: input.now,
+    priorTurnTreeHash: baseTurnTreeHash,
+    schema,
+  });
+};
 
 /**
  * Content-addressed TurnNode write (kernel spec §3.3): computes the node's
@@ -1017,7 +915,7 @@ export async function createTurnTree(
  * persisting it with `previousTurnNodeHash` chaining it onto its
  * predecessor.
  */
-export async function createTurnNode(
+export const createTurnNode = async (
   tx: RuntimeBackendTx,
   input: {
     consumedStagedResults: StagedResult[];
@@ -1027,7 +925,7 @@ export async function createTurnNode(
     schemaId: string;
     turnTreeHash: HashString;
   }
-): Promise<HashString> {
+): Promise<HashString> => {
   const nodeWithoutHash: Omit<TurnNode, "hash"> = {
     consumedStagedResults: input.consumedStagedResults,
     eventHash: input.eventHash,
@@ -1052,4 +950,97 @@ export async function createTurnNode(
     turnTreeHash: input.turnTreeHash,
   });
   return hash;
-}
+};
+
+/**
+ * Shared checkpoint mechanics behind {@link maybeCheckpoint} and
+ * {@link checkpointAndClear}: derives (or accepts) the checkpoint's turn
+ * tree, creates a new TurnNode chained onto the branch's current head, and
+ * advances both the branch head and the run's turn head to it. Does not
+ * clear the run's staged work — callers are responsible for that.
+ */
+export const checkpointRun = async (
+  tx: RuntimeBackendTx,
+  input: {
+    eventHash: HashString | null;
+    now: () => EpochMs;
+    run: RunRecord;
+    stagedResults: StagedResult[];
+    treeHash?: HashString;
+  }
+): Promise<HashString> => {
+  const branch = await requireBranch(tx, input.run.branchId);
+  const baseTurnNode = await requireTurnNode(tx, branch.headTurnNodeHash);
+  const turnTreeHash =
+    input.treeHash ??
+    (await createIncorporatedTree(tx, baseTurnNode.turnTreeHash, input));
+  const turnNodeHash = await createTurnNode(tx, {
+    consumedStagedResults: input.stagedResults,
+    eventHash: input.eventHash,
+    now: input.now,
+    previousTurnNodeHash: branch.headTurnNodeHash,
+    schemaId: input.run.schemaId,
+    turnTreeHash,
+  });
+  await tx.branches.set({
+    ...branch,
+    headTurnNodeHash: turnNodeHash,
+    updatedAtMs: input.now(),
+  });
+  await tx.turns.set({
+    ...(await requireStoredTurn(tx, input.run.turnId)),
+    headTurnNodeHash: turnNodeHash,
+    updatedAtMs: input.now(),
+  });
+  return turnNodeHash;
+};
+
+/**
+ * Reactive checkpoint for `run.complete` (kernel spec §5.8): checkpoints and
+ * clears un-anchored staged work only when there is something to anchor
+ * (staged results or an event), returning `undefined` and leaving durable
+ * state untouched otherwise. Unlike {@link checkpointAndClear}, `treeHash`
+ * is always `undefined` here — completion never accepts a caller-supplied
+ * tree.
+ */
+export const maybeCheckpoint = async (
+  tx: RuntimeBackendTx,
+  run: RunRecord,
+  stagedResults: StagedResult[],
+  input: {
+    eventHash: HashString | null;
+    now: () => EpochMs;
+    treeHash: undefined;
+  }
+): Promise<HashString | undefined> => {
+  if (stagedResults.length === 0 && input.eventHash === null) {
+    return undefined;
+  }
+
+  const hash = await checkpointRun(tx, { ...input, run, stagedResults });
+  await tx.stagedResults.clearRun(run.runId);
+  return hash;
+};
+
+/**
+ * Declarative checkpoint for `run.completeStep` (kernel spec §5.8): always
+ * checkpoints (see {@link stepRequiresCheckpoint} for the caller's decision
+ * of when to invoke this) and clears the run's staged work. Unlike
+ * {@link maybeCheckpoint}, `input.treeHash` may be supplied to check the run
+ * into a caller-precomputed tree instead of one derived from its staged
+ * results.
+ */
+export const checkpointAndClear = async (
+  tx: RuntimeBackendTx,
+  run: RunRecord,
+  stagedResults: StagedResult[],
+  input: {
+    eventHash: HashString | null;
+    now: () => EpochMs;
+    treeHash?: HashString;
+  }
+): Promise<HashString> => {
+  const hash = await checkpointRun(tx, { ...input, run, stagedResults });
+  await tx.stagedResults.clearRun(run.runId);
+  return hash;
+};

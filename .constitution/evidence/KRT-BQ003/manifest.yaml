@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "45f0aa3329d6f896edefd5b1dda7ad7bee390384",
-    "command": "Historical M4-M10R phase proofs; accelerated gates and complete protocol reordering-rule assertion"
+    "commit": "2e52a9e2d4e245e17b91c945e2da4546d489f10a",
+    "command": "Historical M4-M11R proofs; compact body/dependency/generator proof and accelerated lead verification"
   },
   "files": [
     {
@@ -41,6 +41,36 @@
       "path": "M10R-result.json",
       "sha256": "22636aafd8e87e89da3bbdd1f62822df6d17f9eadbaeaad2935453af45cd92f8",
       "bytes": 8815,
+      "role": "measurement"
+    },
+    {
+      "path": "M11R-lead-gates.tar.gz",
+      "sha256": "4e39c0b544a5784b202869b60269ab97946c098575b4df2a70485e0fd74ad65e",
+      "bytes": 2500,
+      "role": "measurement"
+    },
+    {
+      "path": "M11R-lead-index.json.gz",
+      "sha256": "b8d561a1b6b7aa27f27c4e06b8ead75c864bfcc784fb376756f0918664b22268",
+      "bytes": 496,
+      "role": "measurement"
+    },
+    {
+      "path": "M11R-proof-index.json.gz",
+      "sha256": "86032b22a1a03df806066bb31ca3071a29b6f12febaaede12d2c87f6cb71a41b",
+      "bytes": 2130,
+      "role": "measurement"
+    },
+    {
+      "path": "M11R-proof.tar.gz",
+      "sha256": "ea5fbbf13ba9f72931bb4434fea412b90f2488634e3d566d97d38b4115abba48",
+      "bytes": 77241,
+      "role": "measurement"
+    },
+    {
+      "path": "M11R-result.json",
+      "sha256": "c333376c4b206f68bb7569be3b97125b1b09f3fb06f0d092c25500c190e9559f",
+      "bytes": 8476,
       "role": "measurement"
     },
     {
@@ -452,5 +482,5 @@
       "role": "measurement"
     }
   ],
-  "pass_criteria": "Phase hashes and archive members validate; both reordering rules have zero findings throughout protocol in both native modes; validator/test/fixture behavior and scoped tests pass. Runtime conversion, broad ticket completion and admission remain pending."
+  "pass_criteria": "Phase source/archive hashes validate; targeted rules clear; transactions, errors, events and async generator bodies/order remain intact; scoped tests pass. Pre-existing oversized modules shrink. Broad ticket completion and native admission remain pending."
 }
