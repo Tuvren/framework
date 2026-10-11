@@ -118,3 +118,71 @@ tickets:
           - tools/scripts/lib/biome-lint-partition.test.ts
           - tools/scripts/biome-lint.test.ts
         justification: "Atomic admission exposed two obsolete bootstrap assumptions in the existing 15-suite lane: empty native arrays in the actual partition test and an assertion that real metadata discovers zero native targets. Actual native ownership independently passes 42 code and 14 JSON files without gaps or duplicates. Under the owner's latest instruction to complete work autonomously while absent, extend scope only for necessary test maintenance: use actual native code/JSON selection in the approved partition path, and assert both admitted kernel targets in the additional routing-test path. This additional path was adopted autonomously, not separately confirmed. Preserve completeness assertions, inventories, negative controls, suite registrations and lint policy; retain the original 139-pass/2-fail measurement alongside final passing repair proof."
+closeout:
+  tickets_completed: [KRT-BQ001, KRT-BQ002, KRT-BQ003, KRT-BQ004]
+  tickets_deferred: []
+  points_completed: 24
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Completed EPIC-BQ: kernel protocol and runtime satisfy the shipped native preset, preserve the reordering pilot outcomes, and gain atomic code/JSON lint ownership. All six original suppression identities and reasons remain accounted for in the final admission ledger."
+    - directory: tech-spec
+      type: changed
+      text: "Kernel-record grammar has direct CDDL package-test evidence. Execution records intentional callable/error-delivery API changes with protocol, runtime and SDK minor release coverage and routes implementation patterns and evidence conventions to Stage 3 alignment."
+  candidate_terms: []
+  routed_upstream: []
+  follow_ups: ["Stage 3 alignment should review the code_decisions routed by reconciliation. EPIC-CB suppression aggregation should consume .constitution/evidence/KRT-BQ004/suppressions.json as the final BQ disposition ledger, retaining the linked M3 and M4 historical proofs."]
+  code_decisions:
+    - summary: "Historical callable compatibility evidence uses TypeScript compiler AST builders with NoTruncation and array-spelling normalization; it verifies callable signatures and export presence, not type-only interface structure."
+      kind: pattern
+      paths: [".constitution/evidence/KRT-BQ001/runtime-signature-probe.mjs"]
+      commit: 34b16bd
+    - summary: "Suppression evidence uses a versioned ledger keyed by path/rule/occurrence, raw command-report wrappers and byte-identical external mirrors under the retained checker. File-backed subprocess capture avoids measured Bun output truncation. These are evidence conventions, not runtime contracts or lint policy."
+      kind: convention
+      paths: [".constitution/evidence/KRT-BQ002/suppressions.json", ".constitution/evidence/KRT-BQ002/probe.ts"]
+      commit: d52e5b0
+    - summary: Fresh-process module-initialization tests recursively invoke the Bun test runner with TUVREN_KERNEL_FIRST_MODULE and check public validation/error-order/canonical-identity outcomes under six first-import choices.
+      kind: pattern
+      paths: [typescript/kernel/protocol/test/kernel-module-initialization.test.ts]
+      commit: a400c05
+    - summary: "An overloaded assertion arrow retains its exported overload annotation and satisfies the precise implementation callable type, preserving default-parameter inference under TypeScript 6.0.2 while passing retained Biome without casts or suppressions."
+      kind: pattern
+      paths: [typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts]
+      commit: 734df20
+    - summary: "Kernel protocol method signatures become callable properties with strict parameter variance; hashKernelRecord and hashTurnTreeIdentity reject invalid input through their Promise. These deliberate 0.x breaking changes carry protocol and SDK minor release coverage and exactly three generated SDK freeze updates."
+      kind: contract_shape
+      paths: [typescript/kernel/protocol/src/lib/kernel-types.ts, typescript/kernel/protocol/src/lib/kernel-record-identity.ts, typescript/kernel/protocol/src/lib/kernel-identity.ts, tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json]
+      commit: 2d123e7612c27a0cf6af05fc20c526e86b5753d7
+    - summary: "Canonical normalization allocates a typed empty dynamic dictionary and then sets its prototype to null before population, avoiding unsafe Object.create assertions while retaining null-prototype behavior."
+      kind: pattern
+      paths: [typescript/kernel/protocol/src/lib/kernel-record-identity.ts, typescript/kernel/protocol/src/lib/kernel-identity.ts]
+      commit: 2d123e7612c27a0cf6af05fc20c526e86b5753d7
+    - summary: "Private bounded async recursion preserves sequential benchmark iterations, samples and cases under no-await-in-loop. Benchmark results are smoke evidence rather than a comparative performance claim."
+      kind: pattern
+      paths: [typescript/kernel/protocol/bench/kernel-identity.bench.ts]
+      commit: 2d123e7612c27a0cf6af05fc20c526e86b5753d7
+    - summary: Malformed-input tests capture unknown Reflect.apply results and await a rejectionOf(Promise<unknown>) helper before checking Error details. Order-sensitive fixtures use Object.fromEntries and prototype/symbol boundary tests use reflection/descriptors instead of unsafe casts.
+      kind: pattern
+      paths: [typescript/kernel/protocol/test/kernel-contract-test-helpers.ts, typescript/kernel/protocol/test/kernel-protocol-fixtures.ts, typescript/kernel/protocol/test/kernel-record-fixtures.ts, typescript/kernel/protocol/test/kernel-contract-deterministic.test.ts, typescript/kernel/protocol/test/kernel-records.test.ts]
+      commit: 2d123e7612c27a0cf6af05fc20c526e86b5753d7
+    - summary: "Internal mapSequential async generator and nonrecursive unfoldAsync state iterator preserve sequential effects, concurrent-pull serialization and lazy termination under no-await-in-loop. State steps return {next,value} or null. Focused tests prove early return, error identity, transaction rereads and a 20,000-step traversal."
+      kind: pattern
+      paths: [typescript/kernel/runtime/src/lib/runtime-kernel-async.ts, typescript/kernel/runtime/test/runtime-kernel-async.test.ts]
+      commit: 9abbb6b6d70c85672ee2fd0af0b84f2516ea3f44
+    - summary: "RuntimeKernel.verdicts.compose now rejects malformed-input evaluation through its Promise rather than throwing synchronously; successful priority, value/object identity and evaluation Error identity remain covered. This intentional 0.x behavior tightening carries kernel-runtime minor release coverage."
+      kind: contract_shape
+      paths: [typescript/kernel/runtime/src/lib/runtime-kernel.ts, typescript/kernel/runtime/README.md]
+      commit: 9abbb6b6d70c85672ee2fd0af0b84f2516ea3f44
+    - summary: "Native ownership tests derive current code and JSON selections from classified metadata and permanent checker helpers. JSON credit requires an explicit companion or JSON-only target; the existing bare-Oxlint negative control exercises the same selector. The final six-identity ledger links indexed raw archive members and immutable initial/early-deletion history for later aggregation."
+      kind: convention
+      paths: [tools/scripts/lib/biome-lint-partition.test.ts, tools/scripts/biome-lint.test.ts, ".constitution/evidence/KRT-BQ004/suppressions.json"]
+      commit: 9bd27c2f662c5daab33295956d1021948cf897e9
+  settled:
+    - record: ".constitution/tech-spec/data-models/kernel-records.meta.yaml"
+      evidence:
+        kind: repository
+        ref: typescript/kernel/protocol/test/kernel-cddl.test.ts
+        version: 2e52a9e
+        date: 2026-10-11
+        note: "Directly parses spec/kernel/cddl/kernel-records.cddl, names canonical families and checks runtime scalar restrictions; tested in the same source batch."
