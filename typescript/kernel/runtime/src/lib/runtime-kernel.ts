@@ -17,27 +17,27 @@
 import { randomUUID } from "node:crypto";
 
 import {
-  type EpochMs,
   TuvrenLineageError,
   TuvrenPersistenceError,
   TuvrenRuntimeError,
   TuvrenValidationError,
 } from "@tuvren/core";
-import {
-  assertTurnTreeSchema,
-  type BranchHeadListEntry,
-  type KernelThreadListCursor,
-  type ListThreadsCursorPayload,
-  type ReclamationOptions,
-  type ReclamationSummary,
-  type RuntimeBackend,
-  type RuntimeKernel,
-  type RuntimeKernelRunLiveness,
-  type SetHeadResult,
-  type StoredBranch,
-  type StoredTurn,
-  type ThreadCreateResult,
-  type TurnTreeManifest,
+import type { EpochMs } from "@tuvren/core";
+import { assertTurnTreeSchema } from "@tuvren/kernel-protocol";
+import type {
+  BranchHeadListEntry,
+  KernelThreadListCursor,
+  ListThreadsCursorPayload,
+  ReclamationOptions,
+  ReclamationSummary,
+  RuntimeBackend,
+  RuntimeKernel,
+  RuntimeKernelRunLiveness,
+  SetHeadResult,
+  StoredBranch,
+  StoredTurn,
+  ThreadCreateResult,
+  TurnTreeManifest,
 } from "@tuvren/kernel-protocol";
 
 import {
@@ -93,7 +93,7 @@ import {
 function encodeCursor(
   payload: ListThreadsCursorPayload
 ): KernelThreadListCursor {
-  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  return Buffer.from(JSON.stringify(payload), "utf-8").toString("base64url");
 }
 
 /**
@@ -109,7 +109,7 @@ function decodeCursor(
 ): ListThreadsCursorPayload {
   let raw: string;
   try {
-    raw = Buffer.from(cursor, "base64url").toString("utf8");
+    raw = Buffer.from(cursor, "base64url").toString("utf-8");
   } catch {
     throw new TuvrenValidationError(
       "thread.list cursor is not valid base64url",
@@ -185,7 +185,7 @@ export function createRuntimeKernel(
   options: RuntimeKernelOptions
 ): RuntimeKernel & RuntimeKernelRunLiveness {
   const now = options.now ?? (() => Date.now() as EpochMs);
-  const backend = options.backend;
+  const { backend } = options;
   const createFencingToken = options.createFencingToken ?? randomUUID;
 
   return {
@@ -417,12 +417,12 @@ export function createRuntimeKernel(
 
           const objectHash = await putObject(tx, blob, now);
           const stagedResult = createStagedResult({
+            interruptPayload,
             objectHash,
             objectType,
             status,
             taskId,
             timestamp: now(),
-            interruptPayload,
           });
           await tx.stagedResults.set(toStoredStagedResult(runId, stagedResult));
           return { objectHash, stagedResult };
@@ -526,16 +526,16 @@ export function createRuntimeKernel(
               ? undefined
               : decodeCursor(options.cursor);
           const result = await tx.threads.list({
-            limit: options?.limit,
             cursor: decodedCursor,
             filter: options?.filter,
+            limit: options?.limit,
           });
           return {
-            threads: result.threads,
             nextCursor:
               result.nextCursor === undefined
                 ? undefined
                 : encodeCursor(result.nextCursor),
+            threads: result.threads,
           };
         });
       },

@@ -26,10 +26,9 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
-const TEST_DIRECTORY = dirname(fileURLToPath(import.meta.url));
+const TEST_DIRECTORY = import.meta.dirname;
 
 const DECLARATION_SOURCES = [
   join(TEST_DIRECTORY, "../src/lib/runtime-kernel-storage.ts"),
@@ -50,15 +49,15 @@ const DECLARATION_SOURCES = [
   ),
 ];
 
-function extractDeclaredValues(constantName: string): Array<{
+function extractDeclaredValues(constantName: string): {
   file: string;
   value: number;
-}> {
+}[] {
   const pattern = new RegExp(`${constantName}\\s*=\\s*(\\d+)`, "g");
-  const found: Array<{ file: string; value: number }> = [];
+  const found: { file: string; value: number }[] = [];
 
   for (const file of DECLARATION_SOURCES) {
-    const text = readFileSync(file, "utf8");
+    const text = readFileSync(file, "utf-8");
 
     for (const match of text.matchAll(pattern)) {
       const rawValue = match[1];
