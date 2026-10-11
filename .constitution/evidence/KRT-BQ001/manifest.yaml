@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "b86053389235ed5c34a6896020a685f599eddce0",
-    "command": "bunx --bun oxlint --fix typescript/kernel/runtime; bun run typecheck; bun run lint; bun .constitution/evidence/KRT-BQ001/runtime-signature-probe.mjs b86053389235ed5c34a6896020a685f599eddce0"
+    "commit": "fd61762",
+    "command": "bun .constitution/evidence/KRT-BQ001/runtime-signature-probe.mjs b86053389235ed5c34a6896020a685f599eddce0; bun run typecheck; bun run lint"
   },
   "files": [
     {
@@ -92,6 +92,42 @@
       "role": "measurement"
     },
     {
+      "path": "M2a-changeset.log.gz",
+      "sha256": "c4a5b45ee2ad060413562fdf0b1ed1ad4853d95cdd5885e67fc9d6c5d784fb55",
+      "bytes": 117,
+      "role": "measurement"
+    },
+    {
+      "path": "M2a-constitution.log.gz",
+      "sha256": "c1e53a16ec78ee220f76e084f60d24e1c24f7df2ce48b7d7efd27e216a060053",
+      "bytes": 1266,
+      "role": "measurement"
+    },
+    {
+      "path": "M2a-format.log.gz",
+      "sha256": "cc7f6d66263cf646d9260d7b41e46228ccea4b31433cf2bb667d5f6f5259a534",
+      "bytes": 131,
+      "role": "measurement"
+    },
+    {
+      "path": "M2a-lint.log.gz",
+      "sha256": "45a093f95c21bb546b1202dbd71e2990f6cfafa2d974ec03363c95246ab30717",
+      "bytes": 316,
+      "role": "measurement"
+    },
+    {
+      "path": "M2a-scoped.log.gz",
+      "sha256": "6dcf366a501a555491ed296e87de426215763f5eba2a804f65ffbf85dafd6e5f",
+      "bytes": 448,
+      "role": "measurement"
+    },
+    {
+      "path": "M2a-typecheck.log.gz",
+      "sha256": "7ef8a5d9c081fac69b14df25d4f6732e813090e590c657840ab08ed71a25b81f",
+      "bytes": 875,
+      "role": "measurement"
+    },
+    {
       "path": "baseline.json",
       "sha256": "93750590ff5c90d2d15cd37cdcd43aa5ed0ef2256eabdc7f121230149a8cc4be",
       "bytes": 1324,
@@ -147,14 +183,14 @@
     },
     {
       "path": "runtime-signature-probe.mjs",
-      "sha256": "f6796a4eaa83b5743eec99171ad222d3f47b0c9b5256c23780e8830139445c15",
-      "bytes": 4606,
+      "sha256": "37d4c9c8af70f10978742fd065de44e572fc8e940ce14cd291891944cab4450d",
+      "bytes": 6806,
       "role": "measurement"
     },
     {
       "path": "runtime-signatures.json",
-      "sha256": "dd54c3c85da04eeb813731cb55eab31b64b5e52b90443758f2f074f6588454f2",
-      "bytes": 61184,
+      "sha256": "00bbf0d3adb9c10e8aa88959d7b1b4a0df7dfcb9533713bbd646d2f174ba1fef",
+      "bytes": 53138,
       "role": "measurement"
     },
     {
@@ -164,5 +200,5 @@
       "role": "measurement"
     }
   ],
-  "pass_criteria": "Both pilot packages typecheck and their 142 tests pass. Retained lint, format, direct changeset coverage and full runtime export/callable comparisons pass. Historical diagnostic counts are not quotas."
+  "pass_criteria": "Full export and callable compatibility, array normalization and negative self-checks pass. All final milestone gates run with the runnable evidence helper present, under the retained policy without suppressions or bitmask arithmetic workarounds."
 }

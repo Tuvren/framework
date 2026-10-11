@@ -10,961 +10,961 @@
   "callableSignatureCount": 79,
   "before": {
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:composeModifyVerdict": {
-      "type": "declare const fn: (verdicts: ReadonlyArray<{\n    kind: string;\n    transform?: KernelRecord;\n}>) => ModifyVerdict | undefined;\n",
+      "type": "(verdicts: ReadonlyArray<{ kind: string; transform?: KernelRecord; }>) => ModifyVerdict | undefined",
       "callSignatures": [
-        "declare const fn: (verdicts: ReadonlyArray<{\n    kind: string;\n    transform?: KernelRecord;\n}>) => ModifyVerdict | undefined;\n"
+        "(verdicts: ReadonlyArray<{ kind: string; transform?: KernelRecord; }>) => ModifyVerdict | undefined"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:walkBack": {
-      "type": "declare const fn: (backend: RuntimeBackend, fromHash: HashString) => AsyncIterable<TurnNode>;\n",
+      "type": "(backend: RuntimeBackend, fromHash: HashString) => AsyncIterable<TurnNode>",
       "callSignatures": [
-        "declare const fn: (backend: RuntimeBackend, fromHash: HashString) => AsyncIterable<TurnNode>;\n"
+        "(backend: RuntimeBackend, fromHash: HashString) => AsyncIterable<TurnNode>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:walkBackFromTx": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, fromHash: HashString) => AsyncIterable<TurnNode>;\n",
+      "type": "(tx: RuntimeBackendTx, fromHash: HashString) => AsyncIterable<TurnNode>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, fromHash: HashString) => AsyncIterable<TurnNode>;\n"
+        "(tx: RuntimeBackendTx, fromHash: HashString) => AsyncIterable<TurnNode>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:classifyHeadMovement": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<\"forward\" | \"backward\" | \"lateral\">;\n",
+      "type": "(tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<\"forward\" | \"backward\" | \"lateral\">",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<\"forward\" | \"backward\" | \"lateral\">;\n"
+        "(tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<\"forward\" | \"backward\" | \"lateral\">"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertNoActiveBranchRunForForwardHeadMove": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, branch: StoredBranch) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, branch: StoredBranch) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, branch: StoredBranch) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, branch: StoredBranch) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:collectAbandonedSegmentHashes": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<Set<HashString>>;\n",
+      "type": "(tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<Set<HashString>>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<Set<HashString>>;\n"
+        "(tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<Set<HashString>>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:allocateArchiveBranchId": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, input: {\n    branchId: string;\n    currentHead: HashString;\n    initialOrdinal: number;\n}) => Promise<string>;\n",
+      "type": "(tx: RuntimeBackendTx, input: { branchId: string; currentHead: HashString; initialOrdinal: number; }) => Promise<string>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, input: {\n    branchId: string;\n    currentHead: HashString;\n    initialOrdinal: number;\n}) => Promise<string>;\n"
+        "(tx: RuntimeBackendTx, input: { branchId: string; currentHead: HashString; initialOrdinal: number; }) => Promise<string>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:runTouchesSegment": {
-      "type": "declare const fn: (run: StoredRun, segmentHashes: ReadonlySet<HashString>) => boolean;\n",
+      "type": "(run: StoredRun, segmentHashes: ReadonlySet<HashString>) => boolean",
       "callSignatures": [
-        "declare const fn: (run: StoredRun, segmentHashes: ReadonlySet<HashString>) => boolean;\n"
+        "(run: StoredRun, segmentHashes: ReadonlySet<HashString>) => boolean"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:getLastRunTurnNodeHash": {
-      "type": "declare const fn: (run: RunRecord) => HashString;\n",
+      "type": "(run: RunRecord) => HashString",
       "callSignatures": [
-        "declare const fn: (run: RunRecord) => HashString;\n"
+        "(run: RunRecord) => HashString"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:getLastRunTurnNodeHashFromStoredRun": {
-      "type": "declare const fn: (run: StoredRun) => HashString;\n",
+      "type": "(run: StoredRun) => HashString",
       "callSignatures": [
-        "declare const fn: (run: StoredRun) => HashString;\n"
+        "(run: StoredRun) => HashString"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:isLeaseExpired": {
-      "type": "declare const fn: (leaseExpiresAtMs: EpochMs, nowMs: EpochMs) => boolean;\n",
+      "type": "(leaseExpiresAtMs: EpochMs, nowMs: EpochMs) => boolean",
       "callSignatures": [
-        "declare const fn: (leaseExpiresAtMs: EpochMs, nowMs: EpochMs) => boolean;\n"
+        "(leaseExpiresAtMs: EpochMs, nowMs: EpochMs) => boolean"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:turnNodeDescendsFrom": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, candidateHash: HashString, ancestorHash: HashString) => Promise<boolean>;\n",
+      "type": "(tx: RuntimeBackendTx, candidateHash: HashString, ancestorHash: HashString) => Promise<boolean>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, candidateHash: HashString, ancestorHash: HashString) => Promise<boolean>;\n"
+        "(tx: RuntimeBackendTx, candidateHash: HashString, ancestorHash: HashString) => Promise<boolean>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:validateTurnParent": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, threadId: string, branchId: string, parentTurnId: string | null, startTurnNodeHash: HashString) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, threadId: string, branchId: string, parentTurnId: string | null, startTurnNodeHash: HashString) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, threadId: string, branchId: string, parentTurnId: string | null, startTurnNodeHash: HashString) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, threadId: string, branchId: string, parentTurnId: string | null, startTurnNodeHash: HashString) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertTurnHeadRewritePreservesDependents": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turn: TurnRecord, nextHeadTurnNodeHash: HashString) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, turn: TurnRecord, nextHeadTurnNodeHash: HashString) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turn: TurnRecord, nextHeadTurnNodeHash: HashString) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, turn: TurnRecord, nextHeadTurnNodeHash: HashString) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:stepRequiresCheckpoint": {
-      "type": "declare const fn: (step: StepDeclaration, stagedResults: Array<StagedResult>, treeHash: HashString | undefined) => boolean;\n",
+      "type": "(step: StepDeclaration, stagedResults: Array<StagedResult>, treeHash: HashString | undefined) => boolean",
       "callSignatures": [
-        "declare const fn: (step: StepDeclaration, stagedResults: Array<StagedResult>, treeHash: HashString | undefined) => boolean;\n"
+        "(step: StepDeclaration, stagedResults: Array<StagedResult>, treeHash: HashString | undefined) => boolean"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:requireRunningRun": {
-      "type": "declare const fn: (run: RunRecord, runId: string) => void;\n",
+      "type": "(run: RunRecord, runId: string) => void",
       "callSignatures": [
-        "declare const fn: (run: RunRecord, runId: string) => void;\n"
+        "(run: RunRecord, runId: string) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:requireCurrentStep": {
-      "type": "declare const fn: (run: RunRecord, stepId: string) => StepDeclaration;\n",
+      "type": "(run: RunRecord, stepId: string) => StepDeclaration",
       "callSignatures": [
-        "declare const fn: (run: RunRecord, stepId: string) => StepDeclaration;\n"
+        "(run: RunRecord, stepId: string) => StepDeclaration"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertEventHashInStore": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, eventHash: HashString | undefined) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, eventHash: HashString | undefined) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, eventHash: HashString | undefined) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, eventHash: HashString | undefined) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertTreeHashForRun": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, treeHash: HashString | undefined, schemaId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, treeHash: HashString | undefined, schemaId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, treeHash: HashString | undefined, schemaId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, treeHash: HashString | undefined, schemaId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:encodeSignalsCborFromObserveResults": {
-      "type": "declare const fn: (observeResults: Array<{\n    signals: Array<KernelRecord>;\n}> | undefined) => Uint8Array | undefined;\n",
+      "type": "(observeResults: Array<{ signals: Array<KernelRecord>; }> | undefined) => Uint8Array | undefined",
       "callSignatures": [
-        "declare const fn: (observeResults: Array<{\n    signals: Array<KernelRecord>;\n}> | undefined) => Uint8Array | undefined;\n"
+        "(observeResults: Array<{ signals: Array<KernelRecord>; }> | undefined) => Uint8Array | undefined"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:createObserveAnnotationRecords": {
-      "type": "declare const fn: (input: {\n    now: () => EpochMs;\n    observeResults: Array<{\n        annotations: Array<KernelObject>;\n    }> | undefined;\n    runId: string;\n    turnNodeHash: HashString | null;\n}) => Promise<Array<{\n    annotationCbor: Uint8Array;\n    annotationHash: HashString;\n    createdAtMs: EpochMs;\n    runId: string;\n    turnNodeHash: HashString | null;\n}>>;\n",
+      "type": "(input: { now: () => EpochMs; observeResults: Array<{ annotations: Array<KernelObject>; }> | undefined; runId: string; turnNodeHash: HashString | null; }) => Promise<Array<{ annotationCbor: Uint8Array; annotationHash: HashString; createdAtMs: EpochMs; runId: string; turnNodeHash: HashString | null; }>>",
       "callSignatures": [
-        "declare const fn: (input: {\n    now: () => EpochMs;\n    observeResults: Array<{\n        annotations: Array<KernelObject>;\n    }> | undefined;\n    runId: string;\n    turnNodeHash: HashString | null;\n}) => Promise<Array<{\n    annotationCbor: Uint8Array;\n    annotationHash: HashString;\n    createdAtMs: EpochMs;\n    runId: string;\n    turnNodeHash: HashString | null;\n}>>;\n"
+        "(input: { now: () => EpochMs; observeResults: Array<{ annotations: Array<KernelObject>; }> | undefined; runId: string; turnNodeHash: HashString | null; }) => Promise<Array<{ annotationCbor: Uint8Array; annotationHash: HashString; createdAtMs: EpochMs; runId: string; turnNodeHash: HashString | null; }>>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:validateObserveResults": {
-      "type": "declare const fn: (observeResults: Array<unknown> | undefined) => void;\n",
+      "type": "(observeResults: Array<unknown> | undefined) => void",
       "callSignatures": [
-        "declare const fn: (observeResults: Array<unknown> | undefined) => void;\n"
+        "(observeResults: Array<unknown> | undefined) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertUniqueStepIds": {
-      "type": "declare const fn: (steps: Array<StepDeclaration>) => void;\n",
+      "type": "(steps: Array<StepDeclaration>) => void",
       "callSignatures": [
-        "declare const fn: (steps: Array<StepDeclaration>) => void;\n"
+        "(steps: Array<StepDeclaration>) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:validateTurnTreeChangeSet": {
-      "type": "declare const fn: (schema: TurnTreeSchema, changes: TurnTreeChangeSet) => void;\n",
+      "type": "(schema: TurnTreeSchema, changes: TurnTreeChangeSet) => void",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema, changes: TurnTreeChangeSet) => void;\n"
+        "(schema: TurnTreeSchema, changes: TurnTreeChangeSet) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:validateStagedResultsHaveRules": {
-      "type": "declare const fn: (schema: TurnTreeSchema, stagedResults: Array<StagedResult>) => void;\n",
+      "type": "(schema: TurnTreeSchema, stagedResults: Array<StagedResult>) => void",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema, stagedResults: Array<StagedResult>) => void;\n"
+        "(schema: TurnTreeSchema, stagedResults: Array<StagedResult>) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:applyStagedResultsToManifest": {
-      "type": "declare const fn: (schema: TurnTreeSchema, manifest: TurnTreeManifest, stagedResults: Array<StagedResult>) => void;\n",
+      "type": "(schema: TurnTreeSchema, manifest: TurnTreeManifest, stagedResults: Array<StagedResult>) => void",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema, manifest: TurnTreeManifest, stagedResults: Array<StagedResult>) => void;\n"
+        "(schema: TurnTreeSchema, manifest: TurnTreeManifest, stagedResults: Array<StagedResult>) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:maybeCheckpoint": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    treeHash: undefined;\n}) => Promise<HashString | undefined>;\n",
+      "type": "(tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: { eventHash: HashString | null; now: () => EpochMs; treeHash: undefined; }) => Promise<HashString | undefined>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    treeHash: undefined;\n}) => Promise<HashString | undefined>;\n"
+        "(tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: { eventHash: HashString | null; now: () => EpochMs; treeHash: undefined; }) => Promise<HashString | undefined>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:checkpointAndClear": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    treeHash?: HashString;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: { eventHash: HashString | null; now: () => EpochMs; treeHash?: HashString; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    treeHash?: HashString;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: { eventHash: HashString | null; now: () => EpochMs; treeHash?: HashString; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:checkpointRun": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    run: RunRecord;\n    stagedResults: Array<StagedResult>;\n    treeHash?: HashString;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, input: { eventHash: HashString | null; now: () => EpochMs; run: RunRecord; stagedResults: Array<StagedResult>; treeHash?: HashString; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    run: RunRecord;\n    stagedResults: Array<StagedResult>;\n    treeHash?: HashString;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, input: { eventHash: HashString | null; now: () => EpochMs; run: RunRecord; stagedResults: Array<StagedResult>; treeHash?: HashString; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:createIncorporatedTree": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, baseTurnTreeHash: HashString, input: {\n    now: () => EpochMs;\n    run: RunRecord;\n    stagedResults: Array<StagedResult>;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, baseTurnTreeHash: HashString, input: { now: () => EpochMs; run: RunRecord; stagedResults: Array<StagedResult>; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, baseTurnTreeHash: HashString, input: {\n    now: () => EpochMs;\n    run: RunRecord;\n    stagedResults: Array<StagedResult>;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, baseTurnTreeHash: HashString, input: { now: () => EpochMs; run: RunRecord; stagedResults: Array<StagedResult>; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:createTurnTree": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, input: {\n    changes: TurnTreeChangeSet;\n    now: () => EpochMs;\n    priorTurnTreeHash?: HashString;\n    schema: TurnTreeSchema;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, input: { changes: TurnTreeChangeSet; now: () => EpochMs; priorTurnTreeHash?: HashString; schema: TurnTreeSchema; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, input: {\n    changes: TurnTreeChangeSet;\n    now: () => EpochMs;\n    priorTurnTreeHash?: HashString;\n    schema: TurnTreeSchema;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, input: { changes: TurnTreeChangeSet; now: () => EpochMs; priorTurnTreeHash?: HashString; schema: TurnTreeSchema; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:createTurnNode": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, input: {\n    consumedStagedResults: Array<StagedResult>;\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    previousTurnNodeHash: HashString | null;\n    schemaId: string;\n    turnTreeHash: HashString;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, input: { consumedStagedResults: Array<StagedResult>; eventHash: HashString | null; now: () => EpochMs; previousTurnNodeHash: HashString | null; schemaId: string; turnTreeHash: HashString; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, input: {\n    consumedStagedResults: Array<StagedResult>;\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    previousTurnNodeHash: HashString | null;\n    schemaId: string;\n    turnTreeHash: HashString;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, input: { consumedStagedResults: Array<StagedResult>; eventHash: HashString | null; now: () => EpochMs; previousTurnNodeHash: HashString | null; schemaId: string; turnTreeHash: HashString; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts:createRuntimeKernelRunApi": {
-      "type": "declare const fn: (dependencies: RuntimeKernelRunsDependencies) => RuntimeKernel[\"run\"];\n",
+      "type": "(dependencies: RuntimeKernelRunsDependencies) => RuntimeKernel[\"run\"]",
       "callSignatures": [
-        "declare const fn: (dependencies: RuntimeKernelRunsDependencies) => RuntimeKernel[\"run\"];\n"
+        "(dependencies: RuntimeKernelRunsDependencies) => RuntimeKernel[\"run\"]"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts:createRuntimeKernelRunLivenessApi": {
-      "type": "declare const fn: (dependencies: RuntimeKernelRunsDependencies) => RuntimeKernelRunLiveness[\"runLiveness\"];\n",
+      "type": "(dependencies: RuntimeKernelRunsDependencies) => RuntimeKernelRunLiveness[\"runLiveness\"]",
       "callSignatures": [
-        "declare const fn: (dependencies: RuntimeKernelRunsDependencies) => RuntimeKernelRunLiveness[\"runLiveness\"];\n"
+        "(dependencies: RuntimeKernelRunsDependencies) => RuntimeKernelRunLiveness[\"runLiveness\"]"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:putObject": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, blob: Uint8Array, now: () => EpochMs, mediaType?: string) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, blob: Uint8Array, now: () => EpochMs, mediaType?: string) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, blob: Uint8Array, now: () => EpochMs, mediaType?: string) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, blob: Uint8Array, now: () => EpochMs, mediaType?: string) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:createEmptyManifest": {
-      "type": "declare const fn: (schema: TurnTreeSchema) => TurnTreeManifest;\n",
+      "type": "(schema: TurnTreeSchema) => TurnTreeManifest",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema) => TurnTreeManifest;\n"
+        "(schema: TurnTreeSchema) => TurnTreeManifest"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:normalizeManifest": {
-      "type": "declare const fn: (schema: TurnTreeSchema, changes: TurnTreeChangeSet) => TurnTreeManifest;\n",
+      "type": "(schema: TurnTreeSchema, changes: TurnTreeChangeSet) => TurnTreeManifest",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema, changes: TurnTreeChangeSet) => TurnTreeManifest;\n"
+        "(schema: TurnTreeSchema, changes: TurnTreeChangeSet) => TurnTreeManifest"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toStoredTurnTreePath": {
-      "type": "declare const fn: (turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue) => StoredTurnTreePath;\n",
+      "type": "(turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue) => StoredTurnTreePath",
       "callSignatures": [
-        "declare const fn: (turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue) => StoredTurnTreePath;\n"
+        "(turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue) => StoredTurnTreePath"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toStoredTurnTreePathChunkAware": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue, priorTurnTreeHash: HashString | undefined, now: () => EpochMs) => Promise<StoredTurnTreePath>;\n",
+      "type": "(tx: RuntimeBackendTx, turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue, priorTurnTreeHash: HashString | undefined, now: () => EpochMs) => Promise<StoredTurnTreePath>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue, priorTurnTreeHash: HashString | undefined, now: () => EpochMs) => Promise<StoredTurnTreePath>;\n"
+        "(tx: RuntimeBackendTx, turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue, priorTurnTreeHash: HashString | undefined, now: () => EpochMs) => Promise<StoredTurnTreePath>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireTreeManifest": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, treeHash: HashString) => Promise<TurnTreeManifest>;\n",
+      "type": "(tx: RuntimeBackendTx, treeHash: HashString) => Promise<TurnTreeManifest>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, treeHash: HashString) => Promise<TurnTreeManifest>;\n"
+        "(tx: RuntimeBackendTx, treeHash: HashString) => Promise<TurnTreeManifest>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireThreadTurnNode": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, hash: HashString, thread: ThreadRecord) => Promise<TurnNode>;\n",
+      "type": "(tx: RuntimeBackendTx, hash: HashString, thread: ThreadRecord) => Promise<TurnNode>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, hash: HashString, thread: ThreadRecord) => Promise<TurnNode>;\n"
+        "(tx: RuntimeBackendTx, hash: HashString, thread: ThreadRecord) => Promise<TurnNode>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:listStagedResults": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<Array<StagedResult>>;\n",
+      "type": "(tx: RuntimeBackendTx, runId: string) => Promise<Array<StagedResult>>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<Array<StagedResult>>;\n"
+        "(tx: RuntimeBackendTx, runId: string) => Promise<Array<StagedResult>>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:createStagedResult": {
-      "type": "declare const fn: (input: {\n    interruptPayload?: KernelRecord;\n    objectHash: HashString;\n    objectType: string;\n    status: StagedResultStatus;\n    taskId: string;\n    timestamp: EpochMs;\n}) => StagedResult;\n",
+      "type": "(input: { interruptPayload?: KernelRecord; objectHash: HashString; objectType: string; status: StagedResultStatus; taskId: string; timestamp: EpochMs; }) => StagedResult",
       "callSignatures": [
-        "declare const fn: (input: {\n    interruptPayload?: KernelRecord;\n    objectHash: HashString;\n    objectType: string;\n    status: StagedResultStatus;\n    taskId: string;\n    timestamp: EpochMs;\n}) => StagedResult;\n"
+        "(input: { interruptPayload?: KernelRecord; objectHash: HashString; objectType: string; status: StagedResultStatus; taskId: string; timestamp: EpochMs; }) => StagedResult"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toStoredStagedResult": {
-      "type": "declare const fn: (runId: string, stagedResult: StagedResult) => StoredStagedResult;\n",
+      "type": "(runId: string, stagedResult: StagedResult) => StoredStagedResult",
       "callSignatures": [
-        "declare const fn: (runId: string, stagedResult: StagedResult) => StoredStagedResult;\n"
+        "(runId: string, stagedResult: StagedResult) => StoredStagedResult"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeStoredStagedResult": {
-      "type": "declare const fn: (record: StoredStagedResult) => StagedResult;\n",
+      "type": "(record: StoredStagedResult) => StagedResult",
       "callSignatures": [
-        "declare const fn: (record: StoredStagedResult) => StagedResult;\n"
+        "(record: StoredStagedResult) => StagedResult"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeStoredRun": {
-      "type": "declare const fn: (record: StoredRun) => RunRecord;\n",
+      "type": "(record: StoredRun) => RunRecord",
       "callSignatures": [
-        "declare const fn: (record: StoredRun) => RunRecord;\n"
+        "(record: StoredRun) => RunRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeStoredTurnNode": {
-      "type": "declare const fn: (record: StoredTurnNode) => TurnNode;\n",
+      "type": "(record: StoredTurnNode) => TurnNode",
       "callSignatures": [
-        "declare const fn: (record: StoredTurnNode) => TurnNode;\n"
+        "(record: StoredTurnNode) => TurnNode"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toBranchRecord": {
-      "type": "declare const fn: (record: StoredBranch) => BranchRecord;\n",
+      "type": "(record: StoredBranch) => BranchRecord",
       "callSignatures": [
-        "declare const fn: (record: StoredBranch) => BranchRecord;\n"
+        "(record: StoredBranch) => BranchRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toTurnRecord": {
-      "type": "declare const fn: (record: StoredTurn) => TurnRecord;\n",
+      "type": "(record: StoredTurn) => TurnRecord",
       "callSignatures": [
-        "declare const fn: (record: StoredTurn) => TurnRecord;\n"
+        "(record: StoredTurn) => TurnRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:clearStoredRunLease": {
-      "type": "declare const fn: (record: Omit<StoredRun, \"pendingSignalsCbor\">) => Omit<StoredRun, \"executionOwnerId\" | \"fencingToken\" | \"leaseExpiresAtMs\" | \"preemptionReason\">;\n",
+      "type": "(record: Omit<StoredRun, \"pendingSignalsCbor\">) => Omit<StoredRun, \"executionOwnerId\" | \"fencingToken\" | \"leaseExpiresAtMs\" | \"preemptionReason\">",
       "callSignatures": [
-        "declare const fn: (record: Omit<StoredRun, \"pendingSignalsCbor\">) => Omit<StoredRun, \"executionOwnerId\" | \"fencingToken\" | \"leaseExpiresAtMs\" | \"preemptionReason\">;\n"
+        "(record: Omit<StoredRun, \"pendingSignalsCbor\">) => Omit<StoredRun, \"executionOwnerId\" | \"fencingToken\" | \"leaseExpiresAtMs\" | \"preemptionReason\">"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:createRunningLeaseUpdate": {
-      "type": "declare const fn: (run: StoredRun, createFencingToken: () => string) => {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n} | Record<string, never>;\n",
+      "type": "(run: StoredRun, createFencingToken: () => string) => { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; } | Record<string, never>",
       "callSignatures": [
-        "declare const fn: (run: StoredRun, createFencingToken: () => string) => {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n} | Record<string, never>;\n"
+        "(run: StoredRun, createFencingToken: () => string) => { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; } | Record<string, never>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:isRunLeaseState": {
-      "type": "declare const fn: (value: {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n} | Record<string, never>) => value is {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n};\n",
+      "type": "(value: { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; } | Record<string, never>) => value is { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; }",
       "callSignatures": [
-        "declare const fn: (value: {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n} | Record<string, never>) => value is {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n};\n"
+        "(value: { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; } | Record<string, never>) => value is { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; }"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertLeasedRunCreateInput": {
-      "type": "declare const fn: (input: {\n    executionOwnerId: string;\n    leaseExpiresAtMs: EpochMs;\n}) => void;\n",
+      "type": "(input: { executionOwnerId: string; leaseExpiresAtMs: EpochMs; }) => void",
       "callSignatures": [
-        "declare const fn: (input: {\n    executionOwnerId: string;\n    leaseExpiresAtMs: EpochMs;\n}) => void;\n"
+        "(input: { executionOwnerId: string; leaseExpiresAtMs: EpochMs; }) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertNonEmptyString": {
-      "type": "declare const fn: (value: string, label: string) => void;\n",
+      "type": "(value: string, label: string) => void",
       "callSignatures": [
-        "declare const fn: (value: string, label: string) => void;\n"
+        "(value: string, label: string) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertThreadCreateIdsAvailable": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, threadId: string, initialBranchId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, threadId: string, initialBranchId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, threadId: string, initialBranchId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, threadId: string, initialBranchId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertBranchIdAvailable": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, branchId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, branchId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertRunIdAvailable": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, runId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, runId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertTurnIdAvailable": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, turnId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, turnId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireBranch": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<StoredBranch>;\n",
+      "type": "(tx: RuntimeBackendTx, branchId: string) => Promise<StoredBranch>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<StoredBranch>;\n"
+        "(tx: RuntimeBackendTx, branchId: string) => Promise<StoredBranch>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireRun": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<RunRecord>;\n",
+      "type": "(tx: RuntimeBackendTx, runId: string) => Promise<RunRecord>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<RunRecord>;\n"
+        "(tx: RuntimeBackendTx, runId: string) => Promise<RunRecord>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertNoActiveRunOnBranch": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, branchId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, branchId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireStoredRun": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<StoredRun>;\n",
+      "type": "(tx: RuntimeBackendTx, runId: string) => Promise<StoredRun>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<StoredRun>;\n"
+        "(tx: RuntimeBackendTx, runId: string) => Promise<StoredRun>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireLeasedRun": {
-      "type": "declare const fn: (run: StoredRun, runId: string) => {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n};\n",
+      "type": "(run: StoredRun, runId: string) => { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; }",
       "callSignatures": [
-        "declare const fn: (run: StoredRun, runId: string) => {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n};\n"
+        "(run: StoredRun, runId: string) => { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; }"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireStoredTurn": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<StoredTurn>;\n",
+      "type": "(tx: RuntimeBackendTx, turnId: string) => Promise<StoredTurn>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<StoredTurn>;\n"
+        "(tx: RuntimeBackendTx, turnId: string) => Promise<StoredTurn>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireTurn": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<TurnRecord>;\n",
+      "type": "(tx: RuntimeBackendTx, turnId: string) => Promise<TurnRecord>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<TurnRecord>;\n"
+        "(tx: RuntimeBackendTx, turnId: string) => Promise<TurnRecord>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireTurnNode": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, hash: HashString) => Promise<TurnNode>;\n",
+      "type": "(tx: RuntimeBackendTx, hash: HashString) => Promise<TurnNode>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, hash: HashString) => Promise<TurnNode>;\n"
+        "(tx: RuntimeBackendTx, hash: HashString) => Promise<TurnNode>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireTurnTree": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, hash: HashString) => Promise<{\n    hash: HashString;\n    manifestCbor: Uint8Array;\n    schemaId: string;\n}>;\n",
+      "type": "(tx: RuntimeBackendTx, hash: HashString) => Promise<{ hash: HashString; manifestCbor: Uint8Array; schemaId: string; }>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, hash: HashString) => Promise<{\n    hash: HashString;\n    manifestCbor: Uint8Array;\n    schemaId: string;\n}>;\n"
+        "(tx: RuntimeBackendTx, hash: HashString) => Promise<{ hash: HashString; manifestCbor: Uint8Array; schemaId: string; }>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireThread": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, threadId: string) => Promise<ThreadRecord>;\n",
+      "type": "(tx: RuntimeBackendTx, threadId: string) => Promise<ThreadRecord>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, threadId: string) => Promise<ThreadRecord>;\n"
+        "(tx: RuntimeBackendTx, threadId: string) => Promise<ThreadRecord>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireSchema": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, schemaId: string) => Promise<TurnTreeSchema>;\n",
+      "type": "(tx: RuntimeBackendTx, schemaId: string) => Promise<TurnTreeSchema>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, schemaId: string) => Promise<TurnTreeSchema>;\n"
+        "(tx: RuntimeBackendTx, schemaId: string) => Promise<TurnTreeSchema>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeKernelRecord": {
-      "type": "declare const fn: (bytes: Uint8Array, label: string) => KernelRecord;\n",
+      "type": "(bytes: Uint8Array, label: string) => KernelRecord",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array, label: string) => KernelRecord;\n"
+        "(bytes: Uint8Array, label: string) => KernelRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeKernelRecordArray": {
-      "type": "declare const fn: (bytes: Uint8Array, label: string) => Array<KernelRecord>;\n",
+      "type": "(bytes: Uint8Array, label: string) => Array<KernelRecord>",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array, label: string) => Array<KernelRecord>;\n"
+        "(bytes: Uint8Array, label: string) => Array<KernelRecord>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeSchema": {
-      "type": "declare const fn: (bytes: Uint8Array) => TurnTreeSchema;\n",
+      "type": "(bytes: Uint8Array) => TurnTreeSchema",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => TurnTreeSchema;\n"
+        "(bytes: Uint8Array) => TurnTreeSchema"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeSteps": {
-      "type": "declare const fn: (bytes: Uint8Array) => Array<StepDeclaration>;\n",
+      "type": "(bytes: Uint8Array) => Array<StepDeclaration>",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => Array<StepDeclaration>;\n"
+        "(bytes: Uint8Array) => Array<StepDeclaration>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeHashArray": {
-      "type": "declare const fn: (bytes: Uint8Array) => Array<HashString>;\n",
+      "type": "(bytes: Uint8Array) => Array<HashString>",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => Array<HashString>;\n"
+        "(bytes: Uint8Array) => Array<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeStagedResults": {
-      "type": "declare const fn: (bytes: Uint8Array) => Array<StagedResult>;\n",
+      "type": "(bytes: Uint8Array) => Array<StagedResult>",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => Array<StagedResult>;\n"
+        "(bytes: Uint8Array) => Array<StagedResult>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeManifest": {
-      "type": "declare const fn: (bytes: Uint8Array) => TurnTreeManifest;\n",
+      "type": "(bytes: Uint8Array) => TurnTreeManifest",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => TurnTreeManifest;\n"
+        "(bytes: Uint8Array) => TurnTreeManifest"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:encodeRecord": {
-      "type": "declare const fn: (value: unknown) => Uint8Array;\n",
+      "type": "(value: unknown) => Uint8Array",
       "callSignatures": [
-        "declare const fn: (value: unknown) => Uint8Array;\n"
+        "(value: unknown) => Uint8Array"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toKernelRecord": {
-      "type": "declare const fn: (value: unknown) => KernelRecord;\n",
+      "type": "(value: unknown) => KernelRecord",
       "callSignatures": [
-        "declare const fn: (value: unknown) => KernelRecord;\n"
+        "(value: unknown) => KernelRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel.ts:createRuntimeKernel": {
-      "type": "declare const fn: (options: RuntimeKernelOptions) => RuntimeKernel & RuntimeKernelRunLiveness;\n",
+      "type": "(options: RuntimeKernelOptions) => RuntimeKernel & RuntimeKernelRunLiveness",
       "callSignatures": [
-        "declare const fn: (options: RuntimeKernelOptions) => RuntimeKernel & RuntimeKernelRunLiveness;\n"
+        "(options: RuntimeKernelOptions) => RuntimeKernel & RuntimeKernelRunLiveness"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel.ts:RuntimeKernelOptions": {
-      "type": "declare const fn: any;\n",
+      "type": "any",
       "callSignatures": []
     }
   },
   "after": {
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:composeModifyVerdict": {
-      "type": "declare const fn: (verdicts: ReadonlyArray<{\n    kind: string;\n    transform?: KernelRecord;\n}>) => ModifyVerdict | undefined;\n",
+      "type": "(verdicts: ReadonlyArray<{ kind: string; transform?: KernelRecord; }>) => ModifyVerdict | undefined",
       "callSignatures": [
-        "declare const fn: (verdicts: ReadonlyArray<{\n    kind: string;\n    transform?: KernelRecord;\n}>) => ModifyVerdict | undefined;\n"
+        "(verdicts: ReadonlyArray<{ kind: string; transform?: KernelRecord; }>) => ModifyVerdict | undefined"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:walkBack": {
-      "type": "declare const fn: (backend: RuntimeBackend, fromHash: HashString) => AsyncIterable<TurnNode>;\n",
+      "type": "(backend: RuntimeBackend, fromHash: HashString) => AsyncIterable<TurnNode>",
       "callSignatures": [
-        "declare const fn: (backend: RuntimeBackend, fromHash: HashString) => AsyncIterable<TurnNode>;\n"
+        "(backend: RuntimeBackend, fromHash: HashString) => AsyncIterable<TurnNode>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:walkBackFromTx": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, fromHash: HashString) => AsyncIterable<TurnNode>;\n",
+      "type": "(tx: RuntimeBackendTx, fromHash: HashString) => AsyncIterable<TurnNode>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, fromHash: HashString) => AsyncIterable<TurnNode>;\n"
+        "(tx: RuntimeBackendTx, fromHash: HashString) => AsyncIterable<TurnNode>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:classifyHeadMovement": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<\"forward\" | \"backward\" | \"lateral\">;\n",
+      "type": "(tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<\"forward\" | \"backward\" | \"lateral\">",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<\"forward\" | \"backward\" | \"lateral\">;\n"
+        "(tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<\"forward\" | \"backward\" | \"lateral\">"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertNoActiveBranchRunForForwardHeadMove": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, branch: StoredBranch) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, branch: StoredBranch) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, branch: StoredBranch) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, branch: StoredBranch) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:collectAbandonedSegmentHashes": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<Set<HashString>>;\n",
+      "type": "(tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<Set<HashString>>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<Set<HashString>>;\n"
+        "(tx: RuntimeBackendTx, currentHead: HashString, targetHash: HashString) => Promise<Set<HashString>>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:allocateArchiveBranchId": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, input: {\n    branchId: string;\n    currentHead: HashString;\n    initialOrdinal: number;\n}) => Promise<string>;\n",
+      "type": "(tx: RuntimeBackendTx, input: { branchId: string; currentHead: HashString; initialOrdinal: number; }) => Promise<string>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, input: {\n    branchId: string;\n    currentHead: HashString;\n    initialOrdinal: number;\n}) => Promise<string>;\n"
+        "(tx: RuntimeBackendTx, input: { branchId: string; currentHead: HashString; initialOrdinal: number; }) => Promise<string>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:runTouchesSegment": {
-      "type": "declare const fn: (run: StoredRun, segmentHashes: ReadonlySet<HashString>) => boolean;\n",
+      "type": "(run: StoredRun, segmentHashes: ReadonlySet<HashString>) => boolean",
       "callSignatures": [
-        "declare const fn: (run: StoredRun, segmentHashes: ReadonlySet<HashString>) => boolean;\n"
+        "(run: StoredRun, segmentHashes: ReadonlySet<HashString>) => boolean"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:getLastRunTurnNodeHash": {
-      "type": "declare const fn: (run: RunRecord) => HashString;\n",
+      "type": "(run: RunRecord) => HashString",
       "callSignatures": [
-        "declare const fn: (run: RunRecord) => HashString;\n"
+        "(run: RunRecord) => HashString"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:getLastRunTurnNodeHashFromStoredRun": {
-      "type": "declare const fn: (run: StoredRun) => HashString;\n",
+      "type": "(run: StoredRun) => HashString",
       "callSignatures": [
-        "declare const fn: (run: StoredRun) => HashString;\n"
+        "(run: StoredRun) => HashString"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:isLeaseExpired": {
-      "type": "declare const fn: (leaseExpiresAtMs: EpochMs, nowMs: EpochMs) => boolean;\n",
+      "type": "(leaseExpiresAtMs: EpochMs, nowMs: EpochMs) => boolean",
       "callSignatures": [
-        "declare const fn: (leaseExpiresAtMs: EpochMs, nowMs: EpochMs) => boolean;\n"
+        "(leaseExpiresAtMs: EpochMs, nowMs: EpochMs) => boolean"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:turnNodeDescendsFrom": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, candidateHash: HashString, ancestorHash: HashString) => Promise<boolean>;\n",
+      "type": "(tx: RuntimeBackendTx, candidateHash: HashString, ancestorHash: HashString) => Promise<boolean>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, candidateHash: HashString, ancestorHash: HashString) => Promise<boolean>;\n"
+        "(tx: RuntimeBackendTx, candidateHash: HashString, ancestorHash: HashString) => Promise<boolean>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:validateTurnParent": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, threadId: string, branchId: string, parentTurnId: string | null, startTurnNodeHash: HashString) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, threadId: string, branchId: string, parentTurnId: string | null, startTurnNodeHash: HashString) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, threadId: string, branchId: string, parentTurnId: string | null, startTurnNodeHash: HashString) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, threadId: string, branchId: string, parentTurnId: string | null, startTurnNodeHash: HashString) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertTurnHeadRewritePreservesDependents": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turn: TurnRecord, nextHeadTurnNodeHash: HashString) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, turn: TurnRecord, nextHeadTurnNodeHash: HashString) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turn: TurnRecord, nextHeadTurnNodeHash: HashString) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, turn: TurnRecord, nextHeadTurnNodeHash: HashString) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:stepRequiresCheckpoint": {
-      "type": "declare const fn: (step: StepDeclaration, stagedResults: Array<StagedResult>, treeHash: HashString | undefined) => boolean;\n",
+      "type": "(step: StepDeclaration, stagedResults: Array<StagedResult>, treeHash: HashString | undefined) => boolean",
       "callSignatures": [
-        "declare const fn: (step: StepDeclaration, stagedResults: Array<StagedResult>, treeHash: HashString | undefined) => boolean;\n"
+        "(step: StepDeclaration, stagedResults: Array<StagedResult>, treeHash: HashString | undefined) => boolean"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:requireRunningRun": {
-      "type": "declare const fn: (run: RunRecord, runId: string) => void;\n",
+      "type": "(run: RunRecord, runId: string) => void",
       "callSignatures": [
-        "declare const fn: (run: RunRecord, runId: string) => void;\n"
+        "(run: RunRecord, runId: string) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:requireCurrentStep": {
-      "type": "declare const fn: (run: RunRecord, stepId: string) => StepDeclaration;\n",
+      "type": "(run: RunRecord, stepId: string) => StepDeclaration",
       "callSignatures": [
-        "declare const fn: (run: RunRecord, stepId: string) => StepDeclaration;\n"
+        "(run: RunRecord, stepId: string) => StepDeclaration"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertEventHashInStore": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, eventHash: HashString | undefined) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, eventHash: HashString | undefined) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, eventHash: HashString | undefined) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, eventHash: HashString | undefined) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertTreeHashForRun": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, treeHash: HashString | undefined, schemaId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, treeHash: HashString | undefined, schemaId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, treeHash: HashString | undefined, schemaId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, treeHash: HashString | undefined, schemaId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:encodeSignalsCborFromObserveResults": {
-      "type": "declare const fn: (observeResults: Array<{\n    signals: Array<KernelRecord>;\n}> | undefined) => Uint8Array | undefined;\n",
+      "type": "(observeResults: Array<{ signals: Array<KernelRecord>; }> | undefined) => Uint8Array | undefined",
       "callSignatures": [
-        "declare const fn: (observeResults: Array<{\n    signals: Array<KernelRecord>;\n}> | undefined) => Uint8Array | undefined;\n"
+        "(observeResults: Array<{ signals: Array<KernelRecord>; }> | undefined) => Uint8Array | undefined"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:createObserveAnnotationRecords": {
-      "type": "declare const fn: (input: {\n    now: () => EpochMs;\n    observeResults: Array<{\n        annotations: Array<KernelObject>;\n    }> | undefined;\n    runId: string;\n    turnNodeHash: HashString | null;\n}) => Promise<Array<{\n    annotationCbor: Uint8Array;\n    annotationHash: HashString;\n    createdAtMs: EpochMs;\n    runId: string;\n    turnNodeHash: HashString | null;\n}>>;\n",
+      "type": "(input: { now: () => EpochMs; observeResults: Array<{ annotations: Array<KernelObject>; }> | undefined; runId: string; turnNodeHash: HashString | null; }) => Promise<Array<{ annotationCbor: Uint8Array; annotationHash: HashString; createdAtMs: EpochMs; runId: string; turnNodeHash: HashString | null; }>>",
       "callSignatures": [
-        "declare const fn: (input: {\n    now: () => EpochMs;\n    observeResults: Array<{\n        annotations: Array<KernelObject>;\n    }> | undefined;\n    runId: string;\n    turnNodeHash: HashString | null;\n}) => Promise<Array<{\n    annotationCbor: Uint8Array;\n    annotationHash: HashString;\n    createdAtMs: EpochMs;\n    runId: string;\n    turnNodeHash: HashString | null;\n}>>;\n"
+        "(input: { now: () => EpochMs; observeResults: Array<{ annotations: Array<KernelObject>; }> | undefined; runId: string; turnNodeHash: HashString | null; }) => Promise<Array<{ annotationCbor: Uint8Array; annotationHash: HashString; createdAtMs: EpochMs; runId: string; turnNodeHash: HashString | null; }>>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:validateObserveResults": {
-      "type": "declare const fn: (observeResults: Array<unknown> | undefined) => void;\n",
+      "type": "(observeResults: Array<unknown> | undefined) => void",
       "callSignatures": [
-        "declare const fn: (observeResults: Array<unknown> | undefined) => void;\n"
+        "(observeResults: Array<unknown> | undefined) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:assertUniqueStepIds": {
-      "type": "declare const fn: (steps: Array<StepDeclaration>) => void;\n",
+      "type": "(steps: Array<StepDeclaration>) => void",
       "callSignatures": [
-        "declare const fn: (steps: Array<StepDeclaration>) => void;\n"
+        "(steps: Array<StepDeclaration>) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:validateTurnTreeChangeSet": {
-      "type": "declare const fn: (schema: TurnTreeSchema, changes: TurnTreeChangeSet) => void;\n",
+      "type": "(schema: TurnTreeSchema, changes: TurnTreeChangeSet) => void",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema, changes: TurnTreeChangeSet) => void;\n"
+        "(schema: TurnTreeSchema, changes: TurnTreeChangeSet) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:validateStagedResultsHaveRules": {
-      "type": "declare const fn: (schema: TurnTreeSchema, stagedResults: Array<StagedResult>) => void;\n",
+      "type": "(schema: TurnTreeSchema, stagedResults: Array<StagedResult>) => void",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema, stagedResults: Array<StagedResult>) => void;\n"
+        "(schema: TurnTreeSchema, stagedResults: Array<StagedResult>) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:applyStagedResultsToManifest": {
-      "type": "declare const fn: (schema: TurnTreeSchema, manifest: TurnTreeManifest, stagedResults: Array<StagedResult>) => void;\n",
+      "type": "(schema: TurnTreeSchema, manifest: TurnTreeManifest, stagedResults: Array<StagedResult>) => void",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema, manifest: TurnTreeManifest, stagedResults: Array<StagedResult>) => void;\n"
+        "(schema: TurnTreeSchema, manifest: TurnTreeManifest, stagedResults: Array<StagedResult>) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:maybeCheckpoint": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    treeHash: undefined;\n}) => Promise<HashString | undefined>;\n",
+      "type": "(tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: { eventHash: HashString | null; now: () => EpochMs; treeHash: undefined; }) => Promise<HashString | undefined>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    treeHash: undefined;\n}) => Promise<HashString | undefined>;\n"
+        "(tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: { eventHash: HashString | null; now: () => EpochMs; treeHash: undefined; }) => Promise<HashString | undefined>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:checkpointAndClear": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    treeHash?: HashString;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: { eventHash: HashString | null; now: () => EpochMs; treeHash?: HashString; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    treeHash?: HashString;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, run: RunRecord, stagedResults: Array<StagedResult>, input: { eventHash: HashString | null; now: () => EpochMs; treeHash?: HashString; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:checkpointRun": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    run: RunRecord;\n    stagedResults: Array<StagedResult>;\n    treeHash?: HashString;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, input: { eventHash: HashString | null; now: () => EpochMs; run: RunRecord; stagedResults: Array<StagedResult>; treeHash?: HashString; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, input: {\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    run: RunRecord;\n    stagedResults: Array<StagedResult>;\n    treeHash?: HashString;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, input: { eventHash: HashString | null; now: () => EpochMs; run: RunRecord; stagedResults: Array<StagedResult>; treeHash?: HashString; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:createIncorporatedTree": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, baseTurnTreeHash: HashString, input: {\n    now: () => EpochMs;\n    run: RunRecord;\n    stagedResults: Array<StagedResult>;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, baseTurnTreeHash: HashString, input: { now: () => EpochMs; run: RunRecord; stagedResults: Array<StagedResult>; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, baseTurnTreeHash: HashString, input: {\n    now: () => EpochMs;\n    run: RunRecord;\n    stagedResults: Array<StagedResult>;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, baseTurnTreeHash: HashString, input: { now: () => EpochMs; run: RunRecord; stagedResults: Array<StagedResult>; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:createTurnTree": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, input: {\n    changes: TurnTreeChangeSet;\n    now: () => EpochMs;\n    priorTurnTreeHash?: HashString;\n    schema: TurnTreeSchema;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, input: { changes: TurnTreeChangeSet; now: () => EpochMs; priorTurnTreeHash?: HashString; schema: TurnTreeSchema; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, input: {\n    changes: TurnTreeChangeSet;\n    now: () => EpochMs;\n    priorTurnTreeHash?: HashString;\n    schema: TurnTreeSchema;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, input: { changes: TurnTreeChangeSet; now: () => EpochMs; priorTurnTreeHash?: HashString; schema: TurnTreeSchema; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts:createTurnNode": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, input: {\n    consumedStagedResults: Array<StagedResult>;\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    previousTurnNodeHash: HashString | null;\n    schemaId: string;\n    turnTreeHash: HashString;\n}) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, input: { consumedStagedResults: Array<StagedResult>; eventHash: HashString | null; now: () => EpochMs; previousTurnNodeHash: HashString | null; schemaId: string; turnTreeHash: HashString; }) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, input: {\n    consumedStagedResults: Array<StagedResult>;\n    eventHash: HashString | null;\n    now: () => EpochMs;\n    previousTurnNodeHash: HashString | null;\n    schemaId: string;\n    turnTreeHash: HashString;\n}) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, input: { consumedStagedResults: Array<StagedResult>; eventHash: HashString | null; now: () => EpochMs; previousTurnNodeHash: HashString | null; schemaId: string; turnTreeHash: HashString; }) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts:createRuntimeKernelRunApi": {
-      "type": "declare const fn: (dependencies: RuntimeKernelRunsDependencies) => RuntimeKernel[\"run\"];\n",
+      "type": "(dependencies: RuntimeKernelRunsDependencies) => RuntimeKernel[\"run\"]",
       "callSignatures": [
-        "declare const fn: (dependencies: RuntimeKernelRunsDependencies) => RuntimeKernel[\"run\"];\n"
+        "(dependencies: RuntimeKernelRunsDependencies) => RuntimeKernel[\"run\"]"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts:createRuntimeKernelRunLivenessApi": {
-      "type": "declare const fn: (dependencies: RuntimeKernelRunsDependencies) => RuntimeKernelRunLiveness[\"runLiveness\"];\n",
+      "type": "(dependencies: RuntimeKernelRunsDependencies) => RuntimeKernelRunLiveness[\"runLiveness\"]",
       "callSignatures": [
-        "declare const fn: (dependencies: RuntimeKernelRunsDependencies) => RuntimeKernelRunLiveness[\"runLiveness\"];\n"
+        "(dependencies: RuntimeKernelRunsDependencies) => RuntimeKernelRunLiveness[\"runLiveness\"]"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:putObject": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, blob: Uint8Array, now: () => EpochMs, mediaType?: string) => Promise<HashString>;\n",
+      "type": "(tx: RuntimeBackendTx, blob: Uint8Array, now: () => EpochMs, mediaType?: string) => Promise<HashString>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, blob: Uint8Array, now: () => EpochMs, mediaType?: string) => Promise<HashString>;\n"
+        "(tx: RuntimeBackendTx, blob: Uint8Array, now: () => EpochMs, mediaType?: string) => Promise<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:createEmptyManifest": {
-      "type": "declare const fn: (schema: TurnTreeSchema) => TurnTreeManifest;\n",
+      "type": "(schema: TurnTreeSchema) => TurnTreeManifest",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema) => TurnTreeManifest;\n"
+        "(schema: TurnTreeSchema) => TurnTreeManifest"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:normalizeManifest": {
-      "type": "declare const fn: (schema: TurnTreeSchema, changes: TurnTreeChangeSet) => TurnTreeManifest;\n",
+      "type": "(schema: TurnTreeSchema, changes: TurnTreeChangeSet) => TurnTreeManifest",
       "callSignatures": [
-        "declare const fn: (schema: TurnTreeSchema, changes: TurnTreeChangeSet) => TurnTreeManifest;\n"
+        "(schema: TurnTreeSchema, changes: TurnTreeChangeSet) => TurnTreeManifest"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toStoredTurnTreePath": {
-      "type": "declare const fn: (turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue) => StoredTurnTreePath;\n",
+      "type": "(turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue) => StoredTurnTreePath",
       "callSignatures": [
-        "declare const fn: (turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue) => StoredTurnTreePath;\n"
+        "(turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue) => StoredTurnTreePath"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toStoredTurnTreePathChunkAware": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue, priorTurnTreeHash: HashString | undefined, now: () => EpochMs) => Promise<StoredTurnTreePath>;\n",
+      "type": "(tx: RuntimeBackendTx, turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue, priorTurnTreeHash: HashString | undefined, now: () => EpochMs) => Promise<StoredTurnTreePath>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue, priorTurnTreeHash: HashString | undefined, now: () => EpochMs) => Promise<StoredTurnTreePath>;\n"
+        "(tx: RuntimeBackendTx, turnTreeHash: HashString, collectionKind: \"ordered\" | \"single\", path: string, value: PathValue, priorTurnTreeHash: HashString | undefined, now: () => EpochMs) => Promise<StoredTurnTreePath>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireTreeManifest": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, treeHash: HashString) => Promise<TurnTreeManifest>;\n",
+      "type": "(tx: RuntimeBackendTx, treeHash: HashString) => Promise<TurnTreeManifest>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, treeHash: HashString) => Promise<TurnTreeManifest>;\n"
+        "(tx: RuntimeBackendTx, treeHash: HashString) => Promise<TurnTreeManifest>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireThreadTurnNode": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, hash: HashString, thread: ThreadRecord) => Promise<TurnNode>;\n",
+      "type": "(tx: RuntimeBackendTx, hash: HashString, thread: ThreadRecord) => Promise<TurnNode>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, hash: HashString, thread: ThreadRecord) => Promise<TurnNode>;\n"
+        "(tx: RuntimeBackendTx, hash: HashString, thread: ThreadRecord) => Promise<TurnNode>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:listStagedResults": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<Array<StagedResult>>;\n",
+      "type": "(tx: RuntimeBackendTx, runId: string) => Promise<Array<StagedResult>>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<Array<StagedResult>>;\n"
+        "(tx: RuntimeBackendTx, runId: string) => Promise<Array<StagedResult>>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:createStagedResult": {
-      "type": "declare const fn: (input: {\n    interruptPayload?: KernelRecord;\n    objectHash: HashString;\n    objectType: string;\n    status: StagedResultStatus;\n    taskId: string;\n    timestamp: EpochMs;\n}) => StagedResult;\n",
+      "type": "(input: { interruptPayload?: KernelRecord; objectHash: HashString; objectType: string; status: StagedResultStatus; taskId: string; timestamp: EpochMs; }) => StagedResult",
       "callSignatures": [
-        "declare const fn: (input: {\n    interruptPayload?: KernelRecord;\n    objectHash: HashString;\n    objectType: string;\n    status: StagedResultStatus;\n    taskId: string;\n    timestamp: EpochMs;\n}) => StagedResult;\n"
+        "(input: { interruptPayload?: KernelRecord; objectHash: HashString; objectType: string; status: StagedResultStatus; taskId: string; timestamp: EpochMs; }) => StagedResult"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toStoredStagedResult": {
-      "type": "declare const fn: (runId: string, stagedResult: StagedResult) => StoredStagedResult;\n",
+      "type": "(runId: string, stagedResult: StagedResult) => StoredStagedResult",
       "callSignatures": [
-        "declare const fn: (runId: string, stagedResult: StagedResult) => StoredStagedResult;\n"
+        "(runId: string, stagedResult: StagedResult) => StoredStagedResult"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeStoredStagedResult": {
-      "type": "declare const fn: (record: StoredStagedResult) => StagedResult;\n",
+      "type": "(record: StoredStagedResult) => StagedResult",
       "callSignatures": [
-        "declare const fn: (record: StoredStagedResult) => StagedResult;\n"
+        "(record: StoredStagedResult) => StagedResult"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeStoredRun": {
-      "type": "declare const fn: (record: StoredRun) => RunRecord;\n",
+      "type": "(record: StoredRun) => RunRecord",
       "callSignatures": [
-        "declare const fn: (record: StoredRun) => RunRecord;\n"
+        "(record: StoredRun) => RunRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeStoredTurnNode": {
-      "type": "declare const fn: (record: StoredTurnNode) => TurnNode;\n",
+      "type": "(record: StoredTurnNode) => TurnNode",
       "callSignatures": [
-        "declare const fn: (record: StoredTurnNode) => TurnNode;\n"
+        "(record: StoredTurnNode) => TurnNode"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toBranchRecord": {
-      "type": "declare const fn: (record: StoredBranch) => BranchRecord;\n",
+      "type": "(record: StoredBranch) => BranchRecord",
       "callSignatures": [
-        "declare const fn: (record: StoredBranch) => BranchRecord;\n"
+        "(record: StoredBranch) => BranchRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toTurnRecord": {
-      "type": "declare const fn: (record: StoredTurn) => TurnRecord;\n",
+      "type": "(record: StoredTurn) => TurnRecord",
       "callSignatures": [
-        "declare const fn: (record: StoredTurn) => TurnRecord;\n"
+        "(record: StoredTurn) => TurnRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:clearStoredRunLease": {
-      "type": "declare const fn: (record: Omit<StoredRun, \"pendingSignalsCbor\">) => Omit<StoredRun, \"executionOwnerId\" | \"fencingToken\" | \"leaseExpiresAtMs\" | \"preemptionReason\">;\n",
+      "type": "(record: Omit<StoredRun, \"pendingSignalsCbor\">) => Omit<StoredRun, \"executionOwnerId\" | \"fencingToken\" | \"leaseExpiresAtMs\" | \"preemptionReason\">",
       "callSignatures": [
-        "declare const fn: (record: Omit<StoredRun, \"pendingSignalsCbor\">) => Omit<StoredRun, \"executionOwnerId\" | \"fencingToken\" | \"leaseExpiresAtMs\" | \"preemptionReason\">;\n"
+        "(record: Omit<StoredRun, \"pendingSignalsCbor\">) => Omit<StoredRun, \"executionOwnerId\" | \"fencingToken\" | \"leaseExpiresAtMs\" | \"preemptionReason\">"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:createRunningLeaseUpdate": {
-      "type": "declare const fn: (run: StoredRun, createFencingToken: () => string) => {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n} | Record<string, never>;\n",
+      "type": "(run: StoredRun, createFencingToken: () => string) => { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; } | Record<string, never>",
       "callSignatures": [
-        "declare const fn: (run: StoredRun, createFencingToken: () => string) => {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n} | Record<string, never>;\n"
+        "(run: StoredRun, createFencingToken: () => string) => { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; } | Record<string, never>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:isRunLeaseState": {
-      "type": "declare const fn: (value: {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n} | Record<string, never>) => value is {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n};\n",
+      "type": "(value: { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; } | Record<string, never>) => value is { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; }",
       "callSignatures": [
-        "declare const fn: (value: {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n} | Record<string, never>) => value is {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n};\n"
+        "(value: { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; } | Record<string, never>) => value is { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; }"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertLeasedRunCreateInput": {
-      "type": "declare const fn: (input: {\n    executionOwnerId: string;\n    leaseExpiresAtMs: EpochMs;\n}) => void;\n",
+      "type": "(input: { executionOwnerId: string; leaseExpiresAtMs: EpochMs; }) => void",
       "callSignatures": [
-        "declare const fn: (input: {\n    executionOwnerId: string;\n    leaseExpiresAtMs: EpochMs;\n}) => void;\n"
+        "(input: { executionOwnerId: string; leaseExpiresAtMs: EpochMs; }) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertNonEmptyString": {
-      "type": "declare const fn: (value: string, label: string) => void;\n",
+      "type": "(value: string, label: string) => void",
       "callSignatures": [
-        "declare const fn: (value: string, label: string) => void;\n"
+        "(value: string, label: string) => void"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertThreadCreateIdsAvailable": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, threadId: string, initialBranchId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, threadId: string, initialBranchId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, threadId: string, initialBranchId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, threadId: string, initialBranchId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertBranchIdAvailable": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, branchId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, branchId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertRunIdAvailable": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, runId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, runId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertTurnIdAvailable": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, turnId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, turnId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireBranch": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<StoredBranch>;\n",
+      "type": "(tx: RuntimeBackendTx, branchId: string) => Promise<StoredBranch>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<StoredBranch>;\n"
+        "(tx: RuntimeBackendTx, branchId: string) => Promise<StoredBranch>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireRun": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<RunRecord>;\n",
+      "type": "(tx: RuntimeBackendTx, runId: string) => Promise<RunRecord>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<RunRecord>;\n"
+        "(tx: RuntimeBackendTx, runId: string) => Promise<RunRecord>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:assertNoActiveRunOnBranch": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<void>;\n",
+      "type": "(tx: RuntimeBackendTx, branchId: string) => Promise<void>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, branchId: string) => Promise<void>;\n"
+        "(tx: RuntimeBackendTx, branchId: string) => Promise<void>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireStoredRun": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<StoredRun>;\n",
+      "type": "(tx: RuntimeBackendTx, runId: string) => Promise<StoredRun>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, runId: string) => Promise<StoredRun>;\n"
+        "(tx: RuntimeBackendTx, runId: string) => Promise<StoredRun>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireLeasedRun": {
-      "type": "declare const fn: (run: StoredRun, runId: string) => {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n};\n",
+      "type": "(run: StoredRun, runId: string) => { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; }",
       "callSignatures": [
-        "declare const fn: (run: StoredRun, runId: string) => {\n    executionOwnerId: string;\n    fencingToken: string;\n    leaseExpiresAtMs: EpochMs;\n};\n"
+        "(run: StoredRun, runId: string) => { executionOwnerId: string; fencingToken: string; leaseExpiresAtMs: EpochMs; }"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireStoredTurn": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<StoredTurn>;\n",
+      "type": "(tx: RuntimeBackendTx, turnId: string) => Promise<StoredTurn>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<StoredTurn>;\n"
+        "(tx: RuntimeBackendTx, turnId: string) => Promise<StoredTurn>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireTurn": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<TurnRecord>;\n",
+      "type": "(tx: RuntimeBackendTx, turnId: string) => Promise<TurnRecord>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, turnId: string) => Promise<TurnRecord>;\n"
+        "(tx: RuntimeBackendTx, turnId: string) => Promise<TurnRecord>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireTurnNode": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, hash: HashString) => Promise<TurnNode>;\n",
+      "type": "(tx: RuntimeBackendTx, hash: HashString) => Promise<TurnNode>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, hash: HashString) => Promise<TurnNode>;\n"
+        "(tx: RuntimeBackendTx, hash: HashString) => Promise<TurnNode>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireTurnTree": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, hash: HashString) => Promise<{\n    hash: HashString;\n    manifestCbor: Uint8Array;\n    schemaId: string;\n}>;\n",
+      "type": "(tx: RuntimeBackendTx, hash: HashString) => Promise<{ hash: HashString; manifestCbor: Uint8Array; schemaId: string; }>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, hash: HashString) => Promise<{\n    hash: HashString;\n    manifestCbor: Uint8Array;\n    schemaId: string;\n}>;\n"
+        "(tx: RuntimeBackendTx, hash: HashString) => Promise<{ hash: HashString; manifestCbor: Uint8Array; schemaId: string; }>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireThread": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, threadId: string) => Promise<ThreadRecord>;\n",
+      "type": "(tx: RuntimeBackendTx, threadId: string) => Promise<ThreadRecord>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, threadId: string) => Promise<ThreadRecord>;\n"
+        "(tx: RuntimeBackendTx, threadId: string) => Promise<ThreadRecord>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:requireSchema": {
-      "type": "declare const fn: (tx: RuntimeBackendTx, schemaId: string) => Promise<TurnTreeSchema>;\n",
+      "type": "(tx: RuntimeBackendTx, schemaId: string) => Promise<TurnTreeSchema>",
       "callSignatures": [
-        "declare const fn: (tx: RuntimeBackendTx, schemaId: string) => Promise<TurnTreeSchema>;\n"
+        "(tx: RuntimeBackendTx, schemaId: string) => Promise<TurnTreeSchema>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeKernelRecord": {
-      "type": "declare const fn: (bytes: Uint8Array, label: string) => KernelRecord;\n",
+      "type": "(bytes: Uint8Array, label: string) => KernelRecord",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array, label: string) => KernelRecord;\n"
+        "(bytes: Uint8Array, label: string) => KernelRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeKernelRecordArray": {
-      "type": "declare const fn: (bytes: Uint8Array, label: string) => Array<KernelRecord>;\n",
+      "type": "(bytes: Uint8Array, label: string) => Array<KernelRecord>",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array, label: string) => Array<KernelRecord>;\n"
+        "(bytes: Uint8Array, label: string) => Array<KernelRecord>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeSchema": {
-      "type": "declare const fn: (bytes: Uint8Array) => TurnTreeSchema;\n",
+      "type": "(bytes: Uint8Array) => TurnTreeSchema",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => TurnTreeSchema;\n"
+        "(bytes: Uint8Array) => TurnTreeSchema"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeSteps": {
-      "type": "declare const fn: (bytes: Uint8Array) => Array<StepDeclaration>;\n",
+      "type": "(bytes: Uint8Array) => Array<StepDeclaration>",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => Array<StepDeclaration>;\n"
+        "(bytes: Uint8Array) => Array<StepDeclaration>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeHashArray": {
-      "type": "declare const fn: (bytes: Uint8Array) => Array<HashString>;\n",
+      "type": "(bytes: Uint8Array) => Array<HashString>",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => Array<HashString>;\n"
+        "(bytes: Uint8Array) => Array<HashString>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeStagedResults": {
-      "type": "declare const fn: (bytes: Uint8Array) => Array<StagedResult>;\n",
+      "type": "(bytes: Uint8Array) => Array<StagedResult>",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => Array<StagedResult>;\n"
+        "(bytes: Uint8Array) => Array<StagedResult>"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:decodeManifest": {
-      "type": "declare const fn: (bytes: Uint8Array) => TurnTreeManifest;\n",
+      "type": "(bytes: Uint8Array) => TurnTreeManifest",
       "callSignatures": [
-        "declare const fn: (bytes: Uint8Array) => TurnTreeManifest;\n"
+        "(bytes: Uint8Array) => TurnTreeManifest"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:encodeRecord": {
-      "type": "declare const fn: (value: unknown) => Uint8Array;\n",
+      "type": "(value: unknown) => Uint8Array",
       "callSignatures": [
-        "declare const fn: (value: unknown) => Uint8Array;\n"
+        "(value: unknown) => Uint8Array"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts:toKernelRecord": {
-      "type": "declare const fn: (value: unknown) => KernelRecord;\n",
+      "type": "(value: unknown) => KernelRecord",
       "callSignatures": [
-        "declare const fn: (value: unknown) => KernelRecord;\n"
+        "(value: unknown) => KernelRecord"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel.ts:createRuntimeKernel": {
-      "type": "declare const fn: (options: RuntimeKernelOptions) => RuntimeKernel & RuntimeKernelRunLiveness;\n",
+      "type": "(options: RuntimeKernelOptions) => RuntimeKernel & RuntimeKernelRunLiveness",
       "callSignatures": [
-        "declare const fn: (options: RuntimeKernelOptions) => RuntimeKernel & RuntimeKernelRunLiveness;\n"
+        "(options: RuntimeKernelOptions) => RuntimeKernel & RuntimeKernelRunLiveness"
       ]
     },
     "typescript/kernel/runtime/src/lib/runtime-kernel.ts:RuntimeKernelOptions": {
-      "type": "declare const fn: any;\n",
+      "type": "any",
       "callSignatures": []
     }
   },
