@@ -297,8 +297,8 @@ export function assertRunRecord(
     ],
     label
   );
-  const currentStepIndex = objectValue.currentStepIndex;
-  const stepSequence = objectValue.stepSequence;
+  const { currentStepIndex } = objectValue;
+  const { stepSequence } = objectValue;
 
   assertOptionalFieldIsOmittedWhenUndefined(
     objectValue,
@@ -543,8 +543,8 @@ export function assertRecoveryState(
     ],
     label
   );
-  const stepSequence = objectValue.stepSequence;
-  const lastCompletedStepId = objectValue.lastCompletedStepId;
+  const { stepSequence } = objectValue;
+  const { lastCompletedStepId } = objectValue;
 
   assertHashString(objectValue.lastTurnNodeHash, `${label}.lastTurnNodeHash`);
   assertStagedResultArray(

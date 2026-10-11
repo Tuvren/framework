@@ -171,8 +171,8 @@ export function assertStoredSchema(
     ["createdAtMs", "schemaCbor", "schemaId"],
     label
   );
-  const schemaCbor = objectValue.schemaCbor;
-  const schemaId = objectValue.schemaId;
+  const { schemaCbor } = objectValue;
+  const { schemaId } = objectValue;
 
   assertNonEmptyString(schemaId, `${label}.schemaId`);
   assertUint8Array(schemaCbor, `${label}.schemaCbor`);
@@ -234,7 +234,7 @@ export function assertStoredTurnTree(
     ["createdAtMs", "hash", "manifestCbor", "schemaId"],
     resolvedLabel
   );
-  const manifestCbor = objectValue.manifestCbor;
+  const { manifestCbor } = objectValue;
 
   if (schema.schemaId !== objectValue.schemaId) {
     throw validationError(
@@ -361,14 +361,14 @@ export function assertStoredTurnTreePath(
     ],
     resolvedLabel
   );
-  const turnTreeHash = objectValue.turnTreeHash;
-  const path = objectValue.path;
-  const collectionKind = objectValue.collectionKind;
-  const singleHash = objectValue.singleHash;
-  const orderedEncoding = objectValue.orderedEncoding;
-  const orderedCount = objectValue.orderedCount;
-  const orderedInlineCbor = objectValue.orderedInlineCbor;
-  const orderedChunkListCbor = objectValue.orderedChunkListCbor;
+  const { turnTreeHash } = objectValue;
+  const { path } = objectValue;
+  const { collectionKind } = objectValue;
+  const { singleHash } = objectValue;
+  const { orderedEncoding } = objectValue;
+  const { orderedCount } = objectValue;
+  const { orderedInlineCbor } = objectValue;
+  const { orderedChunkListCbor } = objectValue;
 
   assertOptionalFieldIsOmittedWhenUndefined(
     objectValue,
@@ -640,7 +640,7 @@ function assertStoredFlatTurnTreePathShape(
     );
   }
 
-  const orderedCount = value.orderedCount;
+  const { orderedCount } = value;
 
   if (orderedCount === undefined) {
     throw validationError(
@@ -687,7 +687,7 @@ function assertStoredChunkedTurnTreePathShape(
     value.orderedChunkListCbor,
     `${label}.orderedChunkListCbor`
   );
-  const orderedCount = value.orderedCount;
+  const { orderedCount } = value;
 
   if (orderedCount === undefined) {
     throw validationError(

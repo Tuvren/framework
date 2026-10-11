@@ -1,0 +1,50 @@
+{
+  "epic": "EPIC-BQ",
+  "commit": "f814b9ac82718123e0d23eabb35a9db61aebfacd",
+  "date": "2026-10-11",
+  "commands": [
+    {
+      "command": "bun run conformance",
+      "exit_code": 0,
+      "certification_projects": 11,
+      "prerequisite_tasks": 29,
+      "framework_applicable_checks": 499
+    },
+    {
+      "command": "bun run nx run-many -t typecheck,test -p kernel-contract-protocol,kernel-runtime --parallel=1",
+      "exit_code": 0,
+      "protocol_tests": 86,
+      "runtime_tests": 56
+    },
+    {
+      "command": "constitution-tooling validate --root .",
+      "exit_code": 0,
+      "errors": 0,
+      "warnings": 0
+    }
+  ],
+  "lint": {
+    "retained_biome": {
+      "selected_files": 53,
+      "diagnostics": 0
+    },
+    "protocol": {
+      "syntactic_diagnostics": 591,
+      "type_aware_diagnostics": 846,
+      "code_files": 22,
+      "json_files": 7
+    },
+    "runtime": {
+      "syntactic_diagnostics": 281,
+      "type_aware_diagnostics": 353,
+      "code_files": 17,
+      "json_files": 7
+    },
+    "legacy_directives": 6
+  },
+  "notes": [
+    "Commands ran in the trusted direnv/devenv environment using Bun1.4.2.",
+    "The lead started worktree-local services with bun run services:up before full conformance.",
+    "Historical counts are recorded measurements, not acceptance quotas."
+  ]
+}

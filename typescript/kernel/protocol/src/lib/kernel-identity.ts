@@ -208,7 +208,7 @@ function assertTurnNodeIdentityInput(
     "turn node identity input.schemaId"
   );
 
-  const consumedStagedResults = objectValue.consumedStagedResults;
+  const { consumedStagedResults } = objectValue;
   assertDenseDataArray(
     consumedStagedResults,
     "turn node identity input.consumedStagedResults"
@@ -260,12 +260,12 @@ function assertStagedResultIdentityInput(
     "interruptPayload",
     label
   );
-  const objectHash = objectValue.objectHash;
-  const objectType = objectValue.objectType;
-  const status = objectValue.status;
-  const taskId = objectValue.taskId;
-  const timestamp = objectValue.timestamp;
-  const interruptPayload = objectValue.interruptPayload;
+  const { objectHash } = objectValue;
+  const { objectType } = objectValue;
+  const { status } = objectValue;
+  const { taskId } = objectValue;
+  const { timestamp } = objectValue;
+  const { interruptPayload } = objectValue;
 
   assertHashStringOrThrow(objectHash, `${label}.objectHash`);
   assertNonEmptyString(objectType, `${label}.objectType`);
@@ -546,13 +546,13 @@ function assertTurnTreeSchemaIdentityInput(
 function assertTurnTreeSchemaPathDefinitions(
   value: unknown,
   label: string
-): Array<{ collection: "ordered" | "single"; path: string }> {
+): { collection: "ordered" | "single"; path: string }[] {
   const definitions = assertTurnTreeDenseDataArray(value, label);
   const seenPaths = new Set<string>();
-  const validatedDefinitions: Array<{
+  const validatedDefinitions: {
     collection: "ordered" | "single";
     path: string;
-  }> = [];
+  }[] = [];
 
   for (const [index, definition] of definitions.entries()) {
     const definitionValue = assertTurnTreePlainObjectRecord(
@@ -611,7 +611,7 @@ function assertTurnTreeSchemaPathDefinitions(
  */
 function assertTurnTreeSchemaIncorporationRules(
   value: unknown,
-  pathDefinitions: Array<{ collection: "ordered" | "single"; path: string }>,
+  pathDefinitions: { collection: "ordered" | "single"; path: string }[],
   label: string
 ): void {
   const rules = assertTurnTreeDenseDataArray(value, label);

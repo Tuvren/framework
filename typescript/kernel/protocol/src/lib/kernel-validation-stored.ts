@@ -106,7 +106,7 @@ export function assertStoredTurnNode(
     ],
     label
   );
-  const consumedStagedResultsCbor = objectValue.consumedStagedResultsCbor;
+  const { consumedStagedResultsCbor } = objectValue;
 
   assertHashString(objectValue.hash, `${label}.hash`);
   assertNullableHashString(
@@ -402,9 +402,9 @@ export function assertStoredRun(
     ],
     label
   );
-  const currentStepIndex = objectValue.currentStepIndex;
-  const stepSequenceCbor = objectValue.stepSequenceCbor;
-  const createdTurnNodesCbor = objectValue.createdTurnNodesCbor;
+  const { currentStepIndex } = objectValue;
+  const { stepSequenceCbor } = objectValue;
+  const { createdTurnNodesCbor } = objectValue;
 
   assertOptionalFieldIsOmittedWhenUndefined(
     objectValue,
@@ -531,7 +531,7 @@ export function assertStoredStagedResult(
     ],
     label
   );
-  const interruptPayloadCbor = objectValue.interruptPayloadCbor;
+  const { interruptPayloadCbor } = objectValue;
 
   assertOptionalFieldIsOmittedWhenUndefined(
     objectValue,

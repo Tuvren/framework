@@ -283,7 +283,7 @@ function readKernelCddlGrammar(): {
 
   return {
     assignments,
-    source: readFileSync(cddlPath, "utf8"),
+    source: readFileSync(cddlPath, "utf-8"),
   };
 }
 

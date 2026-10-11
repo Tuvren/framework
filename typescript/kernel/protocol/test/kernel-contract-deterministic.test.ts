@@ -391,9 +391,9 @@ describe("deterministic identity", () => {
       hashTurnTreeIdentity(
         "schema_main",
         {
+          "bad..path": null,
           "context.manifest":
             "2222222222222222222222222222222222222222222222222222222222222222",
-          "bad..path": null,
           messages: [],
         } as never,
         kernelProtocolDeterministicFixtures.turnTreeSchemaRecord

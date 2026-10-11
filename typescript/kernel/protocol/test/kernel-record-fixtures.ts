@@ -23,8 +23,8 @@ import { Encoder } from "cbor-x";
 // TypeSpec and generated schemas, not in these TypeScript test values.
 const deterministicEncoderOptions = {
   tagUint8Array: false,
-  useTag259ForMaps: false,
   useRecords: false,
+  useTag259ForMaps: false,
   variableMapSize: true,
 };
 
@@ -36,6 +36,10 @@ const deterministicScalarEncoder = new Encoder({
 });
 
 export const deterministicKernelRecordFixture = {
+  expectedCborHex:
+    "a5646d657461a265636f756e7402656c6162656c666b72616b656e6562797465734401020304656974656d738365616c70686107f666616374697665f56974696d657374616d701b0000018fcf690433",
+  expectedSha256Hex:
+    "a7e74da5ec721eb03b261d9898f0ade2a6e26ba63d123ca94669d6b130d38a98",
   logicalValue: {
     active: true,
     bytes: new Uint8Array([1, 2, 3, 4]),
@@ -46,10 +50,6 @@ export const deterministicKernelRecordFixture = {
     },
     timestamp: 1_717_171_717_171,
   } satisfies KernelRecord,
-  expectedCborHex:
-    "a5646d657461a265636f756e7402656c6162656c666b72616b656e6562797465734401020304656974656d738365616c70686107f666616374697665f56974696d657374616d701b0000018fcf690433",
-  expectedSha256Hex:
-    "a7e74da5ec721eb03b261d9898f0ade2a6e26ba63d123ca94669d6b130d38a98",
 };
 
 export const kernelRecordInsertionOrderVariants: readonly KernelRecord[] = [
@@ -79,7 +79,7 @@ export const invalidKernelRecordFixtures: readonly unknown[] = [
   Number.NaN,
   Number.POSITIVE_INFINITY,
   3.14,
-  BigInt(7),
+  7n,
   new Date("2026-01-01T00:00:00.000Z"),
   new Map([["a", 1]]),
   new Set([1]),

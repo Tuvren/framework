@@ -100,16 +100,6 @@ export const kernelProtocolDeterministicFixtures = {
   rawOpaqueBytes: new Uint8Array([0, 1, 2, 3, 4, 5, 250, 255]),
   rawOpaqueBytesSha256Hex:
     "68e4b69f67af1d263b6c6818ef79cb2c48aa3f18bec18b7436806a316cb4204c",
-  turnNodeIdentityRecord,
-  turnNodeIdentityRecordCborHex:
-    "a568736368656d6149646b736368656d615f6d61696e696576656e74486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747381a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f316974696d657374616d701b0000018fcf6904336a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a656374547970656b746f6f6c5f726573756c74",
-  turnNodeIdentityRecordSha256Hex:
-    "44ab935c53fcd44b91ede01abf694507fa9605827db0b93185e2a72f13814bbb",
-  turnTreeSchemaRecord,
-  turnTreeSchemaRecordCborHex:
-    "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578742e6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374",
-  turnTreeSchemaRecordSha256Hex:
-    "addd90a22e8a72dc1aad6011e78dc324dba747ab380cb78b9b50f2a9dc33b098",
   storedOrderedPathChunkItemsCborHex:
     "82784037623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762376237623762784038633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863386338633863",
   storedRunCreatedTurnNodesCborHex:
@@ -126,6 +116,16 @@ export const kernelProtocolDeterministicFixtures = {
     "a2686d657373616765738178403233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323332333233323370636f6e746578742e6d616e6966657374784032323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232",
   storedTurnTreePathOrderedInlineCborHex:
     "82784035663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566356635663566784036613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661366136613661",
+  turnNodeIdentityRecord,
+  turnNodeIdentityRecordCborHex:
+    "a568736368656d6149646b736368656d615f6d61696e696576656e74486173687840343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434346c7475726e54726565486173687840323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232327470726576696f75735475726e4e6f646548617368f675636f6e73756d6564537461676564526573756c747381a56673746174757369636f6d706c65746564667461736b49646b746f6f6c5f63616c6c5f316974696d657374616d701b0000018fcf6904336a6f626a656374486173687840333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333336a6f626a656374547970656b746f6f6c5f726573756c74",
+  turnNodeIdentityRecordSha256Hex:
+    "44ab935c53fcd44b91ede01abf694507fa9605827db0b93185e2a72f13814bbb",
+  turnTreeSchemaRecord,
+  turnTreeSchemaRecordCborHex:
+    "a365706174687382a36470617468686d65737361676573686d65746164617461a164726f6c6564636861746a636f6c6c656374696f6e676f726465726564a3647061746870636f6e746578742e6d616e6966657374686d65746164617461a16776657273696f6e016a636f6c6c656374696f6e6673696e676c6568736368656d6149646b736368656d615f6d61696e72696e636f72706f726174696f6e52756c657382a26a6f626a65637454797065676d6573736167656a74617267657450617468686d65737361676573a26a6f626a6563745479706570636f6e746578745f6d616e69666573746a7461726765745061746870636f6e746578742e6d616e6966657374",
+  turnTreeSchemaRecordSha256Hex:
+    "addd90a22e8a72dc1aad6011e78dc324dba747ab380cb78b9b50f2a9dc33b098",
 };
 
 export const kernelProtocolLogicalFixtures = {
@@ -241,7 +241,7 @@ export const kernelProtocolLogicalFixtures = {
       ],
       schemaId: "schema_main",
     },
-    signals: [{ kind: "carry_forward", count: 1 }],
+    signals: [{ count: 1, kind: "carry_forward" }],
     step: {
       deterministic: false,
       id: "tool_execution",
@@ -426,7 +426,6 @@ export const kernelProtocolStoredFixtures = {
 };
 
 export const kernelProtocolInvalidFixtures = {
-  invalidBranchHeadListEntry: ["", "not_a_hash"],
   duplicatePathSchema: {
     incorporationRules: [{ objectType: "message", targetPath: "messages" }],
     paths: [
@@ -443,23 +442,96 @@ export const kernelProtocolInvalidFixtures = {
     paths: [{ collection: "ordered", path: "messages" }],
     schemaId: "schema_main",
   },
-  invalidObserveResult: {
-    annotations: ["note"],
-    signals: ["okay"],
-  },
-  invalidSchemaPathSchema: {
-    incorporationRules: [],
-    paths: [{ collection: "ordered", path: "messages..results" }],
+  invalidArrayWithAccessorIndex: (() => {
+    const arrayValue = [
+      "4646464646464646464646464646464646464646464646464646464646464646",
+    ];
+    Object.defineProperty(arrayValue, "0", {
+      enumerable: true,
+      get() {
+        return "4646464646464646464646464646464646464646464646464646464646464646";
+      },
+    });
+    return arrayValue;
+  })(),
+  invalidArrayWithEnumerableMetadata: (() => {
+    const arrayValue = [
+      "4747474747474747474747474747474747474747474747474747474747474747",
+    ];
+    Object.defineProperty(arrayValue, "meta", {
+      enumerable: true,
+      value: 1,
+    });
+    return arrayValue;
+  })(),
+  invalidBranchHeadListEntry: ["", "not_a_hash"],
+  invalidCompletedRunRecordBeforeSequenceEnd: {
+    branchId: "branch_main",
+    createdTurnNodes: [],
+    currentStepIndex: 0,
+    runId: "run_main",
     schemaId: "schema_main",
+    startTurnNodeHash:
+      "4545454545454545454545454545454545454545454545454545454545454548",
+    status: "completed",
+    stepSequence: [
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ],
+    turnId: "turn_main",
   },
-  invalidNonCanonicalKernelRecordBytes: Uint8Array.from(
-    Buffer.from("fb41f0000000000000", "hex")
-  ),
-  invalidTruncatedKernelRecordBytes: Uint8Array.from([130, 1]),
   invalidNonCanonicalKernelNumberBytes: {
     float: Uint8Array.from(Buffer.from("fb3ff8000000000000", "hex")),
     infinity: Uint8Array.from(Buffer.from("f97c00", "hex")),
     nan: Uint8Array.from(Buffer.from("f97e00", "hex")),
+  },
+  invalidNonCanonicalKernelRecordBytes: Uint8Array.from(
+    Buffer.from("fb41f0000000000000", "hex")
+  ),
+  invalidObserveResult: {
+    annotations: ["note"],
+    signals: ["okay"],
+  },
+  invalidRecoveryStateWithConsumedResultsButNullCompletedStepId: {
+    consumedStagedResults: [
+      {
+        interruptPayload: { reason: "awaiting_approval" },
+        objectHash:
+          "edededededededededededededededededededededededededededededededed",
+        objectType: "tool_result",
+        status: "interrupted",
+        taskId: "tool_call_pending",
+        timestamp: 1_717_171_717_272,
+      },
+    ],
+    lastCompletedStepId: null,
+    lastTurnNodeHash:
+      "ecececececececececececececececececececececececececececececececec",
+    stepSequence: [
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ],
+    uncommittedStagedResults: [],
+  },
+  invalidRecoveryStateWithUnknownCompletedStepId: {
+    consumedStagedResults: [],
+    lastCompletedStepId: "not_in_sequence",
+    lastTurnNodeHash:
+      "3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a",
+    stepSequence: [
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ],
+    uncommittedStagedResults: [],
   },
   invalidRunRecordPastStepSequence: {
     branchId: "branch_main",
@@ -509,23 +581,10 @@ export const kernelProtocolInvalidFixtures = {
     stepSequence: [],
     turnId: "turn_main",
   },
-  invalidCompletedRunRecordBeforeSequenceEnd: {
-    branchId: "branch_main",
-    createdTurnNodes: [],
-    currentStepIndex: 0,
-    runId: "run_main",
+  invalidSchemaPathSchema: {
+    incorporationRules: [],
+    paths: [{ collection: "ordered", path: "messages..results" }],
     schemaId: "schema_main",
-    startTurnNodeHash:
-      "4545454545454545454545454545454545454545454545454545454545454548",
-    status: "completed",
-    stepSequence: [
-      {
-        deterministic: false,
-        id: "model_call",
-        sideEffects: false,
-      },
-    ],
-    turnId: "turn_main",
   },
   invalidSchemaWithAccessorPathMetadata: (() => {
     const pathDefinition = { path: "messages", collection: "ordered" };
@@ -542,15 +601,14 @@ export const kernelProtocolInvalidFixtures = {
       incorporationRules: [],
     };
   })(),
-  invalidSchemaWithSymbolKey: (() => {
-    const schema: Record<PropertyKey, unknown> = {
-      schemaId: "schema_main",
-      paths: [{ path: "messages", collection: "ordered" }],
-      incorporationRules: [],
-    };
-    schema[Symbol("meta")] = 1;
-    return schema;
-  })(),
+  invalidSchemaWithConflictingDuplicatePathDefinitions: {
+    incorporationRules: [],
+    paths: [
+      { collection: "ordered", path: "messages" },
+      { collection: "single", path: "messages" },
+    ],
+    schemaId: "schema_main",
+  },
   invalidSchemaWithDateMetadata: {
     incorporationRules: [],
     paths: [
@@ -559,14 +617,6 @@ export const kernelProtocolInvalidFixtures = {
         metadata: new Date("2026-01-01T00:00:00.000Z"),
         path: "messages",
       },
-    ],
-    schemaId: "schema_main",
-  },
-  invalidSchemaWithConflictingDuplicatePathDefinitions: {
-    incorporationRules: [],
-    paths: [
-      { collection: "ordered", path: "messages" },
-      { collection: "single", path: "messages" },
     ],
     schemaId: "schema_main",
   },
@@ -581,29 +631,16 @@ export const kernelProtocolInvalidFixtures = {
       schemaId: "schema_main",
     };
   })(),
+  invalidSchemaWithSymbolKey: (() => {
+    const schema: Record<PropertyKey, unknown> = {
+      schemaId: "schema_main",
+      paths: [{ path: "messages", collection: "ordered" }],
+      incorporationRules: [],
+    };
+    schema[Symbol("meta")] = 1;
+    return schema;
+  })(),
   invalidSparseOrderedPathValue: new Array(1),
-  invalidArrayWithAccessorIndex: (() => {
-    const arrayValue = [
-      "4646464646464646464646464646464646464646464646464646464646464646",
-    ];
-    Object.defineProperty(arrayValue, "0", {
-      enumerable: true,
-      get() {
-        return "4646464646464646464646464646464646464646464646464646464646464646";
-      },
-    });
-    return arrayValue;
-  })(),
-  invalidArrayWithEnumerableMetadata: (() => {
-    const arrayValue = [
-      "4747474747474747474747474747474747474747474747474747474747474747",
-    ];
-    Object.defineProperty(arrayValue, "meta", {
-      enumerable: true,
-      value: 1,
-    });
-    return arrayValue;
-  })(),
   invalidStagedResultWithCompletedInterruptPayload: {
     interruptPayload: { reason: "should_not_exist" },
     objectHash:
@@ -612,6 +649,26 @@ export const kernelProtocolInvalidFixtures = {
     status: "completed",
     taskId: "tool_call_done",
     timestamp: 1_717_171_717_272,
+  },
+  invalidStoredCompletedRunBeforeSequenceEnd: {
+    branchId: "branch_main",
+    createdAtMs: 1_717_171_717_171,
+    createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
+    currentStepIndex: 0,
+    runId: "run_main",
+    schemaId: "schema_main",
+    startTurnNodeHash:
+      "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3f",
+    status: "completed",
+    stepSequenceCbor: encodeDeterministicKernelRecord([
+      {
+        deterministic: false,
+        id: "model_call",
+        sideEffects: false,
+      },
+    ]),
+    turnId: "turn_main",
+    updatedAtMs: 1_717_171_717_272,
   },
   invalidStoredObjectByteLength: {
     byteLength: 999,
@@ -627,17 +684,19 @@ export const kernelProtocolInvalidFixtures = {
     hash: "5353535353535353535353535353535353535353535353535353535353535353",
     mediaType: "application/json",
   },
-  invalidStoredStagedResultWithCompletedInterruptPayload: {
+  invalidStoredOrderedPathChunkCountMismatch: {
+    chunkHash:
+      "3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b",
     createdAtMs: 1_717_171_717_171,
-    interruptPayloadCbor: encodeDeterministicKernelRecord({
-      reason: "should_not_exist",
-    }),
-    objectHash:
-      "3939393939393939393939393939393939393939393939393939393939393939",
-    objectType: "tool_result",
-    runId: "run_main",
-    status: "completed",
-    taskId: "tool_call_done",
+    itemCount: 999,
+    itemsCbor: encodeDeterministicKernelRecord([orderedChunkHashes[0]]),
+  },
+  invalidStoredOrderedPathChunkMismatchedHash: {
+    chunkHash:
+      "5959595959595959595959595959595959595959595959595959595959595959",
+    createdAtMs: 1_717_171_717_171,
+    itemCount: 2,
+    itemsCbor: encodeDeterministicKernelRecord(orderedChunkHashes),
   },
   invalidStoredRunPastStepSequence: {
     branchId: "branch_main",
@@ -656,6 +715,20 @@ export const kernelProtocolInvalidFixtures = {
         sideEffects: false,
       },
     ]),
+    turnId: "turn_main",
+    updatedAtMs: 1_717_171_717_272,
+  },
+  invalidStoredRunWithMalformedCreatedTurnNodesCbor: {
+    branchId: "branch_main",
+    createdAtMs: 1_717_171_717_171,
+    createdTurnNodesCbor: new Uint8Array([255]),
+    currentStepIndex: 0,
+    runId: "run_main",
+    schemaId: "schema_main",
+    startTurnNodeHash:
+      "3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d",
+    status: "running",
+    stepSequenceCbor: encodeDeterministicKernelRecord([]),
     turnId: "turn_main",
     updatedAtMs: 1_717_171_717_272,
   },
@@ -693,39 +766,10 @@ export const kernelProtocolInvalidFixtures = {
     turnId: "turn_main",
     updatedAtMs: 1_717_171_717_272,
   },
-  invalidStoredCompletedRunBeforeSequenceEnd: {
-    branchId: "branch_main",
+  invalidStoredSchemaMalformedCbor: {
     createdAtMs: 1_717_171_717_171,
-    createdTurnNodesCbor: encodeDeterministicKernelRecord([]),
-    currentStepIndex: 0,
-    runId: "run_main",
+    schemaCbor: new Uint8Array([255]),
     schemaId: "schema_main",
-    startTurnNodeHash:
-      "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3f",
-    status: "completed",
-    stepSequenceCbor: encodeDeterministicKernelRecord([
-      {
-        deterministic: false,
-        id: "model_call",
-        sideEffects: false,
-      },
-    ]),
-    turnId: "turn_main",
-    updatedAtMs: 1_717_171_717_272,
-  },
-  invalidStoredRunWithMalformedCreatedTurnNodesCbor: {
-    branchId: "branch_main",
-    createdAtMs: 1_717_171_717_171,
-    createdTurnNodesCbor: new Uint8Array([255]),
-    currentStepIndex: 0,
-    runId: "run_main",
-    schemaId: "schema_main",
-    startTurnNodeHash:
-      "3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d",
-    status: "running",
-    stepSequenceCbor: encodeDeterministicKernelRecord([]),
-    turnId: "turn_main",
-    updatedAtMs: 1_717_171_717_272,
   },
   invalidStoredSchemaMismatchedSchemaId: {
     createdAtMs: 1_717_171_717_171,
@@ -736,10 +780,17 @@ export const kernelProtocolInvalidFixtures = {
     }),
     schemaId: "outer_schema",
   },
-  invalidStoredSchemaMalformedCbor: {
+  invalidStoredStagedResultWithCompletedInterruptPayload: {
     createdAtMs: 1_717_171_717_171,
-    schemaCbor: new Uint8Array([255]),
-    schemaId: "schema_main",
+    interruptPayloadCbor: encodeDeterministicKernelRecord({
+      reason: "should_not_exist",
+    }),
+    objectHash:
+      "3939393939393939393939393939393939393939393939393939393939393939",
+    objectType: "tool_result",
+    runId: "run_main",
+    status: "completed",
+    taskId: "tool_call_done",
   },
   invalidStoredStagedResultWithMalformedInterruptPayloadCbor: {
     createdAtMs: 1_717_171_717_171,
@@ -751,57 +802,16 @@ export const kernelProtocolInvalidFixtures = {
     status: "interrupted",
     taskId: "tool_call_pending",
   },
-  invalidRecoveryStateWithUnknownCompletedStepId: {
-    consumedStagedResults: [],
-    lastCompletedStepId: "not_in_sequence",
-    lastTurnNodeHash:
-      "3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a",
-    stepSequence: [
-      {
-        deterministic: false,
-        id: "model_call",
-        sideEffects: false,
-      },
-    ],
-    uncommittedStagedResults: [],
-  },
-  invalidRecoveryStateWithConsumedResultsButNullCompletedStepId: {
-    consumedStagedResults: [
-      {
-        interruptPayload: { reason: "awaiting_approval" },
-        objectHash:
-          "edededededededededededededededededededededededededededededededed",
-        objectType: "tool_result",
-        status: "interrupted",
-        taskId: "tool_call_pending",
-        timestamp: 1_717_171_717_272,
-      },
-    ],
-    lastCompletedStepId: null,
-    lastTurnNodeHash:
-      "ecececececececececececececececececececececececececececececececec",
-    stepSequence: [
-      {
-        deterministic: false,
-        id: "model_call",
-        sideEffects: false,
-      },
-    ],
-    uncommittedStagedResults: [],
-  },
-  invalidStoredOrderedPathChunkCountMismatch: {
-    chunkHash:
-      "3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b",
+  invalidStoredTurnNodeMalformedConsumedStagedResultsCbor: {
+    consumedStagedResultsCbor: new Uint8Array([255]),
     createdAtMs: 1_717_171_717_171,
-    itemCount: 999,
-    itemsCbor: encodeDeterministicKernelRecord([orderedChunkHashes[0]]),
-  },
-  invalidStoredOrderedPathChunkMismatchedHash: {
-    chunkHash:
-      "5959595959595959595959595959595959595959595959595959595959595959",
-    createdAtMs: 1_717_171_717_171,
-    itemCount: 2,
-    itemsCbor: encodeDeterministicKernelRecord(orderedChunkHashes),
+    eventHash:
+      "3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f",
+    hash: "5050505050505050505050505050505050505050505050505050505050505050",
+    previousTurnNodeHash: null,
+    schemaId: "schema_main",
+    turnTreeHash:
+      "5151515151515151515151515151515151515151515151515151515151515151",
   },
   invalidStoredTurnNodeMismatchedHash: {
     consumedStagedResultsCbor: encodeDeterministicKernelRecord(
@@ -815,17 +825,6 @@ export const kernelProtocolInvalidFixtures = {
     schemaId: "schema_main",
     turnTreeHash:
       "3434343434343434343434343434343434343434343434343434343434343434",
-  },
-  invalidStoredTurnNodeMalformedConsumedStagedResultsCbor: {
-    consumedStagedResultsCbor: new Uint8Array([255]),
-    createdAtMs: 1_717_171_717_171,
-    eventHash:
-      "3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f",
-    hash: "5050505050505050505050505050505050505050505050505050505050505050",
-    previousTurnNodeHash: null,
-    schemaId: "schema_main",
-    turnTreeHash:
-      "5151515151515151515151515151515151515151515151515151515151515151",
   },
   invalidStoredTurnTreeMalformedManifestCbor: {
     createdAtMs: 1_717_171_717_171,
@@ -841,6 +840,15 @@ export const kernelProtocolInvalidFixtures = {
     ),
     schemaId: "schema_main",
   },
+  invalidStoredTurnTreePathChunkedWithoutChunkRefs: {
+    collectionKind: "ordered",
+    orderedChunkListCbor: encodeDeterministicKernelRecord([]),
+    orderedCount: 1,
+    orderedEncoding: "chunked",
+    path: "messages",
+    turnTreeHash:
+      "5555555555555555555555555555555555555555555555555555555555555555",
+  },
   invalidStoredTurnTreePathMissingOrderedPayload: {
     collectionKind: "ordered",
     orderedCount: 2,
@@ -848,6 +856,15 @@ export const kernelProtocolInvalidFixtures = {
     path: "messages",
     turnTreeHash:
       "4040404040404040404040404040404040404040404040404040404040404040",
+  },
+  invalidStoredTurnTreePathOrderedCountMismatch: {
+    collectionKind: "ordered",
+    orderedCount: 999,
+    orderedEncoding: "flat",
+    orderedInlineCbor: encodeDeterministicKernelRecord([orderedPathHashes[0]]),
+    path: "messages",
+    turnTreeHash:
+      "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
   },
   invalidStoredTurnTreePathSingleWithOrderedFields: {
     collectionKind: "single",
@@ -859,45 +876,6 @@ export const kernelProtocolInvalidFixtures = {
     turnTreeHash:
       "4141414141414141414141414141414141414141414141414141414141414141",
   },
-  invalidStoredTurnTreePathWithOrderedSingleHash: {
-    collectionKind: "ordered",
-    orderedCount: 2,
-    orderedEncoding: "chunked",
-    orderedChunkListCbor: new Uint8Array([129, 1]),
-    path: "messages",
-    singleHash:
-      "4242424242424242424242424242424242424242424242424242424242424242",
-    turnTreeHash:
-      "4343434343434343434343434343434343434343434343434343434343434343",
-  },
-  invalidStoredTurnTreePathWithWrongEncodingPayload: {
-    collectionKind: "ordered",
-    orderedCount: 2,
-    orderedEncoding: "flat",
-    orderedChunkListCbor: new Uint8Array([129, 1]),
-    orderedInlineCbor: new Uint8Array([130, 1, 2]),
-    path: "messages",
-    turnTreeHash:
-      "4444444444444444444444444444444444444444444444444444444444444444",
-  },
-  invalidStoredTurnTreePathOrderedCountMismatch: {
-    collectionKind: "ordered",
-    orderedCount: 999,
-    orderedEncoding: "flat",
-    orderedInlineCbor: encodeDeterministicKernelRecord([orderedPathHashes[0]]),
-    path: "messages",
-    turnTreeHash:
-      "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
-  },
-  invalidStoredTurnTreePathChunkedWithoutChunkRefs: {
-    collectionKind: "ordered",
-    orderedCount: 1,
-    orderedEncoding: "chunked",
-    orderedChunkListCbor: encodeDeterministicKernelRecord([]),
-    path: "messages",
-    turnTreeHash:
-      "5555555555555555555555555555555555555555555555555555555555555555",
-  },
   invalidStoredTurnTreePathWithMalformedPath: {
     collectionKind: "single",
     path: "messages..results",
@@ -906,6 +884,28 @@ export const kernelProtocolInvalidFixtures = {
     turnTreeHash:
       "5757575757575757575757575757575757575757575757575757575757575757",
   },
+  invalidStoredTurnTreePathWithOrderedSingleHash: {
+    collectionKind: "ordered",
+    orderedChunkListCbor: new Uint8Array([129, 1]),
+    orderedCount: 2,
+    orderedEncoding: "chunked",
+    path: "messages",
+    singleHash:
+      "4242424242424242424242424242424242424242424242424242424242424242",
+    turnTreeHash:
+      "4343434343434343434343434343434343434343434343434343434343434343",
+  },
+  invalidStoredTurnTreePathWithWrongEncodingPayload: {
+    collectionKind: "ordered",
+    orderedChunkListCbor: new Uint8Array([129, 1]),
+    orderedCount: 2,
+    orderedEncoding: "flat",
+    orderedInlineCbor: new Uint8Array([130, 1, 2]),
+    path: "messages",
+    turnTreeHash:
+      "4444444444444444444444444444444444444444444444444444444444444444",
+  },
+  invalidTruncatedKernelRecordBytes: Uint8Array.from([130, 1]),
   unknownPathSchema: {
     incorporationRules: [{ objectType: "message", targetPath: "missing" }],
     paths: [{ collection: "ordered", path: "messages" }],

@@ -1,0 +1,84 @@
+{
+  "owner": "KRT-BQ001",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-11",
+    "commit": "f814b9ac82718123e0d23eabb35a9db61aebfacd",
+    "command": "bunx --bun oxlint --fix typescript/kernel/protocol; bun run typecheck; bun run lint"
+  },
+  "files": [
+    {
+      "path": "M1-changeset.log.gz",
+      "sha256": "82f151f5693dccb20dbe216755861eb08dfac17d3bbe27b3cd3d9c35b37cb5fe",
+      "bytes": 117,
+      "role": "measurement"
+    },
+    {
+      "path": "M1-constitution.log.gz",
+      "sha256": "2ec4a51fde093086f062fdb3c3be2df07bcc6ad356b355f2b529d1eecea7f087",
+      "bytes": 1264,
+      "role": "measurement"
+    },
+    {
+      "path": "M1-format.log.gz",
+      "sha256": "196dc601ab354f677a641ecbdbbc42130b50a048bf24b88286a9340b6fbfc378",
+      "bytes": 131,
+      "role": "measurement"
+    },
+    {
+      "path": "M1-lint.log.gz",
+      "sha256": "c6673f2f47632b7bca0aca0b21b0045f779b872ff7ded295573d493f11d8c30a",
+      "bytes": 318,
+      "role": "measurement"
+    },
+    {
+      "path": "M1-scoped.log.gz",
+      "sha256": "45609741154944f91688d3b3704b32ff238c5d2750a02f7e5614d9b5b7510e36",
+      "bytes": 468,
+      "role": "measurement"
+    },
+    {
+      "path": "M1-typecheck.log.gz",
+      "sha256": "ccfedd6b81b71136598567706778588d85eeabc3f9b5476714848204fb6ec050",
+      "bytes": 700,
+      "role": "measurement"
+    },
+    {
+      "path": "M1-working-tree.patch.gz",
+      "sha256": "126cd4c5c40ead2ac5fe45509affec3b7e0f0c1faaad62fdf7adfad1dce35218",
+      "bytes": 6025,
+      "role": "measurement"
+    },
+    {
+      "path": "baseline.json",
+      "sha256": "93750590ff5c90d2d15cd37cdcd43aa5ed0ef2256eabdc7f121230149a8cc4be",
+      "bytes": 1324,
+      "role": "baseline"
+    },
+    {
+      "path": "protocol-after-syntactic.json.gz",
+      "sha256": "69f23687b4e27222d65fcdbff5a6154f93f117dedecd21f12cb6d4456e75d649",
+      "bytes": 13225,
+      "role": "measurement"
+    },
+    {
+      "path": "protocol-after-type-aware.json.gz",
+      "sha256": "026572890401e5ac6d14b7787f93e12b373b967dfebf9b9b240334f9e33cf968",
+      "bytes": 19610,
+      "role": "measurement"
+    },
+    {
+      "path": "protocol-before-syntactic.json.gz",
+      "sha256": "3a602d5ac90da44fad5cb557e78a697bec000da227c704cc2be5c5cb6ff1a1df",
+      "bytes": 15804,
+      "role": "baseline"
+    },
+    {
+      "path": "protocol-before-type-aware.json.gz",
+      "sha256": "b907d156a20e793d8a30232c867f18c65d59823b9f51e3ab3a0aafcb706c3fc3",
+      "bytes": 22296,
+      "role": "baseline"
+    }
+  ],
+  "pass_criteria": "Scoped typechecks and tests, repository typecheck, formatting, retained lint and direct changeset coverage pass; canonical fixtures and intentional insertion-order distinctions remain intact. Diagnostic counts are recorded measurements."
+}

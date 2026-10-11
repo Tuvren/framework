@@ -28,8 +28,8 @@ import { Decoder, Encoder } from "cbor-x";
  */
 const deterministicEncoderOptions = {
   tagUint8Array: false,
-  useTag259ForMaps: false,
   useRecords: false,
+  useTag259ForMaps: false,
   variableMapSize: true,
 };
 
