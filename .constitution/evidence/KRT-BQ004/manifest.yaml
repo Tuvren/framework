@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "818f96124a520a83538f2201665b86d6b9feec13",
-    "command": "Native admission plus accepted PR execution-order repair and independent pinned-executor/tooling verification"
+    "commit": "11a0e0fdda550969117fbe7fa9b63645c5318e3b",
+    "command": "Native admission and scoped PR repairs with independent negative-control and tooling verification"
   },
   "files": [
     {
@@ -188,11 +188,29 @@
       "role": "measurement"
     },
     {
+      "path": "PRR2-fixture-controls-proof-index.json.gz",
+      "sha256": "ca44a4467b973b9cd4cf0a048ad74c964c84fd30d1eed9f442dfbae7e7746d5a",
+      "bytes": 1326,
+      "role": "measurement"
+    },
+    {
+      "path": "PRR2-fixture-controls-proof.tar.gz",
+      "sha256": "e6ae7f2ab44bf23b09fa5044bad588bd67e80ffad5f2b90deb4614e34bfdcbca",
+      "bytes": 5865,
+      "role": "measurement"
+    },
+    {
+      "path": "PRR2-result.json",
+      "sha256": "6deeebf594a3ff435d8098fc9ce93ea479f6271728be4fa2153968b2d58cd828",
+      "bytes": 960,
+      "role": "measurement"
+    },
+    {
       "path": "suppressions.json",
       "sha256": "17a9d6dfba8cac5f1873387c9a83ec415bea578d6e064b62c19103070e0902b0",
       "bytes": 23182,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "42code/14JSON owned; literalparallel:false required for mixedtargets;143tests across15suites,toolingcompiler,156kerneltests,33typechecks,fullformat/lint/API/check pass; original release proof and superseding PR repair phases remain separate"
+  "pass_criteria": "143tests across15registered suites,tooling compiler,format/lint/constitution and focused controls pass; ordered-target repair and all6suppression histories preserved in their indexed phases"
 }
