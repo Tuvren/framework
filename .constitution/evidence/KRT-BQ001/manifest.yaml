@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "f814b9ac82718123e0d23eabb35a9db61aebfacd",
-    "command": "bunx --bun oxlint --fix typescript/kernel/protocol; bun run typecheck; bun run lint"
+    "commit": "b86053389235ed5c34a6896020a685f599eddce0",
+    "command": "bunx --bun oxlint --fix typescript/kernel/runtime; bun run typecheck; bun run lint; bun .constitution/evidence/KRT-BQ001/runtime-signature-probe.mjs b86053389235ed5c34a6896020a685f599eddce0"
   },
   "files": [
     {
@@ -50,6 +50,48 @@
       "role": "measurement"
     },
     {
+      "path": "M2-changeset.log.gz",
+      "sha256": "c4a5b45ee2ad060413562fdf0b1ed1ad4853d95cdd5885e67fc9d6c5d784fb55",
+      "bytes": 117,
+      "role": "measurement"
+    },
+    {
+      "path": "M2-constitution.log.gz",
+      "sha256": "40c9123b8b2a6ca11569618678d15e8b339d96adec01e1cdc7c47537af5bfcaf",
+      "bytes": 1266,
+      "role": "measurement"
+    },
+    {
+      "path": "M2-format.log.gz",
+      "sha256": "196dc601ab354f677a641ecbdbbc42130b50a048bf24b88286a9340b6fbfc378",
+      "bytes": 131,
+      "role": "measurement"
+    },
+    {
+      "path": "M2-lint.log.gz",
+      "sha256": "df259234f72a34f9141dce911d3ab09339e7b8d79d80ab1d8d977221f797729b",
+      "bytes": 318,
+      "role": "measurement"
+    },
+    {
+      "path": "M2-scoped.log.gz",
+      "sha256": "6dcf366a501a555491ed296e87de426215763f5eba2a804f65ffbf85dafd6e5f",
+      "bytes": 448,
+      "role": "measurement"
+    },
+    {
+      "path": "M2-typecheck.log.gz",
+      "sha256": "7ef8a5d9c081fac69b14df25d4f6732e813090e590c657840ab08ed71a25b81f",
+      "bytes": 875,
+      "role": "measurement"
+    },
+    {
+      "path": "M2-working-tree.patch.gz",
+      "sha256": "b785ddbef039bc49ce35c037e312069978782ea0750add6165d45acd58664f0e",
+      "bytes": 2693,
+      "role": "measurement"
+    },
+    {
       "path": "baseline.json",
       "sha256": "93750590ff5c90d2d15cd37cdcd43aa5ed0ef2256eabdc7f121230149a8cc4be",
       "bytes": 1324,
@@ -78,7 +120,49 @@
       "sha256": "b907d156a20e793d8a30232c867f18c65d59823b9f51e3ab3a0aafcb706c3fc3",
       "bytes": 22296,
       "role": "baseline"
+    },
+    {
+      "path": "runtime-after-syntactic.json.gz",
+      "sha256": "0840372d7b095d1bbdcf06feb5f4837e70f8084582c0bd1fe1855b9b18b437a5",
+      "bytes": 5112,
+      "role": "measurement"
+    },
+    {
+      "path": "runtime-after-type-aware.json.gz",
+      "sha256": "bf388236cb5ea33e07b0ccd292db2e38f5ddb5123dbc0bda2f8922f86b65c25f",
+      "bytes": 7584,
+      "role": "measurement"
+    },
+    {
+      "path": "runtime-before-syntactic.json.gz",
+      "sha256": "a36f099b4e8e731fa546ffef3f832b3e1b49ddda9b43e9b66d2f321ac6c0369b",
+      "bytes": 7590,
+      "role": "baseline"
+    },
+    {
+      "path": "runtime-before-type-aware.json.gz",
+      "sha256": "671dedbf2d9775e67b5b3091383e05969e82769058959e056636442dd6506201",
+      "bytes": 9520,
+      "role": "baseline"
+    },
+    {
+      "path": "runtime-signature-probe.mjs",
+      "sha256": "f6796a4eaa83b5743eec99171ad222d3f47b0c9b5256c23780e8830139445c15",
+      "bytes": 4606,
+      "role": "measurement"
+    },
+    {
+      "path": "runtime-signatures.json",
+      "sha256": "dd54c3c85da04eeb813731cb55eab31b64b5e52b90443758f2f074f6588454f2",
+      "bytes": 61184,
+      "role": "measurement"
+    },
+    {
+      "path": "runtime-signatures.log",
+      "sha256": "cc8be2e2c795473f0ee25e1137680542780fb7fc39e060f62914eedadc34b06c",
+      "bytes": 264,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "Scoped typechecks and tests, repository typecheck, formatting, retained lint and direct changeset coverage pass; canonical fixtures and intentional insertion-order distinctions remain intact. Diagnostic counts are recorded measurements."
+  "pass_criteria": "Both pilot packages typecheck and their 142 tests pass. Retained lint, format, direct changeset coverage and full runtime export/callable comparisons pass. Historical diagnostic counts are not quotas."
 }

@@ -263,7 +263,7 @@ describe("toStoredTurnTreePathChunkAware fallback parity with toStoredTurnTreePa
       expect(storedPrior.orderedCount).toBe(grownItems.length);
     }
 
-    const shorterItems = grownItems.slice(0, grownItems.length - 1);
+    const shorterItems = grownItems.slice(0, -1);
 
     await backend.transact(async (tx) => {
       const direct = toStoredTurnTreePath(

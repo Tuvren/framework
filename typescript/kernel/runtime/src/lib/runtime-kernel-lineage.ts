@@ -15,13 +15,15 @@
  */
 
 import {
-  type EpochMs,
-  type HashString,
-  type KernelObject,
-  type KernelRecord,
   TuvrenLineageError,
   TuvrenRuntimeError,
   TuvrenValidationError,
+} from "@tuvren/core";
+import type {
+  EpochMs,
+  HashString,
+  KernelObject,
+  KernelRecord,
 } from "@tuvren/core";
 import {
   assertObserveResult,
@@ -31,19 +33,21 @@ import {
   hashKernelRecord,
   hashTurnNodeIdentity,
   hashTurnTreeIdentity,
-  type ModifyVerdict,
-  type RunRecord,
-  type RuntimeBackend,
-  type RuntimeBackendTx,
-  type StagedResult,
-  type StepDeclaration,
-  type StoredBranch,
-  type StoredRun,
-  type TurnNode,
-  type TurnRecord,
-  type TurnTreeChangeSet,
-  type TurnTreeManifest,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  ModifyVerdict,
+  RunRecord,
+  RuntimeBackend,
+  RuntimeBackendTx,
+  StagedResult,
+  StepDeclaration,
+  StoredBranch,
+  StoredRun,
+  TurnNode,
+  TurnRecord,
+  TurnTreeChangeSet,
+  TurnTreeManifest,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
 import {
@@ -70,7 +74,7 @@ import {
  * the `verdicts.compose` caller.
  */
 export function composeModifyVerdict(
-  verdicts: ReadonlyArray<{ kind: string; transform?: KernelRecord }>
+  verdicts: readonly { kind: string; transform?: KernelRecord }[]
 ): ModifyVerdict | undefined {
   const modifyTransforms = verdicts
     .filter(
@@ -620,13 +624,13 @@ export async function createObserveAnnotationRecords(input: {
   runId: string;
   turnNodeHash: HashString | null;
 }): Promise<
-  Array<{
+  {
     annotationCbor: Uint8Array;
     annotationHash: HashString;
     createdAtMs: EpochMs;
     runId: string;
     turnNodeHash: HashString | null;
-  }>
+  }[]
 > {
   const annotations: KernelObject[] =
     input.observeResults?.flatMap((result) => result.annotations) ?? [];
@@ -636,13 +640,13 @@ export async function createObserveAnnotationRecords(input: {
   }
 
   const createdAtMs = input.now();
-  const records: Array<{
+  const records: {
     annotationCbor: Uint8Array;
     annotationHash: HashString;
     createdAtMs: EpochMs;
     runId: string;
     turnNodeHash: HashString | null;
-  }> = [];
+  }[] = [];
 
   for (const annotation of annotations) {
     const annotationCbor = encodeRecord(annotation);
