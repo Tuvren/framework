@@ -1,0 +1,56 @@
+{
+  "baseline_commit": "d52e5b0d6a769e5d8b2dc986714168468e621109",
+  "public_entrypoint_bytes_identical": true,
+  "public_export_comparison": [
+    {
+      "path": "src/index.ts",
+      "count": 83,
+      "names_kinds_function_arities_equal": true
+    },
+    {
+      "path": "src/lib/kernel-validation.ts",
+      "count": 77,
+      "names_kinds_function_arities_equal": true
+    }
+  ],
+  "moved_symbols": [
+    "assertBranchHeadListEntry",
+    "assertBranchRecord",
+    "assertRecoveryState",
+    "assertRunRecord",
+    "assertSetHeadResult",
+    "assertStagedResult",
+    "assertStepContext",
+    "assertThreadCreateResult",
+    "assertThreadRecord",
+    "assertTurnNode",
+    "assertTurnNodeIdentity",
+    "assertTurnRecord",
+    "isBranchHeadListEntry",
+    "isBranchRecord",
+    "isRecoveryState",
+    "isRunRecord",
+    "isSetHeadResult",
+    "isStagedResult",
+    "isStepContext",
+    "isThreadCreateResult",
+    "isThreadRecord",
+    "isTurnNode",
+    "isTurnRecord"
+  ],
+  "runtime_callable_bodies_and_other_source_bytes_unchanged": true,
+  "internal_imports_adjusted": [],
+  "early_deletion": {
+    "identity": "typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts::lint/performance/noBarrelFile::1",
+    "original_reason": "This focused contract subpath intentionally combines shared runtime validators with delegated record validators.",
+    "retained_checker_disposition": "removed-early-after-cycle-removal-and-fresh-unsuppressed-retained-check-proves-noBarrelFile-dead",
+    "native_admission_disposition": "original-already-removed-with-retained-checker-proof-no-native-suppression-introduced",
+    "before_proof": "M4-biome-before.json.gz",
+    "after_proof": "M4-biome-after.json.gz"
+  },
+  "new_dependencies": [],
+  "new_runtime_contracts": [],
+  "new_patterns": [
+    "Fresh-process Bun test recursion controlled by TUVREN_KERNEL_FIRST_MODULE; same public behavior assertions run after six different initial module imports."
+  ]
+}
