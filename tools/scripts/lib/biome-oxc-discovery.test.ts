@@ -253,7 +253,6 @@ describe("Oxlint project-wide discovery", () => {
             "bun tools/scripts/json-check.ts typescript/kernel/protocol",
           ],
           cwd: ".",
-          parallel: false,
         },
       })
     ).toEqual([]);
@@ -268,6 +267,7 @@ describe("Oxlint project-wide discovery", () => {
             "bunx --bun tsc --noEmit",
           ],
           cwd: ".",
+          parallel: false,
         },
       })
     ).toEqual([]);
@@ -335,6 +335,7 @@ describe("Oxlint project-wide discovery", () => {
             "bun tools/scripts/json-check.ts typescript/kernel/runtime",
           ],
           cwd: ".",
+          parallel: false,
         },
       })
     ).toEqual([]);
@@ -346,6 +347,7 @@ describe("Oxlint project-wide discovery", () => {
             "bunx --bun oxlint --type-aware typescript/kernel/protocol",
           ],
           cwd: ".",
+          parallel: false,
         },
       })
     ).toEqual([]);

@@ -1,0 +1,24 @@
+{
+  "round": 2,
+  "baseline_commit": "11a0e0fdda550969117fbe7fa9b63645c5318e3b",
+  "source_hashes": {
+    "tools/scripts/lib/biome-oxc-discovery.test.ts": {
+      "before": "147064209778c95b83115ef809444c685c51e58b2d4a617f012bad5d66a1b46d",
+      "after": "25e50c7056c0e9b950d092172c561c32ad2269f6137d26dab7ce5740a9297603"
+    }
+  },
+  "status": "ready-for-scoped-verification",
+  "change": "Three malformed mixed-command fixtures gain parallel:false to reach their intended command/order/scope rejection. Ambiguous command-plus-commands fixture omits parallel so its guard is independently exercised. All test names/assertions/counts retained.",
+  "gates": {
+    "focused": 0,
+    "tooling_acceptance": 0,
+    "tooling_typecheck": 0,
+    "format": 0,
+    "lint": 0,
+    "constitution": 0,
+    "diff_check": 0
+  },
+  "proof_archive": "PRR2-fixture-controls-proof.tar.gz",
+  "proof_index": "PRR2-fixture-controls-proof-index.json.gz",
+  "archive_members": 26
+}
