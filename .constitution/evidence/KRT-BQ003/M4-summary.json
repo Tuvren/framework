@@ -1,0 +1,42 @@
+{
+  "milestone": "M4",
+  "ticket": "KRT-BQ003",
+  "baseline_commit": "d52e5b0d6a769e5d8b2dc986714168468e621109",
+  "touched_files": [
+    "typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts",
+    "typescript/kernel/protocol/src/lib/kernel-validation.ts",
+    "typescript/kernel/protocol/test/kernel-module-initialization.test.ts"
+  ],
+  "source_sha256": {
+    "typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts": "b6de8bad674672c7072f0ab467919ec67059391e314422ebb08e6bf0c4dc74d1",
+    "typescript/kernel/protocol/src/lib/kernel-validation.ts": "d4cc929bc3a70c61473e4ca6ca776742b61d9422e4ff4c9a81401d60e3578198",
+    "typescript/kernel/protocol/test/kernel-module-initialization.test.ts": "f4a19a8e1c856e48c8179b237431c52aa44ccf9907a93f3e4f6893d7f0ce1dff"
+  },
+  "checks": {
+    "scoped_typecheck_and_tests": "pass; protocol 92 tests / runtime 56 tests",
+    "fresh_process_baseline_and_after": "pass; 6 import orders each; final test also passes exact pre-M4 module copy",
+    "retained_biome": "pass; 54 selected package files",
+    "format_touched": "pass; 3 selected files",
+    "typecheck": 0,
+    "lint": 0,
+    "format": 0,
+    "changeset": 0,
+    "conformance": 0
+  },
+  "conformance": "11 certification projects / 29 prerequisites; 21 of 40 tasks cached; no structured failures",
+  "public_export_proof": "M4-source-and-export-proof.json",
+  "early_deletion_proof": [
+    "M4-biome-before.json.gz",
+    "M4-biome-after.json.gz"
+  ],
+  "constitution_writes": false,
+  "commit_created": false,
+  "services_managed": false,
+  "dependencies_added": [],
+  "new_patterns": [
+    "Fresh-process Bun test recursion controlled by TUVREN_KERNEL_FIRST_MODULE; same public behavior assertions run after six different initial module imports."
+  ],
+  "new_conventions": [],
+  "new_contract_shapes": [],
+  "risks_or_drift": []
+}

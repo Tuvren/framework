@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This focused contract subpath intentionally combines shared runtime validators with delegated record validators.
-
 import type {
   ComposedVerdict,
   ObserveResult,
@@ -48,32 +46,6 @@ import {
   tryAssert,
   validationError,
 } from "./kernel-validation-shared.js";
-
-export {
-  assertBranchHeadListEntry,
-  assertBranchRecord,
-  assertRecoveryState,
-  assertRunRecord,
-  assertSetHeadResult,
-  assertStagedResult,
-  assertStepContext,
-  assertThreadCreateResult,
-  assertThreadRecord,
-  assertTurnNode,
-  assertTurnNodeIdentity,
-  assertTurnRecord,
-  isBranchHeadListEntry,
-  isBranchRecord,
-  isRecoveryState,
-  isRunRecord,
-  isSetHeadResult,
-  isStagedResult,
-  isStepContext,
-  isThreadCreateResult,
-  isThreadRecord,
-  isTurnNode,
-  isTurnRecord,
-} from "./kernel-validation-records.js";
 
 const PATH_COLLECTION_KINDS = ["ordered", "single"] as const;
 const STAGED_RESULT_STATUSES = ["completed", "failed", "interrupted"] as const;

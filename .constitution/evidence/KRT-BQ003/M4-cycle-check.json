@@ -1,0 +1,20 @@
+{
+  "checker": "oxlint@1.86.0 as shipped",
+  "baseline_cycle_diagnostics": 2,
+  "current_cycle_diagnostics": 0,
+  "current_selected_code_files": 23,
+  "remaining_native_diagnostics": 547,
+  "public_export_snapshots_byte_identical": true,
+  "baseline_report_commit": "34b16bd3c2ec26cfc1a8f24cb787ece14f442fee",
+  "pre_M4_code_commit": "d52e5b0d6a769e5d8b2dc986714168468e621109",
+  "baseline_owned_sources_unchanged_between_commits": true,
+  "baseline_report": ".constitution/evidence/KRT-BQ002/reports.tar.gz#oxlint-protocol-syntactic.json",
+  "current_report": "M4-native-syntactic.json.gz",
+  "command": [
+    "bunx",
+    "--bun",
+    "oxlint",
+    "--format=json",
+    "typescript/kernel/protocol"
+  ]
+}

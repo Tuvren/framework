@@ -1,0 +1,144 @@
+{
+  "owner": "KRT-BQ003",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-11",
+    "commit": "d52e5b0d6a769e5d8b2dc986714168468e621109",
+    "command": "bun run nx run-many -t typecheck,test -p kernel-contract-protocol,kernel-runtime --parallel=1; bun run conformance; bunx --bun oxlint --format=json typescript/kernel/protocol"
+  },
+  "files": [
+    {
+      "path": "M4-baseline-module-mirror-proof.json.gz",
+      "sha256": "4add766ef3d7d8bf56168c0188062b6adc413cc32ffebb29c7c99db06b82c010",
+      "bytes": 401,
+      "role": "baseline"
+    },
+    {
+      "path": "M4-biome-after.json.gz",
+      "sha256": "a2972fb02ab7a54bae9e88742d743acdc8a6506b7643670c1b93edd05c96ffbf",
+      "bytes": 624,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-biome-before.json.gz",
+      "sha256": "685ea4cab16a0b61b19f65c4801ea49c0acff99ee5fc024b9b2fef74563a9372",
+      "bytes": 918,
+      "role": "baseline"
+    },
+    {
+      "path": "M4-cycle-check.json",
+      "sha256": "f1e0ca3ea10416e0520891fa1ed6be23c7a9cf936e4bd59770f3cfdb990a53c1",
+      "bytes": 706,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-exports-after.jsonl.gz",
+      "sha256": "9921f4adb51f356fc5882727d414d08667ec1edc152a05342a8c304ae4482569",
+      "bytes": 695,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-exports-before.jsonl.gz",
+      "sha256": "9921f4adb51f356fc5882727d414d08667ec1edc152a05342a8c304ae4482569",
+      "bytes": 695,
+      "role": "baseline"
+    },
+    {
+      "path": "M4-historical-export-capture.ts.gz",
+      "sha256": "908b723df5eb3bab709451354d17ea1b7b0ab23b821e4fda0ef837077cfed81c",
+      "bytes": 316,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-lead-changeset.log.gz",
+      "sha256": "c4a5b45ee2ad060413562fdf0b1ed1ad4853d95cdd5885e67fc9d6c5d784fb55",
+      "bytes": 117,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-lead-conformance.log.gz",
+      "sha256": "abe1cc50654f16b43b3bad01f0714a80e7f7316356481620b69737799b4fe50b",
+      "bytes": 2591,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-lead-constitution.log.gz",
+      "sha256": "cb4f0d8d5cd6ac5417fa9ca929b0927e7e4bcfe1fcadf3a0d2612dedb6227109",
+      "bytes": 1268,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-lead-format.log.gz",
+      "sha256": "3c9eeba12dc847f787255f1f44238860a4570d63ea3c62455e1d4c00adfb0ede",
+      "bytes": 131,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-lead-lint.log.gz",
+      "sha256": "daa6edc9645ef5a9f97be1844baf7537b97217ddf6e3a6ba9b25f9cd1f8fc0ae",
+      "bytes": 313,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-lead-scoped.log.gz",
+      "sha256": "2a0fc741bcea59f8c7d2634457ce7689d89fa7d1a199bebcd74426867be3b401",
+      "bytes": 455,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-lead-typecheck.log.gz",
+      "sha256": "7ef8a5d9c081fac69b14df25d4f6732e813090e590c657840ab08ed71a25b81f",
+      "bytes": 875,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-native-syntactic.json.gz",
+      "sha256": "114059a2a816dcb116797f3571f6ce5e8db7d2e46dc697af2d5d2e8a2f21ba41",
+      "bytes": 14080,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-source-and-export-proof.json",
+      "sha256": "c7c4ab211cfcc3f54c3f90a21f995f292e4eb324cd71c3fbeeac93f6a6fe76fd",
+      "bytes": 1961,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-summary.json",
+      "sha256": "e3e44047bf935c86e269bb73278032de977cdf50b9d1887b08c2048e2ac5080b",
+      "bytes": 1849,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-worker-conformance.log.gz",
+      "sha256": "599c41696903247e3b6dddf355a98acd2d6ee90c59a7b6e6d843deeb1519474b",
+      "bytes": 3253,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-worker-fresh-process-after.log.gz",
+      "sha256": "2293138197097ac91b023136444879e8ca620905894ad817f3d9b32166c9c92a",
+      "bytes": 111,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-worker-fresh-process-before.log.gz",
+      "sha256": "a4f7b788badd9edbdfc077b321e38da9ffd96d98dfc5335b066a122e3efc8d3a",
+      "bytes": 237,
+      "role": "baseline"
+    },
+    {
+      "path": "M4-worker-fresh-process-final-test-on-baseline.log.gz",
+      "sha256": "fedf748c7c6f28396ecd7212967ebd1c22aa24fc351ab7da8e6c55d9887f74b0",
+      "bytes": 111,
+      "role": "baseline"
+    },
+    {
+      "path": "README.md",
+      "sha256": "029627265f3fd4c463435e98d9d03e320e156e5c2f5e15b2fc69f53b188e5f16",
+      "bytes": 1319,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "M4 preserves public validation, canonical identity and initialization behavior under six fresh-process import orders. Native cycle diagnostics decrease from two to zero. Unchanged validator bodies and exact retained proof justify only the one early dead-directive deletion; all final milestone gates pass."
+}
