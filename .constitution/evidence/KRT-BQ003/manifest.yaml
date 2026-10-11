@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "a400c05376c54e03e8d4210b89885d1af2c04b7a",
-    "command": "bun run nx run-many -t typecheck,test -p kernel-contract-protocol,kernel-runtime --parallel=1; bun run conformance; bun run api-freeze:check"
+    "commit": "983dbb769010b67d4f6bb91f43b3abd6d6b40e91",
+    "command": "Historical M4-M6 phase measurements; M6 compiler/structural/runtime comparisons followed by scoped, typecheck, format, lint, changeset, conformance and API freeze gates"
   },
   "files": [
     {
@@ -200,11 +200,95 @@
       "role": "measurement"
     },
     {
+      "path": "M6-lead-api-freeze.log.gz",
+      "sha256": "a5b7b57eb495f65e47fd5abb2de42d14b8b6915cc2636caacc9b4b26fdda18b7",
+      "bytes": 118,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-callable-lead.log.gz",
+      "sha256": "aa79ce04d0d4bc5d78f71f69e0b91e983a2d976b8e4e286c90c54d32ed06f090",
+      "bytes": 178,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-changeset.log.gz",
+      "sha256": "c4a5b45ee2ad060413562fdf0b1ed1ad4853d95cdd5885e67fc9d6c5d784fb55",
+      "bytes": 117,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-conformance-lead.log.gz",
+      "sha256": "3f9dda0331ae4d9a14e78bd7ae414a0cac3e794f7f6b53e8b7b28b52e1d31620",
+      "bytes": 2598,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-constitution.log.gz",
+      "sha256": "0e850dd0df31a68c9bdeee9c979b0ab11f4cf8ccd6f4b6548ae9ebd93b697d9d",
+      "bytes": 1248,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-format.log.gz",
+      "sha256": "8e7bb27f3d01d0cf43aa41cfb1aab9a4d7c0cabbc349435ea8e18577d2df3afb",
+      "bytes": 131,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-lint.log.gz",
+      "sha256": "b19400d36a1c411bea2d2d072ba7637acf14ee2dcc5f285aab622a26fbdc4f0b",
+      "bytes": 316,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-runtime-lead.log.gz",
+      "sha256": "03c3656d10429f19d804cbd1c4d77fb43db85f5ecb7506c6f1599ac0b4d5b7af",
+      "bytes": 158,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-scoped.log.gz",
+      "sha256": "abd7bb98fb1bb2ab99fd3acf6642ea42c0e8c375bb9a97fe01415bfe11024133",
+      "bytes": 454,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-structural-lead.log.gz",
+      "sha256": "c692c26453d6ac145b55f147887e25a40146c85c89b7ec1de216f571fb399b82",
+      "bytes": 144,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-lead-typecheck.log.gz",
+      "sha256": "7ef8a5d9c081fac69b14df25d4f6732e813090e590c657840ab08ed71a25b81f",
+      "bytes": 875,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-proof-index.json.gz",
+      "sha256": "d96475308a4b4a031198f12febbe4ece85f9acae36e21fc7f5036c8babedcdf9",
+      "bytes": 4190,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-proof.tar.gz",
+      "sha256": "bc1a61a1e73561fc8ff466a0d2f31dc40e728caccff2f4131668841cfb1b5956",
+      "bytes": 170661,
+      "role": "measurement"
+    },
+    {
+      "path": "M6-result.json",
+      "sha256": "228db26df74a1870fbbda233376d95f01b3d356ebe8711a78f2e04305220ba4c",
+      "bytes": 3830,
+      "role": "measurement"
+    },
+    {
       "path": "README.md",
       "sha256": "3db2f76f86725ee26a2072b7e4e53ece2e8f93b1c22fae90884cb79608de665f",
       "bytes": 1798,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "M4–M5 preserve public validation, canonical identity and initialization behavior. M5 preserves all 28 callable/body records while clearing its 105 targeted pair diagnostics. Retained gates, full conformance and frozen API checks pass; unrelated native debt remains for later admission."
+  "pass_criteria": "All phase hashes and archive inventories validate; targeted rules are cleared per batch while callable, initialization, validation, fixture and conformance outcomes remain equal; native admission is still pending."
 }

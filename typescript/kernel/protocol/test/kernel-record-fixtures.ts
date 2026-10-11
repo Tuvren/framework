@@ -87,7 +87,35 @@ export const invalidKernelRecordFixtures: readonly unknown[] = [
   () => "nope",
 ];
 
-export function canonicalizeKernelRecord(value: KernelRecord): unknown {
+const compareByteArrays = (
+  leftBytes: Uint8Array,
+  rightBytes: Uint8Array
+): number => {
+  const sharedLength = Math.min(leftBytes.length, rightBytes.length);
+
+  for (let index = 0; index < sharedLength; index += 1) {
+    if (leftBytes[index] !== rightBytes[index]) {
+      return leftBytes[index] < rightBytes[index] ? -1 : 1;
+    }
+  }
+
+  if (leftBytes.length === rightBytes.length) {
+    return 0;
+  }
+
+  return leftBytes.length < rightBytes.length ? -1 : 1;
+};
+
+const encodeDeterministicScalar = (value: string): Uint8Array =>
+  new Uint8Array(deterministicScalarEncoder.encode(value));
+
+const compareKeys = (leftKey: string, rightKey: string): number =>
+  compareByteArrays(
+    encodeDeterministicScalar(leftKey),
+    encodeDeterministicScalar(rightKey)
+  );
+
+export const canonicalizeKernelRecord = (value: KernelRecord): unknown => {
   assertKernelRecord(value);
 
   if (
@@ -114,42 +142,9 @@ export function canonicalizeKernelRecord(value: KernelRecord): unknown {
       canonicalizeKernelRecord(nestedValue),
     ])
   );
-}
+};
 
-export function encodeDeterministicKernelRecord(
-  value: KernelRecord
-): Uint8Array {
-  const canonicalValue = canonicalizeKernelRecord(value);
-  return new Uint8Array(
-    deterministicEncoder.encode(prepareCanonicalKernelValue(canonicalValue))
-  );
-}
-
-export async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  let digestInput: ArrayBuffer;
-
-  if (
-    bytes.buffer instanceof ArrayBuffer &&
-    bytes.byteOffset === 0 &&
-    bytes.byteLength === bytes.buffer.byteLength
-  ) {
-    digestInput = bytes.buffer;
-  } else if (bytes.buffer instanceof ArrayBuffer) {
-    digestInput = bytes.buffer.slice(
-      bytes.byteOffset,
-      bytes.byteOffset + bytes.byteLength
-    );
-  } else {
-    digestInput = Uint8Array.from(bytes).buffer;
-  }
-
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", digestInput);
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("");
-}
-
-function prepareCanonicalKernelValue(value: unknown): unknown {
+const prepareCanonicalKernelValue = (value: unknown): unknown => {
   if (
     value === null ||
     typeof value === "boolean" ||
@@ -181,34 +176,37 @@ function prepareCanonicalKernelValue(value: unknown): unknown {
   }
 
   return value;
-}
+};
 
-function compareKeys(leftKey: string, rightKey: string): number {
-  return compareByteArrays(
-    encodeDeterministicScalar(leftKey),
-    encodeDeterministicScalar(rightKey)
+export const encodeDeterministicKernelRecord = (
+  value: KernelRecord
+): Uint8Array => {
+  const canonicalValue = canonicalizeKernelRecord(value);
+  return new Uint8Array(
+    deterministicEncoder.encode(prepareCanonicalKernelValue(canonicalValue))
   );
-}
+};
 
-function compareByteArrays(
-  leftBytes: Uint8Array,
-  rightBytes: Uint8Array
-): number {
-  const sharedLength = Math.min(leftBytes.length, rightBytes.length);
+export const sha256Hex = async (bytes: Uint8Array): Promise<string> => {
+  let digestInput: ArrayBuffer;
 
-  for (let index = 0; index < sharedLength; index += 1) {
-    if (leftBytes[index] !== rightBytes[index]) {
-      return leftBytes[index] < rightBytes[index] ? -1 : 1;
-    }
+  if (
+    bytes.buffer instanceof ArrayBuffer &&
+    bytes.byteOffset === 0 &&
+    bytes.byteLength === bytes.buffer.byteLength
+  ) {
+    digestInput = bytes.buffer;
+  } else if (bytes.buffer instanceof ArrayBuffer) {
+    digestInput = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength
+    );
+  } else {
+    digestInput = Uint8Array.from(bytes).buffer;
   }
 
-  if (leftBytes.length === rightBytes.length) {
-    return 0;
-  }
-
-  return leftBytes.length < rightBytes.length ? -1 : 1;
-}
-
-function encodeDeterministicScalar(value: string): Uint8Array {
-  return new Uint8Array(deterministicScalarEncoder.encode(value));
-}
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", digestInput);
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+};

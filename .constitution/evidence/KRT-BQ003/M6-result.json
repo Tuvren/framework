@@ -1,0 +1,110 @@
+{
+  "milestone": "M6",
+  "ticket": "KRT-BQ003",
+  "baseline_commit": "983dbb769010b67d4f6bb91f43b3abd6d6b40e91",
+  "files": [
+    "typescript/kernel/protocol/bench/kernel-identity.bench.ts",
+    "typescript/kernel/protocol/src/lib/kernel-record-identity.ts",
+    "typescript/kernel/protocol/test/kernel-contract-deterministic.test.ts",
+    "typescript/kernel/protocol/test/kernel-record-fixtures.ts"
+  ],
+  "diff_lines": 621,
+  "converted_declarations": 29,
+  "targeted_diagnostics": {
+    "func_style": [
+      29,
+      0
+    ],
+    "no_use_before_define": [
+      27,
+      0
+    ]
+  },
+  "callable_proof": {
+    "localSignatures": 29,
+    "fullPublicExportTypesMatch": true,
+    "allLocalRuntimeNamesAritiesAsyncConstructorsMatch": true,
+    "bodiesMatchAfterOnlySingleReturnToConciseExpressionNormalization": true,
+    "parameterDefaultsOptionalityRestGenericsAndReadonlyContractsMatch": true,
+    "negativeSignatureControls": 5,
+    "negativeStructuralControls": 4
+  },
+  "runtime_proof": {
+    "scopedProtocolTests": 92,
+    "scopedRuntimeTests": 56,
+    "freshProcessTests": 6,
+    "canonicalRecordAndFixtureByteHashCases": 10,
+    "orderedDecodeAndValidationOutcomes": 15,
+    "opaqueBufferViewAndSharedBufferDigestCases": 4,
+    "allFixtureRuntimeValuesAndPropertyOrderMatch": true,
+    "distinctInsertionOrderFixtureVariantsPreserved": true,
+    "statefulTopLevelInitializationOrderUnchanged": true,
+    "benchmarkBeforeAndAfterExit": 0,
+    "conformanceLaneOutcomesMatch": 11,
+    "conformanceBaseline": [
+      "reviewed pre-reorder M4 baseline",
+      "immediate reviewed M5 baseline"
+    ],
+    "apiFreeze": {
+      "entrypoints": 14,
+      "exports": 404
+    }
+  },
+  "worker_gate_exits": {
+    "scoped": 0,
+    "initialization": 0,
+    "retained-biome": 0,
+    "format-touched": 0,
+    "runtime": 0,
+    "bench": 0,
+    "typecheck": 0,
+    "changeset": 0,
+    "conformance": 0,
+    "format": 0,
+    "lint": 0,
+    "api-freeze": 0,
+    "callable-compatibility": 0,
+    "local-runtime-compatibility": 0,
+    "structural-proof": 0,
+    "signature-controls": 0,
+    "structural-controls": 0,
+    "native-summary": 0,
+    "changeset-proof": 0,
+    "conformance-comparison": 0
+  },
+  "proof_archive": "M6-proof.tar.gz",
+  "proof_index": "M6-proof-index.json.gz",
+  "archive_members": 112,
+  "note": "Only targeted rules cleared. Type-only export presence is captured, not a claim of complete type-only structure validation; all non-callable source ASTs are unchanged. Archive members verified against worker hashes; duplicate archive index entries excluded when repackaging.",
+  "source_hashes": {
+    "typescript/kernel/protocol/src/lib/kernel-record-identity.ts": {
+      "before": "cf3941b1c686054a113bc597ea6e790fc454928fd0f1bb36f17f86ed2a079b15",
+      "after": "5ca88e55cb186549c26e4b1e4ea96ea88013976624b620a4f0735c7ada1d4c86"
+    },
+    "typescript/kernel/protocol/bench/kernel-identity.bench.ts": {
+      "before": "0d4e9377e9eb4caa98462810e64c92ec3c5e0372a0b60e781dbc486e81f6a311",
+      "after": "a9a51ce2e3df693504e53aa38a044935b6dee5cef6053105e655407ff5fb70c1"
+    },
+    "typescript/kernel/protocol/test/kernel-record-fixtures.ts": {
+      "before": "e8f7d11159175198969e2c006cc80dcc887a67a4e63a502c812e6553811f2344",
+      "after": "515407ab1bda3131287b0776eeff70c9bdd1f7a9d744593bd6a2df1aa33d5561"
+    },
+    "typescript/kernel/protocol/test/kernel-contract-deterministic.test.ts": {
+      "before": "03c8db209c9d38d7a24ba0ba199762feb5ad2a0452b0b8b624e70673ecb92f36",
+      "after": "1604d2b350b2102c465d9564898c90cc3ad8130f97ce3ebd1c8237de0e3a3241"
+    }
+  },
+  "lead_final_gates": {
+    "scoped": 0,
+    "typecheck": 0,
+    "format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "conformance": 0,
+    "api_freeze": 0,
+    "callable": 0,
+    "structural": 0,
+    "runtime": 0
+  }
+}

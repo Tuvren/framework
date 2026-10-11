@@ -23,6 +23,37 @@ import {
 
 const SAMPLE_COUNT = 5;
 const WARMUP_ITERATIONS = 20;
+
+const createNestedValue = (seed: number, depth: number): KernelRecord => {
+  if (depth === 0) {
+    return seed;
+  }
+
+  return {
+    children: [
+      createNestedValue(seed + 1, depth - 1),
+      createNestedValue(seed + 2, depth - 1),
+    ],
+    enabled: seed % 2 === 0,
+    label: `node-${seed}-${depth}`,
+  };
+};
+
+const createKernelRecord = (width: number, depth: number): KernelRecord => {
+  const record: Record<string, KernelRecord> = {
+    createdAtMs: 1,
+    schemaId: "schema-bench",
+  };
+
+  for (let index = 0; index < width; index += 1) {
+    record[`key_${String(index).padStart(3, "0")}`] = createNestedValue(
+      index,
+      depth
+    );
+  }
+
+  return record;
+};
 const RECORD_FIXTURE = createKernelRecord(20, 4);
 const bunRuntime = globalThis as typeof globalThis & {
   Bun: { nanoseconds(): number };
@@ -62,22 +93,11 @@ const cases: BenchmarkCase[] = [
   },
 ];
 
-await main();
+const nanoseconds = (): number => bunRuntime.Bun.nanoseconds();
 
-async function main(): Promise<void> {
-  process.stdout.write("kernel identity benchmark\n");
-
-  for (const benchmarkCase of cases) {
-    const result = await measure(benchmarkCase);
-    process.stdout.write(
-      `${result.name}: best ${formatNs(result.bestNs)} total, ${formatNs(
-        result.bestNs / result.iterations
-      )}/iter; avg ${formatNs(result.averageNs)} total\n`
-    );
-  }
-}
-
-async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
+const measure = async (
+  benchmarkCase: BenchmarkCase
+): Promise<BenchmarkResult> => {
   await benchmarkCase.run(
     Math.min(WARMUP_ITERATIONS, benchmarkCase.iterations)
   );
@@ -100,40 +120,9 @@ async function measure(benchmarkCase: BenchmarkCase): Promise<BenchmarkResult> {
     iterations: benchmarkCase.iterations,
     name: benchmarkCase.name,
   };
-}
+};
 
-function createKernelRecord(width: number, depth: number): KernelRecord {
-  const record: Record<string, KernelRecord> = {
-    createdAtMs: 1,
-    schemaId: "schema-bench",
-  };
-
-  for (let index = 0; index < width; index += 1) {
-    record[`key_${String(index).padStart(3, "0")}`] = createNestedValue(
-      index,
-      depth
-    );
-  }
-
-  return record;
-}
-
-function createNestedValue(seed: number, depth: number): KernelRecord {
-  if (depth === 0) {
-    return seed;
-  }
-
-  return {
-    children: [
-      createNestedValue(seed + 1, depth - 1),
-      createNestedValue(seed + 2, depth - 1),
-    ],
-    enabled: seed % 2 === 0,
-    label: `node-${seed}-${depth}`,
-  };
-}
-
-function formatNs(value: number): string {
+const formatNs = (value: number): string => {
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(2)}ms`;
   }
@@ -143,8 +132,19 @@ function formatNs(value: number): string {
   }
 
   return `${value.toFixed(0)}ns`;
-}
+};
 
-function nanoseconds(): number {
-  return bunRuntime.Bun.nanoseconds();
-}
+const main = async (): Promise<void> => {
+  process.stdout.write("kernel identity benchmark\n");
+
+  for (const benchmarkCase of cases) {
+    const result = await measure(benchmarkCase);
+    process.stdout.write(
+      `${result.name}: best ${formatNs(result.bestNs)} total, ${formatNs(
+        result.bestNs / result.iterations
+      )}/iter; avg ${formatNs(result.averageNs)} total\n`
+    );
+  }
+};
+
+await main();
