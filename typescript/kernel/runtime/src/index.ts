@@ -29,5 +29,4 @@
  */
 
 export type { RuntimeKernelOptions } from "./lib/runtime-kernel.js";
-// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export { createRuntimeKernel } from "./lib/runtime-kernel.js";

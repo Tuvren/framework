@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "2d123e7612c27a0cf6af05fc20c526e86b5753d7",
-    "command": "M13R andM14R native cleanup with source/repair archives and independent scoped/typecheck/format/lint/API/tooling/conformance gates"
+    "commit": "9abbb6b6d70c85672ee2fd0af0b84f2516ea3f44",
+    "command": "Atomic native admission and bounded bootstrap repairs; full independently run release ladder"
   },
   "files": [
     {
@@ -102,7 +102,67 @@
       "sha256": "6ea4eb8d10c4d8f194d2359257720367bbd132f8d97fbe0903f07319a93e5892",
       "bytes": 13252,
       "role": "measurement"
+    },
+    {
+      "path": "M15R-admission-invariants.json",
+      "sha256": "1ebaf5ea6613f769f356135298639f15e5ec240a5ca62382e4faaf6fbf9e4d20",
+      "bytes": 4932,
+      "role": "measurement"
+    },
+    {
+      "path": "M15R-approved-repair-index.json.gz",
+      "sha256": "bb47bf28b1a0489450a1121fde2a24418ac822c021c93185e4cbebf9b4664c65",
+      "bytes": 1559,
+      "role": "measurement"
+    },
+    {
+      "path": "M15R-approved-repair.tar.gz",
+      "sha256": "2c1ea6d7a1dee73618f5ba0b49ae8e795e0ce0a162b17c76e7dac3da753b7ae3",
+      "bytes": 21208,
+      "role": "measurement"
+    },
+    {
+      "path": "M15R-final-lead-gates.tar.gz",
+      "sha256": "6b335c8cdb6eb5e08ccb91f4cdde324f294282d3d500cf66ac032be0eb1c5dfe",
+      "bytes": 51903,
+      "role": "measurement"
+    },
+    {
+      "path": "M15R-final-lead-index.json.gz",
+      "sha256": "286fd70858ea812599c36bae61b4640a71ad49435f13724d0af9668c8347d968",
+      "bytes": 596,
+      "role": "measurement"
+    },
+    {
+      "path": "M15R-final-result.json",
+      "sha256": "8e2bcf20732ab0ea5f0f863b7fdcf3adc24a1e312594c1e152ed2377e8c1ecea",
+      "bytes": 5128,
+      "role": "measurement"
+    },
+    {
+      "path": "M15R-proof-index.json.gz",
+      "sha256": "7f63b15e298ebfe16240e3d494f69f297e6b967f46c513da6d89a8257a4f25fe",
+      "bytes": 9001,
+      "role": "measurement"
+    },
+    {
+      "path": "M15R-proof.tar.gz",
+      "sha256": "5918802ba0297f9b1fe5d89c6d491a61aebe4b278a12356f5a50c7bd232838ca",
+      "bytes": 480827,
+      "role": "measurement"
+    },
+    {
+      "path": "M15R-result.json",
+      "sha256": "ce34854bbf493ea41e7042f9381c58d4e335faf33c81e833209a1caeed391866",
+      "bytes": 22220,
+      "role": "measurement"
+    },
+    {
+      "path": "suppressions.json",
+      "sha256": "17a9d6dfba8cac5f1873387c9a83ec415bea578d6e064b62c19103070e0902b0",
+      "bytes": 23182,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "Both native modes are clean;156scoped tests,33typecheck projects,141tooling tests,11conformance lanes,API freeze and changeset coverage pass; runtime async ordering/laziness/error identity has focused proof"
+  "pass_criteria": "42code/14JSON files completely owned; all6original IDs/reasons accounted for;156tests,33typechecks,15tooling suites,API/lint/format/conformance and fullrelease ladder pass"
 }

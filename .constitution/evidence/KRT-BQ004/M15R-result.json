@@ -1,0 +1,816 @@
+{
+  "milestone": "M15R",
+  "ticket": "KRT-BQ004",
+  "baseline_commit": "9abbb6b6d70c85672ee2fd0af0b84f2516ea3f44",
+  "files": [
+    "tools/biome-coverage/bq.json",
+    "typescript/kernel/protocol/project.json",
+    "typescript/kernel/protocol/src/index.ts",
+    "typescript/kernel/protocol/src/lib/kernel-identity.ts",
+    "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts",
+    "typescript/kernel/protocol/src/lib/kernel-validation.ts",
+    "typescript/kernel/runtime/project.json",
+    "typescript/kernel/runtime/src/index.ts"
+  ],
+  "source_hashes": {
+    "tools/biome-coverage/bq.json": {
+      "before": "8c53ee68c258704e81054f559d984e67e0eebb068e0c5d023499510a1fef3c2c",
+      "after": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    "typescript/kernel/protocol/project.json": {
+      "before": "47cbaae876be09270d72af14143109d7acc5109c9ee251bf94f0925da2204433",
+      "after": "dd041aaa13cf0f1d153a5c65f7afce2e54c979b11b0dc077bf64e167d08dad43"
+    },
+    "typescript/kernel/protocol/src/index.ts": {
+      "before": "1ca0e002fd56102ddf7d81964c54f41a267d3f432c1d6b56e1e7e11ce22e20b7",
+      "after": "ff6e38ba99deab549a9f1154d7a6a859425a841699fcb3e56bb6f966117d97a4"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-identity.ts": {
+      "before": "ea4dbae18ebf94139e475016d27b2221a9f20fc9a4a0f5374ea20c44c2184813",
+      "after": "d67d7c501307d2312efe7ac62dac690a872dc77f0afc8e0663d0fca5d80cc955"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts": {
+      "before": "ad9fe8a1913c5d10b36d8d32f90604456b916b24f727a36b60b649c2fb40b9ac",
+      "after": "bc41fcf0d290520f95048f100dbbcab4c8b75bd8fae4b932834a7e8357e2c040"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation.ts": {
+      "before": "d4cc929bc3a70c61473e4ca6ca776742b61d9422e4ff4c9a81401d60e3578198",
+      "after": "de790b008af07e3d994d20b6031c27fc302cf343594d923d6ae3f5104fad9316"
+    },
+    "typescript/kernel/runtime/project.json": {
+      "before": "8727cf0bf50b62b12e518c0af91e90159acf86e4bf0f870a0d3452f4c2afe74e",
+      "after": "defb2ba444ed09e5a14aebce1ee155f7b59e2435171e4e382a05fc6b04059b41"
+    },
+    "typescript/kernel/runtime/src/index.ts": {
+      "before": "3a56151ff4c7bf8f252fe5c4ef99740ac17e29c87f438584b99c97aaf8eb4267",
+      "after": "94fc3e1cf60bfdf33f755ff6336f126a50076d7866f92308510359cfbfc359a7"
+    }
+  },
+  "native": {
+    "zeroSyntacticAndTypeAwareDiagnosticsBothPackages": true,
+    "selection": {
+      "code": 42,
+      "json": 14,
+      "formatterJson": 14
+    },
+    "allEnabledAsShippedRules": 474,
+    "typeAwareRules": 55,
+    "noBackendSkipsOrResolutionErrorsReported": true,
+    "completeEffectivePolicyEquality": true
+  },
+  "worker_gates": [
+    {
+      "name": "version-bun",
+      "command": [
+        "bun",
+        "--version"
+      ],
+      "exit_code": 0,
+      "report": "version-bun.json"
+    },
+    {
+      "name": "version-oxlint",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--version"
+      ],
+      "exit_code": 0,
+      "report": "version-oxlint.json"
+    },
+    {
+      "name": "version-oxfmt",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxfmt",
+        "--version"
+      ],
+      "exit_code": 0,
+      "report": "version-oxfmt.json"
+    },
+    {
+      "name": "version-biome",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "--version"
+      ],
+      "exit_code": 0,
+      "report": "version-biome.json"
+    },
+    {
+      "name": "version-ts",
+      "command": [
+        "bunx",
+        "--bun",
+        "tsc",
+        "--version"
+      ],
+      "exit_code": 0,
+      "report": "version-ts.json"
+    },
+    {
+      "name": "oxlint-help",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--help"
+      ],
+      "exit_code": 0,
+      "report": "oxlint-help.json"
+    },
+    {
+      "name": "oxfmt-help",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxfmt",
+        "--help"
+      ],
+      "exit_code": 0,
+      "report": "oxfmt-help.json"
+    },
+    {
+      "name": "oxlint-rules",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--rules",
+        "--format=json"
+      ],
+      "exit_code": 0,
+      "report": "oxlint-rules-initial-pipe-capture.json",
+      "capture_note": "Initial pipe capture preserved; subsequent regular-file recapture is authoritative. Registry JSON initially truncated at65536bytes."
+    },
+    {
+      "name": "oxlint-effective-config",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--print-config"
+      ],
+      "exit_code": 0,
+      "report": "oxlint-effective-config-initial-pipe-capture.json",
+      "capture_note": "Initial pipe capture preserved; subsequent regular-file recapture is authoritative. Registry JSON initially truncated at65536bytes."
+    },
+    {
+      "name": "pre-native-protocol-syntactic",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--format=json",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "pre-native-protocol-syntactic.json"
+    },
+    {
+      "name": "pre-native-protocol-type-aware",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--format=json",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "pre-native-protocol-type-aware.json"
+    },
+    {
+      "name": "pre-selection-protocol",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--debug=files",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "pre-selection-protocol.json"
+    },
+    {
+      "name": "pre-json-protocol",
+      "command": [
+        "bun",
+        "tools/scripts/json-check.ts",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "pre-json-protocol.json"
+    },
+    {
+      "name": "pre-biome-protocol",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "typescript/kernel/protocol",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 0,
+      "report": "pre-biome-protocol.json"
+    },
+    {
+      "name": "pre-native-runtime-syntactic",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--format=json",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "pre-native-runtime-syntactic.json"
+    },
+    {
+      "name": "pre-native-runtime-type-aware",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--format=json",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "pre-native-runtime-type-aware.json"
+    },
+    {
+      "name": "pre-selection-runtime",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--debug=files",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "pre-selection-runtime.json"
+    },
+    {
+      "name": "pre-json-runtime",
+      "command": [
+        "bun",
+        "tools/scripts/json-check.ts",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "pre-json-runtime.json"
+    },
+    {
+      "name": "pre-biome-runtime",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "typescript/kernel/runtime",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 0,
+      "report": "pre-biome-runtime.json"
+    },
+    {
+      "name": "pre-biome-suppressed-1",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/protocol/src/index.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 0,
+      "report": "pre-biome-suppressed-1.json"
+    },
+    {
+      "name": "pre-biome-unsuppressed-1",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/protocol/src/index.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 1,
+      "report": "pre-biome-unsuppressed-1.json"
+    },
+    {
+      "name": "pre-biome-suppressed-2",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/protocol/src/lib/kernel-identity.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 0,
+      "report": "pre-biome-suppressed-2.json"
+    },
+    {
+      "name": "pre-biome-unsuppressed-2",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/protocol/src/lib/kernel-identity.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 1,
+      "report": "pre-biome-unsuppressed-2.json"
+    },
+    {
+      "name": "pre-biome-suppressed-4",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/protocol/src/lib/kernel-validation-stored.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 0,
+      "report": "pre-biome-suppressed-4.json"
+    },
+    {
+      "name": "pre-biome-unsuppressed-4",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/protocol/src/lib/kernel-validation-stored.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 1,
+      "report": "pre-biome-unsuppressed-4.json"
+    },
+    {
+      "name": "pre-biome-suppressed-5",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/protocol/src/lib/kernel-validation.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 0,
+      "report": "pre-biome-suppressed-5.json"
+    },
+    {
+      "name": "pre-biome-unsuppressed-5",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/protocol/src/lib/kernel-validation.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 1,
+      "report": "pre-biome-unsuppressed-5.json"
+    },
+    {
+      "name": "pre-biome-suppressed-6",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/runtime/src/index.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 0,
+      "report": "pre-biome-suppressed-6.json"
+    },
+    {
+      "name": "pre-biome-unsuppressed-6",
+      "command": [
+        "bunx",
+        "--bun",
+        "@biomejs/biome",
+        "check",
+        "--config-path=/home/oscar/GitHub/Tuvren/framework-EPIC-BQ/biome.jsonc",
+        "--vcs-enabled=false",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/scratch/typescript/kernel/runtime/src/index.ts",
+        "--reporter=json",
+        "--max-diagnostics=none"
+      ],
+      "exit_code": 1,
+      "report": "pre-biome-unsuppressed-6.json"
+    },
+    {
+      "name": "oxlint-rules",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--rules",
+        "--format=json"
+      ],
+      "exit_code": 0,
+      "report": "oxlint-rules.json"
+    },
+    {
+      "name": "oxlint-effective-config",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--print-config"
+      ],
+      "exit_code": 0,
+      "report": "oxlint-effective-config.json"
+    },
+    {
+      "name": "post-native-protocol-syntactic",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--format=json",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "post-native-protocol-syntactic.json",
+      "capture_note": "Raw named report is latest exact-command final-source replay; every recorded exit remains0."
+    },
+    {
+      "name": "post-native-protocol-type-aware",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--format=json",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "post-native-protocol-type-aware.json",
+      "capture_note": "Raw named report is latest exact-command final-source replay; every recorded exit remains0."
+    },
+    {
+      "name": "post-selection-protocol",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--debug=files",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "post-selection-protocol.json"
+    },
+    {
+      "name": "post-json-protocol",
+      "command": [
+        "bun",
+        "tools/scripts/json-check.ts",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "post-json-protocol.json"
+    },
+    {
+      "name": "post-native-runtime-syntactic",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--format=json",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "post-native-runtime-syntactic.json",
+      "capture_note": "Raw named report is latest exact-command final-source replay; every recorded exit remains0."
+    },
+    {
+      "name": "post-native-runtime-type-aware",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--format=json",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "post-native-runtime-type-aware.json",
+      "capture_note": "Raw named report is latest exact-command final-source replay; every recorded exit remains0."
+    },
+    {
+      "name": "post-selection-runtime",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--debug=files",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "post-selection-runtime.json"
+    },
+    {
+      "name": "post-json-runtime",
+      "command": [
+        "bun",
+        "tools/scripts/json-check.ts",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "post-json-runtime.json"
+    },
+    {
+      "name": "selection-api",
+      "command": [
+        "bun",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/api-proof.ts"
+      ],
+      "exit_code": 0,
+      "report": "selection-api.json"
+    },
+    {
+      "name": "shipped-effective-config",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "-c",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/shipped-core-config.json",
+        "--print-config"
+      ],
+      "exit_code": 0,
+      "report": "shipped-effective-config.json"
+    },
+    {
+      "name": "nx-lint",
+      "command": [
+        "bun",
+        "run",
+        "nx",
+        "run-many",
+        "-t",
+        "lint",
+        "-p",
+        "kernel-contract-protocol,kernel-runtime",
+        "--parallel=1",
+        "--skip-nx-cache"
+      ],
+      "exit_code": 0,
+      "report": "nx-lint.json"
+    },
+    {
+      "name": "scoped-typecheck-tests",
+      "command": [
+        "bun",
+        "run",
+        "nx",
+        "run-many",
+        "-t",
+        "typecheck,test",
+        "-p",
+        "kernel-contract-protocol,kernel-runtime",
+        "--parallel=1",
+        "--skip-nx-cache"
+      ],
+      "exit_code": 0,
+      "report": "scoped-typecheck-tests.json"
+    },
+    {
+      "name": "typecheck",
+      "command": [
+        "bun",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "report": "typecheck.json"
+    },
+    {
+      "name": "format",
+      "command": [
+        "bun",
+        "run",
+        "format:check"
+      ],
+      "exit_code": 1,
+      "report": "format-initial-double-blanks.json"
+    },
+    {
+      "name": "format-touched",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxfmt",
+        "--write",
+        "typescript/kernel/protocol/src/lib/kernel-identity.ts",
+        "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts",
+        "typescript/kernel/protocol/src/lib/kernel-validation.ts"
+      ],
+      "exit_code": 0,
+      "report": "format-touched.json"
+    },
+    {
+      "name": "post-native-protocol-syntactic",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--format=json",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "post-native-protocol-syntactic.json",
+      "capture_note": "Raw named report is latest exact-command final-source replay; every recorded exit remains0."
+    },
+    {
+      "name": "post-native-protocol-type-aware",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--format=json",
+        "typescript/kernel/protocol"
+      ],
+      "exit_code": 0,
+      "report": "post-native-protocol-type-aware.json",
+      "capture_note": "Raw named report is latest exact-command final-source replay; every recorded exit remains0."
+    },
+    {
+      "name": "post-native-runtime-syntactic",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--format=json",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "post-native-runtime-syntactic.json",
+      "capture_note": "Raw named report is latest exact-command final-source replay; every recorded exit remains0."
+    },
+    {
+      "name": "post-native-runtime-type-aware",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--format=json",
+        "typescript/kernel/runtime"
+      ],
+      "exit_code": 0,
+      "report": "post-native-runtime-type-aware.json",
+      "capture_note": "Raw named report is latest exact-command final-source replay; every recorded exit remains0."
+    },
+    {
+      "name": "selection-api-final",
+      "command": [
+        "bun",
+        "/home/oscar/.codex/plans/tuvren-bq-session/m15r/api-proof.ts"
+      ],
+      "exit_code": 0,
+      "report": "selection-api-final.json"
+    },
+    {
+      "name": "format",
+      "command": [
+        "bun",
+        "run",
+        "format:check"
+      ],
+      "exit_code": 0,
+      "report": "format.json"
+    },
+    {
+      "name": "lint",
+      "command": [
+        "bun",
+        "run",
+        "lint"
+      ],
+      "exit_code": 0,
+      "report": "lint.json"
+    },
+    {
+      "name": "changeset",
+      "command": [
+        "bun",
+        "run",
+        "changeset:check"
+      ],
+      "exit_code": 0,
+      "report": "changeset.json"
+    },
+    {
+      "name": "api-freeze",
+      "command": [
+        "bun",
+        "run",
+        "api-freeze:check"
+      ],
+      "exit_code": 0,
+      "report": "api-freeze.json"
+    },
+    {
+      "name": "tooling-acceptance",
+      "command": [
+        "bun",
+        "test",
+        "tools/scripts/biome-alias.test.ts",
+        "tools/scripts/lib/biome-inventory.test.ts",
+        "tools/scripts/lib/biome-lint-partition.test.ts",
+        "tools/scripts/lib/biome-oxc-discovery.test.ts",
+        "tools/scripts/biome-lint.test.ts",
+        "tools/scripts/generator-oxfmt.test.ts",
+        "tools/scripts/oxc-preparation.test.ts",
+        "tools/scripts/oxc-project-discovery.test.ts",
+        "tools/scripts/typecheck-source-aliases.test.ts",
+        "tools/conformance/harness/test/run.test.ts",
+        "tools/scripts/api-freeze-gate.test.ts",
+        "tools/scripts/generated-prerequisites.test.ts",
+        "tools/scripts/json-check.test.ts",
+        "tools/scripts/json-source-integrity.test.ts",
+        "tools/scripts/telemetry-codegen.test.ts"
+      ],
+      "exit_code": 1,
+      "report": "tooling-acceptance.json"
+    },
+    {
+      "name": "conformance",
+      "command": [
+        "bun",
+        "run",
+        "conformance"
+      ],
+      "exit_code": 0,
+      "report": "conformance.json"
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "report": "diff-check.json"
+    }
+  ],
+  "introduced": {
+    "dependencies": [],
+    "conventions": [],
+    "contract_shapes": []
+  },
+  "proof_archive": "M15R-proof.tar.gz",
+  "proof_index": "M15R-proof-index.json.gz",
+  "archive_members": 216,
+  "note": "User-directed accelerated batch. The archived summary contains full measurement details; no exhaustive hypothetical-adopter compatibility matrix is required."
+}

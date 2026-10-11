@@ -10,6 +10,7 @@ scope:
     - tools/biome-coverage/bq.json
     - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
     - tools/scripts/lib/biome-lint-partition.test.ts
+    - tools/scripts/biome-lint.test.ts
     - ".changeset/toolchain-bq-kernel-lint-pilot.md"
   tech_spec_patchable: []
 estimated_diff_lines: 12500
@@ -93,6 +94,7 @@ tickets:
         - tools/biome-coverage/bq.json
         - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
         - tools/scripts/lib/biome-lint-partition.test.ts
+        - tools/scripts/biome-lint.test.ts
         - ".changeset/toolchain-bq-kernel-lint-pilot.md"
     verification:
       command: bun run lint
@@ -105,10 +107,14 @@ tickets:
       evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert each admitted target has the exact canonical command shape and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. For each admitted path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted path contains a biome-ignore comment after the commit. Paths outside this admission retain needed original directives and Biome coverage. Scoped tests and the full lint gate pass; admitted paths are absent from tools/biome-coverage/bq.json, while every remaining entry retains Biome lint coverage. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: in_progress
+    status: done
     deviations:
       - files:
           - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
           - tools/scripts/lib/biome-lint-partition.test.ts
           - .changeset/toolchain-bq-kernel-lint-pilot.md
         justification: "Owner approved both extra paths on 2026-10-11 after reviewing the generated SDK freeze candidate and measured 40-file inventory. SDK re-exports three intentionally tightened kernel interfaces; declare their breaking snapshot update and direct 0.x minor release coverage under ADR-0069. Update the two stale 39-file partition expectations after the earlier initialization test added one code file, preserving coverage and negative controls. M14R adds a sequential-async helper and focused tests inside runtime scope; fresh selection becomes 42 files and the same two approved expectations follow that corpus. The no-adopters ruling permits direct API tightening; required minor bumps supersede the original patch-only assumption, including runtime verdict composition normalizing malformed-input errors to Promise rejection."
+      - files:
+          - tools/scripts/lib/biome-lint-partition.test.ts
+          - tools/scripts/biome-lint.test.ts
+        justification: "Atomic admission exposed two obsolete bootstrap assumptions in the existing 15-suite lane: empty native arrays in the actual partition test and an assertion that real metadata discovers zero native targets. Actual native ownership independently passes 42 code and 14 JSON files without gaps or duplicates. Under the owner's latest instruction to complete work autonomously while absent, extend scope only for necessary test maintenance: use actual native code/JSON selection in the approved partition path, and assert both admitted kernel targets in the additional routing-test path. This additional path was adopted autonomously, not separately confirmed. Preserve completeness assertions, inventories, negative controls, suite registrations and lint policy; retain the original 139-pass/2-fail measurement alongside final passing repair proof."
