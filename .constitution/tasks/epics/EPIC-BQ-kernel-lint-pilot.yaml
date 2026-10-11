@@ -161,7 +161,7 @@ closeout:
       kind: pattern
       paths: [typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts]
       commit: 734df20
-    - summary: "Kernel protocol method signatures become callable properties with strict parameter variance; hashKernelRecord and hashTurnTreeIdentity reject invalid input through their Promise. These deliberate 0.x breaking changes carry protocol and SDK minor release coverage and exactly three generated SDK freeze updates."
+    - summary: "Kernel protocol method signatures become callable properties with strict parameter variance; hashKernelRecord and hashTurnTreeIdentity reject invalid input through their Promise. These deliberate0.x breaking changes carry protocol and SDK minor release coverage and exactly three generated SDK freeze updates."
       kind: contract_shape
       paths: [typescript/kernel/protocol/src/lib/kernel-types.ts, typescript/kernel/protocol/src/lib/kernel-record-identity.ts, typescript/kernel/protocol/src/lib/kernel-identity.ts, tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json]
       commit: 2d123e7612c27a0cf6af05fc20c526e86b5753d7
@@ -189,6 +189,10 @@ closeout:
       kind: convention
       paths: [tools/scripts/lib/biome-lint-partition.test.ts, tools/scripts/biome-lint.test.ts, ".constitution/evidence/KRT-BQ004/suppressions.json"]
       commit: 9bd27c2f662c5daab33295956d1021948cf897e9
+    - summary: "Mixed native lint targets require literal parallel:false so Nx22.7.12 executes Oxlint before JSON validation and stops after first-checker failure. Native routing rejects missing/true/invalid settings and ambiguous command plus commands fields while preserving single-command forms. Installed-schema and isolated-executor measurements verify the convention."
+      kind: convention
+      paths: [typescript/kernel/protocol/project.json, typescript/kernel/runtime/project.json, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts, tools/scripts/lib/biome-lint-partition.test.ts]
+      commit: 548d891129c22ab8681cc4603d998e5bbb94725f
   settled:
     - record: ".constitution/tech-spec/data-models/kernel-records.meta.yaml"
       evidence:
