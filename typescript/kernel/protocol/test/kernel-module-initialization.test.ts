@@ -17,6 +17,9 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 
+import type * as Protocol from "../src/index.ts";
+import { rejectionOf } from "./kernel-contract-test-helpers.ts";
+
 const firstModules = [
   "../src/index.ts",
   "../src/lib/kernel-validation.ts",
@@ -35,7 +38,7 @@ if (firstModule === undefined) {
       // here would initialize the public entrypoint before the selected module.
       const result = spawnSync(process.execPath, ["test", import.meta.path], {
         cwd: import.meta.dir,
-        encoding: "utf8",
+        encoding: "utf-8",
         env: { ...process.env, TUVREN_KERNEL_FIRST_MODULE: modulePath },
         timeout: 10_000,
       });
@@ -50,8 +53,7 @@ if (firstModule === undefined) {
 } else {
   test("validates records and canonical identity after fresh module initialization", async () => {
     await import(firstModule);
-    const protocol: typeof import("../src/index.ts") =
-      await import("../src/index.ts");
+    const protocol: typeof Protocol = await import("../src/index.ts");
     const { TuvrenValidationError } = await import("@tuvren/core");
     const { kernelProtocolLogicalFixtures: logical } =
       await import("./kernel-protocol-fixtures.js");
@@ -71,8 +73,8 @@ if (firstModule === undefined) {
     // across the record-to-runtime validator dependency.
     const invalidRun = {
       ...logical.runRecord,
-      status: "unknown",
       currentStepIndex: -1,
+      status: "unknown",
     };
     expect(protocol.isRunRecord(invalidRun)).toBe(false);
     let runError: unknown;
@@ -83,10 +85,10 @@ if (firstModule === undefined) {
     }
     expect(runError).toBeInstanceOf(TuvrenValidationError);
     expect(runError).toMatchObject({
-      name: "TuvrenValidationError",
       code: "invalid_run_status",
-      message: "run.status must be one of running, paused, completed, failed",
       details: { value: "unknown" },
+      message: "run.status must be one of running, paused, completed, failed",
+      name: "TuvrenValidationError",
     });
 
     const invalidContext = {
@@ -95,9 +97,9 @@ if (firstModule === undefined) {
       step: { ...logical.stepContext.step, id: "" },
     };
     expect(protocol.isStepContext(invalidContext)).toBe(false);
-    expect(() => protocol.assertStepContext(invalidContext, "context")).toThrow(
-      "context.schema.schemaId must be a non-empty string"
-    );
+    expect(() => {
+      protocol.assertStepContext(invalidContext, "context");
+    }).toThrow("context.schema.schemaId must be a non-empty string");
 
     const identity = deterministic.turnNodeIdentityRecord;
     expect(
@@ -117,16 +119,18 @@ if (firstModule === undefined) {
     await protocol.assertTurnNodeIdentity(node);
 
     const wrongHash = "0".repeat(64);
-    await expect(
-      protocol.assertTurnNodeIdentity({ ...node, hash: wrongHash }, "node")
-    ).rejects.toMatchObject({
-      name: "TuvrenValidationError",
+    expect(
+      await rejectionOf(
+        protocol.assertTurnNodeIdentity({ ...node, hash: wrongHash }, "node")
+      )
+    ).toMatchObject({
       code: "invalid_turn_node_hash",
-      message: "node.hash must match the canonical TurnNode identity hash",
       details: {
         expectedHash: deterministic.turnNodeIdentityRecordSha256Hex,
         hash: wrongHash,
       },
+      message: "node.hash must match the canonical TurnNode identity hash",
+      name: "TuvrenValidationError",
     });
   });
 }

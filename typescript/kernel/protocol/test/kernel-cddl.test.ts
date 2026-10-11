@@ -55,11 +55,11 @@ const HASH_STRING_PATTERN = "^[0-9a-f]{64}$";
 const NON_EMPTY_TEXT_PATTERN = ".+";
 const MIN_SAFE_INTEGER = -9_007_199_254_740_991;
 const MAX_SAFE_INTEGER = 9_007_199_254_740_991;
-const HASH_STRING_ERROR_PATTERN = /lowercase 64-character SHA-256 hex digest/;
-const SAFE_INTEGER_ERROR_PATTERN = /safe integer/;
-const KERNEL_RECORD_ERROR_PATTERN = /restricted runtime kernel record profile/;
-const NON_EMPTY_STRING_ERROR_PATTERN = /non-empty string/;
-const NON_NEGATIVE_SAFE_INTEGER_ERROR_PATTERN = /non-negative safe integer/;
+const HASH_STRING_ERROR_PATTERN = /lowercase 64-character SHA-256 hex digest/u;
+const SAFE_INTEGER_ERROR_PATTERN = /safe integer/u;
+const KERNEL_RECORD_ERROR_PATTERN = /restricted runtime kernel record profile/u;
+const NON_EMPTY_STRING_ERROR_PATTERN = /non-empty string/u;
+const NON_NEGATIVE_SAFE_INTEGER_ERROR_PATTERN = /non-negative safe integer/u;
 const GROUP_REFERENCE = (value: string) => ({
   Type: "group",
   Unwrapped: false,
@@ -443,25 +443,35 @@ describe("kernel CDDL grammar", () => {
       turnId: "turn-1",
     };
 
-    expect(() => assertHashString(validHash, "hash")).not.toThrow();
-    expect(() => assertHashString("F".repeat(64), "hash")).toThrow(
-      HASH_STRING_ERROR_PATTERN
-    );
-    expect(() => assertEpochMs(MAX_SAFE_INTEGER, "epoch")).not.toThrow();
-    expect(() => assertEpochMs(MAX_SAFE_INTEGER + 1, "epoch")).toThrow(
-      SAFE_INTEGER_ERROR_PATTERN
-    );
-    expect(() => assertKernelRecord({ negative: -1 }, "record")).not.toThrow();
-    expect(() =>
-      assertKernelRecord({ tooLarge: MAX_SAFE_INTEGER + 1 }, "record")
-    ).toThrow(KERNEL_RECORD_ERROR_PATTERN);
-    expect(() => assertTurnTreeSchema(validSchema, "schema")).not.toThrow();
-    expect(() =>
-      assertTurnTreeSchema({ ...validSchema, schemaId: "" }, "schema")
-    ).toThrow(NON_EMPTY_STRING_ERROR_PATTERN);
-    expect(() => assertRunRecord(validRun, "run")).not.toThrow();
-    expect(() =>
-      assertRunRecord({ ...validRun, currentStepIndex: -1 }, "run")
-    ).toThrow(NON_NEGATIVE_SAFE_INTEGER_ERROR_PATTERN);
+    expect(() => {
+      assertHashString(validHash, "hash");
+    }).not.toThrow();
+    expect(() => {
+      assertHashString("F".repeat(64), "hash");
+    }).toThrow(HASH_STRING_ERROR_PATTERN);
+    expect(() => {
+      assertEpochMs(MAX_SAFE_INTEGER, "epoch");
+    }).not.toThrow();
+    expect(() => {
+      assertEpochMs(MAX_SAFE_INTEGER + 1, "epoch");
+    }).toThrow(SAFE_INTEGER_ERROR_PATTERN);
+    expect(() => {
+      assertKernelRecord({ negative: -1 }, "record");
+    }).not.toThrow();
+    expect(() => {
+      assertKernelRecord({ tooLarge: MAX_SAFE_INTEGER + 1 }, "record");
+    }).toThrow(KERNEL_RECORD_ERROR_PATTERN);
+    expect(() => {
+      assertTurnTreeSchema(validSchema, "schema");
+    }).not.toThrow();
+    expect(() => {
+      assertTurnTreeSchema({ ...validSchema, schemaId: "" }, "schema");
+    }).toThrow(NON_EMPTY_STRING_ERROR_PATTERN);
+    expect(() => {
+      assertRunRecord(validRun, "run");
+    }).not.toThrow();
+    expect(() => {
+      assertRunRecord({ ...validRun, currentStepIndex: -1 }, "run");
+    }).toThrow(NON_NEGATIVE_SAFE_INTEGER_ERROR_PATTERN);
   });
 });

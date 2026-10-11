@@ -52,6 +52,7 @@ import {
   isVerdict,
   isVerdictDisposition,
 } from "../src/index.ts";
+import { rejectionOf } from "./kernel-contract-test-helpers.ts";
 import {
   kernelProtocolDeterministicFixtures,
   kernelProtocolInvalidFixtures,
@@ -61,58 +62,60 @@ import {
 
 describe("logical contract fixtures", () => {
   test("accepts the canonical logical record fixtures", () => {
-    expect(() =>
+    expect(() => {
       assertBranchHeadListEntry(
         kernelProtocolLogicalFixtures.branchHeadListEntry
-      )
-    ).not.toThrow();
-    expect(() =>
-      assertThreadRecord(kernelProtocolLogicalFixtures.threadRecord)
-    ).not.toThrow();
-    expect(() =>
-      assertTurnNode(kernelProtocolLogicalFixtures.turnNode)
-    ).not.toThrow();
-    expect(() =>
-      assertTurnRecord(kernelProtocolLogicalFixtures.turnRecord)
-    ).not.toThrow();
-    expect(() =>
-      assertRunRecord(kernelProtocolLogicalFixtures.runRecord)
-    ).not.toThrow();
-    expect(() =>
-      assertStagedResult(kernelProtocolLogicalFixtures.stagedResult)
-    ).not.toThrow();
-    expect(() =>
-      assertStepContext(kernelProtocolLogicalFixtures.stepContext)
-    ).not.toThrow();
-    expect(() =>
-      assertRecoveryState(kernelProtocolLogicalFixtures.recoveryState)
-    ).not.toThrow();
-    expect(() =>
-      assertThreadCreateResult(kernelProtocolLogicalFixtures.threadCreateResult)
-    ).not.toThrow();
-    expect(() =>
-      assertSetHeadResult(kernelProtocolLogicalFixtures.setHeadResult)
-    ).not.toThrow();
-    expect(() =>
+      );
+    }).not.toThrow();
+    expect(() => {
+      assertThreadRecord(kernelProtocolLogicalFixtures.threadRecord);
+    }).not.toThrow();
+    expect(() => {
+      assertTurnNode(kernelProtocolLogicalFixtures.turnNode);
+    }).not.toThrow();
+    expect(() => {
+      assertTurnRecord(kernelProtocolLogicalFixtures.turnRecord);
+    }).not.toThrow();
+    expect(() => {
+      assertRunRecord(kernelProtocolLogicalFixtures.runRecord);
+    }).not.toThrow();
+    expect(() => {
+      assertStagedResult(kernelProtocolLogicalFixtures.stagedResult);
+    }).not.toThrow();
+    expect(() => {
+      assertStepContext(kernelProtocolLogicalFixtures.stepContext);
+    }).not.toThrow();
+    expect(() => {
+      assertRecoveryState(kernelProtocolLogicalFixtures.recoveryState);
+    }).not.toThrow();
+    expect(() => {
+      assertThreadCreateResult(
+        kernelProtocolLogicalFixtures.threadCreateResult
+      );
+    }).not.toThrow();
+    expect(() => {
+      assertSetHeadResult(kernelProtocolLogicalFixtures.setHeadResult);
+    }).not.toThrow();
+    expect(() => {
       assertTurnTreeChangeSet(
         kernelProtocolLogicalFixtures.turnTreeChangeSet,
         kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
-      )
-    ).not.toThrow();
-    expect(() =>
-      assertObserveResult(kernelProtocolLogicalFixtures.observeResult)
-    ).not.toThrow();
+      );
+    }).not.toThrow();
+    expect(() => {
+      assertObserveResult(kernelProtocolLogicalFixtures.observeResult);
+    }).not.toThrow();
   });
 
   test("exports KernelSignal as part of the public protocol surface", () => {
     const signal: KernelSignal = { kind: "carry_forward", level: 1 };
 
-    expect(() =>
+    expect(() => {
       assertObserveResult({
         annotations: [{ kind: "note" }],
         signals: [signal],
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
   });
 
   test("exports verdict algebra types as part of the public protocol surface", () => {
@@ -129,35 +132,37 @@ describe("logical contract fixtures", () => {
   test("validates verdict algebra shapes at runtime", () => {
     expect(isVerdictDisposition("HardFail")).toBe(true);
     expect(isVerdictDisposition("explode")).toBe(false);
-    expect(() => assertVerdictDisposition("SoftFail")).not.toThrow();
-    expect(() =>
+    expect(() => {
+      assertVerdictDisposition("SoftFail");
+    }).not.toThrow();
+    expect(() => {
       assertVerdict({
         disposition: "HardFail",
         kind: "abort",
         reason: "blocked",
-      })
-    ).not.toThrow();
-    expect(() =>
+      });
+    }).not.toThrow();
+    expect(() => {
       assertComposedVerdict({
         kind: "pause",
         reason: "waiting",
         resumptionSchema: { kind: "approval" },
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
     expect(isVerdict({ kind: "proceed" })).toBe(true);
-    expect(() =>
+    expect(() => {
       assertVerdict({
         kind: "abort",
         reason: "blocked",
-      })
-    ).toThrow("disposition");
-    expect(() =>
+      });
+    }).toThrow("disposition");
+    expect(() => {
       assertVerdict({
         adjustment: { retries: 1 },
         extra: true,
         kind: "retry",
-      })
-    ).toThrow("extra is not part of the contract shape");
+      });
+    }).toThrow("extra is not part of the contract shape");
   });
 
   test("wraps primitive field failures in TuvrenValidationError", () => {
@@ -187,124 +192,125 @@ describe("logical contract fixtures", () => {
   });
 
   test("enforces canonical TurnNode identity hashes", async () => {
-    await expect(
-      assertTurnNodeIdentity(kernelProtocolLogicalFixtures.turnNode)
-    ).resolves.toBeUndefined();
-    await expect(
+    await assertTurnNodeIdentity(kernelProtocolLogicalFixtures.turnNode);
+    const rejectedError1 = await rejectionOf(
       assertTurnNodeIdentity({
         ...kernelProtocolLogicalFixtures.turnNode,
         hash: "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b",
       })
-    ).rejects.toThrow("hash must match the canonical TurnNode identity hash");
+    );
+    expect(rejectedError1.message).toContain(
+      "hash must match the canonical TurnNode identity hash"
+    );
   });
 
   test("rejects stored-only metadata on logical lifecycle records", () => {
-    expect(() =>
+    expect(() => {
       assertThreadRecord({
         ...kernelProtocolLogicalFixtures.threadRecord,
         createdAtMs: 1_717_171_717_171,
-      })
-    ).toThrow("createdAtMs is not part of the contract shape");
-    expect(() =>
+      });
+    }).toThrow("createdAtMs is not part of the contract shape");
+    expect(() => {
       assertBranchRecord({
         ...kernelProtocolLogicalFixtures.branchRecord,
         archivedFromBranchId: "branch_archive",
-      })
-    ).toThrow("archivedFromBranchId is not part of the contract shape");
-    expect(() =>
+      });
+    }).toThrow("archivedFromBranchId is not part of the contract shape");
+    expect(() => {
       assertTurnRecord({
         ...kernelProtocolLogicalFixtures.turnRecord,
         updatedAtMs: 1_717_171_717_272,
-      })
-    ).toThrow("updatedAtMs is not part of the contract shape");
-    expect(() =>
+      });
+    }).toThrow("updatedAtMs is not part of the contract shape");
+    expect(() => {
       assertRunRecord({
         ...kernelProtocolLogicalFixtures.runRecord,
         createdAtMs: 1_717_171_717_171,
-      })
-    ).toThrow("createdAtMs is not part of the contract shape");
+      });
+    }).toThrow("createdAtMs is not part of the contract shape");
   });
 
   test("rejects impossible run step indexes", () => {
-    expect(() =>
+    expect(() => {
       assertRunRecord(
         kernelProtocolInvalidFixtures.invalidRunRecordPastStepSequence
-      )
-    ).toThrow("currentStepIndex must not exceed");
-    expect(() =>
+      );
+    }).toThrow("currentStepIndex must not exceed");
+    expect(() => {
       assertRunRecord(
         kernelProtocolInvalidFixtures.invalidRunningRunRecordAtSequenceEnd
-      )
-    ).not.toThrow();
-    expect(() =>
+      );
+    }).not.toThrow();
+    expect(() => {
       assertStoredRun(
         kernelProtocolInvalidFixtures.invalidStoredRunningRunAtSequenceEnd
-      )
-    ).not.toThrow();
-    expect(() =>
+      );
+    }).not.toThrow();
+    expect(() => {
       assertRunRecord({
         ...kernelProtocolInvalidFixtures.invalidRunningRunRecordAtSequenceEnd,
         currentStepIndex: 2,
-      })
-    ).toThrow("currentStepIndex must not exceed value.stepSequence.length");
-    expect(() =>
+      });
+    }).toThrow("currentStepIndex must not exceed value.stepSequence.length");
+    expect(() => {
       assertRunRecord(
         kernelProtocolInvalidFixtures.invalidRunningRunRecordWithEmptyStepSequence
-      )
-    ).toThrow('cannot be "running" when value.stepSequence is empty');
-    expect(() =>
+      );
+    }).toThrow('cannot be "running" when value.stepSequence is empty');
+    expect(() => {
       assertRunRecord(
         kernelProtocolInvalidFixtures.invalidCompletedRunRecordBeforeSequenceEnd
-      )
-    ).toThrow(
+      );
+    }).toThrow(
       'must equal the declared step count in value.stepSequence when value.status is "completed"'
     );
   });
 
   test("rejects logical TurnNodes with stored-only timestamps", () => {
-    expect(() =>
+    expect(() => {
       assertTurnNode({
         ...kernelProtocolLogicalFixtures.turnNode,
         createdAtMs: 1_717_171_717_272,
-      })
-    ).toThrow("createdAtMs is not part of the contract shape");
+      });
+    }).toThrow("createdAtMs is not part of the contract shape");
   });
 
   test("rejects recovery states whose lastCompletedStepId is not declared", () => {
-    expect(() =>
+    expect(() => {
       assertRecoveryState(
         kernelProtocolInvalidFixtures.invalidRecoveryStateWithUnknownCompletedStepId
-      )
-    ).toThrow("lastCompletedStepId must reference a declared stepSequence id");
-    expect(() =>
+      );
+    }).toThrow("lastCompletedStepId must reference a declared stepSequence id");
+    expect(() => {
       assertRecoveryState(
         kernelProtocolInvalidFixtures.invalidRecoveryStateWithConsumedResultsButNullCompletedStepId
-      )
-    ).toThrow("lastCompletedStepId must name a completed step");
+      );
+    }).toThrow("lastCompletedStepId must name a completed step");
   });
 
   test("rejects incoherent archive results", () => {
-    expect(() =>
+    expect(() => {
       assertSetHeadResult({
         archiveBranch: {
           ...kernelProtocolLogicalFixtures.setHeadResult.archiveBranch,
           threadId: "thread_other",
         },
         branch: kernelProtocolLogicalFixtures.setHeadResult.branch,
-      })
-    ).toThrow("value.archiveBranch.threadId must match value.branch.threadId");
-    expect(() =>
+      });
+    }).toThrow("value.archiveBranch.threadId must match value.branch.threadId");
+    expect(() => {
       assertSetHeadResult({
         archiveBranch: {
           ...kernelProtocolLogicalFixtures.setHeadResult.archiveBranch,
           branchId: kernelProtocolLogicalFixtures.setHeadResult.branch.branchId,
         },
         branch: kernelProtocolLogicalFixtures.setHeadResult.branch,
-      })
-    ).toThrow(
+      });
+    }).toThrow(
       "value.archiveBranch.branchId must differ from value.branch.branchId"
     );
-    expect(() =>
+    expect(() => {
       assertSetHeadResult({
         archiveBranch: {
           ...kernelProtocolLogicalFixtures.setHeadResult.archiveBranch,
@@ -312,8 +318,8 @@ describe("logical contract fixtures", () => {
             kernelProtocolLogicalFixtures.setHeadResult.branch.headTurnNodeHash,
         },
         branch: kernelProtocolLogicalFixtures.setHeadResult.branch,
-      })
-    ).toThrow(
+      });
+    }).toThrow(
       "value.archiveBranch.headTurnNodeHash must differ from value.branch.headTurnNodeHash"
     );
   });
@@ -331,50 +337,54 @@ describe("logical contract fixtures", () => {
     expect(isRunStatus("broken")).toBe(false);
     expect(isStagedResultStatus("completed")).toBe(true);
     expect(isStagedResultStatus("unknown")).toBe(false);
-    expect(() => assertRunStatus("paused")).not.toThrow();
-    expect(() => assertStagedResultStatus("interrupted")).not.toThrow();
+    expect(() => {
+      assertRunStatus("paused");
+    }).not.toThrow();
+    expect(() => {
+      assertStagedResultStatus("interrupted");
+    }).not.toThrow();
   });
 
   test("rejects invalid observe payloads", () => {
     expect(
       isObserveResult(kernelProtocolInvalidFixtures.invalidObserveResult)
     ).toBe(false);
-    expect(() =>
-      assertObserveResult(kernelProtocolInvalidFixtures.invalidObserveResult)
-    ).toThrow("annotations[0] must be a plain object");
+    expect(() => {
+      assertObserveResult(kernelProtocolInvalidFixtures.invalidObserveResult);
+    }).toThrow("annotations[0] must be a plain object");
   });
 
   test("rejects staged results with undeclared extra fields", () => {
-    expect(() =>
+    expect(() => {
       assertStagedResult({
         ...kernelProtocolLogicalFixtures.stagedResult,
         debug: 1,
-      })
-    ).toThrow("debug is not part of the contract shape");
+      });
+    }).toThrow("debug is not part of the contract shape");
   });
 
   test("rejects explicit undefined for optional logical fields", () => {
-    expect(() =>
+    expect(() => {
       assertStepDeclaration({
         deterministic: false,
         id: "model_call",
         metadata: undefined,
         sideEffects: false,
-      })
-    ).toThrow("metadata must be omitted instead of undefined");
-    expect(() =>
+      });
+    }).toThrow("metadata must be omitted instead of undefined");
+    expect(() => {
       assertSetHeadResult({
         archiveBranch: undefined,
         branch: kernelProtocolLogicalFixtures.branchRecord,
-      })
-    ).toThrow("archiveBranch must be omitted instead of undefined");
-    expect(() =>
+      });
+    }).toThrow("archiveBranch must be omitted instead of undefined");
+    expect(() => {
       assertStagedResult({
         ...kernelProtocolLogicalFixtures.stagedResult,
         interruptPayload: undefined,
-      })
-    ).toThrow("interruptPayload must be omitted instead of undefined");
-    expect(() =>
+      });
+    }).toThrow("interruptPayload must be omitted instead of undefined");
+    expect(() => {
       assertTurnTreeSchema({
         incorporationRules: [],
         paths: [
@@ -385,47 +395,47 @@ describe("logical contract fixtures", () => {
           },
         ],
         schemaId: "schema_main",
-      })
-    ).toThrow("metadata must be omitted instead of undefined");
+      });
+    }).toThrow("metadata must be omitted instead of undefined");
   });
 
   test("rejects invalid branch head list entries", () => {
-    expect(() =>
+    expect(() => {
       assertBranchHeadListEntry(
         kernelProtocolInvalidFixtures.invalidBranchHeadListEntry
-      )
-    ).toThrow("[0] must be a non-empty string");
+      );
+    }).toThrow("[0] must be a non-empty string");
   });
 
   test("rejects undeclared extra fields on exact-shape validators", () => {
-    expect(() =>
+    expect(() => {
       assertStepContext({
         ...kernelProtocolLogicalFixtures.stepContext,
         extra: 1,
-      })
-    ).toThrow("extra is not part of the contract shape");
-    expect(() =>
+      });
+    }).toThrow("extra is not part of the contract shape");
+    expect(() => {
       assertStoredRun({
         ...kernelProtocolStoredFixtures.storedRun,
         extra: 1,
-      })
-    ).toThrow("extra is not part of the contract shape");
-    expect(() =>
+      });
+    }).toThrow("extra is not part of the contract shape");
+    expect(() => {
       assertStoredTurnNode({
         ...kernelProtocolStoredFixtures.storedTurnNode,
         extra: 1,
-      })
-    ).toThrow("extra is not part of the contract shape");
+      });
+    }).toThrow("extra is not part of the contract shape");
   });
 
   test("rejects schema-invalid change sets and duplicate staged-result taskIds", () => {
-    expect(() =>
+    expect(() => {
       assertTurnTreeChangeSet(
         { ghost: null },
         kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
-      )
-    ).toThrow("ghost must reference a schema-defined path");
-    expect(() =>
+      );
+    }).toThrow("ghost must reference a schema-defined path");
+    expect(() => {
       assertTurnTreeChangeSet(
         {
           "context.manifest": [
@@ -433,11 +443,11 @@ describe("logical contract fixtures", () => {
           ],
         },
         kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
-      )
-    ).toThrow(
+      );
+    }).toThrow(
       "context.manifest must be a HashString or null for a single path"
     );
-    expect(() =>
+    expect(() => {
       assertTurnNode({
         ...kernelProtocolLogicalFixtures.turnNode,
         consumedStagedResults: [
@@ -448,9 +458,9 @@ describe("logical contract fixtures", () => {
               "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0",
           },
         ],
-      })
-    ).toThrow("must not contain duplicate staged result taskIds");
-    expect(() =>
+      });
+    }).toThrow("must not contain duplicate staged result taskIds");
+    expect(() => {
       assertStoredTurnNode({
         ...kernelProtocolStoredFixtures.storedTurnNode,
         consumedStagedResultsCbor: encodeDeterministicKernelRecord([
@@ -461,14 +471,14 @@ describe("logical contract fixtures", () => {
               "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0",
           },
         ]),
-      })
-    ).toThrow("must not contain duplicate staged result taskIds");
-    expect(() =>
+      });
+    }).toThrow("must not contain duplicate staged result taskIds");
+    expect(() => {
       assertRecoveryState({
         ...kernelProtocolLogicalFixtures.recoveryState,
         consumedStagedResults: [kernelProtocolLogicalFixtures.stagedResult],
         uncommittedStagedResults: [kernelProtocolLogicalFixtures.stagedResult],
-      })
-    ).toThrow("must not repeat taskIds already present");
+      });
+    }).toThrow("must not repeat taskIds already present");
   });
 });

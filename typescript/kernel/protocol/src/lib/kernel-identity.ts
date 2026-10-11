@@ -24,6 +24,7 @@ import {
   TuvrenValidationError,
 } from "@tuvren/core";
 
+import { hashKernelRecord } from "./kernel-record-identity.js";
 import type {
   StagedResult,
   TurnNode,
@@ -39,8 +40,6 @@ export {
   hashOpaqueObjectBytes,
 } from "./kernel-record-identity.js";
 
-import { hashKernelRecord } from "./kernel-record-identity.js";
-
 /**
  * Allowed {@link StagedResult} statuses, mirrored locally for identity-input
  * validation.
@@ -55,9 +54,7 @@ const STAGED_RESULT_STATUSES = ["completed", "failed", "interrupted"] as const;
 const toTurnNodeIdentityRecord = (
   value: Omit<TurnNode, "hash"> | TurnNode
 ): KernelRecord => {
-  const turnNodeValue = value as TurnNode & {
-    hash?: HashString;
-  };
+  const turnNodeValue = value;
   const identityRecord = {
     consumedStagedResults: turnNodeValue.consumedStagedResults.map(
       (stagedResult) => {
@@ -98,7 +95,7 @@ const toTurnNodeIdentityRecord = (
  * True for objects whose prototype is `Object.prototype` or `null`.
  */
 const isPlainObject = (value: object): value is Record<string, unknown> => {
-  const prototype = Object.getPrototypeOf(value);
+  const prototype: unknown = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 };
 
@@ -144,7 +141,7 @@ const assertDenseDataArray: (
 
     if (
       !(
-        descriptor?.enumerable &&
+        descriptor?.enumerable === true &&
         Object.hasOwn(descriptor, "value") &&
         Number.isInteger(index) &&
         index >= 0 &&
@@ -264,7 +261,9 @@ const assertPlainObjectRecord = (
     const descriptor = descriptors[key];
 
     if (
-      !(descriptor?.enumerable && Object.hasOwn(descriptor, "value")) ||
+      !(
+        descriptor?.enumerable === true && Object.hasOwn(descriptor, "value")
+      ) ||
       Object.hasOwn(descriptor, "get") ||
       Object.hasOwn(descriptor, "set")
     ) {
@@ -272,10 +271,12 @@ const assertPlainObjectRecord = (
     }
   }
 
-  return Object.assign(
-    Object.create(null),
-    Object.fromEntries(Object.entries(value))
-  ) as Record<string, unknown>;
+  const normalizedObject: Record<string, unknown> = {};
+  Object.setPrototypeOf(normalizedObject, null);
+  for (const key of Object.keys(value)) {
+    normalizedObject[key] = Reflect.get(value, key);
+  }
+  return normalizedObject;
 };
 
 /**
@@ -512,9 +513,15 @@ const assertTurnNodeIdentityInput = (
     "turn node identity input.consumedStagedResults"
   );
 
-  return Object.assign(Object.create(null), objectValue, {
+  const normalized: Omit<TurnNode, "hash"> = {
     consumedStagedResults: normalizedConsumedStagedResults,
-  }) as Omit<TurnNode, "hash"> | TurnNode;
+    eventHash: objectValue.eventHash,
+    previousTurnNodeHash: objectValue.previousTurnNodeHash,
+    schemaId: objectValue.schemaId,
+    turnTreeHash: objectValue.turnTreeHash,
+  };
+  Object.setPrototypeOf(normalized, null);
+  return normalized;
 };
 
 /**
@@ -533,7 +540,7 @@ const assertTurnNodeIdentityInput = (
  * @param value - TurnNode identity fields; an existing `hash` field is accepted
  *   but excluded from the digest.
  * @returns The TurnNode hash.
- * @throws TuvrenValidationError With code `invalid_turn_node_hash` when the
+ * @throws {TuvrenValidationError} With code `invalid_turn_node_hash` when the
  *   input is not a valid TurnNode identity payload.
  */
 export const hashTurnNodeIdentity = async (
@@ -587,7 +594,7 @@ const assertTurnTreeDenseDataArray = (
 
     if (
       !(
-        descriptor?.enumerable &&
+        descriptor?.enumerable === true &&
         Object.hasOwn(descriptor, "value") &&
         Number.isInteger(index) &&
         index >= 0 &&
@@ -636,7 +643,9 @@ const assertTurnTreePlainObjectRecord = (
     const descriptor = descriptors[key];
 
     if (
-      !(descriptor?.enumerable && Object.hasOwn(descriptor, "value")) ||
+      !(
+        descriptor?.enumerable === true && Object.hasOwn(descriptor, "value")
+      ) ||
       Object.hasOwn(descriptor, "get") ||
       Object.hasOwn(descriptor, "set")
     ) {
@@ -644,10 +653,12 @@ const assertTurnTreePlainObjectRecord = (
     }
   }
 
-  return Object.assign(
-    Object.create(null),
-    Object.fromEntries(Object.entries(value))
-  ) as Record<string, unknown>;
+  const normalizedObject: Record<string, unknown> = {};
+  Object.setPrototypeOf(normalizedObject, null);
+  for (const key of Object.keys(value)) {
+    normalizedObject[key] = Reflect.get(value, key);
+  }
+  return normalizedObject;
 };
 
 /**
@@ -934,11 +945,13 @@ const assertTurnTreeManifestIdentityInput = (
  * @param manifest - Full path-to-value manifest of the tree.
  * @param schema - Registered schema the manifest must conform to; itself
  *   validated against the registration rules of kernel spec §3.1.
+ * Validation failures reject the returned Promise.
+ *
  * @returns The TurnTree hash.
- * @throws TuvrenValidationError With code `invalid_turn_tree_hash` when the
+ * @throws {TuvrenValidationError} With code `invalid_turn_tree_hash` when the
  *   manifest, schema, or schemaId pairing is invalid.
  */
-export const hashTurnTreeIdentity = (
+export const hashTurnTreeIdentity = async (
   schemaId: string,
   manifest: TurnTreeManifest,
   schema: TurnTreeSchema
@@ -951,5 +964,5 @@ export const hashTurnTreeIdentity = (
       schemaId,
     });
   }
-  return hashKernelRecord({ manifest, schemaId });
+  return await hashKernelRecord({ manifest, schemaId });
 };

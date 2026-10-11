@@ -1,0 +1,229 @@
+{
+  "milestone": "M13R-final",
+  "ticket": "KRT-BQ004",
+  "baselineCommit": "f9d5c8651b6b54adaaeb7dc8ca4a264f2dcfccd6",
+  "phase": "combined protocol cleanup and explicitly approved guard repairs",
+  "initialProof": "M13R-proof.tar.gz",
+  "initialResult": "M13R-result.json",
+  "initialPhaseNote": "Immutable pre-repair proof retains initial API freeze and count assertion failures; see approved repairs and final lead gates for resolved state.",
+  "approvedRepairs": "M13R-approved-repairs.tar.gz",
+  "approvedRepairIndex": "M13R-approved-repairs-index.json.gz",
+  "approval": {
+    "date": "2026-10-11",
+    "answer": "Approve both extra paths (Recommended)",
+    "paths": [
+      "tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json",
+      "tools/scripts/lib/biome-lint-partition.test.ts"
+    ],
+    "scope": "SDK breaking snapshot regeneration, SDK minor changeset coverage, two39-to40 inventory expectations"
+  },
+  "source_hashes": {
+    ".changeset/toolchain-bq-kernel-lint-pilot.md": {
+      "before": "9a74ff32df00645dbacd9352c0802eef23f08949e05b3d15792581d022be4d18",
+      "after": "153e72bcd86b3af65b1faa294dea6ac20ed56b6d718f834f6c4b841f880c5d4a"
+    },
+    "tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json": {
+      "before": "86bf4487413e99f6c00d5496bdcec6be1d824cc2954abe48ec7a2a6f7b2e3ea1",
+      "after": "07fcc8dfd183c8563eb4b438567b3e73d4c105f4d9d616853b86eecf99b055c0"
+    },
+    "tools/scripts/lib/biome-lint-partition.test.ts": {
+      "before": "d8b071911d8762b3607bc98daed05b6de14f76ff4f84b6afa0e03c15e744c664",
+      "after": "011d5ee63e5038d7f6588e3a71c8d3bef060a8312b49b84a042a9e944e1f83db"
+    },
+    "typescript/kernel/protocol/README.md": {
+      "before": "8cbfb94cf2ceefe9bf2c2b402ffdf8770876b4347d14ea8cf324d2b4fad69ef7",
+      "after": "98d1ca9a369be209a5e23b13f1759faa5784d76e7a8a3735562459d37d42b1b8"
+    },
+    "typescript/kernel/protocol/bench/kernel-identity.bench.ts": {
+      "before": "a9a51ce2e3df693504e53aa38a044935b6dee5cef6053105e655407ff5fb70c1",
+      "after": "906c35e85a6e17c307b45206d5d60378e07372fda846227baf105af2e479af92"
+    },
+    "typescript/kernel/protocol/src/index.ts": {
+      "before": "5802c1f92fb08ea97eaecd18acf42695237f3b38e239a37c6c78e1cfbc990718",
+      "after": "1ca0e002fd56102ddf7d81964c54f41a267d3f432c1d6b56e1e7e11ce22e20b7"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-identity.ts": {
+      "before": "dea582c73ceb1c2ca3ca78f1d39b5b777356a16ca94f82efd401ac4ca37afee9",
+      "after": "ea4dbae18ebf94139e475016d27b2221a9f20fc9a4a0f5374ea20c44c2184813"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-record-identity.ts": {
+      "before": "5ca88e55cb186549c26e4b1e4ea96ea88013976624b620a4f0735c7ada1d4c86",
+      "after": "64323c450f273771e0f22937a136d5bdc2cb8e6b2e3e51fad3e9ea023ca955a7"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-types.ts": {
+      "before": "53fecfeb7ff47e8979bad1d886dc2ac94e486ffc1b0217ff2057616e2ad30987",
+      "after": "55f0e2a7b004a5e98f55d20d3b152ebf159d1e508cbc01c6706a9fe5d991a8d3"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation-records.ts": {
+      "before": "b1c7e6c4a3746b7562f74680a5560702a7f69052b0692a74b92c4d960bf7fc02",
+      "after": "70cb6c73fa2615ffc576ec6b8c178088f9adfd1e5896729b615d2ddeafe2df39"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts": {
+      "before": "9b747d1288645d082980acb5ddbfc516ce6e9f51f9706d40f4cad2c8601487c8",
+      "after": "e5177ccae18a8db3c28bf49417e8a81487ba4cc0f6810ce7088ab28f738533a8"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation-shared.ts": {
+      "before": "b247367bd1ed588ba9734feba16dc7626f68915caac72c21b1be4a2c1c4a98b6",
+      "after": "394ce31ffc97cc1751c9525024919402424e97cb303d2fa06a65ddd41ab91239"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation-stored-turn-tree.ts": {
+      "before": "9443a2cfa58aaa3304ca0ad1d55ad6115b2a507458d345abdab6b4bf8e515d53",
+      "after": "1a7809194bd76971a2dbb2ef72a156047f627af1e361ada7d61d3a0453a08591"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts": {
+      "before": "188bfebcf69c4be29edca8f3e816f8b399bf4b4ecd48c5a6dc4f0c78aa573438",
+      "after": "ad9fe8a1913c5d10b36d8d32f90604456b916b24f727a36b60b649c2fb40b9ac"
+    },
+    "typescript/kernel/protocol/test/kernel-cddl.test.ts": {
+      "before": "ddfc721390652bf04f10c602b6c00b6a6ae101f3e551c0b00e8943997a12a3f4",
+      "after": "9312fb4b61cb7fdf264bd01c8ceb1bbb8b5c4ba2d542fca3be22f04f7eca787e"
+    },
+    "typescript/kernel/protocol/test/kernel-contract-deterministic.test.ts": {
+      "before": "1604d2b350b2102c465d9564898c90cc3ad8130f97ce3ebd1c8237de0e3a3241",
+      "after": "c0f08437fba2504e8d645f7e5d0f81bdc60348c9b72123faea4e0613625a5da9"
+    },
+    "typescript/kernel/protocol/test/kernel-contract-logical.test.ts": {
+      "before": "e4137c4b0e00b9bad997c7a5901dd312415ea9cc5f94402554fca5a712c3f9c6",
+      "after": "7d21fd5bb03b2792d7a9286ded0dc9e73bbf84b278a1bb0dfb656d9a180e8f96"
+    },
+    "typescript/kernel/protocol/test/kernel-contract-schema.test.ts": {
+      "before": "f42a6009f891d17e6c4fda1b713fdace422cc77331f338d4dedfd18924a28b4e",
+      "after": "40b532ba7ce7cc6f44d5fede024fbeacd72cc6a9f9c3d2a9565a06c25f6c5ed2"
+    },
+    "typescript/kernel/protocol/test/kernel-contract-stored.test.ts": {
+      "before": "c52033b323cedb641bf57e2ced43cb6a202f97623e1d527a40419437bdd17337",
+      "after": "93623cec3e891b7e74de84cef52bc57ab7e5d98c8ab30ade70d2ba15e8f50455"
+    },
+    "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts": {
+      "before": "29d317daceacb31b01790516a3f47e4701bc74d28cc18b98346179d98669e945",
+      "after": "2799791caecdfbdd01cee320249b09c82c37ff3e4993ec5f7f02670865590fe0"
+    },
+    "typescript/kernel/protocol/test/kernel-module-initialization.test.ts": {
+      "before": "f4a19a8e1c856e48c8179b237431c52aa44ccf9907a93f3e4f6893d7f0ce1dff",
+      "after": "36b82a1fd3e913d93ad741c1d72e148c143cffe9eaeb09f85b7adfde46e10ef0"
+    },
+    "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts": {
+      "before": "4c2ae3762a173f135cee9db281107e8c6a9939b2c48ca1a1161706fc21d21ff1",
+      "after": "92a7939ff1b2f953718c04b722b0c93130891c53c242a49c930e4f415ccb0ee7"
+    },
+    "typescript/kernel/protocol/test/kernel-record-fixtures.ts": {
+      "before": "515407ab1bda3131287b0776eeff70c9bdd1f7a9d744593bd6a2df1aa33d5561",
+      "after": "ce87e79cc7429391607594762a369aa362d9498981b0b1dd7ca8e1e3d07a95f1"
+    },
+    "typescript/kernel/protocol/test/kernel-records.test.ts": {
+      "before": "1b8ad2816ba7ed8d70c04a9d21b732308a5cd62a5fcbb057a4c0922e2e49957b",
+      "after": "93fa84af06352bd97da5ec0f9f13ee382eace0cb277b197522a4f5b715573492"
+    }
+  },
+  "native": {
+    "before": {
+      "syntactic": 142,
+      "typeAware": 400,
+      "codeFiles": 23
+    },
+    "after": {
+      "syntactic": 0,
+      "typeAware": 0,
+      "codeFiles": 23,
+      "shippedRules": 474,
+      "nonTypeAwareRules": 419,
+      "typeAwareRules": 55,
+      "noBackendSkipOrResolutionError": true
+    },
+    "selection": {
+      "code": [
+        "typescript/kernel/protocol/bench/kernel-identity.bench.ts",
+        "typescript/kernel/protocol/src/index.ts",
+        "typescript/kernel/protocol/src/lib/kernel-identity.ts",
+        "typescript/kernel/protocol/src/lib/kernel-record-identity.ts",
+        "typescript/kernel/protocol/src/lib/kernel-types.ts",
+        "typescript/kernel/protocol/src/lib/kernel-validation-records.ts",
+        "typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts",
+        "typescript/kernel/protocol/src/lib/kernel-validation-shared.ts",
+        "typescript/kernel/protocol/src/lib/kernel-validation-stored-turn-tree.ts",
+        "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts",
+        "typescript/kernel/protocol/src/lib/kernel-validation.ts",
+        "typescript/kernel/protocol/test/kernel-cddl.test.ts",
+        "typescript/kernel/protocol/test/kernel-contract-deterministic.test.ts",
+        "typescript/kernel/protocol/test/kernel-contract-logical.test.ts",
+        "typescript/kernel/protocol/test/kernel-contract-protocol.test.ts",
+        "typescript/kernel/protocol/test/kernel-contract-schema.test.ts",
+        "typescript/kernel/protocol/test/kernel-contract-stored.test.ts",
+        "typescript/kernel/protocol/test/kernel-contract-test-helpers.ts",
+        "typescript/kernel/protocol/test/kernel-module-initialization.test.ts",
+        "typescript/kernel/protocol/test/kernel-protocol-fixtures.ts",
+        "typescript/kernel/protocol/test/kernel-record-fixtures.ts",
+        "typescript/kernel/protocol/test/kernel-records.test.ts",
+        "typescript/kernel/protocol/tsup.config.ts"
+      ],
+      "json": [
+        "typescript/kernel/protocol/package.json",
+        "typescript/kernel/protocol/project.json",
+        "typescript/kernel/protocol/tsconfig.dts.json",
+        "typescript/kernel/protocol/tsconfig.json",
+        "typescript/kernel/protocol/tsconfig.lib.json",
+        "typescript/kernel/protocol/tsconfig.tsup.json",
+        "typescript/kernel/protocol/tsconfig.typecheck.json"
+      ],
+      "formatter": [
+        "typescript/kernel/protocol/package.json",
+        "typescript/kernel/protocol/project.json",
+        "typescript/kernel/protocol/tsconfig.dts.json",
+        "typescript/kernel/protocol/tsconfig.json",
+        "typescript/kernel/protocol/tsconfig.lib.json",
+        "typescript/kernel/protocol/tsconfig.tsup.json",
+        "typescript/kernel/protocol/tsconfig.typecheck.json"
+      ]
+    },
+    "policy": "Full effective as-shipped policy equality passes the existing immutable oxc-preparation suite; no overrides or dependencies changed."
+  },
+  "intentionalApiChanges": [
+    {
+      "path": "typescript/kernel/protocol/src/lib/kernel-types.ts",
+      "effect": "74 method signatures become function properties. Generic, parameter, return and optional annotations are unchanged; strictFunctionTypes rejects narrower implementation parameter types.",
+      "evidence": [
+        "callable-signatures.json",
+        "consumer-proof.json"
+      ]
+    },
+    {
+      "paths": [
+        "typescript/kernel/protocol/src/lib/kernel-record-identity.ts",
+        "typescript/kernel/protocol/src/lib/kernel-identity.ts"
+      ],
+      "effect": "hashKernelRecord and hashTurnTreeIdentity return Promise rejections instead of synchronous validation throws. Record validation remains TypeError with the original message; TurnTree validation remains TuvrenValidationError with invalid_turn_tree_hash and original message/order. Canonical bytes/hashes remain unchanged.",
+      "evidence": [
+        "scoped.log",
+        "conformance.log"
+      ]
+    }
+  ],
+  "releaseClasses": {
+    "@tuvren/kernel-protocol": "minor",
+    "@tuvren/kernel-runtime": "patch",
+    "@tuvren/sdk": "minor"
+  },
+  "guardRepairGates": {
+    "apiFreeze": 0,
+    "partition": 0,
+    "all15ToolingSuites": 0,
+    "changeset": 0,
+    "lint": 0,
+    "format": 0,
+    "diffCheck": 0
+  },
+  "lead_final_gates": {
+    "scoped": 0,
+    "typecheck": 0,
+    "format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "conformance": 0,
+    "api-freeze": 0,
+    "tooling-acceptance": 0,
+    "native-protocol": 0
+  },
+  "lead_gate_archive": "M13R-final-lead-gates.tar.gz",
+  "lead_gate_index": "M13R-final-lead-index.json.gz"
+}

@@ -94,7 +94,7 @@ const encodeDeterministicScalar = (value: string): Uint8Array =>
  *
  * @param value - Record to canonicalize.
  * @returns The canonical value tree (scalars, arrays, and key-sorted `Map`s).
- * @throws TuvrenValidationError When `value` is not a valid KernelRecord.
+ * @throws {TypeError} When `value` is not a valid KernelRecord.
  */
 export const canonicalizeKernelRecord = (value: KernelRecord): unknown => {
   assertKernelRecord(value);
@@ -113,11 +113,12 @@ export const canonicalizeKernelRecord = (value: KernelRecord): unknown => {
     return value.map((item) => canonicalizeKernelRecord(item));
   }
 
-  const sortedEntries = Object.entries(value).sort(([leftKey], [rightKey]) =>
-    compareByteArrays(
-      encodeDeterministicScalar(leftKey),
-      encodeDeterministicScalar(rightKey)
-    )
+  const sortedEntries = Object.entries(value).toSorted(
+    ([leftKey], [rightKey]) =>
+      compareByteArrays(
+        encodeDeterministicScalar(leftKey),
+        encodeDeterministicScalar(rightKey)
+      )
   );
 
   return new Map(
@@ -179,7 +180,7 @@ const prepareCanonicalKernelValue = (value: unknown): unknown => {
  * repository conformance policy, those committed fixtures are the authority and
  * this implementation is the reference generator.
  *
- * @throws TuvrenValidationError When `value` is not a valid KernelRecord.
+ * @throws {TypeError} When `value` is not a valid KernelRecord.
  */
 export const encodeDeterministicKernelRecord = (
   value: KernelRecord
@@ -217,7 +218,7 @@ const normalizeDecodedKernelNumber = (value: number, label: string): number => {
  * True for objects whose prototype is `Object.prototype` or `null`.
  */
 const isPlainObject = (value: object): value is Record<string, unknown> => {
-  const prototype = Object.getPrototypeOf(value);
+  const prototype: unknown = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 };
 
@@ -270,9 +271,11 @@ const normalizeDecodedKernelValue = (
   }
 
   if (value instanceof Map) {
-    const objectValue = Object.create(null) as Record<string, KernelRecord>;
+    const objectValue: Record<string, KernelRecord> = {};
+    Object.setPrototypeOf(objectValue, null);
 
-    for (const [entryKey, entryValue] of value) {
+    const entries: Map<unknown, unknown> = value;
+    for (const [entryKey, entryValue] of entries) {
       if (typeof entryKey !== "string") {
         throw new TuvrenValidationError(
           `${label} contains a non-string map key after CBOR decode`,
@@ -303,7 +306,8 @@ const normalizeDecodedKernelValue = (
   }
 
   if (isPlainObject(value)) {
-    const objectValue = Object.create(null) as Record<string, KernelRecord>;
+    const objectValue: Record<string, KernelRecord> = {};
+    Object.setPrototypeOf(objectValue, null);
 
     for (const [entryKey, entryValue] of Object.entries(value)) {
       objectValue[entryKey] = normalizeDecodedKernelValue(
@@ -320,8 +324,7 @@ const normalizeDecodedKernelValue = (
     {
       code: "invalid_decoded_kernel_record",
       details: {
-        decodedType:
-          value == null ? value : Object.prototype.toString.call(value),
+        decodedType: Object.prototype.toString.call(value),
       },
     }
   );
@@ -365,7 +368,7 @@ const bytesToHex = (bytes: Uint8Array): string =>
  *
  * @param bytes - Candidate canonical deterministic CBOR bytes.
  * @returns The decoded KernelRecord.
- * @throws TuvrenValidationError With code `invalid_decoded_kernel_record` when
+ * @throws {TuvrenValidationError} With code `invalid_decoded_kernel_record` when
  *   the bytes are not valid CBOR or decode to unsupported values (non-string map
  *   keys, out-of-range bigints, non-canonical numbers), or
  *   `non_canonical_kernel_record_encoding` when the bytes are valid CBOR but not
@@ -454,10 +457,12 @@ const hashBytesToHex = async (bytes: Uint8Array): Promise<HashString> => {
  *
  * Identical records always hash identically. TurnTree and TurnNode identity
  * (see `hashTurnTreeIdentity` / `hashTurnNodeIdentity` in kernel-identity.ts)
- * both derive from this digest.
+ * both derive from this digest. Validation failures reject the returned Promise.
  */
-export const hashKernelRecord = (value: KernelRecord): Promise<HashString> =>
-  hashBytesToHex(encodeDeterministicKernelRecord(value));
+export const hashKernelRecord = async (
+  value: KernelRecord
+): Promise<HashString> =>
+  await hashBytesToHex(encodeDeterministicKernelRecord(value));
 
 /**
  * Computes the content-address of an opaque Object blob: the lowercase hex
@@ -465,5 +470,6 @@ export const hashKernelRecord = (value: KernelRecord): Promise<HashString> =>
  * §2.1–§2.3). Used for raw blobs, where the bytes themselves are the canonical
  * representation.
  */
-export const hashOpaqueObjectBytes = (bytes: Uint8Array): Promise<HashString> =>
-  hashBytesToHex(bytes);
+export const hashOpaqueObjectBytes = async (
+  bytes: Uint8Array
+): Promise<HashString> => await hashBytesToHex(bytes);

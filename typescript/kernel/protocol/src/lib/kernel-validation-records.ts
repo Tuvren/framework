@@ -141,7 +141,7 @@ export const assertStagedResult: (
 /**
  * Asserts a dense array of valid {@link StagedResult}s with unique `taskId`s.
  *
- * @throws TuvrenValidationError With code `duplicate_staged_result_task_id` on
+ * @throws {TuvrenValidationError} With code `duplicate_staged_result_task_id` on
  *   repeated `taskId`s.
  */
 export const assertStagedResultArray: (
@@ -222,7 +222,7 @@ export const isTurnNode = (value: unknown): value is TurnNode =>
  * recomputed canonical identity digest (`hashTurnNodeIdentity`,
  * docs/KrakenKernelSpecification.md §3.3).
  *
- * @throws TuvrenValidationError With code `invalid_turn_node_hash` when the
+ * @throws {TuvrenValidationError} With code `invalid_turn_node_hash` when the
  *   stored hash does not match the canonical identity hash.
  */
 export const assertTurnNodeIdentity = async (
@@ -305,7 +305,7 @@ export const isBranchRecord = (value: unknown): value is BranchRecord =>
  * Asserts a `[branchId, headTurnNodeHash]` tuple as returned by `branch.list`
  * (kernel spec §4.2).
  *
- * @throws TuvrenValidationError With code `invalid_branch_head_list_entry` when
+ * @throws {TuvrenValidationError} With code `invalid_branch_head_list_entry` when
  *   the tuple arity is wrong.
  */
 export const assertBranchHeadListEntry: (
@@ -908,7 +908,7 @@ export const isSetHeadResult = (value: unknown): value is SetHeadResult =>
  * Asserts `updatedAtMs >= createdAtMs` for stored records that carry both
  * timestamps.
  *
- * @throws TuvrenValidationError With code `invalid_timestamp_order`.
+ * @throws {TuvrenValidationError} With code `invalid_timestamp_order`.
  */
 export const assertMonotonicTimestamps = (
   createdAtMs: number,

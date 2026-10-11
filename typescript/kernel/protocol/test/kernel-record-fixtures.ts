@@ -53,16 +53,19 @@ export const deterministicKernelRecordFixture = {
 };
 
 export const kernelRecordInsertionOrderVariants: readonly KernelRecord[] = [
-  {
-    timestamp: 1_717_171_717_171,
-    meta: {
-      label: "kraken",
-      count: 2,
-    },
-    items: ["alpha", 7, null],
-    bytes: new Uint8Array([1, 2, 3, 4]),
-    active: true,
-  },
+  Object.fromEntries<KernelRecord>([
+    ["timestamp", 1_717_171_717_171],
+    [
+      "meta",
+      Object.fromEntries<KernelRecord>([
+        ["label", "kraken"],
+        ["count", 2],
+      ]),
+    ],
+    ["items", ["alpha", 7, null]],
+    ["bytes", new Uint8Array([1, 2, 3, 4])],
+    ["active", true],
+  ]),
   {
     active: true,
     bytes: new Uint8Array([1, 2, 3, 4]),
@@ -132,8 +135,8 @@ export const canonicalizeKernelRecord = (value: KernelRecord): unknown => {
     return value.map((item) => canonicalizeKernelRecord(item));
   }
 
-  const sortedEntries = Object.entries(value).sort(([leftKey], [rightKey]) =>
-    compareKeys(leftKey, rightKey)
+  const sortedEntries = Object.entries(value).toSorted(
+    ([leftKey], [rightKey]) => compareKeys(leftKey, rightKey)
   );
 
   return new Map(

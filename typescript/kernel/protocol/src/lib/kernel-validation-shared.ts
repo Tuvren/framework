@@ -69,7 +69,7 @@ export const validationError = (
  * non-index own properties. Protocol arrays must be pure data so validation and
  * canonical encoding cannot be bypassed via exotic array shapes.
  *
- * @throws TuvrenValidationError With code `invalid_array`.
+ * @throws {TuvrenValidationError} With code `invalid_array`.
  */
 export const assertArray = (value: unknown, label: string): unknown[] => {
   if (!Array.isArray(value)) {
@@ -100,7 +100,7 @@ export const assertArray = (value: unknown, label: string): unknown[] => {
 
     if (
       !(
-        descriptor?.enumerable &&
+        descriptor?.enumerable === true &&
         Object.hasOwn(descriptor, "value") &&
         Number.isInteger(index) &&
         index >= 0 &&
@@ -136,7 +136,7 @@ export const assertArray = (value: unknown, label: string): unknown[] => {
  * symbol keys, no accessors) and returns a null-prototype shallow copy so later
  * property reads cannot hit inherited or getter-backed state.
  *
- * @throws TuvrenValidationError With code `invalid_object`.
+ * @throws {TuvrenValidationError} With code `invalid_object`.
  */
 export const assertPlainObject = (
   value: unknown,
@@ -148,7 +148,7 @@ export const assertPlainObject = (
     });
   }
 
-  const prototype = Object.getPrototypeOf(value);
+  const prototype: unknown = Object.getPrototypeOf(value);
 
   if (prototype !== Object.prototype && prototype !== null) {
     throw validationError(`${label} must be a plain object`, "invalid_object", {
@@ -168,7 +168,9 @@ export const assertPlainObject = (
     const descriptor = descriptors[key];
 
     if (
-      !(descriptor?.enumerable && Object.hasOwn(descriptor, "value")) ||
+      !(
+        descriptor?.enumerable === true && Object.hasOwn(descriptor, "value")
+      ) ||
       Object.hasOwn(descriptor, "get") ||
       Object.hasOwn(descriptor, "set")
     ) {
@@ -180,7 +182,8 @@ export const assertPlainObject = (
     }
   }
 
-  const normalizedObject: Record<string, unknown> = Object.create(null);
+  const normalizedObject: Record<string, unknown> = {};
+  Object.setPrototypeOf(normalizedObject, null);
 
   for (const [entryKey, entryValue] of Object.entries(value)) {
     normalizedObject[entryKey] = entryValue;
@@ -192,7 +195,7 @@ export const assertPlainObject = (
 /**
  * Rejects any own key outside the declared contract shape.
  *
- * @throws TuvrenValidationError With code `invalid_object_key`.
+ * @throws {TuvrenValidationError} With code `invalid_object_key`.
  */
 export const assertAllowedObjectKeys = (
   value: Record<string, unknown>,
@@ -216,7 +219,7 @@ export const assertAllowedObjectKeys = (
  * Optional contract fields must be omitted rather than set to `undefined`, so
  * field presence stays unambiguous across languages and encodings.
  *
- * @throws TuvrenValidationError With code `invalid_optional_field`.
+ * @throws {TuvrenValidationError} With code `invalid_optional_field`.
  */
 export const assertOptionalFieldIsOmittedWhenUndefined = (
   value: Record<string, unknown>,
@@ -235,7 +238,7 @@ export const assertOptionalFieldIsOmittedWhenUndefined = (
 /**
  * Asserts a non-empty string.
  *
- * @throws TuvrenValidationError With code `invalid_string`.
+ * @throws {TuvrenValidationError} With code `invalid_string`.
  */
 export const assertNonEmptyString: (
   value: unknown,
@@ -256,7 +259,7 @@ export const assertNonEmptyString: (
 /**
  * Asserts a boolean.
  *
- * @throws TuvrenValidationError With code `invalid_boolean`.
+ * @throws {TuvrenValidationError} With code `invalid_boolean`.
  */
 export const assertBoolean: (
   value: unknown,
@@ -329,7 +332,7 @@ export const assertNullableString: (
 /**
  * Asserts a `Uint8Array` payload.
  *
- * @throws TuvrenValidationError With code `invalid_uint8_array`.
+ * @throws {TuvrenValidationError} With code `invalid_uint8_array`.
  */
 export const assertUint8Array: (
   value: unknown,
@@ -350,7 +353,7 @@ export const assertUint8Array: (
 /**
  * Asserts a non-negative safe integer.
  *
- * @throws TuvrenValidationError With code `invalid_integer`.
+ * @throws {TuvrenValidationError} With code `invalid_integer`.
  */
 export const assertNonNegativeInteger: (
   value: unknown,
@@ -498,7 +501,7 @@ export const isHashStringArray = (value: unknown): value is string[] => {
 
     if (
       !(
-        descriptor?.enumerable &&
+        descriptor?.enumerable === true &&
         Object.hasOwn(descriptor, "value") &&
         Number.isInteger(index) &&
         index >= 0 &&
@@ -547,7 +550,7 @@ export const assertHashStringArray: (
  * @param assertion - Shape guard applied to the decoded record.
  * @param label - Diagnostic label for error messages.
  * @returns The decoded, validated value.
- * @throws TuvrenValidationError With code `invalid_cbor_payload` when the bytes
+ * @throws {TuvrenValidationError} With code `invalid_cbor_payload` when the bytes
  *   are not canonical deterministic CBOR, or the guard's own error otherwise.
  */
 export const assertDecodedKernelRecord = <T>(
@@ -589,7 +592,7 @@ export const assertDecodedHashStringArray = (
  * Decodes a CBOR HashString array and asserts its length matches a separately
  * stored count column, keeping denormalized counts honest.
  *
- * @throws TuvrenValidationError With code `invalid_cbor_item_count` when the
+ * @throws {TuvrenValidationError} With code `invalid_cbor_item_count` when the
  *   decoded length differs from `expectedCount`.
  */
 export const assertDecodedHashStringArrayCardinality = (

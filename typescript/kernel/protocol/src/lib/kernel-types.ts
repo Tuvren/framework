@@ -704,9 +704,9 @@ export type StoredStagedResult =
  * produces identical output is harmless.
  */
 export interface ObjectRepository {
-  get(hash: HashString): Promise<StoredObject | null>;
-  has(hash: HashString): Promise<boolean>;
-  put(record: StoredObject): Promise<void>;
+  get: (hash: HashString) => Promise<StoredObject | null>;
+  has: (hash: HashString) => Promise<boolean>;
+  put: (record: StoredObject) => Promise<void>;
 }
 
 /**
@@ -714,16 +714,16 @@ export interface ObjectRepository {
  * §3.1). Schema records are write-once.
  */
 export interface SchemaRepository {
-  get(schemaId: string): Promise<StoredSchema | null>;
-  put(record: StoredSchema): Promise<void>;
+  get: (schemaId: string) => Promise<StoredSchema | null>;
+  put: (record: StoredSchema) => Promise<void>;
 }
 
 /**
  * Durable storage for TurnTree roots, keyed by content hash (kernel spec §3.2).
  */
 export interface TurnTreeRepository {
-  get(hash: HashString): Promise<StoredTurnTree | null>;
-  put(record: StoredTurnTree): Promise<void>;
+  get: (hash: HashString) => Promise<StoredTurnTree | null>;
+  put: (record: StoredTurnTree) => Promise<void>;
 }
 
 /**
@@ -732,20 +732,20 @@ export interface TurnTreeRepository {
  * of one tree.
  */
 export interface TurnTreePathRepository {
-  get(
+  get: (
     turnTreeHash: HashString,
     path: string
-  ): Promise<StoredTurnTreePath | null>;
-  listByTurnTree(turnTreeHash: HashString): Promise<StoredTurnTreePath[]>;
-  putMany(records: StoredTurnTreePath[]): Promise<void>;
+  ) => Promise<StoredTurnTreePath | null>;
+  listByTurnTree: (turnTreeHash: HashString) => Promise<StoredTurnTreePath[]>;
+  putMany: (records: StoredTurnTreePath[]) => Promise<void>;
 }
 
 /**
  * Durable storage for ordered-path chunks, keyed by content hash.
  */
 export interface OrderedPathChunkRepository {
-  get(chunkHash: HashString): Promise<StoredOrderedPathChunk | null>;
-  put(record: StoredOrderedPathChunk): Promise<void>;
+  get: (chunkHash: HashString) => Promise<StoredOrderedPathChunk | null>;
+  put: (record: StoredOrderedPathChunk) => Promise<void>;
 }
 
 /**
@@ -753,8 +753,8 @@ export interface OrderedPathChunkRepository {
  * §3.3).
  */
 export interface TurnNodeRepository {
-  get(hash: HashString): Promise<StoredTurnNode | null>;
-  put(record: StoredTurnNode): Promise<void>;
+  get: (hash: HashString) => Promise<StoredTurnNode | null>;
+  put: (record: StoredTurnNode) => Promise<void>;
 }
 
 /**
@@ -762,8 +762,8 @@ export interface TurnNodeRepository {
  * Run.
  */
 export interface ObserveAnnotationRepository {
-  listByRun(runId: string): Promise<StoredObserveAnnotation[]>;
-  set(record: StoredObserveAnnotation): Promise<void>;
+  listByRun: (runId: string) => Promise<StoredObserveAnnotation[]>;
+  set: (record: StoredObserveAnnotation) => Promise<void>;
 }
 
 /**
@@ -786,7 +786,7 @@ export interface ListThreadsCursorPayload {
  * documentation.
  */
 export interface ThreadRepository {
-  get(threadId: string): Promise<StoredThread | null>;
+  get: (threadId: string) => Promise<StoredThread | null>;
   /**
    * ADR-0034: optional per BackendCapability descriptor. Backends that
    * advertise thread.enumeration:true MUST implement this method. Ordering
@@ -794,15 +794,15 @@ export interface ThreadRepository {
    * the (lastCreatedAtMs, lastThreadId) pair. filter.schemaId restricts
    * results to threads created with the matching schema id.
    */
-  list?(options?: {
+  list?: (options?: {
     limit?: number;
     cursor?: ListThreadsCursorPayload;
     filter?: { schemaId?: string };
-  }): Promise<{
+  }) => Promise<{
     threads: StoredThread[];
     nextCursor?: ListThreadsCursorPayload;
   }>;
-  put(record: StoredThread): Promise<void>;
+  put: (record: StoredThread) => Promise<void>;
 }
 
 /**
@@ -811,9 +811,9 @@ export interface ThreadRepository {
  * above this repository.
  */
 export interface BranchRepository {
-  get(branchId: string): Promise<StoredBranch | null>;
-  listByThread(threadId: string): Promise<StoredBranch[]>;
-  set(record: StoredBranch): Promise<void>;
+  get: (branchId: string) => Promise<StoredBranch | null>;
+  listByThread: (threadId: string) => Promise<StoredBranch[]>;
+  set: (record: StoredBranch) => Promise<void>;
 }
 
 /**
@@ -821,9 +821,9 @@ export interface BranchRepository {
  * and advances `headTurnNodeHash`.
  */
 export interface TurnRepository {
-  get(turnId: string): Promise<StoredTurn | null>;
-  listByThread(threadId: string): Promise<StoredTurn[]>;
-  set(record: StoredTurn): Promise<void>;
+  get: (turnId: string) => Promise<StoredTurn | null>;
+  listByThread: (threadId: string) => Promise<StoredTurn[]>;
+  set: (record: StoredTurn) => Promise<void>;
 }
 
 /**
@@ -832,10 +832,10 @@ export interface TurnRepository {
  * stale-running preemption.
  */
 export interface RunRepository {
-  get(runId: string): Promise<StoredRun | null>;
-  listByBranch(branchId: string): Promise<StoredRun[]>;
-  listExpired(nowMs: EpochMs): Promise<StoredRun[]>;
-  set(record: StoredRun): Promise<void>;
+  get: (runId: string) => Promise<StoredRun | null>;
+  listByBranch: (branchId: string) => Promise<StoredRun[]>;
+  listExpired: (nowMs: EpochMs) => Promise<StoredRun[]>;
+  set: (record: StoredRun) => Promise<void>;
 }
 
 /**
@@ -844,10 +844,10 @@ export interface RunRepository {
  * transaction consumes it.
  */
 export interface StagedResultRepository {
-  clearRun(runId: string): Promise<void>;
-  get(runId: string, taskId: string): Promise<StoredStagedResult | null>;
-  listByRun(runId: string): Promise<StoredStagedResult[]>;
-  set(record: StoredStagedResult): Promise<void>;
+  clearRun: (runId: string) => Promise<void>;
+  get: (runId: string, taskId: string) => Promise<StoredStagedResult | null>;
+  listByRun: (runId: string) => Promise<StoredStagedResult[]>;
+  set: (record: StoredStagedResult) => Promise<void>;
 }
 
 /**
@@ -869,7 +869,7 @@ export interface RuntimeBackendTx {
    * shared-lease-clock MAY omit it; the kernel falls back to its injected clock
    * for those backends.
    */
-  now?(): EpochMs;
+  now?: () => EpochMs;
   objects: ObjectRepository;
   observeAnnotations: ObserveAnnotationRepository;
   orderedPathChunks: OrderedPathChunkRepository;
@@ -982,7 +982,7 @@ export interface RuntimeBackend {
    * syscall (kernel spec §9.1). Must be honest: advertising a capability without
    * implementing its backing method correctly is a backend bug.
    */
-  capabilities(): BackendCapability;
+  capabilities: () => BackendCapability;
   /**
    * Probes the durable substrate's liveness: connectivity plus schema/
    * migration posture (e.g. a persisted snapshot row exists and its
@@ -993,7 +993,7 @@ export interface RuntimeBackend {
    * (e.g. `fsck()`-style maintenance methods, or the validation every write
    * already runs before `COMMIT`), not part of this contract.
    */
-  health(): Promise<{ ok: true } | { ok: false; reason: string }>;
+  health: () => Promise<{ ok: true } | { ok: false; reason: string }>;
   /**
    * Optional substrate partition drop for full tenant offboarding (§9.4: "full
    * tenant offboarding is dropping the Scope partition ... a substrate/edge
@@ -1010,7 +1010,7 @@ export interface RuntimeBackend {
    * empty partition. Offboarding hosts discard the backend after the drop.
    * Backends that cannot drop a partition omit it.
    */
-  purgeScope?(): Promise<void>;
+  purgeScope?: () => Promise<void>;
   /**
    * Optional reachability reclamation backing operation (§9.4). Implemented
    * only by backends advertising `maintenance.reclamation: true`; backends that
@@ -1020,13 +1020,13 @@ export interface RuntimeBackend {
    * active execution lease so reclamation can never race recovery. Never edits
    * committed lineage or alters a reachable Object.
    */
-  reclaim?(options?: ReclamationOptions): Promise<ReclamationSummary>;
+  reclaim?: (options?: ReclamationOptions) => Promise<ReclamationSummary>;
   /**
    * Runs `work` inside one atomic transaction. Every repository write performed
    * through the supplied {@link RuntimeBackendTx} becomes visible together on
    * commit, or not at all when `work` rejects (kernel spec §8.1).
    */
-  transact<T>(work: (tx: RuntimeBackendTx) => Promise<T>): Promise<T>;
+  transact: <T>(work: (tx: RuntimeBackendTx) => Promise<T>) => Promise<T>;
 }
 
 /**
@@ -1055,14 +1055,17 @@ export interface RuntimeKernel {
    * head listing.
    */
   branch: {
-    create(
+    create: (
       branchId: string,
       threadId: string,
       fromTurnNodeHash: HashString
-    ): Promise<BranchRecord>;
-    get(branchId: string): Promise<BranchRecord | null>;
-    setHead(branchId: string, turnNodeHash: HashString): Promise<SetHeadResult>;
-    list(threadId: string): Promise<BranchHeadListEntry[]>;
+    ) => Promise<BranchRecord>;
+    get: (branchId: string) => Promise<BranchRecord | null>;
+    setHead: (
+      branchId: string,
+      turnNodeHash: HashString
+    ) => Promise<SetHeadResult>;
+    list: (threadId: string) => Promise<BranchHeadListEntry[]>;
   };
   /**
    * Capability-gated maintenance operations (kernel spec §9.4).
@@ -1077,7 +1080,7 @@ export interface RuntimeKernel {
      * only the unreachable remainder and never releasing state newer than the
      * oldest active execution lease.
      */
-    reclaim(options?: ReclamationOptions): Promise<ReclamationSummary>;
+    reclaim: (options?: ReclamationOptions) => Promise<ReclamationSummary>;
   };
   /**
    * Read-only history-DAG access (kernel spec §3.3). `walkBack` follows
@@ -1085,8 +1088,8 @@ export interface RuntimeKernel {
    * creation is kernel-internal via `run.completeStep` / `run.complete`.
    */
   node: {
-    get(hash: HashString): Promise<TurnNode | null>;
-    walkBack(fromHash: HashString): AsyncIterable<TurnNode>;
+    get: (hash: HashString) => Promise<TurnNode | null>;
+    walkBack: (fromHash: HashString) => AsyncIterable<TurnNode>;
   };
   /**
    * Run lifecycle (kernel spec §5.8): creation with full legality validation
@@ -1095,36 +1098,36 @@ export interface RuntimeKernel {
    * recovery via {@link RecoveryState}.
    */
   run: {
-    create(
+    create: (
       runId: string,
       turnId: string,
       branchId: string,
       schemaId: string,
       startTurnNodeHash: HashString,
       steps: StepDeclaration[]
-    ): Promise<RunRecord>;
-    beginStep(runId: string, stepId: string): Promise<StepContext>;
-    completeStep(
+    ) => Promise<RunRecord>;
+    beginStep: (runId: string, stepId: string) => Promise<StepContext>;
+    completeStep: (
       runId: string,
       stepId: string,
       eventHash?: HashString,
       observeResults?: ObserveResult[],
       treeHash?: HashString
-    ): Promise<RunStepCompletion>;
-    complete(
+    ) => Promise<RunStepCompletion>;
+    complete: (
       runId: string,
       status: RunCompletionStatus,
       eventHash?: HashString
-    ): Promise<{ turnNodeHash?: HashString }>;
-    recover(runId: string): Promise<RecoveryState>;
+    ) => Promise<{ turnNodeHash?: HashString }>;
+    recover: (runId: string) => Promise<RecoveryState>;
   };
   /**
    * TurnTreeSchema registration and lookup (kernel spec §3.1). Registration is
    * write-once and validated; schema evolution means a new `schemaId`.
    */
   schema: {
-    register(schema: TurnTreeSchema): Promise<string>;
-    get(schemaId: string): Promise<TurnTreeSchema | null>;
+    register: (schema: TurnTreeSchema) => Promise<string>;
+    get: (schemaId: string) => Promise<TurnTreeSchema | null>;
   };
   /**
    * Durable run-scoped staging (kernel spec §3.4). `stage` atomically writes the
@@ -1133,24 +1136,24 @@ export interface RuntimeKernel {
    * a checkpoint or at Run start).
    */
   staging: {
-    stage(
+    stage: (
       runId: string,
       blob: Uint8Array,
       taskId: string,
       objectType: string,
       status: StagedResultStatus,
       interruptPayload?: KernelRecord
-    ): Promise<{ objectHash: HashString; stagedResult: StagedResult }>;
-    current(runId: string): Promise<StagedResult[]>;
+    ) => Promise<{ objectHash: HashString; stagedResult: StagedResult }>;
+    current: (runId: string) => Promise<StagedResult[]>;
   };
   /**
    * Content-addressed Object store (kernel spec §2.4). `put` is write-once and
    * idempotent; `get`/`has` resolve only within the constructing Scope (§2.3).
    */
   store: {
-    put(blob: Uint8Array, mediaType?: string): Promise<HashString>;
-    get(hash: HashString): Promise<Uint8Array | null>;
-    has(hash: HashString): Promise<boolean>;
+    put: (blob: Uint8Array, mediaType?: string) => Promise<HashString>;
+    get: (hash: HashString) => Promise<Uint8Array | null>;
+    has: (hash: HashString) => Promise<boolean>;
   };
   /**
    * Thread bootstrap and lookup (kernel spec §4.1), plus capability-gated
@@ -1159,22 +1162,22 @@ export interface RuntimeKernel {
    * Branch pointing at it.
    */
   thread: {
-    create(
+    create: (
       threadId: string,
       schemaId: string,
       initialBranchId: string
-    ): Promise<ThreadCreateResult>;
-    get(threadId: string): Promise<ThreadRecord | null>;
+    ) => Promise<ThreadCreateResult>;
+    get: (threadId: string) => Promise<ThreadRecord | null>;
     /**
      * ADR-0034: capability-gated thread enumeration. Rejects with
      * TuvrenPersistenceError code "kernel_capability_unsupported" when the
      * backend does not advertise thread.enumeration.
      */
-    list(options?: {
+    list: (options?: {
       limit?: number;
       cursor?: KernelThreadListCursor;
       filter?: { schemaId?: string };
-    }): Promise<{
+    }) => Promise<{
       threads: StoredThread[];
       nextCursor?: KernelThreadListCursor;
     }>;
@@ -1186,33 +1189,33 @@ export interface RuntimeKernel {
    * per-path `resolve`, and full `manifest` dumps.
    */
   tree: {
-    create(
+    create: (
       schemaId: string,
       changes: TurnTreeChangeSet,
       baseTurnTreeHash?: HashString
-    ): Promise<HashString>;
-    incorporate(
+    ) => Promise<HashString>;
+    incorporate: (
       baseTurnTreeHash: HashString,
       stagedResults: StagedResult[]
-    ): Promise<HashString>;
-    diff(treeHashA: HashString, treeHashB: HashString): Promise<string[]>;
-    resolve(treeHash: HashString, path: string): Promise<PathValue>;
-    manifest(treeHash: HashString): Promise<TurnTreeManifest>;
+    ) => Promise<HashString>;
+    diff: (treeHashA: HashString, treeHashB: HashString) => Promise<string[]>;
+    resolve: (treeHash: HashString, path: string) => Promise<PathValue>;
+    manifest: (treeHash: HashString) => Promise<TurnTreeManifest>;
   };
   /**
    * Turn lifecycle (kernel spec §5.3). `updateHead` validates that the new head is
    * a descendant of the Turn's `startTurnNodeHash` by lineage walk.
    */
   turn: {
-    create(
+    create: (
       turnId: string,
       threadId: string,
       branchId: string,
       parentTurnId: string | null | undefined,
       startTurnNodeHash: HashString
-    ): Promise<TurnRecord>;
-    get(turnId: string): Promise<TurnRecord | null>;
-    updateHead(turnId: string, headTurnNodeHash: HashString): Promise<void>;
+    ) => Promise<TurnRecord>;
+    get: (turnId: string) => Promise<TurnRecord | null>;
+    updateHead: (turnId: string, headTurnNodeHash: HashString) => Promise<void>;
   };
   /**
    * Pure verdict composition under the fixed priority
@@ -1221,7 +1224,7 @@ export interface RuntimeKernel {
    * composes.
    */
   verdicts: {
-    compose(verdicts: Verdict[]): Promise<ComposedVerdict>;
+    compose: (verdicts: Verdict[]) => Promise<ComposedVerdict>;
   };
 }
 
@@ -1244,7 +1247,7 @@ export interface RuntimeKernel {
  */
 export interface RuntimeKernelRunLiveness {
   runLiveness: {
-    createLeasedRun(input: {
+    createLeasedRun: (input: {
       branchId: string;
       executionOwnerId: string;
       leaseExpiresAtMs: EpochMs;
@@ -1253,19 +1256,19 @@ export interface RuntimeKernelRunLiveness {
       startTurnNodeHash: HashString;
       steps: StepDeclaration[];
       turnId: string;
-    }): Promise<RunRecord>;
-    listExpired(nowMs: EpochMs): Promise<RunRecord[]>;
-    preemptExpired(
+    }) => Promise<RunRecord>;
+    listExpired: (nowMs: EpochMs) => Promise<RunRecord[]>;
+    preemptExpired: (
       runId: string,
       preemptingOwnerId: string,
       nowMs: EpochMs,
       reason: string
-    ): Promise<RecoveryState>;
-    renewLease(
+    ) => Promise<RecoveryState>;
+    renewLease: (
       runId: string,
       executionOwnerId: string,
       fencingToken: string,
       nextLeaseExpiresAtMs: EpochMs
-    ): Promise<{ fencingToken: string; leaseExpiresAtMs: EpochMs }>;
+    ) => Promise<{ fencingToken: string; leaseExpiresAtMs: EpochMs }>;
   };
 }
