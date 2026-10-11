@@ -29,43 +29,40 @@ import { decodeDeterministicKernelRecord } from "./kernel-identity.js";
 /**
  * True when `value` is one of the given string literals.
  */
-export function isStringLiteral<const T extends readonly string[]>(
+export const isStringLiteral = <const T extends readonly string[]>(
   value: unknown,
   literals: T
-): value is T[number] {
-  return typeof value === "string" && literals.includes(value);
-}
+): value is T[number] => typeof value === "string" && literals.includes(value);
 
 /**
  * Adapts an `assert*` guard into a boolean `is*` predicate by swallowing its
  * validation error.
  */
-export function tryAssert<T>(
+export const tryAssert = <T>(
   value: unknown,
   assertion: (value: unknown, label?: string) => asserts value is T
-): value is T {
+): value is T => {
   try {
     assertion(value);
     return true;
   } catch {
     return false;
   }
-}
+};
 
 /**
  * Builds a TuvrenValidationError with the given machine-readable code and
  * optional diagnostic details.
  */
-export function validationError(
+export const validationError = (
   message: string,
   code: string,
   details?: unknown
-): TuvrenValidationError {
-  return new TuvrenValidationError(message, {
+): TuvrenValidationError =>
+  new TuvrenValidationError(message, {
     code,
     details,
   });
-}
 
 /**
  * Asserts a dense, data-only array: no holes, no symbol keys, no accessors, no
@@ -74,7 +71,7 @@ export function validationError(
  *
  * @throws TuvrenValidationError With code `invalid_array`.
  */
-export function assertArray(value: unknown, label: string): unknown[] {
+export const assertArray = (value: unknown, label: string): unknown[] => {
   if (!Array.isArray(value)) {
     throw validationError(`${label} must be an array`, "invalid_array", {
       value,
@@ -132,7 +129,7 @@ export function assertArray(value: unknown, label: string): unknown[] {
   }
 
   return value;
-}
+};
 
 /**
  * Asserts a plain, data-only object (prototype `Object.prototype` or `null`, no
@@ -141,10 +138,10 @@ export function assertArray(value: unknown, label: string): unknown[] {
  *
  * @throws TuvrenValidationError With code `invalid_object`.
  */
-export function assertPlainObject(
+export const assertPlainObject = (
   value: unknown,
   label: string
-): Record<string, unknown> {
+): Record<string, unknown> => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw validationError(`${label} must be a plain object`, "invalid_object", {
       value,
@@ -190,18 +187,18 @@ export function assertPlainObject(
   }
 
   return normalizedObject;
-}
+};
 
 /**
  * Rejects any own key outside the declared contract shape.
  *
  * @throws TuvrenValidationError With code `invalid_object_key`.
  */
-export function assertAllowedObjectKeys(
+export const assertAllowedObjectKeys = (
   value: Record<string, unknown>,
   allowedKeys: readonly string[],
   label: string
-): void {
+): void => {
   const allowedKeySet = new Set(allowedKeys);
 
   for (const key of Object.keys(value)) {
@@ -213,7 +210,7 @@ export function assertAllowedObjectKeys(
       );
     }
   }
-}
+};
 
 /**
  * Optional contract fields must be omitted rather than set to `undefined`, so
@@ -221,11 +218,11 @@ export function assertAllowedObjectKeys(
  *
  * @throws TuvrenValidationError With code `invalid_optional_field`.
  */
-export function assertOptionalFieldIsOmittedWhenUndefined(
+export const assertOptionalFieldIsOmittedWhenUndefined = (
   value: Record<string, unknown>,
   key: string,
   label: string
-): void {
+): void => {
   if (Object.hasOwn(value, key) && value[key] === undefined) {
     throw validationError(
       `${label}.${key} must be omitted instead of undefined`,
@@ -233,17 +230,20 @@ export function assertOptionalFieldIsOmittedWhenUndefined(
       { key }
     );
   }
-}
+};
 
 /**
  * Asserts a non-empty string.
  *
  * @throws TuvrenValidationError With code `invalid_string`.
  */
-export function assertNonEmptyString(
+export const assertNonEmptyString: (
   value: unknown,
   label: string
-): asserts value is string {
+) => asserts value is string = (
+  value: unknown,
+  label: string
+): asserts value is string => {
   if (typeof value !== "string" || value.length === 0) {
     throw validationError(
       `${label} must be a non-empty string`,
@@ -251,57 +251,93 @@ export function assertNonEmptyString(
       { value }
     );
   }
-}
+};
 
 /**
  * Asserts a boolean.
  *
  * @throws TuvrenValidationError With code `invalid_boolean`.
  */
-export function assertBoolean(
+export const assertBoolean: (
   value: unknown,
   label: string
-): asserts value is boolean {
+) => asserts value is boolean = (
+  value: unknown,
+  label: string
+): asserts value is boolean => {
   if (typeof value !== "boolean") {
     throw validationError(`${label} must be a boolean`, "invalid_boolean", {
       value,
     });
   }
-}
+};
+
+/**
+ * Asserts a lowercase 64-character SHA-256 hex digest, rethrowing the core
+ * guard's failure with protocol code `invalid_hash_string`.
+ */
+export const assertHashString: (
+  value: unknown,
+  label: string
+) => asserts value is string = (
+  value: unknown,
+  label: string
+): asserts value is string => {
+  try {
+    assertSharedHashString(value, label);
+  } catch (error: unknown) {
+    throw validationError(
+      error instanceof Error
+        ? error.message
+        : `${label} must be a lowercase 64-character SHA-256 hex digest`,
+      "invalid_hash_string",
+      { value }
+    );
+  }
+};
 
 /**
  * Asserts `null` or a valid HashString.
  */
-export function assertNullableHashString(
+export const assertNullableHashString: (
   value: unknown,
   label: string
-): asserts value is string | null {
+) => asserts value is string | null = (
+  value: unknown,
+  label: string
+): asserts value is string | null => {
   if (value !== null) {
     assertHashString(value, label);
   }
-}
+};
 
 /**
  * Asserts `null` or a non-empty string.
  */
-export function assertNullableString(
+export const assertNullableString: (
   value: unknown,
   label: string
-): asserts value is string | null {
+) => asserts value is string | null = (
+  value: unknown,
+  label: string
+): asserts value is string | null => {
   if (value !== null) {
     assertNonEmptyString(value, label);
   }
-}
+};
 
 /**
  * Asserts a `Uint8Array` payload.
  *
  * @throws TuvrenValidationError With code `invalid_uint8_array`.
  */
-export function assertUint8Array(
+export const assertUint8Array: (
   value: unknown,
   label: string
-): asserts value is Uint8Array {
+) => asserts value is Uint8Array = (
+  value: unknown,
+  label: string
+): asserts value is Uint8Array => {
   if (!(value instanceof Uint8Array)) {
     throw validationError(
       `${label} must be a Uint8Array`,
@@ -309,17 +345,20 @@ export function assertUint8Array(
       { value }
     );
   }
-}
+};
 
 /**
  * Asserts a non-negative safe integer.
  *
  * @throws TuvrenValidationError With code `invalid_integer`.
  */
-export function assertNonNegativeInteger(
+export const assertNonNegativeInteger: (
   value: unknown,
   label: string
-): asserts value is number {
+) => asserts value is number = (
+  value: unknown,
+  label: string
+): asserts value is number => {
   if (!isEpochMs(value)) {
     throw validationError(
       `${label} must be a non-negative safe integer`,
@@ -337,37 +376,19 @@ export function assertNonNegativeInteger(
       { value: integerValue }
     );
   }
-}
-
-/**
- * Asserts a lowercase 64-character SHA-256 hex digest, rethrowing the core
- * guard's failure with protocol code `invalid_hash_string`.
- */
-export function assertHashString(
-  value: unknown,
-  label: string
-): asserts value is string {
-  try {
-    assertSharedHashString(value, label);
-  } catch (error: unknown) {
-    throw validationError(
-      error instanceof Error
-        ? error.message
-        : `${label} must be a lowercase 64-character SHA-256 hex digest`,
-      "invalid_hash_string",
-      { value }
-    );
-  }
-}
+};
 
 /**
  * Asserts an epoch-milliseconds timestamp, rethrowing the core guard's failure
  * with protocol code `invalid_epoch_ms`.
  */
-export function assertEpochMs(
+export const assertEpochMs: (
   value: unknown,
   label: string
-): asserts value is number {
+) => asserts value is number = (
+  value: unknown,
+  label: string
+): asserts value is number => {
   try {
     assertSharedEpochMs(value, label);
   } catch (error: unknown) {
@@ -379,16 +400,19 @@ export function assertEpochMs(
       { value }
     );
   }
-}
+};
 
 /**
  * Asserts the restricted kernel record profile (see `@tuvren/core`), rethrowing
  * the core guard's failure with protocol code `invalid_kernel_record`.
  */
-export function assertKernelRecord(
+export const assertKernelRecord: (
+  value: unknown,
+  label?: string
+) => asserts value is KernelRecord = (
   value: unknown,
   label = "value"
-): asserts value is KernelRecord {
+): asserts value is KernelRecord => {
   try {
     assertSharedKernelRecord(value, label);
   } catch (error: unknown) {
@@ -400,51 +424,60 @@ export function assertKernelRecord(
       { value }
     );
   }
-}
+};
 
 /**
  * Asserts a dense array of kernel records.
  */
-export function assertKernelRecordArray(
+export const assertKernelRecordArray: (
   value: unknown,
   label: string
-): asserts value is KernelRecord[] {
+) => asserts value is KernelRecord[] = (
+  value: unknown,
+  label: string
+): asserts value is KernelRecord[] => {
   const items = assertArray(value, label);
 
   for (const [index, item] of items.entries()) {
     assertKernelRecord(item, `${label}[${index}]`);
   }
-}
+};
 
 /**
  * Asserts a plain-object kernel record (a `KernelObject`).
  */
-export function assertKernelObject(
+export const assertKernelObject: (
   value: unknown,
   label: string
-): asserts value is KernelObject {
+) => asserts value is KernelObject = (
+  value: unknown,
+  label: string
+): asserts value is KernelObject => {
   assertPlainObject(value, label);
   assertKernelRecord(value, label);
-}
+};
 
 /**
  * Asserts a dense array of plain-object kernel records.
  */
-export function assertKernelObjectArray(
+export const assertKernelObjectArray: (
   value: unknown,
   label: string
-): asserts value is KernelObject[] {
+) => asserts value is KernelObject[] = (
+  value: unknown,
+  label: string
+): asserts value is KernelObject[] => {
   const items = assertArray(value, label);
 
   for (const [index, item] of items.entries()) {
     assertKernelObject(item, `${label}[${index}]`);
   }
-}
+};
 
 /**
  * True when `value` is a dense, data-only array of valid HashStrings.
  */
-export function isHashStringArray(value: unknown): value is string[] {
+export const isHashStringArray = (value: unknown): value is string[] => {
   if (!Array.isArray(value)) {
     return false;
   }
@@ -486,21 +519,24 @@ export function isHashStringArray(value: unknown): value is string[] {
   }
 
   return true;
-}
+};
 
 /**
  * Asserts a dense array of valid HashStrings.
  */
-export function assertHashStringArray(
+export const assertHashStringArray: (
   value: unknown,
   label: string
-): asserts value is string[] {
+) => asserts value is string[] = (
+  value: unknown,
+  label: string
+): asserts value is string[] => {
   const items = assertArray(value, label);
 
   for (const [index, item] of items.entries()) {
     assertHashString(item, `${label}[${index}]`);
   }
-}
+};
 
 /**
  * Decodes canonical deterministic CBOR bytes and validates the decoded value
@@ -514,11 +550,11 @@ export function assertHashStringArray(
  * @throws TuvrenValidationError With code `invalid_cbor_payload` when the bytes
  *   are not canonical deterministic CBOR, or the guard's own error otherwise.
  */
-export function assertDecodedKernelRecord<T>(
+export const assertDecodedKernelRecord = <T>(
   value: Uint8Array,
   assertion: (value: unknown, label: string) => asserts value is T,
   label: string
-): T {
+): T => {
   let decodedValue: KernelRecord;
 
   try {
@@ -539,17 +575,15 @@ export function assertDecodedKernelRecord<T>(
   assertion(decodedValue, label);
 
   return decodedValue;
-}
+};
 
 /**
  * Decodes canonical deterministic CBOR bytes into a HashString array.
  */
-export function assertDecodedHashStringArray(
+export const assertDecodedHashStringArray = (
   value: Uint8Array,
   label: string
-): string[] {
-  return assertDecodedKernelRecord(value, assertHashStringArray, label);
-}
+): string[] => assertDecodedKernelRecord(value, assertHashStringArray, label);
 
 /**
  * Decodes a CBOR HashString array and asserts its length matches a separately
@@ -558,12 +592,12 @@ export function assertDecodedHashStringArray(
  * @throws TuvrenValidationError With code `invalid_cbor_item_count` when the
  *   decoded length differs from `expectedCount`.
  */
-export function assertDecodedHashStringArrayCardinality(
+export const assertDecodedHashStringArrayCardinality = (
   value: Uint8Array,
   expectedCount: number,
   payloadLabel: string,
   countLabel: string
-): void {
+): void => {
   const decodedItems = assertDecodedHashStringArray(value, payloadLabel);
 
   if (decodedItems.length !== expectedCount) {
@@ -573,4 +607,4 @@ export function assertDecodedHashStringArrayCardinality(
       { actualCount: decodedItems.length, expectedCount }
     );
   }
-}
+};

@@ -75,13 +75,6 @@ interface StoredTurnTreePathCandidate {
 }
 
 /**
- * True when `value` is a structurally valid {@link StoredObject}.
- */
-export function isStoredObject(value: unknown): value is StoredObject {
-  return tryAssert(value, assertStoredObject);
-}
-
-/**
  * Asserts a structurally valid {@link StoredObject} (kernel spec §2.1),
  * including that the denormalized `byteLength` matches `bytes.byteLength`. Does
  * not recompute the content hash; use {@link assertStoredObjectIdentity} for
@@ -90,10 +83,13 @@ export function isStoredObject(value: unknown): value is StoredObject {
  * @throws TuvrenValidationError With code `invalid_stored_object_byte_length`
  *   on a byte-length mismatch.
  */
-export function assertStoredObject(
+export const assertStoredObject: (
+  value: unknown,
+  label?: string
+) => asserts value is StoredObject = (
   value: unknown,
   label = "value"
-): asserts value is StoredObject {
+): asserts value is StoredObject => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -117,7 +113,13 @@ export function assertStoredObject(
       }
     );
   }
-}
+};
+
+/**
+ * True when `value` is a structurally valid {@link StoredObject}.
+ */
+export const isStoredObject = (value: unknown): value is StoredObject =>
+  tryAssert(value, assertStoredObject);
 
 /**
  * Asserts a structurally valid {@link StoredObject} whose `hash` also equals
@@ -126,10 +128,10 @@ export function assertStoredObject(
  * @throws TuvrenValidationError With code `invalid_stored_object_hash` when the
  *   stored hash does not match the recomputed digest.
  */
-export async function assertStoredObjectIdentity(
+export const assertStoredObjectIdentity = async (
   value: unknown,
   label = "value"
-): Promise<void> {
+): Promise<void> => {
   assertStoredObject(value, label);
 
   const expectedHash = await hashOpaqueObjectBytes(value.bytes);
@@ -144,14 +146,7 @@ export async function assertStoredObjectIdentity(
       }
     );
   }
-}
-
-/**
- * True when `value` is a structurally valid {@link StoredSchema}.
- */
-export function isStoredSchema(value: unknown): value is StoredSchema {
-  return tryAssert(value, assertStoredSchema);
-}
+};
 
 /**
  * Asserts a structurally valid {@link StoredSchema} (kernel spec §3.1):
@@ -161,10 +156,13 @@ export function isStoredSchema(value: unknown): value is StoredSchema {
  * @throws TuvrenValidationError With code `invalid_stored_schema_id` when the
  *   key column and the decoded schema id disagree.
  */
-export function assertStoredSchema(
+export const assertStoredSchema: (
+  value: unknown,
+  label?: string
+) => asserts value is StoredSchema = (
   value: unknown,
   label = "value"
-): asserts value is StoredSchema {
+): asserts value is StoredSchema => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -193,21 +191,60 @@ export function assertStoredSchema(
       }
     );
   }
-}
+};
+
+/**
+ * True when `value` is a structurally valid {@link StoredSchema}.
+ */
+export const isStoredSchema = (value: unknown): value is StoredSchema =>
+  tryAssert(value, assertStoredSchema);
+
+/**
+ * Schema-independent shape check shared by `isStoredTurnTree` and
+ * `assertStoredTurnTree`: contract keys, valid hash, non-empty schema id, CBOR
+ * payload, and timestamp.
+ */
+const assertStoredTurnTreeShape = (
+  value: unknown,
+  label: string
+): {
+  createdAtMs: unknown;
+  hash: unknown;
+  manifestCbor: Uint8Array;
+  schemaId: unknown;
+} => {
+  const objectValue = assertPlainObject(value, label);
+
+  assertAllowedObjectKeys(
+    objectValue,
+    ["createdAtMs", "hash", "manifestCbor", "schemaId"],
+    label
+  );
+  assertHashString(objectValue.hash, `${label}.hash`);
+  assertNonEmptyString(objectValue.schemaId, `${label}.schemaId`);
+  assertUint8Array(objectValue.manifestCbor, `${label}.manifestCbor`);
+  assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
+
+  return {
+    createdAtMs: objectValue.createdAtMs,
+    hash: objectValue.hash,
+    manifestCbor: objectValue.manifestCbor,
+    schemaId: objectValue.schemaId,
+  };
+};
 
 /**
  * True when `value` has the shape of a {@link StoredTurnTree}. Shape-only —
  * without a schema, the manifest cannot be checked against path definitions;
  * use {@link assertStoredTurnTree} with a schema for that.
  */
-export function isStoredTurnTree(value: unknown): value is StoredTurnTree {
-  return tryAssert(
+export const isStoredTurnTree = (value: unknown): value is StoredTurnTree =>
+  tryAssert(
     value,
     (candidate, innerLabel = "value"): asserts candidate is StoredTurnTree => {
       assertStoredTurnTreeShape(candidate, innerLabel);
     }
   );
-}
 
 /**
  * Asserts a structurally valid {@link StoredTurnTree} against its schema
@@ -216,16 +253,15 @@ export function isStoredTurnTree(value: unknown): value is StoredTurnTree {
  * manifest for that schema. Does not recompute the tree hash; use
  * {@link assertStoredTurnTreeIdentity} for that.
  */
-export function assertStoredTurnTree(
+export const assertStoredTurnTree: (
   value: unknown,
   schema: TurnTreeSchema,
   label?: string
-): asserts value is StoredTurnTree;
-export function assertStoredTurnTree(
+) => asserts value is StoredTurnTree = (
   value: unknown,
   schema: TurnTreeSchema,
   label = "value"
-): asserts value is StoredTurnTree {
+): asserts value is StoredTurnTree => {
   assertTurnTreeSchema(schema, "schema");
   const resolvedLabel = label;
   const objectValue = assertStoredTurnTreeShape(value, resolvedLabel);
@@ -257,7 +293,7 @@ export function assertStoredTurnTree(
     },
     `${resolvedLabel}.manifestCbor`
   );
-}
+};
 
 /**
  * Asserts a structurally valid {@link StoredTurnTree} whose `hash` also equals
@@ -267,16 +303,15 @@ export function assertStoredTurnTree(
  * @throws TuvrenValidationError With code `invalid_stored_turn_tree_hash` when
  *   the stored hash does not match the recomputed digest.
  */
-export async function assertStoredTurnTreeIdentity(
+export const assertStoredTurnTreeIdentity: (
   value: unknown,
   schema: TurnTreeSchema,
   label?: string
-): Promise<void>;
-export async function assertStoredTurnTreeIdentity(
+) => Promise<void> = async (
   value: unknown,
   schema: TurnTreeSchema,
   label = "value"
-): Promise<void> {
+): Promise<void> => {
   assertTurnTreeSchema(schema, "schema");
   const resolvedLabel = label;
   assertStoredTurnTree(value, schema, resolvedLabel);
@@ -303,16 +338,258 @@ export async function assertStoredTurnTreeIdentity(
       }
     );
   }
-}
+};
 
 /**
- * True when `value` is a structurally valid {@link StoredTurnTreePath}.
+ * Untangles the `assertStoredTurnTreePath` overloads: the second argument may
+ * be a diagnostic label or a schema to validate against.
  */
-export function isStoredTurnTreePath(
-  value: unknown
-): value is StoredTurnTreePath {
-  return tryAssert(value, assertStoredTurnTreePath);
-}
+const resolveSchemaAndLabel = (
+  schemaOrLabel: string | TurnTreeSchema | undefined,
+  label: string,
+  schemaLabel: string
+): {
+  resolvedLabel: string;
+  schema?: TurnTreeSchema;
+} => {
+  if (schemaOrLabel === undefined) {
+    return { resolvedLabel: label };
+  }
+
+  if (typeof schemaOrLabel === "string") {
+    return { resolvedLabel: schemaOrLabel };
+  }
+
+  assertTurnTreeSchema(schemaOrLabel, schemaLabel);
+  return {
+    resolvedLabel: label,
+    schema: schemaOrLabel,
+  };
+};
+
+/**
+ * A `"single"` path row must carry `singleHash` and no ordered fields.
+ */
+const assertStoredSingleTurnTreePathShape = (
+  value: StoredTurnTreePathCandidate,
+  label: string
+): void => {
+  if (value.singleHash === undefined) {
+    throw validationError(
+      `${label}.singleHash is required when collectionKind is "single"`,
+      "invalid_stored_turn_tree_path_shape",
+      { collectionKind: value.collectionKind }
+    );
+  }
+
+  if (
+    value.orderedEncoding !== undefined ||
+    value.orderedCount !== undefined ||
+    value.orderedInlineCbor !== undefined ||
+    value.orderedChunkListCbor !== undefined
+  ) {
+    throw validationError(
+      `${label} must not include ordered-path fields when collectionKind is "single"`,
+      "invalid_stored_turn_tree_path_shape",
+      { collectionKind: value.collectionKind }
+    );
+  }
+};
+
+/**
+ * A flat ordered row inlines its hash list: `orderedInlineCbor` required, chunk
+ * list forbidden, and the decoded item count must equal `orderedCount`.
+ */
+const assertStoredFlatTurnTreePathShape = (
+  value: StoredTurnTreePathCandidate,
+  label: string
+): void => {
+  if (value.orderedInlineCbor === undefined) {
+    throw validationError(
+      `${label}.orderedInlineCbor is required when orderedEncoding is "flat"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+
+  if (value.orderedChunkListCbor !== undefined) {
+    throw validationError(
+      `${label}.orderedChunkListCbor must be omitted when orderedEncoding is "flat"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+
+  const { orderedCount } = value;
+
+  if (orderedCount === undefined) {
+    throw validationError(
+      `${label}.orderedCount is required when orderedEncoding is "flat"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+
+  assertDecodedHashStringArrayCardinality(
+    value.orderedInlineCbor,
+    orderedCount,
+    `${label}.orderedInlineCbor`,
+    `${label}.orderedCount`
+  );
+};
+
+/**
+ * A chunked ordered row references its hash list through chunks:
+ * `orderedChunkListCbor` required, inline CBOR forbidden, at least one chunk,
+ * and zero-item paths must use flat storage instead.
+ */
+const assertStoredChunkedTurnTreePathShape = (
+  value: StoredTurnTreePathCandidate,
+  label: string
+): void => {
+  if (value.orderedChunkListCbor === undefined) {
+    throw validationError(
+      `${label}.orderedChunkListCbor is required when orderedEncoding is "chunked"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+
+  if (value.orderedInlineCbor !== undefined) {
+    throw validationError(
+      `${label}.orderedInlineCbor must be omitted when orderedEncoding is "chunked"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+
+  const chunkHashes = assertDecodedHashStringArray(
+    value.orderedChunkListCbor,
+    `${label}.orderedChunkListCbor`
+  );
+  const { orderedCount } = value;
+
+  if (orderedCount === undefined) {
+    throw validationError(
+      `${label}.orderedCount is required when orderedEncoding is "chunked"`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedEncoding: value.orderedEncoding }
+    );
+  }
+
+  if (orderedCount === 0 && chunkHashes.length !== 0) {
+    throw validationError(
+      `${label}.orderedChunkListCbor must be empty when ${label}.orderedCount is 0`,
+      "invalid_stored_turn_tree_path_shape",
+      { chunkCount: chunkHashes.length, orderedCount }
+    );
+  }
+
+  if (orderedCount === 0) {
+    throw validationError(
+      `${label} must use flat ordered storage when ${label}.orderedCount is 0`,
+      "invalid_stored_turn_tree_path_shape",
+      { orderedCount }
+    );
+  }
+
+  if (orderedCount > 0 && chunkHashes.length === 0) {
+    throw validationError(
+      `${label}.orderedChunkListCbor must contain at least one chunk when ${label}.orderedCount is positive`,
+      "invalid_stored_turn_tree_path_shape",
+      { chunkCount: chunkHashes.length, orderedCount }
+    );
+  }
+};
+
+/**
+ * An `"ordered"` path row must carry `orderedEncoding` and `orderedCount`, no
+ * `singleHash`, and satisfy the per-encoding shape rules.
+ */
+const assertStoredOrderedTurnTreePathShape = (
+  value: StoredTurnTreePathCandidate,
+  label: string
+): void => {
+  if (value.singleHash !== undefined) {
+    throw validationError(
+      `${label}.singleHash must be omitted when collectionKind is "ordered"`,
+      "invalid_stored_turn_tree_path_shape",
+      { collectionKind: value.collectionKind }
+    );
+  }
+
+  if (value.orderedEncoding === undefined) {
+    throw validationError(
+      `${label}.orderedEncoding is required when collectionKind is "ordered"`,
+      "invalid_stored_turn_tree_path_shape",
+      { collectionKind: value.collectionKind }
+    );
+  }
+
+  if (value.orderedCount === undefined) {
+    throw validationError(
+      `${label}.orderedCount is required when collectionKind is "ordered"`,
+      "invalid_stored_turn_tree_path_shape",
+      { collectionKind: value.collectionKind }
+    );
+  }
+
+  if (value.orderedEncoding === "flat") {
+    assertStoredFlatTurnTreePathShape(value, label);
+    return;
+  }
+
+  assertStoredChunkedTurnTreePathShape(value, label);
+};
+
+/**
+ * Dispatches shape validation by `collectionKind`.
+ */
+const assertStoredTurnTreePathShape = (
+  value: StoredTurnTreePathCandidate,
+  label: string
+): void => {
+  if (value.collectionKind === "single") {
+    assertStoredSingleTurnTreePathShape(value, label);
+    return;
+  }
+
+  assertStoredOrderedTurnTreePathShape(value, label);
+};
+
+/**
+ * The row's `path` must be schema-defined and its `collectionKind` must match
+ * the schema's collection kind for that path.
+ */
+const assertStoredTurnTreePathMatchesSchema = (
+  value: StoredTurnTreePathCandidate,
+  schema: TurnTreeSchema,
+  label: string
+): void => {
+  const pathDefinition = schema.paths.find(
+    (definition) => definition.path === value.path
+  );
+
+  if (pathDefinition === undefined) {
+    throw validationError(
+      `${label}.path must reference a schema-defined path`,
+      "unknown_turn_tree_path",
+      { path: value.path, schemaId: schema.schemaId }
+    );
+  }
+
+  if (pathDefinition.collection !== value.collectionKind) {
+    throw validationError(
+      `${label}.collectionKind must match the schema collection for ${label}.path`,
+      "invalid_turn_tree_path_collection_kind",
+      {
+        collectionKind: value.collectionKind,
+        expectedCollectionKind: pathDefinition.collection,
+        path: value.path,
+      }
+    );
+  }
+};
 
 /**
  * Asserts a structurally valid {@link StoredTurnTreePath} (kernel spec §3.2),
@@ -327,20 +604,18 @@ export function isStoredTurnTreePath(
  * With the schema overload, the row's `path` must be schema-defined and its
  * `collectionKind` must match the schema's collection for that path.
  */
-export function assertStoredTurnTreePath(
-  value: unknown,
-  label?: string
-): asserts value is StoredTurnTreePath;
-export function assertStoredTurnTreePath(
-  value: unknown,
-  schema: TurnTreeSchema,
-  label?: string
-): asserts value is StoredTurnTreePath;
-export function assertStoredTurnTreePath(
+export const assertStoredTurnTreePath: {
+  (value: unknown, label?: string): asserts value is StoredTurnTreePath;
+  (
+    value: unknown,
+    schema: TurnTreeSchema,
+    label?: string
+  ): asserts value is StoredTurnTreePath;
+} = ((
   value: unknown,
   schemaOrLabel?: string | TurnTreeSchema,
   label = "value"
-): asserts value is StoredTurnTreePath {
+): asserts value is StoredTurnTreePath => {
   const { schema, resolvedLabel } = resolveSchemaAndLabel(
     schemaOrLabel,
     label,
@@ -459,16 +734,18 @@ export function assertStoredTurnTreePath(
       resolvedLabel
     );
   }
-}
+}) satisfies (
+  value: unknown,
+  schemaOrLabel?: string | TurnTreeSchema,
+  label?: string
+) => asserts value is StoredTurnTreePath;
 
 /**
- * True when `value` is a structurally valid {@link StoredOrderedPathChunk}.
+ * True when `value` is a structurally valid {@link StoredTurnTreePath}.
  */
-export function isStoredOrderedPathChunk(
+export const isStoredTurnTreePath = (
   value: unknown
-): value is StoredOrderedPathChunk {
-  return tryAssert(value, assertStoredOrderedPathChunk);
-}
+): value is StoredTurnTreePath => tryAssert(value, assertStoredTurnTreePath);
 
 /**
  * Asserts a structurally valid {@link StoredOrderedPathChunk}: `itemsCbor` must
@@ -476,10 +753,13 @@ export function isStoredOrderedPathChunk(
  * denormalized `itemCount`. Does not recompute the chunk hash; use
  * {@link assertStoredOrderedPathChunkIdentity} for that.
  */
-export function assertStoredOrderedPathChunk(
+export const assertStoredOrderedPathChunk: (
+  value: unknown,
+  label?: string
+) => asserts value is StoredOrderedPathChunk = (
   value: unknown,
   label = "value"
-): asserts value is StoredOrderedPathChunk {
+): asserts value is StoredOrderedPathChunk => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -497,7 +777,15 @@ export function assertStoredOrderedPathChunk(
     `${label}.itemsCbor`,
     `${label}.itemCount`
   );
-}
+};
+
+/**
+ * True when `value` is a structurally valid {@link StoredOrderedPathChunk}.
+ */
+export const isStoredOrderedPathChunk = (
+  value: unknown
+): value is StoredOrderedPathChunk =>
+  tryAssert(value, assertStoredOrderedPathChunk);
 
 /**
  * Asserts a structurally valid {@link StoredOrderedPathChunk} whose `chunkHash`
@@ -508,10 +796,10 @@ export function assertStoredOrderedPathChunk(
  *   `invalid_stored_ordered_path_chunk_hash` when the stored hash does not
  *   match the recomputed digest.
  */
-export async function assertStoredOrderedPathChunkIdentity(
+export const assertStoredOrderedPathChunkIdentity = async (
   value: unknown,
   label = "value"
-): Promise<void> {
+): Promise<void> => {
   assertStoredOrderedPathChunk(value, label);
 
   const items = assertDecodedHashStringArray(
@@ -530,289 +818,4 @@ export async function assertStoredOrderedPathChunkIdentity(
       }
     );
   }
-}
-
-/**
- * Dispatches shape validation by `collectionKind`.
- */
-function assertStoredTurnTreePathShape(
-  value: StoredTurnTreePathCandidate,
-  label: string
-): void {
-  if (value.collectionKind === "single") {
-    assertStoredSingleTurnTreePathShape(value, label);
-    return;
-  }
-
-  assertStoredOrderedTurnTreePathShape(value, label);
-}
-
-/**
- * A `"single"` path row must carry `singleHash` and no ordered fields.
- */
-function assertStoredSingleTurnTreePathShape(
-  value: StoredTurnTreePathCandidate,
-  label: string
-): void {
-  if (value.singleHash === undefined) {
-    throw validationError(
-      `${label}.singleHash is required when collectionKind is "single"`,
-      "invalid_stored_turn_tree_path_shape",
-      { collectionKind: value.collectionKind }
-    );
-  }
-
-  if (
-    value.orderedEncoding !== undefined ||
-    value.orderedCount !== undefined ||
-    value.orderedInlineCbor !== undefined ||
-    value.orderedChunkListCbor !== undefined
-  ) {
-    throw validationError(
-      `${label} must not include ordered-path fields when collectionKind is "single"`,
-      "invalid_stored_turn_tree_path_shape",
-      { collectionKind: value.collectionKind }
-    );
-  }
-}
-
-/**
- * An `"ordered"` path row must carry `orderedEncoding` and `orderedCount`, no
- * `singleHash`, and satisfy the per-encoding shape rules.
- */
-function assertStoredOrderedTurnTreePathShape(
-  value: StoredTurnTreePathCandidate,
-  label: string
-): void {
-  if (value.singleHash !== undefined) {
-    throw validationError(
-      `${label}.singleHash must be omitted when collectionKind is "ordered"`,
-      "invalid_stored_turn_tree_path_shape",
-      { collectionKind: value.collectionKind }
-    );
-  }
-
-  if (value.orderedEncoding === undefined) {
-    throw validationError(
-      `${label}.orderedEncoding is required when collectionKind is "ordered"`,
-      "invalid_stored_turn_tree_path_shape",
-      { collectionKind: value.collectionKind }
-    );
-  }
-
-  if (value.orderedCount === undefined) {
-    throw validationError(
-      `${label}.orderedCount is required when collectionKind is "ordered"`,
-      "invalid_stored_turn_tree_path_shape",
-      { collectionKind: value.collectionKind }
-    );
-  }
-
-  if (value.orderedEncoding === "flat") {
-    assertStoredFlatTurnTreePathShape(value, label);
-    return;
-  }
-
-  assertStoredChunkedTurnTreePathShape(value, label);
-}
-
-/**
- * A flat ordered row inlines its hash list: `orderedInlineCbor` required, chunk
- * list forbidden, and the decoded item count must equal `orderedCount`.
- */
-function assertStoredFlatTurnTreePathShape(
-  value: StoredTurnTreePathCandidate,
-  label: string
-): void {
-  if (value.orderedInlineCbor === undefined) {
-    throw validationError(
-      `${label}.orderedInlineCbor is required when orderedEncoding is "flat"`,
-      "invalid_stored_turn_tree_path_shape",
-      { orderedEncoding: value.orderedEncoding }
-    );
-  }
-
-  if (value.orderedChunkListCbor !== undefined) {
-    throw validationError(
-      `${label}.orderedChunkListCbor must be omitted when orderedEncoding is "flat"`,
-      "invalid_stored_turn_tree_path_shape",
-      { orderedEncoding: value.orderedEncoding }
-    );
-  }
-
-  const { orderedCount } = value;
-
-  if (orderedCount === undefined) {
-    throw validationError(
-      `${label}.orderedCount is required when orderedEncoding is "flat"`,
-      "invalid_stored_turn_tree_path_shape",
-      { orderedEncoding: value.orderedEncoding }
-    );
-  }
-
-  assertDecodedHashStringArrayCardinality(
-    value.orderedInlineCbor,
-    orderedCount,
-    `${label}.orderedInlineCbor`,
-    `${label}.orderedCount`
-  );
-}
-
-/**
- * A chunked ordered row references its hash list through chunks:
- * `orderedChunkListCbor` required, inline CBOR forbidden, at least one chunk,
- * and zero-item paths must use flat storage instead.
- */
-function assertStoredChunkedTurnTreePathShape(
-  value: StoredTurnTreePathCandidate,
-  label: string
-): void {
-  if (value.orderedChunkListCbor === undefined) {
-    throw validationError(
-      `${label}.orderedChunkListCbor is required when orderedEncoding is "chunked"`,
-      "invalid_stored_turn_tree_path_shape",
-      { orderedEncoding: value.orderedEncoding }
-    );
-  }
-
-  if (value.orderedInlineCbor !== undefined) {
-    throw validationError(
-      `${label}.orderedInlineCbor must be omitted when orderedEncoding is "chunked"`,
-      "invalid_stored_turn_tree_path_shape",
-      { orderedEncoding: value.orderedEncoding }
-    );
-  }
-
-  const chunkHashes = assertDecodedHashStringArray(
-    value.orderedChunkListCbor,
-    `${label}.orderedChunkListCbor`
-  );
-  const { orderedCount } = value;
-
-  if (orderedCount === undefined) {
-    throw validationError(
-      `${label}.orderedCount is required when orderedEncoding is "chunked"`,
-      "invalid_stored_turn_tree_path_shape",
-      { orderedEncoding: value.orderedEncoding }
-    );
-  }
-
-  if (orderedCount === 0 && chunkHashes.length !== 0) {
-    throw validationError(
-      `${label}.orderedChunkListCbor must be empty when ${label}.orderedCount is 0`,
-      "invalid_stored_turn_tree_path_shape",
-      { chunkCount: chunkHashes.length, orderedCount }
-    );
-  }
-
-  if (orderedCount === 0) {
-    throw validationError(
-      `${label} must use flat ordered storage when ${label}.orderedCount is 0`,
-      "invalid_stored_turn_tree_path_shape",
-      { orderedCount }
-    );
-  }
-
-  if (orderedCount > 0 && chunkHashes.length === 0) {
-    throw validationError(
-      `${label}.orderedChunkListCbor must contain at least one chunk when ${label}.orderedCount is positive`,
-      "invalid_stored_turn_tree_path_shape",
-      { chunkCount: chunkHashes.length, orderedCount }
-    );
-  }
-}
-
-/**
- * The row's `path` must be schema-defined and its `collectionKind` must match
- * the schema's collection kind for that path.
- */
-function assertStoredTurnTreePathMatchesSchema(
-  value: StoredTurnTreePathCandidate,
-  schema: TurnTreeSchema,
-  label: string
-): void {
-  const pathDefinition = schema.paths.find(
-    (definition) => definition.path === value.path
-  );
-
-  if (pathDefinition === undefined) {
-    throw validationError(
-      `${label}.path must reference a schema-defined path`,
-      "unknown_turn_tree_path",
-      { path: value.path, schemaId: schema.schemaId }
-    );
-  }
-
-  if (pathDefinition.collection !== value.collectionKind) {
-    throw validationError(
-      `${label}.collectionKind must match the schema collection for ${label}.path`,
-      "invalid_turn_tree_path_collection_kind",
-      {
-        collectionKind: value.collectionKind,
-        expectedCollectionKind: pathDefinition.collection,
-        path: value.path,
-      }
-    );
-  }
-}
-
-/**
- * Untangles the `assertStoredTurnTreePath` overloads: the second argument may
- * be a diagnostic label or a schema to validate against.
- */
-function resolveSchemaAndLabel(
-  schemaOrLabel: string | TurnTreeSchema | undefined,
-  label: string,
-  schemaLabel: string
-): {
-  resolvedLabel: string;
-  schema?: TurnTreeSchema;
-} {
-  if (schemaOrLabel === undefined) {
-    return { resolvedLabel: label };
-  }
-
-  if (typeof schemaOrLabel === "string") {
-    return { resolvedLabel: schemaOrLabel };
-  }
-
-  assertTurnTreeSchema(schemaOrLabel, schemaLabel);
-  return {
-    resolvedLabel: label,
-    schema: schemaOrLabel,
-  };
-}
-
-/**
- * Schema-independent shape check shared by `isStoredTurnTree` and
- * `assertStoredTurnTree`: contract keys, valid hash, non-empty schema id, CBOR
- * payload, and timestamp.
- */
-function assertStoredTurnTreeShape(
-  value: unknown,
-  label: string
-): {
-  createdAtMs: unknown;
-  hash: unknown;
-  manifestCbor: Uint8Array;
-  schemaId: unknown;
-} {
-  const objectValue = assertPlainObject(value, label);
-
-  assertAllowedObjectKeys(
-    objectValue,
-    ["createdAtMs", "hash", "manifestCbor", "schemaId"],
-    label
-  );
-  assertHashString(objectValue.hash, `${label}.hash`);
-  assertNonEmptyString(objectValue.schemaId, `${label}.schemaId`);
-  assertUint8Array(objectValue.manifestCbor, `${label}.manifestCbor`);
-  assertEpochMs(objectValue.createdAtMs, `${label}.createdAtMs`);
-
-  return {
-    createdAtMs: objectValue.createdAtMs,
-    hash: objectValue.hash,
-    manifestCbor: objectValue.manifestCbor,
-    schemaId: objectValue.schemaId,
-  };
-}
+};
