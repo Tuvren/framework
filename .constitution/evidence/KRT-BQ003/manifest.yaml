@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "983dbb769010b67d4f6bb91f43b3abd6d6b40e91",
-    "command": "Historical M4-M6 phase measurements; M6 compiler/structural/runtime comparisons followed by scoped, typecheck, format, lint, changeset, conformance and API freeze gates"
+    "commit": "26c4930bd01bf6861f0a599a6ef240a750282f57",
+    "command": "Historical M4-M7 measurements; M7 same-tree scoped tests, typecheck, format, lint, changeset, conformance and API freeze"
   },
   "files": [
     {
@@ -284,11 +284,77 @@
       "role": "measurement"
     },
     {
+      "path": "M7-lead-api-freeze.log.gz",
+      "sha256": "a5b7b57eb495f65e47fd5abb2de42d14b8b6915cc2636caacc9b4b26fdda18b7",
+      "bytes": 118,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-lead-changeset.log.gz",
+      "sha256": "c4a5b45ee2ad060413562fdf0b1ed1ad4853d95cdd5885e67fc9d6c5d784fb55",
+      "bytes": 117,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-lead-conformance-lead.log.gz",
+      "sha256": "887c0a0ac8afe17a08de4411fdbe2a8246a50114f375d741e57d3fbbce1f5f36",
+      "bytes": 2596,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-lead-constitution.log.gz",
+      "sha256": "0e850dd0df31a68c9bdeee9c979b0ab11f4cf8ccd6f4b6548ae9ebd93b697d9d",
+      "bytes": 1248,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-lead-format.log.gz",
+      "sha256": "af4f886427fa57b3004e1029905c9028a720bc16f7d21874341d2eae0b7b1927",
+      "bytes": 132,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-lead-lint.log.gz",
+      "sha256": "53d8bfdfd4be583fda13ad9538608a44caec804f70e3dc465ceb5e031d6d92aa",
+      "bytes": 314,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-lead-scoped.log.gz",
+      "sha256": "8990ed9cf0747f45e2e79334511bab5fc389347540752adf4e9f06b8cdb7be06",
+      "bytes": 454,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-lead-typecheck.log.gz",
+      "sha256": "7ef8a5d9c081fac69b14df25d4f6732e813090e590c657840ab08ed71a25b81f",
+      "bytes": 875,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-proof-index.json.gz",
+      "sha256": "da060d7a593bf586c6d0a50c709441187d569f3d07d83f78220cf6c8d8887a6a",
+      "bytes": 4904,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-proof.tar.gz",
+      "sha256": "836b5c60e0d52f150198cd3127223c07480044856087e90b9136e7637a59c498",
+      "bytes": 414175,
+      "role": "measurement"
+    },
+    {
+      "path": "M7-result.json",
+      "sha256": "51b9bba43d5e4e57ce5d1de510e36c38639fd05474bd20cddf8a70426bb7e073",
+      "bytes": 3311,
+      "role": "measurement"
+    },
+    {
       "path": "README.md",
       "sha256": "3db2f76f86725ee26a2072b7e4e53ece2e8f93b1c22fae90884cb79608de665f",
       "bytes": 1798,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "All phase hashes and archive inventories validate; targeted rules are cleared per batch while callable, initialization, validation, fixture and conformance outcomes remain equal; native admission is still pending."
+  "pass_criteria": "Every recorded phase hash and archive member validates; targeted conversion rules are cleared, original overloads/defaults/body evaluation and initialization remain intact, and behavioral tests/conformance pass. Admission is pending."
 }

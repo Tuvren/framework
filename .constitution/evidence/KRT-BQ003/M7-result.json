@@ -1,0 +1,123 @@
+{
+  "milestone": "M7",
+  "ticket": "KRT-BQ003",
+  "baseline_commit": "26c4930bd01bf6861f0a599a6ef240a750282f57",
+  "files": [
+    "typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts"
+  ],
+  "diff": {
+    "added": 547,
+    "deleted": 513,
+    "total": 1060,
+    "finalLines": 813
+  },
+  "source_hashes": {
+    "before": "b6de8bad674672c7072f0ab467919ec67059391e314422ebb08e6bf0c4dc74d1",
+    "after": "9b747d1288645d082980acb5ddbfc516ce6e9f51f9706d40f4cad2c8601487c8"
+  },
+  "conversion": {
+    "implementations": 36,
+    "overloadDeclarationsPreserved": 2,
+    "initialTargetedStructuralAssertionExit": 1,
+    "initialFunctionStyleDiagnostics": 35,
+    "initialNoUseBeforeDefineDiagnostics": 17,
+    "finalRequestedDiagnostics": 0
+  },
+  "preservation": {
+    "fullCompilerSignaturesPredicatesOverloads": true,
+    "parameterDefaultsOptionalityRestAndFlowTypes": true,
+    "bodyEvaluationTreesAndOrder": true,
+    "nonCallableAstsAndInitializationOrder": true,
+    "legacyDirectives": true,
+    "lexicalSensitiveUses": [],
+    "runtimeCallableMetadata": 36,
+    "orderedValidationOutcomes": 2674
+  },
+  "worker_gates": {
+    "scoped": 0,
+    "fresh-process": 0,
+    "retained-biome": 0,
+    "format-touched": 0,
+    "typecheck": 0,
+    "changeset": 0,
+    "conformance": 0,
+    "api-freeze": 0,
+    "format": 0,
+    "lint": 0
+  },
+  "worker_assertions": {
+    "callable-compatibility": 0,
+    "structural-proof": 0,
+    "signature-controls": 0,
+    "structural-controls": 0,
+    "runtime-compatibility": 0,
+    "native-summary": 0,
+    "changeset-proof": 0,
+    "conformance-comparison": 0,
+    "diff-check": 0
+  },
+  "conformance": {
+    "lanes": 11,
+    "matchReviewedM4": true,
+    "matchReviewedM6": true
+  },
+  "native": {
+    "protocol": {
+      "syntactic": [
+        386,
+        334
+      ],
+      "typeaware": [
+        644,
+        592
+      ],
+      "files": 23,
+      "rules": [
+        419,
+        474
+      ]
+    },
+    "runtime": {
+      "syntactic": [
+        211,
+        211
+      ],
+      "typeaware": [
+        283,
+        283
+      ],
+      "files": 17,
+      "rules": [
+        419,
+        474
+      ]
+    },
+    "outsideTargetDiagnosticCountsUnchanged": true,
+    "residualTargetDiagnostics": {
+      "syntactic": 3,
+      "typeaware": 7
+    },
+    "admissionClaimed": false
+  },
+  "implementation_pattern": {
+    "path": "typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts",
+    "symbol": "assertTurnTreeManifest",
+    "pattern": "Explicit exported two-overload callable annotation plus satisfies against the precise non-overloaded implementation callable supplies contextual parameter types without a redundant default-parameter type annotation.",
+    "approvedByEpicLead": true,
+    "route": "Stage3 alignment at epic closeout"
+  },
+  "proof_archive": "M7-proof.tar.gz",
+  "proof_index": "M7-proof-index.json.gz",
+  "archive_members": 145,
+  "note": "Historical phase proof; full type-only structure is not inferred from export-presence capture. Only transparent outer return/arrow grouping is normalized; full inner operator trees and negative controls are preserved.",
+  "lead_final_gates": {
+    "scoped": 0,
+    "typecheck": 0,
+    "format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "conformance": 0,
+    "api_freeze": 0
+  }
+}
