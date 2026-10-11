@@ -161,7 +161,7 @@ closeout:
       kind: pattern
       paths: [typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts]
       commit: 734df20
-    - summary: "Kernel protocol method signatures become callable properties with strict parameter variance; hashKernelRecord and hashTurnTreeIdentity reject invalid input through their Promise. These deliberate0.x breaking changes carry protocol and SDK minor release coverage and exactly three generated SDK freeze updates."
+    - summary: "Kernel protocol method signatures become callable properties with strict parameter variance; hashKernelRecord and hashTurnTreeIdentity reject invalid input through their Promise. These deliberate 0.x breaking changes carry protocol and SDK minor release coverage and exactly three generated SDK freeze updates."
       kind: contract_shape
       paths: [typescript/kernel/protocol/src/lib/kernel-types.ts, typescript/kernel/protocol/src/lib/kernel-record-identity.ts, typescript/kernel/protocol/src/lib/kernel-identity.ts, tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json]
       commit: 2d123e7612c27a0cf6af05fc20c526e86b5753d7
