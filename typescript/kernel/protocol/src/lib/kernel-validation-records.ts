@@ -58,11 +58,116 @@ import {
 } from "./kernel-validation-shared.js";
 
 /**
- * True when `value` is a structurally valid {@link TurnNode}.
+ * Enforces that `interruptPayload` is present exactly when `status` is
+ * `"interrupted"`.
  */
-export function isTurnNode(value: unknown): value is TurnNode {
-  return tryAssert(value, assertTurnNode);
-}
+const assertInterruptPayloadConsistency = (
+  status: StagedResultStatus,
+  interruptPayload: KernelRecord | undefined,
+  label: string
+): void => {
+  if (status === "interrupted") {
+    if (interruptPayload === undefined) {
+      throw validationError(
+        `${label} is required when status is "interrupted"`,
+        "invalid_interrupt_payload",
+        { status }
+      );
+    }
+
+    return;
+  }
+
+  if (interruptPayload !== undefined) {
+    throw validationError(
+      `${label} must be omitted unless status is "interrupted"`,
+      "invalid_interrupt_payload",
+      { status }
+    );
+  }
+};
+
+/**
+ * Asserts a structurally valid {@link StagedResult} (kernel spec §3.4),
+ * including the interrupt-payload rule: `interruptPayload` is required when
+ * `status` is `"interrupted"` and must be omitted otherwise.
+ */
+export const assertStagedResult: (
+  value: unknown,
+  label?: string
+) => asserts value is StagedResult = (
+  value: unknown,
+  label = "value"
+): asserts value is StagedResult => {
+  const objectValue = assertPlainObject(value, label);
+  assertAllowedObjectKeys(
+    objectValue,
+    [
+      "interruptPayload",
+      "objectHash",
+      "objectType",
+      "status",
+      "taskId",
+      "timestamp",
+    ],
+    label
+  );
+
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "interruptPayload",
+    label
+  );
+  assertNonEmptyString(objectValue.taskId, `${label}.taskId`);
+  assertHashString(objectValue.objectHash, `${label}.objectHash`);
+  assertNonEmptyString(objectValue.objectType, `${label}.objectType`);
+  assertStagedResultStatus(objectValue.status, `${label}.status`);
+  assertEpochMs(objectValue.timestamp, `${label}.timestamp`);
+
+  if (objectValue.interruptPayload !== undefined) {
+    assertKernelRecord(
+      objectValue.interruptPayload,
+      `${label}.interruptPayload`
+    );
+  }
+
+  assertInterruptPayloadConsistency(
+    objectValue.status,
+    objectValue.interruptPayload,
+    `${label}.interruptPayload`
+  );
+};
+
+/**
+ * Asserts a dense array of valid {@link StagedResult}s with unique `taskId`s.
+ *
+ * @throws TuvrenValidationError With code `duplicate_staged_result_task_id` on
+ *   repeated `taskId`s.
+ */
+export const assertStagedResultArray: (
+  value: unknown,
+  label: string
+) => asserts value is StagedResult[] = (
+  value: unknown,
+  label: string
+): asserts value is StagedResult[] => {
+  const results = assertArray(value, label);
+  const seenTaskIds = new Set<string>();
+
+  for (const [index, result] of results.entries()) {
+    assertStagedResult(result, `${label}[${index}]`);
+
+    if (seenTaskIds.has(result.taskId)) {
+      throw validationError(
+        `${label} must not contain duplicate staged result taskIds`,
+        "duplicate_staged_result_task_id",
+        { taskId: result.taskId }
+      );
+    }
+
+    seenTaskIds.add(result.taskId);
+  }
+};
 
 /**
  * Asserts a structurally valid {@link TurnNode} (kernel spec §3.3): contract
@@ -71,10 +176,13 @@ export function isTurnNode(value: unknown): value is TurnNode {
  * `schemaId`. Structural only — does not recompute the identity hash; use
  * {@link assertTurnNodeIdentity} for that.
  */
-export function assertTurnNode(
+export const assertTurnNode: (
+  value: unknown,
+  label?: string
+) => asserts value is TurnNode = (
   value: unknown,
   label = "value"
-): asserts value is TurnNode {
+): asserts value is TurnNode => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -101,7 +209,13 @@ export function assertTurnNode(
   );
   assertNonEmptyString(objectValue.schemaId, `${label}.schemaId`);
   assertNullableHashString(objectValue.eventHash, `${label}.eventHash`);
-}
+};
+
+/**
+ * True when `value` is a structurally valid {@link TurnNode}.
+ */
+export const isTurnNode = (value: unknown): value is TurnNode =>
+  tryAssert(value, assertTurnNode);
 
 /**
  * Asserts a structurally valid {@link TurnNode} whose `hash` also equals the
@@ -111,10 +225,10 @@ export function assertTurnNode(
  * @throws TuvrenValidationError With code `invalid_turn_node_hash` when the
  *   stored hash does not match the canonical identity hash.
  */
-export async function assertTurnNodeIdentity(
+export const assertTurnNodeIdentity = async (
   value: unknown,
   label = "value"
-): Promise<void> {
+): Promise<void> => {
   assertTurnNode(value, label);
 
   const expectedHash = await hashTurnNodeIdentity(value);
@@ -129,22 +243,18 @@ export async function assertTurnNodeIdentity(
       }
     );
   }
-}
-
-/**
- * True when `value` is a structurally valid {@link ThreadRecord}.
- */
-export function isThreadRecord(value: unknown): value is ThreadRecord {
-  return tryAssert(value, assertThreadRecord);
-}
+};
 
 /**
  * Asserts a structurally valid {@link ThreadRecord} (kernel spec §4.1).
  */
-export function assertThreadRecord(
+export const assertThreadRecord: (
+  value: unknown,
+  label?: string
+) => asserts value is ThreadRecord = (
   value: unknown,
   label = "value"
-): asserts value is ThreadRecord {
+): asserts value is ThreadRecord => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -155,22 +265,24 @@ export function assertThreadRecord(
   assertNonEmptyString(objectValue.threadId, `${label}.threadId`);
   assertNonEmptyString(objectValue.schemaId, `${label}.schemaId`);
   assertHashString(objectValue.rootTurnNodeHash, `${label}.rootTurnNodeHash`);
-}
+};
 
 /**
- * True when `value` is a structurally valid {@link BranchRecord}.
+ * True when `value` is a structurally valid {@link ThreadRecord}.
  */
-export function isBranchRecord(value: unknown): value is BranchRecord {
-  return tryAssert(value, assertBranchRecord);
-}
+export const isThreadRecord = (value: unknown): value is ThreadRecord =>
+  tryAssert(value, assertThreadRecord);
 
 /**
  * Asserts a structurally valid {@link BranchRecord} (kernel spec §4.2).
  */
-export function assertBranchRecord(
+export const assertBranchRecord: (
+  value: unknown,
+  label?: string
+) => asserts value is BranchRecord = (
   value: unknown,
   label = "value"
-): asserts value is BranchRecord {
+): asserts value is BranchRecord => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -181,16 +293,13 @@ export function assertBranchRecord(
   assertNonEmptyString(objectValue.branchId, `${label}.branchId`);
   assertNonEmptyString(objectValue.threadId, `${label}.threadId`);
   assertHashString(objectValue.headTurnNodeHash, `${label}.headTurnNodeHash`);
-}
+};
 
 /**
- * True when `value` is a valid {@link BranchHeadListEntry} tuple.
+ * True when `value` is a structurally valid {@link BranchRecord}.
  */
-export function isBranchHeadListEntry(
-  value: unknown
-): value is BranchHeadListEntry {
-  return tryAssert(value, assertBranchHeadListEntry);
-}
+export const isBranchRecord = (value: unknown): value is BranchRecord =>
+  tryAssert(value, assertBranchRecord);
 
 /**
  * Asserts a `[branchId, headTurnNodeHash]` tuple as returned by `branch.list`
@@ -199,10 +308,13 @@ export function isBranchHeadListEntry(
  * @throws TuvrenValidationError With code `invalid_branch_head_list_entry` when
  *   the tuple arity is wrong.
  */
-export function assertBranchHeadListEntry(
+export const assertBranchHeadListEntry: (
+  value: unknown,
+  label?: string
+) => asserts value is BranchHeadListEntry = (
   value: unknown,
   label = "value"
-): asserts value is BranchHeadListEntry {
+): asserts value is BranchHeadListEntry => {
   const tupleValue = assertArray(value, label);
 
   if (tupleValue.length !== 2) {
@@ -215,23 +327,26 @@ export function assertBranchHeadListEntry(
 
   assertNonEmptyString(tupleValue[0], `${label}[0]`);
   assertHashString(tupleValue[1], `${label}[1]`);
-}
+};
 
 /**
- * True when `value` is a structurally valid {@link TurnRecord}.
+ * True when `value` is a valid {@link BranchHeadListEntry} tuple.
  */
-export function isTurnRecord(value: unknown): value is TurnRecord {
-  return tryAssert(value, assertTurnRecord);
-}
+export const isBranchHeadListEntry = (
+  value: unknown
+): value is BranchHeadListEntry => tryAssert(value, assertBranchHeadListEntry);
 
 /**
  * Asserts a structurally valid {@link TurnRecord} (kernel spec §5.3).
  * `parentTurnId` may be `null` for the first semantic Turn.
  */
-export function assertTurnRecord(
+export const assertTurnRecord: (
+  value: unknown,
+  label?: string
+) => asserts value is TurnRecord = (
   value: unknown,
   label = "value"
-): asserts value is TurnRecord {
+): asserts value is TurnRecord => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -252,14 +367,162 @@ export function assertTurnRecord(
   assertNullableString(objectValue.parentTurnId, `${label}.parentTurnId`);
   assertHashString(objectValue.startTurnNodeHash, `${label}.startTurnNodeHash`);
   assertHashString(objectValue.headTurnNodeHash, `${label}.headTurnNodeHash`);
-}
+};
 
 /**
- * True when `value` is a structurally valid {@link RunRecord}.
+ * True when `value` is a structurally valid {@link TurnRecord}.
  */
-export function isRunRecord(value: unknown): value is RunRecord {
-  return tryAssert(value, assertRunRecord);
-}
+export const isTurnRecord = (value: unknown): value is TurnRecord =>
+  tryAssert(value, assertTurnRecord);
+
+/**
+ * Asserts a dense array of valid step declarations with unique step ids
+ * (kernel spec §5.1).
+ */
+const assertStepDeclarationArray: (
+  value: unknown,
+  label: string
+) => asserts value is StepDeclaration[] = (
+  value: unknown,
+  label: string
+): asserts value is StepDeclaration[] => {
+  const steps = assertArray(value, label);
+  const seenIds = new Set<string>();
+
+  for (const [index, step] of steps.entries()) {
+    assertStepDeclaration(step, `${label}[${index}]`);
+
+    if (seenIds.has(step.id)) {
+      throw validationError(
+        `${label} must not contain duplicate step ids`,
+        "duplicate_step_id",
+        { stepId: step.id }
+      );
+    }
+
+    seenIds.add(step.id);
+  }
+};
+
+/**
+ * Enforces the run-liveness field invariants of kernel spec §5.2: the three
+ * lease fields travel together, only on `"running"` runs, and
+ * `preemptionReason` only on `"failed"` runs.
+ */
+const assertOptionalRunLivenessFields = (
+  status: RunStatus,
+  executionOwnerId: unknown,
+  fencingToken: unknown,
+  leaseExpiresAtMs: unknown,
+  preemptionReason: unknown,
+  label: string
+): void => {
+  const hasExecutionOwnerId = executionOwnerId !== undefined;
+  const hasFencingToken = fencingToken !== undefined;
+  const hasLeaseExpiresAtMs = leaseExpiresAtMs !== undefined;
+  const hasLeaseFields =
+    hasExecutionOwnerId || hasFencingToken || hasLeaseExpiresAtMs;
+
+  if (hasLeaseFields) {
+    if (!(hasExecutionOwnerId && hasFencingToken && hasLeaseExpiresAtMs)) {
+      throw validationError(
+        `${label} must provide executionOwnerId, fencingToken, and leaseExpiresAtMs together`,
+        "invalid_run_liveness_fields",
+        {
+          executionOwnerId,
+          fencingToken,
+          leaseExpiresAtMs,
+        }
+      );
+    }
+
+    if (status !== "running") {
+      throw validationError(
+        `${label} must not retain lease ownership fields once the run is not running`,
+        "invalid_run_liveness_status",
+        {
+          status,
+        }
+      );
+    }
+
+    assertNonEmptyString(executionOwnerId, `${label}.executionOwnerId`);
+    assertNonEmptyString(fencingToken, `${label}.fencingToken`);
+    assertEpochMs(leaseExpiresAtMs, `${label}.leaseExpiresAtMs`);
+  }
+
+  if (preemptionReason !== undefined) {
+    if (status !== "failed") {
+      throw validationError(
+        `${label}.preemptionReason is only valid for failed runs`,
+        "invalid_run_preemption_reason_status",
+        {
+          status,
+        }
+      );
+    }
+
+    assertNonEmptyString(preemptionReason, `${label}.preemptionReason`);
+  }
+};
+
+/**
+ * A `"running"` run must have a non-empty step sequence and an in-range
+ * `currentStepIndex` (kernel spec §5.2).
+ */
+const assertRunningRunHasNextStep = (
+  status: RunStatus,
+  currentStepIndex: number,
+  stepCount: number,
+  statusLabel: string,
+  currentStepIndexLabel: string,
+  stepSequenceLabel: string
+): void => {
+  if (status !== "running") {
+    return;
+  }
+
+  if (stepCount === 0) {
+    throw validationError(
+      `${statusLabel} cannot be "running" when ${stepSequenceLabel} is empty`,
+      "invalid_run_step_index",
+      { status, stepCount }
+    );
+  }
+
+  if (currentStepIndex > stepCount) {
+    throw validationError(
+      `${currentStepIndexLabel} must not exceed the declared step count in ${stepSequenceLabel} when ${statusLabel} is "running"`,
+      "invalid_run_step_index",
+      { currentStepIndex, status, stepCount }
+    );
+  }
+};
+
+/**
+ * A `"completed"` run must have executed every declared step:
+ * `currentStepIndex === stepSequence.length`.
+ */
+const assertCompletedRunExhaustsSteps = (
+  status: RunStatus,
+  currentStepIndex: number,
+  stepCount: number,
+  statusLabel: string,
+  currentStepIndexLabel: string,
+  stepSequenceLabel: string
+): void => {
+  if (status !== "completed") {
+    return;
+  }
+
+  if (currentStepIndex !== stepCount) {
+    throw validationError(
+      `${currentStepIndexLabel} must equal the declared step count in ${stepSequenceLabel} when ${statusLabel} is "completed"`,
+      "invalid_run_step_index",
+      { currentStepIndex, status, stepCount }
+    );
+  }
+};
 
 /**
  * Asserts a structurally valid {@link RunRecord} (kernel spec §5.2), including
@@ -273,10 +536,13 @@ export function isRunRecord(value: unknown): value is RunRecord {
  *   Execution Leases").
  * - `preemptionReason` is only legal on `"failed"` runs.
  */
-export function assertRunRecord(
+export const assertRunRecord: (
+  value: unknown,
+  label?: string
+) => asserts value is RunRecord = (
   value: unknown,
   label = "value"
-): asserts value is RunRecord {
+): asserts value is RunRecord => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -364,140 +630,31 @@ export function assertRunRecord(
     `${label}.currentStepIndex`,
     `${label}.stepSequence`
   );
-}
+};
 
 /**
- * Enforces the run-liveness field invariants of kernel spec §5.2: the three
- * lease fields travel together, only on `"running"` runs, and
- * `preemptionReason` only on `"failed"` runs.
+ * True when `value` is a structurally valid {@link RunRecord}.
  */
-function assertOptionalRunLivenessFields(
-  status: RunStatus,
-  executionOwnerId: unknown,
-  fencingToken: unknown,
-  leaseExpiresAtMs: unknown,
-  preemptionReason: unknown,
-  label: string
-): void {
-  const hasExecutionOwnerId = executionOwnerId !== undefined;
-  const hasFencingToken = fencingToken !== undefined;
-  const hasLeaseExpiresAtMs = leaseExpiresAtMs !== undefined;
-  const hasLeaseFields =
-    hasExecutionOwnerId || hasFencingToken || hasLeaseExpiresAtMs;
-
-  if (hasLeaseFields) {
-    if (!(hasExecutionOwnerId && hasFencingToken && hasLeaseExpiresAtMs)) {
-      throw validationError(
-        `${label} must provide executionOwnerId, fencingToken, and leaseExpiresAtMs together`,
-        "invalid_run_liveness_fields",
-        {
-          executionOwnerId,
-          fencingToken,
-          leaseExpiresAtMs,
-        }
-      );
-    }
-
-    if (status !== "running") {
-      throw validationError(
-        `${label} must not retain lease ownership fields once the run is not running`,
-        "invalid_run_liveness_status",
-        {
-          status,
-        }
-      );
-    }
-
-    assertNonEmptyString(executionOwnerId, `${label}.executionOwnerId`);
-    assertNonEmptyString(fencingToken, `${label}.fencingToken`);
-    assertEpochMs(leaseExpiresAtMs, `${label}.leaseExpiresAtMs`);
-  }
-
-  if (preemptionReason !== undefined) {
-    if (status !== "failed") {
-      throw validationError(
-        `${label}.preemptionReason is only valid for failed runs`,
-        "invalid_run_preemption_reason_status",
-        {
-          status,
-        }
-      );
-    }
-
-    assertNonEmptyString(preemptionReason, `${label}.preemptionReason`);
-  }
-}
+export const isRunRecord = (value: unknown): value is RunRecord =>
+  tryAssert(value, assertRunRecord);
 
 /**
  * True when `value` is a structurally valid {@link StagedResult}.
  */
-export function isStagedResult(value: unknown): value is StagedResult {
-  return tryAssert(value, assertStagedResult);
-}
-
-/**
- * Asserts a structurally valid {@link StagedResult} (kernel spec §3.4),
- * including the interrupt-payload rule: `interruptPayload` is required when
- * `status` is `"interrupted"` and must be omitted otherwise.
- */
-export function assertStagedResult(
-  value: unknown,
-  label = "value"
-): asserts value is StagedResult {
-  const objectValue = assertPlainObject(value, label);
-  assertAllowedObjectKeys(
-    objectValue,
-    [
-      "interruptPayload",
-      "objectHash",
-      "objectType",
-      "status",
-      "taskId",
-      "timestamp",
-    ],
-    label
-  );
-
-  assertOptionalFieldIsOmittedWhenUndefined(
-    objectValue,
-    "interruptPayload",
-    label
-  );
-  assertNonEmptyString(objectValue.taskId, `${label}.taskId`);
-  assertHashString(objectValue.objectHash, `${label}.objectHash`);
-  assertNonEmptyString(objectValue.objectType, `${label}.objectType`);
-  assertStagedResultStatus(objectValue.status, `${label}.status`);
-  assertEpochMs(objectValue.timestamp, `${label}.timestamp`);
-
-  if (objectValue.interruptPayload !== undefined) {
-    assertKernelRecord(
-      objectValue.interruptPayload,
-      `${label}.interruptPayload`
-    );
-  }
-
-  assertInterruptPayloadConsistency(
-    objectValue.status,
-    objectValue.interruptPayload,
-    `${label}.interruptPayload`
-  );
-}
-
-/**
- * True when `value` is a structurally valid {@link StepContext}.
- */
-export function isStepContext(value: unknown): value is StepContext {
-  return tryAssert(value, assertStepContext);
-}
+export const isStagedResult = (value: unknown): value is StagedResult =>
+  tryAssert(value, assertStagedResult);
 
 /**
  * Asserts a structurally valid {@link StepContext} as returned by
  * `run.beginStep` (kernel spec §5.8).
  */
-export function assertStepContext(
+export const assertStepContext: (
+  value: unknown,
+  label?: string
+) => asserts value is StepContext = (
   value: unknown,
   label = "value"
-): asserts value is StepContext {
+): asserts value is StepContext => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -512,14 +669,56 @@ export function assertStepContext(
   assertTurnTreeSchema(objectValue.schema, `${label}.schema`);
   assertStepDeclaration(objectValue.step, `${label}.step`);
   assertKernelRecordArray(objectValue.signals, `${label}.signals`);
-}
+};
 
 /**
- * True when `value` is a structurally valid {@link RecoveryState}.
+ * True when `value` is a structurally valid {@link StepContext}.
  */
-export function isRecoveryState(value: unknown): value is RecoveryState {
-  return tryAssert(value, assertRecoveryState);
-}
+export const isStepContext = (value: unknown): value is StepContext =>
+  tryAssert(value, assertStepContext);
+
+/**
+ * Consumed and uncommitted staged results must not share `taskId`s — a task is
+ * either anchored by the last checkpoint or still pending, never both (kernel
+ * spec §5.7).
+ */
+const assertDisjointStagedResultTaskIds = (
+  leftResults: StagedResult[],
+  leftLabel: string,
+  rightResults: StagedResult[],
+  rightLabel: string
+): void => {
+  const consumedTaskIds = new Set(leftResults.map(({ taskId }) => taskId));
+
+  for (const result of rightResults) {
+    if (consumedTaskIds.has(result.taskId)) {
+      throw validationError(
+        `${rightLabel} must not repeat taskIds already present in ${leftLabel}`,
+        "overlapping_staged_result_task_id",
+        { leftLabel, rightLabel, taskId: result.taskId }
+      );
+    }
+  }
+};
+
+/**
+ * Non-empty consumed staged results imply at least one completed step, so
+ * `lastCompletedStepId` must not be `null` in that case.
+ */
+const assertRecoveryStateCoherence = (
+  consumedStagedResults: StagedResult[],
+  lastCompletedStepId: string | null,
+  consumedStagedResultsLabel: string,
+  lastCompletedStepIdLabel: string
+): void => {
+  if (lastCompletedStepId === null && consumedStagedResults.length > 0) {
+    throw validationError(
+      `${lastCompletedStepIdLabel} must name a completed step when ${consumedStagedResultsLabel} is non-empty`,
+      "invalid_recovery_state_step_id",
+      { consumedCount: consumedStagedResults.length, lastCompletedStepId }
+    );
+  }
+};
 
 /**
  * Asserts a structurally valid {@link RecoveryState} (kernel spec §5.8),
@@ -527,10 +726,13 @@ export function isRecoveryState(value: unknown): value is RecoveryState {
  * not share `taskId`s, a non-null `lastCompletedStepId` must reference a
  * declared step, and consumed results require a named completed step.
  */
-export function assertRecoveryState(
+export const assertRecoveryState: (
+  value: unknown,
+  label?: string
+) => asserts value is RecoveryState = (
   value: unknown,
   label = "value"
-): asserts value is RecoveryState {
+): asserts value is RecoveryState => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -581,25 +783,25 @@ export function assertRecoveryState(
       { lastCompletedStepId, stepIds: stepSequence.map((step) => step.id) }
     );
   }
-}
+};
 
 /**
- * True when `value` is a structurally valid {@link ThreadCreateResult}.
+ * True when `value` is a structurally valid {@link RecoveryState}.
  */
-export function isThreadCreateResult(
-  value: unknown
-): value is ThreadCreateResult {
-  return tryAssert(value, assertThreadCreateResult);
-}
+export const isRecoveryState = (value: unknown): value is RecoveryState =>
+  tryAssert(value, assertRecoveryState);
 
 /**
  * Asserts a structurally valid {@link ThreadCreateResult} as returned by the
  * atomic thread bootstrap (kernel spec §4.1).
  */
-export function assertThreadCreateResult(
+export const assertThreadCreateResult: (
+  value: unknown,
+  label?: string
+) => asserts value is ThreadCreateResult = (
   value: unknown,
   label = "value"
-): asserts value is ThreadCreateResult {
+): asserts value is ThreadCreateResult => {
   const objectValue = assertPlainObject(value, label);
   assertAllowedObjectKeys(
     objectValue,
@@ -611,233 +813,26 @@ export function assertThreadCreateResult(
   assertNonEmptyString(objectValue.branchId, `${label}.branchId`);
   assertHashString(objectValue.rootTurnNodeHash, `${label}.rootTurnNodeHash`);
   assertHashString(objectValue.rootTurnTreeHash, `${label}.rootTurnTreeHash`);
-}
+};
 
 /**
- * True when `value` is a structurally valid {@link SetHeadResult}.
+ * True when `value` is a structurally valid {@link ThreadCreateResult}.
  */
-export function isSetHeadResult(value: unknown): value is SetHeadResult {
-  return tryAssert(value, assertSetHeadResult);
-}
-
-/**
- * Asserts a structurally valid {@link SetHeadResult} (kernel spec §4.2). When
- * `archiveBranch` is present (backward head movement), it must share the
- * branch's `threadId` while differing in both `branchId` and
- * `headTurnNodeHash`.
- */
-export function assertSetHeadResult(
-  value: unknown,
-  label = "value"
-): asserts value is SetHeadResult {
-  const objectValue = assertPlainObject(value, label);
-  assertAllowedObjectKeys(objectValue, ["archiveBranch", "branch"], label);
-
-  assertOptionalFieldIsOmittedWhenUndefined(
-    objectValue,
-    "archiveBranch",
-    label
-  );
-  assertBranchRecord(objectValue.branch, `${label}.branch`);
-
-  if (objectValue.archiveBranch !== undefined) {
-    assertBranchRecord(objectValue.archiveBranch, `${label}.archiveBranch`);
-    assertSetHeadArchiveCoherence(
-      objectValue.branch,
-      objectValue.archiveBranch,
-      `${label}.branch`,
-      `${label}.archiveBranch`
-    );
-  }
-}
-
-/**
- * Asserts a dense array of valid {@link StagedResult}s with unique `taskId`s.
- *
- * @throws TuvrenValidationError With code `duplicate_staged_result_task_id` on
- *   repeated `taskId`s.
- */
-export function assertStagedResultArray(
-  value: unknown,
-  label: string
-): asserts value is StagedResult[] {
-  const results = assertArray(value, label);
-  const seenTaskIds = new Set<string>();
-
-  for (const [index, result] of results.entries()) {
-    assertStagedResult(result, `${label}[${index}]`);
-
-    if (seenTaskIds.has(result.taskId)) {
-      throw validationError(
-        `${label} must not contain duplicate staged result taskIds`,
-        "duplicate_staged_result_task_id",
-        { taskId: result.taskId }
-      );
-    }
-
-    seenTaskIds.add(result.taskId);
-  }
-}
-
-/**
- * Asserts `updatedAtMs >= createdAtMs` for stored records that carry both
- * timestamps.
- *
- * @throws TuvrenValidationError With code `invalid_timestamp_order`.
- */
-export function assertMonotonicTimestamps(
-  createdAtMs: number,
-  updatedAtMs: number,
-  createdAtMsLabel: string,
-  updatedAtMsLabel: string
-): void {
-  if (updatedAtMs < createdAtMs) {
-    throw validationError(
-      `${updatedAtMsLabel} must be greater than or equal to ${createdAtMsLabel}`,
-      "invalid_timestamp_order",
-      { createdAtMs, updatedAtMs }
-    );
-  }
-}
-
-/**
- * Asserts a dense array of valid step declarations with unique step ids
- * (kernel spec §5.1).
- */
-function assertStepDeclarationArray(
-  value: unknown,
-  label: string
-): asserts value is StepDeclaration[] {
-  const steps = assertArray(value, label);
-  const seenIds = new Set<string>();
-
-  for (const [index, step] of steps.entries()) {
-    assertStepDeclaration(step, `${label}[${index}]`);
-
-    if (seenIds.has(step.id)) {
-      throw validationError(
-        `${label} must not contain duplicate step ids`,
-        "duplicate_step_id",
-        { stepId: step.id }
-      );
-    }
-
-    seenIds.add(step.id);
-  }
-}
-
-/**
- * A `"running"` run must have a non-empty step sequence and an in-range
- * `currentStepIndex` (kernel spec §5.2).
- */
-function assertRunningRunHasNextStep(
-  status: RunStatus,
-  currentStepIndex: number,
-  stepCount: number,
-  statusLabel: string,
-  currentStepIndexLabel: string,
-  stepSequenceLabel: string
-): void {
-  if (status !== "running") {
-    return;
-  }
-
-  if (stepCount === 0) {
-    throw validationError(
-      `${statusLabel} cannot be "running" when ${stepSequenceLabel} is empty`,
-      "invalid_run_step_index",
-      { status, stepCount }
-    );
-  }
-
-  if (currentStepIndex > stepCount) {
-    throw validationError(
-      `${currentStepIndexLabel} must not exceed the declared step count in ${stepSequenceLabel} when ${statusLabel} is "running"`,
-      "invalid_run_step_index",
-      { currentStepIndex, status, stepCount }
-    );
-  }
-}
-
-/**
- * A `"completed"` run must have executed every declared step:
- * `currentStepIndex === stepSequence.length`.
- */
-function assertCompletedRunExhaustsSteps(
-  status: RunStatus,
-  currentStepIndex: number,
-  stepCount: number,
-  statusLabel: string,
-  currentStepIndexLabel: string,
-  stepSequenceLabel: string
-): void {
-  if (status !== "completed") {
-    return;
-  }
-
-  if (currentStepIndex !== stepCount) {
-    throw validationError(
-      `${currentStepIndexLabel} must equal the declared step count in ${stepSequenceLabel} when ${statusLabel} is "completed"`,
-      "invalid_run_step_index",
-      { currentStepIndex, status, stepCount }
-    );
-  }
-}
-
-/**
- * Consumed and uncommitted staged results must not share `taskId`s — a task is
- * either anchored by the last checkpoint or still pending, never both (kernel
- * spec §5.7).
- */
-function assertDisjointStagedResultTaskIds(
-  leftResults: StagedResult[],
-  leftLabel: string,
-  rightResults: StagedResult[],
-  rightLabel: string
-): void {
-  const consumedTaskIds = new Set(leftResults.map(({ taskId }) => taskId));
-
-  for (const result of rightResults) {
-    if (consumedTaskIds.has(result.taskId)) {
-      throw validationError(
-        `${rightLabel} must not repeat taskIds already present in ${leftLabel}`,
-        "overlapping_staged_result_task_id",
-        { leftLabel, rightLabel, taskId: result.taskId }
-      );
-    }
-  }
-}
-
-/**
- * Non-empty consumed staged results imply at least one completed step, so
- * `lastCompletedStepId` must not be `null` in that case.
- */
-function assertRecoveryStateCoherence(
-  consumedStagedResults: StagedResult[],
-  lastCompletedStepId: string | null,
-  consumedStagedResultsLabel: string,
-  lastCompletedStepIdLabel: string
-): void {
-  if (lastCompletedStepId === null && consumedStagedResults.length > 0) {
-    throw validationError(
-      `${lastCompletedStepIdLabel} must name a completed step when ${consumedStagedResultsLabel} is non-empty`,
-      "invalid_recovery_state_step_id",
-      { consumedCount: consumedStagedResults.length, lastCompletedStepId }
-    );
-  }
-}
+export const isThreadCreateResult = (
+  value: unknown
+): value is ThreadCreateResult => tryAssert(value, assertThreadCreateResult);
 
 /**
  * Archive branches produced by backward head movement must stay in the same
  * thread, use a distinct branch id, and preserve a head different from the
  * rolled-back branch's new head (kernel spec §4.2).
  */
-function assertSetHeadArchiveCoherence(
+const assertSetHeadArchiveCoherence = (
   branch: BranchRecord,
   archiveBranch: BranchRecord,
   branchLabel: string,
   archiveBranchLabel: string
-): void {
+): void => {
   if (branch.threadId !== archiveBranch.threadId) {
     throw validationError(
       `${archiveBranchLabel}.threadId must match ${branchLabel}.threadId`,
@@ -867,34 +862,65 @@ function assertSetHeadArchiveCoherence(
       }
     );
   }
-}
+};
 
 /**
- * Enforces that `interruptPayload` is present exactly when `status` is
- * `"interrupted"`.
+ * Asserts a structurally valid {@link SetHeadResult} (kernel spec §4.2). When
+ * `archiveBranch` is present (backward head movement), it must share the
+ * branch's `threadId` while differing in both `branchId` and
+ * `headTurnNodeHash`.
  */
-function assertInterruptPayloadConsistency(
-  status: StagedResultStatus,
-  interruptPayload: KernelRecord | undefined,
-  label: string
-): void {
-  if (status === "interrupted") {
-    if (interruptPayload === undefined) {
-      throw validationError(
-        `${label} is required when status is "interrupted"`,
-        "invalid_interrupt_payload",
-        { status }
-      );
-    }
+export const assertSetHeadResult: (
+  value: unknown,
+  label?: string
+) => asserts value is SetHeadResult = (
+  value: unknown,
+  label = "value"
+): asserts value is SetHeadResult => {
+  const objectValue = assertPlainObject(value, label);
+  assertAllowedObjectKeys(objectValue, ["archiveBranch", "branch"], label);
 
-    return;
-  }
+  assertOptionalFieldIsOmittedWhenUndefined(
+    objectValue,
+    "archiveBranch",
+    label
+  );
+  assertBranchRecord(objectValue.branch, `${label}.branch`);
 
-  if (interruptPayload !== undefined) {
-    throw validationError(
-      `${label} must be omitted unless status is "interrupted"`,
-      "invalid_interrupt_payload",
-      { status }
+  if (objectValue.archiveBranch !== undefined) {
+    assertBranchRecord(objectValue.archiveBranch, `${label}.archiveBranch`);
+    assertSetHeadArchiveCoherence(
+      objectValue.branch,
+      objectValue.archiveBranch,
+      `${label}.branch`,
+      `${label}.archiveBranch`
     );
   }
-}
+};
+
+/**
+ * True when `value` is a structurally valid {@link SetHeadResult}.
+ */
+export const isSetHeadResult = (value: unknown): value is SetHeadResult =>
+  tryAssert(value, assertSetHeadResult);
+
+/**
+ * Asserts `updatedAtMs >= createdAtMs` for stored records that carry both
+ * timestamps.
+ *
+ * @throws TuvrenValidationError With code `invalid_timestamp_order`.
+ */
+export const assertMonotonicTimestamps = (
+  createdAtMs: number,
+  updatedAtMs: number,
+  createdAtMsLabel: string,
+  updatedAtMsLabel: string
+): void => {
+  if (updatedAtMs < createdAtMs) {
+    throw validationError(
+      `${updatedAtMsLabel} must be greater than or equal to ${createdAtMsLabel}`,
+      "invalid_timestamp_order",
+      { createdAtMs, updatedAtMs }
+    );
+  }
+};

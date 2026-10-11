@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "26c4930bd01bf6861f0a599a6ef240a750282f57",
-    "command": "Historical M4-M7 measurements; M7 same-tree scoped tests, typecheck, format, lint, changeset, conformance and API freeze"
+    "commit": "734df20a6e0a6d63a58fae2fd81bb3f76032b8d1",
+    "command": "Historical M4-M8R phase proofs; accelerated scoped tests, touched formatting, lint, changeset and constitution gates"
   },
   "files": [
     {
@@ -350,11 +350,41 @@
       "role": "measurement"
     },
     {
+      "path": "M8R-lead-gates.tar.gz",
+      "sha256": "ae4886a98f3b9ec50e1e6e128c1414e0135e30b77b1bcc3b5ecc5d3cc3db22cc",
+      "bytes": 2233,
+      "role": "measurement"
+    },
+    {
+      "path": "M8R-lead-index.json.gz",
+      "sha256": "29d0750522a5b63b09a2cfd92955e2bbcc526762df5e40ec6fa3d603a4fa2c13",
+      "bytes": 440,
+      "role": "measurement"
+    },
+    {
+      "path": "M8R-proof-index.json.gz",
+      "sha256": "40f8beb04fb03bd0b89dc00faad8ec2dad22232bcddfb867bc3e4f6353ef3d58",
+      "bytes": 2016,
+      "role": "measurement"
+    },
+    {
+      "path": "M8R-proof.tar.gz",
+      "sha256": "7865d5f8ac50981b0f0ecfc39ebdb1c16f75a989b1b1735129df42564e951930",
+      "bytes": 72912,
+      "role": "measurement"
+    },
+    {
+      "path": "M8R-result.json",
+      "sha256": "21d2639b7b0a8f8aa87804c2fcd180581f7b1624195dd11fa2442cae72830f6d",
+      "bytes": 5902,
+      "role": "measurement"
+    },
+    {
       "path": "README.md",
       "sha256": "3db2f76f86725ee26a2072b7e4e53ece2e8f93b1c22fae90884cb79608de665f",
       "bytes": 1798,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "Every recorded phase hash and archive member validates; targeted conversion rules are cleared, original overloads/defaults/body evaluation and initialization remain intact, and behavioral tests/conformance pass. Admission is pending."
+  "pass_criteria": "All archived members and source hashes validate; targeted rules clear without changing validator bodies, defaults or ordering; scoped behavioral tests pass. Ticket-wide broad completion and native admission are pending."
 }

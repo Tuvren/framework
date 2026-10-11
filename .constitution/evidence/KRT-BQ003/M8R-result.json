@@ -1,0 +1,188 @@
+{
+  "milestone": "M8R",
+  "ticket": "KRT-BQ003",
+  "baseline_commit": "734df20a6e0a6d63a58fae2fd81bb3f76032b8d1",
+  "files": [
+    "typescript/kernel/protocol/src/lib/kernel-validation-records.ts",
+    "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts"
+  ],
+  "diff": {
+    "files": [
+      {
+        "file": "typescript/kernel/protocol/src/lib/kernel-validation-records.ts",
+        "added": 449,
+        "removed": 423
+      },
+      {
+        "file": "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts",
+        "added": 263,
+        "removed": 247
+      }
+    ],
+    "added": 712,
+    "removed": 670
+  },
+  "source_hashes": {
+    "typescript/kernel/protocol/src/lib/kernel-validation-records.ts": {
+      "before": "00a3ba525cb0c9426695de85806321851a5c439872d35b79d2bdcf1cdd48b94e",
+      "after": "b1c7e6c4a3746b7562f74680a5560702a7f69052b0692a74b92c4d960bf7fc02"
+    },
+    "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts": {
+      "before": "e0771bbb3b970c472f86c6970e564c4df25348f9b3de6727844b89bdcca4fe40",
+      "after": "188bfebcf69c4be29edca8f3e816f8b399bf4b4ecd48c5a6dc4f0c78aa573438"
+    }
+  },
+  "conversion": {
+    "functions": 53,
+    "assertions": 21,
+    "files": [
+      {
+        "file": "typescript/kernel/protocol/src/lib/kernel-validation-records.ts",
+        "functions": 33,
+        "assertionFunctions": 13,
+        "bodiesParametersDefaultsReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "noTopLevelCalls": true
+      },
+      {
+        "file": "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts",
+        "functions": 20,
+        "assertionFunctions": 8,
+        "bodiesParametersDefaultsReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "noTopLevelCalls": true
+      }
+    ]
+  },
+  "native": {
+    "syntactic": {
+      "before": 334,
+      "after": 246,
+      "numberOfFiles": 23,
+      "numberOfRules": 419,
+      "target": {
+        "before": {
+          "all": 94,
+          "targetRules": 88,
+          "byRule": {
+            "eslint(func-style)": 53,
+            "eslint(no-use-before-define)": 35,
+            "jsdoc(require-throws-type)": 6
+          },
+          "byFile": {
+            "typescript/kernel/protocol/src/lib/kernel-validation-records.ts": {
+              "eslint(func-style)": 33,
+              "eslint(no-use-before-define)": 23,
+              "jsdoc(require-throws-type)": 4
+            },
+            "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts": {
+              "eslint(func-style)": 20,
+              "eslint(no-use-before-define)": 12,
+              "jsdoc(require-throws-type)": 2
+            }
+          }
+        },
+        "after": {
+          "all": 6,
+          "targetRules": 0,
+          "byRule": {
+            "jsdoc(require-throws-type)": 6
+          },
+          "byFile": {
+            "typescript/kernel/protocol/src/lib/kernel-validation-records.ts": {
+              "jsdoc(require-throws-type)": 4
+            },
+            "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts": {
+              "jsdoc(require-throws-type)": 2
+            }
+          }
+        }
+      },
+      "unrelatedDiagnosticDebtEqual": true
+    },
+    "typeaware": {
+      "before": 592,
+      "after": 504,
+      "numberOfFiles": 23,
+      "numberOfRules": 474,
+      "target": {
+        "before": {
+          "all": 94,
+          "targetRules": 88,
+          "byRule": {
+            "eslint(func-style)": 53,
+            "eslint(no-use-before-define)": 35,
+            "jsdoc(require-throws-type)": 6
+          },
+          "byFile": {
+            "typescript/kernel/protocol/src/lib/kernel-validation-records.ts": {
+              "eslint(func-style)": 33,
+              "eslint(no-use-before-define)": 23,
+              "jsdoc(require-throws-type)": 4
+            },
+            "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts": {
+              "eslint(func-style)": 20,
+              "eslint(no-use-before-define)": 12,
+              "jsdoc(require-throws-type)": 2
+            }
+          }
+        },
+        "after": {
+          "all": 6,
+          "targetRules": 0,
+          "byRule": {
+            "jsdoc(require-throws-type)": 6
+          },
+          "byFile": {
+            "typescript/kernel/protocol/src/lib/kernel-validation-records.ts": {
+              "jsdoc(require-throws-type)": 4
+            },
+            "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts": {
+              "jsdoc(require-throws-type)": 2
+            }
+          }
+        }
+      },
+      "unrelatedDiagnosticDebtEqual": true
+    }
+  },
+  "worker_gates": {
+    "after-changeset": 0,
+    "after-diff-check": 0,
+    "after-format-touched": 0,
+    "after-fresh-process": 0,
+    "after-lint": 0,
+    "after-native-selection": 0,
+    "after-protocol-syntactic": 1,
+    "after-protocol-typeaware": 1,
+    "after-retained-biome": 0,
+    "after-scoped": 0,
+    "before-fresh-process": 0,
+    "before-protocol-syntactic": 1,
+    "before-protocol-typeaware": 1,
+    "before-scoped": 0,
+    "structural-proof": 0
+  },
+  "introduced": {
+    "patterns": [],
+    "dependencies": [],
+    "conventions": [],
+    "contract_shapes": []
+  },
+  "proof_archive": "M8R-proof.tar.gz",
+  "proof_index": "M8R-proof-index.json.gz",
+  "archive_members": 49,
+  "note": "User-directed accelerated batch. The archived summary contains full measurement details; no exhaustive hypothetical-adopter compatibility matrix is required.",
+  "lead_final_gates": {
+    "scoped": 0,
+    "touched-format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "diff": 0
+  },
+  "lead_gate_archive": "M8R-lead-gates.tar.gz",
+  "lead_gate_index": "M8R-lead-index.json.gz"
+}
