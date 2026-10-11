@@ -28,16 +28,16 @@ import { TEST_SCHEMA } from "./runtime-kernel-test-helpers.ts";
 
 const THRESHOLD = 32;
 
-async function seededHashes(
+const seededHashes = async (
   count: number,
   seed = "chunk-aware-unit"
-): Promise<string[]> {
+): Promise<string[]> => {
   const hashes: string[] = [];
   for (let index = 0; index < count; index += 1) {
     hashes.push(await hashKernelRecord(`${seed}-${index}`));
   }
   return hashes;
-}
+};
 
 describe("toStoredTurnTreePathChunkAware fallback parity with toStoredTurnTreePath", () => {
   test("single-collection paths always delegate, regardless of priorTurnTreeHash", async () => {

@@ -1,0 +1,309 @@
+{
+  "milestone": "M12R",
+  "ticket": "KRT-BQ003",
+  "baseline_commit": "e94425942992b87b7119a4aecd2a63dea32073b2",
+  "files": [
+    "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts",
+    "typescript/kernel/runtime/src/lib/runtime-kernel.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-lineage.apply-staged-results.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-reclamation.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-constant-agreement.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-test-helpers.ts",
+    "typescript/kernel/runtime/test/runtime-kernel.turn-tree-chunking.test.ts"
+  ],
+  "diff": {
+    "files": [
+      {
+        "file": "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts",
+        "added": 12,
+        "removed": 12
+      },
+      {
+        "file": "typescript/kernel/runtime/src/lib/runtime-kernel.ts",
+        "added": 9,
+        "removed": 10
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-lineage.apply-staged-results.test.ts",
+        "added": 8,
+        "removed": 10
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-reclamation.test.ts",
+        "added": 9,
+        "removed": 9
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts",
+        "added": 3,
+        "removed": 3
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-constant-agreement.test.ts",
+        "added": 5,
+        "removed": 3
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-test-helpers.ts",
+        "added": 3,
+        "removed": 3
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel.turn-tree-chunking.test.ts",
+        "added": 16,
+        "removed": 15
+      }
+    ],
+    "added": 65,
+    "removed": 65
+  },
+  "source_hashes": {
+    "typescript/kernel/runtime/src/lib/runtime-kernel.ts": {
+      "before": "304a708912abedab35cf49e0c479e20f17aa3990043e04e796eeba0da6fa20b9",
+      "after": "8fc48ba8300e2e140e6bbfe23a18f90b3397dbbc7cc36e51bc06c3da23ad3aa2"
+    },
+    "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts": {
+      "before": "b48647ed133ea77d28a6b526b4bc3bf6b153dfd8235d679a64d22c01fa499d8e",
+      "after": "144e348c998aa0da4422c276acc08e7cd832cfc645fe0d53c2885d087190233d"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel.turn-tree-chunking.test.ts": {
+      "before": "4b4850355271a881b389f18da25b494787a05b5a907c7712f383c6d8212fc8fa",
+      "after": "882bd4597375a3b185004e3c4168565a1106626d0309c8e03512798ff3039a83"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-reclamation.test.ts": {
+      "before": "0ce0bd81e1f46dbb997fad1a0927cf4c167c34b504970dd72f84a24b66c2e6ea",
+      "after": "533b8ac57b07b56b36af5494de16d4f0fa4fa27904eb2de1b8ae3e4d67da0d91"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-lineage.apply-staged-results.test.ts": {
+      "before": "4931cd227ad8db39f8b8e448cb628426d3d9c31bb08945b119c8b0c54d20c4bf",
+      "after": "aafeca98b0df02ec069294746b6a353f2b496ad79ede46f9cdcdfd4cfe8a2a79"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts": {
+      "before": "4a10f52f2802ee4efa76c6a2f4fd11831ddc5bfdece85055eed4bf53fa8058f3",
+      "after": "91ed041aa64ecfc7f084078eac889e2b8c718321105f73fa777dcb56cf0e665c"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-constant-agreement.test.ts": {
+      "before": "db138cff5fd6543cf2b47d7dbd30dbfba5e72ad6fafc284c267907507ea4a15b",
+      "after": "cc6b95464ce5d51689f3b1575d0e781c71fcf962d583f45e37f543662bcedb33"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-test-helpers.ts": {
+      "before": "f814ec6ec3810e28be252b119ba5cc34f56f2eeb6281ac17ede04a248ca85ea2",
+      "after": "895c3fc6a0a2a90d87135cdf956da7a7191aaa6768dbbdf7030b63e61db36b94"
+    }
+  },
+  "conversion": {
+    "functions": 19,
+    "arrows": 19,
+    "assertions": 0,
+    "generators": 0,
+    "files": [
+      {
+        "file": "typescript/kernel/runtime/src/lib/runtime-kernel.ts",
+        "functions": 3,
+        "generatorFunctions": 0,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      },
+      {
+        "file": "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts",
+        "functions": 4,
+        "generatorFunctions": 0,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel.turn-tree-chunking.test.ts",
+        "functions": 5,
+        "generatorFunctions": 0,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-reclamation.test.ts",
+        "functions": 3,
+        "generatorFunctions": 0,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-lineage.apply-staged-results.test.ts",
+        "functions": 1,
+        "generatorFunctions": 0,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts",
+        "functions": 1,
+        "generatorFunctions": 0,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-constant-agreement.test.ts",
+        "functions": 1,
+        "generatorFunctions": 0,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      },
+      {
+        "file": "typescript/kernel/runtime/test/runtime-kernel-test-helpers.ts",
+        "functions": 1,
+        "generatorFunctions": 0,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      }
+    ]
+  },
+  "native": {
+    "syntactic": {
+      "before": 112,
+      "after": 93,
+      "numberOfFiles": 17,
+      "numberOfRules": 419,
+      "targetRulesBefore": 19,
+      "targetRulesAfter": 0,
+      "targetRuleDelta": {
+        "eslint(func-style)": -19,
+        "eslint(no-use-before-define)": 0
+      },
+      "unrelatedDiagnosticDebtEqual": true
+    },
+    "typeaware": {
+      "before": 184,
+      "after": 165,
+      "numberOfFiles": 17,
+      "numberOfRules": 474,
+      "targetRulesBefore": 19,
+      "targetRulesAfter": 0,
+      "targetRuleDelta": {
+        "eslint(func-style)": -19,
+        "eslint(no-use-before-define)": 0
+      },
+      "unrelatedDiagnosticDebtEqual": true
+    }
+  },
+  "worker_gates": {
+    "after-changeset": 0,
+    "after-conformance": 0,
+    "after-diff-check": 0,
+    "after-format-full": 0,
+    "after-format-touched": 0,
+    "after-fresh-process": 0,
+    "after-lint": 0,
+    "after-native-selection": 0,
+    "after-protocol-native-selection": 0,
+    "after-protocol-syntactic": 1,
+    "after-protocol-typeaware": 1,
+    "after-retained-biome": 0,
+    "after-runtime-syntactic": 1,
+    "after-runtime-typeaware": 1,
+    "after-scoped": 0,
+    "after-typecheck": 0,
+    "before-fresh-process": 0,
+    "before-native-selection": 0,
+    "before-runtime-syntactic": 1,
+    "before-runtime-typeaware": 1,
+    "before-scoped": 0,
+    "conformance-comparison": 0,
+    "structural-proof": 0
+  },
+  "introduced": {
+    "patterns": [],
+    "dependencies": [],
+    "conventions": [],
+    "contract_shapes": []
+  },
+  "proof_archive": "M12R-proof.tar.gz",
+  "proof_index": "M12R-proof-index.json.gz",
+  "archive_members": 88,
+  "note": "User-directed accelerated batch. The archived summary contains full measurement details; no exhaustive hypothetical-adopter compatibility matrix is required.",
+  "global_requested_rule_zeros": {
+    "runtime": {
+      "syntactic": 0,
+      "typeaware": 0
+    },
+    "protocol": {
+      "syntactic": 0,
+      "typeaware": 0
+    }
+  },
+  "conformance": {
+    "laneCount": 11,
+    "matchesPreReorderM4": true,
+    "matchesLatestPreservedM7": true,
+    "provenance": {
+      "baseline": "/home/oscar/.codex/plans/tuvren-bq-session/m4/conformance.log",
+      "latest": "/home/oscar/.codex/plans/tuvren-bq-session/m7/after-conformance.log"
+    },
+    "details": "conformance-comparison.json"
+  },
+  "validation": {
+    "scopedTestsBefore": 148,
+    "scopedTestsAfter": 148,
+    "protocolTests": 92,
+    "runtimeTests": 56,
+    "freshProcessCasesBefore": 6,
+    "freshProcessCasesAfter": 6,
+    "failures": 0
+  },
+  "unchanged_runtime_barrel": {
+    "path": "typescript/kernel/runtime/src/index.ts",
+    "sha256": "0c95c539bff7dec7944d436195adec73066033f953b9c725fcd0c581f78e42aa",
+    "directivePreserved": true
+  },
+  "ticket_complete": true,
+  "lead_final_gates": {
+    "scoped": 0,
+    "typecheck": 0,
+    "format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "conformance-lead": 0,
+    "ticket-completion": 0
+  },
+  "lead_gate_archive": "M12R-lead-gates.tar.gz",
+  "lead_gate_index": "M12R-lead-index.json.gz"
+}

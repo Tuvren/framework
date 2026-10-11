@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "2e52a9e2d4e245e17b91c945e2da4546d489f10a",
-    "command": "Historical M4-M11R proofs; compact body/dependency/generator proof and accelerated lead verification"
+    "commit": "e94425942992b87b7119a4aecd2a63dea32073b2",
+    "command": "Historical M4-M12R pilot proof; full scoped tests, repository typecheck/format/lint, same-tree conformance and complete-package rule assertions"
   },
   "files": [
     {
@@ -71,6 +71,36 @@
       "path": "M11R-result.json",
       "sha256": "c333376c4b206f68bb7569be3b97125b1b09f3fb06f0d092c25500c190e9559f",
       "bytes": 8476,
+      "role": "measurement"
+    },
+    {
+      "path": "M12R-lead-gates.tar.gz",
+      "sha256": "bfad601e39bffcf38ce45236624602bc8676cd255a44d3537c3029747f9bc077",
+      "bytes": 5327,
+      "role": "measurement"
+    },
+    {
+      "path": "M12R-lead-index.json.gz",
+      "sha256": "0015ffa4ada127026c80178221ed686bf3730d0b0f11f615dc191f49b5722a0e",
+      "bytes": 552,
+      "role": "measurement"
+    },
+    {
+      "path": "M12R-proof-index.json.gz",
+      "sha256": "25a12d9ac49871b1142948954a6a175f2ed2139e1b911a9f8eea2df99c801d6b",
+      "bytes": 3536,
+      "role": "measurement"
+    },
+    {
+      "path": "M12R-proof.tar.gz",
+      "sha256": "48702f1a3ef8b2fd73850451f5e219bd7b74ab44ea5556cc79c606adc0efbd6d",
+      "bytes": 100655,
+      "role": "measurement"
+    },
+    {
+      "path": "M12R-result.json",
+      "sha256": "37d0824abcbf2c8959c3552230df1ecb4918e37d0970f1be1d5ab72acd89a175",
+      "bytes": 11200,
       "role": "measurement"
     },
     {
@@ -482,5 +512,5 @@
       "role": "measurement"
     }
   ],
-  "pass_criteria": "Phase source/archive hashes validate; targeted rules clear; transactions, errors, events and async generator bodies/order remain intact; scoped tests pass. Pre-existing oversized modules shrink. Broad ticket completion and native admission remain pending."
+  "pass_criteria": "Both reordering rules are zero across both packages in both native modes; all 11 conformance outcomes/counts match pre-reorder and latest preserved baselines; initialization, validation, durable state, errors/events and fixture semantics are preserved; hashes and direct release coverage validate. Native admission remains pending."
 }

@@ -36,19 +36,17 @@ const SCHEMA: TurnTreeSchema = {
   schemaId: "schema_apply_staged_results_test",
 };
 
-function stagedResult(
+const stagedResult = (
   objectType: string,
   objectHash: string,
   timestamp: number
-): StagedResult {
-  return {
-    objectHash,
-    objectType,
-    status: "completed",
-    taskId: `task_${objectHash}`,
-    timestamp,
-  };
-}
+): StagedResult => ({
+  objectHash,
+  objectType,
+  status: "completed",
+  taskId: `task_${objectHash}`,
+  timestamp,
+});
 
 const HASH_A =
   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";

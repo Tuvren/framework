@@ -82,11 +82,11 @@ interface RuntimeKernelRunsDependencies {
  * monotonic across execution owners. Every other backend keeps the kernel's
  * injected clock, preserving single-writer behavior exactly.
  */
-function resolveTransactionClock(
+const resolveTransactionClock = (
   sharedLeaseClock: boolean,
   fallback: () => EpochMs,
   tx: RuntimeBackendTx
-): () => EpochMs {
+): (() => EpochMs) => {
   const backendNow = tx.now;
 
   if (sharedLeaseClock && typeof backendNow === "function") {
@@ -94,7 +94,7 @@ function resolveTransactionClock(
   }
 
   return fallback;
-}
+};
 
 /**
  * Re-bases an owner-supplied absolute lease expiry into the backend clock for a
@@ -104,18 +104,18 @@ function resolveTransactionClock(
  * is exactly `suppliedExpiry`, so existing behavior and conformance are
  * unchanged; under skew it translates the expiry into the authoritative clock.
  */
-function rebaseLeaseExpiry(
+const rebaseLeaseExpiry = (
   sharedLeaseClock: boolean,
   backendNow: () => EpochMs,
   ownerNow: () => EpochMs,
   suppliedExpiry: EpochMs
-): EpochMs {
+): EpochMs => {
   if (!sharedLeaseClock) {
     return suppliedExpiry;
   }
 
   return (backendNow() + (suppliedExpiry - ownerNow())) as EpochMs;
-}
+};
 
 /**
  * Builds the `run` group of the {@link RuntimeKernel} syscall surface
@@ -124,9 +124,9 @@ function rebaseLeaseExpiry(
  * {@link stepRequiresCheckpoint}), terminal completion with reactive
  * checkpointing of any un-anchored staged work, and crash recovery.
  */
-export function createRuntimeKernelRunApi(
+export const createRuntimeKernelRunApi = (
   dependencies: RuntimeKernelRunsDependencies
-): RuntimeKernel["run"] {
+): RuntimeKernel["run"] => {
   const { backend, now } = dependencies;
   const sharedLeaseClock =
     backend.capabilities()["shared-lease-clock"] === true;
@@ -348,7 +348,7 @@ export function createRuntimeKernelRunApi(
       });
     },
   };
-}
+};
 
 /**
  * Builds the `runLiveness` group of the {@link RuntimeKernelRunLiveness}
@@ -357,9 +357,9 @@ export function createRuntimeKernelRunApi(
  * atomically preempting one — fencing the stale owner and marking the run
  * `failed` while preserving verifiably complete staged work.
  */
-export function createRuntimeKernelRunLivenessApi(
+export const createRuntimeKernelRunLivenessApi = (
   dependencies: RuntimeKernelRunsDependencies
-): RuntimeKernelRunLiveness["runLiveness"] {
+): RuntimeKernelRunLiveness["runLiveness"] => {
   const { backend, createFencingToken, now } = dependencies;
   const sharedLeaseClock =
     backend.capabilities()["shared-lease-clock"] === true;
@@ -561,4 +561,4 @@ export function createRuntimeKernelRunLivenessApi(
       });
     },
   };
-}
+};
