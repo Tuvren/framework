@@ -154,8 +154,8 @@ describe("logical contract fixtures", () => {
     expect(() =>
       assertVerdict({
         adjustment: { retries: 1 },
-        kind: "retry",
         extra: true,
+        kind: "retry",
       })
     ).toThrow("extra is not part of the contract shape");
   });

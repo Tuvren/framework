@@ -365,7 +365,7 @@ export function assertVerdict(
   label = "value"
 ): asserts value is Verdict {
   const objectValue = assertPlainObject(value, label);
-  const kind = objectValue.kind;
+  const { kind } = objectValue;
 
   if (kind === "proceed") {
     assertProceedVerdict(objectValue, label);
