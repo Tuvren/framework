@@ -1,0 +1,246 @@
+{
+  "milestone": "M11R",
+  "ticket": "KRT-BQ003",
+  "baseline_commit": "2e52a9e2d4e245e17b91c945e2da4546d489f10a",
+  "files": [
+    "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts",
+    "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts"
+  ],
+  "diff": {
+    "files": [
+      {
+        "file": "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts",
+        "added": 215,
+        "removed": 224
+      },
+      {
+        "file": "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts",
+        "added": 830,
+        "removed": 842
+      }
+    ],
+    "added": 1045,
+    "removed": 1066
+  },
+  "source_hashes": {
+    "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts": {
+      "before": "ec5eca34b3afb1e9bdc3a1646598c3b77997147fb21a60114ab39bb0b4ec299e",
+      "after": "e4add17117b4e3d0b92f65e130d070c439722b81b6356f98b69ead513c2a0ef6"
+    },
+    "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts": {
+      "before": "18a5bf8ba7a32250014b580d33cc0c3afca96fc3523411037fb5533769c7da37",
+      "after": "f5ecc5c0e49c55bdd2ab4c9bd3c3cdf12900cd7b652cea184ad7739fdfc6c83f"
+    }
+  },
+  "conversion": {
+    "functions": 76,
+    "arrows": 74,
+    "assertions": 0,
+    "generators": 2,
+    "files": [
+      {
+        "file": "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts",
+        "functions": 44,
+        "generatorFunctions": 0,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      },
+      {
+        "file": "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts",
+        "functions": 32,
+        "generatorFunctions": 2,
+        "assertionFunctions": 0,
+        "overloadDeclarations": 0,
+        "bodiesParametersDefaultsGenericsReadonlyReturnsExportsAsyncDocsAndCallableSignaturesEqual": true,
+        "dependenciesPrecedeUse": true,
+        "nonCallableStatementsEqual": true,
+        "statefulTopLevelOrderEqual": true,
+        "pureTablesEqual": []
+      }
+    ]
+  },
+  "native": {
+    "syntactic": {
+      "before": 211,
+      "after": 112,
+      "numberOfFiles": 17,
+      "numberOfRules": 419,
+      "target": {
+        "before": {
+          "all": 159,
+          "targetRules": 99,
+          "byRule": {
+            "eslint(func-style)": 76,
+            "eslint(no-await-in-loop)": 9,
+            "eslint(no-use-before-define)": 23,
+            "eslint(require-await)": 1,
+            "jsdoc(require-throws-type)": 47,
+            "jsdoc(require-yields)": 2,
+            "unicorn(no-await-expression-member)": 1
+          },
+          "byFile": {
+            "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts": {
+              "eslint(func-style)": 44,
+              "eslint(no-await-in-loop)": 5,
+              "eslint(no-use-before-define)": 18,
+              "jsdoc(require-throws-type)": 30
+            },
+            "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts": {
+              "eslint(func-style)": 32,
+              "eslint(no-await-in-loop)": 4,
+              "eslint(no-use-before-define)": 5,
+              "eslint(require-await)": 1,
+              "jsdoc(require-throws-type)": 17,
+              "jsdoc(require-yields)": 2,
+              "unicorn(no-await-expression-member)": 1
+            }
+          }
+        },
+        "after": {
+          "all": 60,
+          "targetRules": 0,
+          "byRule": {
+            "eslint(no-await-in-loop)": 9,
+            "eslint(require-await)": 1,
+            "jsdoc(require-throws-type)": 47,
+            "jsdoc(require-yields)": 2,
+            "unicorn(no-await-expression-member)": 1
+          },
+          "byFile": {
+            "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts": {
+              "eslint(no-await-in-loop)": 5,
+              "jsdoc(require-throws-type)": 30
+            },
+            "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts": {
+              "eslint(no-await-in-loop)": 4,
+              "eslint(require-await)": 1,
+              "jsdoc(require-throws-type)": 17,
+              "jsdoc(require-yields)": 2,
+              "unicorn(no-await-expression-member)": 1
+            }
+          }
+        }
+      },
+      "unrelatedDiagnosticDebtEqual": true
+    },
+    "typeaware": {
+      "before": 283,
+      "after": 184,
+      "numberOfFiles": 17,
+      "numberOfRules": 474,
+      "target": {
+        "before": {
+          "all": 162,
+          "targetRules": 99,
+          "byRule": {
+            "eslint(func-style)": 76,
+            "eslint(no-await-in-loop)": 9,
+            "eslint(no-use-before-define)": 23,
+            "eslint(require-await)": 1,
+            "jsdoc(require-throws-type)": 47,
+            "jsdoc(require-yields)": 2,
+            "typescript(no-unnecessary-type-assertion)": 1,
+            "typescript(promise-function-async)": 1,
+            "typescript(return-await)": 1,
+            "unicorn(no-await-expression-member)": 1
+          },
+          "byFile": {
+            "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts": {
+              "eslint(func-style)": 44,
+              "eslint(no-await-in-loop)": 5,
+              "eslint(no-use-before-define)": 18,
+              "jsdoc(require-throws-type)": 30,
+              "typescript(no-unnecessary-type-assertion)": 1
+            },
+            "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts": {
+              "eslint(func-style)": 32,
+              "eslint(no-await-in-loop)": 4,
+              "eslint(no-use-before-define)": 5,
+              "eslint(require-await)": 1,
+              "jsdoc(require-throws-type)": 17,
+              "jsdoc(require-yields)": 2,
+              "typescript(promise-function-async)": 1,
+              "typescript(return-await)": 1,
+              "unicorn(no-await-expression-member)": 1
+            }
+          }
+        },
+        "after": {
+          "all": 63,
+          "targetRules": 0,
+          "byRule": {
+            "eslint(no-await-in-loop)": 9,
+            "eslint(require-await)": 1,
+            "jsdoc(require-throws-type)": 47,
+            "jsdoc(require-yields)": 2,
+            "typescript(no-unnecessary-type-assertion)": 1,
+            "typescript(promise-function-async)": 1,
+            "typescript(return-await)": 1,
+            "unicorn(no-await-expression-member)": 1
+          },
+          "byFile": {
+            "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts": {
+              "eslint(no-await-in-loop)": 5,
+              "jsdoc(require-throws-type)": 30,
+              "typescript(no-unnecessary-type-assertion)": 1
+            },
+            "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts": {
+              "eslint(no-await-in-loop)": 4,
+              "eslint(require-await)": 1,
+              "jsdoc(require-throws-type)": 17,
+              "jsdoc(require-yields)": 2,
+              "typescript(promise-function-async)": 1,
+              "typescript(return-await)": 1,
+              "unicorn(no-await-expression-member)": 1
+            }
+          }
+        }
+      },
+      "unrelatedDiagnosticDebtEqual": true
+    }
+  },
+  "worker_gates": {
+    "after-changeset": 0,
+    "after-diff-check": 0,
+    "after-format-touched": 0,
+    "after-fresh-process": 0,
+    "after-lint": 0,
+    "after-native-selection": 0,
+    "after-retained-biome": 0,
+    "after-runtime-syntactic": 1,
+    "after-runtime-typeaware": 1,
+    "after-scoped": 0,
+    "before-fresh-process": 0,
+    "before-native-selection": 0,
+    "before-runtime-syntactic": 1,
+    "before-runtime-typeaware": 1,
+    "before-scoped": 0,
+    "structural-proof": 0
+  },
+  "introduced": {
+    "patterns": [],
+    "dependencies": [],
+    "conventions": [],
+    "contract_shapes": []
+  },
+  "proof_archive": "M11R-proof.tar.gz",
+  "proof_index": "M11R-proof-index.json.gz",
+  "archive_members": 53,
+  "note": "User-directed accelerated batch. The archived summary contains full measurement details; no exhaustive hypothetical-adopter compatibility matrix is required.",
+  "lead_final_gates": {
+    "scoped": 0,
+    "touched-format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "diff": 0,
+    "structural-lead": 0
+  },
+  "lead_gate_archive": "M11R-lead-gates.tar.gz",
+  "lead_gate_index": "M11R-lead-index.json.gz"
+}
