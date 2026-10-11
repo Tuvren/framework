@@ -1,0 +1,10 @@
+[
+  {
+    "mode": "syntactic",
+    "requested_rule_diagnostics": 0
+  },
+  {
+    "mode": "typeaware",
+    "requested_rule_diagnostics": 0
+  }
+]

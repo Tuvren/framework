@@ -92,9 +92,8 @@ const turnNodeIdentityRecord: Omit<TurnNode, "hash"> = {
     "2222222222222222222222222222222222222222222222222222222222222222",
 };
 
-function bytesFromHex(hex: string): Uint8Array {
-  return Uint8Array.from(Buffer.from(hex, "hex"));
-}
+const bytesFromHex = (hex: string): Uint8Array =>
+  Uint8Array.from(Buffer.from(hex, "hex"));
 
 export const kernelProtocolDeterministicFixtures = {
   rawOpaqueBytes: new Uint8Array([0, 1, 2, 3, 4, 5, 250, 255]),
