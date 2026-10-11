@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "d52e5b0d6a769e5d8b2dc986714168468e621109",
-    "command": "bun run nx run-many -t typecheck,test -p kernel-contract-protocol,kernel-runtime --parallel=1; bun run conformance; bunx --bun oxlint --format=json typescript/kernel/protocol"
+    "commit": "a400c05376c54e03e8d4210b89885d1af2c04b7a",
+    "command": "bun run nx run-many -t typecheck,test -p kernel-contract-protocol,kernel-runtime --parallel=1; bun run conformance; bun run api-freeze:check"
   },
   "files": [
     {
@@ -134,11 +134,77 @@
       "role": "baseline"
     },
     {
+      "path": "M5-lead-api-freeze.log.gz",
+      "sha256": "a5b7b57eb495f65e47fd5abb2de42d14b8b6915cc2636caacc9b4b26fdda18b7",
+      "bytes": 118,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-lead-changeset.log.gz",
+      "sha256": "c4a5b45ee2ad060413562fdf0b1ed1ad4853d95cdd5885e67fc9d6c5d784fb55",
+      "bytes": 117,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-lead-conformance.log.gz",
+      "sha256": "e39b888173e5658792f43929b2934e5af8592e9b7f6172b06c7e94211b557d99",
+      "bytes": 2594,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-lead-constitution.log.gz",
+      "sha256": "0e850dd0df31a68c9bdeee9c979b0ab11f4cf8ccd6f4b6548ae9ebd93b697d9d",
+      "bytes": 1248,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-lead-format.log.gz",
+      "sha256": "1c4af1203a13da4a39d806c4566d51edf549753efbb7e22f451bcefa153895be",
+      "bytes": 131,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-lead-lint.log.gz",
+      "sha256": "fcbad95f02d944536947d389624c33b0b50ae3e10cf08f09725c6e23119297c9",
+      "bytes": 318,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-lead-scoped.log.gz",
+      "sha256": "12d70d952b359721bf0ce10f2426e9bac64a0dd9ccb037e91ee43981888f63b8",
+      "bytes": 455,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-lead-typecheck.log.gz",
+      "sha256": "7ef8a5d9c081fac69b14df25d4f6732e813090e590c657840ab08ed71a25b81f",
+      "bytes": 875,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-proof-index.json.gz",
+      "sha256": "7ce1bfa8a8bec961d315b93e1a08c6b769de3117eaef2eac2d0b2ad716569365",
+      "bytes": 2505,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-proof.tar.gz",
+      "sha256": "6f0f46aeb5675801e3dd2cb6a3034e17a17018d08da678e46a3676339bcf6f92",
+      "bytes": 127023,
+      "role": "measurement"
+    },
+    {
+      "path": "M5-result.json",
+      "sha256": "a97d8cadc25218424605ff33d81da8a9947b6156c37c2ac267ec0ea9985d51ec",
+      "bytes": 1795,
+      "role": "measurement"
+    },
+    {
       "path": "README.md",
-      "sha256": "029627265f3fd4c463435e98d9d03e320e156e5c2f5e15b2fc69f53b188e5f16",
-      "bytes": 1319,
+      "sha256": "3db2f76f86725ee26a2072b7e4e53ece2e8f93b1c22fae90884cb79608de665f",
+      "bytes": 1798,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "M4 preserves public validation, canonical identity and initialization behavior under six fresh-process import orders. Native cycle diagnostics decrease from two to zero. Unchanged validator bodies and exact retained proof justify only the one early dead-directive deletion; all final milestone gates pass."
+  "pass_criteria": "M4–M5 preserve public validation, canonical identity and initialization behavior. M5 preserves all 28 callable/body records while clearing its 105 targeted pair diagnostics. Retained gates, full conformance and frozen API checks pass; unrelated native debt remains for later admission."
 }

@@ -25,3 +25,10 @@ bun run conformance
 
 M4 is one phase of BQ003. Later phase evidence retains its own producing commit
 and fresh diagnostics; it does not overwrite these recorded results.
+
+M5 converts and orders the 28 identity-module functions. `M5-result.json` is the
+readable phase result. `M5-proof.tar.gz` preserves complete compiler, runtime,
+native-diagnostic and conformance comparisons, negative controls, source inputs
+and capture drivers. Its compressed index records exact membership and digests.
+The compiler comparison permits only equivalent single-return block to concise
+arrow normalization. Unrelated native diagnostics remain for later milestones.
