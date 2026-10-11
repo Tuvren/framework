@@ -39,6 +39,7 @@ const SCOPE_SAFE_RUN_COMMANDS_OPTION_KEYS: ReadonlySet<string> = new Set([
   "command",
   "commands",
   "cwd",
+  "parallel",
 ]);
 
 export interface OxcProject {
@@ -99,6 +100,11 @@ function hasOnlyScopeSafeOptions(options: NxCommandOptions): boolean {
 function invokedCommands(
   options: NxCommandOptions
 ): InvokedLintCommands | undefined {
+  if (
+    Object.hasOwn(options, "command") === Object.hasOwn(options, "commands")
+  ) {
+    return undefined;
+  }
   const commands: string[] = [];
   if (typeof options.command === "string") {
     commands.push(options.command);
@@ -233,9 +239,12 @@ function classifyProject(
       ? nativeRoot.replace(BACKSLASH_PATTERN, "/")
       : nativeRoot;
   if (invoked.commands.length === 1) {
+    if (Object.hasOwn(options, "parallel")) {
+      return undefined;
+    }
     return classifySingleCommand(file, invoked, root);
   }
-  if (invoked.commands.length !== 2) {
+  if (invoked.commands.length !== 2 || options.parallel !== false) {
     return undefined;
   }
   const [oxlintCommand, jsonCommand] = invoked.commands;

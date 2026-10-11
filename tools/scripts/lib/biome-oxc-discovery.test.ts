@@ -243,6 +243,22 @@ describe("Oxlint project-wide discovery", () => {
     ).toEqual(["kernel-contract-protocol"]);
   });
 
+  test("rejects a command target that also supplies a commands array", () => {
+    expect(
+      discovered({
+        options: {
+          command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+          commands: [
+            "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+            "bun tools/scripts/json-check.ts typescript/kernel/protocol",
+          ],
+          cwd: ".",
+          parallel: false,
+        },
+      })
+    ).toEqual([]);
+  });
+
   test("rejects a multi-command target", () => {
     expect(
       discovered({
@@ -266,6 +282,7 @@ describe("Oxlint project-wide discovery", () => {
             "bun tools/scripts/json-check.ts typescript/kernel/protocol",
           ],
           cwd: ".",
+          parallel: false,
         },
       }),
     ]);
@@ -277,6 +294,20 @@ describe("Oxlint project-wide discovery", () => {
       },
     ]);
     expect(discoveredProjects.jsonOnlyProjects).toEqual([]);
+  });
+
+  test("rejects mixed commands without explicit serial execution", () => {
+    for (const parallel of [undefined, true, "false", 0]) {
+      const options = {
+        commands: [
+          "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+          "bun tools/scripts/json-check.ts typescript/kernel/protocol",
+        ],
+        cwd: ".",
+        ...(parallel === undefined ? {} : { parallel }),
+      };
+      expect(discovered({ options })).toEqual([]);
+    }
   });
 
   test("credits the exact JSON-only command without a zero-file Oxlint run", () => {

@@ -11,6 +11,8 @@ scope:
     - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
     - tools/scripts/lib/biome-lint-partition.test.ts
     - tools/scripts/biome-lint.test.ts
+    - tools/scripts/lib/native-lint-routing.ts
+    - tools/scripts/lib/biome-oxc-discovery.test.ts
     - ".changeset/toolchain-bq-kernel-lint-pilot.md"
   tech_spec_patchable: []
 estimated_diff_lines: 12500
@@ -95,6 +97,8 @@ tickets:
         - tools/scripts/__snapshots__/api-surface/api-surface-snapshot.json
         - tools/scripts/lib/biome-lint-partition.test.ts
         - tools/scripts/biome-lint.test.ts
+        - tools/scripts/lib/native-lint-routing.ts
+        - tools/scripts/lib/biome-oxc-discovery.test.ts
         - ".changeset/toolchain-bq-kernel-lint-pilot.md"
     verification:
       command: bun run lint
@@ -118,6 +122,13 @@ tickets:
           - tools/scripts/lib/biome-lint-partition.test.ts
           - tools/scripts/biome-lint.test.ts
         justification: "Atomic admission exposed two obsolete bootstrap assumptions in the existing 15-suite lane: empty native arrays in the actual partition test and an assertion that real metadata discovers zero native targets. Actual native ownership independently passes 42 code and 14 JSON files without gaps or duplicates. Under the owner's latest instruction to complete work autonomously while absent, extend scope only for necessary test maintenance: use actual native code/JSON selection in the approved partition path, and assert both admitted kernel targets in the additional routing-test path. This additional path was adopted autonomously, not separately confirmed. Preserve completeness assertions, inventories, negative controls, suite registrations and lint policy; retain the original 139-pass/2-fail measurement alongside final passing repair proof."
+      - files:
+          - tools/scripts/lib/native-lint-routing.ts
+          - tools/scripts/lib/biome-oxc-discovery.test.ts
+          - tools/scripts/lib/biome-lint-partition.test.ts
+          - typescript/kernel/protocol/project.json
+          - typescript/kernel/runtime/project.json
+        justification: "PR review measured Nx 22.7.12 command arrays executing in parallel by default, contrary to the required Oxlint-then-JSON order. Under autonomous completion, add only the routing helper and its controls to scope, require literal parallel:false for mixed native targets, and update the two owned targets and canonical test fixture together. Reject missing/true/invalid settings and preserve single-command forms, unknown-option and ownership controls, shipped lint policy and runtime authority. This repairs execution semantics of the existing ordered-pair requirement; it is not a rule override or separately confirmed extra-path approval."
 closeout:
   tickets_completed: [KRT-BQ001, KRT-BQ002, KRT-BQ003, KRT-BQ004]
   tickets_deferred: []

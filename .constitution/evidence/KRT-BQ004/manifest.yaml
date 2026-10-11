@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "9abbb6b6d70c85672ee2fd0af0b84f2516ea3f44",
-    "command": "Atomic native admission and bounded bootstrap repairs; full independently run release ladder"
+    "commit": "818f96124a520a83538f2201665b86d6b9feec13",
+    "command": "Native admission plus accepted PR execution-order repair and independent pinned-executor/tooling verification"
   },
   "files": [
     {
@@ -158,11 +158,41 @@
       "role": "measurement"
     },
     {
+      "path": "PRR1-final-proof-index.json.gz",
+      "sha256": "7e32dd2c097b715d4f5c7ec27f62c88a83c8dfc81fb31fbe558d0f9089edb841",
+      "bytes": 1877,
+      "role": "measurement"
+    },
+    {
+      "path": "PRR1-final-proof.tar.gz",
+      "sha256": "0534fb539c7ed39c99c7f9815f8190b7ce0f235e9beefa20c7503c64296a42c8",
+      "bytes": 26487,
+      "role": "measurement"
+    },
+    {
+      "path": "PRR1-result.json",
+      "sha256": "a695f57349eb3433204710f63266e2859fbf3b28409c851ec44f215eae7400c7",
+      "bytes": 2831,
+      "role": "measurement"
+    },
+    {
+      "path": "PRR1-worker-proof-index.json.gz",
+      "sha256": "aa7ea45ea1f5ff14a2f0a4443b7d3943cb860496f780ec6cc6b61d22636db6db",
+      "bytes": 2697,
+      "role": "measurement"
+    },
+    {
+      "path": "PRR1-worker-proof.tar.gz",
+      "sha256": "f9bf39dec36399c470cb8d7337d90a14063fb1d11afee794fe73152a2fe1fb0b",
+      "bytes": 24787,
+      "role": "measurement"
+    },
+    {
       "path": "suppressions.json",
       "sha256": "17a9d6dfba8cac5f1873387c9a83ec415bea578d6e064b62c19103070e0902b0",
       "bytes": 23182,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "42code/14JSON files completely owned; all6original IDs/reasons accounted for;156tests,33typechecks,15tooling suites,API/lint/format/conformance and fullrelease ladder pass"
+  "pass_criteria": "42code/14JSON owned; literalparallel:false required for mixedtargets;143tests across15suites,toolingcompiler,156kerneltests,33typechecks,fullformat/lint/API/check pass; original release proof and superseding PR repair phases remain separate"
 }

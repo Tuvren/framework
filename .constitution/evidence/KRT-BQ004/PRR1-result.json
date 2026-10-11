@@ -1,0 +1,59 @@
+{
+  "round": 1,
+  "accepted_finding": "R1-P1-order",
+  "baseline_commit": "818f96124a520a83538f2201665b86d6b9feec13",
+  "status": "ready-for-scoped-PR-verification",
+  "source_hashes": {
+    "typescript/kernel/protocol/project.json": {
+      "before": "dd041aaa13cf0f1d153a5c65f7afce2e54c979b11b0dc077bf64e167d08dad43",
+      "worker_after": "5aad74acfc7a3f4c6b389cd935de5ae4c625a08a0547225cc0697ae5ae604012",
+      "after": "5aad74acfc7a3f4c6b389cd935de5ae4c625a08a0547225cc0697ae5ae604012"
+    },
+    "typescript/kernel/runtime/project.json": {
+      "before": "defb2ba444ed09e5a14aebce1ee155f7b59e2435171e4e382a05fc6b04059b41",
+      "worker_after": "bf87223ad9d44e732477eed6d5ad866edaa5276f473fabe1a9f0ef31f1cdfb65",
+      "after": "bf87223ad9d44e732477eed6d5ad866edaa5276f473fabe1a9f0ef31f1cdfb65"
+    },
+    "tools/scripts/lib/native-lint-routing.ts": {
+      "before": "9711e6ae8554c9b58b77c2471c1d19ad7fd28058b47777a88e3a41c1ea8da51a",
+      "worker_after": "a56101b2974dac6bc48a5307ef16901bcd86de85b6be08324c1be5ea29a7151a",
+      "after": "a56101b2974dac6bc48a5307ef16901bcd86de85b6be08324c1be5ea29a7151a"
+    },
+    "tools/scripts/lib/biome-oxc-discovery.test.ts": {
+      "before": "ad09936c0b3a1475eb6147a652f5ead4c17a2a664b9c22b152608c3e571133b4",
+      "worker_after": "45bf7a2372b5e58ec77b5d75c645d726d381cc0127f53ee4cda98952b765a942",
+      "after": "147064209778c95b83115ef809444c685c51e58b2d4a617f012bad5d66a1b46d"
+    },
+    "tools/scripts/lib/biome-lint-partition.test.ts": {
+      "before": "7c5596212e5ad51ee9e97384ab1f71344b24d9a909bfa6c8163fa626167446d6",
+      "worker_after": "3a53be4ae0fd23088d0f1d706c575aa8069ba237c69bbd584a0da832916abca6",
+      "after": "3a53be4ae0fd23088d0f1d706c575aa8069ba237c69bbd584a0da832916abca6"
+    }
+  },
+  "worker_archive": "PRR1-worker-proof.tar.gz",
+  "final_archive": "PRR1-final-proof.tar.gz",
+  "worker_members": 44,
+  "final_members": 30,
+  "lead_gates": {
+    "scoped": 0,
+    "typecheck": 0,
+    "format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "tooling_acceptance": 0,
+    "tooling_typecheck": 0,
+    "final_format": 0,
+    "final_lint": 0,
+    "api_freeze": 0,
+    "check": 0
+  },
+  "exact_tooling_result": {
+    "suites": 15,
+    "tests": 143,
+    "assertions": 1578
+  },
+  "execution_proof": "Pinned Nx22.7.12 schema default overlaps; explicitfalse orders commands and short-circuits after first failure. Three measured cases preserved.",
+  "fixture_note": "Initial worker fixture misplaced options and direct tools compiler reported TS2353; a fresh bounded fixer nested them correctly. Initial worker bytes and failing compiler log retained; final source compiles and all controls pass.",
+  "policy_note": "Only Nx execution control and canonical metadata validation changed; shipped lint policy and runtime authority unchanged."
+}
