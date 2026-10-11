@@ -135,7 +135,7 @@ export const isStoredTurnNode = (value: unknown): value is StoredTurnNode =>
  * the recomputed canonical TurnNode identity digest over the decoded record
  * fields (`hashTurnNodeIdentity`, kernel spec §3.3).
  *
- * @throws TuvrenValidationError With code `invalid_stored_turn_node_hash` when
+ * @throws {TuvrenValidationError} With code `invalid_stored_turn_node_hash` when
  *   the stored hash does not match the canonical identity hash.
  */
 export const assertStoredTurnNodeIdentity = async (
@@ -248,7 +248,7 @@ export const isStoredThread = (value: unknown): value is StoredThread =>
  * `archivedFromBranchId`, when present, must differ from the branch's own id,
  * and `updatedAtMs` must not precede `createdAtMs`.
  *
- * @throws TuvrenValidationError With code `invalid_branch_archive_source` when
+ * @throws {TuvrenValidationError} With code `invalid_branch_archive_source` when
  *   an archive branch names itself as its source.
  */
 export const assertStoredBranch: (

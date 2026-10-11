@@ -26,7 +26,10 @@ import {
   hashTurnNodeIdentity,
   hashTurnTreeIdentity,
 } from "../src/index.ts";
-import { restorePrototypeValue } from "./kernel-contract-test-helpers.ts";
+import {
+  rejectionOf,
+  restorePrototypeValue,
+} from "./kernel-contract-test-helpers.ts";
 import {
   kernelProtocolDeterministicFixtures,
   kernelProtocolInvalidFixtures,
@@ -35,14 +38,62 @@ import {
 } from "./kernel-protocol-fixtures.js";
 import { deterministicKernelRecordFixture } from "./kernel-record-fixtures.js";
 
-const invokeHashTurnTreeIdentity = (
+const invokeHashTurnTreeIdentity = async (
   schemaId: string,
   manifest: unknown,
   schema: unknown
-): Promise<string> =>
-  Reflect.apply(hashTurnTreeIdentity, undefined, [schemaId, manifest, schema]);
+): Promise<unknown> => {
+  const result: unknown = Reflect.apply(hashTurnTreeIdentity, undefined, [
+    schemaId,
+    manifest,
+    schema,
+  ]);
+  if (!(result instanceof Promise)) {
+    throw new Error("Expected a hashing Promise");
+  }
+  return await result;
+};
+
+const invokeHashTurnNodeIdentity = async (value: unknown): Promise<unknown> => {
+  const result: unknown = Reflect.apply(hashTurnNodeIdentity, undefined, [
+    value,
+  ]);
+  if (!(result instanceof Promise)) {
+    throw new Error("Expected a hashing Promise");
+  }
+  return await result;
+};
 
 describe("deterministic identity", () => {
+  test("returns rejected Promises for invalid record and TurnTree identity inputs", async () => {
+    let recordOperation: Promise<string> | undefined;
+    let treeOperation: Promise<string> | undefined;
+    expect(() => {
+      recordOperation = hashKernelRecord(Number.NaN);
+    }).not.toThrow();
+    expect(() => {
+      treeOperation = hashTurnTreeIdentity(
+        "",
+        {},
+        kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
+      );
+    }).not.toThrow();
+    if (recordOperation === undefined || treeOperation === undefined) {
+      throw new Error("Hash helpers must return Promises");
+    }
+    const recordError = await rejectionOf(recordOperation);
+    const treeError = await rejectionOf(treeOperation);
+    expect(recordError).toBeInstanceOf(TypeError);
+    expect(recordError).toMatchObject({
+      message: "value must match the restricted runtime kernel record profile",
+      name: "TypeError",
+    });
+    expect(treeError).toBeInstanceOf(TuvrenValidationError);
+    expect(treeError).toMatchObject({
+      code: "invalid_turn_tree_hash",
+      message: "schemaId must be a non-empty string",
+    });
+  });
   test("matches the shared canonical kernel-record fixture bytes and hash", async () => {
     const encodedBytes = encodeDeterministicKernelRecord(
       deterministicKernelRecordFixture.logicalValue
@@ -67,9 +118,10 @@ describe("deterministic identity", () => {
   });
 
   test("round-trips reserved object-property names like __proto__", () => {
-    const logicalValue = Object.assign(Object.create(null), {
-      ["__proto__"]: Object.assign(Object.create(null), { ok: 1 }),
-    });
+    const nested = { ok: 1 };
+    Object.setPrototypeOf(nested, null);
+    const logicalValue = { ["__proto__"]: nested };
+    Object.setPrototypeOf(logicalValue, null);
 
     const decodedValue = decodeDeterministicKernelRecord(
       encodeDeterministicKernelRecord(logicalValue)
@@ -91,9 +143,7 @@ describe("deterministic identity", () => {
 
     expect(Object.getPrototypeOf(decodedValue)).toBeNull();
     expect(Object.hasOwn(decodedValue, "__proto__")).toBe(true);
-    expect(protoDescriptor?.value).toEqual(
-      Object.assign(Object.create(null), { ok: 1 })
-    );
+    expect(protoDescriptor?.value).toEqual(nested);
   });
 
   test("rejects non-canonical deterministic CBOR encodings on decode", () => {
@@ -117,53 +167,78 @@ describe("deterministic identity", () => {
 
     expect(caughtError).toBeInstanceOf(TuvrenValidationError);
     expect(caughtError).toBeInstanceOf(Error);
-    expect((caughtError as Error).message).toContain(
+    if (!(caughtError instanceof Error)) {
+      throw new Error("Expected a validation Error");
+    }
+    expect(caughtError.message).toContain(
       "must contain valid deterministic CBOR"
     );
   });
 
   test("rejects malformed TurnNode identity inputs with TuvrenValidationError", async () => {
-    await expect(
-      hashTurnNodeIdentity(undefined as never)
-    ).rejects.toBeInstanceOf(TuvrenValidationError);
-    await expect(hashTurnNodeIdentity(undefined as never)).rejects.toThrow(
+    const missingIdentityInput: unknown = undefined;
+    expect(
+      await rejectionOf(invokeHashTurnNodeIdentity(missingIdentityInput))
+    ).toBeInstanceOf(TuvrenValidationError);
+    const rejectedError1 = await rejectionOf(
+      invokeHashTurnNodeIdentity(missingIdentityInput)
+    );
+    expect(rejectedError1.message).toContain(
       "turn node identity input must be a plain object"
     );
-    await expect(
-      hashTurnNodeIdentity({
+    const rejectedError2 = await rejectionOf(
+      invokeHashTurnNodeIdentity({
         consumedStagedResults: [],
         eventHash: 5,
         previousTurnNodeHash: null,
         schemaId: 7,
         turnTreeHash: 8,
-      } as never)
-    ).rejects.toThrow("turn node identity input.eventHash");
+      })
+    );
+    expect(rejectedError2.message).toContain(
+      "turn node identity input.eventHash"
+    );
   });
 
   test("rejects TurnNode identity inputs that rely on inherited required fields", async () => {
-    const objectPrototype = Object.prototype as Record<string, unknown>;
-    const originalEventHash = objectPrototype.eventHash;
+    const objectPrototype = Object.prototype;
+    const originalEventHash: unknown = Reflect.get(
+      objectPrototype,
+      "eventHash"
+    );
     const hadEventHash = Object.hasOwn(objectPrototype, "eventHash");
-    const originalPreviousTurnNodeHash = objectPrototype.previousTurnNodeHash;
+    const originalPreviousTurnNodeHash: unknown = Reflect.get(
+      objectPrototype,
+      "previousTurnNodeHash"
+    );
     const hadPreviousTurnNodeHash = Object.hasOwn(
       objectPrototype,
       "previousTurnNodeHash"
     );
-    const originalSchemaId = objectPrototype.schemaId;
+    const originalSchemaId: unknown = Reflect.get(objectPrototype, "schemaId");
     const hadSchemaId = Object.hasOwn(objectPrototype, "schemaId");
-    const originalTurnTreeHash = objectPrototype.turnTreeHash;
+    const originalTurnTreeHash: unknown = Reflect.get(
+      objectPrototype,
+      "turnTreeHash"
+    );
     const hadTurnTreeHash = Object.hasOwn(objectPrototype, "turnTreeHash");
 
-    objectPrototype.eventHash = null;
-    objectPrototype.previousTurnNodeHash = null;
-    objectPrototype.schemaId = "schema_main";
-    objectPrototype.turnTreeHash =
-      "abababababababababababababababababababababababababababababababab";
+    Reflect.set(objectPrototype, "eventHash", null);
+    Reflect.set(objectPrototype, "previousTurnNodeHash", null);
+    Reflect.set(objectPrototype, "schemaId", "schema_main");
+    Reflect.set(
+      objectPrototype,
+      "turnTreeHash",
+      "abababababababababababababababababababababababababababababababab"
+    );
 
     try {
-      await expect(
-        hashTurnNodeIdentity({ consumedStagedResults: [] } as never)
-      ).rejects.toThrow("turn node identity input.eventHash");
+      const rejectedError3 = await rejectionOf(
+        invokeHashTurnNodeIdentity({ consumedStagedResults: [] })
+      );
+      expect(rejectedError3.message).toContain(
+        "turn node identity input.eventHash"
+      );
     } finally {
       restorePrototypeValue(
         objectPrototype,
@@ -193,8 +268,8 @@ describe("deterministic identity", () => {
   });
 
   test("rejects TurnNode identity inputs with invalid staged-result interrupt semantics", async () => {
-    await expect(
-      hashTurnNodeIdentity({
+    const rejectedError4 = await rejectionOf(
+      invokeHashTurnNodeIdentity({
         consumedStagedResults: [
           {
             objectHash:
@@ -210,12 +285,13 @@ describe("deterministic identity", () => {
         schemaId: "schema_main",
         turnTreeHash:
           "2222222222222222222222222222222222222222222222222222222222222222",
-      } as never)
-    ).rejects.toThrow(
+      })
+    );
+    expect(rejectedError4.message).toContain(
       'interruptPayload is required when status is "interrupted"'
     );
-    await expect(
-      hashTurnNodeIdentity({
+    const rejectedError5 = await rejectionOf(
+      invokeHashTurnNodeIdentity({
         consumedStagedResults: [
           {
             interruptPayload: { reason: "awaiting_approval" },
@@ -232,12 +308,13 @@ describe("deterministic identity", () => {
         schemaId: "schema_main",
         turnTreeHash:
           "2222222222222222222222222222222222222222222222222222222222222222",
-      } as never)
-    ).rejects.toThrow(
+      })
+    );
+    expect(rejectedError5.message).toContain(
       'interruptPayload must be omitted unless status is "interrupted"'
     );
-    await expect(
-      hashTurnNodeIdentity({
+    const rejectedError6 = await rejectionOf(
+      invokeHashTurnNodeIdentity({
         consumedStagedResults: [
           {
             objectHash:
@@ -261,8 +338,11 @@ describe("deterministic identity", () => {
         schemaId: "schema_main",
         turnTreeHash:
           "2222222222222222222222222222222222222222222222222222222222222222",
-      } as never)
-    ).rejects.toThrow("must not contain duplicate staged result taskIds");
+      })
+    );
+    expect(rejectedError6.message).toContain(
+      "must not contain duplicate staged result taskIds"
+    );
   });
 
   test("rejects TurnNode identity inputs with non-data consumedStagedResults arrays", async () => {
@@ -280,16 +360,19 @@ describe("deterministic identity", () => {
       { meta: 1 }
     );
 
-    await expect(
-      hashTurnNodeIdentity({
+    const rejectedError7 = await rejectionOf(
+      invokeHashTurnNodeIdentity({
         consumedStagedResults,
         eventHash: null,
         previousTurnNodeHash: null,
         schemaId: "schema_main",
         turnTreeHash:
           "2222222222222222222222222222222222222222222222222222222222222222",
-      } as never)
-    ).rejects.toThrow("consumedStagedResults must be a dense data-only array");
+      })
+    );
+    expect(rejectedError7.message).toContain(
+      "consumedStagedResults must be a dense data-only array"
+    );
   });
 
   test("rejects decoded non-canonical kernel numbers as validation errors", () => {
@@ -345,7 +428,7 @@ describe("deterministic identity", () => {
     const encodedHex = Buffer.from(
       encodeDeterministicKernelRecord(turnNodeIdentityRecord)
     ).toString("hex");
-    const digestHex = await hashTurnNodeIdentity(
+    const digestHex = await invokeHashTurnNodeIdentity(
       kernelProtocolDeterministicFixtures.turnNodeIdentityRecord
     );
 
@@ -357,73 +440,88 @@ describe("deterministic identity", () => {
     );
   });
 
-  test("rejects malformed TurnTree manifest inputs before hashing identity", () => {
-    expect(() =>
-      hashTurnTreeIdentity(
+  test("rejects malformed TurnTree manifest inputs before hashing identity", async () => {
+    const rejectedError8 = await rejectionOf(
+      invokeHashTurnTreeIdentity(
         "schema_main",
         {
           "context.manifest":
             "2222222222222222222222222222222222222222222222222222222222222222",
           messages: 1,
-        } as never,
+        },
         kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
       )
-    ).toThrow("manifest.messages must be a HashString[] for an ordered path");
-    expect(() =>
-      hashTurnTreeIdentity(
+    );
+    expect(rejectedError8.message).toContain(
+      "manifest.messages must be a HashString[] for an ordered path"
+    );
+    const rejectedError9 = await rejectionOf(
+      invokeHashTurnTreeIdentity(
         "schema_main",
         {
           "context.manifest":
             "2222222222222222222222222222222222222222222222222222222222222222",
           messages: ["not_hash"],
-        } as never,
+        },
         kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
       )
-    ).toThrow(
+    );
+    expect(rejectedError9.message).toContain(
       "manifest.messages[0] must be a lowercase 64-character SHA-256 hex digest"
     );
-    expect(() =>
-      hashTurnTreeIdentity(
+    const rejectedError10 = await rejectionOf(
+      invokeHashTurnTreeIdentity(
         "schema_main",
         {
           "bad..path": null,
           "context.manifest":
             "2222222222222222222222222222222222222222222222222222222222222222",
           messages: [],
-        } as never,
+        },
         kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
       )
-    ).toThrow("manifest.bad..path must reference a schema-defined path");
-    expect(() =>
+    );
+    expect(rejectedError10.message).toContain(
+      "manifest.bad..path must reference a schema-defined path"
+    );
+    const rejectedError11 = await rejectionOf(
       invokeHashTurnTreeIdentity(
         "schema_main",
         kernelProtocolLogicalFixtures.turnTreeChangeSet,
         kernelProtocolInvalidFixtures.invalidSchemaWithConflictingDuplicatePathDefinitions
       )
-    ).toThrow("schema.paths must not contain duplicate schema paths");
-    expect(() =>
+    );
+    expect(rejectedError11.message).toContain(
+      "schema.paths must not contain duplicate schema paths"
+    );
+    const rejectedError12 = await rejectionOf(
       invokeHashTurnTreeIdentity(
         "schema_main",
         kernelProtocolLogicalFixtures.turnTreeChangeSet,
         kernelProtocolInvalidFixtures.invalidSchemaWithDateMetadata
       )
-    ).toThrow("schema.paths[0].metadata");
-    expect(() =>
+    );
+    expect(rejectedError12.message).toContain("schema.paths[0].metadata");
+    const rejectedError13 = await rejectionOf(
       invokeHashTurnTreeIdentity(
         "schema_main",
         kernelProtocolLogicalFixtures.turnTreeChangeSet,
         kernelProtocolInvalidFixtures.unknownPathSchema
       )
-    ).toThrow(
+    );
+    expect(rejectedError13.message).toContain(
       "schema.incorporationRules[0].targetPath must reference a defined schema path"
     );
-    expect(() =>
+    const rejectedError14 = await rejectionOf(
       invokeHashTurnTreeIdentity(
         "schema_main",
         kernelProtocolLogicalFixtures.turnTreeChangeSet,
         kernelProtocolInvalidFixtures.invalidSchemaWithNonDensePathsArray
       )
-    ).toThrow("schema.paths must be a dense data-only array");
+    );
+    expect(rejectedError14.message).toContain(
+      "schema.paths must be a dense data-only array"
+    );
   });
 
   test("rejects an empty TurnTree schemaId with the TurnTree identity code", async () => {
@@ -440,12 +538,11 @@ describe("deterministic identity", () => {
     }
 
     expect(caught).toBeInstanceOf(TuvrenValidationError);
-    expect((caught as TuvrenValidationError).code).toBe(
-      "invalid_turn_tree_hash"
-    );
-    expect((caught as TuvrenValidationError).message).toBe(
-      "schemaId must be a non-empty string"
-    );
+    if (!(caught instanceof TuvrenValidationError)) {
+      throw new Error("Expected TuvrenValidationError");
+    }
+    expect(caught.code).toBe("invalid_turn_tree_hash");
+    expect(caught.message).toBe("schemaId must be a non-empty string");
   });
 
   test("hashes opaque object bytes without structured-record canonicalization", async () => {

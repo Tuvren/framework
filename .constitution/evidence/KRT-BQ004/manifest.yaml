@@ -1,0 +1,60 @@
+{
+  "owner": "KRT-BQ004",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-11",
+    "commit": "f9d5c8651b6b54adaaeb7dc8ca4a264f2dcfccd6",
+    "command": "M13R combined cleanup, approved generator/guard repairs, and independently rerun scoped/typecheck/format/lint/API/tooling/conformance gates"
+  },
+  "files": [
+    {
+      "path": "M13R-approved-repairs-index.json.gz",
+      "sha256": "2ce9c67ab4a05f5c4ef3b141c9f60ab215e71a2653bd2b5ef8dc9a5a30c1a5f2",
+      "bytes": 1298,
+      "role": "measurement"
+    },
+    {
+      "path": "M13R-approved-repairs.tar.gz",
+      "sha256": "427d41c356bf11938263f5b15ca4d0bd5cf9bc329f8f18132ff953729a473dcc",
+      "bytes": 55297,
+      "role": "measurement"
+    },
+    {
+      "path": "M13R-final-lead-gates.tar.gz",
+      "sha256": "79ed8e5002563c73a9577cec9b85c07fcf159b6829d93e45c77f197f34b4251c",
+      "bytes": 5455,
+      "role": "measurement"
+    },
+    {
+      "path": "M13R-final-lead-index.json.gz",
+      "sha256": "5f225aa6f42310ac65f16dd81895f57d85b9b72726cb5bb6d70618d049a43de8",
+      "bytes": 661,
+      "role": "measurement"
+    },
+    {
+      "path": "M13R-final-result.json",
+      "sha256": "bee9882ae3f0ad9a20360f978d853c6d1b65e9fd717a05241165a184a3e47c52",
+      "bytes": 11362,
+      "role": "measurement"
+    },
+    {
+      "path": "M13R-proof-index.json.gz",
+      "sha256": "3b35439516af2223a1656506dabc79f98bb27472b7adf5da68ec80adcb370527",
+      "bytes": 4662,
+      "role": "measurement"
+    },
+    {
+      "path": "M13R-proof.tar.gz",
+      "sha256": "baa2385e8b06c8f43722f97036233bce537e391d4718c3c24da46c30bcd0f33b",
+      "bytes": 161758,
+      "role": "measurement"
+    },
+    {
+      "path": "M13R-result.json",
+      "sha256": "8122c4069b38fa1b3fe6813b307d87b8ba70f049b89dd91412f2752e867fba1f",
+      "bytes": 18482,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "Protocol has zero native diagnostics; 149 scoped tests,33 typecheck projects,11 conformance lanes,141 tooling tests and frozen SDK gate pass; three declared SDK signature changes have minor release coverage"
+}

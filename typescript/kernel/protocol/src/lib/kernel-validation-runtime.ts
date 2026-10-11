@@ -88,9 +88,9 @@ export const assertPathCollectionKind: (
 export const isPathValue = (value: unknown): value is PathValue =>
   typeof value === "string" ||
   value === null ||
-  tryAssert(value, (candidate, candidateLabel = "value") =>
-    assertHashStringArray(candidate, candidateLabel)
-  );
+  tryAssert(value, (candidate, candidateLabel = "value") => {
+    assertHashStringArray(candidate, candidateLabel);
+  });
 
 /**
  * Asserts a valid {@link PathValue} without checking collection-kind pairing.
@@ -116,7 +116,7 @@ export const assertPathValue: (
  * `HashString[]` for `"ordered"` paths, `HashString | null` for `"single"`
  * paths.
  *
- * @throws TuvrenValidationError With code `invalid_path_value_kind`.
+ * @throws {TuvrenValidationError} With code `invalid_path_value_kind`.
  */
 export const assertPathValueForCollectionKind: (
   value: unknown,
@@ -131,9 +131,9 @@ export const assertPathValueForCollectionKind: (
 
   if (collectionKind === "ordered") {
     if (
-      !tryAssert(value, (candidate, candidateLabel = "value") =>
-        assertHashStringArray(candidate, candidateLabel)
-      )
+      !tryAssert(value, (candidate, candidateLabel = "value") => {
+        assertHashStringArray(candidate, candidateLabel);
+      })
     ) {
       throw validationError(
         `${label} must be a HashString[] for an ordered path`,
@@ -147,9 +147,9 @@ export const assertPathValueForCollectionKind: (
 
   if (
     !(
-      tryAssert(value, (candidate, candidateLabel = "value") =>
-        assertHashString(candidate, candidateLabel)
-      ) || value === null
+      tryAssert(value, (candidate, candidateLabel = "value") => {
+        assertHashString(candidate, candidateLabel);
+      }) || value === null
     )
   ) {
     throw validationError(
@@ -164,7 +164,7 @@ export const assertPathValueForCollectionKind: (
  * Asserts a valid schema path: a non-empty, dot-separated string with non-empty
  * segments (kernel spec §3.1).
  *
- * @throws TuvrenValidationError With code `invalid_schema_path`.
+ * @throws {TuvrenValidationError} With code `invalid_schema_path`.
  */
 export const assertSchemaPath: (
   value: unknown,
@@ -354,7 +354,8 @@ const assertTurnTreePathMap = (
   label: string
 ): Record<string, PathValue> => {
   const objectValue = assertPlainObject(value, label);
-  const validatedPathMap: Record<string, PathValue> = Object.create(null);
+  const validatedPathMap: Record<string, PathValue> = {};
+  Object.setPrototypeOf(validatedPathMap, null);
 
   for (const [path, pathValue] of Object.entries(objectValue)) {
     assertSchemaPath(path, `${label} path`);
@@ -660,7 +661,7 @@ const assertRetryVerdict = (
  * the per-variant shape guard (`proceed`, `abort`, `modify`, `pause`,
  * `retry`).
  *
- * @throws TuvrenValidationError With code `invalid_verdict_kind` for unknown
+ * @throws {TuvrenValidationError} With code `invalid_verdict_kind` for unknown
  *   kinds, or the variant guard's error for malformed payloads.
  */
 export const assertVerdict: (

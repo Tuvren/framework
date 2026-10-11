@@ -586,7 +586,7 @@ export const kernelProtocolInvalidFixtures = {
     schemaId: "schema_main",
   },
   invalidSchemaWithAccessorPathMetadata: (() => {
-    const pathDefinition = { path: "messages", collection: "ordered" };
+    const pathDefinition = { collection: "ordered", path: "messages" };
     Object.defineProperty(pathDefinition, "metadata", {
       enumerable: true,
       get() {
@@ -595,9 +595,9 @@ export const kernelProtocolInvalidFixtures = {
     });
 
     return {
-      schemaId: "schema_main",
-      paths: [pathDefinition],
       incorporationRules: [],
+      paths: [pathDefinition],
+      schemaId: "schema_main",
     };
   })(),
   invalidSchemaWithConflictingDuplicatePathDefinitions: {
@@ -632,14 +632,23 @@ export const kernelProtocolInvalidFixtures = {
   })(),
   invalidSchemaWithSymbolKey: (() => {
     const schema: Record<PropertyKey, unknown> = {
-      schemaId: "schema_main",
-      paths: [{ path: "messages", collection: "ordered" }],
       incorporationRules: [],
+      paths: [{ collection: "ordered", path: "messages" }],
+      schemaId: "schema_main",
     };
-    schema[Symbol("meta")] = 1;
+    Object.defineProperty(schema, Symbol("meta"), {
+      configurable: true,
+      enumerable: true,
+      value: 1,
+      writable: true,
+    });
     return schema;
   })(),
-  invalidSparseOrderedPathValue: new Array(1),
+  invalidSparseOrderedPathValue: (() => {
+    const value: unknown[] = [];
+    value.length = 1;
+    return value;
+  })(),
   invalidStagedResultWithCompletedInterruptPayload: {
     interruptPayload: { reason: "should_not_exist" },
     objectHash:

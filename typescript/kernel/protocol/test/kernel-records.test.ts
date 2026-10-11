@@ -41,23 +41,27 @@ import {
 describe("HashString", () => {
   test("accepts lowercase 64-character hex digests", () => {
     expect(isHashString("a".repeat(64))).toBe(true);
-    expect(() => assertHashString("f".repeat(64), "hash")).not.toThrow();
+    expect(() => {
+      assertHashString("f".repeat(64), "hash");
+    }).not.toThrow();
   });
 
   test("rejects malformed digests", () => {
     expect(isHashString("A".repeat(64))).toBe(false);
     expect(isHashString("abc123")).toBe(false);
     expect(isHashString("g".repeat(64))).toBe(false);
-    expect(() => assertHashString("A".repeat(64), "hash")).toThrow(
-      "hash must be a lowercase 64-character SHA-256 hex digest"
-    );
+    expect(() => {
+      assertHashString("A".repeat(64), "hash");
+    }).toThrow("hash must be a lowercase 64-character SHA-256 hex digest");
   });
 });
 
 describe("EpochMs", () => {
   test("accepts safe integer epoch millisecond values", () => {
     expect(isEpochMs(1_717_171_717_171)).toBe(true);
-    expect(() => assertEpochMs(-1, "epoch")).not.toThrow();
+    expect(() => {
+      assertEpochMs(-1, "epoch");
+    }).not.toThrow();
   });
 
   test("rejects non-integer or unsafe numbers", () => {
@@ -66,9 +70,9 @@ describe("EpochMs", () => {
     expect(isEpochMs(Number.POSITIVE_INFINITY)).toBe(false);
     expect(isEpochMs(-0)).toBe(false);
     expect(isEpochMs(Number.MAX_SAFE_INTEGER + 1)).toBe(false);
-    expect(() => assertEpochMs(1.5, "epoch")).toThrow(
-      "epoch must be a safe integer Unix epoch millisecond value"
-    );
+    expect(() => {
+      assertEpochMs(1.5, "epoch");
+    }).toThrow("epoch must be a safe integer Unix epoch millisecond value");
   });
 });
 
@@ -77,12 +81,12 @@ describe("KernelRecord", () => {
     expect(isKernelRecord(deterministicKernelRecordFixture.logicalValue)).toBe(
       true
     );
-    expect(() =>
+    expect(() => {
       assertKernelRecord(
         deterministicKernelRecordFixture.logicalValue,
         "record"
-      )
-    ).not.toThrow();
+      );
+    }).not.toThrow();
   });
 
   test("rejects unsupported runtime values", () => {
@@ -90,41 +94,45 @@ describe("KernelRecord", () => {
       expect(isKernelRecord(fixture)).toBe(false);
     }
 
-    expect(() => assertKernelRecord(new Map([["a", 1]]), "record")).toThrow(
+    expect(() => {
+      assertKernelRecord(new Map([["a", 1]]), "record");
+    }).toThrow(
       "record must match the restricted runtime kernel record profile"
     );
   });
 
   test("rejects sparse arrays", () => {
-    const sparseArray = new Array(3);
+    const sparseArray: unknown[] = [];
+    sparseArray.length = 3;
     sparseArray[0] = "alpha";
     sparseArray[2] = "omega";
 
     expect(isKernelRecord(sparseArray)).toBe(false);
-    expect(() => assertKernelRecord(sparseArray, "record")).toThrow(
+    expect(() => {
+      assertKernelRecord(sparseArray, "record");
+    }).toThrow(
       "record must match the restricted runtime kernel record profile"
     );
   });
 
   test("rejects inherited array elements from the prototype chain", () => {
-    const inheritedArray = new Array(1);
-    const originalPrototypeElement = Array.prototype[0];
-    const hadOwnPrototypeElement = Object.hasOwn(Array.prototype, 0);
-
-    Array.prototype[0] = "prototype-value";
-
-    try {
-      expect(isKernelRecord(inheritedArray)).toBe(false);
-      expect(() => assertKernelRecord(inheritedArray, "record")).toThrow(
-        "record must match the restricted runtime kernel record profile"
-      );
-    } finally {
-      if (hadOwnPrototypeElement) {
-        Array.prototype[0] = originalPrototypeElement;
-      } else {
-        Reflect.deleteProperty(Array.prototype, 0);
-      }
-    }
+    const inheritedArray: unknown[] = [];
+    inheritedArray.length = 1;
+    const localPrototype = { 0: "prototype-value" };
+    Object.setPrototypeOf(
+      localPrototype,
+      Reflect.getPrototypeOf(inheritedArray)
+    );
+    Object.setPrototypeOf(inheritedArray, localPrototype);
+    expect(Array.isArray(inheritedArray)).toBe(true);
+    expect(inheritedArray[0]).toBe("prototype-value");
+    expect(Object.hasOwn(inheritedArray, 0)).toBe(false);
+    expect(isKernelRecord(inheritedArray)).toBe(false);
+    expect(() => {
+      assertKernelRecord(inheritedArray, "record");
+    }).toThrow(
+      "record must match the restricted runtime kernel record profile"
+    );
   });
 
   test("rejects arrays with extra own metadata properties or symbols", () => {
@@ -143,12 +151,19 @@ describe("KernelRecord", () => {
     });
 
     const symbolArray = [1];
-    (symbolArray as unknown as Record<symbol, number>)[Symbol("meta")] = 2;
+    Object.defineProperty(symbolArray, Symbol("meta"), {
+      configurable: true,
+      enumerable: true,
+      value: 2,
+      writable: true,
+    });
 
     expect(isKernelRecord(hiddenPropertyArray)).toBe(false);
     expect(isKernelRecord(accessorArray)).toBe(false);
     expect(isKernelRecord(symbolArray)).toBe(false);
-    expect(() => assertKernelRecord(hiddenPropertyArray, "record")).toThrow(
+    expect(() => {
+      assertKernelRecord(hiddenPropertyArray, "record");
+    }).toThrow(
       "record must match the restricted runtime kernel record profile"
     );
   });
@@ -161,7 +176,9 @@ describe("KernelRecord", () => {
     });
 
     expect(isKernelRecord(hiddenPropertyObject)).toBe(false);
-    expect(() => assertKernelRecord(hiddenPropertyObject, "record")).toThrow(
+    expect(() => {
+      assertKernelRecord(hiddenPropertyObject, "record");
+    }).toThrow(
       "record must match the restricted runtime kernel record profile"
     );
   });
@@ -179,7 +196,9 @@ describe("KernelRecord", () => {
 
     expect(isKernelRecord(accessorObject)).toBe(false);
     expect(getterCalls).toBe(0);
-    expect(() => assertKernelRecord(accessorObject, "record")).toThrow(
+    expect(() => {
+      assertKernelRecord(accessorObject, "record");
+    }).toThrow(
       "record must match the restricted runtime kernel record profile"
     );
     expect(getterCalls).toBe(0);
@@ -194,10 +213,14 @@ describe("KernelRecord", () => {
 
     expect(isKernelRecord(cyclicObject)).toBe(false);
     expect(isKernelRecord(cyclicArray)).toBe(false);
-    expect(() => assertKernelRecord(cyclicObject, "record")).toThrow(
+    expect(() => {
+      assertKernelRecord(cyclicObject, "record");
+    }).toThrow(
       "record must match the restricted runtime kernel record profile"
     );
-    expect(() => assertKernelRecord(cyclicArray, "record")).toThrow(
+    expect(() => {
+      assertKernelRecord(cyclicArray, "record");
+    }).toThrow(
       "record must match the restricted runtime kernel record profile"
     );
   });
@@ -205,12 +228,37 @@ describe("KernelRecord", () => {
   test("rejects negative zero as a non-canonical kernel integer", () => {
     expect(isKernelRecord(-0)).toBe(false);
     expect(isKernelRecord({ n: -0 })).toBe(false);
-    expect(() => assertKernelRecord(-0, "record")).toThrow(
+    expect(() => {
+      assertKernelRecord(-0, "record");
+    }).toThrow(
       "record must match the restricted runtime kernel record profile"
     );
   });
 
   test("normalizes insertion-order variants to identical deterministic bytes", () => {
+    const [first, second] = kernelRecordInsertionOrderVariants;
+    if (
+      first === null ||
+      typeof first !== "object" ||
+      second === null ||
+      typeof second !== "object"
+    ) {
+      throw new Error("Expected object insertion-order fixtures");
+    }
+    expect(Object.keys(first)).toEqual([
+      "timestamp",
+      "meta",
+      "items",
+      "bytes",
+      "active",
+    ]);
+    expect(Object.keys(second)).toEqual([
+      "active",
+      "bytes",
+      "items",
+      "meta",
+      "timestamp",
+    ]);
     const encodedVariants = kernelRecordInsertionOrderVariants.map((variant) =>
       Buffer.from(encodeDeterministicKernelRecord(variant)).toString("hex")
     );
@@ -279,7 +327,12 @@ describe("KernelRecord", () => {
     });
 
     const symbolBytes = new Uint8Array([1, 2]);
-    (symbolBytes as unknown as Record<symbol, number>)[Symbol("meta")] = 3;
+    Object.defineProperty(symbolBytes, Symbol("meta"), {
+      configurable: true,
+      enumerable: true,
+      value: 3,
+      writable: true,
+    });
 
     expect(isKernelRecord(hiddenPropertyBytes)).toBe(false);
     expect(isKernelRecord(accessorBytes)).toBe(false);
@@ -290,16 +343,16 @@ describe("KernelRecord", () => {
 describe("TuvrenError", () => {
   test("accepts lowercase snake_case error codes", () => {
     expect(isTuvrenErrorCode("invalid_schema")).toBe(true);
-    expect(() =>
-      assertTuvrenErrorCode("store_write_failed", "code")
-    ).not.toThrow();
+    expect(() => {
+      assertTuvrenErrorCode("store_write_failed", "code");
+    }).not.toThrow();
   });
 
   test("rejects invalid public error code shapes", () => {
     expect(isTuvrenErrorCode("Not_Snake_Case")).toBe(false);
-    expect(() => assertTuvrenErrorCode("Not_Snake_Case", "code")).toThrow(
-      "code must be a lowercase snake_case Tuvren error code"
-    );
+    expect(() => {
+      assertTuvrenErrorCode("Not_Snake_Case", "code");
+    }).toThrow("code must be a lowercase snake_case Tuvren error code");
     expect(
       () => new TuvrenValidationError("bad", { code: "Not_Snake_Case" })
     ).toThrow("options.code must be a lowercase snake_case Tuvren error code");

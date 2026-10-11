@@ -56,13 +56,13 @@ const createKernelRecord = (width: number, depth: number): KernelRecord => {
 };
 const RECORD_FIXTURE = createKernelRecord(20, 4);
 const bunRuntime = globalThis as typeof globalThis & {
-  Bun: { nanoseconds(): number };
+  Bun: { nanoseconds: () => number };
 };
 
 interface BenchmarkCase {
   iterations: number;
   name: string;
-  run(iterations: number): Promise<void> | void;
+  run: (iterations: number) => Promise<void> | void;
 }
 
 interface BenchmarkResult {
@@ -71,6 +71,19 @@ interface BenchmarkResult {
   iterations: number;
   name: string;
 }
+
+/** Runs bounded benchmark work in order, with no overlapping samples. */
+const repeatSequentially = async (
+  count: number,
+  operation: (index: number) => Promise<void> | void,
+  index = 0
+): Promise<void> => {
+  if (index >= count) {
+    return;
+  }
+  await operation(index);
+  await repeatSequentially(count, operation, index + 1);
+};
 
 const cases: BenchmarkCase[] = [
   {
@@ -86,9 +99,9 @@ const cases: BenchmarkCase[] = [
     iterations: 250,
     name: "deterministic CBOR encode and SHA-256 hash",
     async run(iterations) {
-      for (let index = 0; index < iterations; index += 1) {
+      await repeatSequentially(iterations, async () => {
         await hashKernelRecord(RECORD_FIXTURE);
-      }
+      });
     },
   },
 ];
@@ -104,11 +117,11 @@ const measure = async (
 
   const samples: number[] = [];
 
-  for (let sampleIndex = 0; sampleIndex < SAMPLE_COUNT; sampleIndex += 1) {
+  await repeatSequentially(SAMPLE_COUNT, async () => {
     const startedAt = nanoseconds();
     await benchmarkCase.run(benchmarkCase.iterations);
     samples.push(nanoseconds() - startedAt);
-  }
+  });
 
   const bestNs = Math.min(...samples);
   const averageNs =
@@ -137,14 +150,15 @@ const formatNs = (value: number): string => {
 const main = async (): Promise<void> => {
   process.stdout.write("kernel identity benchmark\n");
 
-  for (const benchmarkCase of cases) {
+  await repeatSequentially(cases.length, async (caseIndex) => {
+    const benchmarkCase = cases[caseIndex];
     const result = await measure(benchmarkCase);
     process.stdout.write(
       `${result.name}: best ${formatNs(result.bestNs)} total, ${formatNs(
         result.bestNs / result.iterations
       )}/iter; avg ${formatNs(result.averageNs)} total\n`
     );
-  }
+  });
 };
 
 await main();

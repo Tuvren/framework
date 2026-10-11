@@ -80,7 +80,7 @@ interface StoredTurnTreePathCandidate {
  * not recompute the content hash; use {@link assertStoredObjectIdentity} for
  * that.
  *
- * @throws TuvrenValidationError With code `invalid_stored_object_byte_length`
+ * @throws {TuvrenValidationError} With code `invalid_stored_object_byte_length`
  *   on a byte-length mismatch.
  */
 export const assertStoredObject: (
@@ -125,7 +125,7 @@ export const isStoredObject = (value: unknown): value is StoredObject =>
  * Asserts a structurally valid {@link StoredObject} whose `hash` also equals
  * the SHA-256 digest of `bytes` (`hashOpaqueObjectBytes`, kernel spec §2.3).
  *
- * @throws TuvrenValidationError With code `invalid_stored_object_hash` when the
+ * @throws {TuvrenValidationError} With code `invalid_stored_object_hash` when the
  *   stored hash does not match the recomputed digest.
  */
 export const assertStoredObjectIdentity = async (
@@ -153,7 +153,7 @@ export const assertStoredObjectIdentity = async (
  * `schemaCbor` must decode as canonical deterministic CBOR into a valid
  * TurnTreeSchema whose `schemaId` matches the record's key column.
  *
- * @throws TuvrenValidationError With code `invalid_stored_schema_id` when the
+ * @throws {TuvrenValidationError} With code `invalid_stored_schema_id` when the
  *   key column and the decoded schema id disagree.
  */
 export const assertStoredSchema: (
@@ -300,7 +300,7 @@ export const assertStoredTurnTree: (
  * the recomputed canonical identity digest of `{ schemaId, manifest }`
  * (`hashTurnTreeIdentity`, kernel spec §3.2).
  *
- * @throws TuvrenValidationError With code `invalid_stored_turn_tree_hash` when
+ * @throws {TuvrenValidationError} With code `invalid_stored_turn_tree_hash` when
  *   the stored hash does not match the recomputed digest.
  */
 export const assertStoredTurnTreeIdentity: (
@@ -318,8 +318,9 @@ export const assertStoredTurnTreeIdentity: (
 
   const manifest = assertDecodedKernelRecord<TurnTreeManifest>(
     value.manifestCbor,
-    (decodedValue, manifestLabel) =>
-      assertTurnTreeManifest(decodedValue, schema, manifestLabel),
+    (decodedValue, manifestLabel) => {
+      assertTurnTreeManifest(decodedValue, schema, manifestLabel);
+    },
     `${resolvedLabel}.manifestCbor`
   );
   const expectedHash = await hashTurnTreeIdentity(
@@ -792,7 +793,7 @@ export const isStoredOrderedPathChunk = (
  * also equals the canonical record digest of the decoded item list
  * (`hashKernelRecord`).
  *
- * @throws TuvrenValidationError With code
+ * @throws {TuvrenValidationError} With code
  *   `invalid_stored_ordered_path_chunk_hash` when the stored hash does not
  *   match the recomputed digest.
  */

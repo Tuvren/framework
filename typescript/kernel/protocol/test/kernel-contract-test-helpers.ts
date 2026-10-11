@@ -15,15 +15,32 @@
  */
 
 export const restorePrototypeValue = (
-  target: Record<PropertyKey, unknown>,
+  target: object,
   key: PropertyKey,
   hadOwn: boolean,
   originalValue: unknown
 ): void => {
   if (hadOwn) {
-    target[key] = originalValue;
+    Reflect.set(target, key, originalValue);
     return;
   }
 
   Reflect.deleteProperty(target, key);
+};
+
+/** Returns a rejected Error so assertions run after the operation settles. */
+export const rejectionOf = async (
+  operation: Promise<unknown>
+): Promise<Error> => {
+  try {
+    await operation;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return error;
+    }
+    throw new Error("Expected the operation to reject with an Error", {
+      cause: error,
+    });
+  }
+  throw new Error("Expected the operation to reject");
 };

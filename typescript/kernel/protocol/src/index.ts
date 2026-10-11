@@ -37,7 +37,7 @@
  * semver-guaranteed for hosts, and should not be imported directly by
  * applications (see docs/guides/publishing-and-adopter-onboarding.md).
  *
- * @packageDocumentation
+ * @file
  */
 
 // biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
