@@ -20,6 +20,7 @@ import { createMemoryBackend } from "@tuvren/backend-memory";
 import { hashKernelRecord } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
+import { mapSequential } from "../src/lib/runtime-kernel-async.ts";
 import {
   toStoredTurnTreePath,
   toStoredTurnTreePathChunkAware,
@@ -33,8 +34,11 @@ const seededHashes = async (
   seed = "chunk-aware-unit"
 ): Promise<string[]> => {
   const hashes: string[] = [];
-  for (let index = 0; index < count; index += 1) {
-    hashes.push(await hashKernelRecord(`${seed}-${index}`));
+  for await (const hash of mapSequential(
+    Array.from({ length: count }, (_, index) => index),
+    async (index) => await hashKernelRecord(`${seed}-${index}`)
+  )) {
+    hashes.push(hash);
   }
   return hashes;
 };
@@ -242,20 +246,24 @@ describe("toStoredTurnTreePathChunkAware fallback parity with toStoredTurnTreePa
     // items.length < prior.orderedCount guard against.
     let treeHash = thread.rootTurnTreeHash;
     const grownItems = await seededHashes(THRESHOLD + 4, "shrink-guard");
-    for (const [index, hash] of grownItems.entries()) {
-      treeHash = await kernel.tree.incorporate(treeHash, [
-        {
-          objectHash: hash,
-          objectType: "message",
-          status: "completed",
-          taskId: `task_${index}`,
-          timestamp: 1,
-        },
-      ]);
+    for await (const grownTreeHash of mapSequential(
+      grownItems.entries(),
+      async ([index, hash]) =>
+        await kernel.tree.incorporate(treeHash, [
+          {
+            objectHash: hash,
+            objectType: "message",
+            status: "completed",
+            taskId: `task_${index}`,
+            timestamp: 1,
+          },
+        ])
+    )) {
+      treeHash = grownTreeHash;
     }
 
-    const storedPrior = await backend.transact(async (tx) =>
-      tx.turnTreePaths.get(treeHash, "messages")
+    const storedPrior = await backend.transact(
+      async (tx) => await tx.turnTreePaths.get(treeHash, "messages")
     );
     expect(storedPrior?.collectionKind).toBe("ordered");
     if (storedPrior?.collectionKind === "ordered") {

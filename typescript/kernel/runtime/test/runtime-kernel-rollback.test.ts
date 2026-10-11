@@ -16,7 +16,10 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { createThreadFixture } from "./runtime-kernel-test-helpers.ts";
+import {
+  rejectionOf,
+  createThreadFixture,
+} from "./runtime-kernel-test-helpers.ts";
 
 describe("createRuntimeKernel rollback and branch movement", () => {
   test("branch.setHead allocates an unused rollback archive branch id", async () => {
@@ -148,12 +151,13 @@ describe("createRuntimeKernel rollback and branch movement", () => {
       [{ deterministic: false, id: "step", sideEffects: false }]
     );
 
-    await expect(
+    const rejectedError1 = await rejectionOf(
       fixture.kernel.branch.setHead(
         fixture.branchId,
         forkCheckpoint.turnNodeHash
       )
-    ).rejects.toThrow(
+    );
+    expect(rejectedError1.message).toContain(
       'branch "branch_forward_active_run" cannot move head while run "run_forward_active_run" is active'
     );
   });
@@ -262,8 +266,8 @@ describe("createRuntimeKernel rollback and branch movement", () => {
     expect(
       await fixture.kernel.staging.current("run_rollback_clears_staged")
     ).toEqual([]);
-    const storedRun = await fixture.backend.transact((tx) =>
-      tx.runs.get("run_rollback_clears_staged")
+    const storedRun = await fixture.backend.transact(
+      async (tx) => await tx.runs.get("run_rollback_clears_staged")
     );
     expect(storedRun?.status).toBe("failed");
   });
@@ -360,8 +364,9 @@ describe("createRuntimeKernel rollback and branch movement", () => {
       [{ annotations: [{ note: "second" }], signals: [] }]
     );
 
-    const records = await fixture.backend.transact((tx) =>
-      tx.observeAnnotations.listByRun("run_observe_annotations")
+    const records = await fixture.backend.transact(
+      async (tx) =>
+        await tx.observeAnnotations.listByRun("run_observe_annotations")
     );
 
     expect(records).toHaveLength(2);
@@ -405,8 +410,11 @@ describe("createRuntimeKernel rollback and branch movement", () => {
       ]
     );
 
-    const records = await fixture.backend.transact((tx) =>
-      tx.observeAnnotations.listByRun("run_duplicate_observe_annotations")
+    const records = await fixture.backend.transact(
+      async (tx) =>
+        await tx.observeAnnotations.listByRun(
+          "run_duplicate_observe_annotations"
+        )
     );
 
     expect(records).toHaveLength(2);

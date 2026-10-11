@@ -40,6 +40,7 @@ import type {
   TurnTreeManifest,
 } from "@tuvren/kernel-protocol";
 
+import { mapSequential } from "./runtime-kernel-async.js";
 import {
   allocateArchiveBranchId,
   applyStagedResultsToManifest,
@@ -99,7 +100,7 @@ const encodeCursor = (
  * Inverse of {@link encodeCursor}: decodes and validates an opaque
  * `thread.list` cursor back into its {@link ListThreadsCursorPayload} shape.
  *
- * @throws TuvrenValidationError With code `invalid_durable_read_cursor` when
+ * @throws {TuvrenValidationError} With code `invalid_durable_read_cursor` when
  *   the cursor is not valid base64url, does not decode to JSON, or has an
  *   unexpected shape.
  */
@@ -131,10 +132,14 @@ const decodeCursor = (
   if (
     typeof parsed !== "object" ||
     parsed === null ||
-    (parsed as ListThreadsCursorPayload).v !== 1 ||
-    (parsed as ListThreadsCursorPayload).kind !== "list-threads" ||
-    typeof (parsed as ListThreadsCursorPayload).lastThreadId !== "string" ||
-    typeof (parsed as ListThreadsCursorPayload).lastCreatedAtMs !== "number"
+    !("v" in parsed) ||
+    !("kind" in parsed) ||
+    !("lastThreadId" in parsed) ||
+    !("lastCreatedAtMs" in parsed) ||
+    parsed.v !== 1 ||
+    parsed.kind !== "list-threads" ||
+    typeof parsed.lastThreadId !== "string" ||
+    typeof parsed.lastCreatedAtMs !== "number"
   ) {
     throw new TuvrenValidationError(
       "thread.list cursor payload has unexpected shape",
@@ -143,7 +148,12 @@ const decodeCursor = (
       }
     );
   }
-  return parsed as ListThreadsCursorPayload;
+  return {
+    kind: parsed.kind,
+    lastCreatedAtMs: parsed.lastCreatedAtMs,
+    lastThreadId: parsed.lastThreadId,
+    v: parsed.v,
+  };
 };
 
 /**
@@ -155,14 +165,14 @@ export interface RuntimeKernelOptions {
   /**
    * Generates fencing tokens for leased runs (kernel spec §5.2).
    *
-   * @defaultValue `randomUUID` from `node:crypto`.
+   * Default: `randomUUID` from `node:crypto`.
    */
   createFencingToken?: () => string;
   /**
    * Clock the kernel uses for durable timestamps and lease-expiry
    * comparisons, injectable for deterministic tests.
    *
-   * @defaultValue `() => Date.now() as EpochMs`.
+   * Default: `() => Date.now()`.
    */
   now?: () => EpochMs;
 }
@@ -183,7 +193,7 @@ export interface RuntimeKernelOptions {
 export const createRuntimeKernel = (
   options: RuntimeKernelOptions
 ): RuntimeKernel & RuntimeKernelRunLiveness => {
-  const now = options.now ?? (() => Date.now() as EpochMs);
+  const now = options.now ?? (() => Date.now());
   const { backend } = options;
   const createFencingToken = options.createFencingToken ?? randomUUID;
 
@@ -266,8 +276,11 @@ export const createRuntimeKernel = (
             currentHead,
             turnNodeHash
           );
+          const threadBranches = await tx.branches.listByThread(
+            branch.threadId
+          );
           const archiveOrdinal =
-            (await tx.branches.listByThread(branch.threadId)).filter(
+            threadBranches.filter(
               (candidate) => candidate.archivedFromBranchId === branchId
             ).length + 1;
           const archiveBranchId = await allocateArchiveBranchId(tx, {
@@ -287,7 +300,7 @@ export const createRuntimeKernel = (
 
           // Fail all running/paused runs on the abandoned segment
           const branchRuns = await tx.runs.listByBranch(branchId);
-          for (const storedRun of branchRuns) {
+          for await (const _ of mapSequential(branchRuns, async (storedRun) => {
             if (
               (storedRun.status === "running" ||
                 storedRun.status === "paused") &&
@@ -302,6 +315,8 @@ export const createRuntimeKernel = (
                 updatedAtMs: now(),
               });
             }
+          })) {
+            // All writes for this run settled before processing the next run.
           }
 
           const updated: StoredBranch = {
@@ -320,8 +335,10 @@ export const createRuntimeKernel = (
     },
 
     maintenance: {
-      async reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
-        if (!backend.capabilities()["maintenance.reclamation"]) {
+      async reclaim(
+        reclamationOptions?: ReclamationOptions
+      ): Promise<ReclamationSummary> {
+        if (backend.capabilities()["maintenance.reclamation"] !== true) {
           throw new TuvrenPersistenceError(
             "maintenance.reclamation is not supported by this backend",
             { code: "kernel_capability_unsupported" }
@@ -333,7 +350,9 @@ export const createRuntimeKernel = (
             { code: "kernel_capability_unsupported" }
           );
         }
-        return await backend.reclaim({ nowMs: options?.nowMs ?? now() });
+        return await backend.reclaim({
+          nowMs: reclamationOptions?.nowMs ?? now(),
+        });
       },
     },
 
@@ -438,12 +457,12 @@ export const createRuntimeKernel = (
       },
 
       async has(hash) {
-        return await backend.transact(async (tx) => tx.objects.has(hash));
+        return await backend.transact(async (tx) => await tx.objects.has(hash));
       },
 
       async put(blob, mediaType) {
-        return await backend.transact(async (tx) =>
-          putObject(tx, blob, now, mediaType)
+        return await backend.transact(
+          async (tx) => await putObject(tx, blob, now, mediaType)
         );
       },
     },
@@ -506,7 +525,7 @@ export const createRuntimeKernel = (
         });
       },
 
-      async list(options) {
+      async list(listOptions) {
         if (!backend.capabilities()["thread.enumeration"]) {
           throw new TuvrenPersistenceError(
             "thread.list is not supported by this backend",
@@ -521,13 +540,13 @@ export const createRuntimeKernel = (
             );
           }
           const decodedCursor =
-            options?.cursor === undefined
+            listOptions?.cursor === undefined
               ? undefined
-              : decodeCursor(options.cursor);
+              : decodeCursor(listOptions.cursor);
           const result = await tx.threads.list({
             cursor: decodedCursor,
-            filter: options?.filter,
-            limit: options?.limit,
+            filter: listOptions?.filter,
+            limit: listOptions?.limit,
           });
           return {
             nextCursor:
@@ -632,8 +651,8 @@ export const createRuntimeKernel = (
       },
 
       async manifest(treeHash) {
-        return await backend.transact(async (tx) =>
-          requireTreeManifest(tx, treeHash)
+        return await backend.transact(
+          async (tx) => await requireTreeManifest(tx, treeHash)
         );
       },
 
@@ -742,23 +761,23 @@ export const createRuntimeKernel = (
     },
 
     verdicts: {
-      compose(verdicts) {
+      async compose(verdicts) {
         const abort = verdicts.find((verdict) => verdict.kind === "abort");
         if (abort !== undefined) {
-          return Promise.resolve(abort);
+          return abort;
         }
 
         const pause = verdicts.find((verdict) => verdict.kind === "pause");
         if (pause !== undefined) {
-          return Promise.resolve(pause);
+          return pause;
         }
 
         const modify = composeModifyVerdict(verdicts);
         if (modify !== undefined) {
-          return Promise.resolve(modify);
+          return modify;
         }
 
-        return Promise.resolve(
+        return await Promise.resolve(
           verdicts.find((verdict) => verdict.kind === "retry") ?? {
             kind: "proceed",
           }

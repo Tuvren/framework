@@ -20,6 +20,7 @@ import { createMemoryBackend } from "@tuvren/backend-memory";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
 import {
+  rejectionOf,
   createThreadFixture,
   TEST_SCHEMA,
 } from "./runtime-kernel-test-helpers.ts";
@@ -138,7 +139,10 @@ describe("createRuntimeKernel foundation", () => {
     expect(await kernel.schema.register(TEST_SCHEMA)).toBe(
       TEST_SCHEMA.schemaId
     );
-    await expect(kernel.schema.register(TEST_SCHEMA)).rejects.toThrow(
+    const rejectedError1 = await rejectionOf(
+      kernel.schema.register(TEST_SCHEMA)
+    );
+    expect(rejectedError1.message).toContain(
       `schema "${TEST_SCHEMA.schemaId}" is already registered`
     );
   });
@@ -167,9 +171,10 @@ describe("createRuntimeKernel foundation", () => {
     await fixture.kernel.run.beginStep("run_final_step", "only");
     await fixture.kernel.run.completeStep("run_final_step", "only");
 
-    await expect(
+    const rejectedError2 = await rejectionOf(
       fixture.kernel.run.beginStep("run_final_step", "only")
-    ).rejects.toThrow('unexpected step "only"');
+    );
+    expect(rejectedError2.message).toContain('unexpected step "only"');
 
     const recovery = await fixture.kernel.run.recover("run_final_step");
     expect(recovery.lastCompletedStepId).toBe("only");
@@ -182,25 +187,31 @@ describe("createRuntimeKernel foundation", () => {
       threadId: "thread_uniqueness",
     });
 
-    await expect(
+    const rejectedError3 = await rejectionOf(
       fixture.kernel.thread.create(
         fixture.threadId,
         fixture.schemaId,
         "branch_shadow"
       )
-    ).rejects.toThrow('thread "thread_uniqueness" already exists');
+    );
+    expect(rejectedError3.message).toContain(
+      'thread "thread_uniqueness" already exists'
+    );
 
     expect(await fixture.kernel.branch.list(fixture.threadId)).toEqual([
       [fixture.branchId, fixture.rootTurnNodeHash],
     ]);
 
-    await expect(
+    const rejectedError4 = await rejectionOf(
       fixture.kernel.thread.create(
         "thread_branch_collision",
         fixture.schemaId,
         fixture.branchId
       )
-    ).rejects.toThrow('branch "branch_thread_uniqueness" already exists');
+    );
+    expect(rejectedError4.message).toContain(
+      'branch "branch_thread_uniqueness" already exists'
+    );
     expect(
       await fixture.kernel.thread.get("thread_branch_collision")
     ).toBeNull();
@@ -213,13 +224,16 @@ describe("createRuntimeKernel foundation", () => {
       threadId: "thread_branch_create_uniqueness",
     });
 
-    await expect(
+    const rejectedError5 = await rejectionOf(
       fixture.kernel.branch.create(
         fixture.branchId,
         fixture.threadId,
         fixture.rootTurnNodeHash
       )
-    ).rejects.toThrow('branch "branch_create_uniqueness" already exists');
+    );
+    expect(rejectedError5.message).toContain(
+      'branch "branch_create_uniqueness" already exists'
+    );
 
     expect(await fixture.kernel.branch.list(fixture.threadId)).toEqual([
       [fixture.branchId, fixture.rootTurnNodeHash],
@@ -241,7 +255,7 @@ describe("createRuntimeKernel foundation", () => {
       fixture.rootTurnNodeHash
     );
 
-    await expect(
+    const rejectedError6 = await rejectionOf(
       fixture.kernel.turn.create(
         turn.turnId,
         fixture.threadId,
@@ -249,7 +263,10 @@ describe("createRuntimeKernel foundation", () => {
         null,
         fixture.rootTurnNodeHash
       )
-    ).rejects.toThrow('turn "turn_uniqueness" already exists');
+    );
+    expect(rejectedError6.message).toContain(
+      'turn "turn_uniqueness" already exists'
+    );
 
     expect(await fixture.kernel.turn.get(turn.turnId)).toEqual(turn);
   });
@@ -278,7 +295,7 @@ describe("createRuntimeKernel foundation", () => {
       [{ deterministic: true, id: "start", sideEffects: false }]
     );
 
-    await expect(
+    const rejectedError7 = await rejectionOf(
       fixture.kernel.run.create(
         "run_uniqueness",
         turn.turnId,
@@ -287,6 +304,9 @@ describe("createRuntimeKernel foundation", () => {
         fixture.rootTurnNodeHash,
         [{ deterministic: true, id: "start", sideEffects: false }]
       )
-    ).rejects.toThrow('run "run_uniqueness" already exists');
+    );
+    expect(rejectedError7.message).toContain(
+      'run "run_uniqueness" already exists'
+    );
   });
 });

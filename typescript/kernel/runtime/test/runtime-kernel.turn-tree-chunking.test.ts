@@ -21,14 +21,18 @@ import { hashKernelRecord } from "@tuvren/kernel-protocol";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import type { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
+import { mapSequential } from "../src/lib/runtime-kernel-async.ts";
 import { createThreadFixture } from "./runtime-kernel-test-helpers.ts";
 
 const THRESHOLD = 32;
 
 const seededHashes = async (count: number, seed: string): Promise<string[]> => {
   const hashes: string[] = [];
-  for (let index = 0; index < count; index += 1) {
-    hashes.push(await hashKernelRecord(`${seed}-${index}`));
+  for await (const hash of mapSequential(
+    Array.from({ length: count }, (_, index) => index),
+    async (index) => await hashKernelRecord(`${seed}-${index}`)
+  )) {
+    hashes.push(hash);
   }
   return hashes;
 };
@@ -56,13 +60,12 @@ const growMessagesOneAtATime = async (
 ): Promise<string> => {
   let treeHash = startTreeHash;
 
-  for (const [index, hash] of hashes.entries()) {
-    treeHash = await incorporateOneMessage(
-      kernel,
-      treeHash,
-      hash,
-      `task_${index}`
-    );
+  for await (const grownTreeHash of mapSequential(
+    hashes.entries(),
+    async ([index, hash]) =>
+      await incorporateOneMessage(kernel, treeHash, hash, `task_${index}`)
+  )) {
+    treeHash = grownTreeHash;
   }
 
   return treeHash;
@@ -99,19 +102,20 @@ const withCountingOrderedPathChunkPuts = (
   let count = 0;
   const backend: RuntimeBackend = {
     capabilities: () => inner.capabilities(),
-    health: () => inner.health(),
-    transact: (work) =>
-      inner.transact((tx) =>
-        work({
-          ...tx,
-          orderedPathChunks: {
-            ...tx.orderedPathChunks,
-            put: (record) => {
-              count += 1;
-              return tx.orderedPathChunks.put(record);
+    health: async () => await inner.health(),
+    transact: async (work) =>
+      await inner.transact(
+        async (tx) =>
+          await work({
+            ...tx,
+            orderedPathChunks: {
+              ...tx.orderedPathChunks,
+              put: async (record) => {
+                count += 1;
+                await tx.orderedPathChunks.put(record);
+              },
             },
-          },
-        })
+          })
       ),
   };
   return { backend, putCount: () => count };
@@ -158,8 +162,8 @@ describe("createRuntimeKernel chunk-aware TurnTree caller writes", () => {
     const manifest = await fixture.kernel.tree.manifest(grownTreeHash);
     expect(manifest.messages).toEqual(hashes);
 
-    const storedPath = await fixture.backend.transact(async (tx) =>
-      tx.turnTreePaths.get(grownTreeHash, "messages")
+    const storedPath = await fixture.backend.transact(
+      async (tx) => await tx.turnTreePaths.get(grownTreeHash, "messages")
     );
     expect(storedPath?.collectionKind).toBe("ordered");
     if (storedPath?.collectionKind === "ordered") {
@@ -182,8 +186,8 @@ describe("createRuntimeKernel chunk-aware TurnTree caller writes", () => {
       hashes
     );
 
-    const storedPath = await fixture.backend.transact(async (tx) =>
-      tx.turnTreePaths.get(treeHash, "messages")
+    const storedPath = await fixture.backend.transact(
+      async (tx) => await tx.turnTreePaths.get(treeHash, "messages")
     );
     expect(storedPath?.collectionKind).toBe("ordered");
     if (storedPath?.collectionKind === "ordered") {
@@ -218,33 +222,44 @@ describe("createRuntimeKernel chunk-aware TurnTree caller writes", () => {
     const crossingCount = THRESHOLD + 1;
     let treeHash = rootTurnTreeHash;
 
-    for (let index = 0; index < crossingCount; index += 1) {
-      treeHash = await incorporateOneMessage(
-        fixture.kernel,
-        treeHash,
-        hashes[index] as string,
-        `crossing_task_${index}`
-      );
+    for await (const grownTreeHash of mapSequential(
+      hashes.slice(0, crossingCount).entries(),
+      async ([index, hash]) =>
+        await incorporateOneMessage(
+          fixture.kernel,
+          treeHash,
+          hash,
+          `crossing_task_${index}`
+        )
+    )) {
+      treeHash = grownTreeHash;
     }
 
-    const storedAfterCrossing = await backend.transact(async (tx) =>
-      tx.turnTreePaths.get(treeHash, "messages")
+    const storedAfterCrossing = await backend.transact(
+      async (tx) => await tx.turnTreePaths.get(treeHash, "messages")
     );
     expect(storedAfterCrossing?.collectionKind).toBe("ordered");
     if (storedAfterCrossing?.collectionKind === "ordered") {
       expect(storedAfterCrossing.orderedEncoding).toBe("chunked");
     }
 
-    for (let index = crossingCount; index < totalItems; index += 1) {
-      const before = putCount();
-      treeHash = await incorporateOneMessage(
-        fixture.kernel,
-        treeHash,
-        hashes[index] as string,
-        `steady_state_task_${index}`
-      );
+    for await (const { grownTreeHash, previousPutCount } of mapSequential(
+      hashes.slice(crossingCount).entries(),
+      async ([offset, hash]) => {
+        const index = crossingCount + offset;
+        const before = putCount();
+        treeHash = await incorporateOneMessage(
+          fixture.kernel,
+          treeHash,
+          hash,
+          `steady_state_task_${index}`
+        );
+        return { grownTreeHash: treeHash, previousPutCount: before };
+      }
+    )) {
+      treeHash = grownTreeHash;
       const after = putCount();
-      expect(after - before).toBe(1);
+      expect(after - previousPutCount).toBe(1);
     }
 
     const resolved = await fixture.kernel.tree.resolve(treeHash, "messages");
@@ -268,8 +283,8 @@ describe("createRuntimeKernel chunk-aware TurnTree caller writes", () => {
       priorHashes
     );
 
-    const storedPrior = await fixture.backend.transact(async (tx) =>
-      tx.turnTreePaths.get(priorTreeHash, "messages")
+    const storedPrior = await fixture.backend.transact(
+      async (tx) => await tx.turnTreePaths.get(priorTreeHash, "messages")
     );
     expect(storedPrior?.collectionKind).toBe("ordered");
     if (storedPrior?.collectionKind === "ordered") {
@@ -300,8 +315,8 @@ describe("createRuntimeKernel chunk-aware TurnTree caller writes", () => {
     );
     expect(resolved).toEqual(expected);
 
-    const storedGrown = await fixture.backend.transact(async (tx) =>
-      tx.turnTreePaths.get(grownTreeHash, "messages")
+    const storedGrown = await fixture.backend.transact(
+      async (tx) => await tx.turnTreePaths.get(grownTreeHash, "messages")
     );
     expect(storedGrown?.collectionKind).toBe("ordered");
     if (storedGrown?.collectionKind === "ordered") {

@@ -50,6 +50,7 @@ import type {
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
+import { mapSequential, unfoldAsync } from "./runtime-kernel-async.js";
 import {
   decodeHashArray,
   decodeStoredRun,
@@ -105,15 +106,16 @@ export const composeModifyVerdict = (
  * TurnNodes from `fromHash` back toward the thread root, following
  * `previousTurnNodeHash` links one transaction per step.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_turn_node`
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_turn_node`
  *   when no node exists at `fromHash`.
+ * @yields {TurnNode} Each TurnNode, starting at fromHash.
  */
 export const walkBack = async function* walkBack(
   backend: RuntimeBackend,
   fromHash: HashString
 ): AsyncIterable<TurnNode> {
-  const first = await backend.transact(async (tx) =>
-    tx.turnNodes.get(fromHash)
+  const first = await backend.transact(
+    async (tx) => await tx.turnNodes.get(fromHash)
   );
 
   if (first === null) {
@@ -122,22 +124,18 @@ export const walkBack = async function* walkBack(
     });
   }
 
-  let currentHash: HashString | null = fromHash;
-
-  while (currentHash !== null) {
-    const hash = currentHash;
+  yield* unfoldAsync<HashString | null, TurnNode>(fromHash, async (hash) => {
+    if (hash === null) {
+      return null;
+    }
     const node = await backend.transact(async (tx) => {
       const stored = await tx.turnNodes.get(hash);
       return stored === null ? null : decodeStoredTurnNode(stored);
     });
-
-    if (node === null) {
-      return;
-    }
-
-    yield node;
-    currentHash = node.previousTurnNodeHash;
-  }
+    return node === null
+      ? null
+      : { next: node.previousTurnNodeHash, value: node };
+  });
 };
 
 /**
@@ -146,20 +144,21 @@ export const walkBack = async function* walkBack(
  * {@link RuntimeBackendTx}, for callers that need the walk inside a larger
  * atomic operation (head movement classification, lineage checks).
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_turn_node`
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_turn_node`
  *   when the walk reaches a hash with no corresponding node.
+ * @yields {TurnNode} Each TurnNode, starting at fromHash.
  */
 export const walkBackFromTx = async function* walkBackFromTx(
   tx: RuntimeBackendTx,
   fromHash: HashString
 ): AsyncIterable<TurnNode> {
-  let currentHash: HashString | null = fromHash;
-
-  while (currentHash !== null) {
-    const node = await requireTurnNode(tx, currentHash);
-    yield node;
-    currentHash = node.previousTurnNodeHash;
-  }
+  yield* unfoldAsync<HashString | null, TurnNode>(fromHash, async (hash) => {
+    if (hash === null) {
+      return null;
+    }
+    const node = await requireTurnNode(tx, hash);
+    return { next: node.previousTurnNodeHash, value: node };
+  });
 };
 
 /**
@@ -194,7 +193,7 @@ export const classifyHeadMovement = async (
  * forward — a forward move while a run is active would strand the run's
  * lineage assumptions.
  *
- * @throws TuvrenRuntimeError With code
+ * @throws {TuvrenRuntimeError} With code
  *   `kernel_runtime_branch_has_active_run`.
  */
 export const assertNoActiveBranchRunForForwardHeadMove = async (
@@ -222,7 +221,7 @@ export const assertNoActiveBranchRunForForwardHeadMove = async (
  * `targetHash` (exclusive of `targetHash`), the segment a backward
  * `branch.setHead` move abandons and archives.
  *
- * @throws TuvrenLineageError With code
+ * @throws {TuvrenLineageError} With code
  *   `kernel_runtime_backward_lineage_mismatch` when `targetHash` is not an
  *   ancestor of `currentHead`.
  */
@@ -261,18 +260,20 @@ export const allocateArchiveBranchId = async (
     initialOrdinal: number;
   }
 ): Promise<string> => {
-  let ordinal = input.initialOrdinal;
-
-  while (true) {
+  const candidates = unfoldAsync(input.initialOrdinal, async (ordinal) => {
     const candidate = `${input.branchId}-archive-${ordinal}-${input.currentHead.slice(0, 16)}`;
     const existing = await tx.branches.get(candidate);
-
-    if (existing === null) {
-      return candidate;
+    return {
+      next: ordinal + 1,
+      value: { available: existing === null, candidate },
+    };
+  });
+  for await (const candidate of candidates) {
+    if (candidate.available) {
+      return candidate.candidate;
     }
-
-    ordinal += 1;
   }
+  throw new Error("archive candidate sequence ended unexpectedly");
 };
 
 /**
@@ -348,7 +349,7 @@ export const turnNodeDescendsFrom = async (
  * turn's head landed must name the immediately preceding turn on the same
  * branch as its parent.
  *
- * @throws TuvrenLineageError With code `kernel_runtime_turn_parent_required`,
+ * @throws {TuvrenLineageError} With code `kernel_runtime_turn_parent_required`,
  *   `kernel_runtime_turn_parent_thread_mismatch`,
  *   `kernel_runtime_turn_parent_start_mismatch`, or
  *   `kernel_runtime_turn_parent_not_immediate_predecessor` depending on
@@ -361,7 +362,8 @@ export const validateTurnParent = async (
   parentTurnId: string | null,
   startTurnNodeHash: HashString
 ): Promise<void> => {
-  const candidateTurnsAtStart = (await tx.turns.listByThread(threadId)).filter(
+  const threadTurns = await tx.turns.listByThread(threadId);
+  const candidateTurnsAtStart = threadTurns.filter(
     (candidateTurn) => candidateTurn.headTurnNodeHash === startTurnNodeHash
   );
   const sameBranchCandidateTurns = candidateTurnsAtStart.filter(
@@ -424,8 +426,8 @@ export const validateTurnParent = async (
  * `nextHeadTurnNodeHash`, and no other turn that names `turn` as its parent
  * may start anywhere but `nextHeadTurnNodeHash`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_turn_has_active_run`.
- * @throws TuvrenLineageError With code
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_turn_has_active_run`.
+ * @throws {TuvrenLineageError} With code
  *   `kernel_runtime_turn_head_has_dependent_turns`.
  */
 export const assertTurnHeadRewritePreservesDependents = async (
@@ -489,7 +491,7 @@ export const stepRequiresCheckpoint = (
 /**
  * Asserts `run` is in `"running"` status.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_run_not_running`.
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_run_not_running`.
  */
 export const requireRunningRun = (run: RunRecord, runId: string): void => {
   if (run.status !== "running") {
@@ -505,7 +507,7 @@ export const requireRunningRun = (run: RunRecord, runId: string): void => {
  * `stepId` — `beginStep`/`completeStep` must always target the run's next
  * declared step, never skip ahead or repeat.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_unexpected_step` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_unexpected_step` when
  *   `stepId` does not match the current step.
  */
 export const requireCurrentStep = (
@@ -528,7 +530,7 @@ export const requireCurrentStep = (
  * `run.completeStep`/`run.complete` caller must stage the event's bytes via
  * `store.put` or `staging.stage` before referencing them.
  *
- * @throws TuvrenValidationError With code
+ * @throws {TuvrenValidationError} With code
  *   `kernel_runtime_missing_event_object` when `eventHash` is set but not
  *   found.
  */
@@ -555,7 +557,7 @@ export const assertEventHashInStore = async (
  * both exists and was built against `schemaId` — a step must not check
  * itself into a tree from a foreign schema.
  *
- * @throws TuvrenValidationError With code `kernel_runtime_missing_tree` when
+ * @throws {TuvrenValidationError} With code `kernel_runtime_missing_tree` when
  *   `treeHash` is set but not found, or
  *   `kernel_runtime_tree_schema_mismatch` when its schema differs.
  */
@@ -639,15 +641,17 @@ export const createObserveAnnotationRecords = async (input: {
     turnNodeHash: HashString | null;
   }[] = [];
 
-  for (const annotation of annotations) {
+  for await (const record of mapSequential(annotations, async (annotation) => {
     const annotationCbor = encodeRecord(annotation);
-    records.push({
+    return {
       annotationCbor,
       annotationHash: await hashKernelRecord(annotation),
       createdAtMs,
       runId: input.runId,
       turnNodeHash: input.turnNodeHash,
-    });
+    };
+  })) {
+    records.push(record);
   }
 
   return records;
@@ -658,7 +662,7 @@ export const createObserveAnnotationRecords = async (input: {
  * structurally valid ObserveResult, a no-op when `observeResults` is
  * `undefined`.
  *
- * @throws TuvrenValidationError When an element is not a valid ObserveResult.
+ * @throws {TuvrenValidationError} When an element is not a valid ObserveResult.
  */
 export const validateObserveResults = (
   observeResults: unknown[] | undefined
@@ -676,7 +680,7 @@ export const validateObserveResults = (
  * Validates each of `run.create`'s step declarations and asserts their `id`s
  * are unique within the sequence.
  *
- * @throws TuvrenValidationError With code `kernel_runtime_duplicate_step_id`
+ * @throws {TuvrenValidationError} With code `kernel_runtime_duplicate_step_id`
  *   when two steps share an `id`.
  */
 export const assertUniqueStepIds = (steps: StepDeclaration[]): void => {
@@ -701,7 +705,7 @@ export const assertUniqueStepIds = (steps: StepDeclaration[]): void => {
  * every path in `changes` must be schema-declared, and each value must match
  * its path's collection kind.
  *
- * @throws TuvrenValidationError With code `kernel_runtime_unknown_tree_path`
+ * @throws {TuvrenValidationError} With code `kernel_runtime_unknown_tree_path`
  *   for an undeclared path, or `invalid_path_value_kind` (from
  *   {@link assertPathValueForCollectionKind}) for a mismatched value.
  */
@@ -736,7 +740,7 @@ export const validateTurnTreeChangeSet = (
  * incorporation rule in `schema` (kernel spec Appendix B) — an unmatched
  * object type would have nowhere to land when incorporated into a tree.
  *
- * @throws TuvrenValidationError With code
+ * @throws {TuvrenValidationError} With code
  *   `kernel_runtime_unmatched_incorporation_rule` when a result's
  *   `objectType` has no rule.
  */
@@ -767,7 +771,7 @@ export const validateStagedResultsHaveRules = (
  * {@link validateStagedResultsHaveRules} already confirmed every result has
  * a rule; still throws defensively if one is missing.
  *
- * @throws TuvrenValidationError With code
+ * @throws {TuvrenValidationError} With code
  *   `kernel_runtime_unmatched_incorporation_rule`.
  */
 export const applyStagedResultsToManifest = (
@@ -851,16 +855,17 @@ export const createTurnTree = async (
   });
   await tx.turnTreePaths.putMany(
     await Promise.all(
-      input.schema.paths.map((path) =>
-        toStoredTurnTreePathChunkAware(
-          tx,
-          hash,
-          path.collection,
-          path.path,
-          manifest[path.path],
-          input.priorTurnTreeHash,
-          input.now
-        )
+      input.schema.paths.map(
+        async (path) =>
+          await toStoredTurnTreePathChunkAware(
+            tx,
+            hash,
+            path.collection,
+            path.path,
+            manifest[path.path],
+            input.priorTurnTreeHash,
+            input.now
+          )
       )
     )
   );
@@ -873,7 +878,7 @@ export const createTurnTree = async (
  * incorporation rules, mirroring the public `tree.incorporate` syscall but
  * for the run's own schema and base tree.
  *
- * @throws TuvrenValidationError With code
+ * @throws {TuvrenValidationError} With code
  *   `kernel_runtime_tree_schema_mismatch` when the base tree's schema
  *   differs from the run's schema.
  */

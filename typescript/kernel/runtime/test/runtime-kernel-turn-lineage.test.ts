@@ -16,7 +16,10 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { createThreadFixture } from "./runtime-kernel-test-helpers.ts";
+import {
+  rejectionOf,
+  createThreadFixture,
+} from "./runtime-kernel-test-helpers.ts";
 
 describe("createRuntimeKernel turn lineage", () => {
   test("turn.create rejects stale same-branch parent turns in the kernel", async () => {
@@ -80,7 +83,7 @@ describe("createRuntimeKernel turn lineage", () => {
       checkpoint.turnNodeHash
     );
 
-    await expect(
+    const rejectedError1 = await rejectionOf(
       fixture.kernel.turn.create(
         "turn_parent_stale",
         fixture.threadId,
@@ -88,7 +91,8 @@ describe("createRuntimeKernel turn lineage", () => {
         mainTurn.turnId,
         checkpoint.turnNodeHash
       )
-    ).rejects.toThrow(
+    );
+    expect(rejectedError1.message).toContain(
       'parent turn "turn_parent_main" is not the immediately previous turn on branch "branch_turn_parent_kernel_fork"'
     );
 
@@ -143,12 +147,13 @@ describe("createRuntimeKernel turn lineage", () => {
       checkpoint.turnNodeHash
     );
 
-    await expect(
+    const rejectedError2 = await rejectionOf(
       fixture.kernel.turn.updateHead(
         parentTurn.turnId,
         fixture.rootTurnNodeHash
       )
-    ).rejects.toThrow(
+    );
+    expect(rejectedError2.message).toContain(
       'turn "turn_head_parent" cannot rewrite head past dependent turn "turn_head_child"'
     );
   });

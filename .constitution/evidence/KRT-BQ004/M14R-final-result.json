@@ -1,0 +1,375 @@
+{
+  "milestone": "M14R-final",
+  "ticket": "KRT-BQ004",
+  "baseline_commit": "2d123e7612c27a0cf6af05fc20c526e86b5753d7",
+  "files": [
+    ".changeset/toolchain-bq-kernel-lint-pilot.md",
+    "tools/scripts/lib/biome-lint-partition.test.ts",
+    "typescript/kernel/runtime/README.md",
+    "typescript/kernel/runtime/src/index.ts",
+    "typescript/kernel/runtime/src/lib/runtime-kernel-async.ts",
+    "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts",
+    "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts",
+    "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts",
+    "typescript/kernel/runtime/src/lib/runtime-kernel.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-async.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-lineage.apply-staged-results.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-reclamation.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-rollback.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-run-liveness.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-constant-agreement.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-test-helpers.ts",
+    "typescript/kernel/runtime/test/runtime-kernel-turn-lineage.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel.foundation.test.ts",
+    "typescript/kernel/runtime/test/runtime-kernel.turn-tree-chunking.test.ts"
+  ],
+  "diff": {
+    "files": 19,
+    "added": 753,
+    "deleted": 291,
+    "byPath": [
+      {
+        "path": ".changeset/toolchain-bq-kernel-lint-pilot.md",
+        "added": 3,
+        "deleted": 1
+      },
+      {
+        "path": "typescript/kernel/runtime/README.md",
+        "added": 2,
+        "deleted": 0
+      },
+      {
+        "path": "typescript/kernel/runtime/src/index.ts",
+        "added": 1,
+        "deleted": 1
+      },
+      {
+        "path": "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts",
+        "added": 65,
+        "deleted": 60
+      },
+      {
+        "path": "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts",
+        "added": 16,
+        "deleted": 9
+      },
+      {
+        "path": "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts",
+        "added": 83,
+        "deleted": 64
+      },
+      {
+        "path": "typescript/kernel/runtime/src/lib/runtime-kernel.ts",
+        "added": 48,
+        "deleted": 29
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel-lineage.apply-staged-results.test.ts",
+        "added": 15,
+        "deleted": 7
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel-reclamation.test.ts",
+        "added": 11,
+        "deleted": 6
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel-rollback.test.ts",
+        "added": 17,
+        "deleted": 9
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel-run-liveness.test.ts",
+        "added": 17,
+        "deleted": 17
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts",
+        "added": 22,
+        "deleted": 14
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-constant-agreement.test.ts",
+        "added": 12,
+        "deleted": 9
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel-test-helpers.ts",
+        "added": 17,
+        "deleted": 0
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel-turn-lineage.test.ts",
+        "added": 10,
+        "deleted": 5
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel.foundation.test.ts",
+        "added": 33,
+        "deleted": 13
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel.turn-tree-chunking.test.ts",
+        "added": 62,
+        "deleted": 47
+      },
+      {
+        "path": "typescript/kernel/runtime/src/lib/runtime-kernel-async.ts",
+        "added": 56,
+        "deleted": 0
+      },
+      {
+        "path": "typescript/kernel/runtime/test/runtime-kernel-async.test.ts",
+        "added": 263,
+        "deleted": 0
+      }
+    ]
+  },
+  "source_hashes": {
+    ".changeset/toolchain-bq-kernel-lint-pilot.md": {
+      "before": "153e72bcd86b3af65b1faa294dea6ac20ed56b6d718f834f6c4b841f880c5d4a",
+      "after": "79a79ef59356b81cde780c4f1fb6e66d908709fcef0d4c72a6f08b12dba3153c"
+    },
+    "tools/scripts/lib/biome-lint-partition.test.ts": {
+      "before": "011d5ee63e5038d7f6588e3a71c8d3bef060a8312b49b84a042a9e944e1f83db",
+      "after": "a5dad047950914b2b930d3d835618ed33ff04eca5f036c6c3ff626f4b051934e"
+    },
+    "typescript/kernel/runtime/README.md": {
+      "before": "59901436f07e7d5e206393578b85b10ed27fab46c96b623fd96935124f3bd894",
+      "after": "4c4af4649e944233381ca65e3893741b8c355c67846438a60453f45cdfa4d961"
+    },
+    "typescript/kernel/runtime/src/index.ts": {
+      "before": "0c95c539bff7dec7944d436195adec73066033f953b9c725fcd0c581f78e42aa",
+      "after": "3a56151ff4c7bf8f252fe5c4ef99740ac17e29c87f438584b99c97aaf8eb4267"
+    },
+    "typescript/kernel/runtime/src/lib/runtime-kernel-async.ts": {
+      "before": null,
+      "after": "f57b112c8e7028ff517ca0309de4336066081205c93f71112732e61304bbb665"
+    },
+    "typescript/kernel/runtime/src/lib/runtime-kernel-lineage.ts": {
+      "before": "f5ecc5c0e49c55bdd2ab4c9bd3c3cdf12900cd7b652cea184ad7739fdfc6c83f",
+      "after": "6654d90494f5bc07e874c10d9f12148c57ce3fc9384eb1a55ef4aef21c4d762c"
+    },
+    "typescript/kernel/runtime/src/lib/runtime-kernel-runs.ts": {
+      "before": "144e348c998aa0da4422c276acc08e7cd832cfc645fe0d53c2885d087190233d",
+      "after": "ca1061bfa69af10d9b6899483249de6fb07852e3cc2073bbda6a5587f8e2a8aa"
+    },
+    "typescript/kernel/runtime/src/lib/runtime-kernel-storage.ts": {
+      "before": "e4add17117b4e3d0b92f65e130d070c439722b81b6356f98b69ead513c2a0ef6",
+      "after": "ac5aea208e73b0e529d57bf5af3a6b252641f2dc3b7989ec1b6bb1f75627134b"
+    },
+    "typescript/kernel/runtime/src/lib/runtime-kernel.ts": {
+      "before": "8fc48ba8300e2e140e6bbfe23a18f90b3397dbbc7cc36e51bc06c3da23ad3aa2",
+      "after": "5e2a60ace144475918b88455e12dff33669fc988d2c00a069ad368a18e00027a"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-async.test.ts": {
+      "before": null,
+      "after": "95446d5b55564dd228871ca4811887df760a2dea833ae04fa4e7a03a974d17ab"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-lineage.apply-staged-results.test.ts": {
+      "before": "aafeca98b0df02ec069294746b6a353f2b496ad79ede46f9cdcdfd4cfe8a2a79",
+      "after": "da8b489b2f9f12d97890975d7f889a846ef1b4e7ab102f43d4c1b2fd73212834"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-reclamation.test.ts": {
+      "before": "533b8ac57b07b56b36af5494de16d4f0fa4fa27904eb2de1b8ae3e4d67da0d91",
+      "after": "2eff20ca418eb98369e808c344222b0d1019839d36bcd0a727ca07ad414d8423"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-rollback.test.ts": {
+      "before": "b1b495001aa4b106919b6441db766bad2f9f4c08a8b1bab540b8d5ca042e548b",
+      "after": "340bf8770cb40181af8b072ac875f022fda4b3ecdea22fb73584d597fbef568f"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-run-liveness.test.ts": {
+      "before": "98cd2d908180b0576361f0f323d9274822981b498e81a19e20f742c25e49fcb0",
+      "after": "b24e1756bfc8dfa790e5d99cacdf2ac20124b48878f636a232c79bcc6c89d1a7"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-aware.test.ts": {
+      "before": "91ed041aa64ecfc7f084078eac889e2b8c718321105f73fa777dcb56cf0e665c",
+      "after": "fa6fb3664d5a2a4ce7477318c906885d4a3868bdf3799095b717aeb62094c841"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-storage.chunk-constant-agreement.test.ts": {
+      "before": "cc6b95464ce5d51689f3b1575d0e781c71fcf962d583f45e37f543662bcedb33",
+      "after": "7d17a0109aed78f3d40e49c8942dd9767c33040455cfc32266440e1f3d996a4f"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-test-helpers.ts": {
+      "before": "895c3fc6a0a2a90d87135cdf956da7a7191aaa6768dbbdf7030b63e61db36b94",
+      "after": "d3bf5adee690cccdae3a78cda0f25462e0125f6eb54bdf7cb1c242c92fc7fb9b"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel-turn-lineage.test.ts": {
+      "before": "288fd99391fe9bb1b9b6f08a020c8d28a4fbcae565f485fb6fe8b94deb4c2b24",
+      "after": "618748c77eeada5214731f75e3e90b2836f43f9768508e41d76b5a174aee636d"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel.foundation.test.ts": {
+      "before": "095ae22adf8d434e9052d0a49758b3d93ba8682f5792e323d9f149eb7dca91ca",
+      "after": "2120a86b270b4413548676800e9e8c93053c0edb37d3287843d34fcfaeb7d4c9"
+    },
+    "typescript/kernel/runtime/test/runtime-kernel.turn-tree-chunking.test.ts": {
+      "before": "882bd4597375a3b185004e3c4168565a1106626d0309c8e03512798ff3039a83",
+      "after": "3d7c3235e198d0a561a390ab51cb60779bcbb1336dd00be5bdfa3198a5830e40"
+    }
+  },
+  "native": {
+    "before": {
+      "syntactic": 93,
+      "typeAware": 164,
+      "historicalTypeAware": 165,
+      "drift": "Live baseline164 is recorded; historical165 is not a quota."
+    },
+    "after": {
+      "syntactic": 0,
+      "typeAware": 0,
+      "files": 19,
+      "rules": 474,
+      "nonTypeAwareRules": 419,
+      "typeAwareRules": 55
+    },
+    "combinedCodeSelection": 42,
+    "jsonFiles": 7
+  },
+  "worker_gates": [
+    {
+      "name": "scoped",
+      "command": "bun run nx run-many -t typecheck,test -p kernel-contract-protocol,kernel-runtime --parallel=1",
+      "exitCode": 0,
+      "log": "scoped.log"
+    },
+    {
+      "name": "focused",
+      "command": "bun test typescript/kernel/runtime/test/runtime-kernel-async.test.ts",
+      "exitCode": 0,
+      "log": "focused.log"
+    },
+    {
+      "name": "typecheck",
+      "command": "bun run typecheck",
+      "exitCode": 0,
+      "log": "typecheck.log"
+    },
+    {
+      "name": "native-syntactic",
+      "command": "bunx --bun oxlint typescript/kernel/runtime",
+      "exitCode": 0,
+      "log": "native-syntactic.log"
+    },
+    {
+      "name": "native-type-aware",
+      "command": "bunx --bun oxlint --type-aware typescript/kernel/runtime",
+      "exitCode": 0,
+      "log": "native-type-aware.log"
+    },
+    {
+      "name": "native-selection",
+      "command": "bunx --bun oxlint --debug=files typescript/kernel/runtime",
+      "exitCode": 0,
+      "log": "native-selection.log"
+    },
+    {
+      "name": "native-selection-all",
+      "command": "bunx --bun oxlint --debug=files typescript/kernel/protocol typescript/kernel/runtime",
+      "exitCode": 0,
+      "log": "native-selection-all.log"
+    },
+    {
+      "name": "native-json",
+      "command": "bun tools/scripts/json-check.ts typescript/kernel/runtime",
+      "exitCode": 0,
+      "log": "native-json.log"
+    },
+    {
+      "name": "retained-biome",
+      "command": "bunx --bun @biomejs/biome check typescript/kernel/runtime",
+      "exitCode": 0,
+      "log": "retained-biome.log"
+    },
+    {
+      "name": "format",
+      "command": "bun run format:check",
+      "exitCode": 0,
+      "log": "format.log"
+    },
+    {
+      "name": "lint",
+      "command": "bun run lint",
+      "exitCode": 0,
+      "log": "lint.log"
+    },
+    {
+      "name": "changeset",
+      "command": "bun run changeset:check",
+      "exitCode": 0,
+      "log": "changeset.log"
+    },
+    {
+      "name": "api-freeze",
+      "command": "bun run api-freeze",
+      "exitCode": 0,
+      "log": "api-freeze.log"
+    },
+    {
+      "name": "build",
+      "command": "bun run nx run-many -t build -p kernel-contract-protocol,kernel-runtime --parallel=1",
+      "exitCode": 0,
+      "log": "build.log"
+    },
+    {
+      "name": "conformance",
+      "command": "bun run conformance",
+      "exitCode": 0,
+      "log": "conformance.log"
+    },
+    {
+      "name": "constitution",
+      "command": "bun run /home/oscar/.codex/skills/constitution-tooling/scripts/cli.ts validate --root .",
+      "exitCode": 0,
+      "log": "constitution.log"
+    }
+  ],
+  "introduced": {
+    "patterns": [
+      {
+        "pattern": "Internal mapSequential async generator",
+        "purpose": "Map one input per pull, await completion through generator semantics, preserve ordered effects and close the source on return/error."
+      },
+      {
+        "pattern": "Internal unfoldAsync async generator over a typed AsyncIterable iterator",
+        "purpose": "One asynchronous state transition per pull with constant stack, no recursive delegation or prefetch.",
+        "shape": "step(State) => Promise<{ next: State; value: Value } | null>"
+      },
+      {
+        "pattern": "Runtime-test rejectionOf(Promise<unknown>) helper",
+        "purpose": "Reuse reviewed protocol test pattern to await rejection before Error assertions instead of awaiting Bun matchers typed void."
+      }
+    ],
+    "dependencies": [],
+    "conventions": [],
+    "contract_shapes": [
+      {
+        "visibility": "Internal helper only; no public or machine-authority contract change",
+        "shape": "State transition result { next: State; value: Value } | null",
+        "owner": "typescript/kernel/runtime/src/lib/runtime-kernel-async.ts"
+      }
+    ]
+  },
+  "proof_archive": "M14R-proof.tar.gz",
+  "proof_index": "M14R-proof-index.json.gz",
+  "archive_members": 81,
+  "note": "Combined milestone source hashes include separately authored approved shared-assertion alignment. Worker archive and repair archive remain distinct and immutable.",
+  "original_worker_result": "M14R-result.json",
+  "approved_repair_archive": "M14R-approved-repair.tar.gz",
+  "approved_repair_index": "M14R-approved-repair-index.json.gz",
+  "approval_note": "Owner-approved shared partition assertion path follows measured40-to42 corpus; all other assertions and negative controls preserved",
+  "lead_final_gates": {
+    "scoped": 0,
+    "typecheck": 0,
+    "format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "conformance": 0,
+    "api-freeze": 0,
+    "tooling-acceptance": 0,
+    "native-both": 0
+  },
+  "lead_gate_archive": "M14R-final-lead-gates.tar.gz",
+  "lead_gate_index": "M14R-final-lead-index.json.gz"
+}

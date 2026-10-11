@@ -25,7 +25,7 @@
  * {@link createRuntimeKernel} — it is the runtime counterpart to the
  * protocol types and validation guards exported by `@tuvren/kernel-protocol`.
  *
- * @packageDocumentation
+ * Package entrypoint.
  */
 
 export type { RuntimeKernelOptions } from "./lib/runtime-kernel.js";

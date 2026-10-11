@@ -52,6 +52,8 @@ import type {
   TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
+import { mapSequential, unfoldAsync } from "./runtime-kernel-async.js";
+
 // ADR-0011 frames the ordered-path chunking threshold/size as an
 // implementation constant, not a protocol constant, so each storage-owning
 // module (memory/postgres/sqlite backends, and this runtime caller) declares
@@ -144,7 +146,7 @@ export const normalizeManifest = (
  * (recursing into their elements/values); anything else (e.g. `undefined`,
  * functions, non-safe-integer numbers) is rejected.
  *
- * @throws TuvrenValidationError With code `kernel_runtime_invalid_record`
+ * @throws {TuvrenValidationError} With code `kernel_runtime_invalid_record`
  *   when `value` cannot be represented as a kernel record.
  */
 export const toKernelRecord = (value: unknown): KernelRecord => {
@@ -231,7 +233,7 @@ export const toStoredTurnTreePath = (
 /**
  * Decodes deterministic CBOR `bytes` into a {@link KernelRecord}.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_invalid_record` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_invalid_record` when
  *   `bytes` do not decode, using `label` to identify the field in the error
  *   message.
  */
@@ -254,7 +256,7 @@ export const decodeKernelRecord = (
  * Decodes and validates a CBOR-encoded array of hash strings, e.g. a run's
  * `createdTurnNodesCbor` or a chunked ordered path's chunk-hash list.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_invalid_record` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_invalid_record` when
  *   the bytes do not decode to an array of valid hash strings.
  */
 export const decodeHashArray = (bytes: Uint8Array): HashString[] => {
@@ -324,30 +326,38 @@ export const toStoredTurnTreePathChunkAware = async (
   const reusedChunkHashes = priorChunkHashes.slice(0, stableChunkCount);
   const newChunkHashes: HashString[] = [];
 
-  for (
-    let index = stableChunkCount * RUNTIME_ORDERED_PATH_CHUNK_SIZE;
-    index < items.length;
-    index += RUNTIME_ORDERED_PATH_CHUNK_SIZE
-  ) {
-    const chunkItems = items.slice(
-      index,
-      index + RUNTIME_ORDERED_PATH_CHUNK_SIZE
-    );
-    const chunkHash = await hashKernelRecord(chunkItems);
-    // Chunk content is hash-addressed, so an identical chunk of items may
-    // already exist under a different tree's history (e.g. divergent
-    // branches sharing early lineage). Backends reject a put whose
-    // createdAtMs differs from an existing record with the same key, so
-    // preserve the original stamp instead of always using `now()` — mirrors
-    // the memory/postgres/sqlite backends' own promotion-path behavior.
-    const existingChunk = await tx.orderedPathChunks.get(chunkHash);
-    await tx.orderedPathChunks.put({
-      chunkHash,
-      createdAtMs: existingChunk?.createdAtMs ?? now(),
-      itemCount: chunkItems.length,
-      itemsCbor: encodeRecord(chunkItems),
-    });
-    newChunkHashes.push(chunkHash);
+  const chunkHashes = unfoldAsync(
+    stableChunkCount * RUNTIME_ORDERED_PATH_CHUNK_SIZE,
+    async (index) => {
+      if (index >= items.length) {
+        return null;
+      }
+      const chunkItems = items.slice(
+        index,
+        index + RUNTIME_ORDERED_PATH_CHUNK_SIZE
+      );
+      const chunkHash = await hashKernelRecord(chunkItems);
+      // Chunk content is hash-addressed, so an identical chunk of items may
+      // already exist under a different tree's history (e.g. divergent
+      // branches sharing early lineage). Backends reject a put whose
+      // createdAtMs differs from an existing record with the same key, so
+      // preserve the original stamp instead of always using `now()` — mirrors
+      // the memory/postgres/sqlite backends' own promotion-path behavior.
+      const existingChunk = await tx.orderedPathChunks.get(chunkHash);
+      await tx.orderedPathChunks.put({
+        chunkHash,
+        createdAtMs: existingChunk?.createdAtMs ?? now(),
+        itemCount: chunkItems.length,
+        itemsCbor: encodeRecord(chunkItems),
+      });
+      return {
+        next: index + RUNTIME_ORDERED_PATH_CHUNK_SIZE,
+        value: chunkHash,
+      };
+    }
+  );
+  for await (const storedChunkHash of chunkHashes) {
+    newChunkHashes.push(storedChunkHash);
   }
 
   return {
@@ -367,7 +377,7 @@ export const toStoredTurnTreePathChunkAware = async (
  * Loads the durable TurnTree row (hash, encoded manifest, schema id) for
  * `hash`, without decoding the manifest.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_turn_tree`
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_turn_tree`
  *   when no tree exists at `hash`.
  */
 export const requireTurnTree = async (
@@ -394,7 +404,7 @@ export const requireTurnTree = async (
  * {@link TurnTreeManifest}, checking each path value is `null`, a hash
  * string, or an array of hash strings.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_invalid_record` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_invalid_record` when
  *   the bytes do not decode to an object, or a path value has an invalid
  *   shape.
  */
@@ -443,7 +453,7 @@ export const decodeManifest = (bytes: Uint8Array): TurnTreeManifest => {
 /**
  * Loads and decodes the full {@link TurnTreeManifest} for `treeHash`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_turn_tree`
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_turn_tree`
  *   when no tree exists at `treeHash`.
  */
 export const requireTreeManifest = async (
@@ -458,9 +468,9 @@ export const requireTreeManifest = async (
  * Decodes and validates a CBOR-encoded array of {@link StagedResult}s, e.g. a
  * TurnNode's `consumedStagedResultsCbor`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_invalid_record` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_invalid_record` when
  *   the bytes do not decode to an array.
- * @throws TuvrenValidationError When an element is not a valid
+ * @throws {TuvrenValidationError} When an element is not a valid
  *   {@link StagedResult}.
  */
 export const decodeStagedResults = (bytes: Uint8Array): StagedResult[] => {
@@ -498,7 +508,7 @@ export const decodeStoredTurnNode = (record: StoredTurnNode): TurnNode => ({
 /**
  * Loads and decodes the {@link TurnNode} at `hash`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_turn_node`
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_turn_node`
  *   when no node exists at `hash`.
  */
 export const requireTurnNode = async (
@@ -520,7 +530,7 @@ export const requireTurnNode = async (
  * Walks back from `hash` toward the thread root, confirming it lies on the
  * thread's TurnNode lineage before returning the node at `hash`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_lineage_mismatch` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_lineage_mismatch` when
  *   the lineage walk from `hash` reaches the thread genesis without ever
  *   encountering `thread.rootTurnNodeHash`.
  */
@@ -529,16 +539,25 @@ export const requireThreadTurnNode = async (
   hash: HashString,
   thread: ThreadRecord
 ): Promise<TurnNode> => {
-  let currentHash: HashString | null = hash;
-
-  while (currentHash !== null) {
-    const node = await requireTurnNode(tx, currentHash);
-
-    if (node.hash === thread.rootTurnNodeHash) {
-      return await requireTurnNode(tx, hash);
+  const nodes = unfoldAsync<HashString | null, TurnNode>(
+    hash,
+    async (currentHash) => {
+      if (currentHash === null) {
+        return null;
+      }
+      const node = await requireTurnNode(tx, currentHash);
+      return { next: node.previousTurnNodeHash, value: node };
     }
-
-    currentHash = node.previousTurnNodeHash;
+  );
+  // Mapping the matching node keeps the final reread inside the same ordered walk.
+  for await (const matchedNode of mapSequential(nodes, async (node) =>
+    node.hash === thread.rootTurnNodeHash
+      ? await requireTurnNode(tx, hash)
+      : null
+  )) {
+    if (matchedNode !== null) {
+      return matchedNode;
+    }
   }
 
   throw new TuvrenRuntimeError("turn node does not belong to thread", {
@@ -656,9 +675,9 @@ export const toStoredStagedResult = (
  * Decodes and validates a run's CBOR-encoded step sequence into
  * {@link StepDeclaration}s.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_invalid_record` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_invalid_record` when
  *   the bytes do not decode to an array.
- * @throws TuvrenValidationError When an element is not a valid
+ * @throws {TuvrenValidationError} When an element is not a valid
  *   {@link StepDeclaration}.
  */
 export const decodeSteps = (bytes: Uint8Array): StepDeclaration[] => {
@@ -820,7 +839,7 @@ export const isRunLeaseState = (
  * Asserts `value` is a non-empty string, throwing with `label` identifying
  * the field for a caller-facing error message.
  *
- * @throws TuvrenValidationError With code `kernel_runtime_invalid_string`.
+ * @throws {TuvrenValidationError} With code `kernel_runtime_invalid_string`.
  */
 export const assertNonEmptyString = (value: string, label: string): void => {
   if (value.length === 0) {
@@ -834,7 +853,7 @@ export const assertNonEmptyString = (value: string, label: string): void => {
  * Validates `createLeasedRun` input shared fields before the run is created:
  * a non-empty `executionOwnerId` and a safe-integer epoch `leaseExpiresAtMs`.
  *
- * @throws TuvrenValidationError With code `kernel_runtime_invalid_string` or
+ * @throws {TuvrenValidationError} With code `kernel_runtime_invalid_string` or
  *   `kernel_runtime_invalid_lease_expiry`.
  */
 export const assertLeasedRunCreateInput = (input: {
@@ -856,7 +875,7 @@ export const assertLeasedRunCreateInput = (input: {
  * `thread.create` fails fast before any writes when either identity
  * collides.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_thread_exists` or
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_thread_exists` or
  *   `kernel_runtime_branch_exists`.
  */
 export const assertThreadCreateIdsAvailable = async (
@@ -880,7 +899,7 @@ export const assertThreadCreateIdsAvailable = async (
 /**
  * Asserts `branchId` is not already registered.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_branch_exists`.
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_branch_exists`.
  */
 export const assertBranchIdAvailable = async (
   tx: RuntimeBackendTx,
@@ -896,7 +915,7 @@ export const assertBranchIdAvailable = async (
 /**
  * Asserts `runId` is not already registered.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_run_exists`.
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_run_exists`.
  */
 export const assertRunIdAvailable = async (
   tx: RuntimeBackendTx,
@@ -912,7 +931,7 @@ export const assertRunIdAvailable = async (
 /**
  * Asserts `turnId` is not already registered.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_turn_exists`.
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_turn_exists`.
  */
 export const assertTurnIdAvailable = async (
   tx: RuntimeBackendTx,
@@ -928,7 +947,7 @@ export const assertTurnIdAvailable = async (
 /**
  * Loads the durable {@link StoredBranch} for `branchId`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_branch` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_branch` when
  *   no branch exists at `branchId`.
  */
 export const requireBranch = async (
@@ -949,7 +968,7 @@ export const requireBranch = async (
 /**
  * Loads the durable {@link StoredRun} for `runId`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_run` when no
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_run` when no
  *   run exists at `runId`.
  */
 export const requireStoredRun = async (
@@ -970,7 +989,7 @@ export const requireStoredRun = async (
 /**
  * Loads and decodes the live {@link RunRecord} for `runId`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_run` when no
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_run` when no
  *   run exists at `runId`.
  */
 export const requireRun = async (
@@ -982,7 +1001,7 @@ export const requireRun = async (
  * Asserts `branchId` has no `running` or `paused` run, so a new run's
  * single-active-run-per-branch invariant holds before it is created.
  *
- * @throws TuvrenRuntimeError With code
+ * @throws {TuvrenRuntimeError} With code
  *   `kernel_runtime_branch_already_active`.
  */
 export const assertNoActiveRunOnBranch = async (
@@ -1007,7 +1026,7 @@ export const assertNoActiveRunOnBranch = async (
  * (lease renewal, preemption) that require the run to currently hold
  * execution ownership.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_run_not_leased` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_run_not_leased` when
  *   `run` holds no lease.
  */
 export const requireLeasedRun = (
@@ -1039,7 +1058,7 @@ export const requireLeasedRun = (
 /**
  * Loads the durable {@link StoredTurn} for `turnId`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_turn` when no
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_turn` when no
  *   turn exists at `turnId`.
  */
 export const requireStoredTurn = async (
@@ -1060,7 +1079,7 @@ export const requireStoredTurn = async (
 /**
  * Loads and projects the public {@link TurnRecord} for `turnId`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_turn`.
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_turn`.
  */
 export const requireTurn = async (
   tx: RuntimeBackendTx,
@@ -1070,7 +1089,7 @@ export const requireTurn = async (
 /**
  * Loads the public {@link ThreadRecord} for `threadId`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_thread` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_thread` when
  *   no thread exists at `threadId`.
  */
 export const requireThread = async (
@@ -1096,9 +1115,9 @@ export const requireThread = async (
  * Decodes and validates a stored schema's CBOR bytes into a
  * {@link TurnTreeSchema}.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_invalid_record` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_invalid_record` when
  *   the bytes do not decode.
- * @throws TuvrenValidationError When the decoded value is not a valid
+ * @throws {TuvrenValidationError} When the decoded value is not a valid
  *   {@link TurnTreeSchema}.
  */
 export const decodeSchema = (bytes: Uint8Array): TurnTreeSchema => {
@@ -1110,7 +1129,7 @@ export const decodeSchema = (bytes: Uint8Array): TurnTreeSchema => {
 /**
  * Loads and decodes the {@link TurnTreeSchema} for `schemaId`.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_missing_schema` when
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_missing_schema` when
  *   no schema exists at `schemaId`.
  */
 export const requireSchema = async (
@@ -1132,7 +1151,7 @@ export const requireSchema = async (
  * {@link decodeKernelRecord}, additionally asserting the decoded value is an
  * array.
  *
- * @throws TuvrenRuntimeError With code `kernel_runtime_invalid_record`.
+ * @throws {TuvrenRuntimeError} With code `kernel_runtime_invalid_record`.
  */
 export const decodeKernelRecordArray = (
   bytes: Uint8Array,
@@ -1146,5 +1165,5 @@ export const decodeKernelRecordArray = (
     });
   }
 
-  return decoded as KernelRecord[];
+  return decoded;
 };
