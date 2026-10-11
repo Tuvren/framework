@@ -1,0 +1,58 @@
+{
+  "milestone": "M5",
+  "ticket": "KRT-BQ003",
+  "baseline_commit": "a400c05376c54e03e8d4210b89885d1af2c04b7a",
+  "source_file": "typescript/kernel/protocol/src/lib/kernel-identity.ts",
+  "source_hashes": {
+    "before": "c14572dc86eb80a840b3b40835cfa31f9e92fd445035dd583c08e08a14e443dd",
+    "after": "dea582c73ceb1c2ca3ca78f1d39b5b777356a16ca94f82efd401ac4ca37afee9"
+  },
+  "diff_lines": 1239,
+  "converted_declarations": 28,
+  "assertion_callable_annotations": 7,
+  "targeted_diagnostics": {
+    "func_style": [
+      28,
+      0
+    ],
+    "no_use_before_define": [
+      77,
+      0
+    ]
+  },
+  "complete_callable_predicate_assertion_parameter_async_body_comparison": true,
+  "signature_negative_controls": 5,
+  "dependency_initialization_order_valid": true,
+  "imports_reexports_constants_unchanged": true,
+  "legacy_directive_preserved": "// biome-ignore-all lint/performance/noBarrelFile: This focused contract subpath intentionally re-exports deterministic identity helpers alongside local identity guards.",
+  "worker_gate_exits": {
+    "scoped": 0,
+    "fresh-process": 0,
+    "retained-biome": 0,
+    "format-touched": 0,
+    "typecheck": 0,
+    "changeset": 0,
+    "conformance": 0,
+    "format": 0,
+    "lint": 0
+  },
+  "conformance_outcomes_match_baseline": true,
+  "proof_archive": "M5-proof.tar.gz",
+  "proof_index": "M5-proof-index.json.gz",
+  "note": "Only exact single-return block to concise-arrow normalization is allowed in body comparison; unrelated native debt remains for later milestones.",
+  "lead_final_gates": {
+    "scoped": 0,
+    "typecheck": 0,
+    "format": 0,
+    "lint": 0,
+    "changeset": 0,
+    "constitution": 0,
+    "conformance": 0,
+    "api_freeze": 0
+  },
+  "frozen_surface": {
+    "entrypoints": 14,
+    "exports": 404,
+    "changed": false
+  }
+}
