@@ -20,7 +20,7 @@ import { createMemoryBackend } from "@tuvren/backend-memory";
 import type { RuntimeBackend } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
-import { TEST_SCHEMA } from "./runtime-kernel-test-helpers.ts";
+import { rejectionOf, TEST_SCHEMA } from "./runtime-kernel-test-helpers.ts";
 
 interface ReclamationFixture {
   backend: RuntimeBackend;
@@ -292,8 +292,11 @@ describe("createRuntimeKernel maintenance.reclamation", () => {
     });
 
     const archivedNode = await fixture.kernel.node.get(archived.turnNodeHash);
+    if (archivedNode === null) {
+      throw new Error("expected archived node");
+    }
     const archivedManifest = await fixture.kernel.tree.manifest(
-      (archivedNode as { turnTreeHash: string }).turnTreeHash
+      archivedNode.turnTreeHash
     );
     expect(archivedManifest.messages).toContain(shared.objectHash);
     expect(archivedManifest.messages).toContain(archived.objectHash);
@@ -406,14 +409,15 @@ describe("createRuntimeKernel maintenance.reclamation", () => {
   test("rejects reclamation when the backend does not advertise the capability", async () => {
     const nonReclaimingBackend: RuntimeBackend = {
       capabilities: () => ({ "thread.enumeration": true }),
-      health: () => Promise.resolve({ ok: true }),
+      health: async () => await Promise.resolve({ ok: true }),
       transact: () => {
         throw new Error("transact must not be reached when reclaim is gated");
       },
     };
     const kernel = createRuntimeKernel({ backend: nonReclaimingBackend });
 
-    await expect(kernel.maintenance.reclaim()).rejects.toThrow(
+    const rejectedError1 = await rejectionOf(kernel.maintenance.reclaim());
+    expect(rejectedError1.message).toContain(
       "maintenance.reclamation is not supported by this backend"
     );
   });
@@ -424,7 +428,7 @@ describe("createRuntimeKernel maintenance.reclamation", () => {
         "maintenance.reclamation": true,
         "thread.enumeration": true,
       }),
-      health: () => Promise.resolve({ ok: true }),
+      health: async () => await Promise.resolve({ ok: true }),
       transact: () => {
         throw new Error("transact must not be reached when reclaim is gated");
       },
@@ -433,7 +437,8 @@ describe("createRuntimeKernel maintenance.reclamation", () => {
       backend: advertisesButUnimplemented,
     });
 
-    await expect(kernel.maintenance.reclaim()).rejects.toThrow(
+    const rejectedError2 = await rejectionOf(kernel.maintenance.reclaim());
+    expect(rejectedError2.message).toContain(
       "backend advertises maintenance.reclamation but does not implement reclaim"
     );
   });

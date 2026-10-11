@@ -182,7 +182,7 @@ describe("biome coverage partition", () => {
     });
 
     expectCompletePartition(inventory, resolution);
-    expect(resolution.oxlintFiles).toHaveLength(40);
+    expect(resolution.oxlintFiles).toHaveLength(42);
     expect(resolution.jsonValidatedFiles).toHaveLength(14);
     expect(resolution.perList.get("bq")).toEqual([]);
     for (const file of [
@@ -232,7 +232,7 @@ describe("biome coverage partition", () => {
       { jsonValidatedFiles: [], oxlintFiles }
     );
 
-    expect(resolution.oxlintFiles).toHaveLength(40);
+    expect(resolution.oxlintFiles).toHaveLength(42);
     expect(resolution.jsonValidatedFiles).toEqual([]);
     expect(resolution.missing).toHaveLength(14);
     expect(resolution.missing.every((file) => file.endsWith(".json"))).toBe(

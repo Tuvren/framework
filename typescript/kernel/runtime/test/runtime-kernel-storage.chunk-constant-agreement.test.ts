@@ -26,24 +26,27 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 
 const TEST_DIRECTORY = import.meta.dirname;
 
 const DECLARATION_SOURCES = [
-  join(TEST_DIRECTORY, "../src/lib/runtime-kernel-storage.ts"),
-  join(
+  path.join(TEST_DIRECTORY, "../src/lib/runtime-kernel-storage.ts"),
+  path.join(
     TEST_DIRECTORY,
     "../../backends/memory/src/lib/memory-backend-turn-tree.ts"
   ),
   // The relational Postgres backend (issue #110) declares only the
   // threshold; its chunk size comes from the shared integrity-assertions
   // module below.
-  join(TEST_DIRECTORY, "../../backends/postgres/src/lib/postgres-backend.ts"),
-  join(TEST_DIRECTORY, "../../backends/sqlite/src/lib/sqlite-backend.ts"),
+  path.join(
+    TEST_DIRECTORY,
+    "../../backends/postgres/src/lib/postgres-backend.ts"
+  ),
+  path.join(TEST_DIRECTORY, "../../backends/sqlite/src/lib/sqlite-backend.ts"),
   // Declares the single shared ORDERED_PATH_CHUNK_SIZE the SQLite and
   // Postgres integrity-assertion shims re-export.
-  join(
+  path.join(
     TEST_DIRECTORY,
     "../../backends/shared/src/lib/backend-invariant-integrity-assertions.ts"
   ),
@@ -55,20 +58,20 @@ const extractDeclaredValues = (
   file: string;
   value: number;
 }[] => {
-  const pattern = new RegExp(`${constantName}\\s*=\\s*(\\d+)`, "g");
+  const pattern = new RegExp(`${constantName}\\s*=\\s*(\\d+)`, "gu");
   const found: { file: string; value: number }[] = [];
 
   for (const file of DECLARATION_SOURCES) {
     const text = readFileSync(file, "utf-8");
 
     for (const match of text.matchAll(pattern)) {
-      const rawValue = match[1];
+      const [, rawValue] = match;
 
       if (rawValue === undefined) {
         continue;
       }
 
-      found.push({ file, value: Number.parseInt(rawValue, 10) });
+      found.push({ file, value: Number(rawValue) });
     }
   }
 

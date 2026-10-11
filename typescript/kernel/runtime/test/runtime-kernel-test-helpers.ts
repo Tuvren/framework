@@ -68,3 +68,20 @@ export const createThreadFixture = async (
     threadId: thread.threadId,
   };
 };
+
+/** Returns a rejected Error so assertions run after the operation settles. */
+export const rejectionOf = async (
+  operation: Promise<unknown>
+): Promise<Error> => {
+  try {
+    await operation;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return error;
+    }
+    throw new Error("Expected the operation to reject with an Error", {
+      cause: error,
+    });
+  }
+  throw new Error("Expected the operation to reject");
+};

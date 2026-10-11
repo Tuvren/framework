@@ -16,7 +16,10 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { createThreadFixture } from "./runtime-kernel-test-helpers.ts";
+import {
+  rejectionOf,
+  createThreadFixture,
+} from "./runtime-kernel-test-helpers.ts";
 
 describe("createRuntimeKernel run liveness", () => {
   test("runLiveness.createLeasedRun returns a leased running record", async () => {
@@ -119,26 +122,24 @@ describe("createRuntimeKernel run liveness", () => {
     expect(stepResult.lease?.fencingToken).not.toBe(leasedRun.fencingToken);
     expect(stepResult.lease?.leaseExpiresAtMs).toBe(50);
 
-    await expect(
+    const rejectedError1 = await rejectionOf(
       fixture.kernel.runLiveness.renewLease(
         leasedRun.runId,
         "owner-alpha",
         leasedRun.fencingToken ?? "",
         75
       )
-    ).rejects.toThrow("fencing token");
+    );
+    expect(rejectedError1.message).toContain("fencing token");
 
-    await expect(
-      fixture.kernel.runLiveness.renewLease(
-        leasedRun.runId,
-        "owner-alpha",
-        stepResult.lease?.fencingToken ?? "",
-        75
-      )
-    ).resolves.toEqual({
-      fencingToken: expect.any(String),
-      leaseExpiresAtMs: 75,
-    });
+    const resolvedValue2 = await fixture.kernel.runLiveness.renewLease(
+      leasedRun.runId,
+      "owner-alpha",
+      stepResult.lease?.fencingToken ?? "",
+      75
+    );
+    expect(typeof resolvedValue2.fencingToken).toBe("string");
+    expect(resolvedValue2.leaseExpiresAtMs).toBe(75);
   });
 
   test("runLiveness.listExpired excludes paused and non-expired runs", async () => {
@@ -169,9 +170,8 @@ describe("createRuntimeKernel run liveness", () => {
     expect(await fixture.kernel.runLiveness.listExpired(19)).toEqual([]);
 
     currentNow = 21;
-    expect(
-      (await fixture.kernel.runLiveness.listExpired(21)).map((run) => run.runId)
-    ).toEqual(["run_list_expired"]);
+    const expiredRuns = await fixture.kernel.runLiveness.listExpired(21);
+    expect(expiredRuns.map((run) => run.runId)).toEqual(["run_list_expired"]);
 
     await fixture.kernel.run.complete(leasedRun.runId, "failed");
     expect(await fixture.kernel.runLiveness.listExpired(21)).toEqual([]);

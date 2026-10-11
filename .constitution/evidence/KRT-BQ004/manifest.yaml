@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-11",
-    "commit": "f9d5c8651b6b54adaaeb7dc8ca4a264f2dcfccd6",
-    "command": "M13R combined cleanup, approved generator/guard repairs, and independently rerun scoped/typecheck/format/lint/API/tooling/conformance gates"
+    "commit": "2d123e7612c27a0cf6af05fc20c526e86b5753d7",
+    "command": "M13R andM14R native cleanup with source/repair archives and independent scoped/typecheck/format/lint/API/tooling/conformance gates"
   },
   "files": [
     {
@@ -54,7 +54,55 @@
       "sha256": "8122c4069b38fa1b3fe6813b307d87b8ba70f049b89dd91412f2752e867fba1f",
       "bytes": 18482,
       "role": "measurement"
+    },
+    {
+      "path": "M14R-approved-repair-index.json.gz",
+      "sha256": "c14796b2076d33a8694e4d43e7956117347bfb8d3ff696262613723f786569f3",
+      "bytes": 532,
+      "role": "measurement"
+    },
+    {
+      "path": "M14R-approved-repair.tar.gz",
+      "sha256": "5235d445b08e12d408d47f56d5813c2d6f0b429566387b715d5c05193448ac53",
+      "bytes": 3964,
+      "role": "measurement"
+    },
+    {
+      "path": "M14R-final-lead-gates.tar.gz",
+      "sha256": "89976e702e8ea42938414d26abc0d98e94d9c7594f5d231a2aaee85cc924b195",
+      "bytes": 5462,
+      "role": "measurement"
+    },
+    {
+      "path": "M14R-final-lead-index.json.gz",
+      "sha256": "8b2737dd571e14ad3954fdd8c0b1ea186159dae561b594f8ff6c647741912c52",
+      "bytes": 659,
+      "role": "measurement"
+    },
+    {
+      "path": "M14R-final-result.json",
+      "sha256": "6a983d8e3c8f57c3d711c92673fd8a91fdacbf4e573c890410edb8c95eaeb9e3",
+      "bytes": 14216,
+      "role": "measurement"
+    },
+    {
+      "path": "M14R-proof-index.json.gz",
+      "sha256": "6760e6f64d29303a6ea3ade15cfb16580b5ff5cb88f5e0b8f3a4f5353f274fb2",
+      "bytes": 4540,
+      "role": "measurement"
+    },
+    {
+      "path": "M14R-proof.tar.gz",
+      "sha256": "91c9fdd2cf98a95877cd6cdcf3a11098b4a74cd1ac059e3a17c55d097f9e0539",
+      "bytes": 116915,
+      "role": "measurement"
+    },
+    {
+      "path": "M14R-result.json",
+      "sha256": "6ea4eb8d10c4d8f194d2359257720367bbd132f8d97fbe0903f07319a93e5892",
+      "bytes": 13252,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "Protocol has zero native diagnostics; 149 scoped tests,33 typecheck projects,11 conformance lanes,141 tooling tests and frozen SDK gate pass; three declared SDK signature changes have minor release coverage"
+  "pass_criteria": "Both native modes are clean;156scoped tests,33typecheck projects,141tooling tests,11conformance lanes,API freeze and changeset coverage pass; runtime async ordering/laziness/error identity has focused proof"
 }

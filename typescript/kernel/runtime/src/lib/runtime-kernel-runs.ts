@@ -25,6 +25,7 @@ import type {
   StoredRun,
 } from "@tuvren/kernel-protocol";
 
+import { mapSequential } from "./runtime-kernel-async.js";
 import {
   assertEventHashInStore,
   assertTreeHashForRun,
@@ -70,8 +71,8 @@ import {
  */
 interface RuntimeKernelRunsDependencies {
   backend: RuntimeBackend;
-  createFencingToken(): string;
-  now(): EpochMs;
+  createFencingToken: () => string;
+  now: () => EpochMs;
 }
 
 /**
@@ -87,10 +88,10 @@ const resolveTransactionClock = (
   fallback: () => EpochMs,
   tx: RuntimeBackendTx
 ): (() => EpochMs) => {
-  const backendNow = tx.now;
+  const backendNow = tx.now?.bind(tx);
 
-  if (sharedLeaseClock && typeof backendNow === "function") {
-    return () => backendNow.call(tx);
+  if (sharedLeaseClock && backendNow !== undefined) {
+    return backendNow;
   }
 
   return fallback;
@@ -114,7 +115,7 @@ const rebaseLeaseExpiry = (
     return suppliedExpiry;
   }
 
-  return (backendNow() + (suppliedExpiry - ownerNow())) as EpochMs;
+  return backendNow() + (suppliedExpiry - ownerNow());
 };
 
 /**
@@ -273,8 +274,13 @@ export const createRuntimeKernelRunApi = (
 
         await tx.runs.set(updatedRun);
 
-        for (const annotationRecord of annotationRecords) {
-          await tx.observeAnnotations.set(annotationRecord);
+        for await (const _ of mapSequential(
+          annotationRecords,
+          async (record) => {
+            await tx.observeAnnotations.set(record);
+          }
+        )) {
+          // Preserve transaction write order.
         }
 
         return {
@@ -424,7 +430,8 @@ export const createRuntimeKernelRunLivenessApi = (
       return await backend.transact(async (tx) => {
         const clock = resolveTransactionClock(sharedLeaseClock, now, tx);
         const effectiveNowMs = sharedLeaseClock ? clock() : nowMs;
-        return (await tx.runs.listExpired(effectiveNowMs)).map(decodeStoredRun);
+        const expiredRuns = await tx.runs.listExpired(effectiveNowMs);
+        return expiredRuns.map(decodeStoredRun);
       });
     },
 

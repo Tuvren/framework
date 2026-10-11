@@ -48,6 +48,14 @@ const stagedResult = (
   timestamp,
 });
 
+const orderedMessages = (manifest: TurnTreeManifest): string[] => {
+  const { messages } = manifest;
+  if (!Array.isArray(messages)) {
+    throw new TypeError("expected ordered messages");
+  }
+  return [...messages];
+};
+
 const HASH_A =
   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const HASH_B =
@@ -64,13 +72,13 @@ describe("applyStagedResultsToManifest", () => {
     applyStagedResultsToManifest(SCHEMA, manifest, [
       stagedResult("message", HASH_A, 1),
     ]);
-    const afterFirst = [...(manifest.messages as string[])];
+    const afterFirst = orderedMessages(manifest);
     expect(afterFirst).toEqual([HASH_A]);
 
     applyStagedResultsToManifest(SCHEMA, manifest, [
       stagedResult("message", HASH_B, 2),
     ]);
-    const afterSecond = [...(manifest.messages as string[])];
+    const afterSecond = orderedMessages(manifest);
 
     // Strict-prefix-preserving extension: every previously staged entry
     // survives, in order, at the head of the array.
@@ -80,7 +88,7 @@ describe("applyStagedResultsToManifest", () => {
     applyStagedResultsToManifest(SCHEMA, manifest, [
       stagedResult("message", HASH_C, 3),
     ]);
-    const afterThird = [...(manifest.messages as string[])];
+    const afterThird = orderedMessages(manifest);
     expect(afterThird.slice(0, afterSecond.length)).toEqual(afterSecond);
     expect(afterThird).toEqual([HASH_A, HASH_B, HASH_C]);
   });
@@ -111,7 +119,7 @@ describe("applyStagedResultsToManifest", () => {
       applyStagedResultsToManifest(SCHEMA, manifest, [
         stagedResult("message", hash, hashes.indexOf(hash)),
       ]);
-      const current = [...(manifest.messages as string[])];
+      const current = orderedMessages(manifest);
       expect(current.length).toBe(previous.length + 1);
       expect(current.slice(0, previous.length)).toEqual(previous);
       previous = current;
@@ -141,10 +149,10 @@ describe("applyStagedResultsToManifest", () => {
       messages: [],
     };
 
-    expect(() =>
+    expect(() => {
       applyStagedResultsToManifest(SCHEMA, manifest, [
         stagedResult("unmapped-type", HASH_A, 1),
-      ])
-    ).toThrow();
+      ]);
+    }).toThrow();
   });
 });
