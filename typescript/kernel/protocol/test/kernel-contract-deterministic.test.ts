@@ -35,17 +35,12 @@ import {
 } from "./kernel-protocol-fixtures.js";
 import { deterministicKernelRecordFixture } from "./kernel-record-fixtures.js";
 
-function invokeHashTurnTreeIdentity(
+const invokeHashTurnTreeIdentity = (
   schemaId: string,
   manifest: unknown,
   schema: unknown
-): Promise<string> {
-  return Reflect.apply(hashTurnTreeIdentity, undefined, [
-    schemaId,
-    manifest,
-    schema,
-  ]);
-}
+): Promise<string> =>
+  Reflect.apply(hashTurnTreeIdentity, undefined, [schemaId, manifest, schema]);
 
 describe("deterministic identity", () => {
   test("matches the shared canonical kernel-record fixture bytes and hash", async () => {
