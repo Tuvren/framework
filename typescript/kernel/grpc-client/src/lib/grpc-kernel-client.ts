@@ -100,6 +100,66 @@ export interface GrpcRuntimeKernelOptions {
 }
 
 /**
+ * Trims `value` and asserts it is non-empty.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_runtime_options` when the
+ *   trimmed value is empty.
+ */
+const normalizeBaseUrl = (value: string): string => {
+  const normalized = value.trim();
+
+  if (normalized.length === 0) {
+    throw new TuvrenRuntimeError("gRPC runtime kernel requires a base URL", {
+      code: "invalid_runtime_options",
+    });
+  }
+
+  return normalized;
+};
+
+/**
+ * Normalizes any error raised by a gRPC call into a {@link TuvrenRuntimeError}:
+ * decodes the kernel's structured error detail (`KernelErrorPayloadSchema`)
+ * when the server attached one, preserving its `code` and CBOR-encoded
+ * `details`, and otherwise falls back to a generic
+ * `kernel_transport_error` code built from the raw Connect error. `operation`
+ * identifies the failing kernel call (e.g. `"branch.create"`) in the
+ * resulting error's details.
+ */
+const toTransportError = (
+  error: unknown,
+  operation: string
+): TuvrenRuntimeError => {
+  const connectError = ConnectError.from(error);
+  const kernelPayload = connectError.findDetails(KernelErrorPayloadSchema)[0];
+  const decodedDetails =
+    kernelPayload?.detailsCbor === undefined
+      ? undefined
+      : decodeKernelRecordBytes(
+          kernelPayload.detailsCbor,
+          `${operation}.error.details`
+        );
+  const errorCode =
+    kernelPayload !== undefined && isTuvrenErrorCode(kernelPayload.code)
+      ? kernelPayload.code
+      : "kernel_transport_error";
+
+  return new TuvrenRuntimeError(
+    kernelPayload?.message ?? connectError.rawMessage,
+    {
+      cause: error,
+      code: errorCode,
+      details: {
+        connectCode: connectError.code,
+        decodedDetails,
+        metadata: Object.fromEntries(connectError.metadata.entries()),
+        operation,
+      },
+    }
+  );
+};
+
+/**
  * Builds a {@link RuntimeKernel} that projects every syscall onto a remote
  * kernel service over gRPC (via Connect RPC), one client per kernel service
  * group (`store`, `schema`, `tree`, `node`, `thread`, `branch`, `staging`,
@@ -119,9 +179,9 @@ export interface GrpcRuntimeKernelOptions {
  * service instead of an in-process one (see
  * docs/guides/publishing-and-adopter-onboarding.md §4).
  */
-export function createGrpcRuntimeKernel(
+export const createGrpcRuntimeKernel = (
   options: GrpcRuntimeKernelOptions
-): RuntimeKernel {
+): RuntimeKernel => {
   const baseUrl = normalizeBaseUrl(options.baseUrl);
   const transport = createGrpcTransport({
     baseUrl,
@@ -583,64 +643,4 @@ export function createGrpcRuntimeKernel(
       },
     },
   };
-}
-
-/**
- * Trims `value` and asserts it is non-empty.
- *
- * @throws TuvrenRuntimeError With code `invalid_runtime_options` when the
- *   trimmed value is empty.
- */
-function normalizeBaseUrl(value: string): string {
-  const normalized = value.trim();
-
-  if (normalized.length === 0) {
-    throw new TuvrenRuntimeError("gRPC runtime kernel requires a base URL", {
-      code: "invalid_runtime_options",
-    });
-  }
-
-  return normalized;
-}
-
-/**
- * Normalizes any error raised by a gRPC call into a {@link TuvrenRuntimeError}:
- * decodes the kernel's structured error detail (`KernelErrorPayloadSchema`)
- * when the server attached one, preserving its `code` and CBOR-encoded
- * `details`, and otherwise falls back to a generic
- * `kernel_transport_error` code built from the raw Connect error. `operation`
- * identifies the failing kernel call (e.g. `"branch.create"`) in the
- * resulting error's details.
- */
-function toTransportError(
-  error: unknown,
-  operation: string
-): TuvrenRuntimeError {
-  const connectError = ConnectError.from(error);
-  const kernelPayload = connectError.findDetails(KernelErrorPayloadSchema)[0];
-  const decodedDetails =
-    kernelPayload?.detailsCbor === undefined
-      ? undefined
-      : decodeKernelRecordBytes(
-          kernelPayload.detailsCbor,
-          `${operation}.error.details`
-        );
-  const errorCode =
-    kernelPayload !== undefined && isTuvrenErrorCode(kernelPayload.code)
-      ? kernelPayload.code
-      : "kernel_transport_error";
-
-  return new TuvrenRuntimeError(
-    kernelPayload?.message ?? connectError.rawMessage,
-    {
-      cause: error,
-      code: errorCode,
-      details: {
-        connectCode: connectError.code,
-        decodedDetails,
-        metadata: Object.fromEntries(connectError.metadata.entries()),
-        operation,
-      },
-    }
-  );
-}
+};

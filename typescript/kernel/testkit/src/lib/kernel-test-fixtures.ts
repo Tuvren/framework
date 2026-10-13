@@ -42,85 +42,76 @@ import { canonicalKernelTestSchemaFixture } from "./kernel-conformance-fixtures.
  * the conformance/invariant/recovery suites, so test cases can rely on a
  * consistent schema without accidentally sharing mutable state.
  */
-export function createCanonicalKernelTestSchema(): TurnTreeSchema {
-  return structuredClone(canonicalKernelTestSchemaFixture);
-}
+export const createCanonicalKernelTestSchema = (): TurnTreeSchema =>
+  structuredClone(canonicalKernelTestSchemaFixture);
 
 /** Builds a `StoredSchema` row encoding `schema`'s paths and incorporation rules. */
-export function createStoredSchemaRecord(
+export const createStoredSchemaRecord = (
   schema: TurnTreeSchema,
   createdAtMs: number
-): StoredSchema {
-  return {
-    createdAtMs,
-    schemaCbor: encodeDeterministicKernelRecord({
-      incorporationRules: schema.incorporationRules.map((rule) => ({
-        objectType: rule.objectType,
-        targetPath: rule.targetPath,
-      })),
-      paths: schema.paths.map((path) => ({
-        collection: path.collection,
-        path: path.path,
-      })),
-      schemaId: schema.schemaId,
-    }),
+): StoredSchema => ({
+  createdAtMs,
+  schemaCbor: encodeDeterministicKernelRecord({
+    incorporationRules: schema.incorporationRules.map((rule) => ({
+      objectType: rule.objectType,
+      targetPath: rule.targetPath,
+    })),
+    paths: schema.paths.map((path) => ({
+      collection: path.collection,
+      path: path.path,
+    })),
     schemaId: schema.schemaId,
-  };
-}
+  }),
+  schemaId: schema.schemaId,
+});
 
 /** Builds a `StoredObject` row for `bytes`, hashing it as an opaque object. */
-export async function createStoredObjectRecord(
+export const createStoredObjectRecord = async (
   bytes: Uint8Array,
   createdAtMs: number
-): Promise<StoredObject> {
-  return {
-    byteLength: bytes.byteLength,
-    bytes: Uint8Array.from(bytes),
-    createdAtMs,
-    hash: await hashOpaqueObjectBytes(bytes),
-    mediaType: "application/octet-stream",
-  };
-}
+): Promise<StoredObject> => ({
+  byteLength: bytes.byteLength,
+  bytes: Uint8Array.from(bytes),
+  createdAtMs,
+  hash: await hashOpaqueObjectBytes(bytes),
+  mediaType: "application/octet-stream",
+});
 
 /** Builds a `StoredTurnTree` row for `manifest`, deriving its content-addressed hash. */
-export async function createStoredTurnTreeRecord(
+export const createStoredTurnTreeRecord = async (
   schema: TurnTreeSchema,
   manifest: TurnTreeManifest,
   createdAtMs: number
-): Promise<StoredTurnTree> {
-  return {
-    createdAtMs,
-    hash: await hashTurnTreeIdentity(schema.schemaId, manifest, schema),
-    manifestCbor: encodeDeterministicKernelRecord(manifest),
-    schemaId: schema.schemaId,
-  };
-}
+): Promise<StoredTurnTree> => ({
+  createdAtMs,
+  hash: await hashTurnTreeIdentity(schema.schemaId, manifest, schema),
+  manifestCbor: encodeDeterministicKernelRecord(manifest),
+  schemaId: schema.schemaId,
+});
 
 /** Builds a `StoredOrderedPathChunk` row for `hashes`, deriving its content-addressed hash. */
-export async function createStoredOrderedPathChunkRecord(
+export const createStoredOrderedPathChunkRecord = async (
   hashes: string[],
   createdAtMs: number
-): Promise<StoredOrderedPathChunk> {
-  return {
-    chunkHash: await hashKernelRecord(hashes),
-    createdAtMs,
-    itemCount: hashes.length,
-    itemsCbor: encodeDeterministicKernelRecord(hashes),
-  };
-}
+): Promise<StoredOrderedPathChunk> => ({
+  chunkHash: await hashKernelRecord(hashes),
+  createdAtMs,
+  itemCount: hashes.length,
+  itemsCbor: encodeDeterministicKernelRecord(hashes),
+});
 
 /**
  * Builds a `StoredTurnNode` row from its logical identity fields, encoding
  * `consumedStagedResults` and deriving the node's content-addressed hash.
  */
-export async function createStoredTurnNodeRecord(input: {
+export const createStoredTurnNodeRecord = async (input: {
   consumedStagedResults: StagedResult[];
   createdAtMs: number;
   eventHash: string | null;
   previousTurnNodeHash: string | null;
   schemaId: string;
   turnTreeHash: string;
-}): Promise<StoredTurnNode> {
+}): Promise<StoredTurnNode> => {
   const encodedConsumedStagedResults: KernelRecord[] = [];
 
   for (const stagedResult of input.consumedStagedResults) {
@@ -162,33 +153,33 @@ export async function createStoredTurnNodeRecord(input: {
     schemaId: input.schemaId,
     turnTreeHash: input.turnTreeHash,
   };
-}
-
-/**
- * Builds `count` deterministic, distinct hash strings starting at
- * `offset`, via {@link createHashFromIndex}.
- */
-export function createHashSequence(count: number, offset = 0): string[] {
-  return Array.from({ length: count }, (_, index) =>
-    createHashFromIndex(index + offset)
-  );
-}
+};
 
 /**
  * Deterministically derives a 64-hex-character hash-shaped string from an
  * index — not a real content hash, just a distinct, readable placeholder
  * for fixtures that only need referential identity.
  */
-export function createHashFromIndex(index: number): string {
-  return index.toString(16).padStart(64, "0");
-}
+export const createHashFromIndex = (index: number): string =>
+  index.toString(16).padStart(64, "0");
+
+/**
+ * Builds `count` deterministic, distinct hash strings starting at
+ * `offset`, via {@link createHashFromIndex}.
+ */
+export const createHashSequence = (count: number, offset = 0): string[] =>
+  Array.from({ length: count }, (_, index) =>
+    createHashFromIndex(index + offset)
+  );
 
 /**
  * Builds a clock function that returns `initialValue`, then a strictly
  * increasing integer on every call — useful for deterministic `createdAtMs`
  * sequencing in tests without depending on wall-clock time.
  */
-export function createIncrementingClock(initialValue: number): () => number {
+export const createIncrementingClock = (
+  initialValue: number
+): (() => number) => {
   let currentValue = initialValue;
 
   return () => {
@@ -196,14 +187,13 @@ export function createIncrementingClock(initialValue: number): () => number {
     currentValue += 1;
     return nextValue;
   };
-}
+};
 
 /** Resolves after `durationMs` milliseconds — for timing-sensitive test scenarios. */
-export function delay(durationMs: number): Promise<void> {
-  return new Promise((resolve) => {
+export const delay = (durationMs: number): Promise<void> =>
+  new Promise((resolve) => {
     setTimeout(resolve, durationMs);
   });
-}
 
 /**
  * Builds the indexed `StoredTurnTreePath` rows for `manifest`, matching the
@@ -214,10 +204,10 @@ export function delay(durationMs: number): Promise<void> {
  * @throws Error when `manifest` does not match the canonical test schema's
  *   shape (a `messages` array and a `context.manifest` hash-or-null).
  */
-export function createCanonicalTurnTreePaths(
+export const createCanonicalTurnTreePaths = (
   turnTree: StoredTurnTree,
   manifest: TurnTreeManifest
-): StoredTurnTreePath[] {
+): StoredTurnTreePath[] => {
   const messageHashes = manifest.messages;
   const contextManifestHash = manifest["context.manifest"];
 
@@ -249,4 +239,4 @@ export function createCanonicalTurnTreePaths(
       turnTreeHash: turnTree.hash,
     },
   ];
-}
+};
