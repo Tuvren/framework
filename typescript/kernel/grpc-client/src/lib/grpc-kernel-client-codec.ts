@@ -92,6 +92,8 @@ import {
   VerdictSchema,
 } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
 import type {
+  ObserveResult as ProtoObserveResult,
+  PathValueEntry as ProtoPathValueEntry,
   StoredThreadEntry as ProtoStoredThreadEntry,
   BranchHeadListEntry as ProtoBranchHeadListEntry,
   BranchRecord as ProtoBranchRecord,
@@ -421,10 +423,10 @@ const encodeKernelObjectBytes = (
  * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
  *   when `value` is `undefined` (from {@link createInvalidTransportResponseError}).
  */
-export function requireBranchRecord(
+export const requireBranchRecord = (
   value: ProtoBranchRecord | undefined,
   label: string
-): BranchRecord {
+): BranchRecord => {
   if (value === undefined) {
     throw createInvalidTransportResponseError(`${label}.branch`);
   }
@@ -436,535 +438,20 @@ export function requireBranchRecord(
   };
   assertBranchRecord(record, label);
   return record;
-}
+};
 
 /**
  * Decodes a protobuf branch head list entry into the tuple-shaped protocol
  * {@link BranchHeadListEntry}, validating the result.
  */
-export function requireBranchHeadListEntry(
+export const requireBranchHeadListEntry = (
   value: ProtoBranchHeadListEntry,
   label: string
-): BranchHeadListEntry {
+): BranchHeadListEntry => {
   const entry: BranchHeadListEntry = [value.branchId, value.headTurnNodeHash];
   assertBranchHeadListEntry(entry, label);
   return entry;
-}
-
-/**
- * Decodes a required protobuf `Verdict` field and asserts it is a valid
- * {@link ComposedVerdict} — the shape `verdicts.compose` returns
- * (structurally identical to `Verdict`; composition does not narrow it).
- */
-export function requireComposedVerdict(
-  value: ProtoVerdict | undefined,
-  label: string
-): ComposedVerdict {
-  const verdict = requireVerdict(value, label);
-  assertComposedVerdict(verdict, label);
-  return verdict;
-}
-
-/**
- * Decodes a required protobuf `PathValue` field into a protocol
- * {@link PathValue}, validating the result.
- */
-export function requirePathValue(
-  value: ProtoPathValue | undefined,
-  label: string
-): PathValue {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.value`);
-  }
-
-  const decoded = fromProtoPathValue(value, label);
-  assertPathValue(decoded, label);
-  return decoded;
-}
-
-/**
- * Decodes a required protobuf `RecoveryState` field into a protocol
- * {@link RecoveryState}, recursively decoding its staged results and step
- * sequence.
- */
-export function requireRecoveryState(
-  value: ProtoRecoveryState | undefined,
-  label: string
-): RecoveryState {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.recoveryState`);
-  }
-
-  const decoded: RecoveryState = {
-    consumedStagedResults: value.consumedStagedResults.map((result, index) =>
-      fromProtoStagedResult(result, `${label}.consumedStagedResults[${index}]`)
-    ),
-    lastCompletedStepId: value.lastCompletedStepId ?? null,
-    lastTurnNodeHash: value.lastTurnNodeHash,
-    stepSequence: value.stepSequence.map((step, index) =>
-      fromProtoStepDeclaration(step, `${label}.stepSequence[${index}]`)
-    ),
-    uncommittedStagedResults: value.uncommittedStagedResults.map(
-      (result, index) =>
-        fromProtoStagedResult(
-          result,
-          `${label}.uncommittedStagedResults[${index}]`
-        )
-    ),
-  };
-  assertRecoveryState(decoded, label);
-  return decoded;
-}
-
-/**
- * Decodes a required protobuf `RunRecord` field into a protocol
- * {@link RunRecord}, validating hash fields, `status`, and each declared
- * step.
- */
-export function requireRunRecord(
-  value: ProtoRunRecord | undefined,
-  label: string
-): RunRecord {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.run`);
-  }
-
-  const record: RunRecord = {
-    branchId: value.branchId,
-    createdTurnNodes: value.createdTurnNodes.map((hash, index) => {
-      assertHashString(hash, `${label}.createdTurnNodes[${index}]`);
-      return hash;
-    }),
-    currentStepIndex: value.currentStepIndex,
-    runId: value.runId,
-    schemaId: value.schemaId,
-    startTurnNodeHash: value.startTurnNodeHash,
-    status: fromProtoRunStatus(value.status, `${label}.status`),
-    stepSequence: value.stepSequence.map((step, index) =>
-      fromProtoStepDeclaration(step, `${label}.stepSequence[${index}]`)
-    ),
-    turnId: value.turnId,
-  };
-  assertRunRecord(record, label);
-  return record;
-}
-
-/**
- * Decodes a required protobuf `SetHeadResult` field into a protocol
- * {@link SetHeadResult}, including the optional `archiveBranch` produced by
- * a backward head movement.
- */
-export function requireSetHeadResult(
-  value: ProtoSetHeadResult | undefined,
-  label: string
-): SetHeadResult {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.result`);
-  }
-
-  const result: SetHeadResult = {
-    branch: requireBranchRecord(value.branch, `${label}.branch`),
-    ...(value.archiveBranch === undefined
-      ? {}
-      : {
-          archiveBranch: requireBranchRecord(
-            value.archiveBranch,
-            `${label}.archiveBranch`
-          ),
-        }),
-  };
-  assertSetHeadResult(result, label);
-  return result;
-}
-
-/**
- * Decodes a required protobuf `StagedResult` field into a protocol
- * {@link StagedResult} ({@link fromProtoStagedResult}), validating the
- * result.
- */
-export function requireStagedResult(
-  value: ProtoStagedResult | undefined,
-  label: string
-): StagedResult {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.stagedResult`);
-  }
-
-  const result = fromProtoStagedResult(value, label);
-  assertStagedResult(result, label);
-  return result;
-}
-
-/**
- * Decodes a required protobuf `StepContext` field into a protocol
- * {@link StepContext}, decoding its schema, pending signals, and step
- * declaration.
- */
-export function requireStepContext(
-  value: ProtoStepContext | undefined,
-  label: string
-): StepContext {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.context`);
-  }
-
-  const context: StepContext = {
-    currentTurnNodeHash: value.currentTurnNodeHash,
-    schema: requireTurnTreeSchema(value.schema, `${label}.schema`),
-    signals: value.signalsCbor.map((signal, index) =>
-      decodeKernelRecordBytes(signal, `${label}.signals[${index}]`)
-    ),
-    step: fromProtoStepDeclaration(value.step, `${label}.step`),
-  };
-  assertStepContext(context, label);
-  return context;
-}
-
-/**
- * Decodes a required protobuf `ThreadCreateResult` field into a protocol
- * {@link ThreadCreateResult}, validating the result.
- */
-export function requireThreadCreateResult(
-  value: ProtoThreadCreateResult | undefined,
-  label: string
-): ThreadCreateResult {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.result`);
-  }
-
-  const result: ThreadCreateResult = {
-    branchId: value.branchId,
-    rootTurnNodeHash: value.rootTurnNodeHash,
-    rootTurnTreeHash: value.rootTurnTreeHash,
-    threadId: value.threadId,
-  };
-  assertThreadCreateResult(result, label);
-  return result;
-}
-
-/**
- * Decodes a required protobuf `ThreadRecord` field into a protocol
- * {@link ThreadRecord}, validating the result.
- */
-export function requireThreadRecord(
-  value: ProtoThreadRecord | undefined,
-  label: string
-): ThreadRecord {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.thread`);
-  }
-
-  const record: ThreadRecord = {
-    rootTurnNodeHash: value.rootTurnNodeHash,
-    schemaId: value.schemaId,
-    threadId: value.threadId,
-  };
-  assertThreadRecord(record, label);
-  return record;
-}
-
-/**
- * Decodes a protobuf stored-thread list entry (from a `thread.list` page)
- * into a protocol {@link StoredThread}. Unlike the `require*` decoders in
- * this file, does not assert the result — the stream/list transport shape
- * carries required fields non-optionally.
- */
-export function fromStoredThreadEntry(
-  value: ProtoStoredThreadEntry,
-  label: string
-): StoredThread {
-  const createdAtMs = fromProtoEpochMs(
-    value.createdAtMs,
-    `${label}.createdAtMs`
-  );
-  const thread: StoredThread = {
-    threadId: value.threadId,
-    schemaId: value.schemaId,
-    rootTurnNodeHash: value.rootTurnNodeHash,
-    createdAtMs,
-  };
-  return thread;
-}
-
-/**
- * Decodes a required protobuf `TurnNode` field into a protocol
- * {@link TurnNode}, decoding its consumed staged results.
- */
-export function requireTurnNode(
-  value: ProtoTurnNode | undefined,
-  label: string
-): TurnNode {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.node`);
-  }
-
-  const node: TurnNode = {
-    consumedStagedResults: value.consumedStagedResults.map((result, index) =>
-      fromProtoStagedResult(result, `${label}.consumedStagedResults[${index}]`)
-    ),
-    eventHash: value.eventHash ?? null,
-    hash: value.hash,
-    previousTurnNodeHash: value.previousTurnNodeHash ?? null,
-    schemaId: value.schemaId,
-    turnTreeHash: value.turnTreeHash,
-  };
-  assertTurnNode(node, label);
-  return node;
-}
-
-/**
- * Decodes a required protobuf `TurnRecord` field into a protocol
- * {@link TurnRecord}, validating the result.
- */
-export function requireTurnRecord(
-  value: ProtoTurnRecord | undefined,
-  label: string
-): TurnRecord {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.turn`);
-  }
-
-  const record: TurnRecord = {
-    branchId: value.branchId,
-    headTurnNodeHash: value.headTurnNodeHash,
-    parentTurnId: value.parentTurnId ?? null,
-    startTurnNodeHash: value.startTurnNodeHash,
-    threadId: value.threadId,
-    turnId: value.turnId,
-  };
-  assertTurnRecord(record, label);
-  return record;
-}
-
-/**
- * Decodes a required protobuf `TurnTreeSchema` field into a protocol
- * {@link TurnTreeSchema} ({@link fromProtoTurnTreeSchema}), validating the
- * result.
- */
-export function requireTurnTreeSchema(
-  value: ProtoTurnTreeSchema | undefined,
-  label: string
-): TurnTreeSchema {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.schema`);
-  }
-
-  const schema = fromProtoTurnTreeSchema(value, label);
-  assertTurnTreeSchema(schema, label);
-  return schema;
-}
-
-/**
- * Decodes a required protobuf `Verdict` field into a protocol
- * {@link Verdict} ({@link fromProtoVerdict}), validating the result.
- */
-export function requireVerdict(
-  value: ProtoVerdict | undefined,
-  label: string
-): Verdict {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(`${label}.verdict`);
-  }
-
-  const verdict = fromProtoVerdict(value, label);
-  assertVerdict(verdict, label);
-  return verdict;
-}
-
-/**
- * Decodes a `branch.list` gRPC response into the protocol's
- * {@link BranchHeadListEntry} array.
- */
-export function fromBranchHeadListEntries(
-  response: BranchListResponse,
-  label: string
-): BranchHeadListEntry[] {
-  return response.entries.map((entry, index) =>
-    requireBranchHeadListEntry(entry, `${label}.entries[${index}]`)
-  );
-}
-
-/**
- * Decodes a `tree.manifest` gRPC response's path/value entries into a
- * protocol {@link TurnTreeManifest}.
- *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
- *   when the response repeats the same manifest path.
- */
-export function fromProtoManifestEntries(
-  response: TreeManifestResponse,
-  label: string
-): TurnTreeManifest {
-  const manifest: TurnTreeManifest = {};
-
-  for (const [index, entry] of response.entries.entries()) {
-    if (entry.path in manifest) {
-      throw new TuvrenRuntimeError(
-        `duplicate transport manifest path "${entry.path}"`,
-        {
-          code: "invalid_kernel_transport_response",
-          details: { index, label, path: entry.path },
-        }
-      );
-    }
-
-    manifest[entry.path] = requirePathValue(
-      entry.value,
-      `${label}.entries[${index}]`
-    );
-  }
-
-  return manifest;
-}
-
-/**
- * Decodes the protobuf `PathValue` oneof into a protocol {@link PathValue}:
- * `null`, a single hash string, or an ordered array of hash strings.
- *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
- *   for an unrecognized oneof case.
- */
-function fromProtoPathValue(value: ProtoPathValue, label: string): PathValue {
-  switch (value.value.case) {
-    case "nullValue": {
-      return null;
-    }
-    case "orderedHashes": {
-      const hashes: HashString[] = [];
-
-      for (const [index, hash] of value.value.value.hashes.entries()) {
-        assertHashString(hash, `${label}.orderedHashes[${index}]`);
-        hashes.push(hash);
-      }
-
-      return hashes;
-    }
-    case "singleHash": {
-      assertHashString(value.value.value, `${label}.singleHash`);
-      return value.value.value;
-    }
-    default: {
-      throw createInvalidTransportResponseError(`${label}.value`);
-    }
-  }
-}
-
-/**
- * Decodes a protobuf `StagedResult`, discriminating on its `outcome` oneof
- * into the protocol's interrupted or settled {@link StagedResult} variant.
- *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
- *   for an unrecognized `outcome` case.
- */
-function fromProtoStagedResult(
-  value: ProtoStagedResult,
-  label: string
-): StagedResult {
-  const timestamp = fromProtoEpochMs(value.timestampMs, `${label}.timestampMs`);
-
-  switch (value.outcome.case) {
-    case "interrupted": {
-      const result: StagedResult = {
-        interruptPayload: decodeKernelRecordBytes(
-          value.outcome.value.interruptPayloadCbor,
-          `${label}.interruptPayload`
-        ),
-        objectHash: value.objectHash,
-        objectType: value.objectType,
-        status: "interrupted",
-        taskId: value.taskId,
-        timestamp,
-      };
-      assertStagedResult(result, label);
-      return result;
-    }
-    case "settled": {
-      const status = fromProtoStagedResultStatus(
-        value.outcome.value.status,
-        `${label}.status`
-      );
-      const result: StagedResult = {
-        objectHash: value.objectHash,
-        objectType: value.objectType,
-        status,
-        taskId: value.taskId,
-        timestamp,
-      };
-      assertStagedResult(result, label);
-      return result;
-    }
-    default: {
-      throw createInvalidTransportResponseError(`${label}.outcome`);
-    }
-  }
-}
-
-/**
- * Decodes a required protobuf `StepDeclaration` field into a protocol
- * {@link StepDeclaration}, decoding optional CBOR-encoded metadata.
- *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
- *   when `value` is `undefined`.
- */
-function fromProtoStepDeclaration(
-  value: ProtoStepDeclaration | undefined,
-  label: string
-): StepDeclaration {
-  if (value === undefined) {
-    throw createInvalidTransportResponseError(label);
-  }
-
-  const step: StepDeclaration = {
-    deterministic: value.deterministic,
-    id: value.id,
-    sideEffects: value.sideEffects,
-    ...(value.metadataCbor === undefined
-      ? {}
-      : {
-          metadata: decodeKernelRecordBytes(
-            value.metadataCbor,
-            `${label}.metadata`
-          ),
-        }),
-  };
-  assertStepDeclaration(step, label);
-  return step;
-}
-
-/**
- * Decodes a protobuf `TurnTreeSchema` message into a protocol
- * {@link TurnTreeSchema}, decoding each path's optional CBOR-encoded
- * metadata.
- */
-function fromProtoTurnTreeSchema(
-  value: ProtoTurnTreeSchema,
-  label: string
-): TurnTreeSchema {
-  const schema: TurnTreeSchema = {
-    incorporationRules: value.incorporationRules.map((rule) => ({
-      objectType: rule.objectType,
-      targetPath: rule.targetPath,
-    })),
-    paths: value.paths.map((path, index) => ({
-      collection: fromProtoPathCollectionKind(
-        path.collection,
-        `${label}.paths[${index}].collection`
-      ),
-      path: path.path,
-      ...(path.metadataCbor === undefined
-        ? {}
-        : {
-            metadata: decodeKernelRecordBytes(
-              path.metadataCbor,
-              `${label}.paths[${index}].metadata`
-            ),
-          }),
-    })),
-    schemaId: value.schemaId,
-  };
-  assertTurnTreeSchema(schema, label);
-  return schema;
-}
+};
 
 /**
  * Decodes a protobuf `Verdict`, discriminating on its `verdict` oneof into
@@ -974,7 +461,7 @@ function fromProtoTurnTreeSchema(
  * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
  *   for an unrecognized `verdict` case.
  */
-function fromProtoVerdict(value: ProtoVerdict, label: string): Verdict {
+const fromProtoVerdict = (value: ProtoVerdict, label: string): Verdict => {
   switch (value.verdict.case) {
     case "abort": {
       return {
@@ -1023,14 +510,534 @@ function fromProtoVerdict(value: ProtoVerdict, label: string): Verdict {
       throw createInvalidTransportResponseError(`${label}.verdict`);
     }
   }
-}
+};
+
+/**
+ * Decodes a required protobuf `Verdict` field into a protocol
+ * {@link Verdict} ({@link fromProtoVerdict}), validating the result.
+ */
+export const requireVerdict = (
+  value: ProtoVerdict | undefined,
+  label: string
+): Verdict => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.verdict`);
+  }
+
+  const verdict = fromProtoVerdict(value, label);
+  assertVerdict(verdict, label);
+  return verdict;
+};
+
+/**
+ * Decodes a required protobuf `Verdict` field and asserts it is a valid
+ * {@link ComposedVerdict} — the shape `verdicts.compose` returns
+ * (structurally identical to `Verdict`; composition does not narrow it).
+ */
+export const requireComposedVerdict = (
+  value: ProtoVerdict | undefined,
+  label: string
+): ComposedVerdict => {
+  const verdict = requireVerdict(value, label);
+  assertComposedVerdict(verdict, label);
+  return verdict;
+};
+
+/**
+ * Decodes the protobuf `PathValue` oneof into a protocol {@link PathValue}:
+ * `null`, a single hash string, or an ordered array of hash strings.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized oneof case.
+ */
+const fromProtoPathValue = (
+  value: ProtoPathValue,
+  label: string
+): PathValue => {
+  switch (value.value.case) {
+    case "nullValue": {
+      return null;
+    }
+    case "orderedHashes": {
+      const hashes: HashString[] = [];
+
+      for (const [index, hash] of value.value.value.hashes.entries()) {
+        assertHashString(hash, `${label}.orderedHashes[${index}]`);
+        hashes.push(hash);
+      }
+
+      return hashes;
+    }
+    case "singleHash": {
+      assertHashString(value.value.value, `${label}.singleHash`);
+      return value.value.value;
+    }
+    default: {
+      throw createInvalidTransportResponseError(`${label}.value`);
+    }
+  }
+};
+
+/**
+ * Decodes a required protobuf `PathValue` field into a protocol
+ * {@link PathValue}, validating the result.
+ */
+export const requirePathValue = (
+  value: ProtoPathValue | undefined,
+  label: string
+): PathValue => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.value`);
+  }
+
+  const decoded = fromProtoPathValue(value, label);
+  assertPathValue(decoded, label);
+  return decoded;
+};
+
+/**
+ * Decodes a protobuf `StagedResult`, discriminating on its `outcome` oneof
+ * into the protocol's interrupted or settled {@link StagedResult} variant.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   for an unrecognized `outcome` case.
+ */
+const fromProtoStagedResult = (
+  value: ProtoStagedResult,
+  label: string
+): StagedResult => {
+  const timestamp = fromProtoEpochMs(value.timestampMs, `${label}.timestampMs`);
+
+  switch (value.outcome.case) {
+    case "interrupted": {
+      const result: StagedResult = {
+        interruptPayload: decodeKernelRecordBytes(
+          value.outcome.value.interruptPayloadCbor,
+          `${label}.interruptPayload`
+        ),
+        objectHash: value.objectHash,
+        objectType: value.objectType,
+        status: "interrupted",
+        taskId: value.taskId,
+        timestamp,
+      };
+      assertStagedResult(result, label);
+      return result;
+    }
+    case "settled": {
+      const status = fromProtoStagedResultStatus(
+        value.outcome.value.status,
+        `${label}.status`
+      );
+      const result: StagedResult = {
+        objectHash: value.objectHash,
+        objectType: value.objectType,
+        status,
+        taskId: value.taskId,
+        timestamp,
+      };
+      assertStagedResult(result, label);
+      return result;
+    }
+    default: {
+      throw createInvalidTransportResponseError(`${label}.outcome`);
+    }
+  }
+};
+
+/**
+ * Decodes a required protobuf `StepDeclaration` field into a protocol
+ * {@link StepDeclaration}, decoding optional CBOR-encoded metadata.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   when `value` is `undefined`.
+ */
+const fromProtoStepDeclaration = (
+  value: ProtoStepDeclaration | undefined,
+  label: string
+): StepDeclaration => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(label);
+  }
+
+  const step: StepDeclaration = {
+    deterministic: value.deterministic,
+    id: value.id,
+    sideEffects: value.sideEffects,
+    ...(value.metadataCbor === undefined
+      ? {}
+      : {
+          metadata: decodeKernelRecordBytes(
+            value.metadataCbor,
+            `${label}.metadata`
+          ),
+        }),
+  };
+  assertStepDeclaration(step, label);
+  return step;
+};
+
+/**
+ * Decodes a required protobuf `RecoveryState` field into a protocol
+ * {@link RecoveryState}, recursively decoding its staged results and step
+ * sequence.
+ */
+export const requireRecoveryState = (
+  value: ProtoRecoveryState | undefined,
+  label: string
+): RecoveryState => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.recoveryState`);
+  }
+
+  const decoded: RecoveryState = {
+    consumedStagedResults: value.consumedStagedResults.map((result, index) =>
+      fromProtoStagedResult(result, `${label}.consumedStagedResults[${index}]`)
+    ),
+    lastCompletedStepId: value.lastCompletedStepId ?? null,
+    lastTurnNodeHash: value.lastTurnNodeHash,
+    stepSequence: value.stepSequence.map((step, index) =>
+      fromProtoStepDeclaration(step, `${label}.stepSequence[${index}]`)
+    ),
+    uncommittedStagedResults: value.uncommittedStagedResults.map(
+      (result, index) =>
+        fromProtoStagedResult(
+          result,
+          `${label}.uncommittedStagedResults[${index}]`
+        )
+    ),
+  };
+  assertRecoveryState(decoded, label);
+  return decoded;
+};
+
+/**
+ * Decodes a required protobuf `RunRecord` field into a protocol
+ * {@link RunRecord}, validating hash fields, `status`, and each declared
+ * step.
+ */
+export const requireRunRecord = (
+  value: ProtoRunRecord | undefined,
+  label: string
+): RunRecord => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.run`);
+  }
+
+  const record: RunRecord = {
+    branchId: value.branchId,
+    createdTurnNodes: value.createdTurnNodes.map((hash, index) => {
+      assertHashString(hash, `${label}.createdTurnNodes[${index}]`);
+      return hash;
+    }),
+    currentStepIndex: value.currentStepIndex,
+    runId: value.runId,
+    schemaId: value.schemaId,
+    startTurnNodeHash: value.startTurnNodeHash,
+    status: fromProtoRunStatus(value.status, `${label}.status`),
+    stepSequence: value.stepSequence.map((step, index) =>
+      fromProtoStepDeclaration(step, `${label}.stepSequence[${index}]`)
+    ),
+    turnId: value.turnId,
+  };
+  assertRunRecord(record, label);
+  return record;
+};
+
+/**
+ * Decodes a required protobuf `SetHeadResult` field into a protocol
+ * {@link SetHeadResult}, including the optional `archiveBranch` produced by
+ * a backward head movement.
+ */
+export const requireSetHeadResult = (
+  value: ProtoSetHeadResult | undefined,
+  label: string
+): SetHeadResult => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.result`);
+  }
+
+  const result: SetHeadResult = {
+    branch: requireBranchRecord(value.branch, `${label}.branch`),
+    ...(value.archiveBranch === undefined
+      ? {}
+      : {
+          archiveBranch: requireBranchRecord(
+            value.archiveBranch,
+            `${label}.archiveBranch`
+          ),
+        }),
+  };
+  assertSetHeadResult(result, label);
+  return result;
+};
+
+/**
+ * Decodes a required protobuf `StagedResult` field into a protocol
+ * {@link StagedResult} ({@link fromProtoStagedResult}), validating the
+ * result.
+ */
+export const requireStagedResult = (
+  value: ProtoStagedResult | undefined,
+  label: string
+): StagedResult => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.stagedResult`);
+  }
+
+  const result = fromProtoStagedResult(value, label);
+  assertStagedResult(result, label);
+  return result;
+};
+
+/**
+ * Decodes a protobuf `TurnTreeSchema` message into a protocol
+ * {@link TurnTreeSchema}, decoding each path's optional CBOR-encoded
+ * metadata.
+ */
+const fromProtoTurnTreeSchema = (
+  value: ProtoTurnTreeSchema,
+  label: string
+): TurnTreeSchema => {
+  const schema: TurnTreeSchema = {
+    incorporationRules: value.incorporationRules.map((rule) => ({
+      objectType: rule.objectType,
+      targetPath: rule.targetPath,
+    })),
+    paths: value.paths.map((path, index) => ({
+      collection: fromProtoPathCollectionKind(
+        path.collection,
+        `${label}.paths[${index}].collection`
+      ),
+      path: path.path,
+      ...(path.metadataCbor === undefined
+        ? {}
+        : {
+            metadata: decodeKernelRecordBytes(
+              path.metadataCbor,
+              `${label}.paths[${index}].metadata`
+            ),
+          }),
+    })),
+    schemaId: value.schemaId,
+  };
+  assertTurnTreeSchema(schema, label);
+  return schema;
+};
+
+/**
+ * Decodes a required protobuf `TurnTreeSchema` field into a protocol
+ * {@link TurnTreeSchema} ({@link fromProtoTurnTreeSchema}), validating the
+ * result.
+ */
+export const requireTurnTreeSchema = (
+  value: ProtoTurnTreeSchema | undefined,
+  label: string
+): TurnTreeSchema => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.schema`);
+  }
+
+  const schema = fromProtoTurnTreeSchema(value, label);
+  assertTurnTreeSchema(schema, label);
+  return schema;
+};
+
+/**
+ * Decodes a required protobuf `StepContext` field into a protocol
+ * {@link StepContext}, decoding its schema, pending signals, and step
+ * declaration.
+ */
+export const requireStepContext = (
+  value: ProtoStepContext | undefined,
+  label: string
+): StepContext => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.context`);
+  }
+
+  const context: StepContext = {
+    currentTurnNodeHash: value.currentTurnNodeHash,
+    schema: requireTurnTreeSchema(value.schema, `${label}.schema`),
+    signals: value.signalsCbor.map((signal, index) =>
+      decodeKernelRecordBytes(signal, `${label}.signals[${index}]`)
+    ),
+    step: fromProtoStepDeclaration(value.step, `${label}.step`),
+  };
+  assertStepContext(context, label);
+  return context;
+};
+
+/**
+ * Decodes a required protobuf `ThreadCreateResult` field into a protocol
+ * {@link ThreadCreateResult}, validating the result.
+ */
+export const requireThreadCreateResult = (
+  value: ProtoThreadCreateResult | undefined,
+  label: string
+): ThreadCreateResult => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.result`);
+  }
+
+  const result: ThreadCreateResult = {
+    branchId: value.branchId,
+    rootTurnNodeHash: value.rootTurnNodeHash,
+    rootTurnTreeHash: value.rootTurnTreeHash,
+    threadId: value.threadId,
+  };
+  assertThreadCreateResult(result, label);
+  return result;
+};
+
+/**
+ * Decodes a required protobuf `ThreadRecord` field into a protocol
+ * {@link ThreadRecord}, validating the result.
+ */
+export const requireThreadRecord = (
+  value: ProtoThreadRecord | undefined,
+  label: string
+): ThreadRecord => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.thread`);
+  }
+
+  const record: ThreadRecord = {
+    rootTurnNodeHash: value.rootTurnNodeHash,
+    schemaId: value.schemaId,
+    threadId: value.threadId,
+  };
+  assertThreadRecord(record, label);
+  return record;
+};
+
+/**
+ * Decodes a protobuf stored-thread list entry (from a `thread.list` page)
+ * into a protocol {@link StoredThread}. Unlike the `require*` decoders in
+ * this file, does not assert the result — the stream/list transport shape
+ * carries required fields non-optionally.
+ */
+export const fromStoredThreadEntry = (
+  value: ProtoStoredThreadEntry,
+  label: string
+): StoredThread => {
+  const createdAtMs = fromProtoEpochMs(
+    value.createdAtMs,
+    `${label}.createdAtMs`
+  );
+  const thread: StoredThread = {
+    threadId: value.threadId,
+    schemaId: value.schemaId,
+    rootTurnNodeHash: value.rootTurnNodeHash,
+    createdAtMs,
+  };
+  return thread;
+};
+
+/**
+ * Decodes a required protobuf `TurnNode` field into a protocol
+ * {@link TurnNode}, decoding its consumed staged results.
+ */
+export const requireTurnNode = (
+  value: ProtoTurnNode | undefined,
+  label: string
+): TurnNode => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.node`);
+  }
+
+  const node: TurnNode = {
+    consumedStagedResults: value.consumedStagedResults.map((result, index) =>
+      fromProtoStagedResult(result, `${label}.consumedStagedResults[${index}]`)
+    ),
+    eventHash: value.eventHash ?? null,
+    hash: value.hash,
+    previousTurnNodeHash: value.previousTurnNodeHash ?? null,
+    schemaId: value.schemaId,
+    turnTreeHash: value.turnTreeHash,
+  };
+  assertTurnNode(node, label);
+  return node;
+};
+
+/**
+ * Decodes a required protobuf `TurnRecord` field into a protocol
+ * {@link TurnRecord}, validating the result.
+ */
+export const requireTurnRecord = (
+  value: ProtoTurnRecord | undefined,
+  label: string
+): TurnRecord => {
+  if (value === undefined) {
+    throw createInvalidTransportResponseError(`${label}.turn`);
+  }
+
+  const record: TurnRecord = {
+    branchId: value.branchId,
+    headTurnNodeHash: value.headTurnNodeHash,
+    parentTurnId: value.parentTurnId ?? null,
+    startTurnNodeHash: value.startTurnNodeHash,
+    threadId: value.threadId,
+    turnId: value.turnId,
+  };
+  assertTurnRecord(record, label);
+  return record;
+};
+
+/**
+ * Decodes a `branch.list` gRPC response into the protocol's
+ * {@link BranchHeadListEntry} array.
+ */
+export const fromBranchHeadListEntries = (
+  response: BranchListResponse,
+  label: string
+): BranchHeadListEntry[] =>
+  response.entries.map((entry, index) =>
+    requireBranchHeadListEntry(entry, `${label}.entries[${index}]`)
+  );
+
+/**
+ * Decodes a `tree.manifest` gRPC response's path/value entries into a
+ * protocol {@link TurnTreeManifest}.
+ *
+ * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ *   when the response repeats the same manifest path.
+ */
+export const fromProtoManifestEntries = (
+  response: TreeManifestResponse,
+  label: string
+): TurnTreeManifest => {
+  const manifest: TurnTreeManifest = {};
+
+  for (const [index, entry] of response.entries.entries()) {
+    if (entry.path in manifest) {
+      throw new TuvrenRuntimeError(
+        `duplicate transport manifest path "${entry.path}"`,
+        {
+          code: "invalid_kernel_transport_response",
+          details: { index, label, path: entry.path },
+        }
+      );
+    }
+
+    manifest[entry.path] = requirePathValue(
+      entry.value,
+      `${label}.entries[${index}]`
+    );
+  }
+
+  return manifest;
+};
 
 /**
  * Encodes a protocol {@link ObserveResult} into its protobuf `ObserveResult`
  * message, CBOR-encoding annotations and signals.
  */
-export function toProtoObserveResult(value: ObserveResult, label: string) {
-  return create(ObserveResultSchema, {
+export const toProtoObserveResult = (
+  value: ObserveResult,
+  label: string
+): ProtoObserveResult =>
+  create(ObserveResultSchema, {
     annotationsCbor: value.annotations.map((annotation, index) =>
       encodeKernelObjectBytes(annotation, `${label}.annotations[${index}]`)
     ),
@@ -1038,13 +1045,15 @@ export function toProtoObserveResult(value: ObserveResult, label: string) {
       encodeKernelRecordBytes(signal, `${label}.signals[${index}]`)
     ),
   });
-}
 
 /**
  * Encodes a protocol {@link PathValue} into its protobuf `PathValue` oneof
  * message (`nullValue`, `singleHash`, or `orderedHashes`).
  */
-export function toProtoPathValue(value: PathValue, label: string) {
+export const toProtoPathValue = (
+  value: PathValue,
+  label: string
+): ProtoPathValue => {
   if (value === null) {
     return create(PathValueSchema, {
       value: {
@@ -1077,30 +1086,32 @@ export function toProtoPathValue(value: PathValue, label: string) {
       value: { hashes },
     },
   });
-}
+};
 
 /**
  * Encodes a protocol {@link TurnTreeChangeSet} into the protobuf path/value
  * entry list `tree.create`/`tree.incorporate` transmit over the wire.
  */
-export function toProtoPathValueEntries(
+export const toProtoPathValueEntries = (
   changes: TurnTreeChangeSet,
   label: string
-) {
-  return Object.entries(changes).map(([path, value]) =>
+): ProtoPathValueEntry[] =>
+  Object.entries(changes).map(([path, value]) =>
     create(PathValueEntrySchema, {
       path,
       value: toProtoPathValue(value, `${label}.${path}`),
     })
   );
-}
 
 /**
  * Encodes a protocol {@link StagedResult} into its protobuf `StagedResult`
  * message, discriminating on `status` into the `interrupted` or `settled`
  * outcome oneof.
  */
-export function toProtoStagedResult(value: StagedResult, label: string) {
+export const toProtoStagedResult = (
+  value: StagedResult,
+  label: string
+): ProtoStagedResult => {
   const base = {
     objectHash: value.objectHash,
     objectType: value.objectType,
@@ -1132,7 +1143,7 @@ export function toProtoStagedResult(value: StagedResult, label: string) {
       },
     },
   });
-}
+};
 
 /**
  * Encodes a `staging.stage` call's status and optional interrupt payload
@@ -1140,11 +1151,25 @@ export function toProtoStagedResult(value: StagedResult, label: string) {
  * {@link StagedResult} to encode from ({@link toProtoStagedResult} is used
  * once the kernel has assigned the rest of the result's fields).
  */
-export function toProtoStagingOutcome(
+export const toProtoStagingOutcome = (
   status: StagedResultStatus,
   interruptPayload: KernelRecord | undefined,
   label: string
-) {
+):
+  | {
+      case: "interrupted";
+      value: {
+        interruptPayloadCbor: Uint8Array;
+        status?: undefined;
+      };
+    }
+  | {
+      case: "settled";
+      value: {
+        status: ProtoStagedResultStatus;
+        interruptPayloadCbor?: undefined;
+      };
+    } => {
   if (status === "interrupted") {
     return {
       case: "interrupted" as const,
@@ -1163,13 +1188,16 @@ export function toProtoStagingOutcome(
       status: toProtoStagedResultStatus(status),
     },
   };
-}
+};
 
 /**
  * Validates and encodes a protocol {@link StepDeclaration} into its
  * protobuf `StepDeclaration` message, CBOR-encoding optional metadata.
  */
-export function toProtoStepDeclaration(value: StepDeclaration, label: string) {
+export const toProtoStepDeclaration = (
+  value: StepDeclaration,
+  label: string
+): ProtoStepDeclaration => {
   assertStepDeclaration(value, label);
   return create(StepDeclarationSchema, {
     deterministic: value.deterministic,
@@ -1180,13 +1208,16 @@ export function toProtoStepDeclaration(value: StepDeclaration, label: string) {
         : encodeKernelRecordBytes(value.metadata, `${label}.metadata`),
     sideEffects: value.sideEffects,
   });
-}
+};
 
 /**
  * Validates and encodes a protocol {@link TurnTreeSchema} into its protobuf
  * `TurnTreeSchema` message, CBOR-encoding each path's optional metadata.
  */
-export function toProtoTurnTreeSchema(value: TurnTreeSchema, label: string) {
+export const toProtoTurnTreeSchema = (
+  value: TurnTreeSchema,
+  label: string
+): ProtoTurnTreeSchema => {
   assertTurnTreeSchema(value, label);
   return create(TurnTreeSchemaSchema, {
     incorporationRules: value.incorporationRules.map((rule) => ({
@@ -1206,13 +1237,13 @@ export function toProtoTurnTreeSchema(value: TurnTreeSchema, label: string) {
     })),
     schemaId: value.schemaId,
   });
-}
+};
 
 /**
  * Validates and encodes a protocol {@link Verdict} into its protobuf
  * `Verdict` message, discriminating on `kind` into the matching oneof case.
  */
-export function toProtoVerdict(value: Verdict, label: string) {
+export const toProtoVerdict = (value: Verdict, label: string): ProtoVerdict => {
   assertVerdict(value, label);
 
   switch (value.kind) {
@@ -1279,4 +1310,4 @@ export function toProtoVerdict(value: Verdict, label: string) {
       throw createInvalidTransportResponseError("verdict");
     }
   }
-}
+};
