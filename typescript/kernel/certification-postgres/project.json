@@ -30,6 +30,13 @@
         "cwd": ".",
         "command": "bun tools/conformance/harness/run.ts --adapter typescript/kernel/conformance-adapter/adapter-postgres.json --concurrency 4 --summary-only"
       }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "bun tools/scripts/json-check.ts --json-only typescript/kernel/certification-postgres"
+      }
     }
   }
 }

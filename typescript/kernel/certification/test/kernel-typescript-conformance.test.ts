@@ -16,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -53,11 +53,11 @@ const KERNEL_SUITE_MANIFEST_SCHEMA = new URL(
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const readJsonObject = (path: string): Record<string, unknown> => {
-  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
+const readJsonObject = (filePath: string): Record<string, unknown> => {
+  const value: unknown = JSON.parse(readFileSync(filePath, "utf-8"));
 
   if (!isRecord(value)) {
-    throw new Error(`${path} must contain a JSON object`);
+    throw new Error(`${filePath} must contain a JSON object`);
   }
 
   return value;
@@ -73,7 +73,7 @@ const readSuiteManifest = (url: URL): SuiteManifest => {
     typeof value.suiteId !== "string" ||
     typeof value.suiteVersion !== "string"
   ) {
-    throw new Error(`${url.pathname} must be a valid suite manifest`);
+    throw new TypeError(`${url.pathname} must be a valid suite manifest`);
   }
 
   const fixtures = value.fixtures.map((fixture) => {
@@ -100,14 +100,14 @@ const readSuiteManifest = (url: URL): SuiteManifest => {
   };
 };
 
-const readJsonSchema = (path: string): AnySchema => {
-  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
+const readJsonSchema = (filePath: string): AnySchema => {
+  const value: unknown = JSON.parse(readFileSync(filePath, "utf-8"));
 
   if (typeof value === "boolean" || isRecord(value)) {
     return value;
   }
 
-  throw new Error(`${path} must contain a JSON Schema object or boolean`);
+  throw new Error(`${filePath} must contain a JSON Schema object or boolean`);
 };
 
 const fixturePathById = (
@@ -191,7 +191,7 @@ const readValidatedKernelFixtureSuite = (
     "kernel-protocol-logical",
   ]);
 
-  const manifestDirectory = dirname(fileURLToPath(manifestUrl));
+  const manifestDirectory = path.dirname(fileURLToPath(manifestUrl));
   const fixtureIndex = {
     canonicalSchemaPath: fixturePathById(
       manifest.fixtures,
@@ -207,22 +207,25 @@ const readValidatedKernelFixtureSuite = (
     ),
   };
   const schema = readJsonSchema(
-    join(manifestDirectory, manifest.fixtureSchemaPath)
+    path.join(manifestDirectory, manifest.fixtureSchemaPath)
   );
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   const validate = ajv.compile(schema);
 
   expect(validate(fixtureIndex), ajv.errorsText(validate.errors)).toBe(true);
 
-  const canonicalSchemaPath = join(
+  const canonicalSchemaPath = path.join(
     manifestDirectory,
     fixtureIndex.canonicalSchemaPath
   );
-  const deterministicPath = join(
+  const deterministicPath = path.join(
     manifestDirectory,
     fixtureIndex.deterministicFixturePath
   );
-  const logicalPath = join(manifestDirectory, fixtureIndex.logicalFixturePath);
+  const logicalPath = path.join(
+    manifestDirectory,
+    fixtureIndex.logicalFixturePath
+  );
   const canonicalSchema = readJsonObject(canonicalSchemaPath);
   const deterministic = readJsonObject(deterministicPath);
   const logical = readJsonObject(logicalPath);

@@ -116,7 +116,7 @@ tickets:
       evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert each admitted target has the exact canonical command shape and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. For each admitted path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted path contains a biome-ignore comment after the commit. Paths outside this admission retain needed original directives and Biome coverage. Scoped tests and the full lint gate pass; admitted paths are absent from tools/biome-coverage/bs.json, while every remaining entry retains Biome lint coverage. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: in_progress
+    status: done
 
 # Execution bookkeeping (lead-owned; partial tickets remain in progress).
 # M1 / KRT-BS001: native --type-aware --format=unix diagnostics grpc-client
@@ -314,3 +314,33 @@ tickets:
 # M9 archive binds 280 indexed complete reports/probes (496808 bytes); held
 # failed fixture attempts remain explicitly historical. Native debt is now
 # certification 2; M10 release verification/BS004 completion remain due.
+# M9 independent review: CLEAN. Seven exact gates, uncached 22/3 suites,
+# twelve archive replays, all 280 digests, changeset/validation and purity pass.
+# M10 / KRT-BS004 completes: five product files, 79 changed lines;
+# certification native 2 -> 0 and both wrappers use canonical JSON-only targets.
+# All five roots are admitted, bs.json is empty, other coverage/source regions
+# unchanged. Fresh raw proof: seven projects (five code/two JSON-only),
+# 67 code/34 JSON owners exactly once; both wrappers are metadata-only.
+# Complete unchanged policy: 473 rules, 55 type-aware/418 others; no override,
+# suppression, project-resolution error or remaining admitted legacy directive.
+# Certification hashes all 159 actual program sources, fixing 71 missing inputs;
+# inherited checker/config/lock inputs remain, actual mutation/restoration and
+# repeated cache pass. Sole generated import is tracked telemetry source;
+# no generated/build edge needed, ordinary typecheck stays source-only.
+# Twenty-one old/current behavior cases preserve first messages/order/values;
+# six invalid manifest-field guards use TypeError under A11/shared OD-09.
+# Existing positive certification assertions remain byte-identical.
+# Worker and lead independently pass all thirteen required gates, including
+# three conformance lanes (memory 68/SQLite 71/PostgreSQL 72 checks), full lint,
+# affected checks, kernel verification, serial full verify and direct changeset.
+# Worker adds eleven checks; full tooling controls 147 tests/1567 assertions,
+# API freeze 14 entrypoints/404 exports and repeat native cache 3/3 pass.
+# Lead extracted admission/program/hash/21-case behavior replay all pass;
+# 365 archive member digests/sizes match. Worker freezes 2313 files/index;
+# lead freezes all 2318 assembled tracked/new files/index through verification.
+# Successful fetch cleanup follows broad gates; no gate failure/retry.
+# Final evidence is assembled before lead gates, with explicit historical M8/M9
+# snapshots and current 52-source fingerprints, final two-entry ledger/archive.
+# New Stage 3 conventions: actual tsconfig-included lint dependency inputs and
+# internal manifest guard TypeError. A24 documentation followup remains explicit;
+# no dependency, public seam, protocol, snapshot, spec patch or ticket deferral.

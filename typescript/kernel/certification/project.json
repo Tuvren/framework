@@ -32,9 +32,37 @@
     },
     "lint": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/biome.jsonc",
+        "{workspaceRoot}/oxlint.config.ts",
+        "{workspaceRoot}/oxfmt.config.ts",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/bun.lock",
+        "{workspaceRoot}/tools/scripts/json-check.ts",
+        "{workspaceRoot}/tools/scripts/json-source-check.ts",
+        "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+        "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+        "{workspaceRoot}/Cargo.toml",
+        "{workspaceRoot}/Cargo.lock",
+        "{workspaceRoot}/rust-toolchain.toml",
+        "^production",
+        "{workspaceRoot}/tsconfig.json",
+        "{workspaceRoot}/tsconfig.base.json",
+        "{workspaceRoot}/tools/conformance/adapter-protocol/**/*",
+        "{workspaceRoot}/typescript/kernel/conformance-adapter/src/**/*",
+        "{workspaceRoot}/typescript/runtime/src/**/*",
+        "{workspaceRoot}/typescript/sdk/src/**/*",
+        "{workspaceRoot}/typescript/telemetry/semconv/src/**/*"
+      ],
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check typescript/kernel/certification"
+        "commands": [
+          "bunx --bun oxlint --type-aware typescript/kernel/certification",
+          "bun tools/scripts/json-check.ts typescript/kernel/certification"
+        ],
+        "parallel": false
       }
     },
     "test": {

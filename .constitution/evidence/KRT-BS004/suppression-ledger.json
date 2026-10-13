@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BS004",
+  "milestone": "M10",
+  "measurement_base_head": "cd1f44d94e48b963eb48de159484d6de548c96e3",
+  "measurement_kind": "uncommitted-working-tree-candidate",
+  "historical_ledger": ".constitution/evidence/KRT-BS002/suppressions.json",
+  "historical_ledger_sha256": "38f5cd93d2994c42746e8eab15b364fb8a266f79b8b8a0806429dada9a30e9d4",
+  "entries": [
+    {
+      "identity": "typescript/kernel/grpc-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/grpc-client/src/index.ts",
+      "directive": "// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "original_reason_preserved": true,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_admission_disposition": "removed-at-atomic-native-admission-no-native-counterpart",
+      "atomic_admission_commit": "55907cfb80861d68b5a95db537057e811c9065b9",
+      "currently_retained": false,
+      "equivalent_firing_diagnostics": [],
+      "actual_final_file_diagnostics": [],
+      "native_suppressions_added": [],
+      "final_native_report": "final/18-native-all-five.json",
+      "final_native_raw_log": "final/18-native-all-five.log",
+      "atomic_and_original_reason_proof": "admission-final/suppression-disposition.json"
+    },
+    {
+      "identity": "typescript/kernel/testkit/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/testkit/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "original_reason_preserved": true,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_admission_disposition": "removed-at-atomic-native-admission-no-native-counterpart",
+      "atomic_admission_commit": "cd1f44d94e48b963eb48de159484d6de548c96e3",
+      "currently_retained": false,
+      "equivalent_firing_diagnostics": [],
+      "actual_final_file_diagnostics": [],
+      "native_suppressions_added": [],
+      "final_native_report": "final/18-native-all-five.json",
+      "final_native_raw_log": "final/18-native-all-five.log",
+      "atomic_and_original_reason_proof": "admission-final/suppression-disposition.json"
+    }
+  ]
+}
