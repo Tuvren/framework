@@ -127,7 +127,7 @@ function invokedCommands(
   if (commands.length === 0) {
     return undefined;
   }
-  const cwd = options.cwd;
+  const { cwd } = options;
   if (cwd !== undefined && typeof cwd !== "string") {
     return undefined;
   }

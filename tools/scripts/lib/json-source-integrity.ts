@@ -378,7 +378,7 @@ export async function validateJsonSources(
   for (const file of ordered) {
     let source: string;
     try {
-      source = readFileSync(file, "utf8");
+      source = readFileSync(file, "utf-8");
     } catch (error: unknown) {
       issues.push({ file, message: errorMessage(error) });
       continue;

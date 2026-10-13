@@ -91,11 +91,11 @@ export interface SurfaceDiff {
   impliedBump: "experimental-only" | "major" | "minor" | "none";
 }
 
-const SEMVER_MINOR_CLASSES: readonly DiffClass[] = [
+const SEMVER_MINOR_CLASSES: ReadonlySet<DiffClass> = new Set([
   "experimental-tag-removed",
   "export-added",
   "experimental-export-removed",
-];
+]);
 
 /**
  * Classify the drift between the committed snapshot surface and the live
@@ -272,7 +272,7 @@ function computeImpliedBump(
     return "major";
   }
 
-  if (allowed.some((finding) => SEMVER_MINOR_CLASSES.includes(finding.class))) {
+  if (allowed.some((finding) => SEMVER_MINOR_CLASSES.has(finding.class))) {
     return "minor";
   }
 

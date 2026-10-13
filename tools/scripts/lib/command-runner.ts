@@ -79,7 +79,7 @@ export function runCommand(
         clearTimeout(timeoutHandle);
       }
 
-      const stderr = Buffer.concat(stderrChunks).toString("utf8");
+      const stderr = Buffer.concat(stderrChunks).toString("utf-8");
       resolve({
         code: timedOut ? 124 : (code ?? 1),
         stderr: timedOut
@@ -87,7 +87,7 @@ export function runCommand(
               .filter((value) => value.length > 0)
               .join("\n")
           : stderr,
-        stdout: Buffer.concat(stdoutChunks).toString("utf8"),
+        stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
       });
     });
   });
