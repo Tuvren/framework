@@ -9,8 +9,8 @@
   "files": [
     {
       "path": "suppression-ledger.json",
-      "sha256": "821a5c1e2c6fecd6bca2b1878e74158b3c311a849c5e605c0734e1db941ba3ac",
-      "bytes": 5528,
+      "sha256": "62d6709cabf1034e92bb15e3a3ae65920aa165cb3e9b2349343a2271419aefc8",
+      "bytes": 5621,
       "role": "measurement"
     },
     {
@@ -33,8 +33,8 @@
     },
     {
       "path": "verification.log",
-      "sha256": "90699f66572e7b5ea143fd0e1d50a978989fd8fe3528e99f366005ed9aec1a43",
-      "bytes": 10594,
+      "sha256": "b2667487b7fcd1445063255ea4ddb5365cc1465b90d0b6083731e5d4c3b985cb",
+      "bytes": 10524,
       "role": "log"
     }
   ],

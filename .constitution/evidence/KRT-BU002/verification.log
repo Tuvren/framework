@@ -343,5 +343,3 @@ Finished in 41ms on 7 files using 16 threads.
  NX   Successfully ran target lint for project kernel-runtime
 
 Nx read the output from the cache instead of running the command for 1 out of 1 tasks.
-
-
