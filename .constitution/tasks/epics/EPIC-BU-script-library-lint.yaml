@@ -65,7 +65,7 @@ tickets:
       evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success."
     flows: []
     certainty: settled
-    status: planned
+    status: done
   - id: KRT-BU004
     title: Clear remaining rules and prove native-clean readiness
     type: Chore
@@ -108,3 +108,11 @@ tickets:
 # test registrations and eight fresh-process results/four import orders match.
 # JSON profiles, path handling, independent selections, fail-closed routing,
 # first failures and serial manifest traversal preserve the prior outcomes.
+
+# M5 completes KRT-BU003: two conformance helpers reordered; four assertion
+# callable constants explicitly typed. All seven plan checks pass, including
+# helpers (71/235 assertions), harness (42/74), repository typecheck (33 projects
+# plus one prerequisite), and conformance (11 projects plus 29 prerequisites).
+# Locked conformance retained the lock through successful origin/master fetch.
+# Twenty-seven signatures/bodies, six imports, one eager initializer and 51
+# scenarios across two fresh-process import orders match. Native 163 -> 81.

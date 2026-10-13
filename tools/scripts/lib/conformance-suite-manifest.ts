@@ -33,9 +33,21 @@ import type {
 const SUITE_MANIFEST_SCHEMA_RELATIVE_PATH =
   "../schemas/suite-manifest.schema.json";
 
-export async function readConformanceSuiteManifest(
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const readJsonSchema = (value: unknown, label: string): AnySchema => {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error(`${label} must contain a JSON Schema object or boolean`);
+};
+
+export const readConformanceSuiteManifest = async (
   manifestPath: string
-): Promise<ConformanceSuiteManifest> {
+): Promise<ConformanceSuiteManifest> => {
   const manifest = JSON.parse(await readFile(manifestPath, "utf-8")) as unknown;
   // The suite manifest schema lives next to the owning boundary instead of
   // being referenced from inside the manifest. Keeping that path conventional
@@ -59,34 +71,24 @@ export async function readConformanceSuiteManifest(
 
   assertConformanceSuiteManifest(manifest, manifestPath);
   return manifest;
-}
+};
 
-export function selectImplementationChecks(
+export const selectImplementationChecks = (
   manifest: ConformanceSuiteManifest,
   implementationId: string
-): readonly SuiteCheck[] {
+): readonly SuiteCheck[] => {
   return manifest.checks.filter((check) =>
     check.implementations?.includes(implementationId)
   );
-}
+};
 
-export function emitConformanceEvidence(evidence: ConformanceEvidence): void {
+export const emitConformanceEvidence = (
+  evidence: ConformanceEvidence
+): void => {
   assertConformanceEvidence(evidence, "conformance evidence");
   process.stdout.write(`${JSON.stringify(evidence, null, 2)}\n`);
 
   if (evidence.status !== "pass") {
     process.exitCode = 1;
   }
-}
-
-function readJsonSchema(value: unknown, label: string): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${label} must contain a JSON Schema object or boolean`);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+};
