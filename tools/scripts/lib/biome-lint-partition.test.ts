@@ -52,7 +52,7 @@ const OXLINT_COMMAND_PREFIX = "bunx --bun oxlint --type-aware";
 
 let inventoryCache: Promise<string[]> | undefined;
 
-async function discoverInventory(): Promise<string[]> {
+const discoverInventory = async (): Promise<string[]> => {
   inventoryCache ??= (async () => {
     const discovery = await runCommand(FORMER_ROOT_DISCOVERY_COMMAND, {
       captureOutput: true,
@@ -73,12 +73,12 @@ async function discoverInventory(): Promise<string[]> {
     );
   })();
   return await inventoryCache;
-}
+};
 
-function switchProjectsToOxc(
+const switchProjectsToOxc = (
   files: readonly NxProjectFile[],
   names: ReadonlySet<string> = BQ_PROJECTS
-): NxProjectFile[] {
+): NxProjectFile[] => {
   return files.map((file) => {
     if (!names.has(file.name)) {
       return file;
@@ -108,12 +108,14 @@ function switchProjectsToOxc(
       },
     };
   });
-}
+};
 
-function partitionScenario(additionalAdmissions: boolean): {
+const partitionScenario = (
+  additionalAdmissions: boolean
+): {
   entries: CoverageEntry[];
   projects: NxProjectFile[];
-} {
+} => {
   let projects = switchProjectsToOxc(loadNxProjectFiles(REPO_ROOT));
   let entries = readCoverageEntries(COVERAGE_DIR).filter(
     (entry) => entry.list !== "bq"
@@ -150,12 +152,12 @@ function partitionScenario(additionalAdmissions: boolean): {
     );
   }
   return { entries, projects };
-}
+};
 
-function expectCompletePartition(
+const expectCompletePartition = (
   inventory: readonly string[],
   resolution: CoverageResolution
-): void {
+): void => {
   expect(resolution.missing).toEqual([]);
   expect(resolution.duplicates).toEqual([]);
   const nativeFiles = [
@@ -174,19 +176,19 @@ function expectCompletePartition(
   // overlap and no leftover file: the complete disjoint partition.
   expect(partition.size).toBe(inventory.length);
   expect(owned + nativeFiles.length).toBe(inventory.length);
-}
+};
 
-function isBqFile(file: string): boolean {
+const isBqFile = (file: string): boolean => {
   return (
     file.startsWith("typescript/kernel/protocol/") ||
     file.startsWith("typescript/kernel/runtime/")
   );
-}
+};
 
-async function actualNativeFiles(
+const actualNativeFiles = async (
   inventory: readonly string[],
   projects: readonly NxProjectFile[]
-): Promise<{ jsonValidatedFiles: string[]; oxlintFiles: string[] }> {
+): Promise<{ jsonValidatedFiles: string[]; oxlintFiles: string[] }> => {
   const nativeProjects = discoverNativeLintProjects(projects);
   const oxlintFiles = await collectOxlintSelectedFiles(
     nativeProjects.oxcProjects,
@@ -220,7 +222,7 @@ async function actualNativeFiles(
     // Compare coverage membership independently of project-name ordering.
     oxlintFiles: oxlintFiles.sort((left, right) => left.localeCompare(right)),
   };
-}
+};
 
 describe("biome coverage partition", () => {
   test("the real inventory partitions completely between owned and OXC-excluded", async () => {
