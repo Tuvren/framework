@@ -28,9 +28,9 @@ export interface GeneratedPrerequisiteOptions {
  * output directory and is cacheable, so normal iteration restores the output
  * from Nx while fresh kernel verification can force the generator to run.
  */
-export function createGeneratedPrerequisitePhase(
+export const createGeneratedPrerequisitePhase = (
   options: GeneratedPrerequisiteOptions
-): VerificationPhase {
+): VerificationPhase => {
   return {
     concurrency: 1,
     id: "generated prerequisites",
@@ -48,11 +48,11 @@ export function createGeneratedPrerequisitePhase(
       },
     ],
   };
-}
+};
 
-export function prependGeneratedPrerequisitePhase(
+export const prependGeneratedPrerequisitePhase = (
   phases: readonly VerificationPhase[],
   options: GeneratedPrerequisiteOptions
-): VerificationPhase[] {
+): VerificationPhase[] => {
   return [createGeneratedPrerequisitePhase(options), ...phases];
-}
+};

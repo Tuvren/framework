@@ -85,3 +85,11 @@ tickets:
     flows: []
     certainty: settled
     status: planned
+
+# M2 (KRT-BU003 partial): eight utility/API files reordered; 247 additions/124 deletions.
+# All six plan checks pass: tools tsc, helper tests (69/203 assertions), retained
+# Biome, Oxfmt, API-freeze/generated-prerequisite tests (10/39), api-freeze:check.
+# Native diagnostics 220 -> 203. Fourteen callable signatures and bodies match;
+# 18 fresh-process probes match across nine rotated import orders.
+# Synchronous empty-command errors, timeout/signals, phase factories, API ordering
+# and worktree guards retain their baseline behavior. No scope deviation.

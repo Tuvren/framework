@@ -97,66 +97,11 @@ const SEMVER_MINOR_CLASSES: ReadonlySet<DiffClass> = new Set([
   "experimental-export-removed",
 ]);
 
-/**
- * Classify the drift between the committed snapshot surface and the live
- * surface under the ADR-0056 diff table. Pure function: no I/O.
- *
- * `whollyExperimentalEntrypoints` lists the subpaths the authority declares
- * wholly experimental (ADR-0056 consistency floor); the floor is evaluated on
- * the live surface regardless of drift.
- */
-export function classifySurfaceDiff(
-  snapshot: ApiSurface,
-  live: ApiSurface,
-  whollyExperimentalEntrypoints: readonly string[]
-): SurfaceDiff {
-  const blocked: DiffFinding[] = [];
-  const allowed: DiffFinding[] = [];
-
-  const entrypoints = new Set([...Object.keys(snapshot), ...Object.keys(live)]);
-
-  for (const entrypoint of [...entrypoints].sort()) {
-    const before = snapshot[entrypoint] ?? {};
-    const after = live[entrypoint] ?? {};
-    const names = new Set([...Object.keys(before), ...Object.keys(after)]);
-
-    for (const exportName of [...names].sort()) {
-      const finding = classifyExportChange(
-        entrypoint,
-        exportName,
-        before[exportName],
-        after[exportName]
-      );
-
-      if (finding === undefined) {
-        continue;
-      }
-
-      if (finding.verdict === "blocked") {
-        blocked.push(finding);
-      } else {
-        allowed.push(finding);
-      }
-    }
-  }
-
-  return {
-    allowed,
-    blocked,
-    floorViolations: collectFloorViolations(
-      live,
-      whollyExperimentalEntrypoints
-    ),
-    hasDrift: blocked.length > 0 || allowed.length > 0,
-    impliedBump: computeImpliedBump(blocked, allowed),
-  };
-}
-
 /** ADR-0056 consistency floor, evaluated on the live surface regardless of drift. */
-function collectFloorViolations(
+const collectFloorViolations = (
   live: ApiSurface,
   whollyExperimentalEntrypoints: readonly string[]
-): FloorViolation[] {
+): FloorViolation[] => {
   const floorViolations: FloorViolation[] = [];
 
   for (const entrypoint of whollyExperimentalEntrypoints) {
@@ -170,15 +115,15 @@ function collectFloorViolations(
   }
 
   return floorViolations;
-}
+};
 
 /** One export's row in the ADR-0056 diff table; undefined means no change. */
-function classifyExportChange(
+const classifyExportChange = (
   entrypoint: string,
   exportName: string,
   prev: ExportRecord | undefined,
   next: ExportRecord | undefined
-): DiffFinding | undefined {
+): DiffFinding | undefined => {
   if (prev === undefined && next !== undefined) {
     return {
       class: "export-added",
@@ -262,12 +207,12 @@ function classifyExportChange(
     exportName,
     verdict: "blocked",
   };
-}
+};
 
-function computeImpliedBump(
+const computeImpliedBump = (
   blocked: DiffFinding[],
   allowed: DiffFinding[]
-): SurfaceDiff["impliedBump"] {
+): SurfaceDiff["impliedBump"] => {
   if (blocked.length > 0) {
     return "major";
   }
@@ -277,7 +222,62 @@ function computeImpliedBump(
   }
 
   return allowed.length > 0 ? "experimental-only" : "none";
-}
+};
+
+/**
+ * Classify the drift between the committed snapshot surface and the live
+ * surface under the ADR-0056 diff table. Pure function: no I/O.
+ *
+ * `whollyExperimentalEntrypoints` lists the subpaths the authority declares
+ * wholly experimental (ADR-0056 consistency floor); the floor is evaluated on
+ * the live surface regardless of drift.
+ */
+export const classifySurfaceDiff = (
+  snapshot: ApiSurface,
+  live: ApiSurface,
+  whollyExperimentalEntrypoints: readonly string[]
+): SurfaceDiff => {
+  const blocked: DiffFinding[] = [];
+  const allowed: DiffFinding[] = [];
+
+  const entrypoints = new Set([...Object.keys(snapshot), ...Object.keys(live)]);
+
+  for (const entrypoint of [...entrypoints].sort()) {
+    const before = snapshot[entrypoint] ?? {};
+    const after = live[entrypoint] ?? {};
+    const names = new Set([...Object.keys(before), ...Object.keys(after)]);
+
+    for (const exportName of [...names].sort()) {
+      const finding = classifyExportChange(
+        entrypoint,
+        exportName,
+        before[exportName],
+        after[exportName]
+      );
+
+      if (finding === undefined) {
+        continue;
+      }
+
+      if (finding.verdict === "blocked") {
+        blocked.push(finding);
+      } else {
+        allowed.push(finding);
+      }
+    }
+  }
+
+  return {
+    allowed,
+    blocked,
+    floorViolations: collectFloorViolations(
+      live,
+      whollyExperimentalEntrypoints
+    ),
+    hasDrift: blocked.length > 0 || allowed.length > 0,
+    impliedBump: computeImpliedBump(blocked, allowed),
+  };
+};
 
 /**
  * The four KRT-BL002 acceptance scenarios as executable fixtures. The gate CLI
@@ -285,7 +285,7 @@ function computeImpliedBump(
  * ADR-0056 table cannot silently regress between snapshot runs. Returns the
  * list of scenario failures (empty means the table behaves as specified).
  */
-export function runDiffTableSelfTest(): string[] {
+export const runDiffTableSelfTest = (): string[] => {
   const failures: string[] = [];
   const entry = "@tuvren/fixture";
 
@@ -366,4 +366,4 @@ export function runDiffTableSelfTest(): string[] {
   }
 
   return failures;
-}
+};

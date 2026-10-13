@@ -27,9 +27,24 @@ export interface WorktreeSnapshot {
   unstagedDiff: string;
 }
 
-export async function readWorktreeSnapshot(
+const readGitOutput = async (
+  command: readonly string[],
   cwd: string
-): Promise<WorktreeSnapshot> {
+): Promise<string> => {
+  const result = await runCommand(command, { captureOutput: true, cwd });
+
+  if (result.code !== 0) {
+    throw new Error(
+      result.stderr || result.stdout || `${command.join(" ")} failed`
+    );
+  }
+
+  return result.stdout;
+};
+
+export const readWorktreeSnapshot = async (
+  cwd: string
+): Promise<WorktreeSnapshot> => {
   const [status, unstagedDiff, stagedDiff] = await Promise.all([
     readGitOutput(
       ["git", "status", "--porcelain=v1", "--untracked-files=all"],
@@ -44,12 +59,12 @@ export async function readWorktreeSnapshot(
     status,
     unstagedDiff,
   };
-}
+};
 
-export async function assertWorktreeUnchanged(
+export const assertWorktreeUnchanged = async (
   before: WorktreeSnapshot,
   options: WorktreeGuardOptions
-): Promise<void> {
+): Promise<void> => {
   const after = await readWorktreeSnapshot(options.cwd);
 
   if (
@@ -72,19 +87,4 @@ export async function assertWorktreeUnchanged(
       ...changes.map((change) => `- ${change}`),
     ].join("\n")
   );
-}
-
-async function readGitOutput(
-  command: readonly string[],
-  cwd: string
-): Promise<string> {
-  const result = await runCommand(command, { captureOutput: true, cwd });
-
-  if (result.code !== 0) {
-    throw new Error(
-      result.stderr || result.stdout || `${command.join(" ")} failed`
-    );
-  }
-
-  return result.stdout;
-}
+};

@@ -46,7 +46,7 @@ export const REGENERATE_COMMAND_ALLOWLIST: readonly string[] = [
  * execution: fails loud when the command contains a shell metacharacter,
  * is empty, or does not start with an allowlisted command prefix.
  */
-export function parseRegenerateCommandArgv(command: string): string[] {
+export const parseRegenerateCommandArgv = (command: string): string[] => {
   if (SHELL_METACHARACTER_PATTERN.test(command)) {
     throw new Error(
       `regenerateCommand "${command}" contains a shell metacharacter (one of | & ; \` $ < > ( )); ` +
@@ -72,4 +72,4 @@ export function parseRegenerateCommandArgv(command: string): string[] {
   }
 
   return argv;
-}
+};

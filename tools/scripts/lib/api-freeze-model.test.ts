@@ -27,7 +27,9 @@ import type { ApiSurface, ExportRecord } from "./api-freeze-model.js";
 
 const ENTRY = "@tuvren/fixture";
 
-function surface(records: Record<string, Partial<ExportRecord>>): ApiSurface {
+const surface = (
+  records: Record<string, Partial<ExportRecord>>
+): ApiSurface => {
   return {
     [ENTRY]: Object.fromEntries(
       Object.entries(records).map(([name, record]) => [
@@ -41,7 +43,7 @@ function surface(records: Record<string, Partial<ExportRecord>>): ApiSurface {
       ])
     ),
   };
-}
+};
 
 describe("classifySurfaceDiff (ADR-0056 diff table)", () => {
   test("identical surfaces produce no drift", () => {
@@ -168,6 +170,51 @@ describe("classifySurfaceDiff (ADR-0056 diff table)", () => {
     const diff = classifySurfaceDiff({}, surface({ A: {}, B: {} }), []);
     expect(diff.blocked).toHaveLength(0);
     expect(diff.allowed).toHaveLength(2);
+  });
+
+  test("orders findings and floor violations deterministically across entrypoints", () => {
+    const stable: ExportRecord = {
+      kind: "type",
+      signature: "interface Widget {}",
+      stability: "stable",
+    };
+    const snapshot: ApiSurface = {};
+    const live: ApiSurface = {};
+
+    for (const entrypoint of ["z", "a"]) {
+      snapshot[entrypoint] = Object.fromEntries(
+        ["Z", "A"].map((name) => [name, stable])
+      );
+      live[entrypoint] = Object.fromEntries(
+        ["Y", "B"].map((name) => [name, stable])
+      );
+    }
+
+    const diff = classifySurfaceDiff(snapshot, live, ["z", "a"]);
+
+    expect(
+      diff.blocked.map(({ entrypoint, exportName }) => [entrypoint, exportName])
+    ).toEqual([
+      ["a", "A"],
+      ["a", "Z"],
+      ["z", "A"],
+      ["z", "Z"],
+    ]);
+    expect(
+      diff.allowed.map(({ entrypoint, exportName }) => [entrypoint, exportName])
+    ).toEqual([
+      ["a", "B"],
+      ["a", "Y"],
+      ["z", "B"],
+      ["z", "Y"],
+    ]);
+    expect(diff.floorViolations).toEqual([
+      { entrypoint: "z", exportName: "B" },
+      { entrypoint: "z", exportName: "Y" },
+      { entrypoint: "a", exportName: "B" },
+      { entrypoint: "a", exportName: "Y" },
+    ]);
+    expect(diff.impliedBump).toBe("major");
   });
 });
 
