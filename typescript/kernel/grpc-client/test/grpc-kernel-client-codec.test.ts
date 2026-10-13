@@ -25,20 +25,32 @@ import type {
   VerdictDisposition,
 } from "@tuvren/kernel-protocol";
 
+import { TreeManifestResponseSchema } from "../src/lib/generated/kernel-interop/tuvren/kernel/interop/v1/kernel_services_pb.js";
 import {
+  PathValueSchema,
+  RecoveryStateSchema,
   RunCompletionStatus as ProtoRunCompletionStatus,
   StagedResultSchema,
   StagedResultStatus as ProtoStagedResultStatus,
+  StepContextSchema,
+  StepDeclarationSchema,
+  TurnTreeSchemaSchema,
 } from "../src/lib/generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb.js";
 import {
   createInvalidTransportResponseError,
   decodeKernelRecordBytes,
   encodeKernelRecordBytes,
+  fromProtoManifestEntries,
   requirePathValue,
+  requireRecoveryState,
   requireStagedResult,
+  requireStepContext,
+  requireTurnTreeSchema,
   requireVerdict,
   toProtoPathValue,
   toProtoRunCompletionStatus,
+  toProtoStepDeclaration,
+  toProtoTurnTreeSchema,
   toProtoVerdict,
 } from "../src/lib/grpc-kernel-client-codec.js";
 
@@ -108,6 +120,114 @@ describe("grpc kernel client codec — verdict round-trips", () => {
     expect(
       requireVerdict(toProtoVerdict(verdict, "verdict"), "verdict")
     ).toEqual(verdict);
+  });
+});
+
+describe("grpc kernel client codec — converter validation order", () => {
+  test("an absent path field and an unset oneof fail while explicit null survives", () => {
+    for (const value of [undefined, create(PathValueSchema)]) {
+      expect(() => requirePathValue(value, "path")).toThrow(
+        createInvalidTransportResponseError("path.value")
+      );
+    }
+    expect(requirePathValue(toProtoPathValue(null, "path"), "path")).toBeNull();
+  });
+
+  test("an unknown collection enum fails before malformed path metadata", () => {
+    const unknownCollection = Number.MAX_SAFE_INTEGER;
+    const schema = create(TurnTreeSchemaSchema, {
+      paths: [
+        { collection: unknownCollection, metadataCbor: new Uint8Array() },
+      ],
+    });
+    expect(() => requireTurnTreeSchema(schema, "schema")).toThrow(
+      createInvalidTransportResponseError("schema.paths[0].collection")
+    );
+  });
+
+  test("step contexts preserve omitted metadata and decode present metadata", () => {
+    for (const metadata of [undefined, { note: "value" }]) {
+      const schema = {
+        incorporationRules: [],
+        paths: [
+          {
+            collection: "single" as const,
+            path: "state",
+            ...(metadata === undefined ? {} : { metadata }),
+          },
+        ],
+        schemaId: "schema",
+      };
+      const step = {
+        deterministic: true,
+        id: "step",
+        sideEffects: false,
+        ...(metadata === undefined ? {} : { metadata }),
+      };
+      const context = create(StepContextSchema, {
+        currentTurnNodeHash: HASH_A,
+        schema: toProtoTurnTreeSchema(schema, "schema"),
+        signalsCbor: [encodeKernelRecordBytes({ signal: true }, "signal")],
+        step: toProtoStepDeclaration(step, "step"),
+      });
+      expect(requireStepContext(context, "context")).toStrictEqual({
+        currentTurnNodeHash: HASH_A,
+        schema,
+        signals: [{ signal: true }],
+        step,
+      });
+    }
+  });
+
+  test("a missing context schema fails before malformed signals and missing step", () => {
+    const context = create(StepContextSchema, {
+      signalsCbor: [new Uint8Array()],
+    });
+    expect(() => requireStepContext(context, "context")).toThrow(
+      createInvalidTransportResponseError("context.schema.schema")
+    );
+  });
+
+  test("recovery decodes consumed results before steps and uncommitted results", () => {
+    const recovery = create(RecoveryStateSchema, {
+      consumedStagedResults: [create(StagedResultSchema)],
+      stepSequence: [
+        create(StepDeclarationSchema, { metadataCbor: new Uint8Array() }),
+      ],
+      uncommittedStagedResults: [create(StagedResultSchema)],
+    });
+    expect(() => requireRecoveryState(recovery, "recovery")).toThrow(
+      createInvalidTransportResponseError(
+        "recovery.consumedStagedResults[0].outcome"
+      )
+    );
+    recovery.consumedStagedResults = [];
+    expect(() => requireRecoveryState(recovery, "recovery")).toThrow(
+      "decoded kernel record bytes must contain valid deterministic CBOR"
+    );
+  });
+
+  test("a duplicate manifest path fails before its missing value", () => {
+    const manifest = create(TreeManifestResponseSchema, {
+      entries: [
+        { path: "state", value: toProtoPathValue(null, "path") },
+        { path: "state" },
+      ],
+    });
+    try {
+      fromProtoManifestEntries(manifest, "manifest");
+      throw new Error("Expected duplicate manifest path validation to fail");
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(TuvrenRuntimeError);
+      if (!(error instanceof TuvrenRuntimeError)) {
+        throw error;
+      }
+      expect(error).toMatchObject({
+        code: "invalid_kernel_transport_response",
+        details: { index: 1, label: "manifest", path: "state" },
+        message: 'duplicate transport manifest path "state"',
+      });
+    }
   });
 });
 

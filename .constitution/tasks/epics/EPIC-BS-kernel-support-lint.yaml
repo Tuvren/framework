@@ -174,3 +174,18 @@ tickets:
 # all exit 0; direct patch changeset coverage passes. Fresh native 451 -> 387,
 # grpc-client 176 -> 112; other roots unchanged. All five roots remain retained.
 # Same-implementation conformance remains due at M7 before KRT-BS003 completion.
+# M4 independent review: no findings; exact gates, fresh package checks, all
+# 44 body comparisons and five import-order comparisons independently passed.
+# M5 / KRT-BS003 partial: remaining 31 codec declarations reordered/converted;
+# two files, 1237 changed lines. All 44 fully qualified callable signatures and
+# normalized AST bodies match exact prior source. Runtime imports/initialization
+# and acyclic three-module graph match; two type-only Proto imports added for
+# explicit return annotations. Five fresh import orders preserve actual outputs.
+# Six converter/null/enum/metadata/context/recovery/duplicate-manifest assertions
+# pass on both sources (26 tests, 43 assertions); existing assertions retained.
+# Lead exact M5 gates (scoped typecheck/test, workspace typecheck, API freeze)
+# and direct patch changeset coverage pass; validation 0 errors/0 warnings.
+# Fresh native 387 -> 344, grpc-client 112 -> 69; exactly 31 func-style and 12
+# no-use-before-define removed, no introduced diagnostics. All roots retained.
+# A12 read: owned native target metadata will preserve real generated-output
+# prerequisites/hashing and required checker inputs using installed Nx semantics.
