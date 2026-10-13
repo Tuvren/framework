@@ -3,26 +3,26 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-13",
-    "commit": "b7e98e488848587fec3da8ae38b61454e1a89503",
+    "commit": "6c6c4c5fea63517087629822578d3306d9322a6e",
     "command": "bunx --bun oxlint --type-aware tools/scripts/lib; bunx --bun oxlint --type-aware --debug=files tools/scripts/lib; bun run check; bun run verify:kernel; VERIFY_SERIAL=1 bun run verify"
   },
   "files": [
     {
       "path": "readiness.json",
-      "sha256": "dceeb3ada1d0e126a035c61e53b853c458f79ad4c83ffd91c598714fbf5898f8",
+      "sha256": "550654c2c4f8eaba499c6962080bf5f551e63b48db367b96751f05dfe5f5bc0e",
       "bytes": 5213,
       "role": "measurement"
     },
     {
       "path": "suppression-ledger.json",
-      "sha256": "0f62e1bcbaa42504a03b2876b02dbd97dafef45dd1ad31d30a9d8458a68980ff",
-      "bytes": 12697,
+      "sha256": "b7385bba0bd5fa7dfb15136a0e5a46e0cdf45f9e575d70c8f744dec176c32678",
+      "bytes": 14706,
       "role": "measurement"
     },
     {
       "path": "verification.json",
-      "sha256": "c9dd40185a357bf46370cac493e9d7b4cc33dc4ecfc2d6d1b70669879a7d6576",
-      "bytes": 3159,
+      "sha256": "6e882a28023cbcfdfba92735b3e2de97e7fa65e3448268ff2811de9a7040c708",
+      "bytes": 3240,
       "role": "measurement"
     },
     {
@@ -33,8 +33,8 @@
     },
     {
       "path": "verification-transcripts.json.gz",
-      "sha256": "56e4ee57c86efa8805f39e232a01ef16809f639fc2ab17448f3668f6152ffb28",
-      "bytes": 1112065,
+      "sha256": "92e04c653cc4d52217c51a9c8d5e4168eb39ddc313c02101c6031621fe50790f",
+      "bytes": 1630170,
       "role": "transcript_bundle"
     }
   ],
