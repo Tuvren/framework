@@ -225,3 +225,22 @@ tickets:
 # Exactly 36 func-style and 46 no-use-before-define removed; no introduced debt.
 # All five Biome roots/directives retained. BS003 completion/full repository
 # conformance and verify:kernel remain due after independently reviewed M7b.
+# M7a independent review: no findings; all scoped/repository/API gates and
+# 36 actual signatures/bodies plus ten runtime import captures reproduced.
+# M7b / KRT-BS003 pending review: two test files, 797 changed source lines,
+# 13 helpers. Against exact bbca509 and 381a980 snapshots, lead reproduced
+# equality of 49 combined binding/initializer signatures, normalized bodies,
+# retained statements/imports and the acyclic 14-module runtime graph.
+# Ten fresh import variants preserve 23 shared cases/26 registrations and
+# 12 fault phase/policy/concurrent scenarios with ordered errors/durable state.
+# Lead seven exact gates pass: testkit typecheck/test/conformance/exports-smoke,
+# repository typecheck, full conformance (11 projects plus 29 prerequisites),
+# verify:kernel (seven steps). Testkit tests remain 13/38, conformance 3/20,
+# exports smoke 1/2; API freeze remains 14 entrypoints/404 exports. Changeset,
+# retained Biome, formatting, diff and both fetch cleanups pass.
+# Fresh native 177 -> 135: exactly 13 func-style plus 29 no-use-before-define
+# removed; grpc 34, testkit 99, certification 2 and wrappers 0 remain.
+# All five Biome roots and both original directives retained; no new pattern,
+# dependency or semantic normalization. A20 freezes all tracked/index state
+# during broad gates; worker proved all 2305 tracked files/index unchanged.
+# BS003 completion is withheld until independent M7b review, per A17.

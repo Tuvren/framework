@@ -50,6 +50,358 @@ import {
   registerBackendRecoverySuite,
 } from "../src/index.ts";
 
+const seedFaultInjectionBranch = async (
+  backend: RuntimeBackend,
+  branchId: string
+): Promise<{
+  branch: StoredBranch;
+  childNode: StoredTurnNode;
+  rootNode: StoredTurnNode;
+}> => {
+  const rootNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 12,
+    eventHash: null,
+    previousTurnNodeHash: null,
+    schemaId: "schema_fault_injection",
+    turnTreeHash: createHashFromIndex(99),
+  });
+  const childNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 13,
+    eventHash: null,
+    previousTurnNodeHash: rootNode.hash,
+    schemaId: rootNode.schemaId,
+    turnTreeHash: rootNode.turnTreeHash,
+  });
+  const branch: StoredBranch = {
+    branchId,
+    createdAtMs: 15,
+    headTurnNodeHash: rootNode.hash,
+    threadId: `${branchId}_thread`,
+    updatedAtMs: 15,
+  };
+
+  await backend.transact(async (tx) => {
+    await tx.turnNodes.put(rootNode);
+    await tx.branches.set(branch);
+  });
+
+  return {
+    branch,
+    childNode,
+    rootNode,
+  };
+};
+
+const readBranch = async (
+  backend: RuntimeBackend,
+  branchId: string
+): Promise<StoredBranch | null> =>
+  await backend.transact(async (tx) => await tx.branches.get(branchId));
+
+const readBranchHeadHash = async (
+  backend: RuntimeBackend,
+  branchId: string
+): Promise<string | null> => {
+  const branch = await readBranch(backend, branchId);
+  return branch?.headTurnNodeHash ?? null;
+};
+
+const readTurnNode = async (
+  backend: RuntimeBackend,
+  turnNodeHash: string
+): Promise<StoredTurnNode | null> =>
+  await backend.transact(async (tx) => await tx.turnNodes.get(turnNodeHash));
+
+const hasAncestor = (
+  turnNodes: Map<string, StoredTurnNode>,
+  startHash: string,
+  ancestorHash: string
+): boolean => {
+  let current = turnNodes.get(startHash);
+
+  while (current !== undefined && current.previousTurnNodeHash !== null) {
+    if (current.previousTurnNodeHash === ancestorHash) {
+      return true;
+    }
+
+    current = turnNodes.get(current.previousTurnNodeHash);
+  }
+
+  return false;
+};
+
+const classifyTurnNodeRelationship = (
+  turnNodes: Map<string, StoredTurnNode>,
+  sourceHash: string,
+  targetHash: string
+): "ancestor" | "descendant" | "lateral" | "same" => {
+  if (sourceHash === targetHash) {
+    return "same";
+  }
+
+  if (hasAncestor(turnNodes, targetHash, sourceHash)) {
+    return "descendant";
+  }
+
+  if (hasAncestor(turnNodes, sourceHash, targetHash)) {
+    return "ancestor";
+  }
+
+  return "lateral";
+};
+
+const createBranchHeadLateralMoveError = (
+  previousHeadTurnNodeHash: string,
+  nextHeadTurnNodeHash: string
+): Error & { code: string } =>
+  Object.assign(
+    new Error(
+      "record.headTurnNodeHash must remain on the same thread lineage as the current branch head"
+    ),
+    {
+      code: "test_backend_branch_head_lateral_move",
+      details: {
+        nextHeadTurnNodeHash,
+        previousHeadTurnNodeHash,
+      },
+    }
+  );
+
+const createTestTransaction = (state: {
+  branches: Map<string, StoredBranch>;
+  objects: Map<string, StoredObject>;
+  turnNodes: Map<string, StoredTurnNode>;
+}): RuntimeBackendTx => ({
+  branches: {
+    get(branchId) {
+      return Promise.resolve(state.branches.get(branchId) ?? null);
+    },
+    listByThread() {
+      return Promise.resolve([]);
+    },
+    set(record) {
+      const existing = state.branches.get(record.branchId);
+
+      if (
+        existing !== undefined &&
+        classifyTurnNodeRelationship(
+          state.turnNodes,
+          existing.headTurnNodeHash,
+          record.headTurnNodeHash
+        ) === "lateral"
+      ) {
+        throw createBranchHeadLateralMoveError(
+          existing.headTurnNodeHash,
+          record.headTurnNodeHash
+        );
+      }
+
+      state.branches.set(record.branchId, structuredClone(record));
+      return Promise.resolve();
+    },
+  },
+  objects: {
+    get(hash) {
+      return Promise.resolve(state.objects.get(hash) ?? null);
+    },
+    has(hash) {
+      return Promise.resolve(state.objects.has(hash));
+    },
+    put(record) {
+      state.objects.set(record.hash, structuredClone(record));
+      return Promise.resolve();
+    },
+  },
+  observeAnnotations: {
+    listByRun() {
+      return Promise.resolve<StoredObserveAnnotation[]>([]);
+    },
+    set() {
+      return Promise.resolve();
+    },
+  },
+  orderedPathChunks: {
+    get() {
+      return Promise.resolve<StoredOrderedPathChunk | null>(null);
+    },
+    put() {
+      return Promise.resolve();
+    },
+  },
+  stagedResults: {
+    clearRun() {
+      return Promise.resolve();
+    },
+    get() {
+      return Promise.resolve<StoredStagedResult | null>(null);
+    },
+    listByRun() {
+      return Promise.resolve<StoredStagedResult[]>([]);
+    },
+    set() {
+      return Promise.resolve();
+    },
+  },
+  turnNodes: {
+    get(hash) {
+      return Promise.resolve(state.turnNodes.get(hash) ?? null);
+    },
+    put(record) {
+      state.turnNodes.set(record.hash, structuredClone(record));
+      return Promise.resolve();
+    },
+  },
+  turns: {
+    get() {
+      return Promise.resolve<StoredTurn | null>(null);
+    },
+    listByThread() {
+      return Promise.resolve<StoredTurn[]>([]);
+    },
+    set() {
+      return Promise.resolve();
+    },
+  },
+  threads: {
+    get() {
+      return Promise.resolve<StoredThread | null>(null);
+    },
+    list() {
+      return Promise.resolve({ threads: [] });
+    },
+    put() {
+      return Promise.resolve();
+    },
+  },
+  turnTrees: {
+    get() {
+      return Promise.resolve<StoredTurnTree | null>(null);
+    },
+    put() {
+      return Promise.resolve();
+    },
+  },
+  turnTreePaths: {
+    get() {
+      return Promise.resolve<StoredTurnTreePath | null>(null);
+    },
+    listByTurnTree() {
+      return Promise.resolve<StoredTurnTreePath[]>([]);
+    },
+    putMany() {
+      return Promise.resolve();
+    },
+  },
+  schemas: {
+    get() {
+      return Promise.resolve(null);
+    },
+    put() {
+      return Promise.resolve();
+    },
+  },
+  runs: {
+    get() {
+      return Promise.resolve<StoredRun | null>(null);
+    },
+    listByBranch() {
+      return Promise.resolve<StoredRun[]>([]);
+    },
+    listExpired() {
+      return Promise.resolve<StoredRun[]>([]);
+    },
+    set() {
+      return Promise.resolve();
+    },
+  },
+});
+
+const createTestBackend = (): RuntimeBackend => {
+  const faultControl = Symbol("fault-control");
+  const state = {
+    branches: new Map<string, StoredBranch>(),
+    objects: new Map<string, StoredObject>(),
+    turnNodes: new Map<string, StoredTurnNode>(),
+  };
+  let hooks: {
+    afterCommitBeforeAck?(): Promise<void>;
+    beforeCommit?(): Promise<void>;
+    midCommit?(commit: () => Promise<void>): Promise<void>;
+  } | null = null;
+  let transactionQueue = Promise.resolve();
+
+  const backend: RuntimeBackend & Record<PropertyKey, unknown> = {
+    [faultControl]: {
+      setFaultHooks(nextHooks: typeof hooks) {
+        hooks = nextHooks;
+      },
+      supportsFaultPoint() {
+        return true;
+      },
+    },
+    capabilities() {
+      return { "thread.enumeration": false };
+    },
+    health() {
+      return Promise.resolve({ ok: true });
+    },
+    async transact<T>(work: (tx: RuntimeBackendTx) => Promise<T>): Promise<T> {
+      const priorTransaction = transactionQueue;
+      let releaseQueue: (() => void) | undefined;
+
+      transactionQueue = new Promise<void>((resolve) => {
+        releaseQueue = resolve;
+      });
+
+      await priorTransaction;
+
+      const draft = {
+        branches: new Map(state.branches),
+        objects: new Map(state.objects),
+        turnNodes: new Map(state.turnNodes),
+      };
+      const tx = createTestTransaction(draft);
+
+      try {
+        const result = await work(tx);
+        await hooks?.beforeCommit?.();
+
+        let committed = false;
+        const commit = (): Promise<void> => {
+          if (committed) {
+            throw new Error("test backend commit hook attempted double commit");
+          }
+
+          state.branches = draft.branches;
+          state.objects = draft.objects;
+          state.turnNodes = draft.turnNodes;
+          committed = true;
+          return Promise.resolve();
+        };
+
+        if (hooks?.midCommit === undefined) {
+          await commit();
+        } else {
+          await hooks.midCommit(commit);
+
+          if (!committed) {
+            throw new Error("test backend mid-commit hook must commit once");
+          }
+        }
+
+        await hooks?.afterCommitBeforeAck?.();
+        return result;
+      } finally {
+        releaseQueue?.();
+      }
+    },
+  };
+
+  return backend;
+};
+
 describe("@tuvren/kernel-testkit fixtures", () => {
   test("creates the canonical kernel test schema", () => {
     deepStrictEqual(createCanonicalKernelTestSchema(), {
@@ -425,362 +777,3 @@ describe("@tuvren/kernel-testkit fixtures", () => {
     expect(finalBranch.headTurnNodeHash).toBe(seeded.childNode.hash);
   });
 });
-
-async function seedFaultInjectionBranch(
-  backend: RuntimeBackend,
-  branchId: string
-): Promise<{
-  branch: StoredBranch;
-  childNode: StoredTurnNode;
-  rootNode: StoredTurnNode;
-}> {
-  const rootNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 12,
-    eventHash: null,
-    previousTurnNodeHash: null,
-    schemaId: "schema_fault_injection",
-    turnTreeHash: createHashFromIndex(99),
-  });
-  const childNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 13,
-    eventHash: null,
-    previousTurnNodeHash: rootNode.hash,
-    schemaId: rootNode.schemaId,
-    turnTreeHash: rootNode.turnTreeHash,
-  });
-  const branch: StoredBranch = {
-    branchId,
-    createdAtMs: 15,
-    headTurnNodeHash: rootNode.hash,
-    threadId: `${branchId}_thread`,
-    updatedAtMs: 15,
-  };
-
-  await backend.transact(async (tx) => {
-    await tx.turnNodes.put(rootNode);
-    await tx.branches.set(branch);
-  });
-
-  return {
-    branch,
-    childNode,
-    rootNode,
-  };
-}
-
-async function readBranch(
-  backend: RuntimeBackend,
-  branchId: string
-): Promise<StoredBranch | null> {
-  return await backend.transact(async (tx) => await tx.branches.get(branchId));
-}
-
-async function readBranchHeadHash(
-  backend: RuntimeBackend,
-  branchId: string
-): Promise<string | null> {
-  const branch = await readBranch(backend, branchId);
-  return branch?.headTurnNodeHash ?? null;
-}
-
-async function readTurnNode(
-  backend: RuntimeBackend,
-  turnNodeHash: string
-): Promise<StoredTurnNode | null> {
-  return await backend.transact(
-    async (tx) => await tx.turnNodes.get(turnNodeHash)
-  );
-}
-
-function createTestBackend(): RuntimeBackend {
-  const faultControl = Symbol("fault-control");
-  const state = {
-    branches: new Map<string, StoredBranch>(),
-    objects: new Map<string, StoredObject>(),
-    turnNodes: new Map<string, StoredTurnNode>(),
-  };
-  let hooks: {
-    afterCommitBeforeAck?(): Promise<void>;
-    beforeCommit?(): Promise<void>;
-    midCommit?(commit: () => Promise<void>): Promise<void>;
-  } | null = null;
-  let transactionQueue = Promise.resolve();
-
-  const backend: RuntimeBackend & Record<PropertyKey, unknown> = {
-    [faultControl]: {
-      setFaultHooks(nextHooks: typeof hooks) {
-        hooks = nextHooks;
-      },
-      supportsFaultPoint() {
-        return true;
-      },
-    },
-    capabilities() {
-      return { "thread.enumeration": false };
-    },
-    health() {
-      return Promise.resolve({ ok: true });
-    },
-    async transact<T>(work: (tx: RuntimeBackendTx) => Promise<T>): Promise<T> {
-      const priorTransaction = transactionQueue;
-      let releaseQueue: (() => void) | undefined;
-
-      transactionQueue = new Promise<void>((resolve) => {
-        releaseQueue = resolve;
-      });
-
-      await priorTransaction;
-
-      const draft = {
-        branches: new Map(state.branches),
-        objects: new Map(state.objects),
-        turnNodes: new Map(state.turnNodes),
-      };
-      const tx = createTestTransaction(draft);
-
-      try {
-        const result = await work(tx);
-        await hooks?.beforeCommit?.();
-
-        let committed = false;
-        const commit = (): Promise<void> => {
-          if (committed) {
-            throw new Error("test backend commit hook attempted double commit");
-          }
-
-          state.branches = draft.branches;
-          state.objects = draft.objects;
-          state.turnNodes = draft.turnNodes;
-          committed = true;
-          return Promise.resolve();
-        };
-
-        if (hooks?.midCommit === undefined) {
-          await commit();
-        } else {
-          await hooks.midCommit(commit);
-
-          if (!committed) {
-            throw new Error("test backend mid-commit hook must commit once");
-          }
-        }
-
-        await hooks?.afterCommitBeforeAck?.();
-        return result;
-      } finally {
-        releaseQueue?.();
-      }
-    },
-  };
-
-  return backend;
-}
-
-function createTestTransaction(state: {
-  branches: Map<string, StoredBranch>;
-  objects: Map<string, StoredObject>;
-  turnNodes: Map<string, StoredTurnNode>;
-}): RuntimeBackendTx {
-  return {
-    branches: {
-      get(branchId) {
-        return Promise.resolve(state.branches.get(branchId) ?? null);
-      },
-      listByThread() {
-        return Promise.resolve([]);
-      },
-      set(record) {
-        const existing = state.branches.get(record.branchId);
-
-        if (
-          existing !== undefined &&
-          classifyTurnNodeRelationship(
-            state.turnNodes,
-            existing.headTurnNodeHash,
-            record.headTurnNodeHash
-          ) === "lateral"
-        ) {
-          throw createBranchHeadLateralMoveError(
-            existing.headTurnNodeHash,
-            record.headTurnNodeHash
-          );
-        }
-
-        state.branches.set(record.branchId, structuredClone(record));
-        return Promise.resolve();
-      },
-    },
-    objects: {
-      get(hash) {
-        return Promise.resolve(state.objects.get(hash) ?? null);
-      },
-      has(hash) {
-        return Promise.resolve(state.objects.has(hash));
-      },
-      put(record) {
-        state.objects.set(record.hash, structuredClone(record));
-        return Promise.resolve();
-      },
-    },
-    observeAnnotations: {
-      listByRun() {
-        return Promise.resolve<StoredObserveAnnotation[]>([]);
-      },
-      set() {
-        return Promise.resolve();
-      },
-    },
-    orderedPathChunks: {
-      get() {
-        return Promise.resolve<StoredOrderedPathChunk | null>(null);
-      },
-      put() {
-        return Promise.resolve();
-      },
-    },
-    stagedResults: {
-      clearRun() {
-        return Promise.resolve();
-      },
-      get() {
-        return Promise.resolve<StoredStagedResult | null>(null);
-      },
-      listByRun() {
-        return Promise.resolve<StoredStagedResult[]>([]);
-      },
-      set() {
-        return Promise.resolve();
-      },
-    },
-    turnNodes: {
-      get(hash) {
-        return Promise.resolve(state.turnNodes.get(hash) ?? null);
-      },
-      put(record) {
-        state.turnNodes.set(record.hash, structuredClone(record));
-        return Promise.resolve();
-      },
-    },
-    turns: {
-      get() {
-        return Promise.resolve<StoredTurn | null>(null);
-      },
-      listByThread() {
-        return Promise.resolve<StoredTurn[]>([]);
-      },
-      set() {
-        return Promise.resolve();
-      },
-    },
-    threads: {
-      get() {
-        return Promise.resolve<StoredThread | null>(null);
-      },
-      list() {
-        return Promise.resolve({ threads: [] });
-      },
-      put() {
-        return Promise.resolve();
-      },
-    },
-    turnTrees: {
-      get() {
-        return Promise.resolve<StoredTurnTree | null>(null);
-      },
-      put() {
-        return Promise.resolve();
-      },
-    },
-    turnTreePaths: {
-      get() {
-        return Promise.resolve<StoredTurnTreePath | null>(null);
-      },
-      listByTurnTree() {
-        return Promise.resolve<StoredTurnTreePath[]>([]);
-      },
-      putMany() {
-        return Promise.resolve();
-      },
-    },
-    schemas: {
-      get() {
-        return Promise.resolve(null);
-      },
-      put() {
-        return Promise.resolve();
-      },
-    },
-    runs: {
-      get() {
-        return Promise.resolve<StoredRun | null>(null);
-      },
-      listByBranch() {
-        return Promise.resolve<StoredRun[]>([]);
-      },
-      listExpired() {
-        return Promise.resolve<StoredRun[]>([]);
-      },
-      set() {
-        return Promise.resolve();
-      },
-    },
-  };
-}
-
-function classifyTurnNodeRelationship(
-  turnNodes: Map<string, StoredTurnNode>,
-  sourceHash: string,
-  targetHash: string
-): "ancestor" | "descendant" | "lateral" | "same" {
-  if (sourceHash === targetHash) {
-    return "same";
-  }
-
-  if (hasAncestor(turnNodes, targetHash, sourceHash)) {
-    return "descendant";
-  }
-
-  if (hasAncestor(turnNodes, sourceHash, targetHash)) {
-    return "ancestor";
-  }
-
-  return "lateral";
-}
-
-function hasAncestor(
-  turnNodes: Map<string, StoredTurnNode>,
-  startHash: string,
-  ancestorHash: string
-): boolean {
-  let current = turnNodes.get(startHash);
-
-  while (current !== undefined && current.previousTurnNodeHash !== null) {
-    if (current.previousTurnNodeHash === ancestorHash) {
-      return true;
-    }
-
-    current = turnNodes.get(current.previousTurnNodeHash);
-  }
-
-  return false;
-}
-
-function createBranchHeadLateralMoveError(
-  previousHeadTurnNodeHash: string,
-  nextHeadTurnNodeHash: string
-): Error & { code: string } {
-  return Object.assign(
-    new Error(
-      "record.headTurnNodeHash must remain on the same thread lineage as the current branch head"
-    ),
-    {
-      code: "test_backend_branch_head_lateral_move",
-      details: {
-        nextHeadTurnNodeHash,
-        previousHeadTurnNodeHash,
-      },
-    }
-  );
-}
