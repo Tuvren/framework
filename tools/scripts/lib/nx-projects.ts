@@ -66,6 +66,90 @@ export interface NxProjectTarget {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) &&
+  value.every((entry: unknown) => typeof entry === "string");
+
+const isOptionalString = (value: unknown): value is string | undefined =>
+  value === undefined || typeof value === "string";
+
+const COMMAND_COLORS = new Set([
+  "black",
+  "red",
+  "green",
+  "yellow",
+  "blue",
+  "magenta",
+  "cyan",
+  "white",
+]);
+
+const COMMAND_BACKGROUND_COLORS = new Set([
+  "bgBlack",
+  "bgRed",
+  "bgGreen",
+  "bgYellow",
+  "bgBlue",
+  "bgMagenta",
+  "bgCyan",
+  "bgWhite",
+]);
+
+const isRunCommandEntry = (value: unknown): boolean => {
+  if (typeof value === "string") {
+    return true;
+  }
+  if (!isRecord(value) || typeof value.command !== "string") {
+    return false;
+  }
+  return Object.entries(value).every(([key, field]) => {
+    switch (key) {
+      case "command":
+      case "prefix":
+      case "description": {
+        return typeof field === "string";
+      }
+      case "forwardAllArgs": {
+        return typeof field === "boolean";
+      }
+      case "color":
+      case "prefixColor": {
+        return typeof field === "string" && COMMAND_COLORS.has(field);
+      }
+      case "bgColor": {
+        return (
+          typeof field === "string" && COMMAND_BACKGROUND_COLORS.has(field)
+        );
+      }
+      default: {
+        return false;
+      }
+    }
+  });
+};
+
+const isCanonicalCommandOptions = (
+  value: unknown
+): value is NxCommandOptions => {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    isOptionalString(value.command) &&
+    isOptionalString(value.cwd) &&
+    !(Object.hasOwn(value, "command") && Object.hasOwn(value, "commands")) &&
+    (value.commands === undefined ||
+      (Array.isArray(value.commands) &&
+        value.commands.every(isRunCommandEntry))) &&
+    (value.args === undefined ||
+      typeof value.args === "string" ||
+      isStringArray(value.args)) &&
+    (value.__unparsed__ === undefined || isStringArray(value.__unparsed__)) &&
+    (value.forwardAllArgs === undefined ||
+      typeof value.forwardAllArgs === "boolean")
+  );
+};
+
 /**
  * Every command string an nx:run-commands target can execute: the base
  * `options` (single `command` string or `commands` array of strings /
@@ -75,26 +159,58 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  * equally-valid alternate shape silently escapes the gate.
  */
 export const targetCommandStrings = (target: NxProjectTarget): string[] => {
+  if (target.executor !== "nx:run-commands") {
+    return [];
+  }
+  const configurations = Object.values(target.configurations ?? {});
+  if (
+    (target.options !== undefined &&
+      !isCanonicalCommandOptions(target.options)) ||
+    configurations.some(
+      (configuration) =>
+        !isCanonicalCommandOptions({ ...target.options, ...configuration })
+    )
+  ) {
+    return [];
+  }
   const out: string[] = [];
-  const collect = (options: Record<string, unknown> | undefined): void => {
-    if (typeof options?.command === "string") {
-      out.push(options.command);
+  const collect = (options: Record<string, unknown> | undefined): boolean => {
+    if (options === undefined) {
+      return true;
     }
-    if (!Array.isArray(options?.commands)) {
-      return;
+    if (typeof options.command === "string") {
+      out.push(options.command);
+      return !Object.hasOwn(options, "commands");
+    }
+    if (Object.hasOwn(options, "command")) {
+      return false;
+    }
+    if (!Object.hasOwn(options, "commands")) {
+      return true;
+    }
+    if (!Array.isArray(options.commands)) {
+      return false;
     }
     const entries: unknown[] = options.commands;
     for (const entry of entries) {
       if (typeof entry === "string") {
         out.push(entry);
-      } else if (isRecord(entry) && typeof entry.command === "string") {
-        out.push(entry.command);
+        continue;
       }
+      if (!isRecord(entry) || typeof entry.command !== "string") {
+        return false;
+      }
+      out.push(entry.command);
     }
+    return true;
   };
-  collect(target.options);
-  for (const configuration of Object.values(target.configurations ?? {})) {
-    collect(configuration);
+  if (!collect(target.options)) {
+    return [];
+  }
+  for (const configuration of configurations) {
+    if (!collect(configuration)) {
+      return [];
+    }
   }
   return out;
 };
@@ -113,13 +229,6 @@ export interface NxProjectFile {
   /** Parsed `project.json` content. */
   project: NxProjectJson;
 }
-
-const isStringArray = (value: unknown): value is string[] =>
-  Array.isArray(value) &&
-  value.every((entry: unknown) => typeof entry === "string");
-
-const isOptionalString = (value: unknown): value is string | undefined =>
-  value === undefined || typeof value === "string";
 
 const isNxProjectTarget = (value: unknown): value is NxProjectTarget => {
   if (!isRecord(value)) {

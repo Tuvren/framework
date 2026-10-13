@@ -464,12 +464,90 @@ describe("Nx project input validation", () => {
       if (lint === undefined) {
         throw new Error("expected the fixture lint target");
       }
-      expect(targetCommandStrings(lint)).toEqual([
-        "bunx --bun oxlint --type-aware typescript/kernel/protocol",
-        "bun custom.ts",
-      ]);
+      expect(targetCommandStrings(lint)).toEqual([]);
       expect(discovered(lint)).toEqual([]);
     });
+  });
+
+  test("does not treat opaque executor metadata as execution proof", () => {
+    const harnessCommand = "bun tools/conformance/harness/run.ts";
+    for (const executor of ["custom:executor", undefined, "nx:run-script"]) {
+      const target = {
+        ...(executor === undefined ? {} : { executor }),
+        configurations: {
+          custom: {
+            command: harnessCommand,
+            commands: [{ command: "cargo test" }],
+          },
+        },
+        options: {
+          command: "cargo test",
+          commands: [null, harnessCommand],
+        },
+      };
+      const project = { name: "fixture", targets: { test: target } };
+      withProjectFixture(project, (root) => {
+        const [loaded] = loadNxProjectFiles(root);
+        expect(loaded?.project).toEqual(project);
+        const testTarget = loaded?.project.targets?.test;
+        if (testTarget === undefined) {
+          throw new Error("expected the fixture test target");
+        }
+        expect(targetCommandStrings(testTarget)).toEqual([]);
+      });
+    }
+  });
+
+  test("extracts canonical command strings from each supported shape", () => {
+    const command = "bun tools/conformance/harness/run.ts";
+    for (const options of [
+      { command },
+      { commands: [command] },
+      { commands: [{ command }] },
+    ]) {
+      expect(
+        targetCommandStrings({ executor: "nx:run-commands", options })
+      ).toEqual([command]);
+      expect(
+        targetCommandStrings({
+          configurations: { alternate: options },
+          executor: "nx:run-commands",
+        })
+      ).toEqual([command]);
+    }
+  });
+
+  test("does not extract partial execution proof from malformed canonical commands", () => {
+    const command = "bun tools/conformance/harness/run.ts";
+    for (const options of [
+      { command: false },
+      { command, commands: [command] },
+      { commands: "invalid" },
+      ...[null, false, {}, { command: false }, [command]].map((entry) => ({
+        commands: [entry, command],
+      })),
+    ]) {
+      for (const target of [
+        { executor: "nx:run-commands", options },
+        {
+          configurations: { alternate: options },
+          executor: "nx:run-commands",
+          options: { command },
+        },
+      ]) {
+        withProjectFixture(
+          { name: "fixture", targets: { test: target } },
+          (root) => {
+            const [loaded] = loadNxProjectFiles(root);
+            const testTarget = loaded?.project.targets?.test;
+            if (testTarget === undefined) {
+              throw new Error("expected the fixture test target");
+            }
+            expect(targetCommandStrings(testTarget)).toEqual([]);
+          }
+        );
+      }
+    }
   });
 
   test("gives malformed canonical command options no native credit", () => {
@@ -512,6 +590,151 @@ describe("Nx project input validation", () => {
     }
   });
 
+  test("rejects malformed known command fields in base and effective configurations", () => {
+    const command = "bun tools/conformance/harness/run.ts";
+    const malformedFields = [
+      { args: { invalid: true } },
+      { args: [false] },
+      { args: null },
+      { cwd: false },
+      { __unparsed__: "--flag" },
+      { __unparsed__: [false] },
+      { forwardAllArgs: "false" },
+    ];
+    for (const fields of malformedFields) {
+      const targets: NxProjectTarget[] = [
+        { executor: "nx:run-commands", options: { command, ...fields } },
+        {
+          configurations: { native: fields },
+          defaultConfiguration: "native",
+          executor: "nx:run-commands",
+          options: { command },
+        },
+        {
+          configurations: { alternate: fields },
+          executor: "nx:run-commands",
+          options: { command },
+        },
+      ];
+      for (const target of targets) {
+        withProjectFixture(
+          { name: "fixture", targets: { test: target } },
+          (root) => {
+            const [loaded] = loadNxProjectFiles(root);
+            expect(loaded?.project).toEqual({
+              name: "fixture",
+              targets: { test: target },
+            });
+            expect(
+              targetCommandStrings(loaded?.project.targets?.test ?? {})
+            ).toEqual([]);
+          }
+        );
+      }
+    }
+  });
+
+  test("rejects malformed command object fields without partial proof", () => {
+    const command = "bun tools/conformance/harness/run.ts";
+    for (const fields of [
+      { forwardAllArgs: "false" },
+      { prefix: false },
+      { prefixColor: "orange" },
+      { color: "orange" },
+      { bgColor: "red" },
+      { description: false },
+      { unknown: true },
+    ]) {
+      const options = { commands: [command, { command, ...fields }] };
+      expect(
+        targetCommandStrings({ executor: "nx:run-commands", options })
+      ).toEqual([]);
+      expect(
+        targetCommandStrings({
+          configurations: { native: options },
+          defaultConfiguration: "native",
+          executor: "nx:run-commands",
+          options: { commands: [command] },
+        })
+      ).toEqual([]);
+    }
+  });
+
+  test("rejects conflicting command shapes after configuration merging", () => {
+    const command = "bun tools/conformance/harness/run.ts";
+    for (const [options, native] of [
+      [{ command }, { commands: [command] }],
+      [{ commands: [command] }, { command }],
+    ]) {
+      expect(
+        targetCommandStrings({
+          configurations: { native },
+          defaultConfiguration: "native",
+          executor: "nx:run-commands",
+          options,
+        })
+      ).toEqual([]);
+    }
+  });
+
+  test("preserves base commands for missing and empty default configurations", () => {
+    const command = "bun tools/conformance/harness/run.ts";
+    for (const defaultConfiguration of ["missing", ""]) {
+      const target = {
+        defaultConfiguration,
+        executor: "nx:run-commands",
+        options: { command },
+      };
+      expect(targetCommandStrings(target)).toEqual([command]);
+      expect(
+        targetCommandStrings({
+          ...target,
+          configurations: { alternate: { command: "bun alternate.ts" } },
+        })
+      ).toEqual([command, "bun alternate.ts"]);
+    }
+  });
+
+  test("accepts valid command fields, object enums and commandless configuration fragments", () => {
+    const command = "bun tools/conformance/harness/run.ts";
+    for (const color of [
+      "black",
+      "red",
+      "green",
+      "yellow",
+      "blue",
+      "magenta",
+      "cyan",
+      "white",
+    ]) {
+      expect(
+        targetCommandStrings({
+          configurations: { native: { args: "--native" } },
+          defaultConfiguration: "native",
+          executor: "nx:run-commands",
+          options: {
+            __unparsed__: ["--flag"],
+            args: ["--flag"],
+            commands: [
+              {
+                bgColor: `bg${color.charAt(0).toUpperCase()}${color.slice(1)}`,
+                color,
+                command,
+                description: "fixture",
+                forwardAllArgs: false,
+                prefix: "fixture",
+                prefixColor: color,
+              },
+            ],
+            cwd: ".",
+            forwardAllArgs: false,
+            parallel: true,
+          },
+        })
+      ).toEqual([command]);
+    }
+  });
+
   test("preserves alternate commands, configurations and custom metadata", () => {
     const project = {
       customMetadata: { owner: "fixture" },
@@ -521,7 +744,7 @@ describe("Nx project input validation", () => {
         custom: { executor: "custom:executor", options: { customScalar: 3 } },
         lint: {
           configurations: {
-            native: { args: "--flag", command: "bun native.ts" },
+            native: { args: "--flag", commands: ["bun native.ts"] },
           },
           customTargetMetadata: true,
           defaultConfiguration: "native",
