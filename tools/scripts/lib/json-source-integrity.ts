@@ -107,10 +107,6 @@ export const JSON_SOURCE_INTEGRITY_EXCLUSIONS = Object.freeze([
   ".constitution/**",
 ]);
 
-interface GlobMatcher {
-  match(value: string): boolean;
-}
-
 export interface JsonInventory {
   codeFiles: string[];
   formatFiles: string[];
@@ -151,9 +147,8 @@ export interface JsonDiscoveryDependencies {
   sourceIgnorePatterns: readonly string[];
 }
 
-export const parseGitFileList = (stdout: string): string[] => {
-  return stdout.split("\0").filter((entry) => entry.length > 0);
-};
+export const parseGitFileList = (stdout: string): string[] =>
+  stdout.split("\0").filter((entry) => entry.length > 0);
 
 export const removeDeletedFiles = (
   candidates: readonly string[],
@@ -163,17 +158,14 @@ export const removeDeletedFiles = (
   return candidates.filter((file) => !deletedPaths.has(file));
 };
 
-const extensionOf = (file: string): string => {
-  return path.posix.extname(file).toLowerCase();
-};
+const extensionOf = (file: string): string =>
+  path.posix.extname(file).toLowerCase();
 
-export const isJsonFile = (file: string): boolean => {
-  return JSON_EXTENSIONS.has(extensionOf(file));
-};
+export const isJsonFile = (file: string): boolean =>
+  JSON_EXTENSIONS.has(extensionOf(file));
 
-export const isCodeFile = (file: string): boolean => {
-  return CODE_EXTENSIONS.has(extensionOf(file));
-};
+export const isCodeFile = (file: string): boolean =>
+  CODE_EXTENSIONS.has(extensionOf(file));
 
 const normalizeRepoRelative = (value: string, source: string): string => {
   // Git's `-z` output is already repository-relative and slash-separated on
@@ -210,30 +202,31 @@ export const normalizeJsonScopes = (scopes: readonly string[]): string[] => {
   return scopes.map((scope) => normalizeRepoRelative(scope, "json-check"));
 };
 
-const isWithinScope = (file: string, scope: string): boolean => {
-  return scope === "." || file === scope || file.startsWith(`${scope}/`);
-};
+const isWithinScope = (file: string, scope: string): boolean =>
+  scope === "." || file === scope || file.startsWith(`${scope}/`);
 
-const matchesPattern = (matcher: GlobMatcher, file: string): boolean => {
-  if (matcher.match(file)) {
-    return true;
-  }
+const matchesPattern = (matcher: Glob, file: string): boolean => {
+  // Evaluate the literal file first, then its ancestors: directory patterns
+  // exclude descendants without changing Bun's glob grammar or path bytes.
+  const candidates = [file];
   const segments = file.split("/");
   for (let index = 1; index < segments.length; index += 1) {
-    if (matcher.match(segments.slice(0, index).join("/"))) {
-      return true;
-    }
+    candidates.push(segments.slice(0, index).join("/"));
   }
-  return false;
+  return candidates.some((candidate) => matcher.match(candidate));
 };
 
 const matchingPattern = (
   file: string,
-  ignoreMatchers: readonly { matcher: GlobMatcher; pattern: string }[]
-): string | undefined => {
-  return ignoreMatchers.find(({ matcher }) => matchesPattern(matcher, file))
-    ?.pattern;
-};
+  ignoreMatchers: readonly { matcher: Glob; pattern: string }[]
+): string | undefined =>
+  ignoreMatchers.find(({ matcher }) => matchesPattern(matcher, file))?.pattern;
+
+const createIgnoreMatchers = (patterns: readonly string[]) =>
+  patterns.map((pattern) => ({
+    matcher: new Glob(pattern.replace(LEADING_BANGS_PATTERN, "")),
+    pattern,
+  }));
 
 export const selectJsonInventory = (
   candidates: readonly string[],
@@ -242,13 +235,8 @@ export const selectJsonInventory = (
   formatIgnorePatterns: readonly string[] = []
 ): JsonInventory => {
   const normalizedScopes = normalizeJsonScopes(scopes);
-  const matchers = (patterns: readonly string[]) =>
-    patterns.map((pattern) => ({
-      matcher: new Glob(pattern.replace(LEADING_BANGS_PATTERN, "")),
-      pattern,
-    }));
-  const sourceIgnoreMatchers = matchers(sourceIgnorePatterns);
-  const formatIgnoreMatchers = matchers(formatIgnorePatterns);
+  const sourceIgnoreMatchers = createIgnoreMatchers(sourceIgnorePatterns);
+  const formatIgnoreMatchers = createIgnoreMatchers(formatIgnorePatterns);
   const jsonFiles: string[] = [];
   const formatFiles: string[] = [];
   const codeFiles: string[] = [];
@@ -341,9 +329,8 @@ export const isJsoncProfile = (
   return normalized.split(pathSemantics.sep).includes(".vscode");
 };
 
-const errorMessage = (error: unknown): string => {
-  return error instanceof Error ? error.message : String(error);
-};
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 const parseJsonSource = (
   file: string,
@@ -369,7 +356,7 @@ const parseJsonSource = (
 export const validateJsonSources = async (
   files: readonly string[]
 ): Promise<JsonIntegrityResult> => {
-  const ordered = [...files].sort((left, right) => left.localeCompare(right));
+  const ordered = files.toSorted((left, right) => left.localeCompare(right));
   const issues: JsonIntegrityIssue[] = [];
   const buildable: string[] = [];
   const buildSources: Record<string, string> = {};

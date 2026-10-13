@@ -39,7 +39,7 @@ import { runCommand } from "./command-runner.js";
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const BIOME_BIN = path.join(REPO_ROOT, "node_modules/@biomejs/biome/bin/biome");
 
-const PROCESSED_FILE_LINE_PATTERN = /^\s*-\s+(.+?)\s*$/;
+const PROCESSED_FILE_LINE_PATTERN = /^\s*-\s+(?<file>.+?)\s*$/u;
 const BIOME_CONTROL_COMMAND = [
   process.execPath,
   BIOME_BIN,
@@ -92,9 +92,8 @@ const readWorkingTreeCandidates = async (): Promise<string[]> => {
   return removeDeletedFiles(candidates, parseGitFileList(deletion.stdout));
 };
 
-const readFilesystemInventory = async (): Promise<string[]> => {
-  return selectFormerRootFiles(REPO_ROOT, await readWorkingTreeCandidates());
-};
+const readFilesystemInventory = async (): Promise<string[]> =>
+  selectFormerRootFiles(REPO_ROOT, await readWorkingTreeCandidates());
 
 const writeGitFixture = async (): Promise<string> => {
   const root = mkdtempSync(path.join(tmpdir(), "biome-inventory-git-"));
@@ -110,7 +109,7 @@ const writeGitFixture = async (): Promise<string> => {
     "export const deleted = 1;\n"
   );
   const git = async (args: string[]): Promise<unknown> =>
-    runCommand(["git", ...args], { captureOutput: true, cwd: root });
+    await runCommand(["git", ...args], { captureOutput: true, cwd: root });
   await git(["init", "-q", "-b", "main"]);
   await git(["add", "-A"]);
   await git([
@@ -220,7 +219,7 @@ describe("former-root inventory derivation", () => {
     }
   });
 
-  test("config validation preserves the first error and its synchronous shape", () => {
+  test("config validation preserves the first error and normalizes type errors and causes", () => {
     const root = mkdtempSync(path.join(tmpdir(), "biome-inventory-errors-"));
     const configPath = path.join(root, "biome.jsonc");
     try {
@@ -261,10 +260,14 @@ describe("former-root inventory derivation", () => {
         if (!(thrown instanceof Error)) {
           throw new Error("expected a synchronous config validation error");
         }
-        expect(thrown.constructor).toBe(Error);
-        expect(thrown.name).toBe("Error");
+        const wrapped = message.startsWith("cannot read Biome config");
+        expect(thrown.constructor).toBe(wrapped ? Error : TypeError);
+        expect(thrown.name).toBe(wrapped ? "Error" : "TypeError");
         expect(thrown.message).toBe(message);
-        expect(Object.hasOwn(thrown, "cause")).toBe(false);
+        expect(Object.hasOwn(thrown, "cause")).toBe(wrapped);
+        if (wrapped) {
+          expect(thrown.cause).toBeInstanceOf(Error);
+        }
       }
     } finally {
       rmSync(root, { force: true, recursive: true });
@@ -345,7 +348,7 @@ describe("former-root inventory derivation", () => {
 
     const filesystem = await readFilesystemInventory();
     expect(filesystem).toEqual(
-      [...controlFiles].sort((left, right) => left.localeCompare(right))
+      controlFiles.toSorted((left, right) => left.localeCompare(right))
     );
   });
 });

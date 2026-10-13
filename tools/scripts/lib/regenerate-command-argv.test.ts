@@ -15,13 +15,13 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { readdir, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 
 import { parseRegenerateCommandArgv } from "./regenerate-command-argv.js";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const SPEC_ROOT = resolve(REPO_ROOT, "spec");
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
+const SPEC_ROOT = path.resolve(REPO_ROOT, "spec");
 const MANIFEST_FILE_NAME = "authority-packet.json";
 
 interface AuthorityPacketManifestFixture {
@@ -29,17 +29,41 @@ interface AuthorityPacketManifestFixture {
   packetId?: string;
 }
 
-const findAuthorityPacketManifests = async (
-  directory: string
-): Promise<string[]> => {
-  const entries = await readdir(directory, { withFileTypes: true });
+const isAuthorityPacketManifestFixture = (
+  value: unknown
+): value is AuthorityPacketManifestFixture => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  if ("packetId" in value && typeof value.packetId !== "string") {
+    return false;
+  }
+  if (!("freshnessChecks" in value) || value.freshnessChecks === undefined) {
+    return true;
+  }
+  return (
+    Array.isArray(value.freshnessChecks) &&
+    value.freshnessChecks.every(
+      (check: unknown) =>
+        typeof check === "object" &&
+        check !== null &&
+        "artifact" in check &&
+        typeof check.artifact === "string" &&
+        "regenerateCommand" in check &&
+        typeof check.regenerateCommand === "string"
+    )
+  );
+};
+
+const findAuthorityPacketManifests = (directory: string): string[] => {
+  const entries = readdirSync(directory, { withFileTypes: true });
   const manifests: string[] = [];
 
   for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
+    const entryPath = path.resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
-      manifests.push(...(await findAuthorityPacketManifests(entryPath)));
+      manifests.push(...findAuthorityPacketManifests(entryPath));
       continue;
     }
 
@@ -48,7 +72,7 @@ const findAuthorityPacketManifests = async (
     }
   }
 
-  return manifests.sort();
+  return manifests.toSorted();
 };
 
 describe("parseRegenerateCommandArgv", () => {
@@ -157,16 +181,20 @@ describe("parseRegenerateCommandArgv", () => {
 });
 
 describe("parseRegenerateCommandArgv against real authority packets", () => {
-  test("every declared regenerateCommand in spec/**/authority-packet.json parses", async () => {
-    const manifestPaths = await findAuthorityPacketManifests(SPEC_ROOT);
+  test("every declared regenerateCommand in spec/**/authority-packet.json parses", () => {
+    const manifestPaths = findAuthorityPacketManifests(SPEC_ROOT);
     expect(manifestPaths.length).toBeGreaterThan(0);
 
     const commands: string[] = [];
 
     for (const manifestPath of manifestPaths) {
-      const value = JSON.parse(
-        await readFile(manifestPath, "utf-8")
-      ) as AuthorityPacketManifestFixture;
+      const value = JSON.parse(readFileSync(manifestPath, "utf-8")) as unknown;
+
+      if (!isAuthorityPacketManifestFixture(value)) {
+        throw new TypeError(
+          `invalid authority packet fixture at ${manifestPath}`
+        );
+      }
 
       for (const check of value.freshnessChecks ?? []) {
         commands.push(check.regenerateCommand);

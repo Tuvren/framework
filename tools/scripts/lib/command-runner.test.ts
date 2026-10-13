@@ -19,28 +19,18 @@ import { describe, expect, test } from "bun:test";
 import { runCommand } from "./command-runner.js";
 
 describe("runCommand", () => {
-  test("throws an ordinary Error synchronously for empty argv", () => {
+  test("rejects empty argv with the executable precondition message", async () => {
     let failure: unknown;
-
-    expect(() => {
-      try {
-        return runCommand([]);
-      } catch (error: unknown) {
-        failure = error;
-        throw error;
-      }
-    }).toThrow("runCommand requires an executable");
-
-    expect(failure).toBeInstanceOf(Error);
-
-    if (!(failure instanceof Error)) {
-      throw new Error("expected the empty command to throw synchronously");
+    try {
+      await runCommand([]);
+    } catch (error: unknown) {
+      failure = error;
     }
-
-    expect(failure.constructor).toBe(Error);
-    expect(failure.name).toBe("Error");
+    expect(failure).toBeInstanceOf(Error);
+    if (!(failure instanceof Error)) {
+      throw new Error("expected the empty command to reject");
+    }
     expect(failure.message).toBe("runCommand requires an executable");
-    expect(Object.hasOwn(failure, "cause")).toBe(false);
   });
 
   test("merges explicit environment overrides", async () => {

@@ -38,6 +38,8 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
+import { Glob, JSONC } from "bun";
+
 /** Read-only Git enumeration of tracked plus untracked non-ignored files. */
 export const FORMER_ROOT_DISCOVERY_COMMAND = [
   "git",
@@ -75,34 +77,16 @@ const SUPPORTED_EXTENSIONS = new Set([
   ".tsx",
 ]);
 
-const LEADING_BANGS_PATTERN = /^!+/;
-
-interface GlobMatcher {
-  match(value: string): boolean;
-}
-
-type GlobConstructor = new (pattern: string) => GlobMatcher;
-
-interface JsoncParser {
-  parse(text: string): unknown;
-}
-
-interface BunRuntime {
-  Glob: GlobConstructor;
-  JSONC: JsoncParser;
-}
+const LEADING_BANGS_PATTERN = /^!+/u;
 
 interface BiomeConfigDocument {
   extends?: unknown;
   files?: { includes?: unknown };
 }
 
-const bun = (globalThis as unknown as { Bun: BunRuntime }).Bun;
-
 /** Decompose NUL-delimited `git ls-files -z` stdout into repo-relative paths. */
-export const parseGitFileList = (stdout: string): string[] => {
-  return stdout.split("\0").filter((entry) => entry.length > 0);
-};
+export const parseGitFileList = (stdout: string): string[] =>
+  stdout.split("\0").filter((entry) => entry.length > 0);
 
 /**
  * Drop tracked paths Git confirms are deleted from the working tree. The two
@@ -121,21 +105,20 @@ export const removeDeletedFiles = (
   return candidates.filter((file) => !deletedPaths.has(file));
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const stringArray = (value: unknown, source: string): string[] => {
   if (value === undefined) {
     return [];
   }
   if (!Array.isArray(value)) {
-    throw new Error(`${source}: expected a string array`);
+    throw new TypeError(`${source}: expected a string array`);
   }
   const out: string[] = [];
   for (const entry of value) {
     if (typeof entry !== "string") {
-      throw new Error(`${source}: every entry must be a string`);
+      throw new TypeError(`${source}: every entry must be a string`);
     }
     out.push(entry);
   }
@@ -146,7 +129,7 @@ const parseBiomeConfig = (
   text: string,
   source: string
 ): BiomeConfigDocument => {
-  const parsed = bun.JSONC.parse(text);
+  const parsed = JSONC.parse(text);
   if (!isRecord(parsed)) {
     throw new Error(`${source}: expected a JSON object`);
   }
@@ -181,7 +164,9 @@ const collectIncludes = (
     parsed = parseBiomeConfig(readFileSync(configPath, "utf-8"), configPath);
   } catch (error: unknown) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`cannot read Biome config ${configPath}: ${detail}`);
+    throw new Error(`cannot read Biome config ${configPath}: ${detail}`, {
+      cause: error,
+    });
   }
   for (const entry of stringArray(parsed.extends, `${configPath}.extends`)) {
     collectIncludes(resolveExtends(entry, configPath), seen, out);
@@ -201,23 +186,18 @@ export const readBiomeIncludes = (configPath: string): string[] => {
   return out;
 };
 
-const normalizePattern = (pattern: string): string => {
-  return pattern.replace(LEADING_BANGS_PATTERN, "");
-};
+const normalizePattern = (pattern: string): string =>
+  pattern.replace(LEADING_BANGS_PATTERN, "");
 
-const matchesPattern = (matcher: GlobMatcher, file: string): boolean => {
-  if (matcher.match(file)) {
-    return true;
-  }
-  // A directory pattern such as `!!**/generated` excludes every file beneath
-  // an ancestor directory with that name, not only a file of that name.
+const matchesPattern = (matcher: Glob, file: string): boolean => {
+  // Evaluate the literal file first, then its ancestors: directory patterns
+  // exclude descendants without changing Bun's glob grammar or path bytes.
+  const candidates = [file];
   const segments = file.split("/");
   for (let index = 1; index < segments.length; index += 1) {
-    if (matcher.match(segments.slice(0, index).join("/"))) {
-      return true;
-    }
+    candidates.push(segments.slice(0, index).join("/"));
   }
-  return false;
+  return candidates.some((candidate) => matcher.match(candidate));
 };
 
 const isSupportedSourceFile = (file: string): boolean => {
@@ -235,19 +215,19 @@ export const selectFormerRootFiles = (
   candidates: readonly string[]
 ): string[] => {
   const includes = readBiomeIncludes(path.join(repoRoot, "biome.jsonc"));
-  const matcherCache = new Map<string, GlobMatcher>();
-  const matcherFor = (pattern: string): GlobMatcher => {
+  const matcherCache = new Map<string, Glob>();
+  const matcherFor = (pattern: string): Glob => {
     const normalized = normalizePattern(pattern);
     const existing = matcherCache.get(normalized);
     if (existing !== undefined) {
       return existing;
     }
-    const created = new bun.Glob(normalized);
+    const created = new Glob(normalized);
     matcherCache.set(normalized, created);
     return created;
   };
-  const positiveMatchers: GlobMatcher[] = [];
-  const negativeMatchers: GlobMatcher[] = [];
+  const positiveMatchers: Glob[] = [];
+  const negativeMatchers: Glob[] = [];
   for (const pattern of includes) {
     if (pattern.startsWith("!")) {
       negativeMatchers.push(matcherFor(pattern));

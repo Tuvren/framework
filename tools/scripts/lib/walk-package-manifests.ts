@@ -21,7 +21,11 @@ export const walkPackageManifests = async (
   const found: string[] = [];
   const entries = await readdir(rootDir, { withFileTypes: true });
 
-  for (const entry of entries) {
+  const visitEntry = async (
+    previous: Promise<void>,
+    entry: (typeof entries)[number]
+  ): Promise<void> => {
+    await previous;
     if (entry.isFile() && entry.name === "package.json") {
       found.push(path.join(rootDir, entry.name));
     } else if (
@@ -32,7 +36,12 @@ export const walkPackageManifests = async (
         ...(await walkPackageManifests(path.join(rootDir, entry.name)))
       );
     }
+  };
+  let pending = Promise.resolve();
+  for (const entry of entries) {
+    pending = visitEntry(pending, entry);
   }
+  await pending;
 
   return found;
 };

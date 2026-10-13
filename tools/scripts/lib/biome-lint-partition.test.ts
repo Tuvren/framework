@@ -78,8 +78,8 @@ const discoverInventory = async (): Promise<string[]> => {
 const switchProjectsToOxc = (
   files: readonly NxProjectFile[],
   names: ReadonlySet<string> = BQ_PROJECTS
-): NxProjectFile[] => {
-  return files.map((file) => {
+): NxProjectFile[] =>
+  files.map((file) => {
     if (!names.has(file.name)) {
       return file;
     }
@@ -108,7 +108,6 @@ const switchProjectsToOxc = (
       },
     };
   });
-};
 
 const partitionScenario = (
   additionalAdmissions: boolean
@@ -178,12 +177,9 @@ const expectCompletePartition = (
   expect(owned + nativeFiles.length).toBe(inventory.length);
 };
 
-const isBqFile = (file: string): boolean => {
-  return (
-    file.startsWith("typescript/kernel/protocol/") ||
-    file.startsWith("typescript/kernel/runtime/")
-  );
-};
+const isBqFile = (file: string): boolean =>
+  file.startsWith("typescript/kernel/protocol/") ||
+  file.startsWith("typescript/kernel/runtime/");
 
 const actualNativeFiles = async (
   inventory: readonly string[],
@@ -216,11 +212,13 @@ const actualNativeFiles = async (
     }
   }
   return {
-    jsonValidatedFiles: [...jsonValidatedFiles].sort((left, right) =>
+    jsonValidatedFiles: [...jsonValidatedFiles].toSorted((left, right) =>
       left.localeCompare(right)
     ),
     // Compare coverage membership independently of project-name ordering.
-    oxlintFiles: oxlintFiles.sort((left, right) => left.localeCompare(right)),
+    oxlintFiles: oxlintFiles.toSorted((left, right) =>
+      left.localeCompare(right)
+    ),
   };
 };
 

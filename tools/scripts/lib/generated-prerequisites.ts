@@ -30,29 +30,28 @@ export interface GeneratedPrerequisiteOptions {
  */
 export const createGeneratedPrerequisitePhase = (
   options: GeneratedPrerequisiteOptions
-): VerificationPhase => {
-  return {
-    concurrency: 1,
-    id: "generated prerequisites",
-    steps: [
-      {
-        command: [
-          "bun",
-          "run",
-          "nx",
-          "run",
-          `${GENERATED_PREREQUISITE_PROJECT}:codegen`,
-          ...(options.fresh ? ["--skipNxCache"] : []),
-        ],
-        id: "kernel interop generated prerequisite",
-      },
-    ],
-  };
-};
+): VerificationPhase => ({
+  concurrency: 1,
+  id: "generated prerequisites",
+  steps: [
+    {
+      command: [
+        "bun",
+        "run",
+        "nx",
+        "run",
+        `${GENERATED_PREREQUISITE_PROJECT}:codegen`,
+        ...(options.fresh ? ["--skipNxCache"] : []),
+      ],
+      id: "kernel interop generated prerequisite",
+    },
+  ],
+});
 
 export const prependGeneratedPrerequisitePhase = (
   phases: readonly VerificationPhase[],
   options: GeneratedPrerequisiteOptions
-): VerificationPhase[] => {
-  return [createGeneratedPrerequisitePhase(options), ...phases];
-};
+): VerificationPhase[] => [
+  createGeneratedPrerequisitePhase(options),
+  ...phases,
+];

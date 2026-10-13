@@ -24,7 +24,7 @@
  */
 
 import { readdirSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import path from "node:path";
 
 // nx:run-commands accepts a single `command` string or a `commands` array
 // whose entries are strings or `{ command: string, ... }` objects; gates
@@ -106,6 +106,66 @@ export interface NxProjectFile {
   project: NxProjectJson;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) &&
+  value.every((entry: unknown) => typeof entry === "string");
+
+const isOptionalString = (value: unknown): value is string | undefined =>
+  value === undefined || typeof value === "string";
+
+const isNxCommandOptions = (value: unknown): value is NxCommandOptions => {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    isOptionalString(value.command) &&
+    isOptionalString(value.cwd) &&
+    (value.commands === undefined ||
+      (Array.isArray(value.commands) &&
+        value.commands.every(
+          (entry: unknown) =>
+            typeof entry === "string" ||
+            (isRecord(entry) && isOptionalString(entry.command))
+        ))) &&
+    (value.args === undefined ||
+      typeof value.args === "string" ||
+      isStringArray(value.args)) &&
+    (value.__unparsed__ === undefined || isStringArray(value.__unparsed__)) &&
+    (value.forwardAllArgs === undefined ||
+      typeof value.forwardAllArgs === "boolean")
+  );
+};
+
+const isNxProjectTarget = (value: unknown): value is NxProjectTarget => {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    isOptionalString(value.executor) &&
+    isOptionalString(value.defaultConfiguration) &&
+    (value.options === undefined || isNxCommandOptions(value.options)) &&
+    (value.configurations === undefined ||
+      (isRecord(value.configurations) &&
+        Object.values(value.configurations).every(isNxCommandOptions)))
+  );
+};
+
+const isNxProjectJson = (value: unknown): value is NxProjectJson => {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    isOptionalString(value.name) &&
+    (value.tags === undefined || isStringArray(value.tags)) &&
+    (value.targets === undefined ||
+      (isRecord(value.targets) &&
+        Object.values(value.targets).every(isNxProjectTarget)))
+  );
+};
+
 const SKIP_DIR_NAMES = new Set(["node_modules", "dist", ".git"]);
 
 const findProjectFiles = (dir: string, out: string[]): void => {
@@ -116,9 +176,9 @@ const findProjectFiles = (dir: string, out: string[]): void => {
       if (SKIP_DIR_NAMES.has(entry.name) || entry.name.startsWith(".")) {
         continue;
       }
-      findProjectFiles(join(dir, entry.name), out);
+      findProjectFiles(path.join(dir, entry.name), out);
     } else if (entry.isFile() && entry.name === "project.json") {
-      out.push(join(dir, entry.name));
+      out.push(path.join(dir, entry.name));
     }
   }
 };
@@ -128,23 +188,30 @@ export const loadNxProjectFiles = (root: string): NxProjectFile[] => {
   findProjectFiles(root, files);
   const records: NxProjectFile[] = [];
   for (const absolute of files) {
-    const path = relative(root, absolute);
-    let project: NxProjectJson;
+    const relativePath = path.relative(root, absolute);
+    let project: unknown;
     try {
       project = JSON.parse(readFileSync(absolute, "utf-8"));
-    } catch (error) {
-      throw new Error(`unparseable project.json at ${path}: ${error}`);
+    } catch (error: unknown) {
+      throw new Error(
+        `unparseable project.json at ${relativePath}: ${String(error)}`,
+        { cause: error }
+      );
     }
     // Nx would infer a name from the directory here, but the discovery
     // gates built on this index (certification parity, test-lane coverage)
     // exist to hard-fail instead of silently narrowing — a live project
     // this loader cannot index would escape both. Fail loud.
-    if (typeof project.name !== "string") {
-      throw new Error(
-        `project.json without a string name at ${path} — the discovery gates cannot index it; add an explicit name`
+    if (!isRecord(project) || typeof project.name !== "string") {
+      throw new TypeError(
+        `project.json without a string name at ${relativePath} — the discovery gates cannot index it; add an explicit name`
       );
     }
-    records.push({ name: project.name, path, project });
+    const { name } = project;
+    if (!isNxProjectJson(project)) {
+      throw new TypeError(`invalid project.json fields at ${relativePath}`);
+    }
+    records.push({ name, path: relativePath, project });
   }
   return records;
 };

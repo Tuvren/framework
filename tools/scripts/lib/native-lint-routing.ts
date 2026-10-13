@@ -91,11 +91,10 @@ const selectDefaultTargetOptions = (
   return { ...target.options, ...selected };
 };
 
-const hasOnlyScopeSafeOptions = (options: NxCommandOptions): boolean => {
-  return Object.keys(options).every((key) =>
+const hasOnlyScopeSafeOptions = (options: NxCommandOptions): boolean =>
+  Object.keys(options).every((key) =>
     SCOPE_SAFE_RUN_COMMANDS_OPTION_KEYS.has(key)
   );
-};
 
 const invokedCommands = (
   options: NxCommandOptions
@@ -186,7 +185,7 @@ const classifySingleCommand = (
   invoked: InvokedLintCommands,
   root: string
 ): ClassifiedProject | undefined => {
-  const command = invoked.commands[0];
+  const [command] = invoked.commands;
   if (command === undefined) {
     return undefined;
   }
@@ -292,28 +291,29 @@ export const discoverNativeLintProjects = (
 export const discoverOxcProjects = (
   projectFiles: readonly NxProjectFile[],
   pathSemantics: NativePathSemantics = path
-): OxcProject[] => {
-  return discoverNativeLintProjects(projectFiles, pathSemantics).oxcProjects;
-};
+): OxcProject[] =>
+  discoverNativeLintProjects(projectFiles, pathSemantics).oxcProjects;
 
-const parseOxlintSelectedFiles = (stdout: string): string[] => {
-  return stdout
+const parseOxlintSelectedFiles = (stdout: string): string[] =>
+  stdout
     .split(LINE_PATTERN)
     .map((line) => line.trim().replace(BACKSLASH_PATTERN, "/"))
     .filter((line) => line.length > 0)
-    .sort((left, right) => left.localeCompare(right));
-};
+    .toSorted((left, right) => left.localeCompare(right));
 
-const isWithin = (file: string, candidate: string): boolean => {
-  return file === candidate || file.startsWith(`${candidate}/`);
-};
+const isWithin = (file: string, candidate: string): boolean =>
+  file === candidate || file.startsWith(`${candidate}/`);
 
 export const collectOxlintSelectedFiles = async (
   projects: readonly OxcProject[],
   deps: OxlintSelectionDependencies
 ): Promise<string[]> => {
   const selected: string[] = [];
-  for (const project of projects) {
+  const collectProject = async (
+    previous: Promise<void>,
+    project: OxcProject
+  ): Promise<void> => {
+    await previous;
     const result = await deps.runCommand(
       [
         "bunx",
@@ -342,6 +342,11 @@ export const collectOxlintSelectedFiles = async (
       );
     }
     selected.push(...files);
+  };
+  let pending = Promise.resolve();
+  for (const project of projects) {
+    pending = collectProject(pending, project);
   }
+  await pending;
   return selected;
 };

@@ -58,7 +58,7 @@ export const parseRegenerateCommandArgv = (command: string): string[] => {
     .trim()
     .split(WHITESPACE_PATTERN)
     .filter((token) => token.length > 0);
-  const executable = argv[0];
+  const [executable] = argv;
 
   if (executable === undefined) {
     throw new Error("regenerateCommand must not be empty");

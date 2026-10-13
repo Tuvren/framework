@@ -22,7 +22,9 @@
 // command (`args`, `__unparsed__`, an unrecognized scalar option) or a custom
 // executor must leave the project in the retained Biome gate.
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 import {
@@ -30,6 +32,7 @@ import {
   discoverNativeLintProjects,
   discoverOxcProjects,
 } from "./native-lint-routing.js";
+import { loadNxProjectFiles, targetCommandStrings } from "./nx-projects.js";
 import type { NxProjectFile, NxProjectTarget } from "./nx-projects.js";
 
 const PROJECT_ROOT = "typescript/kernel/protocol";
@@ -38,22 +41,19 @@ const projectFile = (
   name: string,
   root: string,
   lint: NxProjectTarget
-): NxProjectFile => {
-  return {
+): NxProjectFile => ({
+  name,
+  path: `${root}/project.json`,
+  project: {
     name,
-    path: `${root}/project.json`,
-    project: {
-      name,
-      targets: { lint: { executor: "nx:run-commands", ...lint } },
-    },
-  };
-};
+    targets: { lint: { executor: "nx:run-commands", ...lint } },
+  },
+});
 
-const discovered = (lint: NxProjectTarget): string[] => {
-  return discoverOxcProjects([
+const discovered = (lint: NxProjectTarget): string[] =>
+  discoverOxcProjects([
     projectFile("kernel-contract-protocol", PROJECT_ROOT, lint),
   ]).map((project) => project.name);
-};
 
 describe("Oxlint project-wide discovery", () => {
   test("credits a workspace-root cwd with the project path", () => {
@@ -88,17 +88,16 @@ describe("Oxlint project-wide discovery", () => {
         root: PROJECT_ROOT,
       },
     ]);
-    await expect(
-      collectOxlintSelectedFiles(projects, {
+    expect(
+      await collectOxlintSelectedFiles(projects, {
         repoRoot: String.raw`C:\repo`,
-        runCommand: async () =>
-          Promise.resolve({
-            code: 0,
-            stderr: "",
-            stdout: "typescript/kernel/protocol/src/index.ts\n",
-          }),
+        runCommand: mock().mockResolvedValue({
+          code: 0,
+          stderr: "",
+          stdout: "typescript/kernel/protocol/src/index.ts\n",
+        }),
       })
-    ).resolves.toEqual(["typescript/kernel/protocol/src/index.ts"]);
+    ).toEqual(["typescript/kernel/protocol/src/index.ts"]);
   });
 
   test("credits a project-root cwd with a bare dot", () => {
@@ -408,5 +407,168 @@ describe("Oxlint project-wide discovery", () => {
         },
       })
     ).toEqual([]);
+  });
+});
+
+const withProjectFixture = (
+  value: unknown,
+  check: (root: string) => void
+): void => {
+  const root = mkdtempSync(path.join(tmpdir(), "nx-project-loader-"));
+  try {
+    writeFileSync(path.join(root, "project.json"), JSON.stringify(value));
+    check(root);
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+};
+
+describe("Nx project input validation", () => {
+  test("preserves alternate commands, configurations and custom metadata", () => {
+    const project = {
+      customMetadata: { owner: "fixture" },
+      name: "fixture",
+      tags: ["tooling"],
+      targets: {
+        custom: { executor: "custom:executor", options: { customScalar: 3 } },
+        lint: {
+          configurations: {
+            native: { args: "--flag", command: "bun native.ts" },
+          },
+          customTargetMetadata: true,
+          defaultConfiguration: "native",
+          executor: "nx:run-commands",
+          options: {
+            __unparsed__: ["--other"],
+            args: ["--flag"],
+            commands: [
+              "bun first.ts",
+              { command: "bun second.ts", forwardAllArgs: false },
+            ],
+            customOption: { nested: true },
+            cwd: ".",
+            forwardAllArgs: true,
+            parallel: false,
+          },
+        },
+      },
+    };
+    withProjectFixture(project, (root) => {
+      const [loaded] = loadNxProjectFiles(root);
+      expect(loaded?.project).toEqual(project);
+      expect(loaded?.name).toBe("fixture");
+      const lint = loaded?.project.targets?.lint;
+      if (lint === undefined) {
+        throw new Error("expected the fixture lint target");
+      }
+      expect(targetCommandStrings(lint)).toEqual([
+        "bun first.ts",
+        "bun second.ts",
+        "bun native.ts",
+      ]);
+    });
+  });
+
+  test("reports a missing string name before malformed optional fields", () => {
+    withProjectFixture({ name: 3, targets: [] }, (root) => {
+      expect(() => loadNxProjectFiles(root)).toThrow(
+        "project.json without a string name at project.json — the discovery gates cannot index it; add an explicit name"
+      );
+    });
+  });
+
+  test("rejects malformed declared optional fields without dropping the project", () => {
+    const invalidFields = [
+      { tags: [3] },
+      { targets: [] },
+      { targets: { lint: null } },
+      { targets: { lint: { executor: 3 } } },
+      { targets: { lint: { defaultConfiguration: false } } },
+      { targets: { lint: { configurations: [] } } },
+      { targets: { lint: { configurations: { native: null } } } },
+      { targets: { lint: { options: { command: 3 } } } },
+      { targets: { lint: { options: { cwd: false } } } },
+      { targets: { lint: { options: { commands: [null] } } } },
+      { targets: { lint: { options: { commands: [{ command: false }] } } } },
+      { targets: { lint: { options: { args: [3] } } } },
+      { targets: { lint: { options: { __unparsed__: [false] } } } },
+      { targets: { lint: { options: { forwardAllArgs: "false" } } } },
+    ];
+    for (const fields of invalidFields) {
+      withProjectFixture({ name: "fixture", ...fields }, (root) => {
+        expect(() => loadNxProjectFiles(root)).toThrow(
+          "invalid project.json fields at project.json"
+        );
+      });
+    }
+  });
+});
+
+describe("serial Oxlint selection", () => {
+  const projects = [
+    { jsonCompanion: false, name: "first", root: "typescript/first" },
+    { jsonCompanion: false, name: "second", root: "typescript/second" },
+  ];
+
+  test("waits for each selection before launching the next project", async () => {
+    const first = Promise.withResolvers<{
+      code: number;
+      stderr: string;
+      stdout: string;
+    }>();
+    const started = Promise.withResolvers<boolean>();
+    const commands: (readonly string[])[] = [];
+    const run = async (command: readonly string[]) => {
+      commands.push(command);
+      if (commands.length === 1) {
+        started.resolve(true);
+        return await first.promise;
+      }
+      return { code: 0, stderr: "", stdout: "typescript/second/main.ts\n" };
+    };
+    const selection = collectOxlintSelectedFiles(projects, {
+      repoRoot: "/repo",
+      runCommand: run,
+    });
+    await started.promise;
+    expect(commands).toHaveLength(1);
+    first.resolve({
+      code: 0,
+      stderr: "",
+      stdout: "typescript/first/main.ts\n",
+    });
+    expect(await selection).toEqual([
+      "typescript/first/main.ts",
+      "typescript/second/main.ts",
+    ]);
+    expect(commands.map((command) => command[4])).toEqual([
+      "typescript/first",
+      "typescript/second",
+    ]);
+  });
+
+  test("stops at the first failed selection and preserves its message", async () => {
+    const run = mock().mockResolvedValue({
+      code: 7,
+      stderr: "failure",
+      stdout: "",
+    });
+    let failure: unknown;
+    try {
+      await collectOxlintSelectedFiles(projects, {
+        repoRoot: "/repo",
+        runCommand: run,
+      });
+    } catch (error: unknown) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(Error);
+    if (!(failure instanceof Error)) {
+      throw new Error("expected selection to fail");
+    }
+    expect(failure.message).toBe(
+      "Oxlint file selection for first exited with code 7"
+    );
+    expect(run).toHaveBeenCalledTimes(1);
   });
 });
