@@ -128,8 +128,19 @@ describe("kernel testkit native admission preservation", () => {
     const calls: string[] = [];
     const waiting = delay(0);
     calls.push("called");
-    await waiting;
-    calls.push("completed");
+    const observeCompletion = async (): Promise<void> => {
+      await waiting;
+      calls.push("completed");
+    };
+    const completion = observeCompletion();
+    // A timer stays pending through this checkpoint, unlike an immediate result.
+    const checkpoint = Promise.withResolvers<null>();
+    queueMicrotask(() => {
+      checkpoint.resolve(null);
+    });
+    await checkpoint.promise;
+    deepStrictEqual(calls, ["called"]);
+    await completion;
     deepStrictEqual(calls, ["called", "completed"]);
   });
 });

@@ -348,6 +348,22 @@ tickets:
 # thirteen gates, uncached certification 1/15, five extracted replay proofs,
 # 365 archive digests, validate 0 errors/0 warnings and 2318-file/index purity.
 
+# PR round 1: independent 6.1/5.6 full panel found two General feedback items.
+# Corrected inaccurate unmodified-forwarding documentation and strengthened
+# timer-pending regression proof; two product files, 22 changed lines.
+# Both immediate-completion mutants fail; ten positive runs/40 tests pass.
+# All sixteen production TS files/277 callables retain normalized AST,
+# signatures and bodies. Fifty old M10 fingerprints match; exact two-hash
+# review delta is explicit. Historical M10 d04b archive remains unchanged.
+# Worker and lead nineteen current checks pass, including native0, complete
+# policy/rawownership/JSON/inputs, full lint, scoped tests/conformance, API,
+# direct changeset and verify:kernel; all gate/fetch statuses are zero.
+# Lead archived replay and all 231 member digests pass; 2325 assembled
+# tracked/new files/index stay frozen. Full release verification remains
+# exact historical M10 evidence until CI on the new head completes.
+# A32 model routing applies to subsequent clear fixes; this already-written
+# frozen Sol patch completed with its original sole worker, without restart.
+
 closeout:
   {
     "tickets_completed": [
