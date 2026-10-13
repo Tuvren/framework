@@ -3,20 +3,20 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-13",
-    "commit": "cd1f44d94e48b963eb48de159484d6de548c96e3",
-    "command": "M10 thirteen exact plan gates, VERIFY_SERIAL=1 for bun run verify, plus archived admission/program/hash/behavior replay per M10-REPLAY.md; candidate fingerprints distinguish source from measurement base"
+    "commit": "89fbfdb8d9e4944f332ee22fb597c6b822d32aeb",
+    "command": "Historical M8/M9/M10 exact plan gates and archives; current PR round-one overlay gates.mjs nineteen scoped checks plus source/admission/program/hash/test replay per pr-review-round1/REPLAY.md; candidate source fingerprints distinguish the exact review base from later bytes."
   },
   "files": [
     {
       "path": "M10-REPLAY.md",
-      "sha256": "e87478892d0dc0b28d4bb631eef7c46cff02279a7a06709e5b52678925f86109",
-      "bytes": 5366,
+      "sha256": "29c4687d88a40605750dcf54eaba613d824cf52193939a1210ba0311b775c8a9",
+      "bytes": 5630,
       "role": "measurement"
     },
     {
       "path": "README.md",
-      "sha256": "8baf5cbc594699c35b6912e7685da9a293989ba21122608f7953c5856ca2d6e9",
-      "bytes": 5186,
+      "sha256": "dc293b01420a419545d67fc2e88aed1f651590bd420e18ec44318059db7d1ca4",
+      "bytes": 6282,
       "role": "measurement"
     },
     {
@@ -68,11 +68,53 @@
       "role": "measurement"
     },
     {
+      "path": "pr-review-round1/REPLAY.md",
+      "sha256": "d0e51d66f28633aabb7bc405c459c210eff221bc4e96c36a542186d9a4305e60",
+      "bytes": 4707,
+      "role": "measurement"
+    },
+    {
+      "path": "pr-review-round1/current-source-fingerprints.json",
+      "sha256": "6783f1fa2e216d239b2f8f9371eb6d13493d72893dc12878c2b52df9e992401a",
+      "bytes": 6751,
+      "role": "measurement"
+    },
+    {
+      "path": "pr-review-round1/digest-index.json",
+      "sha256": "66622e1fa07ef4f691d88b9e030f71cedeca7979bbef96f60389f3f394ef601b",
+      "bytes": 32575,
+      "role": "measurement"
+    },
+    {
+      "path": "pr-review-round1/outer-index.json",
+      "sha256": "10bc018a748d6ffe825e14c9b24c6e440c5929393bb035ce747e50de2dcd8dbe",
+      "bytes": 3746,
+      "role": "measurement"
+    },
+    {
+      "path": "pr-review-round1/portable-replay-proof.json",
+      "sha256": "bf66e52ec1559080c280145979bf3cb9178213b70ba3d2e7f3708ee1e87cf844",
+      "bytes": 1969,
+      "role": "measurement"
+    },
+    {
+      "path": "pr-review-round1/reports.tar.gz",
+      "sha256": "5b94f9afd21924ee815efbe4d7136d566e634d4692bcc9c9a70c1c247c8a53c5",
+      "bytes": 1010218,
+      "role": "archive"
+    },
+    {
+      "path": "pr-review-round1/summary.json",
+      "sha256": "bfd363278962fdb161d9aa54b218316b0706d5c3ae3fcda9786592cebaeca982",
+      "bytes": 17391,
+      "role": "measurement"
+    },
+    {
       "path": "suppression-ledger.json",
       "sha256": "82a162cc2c824dcb025400e028ca88c0a1cc45da232933989972708508ee4431",
       "bytes": 2580,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "All five roots admitted atomically with canonical native commands and zero diagnostics, empty bs.json, fresh JSON-only code absence, complete unchanged shipped effective policy, independent source integrity and unique raw ownership. Both original directives are retired without native counterpart or suppression. Actual dependency/checker/config/lock/generated inputs and cache behavior pass. All thirteen final gates and replay proofs pass with tracked/index freeze and successful fetch cleanup; no deferred ticket or config exception."
+  "pass_criteria": "All five roots admitted atomically with canonical native commands and zero diagnostics, empty bs.json, fresh JSON-only code absence, complete unchanged shipped effective policy, independent source integrity and unique raw ownership. Both original directives are retired without native counterpart or suppression. Actual dependency/checker/config/lock/generated inputs and cache behavior pass. All thirteen final gates and replay proofs pass with tracked/index freeze and successful fetch cleanup; no deferred ticket or config exception. Post-admission review changes are limited to accurate forwarding documentation and a meaningful delay regression test; exact two-hash delta, fifty unchanged fingerprints and full production AST equality replace the historical whole-region byte-identity claim."
 }

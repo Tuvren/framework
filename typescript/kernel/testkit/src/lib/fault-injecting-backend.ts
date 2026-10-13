@@ -435,9 +435,10 @@ const readOptionalFsckMethod = (
 /**
  * Wraps a `RuntimeBackend` so its next matching `transact` call (per
  * `plan`) fails at a chosen point in the commit sequence, for exercising a
- * backend's crash-recovery behavior. `capabilities`/`health`/`reclaim`/
- * `purgeScope`/`close`/`destroy`/`fsck` pass straight through to `inner`
- * unmodified; only `transact` is instrumented.
+ * backend's crash-recovery behavior. Only `transact` receives fault injection.
+ * Other operations delegate to `inner` with its receiver preserved. `health`
+ * awaits the backend result. Optional `fsck` validates the result shape and
+ * returns valid results unchanged.
  *
  * Requires the wrapped backend to expose a hidden fault-injection control
  * surface (found by shape via `Object.getOwnPropertySymbols`, not a public

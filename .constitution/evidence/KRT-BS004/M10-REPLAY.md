@@ -1,3 +1,5 @@
+Historical source snapshot: `d04b04d172007604c930aa38ccde7acee1145fa6`. The current PR has two later comment/test corrections; use [the review overlay](pr-review-round1/REPLAY.md) for current-source replay. This M10 archive and its fingerprints remain unchanged.
+
 # M10 evidence replay
 
 Measurement base is cd1f44d94e48b963eb48de159484d6de548c96e3; this bundle measures an uncommitted working candidate. Final52-file fingerprints cover complete fresh Git inventories of all five owned roots plus bs.json. M8=55907cfb80861d68b5a95db537057e811c9065b9 and M9=cd1f44d94e48b963eb48de159484d6de548c96e3 are historical measurements. Their source regions remain byte-identical at M10; historical reports are not relabeled as new runs.

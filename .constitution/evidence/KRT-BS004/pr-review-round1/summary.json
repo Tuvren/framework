@@ -1,0 +1,512 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BS004",
+  "pull_request": 151,
+  "round": 1,
+  "status": "all-required-current-gates-pass-awaiting-lead-commit-and-review",
+  "measurement_kind": "uncommitted-post-admission-review-overlay",
+  "exact_review_base": "89fbfdb8d9e4944f332ee22fb597c6b822d32aeb",
+  "historical_m10_commit": "d04b04d172007604c930aa38ccde7acee1145fa6",
+  "source_delta": {
+    "typescript/kernel/testkit/src/lib/fault-injecting-backend.ts": {
+      "before": "9c12f1a05671ee5b74c622eebc743c9dfb037ccfa7174ecdf55df7617367a4a7",
+      "after": "ca3d69d491c1a8750c6eeefa5928c8584f75338d59341d0373e30239e12f0e3d"
+    },
+    "typescript/kernel/testkit/test/native-admission.test.ts": {
+      "before": "71a82a6696a85944af6dfd0db13d43895ce9bd6501ac201afca55d77acf10628",
+      "after": "225fca08c07c50e311f093d8c4c4e004c97d73e4ba7f60c1a4e0346ff6f8860c"
+    }
+  },
+  "scope": {
+    "product_paths": [
+      "typescript/kernel/testkit/src/lib/fault-injecting-backend.ts",
+      "typescript/kernel/testkit/test/native-admission.test.ts"
+    ],
+    "source_comment_only": true,
+    "test_regression_strengthening": true,
+    "production_statements_signatures_or_behavior_changed": false,
+    "constitution_edits": false,
+    "config_policy_dependencies_changed": false
+  },
+  "historical_m10": {
+    "archive": ".constitution/evidence/KRT-BS004/m10-reports.tar.gz",
+    "sha256": "f2ec8fd7dc2fe13c3516c502e6ed880ff43558f7b824ac0877cd70fedee16d3a",
+    "original_archive_and_indexes_unchanged": true,
+    "original_all365_members_verified": true,
+    "historical_fingerprints_retained": 52,
+    "current_fingerprints_matching": 50,
+    "approved_post_admission_deltas": 2,
+    "original_serial_full_verify_is_historical": true
+  },
+  "production_proof": {
+    "production_files": 16,
+    "callables": 277,
+    "all_normalized_ast_and_callable_signatures_and_bodies_match_d04b": true
+  },
+  "test_proof": {
+    "immediate_resolution_mutants_rejected": 2,
+    "positive_stable_runs": 10,
+    "positive_tests": 40,
+    "no_wall_clock_threshold_fake_clock_or_padding": true,
+    "no_promise_identity_or_microtask_count_contract": true
+  },
+  "gates": [
+    {
+      "name": "01-native-testkit",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "typescript/kernel/testkit"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:44:27.680Z",
+      "finished_at": "2026-10-13T22:44:28.341Z",
+      "log": "01-native-testkit.log"
+    },
+    {
+      "name": "02-json-testkit",
+      "command": [
+        "bun",
+        "tools/scripts/json-check.ts",
+        "typescript/kernel/testkit"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:44:28.456Z",
+      "finished_at": "2026-10-13T22:44:28.599Z",
+      "log": "02-json-testkit.log"
+    },
+    {
+      "name": "03-typecheck",
+      "command": [
+        "bun",
+        "run",
+        "nx",
+        "run",
+        "kernel-testkit:typecheck"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:44:28.854Z",
+      "finished_at": "2026-10-13T22:44:37.850Z",
+      "log": "03-typecheck.log"
+    },
+    {
+      "name": "04-test",
+      "command": [
+        "bun",
+        "run",
+        "nx",
+        "run",
+        "kernel-testkit:test"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:44:38.022Z",
+      "finished_at": "2026-10-13T22:44:39.246Z",
+      "log": "04-test.log"
+    },
+    {
+      "name": "05-conformance",
+      "command": [
+        "bun",
+        "run",
+        "nx",
+        "run",
+        "kernel-testkit:conformance"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:44:39.356Z",
+      "finished_at": "2026-10-13T22:44:40.338Z",
+      "log": "05-conformance.log"
+    },
+    {
+      "name": "06-exports-smoke",
+      "command": [
+        "bun",
+        "run",
+        "nx",
+        "run",
+        "kernel-testkit:exports-smoke"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:44:42.623Z",
+      "finished_at": "2026-10-13T22:44:49.299Z",
+      "log": "06-exports-smoke.log"
+    },
+    {
+      "name": "07-full-lint",
+      "command": [
+        "bun",
+        "run",
+        "lint"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:44:49.416Z",
+      "finished_at": "2026-10-13T22:44:58.417Z",
+      "log": "07-full-lint.log"
+    },
+    {
+      "name": "08-api-freeze",
+      "command": [
+        "bun",
+        "run",
+        "api-freeze:check"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:44:58.547Z",
+      "finished_at": "2026-10-13T22:44:59.886Z",
+      "log": "08-api-freeze.log"
+    },
+    {
+      "name": "09-changeset",
+      "command": [
+        "bun",
+        "run",
+        "changeset:check",
+        "--base=master"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:45:00.008Z",
+      "finished_at": "2026-10-13T22:45:00.186Z",
+      "log": "09-changeset.log"
+    },
+    {
+      "name": "10-kernel-verify",
+      "command": [
+        "bun",
+        "run",
+        "verify:kernel"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:45:02.850Z",
+      "finished_at": "2026-10-13T22:45:45.123Z",
+      "log": "10-kernel-verify.log"
+    },
+    {
+      "name": "11-format",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxfmt",
+        "--check",
+        "typescript/kernel/testkit/src/lib/fault-injecting-backend.ts",
+        "typescript/kernel/testkit/test/native-admission.test.ts"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:45:47.653Z",
+      "finished_at": "2026-10-13T22:45:47.715Z",
+      "log": "11-format.log"
+    },
+    {
+      "name": "12-diff",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:45:47.801Z",
+      "finished_at": "2026-10-13T22:45:47.808Z",
+      "log": "12-diff.log"
+    },
+    {
+      "name": "13-all-five-canonical",
+      "command": [
+        "bun",
+        "run",
+        "nx",
+        "run-many",
+        "-t",
+        "lint",
+        "--projects=kernel-grpc-client,kernel-testkit,kernel-typescript-certification,kernel-typescript-sqlite-certification,kernel-typescript-postgres-certification",
+        "--skipNxCache",
+        "--parallel=1"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:45:47.918Z",
+      "finished_at": "2026-10-13T22:45:52.525Z",
+      "log": "13-all-five-canonical.log"
+    },
+    {
+      "name": "14-all-five-native-json",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "--format=json",
+        "typescript/kernel/grpc-client",
+        "typescript/kernel/testkit",
+        "typescript/kernel/certification",
+        "typescript/kernel/certification-sqlite",
+        "typescript/kernel/certification-postgres"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:46:50.276Z",
+      "finished_at": "2026-10-13T22:46:50.790Z",
+      "log": "14-all-five-native-json.log"
+    },
+    {
+      "name": "15-admission",
+      "command": [
+        "bun",
+        "/tmp/tuvren-bs-pr-fix1/admission-proof.mjs",
+        "/tmp/tuvren-bs-pr-fix1/remaining/admission"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:46:50.887Z",
+      "finished_at": "2026-10-13T22:46:53.107Z",
+      "log": "15-admission.log"
+    },
+    {
+      "name": "16-program",
+      "command": [
+        "bun",
+        "/tmp/tuvren-bs-pr-fix1/program.mjs",
+        "/tmp/tuvren-bs-pr-fix1/remaining/program.json"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:46:53.199Z",
+      "finished_at": "2026-10-13T22:46:54.394Z",
+      "log": "16-program.log"
+    },
+    {
+      "name": "17-hash",
+      "command": [
+        "bun",
+        "/tmp/tuvren-bs-pr-fix1/hash.mjs",
+        "/tmp/tuvren-bs-pr-fix1/remaining/hash.json"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:46:54.492Z",
+      "finished_at": "2026-10-13T22:46:55.062Z",
+      "log": "17-hash.log"
+    },
+    {
+      "name": "18-replay",
+      "command": [
+        "bun",
+        "/tmp/tuvren-bs-pr-fix1/replay.mjs",
+        "/tmp/tuvren-bs-pr-fix1",
+        "/tmp/tuvren-bs-pr-fix1/remaining"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:46:55.167Z",
+      "finished_at": "2026-10-13T22:46:56.303Z",
+      "log": "18-replay.log"
+    },
+    {
+      "name": "19-test-proof",
+      "command": [
+        "bun",
+        "/tmp/tuvren-bs-pr-fix1/test-proof.mjs",
+        "/tmp/tuvren-bs-pr-fix1/remaining/test-proof"
+      ],
+      "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+      "exit_code": 0,
+      "started_at": "2026-10-13T22:46:56.379Z",
+      "finished_at": "2026-10-13T22:46:58.144Z",
+      "log": "19-test-proof.log"
+    }
+  ],
+  "verification": {
+    "tracked_index_and_new_files_frozen": 2318,
+    "entire_initial_and_remaining_tree_states_identical": true,
+    "actual_gate_failures": 0,
+    "external_probe_failures_preserved": 4,
+    "fetch_statuses": [
+      {
+        "name": "05-conformance-fetch",
+        "command": [
+          "git",
+          "fetch",
+          "origin",
+          "master"
+        ],
+        "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+        "exit_code": 0,
+        "started_at": "2026-10-13T22:44:40.441Z",
+        "finished_at": "2026-10-13T22:44:42.623Z",
+        "log": "05-conformance-fetch.log"
+      },
+      {
+        "name": "09-changeset-fetch",
+        "command": [
+          "git",
+          "fetch",
+          "origin",
+          "master"
+        ],
+        "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+        "exit_code": 0,
+        "started_at": "2026-10-13T22:45:00.297Z",
+        "finished_at": "2026-10-13T22:45:02.850Z",
+        "log": "09-changeset-fetch.log"
+      },
+      {
+        "name": "10-kernel-verify-fetch",
+        "command": [
+          "git",
+          "fetch",
+          "origin",
+          "master"
+        ],
+        "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+        "exit_code": 0,
+        "started_at": "2026-10-13T22:45:45.227Z",
+        "finished_at": "2026-10-13T22:45:47.653Z",
+        "log": "10-kernel-verify-fetch.log"
+      },
+      {
+        "name": "fetch-cleanup",
+        "command": [
+          "git",
+          "fetch",
+          "origin",
+          "master"
+        ],
+        "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+        "exit_code": 0,
+        "started_at": "2026-10-13T22:45:53.278Z",
+        "finished_at": "2026-10-13T22:45:55.888Z",
+        "log": "fetch-cleanup.log"
+      },
+      {
+        "name": "fetch-cleanup",
+        "command": [
+          "git",
+          "fetch",
+          "origin",
+          "master"
+        ],
+        "cwd": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+        "exit_code": 0,
+        "started_at": "2026-10-13T22:46:58.225Z",
+        "finished_at": "2026-10-13T22:47:00.421Z",
+        "log": "fetch-cleanup.log"
+      }
+    ],
+    "full_serial_verify_repeated": false,
+    "full_serial_verify_reason": "Scoped comment/test-only review correction; all production normalized AST/signatures/bodies equal historical d04b M10 snapshot. Prior complete serial verify remains historical."
+  },
+  "admission": {
+    "status": "pass",
+    "native_projects": 7,
+    "code_projects": 5,
+    "json_only_projects": 2,
+    "raw_code_owner_entries": 67,
+    "raw_json_owner_entries": 34,
+    "certification_code_files": [
+      "typescript/kernel/certification/test/kernel-typescript-conformance.test.ts"
+    ],
+    "certification_json_files": [
+      "typescript/kernel/certification/package.json",
+      "typescript/kernel/certification/project.json",
+      "typescript/kernel/certification/tsconfig.json",
+      "typescript/kernel/certification/tsconfig.typecheck.json"
+    ],
+    "exactly_one_raw_native_owner": true,
+    "no_overlapping_native_roots": true,
+    "json_source_independent_of_formatter_ignores": true,
+    "fresh_json_only_absence_outside_cache": {
+      "applicable_projects": 2,
+      "checked_fresh": true
+    },
+    "complete_global_partition": true,
+    "spec_conformance_kernel_residual_files": 31,
+    "complete_effective_policy_equal": true,
+    "enabled_rules": 473,
+    "enabled_type_aware": 55,
+    "enabled_non_type_aware": 418,
+    "target_inherited_inputs_preserved": true,
+    "original_reasons_preserved": true,
+    "retained_biome_roots": [],
+    "all_five_admitted": true,
+    "all_five_canonical_commands": true,
+    "combined_exactly_one_raw_owner": true,
+    "fresh_owned_source_inventory_files": 51,
+    "both_wrapper_fresh_inventories_metadata_only": true,
+    "all_actual_code_selections_equal_fresh_git_code_inventory": true,
+    "other_coverage_byte_identical": true,
+    "reviewed_M8_M9_regions_byte_identical": false,
+    "post_admission_review_delta": [
+      "typescript/kernel/testkit/src/lib/fault-injecting-backend.ts",
+      "typescript/kernel/testkit/test/native-admission.test.ts"
+    ],
+    "unchanged_production_ast": true,
+    "remaining_M10_fingerprints_identical": true,
+    "atomic_original_two_directive_admissions_proven": true,
+    "native_suppressions_manufactured": 0
+  },
+  "input_proof": {
+    "status": "pass",
+    "source_fingerprints": 52,
+    "source_program_files": 159,
+    "all_actual_program_and_helper_config_lock_inputs_hashed": true,
+    "full_actual_raw_owner_and_policy_replay": true,
+    "measurement_base_head": "89fbfdb8d9e4944f332ee22fb597c6b822d32aeb",
+    "measurement_kind": "post-admission-review-overlay",
+    "historical_m10": "d04b04d172007604c930aa38ccde7acee1145fa6",
+    "approved_delta": [
+      "typescript/kernel/testkit/src/lib/fault-injecting-backend.ts",
+      "typescript/kernel/testkit/test/native-admission.test.ts"
+    ]
+  },
+  "changed_claims": {
+    "M10_entire52_current_fingerprints_match": false,
+    "reviewed_M8_M9_regions_entirely_byte_identical": false,
+    "replacement": "Only the explicitly sanctioned2 source/test deltas differ; remaining50 M10 fingerprints match, production AST/callables unchanged, new delay test positively/negatively verified.",
+    "M10_frozen_repository_file_count": 2313,
+    "current_frozen_repository_file_count": 2318,
+    "current_count_note": "Exact89 review base includes completed lead closeout/evidence files; current broad freeze covers all2318."
+  },
+  "probe_adaptation": {
+    "files": [
+      "admission-proof.mjs.adaptation.patch",
+      "replay.mjs.adaptation.patch"
+    ],
+    "details": [
+      "Keep raw inventory, combined unique ownership, all canonical commands, effective shipped policy, every JSON integrity and atomic suppression check unchanged.",
+      "Replace HEAD-based M8/M9 byte equality with archived historical d04b/exact89 fingerprint verification, allow exactly two approved SHA-pinned deltas, assert complete production AST equality.",
+      "Other coverage comparison uses pinned historical d04b, never current HEAD as baseline.",
+      "Set false byte-identity claim explicitly, report approved deltas and current production proof; update overlay report label/path.",
+      "Replay verifies same159-source program inventory and all actual helper/config/lock inputs; source fingerprint check uses explicit sanctioned delta proof."
+    ]
+  },
+  "new_dependencies": [],
+  "new_contract_shapes": [],
+  "new_patterns_or_conventions_beyond_task": [],
+  "introduced_test_pattern": "Real microtask checkpoint with existing Promise.withResolvers<null>() signal; explicitly named/measured by task, awaits serve pending/completion assertions.",
+  "source_fingerprint_file": "current-source-fingerprints.json",
+  "source_fingerprint_sha256": "6783f1fa2e216d239b2f8f9371eb6d13493d72893dc12878c2b52df9e992401a",
+  "ownership": {
+    "commits_created": false,
+    "subagents_spawned": false,
+    "lead_owns_evidence_assembly_commit_and_PR_followup": true,
+    "source_ownership_released": true
+  },
+  "portable_replay": {
+    "proof": "outer-index.json#portable_replay",
+    "archive": "reports.tar.gz",
+    "instructions": "REPLAY.md",
+    "requires_original_worker_tmp_directory": false
+  }
+}
