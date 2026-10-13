@@ -1,6 +1,6 @@
 {
   "status": "pass",
-  "measurement_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
+  "measurement_commit": "f391ff64d1da4878bb73dcafda9f4c17a87d7474",
   "baseline_identities": 2,
   "live_identities": 2,
   "ledger_identities": 2,

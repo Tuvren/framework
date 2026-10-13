@@ -1,6 +1,6 @@
 {
   "baseline_commit": "6597a27223bf70956cf1b48a9661d21ff1d32bad",
-  "measurement_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
+  "measurement_commit": "f391ff64d1da4878bb73dcafda9f4c17a87d7474",
   "baseline": [
     {
       "identity": "typescript/kernel/grpc-client/src/index.ts::lint/performance/noBarrelFile::1",
@@ -37,7 +37,7 @@
       "original_reason": "This package entrypoint is the intentional public contract surface."
     }
   ],
-  "preexisting_status": "",
+  "preexisting_status": " M .constitution/evidence/KRT-BS002/README.md\n M .constitution/evidence/KRT-BS002/assertions.json\n M .constitution/evidence/KRT-BS002/changeset-direct-proof.json\n M .constitution/evidence/KRT-BS002/inventory.json\n M .constitution/evidence/KRT-BS002/manifest.yaml\n M .constitution/evidence/KRT-BS002/probe.ts\n M .constitution/evidence/KRT-BS002/report-index.json\n M .constitution/evidence/KRT-BS002/reports.tar.gz\n M .constitution/evidence/KRT-BS002/suppressions.json\n",
   "product_sha256": {
     "typescript/kernel/certification-postgres/project.json": "d78c20eb52b91c17dda0a7d9c9a4d0352cfe76a44cea318f2a7b9aa3bfb6aed3",
     "typescript/kernel/certification-sqlite/project.json": "2eb38571cc2ae21de558cfd516d2d18af52658d1d23f2c395489d2ba904bce3c",

@@ -25,6 +25,10 @@ const expectedRule = "lint/performance/noBarrelFile";
 const directivePattern =
   /^\s*\/\/ (biome-ignore(?:-all|-start|-end)?)\s+([^:]+):\s*(.*)$/u;
 const unixPattern = /^(.+?):(\d+):(\d+): (.*) \[(Error|Warning)\/(.+)\]$/u;
+const nativeSummaryPattern = /(?:^|\n)(\d+) problems?(?:\n|$)/u;
+const nativeBackendFailurePattern =
+  /failed to (?:load|resolve)|could not (?:load|resolve)|project resolution error/iu;
+const barrelPattern = /barrel/iu;
 interface Directive {
   identity: string;
   path: string;
@@ -89,7 +93,7 @@ const run = (command: string[]): Report => {
       encoding: "utf8",
       maxBuffer: 64 * 1024 * 1024,
       stdio: ["ignore", stdoutFd, stderrFd],
-      env: { ...process.env, NO_COLOR: "1" },
+      env: { ...process.env, NO_COLOR: "1", LC_ALL: "C" },
     });
   } finally {
     closeSync(stdoutFd);
@@ -140,7 +144,7 @@ const nativeDiagnostics = (report: Report): Finding[] => {
     const match = unixPattern.exec(line);
     if (!match) {
       assert(
-        !line.includes("[Error/") && !line.includes("[Warning/"),
+        !(line.includes("[Error/") || line.includes("[Warning/")),
         `unparsed diagnostic: ${line}`
       );
       continue;
@@ -156,7 +160,7 @@ const nativeDiagnostics = (report: Report): Finding[] => {
       code,
     });
   }
-  const summary = /(?:^|\n)(\d+) problems?(?:\n|$)/u.exec(report.stdout);
+  const summary = nativeSummaryPattern.exec(report.stdout);
   assert(summary?.[1], "unix report must include full diagnostic summary");
   assert.equal(
     findings.length,
@@ -166,9 +170,7 @@ const nativeDiagnostics = (report: Report): Finding[] => {
   assert.equal(report.exit_code, 1, "known native debt remains nonzero");
   assert(findings.length > 0);
   assert(
-    !/failed to (?:load|resolve)|could not (?:load|resolve)|project resolution error/iu.test(
-      report.stderr
-    ),
+    !nativeBackendFailurePattern.test(report.stderr),
     "backend/config failure is not a rule diagnostic"
   );
   return findings;
@@ -209,7 +211,9 @@ const collect = (revision?: string): Directive[] => {
         : git("show", `${revision}:${filename}`);
     const occurrences = new Map<string, number>();
     for (const [index, line] of source.split("\n").entries()) {
-      if (!line.includes("biome-ignore")) continue;
+      if (!line.includes("biome-ignore")) {
+        continue;
+      }
       const match = directivePattern.exec(line);
       assert(match, `unrecognized directive ${filename}:${index + 1}`);
       const rule = match[2]?.trim();
@@ -319,8 +323,9 @@ for (const root of codeRoots) {
     root,
   ]);
   assert.equal(selection.exit_code, 0);
-  for (const entry of live.filter((item) => item.path.startsWith(`${root}/`)))
+  for (const entry of live.filter((item) => item.path.startsWith(`${root}/`))) {
     assert(selection.stdout.includes(entry.path));
+  }
   for (const typeAware of [false, true]) {
     const flavor = typeAware ? "type-aware" : "syntactic";
     const report = capture(`oxlint-${area}-${flavor}.json`, [
@@ -333,8 +338,9 @@ for (const root of codeRoots) {
     ]);
     const findings = nativeDiagnostics(report);
     const counts = new Map<string, number>();
-    for (const finding of findings)
+    for (const finding of findings) {
       counts.set(finding.code, (counts.get(finding.code) ?? 0) + 1);
+    }
     nativeReports.set(`${root}:${flavor}`, findings);
     nativeSummary.push({
       root,
@@ -361,8 +367,9 @@ const retainedRoots: unknown = JSON.parse(
   readFileSync(path.join(repo, "tools/biome-coverage/bs.json"), "utf8")
 );
 assert(Array.isArray(retainedRoots));
-for (const root of ownedPaths)
+for (const root of ownedPaths) {
   assert(retainedRoots.includes(root), `Biome ownership must remain: ${root}`);
+}
 const drift = {
   added: live.filter(
     (entry) => !baseline.some((item) => item.identity === entry.identity)
@@ -454,7 +461,7 @@ const entries = baseline.map((original, index) => {
   assert(
     ![...syntactic, ...typeAware].some(
       (finding) =>
-        /barrel/iu.test(finding.code) || /barrel/iu.test(finding.message)
+        barrelPattern.test(finding.code) || barrelPattern.test(finding.message)
     ),
     "a firing candidate requires equivalence review"
   );
@@ -579,8 +586,9 @@ assert.throws(
     }),
   /original reason preservation/u
 );
-if (process.argv[5])
+if (process.argv[5]) {
   verifyLedger(JSON.parse(readFileSync(process.argv[5], "utf8")));
+}
 save("suppressions.json", ledger);
 const changesetPath = ".changeset/toolchain-bs-kernel-support-lint.md";
 const changeset = readFileSync(path.join(repo, changesetPath), "utf8");

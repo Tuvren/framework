@@ -2,7 +2,7 @@
   "schema_version": 1,
   "ticket": "KRT-BS002",
   "baseline_commit": "6597a27223bf70956cf1b48a9661d21ff1d32bad",
-  "measurement_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
+  "measurement_commit": "f391ff64d1da4878bb73dcafda9f4c17a87d7474",
   "owned_paths": [
     "typescript/kernel/grpc-client",
     "typescript/kernel/testkit",
@@ -59,7 +59,7 @@
         ],
         "rationale": "Enabled oxc/no-barrel-file does not fire under the unchanged shipped preset. It checks export-star/module-count threshold behavior, whereas these explicit re-exports trigger Biome. Unrelated diagnostics do not justify a native suppression."
       },
-      "producing_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953"
+      "producing_commit": "f391ff64d1da4878bb73dcafda9f4c17a87d7474"
     },
     {
       "identity": "typescript/kernel/testkit/src/index.ts::lint/performance/noBarrelFile::1",
@@ -103,7 +103,7 @@
         ],
         "rationale": "Enabled oxc/no-barrel-file does not fire under the unchanged shipped preset. It checks export-star/module-count threshold behavior, whereas these explicit re-exports trigger Biome. Unrelated diagnostics do not justify a native suppression."
       },
-      "producing_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953"
+      "producing_commit": "f391ff64d1da4878bb73dcafda9f4c17a87d7474"
     }
   ]
 }

@@ -3,38 +3,38 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-13",
-    "commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
-    "command": "bun EXTERNAL_PROBE REPOSITORY EXTERNAL_OUTPUT 6597a27223bf70956cf1b48a9661d21ff1d32bad EXTERNAL_LEDGER; bunx --bun @biomejs/biome lint typescript/kernel/grpc-client typescript/kernel/testkit typescript/kernel/certification; bunx --bun oxlint --type-aware --format=unix typescript/kernel/grpc-client typescript/kernel/testkit typescript/kernel/certification; bun run typecheck; bun run lint"
+    "commit": "f391ff64d1da4878bb73dcafda9f4c17a87d7474",
+    "command": "LC_ALL=C bun EXTERNAL_PROBE REPOSITORY EXTERNAL_OUTPUT 6597a27223bf70956cf1b48a9661d21ff1d32bad; bunx --bun @biomejs/biome lint typescript/kernel/grpc-client typescript/kernel/testkit typescript/kernel/certification; bunx --bun oxlint --type-aware --format=unix typescript/kernel/grpc-client typescript/kernel/testkit typescript/kernel/certification; bun run typecheck; bun run lint"
   },
   "files": [
     {
       "path": "README.md",
-      "sha256": "a330d4129a1917ba2b4909697559fa292c9c203f1e34687ace2615b6d7074024",
-      "bytes": 3007,
+      "sha256": "cd4b6503fbf1f9a13c9d0929fb3b84a952118b66fe4a55a1c0df8aa8aa62c912",
+      "bytes": 3759,
       "role": "measurement"
     },
     {
       "path": "assertions.json",
-      "sha256": "63026b1711e05163db0fdc5c5d9c1fbfe813e98bf7db8fecfc0f6f4ec65ed960",
+      "sha256": "9449c4ba7c6b488da14b8dc05b7cbf313d87246b1d973e3f5c5cfeabf4f2d4a9",
       "bytes": 973,
       "role": "measurement"
     },
     {
       "path": "changeset-direct-proof.json",
-      "sha256": "8acb34a12c22d8941b7f2c47ff4dbf510b0e4321a2e1f72928b3241de8e7eedd",
-      "bytes": 1551,
+      "sha256": "ce5f7afdf48b084d10354209f86d5a3be6c5eea8ddd85b03a99405b996f34b3e",
+      "bytes": 2177,
       "role": "measurement"
     },
     {
       "path": "inventory.json",
-      "sha256": "73b20aec54c339f7d412a426dc10453aa8c81caaa507c5ec28ee992c2401ac95",
-      "bytes": 8331,
+      "sha256": "b02ae7d2f4cee941cef7b246d1029935a924c9ea47a5f9e134caf8fbb13cffe3",
+      "bytes": 8807,
       "role": "measurement"
     },
     {
       "path": "lead-verification.json",
-      "sha256": "6524a6f016771e59006537e3f15d64c7a5524be3654236ca58cbdf1edfc4161b",
-      "bytes": 803,
+      "sha256": "0514a2f18b490f57d42c9c87b2c4b3cfb3544dc3c18f04e425047b0dce02e062",
+      "bytes": 945,
       "role": "measurement"
     },
     {
@@ -45,25 +45,25 @@
     },
     {
       "path": "probe.ts",
-      "sha256": "3368f8aa6232eea9e2eb4e18d5408b40f8eccfdf6e95dad4f8fa3935be920f1b",
-      "bytes": 21711,
+      "sha256": "8d78cdd376f0fb454c32906364dec2f39e232e3713e112447628b5a60f315d7f",
+      "bytes": 21911,
       "role": "measurement"
     },
     {
       "path": "report-index.json",
-      "sha256": "cff93a9fd0cfd9f9e45da1181e38c404f69b912c6a7e26413f610c2c5a4b53fc",
+      "sha256": "bf41b275591e37b19ea3109676c90c428630a8d6b740027627a04218380b7108",
       "bytes": 3464,
       "role": "measurement"
     },
     {
       "path": "reports.tar.gz",
-      "sha256": "597452da1165532b32501dad25658ef5cac9924707c41f94a93e833653959ee0",
-      "bytes": 35226,
+      "sha256": "b0c44c8a5c95dbc6647415ee480b996336119b12df27e64b7e892e902bc10e02",
+      "bytes": 34769,
       "role": "archive"
     },
     {
       "path": "suppressions.json",
-      "sha256": "3733d4b5cb63eb7a6b3b9c54ad0aa517534469e8bde8462ae641f370e031f62d",
+      "sha256": "38f5cd93d2994c42746e8eab15b364fb8a266f79b8b8a0806429dada9a30e9d4",
       "bytes": 5665,
       "role": "measurement"
     }
