@@ -12,17 +12,17 @@
   },
   "priorMilestoneNativeDiagnostics": 81,
   "final": {
-    "ownedFiles": 18,
+    "ownedFiles": 19,
     "syntaxDiagnostics": 0,
     "typeAwareDiagnostics": 0,
     "suppressionDirectives": 0,
-    "commit": "f00e7a7561874d4dd2df3953a1fe2082106d2d07"
+    "commit": "b7e98e488848587fec3da8ae38b61454e1a89503"
   },
   "entries": [],
   "baselineEntries": [],
   "driftEntries": [],
   "retainedCheckerDisposition": "No baseline or drift directives exist. Fresh retained Biome passes; ownership and bu.json unchanged.",
-  "nativeAdmissionDisposition": "Full unchanged shipped type-aware preset passes over all 18 owned code files. No counterpart warranted or added; CB still owns whole-tools admission.",
+  "nativeAdmissionDisposition": "Full unchanged shipped type-aware preset passes over all 19 owned code files. No counterpart warranted or added; CB still owns whole-tools admission.",
   "authorityManifestBlobBefore": "fc9e6f643d3d55c9a7b68ad4457ecc663b116a2a",
   "authorityManifestBlobAfter": "fc9e6f643d3d55c9a7b68ad4457ecc663b116a2a",
   "changedFiles": [
@@ -39,6 +39,7 @@
     "tools/scripts/lib/generated-prerequisites.ts",
     "tools/scripts/lib/json-source-integrity.ts",
     "tools/scripts/lib/native-lint-routing.ts",
+    "tools/scripts/lib/nx-command-options.test.ts",
     "tools/scripts/lib/nx-projects.ts",
     "tools/scripts/lib/regenerate-command-argv.test.ts",
     "tools/scripts/lib/regenerate-command-argv.ts",
@@ -47,18 +48,18 @@
   "baselineArtifactSha256": "62d6709cabf1034e92bb15e3a3ae65920aa165cb3e9b2349343a2271419aefc8",
   "verification": {
     "toolsTsc": "pass",
-    "helperTests": "86 pass / 0 fail / 393 assertions",
-    "retainedBiome": "pass;18 files",
-    "oxfmt": "pass;18 files",
-    "extendedTests": "144 pass / 0 fail / 1631 assertions",
+    "helperTests": "93 pass / 0 fail / 7562 assertions",
+    "retainedBiome": "pass;19 files",
+    "oxfmt": "pass;19 files",
+    "extendedTests": "151 pass / 0 fail / 8801 assertions",
     "nativeLint": "pass;0 diagnostics;unchanged type-aware preset",
-    "actualOxlintSelection": "18 owned files;exact complete equality",
+    "actualOxlintSelection": "19 owned files;exact complete equality",
     "nativeJsonSelection": "0 owned JSON/format/protected files;empty JSON CLI not claimed",
     "repositoryTypecheck": "pass;33 projects plus1 prerequisite",
     "repositoryLint": "pass",
     "check": "pass;locked;fetch cleanup pass",
     "verifyKernel": "pass;locked;fetch cleanup pass",
-    "verify": "pass; final A18/A19 source independently verified with all36steps and VERIFY_SERIAL=1; fetch cleanup pass",
+    "verify": "pass; final A22 source independently verified with all36steps and VERIFY_SERIAL=1; fetch cleanup pass",
     "apiTypes": "42 value signatures and 35 type declarations unchanged; only the two A15 NxProjectTarget property declarations are corrected",
     "largeFlatWalker": "12000files;order/skip semantics match original;~64ms",
     "nxDependentTaskInputs": "structured vendor-supported inputs preserved",
@@ -154,6 +155,18 @@
       "exit": 0,
       "sourceCommit": "f00e7a7561874d4dd2df3953a1fe2082106d2d07",
       "log": "bu-m6-canonical-lead-verify.log"
+    },
+    {
+      "attempt": "A22workerSerial",
+      "exit": 0,
+      "sourceCommit": "b7e98e488848587fec3da8ae38b61454e1a89503",
+      "log": "bu-m6-complete-worker-final-verify.log"
+    },
+    {
+      "attempt": "A22leadIndependentSerial",
+      "exit": 0,
+      "sourceCommit": "b7e98e488848587fec3da8ae38b61454e1a89503",
+      "log": "bu-m6-complete-lead-verify.log"
     }
   ],
   "introducedDependencies": [],
@@ -194,7 +207,7 @@
         "tools/scripts/lib/nx-projects.ts",
         "tools/scripts/lib/biome-oxc-discovery.test.ts"
       ],
-      "decision": "A15/A18/A19 align raw Nx options/configurations with vendor generic records; only canonical executors with valid declared fields and effective configurations yield command strings; custom metadata remains opaque and malformed records yield no partial proof"
+      "decision": "A15/A18/A22 align raw Nx options/configurations with vendor generic records; private validation checks all 12 known canonical fields and seven closed command-object fields with isolated test-only vendor reference. Generic custom metadata remains opaque, unknown top-level fields remain accepted, and malformed records yield no partial literal inventory"
     },
     {
       "paths": [
@@ -233,18 +246,56 @@
       "NxProjectTarget.configurations"
     ],
     "canonicalNarrowing": "tools/scripts/lib/native-lint-routing.ts",
-    "regressions": "tools/scripts/lib/biome-oxc-discovery.test.ts"
+    "regressions": [
+      "tools/scripts/lib/biome-oxc-discovery.test.ts",
+      "tools/scripts/lib/nx-command-options.test.ts"
+    ]
   },
   "canonicalExecutionProof": {
     "rulings": [
       "A18",
-      "A19"
+      "A22"
     ],
     "helper": "tools/scripts/lib/nx-projects.ts#targetCommandStrings",
     "unsupportedExecutorsYieldNoCommands": true,
     "malformedKnownFieldsYieldNoPartialCommands": true,
     "effectiveConfigurationValidation": true,
     "missingAndEmptyDefaultUseVendorBaseFallback": true,
-    "discoveryTests": 36
+    "knownTopLevelFields": 12,
+    "knownNestedFields": 7,
+    "installedSchemaCoveragePinned": true,
+    "isolatedTestVendorReference": true,
+    "inventoryIsLiteralTextNotSuccessfulExecutionProof": true
+  },
+  "preexistingModelingExclusions": {
+    "ruling": "A22",
+    "routedTo": "BV/Stage 3",
+    "callers": [
+      "tools/conformance/certification/validate-certification-discovery.ts",
+      "tools/scripts/validate-workspace-test-coverage.ts"
+    ],
+    "items": [
+      "executor-runtime-only readyWhen/serial and presentation/serial contradictions",
+      "interpolation/argument rewriting and shell-token interpretation",
+      "command-array extraction",
+      "graph/targetDefaults modeling"
+    ],
+    "fixedByThisEpic": false
+  },
+  "liveRepositoryInventory": {
+    "baselineCommit": "040ea86f1014ee981704657db58208d1c8769433",
+    "helper": "tools/scripts/lib/nx-projects.ts",
+    "baselineModuleMatchesGitObject": true,
+    "baselineModuleSha256": "9da9f6ea9ea3c666a8331f57b5cf5e6b5ba961abe1ebff665e86351506065dcb",
+    "finalModuleSha256": "6b1c70ceb39e84a6d5319e6df642e0f4e89bc12b88d3b540938bc89114b9e829",
+    "command": "bun /home/oscar/.local/state/tuvren-framework/plans/wave-1-bs-bu/bu-m6-complete-inventory-proof.mjs",
+    "targets": 233,
+    "inventorySha256": "83f3d24658f3acd9f6584bb4f52266dd30e9b80b2255e6ec0ca614b9fc1754ad",
+    "inventoryHashEncoding": "UTF-8 JSON.stringify(perProject), no trailing newline",
+    "prettySnapshotSha256": "91bb9442288fe39a8dcf3a7f8e19bbb4a12110cc9c77b654c92633c0d49917d3",
+    "allPerProjectCommandsEqual": true,
+    "sourceCommit": "b7e98e488848587fec3da8ae38b61454e1a89503",
+    "transcriptBundleArtifact": "bu-m6-complete-inventory-proof.json",
+    "perProjectCommandsIncludedInBundle": true
   }
 }
