@@ -23,10 +23,12 @@ import {
   assertStagedResult,
   assertTurnTreeChangeSet,
   assertTurnTreeSchema,
-  type RecoveryState,
-  type StagedResult,
-  type TurnTreeChangeSet,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  RecoveryState,
+  StagedResult,
+  TurnTreeChangeSet,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -102,7 +104,7 @@ export const kernelProtocolLogicalFixtures: KernelProtocolLogicalFixtureSet =
 function loadCanonicalKernelTestSchema(): TurnTreeSchema {
   const fixtureText = readFileSync(
     kernelConformanceFixtureIndex.canonicalSchemaPath,
-    "utf8"
+    "utf-8"
   );
   const parsedFixture = JSON.parse(fixtureText);
   assertTurnTreeSchema(parsedFixture, "canonicalKernelTestSchemaFixture");
@@ -112,7 +114,7 @@ function loadCanonicalKernelTestSchema(): TurnTreeSchema {
 function loadKernelProtocolDeterministicFixtures(): KernelProtocolDeterministicFixtureSet {
   const fixtureText = readFileSync(
     kernelConformanceFixtureIndex.deterministicFixturePath,
-    "utf8"
+    "utf-8"
   );
   const parsedFixture = JSON.parse(fixtureText);
   assertKernelProtocolDeterministicFixtureSet(parsedFixture);
@@ -122,7 +124,7 @@ function loadKernelProtocolDeterministicFixtures(): KernelProtocolDeterministicF
 function loadKernelProtocolLogicalFixtures(): KernelProtocolLogicalFixtureSet {
   const fixtureText = readFileSync(
     kernelConformanceFixtureIndex.logicalFixturePath,
-    "utf8"
+    "utf-8"
   );
   const parsedFixture = JSON.parse(fixtureText);
   assertKernelProtocolLogicalFixtureSet(parsedFixture);
@@ -156,10 +158,10 @@ function loadKernelConformanceFixtureIndex(): KernelConformanceFixtureIndex {
     import.meta.url,
     MANIFEST_PATH_SEGMENTS
   );
-  const manifestText = readFileSync(manifestPath, "utf8");
+  const manifestText = readFileSync(manifestPath, "utf-8");
   const manifestSchemaText = readFileSync(
     join(dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
-    "utf8"
+    "utf-8"
   );
   const parsedManifest = JSON.parse(manifestText);
   const parsedManifestSchema = readJsonSchema(JSON.parse(manifestSchemaText));
@@ -184,7 +186,7 @@ function loadKernelConformanceFixtureIndex(): KernelConformanceFixtureIndex {
     dirname(manifestPath),
     parsedManifest.fixtureSchemaPath
   );
-  const schemaText = readFileSync(schemaPath, "utf8");
+  const schemaText = readFileSync(schemaPath, "utf-8");
   const parsedSchema = readJsonSchema(JSON.parse(schemaText));
   const validate = ajv.compile(parsedSchema);
 

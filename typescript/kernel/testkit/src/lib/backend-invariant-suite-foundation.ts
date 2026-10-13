@@ -17,13 +17,13 @@
 import { deepStrictEqual, rejects } from "node:assert/strict";
 
 import { TuvrenPersistenceError, TuvrenValidationError } from "@tuvren/core";
-import {
-  encodeDeterministicKernelRecord,
-  type StoredBranch,
-  type StoredRun,
-  type StoredStagedResult,
-  type StoredThread,
-  type StoredTurn,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  StoredBranch,
+  StoredRun,
+  StoredStagedResult,
+  StoredThread,
+  StoredTurn,
 } from "@tuvren/kernel-protocol";
 
 import type { BackendConformanceSuiteOptions } from "./backend-test-suite-types.js";

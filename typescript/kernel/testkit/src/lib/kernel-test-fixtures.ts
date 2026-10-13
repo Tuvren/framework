@@ -21,15 +21,17 @@ import {
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
   hashTurnTreeIdentity,
-  type StagedResult,
-  type StoredObject,
-  type StoredOrderedPathChunk,
-  type StoredSchema,
-  type StoredTurnNode,
-  type StoredTurnTree,
-  type StoredTurnTreePath,
-  type TurnTreeManifest,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  StagedResult,
+  StoredObject,
+  StoredOrderedPathChunk,
+  StoredSchema,
+  StoredTurnNode,
+  StoredTurnTree,
+  StoredTurnTreePath,
+  TurnTreeManifest,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
 import { canonicalKernelTestSchemaFixture } from "./kernel-conformance-fixtures.js";
