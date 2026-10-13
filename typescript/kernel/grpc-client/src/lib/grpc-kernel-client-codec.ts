@@ -135,7 +135,7 @@ export const createInvalidTransportResponseError = (
  * Converts a protobuf `int64`/`uint64` millisecond timestamp (transmitted as
  * `bigint`) into an {@link EpochMs}.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   when `value` does not fit in a non-negative safe integer.
  */
 const fromProtoEpochMs = (value: bigint, label: string): EpochMs => {
@@ -158,7 +158,7 @@ const fromProtoEpochMs = (value: bigint, label: string): EpochMs => {
  * Maps a protobuf `RunStatus` enum value to the protocol's string
  * `RunRecord["status"]` union.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized enum value.
  */
 const fromProtoRunStatus = (
@@ -178,6 +178,9 @@ const fromProtoRunStatus = (
     case ProtoRunStatus.FAILED: {
       return "failed";
     }
+    case ProtoRunStatus.UNSPECIFIED: {
+      throw createInvalidTransportResponseError(label);
+    }
     default: {
       throw createInvalidTransportResponseError(label);
     }
@@ -188,7 +191,7 @@ const fromProtoRunStatus = (
  * Maps a protobuf `StagedResultStatus` enum value to the non-`"interrupted"`
  * subset of the protocol's `StagedResultStatus` union.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized enum value.
  */
 const fromProtoStagedResultStatus = (
@@ -202,6 +205,9 @@ const fromProtoStagedResultStatus = (
     case ProtoStagedResultStatus.FAILED: {
       return "failed";
     }
+    case ProtoStagedResultStatus.UNSPECIFIED: {
+      throw createInvalidTransportResponseError(label);
+    }
     default: {
       throw createInvalidTransportResponseError(label);
     }
@@ -212,7 +218,7 @@ const fromProtoStagedResultStatus = (
  * Maps a protobuf `VerdictDisposition` enum value to the protocol's
  * `VerdictDisposition` string union.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized enum value.
  */
 const fromProtoVerdictDisposition = (
@@ -229,6 +235,9 @@ const fromProtoVerdictDisposition = (
     case ProtoVerdictDisposition.END_TURN: {
       return "EndTurn";
     }
+    case ProtoVerdictDisposition.UNSPECIFIED: {
+      throw createInvalidTransportResponseError(label);
+    }
     default: {
       throw createInvalidTransportResponseError(label);
     }
@@ -239,7 +248,7 @@ const fromProtoVerdictDisposition = (
  * Maps a protobuf `PathCollectionKind` enum value to the protocol's
  * `PathCollectionKind` string union.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized enum value.
  */
 const fromProtoPathCollectionKind = (
@@ -253,6 +262,9 @@ const fromProtoPathCollectionKind = (
     case ProtoPathCollectionKind.SINGLE: {
       return "single";
     }
+    case ProtoPathCollectionKind.UNSPECIFIED: {
+      throw createInvalidTransportResponseError(label);
+    }
     default: {
       throw createInvalidTransportResponseError(label);
     }
@@ -263,7 +275,7 @@ const fromProtoPathCollectionKind = (
  * Maps a protocol {@link PathCollectionKind} to its protobuf
  * `PathCollectionKind` enum value.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized value.
  */
 const toProtoPathCollectionKind = (
@@ -286,7 +298,7 @@ const toProtoPathCollectionKind = (
  * Maps a protocol {@link RunCompletionStatus} to its protobuf
  * `RunCompletionStatus` enum value.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized value.
  */
 export const toProtoRunCompletionStatus = (
@@ -313,7 +325,7 @@ export const toProtoRunCompletionStatus = (
  * `StagedResultStatus` union to its protobuf `StagedResultStatus` enum
  * value.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized value.
  */
 const toProtoStagedResultStatus = (
@@ -336,7 +348,7 @@ const toProtoStagedResultStatus = (
  * Maps a protocol {@link VerdictDisposition} to its protobuf
  * `VerdictDisposition` enum value.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized value.
  */
 const toProtoVerdictDisposition = (
@@ -362,7 +374,7 @@ const toProtoVerdictDisposition = (
  * Decodes deterministic CBOR `bytes` from a transport response into a
  * validated {@link KernelRecord}.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   when `bytes` do not decode.
  */
 export const decodeKernelRecordBytes = (
@@ -398,7 +410,7 @@ export const encodeKernelRecordBytes = (
  * asserting it is a {@link KernelObject} — an annotation's outer shape must
  * be a plain object/record, unlike an arbitrary {@link KernelRecord}.
  *
- * @throws TuvrenRuntimeError With code `invalid_runtime_options` when
+ * @throws {TuvrenRuntimeError} With code `invalid_runtime_options` when
  *   `value` is an array, `Uint8Array`, or `null`.
  */
 const encodeKernelObjectBytes = (
@@ -420,7 +432,7 @@ const encodeKernelObjectBytes = (
  * Decodes a required protobuf `BranchRecord` field into its protocol
  * {@link BranchRecord} shape, validating the result.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   when `value` is `undefined` (from {@link createInvalidTransportResponseError}).
  */
 export const requireBranchRecord = (
@@ -458,7 +470,7 @@ export const requireBranchHeadListEntry = (
  * the matching protocol {@link Verdict} variant (`abort`, `modify`, `pause`,
  * `proceed`, or `retry`).
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized `verdict` case.
  */
 const fromProtoVerdict = (value: ProtoVerdict, label: string): Verdict => {
@@ -506,6 +518,9 @@ const fromProtoVerdict = (value: ProtoVerdict, label: string): Verdict => {
         kind: "retry",
       };
     }
+    case undefined: {
+      throw createInvalidTransportResponseError(`${label}.verdict`);
+    }
     default: {
       throw createInvalidTransportResponseError(`${label}.verdict`);
     }
@@ -547,7 +562,7 @@ export const requireComposedVerdict = (
  * Decodes the protobuf `PathValue` oneof into a protocol {@link PathValue}:
  * `null`, a single hash string, or an ordered array of hash strings.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized oneof case.
  */
 const fromProtoPathValue = (
@@ -571,6 +586,9 @@ const fromProtoPathValue = (
     case "singleHash": {
       assertHashString(value.value.value, `${label}.singleHash`);
       return value.value.value;
+    }
+    case undefined: {
+      throw createInvalidTransportResponseError(`${label}.value`);
     }
     default: {
       throw createInvalidTransportResponseError(`${label}.value`);
@@ -599,7 +617,7 @@ export const requirePathValue = (
  * Decodes a protobuf `StagedResult`, discriminating on its `outcome` oneof
  * into the protocol's interrupted or settled {@link StagedResult} variant.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   for an unrecognized `outcome` case.
  */
 const fromProtoStagedResult = (
@@ -639,6 +657,9 @@ const fromProtoStagedResult = (
       assertStagedResult(result, label);
       return result;
     }
+    case undefined: {
+      throw createInvalidTransportResponseError(`${label}.outcome`);
+    }
     default: {
       throw createInvalidTransportResponseError(`${label}.outcome`);
     }
@@ -649,7 +670,7 @@ const fromProtoStagedResult = (
  * Decodes a required protobuf `StepDeclaration` field into a protocol
  * {@link StepDeclaration}, decoding optional CBOR-encoded metadata.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   when `value` is `undefined`.
  */
 const fromProtoStepDeclaration = (
@@ -925,11 +946,12 @@ export const fromStoredThreadEntry = (
     value.createdAtMs,
     `${label}.createdAtMs`
   );
+  const { threadId, schemaId, rootTurnNodeHash } = value;
   const thread: StoredThread = {
-    threadId: value.threadId,
-    schemaId: value.schemaId,
-    rootTurnNodeHash: value.rootTurnNodeHash,
     createdAtMs,
+    rootTurnNodeHash,
+    schemaId,
+    threadId,
   };
   return thread;
 };
@@ -1000,7 +1022,7 @@ export const fromBranchHeadListEntries = (
  * Decodes a `tree.manifest` gRPC response's path/value entries into a
  * protocol {@link TurnTreeManifest}.
  *
- * @throws TuvrenRuntimeError With code `invalid_kernel_transport_response`
+ * @throws {TuvrenRuntimeError} With code `invalid_kernel_transport_response`
  *   when the response repeats the same manifest path.
  */
 export const fromProtoManifestEntries = (

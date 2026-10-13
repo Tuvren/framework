@@ -23,9 +23,43 @@
     },
     "lint": {
       "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["kernel-interop-grpc"],
+          "target": "codegen",
+          "params": "ignore"
+        }
+      ],
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/biome.jsonc",
+        "{workspaceRoot}/oxlint.config.ts",
+        "{workspaceRoot}/oxfmt.config.ts",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/bun.lock",
+        "{workspaceRoot}/tools/scripts/json-check.ts",
+        "{workspaceRoot}/tools/scripts/json-source-check.ts",
+        "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+        "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+        "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+        "{workspaceRoot}/Cargo.toml",
+        "{workspaceRoot}/Cargo.lock",
+        "{workspaceRoot}/rust-toolchain.toml",
+        {
+          "dependentTasksOutputFiles": "**/*.ts",
+          "transitive": false
+        },
+        "{workspaceRoot}/tsconfig.json",
+        "{workspaceRoot}/tsconfig.base.json"
+      ],
       "options": {
         "cwd": ".",
-        "command": "bunx --bun @biomejs/biome check typescript/kernel/grpc-client"
+        "commands": [
+          "bunx --bun oxlint --type-aware typescript/kernel/grpc-client",
+          "bun tools/scripts/json-check.ts typescript/kernel/grpc-client"
+        ],
+        "parallel": false
       }
     },
     "test": {

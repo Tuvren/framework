@@ -27,9 +27,8 @@
  * `@tuvren/kernel-protocol` types, and normalizes transport failures into
  * `TuvrenRuntimeError`.
  *
- * @packageDocumentation
+ * Package documentation.
  */
 
 export type { GrpcRuntimeKernelOptions } from "./lib/grpc-kernel-client.js";
-// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export { createGrpcRuntimeKernel } from "./lib/grpc-kernel-client.js";

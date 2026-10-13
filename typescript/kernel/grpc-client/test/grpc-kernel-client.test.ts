@@ -20,10 +20,69 @@ import { rejects } from "node:assert/strict";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { Interceptor } from "@connectrpc/connect";
+import { TuvrenPersistenceError } from "@tuvren/core";
 
 import { createGrpcRuntimeKernel } from "../src/lib/grpc-kernel-client.js";
 
 describe("gRPC runtime kernel forwarding", () => {
+  test("maintenance rejects with the typed unsupported capability error", async () => {
+    const calls: string[] = [];
+    const interceptor: Interceptor = (next) => async (request) => {
+      calls.push(request.method.name);
+      return await next(request);
+    };
+    const kernel = createGrpcRuntimeKernel({
+      baseUrl: "http://127.0.0.1:1",
+      interceptors: [interceptor],
+    });
+    await rejects(kernel.maintenance.reclaim(), TuvrenPersistenceError);
+    await rejects(kernel.maintenance.reclaim(), {
+      code: "kernel_capability_unsupported",
+      message:
+        "maintenance.reclamation is not available across the gRPC kernel interop boundary",
+    });
+    expect(calls).toEqual([]);
+  });
+
+  test("thread pagination decodes entries before reading the cursor and preserves zero limit", async () => {
+    const events: string[] = [];
+    const responseReady = Promise.withResolvers<null>();
+    const interceptor: Interceptor = () => async (request) => {
+      await responseReady.promise;
+      if (request.stream) {
+        throw new Error("expected a unary thread list call");
+      }
+      expect(request.message).toMatchObject({ limit: 0 });
+      const message = create(request.method.output, {
+        entries: [{ createdAtMs: -1n }],
+      });
+      Object.defineProperty(message, "nextCursor", {
+        get() {
+          events.push("cursor");
+          throw new Error("cursor must follow entry decoding");
+        },
+      });
+      return {
+        header: new Headers(),
+        message,
+        method: request.method,
+        service: request.service,
+        stream: false,
+        trailer: new Headers(),
+      };
+    };
+    const kernel = createGrpcRuntimeKernel({
+      baseUrl: "http://127.0.0.1:1",
+      interceptors: [interceptor],
+    });
+    const page = kernel.thread.list({ limit: 0 });
+    responseReady.resolve(null);
+    await rejects(page, {
+      message:
+        "tuvren.kernel.interop.v1.ThreadListResponse.entries[0].createdAtMs must be a safe integer epoch",
+    });
+    expect(events).toEqual([]);
+  });
   test("rejects an empty base URL before invoking interceptors", () => {
     const calls: string[] = [];
     const interceptor: Interceptor = (next) => async (request) => {

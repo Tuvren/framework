@@ -102,7 +102,7 @@ export interface GrpcRuntimeKernelOptions {
 /**
  * Trims `value` and asserts it is non-empty.
  *
- * @throws TuvrenRuntimeError With code `invalid_runtime_options` when the
+ * @throws {TuvrenRuntimeError} With code `invalid_runtime_options` when the
  *   trimmed value is empty.
  */
 const normalizeBaseUrl = (value: string): string => {
@@ -131,7 +131,7 @@ const toTransportError = (
   operation: string
 ): TuvrenRuntimeError => {
   const connectError = ConnectError.from(error);
-  const kernelPayload = connectError.findDetails(KernelErrorPayloadSchema)[0];
+  const [kernelPayload] = connectError.findDetails(KernelErrorPayloadSchema);
   const decodedDetails =
     kernelPayload?.detailsCbor === undefined
       ? undefined
@@ -253,12 +253,12 @@ export const createGrpcRuntimeKernel = (
       },
     },
     maintenance: {
-      reclaim() {
+      async reclaim() {
         // Reclamation (§9.4) is an in-process kernel primitive; it is not yet
         // projected across the gRPC interop boundary (the proto carries no
         // maintenance service), so the bridged kernel honestly reports it as
         // unsupported rather than silently no-op'ing.
-        return Promise.reject(
+        return await Promise.reject(
           new TuvrenPersistenceError(
             "maintenance.reclamation is not available across the gRPC kernel interop boundary",
             { code: "kernel_capability_unsupported" }
@@ -504,22 +504,26 @@ export const createGrpcRuntimeKernel = (
           throw toTransportError(error, "thread.get");
         }
       },
-      async list(options) {
+      async list(listOptions) {
         try {
+          const limit = listOptions?.limit;
+          const cursor = listOptions?.cursor ?? undefined;
+          const filterSchemaId = listOptions?.filter?.schemaId ?? undefined;
           const response = await threadClient.threadList({
-            limit: options?.limit === undefined ? undefined : options.limit,
-            cursor: options?.cursor ?? undefined,
-            filterSchemaId: options?.filter?.schemaId ?? undefined,
+            cursor,
+            filterSchemaId,
+            limit,
           });
+          const threads = response.entries.map((entry, index) =>
+            fromStoredThreadEntry(
+              entry,
+              `${ThreadListResponseSchema.typeName}.entries[${index}]`
+            )
+          );
           return {
-            threads: response.entries.map((entry, index) =>
-              fromStoredThreadEntry(
-                entry,
-                `${ThreadListResponseSchema.typeName}.entries[${index}]`
-              )
-            ),
             nextCursor:
               response.nextCursor === "" ? undefined : response.nextCursor,
+            threads,
           };
         } catch (error: unknown) {
           throw toTransportError(error, "thread.list");

@@ -1,5 +1,4 @@
 [
-  "typescript/kernel/grpc-client",
   "typescript/kernel/testkit",
   "typescript/kernel/certification",
   "typescript/kernel/certification-sqlite",
