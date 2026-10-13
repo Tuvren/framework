@@ -1,0 +1,95 @@
+{
+  "sourceCommit": "aa4d96b016a17ff08c41cac97c8a158edacd362d",
+  "mode": "contract_test",
+  "commands": [
+    {
+      "id": "tsc",
+      "command": "bunx --bun tsc --project tools/tsconfig.json --noEmit --pretty false",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "helpers",
+      "command": "bun test tools/scripts/lib",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "biome",
+      "command": "bunx --bun @biomejs/biome lint tools/scripts/lib",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "oxfmt",
+      "command": "bunx --bun oxfmt --check tools/scripts/lib",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "extended",
+      "command": "bun test tools/scripts/lib tools/scripts/json-source-integrity.test.ts tools/scripts/json-check.test.ts tools/scripts/generated-prerequisites.test.ts tools/scripts/oxc-preparation.test.ts tools/scripts/oxc-project-discovery.test.ts tools/conformance/harness/test/run.test.ts",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "native",
+      "command": "bunx --bun oxlint --type-aware tools/scripts/lib",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "selection",
+      "command": "bunx --bun oxlint --type-aware --debug=files tools/scripts/lib",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "typecheck",
+      "command": "bun run typecheck",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "lint",
+      "command": "bun run lint",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "check",
+      "command": "bun run check",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "kernel",
+      "command": "bun run verify:kernel",
+      "serial": false,
+      "exit": 0
+    },
+    {
+      "id": "verify",
+      "command": "bun run verify",
+      "serial": true,
+      "exit": 0
+    }
+  ],
+  "helperTests": {
+    "tests": 76,
+    "assertions": 257
+  },
+  "extendedTests": {
+    "tests": 134,
+    "assertions": 1495
+  },
+  "fullVerifySteps": 36,
+  "signatureMethod": "Compiler-resolved value signatures and complete comment-free interface/type-alias declaration syntax",
+  "notes": [
+    "Recorded counts describe the producing source commit and are not future quotas.",
+    "No live_probe recipes apply.",
+    "Owned JSON inventory is empty; json-check intentionally rejects empty scopes and is not claimed as a passing owned lane.",
+    "Failed fixed-budget alias controls, resource relief, successful isolated controls and serial full runs are preserved in the transcript bundle.",
+    "The bundle is gzip-compressed JSON mapping original transcript filenames to normalized UTF-8 text."
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "epic": "EPIC-BU",
+  "milestone": "M6",
+  "ticket": "KRT-BU004",
+  "baseline": {
+    "files": 18,
+    "lines": 4090,
+    "syntaxDiagnostics": 228,
+    "typeAwareDiagnostics": 241,
+    "suppressionDirectives": 0,
+    "commit": "6597a27223bf70956cf1b48a9661d21ff1d32bad"
+  },
+  "priorMilestoneNativeDiagnostics": 81,
+  "final": {
+    "ownedFiles": 18,
+    "syntaxDiagnostics": 0,
+    "typeAwareDiagnostics": 0,
+    "suppressionDirectives": 0,
+    "commit": "aa4d96b016a17ff08c41cac97c8a158edacd362d"
+  },
+  "entries": [],
+  "baselineEntries": [],
+  "driftEntries": [],
+  "retainedCheckerDisposition": "No baseline or drift directives exist. Fresh retained Biome passes; ownership and bu.json unchanged.",
+  "nativeAdmissionDisposition": "Full unchanged shipped type-aware preset passes over all 18 owned code files. No counterpart warranted or added; CB still owns whole-tools admission.",
+  "authorityManifestBlobBefore": "fc9e6f643d3d55c9a7b68ad4457ecc663b116a2a",
+  "authorityManifestBlobAfter": "fc9e6f643d3d55c9a7b68ad4457ecc663b116a2a",
+  "changedFiles": [
+    "tools/scripts/lib/api-freeze-model.test.ts",
+    "tools/scripts/lib/api-freeze-model.ts",
+    "tools/scripts/lib/biome-inventory.test.ts",
+    "tools/scripts/lib/biome-inventory.ts",
+    "tools/scripts/lib/biome-lint-partition.test.ts",
+    "tools/scripts/lib/biome-oxc-discovery.test.ts",
+    "tools/scripts/lib/command-runner.test.ts",
+    "tools/scripts/lib/command-runner.ts",
+    "tools/scripts/lib/conformance-contract.ts",
+    "tools/scripts/lib/conformance-suite-manifest.ts",
+    "tools/scripts/lib/generated-prerequisites.ts",
+    "tools/scripts/lib/json-source-integrity.ts",
+    "tools/scripts/lib/native-lint-routing.ts",
+    "tools/scripts/lib/nx-projects.ts",
+    "tools/scripts/lib/regenerate-command-argv.test.ts",
+    "tools/scripts/lib/regenerate-command-argv.ts",
+    "tools/scripts/lib/walk-package-manifests.ts"
+  ],
+  "baselineArtifactSha256": "62d6709cabf1034e92bb15e3a3ae65920aa165cb3e9b2349343a2271419aefc8",
+  "verification": {
+    "toolsTsc": "pass",
+    "helperTests": "76 pass / 0 fail / 257 assertions",
+    "retainedBiome": "pass;18 files",
+    "oxfmt": "pass;18 files",
+    "extendedTests": "134 pass / 0 fail / 1495 assertions",
+    "nativeLint": "pass;0 diagnostics;unchanged type-aware preset",
+    "actualOxlintSelection": "18 owned files;exact complete equality",
+    "nativeJsonSelection": "0 owned JSON/format/protected files;empty JSON CLI not claimed",
+    "repositoryTypecheck": "pass;33 projects plus1 prerequisite",
+    "repositoryLint": "pass",
+    "check": "pass;locked;fetch cleanup pass",
+    "verifyKernel": "pass;locked;fetch cleanup pass",
+    "verify": "pass on third attempt with VERIFY_SERIAL=1;all36steps;locked;fetch cleanup pass",
+    "apiTypes": "78 exports unchanged across18files",
+    "largeFlatWalker": "12000files;order/skip semantics match original;~64ms",
+    "nxDependentTaskInputs": "structured vendor-supported inputs preserved",
+    "diffCheck": "pass",
+    "exportedTypeComparison": "42 compiler-resolved value signatures and 36 complete interface/type-alias declarations match pre-M6"
+  },
+  "retryHistory": [
+    {
+      "attempt": "full1",
+      "exit": 1,
+      "reason": "provider-testkit5173ms fixed5000ms timeout",
+      "log": "bu-m6-verify.log"
+    },
+    {
+      "attempt": "full2",
+      "exit": 1,
+      "reason": "kernel-testkit5027ms fixed5000ms timeout",
+      "log": "bu-m6-verify-retry2.log"
+    },
+    {
+      "attempt": "isolated1",
+      "exit": 1,
+      "reason": "framework-testkit5313ms fixed5000ms timeout",
+      "log": "bu-m6-self-alias-isolated.log"
+    },
+    {
+      "attempt": "isolatedAfterA13Relief",
+      "exit": 0,
+      "log": "bu-m6-self-alias-relief2.log"
+    },
+    {
+      "attempt": "full3SerialAfterA13",
+      "exit": 0,
+      "log": "bu-m6-verify-retry3-serial.log"
+    }
+  ],
+  "introducedDependencies": [],
+  "introducedPatternsConventionsContractShapes": [
+    {
+      "paths": [
+        "tools/scripts/lib/command-runner.ts",
+        "tools/scripts/lib/command-runner.test.ts"
+      ],
+      "decision": "A11 honest async command bridge with Promise.withResolvers;empty argv rejects with the same message;launch/output/env/timeout/signals/results preserved"
+    },
+    {
+      "paths": [
+        "tools/scripts/lib/biome-inventory.ts",
+        "tools/scripts/lib/biome-inventory.test.ts",
+        "tools/scripts/lib/conformance-contract.ts",
+        "tools/scripts/lib/nx-projects.ts"
+      ],
+      "decision": "A11 six internal TypeError conversions and two wrapper-cause normalizations;retain first-validation messages/order"
+    },
+    {
+      "paths": [
+        "tools/scripts/lib/walk-package-manifests.ts",
+        "tools/scripts/lib/native-lint-routing.ts",
+        "tools/scripts/lib/biome-oxc-discovery.test.ts"
+      ],
+      "decision": "Serial async task chain awaits the actual prior task before discovery/command IO;tests preserve launch order and first failure;avoids recursion depth"
+    },
+    {
+      "paths": [
+        "tools/scripts/lib/biome-inventory.ts",
+        "tools/scripts/lib/json-source-integrity.ts"
+      ],
+      "decision": "Supported imported Bun Glob/JSONC APIs replace unsafe global narrowing;file-and-ancestor candidates evaluated using Glob.match with Array.some;literal path bytes and glob grammar preserved"
+    },
+    {
+      "paths": [
+        "tools/scripts/lib/nx-projects.ts",
+        "tools/scripts/lib/biome-oxc-discovery.test.ts"
+      ],
+      "decision": "Unknown Nx JSON validated against existing declared optional interfaces;missing-name failure stays first;additional unknown metadata/structured inputs retained;malformed declared fields fail closed"
+    },
+    {
+      "paths": [
+        "tools/scripts/lib/regenerate-command-argv.test.ts"
+      ],
+      "decision": "Synchronous test-only filesystem fixture reads and complete fixture-shape validation replace unsafe JSON assertion;authority ownership unchanged"
+    },
+    {
+      "paths": [
+        "tools/scripts/lib/biome-oxc-discovery.test.ts"
+      ],
+      "decision": "Standard Bun mockResolvedValue and real deferred IO/start coordination for tests;no fake awaits"
+    }
+  ],
+  "baselineArtifact": ".constitution/evidence/KRT-BU002/suppression-ledger.json",
+  "exportProof": {
+    "values": 42,
+    "typeDeclarations": 36,
+    "allEqual": true,
+    "artifact": "readiness.json"
+  }
+}
