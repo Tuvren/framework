@@ -81,9 +81,7 @@ interface GlobMatcher {
   match(value: string): boolean;
 }
 
-interface GlobConstructor {
-  new (pattern: string): GlobMatcher;
-}
+type GlobConstructor = new (pattern: string) => GlobMatcher;
 
 interface JsoncParser {
   parse(text: string): unknown;
@@ -149,7 +147,7 @@ function parseBiomeConfig(text: string, source: string): BiomeConfigDocument {
   if (!isRecord(parsed)) {
     throw new Error(`${source}: expected a JSON object`);
   }
-  const files = parsed.files;
+  const { files } = parsed;
   if (files !== undefined && !isRecord(files)) {
     throw new Error(`${source}: "files" must be an object`);
   }
@@ -177,7 +175,7 @@ function collectIncludes(
   seen.add(configPath);
   let parsed: BiomeConfigDocument;
   try {
-    parsed = parseBiomeConfig(readFileSync(configPath, "utf8"), configPath);
+    parsed = parseBiomeConfig(readFileSync(configPath, "utf-8"), configPath);
   } catch (error: unknown) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`cannot read Biome config ${configPath}: ${detail}`);

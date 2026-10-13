@@ -20,11 +20,10 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-  type ApiSurface,
   classifySurfaceDiff,
-  type ExportRecord,
   runDiffTableSelfTest,
 } from "./api-freeze-model.js";
+import type { ApiSurface, ExportRecord } from "./api-freeze-model.js";
 
 const ENTRY = "@tuvren/fixture";
 

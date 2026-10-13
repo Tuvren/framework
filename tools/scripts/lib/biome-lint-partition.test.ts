@@ -23,12 +23,8 @@ import { describe, expect, test } from "bun:test";
 import path from "node:path";
 
 import oxfmtConfig from "../../../oxfmt.config.js";
-import {
-  readCoverageEntries,
-  resolveCoverage,
-  type CoverageEntry,
-  type CoverageResolution,
-} from "../biome-lint.js";
+import { readCoverageEntries, resolveCoverage } from "../biome-lint.js";
+import type { CoverageEntry, CoverageResolution } from "../biome-lint.js";
 import {
   FORMER_ROOT_DELETED_COMMAND,
   FORMER_ROOT_DISCOVERY_COMMAND,
@@ -46,7 +42,8 @@ import {
   discoverNativeLintProjects,
   discoverOxcProjects,
 } from "./native-lint-routing.js";
-import { loadNxProjectFiles, type NxProjectFile } from "./nx-projects.js";
+import { loadNxProjectFiles } from "./nx-projects.js";
+import type { NxProjectFile } from "./nx-projects.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const COVERAGE_DIR = path.join(REPO_ROOT, "tools/biome-coverage");

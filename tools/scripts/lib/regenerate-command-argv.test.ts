@@ -16,17 +16,16 @@
 
 import { describe, expect, test } from "bun:test";
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 import { parseRegenerateCommandArgv } from "./regenerate-command-argv.js";
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const MANIFEST_FILE_NAME = "authority-packet.json";
 
 interface AuthorityPacketManifestFixture {
-  freshnessChecks?: Array<{ artifact: string; regenerateCommand: string }>;
+  freshnessChecks?: { artifact: string; regenerateCommand: string }[];
   packetId?: string;
 }
 
@@ -120,7 +119,7 @@ describe("parseRegenerateCommandArgv against real authority packets", () => {
 
     for (const manifestPath of manifestPaths) {
       const value = JSON.parse(
-        await readFile(manifestPath, "utf8")
+        await readFile(manifestPath, "utf-8")
       ) as AuthorityPacketManifestFixture;
 
       for (const check of value.freshnessChecks ?? []) {

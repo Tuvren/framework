@@ -131,7 +131,7 @@ export function loadNxProjectFiles(root: string): NxProjectFile[] {
     const path = relative(root, absolute);
     let project: NxProjectJson;
     try {
-      project = JSON.parse(readFileSync(absolute, "utf8"));
+      project = JSON.parse(readFileSync(absolute, "utf-8"));
     } catch (error) {
       throw new Error(`unparseable project.json at ${path}: ${error}`);
     }

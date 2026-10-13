@@ -109,7 +109,7 @@ async function writeGitFixture(): Promise<string> {
     path.join(root, "src/deleted.ts"),
     "export const deleted = 1;\n"
   );
-  const git = (args: string[]): Promise<unknown> =>
+  const git = async (args: string[]): Promise<unknown> =>
     runCommand(["git", ...args], { captureOutput: true, cwd: root });
   await git(["init", "-q", "-b", "main"]);
   await git(["add", "-A"]);

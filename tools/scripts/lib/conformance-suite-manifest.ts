@@ -23,9 +23,11 @@ import Ajv2020 from "ajv/dist/2020.js";
 import {
   assertConformanceEvidence,
   assertConformanceSuiteManifest,
-  type ConformanceEvidence,
-  type ConformanceSuiteManifest,
-  type SuiteCheck,
+} from "./conformance-contract.js";
+import type {
+  ConformanceEvidence,
+  ConformanceSuiteManifest,
+  SuiteCheck,
 } from "./conformance-contract.js";
 
 const SUITE_MANIFEST_SCHEMA_RELATIVE_PATH =
@@ -34,7 +36,7 @@ const SUITE_MANIFEST_SCHEMA_RELATIVE_PATH =
 export async function readConformanceSuiteManifest(
   manifestPath: string
 ): Promise<ConformanceSuiteManifest> {
-  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as unknown;
+  const manifest = JSON.parse(await readFile(manifestPath, "utf-8")) as unknown;
   // The suite manifest schema lives next to the owning boundary instead of
   // being referenced from inside the manifest. Keeping that path conventional
   // avoids a second layer of manifest indirection that could drift silently.
@@ -43,7 +45,7 @@ export async function readConformanceSuiteManifest(
     SUITE_MANIFEST_SCHEMA_RELATIVE_PATH
   );
   const schema = readJsonSchema(
-    JSON.parse(await readFile(schemaPath, "utf8")) as unknown,
+    JSON.parse(await readFile(schemaPath, "utf-8")) as unknown,
     schemaPath
   );
   const ajv = new Ajv2020({ allErrors: true, strict: false });

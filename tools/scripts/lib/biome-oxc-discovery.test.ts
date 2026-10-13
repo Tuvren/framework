@@ -91,7 +91,7 @@ describe("Oxlint project-wide discovery", () => {
     await expect(
       collectOxlintSelectedFiles(projects, {
         repoRoot: String.raw`C:\repo`,
-        runCommand: () =>
+        runCommand: async () =>
           Promise.resolve({
             code: 0,
             stderr: "",
@@ -154,9 +154,9 @@ describe("Oxlint project-wide discovery", () => {
     expect(
       discovered({
         options: {
+          args: ["--ignore-pattern", "test/**"],
           command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
           cwd: ".",
-          args: ["--ignore-pattern", "test/**"],
         },
       })
     ).toEqual([]);
@@ -180,9 +180,9 @@ describe("Oxlint project-wide discovery", () => {
     expect(
       discovered({
         options: {
+          __unparsed__: ["--ignore-pattern", "test/**"],
           command: "bunx --bun oxlint --type-aware typescript/kernel/protocol",
           cwd: ".",
-          __unparsed__: ["--ignore-pattern", "test/**"],
         },
       })
     ).toEqual([]);
