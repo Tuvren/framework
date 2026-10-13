@@ -18,11 +18,7 @@ import path from "node:path";
 
 import type { RunCommandResult } from "./command-runner.js";
 import { isCodeFile } from "./json-source-integrity.js";
-import type {
-  NxCommandOptions,
-  NxProjectFile,
-  NxProjectTarget,
-} from "./nx-projects.js";
+import type { NxProjectFile, NxProjectTarget } from "./nx-projects.js";
 
 const OXLINT_PROJECT_WIDE_COMMAND_PATTERN =
   /^bunx --bun oxlint --type-aware(?: (?<operand>\S+))?$/u;
@@ -80,7 +76,7 @@ export interface OxlintSelectionDependencies {
 
 const selectDefaultTargetOptions = (
   target: NxProjectTarget
-): NxCommandOptions | undefined => {
+): Record<string, unknown> | undefined => {
   const selected =
     target.defaultConfiguration === undefined
       ? undefined
@@ -91,13 +87,13 @@ const selectDefaultTargetOptions = (
   return { ...target.options, ...selected };
 };
 
-const hasOnlyScopeSafeOptions = (options: NxCommandOptions): boolean =>
+const hasOnlyScopeSafeOptions = (options: Record<string, unknown>): boolean =>
   Object.keys(options).every((key) =>
     SCOPE_SAFE_RUN_COMMANDS_OPTION_KEYS.has(key)
   );
 
 const invokedCommands = (
-  options: NxCommandOptions
+  options: Record<string, unknown>
 ): InvokedLintCommands | undefined => {
   if (
     Object.hasOwn(options, "command") === Object.hasOwn(options, "commands")
@@ -108,13 +104,19 @@ const invokedCommands = (
   if (typeof options.command === "string") {
     commands.push(options.command);
   } else {
-    for (const entry of options.commands ?? []) {
+    if (!Array.isArray(options.commands)) {
+      return undefined;
+    }
+    const entries: unknown[] = options.commands;
+    for (const entry of entries) {
       if (typeof entry === "string") {
         commands.push(entry);
       } else if (
         entry !== null &&
         typeof entry === "object" &&
+        !Array.isArray(entry) &&
         Object.keys(entry).length === 1 &&
+        "command" in entry &&
         typeof entry.command === "string"
       ) {
         commands.push(entry.command);

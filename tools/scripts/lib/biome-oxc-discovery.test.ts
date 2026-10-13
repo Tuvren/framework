@@ -424,6 +424,94 @@ const withProjectFixture = (
 };
 
 describe("Nx project input validation", () => {
+  test("preserves executor-specific fields that collide with command option names", () => {
+    const project = {
+      name: "fixture",
+      targets: {
+        lint: {
+          configurations: {
+            custom: {
+              __unparsed__: false,
+              args: { mode: "custom" },
+              command: 3,
+              commands: { custom: true },
+              cwd: ["custom"],
+              forwardAllArgs: "custom",
+            },
+          },
+          defaultConfiguration: "custom",
+          executor: "custom:executor",
+          inputs: [
+            "default",
+            { dependentTasksOutputFiles: "**/*.ts", transitive: true },
+          ],
+          options: {
+            __unparsed__: { custom: true },
+            args: { include: ["custom"] },
+            command:
+              "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+            commands: [null, { command: false }, "bun custom.ts"],
+            cwd: { root: "custom" },
+            forwardAllArgs: [false],
+          },
+        },
+      },
+    };
+    withProjectFixture(project, (root) => {
+      const [loaded] = loadNxProjectFiles(root);
+      expect(loaded?.project).toEqual(project);
+      const lint = loaded?.project.targets?.lint;
+      if (lint === undefined) {
+        throw new Error("expected the fixture lint target");
+      }
+      expect(targetCommandStrings(lint)).toEqual([
+        "bunx --bun oxlint --type-aware typescript/kernel/protocol",
+        "bun custom.ts",
+      ]);
+      expect(discovered(lint)).toEqual([]);
+    });
+  });
+
+  test("gives malformed canonical command options no native credit", () => {
+    const command = "bunx --bun oxlint --type-aware typescript/kernel/protocol";
+    const malformedOptions = [
+      { command: 3 },
+      { command, cwd: false },
+      { commands: "invalid" },
+      { commands: { command } },
+      { commands: [null] },
+      { commands: [{ command: false }] },
+      { commands: [[command]] },
+      { args: { custom: true }, command },
+      { __unparsed__: [false], command },
+      { command, forwardAllArgs: "false" },
+    ];
+    for (const options of malformedOptions) {
+      for (const lint of [
+        { executor: "nx:run-commands", options },
+        {
+          configurations: { native: options },
+          defaultConfiguration: "native",
+          executor: "nx:run-commands",
+          options: { command },
+        },
+      ]) {
+        withProjectFixture({ name: "fixture", targets: { lint } }, (root) => {
+          const [loaded] = loadNxProjectFiles(root);
+          const loadedLint = loaded?.project.targets?.lint;
+          if (loadedLint === undefined) {
+            throw new Error("expected the fixture lint target");
+          }
+          expect(loaded?.project).toEqual({
+            name: "fixture",
+            targets: { lint },
+          });
+          expect(discovered(loadedLint)).toEqual([]);
+        });
+      }
+    }
+  });
+
   test("preserves alternate commands, configurations and custom metadata", () => {
     const project = {
       customMetadata: { owner: "fixture" },
@@ -486,13 +574,8 @@ describe("Nx project input validation", () => {
       { targets: { lint: { defaultConfiguration: false } } },
       { targets: { lint: { configurations: [] } } },
       { targets: { lint: { configurations: { native: null } } } },
-      { targets: { lint: { options: { command: 3 } } } },
-      { targets: { lint: { options: { cwd: false } } } },
-      { targets: { lint: { options: { commands: [null] } } } },
-      { targets: { lint: { options: { commands: [{ command: false }] } } } },
-      { targets: { lint: { options: { args: [3] } } } },
-      { targets: { lint: { options: { __unparsed__: [false] } } } },
-      { targets: { lint: { options: { forwardAllArgs: "false" } } } },
+      { targets: { lint: { options: null } } },
+      { targets: { lint: { options: [] } } },
     ];
     for (const fields of invalidFields) {
       withProjectFixture({ name: "fixture", ...fields }, (root) => {

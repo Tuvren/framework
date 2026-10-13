@@ -50,7 +50,7 @@ export interface NxCommandOptions {
 }
 
 export interface NxProjectTarget {
-  configurations?: Record<string, NxCommandOptions>;
+  configurations?: Record<string, Record<string, unknown>>;
   // Nx selects this configuration for an unqualified `nx run project:target`
   // (create-task-graph resolveConfiguration). Gates that model the invoked
   // command must apply it, not every named configuration.
@@ -59,8 +59,12 @@ export interface NxProjectTarget {
   // forwarded args; a custom executor that merely accepts a command-shaped
   // `options` object must never earn lint coverage.
   executor?: string;
-  options?: NxCommandOptions;
+  // Executor-specific fields are opaque until a consumer selects an executor.
+  options?: Record<string, unknown>;
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
  * Every command string an nx:run-commands target can execute: the base
@@ -72,14 +76,18 @@ export interface NxProjectTarget {
  */
 export const targetCommandStrings = (target: NxProjectTarget): string[] => {
   const out: string[] = [];
-  const collect = (options: NxCommandOptions | undefined): void => {
+  const collect = (options: Record<string, unknown> | undefined): void => {
     if (typeof options?.command === "string") {
       out.push(options.command);
     }
-    for (const entry of options?.commands ?? []) {
+    if (!Array.isArray(options?.commands)) {
+      return;
+    }
+    const entries: unknown[] = options.commands;
+    for (const entry of entries) {
       if (typeof entry === "string") {
         out.push(entry);
-      } else if (typeof entry?.command === "string") {
+      } else if (isRecord(entry) && typeof entry.command === "string") {
         out.push(entry.command);
       }
     }
@@ -106,38 +114,12 @@ export interface NxProjectFile {
   project: NxProjectJson;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) &&
   value.every((entry: unknown) => typeof entry === "string");
 
 const isOptionalString = (value: unknown): value is string | undefined =>
   value === undefined || typeof value === "string";
-
-const isNxCommandOptions = (value: unknown): value is NxCommandOptions => {
-  if (!isRecord(value)) {
-    return false;
-  }
-  return (
-    isOptionalString(value.command) &&
-    isOptionalString(value.cwd) &&
-    (value.commands === undefined ||
-      (Array.isArray(value.commands) &&
-        value.commands.every(
-          (entry: unknown) =>
-            typeof entry === "string" ||
-            (isRecord(entry) && isOptionalString(entry.command))
-        ))) &&
-    (value.args === undefined ||
-      typeof value.args === "string" ||
-      isStringArray(value.args)) &&
-    (value.__unparsed__ === undefined || isStringArray(value.__unparsed__)) &&
-    (value.forwardAllArgs === undefined ||
-      typeof value.forwardAllArgs === "boolean")
-  );
-};
 
 const isNxProjectTarget = (value: unknown): value is NxProjectTarget => {
   if (!isRecord(value)) {
@@ -146,10 +128,10 @@ const isNxProjectTarget = (value: unknown): value is NxProjectTarget => {
   return (
     isOptionalString(value.executor) &&
     isOptionalString(value.defaultConfiguration) &&
-    (value.options === undefined || isNxCommandOptions(value.options)) &&
+    (value.options === undefined || isRecord(value.options)) &&
     (value.configurations === undefined ||
       (isRecord(value.configurations) &&
-        Object.values(value.configurations).every(isNxCommandOptions)))
+        Object.values(value.configurations).every(isRecord)))
   );
 };
 
