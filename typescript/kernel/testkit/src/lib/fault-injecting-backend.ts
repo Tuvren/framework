@@ -129,6 +129,286 @@ interface FsckCapableBackend {
   fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
 }
 
+/** Structural check for the hidden `BackendFaultInjectionControl` shape. */
+const isBackendFaultInjectionControl = (
+  value: unknown
+): value is BackendFaultInjectionControl =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof Reflect.get(value, "setFaultHooks") === "function" &&
+  typeof Reflect.get(value, "supportsFaultPoint") === "function";
+
+/** Locates a backend's hidden fault-injection control surface, if it exposes one. */
+const readFaultInjectionControl = (
+  backend: RuntimeBackend
+): BackendFaultInjectionControl | undefined => {
+  // Discover the backend-local seam by shape so production code does not get a
+  // stable global symbol lookup key for the hidden test hook.
+  for (const symbol of Object.getOwnPropertySymbols(backend)) {
+    const value = Reflect.get(backend, symbol);
+
+    if (isBackendFaultInjectionControl(value)) {
+      return value;
+    }
+  }
+
+  return undefined;
+};
+
+/**
+ * Captures a branch's current head turn node before the faulted
+ * transaction runs, as the basis {@link runConcurrentWriter} extends from.
+ * Returns `undefined` if the branch or its head does not (yet) exist.
+ */
+const readConcurrentWriterSnapshot = async (
+  backend: RuntimeBackend,
+  branchId: string
+): Promise<ConcurrentWriterSnapshot | undefined> =>
+  await backend.transact(async (tx) => {
+    const branch = await tx.branches.get(branchId);
+
+    if (branch === null) {
+      return;
+    }
+
+    const head = await tx.turnNodes.get(branch.headTurnNodeHash);
+
+    if (head === null) {
+      return;
+    }
+
+    return { branch, head };
+  });
+
+/** Fresh, empty recording for one `transact` call. */
+const createTransactionRecording = (): TransactionRecording => ({
+  branchIds: new Set<string>(),
+  operation: "unknown",
+});
+
+/** Builds the error thrown when a planned fault fires. */
+const createInjectedFaultError = (
+  _operation: FaultOperation,
+  point: FaultPoint
+): TuvrenError =>
+  new TuvrenPersistenceError(
+    `injected ${point} persistence fault interrupted verification`,
+    {
+      code: "kernel_persistence_fault_injected",
+      details: { point },
+    }
+  );
+
+/** Builds the error thrown when a plan targets a point the backend cannot honor. */
+const createUnsupportedFaultPointError = (
+  point: FaultPoint
+): TuvrenPersistenceError =>
+  new TuvrenPersistenceError(
+    `fault point "${point}" requires backend-local test hooks`,
+    {
+      code: "kernel_fault_point_unsupported",
+      details: { point },
+    }
+  );
+
+/**
+ * Builds the backend-local commit hooks that fire the injected fault at
+ * `plan.point` once `shouldInject()` reports the current transaction
+ * matches, marking the plan consumed and throwing
+ * {@link createInjectedFaultError}; a mismatched point on a matching
+ * transaction throws {@link createUnsupportedFaultPointError} instead of
+ * silently no-op-ing.
+ */
+const createFaultHooks = (
+  control: BackendFaultInjectionControl,
+  plan: FaultPlan,
+  getOperation: () => FaultOperation,
+  shouldInject: () => boolean,
+  markConsumed: () => void
+): BackendFaultHooks => ({
+  afterCommitBeforeAck: () => {
+    if (!shouldInject()) {
+      return Promise.resolve();
+    }
+
+    if (plan.point !== "after-commit-before-ack") {
+      return Promise.resolve();
+    }
+
+    markConsumed();
+    throw createInjectedFaultError(getOperation(), plan.point);
+  },
+  beforeCommit: () => {
+    if (!shouldInject()) {
+      return Promise.resolve();
+    }
+
+    if (!control.supportsFaultPoint(plan.point)) {
+      throw createUnsupportedFaultPointError(plan.point);
+    }
+
+    if (plan.point !== "before-commit") {
+      return Promise.resolve();
+    }
+
+    markConsumed();
+    throw createInjectedFaultError(getOperation(), plan.point);
+  },
+  midCommit: async (commit) => {
+    if (!shouldInject()) {
+      await commit();
+      return;
+    }
+
+    if (plan.point !== "mid-commit") {
+      await commit();
+      return;
+    }
+
+    if (!control.supportsFaultPoint(plan.point)) {
+      throw createUnsupportedFaultPointError(plan.point);
+    }
+
+    markConsumed();
+    await commit();
+    throw createInjectedFaultError(getOperation(), plan.point);
+  },
+});
+
+/**
+ * Wraps a transaction handle so touched branch IDs and a coarse
+ * `"checkpoint"` vs `"unknown"` operation classification are captured into
+ * `recording` as `work` calls the repositories, for {@link matchesFaultPlan}
+ * to later evaluate `plan.match` against.
+ */
+const createRecordingTransactionProxy = (
+  tx: RuntimeBackendTx,
+  recording: TransactionRecording
+): RuntimeBackendTx => ({
+  ...tx,
+  branches: {
+    ...tx.branches,
+    get(branchId) {
+      recording.branchIds.add(branchId);
+      return tx.branches.get(branchId);
+    },
+    set(record: StoredBranch) {
+      recording.branchIds.add(record.branchId);
+      return tx.branches.set(record);
+    },
+  },
+  stagedResults: {
+    ...tx.stagedResults,
+    clearRun(runId) {
+      recording.operation =
+        recording.operation === "checkpoint" ? "checkpoint" : "unknown";
+      return tx.stagedResults.clearRun(runId);
+    },
+  },
+  turnNodes: {
+    ...tx.turnNodes,
+    put(record: StoredTurnNode) {
+      recording.operation = "checkpoint";
+      return tx.turnNodes.put(record);
+    },
+  },
+  turns: {
+    ...tx.turns,
+    set(record: StoredTurn) {
+      recording.branchIds.add(record.branchId);
+      recording.operation =
+        recording.operation === "checkpoint" ? "checkpoint" : "unknown";
+      return tx.turns.set(record);
+    },
+  },
+});
+
+/** Evaluates whether a completed transaction's recording satisfies `plan`. */
+const matchesFaultPlan = (
+  plan: FaultPlan,
+  recording: TransactionRecording,
+  consumed: boolean
+): boolean => {
+  if (plan.policy === "once" && consumed) {
+    return false;
+  }
+
+  if (
+    plan.match?.branchId !== undefined &&
+    !recording.branchIds.has(plan.match.branchId)
+  ) {
+    return false;
+  }
+
+  if (
+    plan.match?.operation !== undefined &&
+    recording.operation !== plan.match.operation
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Runs an independent transaction that appends a sibling turn node after
+ * `snapshot.head` and moves `snapshot.branch`'s head onto it — simulating a
+ * second writer that raced ahead while the faulted transaction was
+ * interrupted.
+ */
+const runConcurrentWriter = async (
+  backend: RuntimeBackend,
+  snapshot: ConcurrentWriterSnapshot
+): Promise<void> => {
+  const createdAtMs = Math.max(snapshot.head.createdAtMs + 1, Date.now());
+  const siblingEvent = await createStoredObjectRecord(
+    new Uint8Array([0x63, 0x77]),
+    createdAtMs
+  );
+  const siblingNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs,
+    eventHash: siblingEvent.hash,
+    previousTurnNodeHash: snapshot.head.hash,
+    schemaId: snapshot.head.schemaId,
+    turnTreeHash: snapshot.head.turnTreeHash,
+  });
+
+  await backend.transact(async (tx) => {
+    await tx.objects.put(siblingEvent);
+    await tx.turnNodes.put(siblingNode);
+    await tx.branches.set({
+      ...snapshot.branch,
+      headTurnNodeHash: siblingNode.hash,
+      updatedAtMs: Math.max(snapshot.branch.updatedAtMs + 1, Date.now()),
+    });
+  });
+};
+
+/** Reads an optional method off `value` if present and callable. */
+const readOptionalMethod = (
+  value: object,
+  key: "close" | "destroy"
+): ((...args: unknown[]) => Promise<void>) | undefined => {
+  const method = Reflect.get(value, key);
+  return typeof method === "function" ? method : undefined;
+};
+
+/**
+ * Reads an optional `fsck()` method off `value` if present and callable —
+ * mirrors {@link readOptionalMethod}, but kept separate since `fsck`'s
+ * return type differs from `close`/`destroy`'s and it is not a key of
+ * `RuntimeBackend`, so it cannot be discovered through that interface.
+ */
+const readOptionalFsckMethod = (
+  value: object
+): FsckCapableBackend["fsck"] | undefined => {
+  const method = Reflect.get(value, "fsck");
+  return typeof method === "function"
+    ? (method as FsckCapableBackend["fsck"])
+    : undefined;
+};
+
 /**
  * Wraps a `RuntimeBackend` so its next matching `transact` call (per
  * `plan`) fails at a chosen point in the commit sequence, for exercising a
@@ -147,10 +427,10 @@ interface FsckCapableBackend {
  *   plan's point fires but the wrapped backend has no matching control
  *   surface, or `kernel_persistence_fault_injected` for the fault itself.
  */
-export function createFaultInjectingBackend(
+export const createFaultInjectingBackend = (
   inner: RuntimeBackend,
   plan: FaultPlan
-): RuntimeBackend {
+): RuntimeBackend => {
   const control = readFaultInjectionControl(inner);
   const innerReclaim = inner.reclaim?.bind(inner);
   const innerPurgeScope = inner.purgeScope?.bind(inner);
@@ -279,296 +559,4 @@ export function createFaultInjectingBackend(
   }
 
   return decorated;
-}
-
-/** Locates a backend's hidden fault-injection control surface, if it exposes one. */
-function readFaultInjectionControl(
-  backend: RuntimeBackend
-): BackendFaultInjectionControl | undefined {
-  // Discover the backend-local seam by shape so production code does not get a
-  // stable global symbol lookup key for the hidden test hook.
-  for (const symbol of Object.getOwnPropertySymbols(backend)) {
-    const value = Reflect.get(backend, symbol);
-
-    if (isBackendFaultInjectionControl(value)) {
-      return value;
-    }
-  }
-
-  return undefined;
-}
-
-/** Structural check for the hidden `BackendFaultInjectionControl` shape. */
-function isBackendFaultInjectionControl(
-  value: unknown
-): value is BackendFaultInjectionControl {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof Reflect.get(value, "setFaultHooks") === "function" &&
-    typeof Reflect.get(value, "supportsFaultPoint") === "function"
-  );
-}
-
-/**
- * Builds the backend-local commit hooks that fire the injected fault at
- * `plan.point` once `shouldInject()` reports the current transaction
- * matches, marking the plan consumed and throwing
- * {@link createInjectedFaultError}; a mismatched point on a matching
- * transaction throws {@link createUnsupportedFaultPointError} instead of
- * silently no-op-ing.
- */
-function createFaultHooks(
-  control: BackendFaultInjectionControl,
-  plan: FaultPlan,
-  getOperation: () => FaultOperation,
-  shouldInject: () => boolean,
-  markConsumed: () => void
-): BackendFaultHooks {
-  return {
-    afterCommitBeforeAck: () => {
-      if (!shouldInject()) {
-        return Promise.resolve();
-      }
-
-      if (plan.point !== "after-commit-before-ack") {
-        return Promise.resolve();
-      }
-
-      markConsumed();
-      throw createInjectedFaultError(getOperation(), plan.point);
-    },
-    beforeCommit: () => {
-      if (!shouldInject()) {
-        return Promise.resolve();
-      }
-
-      if (!control.supportsFaultPoint(plan.point)) {
-        throw createUnsupportedFaultPointError(plan.point);
-      }
-
-      if (plan.point !== "before-commit") {
-        return Promise.resolve();
-      }
-
-      markConsumed();
-      throw createInjectedFaultError(getOperation(), plan.point);
-    },
-    midCommit: async (commit) => {
-      if (!shouldInject()) {
-        await commit();
-        return;
-      }
-
-      if (plan.point !== "mid-commit") {
-        await commit();
-        return;
-      }
-
-      if (!control.supportsFaultPoint(plan.point)) {
-        throw createUnsupportedFaultPointError(plan.point);
-      }
-
-      markConsumed();
-      await commit();
-      throw createInjectedFaultError(getOperation(), plan.point);
-    },
-  };
-}
-
-/** Fresh, empty recording for one `transact` call. */
-function createTransactionRecording(): TransactionRecording {
-  return {
-    branchIds: new Set<string>(),
-    operation: "unknown",
-  };
-}
-
-/**
- * Wraps a transaction handle so touched branch IDs and a coarse
- * `"checkpoint"` vs `"unknown"` operation classification are captured into
- * `recording` as `work` calls the repositories, for {@link matchesFaultPlan}
- * to later evaluate `plan.match` against.
- */
-function createRecordingTransactionProxy(
-  tx: RuntimeBackendTx,
-  recording: TransactionRecording
-): RuntimeBackendTx {
-  return {
-    ...tx,
-    branches: {
-      ...tx.branches,
-      get(branchId) {
-        recording.branchIds.add(branchId);
-        return tx.branches.get(branchId);
-      },
-      set(record: StoredBranch) {
-        recording.branchIds.add(record.branchId);
-        return tx.branches.set(record);
-      },
-    },
-    stagedResults: {
-      ...tx.stagedResults,
-      clearRun(runId) {
-        recording.operation =
-          recording.operation === "checkpoint" ? "checkpoint" : "unknown";
-        return tx.stagedResults.clearRun(runId);
-      },
-    },
-    turnNodes: {
-      ...tx.turnNodes,
-      put(record: StoredTurnNode) {
-        recording.operation = "checkpoint";
-        return tx.turnNodes.put(record);
-      },
-    },
-    turns: {
-      ...tx.turns,
-      set(record: StoredTurn) {
-        recording.branchIds.add(record.branchId);
-        recording.operation =
-          recording.operation === "checkpoint" ? "checkpoint" : "unknown";
-        return tx.turns.set(record);
-      },
-    },
-  };
-}
-
-/**
- * Captures a branch's current head turn node before the faulted
- * transaction runs, as the basis {@link runConcurrentWriter} extends from.
- * Returns `undefined` if the branch or its head does not (yet) exist.
- */
-async function readConcurrentWriterSnapshot(
-  backend: RuntimeBackend,
-  branchId: string
-): Promise<ConcurrentWriterSnapshot | undefined> {
-  return await backend.transact(async (tx) => {
-    const branch = await tx.branches.get(branchId);
-
-    if (branch === null) {
-      return;
-    }
-
-    const head = await tx.turnNodes.get(branch.headTurnNodeHash);
-
-    if (head === null) {
-      return;
-    }
-
-    return { branch, head };
-  });
-}
-
-/**
- * Runs an independent transaction that appends a sibling turn node after
- * `snapshot.head` and moves `snapshot.branch`'s head onto it — simulating a
- * second writer that raced ahead while the faulted transaction was
- * interrupted.
- */
-async function runConcurrentWriter(
-  backend: RuntimeBackend,
-  snapshot: ConcurrentWriterSnapshot
-): Promise<void> {
-  const createdAtMs = Math.max(snapshot.head.createdAtMs + 1, Date.now());
-  const siblingEvent = await createStoredObjectRecord(
-    new Uint8Array([0x63, 0x77]),
-    createdAtMs
-  );
-  const siblingNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs,
-    eventHash: siblingEvent.hash,
-    previousTurnNodeHash: snapshot.head.hash,
-    schemaId: snapshot.head.schemaId,
-    turnTreeHash: snapshot.head.turnTreeHash,
-  });
-
-  await backend.transact(async (tx) => {
-    await tx.objects.put(siblingEvent);
-    await tx.turnNodes.put(siblingNode);
-    await tx.branches.set({
-      ...snapshot.branch,
-      headTurnNodeHash: siblingNode.hash,
-      updatedAtMs: Math.max(snapshot.branch.updatedAtMs + 1, Date.now()),
-    });
-  });
-}
-
-/** Evaluates whether a completed transaction's recording satisfies `plan`. */
-function matchesFaultPlan(
-  plan: FaultPlan,
-  recording: TransactionRecording,
-  consumed: boolean
-): boolean {
-  if (plan.policy === "once" && consumed) {
-    return false;
-  }
-
-  if (
-    plan.match?.branchId !== undefined &&
-    !recording.branchIds.has(plan.match.branchId)
-  ) {
-    return false;
-  }
-
-  if (
-    plan.match?.operation !== undefined &&
-    recording.operation !== plan.match.operation
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-/** Builds the error thrown when a planned fault fires. */
-function createInjectedFaultError(
-  _operation: FaultOperation,
-  point: FaultPoint
-): TuvrenError {
-  return new TuvrenPersistenceError(
-    `injected ${point} persistence fault interrupted verification`,
-    {
-      code: "kernel_persistence_fault_injected",
-      details: { point },
-    }
-  );
-}
-
-/** Builds the error thrown when a plan targets a point the backend cannot honor. */
-function createUnsupportedFaultPointError(
-  point: FaultPoint
-): TuvrenPersistenceError {
-  return new TuvrenPersistenceError(
-    `fault point "${point}" requires backend-local test hooks`,
-    {
-      code: "kernel_fault_point_unsupported",
-      details: { point },
-    }
-  );
-}
-
-/** Reads an optional method off `value` if present and callable. */
-function readOptionalMethod(
-  value: object,
-  key: "close" | "destroy"
-): ((...args: unknown[]) => Promise<void>) | undefined {
-  const method = Reflect.get(value, key);
-  return typeof method === "function" ? method : undefined;
-}
-
-/**
- * Reads an optional `fsck()` method off `value` if present and callable —
- * mirrors {@link readOptionalMethod}, but kept separate since `fsck`'s
- * return type differs from `close`/`destroy`'s and it is not a key of
- * `RuntimeBackend`, so it cannot be discovered through that interface.
- */
-function readOptionalFsckMethod(
-  value: object
-): FsckCapableBackend["fsck"] | undefined {
-  const method = Reflect.get(value, "fsck");
-  return typeof method === "function"
-    ? (method as FsckCapableBackend["fsck"])
-    : undefined;
-}
+};

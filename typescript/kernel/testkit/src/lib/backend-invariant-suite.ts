@@ -26,9 +26,9 @@ import type { BackendConformanceSuiteOptions } from "./backend-test-suite-types.
  * implementation that passes this suite enforces the same referential and
  * lineage invariants as the reference (memory) backend.
  */
-export function registerBackendInvariantSuite(
+export const registerBackendInvariantSuite = (
   options: BackendConformanceSuiteOptions
-): void {
+): void => {
   const suiteName = options.suiteName ?? "Backend Invariants";
 
   options.testApi.describe(suiteName, () => {
@@ -36,4 +36,4 @@ export function registerBackendInvariantSuite(
     registerBackendInvariantTurnCases(options);
     registerBackendInvariantArchiveCases(options);
   });
-}
+};

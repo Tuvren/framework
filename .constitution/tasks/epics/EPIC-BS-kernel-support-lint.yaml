@@ -209,3 +209,19 @@ tickets:
 # stream-error delivery (grpc-client/test/grpc-kernel-client.test.ts); no dependency.
 # A13 compiler locks and A14 same-model availability recovery applied; original
 # milestone sequence/models remain unchanged. Larger fixture loader/suites are M7.
+# M6 independent review: no findings; seven gates, uncached 30/13/1 suites, API
+# freeze, direct changeset and validation independently pass.
+# A17 replaces oversized original M7 (2066 external lines) with reviewed M7a
+# production then M7b tests. Original dry run applied no code; no ticket deferred.
+# M7a / KRT-BS003 partial: nine production modules, 1269 changed source lines,
+# 36 declarations. Tests byte-identical. Lead binding+initializer signatures,
+# normalized bodies, retained declarations/eight eager initializers match;
+# ten-module runtime graph remains acyclic and compiler diagnostics are zero.
+# Ten fresh import orders match: 23 shared memory backend cases, 12 phase/policy/
+# concurrent fault scenarios with ordered hooks/errors/committed state, five
+# bound optional forwards and absent controls. All M7a scoped gates, repository
+# typecheck, API freeze, changeset, retained Biome and formatting pass.
+# Fresh native 259 -> 177 (testkit 223 -> 141); grpc 34/certification 2 unchanged.
+# Exactly 36 func-style and 46 no-use-before-define removed; no introduced debt.
+# All five Biome roots/directives retained. BS003 completion/full repository
+# conformance and verify:kernel remain due after independently reviewed M7b.

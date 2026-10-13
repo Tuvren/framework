@@ -29,14 +29,130 @@ import {
 } from "./kernel-test-fixtures.js";
 
 /**
+ * Builds the shared unpersisted fixture set (schema, turn tree, a
+ * three-node genesis→middle→head lineage, thread, and branch at the head)
+ * that every archive-rollback test case in this suite starts from.
+ */
+export const createArchiveRollbackFixtures = async (): Promise<{
+  branch: StoredBranch;
+  headNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
+  middleNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
+  rootNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
+  schema: ReturnType<typeof createCanonicalKernelTestSchema>;
+  schemaRecord: ReturnType<typeof createStoredSchemaRecord>;
+  thread: StoredThread;
+  turnTree: Awaited<ReturnType<typeof createStoredTurnTreeRecord>>;
+}> => {
+  const schema = createCanonicalKernelTestSchema();
+  const schemaRecord = createStoredSchemaRecord(schema, 1);
+  const turnTree = await createStoredTurnTreeRecord(
+    schema,
+    { "context.manifest": null, messages: [] },
+    2
+  );
+  const rootNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 3,
+    eventHash: null,
+    previousTurnNodeHash: null,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const middleNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 4,
+    eventHash: null,
+    previousTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const headNode = await createStoredTurnNodeRecord({
+    consumedStagedResults: [],
+    createdAtMs: 5,
+    eventHash: null,
+    previousTurnNodeHash: middleNode.hash,
+    schemaId: schema.schemaId,
+    turnTreeHash: turnTree.hash,
+  });
+  const thread: StoredThread = {
+    createdAtMs: 6,
+    rootTurnNodeHash: rootNode.hash,
+    schemaId: schema.schemaId,
+    threadId: "thread_archive_provenance",
+  };
+  const branch: StoredBranch = {
+    branchId: "branch_archive_provenance",
+    createdAtMs: 7,
+    headTurnNodeHash: headNode.hash,
+    threadId: thread.threadId,
+    updatedAtMs: 7,
+  };
+
+  return {
+    branch,
+    headNode,
+    middleNode,
+    rootNode,
+    schema,
+    schemaRecord,
+    thread,
+    turnTree,
+  };
+};
+
+/**
+ * Builds {@link createArchiveRollbackFixtures}' fixture set and persists it
+ * (schema, turn tree/paths, all three turn nodes, thread, branch) into a
+ * fresh backend, returning both the backend and the fixtures for the
+ * calling test case to build forged/stale archive attempts against.
+ */
+const createArchiveRollbackScenario = async (
+  options: BackendConformanceSuiteOptions
+): Promise<{
+  backend: ReturnType<BackendConformanceSuiteOptions["createBackend"]>;
+  branch: StoredBranch;
+  headNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
+  middleNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
+  rootNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
+  schema: ReturnType<typeof createCanonicalKernelTestSchema>;
+  schemaRecord: ReturnType<typeof createStoredSchemaRecord>;
+  thread: StoredThread;
+  turnTree: Awaited<ReturnType<typeof createStoredTurnTreeRecord>>;
+}> => {
+  const backend = options.createBackend();
+  const fixtures = await createArchiveRollbackFixtures();
+
+  await backend.transact(async (tx) => {
+    await tx.schemas.put(fixtures.schemaRecord);
+    await tx.turnTrees.put(fixtures.turnTree);
+    await tx.turnTreePaths.putMany(
+      createCanonicalTurnTreePaths(fixtures.turnTree, {
+        "context.manifest": null,
+        messages: [],
+      })
+    );
+    await tx.turnNodes.put(fixtures.rootNode);
+    await tx.turnNodes.put(fixtures.middleNode);
+    await tx.turnNodes.put(fixtures.headNode);
+    await tx.threads.put(fixtures.thread);
+    await tx.branches.set(fixtures.branch);
+  });
+
+  return {
+    backend,
+    ...fixtures,
+  };
+};
+
+/**
  * Registers archive-branch invariant cases (forged archives, stale
  * rollback state) against `options.testApi`. Called by
  * `registerBackendInvariantSuite` in backend-invariant-suite.js; not
  * intended to be called standalone.
  */
-export function registerBackendInvariantArchiveCases(
+export const registerBackendInvariantArchiveCases = (
   options: BackendConformanceSuiteOptions
-): void {
+): void => {
   options.testApi.test("rejects forged archive branches", async () => {
     const { backend, branch, headNode, middleNode, thread } =
       await createArchiveRollbackScenario(options);
@@ -117,120 +233,4 @@ export function registerBackendInvariantArchiveCases(
       TuvrenPersistenceError
     );
   });
-}
-
-/**
- * Builds the shared unpersisted fixture set (schema, turn tree, a
- * three-node genesis→middle→head lineage, thread, and branch at the head)
- * that every archive-rollback test case in this suite starts from.
- */
-export async function createArchiveRollbackFixtures(): Promise<{
-  branch: StoredBranch;
-  headNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
-  middleNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
-  rootNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
-  schema: ReturnType<typeof createCanonicalKernelTestSchema>;
-  schemaRecord: ReturnType<typeof createStoredSchemaRecord>;
-  thread: StoredThread;
-  turnTree: Awaited<ReturnType<typeof createStoredTurnTreeRecord>>;
-}> {
-  const schema = createCanonicalKernelTestSchema();
-  const schemaRecord = createStoredSchemaRecord(schema, 1);
-  const turnTree = await createStoredTurnTreeRecord(
-    schema,
-    { "context.manifest": null, messages: [] },
-    2
-  );
-  const rootNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 3,
-    eventHash: null,
-    previousTurnNodeHash: null,
-    schemaId: schema.schemaId,
-    turnTreeHash: turnTree.hash,
-  });
-  const middleNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 4,
-    eventHash: null,
-    previousTurnNodeHash: rootNode.hash,
-    schemaId: schema.schemaId,
-    turnTreeHash: turnTree.hash,
-  });
-  const headNode = await createStoredTurnNodeRecord({
-    consumedStagedResults: [],
-    createdAtMs: 5,
-    eventHash: null,
-    previousTurnNodeHash: middleNode.hash,
-    schemaId: schema.schemaId,
-    turnTreeHash: turnTree.hash,
-  });
-  const thread: StoredThread = {
-    createdAtMs: 6,
-    rootTurnNodeHash: rootNode.hash,
-    schemaId: schema.schemaId,
-    threadId: "thread_archive_provenance",
-  };
-  const branch: StoredBranch = {
-    branchId: "branch_archive_provenance",
-    createdAtMs: 7,
-    headTurnNodeHash: headNode.hash,
-    threadId: thread.threadId,
-    updatedAtMs: 7,
-  };
-
-  return {
-    branch,
-    headNode,
-    middleNode,
-    rootNode,
-    schema,
-    schemaRecord,
-    thread,
-    turnTree,
-  };
-}
-
-/**
- * Builds {@link createArchiveRollbackFixtures}' fixture set and persists it
- * (schema, turn tree/paths, all three turn nodes, thread, branch) into a
- * fresh backend, returning both the backend and the fixtures for the
- * calling test case to build forged/stale archive attempts against.
- */
-async function createArchiveRollbackScenario(
-  options: BackendConformanceSuiteOptions
-): Promise<{
-  backend: ReturnType<BackendConformanceSuiteOptions["createBackend"]>;
-  branch: StoredBranch;
-  headNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
-  middleNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
-  rootNode: Awaited<ReturnType<typeof createStoredTurnNodeRecord>>;
-  schema: ReturnType<typeof createCanonicalKernelTestSchema>;
-  schemaRecord: ReturnType<typeof createStoredSchemaRecord>;
-  thread: StoredThread;
-  turnTree: Awaited<ReturnType<typeof createStoredTurnTreeRecord>>;
-}> {
-  const backend = options.createBackend();
-  const fixtures = await createArchiveRollbackFixtures();
-
-  await backend.transact(async (tx) => {
-    await tx.schemas.put(fixtures.schemaRecord);
-    await tx.turnTrees.put(fixtures.turnTree);
-    await tx.turnTreePaths.putMany(
-      createCanonicalTurnTreePaths(fixtures.turnTree, {
-        "context.manifest": null,
-        messages: [],
-      })
-    );
-    await tx.turnNodes.put(fixtures.rootNode);
-    await tx.turnNodes.put(fixtures.middleNode);
-    await tx.turnNodes.put(fixtures.headNode);
-    await tx.threads.put(fixtures.thread);
-    await tx.branches.set(fixtures.branch);
-  });
-
-  return {
-    backend,
-    ...fixtures,
-  };
-}
+};
