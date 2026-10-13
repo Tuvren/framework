@@ -26,12 +26,11 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-// nx:run-commands accepts a single `command` string or a `commands` array
-// whose entries are strings or `{ command: string, ... }` objects; gates
-// that inspect command text must scan both shapes — and `configurations`
-// overrides, which carry the same dual shape per configuration name.
+// nx:run-commands accepts `command` as a string or string array, or `commands`
+// entries as strings or `{ command: string, ... }` objects. Command-text gates
+// inventory each shape in the base and every named configuration override.
 export interface NxCommandOptions {
-  command?: string;
+  command?: string | string[];
   commands?: (string | { command?: string })[];
   cwd?: string;
   // `nx:run-commands` appends these to the executed command
@@ -186,9 +185,17 @@ const invalidCanonicalCommandField = (value: unknown): string | undefined => {
 const isCanonicalCommandOptions = (value: unknown): boolean =>
   invalidCanonicalCommandField(value) === undefined;
 
+// Nx 22.7.12 normalizeOptions joins arrays literally, including empties.
+const normalizedLiteralCommand = (command: unknown): string | undefined => {
+  if (typeof command === "string") {
+    return command;
+  }
+  return isStringArray(command) ? command.join(" ") : undefined;
+};
+
 /**
  * Supported literal command inventory for an nx:run-commands target: the base
- * `options` (single `command` string or `commands` array of strings /
+ * `options` (`command` string / string array or `commands` array of strings /
  * `{ command }` objects) plus every named `configurations` override.
  * Gates that back-check command text (certification discovery, workspace
  * test-lane coverage) must scan all of these, or a target rewritten in an
@@ -226,8 +233,9 @@ export const targetCommandStrings = (target: NxProjectTarget): string[] => {
     if (options === undefined) {
       return true;
     }
-    if (typeof options.command === "string") {
-      out.push(options.command);
+    const command = normalizedLiteralCommand(options.command);
+    if (command !== undefined) {
+      out.push(command);
       return !Object.hasOwn(options, "commands");
     }
     if (Object.hasOwn(options, "command")) {
