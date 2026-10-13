@@ -11,6 +11,7 @@ tools/scripts/lib/conformance-suite-manifest.ts
 tools/scripts/lib/generated-prerequisites.ts
 tools/scripts/lib/json-source-integrity.ts
 tools/scripts/lib/native-lint-routing.ts
+tools/scripts/lib/nx-command-options.test.ts
 tools/scripts/lib/nx-projects.ts
 tools/scripts/lib/regenerate-command-argv.test.ts
 tools/scripts/lib/regenerate-command-argv.ts

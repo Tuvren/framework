@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "f00e7a7561874d4dd2df3953a1fe2082106d2d07",
+  "sourceCommit": "b7e98e488848587fec3da8ae38b61454e1a89503",
   "mode": "contract_test",
   "commands": [
     {
@@ -76,15 +76,15 @@
     }
   ],
   "helperTests": {
-    "tests": 86,
-    "assertions": 393
+    "tests": 93,
+    "assertions": 7562
   },
   "extendedTests": {
-    "tests": 144,
-    "assertions": 1631
+    "tests": 151,
+    "assertions": 8801
   },
   "fullVerifySteps": 36,
-  "signatureMethod": "Compiler-resolved value signatures and complete comment-free interface/type-alias declaration syntax",
+  "signatureMethod": "Compiler-resolved value signatures and complete comment-free interface/type-alias declaration syntax; new owned test files compare against an empty export surface",
   "notes": [
     "Recorded counts describe the producing source commit and are not future quotas.",
     "No live_probe recipes apply.",

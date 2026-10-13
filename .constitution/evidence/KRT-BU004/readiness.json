@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "f00e7a7561874d4dd2df3953a1fe2082106d2d07",
+  "sourceCommit": "b7e98e488848587fec3da8ae38b61454e1a89503",
   "baselineCommit": "63ae87fdeea3ec819c5b4d36417d1bf3b90fac7a",
   "configurationEquality": {
     "fields": [
@@ -16,6 +16,8 @@
   },
   "installedRules": 871,
   "installedTypeAware": 60,
+  "enabledRuleSettings": 473,
+  "enabledNonTypeAwareRuleSettings": 418,
   "enabledTypeAwareCount": 55,
   "enabledTypeAware": [
     "typescript/await-thenable",
@@ -88,6 +90,7 @@
     "tools/scripts/lib/generated-prerequisites.ts",
     "tools/scripts/lib/json-source-integrity.ts",
     "tools/scripts/lib/native-lint-routing.ts",
+    "tools/scripts/lib/nx-command-options.test.ts",
     "tools/scripts/lib/nx-projects.ts",
     "tools/scripts/lib/regenerate-command-argv.test.ts",
     "tools/scripts/lib/regenerate-command-argv.ts",
@@ -103,7 +106,10 @@
   "signatures": {
     "baselineCommit": "63ae87fdeea3ec819c5b4d36417d1bf3b90fac7a",
     "typescriptVersion": "6.0.2",
-    "files": 18,
+    "files": 19,
+    "newFilesWithNoExports": [
+      "tools/scripts/lib/nx-command-options.test.ts"
+    ],
     "exports": 78,
     "valueSignatures": 42,
     "typeDeclarations": 36,
@@ -118,7 +124,7 @@
         "after": "export interface NxProjectTarget {\n    configurations?: Record<string, Record<string, unknown>>;\n    defaultConfiguration?: string;\n    executor?: string;\n    options?: Record<string, unknown>;\n}"
       }
     ],
-    "method": "Compiler-resolved value signatures and complete comment-free interface/type-alias declaration syntax",
+    "method": "Compiler-resolved value signatures and complete comment-free interface/type-alias declaration syntax; new owned test files compare against an empty export surface",
     "allEqualExceptApprovedInternalCorrection": true
   }
 }
