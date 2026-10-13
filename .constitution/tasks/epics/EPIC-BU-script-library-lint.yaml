@@ -194,3 +194,63 @@ decisions:
 # remains historical evidence, never a quota. Native strict discovery was tested
 # independently and needed no production change. A23 records exact 233-target
 # inventory equality against 040ea86 without a permanent workspace hash golden.
+
+closeout:
+  tickets_completed: [KRT-BU001, KRT-BU002, KRT-BU003, KRT-BU004]
+  tickets_deferred: []
+  points_completed: 24
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: Complete EPIC-BU helper cleanup and native readiness under the unchanged shipped preset, with retained Biome ownership and measured evidence.
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: Review shared OD-09 after this wave and record the bounded internal async/error normalization interpretation and the execution conventions below. A15 corrects internal Nx metadata types to the installed vendor schema; public Tuvren package APIs remain frozen.
+    - stage: tasks
+      item: BV/tooling follow-up for the pre-existing kernel-interop governance side effect that deletes refs/remotes/origin/master. Reproduction is kernel-interop-grpc:interop-smoke --skipNxCache after git fetch origin master; manual runtime locking and fetch cleanup restore the ref. A5/A8 distinguish breaking/interop from ordinary codegen.
+    - stage: tasks
+      item: BV/tooling investigation from A6 for resolveCoverage set aggregation potentially collapsing repeated native selections without independent overlap proof. No production checker/topology change was included in BU.
+    - stage: tasks
+      item: Investigate resource sensitivity of the unchanged 5000ms TypeScript self-alias controls. Two full runs and an isolated run timed out under contention; resource relief and A13 compiler locking yielded passing isolation and serial full verification without changing limits or coverage.
+    - stage: tech-spec
+      item: A22 preserves literal base/all-configuration command inventory. BV/Stage 3 should investigate pre-existing executor-runtime-only readyWhen/serial and presentation/serial contradictions, interpolation/argument rewriting or shell-token interpretation, command-array extraction, and graph/targetDefaults modeling for tools/conformance/certification/validate-certification-discovery.ts and tools/scripts/validate-workspace-test-coverage.ts. These are not successful-execution guarantees and were not changed by BU; strict native discovery retains its selected-default and scope-safe grammar.
+  follow_ups:
+    - Repository owner rules on proposed shared OD-09 through Stage 3 alignment after the wave.
+    - CB owns whole-tools admission and retirement of bu.json after BU, BV and BW; BU leaves the retained entry byte-identical and activates no partial target.
+    - Root merges BS before BU, verifies the expanded partition after rebase, and reconciles/derives once for the wave.
+  code_decisions:
+    - summary: Honest async command execution preserves the Promise result contract and supported IO/messages while Promise.withResolvers bridges child events; empty argv rejects with the same message under OD-09/A11.
+      kind: pattern
+      paths: [tools/scripts/lib/command-runner.ts, tools/scripts/lib/command-runner.test.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: Apply the selected preset's six internal TypeError conversions and two wrapper-cause normalizations while retaining first-validation messages/order; these unpromised implementation observations follow OD-09/A11.
+      kind: convention
+      paths: [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/biome-inventory.test.ts, tools/scripts/lib/conformance-contract.ts, tools/scripts/lib/nx-projects.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: Await predecessor tasks to retain serial filesystem/command traversal, output order and first-failure propagation without recursive stack growth or fake awaits.
+      kind: pattern
+      paths: [tools/scripts/lib/walk-package-manifests.ts, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: Use supported Bun Glob/JSONC imports and file-plus-ancestor candidate predicates to preserve literal path bytes and glob grammar while avoiding the invalid regexp autofix.
+      kind: pattern
+      paths: [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/json-source-integrity.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: A15 changes only NxProjectTarget.options from NxCommandOptions to Record<string, unknown> and configurations from Record<string, NxCommandOptions> to Record<string, Record<string, unknown>>. Raw executor-specific metadata remains opaque and preserved until canonical consumer selection. All callable signatures, NxCommandOptions and public Tuvren APIs remain frozen.
+      kind: contract_shape
+      paths: [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts]
+      commit: 78c776de22e7768838e7a1bc5424c0b9f79971d1
+    - summary: A18/A22 privately validate all 12 known canonical fields and seven closed command-object fields, with shallow effective configurations and atomic malformed-record rejection. Tests pin installed schema constraints and use one isolated vendor-reference child; production discovery imports no vendor validator. Literal base/all-config inventory, partial fragments and missing or empty default fallback remain supported. A23 records operational baseline-to-final live-inventory equality without freezing unrelated workspace metadata in a permanent golden.
+      kind: convention
+      paths: [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/nx-command-options.test.ts]
+      commit: b7e98e488848587fec3da8ae38b61454e1a89503
+    - summary: Read authority fixtures synchronously inside test code and validate their declared fixture shape before use; owner schemas and conformance remain the authority.
+      kind: convention
+      paths: [tools/scripts/lib/regenerate-command-argv.test.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: Use standard Bun resolved-value mocks and real deferred IO coordination for serial launch/failure regression tests.
+      kind: pattern
+      paths: [tools/scripts/lib/biome-oxc-discovery.test.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+  settled: []
