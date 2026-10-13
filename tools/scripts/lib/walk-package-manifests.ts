@@ -15,7 +15,9 @@ const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist"]);
  * path). Returns absolute manifest paths; callers needing repo-relative
  * paths map the result through `path.relative`.
  */
-export async function walkPackageManifests(rootDir: string): Promise<string[]> {
+export const walkPackageManifests = async (
+  rootDir: string
+): Promise<string[]> => {
   const found: string[] = [];
   const entries = await readdir(rootDir, { withFileTypes: true });
 
@@ -33,4 +35,4 @@ export async function walkPackageManifests(rootDir: string): Promise<string[]> {
   }
 
   return found;
-}
+};

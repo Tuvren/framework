@@ -100,3 +100,11 @@ tickets:
 # Twenty-three callable signatures/bodies, 21 imports/14 eager initializers,
 # and ten fresh-process results across five import orders match baseline.
 # Cyclic config dependency order and exact validation precedence remain pinned.
+
+# M4 (KRT-BU003 partial): five JSON/native-discovery files reordered.
+# All five plan checks pass: tools tsc, helpers (71/235 assertions), retained
+# Biome, Oxfmt and routing/JSON tests (52/1078). Native diagnostics 185 -> 163.
+# Thirty-four callable signatures/bodies, 16 imports, 23 eager declarations,
+# test registrations and eight fresh-process results/four import orders match.
+# JSON profiles, path handling, independent selections, fail-closed routing,
+# first failures and serial manifest traversal preserve the prior outcomes.

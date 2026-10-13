@@ -34,11 +34,11 @@ import type { NxProjectFile, NxProjectTarget } from "./nx-projects.js";
 
 const PROJECT_ROOT = "typescript/kernel/protocol";
 
-function projectFile(
+const projectFile = (
   name: string,
   root: string,
   lint: NxProjectTarget
-): NxProjectFile {
+): NxProjectFile => {
   return {
     name,
     path: `${root}/project.json`,
@@ -47,13 +47,13 @@ function projectFile(
       targets: { lint: { executor: "nx:run-commands", ...lint } },
     },
   };
-}
+};
 
-function discovered(lint: NxProjectTarget): string[] {
+const discovered = (lint: NxProjectTarget): string[] => {
   return discoverOxcProjects([
     projectFile("kernel-contract-protocol", PROJECT_ROOT, lint),
   ]).map((project) => project.name);
-}
+};
 
 describe("Oxlint project-wide discovery", () => {
   test("credits a workspace-root cwd with the project path", () => {
