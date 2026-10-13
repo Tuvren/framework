@@ -1,0 +1,110 @@
+{
+  "archive": "reports.tar.gz",
+  "members": [
+    {
+      "path": "biome-retained.json",
+      "sha256": "5b9c130946d7a764593fc1c68de10007ce295284bf14bac0196775e1c62b087e",
+      "bytes": 525
+    },
+    {
+      "path": "biome-suppressed-mirror-1.json",
+      "sha256": "7d90bab9a24b8a2e873976d5a959aa7ac383f026918e51e824f166de03981fe5",
+      "bytes": 972
+    },
+    {
+      "path": "biome-suppressed-mirror-2.json",
+      "sha256": "9461e4875a8ddde9c1df1d305effa9dd48de6c6cc7122baa2a07a557f72e98b3",
+      "bytes": 968
+    },
+    {
+      "path": "biome-unsuppressed-mirror-1.json",
+      "sha256": "01e3ea8bbacac743d1b983fb2a6ff84ff4324f97742e30d1c63f7a6d8b21e967",
+      "bytes": 1712
+    },
+    {
+      "path": "biome-unsuppressed-mirror-2.json",
+      "sha256": "73e752b3fa7f50c47aad95d9672db11a0756d50ae547b45b752e1fbbe47e1817",
+      "bytes": 1704
+    },
+    {
+      "path": "changeset-check.json",
+      "sha256": "404dbfd5ccb1320594c1fe648b06076a8561ebadceddce3528b0057b199c181d",
+      "bytes": 584
+    },
+    {
+      "path": "full-lint.json",
+      "sha256": "6cb71ca70666b41d1c92e1f121b9a116aaf75ca241b5f7ca2113446efd10cbf1",
+      "bytes": 2225
+    },
+    {
+      "path": "oxlint-certification-selection.json",
+      "sha256": "aa5c2b0f8190ec2e834f75376bb5c3a684d997716f1d0441937076efc8b3bd50",
+      "bytes": 487
+    },
+    {
+      "path": "oxlint-certification-syntactic.json",
+      "sha256": "8c284505e84eca7112e70157ca7d5e2a6f4e1bc0d2512e574c12aeea1475177d",
+      "bytes": 6151
+    },
+    {
+      "path": "oxlint-certification-type-aware.json",
+      "sha256": "55d4ed34c7cba0c87017b9180436259ad868930e5be600035e6bce82a3ad518b",
+      "bytes": 6171
+    },
+    {
+      "path": "oxlint-combined-type-aware.json",
+      "sha256": "9825068b02673b5b0890e6199241073ce0fdfb5905300653ff287bdfecaef35e",
+      "bytes": 69798
+    },
+    {
+      "path": "oxlint-effective-config.json",
+      "sha256": "40b6dcddd58c21eff3ce5e808f7925994053ac4d1f830a4d51b383b0135a741d",
+      "bytes": 28797
+    },
+    {
+      "path": "oxlint-grpc-client-selection.json",
+      "sha256": "2269bcdeac827a53481c1d810eebc93d1c9df4547732d41c407797db074eee09",
+      "bytes": 696
+    },
+    {
+      "path": "oxlint-grpc-client-syntactic.json",
+      "sha256": "436fe7f343da6b5b5a838620cd276917f32f45f093ece4e62bbeb0b7a9392150",
+      "bytes": 25946
+    },
+    {
+      "path": "oxlint-grpc-client-type-aware.json",
+      "sha256": "25480b5e3f9cad4c2dc361a9ab545043e483808b100c14346a37645cc8b95c60",
+      "bytes": 27880
+    },
+    {
+      "path": "oxlint-rules.json",
+      "sha256": "87318fe8ba205ca9079ef76ca2b7aa8422e2776c28d99b91f3e25cf0fe0546fd",
+      "bytes": 258747
+    },
+    {
+      "path": "oxlint-testkit-selection.json",
+      "sha256": "195ac86dc76ff2ea2e1af01a90cfc9d6dbb5d639cd0a7151be321be41cf2a332",
+      "bytes": 1429
+    },
+    {
+      "path": "oxlint-testkit-syntactic.json",
+      "sha256": "9efa8ebe9b6d56a0302c1a5613e5e47856b52cb90d5c143d172524fd29f0bad5",
+      "bytes": 25931
+    },
+    {
+      "path": "oxlint-testkit-type-aware.json",
+      "sha256": "7b1397f1cd2a086d4e15693a58e4c172830636300620c42c90a25d000f5c0f1b",
+      "bytes": 36562
+    },
+    {
+      "path": "typecheck.json",
+      "sha256": "d55ca15743299d410513adc51c7bb5b322f49cdcbc0ee5660f290218906b8e61",
+      "bytes": 7253
+    },
+    {
+      "path": "versions.json",
+      "sha256": "5ece591a1cf307ade65cb32e72a775c205690799c3f56d1a3afc25e846de0046",
+      "bytes": 1215
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "measurement_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
+  "independent_probe_replay": "pass",
+  "commands": [
+    {
+      "command": "bunx --bun @biomejs/biome lint typescript/kernel/grpc-client typescript/kernel/testkit typescript/kernel/certification",
+      "exit": 0,
+      "expected_nonzero_native_baseline": false
+    },
+    {
+      "command": "bunx --bun oxlint --type-aware --format=unix typescript/kernel/grpc-client typescript/kernel/testkit typescript/kernel/certification",
+      "exit": 1,
+      "expected_nonzero_native_baseline": true
+    },
+    {
+      "command": "bun run typecheck",
+      "exit": 0,
+      "expected_nonzero_native_baseline": false
+    },
+    {
+      "command": "bun run lint",
+      "exit": 0,
+      "expected_nonzero_native_baseline": false
+    }
+  ]
+}

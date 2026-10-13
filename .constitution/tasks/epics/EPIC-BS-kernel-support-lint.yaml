@@ -65,7 +65,7 @@ tickets:
       evidence: "Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: planned
+    status: done
   - id: KRT-BS003
     title: Reorder definitions without initialization regressions
     type: Chore
@@ -141,3 +141,13 @@ tickets:
 # reordering to preserve synchronous throws, promise identity and fault-hook order.
 # All five Biome roots and both original barrel directives remain retained.
 # Testkit is private; M1's direct public gRPC changeset remains sufficient.
+# M2 independent milestone review: no bugs or blockers; required gates and
+# direct changeset coverage independently passed, validation 0 errors/0 warnings.
+# M3 / KRT-BS002: baseline/live inventory equality proves two original barrel
+# directives and unchanged reasons. Suppressed/unsuppressed retained-policy mirrors
+# prove both needed; native syntactic/type-aware diagnostics show no counterpart.
+# Lead replay and exact gates: Biome 0, native 1 (451 expected remaining issues),
+# repository typecheck 0, full lint 0. Direct patch changeset proof passes.
+# Durable ledger, negative controls, 21 complete archived reports, stream/archive
+# digests and runnable probe live in evidence/KRT-BS002. No product bytes changed.
+# Every root remains Biome-owned; no native suppression or early deletion added.

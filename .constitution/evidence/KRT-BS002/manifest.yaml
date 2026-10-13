@@ -1,0 +1,72 @@
+{
+  "owner": "KRT-BS002",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-13",
+    "commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
+    "command": "bun EXTERNAL_PROBE REPOSITORY EXTERNAL_OUTPUT 6597a27223bf70956cf1b48a9661d21ff1d32bad EXTERNAL_LEDGER; bunx --bun @biomejs/biome lint typescript/kernel/grpc-client typescript/kernel/testkit typescript/kernel/certification; bunx --bun oxlint --type-aware --format=unix typescript/kernel/grpc-client typescript/kernel/testkit typescript/kernel/certification; bun run typecheck; bun run lint"
+  },
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "a330d4129a1917ba2b4909697559fa292c9c203f1e34687ace2615b6d7074024",
+      "bytes": 3007,
+      "role": "measurement"
+    },
+    {
+      "path": "assertions.json",
+      "sha256": "63026b1711e05163db0fdc5c5d9c1fbfe813e98bf7db8fecfc0f6f4ec65ed960",
+      "bytes": 973,
+      "role": "measurement"
+    },
+    {
+      "path": "changeset-direct-proof.json",
+      "sha256": "8acb34a12c22d8941b7f2c47ff4dbf510b0e4321a2e1f72928b3241de8e7eedd",
+      "bytes": 1551,
+      "role": "measurement"
+    },
+    {
+      "path": "inventory.json",
+      "sha256": "73b20aec54c339f7d412a426dc10453aa8c81caaa507c5ec28ee992c2401ac95",
+      "bytes": 8331,
+      "role": "measurement"
+    },
+    {
+      "path": "lead-verification.json",
+      "sha256": "6524a6f016771e59006537e3f15d64c7a5524be3654236ca58cbdf1edfc4161b",
+      "bytes": 803,
+      "role": "measurement"
+    },
+    {
+      "path": "native-summary.json",
+      "sha256": "3adeee8220feb5b316b4a5dab3f98d8a14a4dd41a02156e79edc1397e65762fb",
+      "bytes": 3534,
+      "role": "measurement"
+    },
+    {
+      "path": "probe.ts",
+      "sha256": "3368f8aa6232eea9e2eb4e18d5408b40f8eccfdf6e95dad4f8fa3935be920f1b",
+      "bytes": 21711,
+      "role": "measurement"
+    },
+    {
+      "path": "report-index.json",
+      "sha256": "cff93a9fd0cfd9f9e45da1181e38c404f69b912c6a7e26413f610c2c5a4b53fc",
+      "bytes": 3464,
+      "role": "measurement"
+    },
+    {
+      "path": "reports.tar.gz",
+      "sha256": "597452da1165532b32501dad25658ef5cac9924707c41f94a93e833653959ee0",
+      "bytes": 35226,
+      "role": "archive"
+    },
+    {
+      "path": "suppressions.json",
+      "sha256": "3733d4b5cb63eb7a6b3b9c54ad0aa517534469e8bde8462ae641f370e031f62d",
+      "bytes": 5665,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "Every baseline/live directive identity and original reason matches fresh retained Biome and native diagnostics. Needed originals remain while Biome owns their roots. No native counterpart is fabricated. Missing-ledger and changed-reason controls fail. Retained lint, typecheck, full lint and direct patch changeset coverage pass. Native diagnostics remain an expected nonzero measurement, never native-clean readiness."
+}

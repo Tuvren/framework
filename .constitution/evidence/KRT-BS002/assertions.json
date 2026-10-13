@@ -1,0 +1,30 @@
+{
+  "status": "pass",
+  "measurement_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
+  "baseline_identities": 2,
+  "live_identities": 2,
+  "ledger_identities": 2,
+  "full_expected_identity_set_equality": true,
+  "original_reasons_preserved": true,
+  "needed_original_directives_retained": true,
+  "no_added_biome_directives": true,
+  "no_fabricated_native_counterparts": true,
+  "mirror_exact_retained_diagnostic": true,
+  "native_unix_reports_complete": true,
+  "combined_and_per_root_diagnostics_equal": true,
+  "native_diagnostic_count": 451,
+  "all_five_roots_retain_biome": true,
+  "negative_controls": {
+    "missing_entry_rejected": true,
+    "altered_reason_rejected": true
+  },
+  "retained_biome_exit_code": 0,
+  "native_baseline_exit_code": 1,
+  "full_lint_exit_code": 0,
+  "typecheck_exit_code": 0,
+  "changeset_check_exit_code": 0,
+  "worktree_unchanged": true,
+  "owned_bytes_unchanged": true,
+  "early_deletions": [],
+  "native_suppressions_added": []
+}
