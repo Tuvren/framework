@@ -78,9 +78,9 @@ export interface OxlintSelectionDependencies {
   ) => Promise<RunCommandResult>;
 }
 
-function selectDefaultTargetOptions(
+const selectDefaultTargetOptions = (
   target: NxProjectTarget
-): NxCommandOptions | undefined {
+): NxCommandOptions | undefined => {
   const selected =
     target.defaultConfiguration === undefined
       ? undefined
@@ -89,17 +89,17 @@ function selectDefaultTargetOptions(
     return undefined;
   }
   return { ...target.options, ...selected };
-}
+};
 
-function hasOnlyScopeSafeOptions(options: NxCommandOptions): boolean {
+const hasOnlyScopeSafeOptions = (options: NxCommandOptions): boolean => {
   return Object.keys(options).every((key) =>
     SCOPE_SAFE_RUN_COMMANDS_OPTION_KEYS.has(key)
   );
-}
+};
 
-function invokedCommands(
+const invokedCommands = (
   options: NxCommandOptions
-): InvokedLintCommands | undefined {
+): InvokedLintCommands | undefined => {
   if (
     Object.hasOwn(options, "command") === Object.hasOwn(options, "commands")
   ) {
@@ -132,9 +132,9 @@ function invokedCommands(
     return undefined;
   }
   return { commands, cwd: cwd ?? "." };
-}
+};
 
-function normalizeRepoRelative(value: string): string | undefined {
+const normalizeRepoRelative = (value: string): string | undefined => {
   const normalized = value.replace(BACKSLASH_PATTERN, "/");
   if (
     normalized.length === 0 ||
@@ -153,14 +153,14 @@ function normalizeRepoRelative(value: string): string | undefined {
     return undefined;
   }
   return collapsed;
-}
+};
 
-function isProjectWideScope(
+const isProjectWideScope = (
   command: string,
   cwdValue: string,
   projectRoot: string,
   pattern: RegExp
-): boolean {
+): boolean => {
   const match = pattern.exec(command);
   if (match === null) {
     return false;
@@ -179,13 +179,13 @@ function isProjectWideScope(
     resolvedOperand !== undefined &&
     path.posix.normalize(path.posix.join(cwd, resolvedOperand)) === root
   );
-}
+};
 
-function classifySingleCommand(
+const classifySingleCommand = (
   file: NxProjectFile,
   invoked: InvokedLintCommands,
   root: string
-): ClassifiedProject | undefined {
+): ClassifiedProject | undefined => {
   const command = invoked.commands[0];
   if (command === undefined) {
     return undefined;
@@ -213,12 +213,12 @@ function classifySingleCommand(
     return { jsonOnlyProject: { name: file.name, root } };
   }
   return undefined;
-}
+};
 
-function classifyProject(
+const classifyProject = (
   file: NxProjectFile,
   pathSemantics: NativePathSemantics
-): ClassifiedProject | undefined {
+): ClassifiedProject | undefined => {
   const lintTarget = file.project.targets?.lint;
   if (lintTarget?.executor !== RUN_COMMANDS_EXECUTOR) {
     return undefined;
@@ -267,12 +267,12 @@ function classifyProject(
     return undefined;
   }
   return { oxcProject: { jsonCompanion: true, name: file.name, root } };
-}
+};
 
-export function discoverNativeLintProjects(
+export const discoverNativeLintProjects = (
   projectFiles: readonly NxProjectFile[],
   pathSemantics: NativePathSemantics = path
-): NativeLintProjects {
+): NativeLintProjects => {
   const jsonOnlyProjects: JsonOnlyProject[] = [];
   const oxcProjects: OxcProject[] = [];
   for (const file of projectFiles) {
@@ -287,27 +287,31 @@ export function discoverNativeLintProjects(
   jsonOnlyProjects.sort((left, right) => left.name.localeCompare(right.name));
   oxcProjects.sort((left, right) => left.name.localeCompare(right.name));
   return { jsonOnlyProjects, oxcProjects };
-}
+};
 
-export function discoverOxcProjects(
+export const discoverOxcProjects = (
   projectFiles: readonly NxProjectFile[],
   pathSemantics: NativePathSemantics = path
-): OxcProject[] {
+): OxcProject[] => {
   return discoverNativeLintProjects(projectFiles, pathSemantics).oxcProjects;
-}
+};
 
-function parseOxlintSelectedFiles(stdout: string): string[] {
+const parseOxlintSelectedFiles = (stdout: string): string[] => {
   return stdout
     .split(LINE_PATTERN)
     .map((line) => line.trim().replace(BACKSLASH_PATTERN, "/"))
     .filter((line) => line.length > 0)
     .sort((left, right) => left.localeCompare(right));
-}
+};
 
-export async function collectOxlintSelectedFiles(
+const isWithin = (file: string, candidate: string): boolean => {
+  return file === candidate || file.startsWith(`${candidate}/`);
+};
+
+export const collectOxlintSelectedFiles = async (
   projects: readonly OxcProject[],
   deps: OxlintSelectionDependencies
-): Promise<string[]> {
+): Promise<string[]> => {
   const selected: string[] = [];
   for (const project of projects) {
     const result = await deps.runCommand(
@@ -340,8 +344,4 @@ export async function collectOxlintSelectedFiles(
     selected.push(...files);
   }
   return selected;
-}
-
-function isWithin(file: string, candidate: string): boolean {
-  return file === candidate || file.startsWith(`${candidate}/`);
-}
+};

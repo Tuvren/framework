@@ -151,31 +151,31 @@ export interface JsonDiscoveryDependencies {
   sourceIgnorePatterns: readonly string[];
 }
 
-export function parseGitFileList(stdout: string): string[] {
+export const parseGitFileList = (stdout: string): string[] => {
   return stdout.split("\0").filter((entry) => entry.length > 0);
-}
+};
 
-export function removeDeletedFiles(
+export const removeDeletedFiles = (
   candidates: readonly string[],
   deleted: readonly string[]
-): string[] {
+): string[] => {
   const deletedPaths = new Set(deleted);
   return candidates.filter((file) => !deletedPaths.has(file));
-}
+};
 
-function extensionOf(file: string): string {
+const extensionOf = (file: string): string => {
   return path.posix.extname(file).toLowerCase();
-}
+};
 
-export function isJsonFile(file: string): boolean {
+export const isJsonFile = (file: string): boolean => {
   return JSON_EXTENSIONS.has(extensionOf(file));
-}
+};
 
-export function isCodeFile(file: string): boolean {
+export const isCodeFile = (file: string): boolean => {
   return CODE_EXTENSIONS.has(extensionOf(file));
-}
+};
 
-function normalizeRepoRelative(value: string, source: string): string {
+const normalizeRepoRelative = (value: string, source: string): string => {
   // Git's `-z` output is already repository-relative and slash-separated on
   // Windows. On POSIX, a backslash is a legal filename byte, so only CLI
   // scopes entered on Windows may reinterpret it as a directory separator.
@@ -201,20 +201,20 @@ function normalizeRepoRelative(value: string, source: string): string {
     return ".";
   }
   return normalized;
-}
+};
 
-export function normalizeJsonScopes(scopes: readonly string[]): string[] {
+export const normalizeJsonScopes = (scopes: readonly string[]): string[] => {
   if (scopes.length === 0) {
     throw new Error("at least one JSON scope is required");
   }
   return scopes.map((scope) => normalizeRepoRelative(scope, "json-check"));
-}
+};
 
-function isWithinScope(file: string, scope: string): boolean {
+const isWithinScope = (file: string, scope: string): boolean => {
   return scope === "." || file === scope || file.startsWith(`${scope}/`);
-}
+};
 
-function matchesPattern(matcher: GlobMatcher, file: string): boolean {
+const matchesPattern = (matcher: GlobMatcher, file: string): boolean => {
   if (matcher.match(file)) {
     return true;
   }
@@ -225,22 +225,22 @@ function matchesPattern(matcher: GlobMatcher, file: string): boolean {
     }
   }
   return false;
-}
+};
 
-function matchingPattern(
+const matchingPattern = (
   file: string,
   ignoreMatchers: readonly { matcher: GlobMatcher; pattern: string }[]
-): string | undefined {
+): string | undefined => {
   return ignoreMatchers.find(({ matcher }) => matchesPattern(matcher, file))
     ?.pattern;
-}
+};
 
-export function selectJsonInventory(
+export const selectJsonInventory = (
   candidates: readonly string[],
   scopes: readonly string[],
   sourceIgnorePatterns: readonly string[],
   formatIgnorePatterns: readonly string[] = []
-): JsonInventory {
+): JsonInventory => {
   const normalizedScopes = normalizeJsonScopes(scopes);
   const matchers = (patterns: readonly string[]) =>
     patterns.map((pattern) => ({
@@ -296,11 +296,11 @@ export function selectJsonInventory(
     protectedFiles,
     protectedReasons,
   };
-}
+};
 
-export async function discoverJsonInventory(
+export const discoverJsonInventory = async (
   deps: JsonDiscoveryDependencies
-): Promise<JsonInventory> {
+): Promise<JsonInventory> => {
   const discovery = await deps.runCommand(JSON_DISCOVERY_COMMAND, {
     captureOutput: true,
     cwd: deps.repoRoot,
@@ -324,12 +324,12 @@ export async function discoverJsonInventory(
     deps.sourceIgnorePatterns,
     deps.formatIgnorePatterns
   );
-}
+};
 
-export function isJsoncProfile(
+export const isJsoncProfile = (
   file: string,
   pathSemantics: Pick<typeof path, "basename" | "normalize" | "sep"> = path
-): boolean {
+): boolean => {
   // Callers pass native absolute paths. Normalize with the host's path rules so
   // Windows separators are recognized without reinterpreting valid POSIX
   // backslashes as directory separators.
@@ -339,16 +339,16 @@ export function isJsoncProfile(
     return true;
   }
   return normalized.split(pathSemantics.sep).includes(".vscode");
-}
+};
 
-function errorMessage(error: unknown): string {
+const errorMessage = (error: unknown): string => {
   return error instanceof Error ? error.message : String(error);
-}
+};
 
-function parseJsonSource(
+const parseJsonSource = (
   file: string,
   source: string
-): JsonIntegrityIssue | undefined {
+): JsonIntegrityIssue | undefined => {
   try {
     if (isJsoncProfile(file)) {
       JSONC.parse(source);
@@ -359,16 +359,16 @@ function parseJsonSource(
   } catch (error: unknown) {
     return { file, message: errorMessage(error) };
   }
-}
+};
 
 /**
  * Validate JSON source without writing output. Strict JSON and the repository's
  * established JSONC profiles are parsed first. Bun's native loader then adds
  * duplicate-key diagnostics, including escaped-equivalent and nested keys.
  */
-export async function validateJsonSources(
+export const validateJsonSources = async (
   files: readonly string[]
-): Promise<JsonIntegrityResult> {
+): Promise<JsonIntegrityResult> => {
   const ordered = [...files].sort((left, right) => left.localeCompare(right));
   const issues: JsonIntegrityIssue[] = [];
   const buildable: string[] = [];
@@ -423,4 +423,4 @@ export async function validateJsonSources(
   }
 
   return { files: ordered, issues };
-}
+};

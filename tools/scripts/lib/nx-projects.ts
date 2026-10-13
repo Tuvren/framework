@@ -70,7 +70,7 @@ export interface NxProjectTarget {
  * test-lane coverage) must scan all of these, or a target rewritten in an
  * equally-valid alternate shape silently escapes the gate.
  */
-export function targetCommandStrings(target: NxProjectTarget): string[] {
+export const targetCommandStrings = (target: NxProjectTarget): string[] => {
   const out: string[] = [];
   const collect = (options: NxCommandOptions | undefined): void => {
     if (typeof options?.command === "string") {
@@ -89,7 +89,7 @@ export function targetCommandStrings(target: NxProjectTarget): string[] {
     collect(configuration);
   }
   return out;
-}
+};
 
 export interface NxProjectJson {
   name?: string;
@@ -108,7 +108,7 @@ export interface NxProjectFile {
 
 const SKIP_DIR_NAMES = new Set(["node_modules", "dist", ".git"]);
 
-function findProjectFiles(dir: string, out: string[]): void {
+const findProjectFiles = (dir: string, out: string[]): void => {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     // Plain directories only: symlinked dirs (e.g. the root bazel-* links)
     // report isDirectory() === false on the Dirent and are skipped.
@@ -121,9 +121,9 @@ function findProjectFiles(dir: string, out: string[]): void {
       out.push(join(dir, entry.name));
     }
   }
-}
+};
 
-export function loadNxProjectFiles(root: string): NxProjectFile[] {
+export const loadNxProjectFiles = (root: string): NxProjectFile[] => {
   const files: string[] = [];
   findProjectFiles(root, files);
   const records: NxProjectFile[] = [];
@@ -147,4 +147,4 @@ export function loadNxProjectFiles(root: string): NxProjectFile[] {
     records.push({ name: project.name, path, project });
   }
   return records;
-}
+};
