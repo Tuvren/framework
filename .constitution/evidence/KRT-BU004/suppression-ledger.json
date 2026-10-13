@@ -16,7 +16,7 @@
     "syntaxDiagnostics": 0,
     "typeAwareDiagnostics": 0,
     "suppressionDirectives": 0,
-    "commit": "b7e98e488848587fec3da8ae38b61454e1a89503"
+    "commit": "6c6c4c5fea63517087629822578d3306d9322a6e"
   },
   "entries": [],
   "baselineEntries": [],
@@ -48,10 +48,10 @@
   "baselineArtifactSha256": "62d6709cabf1034e92bb15e3a3ae65920aa165cb3e9b2349343a2271419aefc8",
   "verification": {
     "toolsTsc": "pass",
-    "helperTests": "93 pass / 0 fail / 7562 assertions",
+    "helperTests": "95 pass / 0 fail / 9490 assertions",
     "retainedBiome": "pass;19 files",
     "oxfmt": "pass;19 files",
-    "extendedTests": "151 pass / 0 fail / 8801 assertions",
+    "extendedTests": "153 pass / 0 fail / 10729 assertions",
     "nativeLint": "pass;0 diagnostics;unchanged type-aware preset",
     "actualOxlintSelection": "19 owned files;exact complete equality",
     "nativeJsonSelection": "0 owned JSON/format/protected files;empty JSON CLI not claimed",
@@ -59,12 +59,13 @@
     "repositoryLint": "pass",
     "check": "pass;locked;fetch cleanup pass",
     "verifyKernel": "pass;locked;fetch cleanup pass",
-    "verify": "pass; final A22 source independently verified with all36steps and VERIFY_SERIAL=1; fetch cleanup pass",
+    "verify": "pass; final A25 source independently verified with all36steps and VERIFY_SERIAL=1; fetch cleanup pass",
     "apiTypes": "42 value signatures and 35 type declarations unchanged; only the two A15 NxProjectTarget property declarations are corrected",
     "largeFlatWalker": "12000files;order/skip semantics match original;~64ms",
     "nxDependentTaskInputs": "structured vendor-supported inputs preserved",
     "diffCheck": "pass",
-    "exportedTypeComparison": "42 value signatures and 35 complete type declarations match pre-M6; only NxProjectTarget.options/configurations are aligned with Nx22.7.12 under A15"
+    "exportedTypeComparison": "42 value signatures and 35 complete type declarations match pre-M6; only NxProjectTarget.options/configurations are aligned with Nx22.7.12 under A15",
+    "leadContinuation": "A27 preserves the first four unchanged-source green lead checks, then reruns the complete extended suite and all remaining eight checks under the shared lock; no coverage or assertion is dropped"
   },
   "retryHistory": [
     {
@@ -167,6 +168,37 @@
       "exit": 0,
       "sourceCommit": "b7e98e488848587fec3da8ae38b61454e1a89503",
       "log": "bu-m6-complete-lead-verify.log"
+    },
+    {
+      "attempt": "A25workerSerial",
+      "exit": 0,
+      "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
+      "log": "bu-pr-fix-worker-final-verify.log"
+    },
+    {
+      "attempt": "A25leadExtendedFirst",
+      "exit": 1,
+      "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
+      "reason": "Unchanged Biome whole-root inventory control5007ms fixed5000ms timeout under measured36.72load; frozen source/index held; A27 runtime retry",
+      "log": "bu-pr-fix-lead-extended.log"
+    },
+    {
+      "attempt": "A27leadIsolatedInventory",
+      "exit": 0,
+      "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
+      "log": "bu-pr-fix-lead-inventory-isolated.log"
+    },
+    {
+      "attempt": "A27leadCompleteExtendedRetry",
+      "exit": 0,
+      "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
+      "log": "bu-pr-fix-lead-retry2-extended.log"
+    },
+    {
+      "attempt": "A25leadIndependentSerial",
+      "exit": 0,
+      "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
+      "log": "bu-pr-fix-lead-retry2-verify.log"
     }
   ],
   "introducedDependencies": [],
@@ -220,6 +252,14 @@
         "tools/scripts/lib/biome-oxc-discovery.test.ts"
       ],
       "decision": "Standard Bun mockResolvedValue and real deferred IO/start coordination for tests;no fake awaits"
+    },
+    {
+      "paths": [
+        "tools/scripts/lib/nx-projects.ts",
+        "tools/scripts/lib/nx-command-options.test.ts",
+        "tools/scripts/lib/biome-oxc-discovery.test.ts"
+      ],
+      "decision": "A25 invalid known canonical records throw an internal contextual TypeError instead of becoming empty inventory. Actual caller fixtures protect both certification absence checks and coverage presence credit, while custom executors and vendor-valid unsupported extraction remain opaque/no proof."
     }
   ],
   "baselineArtifact": ".constitution/evidence/KRT-BU002/suppression-ledger.json",
@@ -254,11 +294,15 @@
   "canonicalExecutionProof": {
     "rulings": [
       "A18",
-      "A22"
+      "A22",
+      "A25"
     ],
     "helper": "tools/scripts/lib/nx-projects.ts#targetCommandStrings",
     "unsupportedExecutorsYieldNoCommands": true,
     "malformedKnownFieldsYieldNoPartialCommands": true,
+    "invalidCanonicalRecordsThrowTypeError": true,
+    "presenceAndAbsenceConsumersFailClosed": true,
+    "vendorValidUnsupportedCommandArraysYieldNoCommands": true,
     "effectiveConfigurationValidation": true,
     "missingAndEmptyDefaultUseVendorBaseFallback": true,
     "knownTopLevelFields": 12,
@@ -287,14 +331,14 @@
     "helper": "tools/scripts/lib/nx-projects.ts",
     "baselineModuleMatchesGitObject": true,
     "baselineModuleSha256": "9da9f6ea9ea3c666a8331f57b5cf5e6b5ba961abe1ebff665e86351506065dcb",
-    "finalModuleSha256": "6b1c70ceb39e84a6d5319e6df642e0f4e89bc12b88d3b540938bc89114b9e829",
+    "finalModuleSha256": "2d3852f9ef5c4ea0ec1b4b5f062dd0734197f1893bf83d15e4d0f8ccc6883ffd",
     "command": "bun /home/oscar/.local/state/tuvren-framework/plans/wave-1-bs-bu/bu-m6-complete-inventory-proof.mjs",
     "targets": 233,
     "inventorySha256": "83f3d24658f3acd9f6584bb4f52266dd30e9b80b2255e6ec0ca614b9fc1754ad",
     "inventoryHashEncoding": "UTF-8 JSON.stringify(perProject), no trailing newline",
     "prettySnapshotSha256": "91bb9442288fe39a8dcf3a7f8e19bbb4a12110cc9c77b654c92633c0d49917d3",
     "allPerProjectCommandsEqual": true,
-    "sourceCommit": "b7e98e488848587fec3da8ae38b61454e1a89503",
+    "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
     "transcriptBundleArtifact": "bu-m6-complete-inventory-proof.json",
     "perProjectCommandsIncludedInBundle": true
   }
