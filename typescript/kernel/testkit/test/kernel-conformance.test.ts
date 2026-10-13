@@ -29,6 +29,48 @@ import {
   kernelProtocolLogicalFixtures,
 } from "../src/lib/kernel-conformance-fixtures.ts";
 
+const hexToBytes = (value: string): Uint8Array =>
+  Uint8Array.from(
+    value.match(/.{1,2}/gu)?.map((entry) => Number.parseInt(entry, 16)) ?? []
+  );
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const expectDecodedTurnTreeSchemaRecord = (
+  value: unknown,
+  expected: typeof kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
+): void => {
+  expect(isPlainRecord(value)).toBe(true);
+
+  if (!(isPlainRecord(value) && Array.isArray(value.paths))) {
+    throw new Error("decoded turn tree schema record must contain paths");
+  }
+
+  expect(value.schemaId).toBe(expected.schemaId);
+  expect(value.paths).toEqual(expected.paths);
+  expect(value.incorporationRules).toEqual(expected.incorporationRules);
+};
+
+const expectDecodedTurnNodeIdentityRecord = (
+  value: unknown,
+  expected: typeof kernelProtocolDeterministicFixtures.turnNodeIdentityRecord
+): void => {
+  expect(isPlainRecord(value)).toBe(true);
+
+  if (!(isPlainRecord(value) && Array.isArray(value.consumedStagedResults))) {
+    throw new Error(
+      "decoded turn node identity record must contain consumed staged results"
+    );
+  }
+
+  expect(value.schemaId).toBe(expected.schemaId);
+  expect(value.eventHash).toBe(expected.eventHash);
+  expect(value.previousTurnNodeHash).toBe(expected.previousTurnNodeHash);
+  expect(value.turnTreeHash).toBe(expected.turnTreeHash);
+  expect(value.consumedStagedResults).toEqual(expected.consumedStagedResults);
+};
+
 describe("@tuvren/kernel-testkit conformance assets", () => {
   test("loads the canonical boundary-owned schema fixture", () => {
     expect(canonicalKernelTestSchemaFixture.schemaId).toBe("schema_main");
@@ -151,47 +193,3 @@ describe("@tuvren/kernel-testkit conformance assets", () => {
     });
   });
 });
-
-function hexToBytes(value: string): Uint8Array {
-  return Uint8Array.from(
-    value.match(/.{1,2}/gu)?.map((entry) => Number.parseInt(entry, 16)) ?? []
-  );
-}
-
-function expectDecodedTurnTreeSchemaRecord(
-  value: unknown,
-  expected: typeof kernelProtocolDeterministicFixtures.turnTreeSchemaRecord
-): void {
-  expect(isPlainRecord(value)).toBe(true);
-
-  if (!(isPlainRecord(value) && Array.isArray(value.paths))) {
-    throw new Error("decoded turn tree schema record must contain paths");
-  }
-
-  expect(value.schemaId).toBe(expected.schemaId);
-  expect(value.paths).toEqual(expected.paths);
-  expect(value.incorporationRules).toEqual(expected.incorporationRules);
-}
-
-function expectDecodedTurnNodeIdentityRecord(
-  value: unknown,
-  expected: typeof kernelProtocolDeterministicFixtures.turnNodeIdentityRecord
-): void {
-  expect(isPlainRecord(value)).toBe(true);
-
-  if (!(isPlainRecord(value) && Array.isArray(value.consumedStagedResults))) {
-    throw new Error(
-      "decoded turn node identity record must contain consumed staged results"
-    );
-  }
-
-  expect(value.schemaId).toBe(expected.schemaId);
-  expect(value.eventHash).toBe(expected.eventHash);
-  expect(value.previousTurnNodeHash).toBe(expected.previousTurnNodeHash);
-  expect(value.turnTreeHash).toBe(expected.turnTreeHash);
-  expect(value.consumedStagedResults).toEqual(expected.consumedStagedResults);
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
