@@ -50,7 +50,7 @@ const BIOME_CONTROL_COMMAND = [
   "--colors=off",
 ] as const;
 
-function parseProcessedFiles(verboseOutput: string): string[] {
+const parseProcessedFiles = (verboseOutput: string): string[] => {
   const files: string[] = [];
   let collecting = false;
   for (const line of verboseOutput.split("\n")) {
@@ -71,22 +71,18 @@ function parseProcessedFiles(verboseOutput: string): string[] {
     }
   }
   return files;
-}
+};
 
-async function readGitCandidates(): Promise<string[]> {
+const readGitCandidates = async (): Promise<string[]> => {
   const discovery = await runCommand(FORMER_ROOT_DISCOVERY_COMMAND, {
     captureOutput: true,
     cwd: REPO_ROOT,
   });
   expect(discovery.code).toBe(0);
   return parseGitFileList(discovery.stdout);
-}
+};
 
-async function readFilesystemInventory(): Promise<string[]> {
-  return selectFormerRootFiles(REPO_ROOT, await readWorkingTreeCandidates());
-}
-
-async function readWorkingTreeCandidates(): Promise<string[]> {
+const readWorkingTreeCandidates = async (): Promise<string[]> => {
   const candidates = await readGitCandidates();
   const deletion = await runCommand(FORMER_ROOT_DELETED_COMMAND, {
     captureOutput: true,
@@ -94,9 +90,13 @@ async function readWorkingTreeCandidates(): Promise<string[]> {
   });
   expect(deletion.code).toBe(0);
   return removeDeletedFiles(candidates, parseGitFileList(deletion.stdout));
-}
+};
 
-async function writeGitFixture(): Promise<string> {
+const readFilesystemInventory = async (): Promise<string[]> => {
+  return selectFormerRootFiles(REPO_ROOT, await readWorkingTreeCandidates());
+};
+
+const writeGitFixture = async (): Promise<string> => {
   const root = mkdtempSync(path.join(tmpdir(), "biome-inventory-git-"));
   writeFileSync(
     path.join(root, "biome.jsonc"),
@@ -129,7 +129,7 @@ async function writeGitFixture(): Promise<string> {
     "export const untracked = 1;\n"
   );
   return root;
-}
+};
 
 describe("former-root inventory derivation", () => {
   test("parseGitFileList splits NUL-delimited git output and drops empties", () => {
@@ -185,6 +185,90 @@ describe("former-root inventory derivation", () => {
     expect(includes).toContain("!!**/generated");
     expect(includes).toContain("!!target");
     expect(includes).toContain("!.claude");
+  });
+
+  test("cyclic extends preserve dependency-first includes and ancestor exclusions", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "biome-inventory-config-"));
+    try {
+      writeFileSync(
+        path.join(root, "biome.jsonc"),
+        JSON.stringify({
+          extends: ["./base.jsonc"],
+          files: { includes: ["!!**/generated"] },
+        })
+      );
+      writeFileSync(
+        path.join(root, "base.jsonc"),
+        JSON.stringify({
+          extends: ["./biome.jsonc"],
+          files: { includes: ["src/**"] },
+        })
+      );
+      expect(readBiomeIncludes(path.join(root, "biome.jsonc"))).toEqual([
+        "src/**",
+        "!!**/generated",
+      ]);
+      expect(
+        selectFormerRootFiles(root, [
+          "src/kept.ts",
+          "src/nested/generated/ignored.ts",
+          "other/excluded.ts",
+        ])
+      ).toEqual(["src/kept.ts"]);
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
+  });
+
+  test("config validation preserves the first error and its synchronous shape", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "biome-inventory-errors-"));
+    const configPath = path.join(root, "biome.jsonc");
+    try {
+      for (const [document, message] of [
+        [
+          [],
+          `cannot read Biome config ${configPath}: ${configPath}: expected a JSON object`,
+        ],
+        [
+          { extends: 1, files: [] },
+          `cannot read Biome config ${configPath}: ${configPath}: "files" must be an object`,
+        ],
+        [
+          { extends: 1, files: { includes: 1 } },
+          `${configPath}.extends: expected a string array`,
+        ],
+        [
+          { extends: [1], files: { includes: 1 } },
+          `${configPath}.extends: every entry must be a string`,
+        ],
+        [
+          { files: { includes: 1 } },
+          `${configPath}.files.includes: expected a string array`,
+        ],
+        [
+          { files: { includes: [1] } },
+          `${configPath}.files.includes: every entry must be a string`,
+        ],
+      ] as const) {
+        writeFileSync(configPath, JSON.stringify(document));
+        let thrown: unknown;
+        try {
+          readBiomeIncludes(configPath);
+        } catch (error: unknown) {
+          thrown = error;
+        }
+        expect(thrown).toBeInstanceOf(Error);
+        if (!(thrown instanceof Error)) {
+          throw new Error("expected a synchronous config validation error");
+        }
+        expect(thrown.constructor).toBe(Error);
+        expect(thrown.name).toBe("Error");
+        expect(thrown.message).toBe(message);
+        expect(Object.hasOwn(thrown, "cause")).toBe(false);
+      }
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
   });
 
   test("selection keeps supported files and rejects generated, ignored and unknown types", () => {

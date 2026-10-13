@@ -100,9 +100,9 @@ interface BiomeConfigDocument {
 const bun = (globalThis as unknown as { Bun: BunRuntime }).Bun;
 
 /** Decompose NUL-delimited `git ls-files -z` stdout into repo-relative paths. */
-export function parseGitFileList(stdout: string): string[] {
+export const parseGitFileList = (stdout: string): string[] => {
   return stdout.split("\0").filter((entry) => entry.length > 0);
-}
+};
 
 /**
  * Drop tracked paths Git confirms are deleted from the working tree. The two
@@ -110,22 +110,22 @@ export function parseGitFileList(stdout: string): string[] {
  * trusts the working tree itself and a permission or I/O failure stays fatal
  * instead of being misread as a deletion.
  */
-export function removeDeletedFiles(
+export const removeDeletedFiles = (
   candidates: readonly string[],
   deleted: readonly string[]
-): string[] {
+): string[] => {
   if (deleted.length === 0) {
     return [...candidates];
   }
   const deletedPaths = new Set(deleted);
   return candidates.filter((file) => !deletedPaths.has(file));
-}
+};
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+};
 
-function stringArray(value: unknown, source: string): string[] {
+const stringArray = (value: unknown, source: string): string[] => {
   if (value === undefined) {
     return [];
   }
@@ -140,9 +140,12 @@ function stringArray(value: unknown, source: string): string[] {
     out.push(entry);
   }
   return out;
-}
+};
 
-function parseBiomeConfig(text: string, source: string): BiomeConfigDocument {
+const parseBiomeConfig = (
+  text: string,
+  source: string
+): BiomeConfigDocument => {
   const parsed = bun.JSONC.parse(text);
   if (!isRecord(parsed)) {
     throw new Error(`${source}: expected a JSON object`);
@@ -155,20 +158,20 @@ function parseBiomeConfig(text: string, source: string): BiomeConfigDocument {
     extends: parsed.extends,
     files: { includes: files?.includes },
   };
-}
+};
 
-function resolveExtends(entry: string, configPath: string): string {
+const resolveExtends = (entry: string, configPath: string): string => {
   if (entry.startsWith(".")) {
     return path.resolve(path.dirname(configPath), entry);
   }
   return createRequire(configPath).resolve(entry);
-}
+};
 
-function collectIncludes(
+const collectIncludes = (
   configPath: string,
   seen: Set<string>,
   out: string[]
-): void {
+): void => {
   if (seen.has(configPath)) {
     return;
   }
@@ -186,23 +189,23 @@ function collectIncludes(
   out.push(
     ...stringArray(parsed.files?.includes, `${configPath}.files.includes`)
   );
-}
+};
 
 /**
  * Every `files.includes` pattern the retained Biome config resolves to, from
  * the owned configuration through each `extends` level.
  */
-export function readBiomeIncludes(configPath: string): string[] {
+export const readBiomeIncludes = (configPath: string): string[] => {
   const out: string[] = [];
   collectIncludes(configPath, new Set<string>(), out);
   return out;
-}
+};
 
-function normalizePattern(pattern: string): string {
+const normalizePattern = (pattern: string): string => {
   return pattern.replace(LEADING_BANGS_PATTERN, "");
-}
+};
 
-function matchesPattern(matcher: GlobMatcher, file: string): boolean {
+const matchesPattern = (matcher: GlobMatcher, file: string): boolean => {
   if (matcher.match(file)) {
     return true;
   }
@@ -215,22 +218,22 @@ function matchesPattern(matcher: GlobMatcher, file: string): boolean {
     }
   }
   return false;
-}
+};
 
-function isSupportedSourceFile(file: string): boolean {
+const isSupportedSourceFile = (file: string): boolean => {
   const dot = file.lastIndexOf(".");
   return dot > 0 && SUPPORTED_EXTENSIONS.has(file.slice(dot));
-}
+};
 
 /**
  * Filter candidate working-tree paths down to the complete former-root Biome
  * inventory: supported source types that match the owned `files.includes`
  * surface and no owned exclusion.
  */
-export function selectFormerRootFiles(
+export const selectFormerRootFiles = (
   repoRoot: string,
   candidates: readonly string[]
-): string[] {
+): string[] => {
   const includes = readBiomeIncludes(path.join(repoRoot, "biome.jsonc"));
   const matcherCache = new Map<string, GlobMatcher>();
   const matcherFor = (pattern: string): GlobMatcher => {
@@ -271,4 +274,4 @@ export function selectFormerRootFiles(
   }
   selected.sort((left, right) => left.localeCompare(right));
   return selected;
-}
+};

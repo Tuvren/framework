@@ -93,3 +93,10 @@ tickets:
 # 18 fresh-process probes match across nine rotated import orders.
 # Synchronous empty-command errors, timeout/signals, phase factories, API ordering
 # and worktree guards retain their baseline behavior. No scope deviation.
+
+# M3 (KRT-BU003 partial): inventory/partition definitions reordered in three files.
+# Tools tsc, helpers (71/235 assertions), retained Biome, Oxfmt and listed
+# routing/JSON tests (52/1078) pass. Native diagnostics 203 -> 185.
+# Twenty-three callable signatures/bodies, 21 imports/14 eager initializers,
+# and ten fresh-process results across five import orders match baseline.
+# Cyclic config dependency order and exact validation precedence remain pinned.
