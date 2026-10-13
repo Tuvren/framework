@@ -157,12 +157,20 @@ decisions:
 # M6 completes KRT-BU004: native diagnostics 81 -> 0 over all 18 code files;
 # zero owned JSON and zero baseline/drift/counterpart directives. Full effective
 # shipped policy equality holds (536 rule keys; 55 enabled type-aware rules).
-# All 12 lead checks pass: tools tsc, helpers (76/257 assertions), Biome, Oxfmt,
-# extended tests (134/1495), native lint/selection, typecheck, lint, check,
+# All 12 final lead checks pass: tools tsc, helpers (78/295 assertions), Biome,
+# Oxfmt, extended tests (136/1533), native lint/selection, typecheck, lint, check,
 # verify:kernel and VERIFY_SERIAL=1 verify (36 steps). Fetch cleanup passed.
 # Under A13, two worker full runs and one isolated alias control timed out at
 # the unchanged 5s limit. After resource relief isolated controls and the third
 # serial full run passed; the lead independently repeated the full gate.
-# Complete comparison preserves 42 value signatures and 36 interface/type-alias
-# declarations against pre-M6 63ae87f. The 12000-file walker and serial failure
+# A15 comparison preserves 42 value signatures and 35 type declarations against
+# pre-M6 63ae87f; only NxProjectTarget options/configurations align with vendor
+# generic records. The 12000-file walker and serial failure
 # probes pass. Nx structured dependent-output inputs retain their values.
+
+# M6 independent review P1 fixed under A15: generic executor metadata remains
+# loader-valid; canonical command fields narrow privately after executor choice.
+# Custom field collisions/configurations retain their payload and earn no native
+# credit; malformed canonical commands fail closed. Public Tuvren APIs unchanged.
+# Final fix worker and lead both pass serial 36-step verify. A16 resolved an
+# optional child-Git transport environment failure without source/limit changes.
