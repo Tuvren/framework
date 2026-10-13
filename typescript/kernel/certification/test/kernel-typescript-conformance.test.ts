@@ -25,17 +25,19 @@ import {
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
-  type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+import type { TurnTreeSchema } from "@tuvren/kernel-protocol";
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import {
   canonicalKernelTestSchemaFixture,
-  type KernelProtocolDeterministicFixtureSet,
-  type KernelProtocolLogicalFixtureSet,
   kernelProtocolDeterministicFixtures,
   kernelProtocolLogicalFixtures,
+} from "../../testkit/src/lib/kernel-conformance-fixtures.ts";
+import type {
+  KernelProtocolDeterministicFixtureSet,
+  KernelProtocolLogicalFixtureSet,
 } from "../../testkit/src/lib/kernel-conformance-fixtures.ts";
 
 const LOWERCASE_SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/u;
@@ -246,7 +248,7 @@ function fixturePathById(
 }
 
 function readJsonObject(path: string): Record<string, unknown> {
-  const value: unknown = JSON.parse(readFileSync(path, "utf8"));
+  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
 
   if (!isRecord(value)) {
     throw new Error(`${path} must contain a JSON object`);
@@ -256,7 +258,7 @@ function readJsonObject(path: string): Record<string, unknown> {
 }
 
 function readJsonSchema(path: string): AnySchema {
-  const value: unknown = JSON.parse(readFileSync(path, "utf8"));
+  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
 
   if (typeof value === "boolean" || isRecord(value)) {
     return value;

@@ -106,7 +106,7 @@ describe("grpc kernel client codec — verdict round-trips", () => {
 });
 
 describe("grpc kernel client codec — path value round-trips", () => {
-  const cases: Array<{ label: string; value: PathValue }> = [
+  const cases: { label: string; value: PathValue }[] = [
     { label: "null", value: null },
     { label: "single hash", value: HASH_A },
     { label: "ordered hashes", value: [HASH_A, HASH_B] },
