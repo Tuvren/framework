@@ -16,7 +16,7 @@
     "syntaxDiagnostics": 0,
     "typeAwareDiagnostics": 0,
     "suppressionDirectives": 0,
-    "commit": "aa4d96b016a17ff08c41cac97c8a158edacd362d"
+    "commit": "78c776de22e7768838e7a1bc5424c0b9f79971d1"
   },
   "entries": [],
   "baselineEntries": [],
@@ -47,10 +47,10 @@
   "baselineArtifactSha256": "62d6709cabf1034e92bb15e3a3ae65920aa165cb3e9b2349343a2271419aefc8",
   "verification": {
     "toolsTsc": "pass",
-    "helperTests": "76 pass / 0 fail / 257 assertions",
+    "helperTests": "78 pass / 0 fail / 295 assertions",
     "retainedBiome": "pass;18 files",
     "oxfmt": "pass;18 files",
-    "extendedTests": "134 pass / 0 fail / 1495 assertions",
+    "extendedTests": "136 pass / 0 fail / 1533 assertions",
     "nativeLint": "pass;0 diagnostics;unchanged type-aware preset",
     "actualOxlintSelection": "18 owned files;exact complete equality",
     "nativeJsonSelection": "0 owned JSON/format/protected files;empty JSON CLI not claimed",
@@ -58,41 +58,71 @@
     "repositoryLint": "pass",
     "check": "pass;locked;fetch cleanup pass",
     "verifyKernel": "pass;locked;fetch cleanup pass",
-    "verify": "pass on third attempt with VERIFY_SERIAL=1;all36steps;locked;fetch cleanup pass",
-    "apiTypes": "78 exports unchanged across18files",
+    "verify": "pass; final A15 source independently verified with all36steps and VERIFY_SERIAL=1; fetch cleanup pass",
+    "apiTypes": "42 value signatures and 35 type declarations unchanged; only the two A15 NxProjectTarget property declarations are corrected",
     "largeFlatWalker": "12000files;order/skip semantics match original;~64ms",
     "nxDependentTaskInputs": "structured vendor-supported inputs preserved",
     "diffCheck": "pass",
-    "exportedTypeComparison": "42 compiler-resolved value signatures and 36 complete interface/type-alias declarations match pre-M6"
+    "exportedTypeComparison": "42 value signatures and 35 complete type declarations match pre-M6; only NxProjectTarget.options/configurations are aligned with Nx22.7.12 under A15"
   },
   "retryHistory": [
     {
       "attempt": "full1",
       "exit": 1,
       "reason": "provider-testkit5173ms fixed5000ms timeout",
-      "log": "bu-m6-verify.log"
+      "log": "bu-m6-verify.log",
+      "sourceCommit": "aa4d96b016a17ff08c41cac97c8a158edacd362d"
     },
     {
       "attempt": "full2",
       "exit": 1,
       "reason": "kernel-testkit5027ms fixed5000ms timeout",
-      "log": "bu-m6-verify-retry2.log"
+      "log": "bu-m6-verify-retry2.log",
+      "sourceCommit": "aa4d96b016a17ff08c41cac97c8a158edacd362d"
     },
     {
       "attempt": "isolated1",
       "exit": 1,
       "reason": "framework-testkit5313ms fixed5000ms timeout",
-      "log": "bu-m6-self-alias-isolated.log"
+      "log": "bu-m6-self-alias-isolated.log",
+      "sourceCommit": "aa4d96b016a17ff08c41cac97c8a158edacd362d"
     },
     {
       "attempt": "isolatedAfterA13Relief",
       "exit": 0,
-      "log": "bu-m6-self-alias-relief2.log"
+      "log": "bu-m6-self-alias-relief2.log",
+      "sourceCommit": "aa4d96b016a17ff08c41cac97c8a158edacd362d"
     },
     {
       "attempt": "full3SerialAfterA13",
       "exit": 0,
-      "log": "bu-m6-verify-retry3-serial.log"
+      "log": "bu-m6-verify-retry3-serial.log",
+      "sourceCommit": "aa4d96b016a17ff08c41cac97c8a158edacd362d"
+    },
+    {
+      "attempt": "A15full1Transport",
+      "exit": 1,
+      "sourceCommit": "78c776de22e7768838e7a1bc5424c0b9f79971d1",
+      "reason": "Buf child omitted empty GIT_CONFIG value; A16 command-local transport resolution",
+      "log": "bu-m6-fix-verify.log"
+    },
+    {
+      "attempt": "A16uncachedInteropControl",
+      "exit": 0,
+      "sourceCommit": "78c776de22e7768838e7a1bc5424c0b9f79971d1",
+      "log": "bu-m6-fix-interop-transport-control.log"
+    },
+    {
+      "attempt": "A15full2Serial",
+      "exit": 0,
+      "sourceCommit": "78c776de22e7768838e7a1bc5424c0b9f79971d1",
+      "log": "bu-m6-fix-verify-attempt2.log"
+    },
+    {
+      "attempt": "A15leadIndependentSerial",
+      "exit": 0,
+      "sourceCommit": "78c776de22e7768838e7a1bc5424c0b9f79971d1",
+      "log": "bu-m6-fix-lead-verify.log"
     }
   ],
   "introducedDependencies": [],
@@ -133,7 +163,7 @@
         "tools/scripts/lib/nx-projects.ts",
         "tools/scripts/lib/biome-oxc-discovery.test.ts"
       ],
-      "decision": "Unknown Nx JSON validated against existing declared optional interfaces;missing-name failure stays first;additional unknown metadata/structured inputs retained;malformed declared fields fail closed"
+      "decision": "A15 aligns raw Nx options/configurations with vendor generic records; private canonical consumers narrow command fields after executor selection, preserving custom metadata and fail-closed credit"
     },
     {
       "paths": [
@@ -150,9 +180,28 @@
   ],
   "baselineArtifact": ".constitution/evidence/KRT-BU002/suppression-ledger.json",
   "exportProof": {
-    "values": 42,
-    "typeDeclarations": 36,
-    "allEqual": true,
+    "unchangedValues": 42,
+    "unchangedTypeDeclarations": 35,
+    "approvedInternalTypeCorrections": [
+      {
+        "path": "tools/scripts/lib/nx-projects.ts",
+        "name": "NxProjectTarget",
+        "ruling": "A15",
+        "before": "export interface NxProjectTarget {\n    configurations?: Record<string, NxCommandOptions>;\n    defaultConfiguration?: string;\n    executor?: string;\n    options?: NxCommandOptions;\n}",
+        "after": "export interface NxProjectTarget {\n    configurations?: Record<string, Record<string, unknown>>;\n    defaultConfiguration?: string;\n    executor?: string;\n    options?: Record<string, unknown>;\n}"
+      }
+    ],
+    "allEqualExceptApprovedInternalCorrection": true,
     "artifact": "readiness.json"
+  },
+  "internalVendorSchemaCorrection": {
+    "ruling": "A15",
+    "path": "tools/scripts/lib/nx-projects.ts",
+    "properties": [
+      "NxProjectTarget.options",
+      "NxProjectTarget.configurations"
+    ],
+    "canonicalNarrowing": "tools/scripts/lib/native-lint-routing.ts",
+    "regressions": "tools/scripts/lib/biome-oxc-discovery.test.ts"
   }
 }

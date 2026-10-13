@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "aa4d96b016a17ff08c41cac97c8a158edacd362d",
+  "sourceCommit": "78c776de22e7768838e7a1bc5424c0b9f79971d1",
   "mode": "contract_test",
   "commands": [
     {
@@ -76,12 +76,12 @@
     }
   ],
   "helperTests": {
-    "tests": 76,
-    "assertions": 257
+    "tests": 78,
+    "assertions": 295
   },
   "extendedTests": {
-    "tests": 134,
-    "assertions": 1495
+    "tests": 136,
+    "assertions": 1533
   },
   "fullVerifySteps": 36,
   "signatureMethod": "Compiler-resolved value signatures and complete comment-free interface/type-alias declaration syntax",
@@ -89,7 +89,9 @@
     "Recorded counts describe the producing source commit and are not future quotas.",
     "No live_probe recipes apply.",
     "Owned JSON inventory is empty; json-check intentionally rejects empty scopes and is not claimed as a passing owned lane.",
+    "The A15 internal vendor-schema correction is explicit; all Tuvren public APIs remain frozen.",
     "Failed fixed-budget alias controls, resource relief, successful isolated controls and serial full runs are preserved in the transcript bundle.",
+    "A16 transport failure/control and successful unchanged-source retry are preserved.",
     "The bundle is gzip-compressed JSON mapping original transcript filenames to normalized UTF-8 text."
   ]
 }
