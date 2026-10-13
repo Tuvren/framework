@@ -1,0 +1,7 @@
+[0mdirenv: loading ~/GitHub/Tuvren/framework/.envrc
+[0mdirenv: using devenv
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 43.0ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 23.1ms
+PASS: 78 exported declaration signatures identical across 18 owned files.

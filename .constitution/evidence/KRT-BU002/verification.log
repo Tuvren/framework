@@ -1,0 +1,347 @@
+bunx --bun tsc --project tools/tsconfig.json --noEmit --pretty false
+Exit: 0
+[0mdirenv: loading ~/GitHub/Tuvren/framework/.envrc
+[0mdirenv: using devenv
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 22.8ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 17.4ms
+
+bun test tools/scripts/lib
+Exit: 0
+[0mdirenv: loading ~/GitHub/Tuvren/framework/.envrc
+[0mdirenv: using devenv
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 23.7ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 20.6ms
+bun test v1.4.2 (744846f84)
+
+ 64 pass
+ 0 fail
+ 186 expect() calls
+Ran 64 tests across 6 files. [3.84s]
+
+bunx --bun @biomejs/biome lint tools/scripts/lib
+Exit: 0
+[0mdirenv: loading ~/GitHub/Tuvren/framework/.envrc
+[0mdirenv: using devenv
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 19.6ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 21.3ms
+Checked 18 files in 34ms. No fixes applied.
+
+bunx --bun oxfmt --check tools/scripts/lib
+Exit: 0
+[0mdirenv: loading ~/GitHub/Tuvren/framework/.envrc
+[0mdirenv: using devenv
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 25.9ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 24.6ms
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 17ms on 18 files using 16 threads.
+
+bun test tools/scripts/lib tools/scripts/json-source-integrity.test.ts tools/scripts/json-check.test.ts tools/scripts/generated-prerequisites.test.ts tools/scripts/oxc-preparation.test.ts tools/scripts/oxc-project-discovery.test.ts tools/conformance/harness/test/run.test.ts
+Exit: 0
+[0mdirenv: loading ~/GitHub/Tuvren/framework/.envrc
+[0mdirenv: using devenv
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 26.7ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 25.9ms
+bun test v1.4.2 (744846f84)
+Initialized empty Git repository in /tmp/json-integrity-Aj5cjt/.git/
+Initialized empty Git repository in /tmp/json-integrity-qB7POi/.git/
+
+ 122 pass
+ 0 fail
+ 1424 expect() calls
+Ran 122 tests across 12 files. [7.08s]
+
+bun run typecheck
+Exit: 0
+[0mdirenv: loading ~/GitHub/Tuvren/framework/.envrc
+[0mdirenv: using devenv
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 20.6ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 16.9ms
+$ bun run nx run-many -t typecheck --parallel=4
+$ bun ./tools/run-nx.mjs run-many -t typecheck "--parallel=4"
+
+ NX   Running target typecheck for 33 projects and 1 task they depend on:
+
+- providers-typescript-conformance-adapter
+- kernel-typescript-conformance-adapter
+- backend-postgres
+- providers-bridge-ai-sdk
+- providers-typescript-certification
+- backend-memory
+- backend-shared
+- backend-sqlite
+- provider-api
+- kernel-typescript-certification
+- framework-typescript-conformance-adapter
+- remote-session
+- session-client
+- kernel-grpc-client
+- providers-testkit
+- telemetry-semconv
+- mcp-client
+- kernel-contract-protocol
+- framework-stream-agui
+- framework-stream-core
+- framework-telemetry-otel
+- kernel-runtime
+- kernel-testkit
+- framework-stream-sse
+- framework-typescript-certification
+- runner-react
+- framework-stream-ws
+- host-session
+- host-repl
+- framework-runtime
+- framework-testkit
+- shared-core
+- sdk
+
+
+
+> nx run kernel-interop-grpc:codegen  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/kernel-interop-governance.ts codegen
+
+
+> nx run shared-core:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/core tsconfig.lib.json tsconfig.spec.json
+
+
+> nx run kernel-contract-protocol:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/kernel/protocol
+
+
+> nx run backend-shared:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/kernel/backends/shared
+
+
+> nx run framework-testkit:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/testkit
+
+
+> nx run kernel-testkit:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/kernel/testkit
+
+
+> nx run framework-stream-core:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/streaming/core
+
+
+> nx run backend-memory:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/kernel/backends/memory
+
+
+> nx run kernel-runtime:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/kernel/runtime
+
+
+> nx run framework-stream-agui:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/streaming/agui
+
+
+> nx run framework-stream-sse:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/streaming/sse
+
+
+> nx run telemetry-semconv:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/telemetry/semconv
+
+
+> nx run framework-runtime:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/runtime
+
+
+> nx run provider-api:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/providers/provider-api
+
+
+> nx run providers-testkit:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/providers/testkit
+
+
+> nx run runner-react:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/runners/react
+
+
+> nx run sdk:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/sdk
+
+
+> nx run providers-bridge-ai-sdk:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/providers/bridge-ai-sdk
+
+
+> nx run backend-sqlite:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/kernel/backends/sqlite
+
+
+> nx run host-session:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/host/session
+
+
+> nx run mcp-client:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/tools/mcp-client
+
+
+> nx run remote-session:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/host/remote-session
+
+
+> nx run backend-postgres:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/kernel/backends/postgres
+
+
+> nx run framework-stream-ws:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/streaming/ws
+
+
+> nx run session-client:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/host/session-client
+
+
+> nx run kernel-typescript-certification:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/kernel/certification
+
+
+> nx run providers-typescript-certification:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/providers/certification
+
+
+> nx run providers-typescript-conformance-adapter:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/providers/conformance-adapter
+
+
+> nx run kernel-typescript-conformance-adapter:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/kernel/conformance-adapter
+
+
+> nx run framework-telemetry-otel:typecheck  [existing outputs match the cache, left as is]
+
+> bun tools/scripts/typecheck-project.ts typescript/telemetry/otel
+
+
+> nx run kernel-grpc-client:typecheck
+
+
+> nx run host-repl:typecheck
+
+
+> nx run framework-typescript-conformance-adapter:typecheck
+
+
+> nx run framework-typescript-certification:typecheck
+
+
+
+
+ NX   Successfully ran target typecheck for 33 projects and 1 task they depend on
+
+Nx read the output from the cache instead of running the command for 30 out of 34 tasks.
+
+
+bun run lint
+Exit: 0
+[0mdirenv: loading ~/GitHub/Tuvren/framework/.envrc
+[0mdirenv: using devenv
+• Running devenv:files:cleanup
+✓ Running devenv:files:cleanup in 61.8ms
+• Running devenv:enterShell
+✓ Running devenv:enterShell in 44.1ms
+$ bun tools/scripts/biome-lint.ts
+Checked 154 files in 362ms. No fixes applied.
+Checked 43 files in 110ms. No fixes applied.
+Checked 132 files in 364ms. No fixes applied.
+Checked 18 files in 89ms. No fixes applied.
+Checked 40 files in 218ms. No fixes applied.
+Checked 24 files in 96ms. No fixes applied.
+Checked 77 files in 187ms. No fixes applied.
+Checked 52 files in 162ms. No fixes applied.
+Checked 85 files in 127ms. No fixes applied.
+Checked 183 files in 202ms. No fixes applied.
+Checked 489 files in 223ms. No fixes applied.
+kraken-surface-gate: 40 public entrypoints clean — no Kraken*-named exports
+$ bunx --bun oxfmt --check .
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 226ms on 1299 files using 16 threads.
+$ bun ./tools/run-nx.mjs run kernel-contract-protocol:lint
+
+> nx run kernel-contract-protocol:lint  [existing outputs match the cache, left as is]
+
+> bunx --bun oxlint --type-aware typescript/kernel/protocol
+
+> bun tools/scripts/json-check.ts typescript/kernel/protocol
+
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 21ms on 7 files using 16 threads.
+
+
+
+ NX   Successfully ran target lint for project kernel-contract-protocol
+
+Nx read the output from the cache instead of running the command for 1 out of 1 tasks.
+
+$ bun ./tools/run-nx.mjs run kernel-runtime:lint
+
+> nx run kernel-runtime:lint  [existing outputs match the cache, left as is]
+
+> bunx --bun oxlint --type-aware typescript/kernel/runtime
+
+> bun tools/scripts/json-check.ts typescript/kernel/runtime
+
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 41ms on 7 files using 16 threads.
+
+
+
+ NX   Successfully ran target lint for project kernel-runtime
+
+Nx read the output from the cache instead of running the command for 1 out of 1 tasks.
+
+
