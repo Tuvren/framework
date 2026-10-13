@@ -148,17 +148,18 @@ decisions:
         - tools/scripts/lib/conformance-contract.ts
         - tools/scripts/lib/nx-projects.ts
         - KRT-BS004
+        - typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts
     status: proposed
     asked:
       date: 2026-10-13
       in: EPIC-BU
     proposed_by: EPIC-BU under approved wave amendment A11
 
-# M6 completes KRT-BU004: native diagnostics 81 -> 0 over all 18 code files;
+# M6 completes KRT-BU004: native diagnostics 81 -> 0 over all 19 code files;
 # zero owned JSON and zero baseline/drift/counterpart directives. Full effective
 # shipped policy equality holds (536 rule keys; 55 enabled type-aware rules).
-# All 12 final lead checks pass: tools tsc, helpers (86/393 assertions), Biome,
-# Oxfmt, extended tests (144/1631), native lint/selection, typecheck, lint, check,
+# All 12 final lead checks pass: tools tsc, helpers (93/7562 assertions), Biome,
+# Oxfmt, extended tests (151/8801), native lint/selection, typecheck, lint, check,
 # verify:kernel and VERIFY_SERIAL=1 verify (36 steps). Fetch cleanup passed.
 # Under A13, two worker full runs and one isolated alias control timed out at
 # the unchanged 5s limit. After resource relief isolated controls and the third
@@ -185,3 +186,11 @@ decisions:
 # A20 invalidated a worker full run whose purity window overlapped the lead's
 # epic-count update; source hashes stayed frozen. The authorized unchanged-source
 # worker retry and independent lead run passed with all tracked/index state frozen.
+# A21's recurring-field review changed strategy. A22 now validates the complete
+# 12 top-level and seven closed command-object fields privately, with a committed
+# schema/type/enum matrix and one isolated test-only vendor-reference child.
+# The new owned test accounts for the 19-file selection and adds no exports.
+# Current policy has 473 enabled settings (55 type-aware, 418 other); 474/419
+# remains historical evidence, never a quota. Native strict discovery was tested
+# independently and needed no production change. A23 records exact 233-target
+# inventory equality against 040ea86 without a permanent workspace hash golden.

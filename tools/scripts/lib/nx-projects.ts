@@ -128,35 +128,65 @@ const isRunCommandEntry = (value: unknown): boolean => {
   });
 };
 
-const isCanonicalCommandOptions = (
-  value: unknown
-): value is NxCommandOptions => {
+// Validate the complete installed run-commands field surface after executor
+// selection. Partial configuration fragments need not contain a command;
+// unknown top-level fields remain opaque. Tests pin this boundary to Nx's
+// schema without importing its runtime validator into filesystem discovery.
+const isCanonicalCommandOptions = (value: unknown): boolean => {
   if (!isRecord(value)) {
     return false;
   }
-  return (
-    isOptionalString(value.command) &&
-    isOptionalString(value.cwd) &&
-    !(Object.hasOwn(value, "command") && Object.hasOwn(value, "commands")) &&
-    (value.commands === undefined ||
-      (Array.isArray(value.commands) &&
-        value.commands.every(isRunCommandEntry))) &&
-    (value.args === undefined ||
-      typeof value.args === "string" ||
-      isStringArray(value.args)) &&
-    (value.__unparsed__ === undefined || isStringArray(value.__unparsed__)) &&
-    (value.forwardAllArgs === undefined ||
-      typeof value.forwardAllArgs === "boolean")
-  );
+  if (Object.hasOwn(value, "command") && Object.hasOwn(value, "commands")) {
+    return false;
+  }
+  return Object.entries(value).every(([key, field]) => {
+    if (field === undefined) {
+      return true;
+    }
+    switch (key) {
+      case "command":
+      case "readyWhen":
+      case "args": {
+        return typeof field === "string" || isStringArray(field);
+      }
+      case "commands": {
+        return Array.isArray(field) && field.every(isRunCommandEntry);
+      }
+      case "parallel":
+      case "color":
+      case "forwardAllArgs":
+      case "tty": {
+        return typeof field === "boolean";
+      }
+      case "envFile":
+      case "cwd": {
+        return typeof field === "string";
+      }
+      case "env": {
+        return (
+          isRecord(field) &&
+          Object.values(field).every((entry) => typeof entry === "string")
+        );
+      }
+      case "__unparsed__": {
+        return isStringArray(field);
+      }
+      default: {
+        return true;
+      }
+    }
+  });
 };
 
 /**
- * Every command string an nx:run-commands target can execute: the base
+ * Supported literal command inventory for an nx:run-commands target: the base
  * `options` (single `command` string or `commands` array of strings /
  * `{ command }` objects) plus every named `configurations` override.
  * Gates that back-check command text (certification discovery, workspace
  * test-lane coverage) must scan all of these, or a target rewritten in an
- * equally-valid alternate shape silently escapes the gate.
+ * equally-valid alternate shape silently escapes the gate. This inventories
+ * text; it does not prove successful execution or normalize runtime
+ * interpolation, arguments, or shell tokens.
  */
 export const targetCommandStrings = (target: NxProjectTarget): string[] => {
   if (target.executor !== "nx:run-commands") {
