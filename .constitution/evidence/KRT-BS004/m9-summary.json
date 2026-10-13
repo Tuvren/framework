@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BS004",
+  "milestone": "M9",
+  "status": "ready-for-lead-verification-and-independent-review",
+  "measurement_kind": "uncommitted-working-tree-candidate",
+  "measurement_base_head": "55907cfb80861d68b5a95db537057e811c9065b9",
+  "measurement_environment_root": "/home/oscar/GitHub/Tuvren/framework-worktrees/EPIC-BS",
+  "product_sha256": {
+    "tools/biome-coverage/bs.json": "f85d1acf67c64c945fb2c6a3d4663399c1967b5b81b4442fdbc772ae2505f985",
+    "typescript/kernel/testkit/project.json": "bcdb47211d203b52b9f692ac0c37ffd0e46369adb7a2e6c6c777f5c3058b533d",
+    "typescript/kernel/testkit/src/index.ts": "cda0fdac8780dd766716a35ca24a4ce3dd6067a521cb124ac7e661a2b63ad20f",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite-foundation.ts": "fbd41377529186815325fc5ee0c021695000621b825a4e8ea763648072c2c995",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite-run-state.ts": "e337bd3f668deb30bab099f4861f48c745e498e56a6ff7f2e6a12c92df12a212",
+    "typescript/kernel/testkit/src/lib/backend-test-suite-types.ts": "503b5d0c7c126ca37dd6c8c5b45f5fcd18c28f91aa0d39f749d27ce0b79ae3e7",
+    "typescript/kernel/testkit/src/lib/bench-phase-stats.ts": "df13059a9c7c4a959e5c5877425d439fe3f4d5d05a136fcef9bcdde09d3512c8",
+    "typescript/kernel/testkit/src/lib/fault-injecting-backend.ts": "9c12f1a05671ee5b74c622eebc743c9dfb037ccfa7174ecdf55df7617367a4a7",
+    "typescript/kernel/testkit/src/lib/kernel-conformance-fixtures.ts": "d78f371aadd59a2435decf44cc7a7cc62d496c9f29d4a69c10e391e7d5018940",
+    "typescript/kernel/testkit/src/lib/kernel-test-fixtures.ts": "392c301cb10fadea048909f64a805d649af590b2e37dad41cd964bafd0ac8acd",
+    "typescript/kernel/testkit/test/kernel-testkit.test.ts": "cb403bd064b2b4df4c43aae1d9d2729a9d42635d3e27bd98c8dc059a5f780d5b",
+    "typescript/kernel/testkit/test/native-admission.test.ts": "71a82a6696a85944af6dfd0db13d43895ce9bd6501ac201afca55d77acf10628"
+  },
+  "diff": {
+    "files": 12,
+    "tracked_changed_lines": 918,
+    "new_test_lines": 135,
+    "product_changed_lines": 1053,
+    "expected_total_with_lean_lead_bookkeeping": 1253
+  },
+  "diagnostics": {
+    "baseline_testkit": 99,
+    "final_testkit": 0,
+    "final_grpc": 0,
+    "remaining_certification": 2
+  },
+  "verification": {
+    "required_seven_gates": "all exit 0; final/results.json",
+    "additional_checks": 18,
+    "fetch_cleanup": 0,
+    "frozen_tracked_and_new_files": 2311,
+    "all_tracked_index_and_new_source_frozen": true,
+    "package_tests": 22,
+    "package_conformance_tests": 3,
+    "exports_smoke_tests": 1,
+    "workspace_typecheck_projects": 33,
+    "preset_controls": "17 tests /198 assertions",
+    "partition_controls": "59 tests /1114 assertions",
+    "api_freeze": "14 entrypoints /404 exports",
+    "repeat_lint_cache_reused": true,
+    "full_conformance": "11 projects +29 prerequisites pass; gate/fetch0; final/25-full-conformance.log"
+  },
+  "preservation": {
+    "production_callable_signatures": 61,
+    "public_signature_changes": [],
+    "new_private_production_helper": "isFsckResult",
+    "fixture_private_deltas": [
+      "createTestTransaction removed",
+      "createTestBackend returns FocusedTestBackend with cloned inspect snapshots",
+      "private fixture midCommit takes local synchronous publication thunk; production hooks unchanged"
+    ],
+    "five_original_cases": "same final focused harness matches exact old/current production including committed state",
+    "focused_negative_controls": "unsupported keys/arity/calls and reads of staged-only nodes fail; rejected work preserves committed state",
+    "malformed_payload_first_errors": "18 original/current cases match messages/order",
+    "domain_error_identity_and_cleanup": "supported errors preserved; non-Error causes normalized",
+    "optional_fault_hook_signatures": "included through actual non-nullable callable type comparison; production Promise-only seam unchanged"
+  },
+  "admission": {
+    "testkit_code_files": 18,
+    "testkit_json_files": 7,
+    "native_projects": 4,
+    "raw_code_owners": 66,
+    "raw_json_owners": 28,
+    "exactly_one_raw_owner": true,
+    "complete_global_partition": true,
+    "residual_kernel_spec_files": 31,
+    "shipped_rules": 473,
+    "type_aware_rules": 55,
+    "other_rules": 418,
+    "complete_policy_equality": true,
+    "actual_dependency_sources": 25,
+    "no_generated_prerequisite_needed": true,
+    "retained_biome_roots": [
+      "typescript/kernel/certification",
+      "typescript/kernel/certification-sqlite",
+      "typescript/kernel/certification-postgres"
+    ]
+  },
+  "ledger": "admission-final/suppression-disposition.json: both original directives retired atomically; no native counterpart or suppression",
+  "code_decisions": [
+    "Focused typed Bun recorded-call unit transaction fixture; no generic backend conformance claim (A29)",
+    "node:timers/promises replaces manually constructed delay Promise",
+    "Decimal-prefix environment parsing preserved with explicit matched prefix and Number",
+    "Owned native lint inputs preserve inherited helpers plus actual sources/root TS configs",
+    "Unknown fsck result validation and non-Error cause normalization preserve valid identities",
+    "Actual testkit @packageDocumentation marker removal under A24; Stage3/Stage4 documentation followup"
+  ],
+  "a11_applications": [
+    "fault-injecting-backend.ts honest forwarding/fault rejection and internal non-Error normalization",
+    "kernel-test-fixtures.ts and kernel-conformance-fixtures.ts internal TypeError guards preserve first messages",
+    "kernel-testkit.test.ts typed unit mocks and awaited real repository/callback/maintenance operations"
+  ],
+  "new_dependencies": [],
+  "new_public_contract_shapes": [],
+  "drift": [],
+  "historical_attempts": "Held fake-await candidates are historical, not final acceptance.",
+  "source_ownership_handoff": "worker finished; lead may verify/record/commit; no worker commit or constitution edit"
+}

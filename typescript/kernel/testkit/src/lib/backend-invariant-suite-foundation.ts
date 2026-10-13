@@ -214,22 +214,19 @@ export const registerBackendInvariantFoundationCases = (
       });
 
       await backend.transact(async (tx) => {
+        const branches = await tx.branches.listByThread(thread.threadId);
         deepStrictEqual(
-          (await tx.branches.listByThread(thread.threadId)).map(
-            (branch) => branch.branchId
-          ),
+          branches.map((branch) => branch.branchId),
           ["branch_b", "branch_a"]
         );
+        const runs = await tx.runs.listByBranch(lateBranch.branchId);
         deepStrictEqual(
-          (await tx.runs.listByBranch(lateBranch.branchId)).map(
-            (run) => run.runId
-          ),
+          runs.map((run) => run.runId),
           ["run_a", "run_b"]
         );
+        const stagedResults = await tx.stagedResults.listByRun(stagedRun.runId);
         deepStrictEqual(
-          (await tx.stagedResults.listByRun(stagedRun.runId)).map(
-            (stagedResult) => stagedResult.taskId
-          ),
+          stagedResults.map((stagedResult) => stagedResult.taskId),
           ["task_a", "task_b"]
         );
       });

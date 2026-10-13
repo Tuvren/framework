@@ -34,11 +34,8 @@
  * canonical `Stored*` records and small deterministic helpers (hash
  * sequences, incrementing clocks) shared across the suites and available to
  * package-local tests.
- *
- * @packageDocumentation
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.
 export { registerBackendConformanceSuite } from "./lib/backend-conformance-suite.js";
 export { registerBackendInvariantSuite } from "./lib/backend-invariant-suite.js";
 export { registerBackendRecoverySuite } from "./lib/backend-recovery-suite.js";

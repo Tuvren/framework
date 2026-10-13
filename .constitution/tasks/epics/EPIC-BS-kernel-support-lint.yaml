@@ -278,3 +278,39 @@ tickets:
 # with current candidate hashes and an explicit measurement-base distinction.
 # Historical BS002 evidence is unchanged. Remaining native debt is testkit 99
 # and certification 2; M9/M10 and full release verification remain due.
+# M8 independent review: all implementation acceptance/gates/signatures/cache
+# and purity pass. Valid P2: removed @packageDocumentation is real metadata,
+# not equivalent to prose. A24 adopts the currently latent Stage 3/4 docgen/
+# lint-convention followup and records actual gRPC/testkit marker removals.
+# Required experimental markers stay intact; no native exception was added.
+# M9 / KRT-BS004 partial: testkit native 99 -> 0; twelve product files,
+# 1053 changed lines. Target/directive/coverage transfer is atomic; three
+# certification roots remain retained. gRPC source stays byte-identical.
+# A26 hooks use bare no-fault returns and real awaited typed fault rejection;
+# production Promise-only hooks and all 61 original production callables match.
+# A28 permits cleaner intentional breaks; A29 resolves the measured fixture
+# conflict without public seam/protocol/dependency/snapshot changes. Focused
+# typed Bun mocks record actual writes; real transact awaits work, validates
+# keys/arity/lineage and publishes at the commit point. No padding await,
+# artificial IO/queue or unsupported generic-backend proof remains.
+# Five original cases match exact old/current production with the same final
+# harness and committed-state snapshots; unsupported reads/calls/rejected-work
+# controls pass. Eighteen malformed payload cases preserve first messages/order
+# through truthful dictionary guards and explicit array handling.
+# Lead seven exact gates and twelve archive replay checks pass after evidence
+# assembly. Repository typecheck (33 projects), API freeze (14/404), direct
+# changeset coverage, formatting/diff, manifest/source/archive checks pass.
+# Worker full actual-backend conformance passes 11 projects plus 29 tasks,
+# with fetch cleanup and all 2311 tracked/new files/index frozen throughout.
+# Package tests 22, conformance 3, exports smoke 1; preset controls 17/198 and
+# partition controls 59/1114 pass. Raw owners: 66 code/28 JSON across four
+# native projects, one each; testkit 18 code/7 JSON, 31 spec files retained.
+# Complete policy remains 473 rules (55 type-aware/418 others); 25 actual
+# imported sources/root TS configs/checker inputs covered, no generated edge.
+# Stage 3 drafts: focused typed-mock transactions, native promise timer,
+# explicit decimal-prefix parsing, actual lint cache inputs, unknown fsck/
+# non-Error cause boundaries and actual testkit documentation-marker removal.
+# Shared OD-09/A11 applications are the owned fault/helper normalization paths.
+# M9 archive binds 280 indexed complete reports/probes (496808 bytes); held
+# failed fixture attempts remain explicitly historical. Native debt is now
+# certification 2; M10 release verification/BS004 completion remain due.
