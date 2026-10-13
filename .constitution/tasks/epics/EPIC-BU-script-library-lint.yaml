@@ -229,7 +229,7 @@ closeout:
     - stage: tasks
       item: Investigate resource sensitivity of unchanged 5000ms TypeScript self-alias and Biome whole-root inventory controls. Earlier full and isolated alias runs and a later inventory control timed out under measured contention. A13/A27 locking, resource relief, successful isolation and complete retries preserved source, assertions, timeouts and coverage.
     - stage: tech-spec
-      item: A22 preserves literal base/all-configuration command inventory. BV/Stage 3 should investigate pre-existing executor-runtime-only readyWhen/serial and presentation/serial contradictions, interpolation/argument rewriting or shell-token interpretation, command-array extraction, and graph/targetDefaults modeling for tools/conformance/certification/validate-certification-discovery.ts and tools/scripts/validate-workspace-test-coverage.ts. These are not successful-execution guarantees and were not changed by BU; strict native discovery retains its selected-default and scope-safe grammar.
+      item: A22 preserves literal base/all-configuration command inventory. BV/Stage 3 should investigate pre-existing executor-runtime-only readyWhen/serial and presentation/serial contradictions, interpolation/argument rewriting or shell-token interpretation and graph/targetDefaults modeling for tools/conformance/certification/validate-certification-discovery.ts and tools/scripts/validate-workspace-test-coverage.ts. These are not successful-execution guarantees and were not changed by BU; strict native discovery retains its selected-default and scope-safe grammar.
   follow_ups:
     - Repository owner rules on proposed shared OD-09 through Stage 3 alignment after the wave.
     - CB owns whole-tools admission and retirement of bu.json after BU, BV and BW; BU leaves the retained entry byte-identical and activates no partial target.
@@ -251,7 +251,7 @@ closeout:
       kind: pattern
       paths: [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/json-source-integrity.ts]
       commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
-    - summary: A15 changes only NxProjectTarget.options from NxCommandOptions to Record<string, unknown> and configurations from Record<string, NxCommandOptions> to Record<string, Record<string, unknown>>. Raw executor-specific metadata remains opaque and preserved until canonical consumer selection. All callable signatures, NxCommandOptions and public Tuvren APIs remain unchanged.
+    - summary: A15 changes only NxProjectTarget.options from NxCommandOptions to Record<string, unknown> and configurations from Record<string, NxCommandOptions> to Record<string, Record<string, unknown>>. Raw executor-specific metadata remains opaque and preserved until canonical consumer selection. All callable signatures and public Tuvren package APIs remain unchanged; A30 separately records the canonical command type correction.
       kind: contract_shape
       paths: [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts]
       commit: 78c776de22e7768838e7a1bc5424c0b9f79971d1
@@ -267,8 +267,12 @@ closeout:
       kind: pattern
       paths: [tools/scripts/lib/biome-oxc-discovery.test.ts]
       commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
-    - summary: A25 surfaces vendor-invalid canonical known fields, command records and effective configuration conflicts as an explicit internal TypeError with stable context. This preserves atomic rejection while preventing invalid metadata from becoming false absence for certification discovery or positive execution credit for coverage checks. Opaque custom or unsupported executors and vendor-valid unsupported command arrays still return no supported proof. Controlled discovery fixtures exercise the original caller grading logic; all exported declarations remain unchanged.
+    - summary: A25 surfaces vendor-invalid canonical known fields, command records and effective configuration conflicts as an explicit internal TypeError with stable context. This preserves atomic rejection while preventing invalid metadata from becoming false absence for certification discovery or positive execution credit for coverage checks. Opaque custom or unsupported executors still return no supported proof; A30 separately adds vendor command-array normalization. Controlled discovery fixtures exercise the original caller grading logic; all exported declarations remain unchanged.
       kind: convention
       paths: [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/nx-command-options.test.ts, tools/scripts/lib/biome-oxc-discovery.test.ts]
       commit: 6c6c4c5fea63517087629822578d3306d9322a6e
+    - summary: A30 corrects internal NxCommandOptions.command from string to string | string[] and normalizes arrays with the installed Nx22.7.12 normalizeOptions array.join(' ') behavior. This preserves the full base/all-configuration literal union, fixes mixed-fragment absence erasure and retires command-array omission. Vendor-invalid metadata still fails explicitly under A25; native discovery retains its stricter scope-safe grammar. The two corrected internal interfaces are measured separately, with all other declarations and public package APIs unchanged.
+      kind: contract_shape
+      paths: [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/nx-command-options.test.ts, tools/scripts/lib/nx-command-callers.test.ts]
+      commit: 9285a987e149eb0a245d5749b83963ca843c0d3c
   settled: []
