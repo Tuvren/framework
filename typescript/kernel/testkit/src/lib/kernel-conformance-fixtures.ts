@@ -82,59 +82,11 @@ const MANIFEST_PATH_SEGMENTS = [
 ];
 const MANIFEST_SCHEMA_RELATIVE_PATH = "../schemas/suite-manifest.schema.json";
 const LOWERCASE_HEX_PATTERN = /^[0-9a-f]+$/u;
-const ajv = new Ajv2020({ allErrors: true, strict: false });
-const kernelConformanceFixtureIndex = loadKernelConformanceFixtureIndex();
 
-/**
- * The canonical turn-tree schema fixture the conformance suite manifest
- * defines, loaded and validated once at module load. Callers that need a
- * private mutable copy should clone it (see
- * `createCanonicalKernelTestSchema` in kernel-test-fixtures.js) rather than
- * mutate this shared instance.
- */
-export const canonicalKernelTestSchemaFixture: TurnTreeSchema =
-  loadCanonicalKernelTestSchema();
-/** Loaded, schema-validated deterministic-encoding conformance fixtures. */
-export const kernelProtocolDeterministicFixtures: KernelProtocolDeterministicFixtureSet =
-  loadKernelProtocolDeterministicFixtures();
-/** Loaded, schema-validated logical conformance fixtures. */
-export const kernelProtocolLogicalFixtures: KernelProtocolLogicalFixtureSet =
-  loadKernelProtocolLogicalFixtures();
-
-function loadCanonicalKernelTestSchema(): TurnTreeSchema {
-  const fixtureText = readFileSync(
-    kernelConformanceFixtureIndex.canonicalSchemaPath,
-    "utf-8"
-  );
-  const parsedFixture = JSON.parse(fixtureText);
-  assertTurnTreeSchema(parsedFixture, "canonicalKernelTestSchemaFixture");
-  return parsedFixture;
-}
-
-function loadKernelProtocolDeterministicFixtures(): KernelProtocolDeterministicFixtureSet {
-  const fixtureText = readFileSync(
-    kernelConformanceFixtureIndex.deterministicFixturePath,
-    "utf-8"
-  );
-  const parsedFixture = JSON.parse(fixtureText);
-  assertKernelProtocolDeterministicFixtureSet(parsedFixture);
-  return parsedFixture;
-}
-
-function loadKernelProtocolLogicalFixtures(): KernelProtocolLogicalFixtureSet {
-  const fixtureText = readFileSync(
-    kernelConformanceFixtureIndex.logicalFixturePath,
-    "utf-8"
-  );
-  const parsedFixture = JSON.parse(fixtureText);
-  assertKernelProtocolLogicalFixtureSet(parsedFixture);
-  return parsedFixture;
-}
-
-function resolveFixturePath(
+const resolveFixturePath = (
   metaUrl: string,
   pathSegments: readonly string[]
-): string {
+): string => {
   const currentFilePath = fileURLToPath(metaUrl);
   let currentDirectory = dirname(currentFilePath);
 
@@ -151,9 +103,59 @@ function resolveFixturePath(
   throw new Error(
     `unable to locate kernel conformance fixture ${pathSegments.join("/")}`
   );
-}
+};
 
-function loadKernelConformanceFixtureIndex(): KernelConformanceFixtureIndex {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readJsonSchema = (value: unknown): AnySchema => {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error("kernel conformance schema must be an object or boolean");
+};
+const ajv = new Ajv2020({ allErrors: true, strict: false });
+
+const readKernelFixtureIndex = (
+  fixtures: readonly unknown[]
+): KernelConformanceFixtureIndex => {
+  const pathById = new Map<string, string>();
+
+  for (const fixture of fixtures) {
+    if (
+      !isRecord(fixture) ||
+      typeof fixture.id !== "string" ||
+      typeof fixture.path !== "string"
+    ) {
+      throw new Error("kernel conformance manifest fixture entry is invalid");
+    }
+
+    pathById.set(fixture.id, fixture.path);
+  }
+
+  const canonicalSchemaPath = pathById.get("canonical-turn-tree-schema");
+  const deterministicFixturePath = pathById.get(
+    "kernel-protocol-deterministic"
+  );
+  const logicalFixturePath = pathById.get("kernel-protocol-logical");
+
+  if (
+    canonicalSchemaPath === undefined ||
+    deterministicFixturePath === undefined ||
+    logicalFixturePath === undefined
+  ) {
+    throw new Error("kernel conformance manifest is missing required fixtures");
+  }
+
+  return {
+    canonicalSchemaPath,
+    deterministicFixturePath,
+    logicalFixturePath,
+  };
+};
+
+const loadKernelConformanceFixtureIndex = (): KernelConformanceFixtureIndex => {
   const manifestPath = resolveFixturePath(
     import.meta.url,
     MANIFEST_PATH_SEGMENTS
@@ -213,119 +215,76 @@ function loadKernelConformanceFixtureIndex(): KernelConformanceFixtureIndex {
       relativeFixtureIndex.logicalFixturePath
     ),
   };
-}
+};
+const kernelConformanceFixtureIndex = loadKernelConformanceFixtureIndex();
 
-function readJsonSchema(value: unknown): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error("kernel conformance schema must be an object or boolean");
-}
-
-function readKernelFixtureIndex(
-  fixtures: readonly unknown[]
-): KernelConformanceFixtureIndex {
-  const pathById = new Map<string, string>();
-
-  for (const fixture of fixtures) {
-    if (
-      !isRecord(fixture) ||
-      typeof fixture.id !== "string" ||
-      typeof fixture.path !== "string"
-    ) {
-      throw new Error("kernel conformance manifest fixture entry is invalid");
-    }
-
-    pathById.set(fixture.id, fixture.path);
-  }
-
-  const canonicalSchemaPath = pathById.get("canonical-turn-tree-schema");
-  const deterministicFixturePath = pathById.get(
-    "kernel-protocol-deterministic"
+const loadCanonicalKernelTestSchema = (): TurnTreeSchema => {
+  const fixtureText = readFileSync(
+    kernelConformanceFixtureIndex.canonicalSchemaPath,
+    "utf-8"
   );
-  const logicalFixturePath = pathById.get("kernel-protocol-logical");
+  const parsedFixture = JSON.parse(fixtureText);
+  assertTurnTreeSchema(parsedFixture, "canonicalKernelTestSchemaFixture");
+  return parsedFixture;
+};
 
-  if (
-    canonicalSchemaPath === undefined ||
-    deterministicFixturePath === undefined ||
-    logicalFixturePath === undefined
-  ) {
-    throw new Error("kernel conformance manifest is missing required fixtures");
-  }
-
-  return {
-    canonicalSchemaPath,
-    deterministicFixturePath,
-    logicalFixturePath,
-  };
-}
-
-function assertKernelProtocolDeterministicFixtureSet(
-  value: unknown
-): asserts value is KernelProtocolDeterministicFixtureSet {
-  if (!isRecord(value)) {
-    throw new Error("kernel deterministic fixture set must be an object");
-  }
-
-  assertNumberArray(value.rawOpaqueBytes, "rawOpaqueBytes");
-  assertHashString(value.rawOpaqueBytesSha256Hex, "rawOpaqueBytesSha256Hex");
-  assertTurnTreeSchema(value.turnTreeSchemaRecord, "turnTreeSchemaRecord");
-  assertHexString(
-    value.turnTreeSchemaRecordCborHex,
-    "turnTreeSchemaRecordCborHex"
-  );
-  assertHashString(
-    value.turnTreeSchemaRecordSha256Hex,
-    "turnTreeSchemaRecordSha256Hex"
-  );
-  assertTurnNodeIdentityRecord(
-    value.turnNodeIdentityRecord,
-    "turnNodeIdentityRecord"
-  );
-  assertHexString(
-    value.turnNodeIdentityRecordCborHex,
-    "turnNodeIdentityRecordCborHex"
-  );
-  assertHashString(
-    value.turnNodeIdentityRecordSha256Hex,
-    "turnNodeIdentityRecordSha256Hex"
-  );
-}
-
-function assertKernelProtocolLogicalFixtureSet(
-  value: unknown
-): asserts value is KernelProtocolLogicalFixtureSet {
-  if (!isRecord(value)) {
-    throw new Error("kernel logical fixture set must be an object");
-  }
-
-  if (
-    !Array.isArray(value.branchHeadListEntry) ||
-    value.branchHeadListEntry.length !== 2
-  ) {
-    throw new Error("branchHeadListEntry must be a two-item tuple");
-  }
-
-  const [branchId, turnNodeHash] = value.branchHeadListEntry;
-
-  if (typeof branchId !== "string") {
-    throw new Error("branchHeadListEntry[0] must be a string");
-  }
-
-  assertHashString(turnNodeHash, "branchHeadListEntry[1]");
-  assertRecoveryState(value.recoveryState, "recoveryState");
-  assertTurnTreeChangeSet(
-    value.turnTreeChangeSet,
-    canonicalKernelTestSchemaFixture,
-    "turnTreeChangeSet"
-  );
-}
-
-function assertTurnNodeIdentityRecord(
+const assertNumberArray: (
   value: unknown,
   label: string
-): asserts value is KernelProtocolDeterministicFixtureSet["turnNodeIdentityRecord"] {
+) => asserts value is readonly number[] = (
+  value: unknown,
+  label: string
+): asserts value is readonly number[] => {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
+  }
+
+  for (const [index, entry] of value.entries()) {
+    if (typeof entry !== "number") {
+      throw new Error(`${label}[${index}] must be a number`);
+    }
+  }
+};
+
+const assertHexString: (
+  value: unknown,
+  label: string
+) => asserts value is string = (
+  value: unknown,
+  label: string
+): asserts value is string => {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+
+  if (!LOWERCASE_HEX_PATTERN.test(value)) {
+    throw new Error(`${label} must be lowercase hexadecimal`);
+  }
+};
+
+const assertHashString: (
+  value: unknown,
+  label: string
+) => asserts value is string = (
+  value: unknown,
+  label: string
+): asserts value is string => {
+  assertHexString(value, label);
+
+  if (value.length !== 64) {
+    throw new Error(
+      `${label} must be a 64-character lowercase hexadecimal hash`
+    );
+  }
+};
+
+const assertTurnNodeIdentityRecord: (
+  value: unknown,
+  label: string
+) => asserts value is KernelProtocolDeterministicFixtureSet["turnNodeIdentityRecord"] = (
+  value: unknown,
+  label: string
+): asserts value is KernelProtocolDeterministicFixtureSet["turnNodeIdentityRecord"] => {
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
@@ -358,49 +317,107 @@ function assertTurnNodeIdentityRecord(
   }
 
   assertHashString(value.turnTreeHash, `${label}.turnTreeHash`);
-}
+};
 
-function assertNumberArray(
-  value: unknown,
-  label: string
-): asserts value is readonly number[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
+const assertKernelProtocolDeterministicFixtureSet: (
+  value: unknown
+) => asserts value is KernelProtocolDeterministicFixtureSet = (
+  value: unknown
+): asserts value is KernelProtocolDeterministicFixtureSet => {
+  if (!isRecord(value)) {
+    throw new Error("kernel deterministic fixture set must be an object");
   }
 
-  for (const [index, entry] of value.entries()) {
-    if (typeof entry !== "number") {
-      throw new Error(`${label}[${index}] must be a number`);
-    }
-  }
-}
+  assertNumberArray(value.rawOpaqueBytes, "rawOpaqueBytes");
+  assertHashString(value.rawOpaqueBytesSha256Hex, "rawOpaqueBytesSha256Hex");
+  assertTurnTreeSchema(value.turnTreeSchemaRecord, "turnTreeSchemaRecord");
+  assertHexString(
+    value.turnTreeSchemaRecordCborHex,
+    "turnTreeSchemaRecordCborHex"
+  );
+  assertHashString(
+    value.turnTreeSchemaRecordSha256Hex,
+    "turnTreeSchemaRecordSha256Hex"
+  );
+  assertTurnNodeIdentityRecord(
+    value.turnNodeIdentityRecord,
+    "turnNodeIdentityRecord"
+  );
+  assertHexString(
+    value.turnNodeIdentityRecordCborHex,
+    "turnNodeIdentityRecordCborHex"
+  );
+  assertHashString(
+    value.turnNodeIdentityRecordSha256Hex,
+    "turnNodeIdentityRecordSha256Hex"
+  );
+};
 
-function assertHexString(
-  value: unknown,
-  label: string
-): asserts value is string {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`${label} must be a non-empty string`);
-  }
-
-  if (!LOWERCASE_HEX_PATTERN.test(value)) {
-    throw new Error(`${label} must be lowercase hexadecimal`);
-  }
-}
-
-function assertHashString(
-  value: unknown,
-  label: string
-): asserts value is string {
-  assertHexString(value, label);
-
-  if (value.length !== 64) {
-    throw new Error(
-      `${label} must be a 64-character lowercase hexadecimal hash`
+const loadKernelProtocolDeterministicFixtures =
+  (): KernelProtocolDeterministicFixtureSet => {
+    const fixtureText = readFileSync(
+      kernelConformanceFixtureIndex.deterministicFixturePath,
+      "utf-8"
     );
-  }
-}
+    const parsedFixture = JSON.parse(fixtureText);
+    assertKernelProtocolDeterministicFixtureSet(parsedFixture);
+    return parsedFixture;
+  };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+/**
+ * The canonical turn-tree schema fixture the conformance suite manifest
+ * defines, loaded and validated once at module load. Callers that need a
+ * private mutable copy should clone it (see
+ * `createCanonicalKernelTestSchema` in kernel-test-fixtures.js) rather than
+ * mutate this shared instance.
+ */
+export const canonicalKernelTestSchemaFixture: TurnTreeSchema =
+  loadCanonicalKernelTestSchema();
+
+const assertKernelProtocolLogicalFixtureSet: (
+  value: unknown
+) => asserts value is KernelProtocolLogicalFixtureSet = (
+  value: unknown
+): asserts value is KernelProtocolLogicalFixtureSet => {
+  if (!isRecord(value)) {
+    throw new Error("kernel logical fixture set must be an object");
+  }
+
+  if (
+    !Array.isArray(value.branchHeadListEntry) ||
+    value.branchHeadListEntry.length !== 2
+  ) {
+    throw new Error("branchHeadListEntry must be a two-item tuple");
+  }
+
+  const [branchId, turnNodeHash] = value.branchHeadListEntry;
+
+  if (typeof branchId !== "string") {
+    throw new Error("branchHeadListEntry[0] must be a string");
+  }
+
+  assertHashString(turnNodeHash, "branchHeadListEntry[1]");
+  assertRecoveryState(value.recoveryState, "recoveryState");
+  assertTurnTreeChangeSet(
+    value.turnTreeChangeSet,
+    canonicalKernelTestSchemaFixture,
+    "turnTreeChangeSet"
+  );
+};
+
+const loadKernelProtocolLogicalFixtures =
+  (): KernelProtocolLogicalFixtureSet => {
+    const fixtureText = readFileSync(
+      kernelConformanceFixtureIndex.logicalFixturePath,
+      "utf-8"
+    );
+    const parsedFixture = JSON.parse(fixtureText);
+    assertKernelProtocolLogicalFixtureSet(parsedFixture);
+    return parsedFixture;
+  };
+/** Loaded, schema-validated deterministic-encoding conformance fixtures. */
+export const kernelProtocolDeterministicFixtures: KernelProtocolDeterministicFixtureSet =
+  loadKernelProtocolDeterministicFixtures();
+/** Loaded, schema-validated logical conformance fixtures. */
+export const kernelProtocolLogicalFixtures: KernelProtocolLogicalFixtureSet =
+  loadKernelProtocolLogicalFixtures();

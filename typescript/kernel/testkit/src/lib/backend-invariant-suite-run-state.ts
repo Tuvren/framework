@@ -46,9 +46,9 @@ import {
  * Called by `registerBackendInvariantSuite` in backend-invariant-suite.js;
  * not intended to be called standalone.
  */
-export function registerBackendInvariantRunStateCases(
+export const registerBackendInvariantRunStateCases = (
   options: BackendConformanceSuiteOptions
-): void {
+): void => {
   registerBackendInvariantFoundationCases(options);
 
   options.testApi.test(
@@ -597,4 +597,4 @@ export function registerBackendInvariantRunStateCases(
       );
     }
   );
-}
+};

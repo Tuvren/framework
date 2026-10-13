@@ -48,9 +48,9 @@ const BOOM_ERROR_PATTERN = /boom/u;
  * suite satisfies the baseline `RuntimeBackendTx` contract every kernel
  * backend must uphold.
  */
-export function registerBackendConformanceSuite(
+export const registerBackendConformanceSuite = (
   options: BackendConformanceSuiteOptions
-): void {
+): void => {
   const suiteName = options.suiteName ?? "Backend Conformance";
 
   options.testApi.describe(suiteName, () => {
@@ -347,4 +347,4 @@ export function registerBackendConformanceSuite(
       }
     );
   });
-}
+};

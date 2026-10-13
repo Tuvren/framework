@@ -44,9 +44,9 @@ import {
  * backend-invariant-suite-run-state.js; not intended to be called
  * standalone.
  */
-export function registerBackendInvariantFoundationCases(
+export const registerBackendInvariantFoundationCases = (
   options: BackendConformanceSuiteOptions
-): void {
+): void => {
   options.testApi.test(
     "preserves deterministic list ordering for branches, runs, and staged results",
     async () => {
@@ -478,4 +478,4 @@ export function registerBackendInvariantFoundationCases(
       );
     }
   );
-}
+};

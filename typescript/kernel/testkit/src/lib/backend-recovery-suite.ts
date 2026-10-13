@@ -46,9 +46,9 @@ const CHECKPOINT_FAILURE_PATTERN = /checkpoint failed/u;
  * implementation that passes this suite recovers cleanly from interrupted
  * or failed transactions without leaving partially committed state.
  */
-export function registerBackendRecoverySuite(
+export const registerBackendRecoverySuite = (
   options: BackendConformanceSuiteOptions
-): void {
+): void => {
   const suiteName = options.suiteName ?? "Backend Recovery";
 
   options.testApi.describe(suiteName, () => {
@@ -574,4 +574,4 @@ export function registerBackendRecoverySuite(
       }
     );
   });
-}
+};

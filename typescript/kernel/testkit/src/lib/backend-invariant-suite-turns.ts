@@ -44,9 +44,9 @@ import {
  * by `registerBackendInvariantSuite` in backend-invariant-suite.js; not
  * intended to be called standalone.
  */
-export function registerBackendInvariantTurnCases(
+export const registerBackendInvariantTurnCases = (
   options: BackendConformanceSuiteOptions
-): void {
+): void => {
   options.testApi.test(
     "rejects turns whose parent is not the immediate predecessor and rejects ambiguous null parents",
     async () => {
@@ -498,4 +498,4 @@ export function registerBackendInvariantTurnCases(
       );
     }
   );
-}
+};
