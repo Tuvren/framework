@@ -143,6 +143,6 @@ A dependency-respecting listing, not a chain: `needs` names a ticket's own `depe
 
 ## Concurrency mechanics
 
-- **Worktree:** one worktree per epic, not recorded yet in constitution.yaml
-- **Branch naming:** type/description, not recorded yet in constitution.yaml
-- **Merge strategy:** not recorded yet in constitution.yaml
+- **Worktree:** ../framework-worktrees/EPIC-<ID>
+- **Branch naming:** epic/<lowercase-id>-<slug>
+- **Merge strategy:** rebase

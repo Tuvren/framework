@@ -1,4 +1,14 @@
 entries:
+  - version: v0.47.6
+    date: 2026-10-13
+    by: patch-lane
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.5
+    changed:
+      - "Record epic execution settings: worktrees at ../framework-worktrees/EPIC-<ID>, branches named epic/<lowercase-id>-<slug>, and rebase merges. Regenerate the critical path with these settings."
+      - "Preserve all epic scopes, statuses, dependencies, tickets, and estimates. INFO-CAL reports an observed actual-to-estimate ratio of 1.93 over four completed epics; this patch introduces no estimates."
   - version: v0.47.5
     date: 2026-10-11
     changed: ["Completed EPIC-BQ: kernel protocol and runtime satisfy the shipped native preset, preserve the reordering pilot outcomes, and gain atomic code/JSON lint ownership. All six original suppression identities and reasons remain accounted for in the final admission ledger.", "EPIC-BQ Kernel protocol and runtime lint pilot archived: 4 tickets, 24 points, 20965 diff lines, 2 review rounds"]
