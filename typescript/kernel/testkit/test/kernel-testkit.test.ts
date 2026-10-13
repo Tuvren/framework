@@ -145,8 +145,7 @@ describe("@tuvren/kernel-testkit fixtures", () => {
   });
 
   test("registers the shared suite entrypoints without executing them eagerly", () => {
-    const registrations: Array<{ kind: "describe" | "test"; name: string }> =
-      [];
+    const registrations: { kind: "describe" | "test"; name: string }[] = [];
     const testApi = {
       describe(name: string, register: () => void) {
         registrations.push({ kind: "describe", name });
@@ -208,7 +207,7 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       ],
       {
         cwd: repositoryRoot,
-        encoding: "utf8",
+        encoding: "utf-8",
       }
     );
 

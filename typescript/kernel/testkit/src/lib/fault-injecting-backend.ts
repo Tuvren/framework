@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { type TuvrenError, TuvrenPersistenceError } from "@tuvren/core";
+import { TuvrenPersistenceError } from "@tuvren/core";
+import type { TuvrenError } from "@tuvren/core";
 import type {
   RuntimeBackend,
   RuntimeBackendTx,
@@ -446,13 +447,13 @@ async function readConcurrentWriterSnapshot(
     const branch = await tx.branches.get(branchId);
 
     if (branch === null) {
-      return undefined;
+      return;
     }
 
     const head = await tx.turnNodes.get(branch.headTurnNodeHash);
 
     if (head === null) {
-      return undefined;
+      return;
     }
 
     return { branch, head };

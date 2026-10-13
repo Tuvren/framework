@@ -17,12 +17,12 @@
 import { rejects } from "node:assert/strict";
 
 import { TuvrenPersistenceError } from "@tuvren/core";
-import {
-  encodeDeterministicKernelRecord,
-  type StoredBranch,
-  type StoredRun,
-  type StoredThread,
-  type StoredTurn,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  StoredBranch,
+  StoredRun,
+  StoredThread,
+  StoredTurn,
 } from "@tuvren/kernel-protocol";
 
 import { createArchiveRollbackFixtures } from "./backend-invariant-suite-archive.js";

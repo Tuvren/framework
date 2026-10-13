@@ -40,7 +40,7 @@ tickets:
       evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: in_progress
+    status: done
   - id: KRT-BS002
     title: Migrate live suppressions and delete dead ones
     type: Chore
@@ -132,3 +132,12 @@ tickets:
 # confirmed; every subsequent command explicitly uses the BS shell workdir.
 # M1 lead verification: grpc-client typecheck/test, certification typecheck/test,
 # repository typecheck (33 projects), changeset:check --base=master all exit 0.
+# M1 independent milestone review: GPT-5.6 Sol found no bugs or blockers and
+# independently reran all six checks plus constitution validation successfully.
+# M2 / KRT-BS001 completion: fresh testkit diagnostics 288 -> 240; ten files,
+# 64 additions and 60 deletions. Testkit typecheck/test (13 tests, 38 assertions),
+# repository typecheck (33 projects), and full lint all exit 0 in lead verification.
+# Rejected async additions, Error-to-TypeError rewrites and runtime property
+# reordering to preserve synchronous throws, promise identity and fault-hook order.
+# All five Biome roots and both original barrel directives remain retained.
+# Testkit is private; M1's direct public gRPC changeset remains sufficient.
