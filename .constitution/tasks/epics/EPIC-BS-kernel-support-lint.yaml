@@ -189,3 +189,23 @@ tickets:
 # no-use-before-define removed, no introduced diagnostics. All roots retained.
 # A12 read: owned native target metadata will preserve real generated-output
 # prerequisites/hashing and required checker inputs using installed Nx semantics.
+# M5 independent review: no findings; 44 signature/body comparisons, exact
+# parent/current tests and required gates pass. Full conformance remains M7.
+# M6 / KRT-BS003 partial: 28 declarations across client/certification/small
+# fixtures/statistics reordered; five files, 837 changed lines including a new
+# gRPC client test. Lead actual binding signatures, assertion predicates, bodies
+# and retained initialization all match; eight runtime modules remain acyclic.
+# Six fresh import orders preserve fixture records/bytes/clock/statistics/errors.
+# Four public client tests prove detached receiver forwarding, URL normalization
+# and stream response/error order on both baseline and final implementations.
+# Lead exact seven gates pass: gRPC 30 tests/52 Bun expect calls, testkit 13/38,
+# certification 1/15, all scoped typechecks and repository typecheck (33 projects).
+# API freeze remains 14 entrypoints/404 exports; direct patch coverage passes.
+# Native 344 -> 259: grpc 69 -> 34, testkit 240 -> 223, certification 35 -> 2.
+# Exactly 28 func-style and 57 no-use-before-define diagnostics removed; no
+# introduced diagnostics. All five roots/directives remain Biome-retained.
+# Stage 3 code-decision draft: Connect interceptor test fixtures use native
+# Promise.withResolvers<null> readiness/failure gates for deterministic RPC and
+# stream-error delivery (grpc-client/test/grpc-kernel-client.test.ts); no dependency.
+# A13 compiler locks and A14 same-model availability recovery applied; original
+# milestone sequence/models remain unchanged. Larger fixture loader/suites are M7.

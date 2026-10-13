@@ -42,7 +42,7 @@ export interface PhaseStats extends TimingStats {
 }
 
 /** Reads `BENCH_SAMPLE_COUNT` from the environment, falling back to `fallback`. */
-export function readSampleCountFromEnv(fallback: number): number {
+export const readSampleCountFromEnv = (fallback: number): number => {
   const raw = process.env.BENCH_SAMPLE_COUNT;
 
   if (raw === undefined || raw.length === 0) {
@@ -58,16 +58,16 @@ export function readSampleCountFromEnv(fallback: number): number {
   }
 
   return parsed;
-}
+};
 
 /**
  * The value at `rank` (e.g. `0.5` for median, `0.95` for p95) of
  * `sortedSamples`, which callers must already have sorted ascending.
  */
-export function percentile(
+export const percentile = (
   sortedSamples: readonly number[],
   rank: number
-): number {
+): number => {
   if (sortedSamples.length === 0) {
     throw new Error("expected benchmark samples");
   }
@@ -83,10 +83,10 @@ export function percentile(
   }
 
   return value;
-}
+};
 
 /** Formats a nanosecond duration as the largest whole unit that keeps it readable. */
-export function formatNs(value: number): string {
+export const formatNs = (value: number): string => {
   if (value >= 1_000_000_000) {
     return `${(value / 1_000_000_000).toFixed(3)}s`;
   }
@@ -100,10 +100,12 @@ export function formatNs(value: number): string {
   }
 
   return `${value.toFixed(0)}ns`;
-}
+};
 
 /** Groups recorded phase samples by phase and computes best/median/p95/avg/n per phase. */
-export function summarizePhases(samples: readonly PhaseSample[]): PhaseStats[] {
+export const summarizePhases = (
+  samples: readonly PhaseSample[]
+): PhaseStats[] => {
   const byPhase = new Map<PersistencePhase, number[]>();
 
   for (const sample of samples) {
@@ -130,7 +132,7 @@ export function summarizePhases(samples: readonly PhaseSample[]): PhaseStats[] {
 
   phaseStats.sort((left, right) => left.phase.localeCompare(right.phase));
   return phaseStats;
-}
+};
 
 /**
  * Renders a phase-attribution table for stdout, one row per observed phase,
@@ -138,10 +140,10 @@ export function summarizePhases(samples: readonly PhaseSample[]): PhaseStats[] {
  * header line, e.g. sqlite-load-cost's "health phases:", pass a deeper
  * indent than a top-level table).
  */
-export function formatPhaseTable(
+export const formatPhaseTable = (
   phases: readonly PhaseStats[],
   indent = "  "
-): string {
+): string => {
   if (phases.length === 0) {
     return `${indent}(no phase samples recorded)\n`;
   }
@@ -155,4 +157,4 @@ export function formatPhaseTable(
       )} avg ${formatNs(phase.averageNs)}\n`
   );
   return rows.join("");
-}
+};

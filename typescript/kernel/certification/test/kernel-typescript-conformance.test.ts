@@ -50,6 +50,199 @@ const KERNEL_SUITE_MANIFEST_SCHEMA = new URL(
   import.meta.url
 );
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readJsonObject = (path: string): Record<string, unknown> => {
+  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
+
+  if (!isRecord(value)) {
+    throw new Error(`${path} must contain a JSON object`);
+  }
+
+  return value;
+};
+
+const readSuiteManifest = (url: URL): SuiteManifest => {
+  const value = readJsonObject(fileURLToPath(url));
+
+  if (
+    typeof value.boundary !== "string" ||
+    typeof value.fixtureSchemaPath !== "string" ||
+    !Array.isArray(value.fixtures) ||
+    typeof value.suiteId !== "string" ||
+    typeof value.suiteVersion !== "string"
+  ) {
+    throw new Error(`${url.pathname} must be a valid suite manifest`);
+  }
+
+  const fixtures = value.fixtures.map((fixture) => {
+    if (
+      !isRecord(fixture) ||
+      typeof fixture.id !== "string" ||
+      typeof fixture.path !== "string"
+    ) {
+      throw new Error(`${url.pathname} must contain valid fixture entries`);
+    }
+
+    return {
+      id: fixture.id,
+      path: fixture.path,
+    };
+  });
+
+  return {
+    boundary: value.boundary,
+    fixtureSchemaPath: value.fixtureSchemaPath,
+    fixtures,
+    suiteId: value.suiteId,
+    suiteVersion: value.suiteVersion,
+  };
+};
+
+const readJsonSchema = (path: string): AnySchema => {
+  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
+
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error(`${path} must contain a JSON Schema object or boolean`);
+};
+
+const fixturePathById = (
+  fixtures: readonly SuiteFixture[],
+  expectedId: string
+): string => {
+  const fixture = fixtures.find((entry) => entry.id === expectedId);
+
+  if (fixture === undefined) {
+    throw new Error(`kernel suite is missing fixture ${expectedId}`);
+  }
+
+  return fixture.path;
+};
+
+const assertKernelProtocolDeterministicFixtureSet: (
+  value: unknown,
+  label: string
+) => asserts value is KernelProtocolDeterministicFixtureSet = (
+  value: unknown,
+  label: string
+): asserts value is KernelProtocolDeterministicFixtureSet => {
+  if (
+    !(
+      isRecord(value) &&
+      Array.isArray(value.rawOpaqueBytes) &&
+      typeof value.rawOpaqueBytesSha256Hex === "string" &&
+      isRecord(value.turnNodeIdentityRecord) &&
+      typeof value.turnNodeIdentityRecordCborHex === "string" &&
+      typeof value.turnNodeIdentityRecordSha256Hex === "string" &&
+      isRecord(value.turnTreeSchemaRecord) &&
+      typeof value.turnTreeSchemaRecordCborHex === "string" &&
+      typeof value.turnTreeSchemaRecordSha256Hex === "string"
+    )
+  ) {
+    throw new Error(`${label} must contain deterministic kernel fixtures`);
+  }
+};
+
+const assertKernelProtocolLogicalFixtureSet: (
+  value: unknown,
+  label: string
+) => asserts value is KernelProtocolLogicalFixtureSet = (
+  value: unknown,
+  label: string
+): asserts value is KernelProtocolLogicalFixtureSet => {
+  if (
+    !(
+      isRecord(value) &&
+      Array.isArray(value.branchHeadListEntry) &&
+      isRecord(value.recoveryState) &&
+      isRecord(value.turnTreeChangeSet)
+    )
+  ) {
+    throw new Error(`${label} must contain logical kernel fixtures`);
+  }
+};
+
+const readValidatedKernelFixtureSuite = (
+  manifestUrl: URL
+): KernelFixtureSuite => {
+  const manifest = readSuiteManifest(manifestUrl);
+  const manifestSchema = readJsonSchema(
+    fileURLToPath(KERNEL_SUITE_MANIFEST_SCHEMA)
+  );
+  const manifestAjv = new Ajv2020({ allErrors: true, strict: false });
+  const validateManifest = manifestAjv.compile(manifestSchema);
+
+  expect(
+    validateManifest(readJsonObject(fileURLToPath(manifestUrl))),
+    manifestAjv.errorsText(validateManifest.errors)
+  ).toBe(true);
+  expect(manifest).toMatchObject({
+    boundary: "kernel",
+    suiteId: "tuvren.kernel.protocol-seed",
+    suiteVersion: "0.2.0",
+  });
+  expect(manifest.fixtures.map((fixture) => fixture.id)).toEqual([
+    "canonical-turn-tree-schema",
+    "kernel-protocol-deterministic",
+    "kernel-protocol-logical",
+  ]);
+
+  const manifestDirectory = dirname(fileURLToPath(manifestUrl));
+  const fixtureIndex = {
+    canonicalSchemaPath: fixturePathById(
+      manifest.fixtures,
+      "canonical-turn-tree-schema"
+    ),
+    deterministicFixturePath: fixturePathById(
+      manifest.fixtures,
+      "kernel-protocol-deterministic"
+    ),
+    logicalFixturePath: fixturePathById(
+      manifest.fixtures,
+      "kernel-protocol-logical"
+    ),
+  };
+  const schema = readJsonSchema(
+    join(manifestDirectory, manifest.fixtureSchemaPath)
+  );
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const validate = ajv.compile(schema);
+
+  expect(validate(fixtureIndex), ajv.errorsText(validate.errors)).toBe(true);
+
+  const canonicalSchemaPath = join(
+    manifestDirectory,
+    fixtureIndex.canonicalSchemaPath
+  );
+  const deterministicPath = join(
+    manifestDirectory,
+    fixtureIndex.deterministicFixturePath
+  );
+  const logicalPath = join(manifestDirectory, fixtureIndex.logicalFixturePath);
+  const canonicalSchema = readJsonObject(canonicalSchemaPath);
+  const deterministic = readJsonObject(deterministicPath);
+  const logical = readJsonObject(logicalPath);
+
+  assertTurnTreeSchema(canonicalSchema, canonicalSchemaPath);
+  assertKernelProtocolDeterministicFixtureSet(deterministic, deterministicPath);
+  assertKernelProtocolLogicalFixtureSet(logical, logicalPath);
+
+  return {
+    canonicalSchema,
+    deterministic,
+    logical,
+  };
+};
+
+const hexToBytes = (value: string): Uint8Array =>
+  Uint8Array.from(
+    value.match(/.{1,2}/gu)?.map((entry) => Number.parseInt(entry, 16)) ?? []
+  );
+
 describe("kernel TypeScript certification", () => {
   test("executes the shared kernel protocol seed suite", async () => {
     const fixtures = readValidatedKernelFixtureSuite(KERNEL_SUITE_MANIFEST);
@@ -125,191 +318,4 @@ interface SuiteManifest {
   fixtures: SuiteFixture[];
   suiteId: string;
   suiteVersion: string;
-}
-
-function readValidatedKernelFixtureSuite(manifestUrl: URL): KernelFixtureSuite {
-  const manifest = readSuiteManifest(manifestUrl);
-  const manifestSchema = readJsonSchema(
-    fileURLToPath(KERNEL_SUITE_MANIFEST_SCHEMA)
-  );
-  const manifestAjv = new Ajv2020({ allErrors: true, strict: false });
-  const validateManifest = manifestAjv.compile(manifestSchema);
-
-  expect(
-    validateManifest(readJsonObject(fileURLToPath(manifestUrl))),
-    manifestAjv.errorsText(validateManifest.errors)
-  ).toBe(true);
-  expect(manifest).toMatchObject({
-    boundary: "kernel",
-    suiteId: "tuvren.kernel.protocol-seed",
-    suiteVersion: "0.2.0",
-  });
-  expect(manifest.fixtures.map((fixture) => fixture.id)).toEqual([
-    "canonical-turn-tree-schema",
-    "kernel-protocol-deterministic",
-    "kernel-protocol-logical",
-  ]);
-
-  const manifestDirectory = dirname(fileURLToPath(manifestUrl));
-  const fixtureIndex = {
-    canonicalSchemaPath: fixturePathById(
-      manifest.fixtures,
-      "canonical-turn-tree-schema"
-    ),
-    deterministicFixturePath: fixturePathById(
-      manifest.fixtures,
-      "kernel-protocol-deterministic"
-    ),
-    logicalFixturePath: fixturePathById(
-      manifest.fixtures,
-      "kernel-protocol-logical"
-    ),
-  };
-  const schema = readJsonSchema(
-    join(manifestDirectory, manifest.fixtureSchemaPath)
-  );
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  const validate = ajv.compile(schema);
-
-  expect(validate(fixtureIndex), ajv.errorsText(validate.errors)).toBe(true);
-
-  const canonicalSchemaPath = join(
-    manifestDirectory,
-    fixtureIndex.canonicalSchemaPath
-  );
-  const deterministicPath = join(
-    manifestDirectory,
-    fixtureIndex.deterministicFixturePath
-  );
-  const logicalPath = join(manifestDirectory, fixtureIndex.logicalFixturePath);
-  const canonicalSchema = readJsonObject(canonicalSchemaPath);
-  const deterministic = readJsonObject(deterministicPath);
-  const logical = readJsonObject(logicalPath);
-
-  assertTurnTreeSchema(canonicalSchema, canonicalSchemaPath);
-  assertKernelProtocolDeterministicFixtureSet(deterministic, deterministicPath);
-  assertKernelProtocolLogicalFixtureSet(logical, logicalPath);
-
-  return {
-    canonicalSchema,
-    deterministic,
-    logical,
-  };
-}
-
-function readSuiteManifest(url: URL): SuiteManifest {
-  const value = readJsonObject(fileURLToPath(url));
-
-  if (
-    typeof value.boundary !== "string" ||
-    typeof value.fixtureSchemaPath !== "string" ||
-    !Array.isArray(value.fixtures) ||
-    typeof value.suiteId !== "string" ||
-    typeof value.suiteVersion !== "string"
-  ) {
-    throw new Error(`${url.pathname} must be a valid suite manifest`);
-  }
-
-  const fixtures = value.fixtures.map((fixture) => {
-    if (
-      !isRecord(fixture) ||
-      typeof fixture.id !== "string" ||
-      typeof fixture.path !== "string"
-    ) {
-      throw new Error(`${url.pathname} must contain valid fixture entries`);
-    }
-
-    return {
-      id: fixture.id,
-      path: fixture.path,
-    };
-  });
-
-  return {
-    boundary: value.boundary,
-    fixtureSchemaPath: value.fixtureSchemaPath,
-    fixtures,
-    suiteId: value.suiteId,
-    suiteVersion: value.suiteVersion,
-  };
-}
-
-function fixturePathById(
-  fixtures: readonly SuiteFixture[],
-  expectedId: string
-): string {
-  const fixture = fixtures.find((entry) => entry.id === expectedId);
-
-  if (fixture === undefined) {
-    throw new Error(`kernel suite is missing fixture ${expectedId}`);
-  }
-
-  return fixture.path;
-}
-
-function readJsonObject(path: string): Record<string, unknown> {
-  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
-
-  if (!isRecord(value)) {
-    throw new Error(`${path} must contain a JSON object`);
-  }
-
-  return value;
-}
-
-function readJsonSchema(path: string): AnySchema {
-  const value: unknown = JSON.parse(readFileSync(path, "utf-8"));
-
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${path} must contain a JSON Schema object or boolean`);
-}
-
-function assertKernelProtocolDeterministicFixtureSet(
-  value: unknown,
-  label: string
-): asserts value is KernelProtocolDeterministicFixtureSet {
-  if (
-    !(
-      isRecord(value) &&
-      Array.isArray(value.rawOpaqueBytes) &&
-      typeof value.rawOpaqueBytesSha256Hex === "string" &&
-      isRecord(value.turnNodeIdentityRecord) &&
-      typeof value.turnNodeIdentityRecordCborHex === "string" &&
-      typeof value.turnNodeIdentityRecordSha256Hex === "string" &&
-      isRecord(value.turnTreeSchemaRecord) &&
-      typeof value.turnTreeSchemaRecordCborHex === "string" &&
-      typeof value.turnTreeSchemaRecordSha256Hex === "string"
-    )
-  ) {
-    throw new Error(`${label} must contain deterministic kernel fixtures`);
-  }
-}
-
-function assertKernelProtocolLogicalFixtureSet(
-  value: unknown,
-  label: string
-): asserts value is KernelProtocolLogicalFixtureSet {
-  if (
-    !(
-      isRecord(value) &&
-      Array.isArray(value.branchHeadListEntry) &&
-      isRecord(value.recoveryState) &&
-      isRecord(value.turnTreeChangeSet)
-    )
-  ) {
-    throw new Error(`${label} must contain logical kernel fixtures`);
-  }
-}
-
-function hexToBytes(value: string): Uint8Array {
-  return Uint8Array.from(
-    value.match(/.{1,2}/gu)?.map((entry) => Number.parseInt(entry, 16)) ?? []
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
