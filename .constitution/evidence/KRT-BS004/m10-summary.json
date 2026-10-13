@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BS004",
+  "milestone": "M10",
+  "status": "worker-checks-pass-awaiting-lead-assembly-replay-and-independent-review",
+  "measurement_base_head": "cd1f44d94e48b963eb48de159484d6de548c96e3",
+  "measurement_kind": "uncommitted-working-tree-candidate",
+  "historical_milestones": {
+    "M8": {
+      "commit": "55907cfb80861d68b5a95db537057e811c9065b9",
+      "summary_sha256": "5ae98572243ff19cf9f90ee331cc0bc8738a9abec96c4a51ae2e964bd1d6262e",
+      "historical": true
+    },
+    "M9": {
+      "commit": "cd1f44d94e48b963eb48de159484d6de548c96e3",
+      "summary_sha256": "c016090ee6c7d2785a7f5ca1af82e7725f59d4ff7888852e74dbed81bd3c91f0",
+      "historical": true
+    }
+  },
+  "versions": {
+    "nx": "22.7.12",
+    "typescript": "6.0.2",
+    "oxlint": "1.86.0",
+    "oxfmt": "0.71.0",
+    "oxlint-tsgolint": "7.0.2003",
+    "ultracite": "7.12.2",
+    "@biomejs/biome": "2.5.14",
+    "bun": "1.4.2"
+  },
+  "product_files": [
+    "tools/biome-coverage/bs.json",
+    "typescript/kernel/certification-postgres/project.json",
+    "typescript/kernel/certification-sqlite/project.json",
+    "typescript/kernel/certification/project.json",
+    "typescript/kernel/certification/test/kernel-typescript-conformance.test.ts"
+  ],
+  "diff": {
+    "files": 5,
+    "added_lines": 60,
+    "deleted_lines": 19,
+    "changed_lines": 79,
+    "expected_total_with_lean_lead_evidence_and_bookkeeping": "below1500lines/30files; product79lines/5files; finalassembly owned by lead"
+  },
+  "diagnostics": {
+    "certification_before": 2,
+    "certification_final": 0,
+    "all_five_owned_regions_final": 0,
+    "biome_bs_entries_before": 3,
+    "biome_bs_entries_final": 0
+  },
+  "required_gates": [
+    {
+      "command": "bunx --bun oxlint --type-aware typescript/kernel/certification",
+      "exit_code": 0,
+      "log": "final/01-native.log"
+    },
+    {
+      "command": "bun tools/scripts/json-check.ts typescript/kernel/certification",
+      "exit_code": 0,
+      "log": "final/02-json.log"
+    },
+    {
+      "command": "bun tools/scripts/json-check.ts --json-only typescript/kernel/certification-sqlite",
+      "exit_code": 0,
+      "log": "final/03-sqlite-json.log"
+    },
+    {
+      "command": "bun tools/scripts/json-check.ts --json-only typescript/kernel/certification-postgres",
+      "exit_code": 0,
+      "log": "final/04-postgres-json.log"
+    },
+    {
+      "command": "bun run nx run kernel-typescript-certification:conformance",
+      "exit_code": 0,
+      "log": "final/05-certification-conformance.log"
+    },
+    {
+      "command": "bun run nx run kernel-typescript-sqlite-certification:conformance",
+      "exit_code": 0,
+      "log": "final/06-sqlite-conformance.log"
+    },
+    {
+      "command": "bun run nx run kernel-typescript-postgres-certification:conformance",
+      "exit_code": 0,
+      "log": "final/07-postgres-conformance.log"
+    },
+    {
+      "command": "bun run typecheck",
+      "exit_code": 0,
+      "log": "final/08-workspace-typecheck.log"
+    },
+    {
+      "command": "bun run lint",
+      "exit_code": 0,
+      "log": "final/09-full-lint.log"
+    },
+    {
+      "command": "bun run check",
+      "exit_code": 0,
+      "log": "final/10-check.log"
+    },
+    {
+      "command": "bun run verify:kernel",
+      "exit_code": 0,
+      "log": "final/11-kernel-verify.log"
+    },
+    {
+      "command": "bun run verify",
+      "exit_code": 0,
+      "log": "final/12-full-verify.log",
+      "env": {
+        "VERIFY_SERIAL": "1"
+      },
+      "started_at": "2026-10-13T22:03:25.051Z",
+      "finished_at": "2026-10-13T22:07:00.269Z"
+    },
+    {
+      "command": "bun run changeset:check --base=master",
+      "exit_code": 0,
+      "log": "final/13-changeset.log"
+    }
+  ],
+  "verification": {
+    "required_gates": 13,
+    "additional_checks": 11,
+    "fetch_cleanups": [
+      {
+        "command": "git fetch origin master",
+        "exit_code": 0,
+        "log": "final/10-check-fetch.log"
+      },
+      {
+        "command": "git fetch origin master",
+        "exit_code": 0,
+        "log": "final/11-kernel-verify-fetch.log"
+      },
+      {
+        "command": "git fetch origin master",
+        "exit_code": 0,
+        "log": "final/12-full-verify-fetch.log"
+      },
+      {
+        "command": "git fetch origin master",
+        "exit_code": 0,
+        "log": "final/fetch-cleanup.log"
+      }
+    ],
+    "full_source_freeze_files": 2313,
+    "all_tracked_index_and_new_source_frozen": true,
+    "broad_gate_failures": 0,
+    "broad_gate_retries": 0,
+    "tooling_controls": {
+      "files": 15,
+      "tests": 147,
+      "assertions": 1567,
+      "failures": 0
+    },
+    "api_freeze": {
+      "entrypoints": 14,
+      "exports": 404
+    },
+    "certification_unit": {
+      "tests": 1,
+      "assertions": 15
+    },
+    "conformance_passed_checks": {
+      "memory": 68,
+      "sqlite": 71,
+      "postgres": 72
+    },
+    "repeated_native_cache_hits": "3/3"
+  },
+  "admission": {
+    "status": "pass",
+    "native_projects": 7,
+    "code_projects": 5,
+    "json_only_projects": 2,
+    "raw_code_owner_entries": 67,
+    "raw_json_owner_entries": 34,
+    "certification_code_files": [
+      "typescript/kernel/certification/test/kernel-typescript-conformance.test.ts"
+    ],
+    "certification_json_files": [
+      "typescript/kernel/certification/package.json",
+      "typescript/kernel/certification/project.json",
+      "typescript/kernel/certification/tsconfig.json",
+      "typescript/kernel/certification/tsconfig.typecheck.json"
+    ],
+    "exactly_one_raw_native_owner": true,
+    "no_overlapping_native_roots": true,
+    "json_source_independent_of_formatter_ignores": true,
+    "fresh_json_only_absence_outside_cache": {
+      "applicable_projects": 2,
+      "checked_fresh": true
+    },
+    "complete_global_partition": true,
+    "spec_conformance_kernel_residual_files": 31,
+    "complete_effective_policy_equal": true,
+    "enabled_rules": 473,
+    "enabled_type_aware": 55,
+    "enabled_non_type_aware": 418,
+    "target_inherited_inputs_preserved": true,
+    "original_reasons_preserved": true,
+    "retained_biome_roots": [],
+    "all_five_admitted": true,
+    "all_five_canonical_commands": true,
+    "combined_exactly_one_raw_owner": true,
+    "fresh_owned_source_inventory_files": 51,
+    "both_wrapper_fresh_inventories_metadata_only": true,
+    "all_actual_code_selections_equal_fresh_git_code_inventory": true,
+    "other_coverage_byte_identical": true,
+    "reviewed_M8_M9_regions_byte_identical": true,
+    "atomic_original_two_directive_admissions_proven": true,
+    "native_suppressions_manufactured": 0
+  },
+  "all_five_counts": [
+    {
+      "root": "typescript/kernel/grpc-client",
+      "git_files": 17,
+      "code_files": 6,
+      "json_files": 7
+    },
+    {
+      "root": "typescript/kernel/testkit",
+      "git_files": 26,
+      "code_files": 18,
+      "json_files": 7
+    },
+    {
+      "root": "typescript/kernel/certification",
+      "git_files": 6,
+      "code_files": 1,
+      "json_files": 4
+    },
+    {
+      "root": "typescript/kernel/certification-sqlite",
+      "git_files": 1,
+      "code_files": 0,
+      "json_files": 1
+    },
+    {
+      "root": "typescript/kernel/certification-postgres",
+      "git_files": 1,
+      "code_files": 0,
+      "json_files": 1
+    }
+  ],
+  "cache": {
+    "actual_source_program_files": 159,
+    "actual_dependency_sources": 158,
+    "initial_missing_source_inputs": 71,
+    "explicit_added_source_filesets": 5,
+    "all_final_program_sources_and_helpers_configs_locks_hashed": true,
+    "actual_owned_source_mutation_invalidates_hash": true,
+    "exact_source_and_hash_restoration": true,
+    "no_ignored_generated_or_dist_imports": true,
+    "tracked_semconv_generated_source": "typescript/telemetry/semconv/src/lib/generated/tuvren-runtime-telemetry.ts",
+    "ordinary_typecheck_source_only": true,
+    "no_build_edge_added": true,
+    "reviewed_grpc_output_hash_and_testkit_inputs_unchanged": true
+  },
+  "actual_A11_application": {
+    "path": "typescript/kernel/certification/test/kernel-typescript-conformance.test.ts",
+    "symbol": "readSuiteManifest",
+    "change": "Internal malformed suite-manifest field guard throws TypeError instead of Error; same first validation message/order, unchanged valid return shape. No M10 async or cause normalization.",
+    "original_current_cases": 21,
+    "typeerror_normalization_cases": 6,
+    "existing_certification_assertions_byte_identical": true
+  },
+  "new_dependencies": [],
+  "new_contract_shapes": [],
+  "new_patterns_beyond_plan": [],
+  "stage3_alignment": [
+    {
+      "convention": "Hash actual source-program dependencies reached by explicit tsconfig include when Nx import graph dependency inputs miss them; retain all inherited helper/config/lock inputs.",
+      "path": "typescript/kernel/certification/project.json",
+      "authority": "A12 plus M8/M9 input convention; measured159sources/71previouslymissing"
+    },
+    {
+      "convention": "A11 internal type-guard error normalization",
+      "path": "typescript/kernel/certification/test/kernel-typescript-conformance.test.ts",
+      "authority": "A11/ADR0070 shared OD09"
+    }
+  ],
+  "followups_carried_unchanged": [
+    "A5 shared Git-ref deletion: upstream tooling/Stage4; lock retained through fetch cleanup.",
+    "A6 production native-overlap aggregation investigation: upstream tooling/Stage4; final raw owner proof passes.",
+    "A24 latent @packageDocumentation marker integration: Stage3/Stage4 convention reconciliation; M8/M9 source and @experimental annotations untouched in M10."
+  ],
+  "ownership": {
+    "constitution_edits": false,
+    "commits_created": false,
+    "lead_owns_final_evidence_manifests_and_epic_status": true,
+    "not_epic_complete": true
+  },
+  "source_fingerprint_sha256": "b298719449bd41f03101b163476c073dfcde58c0d386321f375908cec531c8e1",
+  "source_fingerprint_file": "final-source-hashes.json",
+  "suppression_ledger": "suppression-ledger.json",
+  "failure_provenance": "failure-provenance.json",
+  "portable_replay": {
+    "status": "pass",
+    "proof": "portable-replay-proof.json",
+    "extracted_outside_repository": true,
+    "no_original_tmp_dependency": true,
+    "tracked_and_new_files_after_replay": 2313
+  }
+}

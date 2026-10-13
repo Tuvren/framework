@@ -3,14 +3,38 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-13",
-    "commit": "55907cfb80861d68b5a95db537057e811c9065b9",
-    "command": "LC_ALL=C bunx --bun oxlint --type-aware typescript/kernel/testkit; bun tools/scripts/json-check.ts typescript/kernel/testkit; bunx --bun oxlint --debug=files typescript/kernel/testkit; bun run nx run kernel-testkit:typecheck; bun run nx run kernel-testkit:test; bun run nx run kernel-testkit:exports-smoke; bun run lint; bun run conformance; extracted M9 archive replay.mjs as documented in REPLAY.md"
+    "commit": "cd1f44d94e48b963eb48de159484d6de548c96e3",
+    "command": "M10 thirteen exact plan gates, VERIFY_SERIAL=1 for bun run verify, plus archived admission/program/hash/behavior replay per M10-REPLAY.md; candidate fingerprints distinguish source from measurement base"
   },
   "files": [
     {
+      "path": "M10-REPLAY.md",
+      "sha256": "e87478892d0dc0b28d4bb631eef7c46cff02279a7a06709e5b52678925f86109",
+      "bytes": 5366,
+      "role": "measurement"
+    },
+    {
       "path": "README.md",
-      "sha256": "4658cfc4387d92a0f0024ff8558025bb2a2d1d12f285b7df5ac142e729a44997",
-      "bytes": 3843,
+      "sha256": "8baf5cbc594699c35b6912e7685da9a293989ba21122608f7953c5856ca2d6e9",
+      "bytes": 5186,
+      "role": "measurement"
+    },
+    {
+      "path": "m10-digest-index.json",
+      "sha256": "3b14056e1b7829550173dc83590cc7633de95c5e62b21fcca9a1f921a202f1ac",
+      "bytes": 54607,
+      "role": "measurement"
+    },
+    {
+      "path": "m10-reports.tar.gz",
+      "sha256": "f2ec8fd7dc2fe13c3516c502e6ed880ff43558f7b824ac0877cd70fedee16d3a",
+      "bytes": 1108914,
+      "role": "archive"
+    },
+    {
+      "path": "m10-summary.json",
+      "sha256": "c3c0b608b66e1f62d3e1a810b90b11de84fb9354cd72636729688dbfd03961c5",
+      "bytes": 10226,
       "role": "measurement"
     },
     {
@@ -42,7 +66,13 @@
       "sha256": "c016090ee6c7d2785a7f5ca1af82e7725f59d4ff7888852e74dbed81bd3c91f0",
       "bytes": 5971,
       "role": "measurement"
+    },
+    {
+      "path": "suppression-ledger.json",
+      "sha256": "82a162cc2c824dcb025400e028ca88c0a1cc45da232933989972708508ee4431",
+      "bytes": 2580,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "M8/M9 partial admission: exact canonical gRPC and testkit targets and atomic directive/coverage retirement with no native counterpart, suppression, override or fake await. Actual raw code/JSON ownership is unique; shipped policy and real source/config/generated cache inputs are proven. A29 focused unit scenarios retain meaningful assertions, and real backend authority passes full conformance. Three certification roots retain Biome ownership; M10 release verification and BS004 completion remain pending."
+  "pass_criteria": "All five roots admitted atomically with canonical native commands and zero diagnostics, empty bs.json, fresh JSON-only code absence, complete unchanged shipped effective policy, independent source integrity and unique raw ownership. Both original directives are retired without native counterpart or suppression. Actual dependency/checker/config/lock/generated inputs and cache behavior pass. All thirteen final gates and replay proofs pass with tracked/index freeze and successful fetch cleanup; no deferred ticket or config exception."
 }
