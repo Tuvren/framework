@@ -543,7 +543,9 @@ describe("Nx project input validation", () => {
             if (testTarget === undefined) {
               throw new Error("expected the fixture test target");
             }
-            expect(targetCommandStrings(testTarget)).toEqual([]);
+            expect(() => targetCommandStrings(testTarget)).toThrow(
+              "invalid nx:run-commands"
+            );
           }
         );
       }
@@ -625,9 +627,9 @@ describe("Nx project input validation", () => {
               name: "fixture",
               targets: { test: target },
             });
-            expect(
+            expect(() =>
               targetCommandStrings(loaded?.project.targets?.test ?? {})
-            ).toEqual([]);
+            ).toThrow("invalid nx:run-commands");
           }
         );
       }
@@ -646,17 +648,17 @@ describe("Nx project input validation", () => {
       { unknown: true },
     ]) {
       const options = { commands: [command, { command, ...fields }] };
-      expect(
+      expect(() =>
         targetCommandStrings({ executor: "nx:run-commands", options })
-      ).toEqual([]);
-      expect(
+      ).toThrow("invalid nx:run-commands");
+      expect(() =>
         targetCommandStrings({
           configurations: { native: options },
           defaultConfiguration: "native",
           executor: "nx:run-commands",
           options: { commands: [command] },
         })
-      ).toEqual([]);
+      ).toThrow("invalid nx:run-commands");
     }
   });
 
@@ -666,14 +668,14 @@ describe("Nx project input validation", () => {
       [{ command }, { commands: [command] }],
       [{ commands: [command] }, { command }],
     ]) {
-      expect(
+      expect(() =>
         targetCommandStrings({
           configurations: { native },
           defaultConfiguration: "native",
           executor: "nx:run-commands",
           options,
         })
-      ).toEqual([]);
+      ).toThrow("invalid nx:run-commands");
     }
   });
 

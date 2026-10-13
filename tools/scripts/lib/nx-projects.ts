@@ -132,51 +132,59 @@ const isRunCommandEntry = (value: unknown): boolean => {
 // selection. Partial configuration fragments need not contain a command;
 // unknown top-level fields remain opaque. Tests pin this boundary to Nx's
 // schema without importing its runtime validator into filesystem discovery.
-const isCanonicalCommandOptions = (value: unknown): boolean => {
-  if (!isRecord(value)) {
-    return false;
+const isCanonicalCommandField = (key: string, field: unknown): boolean => {
+  if (field === undefined) {
+    return true;
   }
-  if (Object.hasOwn(value, "command") && Object.hasOwn(value, "commands")) {
-    return false;
-  }
-  return Object.entries(value).every(([key, field]) => {
-    if (field === undefined) {
+  switch (key) {
+    case "command":
+    case "readyWhen":
+    case "args": {
+      return typeof field === "string" || isStringArray(field);
+    }
+    case "commands": {
+      return Array.isArray(field) && field.every(isRunCommandEntry);
+    }
+    case "parallel":
+    case "color":
+    case "forwardAllArgs":
+    case "tty": {
+      return typeof field === "boolean";
+    }
+    case "envFile":
+    case "cwd": {
+      return typeof field === "string";
+    }
+    case "env": {
+      return (
+        isRecord(field) &&
+        Object.values(field).every((entry) => typeof entry === "string")
+      );
+    }
+    case "__unparsed__": {
+      return isStringArray(field);
+    }
+    default: {
       return true;
     }
-    switch (key) {
-      case "command":
-      case "readyWhen":
-      case "args": {
-        return typeof field === "string" || isStringArray(field);
-      }
-      case "commands": {
-        return Array.isArray(field) && field.every(isRunCommandEntry);
-      }
-      case "parallel":
-      case "color":
-      case "forwardAllArgs":
-      case "tty": {
-        return typeof field === "boolean";
-      }
-      case "envFile":
-      case "cwd": {
-        return typeof field === "string";
-      }
-      case "env": {
-        return (
-          isRecord(field) &&
-          Object.values(field).every((entry) => typeof entry === "string")
-        );
-      }
-      case "__unparsed__": {
-        return isStringArray(field);
-      }
-      default: {
-        return true;
-      }
-    }
-  });
+  }
 };
+
+const invalidCanonicalCommandField = (value: unknown): string | undefined => {
+  if (!isRecord(value)) {
+    return "expected an options record";
+  }
+  if (Object.hasOwn(value, "command") && Object.hasOwn(value, "commands")) {
+    return "command/commands conflict";
+  }
+  const invalidEntry = Object.entries(value).find(
+    ([key, field]) => !isCanonicalCommandField(key, field)
+  );
+  return invalidEntry?.[0];
+};
+
+const isCanonicalCommandOptions = (value: unknown): boolean =>
+  invalidCanonicalCommandField(value) === undefined;
 
 /**
  * Supported literal command inventory for an nx:run-commands target: the base
@@ -186,22 +194,32 @@ const isCanonicalCommandOptions = (value: unknown): boolean => {
  * test-lane coverage) must scan all of these, or a target rewritten in an
  * equally-valid alternate shape silently escapes the gate. This inventories
  * text; it does not prove successful execution or normalize runtime
- * interpolation, arguments, or shell tokens.
+ * interpolation, arguments, or shell tokens. Invalid canonical metadata
+ * throws: absence back-checks must not mistake a malformed target for an
+ * empty literal inventory.
  */
 export const targetCommandStrings = (target: NxProjectTarget): string[] => {
   if (target.executor !== "nx:run-commands") {
     return [];
   }
-  const configurations = Object.values(target.configurations ?? {});
+  const configurations = Object.entries(target.configurations ?? {});
   if (
-    (target.options !== undefined &&
-      !isCanonicalCommandOptions(target.options)) ||
-    configurations.some(
-      (configuration) =>
-        !isCanonicalCommandOptions({ ...target.options, ...configuration })
-    )
+    target.options !== undefined &&
+    !isCanonicalCommandOptions(target.options)
   ) {
-    return [];
+    throw new TypeError(
+      `invalid nx:run-commands options: ${invalidCanonicalCommandField(target.options)}`
+    );
+  }
+  // Validate the entire inventory before collecting, preserving base-first
+  // failure order and rejecting conflicts introduced by shallow overrides.
+  for (const [name, configuration] of configurations) {
+    const effective = { ...target.options, ...configuration };
+    if (!isCanonicalCommandOptions(effective)) {
+      throw new TypeError(
+        `invalid nx:run-commands configurations[${JSON.stringify(name)}] (effective options): ${invalidCanonicalCommandField(effective)}`
+      );
+    }
   }
   const out: string[] = [];
   const collect = (options: Record<string, unknown> | undefined): boolean => {
@@ -237,7 +255,7 @@ export const targetCommandStrings = (target: NxProjectTarget): string[] => {
   if (!collect(target.options)) {
     return [];
   }
-  for (const configuration of configurations) {
+  for (const [, configuration] of configurations) {
     if (!collect(configuration)) {
       return [];
     }

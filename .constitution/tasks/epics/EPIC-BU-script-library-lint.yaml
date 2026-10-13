@@ -138,7 +138,7 @@ decisions:
     ruler: Repository owner through Stage 3 alignment after this wave
     waiting_on: Review the native-readiness evidence, master tests and promoted conformance after BS and BU merge.
     interim:
-      assumption: ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported public signatures, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized.
+      assumption: ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported contracts, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. A28 permits separately authorized intentional breaking API or shape changes with the affected authority, tests and release metadata; BU's public APIs remain unchanged. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized.
       applied_by:
         - KRT-BU004
         - tools/scripts/lib/command-runner.ts
@@ -158,8 +158,8 @@ decisions:
 # M6 completes KRT-BU004: native diagnostics 81 -> 0 over all 19 code files;
 # zero owned JSON and zero baseline/drift/counterpart directives. Full effective
 # shipped policy equality holds (536 rule keys; 55 enabled type-aware rules).
-# All 12 final lead checks pass: tools tsc, helpers (93/7562 assertions), Biome,
-# Oxfmt, extended tests (151/8801), native lint/selection, typecheck, lint, check,
+# All 12 final lead checks pass: tools tsc, helpers (95/9490 assertions), Biome,
+# Oxfmt, extended tests (153/10729), native lint/selection, typecheck, lint, check,
 # verify:kernel and VERIFY_SERIAL=1 verify (36 steps). Fetch cleanup passed.
 # Under A13, two worker full runs and one isolated alias control timed out at
 # the unchanged 5s limit. After resource relief isolated controls and the third
@@ -194,6 +194,14 @@ decisions:
 # remains historical evidence, never a quota. Native strict discovery was tested
 # independently and needed no production change. A23 records exact 233-target
 # inventory equality against 040ea86 without a permanent workspace hash golden.
+# A25 fixes PR150's absence-consumer regression: invalid known canonical fields,
+# command records and effective conflicts throw contextual TypeError rather than
+# becoming false absence. The original certification and workspace coverage
+# graders run against 72 controlled scenarios each; first-error context/order
+# and the full vendor matrix remain covered. A27 preserves a 5007ms inventory
+# timeout under load, then one green isolation and complete extended retry.
+# Worker and lead final serial verification passed with the full tracked/index
+# freeze and fetch cleanup. A28 requires no change to this stable implementation.
 
 closeout:
   tickets_completed: [KRT-BU001, KRT-BU002, KRT-BU003, KRT-BU004]
