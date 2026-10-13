@@ -82,176 +82,51 @@ export interface ConformanceEvidence {
   summary: ConformanceEvidenceSummary;
 }
 
-export function assertConformanceSuiteManifest(
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const assertNonEmptyString: (
   value: unknown,
   label: string
-): asserts value is ConformanceSuiteManifest {
+) => asserts value is string = (
+  value: unknown,
+  label: string
+): asserts value is string => {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+};
+
+const readFixture = (value: unknown, label: string): SuiteFixture => {
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
 
-  assertNonEmptyString(value.boundary, `${label}.boundary`);
-  assertNonEmptyString(value.suiteId, `${label}.suiteId`);
-  assertNonEmptyString(value.suiteVersion, `${label}.suiteVersion`);
+  assertNonEmptyString(value.id, `${label}.id`);
+  assertNonEmptyString(value.path, `${label}.path`);
+  return {
+    id: value.id,
+    path: value.path,
+  };
+};
 
-  if (
-    value.fixtureSchemaPath !== undefined &&
-    typeof value.fixtureSchemaPath !== "string"
-  ) {
-    throw new Error(`${label}.fixtureSchemaPath must be a string when present`);
-  }
+const assertUniqueIds = (values: readonly string[], label: string): void => {
+  const seenValues = new Set<string>();
 
-  const fixtures = readSuiteFixtures(value.fixtures, `${label}.fixtures`);
-  const scenarios = readSuiteScenarios(value.scenarios, `${label}.scenarios`);
-  const checks = readSuiteChecks(value.checks, `${label}.checks`);
-  const fixtureIds = new Set(fixtures.map((fixture) => fixture.id));
-  const scenarioIds = new Set(scenarios.map((scenario) => scenario.id));
-
-  for (const check of checks) {
-    for (const fixtureId of check.fixtureIds ?? []) {
-      if (!fixtureIds.has(fixtureId)) {
-        throw new Error(
-          `${label}.checks contains unknown fixture id ${JSON.stringify(
-            fixtureId
-          )}`
-        );
-      }
+  for (const value of values) {
+    if (seenValues.has(value)) {
+      throw new Error(`${label} must not contain duplicate ids`);
     }
 
-    for (const scenarioId of check.scenarioIds ?? []) {
-      if (!scenarioIds.has(scenarioId)) {
-        throw new Error(
-          `${label}.checks contains unknown scenario id ${JSON.stringify(
-            scenarioId
-          )}`
-        );
-      }
-    }
+    seenValues.add(value);
   }
-}
+};
 
-export function assertConformanceEvidence(
+const readSuiteFixtures = (
   value: unknown,
   label: string
-): asserts value is ConformanceEvidence {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  assertNonEmptyString(value.boundary, `${label}.boundary`);
-  assertNonEmptyString(value.implementationId, `${label}.implementationId`);
-  assertNonEmptyString(value.language, `${label}.language`);
-  assertNonEmptyString(value.suiteId, `${label}.suiteId`);
-  assertNonEmptyString(value.suiteVersion, `${label}.suiteVersion`);
-  assertConformanceStatus(value.status, `${label}.status`);
-
-  const checkResults = readCheckResults(
-    value.checkResults,
-    `${label}.checkResults`
-  );
-  const nonApplicableCheckIds =
-    readOptionalStringArray(
-      value.nonApplicableCheckIds,
-      `${label}.nonApplicableCheckIds`,
-      false
-    ) ?? [];
-  const expectedSummary = createConformanceEvidenceSummary(checkResults);
-
-  if (!isRecord(value.summary)) {
-    throw new Error(`${label}.summary must be an object`);
-  }
-
-  assertSafeInteger(
-    value.summary.totalChecks,
-    `${label}.summary.totalChecks`,
-    expectedSummary.totalChecks + nonApplicableCheckIds.length
-  );
-  assertSafeInteger(
-    value.summary.passedChecks,
-    `${label}.summary.passedChecks`,
-    expectedSummary.passedChecks
-  );
-  assertSafeInteger(
-    value.summary.failedChecks,
-    `${label}.summary.failedChecks`,
-    expectedSummary.failedChecks
-  );
-  assertSafeInteger(
-    value.summary.applicableChecks,
-    `${label}.summary.applicableChecks`,
-    checkResults.length
-  );
-  assertSafeInteger(
-    value.summary.nonApplicableChecks,
-    `${label}.summary.nonApplicableChecks`,
-    nonApplicableCheckIds.length
-  );
-
-  const expectedStatus = expectedSummary.failedChecks === 0 ? "pass" : "fail";
-
-  if (value.status !== expectedStatus) {
-    throw new Error(
-      `${label}.status must be ${expectedStatus} for the provided check results`
-    );
-  }
-}
-
-export function createConformanceEvidenceSummary(
-  checkResults: readonly ConformanceCheckResult[]
-): ConformanceEvidenceSummary {
-  let passedChecks = 0;
-  let failedChecks = 0;
-
-  for (const checkResult of checkResults) {
-    if (checkResult.status === "pass") {
-      passedChecks += 1;
-    } else {
-      failedChecks += 1;
-    }
-  }
-
-  return {
-    failedChecks,
-    passedChecks,
-    totalChecks: checkResults.length,
-  };
-}
-
-export function createCheckResult(
-  checkId: string,
-  assertionResults: readonly ConformanceAssertionResult[],
-  details?: Record<string, unknown>
-): ConformanceCheckResult {
-  const status = assertionResults.every(
-    (assertionResult) => assertionResult.status === "pass"
-  )
-    ? "pass"
-    : "fail";
-
-  return {
-    assertionResults: [...assertionResults],
-    checkId,
-    details,
-    status,
-  };
-}
-
-export function createAssertionResult(
-  assertionId: string,
-  passed: boolean,
-  message?: string
-): ConformanceAssertionResult {
-  return {
-    assertionId,
-    message,
-    status: passed ? "pass" : "fail",
-  };
-}
-
-function readSuiteFixtures(
-  value: unknown,
-  label: string
-): readonly SuiteFixture[] {
+): readonly SuiteFixture[] => {
   if (value === undefined) {
     return [];
   }
@@ -268,25 +143,29 @@ function readSuiteFixtures(
     label
   );
   return fixtures;
-}
+};
 
-function readFixture(value: unknown, label: string): SuiteFixture {
+const readScenario = (value: unknown, label: string): SuiteScenario => {
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
 
   assertNonEmptyString(value.id, `${label}.id`);
-  assertNonEmptyString(value.path, `${label}.path`);
+
+  if (value.path !== undefined && typeof value.path !== "string") {
+    throw new Error(`${label}.path must be a string when present`);
+  }
+
   return {
     id: value.id,
     path: value.path,
   };
-}
+};
 
-function readSuiteScenarios(
+const readSuiteScenarios = (
   value: unknown,
   label: string
-): readonly SuiteScenario[] {
+): readonly SuiteScenario[] => {
   if (value === undefined) {
     return [];
   }
@@ -303,41 +182,40 @@ function readSuiteScenarios(
     label
   );
   return scenarios;
-}
+};
 
-function readScenario(value: unknown, label: string): SuiteScenario {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
+const readStringArray = (
+  value: unknown,
+  label: string,
+  requireNonEmpty: boolean
+): string[] => {
+  if (!Array.isArray(value) || (requireNonEmpty && value.length === 0)) {
+    throw new Error(
+      `${label} must be ${requireNonEmpty ? "a non-empty" : "an"} array`
+    );
   }
 
-  assertNonEmptyString(value.id, `${label}.id`);
+  const strings = value.map((entry, index) => {
+    assertNonEmptyString(entry, `${label}[${index}]`);
+    return entry;
+  });
+  assertUniqueIds(strings, label);
+  return strings;
+};
 
-  if (value.path !== undefined && typeof value.path !== "string") {
-    throw new Error(`${label}.path must be a string when present`);
+const readOptionalStringArray = (
+  value: unknown,
+  label: string,
+  requireNonEmpty = true
+): string[] | undefined => {
+  if (value === undefined) {
+    return undefined;
   }
 
-  return {
-    id: value.id,
-    path: value.path,
-  };
-}
+  return readStringArray(value, label, requireNonEmpty);
+};
 
-function readSuiteChecks(value: unknown, label: string): readonly SuiteCheck[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new Error(`${label} must be a non-empty array`);
-  }
-
-  const checks = value.map((check, index) =>
-    readSuiteCheck(check, `${label}[${index}]`)
-  );
-  assertUniqueIds(
-    checks.map((check) => check.checkId),
-    label
-  );
-  return checks;
-}
-
-function readSuiteCheck(value: unknown, label: string): SuiteCheck {
+const readSuiteCheck = (value: unknown, label: string): SuiteCheck => {
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
@@ -399,30 +277,133 @@ function readSuiteCheck(value: unknown, label: string): SuiteCheck {
     interopPairs,
     scenarioIds,
   };
-}
+};
 
-function readCheckResults(
+const readSuiteChecks = (
   value: unknown,
   label: string
-): readonly ConformanceCheckResult[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
+): readonly SuiteCheck[] => {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(`${label} must be a non-empty array`);
   }
 
-  const checkResults = value.map((checkResult, index) =>
-    readCheckResult(checkResult, `${label}[${index}]`)
+  const checks = value.map((check, index) =>
+    readSuiteCheck(check, `${label}[${index}]`)
   );
   assertUniqueIds(
-    checkResults.map((checkResult) => checkResult.checkId),
+    checks.map((check) => check.checkId),
     label
   );
-  return checkResults;
-}
+  return checks;
+};
 
-function readCheckResult(
+export const assertConformanceSuiteManifest: (
   value: unknown,
   label: string
-): ConformanceCheckResult {
+) => asserts value is ConformanceSuiteManifest = (
+  value: unknown,
+  label: string
+): asserts value is ConformanceSuiteManifest => {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  assertNonEmptyString(value.boundary, `${label}.boundary`);
+  assertNonEmptyString(value.suiteId, `${label}.suiteId`);
+  assertNonEmptyString(value.suiteVersion, `${label}.suiteVersion`);
+
+  if (
+    value.fixtureSchemaPath !== undefined &&
+    typeof value.fixtureSchemaPath !== "string"
+  ) {
+    throw new Error(`${label}.fixtureSchemaPath must be a string when present`);
+  }
+
+  const fixtures = readSuiteFixtures(value.fixtures, `${label}.fixtures`);
+  const scenarios = readSuiteScenarios(value.scenarios, `${label}.scenarios`);
+  const checks = readSuiteChecks(value.checks, `${label}.checks`);
+  const fixtureIds = new Set(fixtures.map((fixture) => fixture.id));
+  const scenarioIds = new Set(scenarios.map((scenario) => scenario.id));
+
+  for (const check of checks) {
+    for (const fixtureId of check.fixtureIds ?? []) {
+      if (!fixtureIds.has(fixtureId)) {
+        throw new Error(
+          `${label}.checks contains unknown fixture id ${JSON.stringify(
+            fixtureId
+          )}`
+        );
+      }
+    }
+
+    for (const scenarioId of check.scenarioIds ?? []) {
+      if (!scenarioIds.has(scenarioId)) {
+        throw new Error(
+          `${label}.checks contains unknown scenario id ${JSON.stringify(
+            scenarioId
+          )}`
+        );
+      }
+    }
+  }
+};
+
+const assertConformanceStatus: (
+  value: unknown,
+  label: string
+) => asserts value is ConformanceStatus = (
+  value: unknown,
+  label: string
+): asserts value is ConformanceStatus => {
+  if (value !== "fail" && value !== "pass") {
+    throw new Error(`${label} must be "pass" or "fail"`);
+  }
+};
+
+const readAssertionResult = (
+  value: unknown,
+  label: string
+): ConformanceAssertionResult => {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  assertNonEmptyString(value.assertionId, `${label}.assertionId`);
+  assertConformanceStatus(value.status, `${label}.status`);
+
+  if (value.message !== undefined && typeof value.message !== "string") {
+    throw new Error(`${label}.message must be a string when present`);
+  }
+
+  return {
+    assertionId: value.assertionId,
+    message: value.message,
+    status: value.status,
+  };
+};
+
+const readAssertionResults = (
+  value: unknown,
+  label: string
+): readonly ConformanceAssertionResult[] => {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(`${label} must be a non-empty array`);
+  }
+
+  const assertionResults = value.map((assertionResult, index) =>
+    readAssertionResult(assertionResult, `${label}[${index}]`)
+  );
+  assertUniqueIds(
+    assertionResults.map((assertionResult) => assertionResult.assertionId),
+    label
+  );
+  return assertionResults;
+};
+
+const readCheckResult = (
+  value: unknown,
+  label: string
+): ConformanceCheckResult => {
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
@@ -456,119 +437,153 @@ function readCheckResult(
     details: value.details,
     status: value.status,
   };
-}
+};
 
-function readAssertionResults(
+const readCheckResults = (
   value: unknown,
   label: string
-): readonly ConformanceAssertionResult[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new Error(`${label} must be a non-empty array`);
+): readonly ConformanceCheckResult[] => {
+  if (!Array.isArray(value)) {
+    throw new Error(`${label} must be an array`);
   }
 
-  const assertionResults = value.map((assertionResult, index) =>
-    readAssertionResult(assertionResult, `${label}[${index}]`)
+  const checkResults = value.map((checkResult, index) =>
+    readCheckResult(checkResult, `${label}[${index}]`)
   );
   assertUniqueIds(
-    assertionResults.map((assertionResult) => assertionResult.assertionId),
+    checkResults.map((checkResult) => checkResult.checkId),
     label
   );
-  return assertionResults;
-}
+  return checkResults;
+};
 
-function readAssertionResult(
+export const createConformanceEvidenceSummary = (
+  checkResults: readonly ConformanceCheckResult[]
+): ConformanceEvidenceSummary => {
+  let passedChecks = 0;
+  let failedChecks = 0;
+
+  for (const checkResult of checkResults) {
+    if (checkResult.status === "pass") {
+      passedChecks += 1;
+    } else {
+      failedChecks += 1;
+    }
+  }
+
+  return {
+    failedChecks,
+    passedChecks,
+    totalChecks: checkResults.length,
+  };
+};
+
+const assertSafeInteger = (
+  value: unknown,
+  label: string,
+  expectedValue: number
+): void => {
+  if (!Number.isSafeInteger(value) || value !== expectedValue) {
+    throw new Error(`${label} must equal ${expectedValue}`);
+  }
+};
+
+export const assertConformanceEvidence: (
   value: unknown,
   label: string
-): ConformanceAssertionResult {
+) => asserts value is ConformanceEvidence = (
+  value: unknown,
+  label: string
+): asserts value is ConformanceEvidence => {
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
 
-  assertNonEmptyString(value.assertionId, `${label}.assertionId`);
+  assertNonEmptyString(value.boundary, `${label}.boundary`);
+  assertNonEmptyString(value.implementationId, `${label}.implementationId`);
+  assertNonEmptyString(value.language, `${label}.language`);
+  assertNonEmptyString(value.suiteId, `${label}.suiteId`);
+  assertNonEmptyString(value.suiteVersion, `${label}.suiteVersion`);
   assertConformanceStatus(value.status, `${label}.status`);
 
-  if (value.message !== undefined && typeof value.message !== "string") {
-    throw new Error(`${label}.message must be a string when present`);
+  const checkResults = readCheckResults(
+    value.checkResults,
+    `${label}.checkResults`
+  );
+  const nonApplicableCheckIds =
+    readOptionalStringArray(
+      value.nonApplicableCheckIds,
+      `${label}.nonApplicableCheckIds`,
+      false
+    ) ?? [];
+  const expectedSummary = createConformanceEvidenceSummary(checkResults);
+
+  if (!isRecord(value.summary)) {
+    throw new Error(`${label}.summary must be an object`);
   }
 
-  return {
-    assertionId: value.assertionId,
-    message: value.message,
-    status: value.status,
-  };
-}
+  assertSafeInteger(
+    value.summary.totalChecks,
+    `${label}.summary.totalChecks`,
+    expectedSummary.totalChecks + nonApplicableCheckIds.length
+  );
+  assertSafeInteger(
+    value.summary.passedChecks,
+    `${label}.summary.passedChecks`,
+    expectedSummary.passedChecks
+  );
+  assertSafeInteger(
+    value.summary.failedChecks,
+    `${label}.summary.failedChecks`,
+    expectedSummary.failedChecks
+  );
+  assertSafeInteger(
+    value.summary.applicableChecks,
+    `${label}.summary.applicableChecks`,
+    checkResults.length
+  );
+  assertSafeInteger(
+    value.summary.nonApplicableChecks,
+    `${label}.summary.nonApplicableChecks`,
+    nonApplicableCheckIds.length
+  );
 
-function readOptionalStringArray(
-  value: unknown,
-  label: string,
-  requireNonEmpty = true
-): string[] | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
+  const expectedStatus = expectedSummary.failedChecks === 0 ? "pass" : "fail";
 
-  return readStringArray(value, label, requireNonEmpty);
-}
-
-function readStringArray(
-  value: unknown,
-  label: string,
-  requireNonEmpty: boolean
-): string[] {
-  if (!Array.isArray(value) || (requireNonEmpty && value.length === 0)) {
+  if (value.status !== expectedStatus) {
     throw new Error(
-      `${label} must be ${requireNonEmpty ? "a non-empty" : "an"} array`
+      `${label}.status must be ${expectedStatus} for the provided check results`
     );
   }
+};
 
-  const strings = value.map((entry, index) => {
-    assertNonEmptyString(entry, `${label}[${index}]`);
-    return entry;
-  });
-  assertUniqueIds(strings, label);
-  return strings;
-}
+export const createCheckResult = (
+  checkId: string,
+  assertionResults: readonly ConformanceAssertionResult[],
+  details?: Record<string, unknown>
+): ConformanceCheckResult => {
+  const status = assertionResults.every(
+    (assertionResult) => assertionResult.status === "pass"
+  )
+    ? "pass"
+    : "fail";
 
-function assertUniqueIds(values: readonly string[], label: string): void {
-  const seenValues = new Set<string>();
+  return {
+    assertionResults: [...assertionResults],
+    checkId,
+    details,
+    status,
+  };
+};
 
-  for (const value of values) {
-    if (seenValues.has(value)) {
-      throw new Error(`${label} must not contain duplicate ids`);
-    }
-
-    seenValues.add(value);
-  }
-}
-
-function assertConformanceStatus(
-  value: unknown,
-  label: string
-): asserts value is ConformanceStatus {
-  if (value !== "fail" && value !== "pass") {
-    throw new Error(`${label} must be "pass" or "fail"`);
-  }
-}
-
-function assertNonEmptyString(
-  value: unknown,
-  label: string
-): asserts value is string {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`${label} must be a non-empty string`);
-  }
-}
-
-function assertSafeInteger(
-  value: unknown,
-  label: string,
-  expectedValue: number
-): void {
-  if (!Number.isSafeInteger(value) || value !== expectedValue) {
-    throw new Error(`${label} must equal ${expectedValue}`);
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+export const createAssertionResult = (
+  assertionId: string,
+  passed: boolean,
+  message?: string
+): ConformanceAssertionResult => {
+  return {
+    assertionId,
+    message,
+    status: passed ? "pass" : "fail",
+  };
+};
