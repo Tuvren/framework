@@ -12,17 +12,17 @@
   },
   "priorMilestoneNativeDiagnostics": 81,
   "final": {
-    "ownedFiles": 19,
+    "ownedFiles": 20,
     "syntaxDiagnostics": 0,
     "typeAwareDiagnostics": 0,
     "suppressionDirectives": 0,
-    "commit": "6c6c4c5fea63517087629822578d3306d9322a6e"
+    "commit": "9285a987e149eb0a245d5749b83963ca843c0d3c"
   },
   "entries": [],
   "baselineEntries": [],
   "driftEntries": [],
   "retainedCheckerDisposition": "No baseline or drift directives exist. Fresh retained Biome passes; ownership and bu.json unchanged.",
-  "nativeAdmissionDisposition": "Full unchanged shipped type-aware preset passes over all 19 owned code files. No counterpart warranted or added; CB still owns whole-tools admission.",
+  "nativeAdmissionDisposition": "Full unchanged shipped type-aware preset passes over all 20 owned code files. No counterpart warranted or added; CB still owns whole-tools admission.",
   "authorityManifestBlobBefore": "fc9e6f643d3d55c9a7b68ad4457ecc663b116a2a",
   "authorityManifestBlobAfter": "fc9e6f643d3d55c9a7b68ad4457ecc663b116a2a",
   "changedFiles": [
@@ -39,6 +39,7 @@
     "tools/scripts/lib/generated-prerequisites.ts",
     "tools/scripts/lib/json-source-integrity.ts",
     "tools/scripts/lib/native-lint-routing.ts",
+    "tools/scripts/lib/nx-command-callers.test.ts",
     "tools/scripts/lib/nx-command-options.test.ts",
     "tools/scripts/lib/nx-projects.ts",
     "tools/scripts/lib/regenerate-command-argv.test.ts",
@@ -48,24 +49,24 @@
   "baselineArtifactSha256": "62d6709cabf1034e92bb15e3a3ae65920aa165cb3e9b2349343a2271419aefc8",
   "verification": {
     "toolsTsc": "pass",
-    "helperTests": "95 pass / 0 fail / 9490 assertions",
-    "retainedBiome": "pass;19 files",
-    "oxfmt": "pass;19 files",
-    "extendedTests": "153 pass / 0 fail / 10729 assertions",
+    "helperTests": "97 pass / 0 fail / 10060 assertions",
+    "retainedBiome": "pass;20 files",
+    "oxfmt": "pass;20 files",
+    "extendedTests": "155 pass / 0 fail / 11300 assertions",
     "nativeLint": "pass;0 diagnostics;unchanged type-aware preset",
-    "actualOxlintSelection": "19 owned files;exact complete equality",
+    "actualOxlintSelection": "20 owned files;exact complete equality",
     "nativeJsonSelection": "0 owned JSON/format/protected files;empty JSON CLI not claimed",
     "repositoryTypecheck": "pass;33 projects plus1 prerequisite",
     "repositoryLint": "pass",
     "check": "pass;locked;fetch cleanup pass",
     "verifyKernel": "pass;locked;fetch cleanup pass",
-    "verify": "pass; final A25 source independently verified with all36steps and VERIFY_SERIAL=1; fetch cleanup pass",
-    "apiTypes": "42 value signatures and 35 type declarations unchanged; only the two A15 NxProjectTarget property declarations are corrected",
+    "verify": "pass; final A30 source independently verified with all36steps and VERIFY_SERIAL=1; fetch cleanup pass",
+    "apiTypes": "42 value signatures and 34 type declarations unchanged; two internal interfaces have explicit A15/A30 vendor-model corrections",
     "largeFlatWalker": "12000files;order/skip semantics match original;~64ms",
     "nxDependentTaskInputs": "structured vendor-supported inputs preserved",
     "diffCheck": "pass",
-    "exportedTypeComparison": "42 value signatures and 35 complete type declarations match pre-M6; only NxProjectTarget.options/configurations are aligned with Nx22.7.12 under A15",
-    "leadContinuation": "A27 preserves the first four unchanged-source green lead checks, then reruns the complete extended suite and all remaining eight checks under the shared lock; no coverage or assertion is dropped"
+    "exportedTypeComparison": "42 value signatures and 34 complete type declarations match pre-M6; only NxProjectTarget.options/configurations (A15) and NxCommandOptions.command (A30) align with Nx22.7.12",
+    "leadContinuation": "Historical A27 continued the A25 checks after resource relief; final A30 source receives a fresh complete worker and lead twelve-command run"
   },
   "retryHistory": [
     {
@@ -199,6 +200,18 @@
       "exit": 0,
       "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
       "log": "bu-pr-fix-lead-retry2-verify.log"
+    },
+    {
+      "attempt": "A30workerSerial",
+      "exit": 0,
+      "sourceCommit": "9285a987e149eb0a245d5749b83963ca843c0d3c",
+      "log": "bu-pr-array-worker-final-verify.log"
+    },
+    {
+      "attempt": "A30leadIndependentSerial",
+      "exit": 0,
+      "sourceCommit": "9285a987e149eb0a245d5749b83963ca843c0d3c",
+      "log": "bu-pr-array-lead-verify.log"
     }
   ],
   "introducedDependencies": [],
@@ -257,15 +270,16 @@
       "paths": [
         "tools/scripts/lib/nx-projects.ts",
         "tools/scripts/lib/nx-command-options.test.ts",
+        "tools/scripts/lib/nx-command-callers.test.ts",
         "tools/scripts/lib/biome-oxc-discovery.test.ts"
       ],
-      "decision": "A25 invalid known canonical records throw an internal contextual TypeError instead of becoming empty inventory. Actual caller fixtures protect both certification absence checks and coverage presence credit, while custom executors and vendor-valid unsupported extraction remain opaque/no proof."
+      "decision": "A25 invalid known canonical records throw contextual TypeError instead of empty inventory, protecting actual absence/presence callers. A30 corrects NxCommandOptions.command to string|string[] and uses installed normalizeOptions array.join to preserve the full supported literal union; opaque executors remain no proof."
     }
   ],
   "baselineArtifact": ".constitution/evidence/KRT-BU002/suppression-ledger.json",
   "exportProof": {
     "unchangedValues": 42,
-    "unchangedTypeDeclarations": 35,
+    "unchangedTypeDeclarations": 34,
     "approvedInternalTypeCorrections": [
       {
         "path": "tools/scripts/lib/nx-projects.ts",
@@ -273,9 +287,16 @@
         "ruling": "A15",
         "before": "export interface NxProjectTarget {\n    configurations?: Record<string, NxCommandOptions>;\n    defaultConfiguration?: string;\n    executor?: string;\n    options?: NxCommandOptions;\n}",
         "after": "export interface NxProjectTarget {\n    configurations?: Record<string, Record<string, unknown>>;\n    defaultConfiguration?: string;\n    executor?: string;\n    options?: Record<string, unknown>;\n}"
+      },
+      {
+        "path": "tools/scripts/lib/nx-projects.ts",
+        "name": "NxCommandOptions",
+        "ruling": "A30",
+        "before": "export interface NxCommandOptions {\n    command?: string;\n    commands?: (string | {\n        command?: string;\n    })[];\n    cwd?: string;\n    args?: string | string[];\n    __unparsed__?: string[];\n    forwardAllArgs?: boolean;\n    [option: string]: unknown;\n}",
+        "after": "export interface NxCommandOptions {\n    command?: string | string[];\n    commands?: (string | {\n        command?: string;\n    })[];\n    cwd?: string;\n    args?: string | string[];\n    __unparsed__?: string[];\n    forwardAllArgs?: boolean;\n    [option: string]: unknown;\n}"
       }
     ],
-    "allEqualExceptApprovedInternalCorrection": true,
+    "allEqualExceptApprovedInternalCorrections": true,
     "artifact": "readiness.json"
   },
   "internalVendorSchemaCorrection": {
@@ -288,21 +309,38 @@
     "canonicalNarrowing": "tools/scripts/lib/native-lint-routing.ts",
     "regressions": [
       "tools/scripts/lib/biome-oxc-discovery.test.ts",
-      "tools/scripts/lib/nx-command-options.test.ts"
+      "tools/scripts/lib/nx-command-options.test.ts",
+      "tools/scripts/lib/nx-command-callers.test.ts"
     ]
+  },
+  "internalCommandModelCorrection": {
+    "ruling": "A30",
+    "path": "tools/scripts/lib/nx-projects.ts",
+    "property": "NxCommandOptions.command",
+    "before": "string",
+    "after": "string | string[]",
+    "vendorNormalization": "array.join(' ')",
+    "vendorSource": "nx/dist/src/executors/run-commands/run-commands.impl.js#normalizeOptions",
+    "vendorVersion": "22.7.12",
+    "vendorImplementationSha256": "65fe611939f4dfa3637ba3724d0002f4ebd9ccedfa67396364114f05ce1484da",
+    "vendorSchemaSha256": "a4b0563d58377afe7254759b8351cd72894699985de7d7b6b202c461e3b0a8c4",
+    "referenceIsolated": true,
+    "fixtureCommandsNeverExecutedByNormalizer": true
   },
   "canonicalExecutionProof": {
     "rulings": [
       "A18",
       "A22",
-      "A25"
+      "A25",
+      "A30"
     ],
     "helper": "tools/scripts/lib/nx-projects.ts#targetCommandStrings",
     "unsupportedExecutorsYieldNoCommands": true,
     "malformedKnownFieldsYieldNoPartialCommands": true,
     "invalidCanonicalRecordsThrowTypeError": true,
     "presenceAndAbsenceConsumersFailClosed": true,
-    "vendorValidUnsupportedCommandArraysYieldNoCommands": true,
+    "vendorValidCommandArraysNormalizeToSingleLiteral": true,
+    "supportedFragmentsNeverErasedByValidArrays": true,
     "effectiveConfigurationValidation": true,
     "missingAndEmptyDefaultUseVendorBaseFallback": true,
     "knownTopLevelFields": 12,
@@ -312,7 +350,10 @@
     "inventoryIsLiteralTextNotSuccessfulExecutionProof": true
   },
   "preexistingModelingExclusions": {
-    "ruling": "A22",
+    "rulings": [
+      "A22",
+      "A30"
+    ],
     "routedTo": "BV/Stage 3",
     "callers": [
       "tools/conformance/certification/validate-certification-discovery.ts",
@@ -321,9 +362,9 @@
     "items": [
       "executor-runtime-only readyWhen/serial and presentation/serial contradictions",
       "interpolation/argument rewriting and shell-token interpretation",
-      "command-array extraction",
       "graph/targetDefaults modeling"
     ],
+    "commandArrayOmissionRetiredBy": "A30",
     "fixedByThisEpic": false
   },
   "liveRepositoryInventory": {
@@ -331,14 +372,14 @@
     "helper": "tools/scripts/lib/nx-projects.ts",
     "baselineModuleMatchesGitObject": true,
     "baselineModuleSha256": "9da9f6ea9ea3c666a8331f57b5cf5e6b5ba961abe1ebff665e86351506065dcb",
-    "finalModuleSha256": "2d3852f9ef5c4ea0ec1b4b5f062dd0734197f1893bf83d15e4d0f8ccc6883ffd",
+    "finalModuleSha256": "1140972fcf2dee6b0a93b5f7fc9d82a6ab0ac9b720e5cd02f2c30245bcc011e5",
     "command": "bun /home/oscar/.local/state/tuvren-framework/plans/wave-1-bs-bu/bu-m6-complete-inventory-proof.mjs",
     "targets": 233,
     "inventorySha256": "83f3d24658f3acd9f6584bb4f52266dd30e9b80b2255e6ec0ca614b9fc1754ad",
     "inventoryHashEncoding": "UTF-8 JSON.stringify(perProject), no trailing newline",
     "prettySnapshotSha256": "91bb9442288fe39a8dcf3a7f8e19bbb4a12110cc9c77b654c92633c0d49917d3",
     "allPerProjectCommandsEqual": true,
-    "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
+    "sourceCommit": "9285a987e149eb0a245d5749b83963ca843c0d3c",
     "transcriptBundleArtifact": "bu-m6-complete-inventory-proof.json",
     "perProjectCommandsIncludedInBundle": true
   }

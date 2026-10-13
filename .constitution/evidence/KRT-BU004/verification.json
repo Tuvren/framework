@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
+  "sourceCommit": "9285a987e149eb0a245d5749b83963ca843c0d3c",
   "mode": "contract_test",
   "commands": [
     {
@@ -76,12 +76,12 @@
     }
   ],
   "helperTests": {
-    "tests": 95,
-    "assertions": 9490
+    "tests": 97,
+    "assertions": 10060
   },
   "extendedTests": {
-    "tests": 153,
-    "assertions": 10729
+    "tests": 155,
+    "assertions": 11300
   },
   "fullVerifySteps": 36,
   "signatureMethod": "Compiler-resolved value signatures and complete comment-free interface/type-alias declaration syntax; new owned test files compare against an empty export surface",
@@ -89,8 +89,8 @@
     "Recorded counts describe the producing source commit and are not future quotas.",
     "No live_probe recipes apply.",
     "Owned JSON inventory is empty; json-check intentionally rejects empty scopes and is not claimed as a passing owned lane.",
-    "The A15 internal vendor-schema correction is explicit; all Tuvren public APIs remain frozen.",
-    "A25 vendor-invalid canonical fields and effective configurations throw contextual TypeError, protecting both caller polarities. Opaque executors and vendor-valid unsupported command arrays yield no supported proof; missing or empty defaults preserve installed Nx base fallback.",
+    "A15 and A30 explicitly correct two internal interfaces; public Tuvren package APIs remain unchanged.",
+    "A25 vendor-invalid canonical fields and effective configurations throw contextual TypeError, protecting both caller polarities. Opaque executors yield no supported proof. A30 normalizes valid command arrays with the installed vendor literal join, preserving the full supported union; missing or empty defaults preserve installed Nx base fallback.",
     "Failed fixed-budget alias controls, resource relief, successful isolated controls and serial full runs are preserved in the transcript bundle.",
     "A16 transport failure/control and successful unchanged-source retry are preserved.",
     "The bundle is gzip-compressed JSON mapping original transcript filenames to normalized UTF-8 text."
