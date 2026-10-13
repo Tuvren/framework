@@ -1,0 +1,167 @@
+id: BU
+name: Repository script library lint ratchet
+kind: tooling
+capabilities: []
+depends_on: [BQ]
+scope:
+  paths: [tools/scripts/lib, tools/biome-coverage/bu.json]
+  tech_spec_patchable: []
+estimated_diff_lines: 12000
+estimate_source: planned
+tickets:
+  - id: KRT-BU001
+    title: Apply safe fixes and preserve types per directory
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in: [tools/scripts/lib]
+    verification:
+      command: bun run typecheck
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Run safe --fix one project at a time and immediately typecheck that project. Repair the 19 measured autofix failure classes, including required undefined arguments and readonly array to Set rewrites. This scope owns library helpers only; gate entrypoints are a separate concurrent epic. Do not switch lint targets yet."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project."
+    flows: []
+    certainty: settled
+    status: done
+  - id: KRT-BU002
+    title: Migrate live suppressions and delete dead ones
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BU001]
+    scope:
+      in: [tools/scripts/lib]
+    verification:
+      command: bun run typecheck
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if a proposed native suppression lacks a fresh equivalent diagnostic, changes the original reason, removes a needed Biome directive before native admission, or introduces a Biome directive; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Treat the measured 144-directive inventory as an identification baseline, not a quota. Re-run live retained-Biome and Oxlint diagnostics across the owned paths. For every baseline identity and any drift discovered at execution, record its original reason, equivalent native rule, retained-checker disposition, and native-admission disposition. While Biome owns a path, preserve each needed original Biome directive and its reason. Remove a directive before admission only after a behavior-preserving code fix proves that the retained Biome diagnostic no longer fires. Do not add Biome directives. Record a native counterpart only when the equivalent native rule actually fires and the original reason remains valid. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Do not create suppressions to reproduce the historical 82-live/62-dead classification. Provide the per-directive disposition ledger for CB aggregation."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate."
+    flows: []
+    certainty: settled
+    status: done
+  - id: KRT-BU003
+    title: Reorder definitions without initialization regressions
+    type: Chore
+    effort: 8
+    depends_on: [KRT-BU002]
+    scope:
+      in: [tools/scripts/lib]
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if a runtime or conformance regression follows reordering; return the rule pair to the owner without overrides occurs; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Convert func-style declarations and reorder no-use-before-define definitions in bounded reviewable module batches. Preserve exports, initialization order and observable execution. The merged kernel pilot is the prerequisite; apply its proven ordering method."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success."
+    flows: []
+    certainty: settled
+    status: done
+  - id: KRT-BU004
+    title: Clear remaining rules and prove native-clean readiness
+    type: Chore
+    effort: 8
+    depends_on: [KRT-BU003]
+    scope:
+      in: [tools/scripts/lib, tools/biome-coverage/bu.json]
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if native-clean proof requires a synthetic or overlapping Nx project, removes a needed original Biome directive or retained coverage before CB, adds an unmeasured native counterpart, or lets the type-aware backend skip an installed enabled rule; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics, then prove native-clean readiness for BU's tools/scripts/lib ownership with the complete effective shipped preset unchanged. Derive the owned code selection from Oxlint's actual --debug=files output and the owned JSON selection from the native source-integrity checker; Oxfmt ignores affect formatting only. Use the established native helpers without adding dependencies or repository-owned lint policy. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Consume KRT-BU002's ledger and rerun retained-Biome and Oxlint diagnostics. Preserve every needed original Biome directive and its reason while Biome owns the region. A scoped native-clean proof can add a native counterpart only when the equivalent native rule actually fires and the original reason remains valid. Do not require zero biome-ignore comments before admission, and do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. This cleanup region has no independent Nx project root: do not create a synthetic or overlapping project, do not activate a partial target, and do not remove tools/biome-coverage/bu.json. CB, after BU, BV, and BW complete, admits the whole tools root atomically and retires all three retained entries."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule over the complete owned code selection with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Reconcile KRT-BU002's ledger against fresh diagnostics. Prove every needed original Biome directive and reason remain while Biome owns the region, and prove each native counterpart matches an actually firing equivalent rule with the same reason. Assert actual --debug=files and native JSON selections cover the owned files, source-integrity coverage remains independent of formatter ignores, scoped tests and the full lint gate pass, and tools/biome-coverage/bu.json remains unchanged under active Biome ownership pending CB's whole-tools admission."
+    flows: []
+    certainty: settled
+    status: done
+closeout:
+  tickets_completed: [KRT-BU001, KRT-BU002, KRT-BU003, KRT-BU004]
+  tickets_deferred: []
+  points_completed: 24
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Complete EPIC-BU helper cleanup and native readiness under the unchanged shipped preset, with retained Biome ownership and measured evidence."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tech-spec
+      item: "Review shared OD-09 after this wave and record the bounded internal async/error normalization interpretation and the execution conventions below. A15 corrects internal Nx metadata types to the installed vendor schema; public Tuvren package APIs remain frozen."
+    - stage: tasks
+      item: "BV/tooling follow-up for the pre-existing kernel-interop governance side effect that deletes refs/remotes/origin/master. Reproduction is kernel-interop-grpc:interop-smoke --skipNxCache after git fetch origin master; manual runtime locking and fetch cleanup restore the ref. A5/A8 distinguish breaking/interop from ordinary codegen."
+    - stage: tasks
+      item: BV/tooling investigation from A6 for resolveCoverage set aggregation potentially collapsing repeated native selections without independent overlap proof. No production checker/topology change was included in BU.
+    - stage: tasks
+      item: "Investigate resource sensitivity of unchanged 5000ms TypeScript self-alias and Biome whole-root inventory controls. Earlier full and isolated alias runs and a later inventory control timed out under measured contention. A13/A27 locking, resource relief, successful isolation and complete retries preserved source, assertions, timeouts and coverage."
+    - stage: tech-spec
+      item: "A22 preserves literal base/all-configuration command inventory. BV/Stage 3 should investigate pre-existing executor-runtime-only readyWhen/serial and presentation/serial contradictions, interpolation/argument rewriting or shell-token interpretation and graph/targetDefaults modeling for tools/conformance/certification/validate-certification-discovery.ts and tools/scripts/validate-workspace-test-coverage.ts. These are not successful-execution guarantees and were not changed by BU; strict native discovery retains its selected-default and scope-safe grammar."
+  follow_ups: [Repository owner rules on proposed shared OD-09 through Stage 3 alignment after the wave., "CB owns whole-tools admission and retirement of bu.json after BU, BV and BW; BU leaves the retained entry byte-identical and activates no partial target.", "Root merges BS before BU, verifies the expanded partition after rebase, and reconciles/derives once for the wave."]
+  code_decisions:
+    - summary: "Honest async command execution preserves the Promise result contract and supported IO/messages while Promise.withResolvers bridges child events; empty argv rejects with the same message under OD-09/A11."
+      kind: pattern
+      paths: [tools/scripts/lib/command-runner.ts, tools/scripts/lib/command-runner.test.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: "Apply the selected preset's six internal TypeError conversions and two wrapper-cause normalizations while retaining first-validation messages/order; these unpromised implementation observations follow OD-09/A11."
+      kind: convention
+      paths: [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/biome-inventory.test.ts, tools/scripts/lib/conformance-contract.ts, tools/scripts/lib/nx-projects.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: "Await predecessor tasks to retain serial filesystem/command traversal, output order and first-failure propagation without recursive stack growth or fake awaits."
+      kind: pattern
+      paths: [tools/scripts/lib/walk-package-manifests.ts, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: Use supported Bun Glob/JSONC imports and file-plus-ancestor candidate predicates to preserve literal path bytes and glob grammar while avoiding the invalid regexp autofix.
+      kind: pattern
+      paths: [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/json-source-integrity.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: "A15 changes only NxProjectTarget.options from NxCommandOptions to Record<string, unknown> and configurations from Record<string, NxCommandOptions> to Record<string, Record<string, unknown>>. Raw executor-specific metadata remains opaque and preserved until canonical consumer selection. All callable signatures and public Tuvren package APIs remain unchanged; A30 separately records the canonical command type correction."
+      kind: contract_shape
+      paths: [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts]
+      commit: 78c776de22e7768838e7a1bc5424c0b9f79971d1
+    - summary: "A18/A22 privately validate all 12 known canonical fields and seven closed command-object fields, with shallow effective configurations and atomic malformed-record rejection. Tests pin installed schema constraints and use one isolated vendor-reference child; production discovery imports no vendor validator. Literal base/all-config inventory, partial fragments and missing or empty default fallback remain supported. A23 records operational baseline-to-final live-inventory equality without freezing unrelated workspace metadata in a permanent golden."
+      kind: convention
+      paths: [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/nx-command-options.test.ts]
+      commit: b7e98e488848587fec3da8ae38b61454e1a89503
+    - summary: "Read authority fixtures synchronously inside test code and validate their declared fixture shape before use; owner schemas and conformance remain the authority."
+      kind: convention
+      paths: [tools/scripts/lib/regenerate-command-argv.test.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: Use standard Bun resolved-value mocks and real deferred IO coordination for serial launch/failure regression tests.
+      kind: pattern
+      paths: [tools/scripts/lib/biome-oxc-discovery.test.ts]
+      commit: aa4d96b016a17ff08c41cac97c8a158edacd362d
+    - summary: "A25 surfaces vendor-invalid canonical known fields, command records and effective configuration conflicts as an explicit internal TypeError with stable context. This preserves atomic rejection while preventing invalid metadata from becoming false absence for certification discovery or positive execution credit for coverage checks. Opaque custom or unsupported executors still return no supported proof; A30 separately adds vendor command-array normalization. Controlled discovery fixtures exercise the original caller grading logic; all exported declarations remain unchanged."
+      kind: convention
+      paths: [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/nx-command-options.test.ts, tools/scripts/lib/biome-oxc-discovery.test.ts]
+      commit: 6c6c4c5fea63517087629822578d3306d9322a6e
+    - summary: "A30 corrects internal NxCommandOptions.command from string to string | string[] and normalizes arrays with the installed Nx22.7.12 normalizeOptions array.join(' ') behavior. This preserves the full base/all-configuration literal union, fixes mixed-fragment absence erasure and retires command-array omission. Vendor-invalid metadata still fails explicitly under A25; native discovery retains its stricter scope-safe grammar. The two corrected internal interfaces are measured separately, with all other declarations and public package APIs unchanged."
+      kind: contract_shape
+      paths: [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/nx-command-options.test.ts, tools/scripts/lib/nx-command-callers.test.ts]
+      commit: 9285a987e149eb0a245d5749b83963ca843c0d3c
+  settled: []
+  actuals:
+    diff_lines: 4592
+    files_touched: 31
+    milestones: 14
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-BU001
+        diff_lines: 71
+        review_rounds: 0
+      - id: KRT-BU002
+        diff_lines: 1196
+        review_rounds: 0
+      - id: KRT-BU003
+        diff_lines: 1414
+        review_rounds: 0
+      - id: KRT-BU004
+        diff_lines: 1911
+        review_rounds: 0
+    merged_commit: 5508fea
+    measured_at: 2026-10-13

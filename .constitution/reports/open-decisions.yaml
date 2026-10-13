@@ -175,3 +175,25 @@ decisions:
       date: 2026-10-01
       summary: "The user directed completion of every BP follow-up in this pass and readiness for the next epic without a later patch. The measured implementation makes the recommended option the consistent closure: the verbatim root spread preserves all 536 shipped effective rules, their option tuples, and the browser environment, while the installed extends loader loses nine option tuples and the browser environment. Stage 3 aligns the stale loader wording without changing the accepted as-shipped policy."
       chosen: Adopt verbatim root spread
+  - id: OD-09
+    question: "Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?"
+    blocks: [KRT-BU004, KRT-BS004]
+    options:
+      - name: "Preserve supported contracts and apply the selected preset's internal normalizations"
+        pros: ["Preserves public signatures, domain errors, validation order, durable outcomes and promoted conformance while implementing ADR-0070 without exceptions.", "Permits consistent Promise rejection, internal TypeError and cause preservation selected by the shipped rules."]
+        cons: [Changes unpromised internal observations such as synchronous invalid-input throws or generic error constructors.]
+      - name: Freeze additional reflection and scheduling observations before migration
+        pros: [Preserves those implementation observations even where no public or promoted contract promises them.]
+        cons: [Requires a separate policy ruling before native readiness and may conflict with the selected unchanged preset.]
+    recommendation: "Preserve supported contracts and apply the selected preset's internal normalizations"
+    closure: ruling
+    ruler: Repository owner through Stage 3 alignment after this wave
+    waiting_on: "Review the native-readiness evidence, master tests and promoted conformance after BS and BU merge."
+    interim:
+      assumption: "ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported contracts, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. A28 permits separately authorized intentional breaking API or shape changes with the affected authority, tests and release metadata; BU's public APIs remain unchanged. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized."
+      applied_by: [KRT-BU004, tools/scripts/lib/command-runner.ts, tools/scripts/lib/command-runner.test.ts, tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/biome-inventory.test.ts, tools/scripts/lib/conformance-contract.ts, tools/scripts/lib/nx-projects.ts, KRT-BS004, typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts]
+    status: proposed
+    asked:
+      date: 2026-10-13
+      in: EPIC-BU
+    proposed_by: EPIC-BU @ 5508fea

@@ -1,0 +1,117 @@
+date: 2026-10-13
+commit: 5508fea
+epics: [BS, BU]
+routed:
+  - stage: tasks
+    item: "EPIC-BV/A5: governance breaking/interop-smoke deletes shared origin/master; replace the runtime lock plus fetch workaround with a durable owned fix."
+    from: BS
+  - stage: tasks
+    item: "EPIC-BV/A6: inspect resolveCoverage Set aggregation for duplicate native owners; BS independently verifies raw per-file multiplicity, while a durable guard belongs to tooling ownership."
+    from: BS
+  - stage: tech-spec
+    item: "A11/shared BU-owned proposed OD-09: record honest preset async/error normalization at grpc-client/src/lib/grpc-kernel-client.ts (55907cf) and testkit/src/lib/fault-injecting-backend.ts, kernel-test-fixtures.ts, kernel-conformance-fixtures.ts plus test/kernel-testkit.test.ts (cd1f44d). Supported behavior, real backend authority and no fake awaits remain binding. M10 adds certification/test/kernel-typescript-conformance.test.ts readSuiteManifest guard Error-to-TypeError at d04b04d; six malformed cases preserve first message/order within 21 baseline/current probes."
+    from: BS
+  - stage: tech-spec
+    item: "A24 valid P2: reconcile documentation generation and native lint conventions after actual @packageDocumentation removal from gRPC/testkit entrypoints; prose is not equivalent metadata, required experimental markers remain, and no active consumer was measured."
+    from: BS
+  - stage: tasks
+    item: Schedule Stage 3/4 documentation-generation/lint convention reconciliation before any future consumer requires removed package metadata.
+    from: BS
+  - stage: tech-spec
+    item: "code decision (pattern): Use Connect interceptor fixtures with native Promise.withResolvers<null> readiness/failure gates for deterministic gRPC forwarding and stream-error delivery tests. [typescript/kernel/grpc-client/test/grpc-kernel-client.test.ts] at bbca5098ae0f4fac23646cdf3f7ad3708995c217"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (convention): Declare native gRPC lint codegen prerequisites, direct generated TypeScript output hashing, inherited checker inputs, imported source dependencies and root TypeScript configs using installed Nx metadata; keep ordinary typecheck source-only. [typescript/kernel/grpc-client/project.json] at 55907cfb80861d68b5a95db537057e811c9065b9"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (convention): Remove the native-rejected @packageDocumentation tag from the admitted gRPC package entrypoint while retaining descriptive prose; prose is not equivalent TSDoc metadata. Reconcile documentation generation and lint conventions through Stage 3/4 before consuming this package marker. [typescript/kernel/grpc-client/src/index.ts] at 55907cfb80861d68b5a95db537057e811c9065b9"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (pattern): Use focused typed Bun recorded-call unit transactions with checked request shapes, staged actual writes and local commit publication; real backend conformance remains separate authority. [typescript/kernel/testkit/test/kernel-testkit.test.ts] at cd1f44d94e48b963eb48de159484d6de548c96e3"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (convention): Use the native node:timers/promises API for testkit delay rather than constructing a callback Promise. [typescript/kernel/testkit/src/lib/kernel-test-fixtures.ts] at cd1f44d94e48b963eb48de159484d6de548c96e3"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (pattern): Preserve benchmark decimal-prefix environment parsing through an explicit matched prefix and Number conversion under the native numeric-coercion rule. [typescript/kernel/testkit/src/lib/bench-phase-stats.ts] at cd1f44d94e48b963eb48de159484d6de548c96e3"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (convention): Apply the native lint source/config/checker-input convention to all 25 actual testkit dependencies while keeping ordinary typecheck source-only. [typescript/kernel/testkit/project.json] at cd1f44d94e48b963eb48de159484d6de548c96e3"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (pattern): Validate discovered unknown fsck results against the existing structural union and normalize unsupported non-Error rejections with causes while preserving real Error/result identities. [typescript/kernel/testkit/src/lib/fault-injecting-backend.ts] at cd1f44d94e48b963eb48de159484d6de548c96e3"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (convention): Remove actual @packageDocumentation metadata from the admitted testkit entrypoint under A24; retain prose without claiming equivalent metadata and route documentation/lint convention reconciliation. [typescript/kernel/testkit/src/index.ts] at cd1f44d94e48b963eb48de159484d6de548c96e3"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (convention): Hash all actual TypeScript program sources reached by explicit certification tsconfig includes when Nx dependency inputs miss them, preserving inherited checker/config/lock inputs and source-only typecheck. [typescript/kernel/certification/project.json] at d04b04d172007604c930aa38ccde7acee1145fa6"
+    from: BS
+  - stage: tech-spec
+    item: "code decision (pattern): Normalize the internal malformed suite-manifest field guard to TypeError while preserving first validation messages/order, valid values and existing certification assertions. [typescript/kernel/certification/test/kernel-typescript-conformance.test.ts] at d04b04d172007604c930aa38ccde7acee1145fa6"
+    from: BS
+  - stage: tech-spec
+    item: "Review shared OD-09 after this wave and record the bounded internal async/error normalization interpretation and the execution conventions below. A15 corrects internal Nx metadata types to the installed vendor schema; public Tuvren package APIs remain frozen."
+    from: BU
+  - stage: tasks
+    item: "BV/tooling follow-up for the pre-existing kernel-interop governance side effect that deletes refs/remotes/origin/master. Reproduction is kernel-interop-grpc:interop-smoke --skipNxCache after git fetch origin master; manual runtime locking and fetch cleanup restore the ref. A5/A8 distinguish breaking/interop from ordinary codegen."
+    from: BU
+  - stage: tasks
+    item: BV/tooling investigation from A6 for resolveCoverage set aggregation potentially collapsing repeated native selections without independent overlap proof. No production checker/topology change was included in BU.
+    from: BU
+  - stage: tasks
+    item: "Investigate resource sensitivity of unchanged 5000ms TypeScript self-alias and Biome whole-root inventory controls. Earlier full and isolated alias runs and a later inventory control timed out under measured contention. A13/A27 locking, resource relief, successful isolation and complete retries preserved source, assertions, timeouts and coverage."
+    from: BU
+  - stage: tech-spec
+    item: "A22 preserves literal base/all-configuration command inventory. BV/Stage 3 should investigate pre-existing executor-runtime-only readyWhen/serial and presentation/serial contradictions, interpolation/argument rewriting or shell-token interpretation and graph/targetDefaults modeling for tools/conformance/certification/validate-certification-discovery.ts and tools/scripts/validate-workspace-test-coverage.ts. These are not successful-execution guarantees and were not changed by BU; strict native discovery retains its selected-default and scope-safe grammar."
+    from: BU
+  - stage: tech-spec
+    item: "code decision (pattern): Honest async command execution preserves the Promise result contract and supported IO/messages while Promise.withResolvers bridges child events; empty argv rejects with the same message under OD-09/A11. [tools/scripts/lib/command-runner.ts, tools/scripts/lib/command-runner.test.ts] at aa4d96b016a17ff08c41cac97c8a158edacd362d"
+    from: BU
+  - stage: tech-spec
+    item: "code decision (convention): Apply the selected preset's six internal TypeError conversions and two wrapper-cause normalizations while retaining first-validation messages/order; these unpromised implementation observations follow OD-09/A11. [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/biome-inventory.test.ts, tools/scripts/lib/conformance-contract.ts, tools/scripts/lib/nx-projects.ts] at aa4d96b016a17ff08c41cac97c8a158edacd362d"
+    from: BU
+  - stage: tech-spec
+    item: "code decision (pattern): Await predecessor tasks to retain serial filesystem/command traversal, output order and first-failure propagation without recursive stack growth or fake awaits. [tools/scripts/lib/walk-package-manifests.ts, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts] at aa4d96b016a17ff08c41cac97c8a158edacd362d"
+    from: BU
+  - stage: tech-spec
+    item: "code decision (pattern): Use supported Bun Glob/JSONC imports and file-plus-ancestor candidate predicates to preserve literal path bytes and glob grammar while avoiding the invalid regexp autofix. [tools/scripts/lib/biome-inventory.ts, tools/scripts/lib/json-source-integrity.ts] at aa4d96b016a17ff08c41cac97c8a158edacd362d"
+    from: BU
+  - stage: tech-spec
+    item: "code decision (contract_shape): A15 changes only NxProjectTarget.options from NxCommandOptions to Record<string, unknown> and configurations from Record<string, NxCommandOptions> to Record<string, Record<string, unknown>>. Raw executor-specific metadata remains opaque and preserved until canonical consumer selection. All callable signatures and public Tuvren package APIs remain unchanged; A30 separately records the canonical command type correction. [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/native-lint-routing.ts, tools/scripts/lib/biome-oxc-discovery.test.ts] at 78c776de22e7768838e7a1bc5424c0b9f79971d1"
+    from: BU
+  - stage: tech-spec
+    item: "code decision (convention): A18/A22 privately validate all 12 known canonical fields and seven closed command-object fields, with shallow effective configurations and atomic malformed-record rejection. Tests pin installed schema constraints and use one isolated vendor-reference child; production discovery imports no vendor validator. Literal base/all-config inventory, partial fragments and missing or empty default fallback remain supported. A23 records operational baseline-to-final live-inventory equality without freezing unrelated workspace metadata in a permanent golden. [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/nx-command-options.test.ts] at b7e98e488848587fec3da8ae38b61454e1a89503"
+    from: BU
+  - stage: tech-spec
+    item: "code decision (convention): Read authority fixtures synchronously inside test code and validate their declared fixture shape before use; owner schemas and conformance remain the authority. [tools/scripts/lib/regenerate-command-argv.test.ts] at aa4d96b016a17ff08c41cac97c8a158edacd362d"
+    from: BU
+  - stage: tech-spec
+    item: "code decision (pattern): Use standard Bun resolved-value mocks and real deferred IO coordination for serial launch/failure regression tests. [tools/scripts/lib/biome-oxc-discovery.test.ts] at aa4d96b016a17ff08c41cac97c8a158edacd362d"
+    from: BU
+  - stage: tech-spec
+    item: "code decision (convention): A25 surfaces vendor-invalid canonical known fields, command records and effective configuration conflicts as an explicit internal TypeError with stable context. This preserves atomic rejection while preventing invalid metadata from becoming false absence for certification discovery or positive execution credit for coverage checks. Opaque custom or unsupported executors still return no supported proof; A30 separately adds vendor command-array normalization. Controlled discovery fixtures exercise the original caller grading logic; all exported declarations remain unchanged. [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/nx-command-options.test.ts, tools/scripts/lib/biome-oxc-discovery.test.ts] at 6c6c4c5fea63517087629822578d3306d9322a6e"
+    from: BU
+  - stage: tech-spec
+    item: "code decision (contract_shape): A30 corrects internal NxCommandOptions.command from string to string | string[] and normalizes arrays with the installed Nx22.7.12 normalizeOptions array.join(' ') behavior. This preserves the full base/all-configuration literal union, fixes mixed-fragment absence erasure and retires command-array omission. Vendor-invalid metadata still fails explicitly under A25; native discovery retains its stricter scope-safe grammar. The two corrected internal interfaces are measured separately, with all other declarations and public package APIs unchanged. [tools/scripts/lib/nx-projects.ts, tools/scripts/lib/nx-command-options.test.ts, tools/scripts/lib/nx-command-callers.test.ts] at 9285a987e149eb0a245d5749b83963ca843c0d3c"
+    from: BU
+  - stage: tasks
+    item: "fast-lane commit ea9d15c \"Preserve BQ partition controls across additional native lint admissions\" touches paths owned by EPIC-BU and EPIC-CB; the fast lane stays inside one active epic's paths, and was not applied"
+    from: fast-lane
+  - stage: tasks
+    item: "fast-lane commit 6597a27 \"Normalize test selection order and cover native admission equality\" touches paths owned by EPIC-BU and EPIC-CB; the fast lane stays inside one active epic's paths, and was not applied"
+    from: fast-lane
+proposed_decisions: [OD-09]
+candidate_terms: []
+stale_owners: [".constitution/evidence/KRT-BU002/manifest.yaml: KRT-BU002", ".constitution/evidence/KRT-BU004/manifest.yaml: KRT-BU004", ".constitution/evidence/KRT-BS004/manifest.yaml: KRT-BS004", ".constitution/evidence/KRT-BS002/manifest.yaml: KRT-BS002"]
+fast_lane:
+  - commit: ea9d15c
+    subject: Preserve BQ partition controls across additional native lint admissions
+    status: routed
+    settled: []
+    reason: "touches paths owned by EPIC-BU and EPIC-CB; the fast lane stays inside one active epic's paths"
+  - commit: 6597a27
+    subject: Normalize test selection order and cover native admission equality
+    status: routed
+    settled: []
+    reason: "touches paths owned by EPIC-BU and EPIC-CB; the fast lane stays inside one active epic's paths"

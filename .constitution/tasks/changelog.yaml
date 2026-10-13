@@ -1,4 +1,14 @@
 entries:
+  - version: v0.47.7
+    date: 2026-10-13
+    changed: ["Complete EPIC-BS: native type-aware kernel support lint, declaration ordering, measured suppression retirement and atomic admission of gRPC, testkit and certification roots.", "EPIC-BS Kernel support lint ratchet archived: 4 tickets, 24 points, 10872 diff lines, 1 review rounds", "Complete EPIC-BU helper cleanup and native readiness under the unchanged shipped preset, with retained Biome ownership and measured evidence.", "EPIC-BU Repository script library lint ratchet archived: 4 tickets, 24 points, 4592 diff lines, 0 review rounds"]
+    added: ["Follow-up from EPIC-BS: A5 shared origin/master ref deleted by governance breaking/interop-smoke; lock gate plus fetch cleanup, BV/Stage4 owner", "Follow-up from EPIC-BS: A6 resolveCoverage aggregation may collapse repeated native selections; independent fresh root/file native ownership proof at M8-M10, BV/Stage4 investigation", "Follow-up from EPIC-BS: A24 validP2: selectedpreset rejects realTSDoc @packageDocumentation marker, currentlyunconsumed; Stage3/Stage4 documentation-generation/lint convention reconciliation needed, experimentalmarkers preserved", "Follow-up from EPIC-BU: Repository owner rules on proposed shared OD-09 through Stage 3 alignment after the wave.", "Follow-up from EPIC-BU: CB owns whole-tools admission and retirement of bu.json after BU, BV and BW; BU leaves the retained entry byte-identical and activates no partial target.", "Follow-up from EPIC-BU: Root merges BS before BU, verifies the expanded partition after rebase, and reconciles/derives once for the wave."]
+    by: reconcile
+    fast_lane_through: 5508fea3ce1f2f2675d2fa07ef5b48ac6c0d81d7
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.5
   - version: v0.47.6
     date: 2026-10-13
     by: patch-lane
@@ -6,9 +16,7 @@ entries:
       prd: v0.13.1
       architecture: v0.16.0
       tech-spec: v0.47.5
-    changed:
-      - "Record epic execution settings: worktrees at ../framework-worktrees/EPIC-<ID>, branches named epic/<lowercase-id>-<slug>, and rebase merges. Regenerate the critical path with these settings."
-      - "Preserve all epic scopes, statuses, dependencies, tickets, and estimates. INFO-CAL reports an observed actual-to-estimate ratio of 1.93 over four completed epics; this patch introduces no estimates."
+    changed: ["Record epic execution settings: worktrees at ../framework-worktrees/EPIC-<ID>, branches named epic/<lowercase-id>-<slug>, and rebase merges. Regenerate the critical path with these settings.", "Preserve all epic scopes, statuses, dependencies, tickets, and estimates. INFO-CAL reports an observed actual-to-estimate ratio of 1.93 over four completed epics; this patch introduces no estimates."]
   - version: v0.47.5
     date: 2026-10-11
     changed: ["Completed EPIC-BQ: kernel protocol and runtime satisfy the shipped native preset, preserve the reordering pilot outcomes, and gain atomic code/JSON lint ownership. All six original suppression identities and reasons remain accounted for in the final admission ledger.", "EPIC-BQ Kernel protocol and runtime lint pilot archived: 4 tickets, 24 points, 20965 diff lines, 2 review rounds"]

@@ -1,0 +1,171 @@
+id: BS
+name: Kernel support lint ratchet
+kind: tooling
+capabilities: []
+depends_on: [BQ]
+scope:
+  paths: [typescript/kernel/grpc-client, typescript/kernel/testkit, typescript/kernel/certification, typescript/kernel/certification-sqlite, typescript/kernel/certification-postgres, tools/biome-coverage/bs.json, ".changeset/toolchain-bs-kernel-support-lint.md"]
+  tech_spec_patchable: []
+estimated_diff_lines: 11500
+estimate_source: planned
+tickets:
+  - id: KRT-BS001
+    title: Apply safe fixes and preserve types per directory
+    type: Chore
+    effort: 5
+    depends_on: []
+    scope:
+      in: [typescript/kernel/grpc-client, typescript/kernel/testkit, typescript/kernel/certification, typescript/kernel/certification-sqlite, typescript/kernel/certification-postgres, ".changeset/toolchain-bs-kernel-support-lint.md"]
+    verification:
+      command: bun run typecheck
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if the change requires a rule override, an undeclared input, or a change to runtime authority occurs; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Run safe --fix one project at a time and immediately typecheck that project. Repair the 19 measured autofix failure classes, including required undefined arguments and readonly array to Set rewrites. Complete kernel support packages without touching the adapter directory, which has a separate project-resolution gate. Do not switch lint targets yet. Add or update .changeset/toolchain-bs-kernel-support-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/kernel-grpc-client. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
+    flows: []
+    certainty: settled
+    status: done
+  - id: KRT-BS002
+    title: Migrate live suppressions and delete dead ones
+    type: Chore
+    effort: 3
+    depends_on: [KRT-BS001]
+    scope:
+      in: [typescript/kernel/grpc-client, typescript/kernel/testkit, typescript/kernel/certification, typescript/kernel/certification-sqlite, typescript/kernel/certification-postgres, ".changeset/toolchain-bs-kernel-support-lint.md"]
+    verification:
+      command: bun run typecheck
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if a proposed native suppression lacks a fresh equivalent diagnostic, changes the original reason, removes a needed Biome directive before native admission, or introduces a Biome directive; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Treat the measured 144-directive inventory as an identification baseline, not a quota. Re-run live retained-Biome and Oxlint diagnostics across the owned paths. For every baseline identity and any drift discovered at execution, record its original reason, equivalent native rule, retained-checker disposition, and native-admission disposition. While Biome owns a path, preserve each needed original Biome directive and its reason. Remove a directive before admission only after a behavior-preserving code fix proves that the retained Biome diagnostic no longer fires. Do not add Biome directives. Record a native counterpart only when the equivalent native rule actually fires and the original reason remains valid. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Do not create suppressions to reproduce the historical 82-live/62-dead classification. Provide the per-directive disposition ledger for CB aggregation. Add or update .changeset/toolchain-bs-kernel-support-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/kernel-grpc-client. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
+    flows: []
+    certainty: settled
+    status: done
+  - id: KRT-BS003
+    title: Reorder definitions without initialization regressions
+    type: Chore
+    effort: 8
+    depends_on: [KRT-BS002]
+    scope:
+      in: [typescript/kernel/grpc-client, typescript/kernel/testkit, typescript/kernel/certification, typescript/kernel/certification-sqlite, typescript/kernel/certification-postgres, ".changeset/toolchain-bs-kernel-support-lint.md"]
+    verification:
+      command: bun run conformance
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if a runtime or conformance regression follows reordering; return the rule pair to the owner without overrides occurs; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Convert func-style declarations and reorder no-use-before-define definitions in bounded reviewable module batches. Preserve exports, initialization order and observable execution. The merged kernel pilot is the prerequisite; apply its proven ordering method. Add or update .changeset/toolchain-bs-kernel-support-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/kernel-grpc-client. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
+    flows: []
+    certainty: settled
+    status: done
+  - id: KRT-BS004
+    title: Clear remaining rules and switch clean project targets
+    type: Chore
+    effort: 8
+    depends_on: [KRT-BS003]
+    scope:
+      in: [typescript/kernel/grpc-client, typescript/kernel/testkit, typescript/kernel/certification, typescript/kernel/certification-sqlite, typescript/kernel/certification-postgres, tools/biome-coverage/bs.json, ".changeset/toolchain-bs-kernel-support-lint.md"]
+    verification:
+      command: bun run lint
+      expected: "Exit 0; the scoped acceptance assertions pass and unaffected lanes retain their baseline results."
+    stop_conditions: ["STOP if a project isn't clean, type-aware lint skips a rule, or an admitted path loses a needed Biome directive before the same commit switches its lint target and coverage ownership; do not improvise."]
+    description: "ADR-0070 and SPK-KRT-OD006. Clear remaining syntactic diagnostics, then run type-aware lint with the complete effective shipped preset unchanged. For every migrated Nx project, use the active default nx:run-commands target with the workspace root as cwd and the exact project-root command pair, in order: bunx --bun oxlint --type-aware PROJECT_ROOT, then bun tools/scripts/json-check.ts PROJECT_ROOT. Use bun tools/scripts/json-check.ts --json-only PROJECT_ROOT only for a JSON-only project whose fresh Git inventory, checked outside the cached Nx result, proves no code files. Reject alternate executors or configurations, partial, glob, or parent operands, extra options, forwarded, unknown, or no-op flags, empty selections, and duplicate checker ownership. Derive code coverage from Oxlint's actual --debug=files selection and JSON coverage from the native source-integrity selection; Oxfmt ignores affect formatting only. Where a project lint target declares inputs and thereby replaces target defaults, include the real native checker helper inputs explicitly. Use the established native helpers without adding dependencies or repository-owned lint policy. Ensure type-aware lint can read prerequisite declarations while ordinary typecheck remains source-only. Consume this epic's suppression-disposition ledger and rerun retained-Biome and Oxlint diagnostics on the admission commit. For each admitted path, remove its legacy Biome directives in the same commit that switches its lint target and coverage ownership. The ledger permits earlier removal while Biome owns the path only after a behavior-preserving code fix and fresh retained-Biome proof that the diagnostic is gone. At native admission, remove a legacy Biome directive with no native counterpart when fresh native proof shows that no equivalent diagnostic fires, and record that disposition. If the equivalent native rule fires, keep only a justified measured native counterpart with the original reason or fix the actual native issue. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Remove each admitted migrated path from tools/biome-coverage/bs.json, leave every other list unchanged, and keep Biome responsible for every path not yet natively admitted. Add or update .changeset/toolchain-bs-kernel-support-lint.md as a patch changeset with direct coverage for the affected public packages: @tuvren/kernel-grpc-client. Private packages require no changeset. Include formatting, configuration, generated outputs and BUILD-file edits in this coverage."
+    acceptance:
+      mode: contract_test
+      evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert each admitted target has the exact canonical command shape and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. For each admitted path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted path contains a biome-ignore comment after the commit. Paths outside this admission retain needed original directives and Biome coverage. Scoped tests and the full lint gate pass; admitted paths are absent from tools/biome-coverage/bs.json, while every remaining entry retains Biome lint coverage. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
+    flows: []
+    certainty: settled
+    status: done
+closeout:
+  tickets_completed: [KRT-BS001, KRT-BS002, KRT-BS003, KRT-BS004]
+  tickets_deferred: []
+  points_completed: 24
+  spec_patches: []
+  changelog_entries:
+    - directory: tasks
+      type: changed
+      text: "Complete EPIC-BS: native type-aware kernel support lint, declaration ordering, measured suppression retirement and atomic admission of gRPC, testkit and certification roots."
+  candidate_terms: []
+  routed_upstream:
+    - stage: tasks
+      item: "EPIC-BV/A5: governance breaking/interop-smoke deletes shared origin/master; replace the runtime lock plus fetch workaround with a durable owned fix."
+    - stage: tasks
+      item: "EPIC-BV/A6: inspect resolveCoverage Set aggregation for duplicate native owners; BS independently verifies raw per-file multiplicity, while a durable guard belongs to tooling ownership."
+    - stage: tech-spec
+      item: "A11/shared BU-owned proposed OD-09: record honest preset async/error normalization at grpc-client/src/lib/grpc-kernel-client.ts (55907cf) and testkit/src/lib/fault-injecting-backend.ts, kernel-test-fixtures.ts, kernel-conformance-fixtures.ts plus test/kernel-testkit.test.ts (cd1f44d). Supported behavior, real backend authority and no fake awaits remain binding. M10 adds certification/test/kernel-typescript-conformance.test.ts readSuiteManifest guard Error-to-TypeError at d04b04d; six malformed cases preserve first message/order within 21 baseline/current probes."
+    - stage: tech-spec
+      item: "A24 valid P2: reconcile documentation generation and native lint conventions after actual @packageDocumentation removal from gRPC/testkit entrypoints; prose is not equivalent metadata, required experimental markers remain, and no active consumer was measured."
+    - stage: tasks
+      item: Schedule Stage 3/4 documentation-generation/lint convention reconciliation before any future consumer requires removed package metadata.
+  follow_ups: ["A5 shared origin/master ref deleted by governance breaking/interop-smoke; lock gate plus fetch cleanup, BV/Stage4 owner", "A6 resolveCoverage aggregation may collapse repeated native selections; independent fresh root/file native ownership proof at M8-M10, BV/Stage4 investigation", "A24 validP2: selectedpreset rejects realTSDoc @packageDocumentation marker, currentlyunconsumed; Stage3/Stage4 documentation-generation/lint convention reconciliation needed, experimentalmarkers preserved"]
+  code_decisions:
+    - summary: Use Connect interceptor fixtures with native Promise.withResolvers<null> readiness/failure gates for deterministic gRPC forwarding and stream-error delivery tests.
+      kind: pattern
+      paths: [typescript/kernel/grpc-client/test/grpc-kernel-client.test.ts]
+      commit: bbca5098ae0f4fac23646cdf3f7ad3708995c217
+    - kind: convention
+      summary: "Declare native gRPC lint codegen prerequisites, direct generated TypeScript output hashing, inherited checker inputs, imported source dependencies and root TypeScript configs using installed Nx metadata; keep ordinary typecheck source-only."
+      paths: [typescript/kernel/grpc-client/project.json]
+      commit: 55907cfb80861d68b5a95db537057e811c9065b9
+    - kind: convention
+      summary: "Remove the native-rejected @packageDocumentation tag from the admitted gRPC package entrypoint while retaining descriptive prose; prose is not equivalent TSDoc metadata. Reconcile documentation generation and lint conventions through Stage 3/4 before consuming this package marker."
+      paths: [typescript/kernel/grpc-client/src/index.ts]
+      commit: 55907cfb80861d68b5a95db537057e811c9065b9
+    - summary: "Use focused typed Bun recorded-call unit transactions with checked request shapes, staged actual writes and local commit publication; real backend conformance remains separate authority."
+      kind: pattern
+      paths: [typescript/kernel/testkit/test/kernel-testkit.test.ts]
+      commit: cd1f44d94e48b963eb48de159484d6de548c96e3
+    - summary: "Use the native node:timers/promises API for testkit delay rather than constructing a callback Promise."
+      kind: convention
+      paths: [typescript/kernel/testkit/src/lib/kernel-test-fixtures.ts]
+      commit: cd1f44d94e48b963eb48de159484d6de548c96e3
+    - summary: Preserve benchmark decimal-prefix environment parsing through an explicit matched prefix and Number conversion under the native numeric-coercion rule.
+      kind: pattern
+      paths: [typescript/kernel/testkit/src/lib/bench-phase-stats.ts]
+      commit: cd1f44d94e48b963eb48de159484d6de548c96e3
+    - summary: Apply the native lint source/config/checker-input convention to all 25 actual testkit dependencies while keeping ordinary typecheck source-only.
+      kind: convention
+      paths: [typescript/kernel/testkit/project.json]
+      commit: cd1f44d94e48b963eb48de159484d6de548c96e3
+    - summary: Validate discovered unknown fsck results against the existing structural union and normalize unsupported non-Error rejections with causes while preserving real Error/result identities.
+      kind: pattern
+      paths: [typescript/kernel/testkit/src/lib/fault-injecting-backend.ts]
+      commit: cd1f44d94e48b963eb48de159484d6de548c96e3
+    - summary: "Remove actual @packageDocumentation metadata from the admitted testkit entrypoint under A24; retain prose without claiming equivalent metadata and route documentation/lint convention reconciliation."
+      kind: convention
+      paths: [typescript/kernel/testkit/src/index.ts]
+      commit: cd1f44d94e48b963eb48de159484d6de548c96e3
+    - summary: "Hash all actual TypeScript program sources reached by explicit certification tsconfig includes when Nx dependency inputs miss them, preserving inherited checker/config/lock inputs and source-only typecheck."
+      kind: convention
+      paths: [typescript/kernel/certification/project.json]
+      commit: d04b04d172007604c930aa38ccde7acee1145fa6
+    - summary: "Normalize the internal malformed suite-manifest field guard to TypeError while preserving first validation messages/order, valid values and existing certification assertions."
+      kind: pattern
+      paths: [typescript/kernel/certification/test/kernel-typescript-conformance.test.ts]
+      commit: d04b04d172007604c930aa38ccde7acee1145fa6
+  settled: []
+  actuals:
+    diff_lines: 10872
+    files_touched: 62
+    milestones: 13
+    review_rounds: 1
+    per_ticket:
+      - id: KRT-BS001
+        diff_lines: 415
+        review_rounds: 0
+      - id: KRT-BS002
+        diff_lines: 1488
+        review_rounds: 0
+      - id: KRT-BS003
+        diff_lines: 4941
+        review_rounds: 1
+      - id: KRT-BS004
+        diff_lines: 4028
+        review_rounds: 0
+    merged_commit: 5508fea
+    measured_at: 2026-10-13
