@@ -90,7 +90,7 @@ tickets:
       evidence: "Assert module initialization, cyclic imports and conformance outcomes match the pre-reorder baseline. Run scoped tests, repository typecheck and bun run conformance on the same implementation. Preserve error and event ordering, not just lint success. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: planned
+    status: in_progress
   - id: KRT-BS004
     title: Clear remaining rules and switch clean project targets
     type: Chore
@@ -161,3 +161,16 @@ tickets:
 # A11 read: native admission remains the original goal. Supported/authority-backed
 # semantics stay binding; honest selected-preset async/error normalization is
 # allowed. Shared OD-09 is BU-owned; actual BS004 applications will be recorded.
+# M3 fix review independently passed current-HEAD replay, full lint, all archive
+# and manifest digests; both P1 assembled-lint and P2 provenance findings resolved.
+# M4 / KRT-BS003 partial: 13 foundation helpers, 318 original moved lines; codec
+# and package tests change 707 lines. All 44 callable signatures and normalized
+# AST bodies match the exact prior source; imports, retained declarations and
+# three-module acyclic graph match. Five fresh-process import orders preserve
+# exports, canonical bytes, decoded records, verdicts and ordered errors.
+# Six added byte/CBOR/timestamp/enum/error-order assertions pass on both sources.
+# Lead verification: grpc-client typecheck/test (20 tests, 32 assertions),
+# repository typecheck (33 projects) and API freeze (14 entrypoints/404 exports)
+# all exit 0; direct patch changeset coverage passes. Fresh native 451 -> 387,
+# grpc-client 176 -> 112; other roots unchanged. All five roots remain retained.
+# Same-implementation conformance remains due at M7 before KRT-BS003 completion.

@@ -16,7 +16,8 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { TuvrenRuntimeError } from "@tuvren/core";
+import { create } from "@bufbuild/protobuf";
+import { TuvrenRuntimeError, TuvrenValidationError } from "@tuvren/core";
 import type {
   PathValue,
   RunCompletionStatus,
@@ -24,12 +25,17 @@ import type {
   VerdictDisposition,
 } from "@tuvren/kernel-protocol";
 
-import { RunCompletionStatus as ProtoRunCompletionStatus } from "../src/lib/generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb.js";
+import {
+  RunCompletionStatus as ProtoRunCompletionStatus,
+  StagedResultSchema,
+  StagedResultStatus as ProtoStagedResultStatus,
+} from "../src/lib/generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb.js";
 import {
   createInvalidTransportResponseError,
   decodeKernelRecordBytes,
   encodeKernelRecordBytes,
   requirePathValue,
+  requireStagedResult,
   requireVerdict,
   toProtoPathValue,
   toProtoRunCompletionStatus,
@@ -159,6 +165,94 @@ describe("grpc kernel client codec — enum and error helpers", () => {
   test("requireVerdict fails loudly on a missing transport verdict", () => {
     expect(() => requireVerdict(undefined, "verdict")).toThrow(
       TuvrenRuntimeError
+    );
+  });
+});
+
+describe("grpc kernel client codec — foundation validation", () => {
+  test("CBOR encoding copies byte views and decoding respects their bounds", () => {
+    const backing = new Uint8Array([99, 1, 2, 3, 88]);
+    const value = backing.subarray(1, 4);
+    const encoded = encodeKernelRecordBytes({ value }, "record");
+    backing.fill(0);
+    const padded = new Uint8Array(encoded.length + 2);
+    padded.set(encoded, 1);
+    expect(decodeKernelRecordBytes(padded.subarray(1, -1), "record")).toEqual({
+      value: new Uint8Array([1, 2, 3]),
+    });
+  });
+
+  test("invalid CBOR retains the protocol validation message and code", () => {
+    let caught: unknown;
+    try {
+      decodeKernelRecordBytes(new Uint8Array(), "record");
+    } catch (error: unknown) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(TuvrenValidationError);
+    expect(caught).toMatchObject({
+      code: "invalid_decoded_kernel_record",
+      message:
+        "decoded kernel record bytes must contain valid deterministic CBOR",
+    });
+  });
+
+  for (const timestampMs of [-1n, 9_007_199_254_740_992n]) {
+    test(`timestamp ${timestampMs} fails before an absent staged outcome`, () => {
+      const value = create(StagedResultSchema, { timestampMs });
+      try {
+        requireStagedResult(value, "stage");
+        throw new Error("Expected timestamp validation to fail");
+      } catch (error: unknown) {
+        expect(error).toBeInstanceOf(TuvrenRuntimeError);
+        if (!(error instanceof TuvrenRuntimeError)) {
+          throw error;
+        }
+        expect(error.code).toBe("invalid_kernel_transport_response");
+        expect(error.message).toBe(
+          "stage.timestampMs must be a safe integer epoch"
+        );
+        expect(error.details).toEqual({
+          label: "stage.timestampMs",
+          value: timestampMs.toString(),
+        });
+      }
+    });
+  }
+
+  test("the largest safe timestamp and settled enums survive decoding", () => {
+    const statuses = [
+      { domain: "completed", proto: ProtoStagedResultStatus.COMPLETED },
+      { domain: "failed", proto: ProtoStagedResultStatus.FAILED },
+    ] as const;
+    for (const status of statuses) {
+      const value = create(StagedResultSchema, {
+        objectHash: HASH_A,
+        objectType: "result",
+        outcome: { case: "settled", value: { status: status.proto } },
+        taskId: "task",
+        timestampMs: 9_007_199_254_740_991n,
+      });
+      expect(requireStagedResult(value, "stage")).toEqual({
+        objectHash: HASH_A,
+        objectType: "result",
+        status: status.domain,
+        taskId: "task",
+        timestamp: Number.MAX_SAFE_INTEGER,
+      });
+    }
+  });
+
+  test("an unspecified settled enum fails before invalid staged record fields", () => {
+    const value = create(StagedResultSchema, {
+      outcome: {
+        case: "settled",
+        value: { status: ProtoStagedResultStatus.UNSPECIFIED },
+      },
+      timestampMs: 0n,
+    });
+    expect(() => requireStagedResult(value, "stage")).toThrow(
+      createInvalidTransportResponseError("stage.status")
     );
   });
 });
