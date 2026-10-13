@@ -29,10 +29,10 @@ export interface RunCommandResult {
   stdout: string;
 }
 
-export function runCommand(
+export const runCommand = (
   command: readonly string[],
   options: RunCommandOptions = {}
-): Promise<RunCommandResult> {
+): Promise<RunCommandResult> => {
   const [executable, ...args] = command;
 
   if (executable === undefined) {
@@ -91,4 +91,4 @@ export function runCommand(
       });
     });
   });
-}
+};

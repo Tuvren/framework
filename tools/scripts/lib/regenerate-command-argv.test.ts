@@ -29,6 +29,28 @@ interface AuthorityPacketManifestFixture {
   packetId?: string;
 }
 
+const findAuthorityPacketManifests = async (
+  directory: string
+): Promise<string[]> => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const manifests: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      manifests.push(...(await findAuthorityPacketManifests(entryPath)));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
+      manifests.push(entryPath);
+    }
+  }
+
+  return manifests.sort();
+};
+
 describe("parseRegenerateCommandArgv", () => {
   test("accepts a real multi-token bun/nx command", () => {
     expect(
@@ -108,6 +130,30 @@ describe("parseRegenerateCommandArgv", () => {
       "generate",
     ]);
   });
+
+  test("keeps metacharacter rejection ahead of the allowlist failure", () => {
+    const command = "python script.py | cat";
+    let failure: unknown;
+
+    try {
+      parseRegenerateCommandArgv(command);
+    } catch (error: unknown) {
+      failure = error;
+    }
+
+    expect(failure).toBeInstanceOf(Error);
+
+    if (!(failure instanceof Error)) {
+      throw new Error("expected the unsafe command to throw");
+    }
+
+    expect(failure.constructor).toBe(Error);
+    expect(failure.name).toBe("Error");
+    expect(failure.message).toBe(
+      'regenerateCommand "python script.py | cat" contains a shell metacharacter (one of | & ; ` $ < > ( )); declare a plain space-separated argv command instead'
+    );
+    expect(Object.hasOwn(failure, "cause")).toBe(false);
+  });
 });
 
 describe("parseRegenerateCommandArgv against real authority packets", () => {
@@ -134,25 +180,3 @@ describe("parseRegenerateCommandArgv against real authority packets", () => {
     }
   });
 });
-
-async function findAuthorityPacketManifests(
-  directory: string
-): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const manifests: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      manifests.push(...(await findAuthorityPacketManifests(entryPath)));
-      continue;
-    }
-
-    if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
-      manifests.push(entryPath);
-    }
-  }
-
-  return manifests.sort();
-}

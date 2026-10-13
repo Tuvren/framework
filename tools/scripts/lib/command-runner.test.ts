@@ -19,12 +19,36 @@ import { describe, expect, test } from "bun:test";
 import { runCommand } from "./command-runner.js";
 
 describe("runCommand", () => {
+  test("throws an ordinary Error synchronously for empty argv", () => {
+    let failure: unknown;
+
+    expect(() => {
+      try {
+        return runCommand([]);
+      } catch (error: unknown) {
+        failure = error;
+        throw error;
+      }
+    }).toThrow("runCommand requires an executable");
+
+    expect(failure).toBeInstanceOf(Error);
+
+    if (!(failure instanceof Error)) {
+      throw new Error("expected the empty command to throw synchronously");
+    }
+
+    expect(failure.constructor).toBe(Error);
+    expect(failure.name).toBe("Error");
+    expect(failure.message).toBe("runCommand requires an executable");
+    expect(Object.hasOwn(failure, "cause")).toBe(false);
+  });
+
   test("merges explicit environment overrides", async () => {
     const result = await runCommand(
       [
         process.execPath,
         "--eval",
-        "process.stdout.write(process.env.TEST_VALUE ?? '')",
+        "process.stdout.write(JSON.stringify([process.env.TEST_VALUE, process.env.PATH]))",
       ],
       {
         captureOutput: true,
@@ -35,7 +59,35 @@ describe("runCommand", () => {
     );
 
     expect(result.code).toBe(0);
-    expect(result.stdout).toBe("interop-fast-path");
+    expect(result.stdout).toBe(
+      JSON.stringify(["interop-fast-path", process.env.PATH])
+    );
+  });
+
+  test("preserves output and the exit code for a failed command", async () => {
+    const result = await runCommand(
+      [
+        process.execPath,
+        "--eval",
+        "process.stdout.write('before failure'); process.stderr.write('failure detail'); process.exitCode = 7",
+      ],
+      { captureOutput: true }
+    );
+
+    expect(result).toEqual({
+      code: 7,
+      stderr: "failure detail",
+      stdout: "before failure",
+    });
+  });
+
+  test("returns the fallback exit code when the child dies from a signal", async () => {
+    const result = await runCommand(
+      [process.execPath, "--eval", "process.kill(process.pid, 'SIGTERM')"],
+      { captureOutput: true }
+    );
+
+    expect(result).toEqual({ code: 1, stderr: "", stdout: "" });
   });
 
   test("returns a timeout exit code when the command exceeds the deadline", async () => {
