@@ -1,0 +1,28 @@
+{
+  "changeset_path": ".changeset/toolchain-bs-kernel-support-lint.md",
+  "contents": "---\n\"@tuvren/kernel-grpc-client\": patch\n---\n\nApply lint fixes to the gRPC kernel client while preserving its public API and runtime behavior.\n",
+  "packages": [
+    "@tuvren/kernel-grpc-client"
+  ],
+  "release_type": "patch",
+  "base": "6597a27223bf70956cf1b48a9661d21ff1d32bad",
+  "changed_paths": [
+    ".changeset/toolchain-bs-kernel-support-lint.md",
+    ".constitution/tasks/epics/EPIC-BS-kernel-support-lint.yaml",
+    "typescript/kernel/certification/test/kernel-typescript-conformance.test.ts",
+    "typescript/kernel/grpc-client/src/lib/grpc-kernel-client-codec.ts",
+    "typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts",
+    "typescript/kernel/grpc-client/test/grpc-kernel-client-codec.test.ts",
+    "typescript/kernel/grpc-client/tsup.config.ts",
+    "typescript/kernel/testkit/src/lib/backend-conformance-suite.ts",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite-foundation.ts",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite-run-state.ts",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite-turns.ts",
+    "typescript/kernel/testkit/src/lib/backend-recovery-suite.ts",
+    "typescript/kernel/testkit/src/lib/fault-injecting-backend.ts",
+    "typescript/kernel/testkit/src/lib/kernel-conformance-fixtures.ts",
+    "typescript/kernel/testkit/src/lib/kernel-test-fixtures.ts",
+    "typescript/kernel/testkit/test/kernel-testkit.test.ts",
+    "typescript/kernel/testkit/tsup.config.ts"
+  ]
+}

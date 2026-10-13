@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BS002",
+  "baseline_commit": "6597a27223bf70956cf1b48a9661d21ff1d32bad",
+  "measurement_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
+  "owned_paths": [
+    "typescript/kernel/grpc-client",
+    "typescript/kernel/testkit",
+    "typescript/kernel/certification",
+    "typescript/kernel/certification-sqlite",
+    "typescript/kernel/certification-postgres"
+  ],
+  "identity_convention": "repository-relative path::Biome rule::one-based occurrence within that path/rule; line is informational",
+  "drift": {
+    "added": [],
+    "removed": [],
+    "changed_reasons": []
+  },
+  "entries": [
+    {
+      "identity": "typescript/kernel/grpc-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/grpc-client/src/index.ts",
+      "directive": "// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "baseline_line": 34,
+      "live_line": 34,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_candidate_options": {
+        "effective_severity": "deny",
+        "explicit_options": null,
+        "documented_default_threshold": 100
+      },
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "retained_proof": {
+        "suppressed_mirror_report": "biome-suppressed-mirror-1.json",
+        "unsuppressed_mirror_report": "biome-unsuppressed-mirror-1.json",
+        "source_sha256": "4e5f93fd2b6101734d06e7c7f329eb061fabd792922f725221151b6a6e6f8bcb",
+        "unsuppressed_sha256": "391069139c47e8d3f9945466dcd0bd4a678df0fd92e53b1303d5fade461038ca",
+        "expected_category": "lint/performance/noBarrelFile",
+        "matching_diagnostics": 1,
+        "product_bytes_unchanged": true,
+        "scratch_discovery_option": "--vcs-enabled=false changes discovery only; repository lint rules and options remain unchanged"
+      },
+      "native_proof": {
+        "syntactic_report": "oxlint-grpc-client-syntactic.json",
+        "type_aware_report": "oxlint-grpc-client-type-aware.json",
+        "combined_type_aware_report": "oxlint-combined-type-aware.json",
+        "registry_report": "oxlint-rules.json",
+        "effective_config_report": "oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "rationale": "Enabled oxc/no-barrel-file does not fire under the unchanged shipped preset. It checks export-star/module-count threshold behavior, whereas these explicit re-exports trigger Biome. Unrelated diagnostics do not justify a native suppression."
+      },
+      "producing_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953"
+    },
+    {
+      "identity": "typescript/kernel/testkit/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/testkit/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface.",
+      "baseline_line": 41,
+      "live_line": 41,
+      "equivalent_native_rule": null,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_candidate_options": {
+        "effective_severity": "deny",
+        "explicit_options": null,
+        "documented_default_threshold": 100
+      },
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "retained_proof": {
+        "suppressed_mirror_report": "biome-suppressed-mirror-2.json",
+        "unsuppressed_mirror_report": "biome-unsuppressed-mirror-2.json",
+        "source_sha256": "a1bb9855fd87ffc8f259dc87560ce3aa71256fcc58b39687ea6d47c1037735fc",
+        "unsuppressed_sha256": "dc9190d895365ed87b59c634c9e4a968b9a9d6a257d235d8685e083bb4135e35",
+        "expected_category": "lint/performance/noBarrelFile",
+        "matching_diagnostics": 1,
+        "product_bytes_unchanged": true,
+        "scratch_discovery_option": "--vcs-enabled=false changes discovery only; repository lint rules and options remain unchanged"
+      },
+      "native_proof": {
+        "syntactic_report": "oxlint-testkit-syntactic.json",
+        "type_aware_report": "oxlint-testkit-type-aware.json",
+        "combined_type_aware_report": "oxlint-combined-type-aware.json",
+        "registry_report": "oxlint-rules.json",
+        "effective_config_report": "oxlint-effective-config.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "rationale": "Enabled oxc/no-barrel-file does not fire under the unchanged shipped preset. It checks export-star/module-count threshold behavior, whereas these explicit re-exports trigger Biome. Unrelated diagnostics do not justify a native suppression."
+      },
+      "producing_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953"
+    }
+  ]
+}

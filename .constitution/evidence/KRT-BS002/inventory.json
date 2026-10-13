@@ -1,0 +1,92 @@
+{
+  "baseline_commit": "6597a27223bf70956cf1b48a9661d21ff1d32bad",
+  "measurement_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
+  "baseline": [
+    {
+      "identity": "typescript/kernel/grpc-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/grpc-client/src/index.ts",
+      "line": 34,
+      "directive": "// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface."
+    },
+    {
+      "identity": "typescript/kernel/testkit/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/testkit/src/index.ts",
+      "line": 41,
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface."
+    }
+  ],
+  "live": [
+    {
+      "identity": "typescript/kernel/grpc-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/grpc-client/src/index.ts",
+      "line": 34,
+      "directive": "// biome-ignore lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface."
+    },
+    {
+      "identity": "typescript/kernel/testkit/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/kernel/testkit/src/index.ts",
+      "line": 41,
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public contract surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public contract surface."
+    }
+  ],
+  "preexisting_status": "",
+  "product_sha256": {
+    "typescript/kernel/certification-postgres/project.json": "d78c20eb52b91c17dda0a7d9c9a4d0352cfe76a44cea318f2a7b9aa3bfb6aed3",
+    "typescript/kernel/certification-sqlite/project.json": "2eb38571cc2ae21de558cfd516d2d18af52658d1d23f2c395489d2ba904bce3c",
+    "typescript/kernel/certification/CHANGELOG.md": "4c32ef3b220ec3eabd4fbb444087d6c1dff5417e2d4986f470cfbad76af35380",
+    "typescript/kernel/certification/package.json": "ec608e778e51cd2a29c4e27554087cba772d2ef3341dbe019c2a33d2c32eb2ab",
+    "typescript/kernel/certification/project.json": "49d284eadb41b89a71a818a4ee3f6d84e7f77f8fbeb6625e7b5b14e28146f829",
+    "typescript/kernel/certification/test/kernel-typescript-conformance.test.ts": "658a75a5669bfd0c23e7d113c9ce2941a78557a5ef052ad22b47ff53a5e0e182",
+    "typescript/kernel/certification/tsconfig.json": "c42ea3477504227b51ef171b273d033de85f10399b7832c933795fef9d937347",
+    "typescript/kernel/certification/tsconfig.typecheck.json": "036da61abde43d2e02a44e240e0acbbb74611b9f7c0e034bb9a2f28fb73b04e9",
+    "typescript/kernel/grpc-client/CHANGELOG.md": "db4c1d615dc69de8a4f67c9842c08acd8d5ab79079fdfc3549fa5fac86560995",
+    "typescript/kernel/grpc-client/LICENSE": "7a1cfa1916ad1571323321a3167321cd6b87915181d22066a043f659bcf7373d",
+    "typescript/kernel/grpc-client/README.md": "bd9b7cebcf983df57475d8f07d208faa4d928a3bbedffd3a957594d8a29d9e78",
+    "typescript/kernel/grpc-client/package.json": "2fd465e1226bd251a04d43cc5e5dafda6b22954f2782abcd30a29939a61ed9de",
+    "typescript/kernel/grpc-client/project.json": "36f98e9acdff5584478db9d6769f6ef7e02de977a0d87b426e306dc9ec801f09",
+    "typescript/kernel/grpc-client/src/index.ts": "4e5f93fd2b6101734d06e7c7f329eb061fabd792922f725221151b6a6e6f8bcb",
+    "typescript/kernel/grpc-client/src/lib/grpc-kernel-client-codec.ts": "3c81a6e8f500e13ce11bed3c867c1c994169272708a49f5270c2646d29702c23",
+    "typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts": "8a4635948905f8ac3978c46f3565a2a9428b296b638b804e3cf39ce3d86caa7e",
+    "typescript/kernel/grpc-client/test/grpc-kernel-client-codec.test.ts": "2f633f4603ae14c5d0f0679fcbf2ff6ef2a507b28bcf1e70415e913180eab69f",
+    "typescript/kernel/grpc-client/tsconfig.dts.json": "295fd3b09aec88bccb6e7ea6f325e5fa6c5112d08e76c74718df2fbc78a7eab5",
+    "typescript/kernel/grpc-client/tsconfig.json": "c306ee017b6a3ac72d216de853534c58f7159c4902ecf68a329a45f45f08462a",
+    "typescript/kernel/grpc-client/tsconfig.kernel-interop.generated.json": "57dea425431ff41b792ec3a6bb1529fdd038022d6a9e5418c3f513afb3ffe902",
+    "typescript/kernel/grpc-client/tsconfig.lib.json": "806dbb60c145deef0f95e0534cf875578438ed602d7952489b28309f1cf061a7",
+    "typescript/kernel/grpc-client/tsconfig.tsup.json": "ca948d94016d0b4d7ef7c6832f4ed3a6e6c2aa749db74450b179f1b1510d1250",
+    "typescript/kernel/grpc-client/tsconfig.typecheck.json": "ec81609c0c395f705d10bc5cc583f14f4754b7319509131d1fc8dd65889c7fa6",
+    "typescript/kernel/grpc-client/tsup.config.ts": "d4eff88f13f38e0397b71bec69793f6c2364c29372cf1c9638ed2ae2793bd28d",
+    "typescript/kernel/testkit/CHANGELOG.md": "317c545f7ec3f587cf25ed7f890a85c605d01de498d197662b455fc5d3d58c27",
+    "typescript/kernel/testkit/package.json": "49c70f8c09f414776f377c1178580abbdd97e6522899e4003eb80639b3acb066",
+    "typescript/kernel/testkit/project.json": "110958585d0560cd941fede07b2d18765cb899d16f2799d722d800863ccc7722",
+    "typescript/kernel/testkit/smoke/package-exports.ts": "1d17f3394d7d0b18391f055eb18b1bc5439f33edb5765d0bfec3faf7a75313d9",
+    "typescript/kernel/testkit/src/index.ts": "a1bb9855fd87ffc8f259dc87560ce3aa71256fcc58b39687ea6d47c1037735fc",
+    "typescript/kernel/testkit/src/lib/backend-conformance-suite.ts": "e39208eb88cf45460357cf5107ea47cacca7f7df08d2c9d908d5b4989c43bbd8",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite-archive.ts": "a3ce47f871a6e0067c853622ee08a85bb374ad7bd9e87f9b1253d474ecf3ef77",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite-foundation.ts": "d19315e3f550d17a26c19fe50aaf25460da5c93a5b2404bed0f2307bb970de39",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite-run-state.ts": "ba0c7a8768a3b61a16455fd5bba1e1c17738bff807a1f525016e39b53b4df3e1",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite-turns.ts": "b82158aae6c00f1406a09fa7f0e8d7dbd74d06f5f1b35e060dd7953d4df016fa",
+    "typescript/kernel/testkit/src/lib/backend-invariant-suite.ts": "ff581a07a6accdef8874e7cd9cd225e66d2bd52ff5a316e30dda0565984f26b4",
+    "typescript/kernel/testkit/src/lib/backend-recovery-suite.ts": "8132217bfdbfca242b45033909c39cf5a49c0414ec3e3dcabee6aeb90baaa900",
+    "typescript/kernel/testkit/src/lib/backend-test-suite-types.ts": "00da9968a29de54ddc592cf11b21953aef2652b48a2ae7f2c4d366b996169d76",
+    "typescript/kernel/testkit/src/lib/bench-phase-stats.ts": "a6e39758118b72ee73b9fb47e726f7ea0230c249370169d2dfdfda697c07ceaf",
+    "typescript/kernel/testkit/src/lib/fault-injecting-backend.ts": "bb78f5062f257865d56c4d0e9db9ed7d9638fec30ce2ce78112ec8a52a2651a9",
+    "typescript/kernel/testkit/src/lib/kernel-conformance-fixtures.ts": "683c9b28cd938b66ea7df26f96900100c7f2cdaf27d4229ebda7557a76a4f2a0",
+    "typescript/kernel/testkit/src/lib/kernel-test-fixtures.ts": "eb6813fc4986bc2a31a0438585a38006a19d1fba7d775dec7d7cd86731acc398",
+    "typescript/kernel/testkit/test/kernel-conformance.test.ts": "57a6441ea98473ed02cdb65ad2179b78d6172893870d78dfbebbede8e90d5586",
+    "typescript/kernel/testkit/test/kernel-testkit.test.ts": "a32600441efe8c9e81a3665ed7a852ffba4a670703aa1da29a62834c0a3eafcb",
+    "typescript/kernel/testkit/tsconfig.dts.json": "bed6c8cd0e9b11489d8b89224a7dff1c9a7658f451ca01542202089e89350ec2",
+    "typescript/kernel/testkit/tsconfig.json": "c306ee017b6a3ac72d216de853534c58f7159c4902ecf68a329a45f45f08462a",
+    "typescript/kernel/testkit/tsconfig.lib.json": "07333a63f7a52e9f4f01278227ff271c68c9ecf4a10a29ceaa2b12950a49865a",
+    "typescript/kernel/testkit/tsconfig.tsup.json": "ca948d94016d0b4d7ef7c6832f4ed3a6e6c2aa749db74450b179f1b1510d1250",
+    "typescript/kernel/testkit/tsconfig.typecheck.json": "32659a230374f84e99eeb76dc6a7276962f48da62a674edcb91636989b057ca2",
+    "typescript/kernel/testkit/tsup.config.ts": "d4eff88f13f38e0397b71bec69793f6c2364c29372cf1c9638ed2ae2793bd28d"
+  }
+}

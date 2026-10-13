@@ -1,0 +1,114 @@
+{
+  "combined_diagnostics": 451,
+  "per_root": [
+    {
+      "root": "typescript/kernel/grpc-client",
+      "flavor": "syntactic",
+      "exit_code": 1,
+      "diagnostics": 166,
+      "by_rule": {
+        "eslint(func-style)": 47,
+        "eslint(no-shadow)": 1,
+        "eslint(no-use-before-define)": 95,
+        "eslint(prefer-destructuring)": 1,
+        "eslint(sort-keys)": 3,
+        "jsdoc(check-tag-names)": 1,
+        "jsdoc(require-throws-type)": 18
+      }
+    },
+    {
+      "root": "typescript/kernel/grpc-client",
+      "flavor": "type-aware",
+      "exit_code": 1,
+      "diagnostics": 176,
+      "by_rule": {
+        "eslint(func-style)": 47,
+        "eslint(no-shadow)": 1,
+        "eslint(no-use-before-define)": 95,
+        "eslint(prefer-destructuring)": 1,
+        "eslint(sort-keys)": 3,
+        "jsdoc(check-tag-names)": 1,
+        "jsdoc(require-throws-type)": 18,
+        "typescript(no-unsafe-type-assertion)": 1,
+        "typescript(prefer-nullish-coalescing)": 1,
+        "typescript(promise-function-async)": 1,
+        "typescript(switch-exhaustiveness-check)": 7
+      }
+    },
+    {
+      "root": "typescript/kernel/testkit",
+      "flavor": "syntactic",
+      "exit_code": 1,
+      "diagnostics": 172,
+      "by_rule": {
+        "eslint(func-style)": 65,
+        "eslint(no-use-before-define)": 76,
+        "eslint(sort-keys)": 2,
+        "jsdoc(check-tag-names)": 1,
+        "jsdoc(require-throws-type)": 2,
+        "oxc(const-comparisons)": 1,
+        "promise(avoid-new)": 2,
+        "typescript(method-signature-style)": 11,
+        "unicorn(import-style)": 1,
+        "unicorn(no-array-sort)": 1,
+        "unicorn(no-await-expression-member)": 3,
+        "unicorn(prefer-number-coercion)": 1,
+        "unicorn(prefer-type-error)": 6
+      }
+    },
+    {
+      "root": "typescript/kernel/testkit",
+      "flavor": "type-aware",
+      "exit_code": 1,
+      "diagnostics": 240,
+      "by_rule": {
+        "eslint(func-style)": 65,
+        "eslint(no-use-before-define)": 76,
+        "eslint(sort-keys)": 2,
+        "jsdoc(check-tag-names)": 1,
+        "jsdoc(require-throws-type)": 2,
+        "oxc(const-comparisons)": 1,
+        "promise(avoid-new)": 2,
+        "typescript(await-thenable)": 5,
+        "typescript(consistent-return)": 1,
+        "typescript(method-signature-style)": 11,
+        "typescript(no-confusing-void-expression)": 5,
+        "typescript(no-unsafe-assignment)": 8,
+        "typescript(no-unsafe-return)": 1,
+        "typescript(no-unsafe-type-assertion)": 1,
+        "typescript(only-throw-error)": 1,
+        "typescript(promise-function-async)": 44,
+        "typescript(strict-boolean-expressions)": 2,
+        "unicorn(import-style)": 1,
+        "unicorn(no-array-sort)": 1,
+        "unicorn(no-await-expression-member)": 3,
+        "unicorn(prefer-number-coercion)": 1,
+        "unicorn(prefer-type-error)": 6
+      }
+    },
+    {
+      "root": "typescript/kernel/certification",
+      "flavor": "syntactic",
+      "exit_code": 1,
+      "diagnostics": 35,
+      "by_rule": {
+        "eslint(func-style)": 9,
+        "eslint(no-use-before-define)": 24,
+        "unicorn(import-style)": 1,
+        "unicorn(prefer-type-error)": 1
+      }
+    },
+    {
+      "root": "typescript/kernel/certification",
+      "flavor": "type-aware",
+      "exit_code": 1,
+      "diagnostics": 35,
+      "by_rule": {
+        "eslint(func-style)": 9,
+        "eslint(no-use-before-define)": 24,
+        "unicorn(import-style)": 1,
+        "unicorn(prefer-type-error)": 1
+      }
+    }
+  ]
+}
