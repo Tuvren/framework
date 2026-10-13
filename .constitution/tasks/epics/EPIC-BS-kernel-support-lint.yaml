@@ -344,3 +344,145 @@ tickets:
 # New Stage 3 conventions: actual tsconfig-included lint dependency inputs and
 # internal manifest guard TypeError. A24 documentation followup remains explicit;
 # no dependency, public seam, protocol, snapshot, spec patch or ticket deferral.
+# M10 independent review: CLEAN, no bugs or flags. Reviewer reproduces all
+# thirteen gates, uncached certification 1/15, five extracted replay proofs,
+# 365 archive digests, validate 0 errors/0 warnings and 2318-file/index purity.
+
+closeout:
+  {
+    "tickets_completed": [
+      "KRT-BS001",
+      "KRT-BS002",
+      "KRT-BS003",
+      "KRT-BS004"
+    ],
+    "tickets_deferred": [],
+    "points_completed": 24,
+    "spec_patches": [],
+    "changelog_entries": [
+      {
+        "directory": "tasks",
+        "type": "changed",
+        "text": "Complete EPIC-BS: native type-aware kernel support lint, declaration ordering, measured suppression retirement and atomic admission of gRPC, testkit and certification roots."
+      }
+    ],
+    "candidate_terms": [],
+    "routed_upstream": [
+      {
+        "stage": "tasks",
+        "item": "EPIC-BV/A5: governance breaking/interop-smoke deletes shared origin/master; replace the runtime lock plus fetch workaround with a durable owned fix."
+      },
+      {
+        "stage": "tasks",
+        "item": "EPIC-BV/A6: inspect resolveCoverage Set aggregation for duplicate native owners; BS independently verifies raw per-file multiplicity, while a durable guard belongs to tooling ownership."
+      },
+      {
+        "stage": "tech-spec",
+        "item": "A11/shared BU-owned proposed OD-09: record honest preset async/error normalization at grpc-client/src/lib/grpc-kernel-client.ts (55907cf) and testkit/src/lib/fault-injecting-backend.ts, kernel-test-fixtures.ts, kernel-conformance-fixtures.ts plus test/kernel-testkit.test.ts (cd1f44d). Supported behavior, real backend authority and no fake awaits remain binding. M10 adds certification/test/kernel-typescript-conformance.test.ts readSuiteManifest guard Error-to-TypeError at d04b04d; six malformed cases preserve first message/order within 21 baseline/current probes."
+      },
+      {
+        "stage": "tech-spec",
+        "item": "A24 valid P2: reconcile documentation generation and native lint conventions after actual @packageDocumentation removal from gRPC/testkit entrypoints; prose is not equivalent metadata, required experimental markers remain, and no active consumer was measured."
+      },
+      {
+        "stage": "tasks",
+        "item": "Schedule Stage 3/4 documentation-generation/lint convention reconciliation before any future consumer requires removed package metadata."
+      }
+    ],
+    "follow_ups": [
+      "A5 shared origin/master ref deleted by governance breaking/interop-smoke; lock gate plus fetch cleanup, BV/Stage4 owner",
+      "A6 resolveCoverage aggregation may collapse repeated native selections; independent fresh root/file native ownership proof at M8-M10, BV/Stage4 investigation",
+      "A24 validP2: selectedpreset rejects realTSDoc @packageDocumentation marker, currentlyunconsumed; Stage3/Stage4 documentation-generation/lint convention reconciliation needed, experimentalmarkers preserved"
+    ],
+    "code_decisions": [
+      {
+        "summary": "Use Connect interceptor fixtures with native Promise.withResolvers<null> readiness/failure gates for deterministic gRPC forwarding and stream-error delivery tests.",
+        "kind": "pattern",
+        "paths": [
+          "typescript/kernel/grpc-client/test/grpc-kernel-client.test.ts"
+        ],
+        "commit": "bbca5098ae0f4fac23646cdf3f7ad3708995c217"
+      },
+      {
+        "kind": "convention",
+        "summary": "Declare native gRPC lint codegen prerequisites, direct generated TypeScript output hashing, inherited checker inputs, imported source dependencies and root TypeScript configs using installed Nx metadata; keep ordinary typecheck source-only.",
+        "paths": [
+          "typescript/kernel/grpc-client/project.json"
+        ],
+        "commit": "55907cfb80861d68b5a95db537057e811c9065b9"
+      },
+      {
+        "kind": "convention",
+        "summary": "Remove the native-rejected @packageDocumentation tag from the admitted gRPC package entrypoint while retaining descriptive prose; prose is not equivalent TSDoc metadata. Reconcile documentation generation and lint conventions through Stage 3/4 before consuming this package marker.",
+        "paths": [
+          "typescript/kernel/grpc-client/src/index.ts"
+        ],
+        "commit": "55907cfb80861d68b5a95db537057e811c9065b9"
+      },
+      {
+        "summary": "Use focused typed Bun recorded-call unit transactions with checked request shapes, staged actual writes and local commit publication; real backend conformance remains separate authority.",
+        "kind": "pattern",
+        "paths": [
+          "typescript/kernel/testkit/test/kernel-testkit.test.ts"
+        ],
+        "commit": "cd1f44d94e48b963eb48de159484d6de548c96e3"
+      },
+      {
+        "summary": "Use the native node:timers/promises API for testkit delay rather than constructing a callback Promise.",
+        "kind": "convention",
+        "paths": [
+          "typescript/kernel/testkit/src/lib/kernel-test-fixtures.ts"
+        ],
+        "commit": "cd1f44d94e48b963eb48de159484d6de548c96e3"
+      },
+      {
+        "summary": "Preserve benchmark decimal-prefix environment parsing through an explicit matched prefix and Number conversion under the native numeric-coercion rule.",
+        "kind": "pattern",
+        "paths": [
+          "typescript/kernel/testkit/src/lib/bench-phase-stats.ts"
+        ],
+        "commit": "cd1f44d94e48b963eb48de159484d6de548c96e3"
+      },
+      {
+        "summary": "Apply the native lint source/config/checker-input convention to all 25 actual testkit dependencies while keeping ordinary typecheck source-only.",
+        "kind": "convention",
+        "paths": [
+          "typescript/kernel/testkit/project.json"
+        ],
+        "commit": "cd1f44d94e48b963eb48de159484d6de548c96e3"
+      },
+      {
+        "summary": "Validate discovered unknown fsck results against the existing structural union and normalize unsupported non-Error rejections with causes while preserving real Error/result identities.",
+        "kind": "pattern",
+        "paths": [
+          "typescript/kernel/testkit/src/lib/fault-injecting-backend.ts"
+        ],
+        "commit": "cd1f44d94e48b963eb48de159484d6de548c96e3"
+      },
+      {
+        "summary": "Remove actual @packageDocumentation metadata from the admitted testkit entrypoint under A24; retain prose without claiming equivalent metadata and route documentation/lint convention reconciliation.",
+        "kind": "convention",
+        "paths": [
+          "typescript/kernel/testkit/src/index.ts"
+        ],
+        "commit": "cd1f44d94e48b963eb48de159484d6de548c96e3"
+      },
+      {
+        "summary": "Hash all actual TypeScript program sources reached by explicit certification tsconfig includes when Nx dependency inputs miss them, preserving inherited checker/config/lock inputs and source-only typecheck.",
+        "kind": "convention",
+        "paths": [
+          "typescript/kernel/certification/project.json"
+        ],
+        "commit": "d04b04d172007604c930aa38ccde7acee1145fa6"
+      },
+      {
+        "summary": "Normalize the internal malformed suite-manifest field guard to TypeError while preserving first validation messages/order, valid values and existing certification assertions.",
+        "kind": "pattern",
+        "paths": [
+          "typescript/kernel/certification/test/kernel-typescript-conformance.test.ts"
+        ],
+        "commit": "d04b04d172007604c930aa38ccde7acee1145fa6"
+      }
+    ],
+    "settled": []
+  }
