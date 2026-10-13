@@ -155,18 +155,19 @@ decisions:
       in: EPIC-BU
     proposed_by: EPIC-BU under approved wave amendment A11
 
-# M6 completes KRT-BU004: native diagnostics 81 -> 0 over all 19 code files;
+# M6 completes KRT-BU004: native diagnostics 81 -> 0 over all 20 code files;
 # zero owned JSON and zero baseline/drift/counterpart directives. Full effective
 # shipped policy equality holds (536 rule keys; 55 enabled type-aware rules).
-# All 12 final lead checks pass: tools tsc, helpers (95/9490 assertions), Biome,
-# Oxfmt, extended tests (153/10729), native lint/selection, typecheck, lint, check,
+# All 12 final lead checks pass: tools tsc, helpers (97/10060 assertions), Biome,
+# Oxfmt, extended tests (155/11300), native lint/selection, typecheck, lint, check,
 # verify:kernel and VERIFY_SERIAL=1 verify (36 steps). Fetch cleanup passed.
 # Under A13, two worker full runs and one isolated alias control timed out at
 # the unchanged 5s limit. After resource relief isolated controls and the third
 # serial full run passed; the lead independently repeated the full gate.
-# A15 comparison preserves 42 value signatures and 35 type declarations against
-# pre-M6 63ae87f; only NxProjectTarget options/configurations align with vendor
-# generic records. The 12000-file walker and serial failure
+# A15/A30 comparison preserves 42 value signatures and 34 type declarations
+# against pre-M6 63ae87f. Exactly two internal interfaces change: NxProjectTarget
+# options/configurations become generic records, and NxCommandOptions.command
+# accepts string arrays matching vendor normalization. The 12000-file walker and serial failure
 # probes pass. Nx structured dependent-output inputs retain their values.
 
 # M6 independent review P1 fixed under A15: generic executor metadata remains
@@ -202,6 +203,11 @@ decisions:
 # timeout under load, then one green isolation and complete extended retry.
 # Worker and lead final serial verification passed with the full tracked/index
 # freeze and fetch cleanup. A28 requires no change to this stable implementation.
+# A30 subsequently fixes valid mixed-fragment erasure through exact installed
+# command-array join normalization and its internal command type union. The
+# complete schema matrix, 161 scenarios through each original caller, strict
+# native no-extra-credit controls and exact6597 supported-string comparisons pass.
+# Both new owned tests add no exports; current selection is 20 code files.
 
 closeout:
   tickets_completed: [KRT-BU001, KRT-BU002, KRT-BU003, KRT-BU004]
