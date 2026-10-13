@@ -29,21 +29,19 @@ const ENTRY = "@tuvren/fixture";
 
 const surface = (
   records: Record<string, Partial<ExportRecord>>
-): ApiSurface => {
-  return {
-    [ENTRY]: Object.fromEntries(
-      Object.entries(records).map(([name, record]) => [
-        name,
-        {
-          kind: "type",
-          signature: `interface ${name} {}`,
-          stability: "stable",
-          ...record,
-        } satisfies ExportRecord,
-      ])
-    ),
-  };
-};
+): ApiSurface => ({
+  [ENTRY]: Object.fromEntries(
+    Object.entries(records).map(([name, record]) => [
+      name,
+      {
+        kind: "type",
+        signature: `interface ${name} {}`,
+        stability: "stable",
+        ...record,
+      } satisfies ExportRecord,
+    ])
+  ),
+});
 
 describe("classifySurfaceDiff (ADR-0056 diff table)", () => {
   test("identical surfaces produce no drift", () => {

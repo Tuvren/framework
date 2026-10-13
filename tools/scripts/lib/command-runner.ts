@@ -29,7 +29,7 @@ export interface RunCommandResult {
   stdout: string;
 }
 
-export const runCommand = (
+export const runCommand = async (
   command: readonly string[],
   options: RunCommandOptions = {}
 ): Promise<RunCommandResult> => {
@@ -39,56 +39,57 @@ export const runCommand = (
     throw new Error("runCommand requires an executable");
   }
 
-  return new Promise<RunCommandResult>((resolve, reject) => {
-    const stdoutChunks: Uint8Array[] = [];
-    const stderrChunks: Uint8Array[] = [];
-    let timedOut = false;
-    const child = spawn(executable, args, {
-      cwd: options.cwd,
-      env: {
-        ...process.env,
-        ...options.env,
-      },
-      stdio: options.captureOutput ? "pipe" : "inherit",
-    });
-    const timeoutHandle =
-      options.timeoutMs === undefined
-        ? undefined
-        : setTimeout(() => {
-            timedOut = true;
-            child.kill("SIGTERM");
-            setTimeout(() => {
-              if (child.exitCode === null) {
-                child.kill("SIGKILL");
-              }
-            }, 1000).unref();
-          }, options.timeoutMs);
+  const { promise, resolve, reject } =
+    Promise.withResolvers<RunCommandResult>();
+  const stdoutChunks: Uint8Array[] = [];
+  const stderrChunks: Uint8Array[] = [];
+  let timedOut = false;
+  const child = spawn(executable, args, {
+    cwd: options.cwd,
+    env: {
+      ...process.env,
+      ...options.env,
+    },
+    stdio: options.captureOutput === true ? "pipe" : "inherit",
+  });
+  const timeoutHandle =
+    options.timeoutMs === undefined
+      ? undefined
+      : setTimeout(() => {
+          timedOut = true;
+          child.kill("SIGTERM");
+          setTimeout(() => {
+            if (child.exitCode === null) {
+              child.kill("SIGKILL");
+            }
+          }, 1000).unref();
+        }, options.timeoutMs);
 
-    if (options.captureOutput) {
-      child.stdout?.on("data", (chunk: Uint8Array) => {
-        stdoutChunks.push(chunk);
-      });
-      child.stderr?.on("data", (chunk: Uint8Array) => {
-        stderrChunks.push(chunk);
-      });
+  if (options.captureOutput === true) {
+    child.stdout?.on("data", (chunk: Uint8Array) => {
+      stdoutChunks.push(chunk);
+    });
+    child.stderr?.on("data", (chunk: Uint8Array) => {
+      stderrChunks.push(chunk);
+    });
+  }
+
+  child.once("error", reject);
+  child.once("close", (code) => {
+    if (timeoutHandle !== undefined) {
+      clearTimeout(timeoutHandle);
     }
 
-    child.once("error", reject);
-    child.once("close", (code) => {
-      if (timeoutHandle !== undefined) {
-        clearTimeout(timeoutHandle);
-      }
-
-      const stderr = Buffer.concat(stderrChunks).toString("utf-8");
-      resolve({
-        code: timedOut ? 124 : (code ?? 1),
-        stderr: timedOut
-          ? [stderr, `command timed out after ${String(options.timeoutMs)}ms`]
-              .filter((value) => value.length > 0)
-              .join("\n")
-          : stderr,
-        stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
-      });
+    const stderr = Buffer.concat(stderrChunks).toString("utf-8");
+    resolve({
+      code: timedOut ? 124 : (code ?? 1),
+      stderr: timedOut
+        ? [stderr, `command timed out after ${String(options.timeoutMs)}ms`]
+            .filter((value) => value.length > 0)
+            .join("\n")
+        : stderr,
+      stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
     });
   });
+  return await promise;
 };

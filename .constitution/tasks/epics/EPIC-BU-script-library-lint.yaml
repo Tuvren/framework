@@ -84,7 +84,7 @@ tickets:
       evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule over the complete owned code selection with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Reconcile KRT-BU002's ledger against fresh diagnostics. Prove every needed original Biome directive and reason remain while Biome owns the region, and prove each native counterpart matches an actually firing equivalent rule with the same reason. Assert actual --debug=files and native JSON selections cover the owned files, source-integrity coverage remains independent of formatter ignores, scoped tests and the full lint gate pass, and tools/biome-coverage/bu.json remains unchanged under active Biome ownership pending CB's whole-tools admission."
     flows: []
     certainty: settled
-    status: planned
+    status: done
 
 # M2 (KRT-BU003 partial): eight utility/API files reordered; 247 additions/124 deletions.
 # All six plan checks pass: tools tsc, helper tests (69/203 assertions), retained
@@ -116,3 +116,53 @@ tickets:
 # Locked conformance retained the lock through successful origin/master fetch.
 # Twenty-seven signatures/bodies, six imports, one eager initializer and 51
 # scenarios across two fresh-process import orders match. Native 163 -> 81.
+
+decisions:
+  - id: OD-09
+    question: Should native readiness preserve supported and authority-backed contracts while allowing the selected preset's internal async and error normalizations, or additionally freeze unpromised reflection and scheduling observations?
+    blocks: [KRT-BU004, KRT-BS004]
+    options:
+      - name: Preserve supported contracts and apply the selected preset's internal normalizations
+        pros:
+          - Preserves public signatures, domain errors, validation order, durable outcomes and promoted conformance while implementing ADR-0070 without exceptions.
+          - Permits consistent Promise rejection, internal TypeError and cause preservation selected by the shipped rules.
+        cons:
+          - Changes unpromised internal observations such as synchronous invalid-input throws or generic error constructors.
+      - name: Freeze additional reflection and scheduling observations before migration
+        pros:
+          - Preserves those implementation observations even where no public or promoted contract promises them.
+        cons:
+          - Requires a separate policy ruling before native readiness and may conflict with the selected unchanged preset.
+    recommendation: Preserve supported contracts and apply the selected preset's internal normalizations
+    closure: ruling
+    ruler: Repository owner through Stage 3 alignment after this wave
+    waiting_on: Review the native-readiness evidence, master tests and promoted conformance after BS and BU merge.
+    interim:
+      assumption: ADR-0070 authorizes honest preset-required internal async, TypeError and cause normalization. Preserve supported public signatures, documented domain errors and messages, first-validation-failure order, fail-closed behavior, emitted event ordering, commit phases, rollback and durable outcomes. Unpromised Promise identity, arbitrary microtask counts, generic internal error constructors and absent cause fields are not additional contracts. No suppressions, overrides, fake awaits or signature workarounds are authorized.
+      applied_by:
+        - KRT-BU004
+        - tools/scripts/lib/command-runner.ts
+        - tools/scripts/lib/command-runner.test.ts
+        - tools/scripts/lib/biome-inventory.ts
+        - tools/scripts/lib/biome-inventory.test.ts
+        - tools/scripts/lib/conformance-contract.ts
+        - tools/scripts/lib/nx-projects.ts
+        - KRT-BS004
+    status: proposed
+    asked:
+      date: 2026-10-13
+      in: EPIC-BU
+    proposed_by: EPIC-BU under approved wave amendment A11
+
+# M6 completes KRT-BU004: native diagnostics 81 -> 0 over all 18 code files;
+# zero owned JSON and zero baseline/drift/counterpart directives. Full effective
+# shipped policy equality holds (536 rule keys; 55 enabled type-aware rules).
+# All 12 lead checks pass: tools tsc, helpers (76/257 assertions), Biome, Oxfmt,
+# extended tests (134/1495), native lint/selection, typecheck, lint, check,
+# verify:kernel and VERIFY_SERIAL=1 verify (36 steps). Fetch cleanup passed.
+# Under A13, two worker full runs and one isolated alias control timed out at
+# the unchanged 5s limit. After resource relief isolated controls and the third
+# serial full run passed; the lead independently repeated the full gate.
+# Complete comparison preserves 42 value signatures and 36 interface/type-alias
+# declarations against pre-M6 63ae87f. The 12000-file walker and serial failure
+# probes pass. Nx structured dependent-output inputs retain their values.

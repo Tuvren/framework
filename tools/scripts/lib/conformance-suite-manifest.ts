@@ -15,7 +15,7 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import path from "node:path";
 
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -33,9 +33,8 @@ import type {
 const SUITE_MANIFEST_SCHEMA_RELATIVE_PATH =
   "../schemas/suite-manifest.schema.json";
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
 const readJsonSchema = (value: unknown, label: string): AnySchema => {
   if (typeof value === "boolean" || isRecord(value)) {
@@ -52,8 +51,8 @@ export const readConformanceSuiteManifest = async (
   // The suite manifest schema lives next to the owning boundary instead of
   // being referenced from inside the manifest. Keeping that path conventional
   // avoids a second layer of manifest indirection that could drift silently.
-  const schemaPath = resolve(
-    dirname(manifestPath),
+  const schemaPath = path.resolve(
+    path.dirname(manifestPath),
     SUITE_MANIFEST_SCHEMA_RELATIVE_PATH
   );
   const schema = readJsonSchema(
@@ -63,7 +62,7 @@ export const readConformanceSuiteManifest = async (
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   const validate = ajv.compile(schema);
 
-  if (!validate(manifest)) {
+  if (validate(manifest) === false) {
     throw new Error(
       `${manifestPath} failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
     );
@@ -76,11 +75,10 @@ export const readConformanceSuiteManifest = async (
 export const selectImplementationChecks = (
   manifest: ConformanceSuiteManifest,
   implementationId: string
-): readonly SuiteCheck[] => {
-  return manifest.checks.filter((check) =>
-    check.implementations?.includes(implementationId)
+): readonly SuiteCheck[] =>
+  manifest.checks.filter(
+    (check) => check.implementations?.includes(implementationId) === true
   );
-};
 
 export const emitConformanceEvidence = (
   evidence: ConformanceEvidence

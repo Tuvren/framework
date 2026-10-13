@@ -82,9 +82,8 @@ export interface ConformanceEvidence {
   summary: ConformanceEvidenceSummary;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const assertNonEmptyString: (
   value: unknown,
@@ -132,7 +131,7 @@ const readSuiteFixtures = (
   }
 
   if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array when present`);
+    throw new TypeError(`${label} must be an array when present`);
   }
 
   const fixtures = value.map((fixture, index) =>
@@ -171,7 +170,7 @@ const readSuiteScenarios = (
   }
 
   if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array when present`);
+    throw new TypeError(`${label} must be an array when present`);
   }
 
   const scenarios = value.map((scenario, index) =>
@@ -444,7 +443,7 @@ const readCheckResults = (
   label: string
 ): readonly ConformanceCheckResult[] => {
   if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
+    throw new TypeError(`${label} must be an array`);
   }
 
   const checkResults = value.map((checkResult, index) =>
@@ -580,10 +579,8 @@ export const createAssertionResult = (
   assertionId: string,
   passed: boolean,
   message?: string
-): ConformanceAssertionResult => {
-  return {
-    assertionId,
-    message,
-    status: passed ? "pass" : "fail",
-  };
-};
+): ConformanceAssertionResult => ({
+  assertionId,
+  message,
+  status: passed ? "pass" : "fail",
+});

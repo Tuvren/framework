@@ -107,7 +107,7 @@ const collectFloorViolations = (
   for (const entrypoint of whollyExperimentalEntrypoints) {
     const surface = live[entrypoint] ?? {};
 
-    for (const exportName of Object.keys(surface).sort()) {
+    for (const exportName of Object.keys(surface).toSorted()) {
       if (surface[exportName]?.stability === "stable") {
         floorViolations.push({ entrypoint, exportName });
       }
@@ -242,12 +242,12 @@ export const classifySurfaceDiff = (
 
   const entrypoints = new Set([...Object.keys(snapshot), ...Object.keys(live)]);
 
-  for (const entrypoint of [...entrypoints].sort()) {
+  for (const entrypoint of [...entrypoints].toSorted()) {
     const before = snapshot[entrypoint] ?? {};
     const after = live[entrypoint] ?? {};
     const names = new Set([...Object.keys(before), ...Object.keys(after)]);
 
-    for (const exportName of [...names].sort()) {
+    for (const exportName of [...names].toSorted()) {
       const finding = classifyExportChange(
         entrypoint,
         exportName,
