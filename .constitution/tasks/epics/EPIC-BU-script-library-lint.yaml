@@ -157,8 +157,8 @@ decisions:
 # M6 completes KRT-BU004: native diagnostics 81 -> 0 over all 18 code files;
 # zero owned JSON and zero baseline/drift/counterpart directives. Full effective
 # shipped policy equality holds (536 rule keys; 55 enabled type-aware rules).
-# All 12 final lead checks pass: tools tsc, helpers (78/295 assertions), Biome,
-# Oxfmt, extended tests (136/1533), native lint/selection, typecheck, lint, check,
+# All 12 final lead checks pass: tools tsc, helpers (86/393 assertions), Biome,
+# Oxfmt, extended tests (144/1631), native lint/selection, typecheck, lint, check,
 # verify:kernel and VERIFY_SERIAL=1 verify (36 steps). Fetch cleanup passed.
 # Under A13, two worker full runs and one isolated alias control timed out at
 # the unchanged 5s limit. After resource relief isolated controls and the third
@@ -174,3 +174,14 @@ decisions:
 # credit; malformed canonical commands fail closed. Public Tuvren APIs unchanged.
 # Final fix worker and lead both pass serial 36-step verify. A16 resolved an
 # optional child-Git transport environment failure without source/limit changes.
+
+# A18 closes the execution-proof review follow-up: custom/absent/unsupported
+# executors yield no command strings. Malformed canonical command records return
+# no partial proof across base/configuration records. Supported canonical shapes
+# still extract. A19 privately validates declared canonical fields and effective
+# configurations atomically; missing/empty defaults preserve measured Nx fallback.
+# Test-first failures and final 36-case discovery controls pass. Worker and lead
+# repeated all 12 gates on the final source, including serial full verification.
+# A20 invalidated a worker full run whose purity window overlapped the lead's
+# epic-count update; source hashes stayed frozen. The authorized unchanged-source
+# worker retry and independent lead run passed with all tracked/index state frozen.
