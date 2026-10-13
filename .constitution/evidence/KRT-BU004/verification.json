@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "78c776de22e7768838e7a1bc5424c0b9f79971d1",
+  "sourceCommit": "f00e7a7561874d4dd2df3953a1fe2082106d2d07",
   "mode": "contract_test",
   "commands": [
     {
@@ -76,12 +76,12 @@
     }
   ],
   "helperTests": {
-    "tests": 78,
-    "assertions": 295
+    "tests": 86,
+    "assertions": 393
   },
   "extendedTests": {
-    "tests": 136,
-    "assertions": 1533
+    "tests": 144,
+    "assertions": 1631
   },
   "fullVerifySteps": 36,
   "signatureMethod": "Compiler-resolved value signatures and complete comment-free interface/type-alias declaration syntax",
@@ -90,6 +90,7 @@
     "No live_probe recipes apply.",
     "Owned JSON inventory is empty; json-check intentionally rejects empty scopes and is not claimed as a passing owned lane.",
     "The A15 internal vendor-schema correction is explicit; all Tuvren public APIs remain frozen.",
+    "A18/A19 canonical command extraction gives opaque executors and malformed declared fields/effective configurations no execution proof; missing or empty defaults preserve installed Nx base fallback.",
     "Failed fixed-budget alias controls, resource relief, successful isolated controls and serial full runs are preserved in the transcript bundle.",
     "A16 transport failure/control and successful unchanged-source retry are preserved.",
     "The bundle is gzip-compressed JSON mapping original transcript filenames to normalized UTF-8 text."

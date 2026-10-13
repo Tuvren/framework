@@ -16,7 +16,7 @@
     "syntaxDiagnostics": 0,
     "typeAwareDiagnostics": 0,
     "suppressionDirectives": 0,
-    "commit": "78c776de22e7768838e7a1bc5424c0b9f79971d1"
+    "commit": "f00e7a7561874d4dd2df3953a1fe2082106d2d07"
   },
   "entries": [],
   "baselineEntries": [],
@@ -47,10 +47,10 @@
   "baselineArtifactSha256": "62d6709cabf1034e92bb15e3a3ae65920aa165cb3e9b2349343a2271419aefc8",
   "verification": {
     "toolsTsc": "pass",
-    "helperTests": "78 pass / 0 fail / 295 assertions",
+    "helperTests": "86 pass / 0 fail / 393 assertions",
     "retainedBiome": "pass;18 files",
     "oxfmt": "pass;18 files",
-    "extendedTests": "136 pass / 0 fail / 1533 assertions",
+    "extendedTests": "144 pass / 0 fail / 1631 assertions",
     "nativeLint": "pass;0 diagnostics;unchanged type-aware preset",
     "actualOxlintSelection": "18 owned files;exact complete equality",
     "nativeJsonSelection": "0 owned JSON/format/protected files;empty JSON CLI not claimed",
@@ -58,7 +58,7 @@
     "repositoryLint": "pass",
     "check": "pass;locked;fetch cleanup pass",
     "verifyKernel": "pass;locked;fetch cleanup pass",
-    "verify": "pass; final A15 source independently verified with all36steps and VERIFY_SERIAL=1; fetch cleanup pass",
+    "verify": "pass; final A18/A19 source independently verified with all36steps and VERIFY_SERIAL=1; fetch cleanup pass",
     "apiTypes": "42 value signatures and 35 type declarations unchanged; only the two A15 NxProjectTarget property declarations are corrected",
     "largeFlatWalker": "12000files;order/skip semantics match original;~64ms",
     "nxDependentTaskInputs": "structured vendor-supported inputs preserved",
@@ -123,6 +123,37 @@
       "exit": 0,
       "sourceCommit": "78c776de22e7768838e7a1bc5424c0b9f79971d1",
       "log": "bu-m6-fix-lead-verify.log"
+    },
+    {
+      "attempt": "A18workerSerial",
+      "exit": 0,
+      "sourceState": "Historical uncommitted A18 patch before A19 finalization; not the final producing commit",
+      "log": "bu-m6-extraction-fix-final-verify.log"
+    },
+    {
+      "attempt": "A18leadIndependentSerial",
+      "exit": 0,
+      "sourceState": "Historical uncommitted A18 patch before A19 finalization; not the final producing commit",
+      "log": "bu-m6-extraction-lead-verify.log"
+    },
+    {
+      "attempt": "A19workerFinal3Purity",
+      "exit": 1,
+      "sourceCommit": "f00e7a7561874d4dd2df3953a1fe2082106d2d07",
+      "reason": "Lead updated own epic YAML bookkeeping during verification; both owned source hashes stayed frozen, all scenarios passed, purity guard correctly failed",
+      "log": "bu-m6-extraction-fix-a19-final3-verify.log"
+    },
+    {
+      "attempt": "A20workerFinal4Serial",
+      "exit": 0,
+      "sourceCommit": "f00e7a7561874d4dd2df3953a1fe2082106d2d07",
+      "log": "bu-m6-extraction-fix-a19-final4-verify.log"
+    },
+    {
+      "attempt": "A19leadIndependentSerial",
+      "exit": 0,
+      "sourceCommit": "f00e7a7561874d4dd2df3953a1fe2082106d2d07",
+      "log": "bu-m6-canonical-lead-verify.log"
     }
   ],
   "introducedDependencies": [],
@@ -163,7 +194,7 @@
         "tools/scripts/lib/nx-projects.ts",
         "tools/scripts/lib/biome-oxc-discovery.test.ts"
       ],
-      "decision": "A15 aligns raw Nx options/configurations with vendor generic records; private canonical consumers narrow command fields after executor selection, preserving custom metadata and fail-closed credit"
+      "decision": "A15/A18/A19 align raw Nx options/configurations with vendor generic records; only canonical executors with valid declared fields and effective configurations yield command strings; custom metadata remains opaque and malformed records yield no partial proof"
     },
     {
       "paths": [
@@ -203,5 +234,17 @@
     ],
     "canonicalNarrowing": "tools/scripts/lib/native-lint-routing.ts",
     "regressions": "tools/scripts/lib/biome-oxc-discovery.test.ts"
+  },
+  "canonicalExecutionProof": {
+    "rulings": [
+      "A18",
+      "A19"
+    ],
+    "helper": "tools/scripts/lib/nx-projects.ts#targetCommandStrings",
+    "unsupportedExecutorsYieldNoCommands": true,
+    "malformedKnownFieldsYieldNoPartialCommands": true,
+    "effectiveConfigurationValidation": true,
+    "missingAndEmptyDefaultUseVendorBaseFallback": true,
+    "discoveryTests": 36
   }
 }
