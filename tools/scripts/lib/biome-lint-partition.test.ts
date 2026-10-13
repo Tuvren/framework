@@ -26,6 +26,7 @@ import oxfmtConfig from "../../../oxfmt.config.js";
 import {
   readCoverageEntries,
   resolveCoverage,
+  type CoverageEntry,
   type CoverageResolution,
 } from "../biome-lint.js";
 import {
@@ -77,11 +78,12 @@ async function discoverInventory(): Promise<string[]> {
   return await inventoryCache;
 }
 
-function switchBqProjectsToOxc(
-  files: readonly NxProjectFile[]
+function switchProjectsToOxc(
+  files: readonly NxProjectFile[],
+  names: ReadonlySet<string> = BQ_PROJECTS
 ): NxProjectFile[] {
   return files.map((file) => {
-    if (!BQ_PROJECTS.has(file.name)) {
+    if (!names.has(file.name)) {
       return file;
     }
     // The canonical whole-project switch (ADR-0070): run from the workspace
@@ -111,6 +113,48 @@ function switchBqProjectsToOxc(
   });
 }
 
+function partitionScenario(additionalAdmissions: boolean): {
+  entries: CoverageEntry[];
+  projects: NxProjectFile[];
+} {
+  let projects = switchProjectsToOxc(loadNxProjectFiles(REPO_ROOT));
+  let entries = readCoverageEntries(COVERAGE_DIR).filter(
+    (entry) => entry.list !== "bq"
+  );
+  if (additionalAdmissions) {
+    // Clone real metadata and transfer only the newly admitted roots out of
+    // retained coverage. Every scenario still resolves the full inventory.
+    projects = switchProjectsToOxc(projects, new Set(["kernel-grpc-client"]));
+    projects = projects.map((file) => {
+      if (file.name !== "kernel-typescript-sqlite-certification") {
+        return file;
+      }
+      return {
+        ...file,
+        project: {
+          ...file.project,
+          targets: {
+            ...file.project.targets,
+            lint: {
+              executor: "nx:run-commands",
+              options: {
+                command: `bun tools/scripts/json-check.ts --json-only ${path.dirname(file.path)}`,
+                cwd: ".",
+              },
+            },
+          },
+        },
+      };
+    });
+    entries = entries.filter(
+      (entry) =>
+        entry.path !== "typescript/kernel/grpc-client" &&
+        entry.path !== "typescript/kernel/certification-sqlite"
+    );
+  }
+  return { entries, projects };
+}
+
 function expectCompletePartition(
   inventory: readonly string[],
   resolution: CoverageResolution
@@ -135,17 +179,11 @@ function expectCompletePartition(
   expect(owned + nativeFiles.length).toBe(inventory.length);
 }
 
-async function actualOxlintFiles(roots: readonly string[]): Promise<string[]> {
-  const files: string[] = [];
-  for (const root of roots) {
-    const result = await runCommand(
-      ["bunx", "--bun", "oxlint", "--type-aware", root, "--debug=files"],
-      { captureOutput: true, cwd: REPO_ROOT }
-    );
-    expect(result.code).toBe(0);
-    files.push(...result.stdout.trim().split(/\r?\n/gu));
-  }
-  return files.filter((file) => file.length > 0).sort();
+function isBqFile(file: string): boolean {
+  return (
+    file.startsWith("typescript/kernel/protocol/") ||
+    file.startsWith("typescript/kernel/runtime/")
+  );
 }
 
 async function actualNativeFiles(
@@ -210,88 +248,183 @@ describe("biome coverage partition", () => {
     expectCompletePartition(inventory, resolution);
   });
 
-  test("a BQ-style switch stays complete through the real metadata path", async () => {
-    const inventory = await discoverInventory();
-    const switched = discoverOxcProjects(
-      switchBqProjectsToOxc(loadNxProjectFiles(REPO_ROOT))
-    );
-    expect(switched.map((project) => project.root)).toEqual([
-      "typescript/kernel/protocol",
-      "typescript/kernel/runtime",
-    ]);
-
-    const withoutBq = readCoverageEntries(COVERAGE_DIR).filter(
-      (entry) => entry.list !== "bq"
-    );
-    const roots = switched.map((project) => project.root);
-    const oxlintFiles = await actualOxlintFiles(roots);
-    const jsonValidatedFiles = inventory.filter(
-      (file) =>
-        file.endsWith(".json") &&
-        roots.some((root) => file.startsWith(`${root}/`))
-    );
-    const resolution = resolveCoverage(inventory, withoutBq, {
-      jsonValidatedFiles,
-      oxlintFiles,
-    });
-
-    expectCompletePartition(inventory, resolution);
-    expect(resolution.oxlintFiles).toHaveLength(42);
-    expect(resolution.jsonValidatedFiles).toHaveLength(14);
-    expect(resolution.perList.get("bq")).toEqual([]);
-    for (const file of [
-      ...resolution.oxlintFiles,
-      ...resolution.jsonValidatedFiles,
-    ]) {
+  test.each([false, true])(
+    "a BQ-style switch stays complete through the real metadata path (additional admissions: %p)",
+    async (additionalAdmissions) => {
+      const inventory = await discoverInventory();
+      const { entries: withoutBq, projects } =
+        partitionScenario(additionalAdmissions);
+      const switched = discoverOxcProjects(projects);
       expect(
-        file.startsWith("typescript/kernel/protocol/") ||
-          file.startsWith("typescript/kernel/runtime/")
-      ).toBe(true);
-    }
-  });
+        switched
+          .filter((project) => BQ_PROJECTS.has(project.name))
+          .map((project) => project.root)
+      ).toEqual(["typescript/kernel/protocol", "typescript/kernel/runtime"]);
 
-  test("standalone Oxlint never receives credit for a project's JSON", async () => {
-    const inventory = await discoverInventory();
-    const switchedFiles = switchBqProjectsToOxc(
-      loadNxProjectFiles(REPO_ROOT)
-    ).map((file) => {
-      if (!BQ_PROJECTS.has(file.name)) {
-        return file;
+      const nativeFiles = await actualNativeFiles(inventory, projects);
+      const resolution = resolveCoverage(inventory, withoutBq, nativeFiles);
+
+      expectCompletePartition(inventory, resolution);
+      expect(resolution.oxlintFiles.filter(isBqFile)).toHaveLength(42);
+      expect(resolution.jsonValidatedFiles.filter(isBqFile)).toHaveLength(14);
+      expect(resolution.perList.get("bq")).toEqual([]);
+      if (additionalAdmissions) {
+        expect(discoverNativeLintProjects(projects).oxcProjects).toContainEqual(
+          {
+            jsonCompanion: true,
+            name: "kernel-grpc-client",
+            root: "typescript/kernel/grpc-client",
+          }
+        );
+        expect(
+          discoverNativeLintProjects(projects).jsonOnlyProjects
+        ).toContainEqual({
+          name: "kernel-typescript-sqlite-certification",
+          root: "typescript/kernel/certification-sqlite",
+        });
+        expect(resolution.oxlintFiles).toContain(
+          "typescript/kernel/grpc-client/src/index.ts"
+        );
+        expect(resolution.jsonValidatedFiles).toContain(
+          "typescript/kernel/grpc-client/project.json"
+        );
+        expect(resolution.jsonValidatedFiles).toContain(
+          "typescript/kernel/certification-sqlite/project.json"
+        );
+        expect(
+          resolution.oxlintFiles.some((file) =>
+            file.startsWith("typescript/kernel/certification-sqlite/")
+          )
+        ).toBe(false);
       }
-      const root = path.dirname(file.path);
-      return {
-        ...file,
-        project: {
-          ...file.project,
-          targets: {
-            ...file.project.targets,
-            lint: {
-              executor: "nx:run-commands",
-              options: {
-                command: `${OXLINT_COMMAND_PREFIX} ${root}`,
-                cwd: ".",
+    }
+  );
+
+  test.each([false, true])(
+    "standalone Oxlint never receives credit for a project's JSON (additional admissions: %p)",
+    async (additionalAdmissions) => {
+      const inventory = await discoverInventory();
+      const { entries, projects } = partitionScenario(additionalAdmissions);
+      const switchedFiles = projects.map((file) => {
+        if (!BQ_PROJECTS.has(file.name)) {
+          return file;
+        }
+        const root = path.dirname(file.path);
+        return {
+          ...file,
+          project: {
+            ...file.project,
+            targets: {
+              ...file.project.targets,
+              lint: {
+                executor: "nx:run-commands",
+                options: {
+                  command: `${OXLINT_COMMAND_PREFIX} ${root}`,
+                  cwd: ".",
+                },
               },
             },
           },
-        },
-      };
-    });
-    const switched = discoverOxcProjects(switchedFiles);
-    const oxlintFiles = await actualOxlintFiles(
-      switched.map((project) => project.root)
-    );
-    const nativeFiles = await actualNativeFiles(inventory, switchedFiles);
-    const resolution = resolveCoverage(
-      inventory,
-      readCoverageEntries(COVERAGE_DIR).filter((entry) => entry.list !== "bq"),
-      { ...nativeFiles, oxlintFiles }
-    );
+        };
+      });
+      const nativeFiles = await actualNativeFiles(inventory, switchedFiles);
+      const resolution = resolveCoverage(inventory, entries, nativeFiles);
 
-    expect(resolution.oxlintFiles).toHaveLength(42);
-    expect(resolution.jsonValidatedFiles).toEqual([]);
-    expect(resolution.missing).toHaveLength(14);
-    expect(resolution.missing.every((file) => file.endsWith(".json"))).toBe(
-      true
-    );
-  });
+      expect(resolution.oxlintFiles.filter(isBqFile)).toHaveLength(42);
+      expect(resolution.jsonValidatedFiles.filter(isBqFile)).toEqual([]);
+      expect(resolution.duplicates).toEqual([]);
+      expect(resolution.missing).toHaveLength(14);
+      expect(resolution.missing).toEqual(
+        inventory.filter((file) => isBqFile(file) && file.endsWith(".json"))
+      );
+      if (additionalAdmissions) {
+        expect(resolution.oxlintFiles).toContain(
+          "typescript/kernel/grpc-client/src/index.ts"
+        );
+        expect(resolution.jsonValidatedFiles).toContain(
+          "typescript/kernel/grpc-client/project.json"
+        );
+        expect(resolution.jsonValidatedFiles).toContain(
+          "typescript/kernel/certification-sqlite/project.json"
+        );
+      }
+    }
+  );
+
+  test.each([false, true])(
+    "gaps, duplicates, and wrong JSON companions still fail (additional admissions: %p)",
+    async (additionalAdmissions) => {
+      const inventory = await discoverInventory();
+      const { entries, projects } = partitionScenario(additionalAdmissions);
+      const nativeFiles = await actualNativeFiles(inventory, projects);
+      const codeFile = "typescript/kernel/protocol/src/index.ts";
+      expect(nativeFiles.oxlintFiles).toContain(codeFile);
+
+      const gap = resolveCoverage(inventory, entries, {
+        ...nativeFiles,
+        oxlintFiles: nativeFiles.oxlintFiles.filter(
+          (file) => file !== codeFile
+        ),
+      });
+      expect(gap.missing).toEqual([codeFile]);
+      expect(gap.duplicates).toEqual([]);
+
+      const duplicate = resolveCoverage(
+        inventory,
+        [...entries, { list: "bq", path: "typescript/kernel/protocol" }],
+        nativeFiles
+      );
+      expect(duplicate.missing).toEqual([]);
+      expect(duplicate.duplicates).toContainEqual({
+        lists: ["oxlint", "bq"],
+        path: codeFile,
+      });
+      expect(duplicate.duplicates).toContainEqual({
+        lists: ["json-source-check", "bq"],
+        path: "typescript/kernel/protocol/project.json",
+      });
+
+      const wrongJsonProjects = projects.map((file) => {
+        if (file.name !== "kernel-contract-protocol") {
+          return file;
+        }
+        return {
+          ...file,
+          project: {
+            ...file.project,
+            targets: {
+              ...file.project.targets,
+              lint: {
+                executor: "nx:run-commands",
+                options: {
+                  commands: [
+                    `${OXLINT_COMMAND_PREFIX} typescript/kernel/protocol`,
+                    "bun tools/scripts/json-check.ts typescript/kernel/runtime",
+                  ],
+                  cwd: ".",
+                  parallel: false,
+                },
+              },
+            },
+          },
+        };
+      });
+      const wrongJsonFiles = await actualNativeFiles(
+        inventory,
+        wrongJsonProjects
+      );
+      const wrongJson = resolveCoverage(inventory, entries, wrongJsonFiles);
+      const protocolInventory = inventory.filter((file) =>
+        file.startsWith("typescript/kernel/protocol/")
+      );
+      expect(protocolInventory.length).toBeGreaterThan(0);
+      expect(wrongJson.missing).toEqual(protocolInventory);
+      expect(wrongJson.duplicates).toEqual([]);
+      expect(
+        wrongJson.jsonValidatedFiles.filter((file) =>
+          file.startsWith("typescript/kernel/protocol/")
+        )
+      ).toEqual([]);
+    }
+  );
 });
