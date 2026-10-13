@@ -21,6 +21,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { spawnSync } from "bun";
 
@@ -277,6 +278,93 @@ const withCommand = (
       replaceLiteral(field, command),
     ])
   );
+
+interface CallerScenario {
+  name: string;
+  target: NxProjectTarget;
+  classified?: boolean;
+}
+
+// Keep the callers' grading intact: replace only their discovery input and
+// intercept process.exit inside one isolated process, without copying checks.
+const runDiscoveryCaller = (
+  caller: "certification" | "coverage",
+  scenarios: CallerScenario[]
+): unknown[] => {
+  const callerPath = path.resolve(
+    caller === "certification"
+      ? "tools/conformance/certification/validate-certification-discovery.ts"
+      : "tools/scripts/validate-workspace-test-coverage.ts"
+  );
+  const source = readFileSync(callerPath, "utf-8")
+    .replace("#!/usr/bin/env bun\n", "")
+    .replace("loadNxProjectFiles,", "loadNxProjectFiles as realDiscovery,")
+    .replace(
+      caller === "certification"
+        ? "../../scripts/lib/nx-projects.js"
+        : "./lib/nx-projects.js",
+      pathToFileURL(path.resolve("tools/scripts/lib/nx-projects.ts")).href
+    )
+    .replace(
+      '"./verify.js"',
+      JSON.stringify(
+        pathToFileURL(path.resolve("tools/scripts/verify.ts")).href
+      )
+    );
+  const child = spawnSync(
+    [
+      process.execPath,
+      "--eval",
+      `
+      const { readFileSync } = await import('node:fs');
+      const { source, caller, scenarios } = JSON.parse(readFileSync(0, 'utf8'));
+      const injected = source + '\\n';
+      const discovery = caller === 'certification'
+        ? "const baseline = globalThis.baseline ??= realDiscovery(process.cwd()); const loadNxProjectFiles = () => [...baseline, globalThis.fixture];\\n"
+        : "const baseline = globalThis.baseline ??= realDiscovery(process.cwd()); const loadNxProjectFiles = () => baseline.map(file => file.name === 'kernel-rust-kernel' ? globalThis.fixture : file);\\n";
+      const js = new Bun.Transpiler({ loader: 'ts' }).transformSync(discovery + injected);
+      class CallerExit extends Error { constructor(code) { super(); this.code = code; } }
+      process.exit = code => { throw new CallerExit(code); };
+      const results = [];
+      for (const [index, scenario] of scenarios.entries()) {
+        globalThis.fixture = {
+          name: caller === 'certification' ? 'fixture' : 'kernel-rust-kernel',
+          path: 'fixture/project.json',
+          project: {
+            tags: scenario.classified ? ['layer:testkit'] : [],
+            targets: { [caller === 'certification' ? 'probe' : 'test']: scenario.target }
+          }
+        };
+        const stdout = [], stderr = [];
+        console.log = (...args) => stdout.push(args.join(' '));
+        console.error = (...args) => stderr.push(args.join(' '));
+        let exit = 0;
+        try {
+          await import('data:text/javascript;base64,' + Buffer.from(js + '\\n//' + index).toString('base64'));
+        } catch (error) {
+          exit = error instanceof CallerExit ? error.code : 1;
+          if (!(error instanceof CallerExit)) stderr.push(String(error));
+        }
+        results.push({ name: scenario.name, exit, stdout: stdout.join('\\n'), stderr: stderr.join('\\n') });
+      }
+      process.stdout.write(JSON.stringify(results));
+      `,
+    ],
+    {
+      cwd: process.cwd(),
+      stdin: new TextEncoder().encode(
+        JSON.stringify({ caller, scenarios, source })
+      ),
+    }
+  );
+  expect(child.stderr.toString()).toBe("");
+  expect(child.exitCode).toBe(0);
+  const results: unknown = JSON.parse(child.stdout.toString());
+  if (!Array.isArray(results)) {
+    throw new TypeError("expected discovery caller results");
+  }
+  return results;
+};
 const schemaConstraints = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map(schemaConstraints);
@@ -313,6 +401,183 @@ const schemaConstraints = (value: unknown): unknown => {
 };
 
 describe("complete installed run-commands boundary", () => {
+  test("reports stable base-first and named effective-configuration failure context", () => {
+    const target = {
+      configurations: { 'unused"quoted': { env: false } },
+      executor: RUN,
+      options: { command: HARNESS, parallel: "invalid" },
+    };
+    expect(() => targetCommandStrings(target)).toThrow(
+      new TypeError("invalid nx:run-commands options: parallel")
+    );
+    expect(() =>
+      targetCommandStrings({
+        ...target,
+        options: { command: HARNESS },
+      })
+    ).toThrow(
+      new TypeError(
+        'invalid nx:run-commands configurations["unused\\"quoted"] (effective options): env'
+      )
+    );
+    expect(() =>
+      targetCommandStrings({
+        executor: RUN,
+        options: { command: HARNESS, commands: [CARGO], parallel: "invalid" },
+      })
+    ).toThrow(
+      new TypeError(
+        "invalid nx:run-commands options: command/commands conflict"
+      )
+    );
+    expect(() =>
+      targetCommandStrings({
+        configurations: {
+          first: { parallel: "invalid" },
+          second: { env: false },
+        },
+        executor: RUN,
+        options: { command: HARNESS },
+      })
+    ).toThrow(
+      new TypeError(
+        'invalid nx:run-commands configurations["first"] (effective options): parallel'
+      )
+    );
+  });
+
+  test("actual absence and presence callers preserve valid controls and fail explicitly on invalid metadata", () => {
+    const invalidMessage: unknown = expect.stringContaining(
+      "TypeError: invalid nx:run-commands"
+    );
+    const successMessage: unknown = expect.stringContaining(": OK");
+    for (const caller of ["certification", "coverage"] as const) {
+      const failureMessage: unknown = expect.stringContaining(
+        caller === "certification"
+          ? "invokes the shared engine"
+          : "no longer invokes cargo"
+      );
+      const command = caller === "certification" ? HARNESS : CARGO;
+      const scenarios: CallerScenario[] = [
+        { name: "valid", target: { executor: RUN, options: { command } } },
+        {
+          classified: true,
+          name: "classified",
+          target: { executor: RUN, options: { command } },
+        },
+        {
+          name: "other literal",
+          target: {
+            executor: RUN,
+            options: { command: caller === "certification" ? CARGO : HARNESS },
+          },
+        },
+        {
+          name: "unsupported array",
+          target: { executor: RUN, options: { command: [command] } },
+        },
+      ];
+      for (const executor of [undefined, "custom:executor", "nx:run-script"]) {
+        scenarios.push({
+          name: `opaque:${executor}`,
+          target: { executor, options: { command, parallel: "invalid" } },
+        });
+      }
+      // Representative of every top-level and nested field, plus required
+      // command entries and merge conflicts; the full value matrix is below.
+      const invalidOptions = [
+        ...[
+          "command",
+          "commands",
+          "parallel",
+          "color",
+          "readyWhen",
+          "args",
+          "envFile",
+          "cwd",
+          "env",
+          "__unparsed__",
+          "forwardAllArgs",
+          "tty",
+        ].map((key) =>
+          key === "commands" ? { commands: null } : { command, [key]: null }
+        ),
+        ...[
+          "command",
+          "forwardAllArgs",
+          "prefix",
+          "description",
+          "color",
+          "prefixColor",
+          "bgColor",
+          "unknown",
+        ].map((key) => ({ commands: [command, { command, [key]: null }] })),
+        { commands: [command, {}] },
+      ];
+      for (const [index, options] of invalidOptions.entries()) {
+        for (const position of ["base", "default", "inactive"] as const) {
+          scenarios.push({
+            name: `invalid ${index}:${position}`,
+            target:
+              position === "base"
+                ? { executor: RUN, options }
+                : {
+                    configurations: { bad: options, valid: { command } },
+                    defaultConfiguration:
+                      position === "default" ? "bad" : "valid",
+                    executor: RUN,
+                    options: {},
+                  },
+          });
+        }
+      }
+      scenarios.push(
+        {
+          name: "inactive invalid field",
+          target: {
+            configurations: { unused: { parallel: "invalid" } },
+            executor: RUN,
+            options: { command },
+          },
+        },
+        {
+          name: "effective conflict",
+          target: {
+            configurations: { unused: { commands: [command] } },
+            executor: RUN,
+            options: { command },
+          },
+        }
+      );
+      const results = runDiscoveryCaller(caller, scenarios);
+      expect(results).toHaveLength(scenarios.length);
+      for (const [index, result] of results.entries()) {
+        if (index >= 7) {
+          expect(result).toMatchObject({
+            exit: 1,
+            name: scenarios[index]?.name,
+            stderr: invalidMessage,
+            stdout: "",
+          });
+        } else {
+          const passes = caller === "certification" ? index !== 0 : index < 2;
+          expect(result).toMatchObject({
+            exit: passes ? 0 : 1,
+            name: scenarios[index]?.name,
+          });
+          expect(result).toMatchObject(
+            passes
+              ? { stderr: "", stdout: successMessage }
+              : {
+                  stderr: failureMessage,
+                  stdout: "",
+                }
+          );
+        }
+      }
+    }
+  });
+
   test("keeps all raw executor metadata opaque and structured inputs intact in the loader", () => {
     const root = mkdtempSync(path.join(tmpdir(), "nx-command-options-"));
     try {
@@ -468,7 +733,16 @@ describe("complete installed run-commands boundary", () => {
           },
         ];
         for (const target of targets) {
-          expect(targetCommandStrings(target), entry.name).toEqual(expected);
+          if (!entry.valid && entry.name !== "commandless fragment") {
+            expect(() => targetCommandStrings(target), entry.name).toThrow(
+              TypeError
+            );
+            expect(() => targetCommandStrings(target), entry.name).toThrow(
+              "invalid nx:run-commands"
+            );
+          } else {
+            expect(targetCommandStrings(target), entry.name).toEqual(expected);
+          }
         }
         if (!entry.valid && entry.name !== "commandless fragment") {
           for (const configurations of [
@@ -482,24 +756,26 @@ describe("complete installed run-commands boundary", () => {
             ]),
           ]) {
             expect(
-              targetCommandStrings({
-                configurations,
-                defaultConfiguration: "valid",
-                executor: RUN,
-              }),
+              () =>
+                targetCommandStrings({
+                  configurations,
+                  defaultConfiguration: "valid",
+                  executor: RUN,
+                }),
               entry.name
-            ).toEqual([]);
+            ).toThrow("invalid nx:run-commands");
           }
           expect(
-            targetCommandStrings({
-              configurations: {
-                repaired: { command, env: {}, parallel: true },
-              },
-              executor: RUN,
-              options,
-            }),
+            () =>
+              targetCommandStrings({
+                configurations: {
+                  repaired: { command, env: {}, parallel: true },
+                },
+                executor: RUN,
+                options,
+              }),
             entry.name
-          ).toEqual([]);
+          ).toThrow("invalid nx:run-commands");
         }
       }
     }
@@ -535,7 +811,11 @@ describe("complete installed run-commands boundary", () => {
   test("preserves partial fragments, shallow merging, literal order and default selection independence", () => {
     for (const command of [HARNESS, CARGO]) {
       const alternate = `${command} --alternate`;
-      const scenarios: { target: NxProjectTarget; expected: string[] }[] = [
+      const scenarios: {
+        target: NxProjectTarget;
+        expected: string[];
+        invalid?: boolean;
+      }[] = [
         {
           expected: [command],
           target: {
@@ -555,6 +835,7 @@ describe("complete installed run-commands boundary", () => {
         },
         {
           expected: [],
+          invalid: true,
           target: {
             configurations: {
               first: { args: "a" },
@@ -585,6 +866,7 @@ describe("complete installed run-commands boundary", () => {
         },
         {
           expected: [],
+          invalid: true,
           target: {
             configurations: { native: { parallel: true } },
             options: { command, parallel: "invalid" },
@@ -592,6 +874,7 @@ describe("complete installed run-commands boundary", () => {
         },
         {
           expected: [],
+          invalid: true,
           target: {
             configurations: { native: { commands: [] } },
             options: { command },
@@ -599,6 +882,7 @@ describe("complete installed run-commands boundary", () => {
         },
         {
           expected: [],
+          invalid: true,
           target: {
             configurations: { native: { command: alternate } },
             options: { commands: [command] },
@@ -619,7 +903,7 @@ describe("complete installed run-commands boundary", () => {
           },
         },
       ];
-      for (const { target, expected } of scenarios) {
+      for (const { target, expected, invalid } of scenarios) {
         for (const defaultConfiguration of [
           undefined,
           "native",
@@ -627,15 +911,19 @@ describe("complete installed run-commands boundary", () => {
           "missing",
           "",
         ]) {
-          expect(
+          const inventory = () =>
             targetCommandStrings({
               ...target,
               executor: RUN,
               ...(defaultConfiguration === undefined
                 ? {}
                 : { defaultConfiguration }),
-            })
-          ).toEqual(expected);
+            });
+          if (invalid === true) {
+            expect(inventory).toThrow("invalid nx:run-commands");
+          } else {
+            expect(inventory()).toEqual(expected);
+          }
         }
       }
       expect(
