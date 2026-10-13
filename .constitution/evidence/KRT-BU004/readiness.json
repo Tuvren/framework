@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "6c6c4c5fea63517087629822578d3306d9322a6e",
+  "sourceCommit": "9285a987e149eb0a245d5749b83963ca843c0d3c",
   "baselineCommit": "63ae87fdeea3ec819c5b4d36417d1bf3b90fac7a",
   "configurationEquality": {
     "fields": [
@@ -90,6 +90,7 @@
     "tools/scripts/lib/generated-prerequisites.ts",
     "tools/scripts/lib/json-source-integrity.ts",
     "tools/scripts/lib/native-lint-routing.ts",
+    "tools/scripts/lib/nx-command-callers.test.ts",
     "tools/scripts/lib/nx-command-options.test.ts",
     "tools/scripts/lib/nx-projects.ts",
     "tools/scripts/lib/regenerate-command-argv.test.ts",
@@ -106,15 +107,16 @@
   "signatures": {
     "baselineCommit": "63ae87fdeea3ec819c5b4d36417d1bf3b90fac7a",
     "typescriptVersion": "6.0.2",
-    "files": 19,
+    "files": 20,
     "newFilesWithNoExports": [
+      "tools/scripts/lib/nx-command-callers.test.ts",
       "tools/scripts/lib/nx-command-options.test.ts"
     ],
     "exports": 78,
     "valueSignatures": 42,
     "typeDeclarations": 36,
     "unchangedValueSignatures": 42,
-    "unchangedTypeDeclarations": 35,
+    "unchangedTypeDeclarations": 34,
     "approvedInternalTypeCorrections": [
       {
         "path": "tools/scripts/lib/nx-projects.ts",
@@ -122,9 +124,16 @@
         "ruling": "A15",
         "before": "export interface NxProjectTarget {\n    configurations?: Record<string, NxCommandOptions>;\n    defaultConfiguration?: string;\n    executor?: string;\n    options?: NxCommandOptions;\n}",
         "after": "export interface NxProjectTarget {\n    configurations?: Record<string, Record<string, unknown>>;\n    defaultConfiguration?: string;\n    executor?: string;\n    options?: Record<string, unknown>;\n}"
+      },
+      {
+        "path": "tools/scripts/lib/nx-projects.ts",
+        "name": "NxCommandOptions",
+        "ruling": "A30",
+        "before": "export interface NxCommandOptions {\n    command?: string;\n    commands?: (string | {\n        command?: string;\n    })[];\n    cwd?: string;\n    args?: string | string[];\n    __unparsed__?: string[];\n    forwardAllArgs?: boolean;\n    [option: string]: unknown;\n}",
+        "after": "export interface NxCommandOptions {\n    command?: string | string[];\n    commands?: (string | {\n        command?: string;\n    })[];\n    cwd?: string;\n    args?: string | string[];\n    __unparsed__?: string[];\n    forwardAllArgs?: boolean;\n    [option: string]: unknown;\n}"
       }
     ],
     "method": "Compiler-resolved value signatures and complete comment-free interface/type-alias declaration syntax; new owned test files compare against an empty export surface",
-    "allEqualExceptApprovedInternalCorrection": true
+    "allEqualExceptApprovedInternalCorrections": true
   }
 }
