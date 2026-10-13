@@ -540,8 +540,8 @@ export const registerBackendInvariantRunStateCases = (
       await backend.transact(async (tx) => {
         await tx.runs.set({
           ...runningRun,
-          status: "completed",
           currentStepIndex: 1,
+          status: "completed",
           updatedAtMs: 10,
         });
       });

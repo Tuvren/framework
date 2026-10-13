@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { setTimeout } from "node:timers/promises";
+
 import type { KernelRecord } from "@tuvren/core";
 import {
   encodeDeterministicKernelRecord,
@@ -190,10 +192,9 @@ export const createIncrementingClock = (
 };
 
 /** Resolves after `durationMs` milliseconds — for timing-sensitive test scenarios. */
-export const delay = (durationMs: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, durationMs);
-  });
+export const delay = async (durationMs: number): Promise<void> => {
+  await setTimeout(durationMs);
+};
 
 /**
  * Builds the indexed `StoredTurnTreePath` rows for `manifest`, matching the
@@ -201,7 +202,7 @@ export const delay = (durationMs: number): Promise<void> =>
  * `messages` as a flat `ordered` collection) — the rows a `turnTreePaths.putMany`
  * call needs alongside a `turnTrees.put` of `turnTree`.
  *
- * @throws Error when `manifest` does not match the canonical test schema's
+ * @throws {Error} when `manifest` does not match the canonical test schema's
  *   shape (a `messages` array and a `context.manifest` hash-or-null).
  */
 export const createCanonicalTurnTreePaths = (
@@ -212,13 +213,13 @@ export const createCanonicalTurnTreePaths = (
   const contextManifestHash = manifest["context.manifest"];
 
   if (!Array.isArray(messageHashes)) {
-    throw new Error(
+    throw new TypeError(
       "manifest.messages must be an ordered hash array for the canonical kernel test schema"
     );
   }
 
   if (typeof contextManifestHash !== "string" && contextManifestHash !== null) {
-    throw new Error(
+    throw new TypeError(
       'manifest["context.manifest"] must be a hash string or null for the canonical kernel test schema'
     );
   }

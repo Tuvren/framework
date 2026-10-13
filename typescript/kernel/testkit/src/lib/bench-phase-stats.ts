@@ -41,6 +41,8 @@ export interface PhaseStats extends TimingStats {
   phase: PersistencePhase;
 }
 
+const DECIMAL_INTEGER_PREFIX = /^[+-]?\d+/u;
+
 /** Reads `BENCH_SAMPLE_COUNT` from the environment, falling back to `fallback`. */
 export const readSampleCountFromEnv = (fallback: number): number => {
   const raw = process.env.BENCH_SAMPLE_COUNT;
@@ -49,7 +51,9 @@ export const readSampleCountFromEnv = (fallback: number): number => {
     return fallback;
   }
 
-  const parsed = Number.parseInt(raw, 10);
+  // Preserve decimal-prefix parsing, including trailing nondecimal text.
+  const prefix = DECIMAL_INTEGER_PREFIX.exec(raw.trimStart())?.[0];
+  const parsed = prefix === undefined ? Number.NaN : Number(prefix);
 
   if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     throw new Error(
@@ -117,7 +121,7 @@ export const summarizePhases = (
   const phaseStats: PhaseStats[] = [];
 
   for (const [phase, durations] of byPhase) {
-    const sorted = [...durations].sort((left, right) => left - right);
+    const sorted = durations.toSorted((left, right) => left - right);
     phaseStats.push({
       averageNs:
         durations.reduce((total, duration) => total + duration, 0) /
@@ -130,8 +134,9 @@ export const summarizePhases = (
     });
   }
 
-  phaseStats.sort((left, right) => left.phase.localeCompare(right.phase));
-  return phaseStats;
+  return phaseStats.toSorted((left, right) =>
+    left.phase.localeCompare(right.phase)
+  );
 };
 
 /**

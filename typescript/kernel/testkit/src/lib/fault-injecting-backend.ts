@@ -89,15 +89,15 @@ type FaultOperation = "checkpoint" | "unknown";
  * sequence.
  */
 interface BackendFaultHooks {
-  afterCommitBeforeAck?(): Promise<void>;
-  beforeCommit?(): Promise<void>;
-  midCommit?(commit: () => Promise<void>): Promise<void>;
+  afterCommitBeforeAck?: () => Promise<void>;
+  beforeCommit?: () => Promise<void>;
+  midCommit?: (commit: () => Promise<void>) => Promise<void>;
 }
 
 /** The hidden per-backend seam {@link readFaultInjectionControl} looks for. */
 interface BackendFaultInjectionControl {
-  setFaultHooks(hooks: BackendFaultHooks | null): void;
-  supportsFaultPoint(point: FaultPoint): boolean;
+  setFaultHooks: (hooks: BackendFaultHooks | null) => void;
+  supportsFaultPoint: (point: FaultPoint) => boolean;
 }
 
 /** What one in-flight transaction has done so far, for fault-plan matching. */
@@ -126,7 +126,7 @@ type TransactionOutcome<T> =
  * structurally, the same way `close`/`destroy` already are below.
  */
 interface FsckCapableBackend {
-  fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
+  fsck: () => Promise<{ ok: true } | { ok: false; reason: string }>;
 }
 
 /** Structural check for the hidden `BackendFaultInjectionControl` shape. */
@@ -145,7 +145,7 @@ const readFaultInjectionControl = (
   // Discover the backend-local seam by shape so production code does not get a
   // stable global symbol lookup key for the hidden test hook.
   for (const symbol of Object.getOwnPropertySymbols(backend)) {
-    const value = Reflect.get(backend, symbol);
+    const value: unknown = Reflect.get(backend, symbol);
 
     if (isBackendFaultInjectionControl(value)) {
       return value;
@@ -167,17 +167,14 @@ const readConcurrentWriterSnapshot = async (
   await backend.transact(async (tx) => {
     const branch = await tx.branches.get(branchId);
 
-    if (branch === null) {
-      return;
+    let snapshot: ConcurrentWriterSnapshot | undefined;
+    if (branch !== null) {
+      const head = await tx.turnNodes.get(branch.headTurnNodeHash);
+      if (head !== null) {
+        snapshot = { branch, head };
+      }
     }
-
-    const head = await tx.turnNodes.get(branch.headTurnNodeHash);
-
-    if (head === null) {
-      return;
-    }
-
-    return { branch, head };
+    return snapshot;
   });
 
 /** Fresh, empty recording for one `transact` call. */
@@ -226,21 +223,21 @@ const createFaultHooks = (
   shouldInject: () => boolean,
   markConsumed: () => void
 ): BackendFaultHooks => ({
-  afterCommitBeforeAck: () => {
+  afterCommitBeforeAck: async () => {
     if (!shouldInject()) {
-      return Promise.resolve();
+      return;
     }
 
     if (plan.point !== "after-commit-before-ack") {
-      return Promise.resolve();
+      return;
     }
 
     markConsumed();
-    throw createInjectedFaultError(getOperation(), plan.point);
+    await Promise.reject(createInjectedFaultError(getOperation(), plan.point));
   },
-  beforeCommit: () => {
+  beforeCommit: async () => {
     if (!shouldInject()) {
-      return Promise.resolve();
+      return;
     }
 
     if (!control.supportsFaultPoint(plan.point)) {
@@ -248,11 +245,11 @@ const createFaultHooks = (
     }
 
     if (plan.point !== "before-commit") {
-      return Promise.resolve();
+      return;
     }
 
     markConsumed();
-    throw createInjectedFaultError(getOperation(), plan.point);
+    await Promise.reject(createInjectedFaultError(getOperation(), plan.point));
   },
   midCommit: async (commit) => {
     if (!shouldInject()) {
@@ -288,37 +285,37 @@ const createRecordingTransactionProxy = (
   ...tx,
   branches: {
     ...tx.branches,
-    get(branchId) {
+    async get(branchId) {
       recording.branchIds.add(branchId);
-      return tx.branches.get(branchId);
+      return await tx.branches.get(branchId);
     },
-    set(record: StoredBranch) {
+    async set(record: StoredBranch) {
       recording.branchIds.add(record.branchId);
-      return tx.branches.set(record);
+      await tx.branches.set(record);
     },
   },
   stagedResults: {
     ...tx.stagedResults,
-    clearRun(runId) {
+    async clearRun(runId) {
       recording.operation =
         recording.operation === "checkpoint" ? "checkpoint" : "unknown";
-      return tx.stagedResults.clearRun(runId);
+      await tx.stagedResults.clearRun(runId);
     },
   },
   turnNodes: {
     ...tx.turnNodes,
-    put(record: StoredTurnNode) {
+    async put(record: StoredTurnNode) {
       recording.operation = "checkpoint";
-      return tx.turnNodes.put(record);
+      await tx.turnNodes.put(record);
     },
   },
   turns: {
     ...tx.turns,
-    set(record: StoredTurn) {
+    async set(record: StoredTurn) {
       recording.branchIds.add(record.branchId);
       recording.operation =
         recording.operation === "checkpoint" ? "checkpoint" : "unknown";
-      return tx.turns.set(record);
+      await tx.turns.set(record);
     },
   },
 });
@@ -390,9 +387,26 @@ const readOptionalMethod = (
   value: object,
   key: "close" | "destroy"
 ): ((...args: unknown[]) => Promise<void>) | undefined => {
-  const method = Reflect.get(value, key);
-  return typeof method === "function" ? method : undefined;
+  const method: unknown = Reflect.get(value, key);
+  if (typeof method !== "function") {
+    return undefined;
+  }
+  return async (...args: unknown[]): Promise<void> => {
+    await method.apply(value, args);
+  };
 };
+
+/** Validates the unknown result of a discovered backend maintenance method. */
+const isFsckResult = (
+  value: unknown
+): value is Awaited<ReturnType<FsckCapableBackend["fsck"]>> =>
+  typeof value === "object" &&
+  value !== null &&
+  "ok" in value &&
+  (value.ok === true ||
+    (value.ok === false &&
+      "reason" in value &&
+      typeof value.reason === "string"));
 
 /**
  * Reads an optional `fsck()` method off `value` if present and callable —
@@ -403,10 +417,19 @@ const readOptionalMethod = (
 const readOptionalFsckMethod = (
   value: object
 ): FsckCapableBackend["fsck"] | undefined => {
-  const method = Reflect.get(value, "fsck");
-  return typeof method === "function"
-    ? (method as FsckCapableBackend["fsck"])
-    : undefined;
+  const method: unknown = Reflect.get(value, "fsck");
+  if (typeof method !== "function") {
+    return undefined;
+  }
+  return async (...args: unknown[]) => {
+    const result: unknown = await method.apply(value, args);
+    if (isFsckResult(result)) {
+      return result;
+    }
+    throw new TypeError(
+      "backend fsck must return an ok result or a failure reason"
+    );
+  };
 };
 
 /**
@@ -423,7 +446,7 @@ const readOptionalFsckMethod = (
  * commit is attempted, but `mid-commit` and `after-commit-before-ack`
  * always require the control surface.
  *
- * @throws TuvrenPersistenceError `kernel_fault_point_unsupported` when the
+ * @throws {TuvrenPersistenceError} `kernel_fault_point_unsupported` when the
  *   plan's point fires but the wrapped backend has no matching control
  *   surface, or `kernel_persistence_fault_injected` for the fault itself.
  */
@@ -444,8 +467,8 @@ export const createFaultInjectingBackend = (
     capabilities() {
       return inner.capabilities();
     },
-    health() {
-      return inner.health();
+    async health() {
+      return await inner.health();
     },
     // Forward the optional maintenance operations so a wrapped backend that
     // advertises maintenance.reclamation (reclaim) or supports tenant
@@ -531,11 +554,21 @@ export const createFaultInjectingBackend = (
       }
 
       if (outcome.status === "rejected") {
-        throw outcome.error;
+        if (outcome.error instanceof Error) {
+          throw outcome.error;
+        }
+        throw new Error("backend transaction rejected with a non-Error value", {
+          cause: outcome.error,
+        });
       }
 
       if (concurrentWriterError !== undefined) {
-        throw concurrentWriterError;
+        if (concurrentWriterError instanceof Error) {
+          throw concurrentWriterError;
+        }
+        throw new Error("concurrent writer rejected with a non-Error value", {
+          cause: concurrentWriterError,
+        });
       }
 
       return outcome.value;

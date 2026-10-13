@@ -22,8 +22,8 @@ import type { RuntimeBackend as KrakenBackend } from "@tuvren/kernel-protocol";
  * calling package uses, so this package stays framework-agnostic.
  */
 export interface BackendTestSuiteApi {
-  describe(name: string, register: () => void): void;
-  test(name: string, run: () => Promise<void> | void): void;
+  describe: (name: string, register: () => void) => void;
+  test: (name: string, run: () => Promise<void> | void) => void;
 }
 
 /** Builds a fresh `RuntimeBackend` instance for one test case. */

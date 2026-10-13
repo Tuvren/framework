@@ -15,7 +15,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -88,16 +88,16 @@ const resolveFixturePath = (
   pathSegments: readonly string[]
 ): string => {
   const currentFilePath = fileURLToPath(metaUrl);
-  let currentDirectory = dirname(currentFilePath);
+  let currentDirectory = path.dirname(currentFilePath);
 
   for (let index = 0; index < 8; index += 1) {
-    const candidatePath = join(currentDirectory, ...pathSegments);
+    const candidatePath = path.join(currentDirectory, ...pathSegments);
 
     if (existsSync(candidatePath)) {
       return candidatePath;
     }
 
-    currentDirectory = dirname(currentDirectory);
+    currentDirectory = path.dirname(currentDirectory);
   }
 
   throw new Error(
@@ -106,7 +106,7 @@ const resolveFixturePath = (
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const readJsonSchema = (value: unknown): AnySchema => {
   if (typeof value === "boolean" || isRecord(value)) {
@@ -162,14 +162,14 @@ const loadKernelConformanceFixtureIndex = (): KernelConformanceFixtureIndex => {
   );
   const manifestText = readFileSync(manifestPath, "utf-8");
   const manifestSchemaText = readFileSync(
-    join(dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
+    path.join(path.dirname(manifestPath), MANIFEST_SCHEMA_RELATIVE_PATH),
     "utf-8"
   );
-  const parsedManifest = JSON.parse(manifestText);
+  const parsedManifest: unknown = JSON.parse(manifestText);
   const parsedManifestSchema = readJsonSchema(JSON.parse(manifestSchemaText));
   const validateManifest = ajv.compile(parsedManifestSchema);
 
-  if (!validateManifest(parsedManifest)) {
+  if (validateManifest(parsedManifest) === false) {
     throw new Error(
       `kernel conformance manifest failed JSON Schema validation: ${ajv.errorsText(validateManifest.errors)}`
     );
@@ -184,8 +184,8 @@ const loadKernelConformanceFixtureIndex = (): KernelConformanceFixtureIndex => {
   }
 
   const relativeFixtureIndex = readKernelFixtureIndex(parsedManifest.fixtures);
-  const schemaPath = join(
-    dirname(manifestPath),
+  const schemaPath = path.join(
+    path.dirname(manifestPath),
     parsedManifest.fixtureSchemaPath
   );
   const schemaText = readFileSync(schemaPath, "utf-8");
@@ -195,23 +195,23 @@ const loadKernelConformanceFixtureIndex = (): KernelConformanceFixtureIndex => {
   // The boundary-owned manifest is the kernel suite's file-path authority too.
   // The JSON Schema validates the multi-file fixture index, and the typed
   // assertions below still verify each decoded payload in detail.
-  if (!validate(relativeFixtureIndex)) {
+  if (validate(relativeFixtureIndex) === false) {
     throw new Error(
       `kernel conformance fixture index failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`
     );
   }
 
   return {
-    canonicalSchemaPath: join(
-      dirname(manifestPath),
+    canonicalSchemaPath: path.join(
+      path.dirname(manifestPath),
       relativeFixtureIndex.canonicalSchemaPath
     ),
-    deterministicFixturePath: join(
-      dirname(manifestPath),
+    deterministicFixturePath: path.join(
+      path.dirname(manifestPath),
       relativeFixtureIndex.deterministicFixturePath
     ),
-    logicalFixturePath: join(
-      dirname(manifestPath),
+    logicalFixturePath: path.join(
+      path.dirname(manifestPath),
       relativeFixtureIndex.logicalFixturePath
     ),
   };
@@ -223,7 +223,7 @@ const loadCanonicalKernelTestSchema = (): TurnTreeSchema => {
     kernelConformanceFixtureIndex.canonicalSchemaPath,
     "utf-8"
   );
-  const parsedFixture = JSON.parse(fixtureText);
+  const parsedFixture: unknown = JSON.parse(fixtureText);
   assertTurnTreeSchema(parsedFixture, "canonicalKernelTestSchemaFixture");
   return parsedFixture;
 };
@@ -236,12 +236,12 @@ const assertNumberArray: (
   label: string
 ): asserts value is readonly number[] => {
   if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
+    throw new TypeError(`${label} must be an array`);
   }
 
   for (const [index, entry] of value.entries()) {
     if (typeof entry !== "number") {
-      throw new Error(`${label}[${index}] must be a number`);
+      throw new TypeError(`${label}[${index}] must be a number`);
     }
   }
 };
@@ -285,12 +285,16 @@ const assertTurnNodeIdentityRecord: (
   value: unknown,
   label: string
 ): asserts value is KernelProtocolDeterministicFixtureSet["turnNodeIdentityRecord"] => {
+  if (Array.isArray(value)) {
+    throw new TypeError(`${label}.consumedStagedResults must be an array`);
+  }
+
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object`);
   }
 
   if (!Array.isArray(value.consumedStagedResults)) {
-    throw new Error(`${label}.consumedStagedResults must be an array`);
+    throw new TypeError(`${label}.consumedStagedResults must be an array`);
   }
 
   for (const [index, stagedResult] of value.consumedStagedResults.entries()) {
@@ -302,10 +306,7 @@ const assertTurnNodeIdentityRecord: (
 
   assertHashString(value.eventHash, `${label}.eventHash`);
 
-  if (
-    value.previousTurnNodeHash !== null &&
-    value.previousTurnNodeHash !== null
-  ) {
+  if (value.previousTurnNodeHash !== null) {
     assertHashString(
       value.previousTurnNodeHash,
       `${label}.previousTurnNodeHash`
@@ -313,7 +314,7 @@ const assertTurnNodeIdentityRecord: (
   }
 
   if (typeof value.schemaId !== "string") {
-    throw new Error(`${label}.schemaId must be a string`);
+    throw new TypeError(`${label}.schemaId must be a string`);
   }
 
   assertHashString(value.turnTreeHash, `${label}.turnTreeHash`);
@@ -324,6 +325,10 @@ const assertKernelProtocolDeterministicFixtureSet: (
 ) => asserts value is KernelProtocolDeterministicFixtureSet = (
   value: unknown
 ): asserts value is KernelProtocolDeterministicFixtureSet => {
+  if (Array.isArray(value)) {
+    throw new TypeError("rawOpaqueBytes must be an array");
+  }
+
   if (!isRecord(value)) {
     throw new Error("kernel deterministic fixture set must be an object");
   }
@@ -359,7 +364,7 @@ const loadKernelProtocolDeterministicFixtures =
       kernelConformanceFixtureIndex.deterministicFixturePath,
       "utf-8"
     );
-    const parsedFixture = JSON.parse(fixtureText);
+    const parsedFixture: unknown = JSON.parse(fixtureText);
     assertKernelProtocolDeterministicFixtureSet(parsedFixture);
     return parsedFixture;
   };
@@ -379,6 +384,10 @@ const assertKernelProtocolLogicalFixtureSet: (
 ) => asserts value is KernelProtocolLogicalFixtureSet = (
   value: unknown
 ): asserts value is KernelProtocolLogicalFixtureSet => {
+  if (Array.isArray(value)) {
+    throw new TypeError("branchHeadListEntry must be a two-item tuple");
+  }
+
   if (!isRecord(value)) {
     throw new Error("kernel logical fixture set must be an object");
   }
@@ -390,10 +399,11 @@ const assertKernelProtocolLogicalFixtureSet: (
     throw new Error("branchHeadListEntry must be a two-item tuple");
   }
 
-  const [branchId, turnNodeHash] = value.branchHeadListEntry;
+  const branchId: unknown = value.branchHeadListEntry[0];
+  const turnNodeHash: unknown = value.branchHeadListEntry[1];
 
   if (typeof branchId !== "string") {
-    throw new Error("branchHeadListEntry[0] must be a string");
+    throw new TypeError("branchHeadListEntry[0] must be a string");
   }
 
   assertHashString(turnNodeHash, "branchHeadListEntry[1]");
@@ -411,7 +421,7 @@ const loadKernelProtocolLogicalFixtures =
       kernelConformanceFixtureIndex.logicalFixturePath,
       "utf-8"
     );
-    const parsedFixture = JSON.parse(fixtureText);
+    const parsedFixture: unknown = JSON.parse(fixtureText);
     assertKernelProtocolLogicalFixtureSet(parsedFixture);
     return parsedFixture;
   };

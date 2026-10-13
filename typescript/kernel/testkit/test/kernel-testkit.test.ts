@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { describe, expect, test } from "bun:test";
-import { deepStrictEqual, strictEqual } from "node:assert/strict";
+import { describe, expect, mock, test } from "bun:test";
+import { deepStrictEqual, rejects, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -24,15 +24,7 @@ import type {
   RuntimeBackendTx,
   StoredBranch,
   StoredObject,
-  StoredObserveAnnotation,
-  StoredOrderedPathChunk,
-  StoredRun,
-  StoredStagedResult,
-  StoredThread,
-  StoredTurn,
   StoredTurnNode,
-  StoredTurnTree,
-  StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
 
@@ -169,156 +161,16 @@ const createBranchHeadLateralMoveError = (
     }
   );
 
-const createTestTransaction = (state: {
-  branches: Map<string, StoredBranch>;
-  objects: Map<string, StoredObject>;
-  turnNodes: Map<string, StoredTurnNode>;
-}): RuntimeBackendTx => ({
-  branches: {
-    get(branchId) {
-      return Promise.resolve(state.branches.get(branchId) ?? null);
-    },
-    listByThread() {
-      return Promise.resolve([]);
-    },
-    set(record) {
-      const existing = state.branches.get(record.branchId);
+interface FocusedTestBackend extends RuntimeBackend {
+  inspect: () => {
+    branches: Map<string, StoredBranch>;
+    objects: Map<string, StoredObject>;
+    turnNodes: Map<string, StoredTurnNode>;
+  };
+}
 
-      if (
-        existing !== undefined &&
-        classifyTurnNodeRelationship(
-          state.turnNodes,
-          existing.headTurnNodeHash,
-          record.headTurnNodeHash
-        ) === "lateral"
-      ) {
-        throw createBranchHeadLateralMoveError(
-          existing.headTurnNodeHash,
-          record.headTurnNodeHash
-        );
-      }
-
-      state.branches.set(record.branchId, structuredClone(record));
-      return Promise.resolve();
-    },
-  },
-  objects: {
-    get(hash) {
-      return Promise.resolve(state.objects.get(hash) ?? null);
-    },
-    has(hash) {
-      return Promise.resolve(state.objects.has(hash));
-    },
-    put(record) {
-      state.objects.set(record.hash, structuredClone(record));
-      return Promise.resolve();
-    },
-  },
-  observeAnnotations: {
-    listByRun() {
-      return Promise.resolve<StoredObserveAnnotation[]>([]);
-    },
-    set() {
-      return Promise.resolve();
-    },
-  },
-  orderedPathChunks: {
-    get() {
-      return Promise.resolve<StoredOrderedPathChunk | null>(null);
-    },
-    put() {
-      return Promise.resolve();
-    },
-  },
-  stagedResults: {
-    clearRun() {
-      return Promise.resolve();
-    },
-    get() {
-      return Promise.resolve<StoredStagedResult | null>(null);
-    },
-    listByRun() {
-      return Promise.resolve<StoredStagedResult[]>([]);
-    },
-    set() {
-      return Promise.resolve();
-    },
-  },
-  turnNodes: {
-    get(hash) {
-      return Promise.resolve(state.turnNodes.get(hash) ?? null);
-    },
-    put(record) {
-      state.turnNodes.set(record.hash, structuredClone(record));
-      return Promise.resolve();
-    },
-  },
-  turns: {
-    get() {
-      return Promise.resolve<StoredTurn | null>(null);
-    },
-    listByThread() {
-      return Promise.resolve<StoredTurn[]>([]);
-    },
-    set() {
-      return Promise.resolve();
-    },
-  },
-  threads: {
-    get() {
-      return Promise.resolve<StoredThread | null>(null);
-    },
-    list() {
-      return Promise.resolve({ threads: [] });
-    },
-    put() {
-      return Promise.resolve();
-    },
-  },
-  turnTrees: {
-    get() {
-      return Promise.resolve<StoredTurnTree | null>(null);
-    },
-    put() {
-      return Promise.resolve();
-    },
-  },
-  turnTreePaths: {
-    get() {
-      return Promise.resolve<StoredTurnTreePath | null>(null);
-    },
-    listByTurnTree() {
-      return Promise.resolve<StoredTurnTreePath[]>([]);
-    },
-    putMany() {
-      return Promise.resolve();
-    },
-  },
-  schemas: {
-    get() {
-      return Promise.resolve(null);
-    },
-    put() {
-      return Promise.resolve();
-    },
-  },
-  runs: {
-    get() {
-      return Promise.resolve<StoredRun | null>(null);
-    },
-    listByBranch() {
-      return Promise.resolve<StoredRun[]>([]);
-    },
-    listExpired() {
-      return Promise.resolve<StoredRun[]>([]);
-    },
-    set() {
-      return Promise.resolve();
-    },
-  },
-});
-
-const createTestBackend = (): RuntimeBackend => {
+/** Focused single-branch unit fixture; real backend conformance lives in shared plans. */
+const createTestBackend = (): FocusedTestBackend => {
   const faultControl = Symbol("fault-control");
   const state = {
     branches: new Map<string, StoredBranch>(),
@@ -326,13 +178,17 @@ const createTestBackend = (): RuntimeBackend => {
     turnNodes: new Map<string, StoredTurnNode>(),
   };
   let hooks: {
-    afterCommitBeforeAck?(): Promise<void>;
-    beforeCommit?(): Promise<void>;
-    midCommit?(commit: () => Promise<void>): Promise<void>;
+    afterCommitBeforeAck?: () => Promise<void>;
+    beforeCommit?: () => Promise<void>;
+    midCommit?: (commit: () => void) => Promise<void>;
   } | null = null;
-  let transactionQueue = Promise.resolve();
-
-  const backend: RuntimeBackend & Record<PropertyKey, unknown> = {
+  const readCommittedHead = (
+    branch: StoredBranch | null
+  ): StoredTurnNode | null =>
+    branch === null
+      ? null
+      : (state.turnNodes.get(branch.headTurnNodeHash) ?? null);
+  const backend = {
     [faultControl]: {
       setFaultHooks(nextHooks: typeof hooks) {
         hooks = nextHooks;
@@ -344,61 +200,237 @@ const createTestBackend = (): RuntimeBackend => {
     capabilities() {
       return { "thread.enumeration": false };
     },
-    health() {
-      return Promise.resolve({ ok: true });
-    },
+    health: mock<RuntimeBackend["health"]>().mockResolvedValue({ ok: true }),
+    inspect: () => structuredClone(state),
     async transact<T>(work: (tx: RuntimeBackendTx) => Promise<T>): Promise<T> {
-      const priorTransaction = transactionQueue;
-      let releaseQueue: (() => void) | undefined;
-
-      transactionQueue = new Promise<void>((resolve) => {
-        releaseQueue = resolve;
-      });
-
-      await priorTransaction;
-
+      const branch = state.branches.values().next().value ?? null;
+      const head = readCommittedHead(branch);
+      const tx = {
+        branches: {
+          get: mock<RuntimeBackendTx["branches"]["get"]>().mockResolvedValue(
+            structuredClone(branch)
+          ),
+          listByThread: mock<
+            RuntimeBackendTx["branches"]["listByThread"]
+          >().mockResolvedValue([]),
+          set: mock<RuntimeBackendTx["branches"]["set"]>().mockResolvedValue(),
+        },
+        objects: {
+          get: mock<RuntimeBackendTx["objects"]["get"]>().mockResolvedValue(
+            null
+          ),
+          has: mock<RuntimeBackendTx["objects"]["has"]>().mockResolvedValue(
+            false
+          ),
+          put: mock<RuntimeBackendTx["objects"]["put"]>().mockResolvedValue(),
+        },
+        observeAnnotations: {
+          listByRun: mock<
+            RuntimeBackendTx["observeAnnotations"]["listByRun"]
+          >().mockResolvedValue([]),
+          set: mock<
+            RuntimeBackendTx["observeAnnotations"]["set"]
+          >().mockResolvedValue(),
+        },
+        orderedPathChunks: {
+          get: mock<
+            RuntimeBackendTx["orderedPathChunks"]["get"]
+          >().mockResolvedValue(null),
+          put: mock<
+            RuntimeBackendTx["orderedPathChunks"]["put"]
+          >().mockResolvedValue(),
+        },
+        runs: {
+          get: mock<RuntimeBackendTx["runs"]["get"]>().mockResolvedValue(null),
+          listByBranch: mock<
+            RuntimeBackendTx["runs"]["listByBranch"]
+          >().mockResolvedValue([]),
+          listExpired: mock<
+            RuntimeBackendTx["runs"]["listExpired"]
+          >().mockResolvedValue([]),
+          set: mock<RuntimeBackendTx["runs"]["set"]>().mockResolvedValue(),
+        },
+        schemas: {
+          get: mock<RuntimeBackendTx["schemas"]["get"]>().mockResolvedValue(
+            null
+          ),
+          put: mock<RuntimeBackendTx["schemas"]["put"]>().mockResolvedValue(),
+        },
+        stagedResults: {
+          clearRun:
+            mock<
+              RuntimeBackendTx["stagedResults"]["clearRun"]
+            >().mockResolvedValue(),
+          get: mock<
+            RuntimeBackendTx["stagedResults"]["get"]
+          >().mockResolvedValue(null),
+          listByRun: mock<
+            RuntimeBackendTx["stagedResults"]["listByRun"]
+          >().mockResolvedValue([]),
+          set: mock<
+            RuntimeBackendTx["stagedResults"]["set"]
+          >().mockResolvedValue(),
+        },
+        threads: {
+          get: mock<RuntimeBackendTx["threads"]["get"]>().mockResolvedValue(
+            null
+          ),
+          put: mock<RuntimeBackendTx["threads"]["put"]>().mockResolvedValue(),
+        },
+        turnNodes: {
+          get: mock<RuntimeBackendTx["turnNodes"]["get"]>().mockResolvedValue(
+            structuredClone(head)
+          ),
+          put: mock<RuntimeBackendTx["turnNodes"]["put"]>().mockResolvedValue(),
+        },
+        turnTreePaths: {
+          get: mock<
+            RuntimeBackendTx["turnTreePaths"]["get"]
+          >().mockResolvedValue(null),
+          listByTurnTree: mock<
+            RuntimeBackendTx["turnTreePaths"]["listByTurnTree"]
+          >().mockResolvedValue([]),
+          putMany:
+            mock<
+              RuntimeBackendTx["turnTreePaths"]["putMany"]
+            >().mockResolvedValue(),
+        },
+        turnTrees: {
+          get: mock<RuntimeBackendTx["turnTrees"]["get"]>().mockResolvedValue(
+            null
+          ),
+          put: mock<RuntimeBackendTx["turnTrees"]["put"]>().mockResolvedValue(),
+        },
+        turns: {
+          get: mock<RuntimeBackendTx["turns"]["get"]>().mockResolvedValue(null),
+          listByThread: mock<
+            RuntimeBackendTx["turns"]["listByThread"]
+          >().mockResolvedValue([]),
+          set: mock<RuntimeBackendTx["turns"]["set"]>().mockResolvedValue(),
+        },
+      };
+      let result: T;
+      try {
+        result = await work(tx);
+      } finally {
+        for (const args of tx.branches.get.mock.calls) {
+          strictEqual(args.length, 1, "focused branch read has one argument");
+          const [branchId] = args;
+          strictEqual(
+            branchId,
+            branch?.branchId,
+            "focused fixture only reads the committed branch"
+          );
+        }
+        for (const args of tx.turnNodes.get.mock.calls) {
+          strictEqual(args.length, 1, "focused head read has one argument");
+          const [hash] = args;
+          strictEqual(
+            hash,
+            branch?.headTurnNodeHash,
+            "focused fixture only reads the committed head"
+          );
+        }
+        for (const calls of [
+          tx.branches.listByThread.mock.calls,
+          tx.objects.get.mock.calls,
+          tx.objects.has.mock.calls,
+          tx.observeAnnotations.listByRun.mock.calls,
+          tx.observeAnnotations.set.mock.calls,
+          tx.orderedPathChunks.get.mock.calls,
+          tx.orderedPathChunks.put.mock.calls,
+          tx.runs.get.mock.calls,
+          tx.runs.listByBranch.mock.calls,
+          tx.runs.listExpired.mock.calls,
+          tx.runs.set.mock.calls,
+          tx.schemas.get.mock.calls,
+          tx.schemas.put.mock.calls,
+          tx.stagedResults.clearRun.mock.calls,
+          tx.stagedResults.get.mock.calls,
+          tx.stagedResults.listByRun.mock.calls,
+          tx.stagedResults.set.mock.calls,
+          tx.threads.get.mock.calls,
+          tx.threads.put.mock.calls,
+          tx.turnTreePaths.get.mock.calls,
+          tx.turnTreePaths.listByTurnTree.mock.calls,
+          tx.turnTreePaths.putMany.mock.calls,
+          tx.turnTrees.get.mock.calls,
+          tx.turnTrees.put.mock.calls,
+          tx.turns.get.mock.calls,
+          tx.turns.listByThread.mock.calls,
+          tx.turns.set.mock.calls,
+        ]) {
+          strictEqual(
+            calls.length,
+            0,
+            "unsupported focused fixture repository call"
+          );
+        }
+      }
       const draft = {
         branches: new Map(state.branches),
         objects: new Map(state.objects),
         turnNodes: new Map(state.turnNodes),
       };
-      const tx = createTestTransaction(draft);
-
-      try {
-        const result = await work(tx);
-        await hooks?.beforeCommit?.();
-
-        let committed = false;
-        const commit = (): Promise<void> => {
-          if (committed) {
-            throw new Error("test backend commit hook attempted double commit");
-          }
-
-          state.branches = draft.branches;
-          state.objects = draft.objects;
-          state.turnNodes = draft.turnNodes;
-          committed = true;
-          return Promise.resolve();
-        };
-
-        if (hooks?.midCommit === undefined) {
-          await commit();
-        } else {
-          await hooks.midCommit(commit);
-
-          if (!committed) {
-            throw new Error("test backend mid-commit hook must commit once");
-          }
-        }
-
-        await hooks?.afterCommitBeforeAck?.();
-        return result;
-      } finally {
-        releaseQueue?.();
+      for (const args of tx.objects.put.mock.calls) {
+        strictEqual(args.length, 1, "focused fixture writes have one record");
+        const [record] = args;
+        draft.objects.set(record.hash, structuredClone(record));
       }
+      for (const args of tx.turnNodes.put.mock.calls) {
+        strictEqual(args.length, 1, "focused fixture writes have one record");
+        const [record] = args;
+        draft.turnNodes.set(record.hash, structuredClone(record));
+      }
+      for (const args of tx.branches.set.mock.calls) {
+        strictEqual(args.length, 1, "focused fixture writes have one record");
+        const [record] = args;
+        const existing = draft.branches.get(record.branchId);
+        if (
+          existing !== undefined &&
+          classifyTurnNodeRelationship(
+            draft.turnNodes,
+            existing.headTurnNodeHash,
+            record.headTurnNodeHash
+          ) === "lateral"
+        ) {
+          throw createBranchHeadLateralMoveError(
+            existing.headTurnNodeHash,
+            record.headTurnNodeHash
+          );
+        }
+        draft.branches.set(record.branchId, structuredClone(record));
+      }
+      strictEqual(
+        draft.branches.size <= 1,
+        true,
+        "focused fixture supports one branch"
+      );
+      await hooks?.beforeCommit?.();
+      let committed = false;
+      const commit = (): void => {
+        strictEqual(
+          committed,
+          false,
+          "test backend commit hook attempted double commit"
+        );
+        state.branches = draft.branches;
+        state.objects = draft.objects;
+        state.turnNodes = draft.turnNodes;
+        committed = true;
+      };
+      if (hooks?.midCommit === undefined) {
+        commit();
+      } else {
+        await hooks.midCommit(commit);
+        if (!committed) {
+          throw new Error("test backend mid-commit hook must commit once");
+        }
+      }
+      await hooks?.afterCommitBeforeAck?.();
+      return result;
     },
   };
-
   return backend;
 };
 
@@ -610,7 +642,7 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       });
     };
 
-    await expect(writeChildHead(faultBackend)).rejects.toMatchObject({
+    await rejects(writeChildHead(faultBackend), {
       code: "kernel_persistence_fault_injected",
     });
     await writeChildHead(faultBackend);
@@ -645,10 +677,10 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       });
     };
 
-    await expect(writeChildHead()).rejects.toMatchObject({
+    await rejects(writeChildHead(), {
       code: "kernel_persistence_fault_injected",
     });
-    await expect(writeChildHead()).rejects.toMatchObject({
+    await rejects(writeChildHead(), {
       code: "kernel_persistence_fault_injected",
     });
 
@@ -705,7 +737,7 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       policy: "once",
     });
 
-    await expect(
+    await rejects(
       faultBackend.transact(async (tx) => {
         await tx.turnNodes.put(seeded.childNode);
         await tx.branches.set({
@@ -713,10 +745,9 @@ describe("@tuvren/kernel-testkit fixtures", () => {
           headTurnNodeHash: seeded.childNode.hash,
           updatedAtMs: seeded.branch.updatedAtMs + 1,
         });
-      })
-    ).rejects.toMatchObject({
-      code: "kernel_persistence_fault_injected",
-    });
+      }),
+      { code: "kernel_persistence_fault_injected" }
+    );
 
     const finalBranch = await readBranch(backend, seeded.branch.branchId);
 
@@ -755,7 +786,7 @@ describe("@tuvren/kernel-testkit fixtures", () => {
       policy: "once",
     });
 
-    await expect(
+    await rejects(
       faultBackend.transact(async (tx) => {
         await tx.turnNodes.put(seeded.childNode);
         await tx.branches.set({
@@ -763,10 +794,9 @@ describe("@tuvren/kernel-testkit fixtures", () => {
           headTurnNodeHash: seeded.childNode.hash,
           updatedAtMs: seeded.branch.updatedAtMs + 1,
         });
-      })
-    ).rejects.toMatchObject({
-      code: "kernel_persistence_fault_injected",
-    });
+      }),
+      { code: "kernel_persistence_fault_injected" }
+    );
 
     const finalBranch = await readBranch(backend, seeded.branch.branchId);
 
@@ -775,5 +805,172 @@ describe("@tuvren/kernel-testkit fixtures", () => {
     }
 
     expect(finalBranch.headTurnNodeHash).toBe(seeded.childNode.hash);
+  });
+  test("preserves optional maintenance receivers, results, errors and absence", async () => {
+    const success = { extra: "preserved", ok: true } as const;
+    const failure = { ok: false, reason: "damaged index" } as const;
+    const domainError = new Error("fsck backend failure");
+    await Promise.all(
+      [success, failure, domainError].map(async (expected) => {
+        const close = mock<() => Promise<void>>().mockResolvedValue();
+        const destroy =
+          mock<
+            (options?: { dropSchema?: boolean }) => Promise<void>
+          >().mockResolvedValue();
+        const fsck = mock<() => Promise<typeof success | typeof failure>>();
+        if (expected instanceof Error) {
+          fsck.mockRejectedValue(expected);
+        } else {
+          fsck.mockResolvedValue(expected);
+        }
+        const backend = Object.assign(createTestBackend(), {
+          close,
+          destroy,
+          fsck,
+        });
+        const wrapped = createFaultInjectingBackend(backend, {
+          point: "before-commit",
+          policy: "once",
+        });
+        const invoke = async (key: string): Promise<unknown> => {
+          const method: unknown = Reflect.get(wrapped, key);
+          if (typeof method !== "function") {
+            throw new TypeError("expected forwarded maintenance method");
+          }
+          return await method.apply(
+            wrapped,
+            key === "destroy" ? [{ dropSchema: true }] : []
+          );
+        };
+        strictEqual(await invoke("close"), undefined);
+        strictEqual(await invoke("destroy"), undefined);
+        if (expected instanceof Error) {
+          await rejects(invoke("fsck"), (error: unknown) => {
+            strictEqual(error, expected);
+            return true;
+          });
+        } else {
+          strictEqual(await invoke("fsck"), expected);
+        }
+        deepStrictEqual(close.mock.calls, [[]]);
+        deepStrictEqual(destroy.mock.calls, [[{ dropSchema: true }]]);
+        deepStrictEqual(fsck.mock.calls, [[]]);
+        strictEqual(close.mock.contexts[0], backend);
+        strictEqual(destroy.mock.contexts[0], backend);
+        strictEqual(fsck.mock.contexts[0], backend);
+      })
+    );
+    const absent = createFaultInjectingBackend(createTestBackend(), {
+      point: "before-commit",
+      policy: "once",
+    });
+    for (const key of ["close", "destroy", "fsck", "reclaim", "purgeScope"]) {
+      strictEqual(key in absent, false);
+    }
+  });
+  test("validates unknown fsck results without changing valid result objects", async () => {
+    const backend = Object.assign(createTestBackend(), {
+      fsck: mock<() => Promise<unknown>>().mockResolvedValue({ ok: false }),
+    });
+    const wrapped = createFaultInjectingBackend(backend, {
+      point: "before-commit",
+      policy: "once",
+    });
+    const method: unknown = Reflect.get(wrapped, "fsck");
+    if (typeof method !== "function") {
+      throw new TypeError("expected forwarded fsck method");
+    }
+    await rejects(
+      async () => {
+        await method.call(wrapped);
+      },
+      {
+        message: "backend fsck must return an ok result or a failure reason",
+        name: "TypeError",
+      }
+    );
+  });
+
+  test("clears installed hooks before propagating transaction errors", async () => {
+    const actualError = new Error("backend transaction failed");
+    const calls: string[] = [];
+    const control = {
+      setFaultHooks(hooks: object | null) {
+        calls.push(hooks === null ? "clear" : "install");
+      },
+      supportsFaultPoint() {
+        return true;
+      },
+    };
+    const backend: RuntimeBackend = {
+      capabilities() {
+        return { "thread.enumeration": false };
+      },
+      health: createTestBackend().health,
+      async transact<T>(
+        _work: (tx: RuntimeBackendTx) => Promise<T>
+      ): Promise<T> {
+        calls.push("transaction");
+        return await Promise.reject<T>(actualError);
+      },
+    };
+    Object.defineProperty(backend, Symbol("fault-control"), { value: control });
+    const wrapped = createFaultInjectingBackend(backend, {
+      point: "before-commit",
+      policy: "once",
+    });
+    await rejects(
+      wrapped.transact(async (tx) => await tx.branches.get("missing")),
+      (error: unknown) => {
+        deepStrictEqual(calls, ["install", "transaction", "clear"]);
+        strictEqual(error, actualError);
+        return true;
+      }
+    );
+  });
+  test("focused fixture rejects unsupported reads even when work fails", async () => {
+    const backend = createTestBackend();
+    const seeded = await seedFaultInjectionBranch(backend, "branch_focused");
+    const before = backend.inspect();
+    await rejects(
+      backend.transact(async (tx) => await tx.branches.get("unsupported")),
+      { message: /focused fixture only reads the committed branch/u }
+    );
+    await rejects(
+      backend.transact(async (tx) => {
+        await tx.objects.get("unsupported");
+        throw new Error("work failed");
+      }),
+      { message: /unsupported focused fixture repository call/u }
+    );
+    await rejects(
+      backend.transact(async (tx) => {
+        await tx.turnNodes.put(seeded.childNode);
+        return await tx.turnNodes.get(seeded.childNode.hash);
+      }),
+      { message: /focused fixture only reads the committed head/u }
+    );
+    deepStrictEqual(backend.inspect(), before);
+  });
+
+  test("focused fixture discards recorded writes when work rejects", async () => {
+    const backend = createTestBackend();
+    const seeded = await seedFaultInjectionBranch(
+      backend,
+      "branch_work_reject"
+    );
+    const before = backend.inspect();
+    const failure = new Error("callback failed");
+    await rejects(
+      backend.transact(async (tx) => {
+        await tx.turnNodes.put(seeded.childNode);
+        throw failure;
+      }),
+      (error: unknown) => {
+        strictEqual(error, failure);
+        return true;
+      }
+    );
+    deepStrictEqual(backend.inspect(), before);
   });
 });
