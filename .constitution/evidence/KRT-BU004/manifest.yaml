@@ -1,0 +1,42 @@
+{
+  "owner": "KRT-BU004",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-13",
+    "commit": "aa4d96b016a17ff08c41cac97c8a158edacd362d",
+    "command": "bunx --bun oxlint --type-aware tools/scripts/lib; bunx --bun oxlint --type-aware --debug=files tools/scripts/lib; bun run check; bun run verify:kernel; VERIFY_SERIAL=1 bun run verify"
+  },
+  "files": [
+    {
+      "path": "readiness.json",
+      "sha256": "5cbe105d7e686406de91c20fb3a0017c8df7df84b59f0baf77d62ccbbc6f14cb",
+      "bytes": 4227,
+      "role": "measurement"
+    },
+    {
+      "path": "suppression-ledger.json",
+      "sha256": "e493a169cfffae824e43e1d6f1f0df865fdf322a918abff09b0983ac873e040b",
+      "bytes": 6390,
+      "role": "measurement"
+    },
+    {
+      "path": "verification.json",
+      "sha256": "14ccb4fe307ecd5fd278dd749e8f67e77c49e41a25ad80181f107d42555cbef7",
+      "bytes": 2701,
+      "role": "measurement"
+    },
+    {
+      "path": "native-selection.log",
+      "sha256": "94d8b4c83e951b2c5a651def9540b302a03a50032062e0f62aeb620c3b31061d",
+      "bytes": 757,
+      "role": "log"
+    },
+    {
+      "path": "verification-transcripts.json.gz",
+      "sha256": "7bb7c99951c4567231510eb43adf007c74b767e5f98fa267b168f4f9482fcfa0",
+      "bytes": 208684,
+      "role": "transcript_bundle"
+    }
+  ],
+  "pass_criteria": "The complete shipped effective policy and enabled type-aware rules remain unchanged; native lint passes over the full owned code selection without project-resolution errors; independent native JSON inventory accounts for all owned files. Needed original directives retain their reasons, every counterpart has a live equivalent, scoped tests and full active gates pass, and bu.json stays byte-identical until CB admission. An empty ledger is valid only with zero baseline and drift identities."
+}
