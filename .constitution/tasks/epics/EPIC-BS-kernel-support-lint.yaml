@@ -116,7 +116,7 @@ tickets:
       evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Assert each admitted target has the exact canonical command shape and workspace cwd; actual --debug=files and native JSON selections are complete and nonempty, source-integrity coverage remains independent of formatter ignores, fresh JSON-only code absence is checked outside cached results, and explicit project inputs name the checker helpers when they override defaults. For each admitted path, reconcile the ledger against fresh diagnostics and record whether the legacy directive has a measured native counterpart. When no equivalent native diagnostic fires, record the no-counterpart disposition. When one fires, preserve the original reason for the justified native counterpart or prove the actual native issue is fixed. Prove the same commit removes legacy Biome directives and switches lint coverage. No admitted path contains a biome-ignore comment after the commit. Paths outside this admission retain needed original directives and Biome coverage. Scoped tests and the full lint gate pass; admitted paths are absent from tools/biome-coverage/bs.json, while every remaining entry retains Biome lint coverage. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: planned
+    status: in_progress
 
 # Execution bookkeeping (lead-owned; partial tickets remain in progress).
 # M1 / KRT-BS001: native --type-aware --format=unix diagnostics grpc-client
@@ -251,3 +251,30 @@ tickets:
 # M7a 381a9803a4b2868baddd870175d383f78d4abefc and
 # M7b f5f842654fad0eeadcaafc7981fb59fe088bb1a4. All original acceptance
 # and same-implementation full conformance/kernel verification are satisfied.
+# M8 / KRT-BS004 partial: gRPC native 34 -> 0; seven product files,
+# 257 changed lines. Canonical native code/JSON target, Biome coverage removal
+# and original barrel directive retirement are atomic. Other four roots and
+# the testkit directive remain retained; no native suppression was needed.
+# Lead assembled KRT-BS004 evidence before replaying all eight M8 gates; all
+# pass, including full lint, API freeze and direct patch changeset coverage.
+# Existing/new tests pass on both sources: 41 tests/65 Bun expect calls;
+# 48 actual binding signatures match. First error/entry-before-cursor order,
+# zero pagination limit, absent oneofs and invalid enum rejection are tested.
+# A6 independent raw selection proof: three native projects, 48 code and 21
+# JSON owner entries; each has exactly one owner, no overlapping roots.
+# gRPC selects six code/seven JSON files; source integrity is independent of
+# formatter ignores. Complete shipped effective policy equality passes with
+# 473 enabled rules (55 type-aware/418 others), recorded facts not quotas.
+# A12 cache proof: real codegen edge/direct generated TS output hashing,
+# every inherited checker input, 14 imported dependency sources and root TS
+# configs covered. Clean output restoration/repeat cache/hash invalidation
+# and exact byte restoration independently reproduced; typecheck unchanged.
+# Stage 3 code-decision draft: this owned native-lint cache convention lives
+# in grpc-client/project.json. A11/shared OD-09 applies to honest async reclaim
+# awaiting its original typed rejection; class/code/message/signature remain.
+# Direct async throw triggers require-await under the installed preset; actual
+# awaited rejection passes. No artificial scheduling guarantee or fake await.
+# Durable archive binds 118 complete indexed reports/probes (138888 bytes),
+# with current candidate hashes and an explicit measurement-base distinction.
+# Historical BS002 evidence is unchanged. Remaining native debt is testkit 99
+# and certification 2; M9/M10 and full release verification remain due.

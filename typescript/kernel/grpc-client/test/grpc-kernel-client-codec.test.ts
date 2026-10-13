@@ -29,6 +29,8 @@ import { TreeManifestResponseSchema } from "../src/lib/generated/kernel-interop/
 import {
   PathValueSchema,
   RecoveryStateSchema,
+  RunRecordSchema,
+  VerdictSchema,
   RunCompletionStatus as ProtoRunCompletionStatus,
   StagedResultSchema,
   StagedResultStatus as ProtoStagedResultStatus,
@@ -43,6 +45,7 @@ import {
   fromProtoManifestEntries,
   requirePathValue,
   requireRecoveryState,
+  requireRunRecord,
   requireStagedResult,
   requireStepContext,
   requireTurnTreeSchema,
@@ -265,13 +268,13 @@ describe("grpc kernel client codec — kernel record byte round-trips", () => {
 
 describe("grpc kernel client codec — enum and error helpers", () => {
   test("run completion status maps every domain value to its proto enum", () => {
-    const expected: Record<RunCompletionStatus, ProtoRunCompletionStatus> = {
-      completed: ProtoRunCompletionStatus.COMPLETED,
-      failed: ProtoRunCompletionStatus.FAILED,
-      paused: ProtoRunCompletionStatus.PAUSED,
-    };
-    for (const status of Object.keys(expected) as RunCompletionStatus[]) {
-      expect(toProtoRunCompletionStatus(status)).toBe(expected[status]);
+    const expected: [RunCompletionStatus, ProtoRunCompletionStatus][] = [
+      ["completed", ProtoRunCompletionStatus.COMPLETED],
+      ["failed", ProtoRunCompletionStatus.FAILED],
+      ["paused", ProtoRunCompletionStatus.PAUSED],
+    ];
+    for (const [status, proto] of expected) {
+      expect(toProtoRunCompletionStatus(status)).toBe(proto);
     }
   });
 
@@ -290,6 +293,53 @@ describe("grpc kernel client codec — enum and error helpers", () => {
 });
 
 describe("grpc kernel client codec — foundation validation", () => {
+  for (const value of [0, Number.MAX_SAFE_INTEGER]) {
+    test(`run enum ${value} fails before malformed step metadata`, () => {
+      const run = create(RunRecordSchema, {
+        status: value,
+        stepSequence: [{ metadataCbor: new Uint8Array() }],
+      });
+      expect(() => requireRunRecord(run, "run")).toThrow(
+        createInvalidTransportResponseError("run.status")
+      );
+    });
+
+    test(`collection enum ${value} fails before malformed metadata`, () => {
+      const schema = create(TurnTreeSchemaSchema, {
+        paths: [{ collection: value, metadataCbor: new Uint8Array() }],
+      });
+      expect(() => requireTurnTreeSchema(schema, "schema")).toThrow(
+        createInvalidTransportResponseError("schema.paths[0].collection")
+      );
+    });
+
+    test(`abort disposition ${value} fails before invalid reason`, () => {
+      const verdict = create(VerdictSchema, {
+        verdict: { case: "abort", value: { disposition: value } },
+      });
+      expect(() => requireVerdict(verdict, "verdict")).toThrow(
+        createInvalidTransportResponseError("verdict.disposition")
+      );
+    });
+
+    test(`settled status ${value} fails before invalid staged fields`, () => {
+      const staged = create(StagedResultSchema, {
+        outcome: { case: "settled", value: { status: value } },
+      });
+      expect(() => requireStagedResult(staged, "staged")).toThrow(
+        createInvalidTransportResponseError("staged.status")
+      );
+    });
+  }
+
+  test("absent verdict and staged-result oneofs fail closed", () => {
+    expect(() => requireVerdict(create(VerdictSchema), "verdict")).toThrow(
+      createInvalidTransportResponseError("verdict.verdict")
+    );
+    expect(() =>
+      requireStagedResult(create(StagedResultSchema), "staged")
+    ).toThrow(createInvalidTransportResponseError("staged.outcome"));
+  });
   test("CBOR encoding copies byte views and decoding respects their bounds", () => {
     const backing = new Uint8Array([99, 1, 2, 3, 88]);
     const value = backing.subarray(1, 4);

@@ -1,0 +1,36 @@
+{
+  "owner": "KRT-BS004",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-13",
+    "commit": "47061b11fd24aabc4c55eec358d3014c4bc80354",
+    "command": "LC_ALL=C bunx --bun oxlint --type-aware typescript/kernel/grpc-client; bun tools/scripts/json-check.ts typescript/kernel/grpc-client; bunx --bun oxlint --debug=files typescript/kernel/grpc-client; bun run nx run kernel-grpc-client:typecheck; bun run nx run kernel-grpc-client:test; bun run lint; bun run api-freeze:check; bun run changeset:check --base=master; extracted archive admission-proof.mjs and cache-proof.mjs as documented in REPLAY.md"
+  },
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "be621db055ba14ab679fe34721c9f7bd3977467d723fa2415b1df945ab851c05",
+      "bytes": 3351,
+      "role": "measurement"
+    },
+    {
+      "path": "m8-reports.tar.gz",
+      "sha256": "01bffa46856f5bf0c73d55f75cd7d4ebd78cef915da45857008b38a085ae0ffd",
+      "bytes": 138888,
+      "role": "archive"
+    },
+    {
+      "path": "m8-summary.json",
+      "sha256": "5ae98572243ff19cf9f90ee331cc0bc8738a9abec96c4a51ae2e964bd1d6262e",
+      "bytes": 9801,
+      "role": "measurement"
+    },
+    {
+      "path": "m8-suppression-disposition.json",
+      "sha256": "3c14be84172a24d4e6753d0aaf7e11f73241c43ae096a0fe2fa6cd434fc1b00b",
+      "bytes": 6245,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "M8 partial admission only: exact canonical gRPC native target, clean unchanged shipped preset, actual code/JSON selections with exactly one raw live native owner, formatter-independent source integrity, all real cache inputs and generated prerequisites, needed legacy directive retired with no firing native counterpart in the same commit as coverage/target switch. Public signatures and typed error behavior remain supported. Four roots retain Biome ownership; BS004 completion and broad release verification remain pending."
+}

@@ -1,0 +1,270 @@
+{
+  "status": "pass",
+  "ticket": "KRT-BS004",
+  "milestone": "M8-partial-admission",
+  "measurement_base_head": "47061b11fd24aabc4c55eec358d3014c4bc80354",
+  "measurement_kind": "uncommitted-working-tree-candidate",
+  "touched_paths": [
+    "tools/biome-coverage/bs.json",
+    "typescript/kernel/grpc-client/project.json",
+    "typescript/kernel/grpc-client/src/index.ts",
+    "typescript/kernel/grpc-client/src/lib/grpc-kernel-client-codec.ts",
+    "typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts",
+    "typescript/kernel/grpc-client/test/grpc-kernel-client-codec.test.ts",
+    "typescript/kernel/grpc-client/test/grpc-kernel-client.test.ts"
+  ],
+  "candidate_sha256": {
+    "tools/biome-coverage/bs.json": "fa572c8a08bb47e99be48ef8455ab13565d7b49b013874a10d538e32e87f51f8",
+    "typescript/kernel/grpc-client/project.json": "fa63a19fbcdd0845752bc5930b4aa8bb8a50b41d48df61f337b713184122799e",
+    "typescript/kernel/grpc-client/src/index.ts": "eb877c825b65e38e8e0c309b3f70512cd18d2731d3381d34d4d3ea1eba1d7437",
+    "typescript/kernel/grpc-client/src/lib/grpc-kernel-client-codec.ts": "5d433beae21cddc8c14728bfb1f510da514fc661f7aafba17e4047d7a4823aa3",
+    "typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts": "38e3d31556b869656ca9f54543dc1fe5800462604aa5c0e3152d73e388200362",
+    "typescript/kernel/grpc-client/test/grpc-kernel-client-codec.test.ts": "ff68b677d80a3aa73834351975c11d558d0d7ccf85e375450311fbf03379b373",
+    "typescript/kernel/grpc-client/test/grpc-kernel-client.test.ts": "068208b73127ef2374e6169389df1d85cbf1c0a1bdd47f04b32b71b23cf6f50b"
+  },
+  "product_diff_sha256": "12b05520df14ae2331302c9d777c839078aba45e7830565bdc37cd121367f4c4",
+  "diff_files": 7,
+  "diff_lines": 257,
+  "changed": [
+    {
+      "file": "tools/biome-coverage/bs.json",
+      "added": 0,
+      "deleted": 1
+    },
+    {
+      "file": "typescript/kernel/grpc-client/project.json",
+      "added": 35,
+      "deleted": 1
+    },
+    {
+      "file": "typescript/kernel/grpc-client/src/index.ts",
+      "added": 1,
+      "deleted": 2
+    },
+    {
+      "file": "typescript/kernel/grpc-client/src/lib/grpc-kernel-client-codec.ts",
+      "added": 42,
+      "deleted": 20
+    },
+    {
+      "file": "typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts",
+      "added": 18,
+      "deleted": 14
+    },
+    {
+      "file": "typescript/kernel/grpc-client/test/grpc-kernel-client-codec.test.ts",
+      "added": 57,
+      "deleted": 7
+    },
+    {
+      "file": "typescript/kernel/grpc-client/test/grpc-kernel-client.test.ts",
+      "added": 59,
+      "deleted": 0
+    }
+  ],
+  "diagnostics": {
+    "baseline_total": 135,
+    "grpc_before": 34,
+    "grpc_after": 0,
+    "remaining_total": 101,
+    "remaining_by_root": {
+      "testkit": 99,
+      "certification": 2
+    }
+  },
+  "required_gates": [
+    {
+      "name": "native",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--type-aware",
+        "typescript/kernel/grpc-client"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "json",
+      "command": [
+        "bun",
+        "tools/scripts/json-check.ts",
+        "typescript/kernel/grpc-client"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "selection",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxlint",
+        "--debug=files",
+        "typescript/kernel/grpc-client"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "typecheck",
+      "command": ["bun", "run", "nx", "run", "kernel-grpc-client:typecheck"],
+      "exit_code": 0
+    },
+    {
+      "name": "test",
+      "command": ["bun", "run", "nx", "run", "kernel-grpc-client:test"],
+      "exit_code": 0
+    },
+    {
+      "name": "lint",
+      "command": ["bun", "run", "lint"],
+      "exit_code": 0
+    },
+    {
+      "name": "api-freeze",
+      "command": ["bun", "run", "api-freeze:check"],
+      "exit_code": 0
+    },
+    {
+      "name": "changeset",
+      "command": ["bun", "run", "changeset:check", "--base=master"],
+      "exit_code": 0
+    }
+  ],
+  "additional_controls": [
+    {
+      "name": "preset-controls",
+      "command": ["bun", "test", "tools/scripts/oxc-preparation.test.ts"],
+      "exit_code": 0
+    },
+    {
+      "name": "partition-controls",
+      "command": [
+        "bun",
+        "test",
+        "tools/scripts/lib/biome-lint-partition.test.ts",
+        "tools/scripts/lib/biome-oxc-discovery.test.ts",
+        "tools/scripts/oxc-project-discovery.test.ts",
+        "tools/scripts/lib/json-source-integrity.test.ts",
+        "tools/scripts/biome-lint.test.ts"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "format",
+      "command": [
+        "bunx",
+        "--bun",
+        "oxfmt",
+        "--check",
+        "typescript/kernel/grpc-client",
+        "tools/biome-coverage/bs.json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "diff",
+      "command": ["git", "diff", "--check"],
+      "exit_code": 0
+    }
+  ],
+  "tests": {
+    "baseline": 41,
+    "final": 41,
+    "expect_calls": 65,
+    "new_regressions": 11
+  },
+  "binding_signatures_equal": 48,
+  "admission": {
+    "status": "pass",
+    "native_projects": 3,
+    "code_projects": 3,
+    "json_only_projects": 0,
+    "raw_code_owner_entries": 48,
+    "raw_json_owner_entries": 21,
+    "grpc_code_files": [
+      "typescript/kernel/grpc-client/src/index.ts",
+      "typescript/kernel/grpc-client/src/lib/grpc-kernel-client-codec.ts",
+      "typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts",
+      "typescript/kernel/grpc-client/test/grpc-kernel-client-codec.test.ts",
+      "typescript/kernel/grpc-client/test/grpc-kernel-client.test.ts",
+      "typescript/kernel/grpc-client/tsup.config.ts"
+    ],
+    "grpc_json_files": [
+      "typescript/kernel/grpc-client/package.json",
+      "typescript/kernel/grpc-client/project.json",
+      "typescript/kernel/grpc-client/tsconfig.dts.json",
+      "typescript/kernel/grpc-client/tsconfig.json",
+      "typescript/kernel/grpc-client/tsconfig.lib.json",
+      "typescript/kernel/grpc-client/tsconfig.tsup.json",
+      "typescript/kernel/grpc-client/tsconfig.typecheck.json"
+    ],
+    "exactly_one_raw_native_owner": true,
+    "no_overlapping_native_roots": true,
+    "json_source_independent_of_formatter_ignores": true,
+    "fresh_json_only_absence_outside_cache": {
+      "applicable_projects": 0,
+      "checked_fresh": true
+    },
+    "complete_effective_policy_equal": true,
+    "enabled_rules": 473,
+    "enabled_type_aware": 55,
+    "enabled_non_type_aware": 418,
+    "target_inherited_inputs_preserved": true,
+    "original_reasons_preserved": true,
+    "retained_biome_roots": [
+      "typescript/kernel/testkit",
+      "typescript/kernel/certification",
+      "typescript/kernel/certification-sqlite",
+      "typescript/kernel/certification-postgres"
+    ]
+  },
+  "cache": {
+    "clean_output_restore_equal": true,
+    "repeated_lint_cache_hit": true,
+    "actual_task_graph_dependency": ["kernel-interop-grpc:codegen"],
+    "original_hash": "8416128270003119103",
+    "mutated_hash": "1612100984767184094",
+    "restored_hash": "8416128270003119103",
+    "dependency_sources_checked": [
+      "typescript/core/src/index.ts",
+      "typescript/core/src/lib/kernel-records.ts",
+      "typescript/core/src/lib/scope.ts",
+      "typescript/core/src/lib/tuvren-error.ts",
+      "typescript/kernel/protocol/src/index.ts",
+      "typescript/kernel/protocol/src/lib/kernel-identity.ts",
+      "typescript/kernel/protocol/src/lib/kernel-record-identity.ts",
+      "typescript/kernel/protocol/src/lib/kernel-types.ts",
+      "typescript/kernel/protocol/src/lib/kernel-validation-records.ts",
+      "typescript/kernel/protocol/src/lib/kernel-validation-runtime.ts",
+      "typescript/kernel/protocol/src/lib/kernel-validation-shared.ts",
+      "typescript/kernel/protocol/src/lib/kernel-validation-stored-turn-tree.ts",
+      "typescript/kernel/protocol/src/lib/kernel-validation-stored.ts",
+      "typescript/kernel/protocol/src/lib/kernel-validation.ts"
+    ],
+    "generated_output_invalidates_only_dependency_output_hash_node": true,
+    "no_generated_files_in_ordinary_inputs": true,
+    "generated_bytes_restored_exactly": true
+  },
+  "suppression_disposition": "admission/suppression-disposition.json",
+  "source_ownership": "worker-finished-parent-may-edit-and-verify",
+  "new_dependencies": [],
+  "new_contract_shapes": [],
+  "new_patterns_or_conventions": [
+    {
+      "kind": "Stage3-code_decision",
+      "paths": ["typescript/kernel/grpc-client/project.json"],
+      "decision": "Native type-aware lint declares the actual kernel-interop-grpc:codegen prerequisite, hashes its direct **/*.ts dependent task outputs, preserves every inherited lint input, and adds ^production plus tsconfig.json/tsconfig.base.json for imported source/config dependencies. This uses installed Nx 22.7.12 metadata; ordinary typecheck is unchanged."
+    }
+  ],
+  "a11_application": {
+    "path": "typescript/kernel/grpc-client/src/lib/grpc-kernel-client.ts",
+    "decision": "Maintenance reclaim is honestly async and awaits its original typed Promise rejection. Direct async throw fires installed require-await; the selected preset requires the actual rejection await. TuvrenPersistenceError class/code/message and Promise signature remain unchanged.",
+    "proof": "async-rule-proof.json"
+  },
+  "drift": [],
+  "limitations": [
+    "M8 completes only gRPC admission; testkit and certification admission and broad M10 verification remain pending.",
+    "Fresh JSON-only absence has zero applicable active native projects in this candidate; wrapper admission is M10."
+  ],
+  "capture_note": "One rule-registry pipe capture truncated despite exit0; archived separately, probe changed to file-descriptor capture and complete registry/config/ownership proof passed. No product or preset change."
+}
