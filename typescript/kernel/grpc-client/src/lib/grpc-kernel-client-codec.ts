@@ -18,11 +18,13 @@ import { create } from "@bufbuild/protobuf";
 import {
   assertHashString,
   assertKernelRecord,
-  type EpochMs,
-  type HashString,
-  type KernelObject,
-  type KernelRecord,
   TuvrenRuntimeError,
+} from "@tuvren/core";
+import type {
+  EpochMs,
+  HashString,
+  KernelObject,
+  KernelRecord,
 } from "@tuvren/core";
 import {
   assertBranchHeadListEntry,
@@ -41,67 +43,71 @@ import {
   assertTurnRecord,
   assertTurnTreeSchema,
   assertVerdict,
-  type BranchHeadListEntry,
-  type BranchRecord,
-  type ComposedVerdict,
   decodeDeterministicKernelRecord,
   encodeDeterministicKernelRecord,
-  type ObserveResult,
-  type PathCollectionKind,
-  type PathValue,
-  type RecoveryState,
-  type RunCompletionStatus,
-  type RunRecord,
-  type SetHeadResult,
-  type StagedResult,
-  type StagedResultStatus,
-  type StepContext,
-  type StepDeclaration,
-  type StoredThread,
-  type ThreadCreateResult,
-  type ThreadRecord,
-  type TurnNode,
-  type TurnRecord,
-  type TurnTreeChangeSet,
-  type TurnTreeManifest,
-  type TurnTreeSchema,
-  type Verdict,
-  type VerdictDisposition,
+} from "@tuvren/kernel-protocol";
+import type {
+  BranchHeadListEntry,
+  BranchRecord,
+  ComposedVerdict,
+  ObserveResult,
+  PathCollectionKind,
+  PathValue,
+  RecoveryState,
+  RunCompletionStatus,
+  RunRecord,
+  SetHeadResult,
+  StagedResult,
+  StagedResultStatus,
+  StepContext,
+  StepDeclaration,
+  StoredThread,
+  ThreadCreateResult,
+  ThreadRecord,
+  TurnNode,
+  TurnRecord,
+  TurnTreeChangeSet,
+  TurnTreeManifest,
+  TurnTreeSchema,
+  Verdict,
+  VerdictDisposition,
 } from "@tuvren/kernel-protocol";
 
 import type {
   BranchListResponse,
   TreeManifestResponse,
 } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_services_pb";
-import type { StoredThreadEntry as ProtoStoredThreadEntry } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
 import {
   ObserveResultSchema,
   PathValueEntrySchema,
   PathValueSchema,
-  type BranchHeadListEntry as ProtoBranchHeadListEntry,
-  type BranchRecord as ProtoBranchRecord,
   PathCollectionKind as ProtoPathCollectionKind,
-  type PathValue as ProtoPathValue,
-  type RecoveryState as ProtoRecoveryState,
   RunCompletionStatus as ProtoRunCompletionStatus,
-  type RunRecord as ProtoRunRecord,
   RunStatus as ProtoRunStatus,
-  type SetHeadResult as ProtoSetHeadResult,
-  type StagedResult as ProtoStagedResult,
   StagedResultStatus as ProtoStagedResultStatus,
-  type StepContext as ProtoStepContext,
-  type StepDeclaration as ProtoStepDeclaration,
-  type ThreadCreateResult as ProtoThreadCreateResult,
-  type ThreadRecord as ProtoThreadRecord,
-  type TurnNode as ProtoTurnNode,
-  type TurnRecord as ProtoTurnRecord,
-  type TurnTreeSchema as ProtoTurnTreeSchema,
-  type Verdict as ProtoVerdict,
   VerdictDisposition as ProtoVerdictDisposition,
   StagedResultSchema,
   StepDeclarationSchema,
   TurnTreeSchemaSchema,
   VerdictSchema,
+} from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
+import type {
+  StoredThreadEntry as ProtoStoredThreadEntry,
+  BranchHeadListEntry as ProtoBranchHeadListEntry,
+  BranchRecord as ProtoBranchRecord,
+  PathValue as ProtoPathValue,
+  RecoveryState as ProtoRecoveryState,
+  RunRecord as ProtoRunRecord,
+  SetHeadResult as ProtoSetHeadResult,
+  StagedResult as ProtoStagedResult,
+  StepContext as ProtoStepContext,
+  StepDeclaration as ProtoStepDeclaration,
+  ThreadCreateResult as ProtoThreadCreateResult,
+  ThreadRecord as ProtoThreadRecord,
+  TurnNode as ProtoTurnNode,
+  TurnRecord as ProtoTurnRecord,
+  TurnTreeSchema as ProtoTurnTreeSchema,
+  Verdict as ProtoVerdict,
 } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
 
 /**
@@ -516,8 +522,9 @@ export function fromProtoManifestEntries(
  */
 function fromProtoPathValue(value: ProtoPathValue, label: string): PathValue {
   switch (value.value.case) {
-    case "nullValue":
+    case "nullValue": {
       return null;
+    }
     case "orderedHashes": {
       const hashes: HashString[] = [];
 
@@ -528,11 +535,13 @@ function fromProtoPathValue(value: ProtoPathValue, label: string): PathValue {
 
       return hashes;
     }
-    case "singleHash":
+    case "singleHash": {
       assertHashString(value.value.value, `${label}.singleHash`);
       return value.value.value;
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError(`${label}.value`);
+    }
   }
 }
 
@@ -548,16 +557,21 @@ function fromProtoRunStatus(
   label: string
 ): RunRecord["status"] {
   switch (value) {
-    case ProtoRunStatus.RUNNING:
+    case ProtoRunStatus.RUNNING: {
       return "running";
-    case ProtoRunStatus.PAUSED:
+    }
+    case ProtoRunStatus.PAUSED: {
       return "paused";
-    case ProtoRunStatus.COMPLETED:
+    }
+    case ProtoRunStatus.COMPLETED: {
       return "completed";
-    case ProtoRunStatus.FAILED:
+    }
+    case ProtoRunStatus.FAILED: {
       return "failed";
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError(label);
+    }
   }
 }
 
@@ -605,8 +619,9 @@ function fromProtoStagedResult(
       assertStagedResult(result, label);
       return result;
     }
-    default:
+    default: {
       throw createInvalidTransportResponseError(`${label}.outcome`);
+    }
   }
 }
 
@@ -622,12 +637,15 @@ function fromProtoStagedResultStatus(
   label: string
 ): Exclude<StagedResultStatus, "interrupted"> {
   switch (value) {
-    case ProtoStagedResultStatus.COMPLETED:
+    case ProtoStagedResultStatus.COMPLETED: {
       return "completed";
-    case ProtoStagedResultStatus.FAILED:
+    }
+    case ProtoStagedResultStatus.FAILED: {
       return "failed";
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError(label);
+    }
   }
 }
 
@@ -708,7 +726,7 @@ function fromProtoTurnTreeSchema(
  */
 function fromProtoVerdict(value: ProtoVerdict, label: string): Verdict {
   switch (value.verdict.case) {
-    case "abort":
+    case "abort": {
       return {
         disposition: fromProtoVerdictDisposition(
           value.verdict.value.disposition,
@@ -717,7 +735,8 @@ function fromProtoVerdict(value: ProtoVerdict, label: string): Verdict {
         kind: "abort",
         reason: value.verdict.value.reason,
       };
-    case "modify":
+    }
+    case "modify": {
       return {
         kind: "modify",
         transform: decodeKernelRecordBytes(
@@ -725,7 +744,8 @@ function fromProtoVerdict(value: ProtoVerdict, label: string): Verdict {
           `${label}.transform`
         ),
       };
-    case "pause":
+    }
+    case "pause": {
       return {
         kind: "pause",
         reason: value.verdict.value.reason,
@@ -734,11 +754,13 @@ function fromProtoVerdict(value: ProtoVerdict, label: string): Verdict {
           `${label}.resumptionSchema`
         ),
       };
-    case "proceed":
+    }
+    case "proceed": {
       return {
         kind: "proceed",
       };
-    case "retry":
+    }
+    case "retry": {
       return {
         adjustment: decodeKernelRecordBytes(
           value.verdict.value.adjustmentCbor,
@@ -746,8 +768,10 @@ function fromProtoVerdict(value: ProtoVerdict, label: string): Verdict {
         ),
         kind: "retry",
       };
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError(`${label}.verdict`);
+    }
   }
 }
 
@@ -763,14 +787,18 @@ function fromProtoVerdictDisposition(
   label: string
 ): VerdictDisposition {
   switch (value) {
-    case ProtoVerdictDisposition.HARD_FAIL:
+    case ProtoVerdictDisposition.HARD_FAIL: {
       return "HardFail";
-    case ProtoVerdictDisposition.SOFT_FAIL:
+    }
+    case ProtoVerdictDisposition.SOFT_FAIL: {
       return "SoftFail";
-    case ProtoVerdictDisposition.END_TURN:
+    }
+    case ProtoVerdictDisposition.END_TURN: {
       return "EndTurn";
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError(label);
+    }
   }
 }
 
@@ -800,12 +828,15 @@ function toProtoPathCollectionKind(
   value: PathCollectionKind
 ): ProtoPathCollectionKind {
   switch (value) {
-    case "ordered":
+    case "ordered": {
       return ProtoPathCollectionKind.ORDERED;
-    case "single":
+    }
+    case "single": {
       return ProtoPathCollectionKind.SINGLE;
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError("pathCollectionKind");
+    }
   }
 }
 
@@ -875,14 +906,18 @@ export function toProtoRunCompletionStatus(
   value: RunCompletionStatus
 ): ProtoRunCompletionStatus {
   switch (value) {
-    case "paused":
+    case "paused": {
       return ProtoRunCompletionStatus.PAUSED;
-    case "completed":
+    }
+    case "completed": {
       return ProtoRunCompletionStatus.COMPLETED;
-    case "failed":
+    }
+    case "failed": {
       return ProtoRunCompletionStatus.FAILED;
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError("runCompletionStatus");
+    }
   }
 }
 
@@ -937,12 +972,15 @@ function toProtoStagedResultStatus(
   value: Exclude<StagedResultStatus, "interrupted">
 ): ProtoStagedResultStatus {
   switch (value) {
-    case "completed":
+    case "completed": {
       return ProtoStagedResultStatus.COMPLETED;
-    case "failed":
+    }
+    case "failed": {
       return ProtoStagedResultStatus.FAILED;
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError("stagedResultStatus");
+    }
   }
 }
 
@@ -1028,7 +1066,7 @@ export function toProtoVerdict(value: Verdict, label: string) {
   assertVerdict(value, label);
 
   switch (value.kind) {
-    case "abort":
+    case "abort": {
       return create(VerdictSchema, {
         verdict: {
           case: "abort",
@@ -1038,7 +1076,8 @@ export function toProtoVerdict(value: Verdict, label: string) {
           },
         },
       });
-    case "modify":
+    }
+    case "modify": {
       return create(VerdictSchema, {
         verdict: {
           case: "modify",
@@ -1050,7 +1089,8 @@ export function toProtoVerdict(value: Verdict, label: string) {
           },
         },
       });
-    case "pause":
+    }
+    case "pause": {
       return create(VerdictSchema, {
         verdict: {
           case: "pause",
@@ -1063,14 +1103,16 @@ export function toProtoVerdict(value: Verdict, label: string) {
           },
         },
       });
-    case "proceed":
+    }
+    case "proceed": {
       return create(VerdictSchema, {
         verdict: {
           case: "proceed",
           value: {},
         },
       });
-    case "retry":
+    }
+    case "retry": {
       return create(VerdictSchema, {
         verdict: {
           case: "retry",
@@ -1082,8 +1124,10 @@ export function toProtoVerdict(value: Verdict, label: string) {
           },
         },
       });
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError("verdict");
+    }
   }
 }
 
@@ -1098,14 +1142,18 @@ function toProtoVerdictDisposition(
   value: VerdictDisposition
 ): ProtoVerdictDisposition {
   switch (value) {
-    case "HardFail":
+    case "HardFail": {
       return ProtoVerdictDisposition.HARD_FAIL;
-    case "SoftFail":
+    }
+    case "SoftFail": {
       return ProtoVerdictDisposition.SOFT_FAIL;
-    case "EndTurn":
+    }
+    case "EndTurn": {
       return ProtoVerdictDisposition.END_TURN;
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError("verdictDisposition");
+    }
   }
 }
 
@@ -1202,12 +1250,15 @@ function fromProtoPathCollectionKind(
   label: string
 ): PathCollectionKind {
   switch (value) {
-    case ProtoPathCollectionKind.ORDERED:
+    case ProtoPathCollectionKind.ORDERED: {
       return "ordered";
-    case ProtoPathCollectionKind.SINGLE:
+    }
+    case ProtoPathCollectionKind.SINGLE: {
       return "single";
-    default:
+    }
+    default: {
       throw createInvalidTransportResponseError(label);
+    }
   }
 }
 

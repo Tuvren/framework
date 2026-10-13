@@ -40,7 +40,7 @@ tickets:
       evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project. Assert the pull request has direct patch changeset coverage for every affected public package under ADR-0069 and tools/scripts/changeset-check.ts; fixed-group propagation alone is insufficient."
     flows: []
     certainty: settled
-    status: planned
+    status: in_progress
   - id: KRT-BS002
     title: Migrate live suppressions and delete dead ones
     type: Chore
@@ -117,3 +117,18 @@ tickets:
     flows: []
     certainty: settled
     status: planned
+
+# Execution bookkeeping (lead-owned; partial tickets remain in progress).
+# M1 / KRT-BS001: native --type-aware --format=unix diagnostics grpc-client
+# 269 -> 176 and certification 40 -> 35. Both wrapper roots contain only
+# project.json; no code diagnostic count is applicable. Five source/config
+# files plus the direct @tuvren/kernel-grpc-client patch changeset changed.
+# Preserved explicit undefined arguments, readonly collections, protobuf
+# absence/null/enums/errors, signatures, runtime property order and promise timing.
+# Rejected autofixes: async maintenance.reclaim, Error-to-TypeError, and runtime
+# object-property evaluation reordering. Original two barrel directives retained.
+# A9 incident: four worker-owned safe fixes briefly landed in MAIN because bun x
+# ignored --cwd; exact patch transferred to BS and reversed from MAIN. MAIN clean
+# confirmed; every subsequent command explicitly uses the BS shell workdir.
+# M1 lead verification: grpc-client typecheck/test, certification typecheck/test,
+# repository typecheck (33 projects), changeset:check --base=master all exit 0.

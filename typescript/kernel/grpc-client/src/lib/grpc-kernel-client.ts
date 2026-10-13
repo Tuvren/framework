@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  ConnectError,
-  createClient,
-  type Interceptor,
-} from "@connectrpc/connect";
+import { ConnectError, createClient } from "@connectrpc/connect";
+import type { Interceptor } from "@connectrpc/connect";
 import { createGrpcTransport } from "@connectrpc/connect-node";
 import {
   isTuvrenErrorCode,
@@ -54,10 +51,8 @@ import {
   TurnGetResponseSchema,
   VerdictsComposeResponseSchema,
 } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_services_pb";
-import {
-  KernelErrorPayloadSchema,
-  type TurnNode as ProtoTurnNode,
-} from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
+import { KernelErrorPayloadSchema } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
+import type { TurnNode as ProtoTurnNode } from "./generated/kernel-interop/tuvren/kernel/interop/v1/kernel_types_pb";
 import {
   decodeKernelRecordBytes,
   fromBranchHeadListEntries,
