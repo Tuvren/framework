@@ -1,6 +1,7 @@
 {
-  "measurement_commit": "9c4ec5f3951620c3e39cd06af3c83e24b4f18953",
-  "independent_probe_replay": "pass",
+  "measurement_commit": "f391ff64d1da4878bb73dcafda9f4c17a87d7474",
+  "assembled_probe_sha256": "8d78cdd376f0fb454c32906364dec2f39e232e3713e112447628b5a60f315d7f",
+  "independent_probe_replay": "pass after corrected probe assembled in repository",
   "commands": [
     {
       "command": "bunx --bun @biomejs/biome lint typescript/kernel/grpc-client typescript/kernel/testkit typescript/kernel/certification",

@@ -151,3 +151,13 @@ tickets:
 # Durable ledger, negative controls, 21 complete archived reports, stream/archive
 # digests and runnable probe live in evidence/KRT-BS002. No product bytes changed.
 # Every root remains Biome-owned; no native suppression or early deletion added.
+# M3 review correction: P1 found the assembled evidence probe itself failed
+# retained Biome. Fresh fix worker corrected all ten diagnostics without changing
+# assertions; lead replayed the assembled fixed tree, including full lint, and
+# refreshed every report/archive/manifest digest. P2 citation provenance fixed
+# with immutable installed-release upstream commits; parsed commands use LC_ALL=C.
+# Pre-reorder conformance baseline at f391ff6 passed all 11 projects plus 29
+# prerequisite tasks; shared lock retained through successful origin/master fetch.
+# A11 read: native admission remains the original goal. Supported/authority-backed
+# semantics stay binding; honest selected-preset async/error normalization is
+# allowed. Shared OD-09 is BU-owned; actual BS004 applications will be recorded.

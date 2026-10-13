@@ -3,28 +3,28 @@
   "members": [
     {
       "path": "biome-retained.json",
-      "sha256": "5b9c130946d7a764593fc1c68de10007ce295284bf14bac0196775e1c62b087e",
+      "sha256": "b9484426e543b0ea9dcab48dd3c5dbd76b0d96d252c726d2f82ca51219914af9",
       "bytes": 525
     },
     {
       "path": "biome-suppressed-mirror-1.json",
-      "sha256": "7d90bab9a24b8a2e873976d5a959aa7ac383f026918e51e824f166de03981fe5",
-      "bytes": 972
+      "sha256": "456d639a19b3a5b13d41452212c1e366b8af06e38d078cf623fd952200bc576a",
+      "bytes": 986
     },
     {
       "path": "biome-suppressed-mirror-2.json",
-      "sha256": "9461e4875a8ddde9c1df1d305effa9dd48de6c6cc7122baa2a07a557f72e98b3",
-      "bytes": 968
+      "sha256": "ae50985ab48dcb750834b03d57bad4c30701b56772839490adce2c5268f73497",
+      "bytes": 982
     },
     {
       "path": "biome-unsuppressed-mirror-1.json",
-      "sha256": "01e3ea8bbacac743d1b983fb2a6ff84ff4324f97742e30d1c63f7a6d8b21e967",
-      "bytes": 1712
+      "sha256": "96dcbbcfd7463740aa15908cd8963b3f8b23b503abda6d8581d6524d5325413d",
+      "bytes": 1740
     },
     {
       "path": "biome-unsuppressed-mirror-2.json",
-      "sha256": "73e752b3fa7f50c47aad95d9672db11a0756d50ae547b45b752e1fbbe47e1817",
-      "bytes": 1704
+      "sha256": "42775eac634ebb22abde73ec0d13b82642a57e9633e8baeb52f37ce6888e738c",
+      "bytes": 1732
     },
     {
       "path": "changeset-check.json",
@@ -33,8 +33,8 @@
     },
     {
       "path": "full-lint.json",
-      "sha256": "6cb71ca70666b41d1c92e1f121b9a116aaf75ca241b5f7ca2113446efd10cbf1",
-      "bytes": 2225
+      "sha256": "510ab0b4f271b0b5da02533b4a15a2498b59c733fa45ee211b83e472dd817ad4",
+      "bytes": 2230
     },
     {
       "path": "oxlint-certification-selection.json",
@@ -53,7 +53,7 @@
     },
     {
       "path": "oxlint-combined-type-aware.json",
-      "sha256": "9825068b02673b5b0890e6199241073ce0fdfb5905300653ff287bdfecaef35e",
+      "sha256": "0134ce885a16e255a8bf3e348b66ad199d34c192f905450190e8f6832bc2d50e",
       "bytes": 69798
     },
     {
@@ -73,7 +73,7 @@
     },
     {
       "path": "oxlint-grpc-client-type-aware.json",
-      "sha256": "25480b5e3f9cad4c2dc361a9ab545043e483808b100c14346a37645cc8b95c60",
+      "sha256": "02ded584ea1cd5d21ba74e537467b73e040741a698efdb8bc2ce22898c10e063",
       "bytes": 27880
     },
     {
@@ -88,12 +88,12 @@
     },
     {
       "path": "oxlint-testkit-syntactic.json",
-      "sha256": "9efa8ebe9b6d56a0302c1a5613e5e47856b52cb90d5c143d172524fd29f0bad5",
+      "sha256": "395179caa9e5dd0efd264ca943dbc0738d9325dee20fcdb5e75668b518248ffb",
       "bytes": 25931
     },
     {
       "path": "oxlint-testkit-type-aware.json",
-      "sha256": "7b1397f1cd2a086d4e15693a58e4c172830636300620c42c90a25d000f5c0f1b",
+      "sha256": "b4364ada59e53a3f135282f2fdec8bdfbf446317b7de39ecc62bc41ffcd5c020",
       "bytes": 36562
     },
     {
