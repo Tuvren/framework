@@ -138,11 +138,11 @@
     "helperTests": "64 pass / 0 fail / 186 assertions",
     "retainedBiome": "pass",
     "oxfmt": "pass",
-    "listedTests": "122 pass / 0 fail / 1422 assertions",
+    "listedTests": "122 pass / 0 fail / 1424 assertions (independent lead run)",
     "repositoryTypecheck": "pass (33 projects and 1 dependency task)",
     "repositoryLint": "pass",
     "exportSignatureProbe": "78 identical exported declaration signatures across 18 files",
-    "diffCheck": "pass"
+    "diffCheck": "pass after captured-output normalization; checked complete milestone range"
   },
   "repairs": [
     "Private readonly array rewritten to Set by safe fix: corrected annotation to ReadonlySet<DiffClass>; identical values and membership semantics.",
