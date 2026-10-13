@@ -1,0 +1,42 @@
+{
+  "owner": "KRT-BU002",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-13",
+    "commit": "ff19f9aaae53436792be459ccab3241eeb13571d",
+    "command": "bunx --bun oxlint --type-aware --format=unix tools/scripts/lib; bunx --bun @biomejs/biome lint tools/scripts/lib; bun test tools/scripts/lib; bun run typecheck; bun run lint"
+  },
+  "files": [
+    {
+      "path": "suppression-ledger.json",
+      "sha256": "821a5c1e2c6fecd6bca2b1878e74158b3c311a849c5e605c0734e1db941ba3ac",
+      "bytes": 5528,
+      "role": "measurement"
+    },
+    {
+      "path": "baseline-native.log",
+      "sha256": "94795007ecd8c5888d0f2401ac01986aabb4f531f4ddbbd2d2fa653ce974b787",
+      "bytes": 30457,
+      "role": "log"
+    },
+    {
+      "path": "after-safe-fix-native.log",
+      "sha256": "a6171ea35ce8e5bf51ec87f7515d1ea00eb5ab56f08f8ca66c9e0f237da70f52",
+      "bytes": 27661,
+      "role": "log"
+    },
+    {
+      "path": "export-signatures.log",
+      "sha256": "d7d7bea9995d0e6702ae5907a5adfd9c5dba956f7ec41fd3ed97a074e6c7ce58",
+      "bytes": 298,
+      "role": "log"
+    },
+    {
+      "path": "verification.log",
+      "sha256": "90699f66572e7b5ea143fd0e1d50a978989fd8fe3528e99f366005ed9aec1a43",
+      "bytes": 10594,
+      "role": "log"
+    }
+  ],
+  "pass_criteria": "Every baseline and drift suppression identity has a disposition backed by live diagnostics. Empty entries are valid only when both measured inventories have zero directives. Retained Biome and all M1 checks pass; bu.json stays byte-identical. Native zero diagnostics is required at M6, not this safe-fix milestone."
+}

@@ -1,0 +1,179 @@
+{
+  "epic": "EPIC-BU",
+  "milestone": "M1",
+  "tickets": [
+    "KRT-BU001",
+    "KRT-BU002"
+  ],
+  "ownedPaths": [
+    "tools/scripts/lib"
+  ],
+  "baseline": {
+    "files": 18,
+    "lines": 4090,
+    "syntaxDiagnostics": 228,
+    "typeAwareDiagnostics": 241,
+    "suppressionDirectives": 0,
+    "commit": "6597a27223bf70956cf1b48a9661d21ff1d32bad"
+  },
+  "final": {
+    "syntaxDiagnostics": 207,
+    "typeAwareDiagnostics": 220,
+    "suppressionDirectives": 0,
+    "commit": "ff19f9aaae53436792be459ccab3241eeb13571d"
+  },
+  "entries": [],
+  "retainedCheckerDisposition": "No baseline or drift directives exist. Retained Biome passes; ownership and bu.json unchanged.",
+  "nativeAdmissionDisposition": "No counterpart warranted or added. Residual native diagnostics remain for later milestones; CB owns whole-tools admission.",
+  "authorityManifestBlobBefore": "fc9e6f643d3d55c9a7b68ad4457ecc663b116a2a",
+  "authorityManifestBlobAfter": "fc9e6f643d3d55c9a7b68ad4457ecc663b116a2a",
+  "diagnosticsPerFile": [
+    {
+      "file": "tools/scripts/lib/api-freeze-model.test.ts",
+      "before": 3,
+      "after": 1
+    },
+    {
+      "file": "tools/scripts/lib/api-freeze-model.ts",
+      "before": 12,
+      "after": 11
+    },
+    {
+      "file": "tools/scripts/lib/biome-inventory.test.ts",
+      "before": 10,
+      "after": 11
+    },
+    {
+      "file": "tools/scripts/lib/biome-inventory.ts",
+      "before": 24,
+      "after": 21
+    },
+    {
+      "file": "tools/scripts/lib/biome-lint-partition.test.ts",
+      "before": 11,
+      "after": 8
+    },
+    {
+      "file": "tools/scripts/lib/biome-oxc-discovery.test.ts",
+      "before": 7,
+      "after": 7
+    },
+    {
+      "file": "tools/scripts/lib/command-runner.ts",
+      "before": 7,
+      "after": 5
+    },
+    {
+      "file": "tools/scripts/lib/conformance-contract.ts",
+      "before": 82,
+      "after": 82
+    },
+    {
+      "file": "tools/scripts/lib/conformance-suite-manifest.ts",
+      "before": 15,
+      "after": 10
+    },
+    {
+      "file": "tools/scripts/lib/generated-prerequisites.ts",
+      "before": 2,
+      "after": 2
+    },
+    {
+      "file": "tools/scripts/lib/json-source-integrity.ts",
+      "before": 22,
+      "after": 21
+    },
+    {
+      "file": "tools/scripts/lib/native-lint-routing.ts",
+      "before": 17,
+      "after": 16
+    },
+    {
+      "file": "tools/scripts/lib/nx-projects.ts",
+      "before": 9,
+      "after": 8
+    },
+    {
+      "file": "tools/scripts/lib/regenerate-command-argv.test.ts",
+      "before": 10,
+      "after": 7
+    },
+    {
+      "file": "tools/scripts/lib/regenerate-command-argv.ts",
+      "before": 2,
+      "after": 2
+    },
+    {
+      "file": "tools/scripts/lib/walk-package-manifests.ts",
+      "before": 2,
+      "after": 2
+    },
+    {
+      "file": "tools/scripts/lib/worktree-guard.ts",
+      "before": 6,
+      "after": 6
+    },
+    {
+      "file": "tools/scripts/lib/command-runner.test.ts",
+      "before": 0,
+      "after": 0
+    }
+  ],
+  "changedFiles": [
+    "tools/scripts/lib/api-freeze-model.test.ts",
+    "tools/scripts/lib/api-freeze-model.ts",
+    "tools/scripts/lib/biome-inventory.test.ts",
+    "tools/scripts/lib/biome-inventory.ts",
+    "tools/scripts/lib/biome-lint-partition.test.ts",
+    "tools/scripts/lib/biome-oxc-discovery.test.ts",
+    "tools/scripts/lib/command-runner.ts",
+    "tools/scripts/lib/conformance-suite-manifest.ts",
+    "tools/scripts/lib/json-source-integrity.ts",
+    "tools/scripts/lib/native-lint-routing.ts",
+    "tools/scripts/lib/nx-projects.ts",
+    "tools/scripts/lib/regenerate-command-argv.test.ts"
+  ],
+  "verification": {
+    "toolsTsc": "pass",
+    "helperTests": "64 pass / 0 fail / 186 assertions",
+    "retainedBiome": "pass",
+    "oxfmt": "pass",
+    "listedTests": "122 pass / 0 fail / 1422 assertions",
+    "repositoryTypecheck": "pass (33 projects and 1 dependency task)",
+    "repositoryLint": "pass",
+    "exportSignatureProbe": "78 identical exported declaration signatures across 18 files",
+    "diffCheck": "pass"
+  },
+  "repairs": [
+    "Private readonly array rewritten to Set by safe fix: corrected annotation to ReadonlySet<DiffClass>; identical values and membership semantics.",
+    "Restored four Bun Glob.match calls after invalid string.test rewrite; six immediate compiler errors and ten helper test failures resolved.",
+    "Restored runCommand synchronous empty-argv throw after unwanted async conversion.",
+    "Restored six original Error constructors and two original wrapper error shapes after TypeError/cause autofixes.",
+    "Removed two unused imports left by import.meta.dirname safe fix. Ran Oxfmt."
+  ],
+  "nativeBehaviorConflictsForOwner": [
+    {
+      "rule": "typescript(promise-function-async)",
+      "file": "tools/scripts/lib/command-runner.ts",
+      "line": 32,
+      "reason": "async autofix changes synchronous empty-argv throw into rejection"
+    },
+    {
+      "rule": "unicorn(prefer-type-error)",
+      "occurrences": 6,
+      "reason": "autofix changes Error constructors/names"
+    },
+    {
+      "rule": "eslint(preserve-caught-error)",
+      "occurrences": 2,
+      "reason": "autofix adds observable cause fields"
+    },
+    {
+      "rule": "unicorn(prefer-regexp-test)",
+      "occurrences": 4,
+      "reason": "autofix mistakes Bun Glob.match for string matching and generates invalid string.test"
+    }
+  ],
+  "introducedDependenciesPatternsConventionsContractShapes": [],
+  "scope": "12 helper files changed; retained coverage unchanged. Baseline and final native logs are attached."
+}
