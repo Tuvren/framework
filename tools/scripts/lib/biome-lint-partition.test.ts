@@ -220,7 +220,8 @@ async function actualNativeFiles(
     jsonValidatedFiles: [...jsonValidatedFiles].sort((left, right) =>
       left.localeCompare(right)
     ),
-    oxlintFiles,
+    // Compare coverage membership independently of project-name ordering.
+    oxlintFiles: oxlintFiles.sort((left, right) => left.localeCompare(right)),
   };
 }
 
@@ -264,6 +265,10 @@ describe("biome coverage partition", () => {
       const nativeFiles = await actualNativeFiles(inventory, projects);
       const resolution = resolveCoverage(inventory, withoutBq, nativeFiles);
 
+      expect(resolution.oxlintFiles).toEqual(nativeFiles.oxlintFiles);
+      expect(resolution.jsonValidatedFiles).toEqual(
+        nativeFiles.jsonValidatedFiles
+      );
       expectCompletePartition(inventory, resolution);
       expect(resolution.oxlintFiles.filter(isBqFile)).toHaveLength(42);
       expect(resolution.jsonValidatedFiles.filter(isBqFile)).toHaveLength(14);
