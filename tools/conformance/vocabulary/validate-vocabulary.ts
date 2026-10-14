@@ -55,67 +55,318 @@ const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const MANIFEST_FILE_NAME = "authority-packet.json";
 const SEMCONV_YAML_FORMAT = "semconv-yaml";
 
-await main();
+interface ResolvedKeyExtraction {
+  error?: string;
+  keys: Set<string>;
+}
 
-async function main(): Promise<void> {
-  const failures = await validateVocabularies();
+interface RawGroup {
+  attributes: unknown;
+  extendsId: string | undefined;
+  id: string | undefined;
+  memberAttributes: unknown;
+}
 
-  if (failures.length > 0) {
-    for (const failure of failures) {
-      console.error(
-        `${relative(REPO_ROOT, failure.manifestPath)}: ${failure.message}`
-      );
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const collectRawGroupSources = (parsed: Record<string, unknown>): unknown[] => {
+  // Both legacy and definition/2 shapes are unioned. Each contributes
+  // group-like records to the raw group set; downstream resolution is
+  // identical because the per-group fields we care about (`id`,
+  // `attributes`, `member_attributes`, `extends`) line up across the two
+  // model versions.
+  const sections = [
+    parsed.groups,
+    parsed.attribute_groups,
+    parsed.metrics,
+    parsed.events,
+    parsed.resources,
+  ];
+  const collected: unknown[] = [];
+
+  for (const section of sections) {
+    if (Array.isArray(section)) {
+      collected.push(...section);
     }
-    process.exitCode = 1;
+  }
+
+  return collected;
+};
+
+const collectAttributeIds = (
+  attributesValue: unknown,
+  attributeIds: Set<string>,
+  rawGroups: ReadonlyMap<string, RawGroup>,
+  visited: Set<string>
+): void => {
+  if (!Array.isArray(attributesValue)) {
     return;
   }
 
-  console.log("vocabulary-check verification passed");
-}
-
-async function validateVocabularies(): Promise<ValidationFailure[]> {
-  // No existsSync guard on the root: a missing spec/ (sparse checkout,
-  // wrong cwd) must fail this gate loudly, never pass it vacuously.
-  const manifestPaths = (await findAuthorityPacketManifests(SPEC_ROOT)).sort();
-  if (manifestPaths.length === 0) {
-    throw new Error(
-      `vocabulary gate found zero authority packets under ${SPEC_ROOT} — refusing to report a vacuous pass`
-    );
-  }
-  const failures: ValidationFailure[] = [];
-
-  for (const manifestPath of manifestPaths) {
-    const manifest = JSON.parse(
-      await readFile(manifestPath, "utf-8")
-    ) as AuthorityPacketManifest;
-
-    const vocabularyPaths = manifest.verificationPaths.filter(
-      (verificationPath) => verificationPath.kind === "vocabulary-check"
-    );
-
-    if (vocabularyPaths.length === 0) {
+  for (const attribute of attributesValue) {
+    if (!isRecord(attribute)) {
       continue;
     }
 
-    for (const vocabularyPath of vocabularyPaths) {
-      await validateVocabularyTarget(
-        manifestPath,
-        manifest,
-        vocabularyPath,
-        failures
+    // Weaver supports three declaration shapes inside a group's attribute
+    // list:
+    //   - `{ id: "attr.name", type: ..., ... }` declares an attribute
+    //     inline.
+    //   - `{ ref: "attr.name", ... }` reuses an attribute defined elsewhere
+    //     (typically in a registry group).
+    //   - `{ ref_group: "group.id", ... }` pulls in every attribute owned
+    //     by another group by id (forward-compat: tuvren-runtime.yaml does
+    //     not currently use this form, but Weaver's semconv schema does
+    //     support it and a future revision could land it without warning).
+    // All three forms contribute attribute ids to the effective vocabulary.
+    if (typeof attribute.id === "string") {
+      attributeIds.add(attribute.id);
+      continue;
+    }
+
+    if (typeof attribute.ref === "string") {
+      attributeIds.add(attribute.ref);
+      continue;
+    }
+
+    if (typeof attribute.ref_group === "string") {
+      // Resolve the named group's effective attribute set transitively
+      // through the same recursion that handles `extends`, so a nested
+      // `ref_group` chain or a `ref_group` that targets a group with its
+      // own `extends` parent resolves correctly. The `visited` set is
+      // shared with the caller so cyclic chains terminate.
+      const inherited = resolveGroupAttributes(
+        attribute.ref_group,
+        rawGroups,
+        visited
       );
+
+      for (const id of inherited) {
+        attributeIds.add(id);
+      }
+    }
+  }
+};
+
+const resolveGroupAttributes = (
+  groupId: string,
+  rawGroups: ReadonlyMap<string, RawGroup>,
+  visited: Set<string>
+): Set<string> => {
+  const ids = new Set<string>();
+
+  if (visited.has(groupId)) {
+    // Defensive: short-circuit on a cyclic `extends` / `ref_group` chain
+    // rather than recursing forever. Weaver's schema forbids cycles, but we
+    // don't trust the source enough to assume it.
+    return ids;
+  }
+
+  visited.add(groupId);
+
+  const raw = rawGroups.get(groupId);
+
+  if (raw === undefined) {
+    return ids;
+  }
+
+  collectAttributeIds(raw.attributes, ids, rawGroups, visited);
+  collectAttributeIds(raw.memberAttributes, ids, rawGroups, visited);
+
+  if (raw.extendsId !== undefined) {
+    const inherited = resolveGroupAttributes(raw.extendsId, rawGroups, visited);
+
+    for (const id of inherited) {
+      ids.add(id);
     }
   }
 
-  return failures;
-}
+  return ids;
+};
 
-async function validateVocabularyTarget(
+const extractSemconvVocabulary = (
+  yamlContent: string
+): ExtractedSemconvVocabulary | undefined => {
+  // Parse the YAML structurally rather than line-scanning for `- id:` so that
+  // deeply namespaced group ids (e.g. Weaver's `attributes.http.client.authority`
+  // style) are still recognized as groups, not misclassified as attributes
+  // because of their dot depth. Two top-level shapes are accepted:
+  //
+  //   - definition/1 (today's `tuvren-runtime.yaml`): a top-level `groups:`
+  //     sequence where each entry has `id`, `attributes`, optional
+  //     `member_attributes`, optional `extends: <other-group-id>`.
+  //   - definition/2 (Weaver's newer registry model): the file may instead
+  //     publish top-level sections like `attributes:`, `attribute_groups:`,
+  //     `metrics:`, `events:`, `resources:`. Each behaves like a group for
+  //     this validator's purposes: a sequence of records that own attribute
+  //     declarations either inline (`{id, type, ...}`), by reference
+  //     (`{ref: "..."}`), or by group reference (`{ref_group: "..."}`).
+  //
+  // Group ids and attribute ids are unioned across whichever sections are
+  // present; the `extends` and `ref_group` edges are resolved transitively
+  // through `resolveGroupAttributes`.
+  const parsed: unknown = yaml.parse(yamlContent);
+
+  if (!isRecord(parsed)) {
+    return undefined;
+  }
+
+  const rawGroups = new Map<string, RawGroup>();
+  const groupIds = new Set<string>();
+
+  const rawGroupSources = collectRawGroupSources(parsed);
+
+  if (rawGroupSources.length === 0) {
+    return undefined;
+  }
+
+  for (const groupEntry of rawGroupSources) {
+    if (!isRecord(groupEntry)) {
+      continue;
+    }
+
+    if (typeof groupEntry.id !== "string") {
+      continue;
+    }
+
+    groupIds.add(groupEntry.id);
+    rawGroups.set(groupEntry.id, {
+      attributes: groupEntry.attributes,
+      extendsId:
+        typeof groupEntry.extends === "string" ? groupEntry.extends : undefined,
+      id: groupEntry.id,
+      memberAttributes: groupEntry.member_attributes,
+    });
+  }
+
+  const resolvedAttributesByGroup = new Map<string, Set<string>>();
+
+  for (const groupId of rawGroups.keys()) {
+    resolvedAttributesByGroup.set(
+      groupId,
+      resolveGroupAttributes(groupId, rawGroups, new Set())
+    );
+  }
+
+  const attributeIds = new Set<string>();
+
+  for (const groupAttributes of resolvedAttributesByGroup.values()) {
+    for (const id of groupAttributes) {
+      attributeIds.add(id);
+    }
+  }
+
+  // definition/2 also allows attribute declarations directly at the top-level
+  // `attributes:` sequence (no enclosing group). Treat each such entry as a
+  // synthetic single-attribute group so it contributes to the vocabulary.
+  collectAttributeIds(parsed.attributes, attributeIds, rawGroups, new Set());
+
+  return { attributeIds, groupIds };
+};
+
+const walkResolvedKeyPath = (
+  value: unknown,
+  segments: readonly string[],
+  index: number,
+  keys: Set<string>,
+  errors: string[]
+): void => {
+  if (index === segments.length) {
+    if (typeof value !== "string") {
+      errors.push(`expected a string at resolved leaf, got ${typeof value}`);
+      return;
+    }
+
+    keys.add(value);
+    return;
+  }
+
+  const segment = segments[index] ?? "";
+
+  if (segment === "*") {
+    if (!Array.isArray(value)) {
+      errors.push(`expected an array at "*" segment ${index}`);
+      return;
+    }
+
+    for (const entry of value) {
+      walkResolvedKeyPath(entry, segments, index + 1, keys, errors);
+    }
+
+    return;
+  }
+
+  if (!isRecord(value)) {
+    errors.push(
+      `expected an object before segment "${segment}" at index ${index}`
+    );
+    return;
+  }
+
+  walkResolvedKeyPath(value[segment], segments, index + 1, keys, errors);
+};
+
+const extractResolvedKeys = (
+  artifact: unknown,
+  keyPath: string
+): ResolvedKeyExtraction => {
+  // `resolvedKeyPath` is a dot-separated path with `*` as the array-iteration
+  // wildcard. Examples:
+  //   - `attributes.*.key`     → today's Weaver attribute registry
+  //   - `metrics.*.name`       → a hypothetical metric registry
+  //   - `attribute_groups.*.attributes.*.id` → nested registry shape
+  // The walker is deliberately simple: it supports literal property segments,
+  // single-level `*` iteration, and a final scalar-string leaf. Anything else
+  // returns an `error` so the validator surfaces a tooling-friendly message
+  // rather than silently accepting the wrong shape.
+  const segments = keyPath.split(".");
+  const keys = new Set<string>();
+  const errors: string[] = [];
+  walkResolvedKeyPath(artifact, segments, 0, keys, errors);
+
+  if (errors.length > 0) {
+    return { error: errors[0], keys };
+  }
+
+  if (keys.size === 0) {
+    return {
+      error: "resolvedKeyPath produced no identifier strings",
+      keys,
+    };
+  }
+
+  return { keys };
+};
+
+const findAuthorityPacketManifests = async (
+  directory: string
+): Promise<string[]> => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const manifests: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      manifests.push(...(await findAuthorityPacketManifests(entryPath)));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
+      manifests.push(entryPath);
+    }
+  }
+
+  return manifests.sort();
+};
+
+const validateVocabularyTarget = async (
   manifestPath: string,
   manifest: AuthorityPacketManifest,
   verificationPath: AuthorityPacketManifest["verificationPaths"][number],
   failures: ValidationFailure[]
-): Promise<void> {
+): Promise<void> => {
   const vocabularyTargetPath = verificationPath.target;
   const absoluteTargetPath = resolve(REPO_ROOT, vocabularyTargetPath);
 
@@ -257,311 +508,59 @@ async function validateVocabularyTarget(
       message: `vocabulary-check: ${vocabularyTargetPath} declares attribute identifiers missing from the resolved artifact: ${undeclaredYamlAttributeIds.sort().join(", ")}`,
     });
   }
-}
+};
 
-interface ResolvedKeyExtraction {
-  error?: string;
-  keys: Set<string>;
-}
-
-function extractResolvedKeys(
-  artifact: unknown,
-  keyPath: string
-): ResolvedKeyExtraction {
-  // `resolvedKeyPath` is a dot-separated path with `*` as the array-iteration
-  // wildcard. Examples:
-  //   - `attributes.*.key`     → today's Weaver attribute registry
-  //   - `metrics.*.name`       → a hypothetical metric registry
-  //   - `attribute_groups.*.attributes.*.id` → nested registry shape
-  // The walker is deliberately simple: it supports literal property segments,
-  // single-level `*` iteration, and a final scalar-string leaf. Anything else
-  // returns an `error` so the validator surfaces a tooling-friendly message
-  // rather than silently accepting the wrong shape.
-  const segments = keyPath.split(".");
-  const keys = new Set<string>();
-  const errors: string[] = [];
-  walkResolvedKeyPath(artifact, segments, 0, keys, errors);
-
-  if (errors.length > 0) {
-    return { error: errors[0], keys };
-  }
-
-  if (keys.size === 0) {
-    return {
-      error: "resolvedKeyPath produced no identifier strings",
-      keys,
-    };
-  }
-
-  return { keys };
-}
-
-function walkResolvedKeyPath(
-  value: unknown,
-  segments: readonly string[],
-  index: number,
-  keys: Set<string>,
-  errors: string[]
-): void {
-  if (index === segments.length) {
-    if (typeof value !== "string") {
-      errors.push(`expected a string at resolved leaf, got ${typeof value}`);
-      return;
-    }
-
-    keys.add(value);
-    return;
-  }
-
-  const segment = segments[index] ?? "";
-
-  if (segment === "*") {
-    if (!Array.isArray(value)) {
-      errors.push(`expected an array at "*" segment ${index}`);
-      return;
-    }
-
-    for (const entry of value) {
-      walkResolvedKeyPath(entry, segments, index + 1, keys, errors);
-    }
-
-    return;
-  }
-
-  if (!isRecord(value)) {
-    errors.push(
-      `expected an object before segment "${segment}" at index ${index}`
-    );
-    return;
-  }
-
-  walkResolvedKeyPath(value[segment], segments, index + 1, keys, errors);
-}
-
-interface RawGroup {
-  attributes: unknown;
-  extendsId: string | undefined;
-  id: string | undefined;
-  memberAttributes: unknown;
-}
-
-function extractSemconvVocabulary(
-  yamlContent: string
-): ExtractedSemconvVocabulary | undefined {
-  // Parse the YAML structurally rather than line-scanning for `- id:` so that
-  // deeply namespaced group ids (e.g. Weaver's `attributes.http.client.authority`
-  // style) are still recognized as groups, not misclassified as attributes
-  // because of their dot depth. Two top-level shapes are accepted:
-  //
-  //   - definition/1 (today's `tuvren-runtime.yaml`): a top-level `groups:`
-  //     sequence where each entry has `id`, `attributes`, optional
-  //     `member_attributes`, optional `extends: <other-group-id>`.
-  //   - definition/2 (Weaver's newer registry model): the file may instead
-  //     publish top-level sections like `attributes:`, `attribute_groups:`,
-  //     `metrics:`, `events:`, `resources:`. Each behaves like a group for
-  //     this validator's purposes: a sequence of records that own attribute
-  //     declarations either inline (`{id, type, ...}`), by reference
-  //     (`{ref: "..."}`), or by group reference (`{ref_group: "..."}`).
-  //
-  // Group ids and attribute ids are unioned across whichever sections are
-  // present; the `extends` and `ref_group` edges are resolved transitively
-  // through `resolveGroupAttributes`.
-  const parsed: unknown = yaml.parse(yamlContent);
-
-  if (!isRecord(parsed)) {
-    return undefined;
-  }
-
-  const rawGroups = new Map<string, RawGroup>();
-  const groupIds = new Set<string>();
-
-  const rawGroupSources = collectRawGroupSources(parsed);
-
-  if (rawGroupSources.length === 0) {
-    return undefined;
-  }
-
-  for (const groupEntry of rawGroupSources) {
-    if (!isRecord(groupEntry)) {
-      continue;
-    }
-
-    if (typeof groupEntry.id !== "string") {
-      continue;
-    }
-
-    groupIds.add(groupEntry.id);
-    rawGroups.set(groupEntry.id, {
-      attributes: groupEntry.attributes,
-      extendsId:
-        typeof groupEntry.extends === "string" ? groupEntry.extends : undefined,
-      id: groupEntry.id,
-      memberAttributes: groupEntry.member_attributes,
-    });
-  }
-
-  const resolvedAttributesByGroup = new Map<string, Set<string>>();
-
-  for (const groupId of rawGroups.keys()) {
-    resolvedAttributesByGroup.set(
-      groupId,
-      resolveGroupAttributes(groupId, rawGroups, new Set())
+const validateVocabularies = async (): Promise<ValidationFailure[]> => {
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail this gate loudly, never pass it vacuously.
+  const manifestPaths = (await findAuthorityPacketManifests(SPEC_ROOT)).sort();
+  if (manifestPaths.length === 0) {
+    throw new Error(
+      `vocabulary gate found zero authority packets under ${SPEC_ROOT} — refusing to report a vacuous pass`
     );
   }
+  const failures: ValidationFailure[] = [];
 
-  const attributeIds = new Set<string>();
+  for (const manifestPath of manifestPaths) {
+    const manifest = JSON.parse(
+      await readFile(manifestPath, "utf-8")
+    ) as AuthorityPacketManifest;
 
-  for (const groupAttributes of resolvedAttributesByGroup.values()) {
-    for (const id of groupAttributes) {
-      attributeIds.add(id);
-    }
-  }
+    const vocabularyPaths = manifest.verificationPaths.filter(
+      (verificationPath) => verificationPath.kind === "vocabulary-check"
+    );
 
-  // definition/2 also allows attribute declarations directly at the top-level
-  // `attributes:` sequence (no enclosing group). Treat each such entry as a
-  // synthetic single-attribute group so it contributes to the vocabulary.
-  collectAttributeIds(parsed.attributes, attributeIds, rawGroups, new Set());
-
-  return { attributeIds, groupIds };
-}
-
-function collectRawGroupSources(parsed: Record<string, unknown>): unknown[] {
-  // Both legacy and definition/2 shapes are unioned. Each contributes
-  // group-like records to the raw group set; downstream resolution is
-  // identical because the per-group fields we care about (`id`,
-  // `attributes`, `member_attributes`, `extends`) line up across the two
-  // model versions.
-  const sections = [
-    parsed.groups,
-    parsed.attribute_groups,
-    parsed.metrics,
-    parsed.events,
-    parsed.resources,
-  ];
-  const collected: unknown[] = [];
-
-  for (const section of sections) {
-    if (Array.isArray(section)) {
-      collected.push(...section);
-    }
-  }
-
-  return collected;
-}
-
-function resolveGroupAttributes(
-  groupId: string,
-  rawGroups: ReadonlyMap<string, RawGroup>,
-  visited: Set<string>
-): Set<string> {
-  const ids = new Set<string>();
-
-  if (visited.has(groupId)) {
-    // Defensive: short-circuit on a cyclic `extends` / `ref_group` chain
-    // rather than recursing forever. Weaver's schema forbids cycles, but we
-    // don't trust the source enough to assume it.
-    return ids;
-  }
-
-  visited.add(groupId);
-
-  const raw = rawGroups.get(groupId);
-
-  if (raw === undefined) {
-    return ids;
-  }
-
-  collectAttributeIds(raw.attributes, ids, rawGroups, visited);
-  collectAttributeIds(raw.memberAttributes, ids, rawGroups, visited);
-
-  if (raw.extendsId !== undefined) {
-    const inherited = resolveGroupAttributes(raw.extendsId, rawGroups, visited);
-
-    for (const id of inherited) {
-      ids.add(id);
-    }
-  }
-
-  return ids;
-}
-
-function collectAttributeIds(
-  attributesValue: unknown,
-  attributeIds: Set<string>,
-  rawGroups: ReadonlyMap<string, RawGroup>,
-  visited: Set<string>
-): void {
-  if (!Array.isArray(attributesValue)) {
-    return;
-  }
-
-  for (const attribute of attributesValue) {
-    if (!isRecord(attribute)) {
+    if (vocabularyPaths.length === 0) {
       continue;
     }
 
-    // Weaver supports three declaration shapes inside a group's attribute
-    // list:
-    //   - `{ id: "attr.name", type: ..., ... }` declares an attribute
-    //     inline.
-    //   - `{ ref: "attr.name", ... }` reuses an attribute defined elsewhere
-    //     (typically in a registry group).
-    //   - `{ ref_group: "group.id", ... }` pulls in every attribute owned
-    //     by another group by id (forward-compat: tuvren-runtime.yaml does
-    //     not currently use this form, but Weaver's semconv schema does
-    //     support it and a future revision could land it without warning).
-    // All three forms contribute attribute ids to the effective vocabulary.
-    if (typeof attribute.id === "string") {
-      attributeIds.add(attribute.id);
-      continue;
-    }
-
-    if (typeof attribute.ref === "string") {
-      attributeIds.add(attribute.ref);
-      continue;
-    }
-
-    if (typeof attribute.ref_group === "string") {
-      // Resolve the named group's effective attribute set transitively
-      // through the same recursion that handles `extends`, so a nested
-      // `ref_group` chain or a `ref_group` that targets a group with its
-      // own `extends` parent resolves correctly. The `visited` set is
-      // shared with the caller so cyclic chains terminate.
-      const inherited = resolveGroupAttributes(
-        attribute.ref_group,
-        rawGroups,
-        visited
+    for (const vocabularyPath of vocabularyPaths) {
+      await validateVocabularyTarget(
+        manifestPath,
+        manifest,
+        vocabularyPath,
+        failures
       );
-
-      for (const id of inherited) {
-        attributeIds.add(id);
-      }
-    }
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-async function findAuthorityPacketManifests(
-  directory: string
-): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const manifests: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      manifests.push(...(await findAuthorityPacketManifests(entryPath)));
-      continue;
-    }
-
-    if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
-      manifests.push(entryPath);
     }
   }
 
-  return manifests.sort();
-}
+  return failures;
+};
+
+const main = async (): Promise<void> => {
+  const failures = await validateVocabularies();
+
+  if (failures.length > 0) {
+    for (const failure of failures) {
+      console.error(
+        `${relative(REPO_ROOT, failure.manifestPath)}: ${failure.message}`
+      );
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log("vocabulary-check verification passed");
+};
+
+await main();
