@@ -124,11 +124,16 @@ const CREDENTIAL_OPTION_KEY_PATTERN =
 // is masked even when it appears under an unexpected option key.
 const URL_CREDENTIAL_VALUE_PATTERN = /\/\/[^/\s:@]+:[^/\s@]+@/u;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 /**
  * Recursively mask credential-shaped backend option keys and embedded-credential
  * string values, leaving non-secret topology fields intact.
  */
-export function redactReplTranscriptBackendOptions(options: unknown): unknown {
+export const redactReplTranscriptBackendOptions = (
+  options: unknown
+): unknown => {
   if (Array.isArray(options)) {
     return options.map((entry) => redactReplTranscriptBackendOptions(entry));
   }
@@ -149,224 +154,91 @@ export function redactReplTranscriptBackendOptions(options: unknown): unknown {
   }
 
   return redacted;
-}
+};
 
 /** Mask credential-shaped backend options while preserving the backend kind. */
-export function redactReplTranscriptBackendConfig(
+export const redactReplTranscriptBackendConfig = (
   backend: ReplTranscriptBackendConfig
-): ReplTranscriptBackendConfig {
-  return {
-    kind: backend.kind,
-    ...(backend.options === undefined
-      ? {}
-      : { options: redactReplTranscriptBackendOptions(backend.options) }),
-  };
-}
+): ReplTranscriptBackendConfig => ({
+  kind: backend.kind,
+  ...(backend.options === undefined
+    ? {}
+    : { options: redactReplTranscriptBackendOptions(backend.options) }),
+});
 
 /** Return a copy of the header with its backend options redacted (§3.9). */
-export function redactReplTranscriptHeader(
+export const redactReplTranscriptHeader = (
   header: ReplTranscriptHeader
-): ReplTranscriptHeader {
-  return {
-    ...header,
-    config: {
-      ...header.config,
-      backend: redactReplTranscriptBackendConfig(header.config.backend),
-    },
-  };
-}
+): ReplTranscriptHeader => ({
+  ...header,
+  config: {
+    ...header.config,
+    backend: redactReplTranscriptBackendConfig(header.config.backend),
+  },
+});
 
-export function serializeReplTranscriptRecord(
-  record: ReplTranscriptRecord
-): string {
-  validateTranscriptRecord(record);
-  return stableStringify(record);
-}
+const requireRecordKind = (
+  value: Record<string, unknown>,
+  expected: ReplTranscriptRecord["recordKind"]
+): void => {
+  if (value.recordKind !== expected) {
+    throw new Error(`transcript recordKind must be ${expected}`);
+  }
+};
 
-export function parseReplTranscriptRecord(line: string): ReplTranscriptRecord {
-  let parsed: unknown;
+const requireVersion = (value: Record<string, unknown>): void => {
+  if (value.v !== 1) {
+    throw new Error("transcript record version must be 1");
+  }
+};
 
-  try {
-    parsed = JSON.parse(line);
-  } catch (error: unknown) {
-    throw new Error(`invalid transcript JSON: ${renderError(error)}`, {
-      cause: error,
-    });
+const requireSafeInteger = (value: unknown, path: string): void => {
+  if (!Number.isSafeInteger(value)) {
+    throw new TypeError(`${path} must be a safe integer`);
+  }
+};
+
+const validateTranscriptDurableRead: (
+  value: Record<string, unknown>
+) => asserts value is ReplTranscriptDurableReadRecord &
+  Record<string, unknown> = (
+  value: Record<string, unknown>
+): asserts value is ReplTranscriptDurableReadRecord &
+  Record<string, unknown> => {
+  requireRecordKind(value, "durable-read");
+  requireVersion(value);
+  requireSafeInteger(value.ordinal, "durable-read.ordinal");
+  requireSafeInteger(value.recordedAtMs, "durable-read.recordedAtMs");
+
+  if (
+    typeof value.operation !== "string" ||
+    !TRANSCRIPT_DURABLE_READ_OPERATIONS.has(value.operation)
+  ) {
+    throw new Error("durable-read.operation is unsupported");
   }
 
-  validateTranscriptRecord(parsed);
-  return parsed;
-}
-
-export async function createReplTranscriptWriter(input: {
-  header: ReplTranscriptHeader;
-  write: (line: string) => void | Promise<void>;
-}): Promise<ReplTranscriptWriter> {
-  // Mask credential-shaped backend options at the write seam so no transcript
-  // header ever persists a secret, regardless of caller. (§3.9, KRT-BD002)
-  const header = redactReplTranscriptHeader(input.header);
-  validateTranscriptHeader(header);
-  await input.write(`${serializeReplTranscriptRecord(header)}\n`);
-
-  return {
-    async close(): Promise<void> {
-      await Promise.resolve();
-    },
-    async writeEntry(entry): Promise<void> {
-      validateTranscriptEntry(entry);
-      await input.write(`${serializeReplTranscriptRecord(entry)}\n`);
-    },
-  };
-}
-
-export async function createReplTranscriptFileWriter(input: {
-  header: ReplTranscriptHeader;
-  path: string;
-}): Promise<ReplTranscriptWriter> {
-  const stream = createWriteStream(input.path, {
-    encoding: "utf-8",
-    flags: "w",
-  });
-  await waitForWriteStreamOpen(stream);
-  const writer = await createReplTranscriptWriter({
-    header: input.header,
-    write(line) {
-      return writeLine(stream, line);
-    },
-  });
-
-  return {
-    async close(): Promise<void> {
-      await writer.close();
-      await closeWritable(stream);
-    },
-    async writeEntry(entry): Promise<void> {
-      await writer.writeEntry(entry);
-    },
-  };
-}
-
-async function waitForWriteStreamOpen(
-  stream: ReturnType<typeof createWriteStream>
-): Promise<void> {
-  if (!stream.pending) {
-    return;
+  if (!Object.hasOwn(value, "result")) {
+    throw new Error("durable-read.result is required");
   }
+};
 
-  await new Promise<void>((resolve, reject) => {
-    stream.once("open", () => {
-      resolve();
-    });
-    stream.once("error", reject);
-  });
-}
-
-export async function readReplTranscriptFromLines(
-  lines: AsyncIterable<string> | Iterable<string>
-): Promise<ReplTranscriptReadable> {
-  const iterator = createAsyncLineIterator(lines);
-  const first = await iterator.next();
-
-  if (first.done === true) {
-    throw new Error("transcript is empty");
+const requireString = (value: unknown, path: string): void => {
+  if (typeof value !== "string") {
+    throw new TypeError(`${path} must be a string`);
   }
+};
 
-  const headerRecord = parseReplTranscriptRecord(first.value);
-
-  if (headerRecord.recordKind !== "header") {
-    throw new Error("transcript first record must be a header");
+const requireOptionalString = (value: unknown, path: string): void => {
+  if (value !== undefined) {
+    requireString(value, path);
   }
+};
 
-  return {
-    async *entries(): AsyncIterable<ReplTranscriptEntry> {
-      let next = await iterator.next();
-
-      while (next.done !== true) {
-        if (next.value.trim().length > 0) {
-          const record = parseReplTranscriptRecord(next.value);
-
-          if (record.recordKind === "header") {
-            throw new Error("transcript header must appear only once");
-          }
-
-          yield record;
-        }
-
-        next = await iterator.next();
-      }
-    },
-    header: headerRecord,
-  };
-}
-
-export async function readReplTranscriptFile(
-  path: string
-): Promise<ReplTranscriptReadable> {
-  const stream = createReadStream(path, { encoding: "utf-8" });
-  const rl = createInterface({ input: stream });
-  const readable = await readReplTranscriptFromLines(rl);
-  const sourceEntries = readable.entries;
-
-  return {
-    async *entries(): AsyncIterable<ReplTranscriptEntry> {
-      try {
-        yield* sourceEntries();
-      } finally {
-        rl.close();
-        stream.destroy();
-      }
-    },
-    header: readable.header,
-  };
-}
-
-function validateTranscriptRecord(
+const validateTranscriptHeader: (
   value: unknown
-): asserts value is ReplTranscriptRecord {
-  if (!isRecord(value)) {
-    throw new Error("transcript record must be an object");
-  }
-
-  switch (value.recordKind) {
-    case "durable-read": {
-      validateTranscriptDurableRead(value);
-      return;
-    }
-    case "header": {
-      validateTranscriptHeader(value);
-      return;
-    }
-    case "input": {
-      validateTranscriptInput(value);
-      return;
-    }
-    case "output": {
-      validateTranscriptOutput(value);
-      return;
-    }
-    case "stream-event": {
-      validateTranscriptStreamEvent(value);
-      return;
-    }
-    default: {
-      throw new Error("unsupported transcript record kind");
-    }
-  }
-}
-
-function validateTranscriptEntry(
+) => asserts value is ReplTranscriptHeader = (
   value: unknown
-): asserts value is ReplTranscriptEntry {
-  validateTranscriptRecord(value);
-
-  if (value.recordKind === "header") {
-    throw new Error("transcript entries cannot be header records");
-  }
-}
-
-function validateTranscriptHeader(
-  value: unknown
-): asserts value is ReplTranscriptHeader {
+): asserts value is ReplTranscriptHeader => {
   if (!isRecord(value)) {
     throw new Error("transcript header must be an object");
   }
@@ -400,21 +272,25 @@ function validateTranscriptHeader(
     value.config.systemPrompt,
     "header.config.systemPrompt"
   );
-}
+};
 
-function validateTranscriptInput(
+const validateTranscriptInput: (
   value: Record<string, unknown>
-): asserts value is ReplTranscriptInputRecord & Record<string, unknown> {
+) => asserts value is ReplTranscriptInputRecord & Record<string, unknown> = (
+  value: Record<string, unknown>
+): asserts value is ReplTranscriptInputRecord & Record<string, unknown> => {
   requireRecordKind(value, "input");
   requireVersion(value);
   requireSafeInteger(value.ordinal, "input.ordinal");
   requireSafeInteger(value.recordedAtMs, "input.recordedAtMs");
   requireString(value.input, "input.input");
-}
+};
 
-function validateTranscriptOutput(
+const validateTranscriptOutput: (
   value: Record<string, unknown>
-): asserts value is ReplTranscriptOutputRecord & Record<string, unknown> {
+) => asserts value is ReplTranscriptOutputRecord & Record<string, unknown> = (
+  value: Record<string, unknown>
+): asserts value is ReplTranscriptOutputRecord & Record<string, unknown> => {
   requireRecordKind(value, "output");
   requireVersion(value);
   requireSafeInteger(value.ordinal, "output.ordinal");
@@ -427,11 +303,15 @@ function validateTranscriptOutput(
   if (value.exit !== undefined && typeof value.exit !== "boolean") {
     throw new Error("output.exit must be a boolean when present");
   }
-}
+};
 
-function validateTranscriptStreamEvent(
+const validateTranscriptStreamEvent: (
   value: Record<string, unknown>
-): asserts value is ReplTranscriptStreamEventRecord & Record<string, unknown> {
+) => asserts value is ReplTranscriptStreamEventRecord &
+  Record<string, unknown> = (
+  value: Record<string, unknown>
+): asserts value is ReplTranscriptStreamEventRecord &
+  Record<string, unknown> => {
   requireRecordKind(value, "stream-event");
   requireVersion(value);
   requireSafeInteger(value.ordinal, "stream-event.ordinal");
@@ -440,66 +320,45 @@ function validateTranscriptStreamEvent(
   if (!isRecord(value.event)) {
     throw new Error("stream-event.event must be an object");
   }
-}
+};
 
-function validateTranscriptDurableRead(
-  value: Record<string, unknown>
-): asserts value is ReplTranscriptDurableReadRecord & Record<string, unknown> {
-  requireRecordKind(value, "durable-read");
-  requireVersion(value);
-  requireSafeInteger(value.ordinal, "durable-read.ordinal");
-  requireSafeInteger(value.recordedAtMs, "durable-read.recordedAtMs");
-
-  if (
-    typeof value.operation !== "string" ||
-    !TRANSCRIPT_DURABLE_READ_OPERATIONS.has(value.operation)
-  ) {
-    throw new Error("durable-read.operation is unsupported");
+const validateTranscriptRecord: (
+  value: unknown
+) => asserts value is ReplTranscriptRecord = (
+  value: unknown
+): asserts value is ReplTranscriptRecord => {
+  if (!isRecord(value)) {
+    throw new Error("transcript record must be an object");
   }
 
-  if (!Object.hasOwn(value, "result")) {
-    throw new Error("durable-read.result is required");
+  switch (value.recordKind) {
+    case "durable-read": {
+      validateTranscriptDurableRead(value);
+      return;
+    }
+    case "header": {
+      validateTranscriptHeader(value);
+      return;
+    }
+    case "input": {
+      validateTranscriptInput(value);
+      return;
+    }
+    case "output": {
+      validateTranscriptOutput(value);
+      return;
+    }
+    case "stream-event": {
+      validateTranscriptStreamEvent(value);
+      return;
+    }
+    default: {
+      throw new Error("unsupported transcript record kind");
+    }
   }
-}
+};
 
-function requireRecordKind(
-  value: Record<string, unknown>,
-  expected: ReplTranscriptRecord["recordKind"]
-): void {
-  if (value.recordKind !== expected) {
-    throw new Error(`transcript recordKind must be ${expected}`);
-  }
-}
-
-function requireVersion(value: Record<string, unknown>): void {
-  if (value.v !== 1) {
-    throw new Error("transcript record version must be 1");
-  }
-}
-
-function requireSafeInteger(value: unknown, path: string): void {
-  if (!Number.isSafeInteger(value)) {
-    throw new TypeError(`${path} must be a safe integer`);
-  }
-}
-
-function requireString(value: unknown, path: string): void {
-  if (typeof value !== "string") {
-    throw new TypeError(`${path} must be a string`);
-  }
-}
-
-function requireOptionalString(value: unknown, path: string): void {
-  if (value !== undefined) {
-    requireString(value, path);
-  }
-}
-
-function stableStringify(value: unknown): string {
-  return JSON.stringify(sortJsonValue(value));
-}
-
-function sortJsonValue(value: unknown): unknown {
+const sortJsonValue = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map((entry) => sortJsonValue(entry));
   }
@@ -519,15 +378,147 @@ function sortJsonValue(value: unknown): unknown {
   }
 
   return value;
-}
+};
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+const stableStringify = (value: unknown): string =>
+  JSON.stringify(sortJsonValue(value));
 
-function createAsyncLineIterator(
+export const serializeReplTranscriptRecord = (
+  record: ReplTranscriptRecord
+): string => {
+  validateTranscriptRecord(record);
+  return stableStringify(record);
+};
+
+const renderError = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+export const parseReplTranscriptRecord = (
+  line: string
+): ReplTranscriptRecord => {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(line);
+  } catch (error: unknown) {
+    throw new Error(`invalid transcript JSON: ${renderError(error)}`, {
+      cause: error,
+    });
+  }
+
+  validateTranscriptRecord(parsed);
+  return parsed;
+};
+
+const validateTranscriptEntry: (
+  value: unknown
+) => asserts value is ReplTranscriptEntry = (
+  value: unknown
+): asserts value is ReplTranscriptEntry => {
+  validateTranscriptRecord(value);
+
+  if (value.recordKind === "header") {
+    throw new Error("transcript entries cannot be header records");
+  }
+};
+
+export const createReplTranscriptWriter = async (input: {
+  header: ReplTranscriptHeader;
+  write: (line: string) => void | Promise<void>;
+}): Promise<ReplTranscriptWriter> => {
+  // Mask credential-shaped backend options at the write seam so no transcript
+  // header ever persists a secret, regardless of caller. (§3.9, KRT-BD002)
+  const header = redactReplTranscriptHeader(input.header);
+  validateTranscriptHeader(header);
+  await input.write(`${serializeReplTranscriptRecord(header)}\n`);
+
+  return {
+    async close(): Promise<void> {
+      await Promise.resolve();
+    },
+    async writeEntry(entry): Promise<void> {
+      validateTranscriptEntry(entry);
+      await input.write(`${serializeReplTranscriptRecord(entry)}\n`);
+    },
+  };
+};
+
+const waitForWriteStreamOpen = async (
+  stream: ReturnType<typeof createWriteStream>
+): Promise<void> => {
+  if (!stream.pending) {
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    stream.once("open", () => {
+      resolve();
+    });
+    stream.once("error", reject);
+  });
+};
+
+const writeLine = async (
+  stream: NodeJS.WritableStream,
+  line: string
+): Promise<void> => {
+  if (stream.write(line)) {
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    stream.once("drain", resolve);
+    stream.once("error", reject);
+  });
+};
+
+const closeWritable = async (stream: NodeJS.WritableStream): Promise<void> => {
+  await new Promise<void>((resolve, reject) => {
+    stream.end((error?: Error | null) => {
+      if (error != null) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+};
+
+export const createReplTranscriptFileWriter = async (input: {
+  header: ReplTranscriptHeader;
+  path: string;
+}): Promise<ReplTranscriptWriter> => {
+  const stream = createWriteStream(input.path, {
+    encoding: "utf-8",
+    flags: "w",
+  });
+  await waitForWriteStreamOpen(stream);
+  const writer = await createReplTranscriptWriter({
+    header: input.header,
+    write(line) {
+      return writeLine(stream, line);
+    },
+  });
+
+  return {
+    async close(): Promise<void> {
+      await writer.close();
+      await closeWritable(stream);
+    },
+    async writeEntry(entry): Promise<void> {
+      await writer.writeEntry(entry);
+    },
+  };
+};
+
+const isAsyncIterable = (
+  value: AsyncIterable<string> | Iterable<string>
+): value is AsyncIterable<string> => Symbol.asyncIterator in value;
+
+const createAsyncLineIterator = (
   lines: AsyncIterable<string> | Iterable<string>
-): AsyncIterator<string> {
+): AsyncIterator<string> => {
   if (isAsyncIterable(lines)) {
     return lines[Symbol.asyncIterator]();
   }
@@ -539,41 +530,63 @@ function createAsyncLineIterator(
       return Promise.resolve(iterator.next());
     },
   };
-}
+};
 
-function isAsyncIterable(
-  value: AsyncIterable<string> | Iterable<string>
-): value is AsyncIterable<string> {
-  return Symbol.asyncIterator in value;
-}
+export const readReplTranscriptFromLines = async (
+  lines: AsyncIterable<string> | Iterable<string>
+): Promise<ReplTranscriptReadable> => {
+  const iterator = createAsyncLineIterator(lines);
+  const first = await iterator.next();
 
-async function writeLine(
-  stream: NodeJS.WritableStream,
-  line: string
-): Promise<void> {
-  if (stream.write(line)) {
-    return;
+  if (first.done === true) {
+    throw new Error("transcript is empty");
   }
 
-  await new Promise<void>((resolve, reject) => {
-    stream.once("drain", resolve);
-    stream.once("error", reject);
-  });
-}
+  const headerRecord = parseReplTranscriptRecord(first.value);
 
-async function closeWritable(stream: NodeJS.WritableStream): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    stream.end((error?: Error | null) => {
-      if (error != null) {
-        reject(error);
-        return;
+  if (headerRecord.recordKind !== "header") {
+    throw new Error("transcript first record must be a header");
+  }
+
+  return {
+    async *entries(): AsyncIterable<ReplTranscriptEntry> {
+      let next = await iterator.next();
+
+      while (next.done !== true) {
+        if (next.value.trim().length > 0) {
+          const record = parseReplTranscriptRecord(next.value);
+
+          if (record.recordKind === "header") {
+            throw new Error("transcript header must appear only once");
+          }
+
+          yield record;
+        }
+
+        next = await iterator.next();
       }
+    },
+    header: headerRecord,
+  };
+};
 
-      resolve();
-    });
-  });
-}
+export const readReplTranscriptFile = async (
+  path: string
+): Promise<ReplTranscriptReadable> => {
+  const stream = createReadStream(path, { encoding: "utf-8" });
+  const rl = createInterface({ input: stream });
+  const readable = await readReplTranscriptFromLines(rl);
+  const sourceEntries = readable.entries;
 
-function renderError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
+  return {
+    async *entries(): AsyncIterable<ReplTranscriptEntry> {
+      try {
+        yield* sourceEntries();
+      } finally {
+        rl.close();
+        stream.destroy();
+      }
+    },
+    header: readable.header,
+  };
+};
