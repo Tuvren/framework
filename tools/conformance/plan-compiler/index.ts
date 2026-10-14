@@ -16,7 +16,6 @@
 
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import type { AnySchema, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -110,20 +109,19 @@ export interface CompiledConformancePlan {
   scenarios: ReadonlyMap<string, unknown>;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const PLAN_SCHEMA_PATH = resolve(
   REPO_ROOT,
   "tools/schemas/conformance-plan.schema.json"
 );
-const PLAN_FILE_PATTERN = /\.json$/u;
 
 export async function loadConformancePlan(
   planPath: string
 ): Promise<CompiledConformancePlan> {
   const absolutePlanPath = resolve(REPO_ROOT, planPath);
   const planValue = JSON.parse(
-    await readFile(absolutePlanPath, "utf8")
+    await readFile(absolutePlanPath, "utf-8")
   ) as unknown;
   const validatePlan = await createPlanValidator();
 
@@ -143,7 +141,7 @@ export async function loadConformancePlan(
   for (const [fixtureId, fixturePath] of Object.entries(plan.fixtures ?? {})) {
     const absoluteFixturePath = resolve(dirname(absolutePlanPath), fixturePath);
     const fixture = JSON.parse(
-      await readFile(absoluteFixturePath, "utf8")
+      await readFile(absoluteFixturePath, "utf-8")
     ) as unknown;
     fixtures.set(fixtureId, fixture);
   }
@@ -156,7 +154,7 @@ export async function loadConformancePlan(
       scenarioPath
     );
     const scenario = JSON.parse(
-      await readFile(absoluteScenarioPath, "utf8")
+      await readFile(absoluteScenarioPath, "utf-8")
     ) as unknown;
     scenarios.set(scenarioId, scenario);
   }
@@ -191,12 +189,12 @@ export async function findConformancePlans(): Promise<string[]> {
 // a single fixed file (PLAN_SCHEMA_PATH), so the memo is a lone promise —
 // no cache-key collision surface. Caching the promise (not the resolved
 // value) also collapses concurrent first calls onto one read+compile.
-let planValidatorPromise: Promise<ValidateFunction<unknown>> | undefined;
+let planValidatorPromise: Promise<ValidateFunction> | undefined;
 
-function createPlanValidator(): Promise<ValidateFunction<unknown>> {
+function createPlanValidator(): Promise<ValidateFunction> {
   planValidatorPromise ??= (async () => {
     const schema = readJsonSchema(
-      JSON.parse(await readFile(PLAN_SCHEMA_PATH, "utf8")) as unknown,
+      JSON.parse(await readFile(PLAN_SCHEMA_PATH, "utf-8")) as unknown,
       PLAN_SCHEMA_PATH
     );
     const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -232,7 +230,7 @@ async function findPlanFiles(directory: string): Promise<string[]> {
 
     if (
       entry.isFile() &&
-      PLAN_FILE_PATTERN.test(entry.name) &&
+      entry.name.endsWith(".json") &&
       isConformancePlansPath(entryPath)
     ) {
       plans.push(entryPath);
@@ -375,18 +373,22 @@ function assertionRequiredEvidencePath(
 ): string | undefined {
   switch (assertion.kind) {
     case "evidenceField":
-    case "stateField":
+    case "stateField": {
       return assertion.field === undefined
         ? undefined
         : normalizeEvidencePath(assertion.field);
-    case "resultField":
+    }
+    case "resultField": {
       return assertion.field === undefined
         ? undefined
         : resultFieldRequiredEvidencePath(assertion.field);
-    case "errorEnvelope":
+    }
+    case "errorEnvelope": {
       return normalizeEvidencePath(assertion.path ?? "$.result.error");
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -401,11 +403,12 @@ function stepAssertionRequiredEvidencePath(
   }
 
   switch (assertion.kind) {
-    case "evidenceField":
+    case "evidenceField": {
       // Step assertions run against a step-local context, but required evidence
       // is checked against the final trace context after the lifecycle finishes.
       return `trace.${stepId}.evidence.${path}`;
-    case "resultField":
+    }
+    case "resultField": {
       if (assertion.field === undefined) {
         return undefined;
       }
@@ -415,12 +418,16 @@ function stepAssertionRequiredEvidencePath(
         : `result.trace.${stepId}.result.${normalizeEvidencePath(
             assertion.field
           )}`;
-    case "stateField":
+    }
+    case "stateField": {
       return `trace.${stepId}.state.${path}`;
-    case "errorEnvelope":
+    }
+    case "errorEnvelope": {
       return `trace.${stepId}.${path}`;
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 

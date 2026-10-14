@@ -110,7 +110,7 @@ function fail(problems: string[]): never {
 }
 
 const manifest: { projects: string[] } = JSON.parse(
-  readFileSync(MANIFEST_PATH, "utf8")
+  readFileSync(MANIFEST_PATH, "utf-8")
 );
 const manifestSet = new Set(manifest.projects);
 if (manifestSet.size !== manifest.projects.length) {

@@ -132,23 +132,26 @@ async function dispatchMethod(
   const paramObject = isRecord(params) ? params : {};
 
   switch (method) {
-    case "initialize":
+    case "initialize": {
       return await adapter.initialize(
         readString(paramObject.packetId, "packetId"),
         readString(paramObject.planVersion, "planVersion")
       );
-    case "createInstance":
+    }
+    case "createInstance": {
       return adapter.createInstance === undefined
         ? null
         : await adapter.createInstance(paramObject.input);
-    case "dispatch":
+    }
+    case "dispatch": {
       return await adapter.dispatch(
         readString(paramObject.operation, "operation"),
         paramObject.input,
         readControls(paramObject.controls),
         paramObject.instance
       );
-    case "events":
+    }
+    case "events": {
       return await collectEvents(
         adapter.events === undefined
           ? []
@@ -159,22 +162,27 @@ async function dispatchMethod(
               paramObject.instance
             )
       );
-    case "inspectState":
+    }
+    case "inspectState": {
       return adapter.inspectState === undefined
         ? null
         : await adapter.inspectState(paramObject.query, paramObject.instance);
-    case "destroyInstance":
+    }
+    case "destroyInstance": {
       if (adapter.destroyInstance !== undefined) {
         await adapter.destroyInstance(paramObject.instance);
       }
       return null;
-    case "shutdown":
+    }
+    case "shutdown": {
       if (adapter.shutdown !== undefined) {
         await adapter.shutdown();
       }
       return null;
-    default:
+    }
+    default: {
       throw new Error(`unsupported adapter method ${method}`);
+    }
   }
 }
 

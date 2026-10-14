@@ -16,28 +16,27 @@
 
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { relative, resolve } from "node:path";
 
 import yaml from "yaml";
 
 interface AuthorityPacketManifest {
-  authoritativeSources: Array<{
+  authoritativeSources: {
     format: string;
     path: string;
-  }>;
-  generatedArtifacts?: Array<{
+  }[];
+  generatedArtifacts?: {
     generatedFrom: string;
     generator?: string;
     path: string;
-  }>;
+  }[];
   packetId: string;
-  verificationPaths: Array<{
+  verificationPaths: {
     kind: string;
     resolvedArtifact?: string;
     resolvedKeyPath?: string;
     target: string;
-  }>;
+  }[];
   version: string;
 }
 
@@ -51,7 +50,7 @@ interface ExtractedSemconvVocabulary {
   groupIds: Set<string>;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const SPEC_ROOT = resolve(REPO_ROOT, "spec");
 const MANIFEST_FILE_NAME = "authority-packet.json";
 const SEMCONV_YAML_FORMAT = "semconv-yaml";
@@ -87,7 +86,7 @@ async function validateVocabularies(): Promise<ValidationFailure[]> {
 
   for (const manifestPath of manifestPaths) {
     const manifest = JSON.parse(
-      await readFile(manifestPath, "utf8")
+      await readFile(manifestPath, "utf-8")
     ) as AuthorityPacketManifest;
 
     const vocabularyPaths = manifest.verificationPaths.filter(
@@ -155,7 +154,7 @@ async function validateVocabularyTarget(
     return;
   }
 
-  const vocabularyContent = await readFile(absoluteTargetPath, "utf8");
+  const vocabularyContent = await readFile(absoluteTargetPath, "utf-8");
   const extraction = extractSemconvVocabulary(vocabularyContent);
 
   if (extraction === undefined) {
@@ -214,7 +213,7 @@ async function validateVocabularyTarget(
   }
 
   const rawArtifact = JSON.parse(
-    await readFile(absoluteArtifactPath, "utf8")
+    await readFile(absoluteArtifactPath, "utf-8")
   ) as unknown;
   const extractionResult = extractResolvedKeys(
     rawArtifact,
