@@ -1,0 +1,787 @@
+{
+  "epic": "EPIC-BW",
+  "ticket": "KRT-BW004",
+  "milestone": "M15",
+  "status": "native-clean-readiness-proven",
+  "measuredAt": "2026-10-14T07:34:59.477Z",
+  "sourceCommit": "60311a54bb56cce1ad5d1bd455760719b610fd4c",
+  "baselineCommit": "054bd042f658d9a43db0bc154a6c64c377a6140e",
+  "worktree": "/home/oscar/GitHub/Tuvren/framework/.claude/worktrees/EPIC-BW",
+  "relocationAmendment": "A10",
+  "historicalFailureProvenance": {
+    "logs": "bw-m15-*",
+    "reason": "The prior worktree ancestor .cache matched retained Biome forced exclusion !!**/.cache. Zero-file results and the prior canonical verify failures are historical failed environment diagnostics, not current acceptance proof.",
+    "freshProofPrefix": "bw-m15-revalidated-"
+  },
+  "ownedPaths": [
+    "tools/conformance",
+    "tools/scripts/conformance",
+    "tools/generators",
+    "tools/biome-coverage/bw.json"
+  ],
+  "versions": {
+    "oxlint": "1.86.0",
+    "oxfmt": "0.71.0",
+    "oxlint-tsgolint": "7.0.2003",
+    "typescript": "6.0.2",
+    "ultracite": "7.12.2",
+    "ultracite-biome": "7.4.2",
+    "@biomejs/biome": "2.5.14",
+    "bun": "1.4.2"
+  },
+  "counts": {
+    "effectiveRules": 536,
+    "enabled": 474,
+    "typeAware": 55,
+    "nonTypeAware": 419,
+    "code": 23,
+    "json": 4
+  },
+  "historicalPinnedCounts": {
+    "typeAware": 55,
+    "nonTypeAware": 419,
+    "total": 474,
+    "treatedAsQuota": false
+  },
+  "preset": {
+    "allPolicyFieldsEqual": true,
+    "policyKeys": [
+      "categories",
+      "env",
+      "globals",
+      "overrides",
+      "plugins",
+      "rules",
+      "settings"
+    ],
+    "rulesOptionsSeveritiesEqual": true,
+    "onlyLocalDifference": "Declared ignorePatterns addition .constitution/**",
+    "localOverrides": [],
+    "nestedConfigs": [],
+    "runtimeRuleCountNote": "CLI count preserves the shipped Astro override import/no-commonjs in addition to the 473 enabled base tuples.",
+    "effectiveConfig": "bw-m15-revalidated-print-config.log",
+    "referenceConfig": "bw-m15-revalidated-reference-print-config.json",
+    "registeredRuleMetadata": "bw-m15-revalidated-rules-type-aware.log",
+    "enabledTypeAwareRules": {
+      "typescript/await-thenable": "await-thenable",
+      "typescript/consistent-return": "consistent-return",
+      "typescript/consistent-type-exports": "consistent-type-exports",
+      "typescript/dot-notation": "dot-notation",
+      "typescript/no-array-delete": "no-array-delete",
+      "typescript/no-base-to-string": "no-base-to-string",
+      "typescript/no-confusing-void-expression": "no-confusing-void-expression",
+      "typescript/no-deprecated": "no-deprecated",
+      "typescript/no-duplicate-type-constituents": "no-duplicate-type-constituents",
+      "typescript/no-floating-promises": "no-floating-promises",
+      "typescript/no-for-in-array": "no-for-in-array",
+      "typescript/no-implied-eval": "no-implied-eval",
+      "typescript/no-meaningless-void-operator": "no-meaningless-void-operator",
+      "typescript/no-misused-promises": "no-misused-promises",
+      "typescript/no-misused-spread": "no-misused-spread",
+      "typescript/no-mixed-enums": "no-mixed-enums",
+      "typescript/no-redundant-type-constituents": "no-redundant-type-constituents",
+      "typescript/no-unnecessary-boolean-literal-compare": "no-unnecessary-boolean-literal-compare",
+      "typescript/no-unnecessary-qualifier": "no-unnecessary-qualifier",
+      "typescript/no-unnecessary-template-expression": "no-unnecessary-template-expression",
+      "typescript/no-unnecessary-type-arguments": "no-unnecessary-type-arguments",
+      "typescript/no-unnecessary-type-assertion": "no-unnecessary-type-assertion",
+      "typescript/no-unnecessary-type-conversion": "no-unnecessary-type-conversion",
+      "typescript/no-unnecessary-type-parameters": "no-unnecessary-type-parameters",
+      "typescript/no-unsafe-argument": "no-unsafe-argument",
+      "typescript/no-unsafe-assignment": "no-unsafe-assignment",
+      "typescript/no-unsafe-call": "no-unsafe-call",
+      "typescript/no-unsafe-enum-comparison": "no-unsafe-enum-comparison",
+      "typescript/no-unsafe-member-access": "no-unsafe-member-access",
+      "typescript/no-unsafe-return": "no-unsafe-return",
+      "typescript/no-unsafe-type-assertion": "no-unsafe-type-assertion",
+      "typescript/no-unsafe-unary-minus": "no-unsafe-unary-minus",
+      "typescript/no-useless-default-assignment": "no-useless-default-assignment",
+      "typescript/non-nullable-type-assertion-style": "non-nullable-type-assertion-style",
+      "typescript/only-throw-error": "only-throw-error",
+      "typescript/prefer-find": "prefer-find",
+      "typescript/prefer-includes": "prefer-includes",
+      "typescript/prefer-nullish-coalescing": "prefer-nullish-coalescing",
+      "typescript/prefer-promise-reject-errors": "prefer-promise-reject-errors",
+      "typescript/prefer-readonly": "prefer-readonly",
+      "typescript/prefer-reduce-type-parameter": "prefer-reduce-type-parameter",
+      "typescript/prefer-regexp-exec": "prefer-regexp-exec",
+      "typescript/prefer-return-this-type": "prefer-return-this-type",
+      "typescript/prefer-string-starts-ends-with": "prefer-string-starts-ends-with",
+      "typescript/promise-function-async": "promise-function-async",
+      "typescript/related-getter-setter-pairs": "related-getter-setter-pairs",
+      "typescript/require-array-sort-compare": "require-array-sort-compare",
+      "typescript/restrict-plus-operands": "restrict-plus-operands",
+      "typescript/restrict-template-expressions": "restrict-template-expressions",
+      "typescript/return-await": "return-await",
+      "typescript/strict-boolean-expressions": "strict-boolean-expressions",
+      "typescript/strict-void-return": "strict-void-return",
+      "typescript/switch-exhaustiveness-check": "switch-exhaustiveness-check",
+      "typescript/unbound-method": "unbound-method",
+      "typescript/use-unknown-in-catch-callback-variable": "use-unknown-in-catch-callback-variable"
+    }
+  },
+  "selection": {
+    "codeFiles": [
+      "tools/conformance/adapter-protocol/index.ts",
+      "tools/conformance/adapter-protocol/stdio-host.ts",
+      "tools/conformance/adapter-protocol/validate-adapter-protocol.ts",
+      "tools/conformance/certification/validate-certification-discovery.ts",
+      "tools/conformance/harness/adapter-client.ts",
+      "tools/conformance/harness/adapter-error.ts",
+      "tools/conformance/harness/assertion-engine/index.ts",
+      "tools/conformance/harness/run-plans.ts",
+      "tools/conformance/harness/run.ts",
+      "tools/conformance/harness/secret-absence/index.ts",
+      "tools/conformance/harness/test/adapter-client.test.ts",
+      "tools/conformance/harness/test/assertion-engine.test.ts",
+      "tools/conformance/harness/test/run-adapters-fixture.ts",
+      "tools/conformance/harness/test/run.test.ts",
+      "tools/conformance/harness/test/secret-absence.test.ts",
+      "tools/conformance/meta-conformance/run.ts",
+      "tools/conformance/plan-compiler/index.test.ts",
+      "tools/conformance/plan-compiler/index.ts",
+      "tools/conformance/plan-compiler/validate-plans.ts",
+      "tools/conformance/vocabulary/validate-vocabulary.ts",
+      "tools/scripts/conformance/format-generated-json.ts",
+      "tools/scripts/conformance/generate-kernel-fixtures.ts",
+      "tools/scripts/conformance/generate-kernel-plans.ts"
+    ],
+    "baselineCodeCount": 20,
+    "addedCodeSinceBaseline": [
+      "tools/conformance/harness/adapter-error.ts",
+      "tools/conformance/harness/run-plans.ts",
+      "tools/conformance/harness/test/run-adapters-fixture.ts"
+    ],
+    "jsonFiles": [
+      "tools/conformance/adapter-protocol/adapter-manifest.schema.json",
+      "tools/conformance/adapter-protocol/protocol.schema.json",
+      "tools/conformance/certification/certified-projects.json",
+      "tools/generators/telemetry/generator-plan.json"
+    ],
+    "jsonFormatFiles": [
+      "tools/conformance/adapter-protocol/adapter-manifest.schema.json",
+      "tools/conformance/adapter-protocol/protocol.schema.json",
+      "tools/conformance/certification/certified-projects.json",
+      "tools/generators/telemetry/generator-plan.json"
+    ],
+    "protectedFiles": [],
+    "nativeMatchesGit": true,
+    "jsonMatchesGit": true,
+    "retainedBiomeFiles": [
+      "tools/conformance/adapter-protocol/adapter-manifest.schema.json",
+      "tools/conformance/adapter-protocol/index.ts",
+      "tools/conformance/adapter-protocol/protocol.schema.json",
+      "tools/conformance/adapter-protocol/stdio-host.ts",
+      "tools/conformance/adapter-protocol/validate-adapter-protocol.ts",
+      "tools/conformance/certification/certified-projects.json",
+      "tools/conformance/certification/validate-certification-discovery.ts",
+      "tools/conformance/harness/adapter-client.ts",
+      "tools/conformance/harness/adapter-error.ts",
+      "tools/conformance/harness/assertion-engine/index.ts",
+      "tools/conformance/harness/run-plans.ts",
+      "tools/conformance/harness/run.ts",
+      "tools/conformance/harness/secret-absence/index.ts",
+      "tools/conformance/harness/test/adapter-client.test.ts",
+      "tools/conformance/harness/test/assertion-engine.test.ts",
+      "tools/conformance/harness/test/run-adapters-fixture.ts",
+      "tools/conformance/harness/test/run.test.ts",
+      "tools/conformance/harness/test/secret-absence.test.ts",
+      "tools/conformance/meta-conformance/run.ts",
+      "tools/conformance/plan-compiler/index.test.ts",
+      "tools/conformance/plan-compiler/index.ts",
+      "tools/conformance/plan-compiler/validate-plans.ts",
+      "tools/conformance/vocabulary/validate-vocabulary.ts",
+      "tools/generators/telemetry/generator-plan.json",
+      "tools/scripts/conformance/format-generated-json.ts",
+      "tools/scripts/conformance/generate-kernel-fixtures.ts",
+      "tools/scripts/conformance/generate-kernel-plans.ts"
+    ],
+    "sourceIntegrityIndependentOfFormatterIgnores": {
+      "sourceSelectionWithAllFormatterFilesIgnored": [
+        "tools/conformance/adapter-protocol/adapter-manifest.schema.json",
+        "tools/conformance/adapter-protocol/protocol.schema.json",
+        "tools/conformance/certification/certified-projects.json",
+        "tools/generators/telemetry/generator-plan.json"
+      ],
+      "formatSelectionWithAllFormatterFilesIgnored": []
+    },
+    "generatorCodeAbsenceInventory": "bw-m15-revalidated-generator-inventory.json",
+    "generatorCodeAbsent": true,
+    "jsonOnlyRunAfterFreshInventory": "json-only-after-inventory"
+  },
+  "suppressionLedgerReconciliation": {
+    "historicalSource": ".constitution/evidence/KRT-BW002/suppression-ledger.json",
+    "historicalSourceCommit": "aecf146a26bdcfec051917f7e8c80b88d4be9987",
+    "baselineBiomeDirectives": [],
+    "currentBiomeDirectives": [],
+    "baselineNativeDirectives": [],
+    "currentNativeDirectives": [],
+    "originalReasons": [],
+    "entries": [],
+    "neededOriginalsRetained": true,
+    "nativeCounterpartsNeeded": false,
+    "retainedBiome": {
+      "files": 27,
+      "diagnostics": [],
+      "exitCode": 0,
+      "positiveActualSelectionVerified": true
+    },
+    "unusedNativeDirectiveDiagnostics": [],
+    "bwCoverage": {
+      "path": "tools/biome-coverage/bw.json",
+      "gitBlob": "c3ae3d845543d9a67a0c25894bc612c3cdd542eb",
+      "activeBiomeOwnership": true,
+      "admissionOwner": "EPIC-CB"
+    }
+  },
+  "verification": {
+    "toolsTypecheck": "pass",
+    "nativeTypeAware": "pass; 23 files; 474 enabled rules; zero diagnostics",
+    "nativeWithCompilerDiagnostics": "pass; zero compiler or project-resolution diagnostics",
+    "conformanceTests": "93 pass; 0 fail; 294 assertions across 5 files",
+    "meta": "19 cases plus 1000 scale checks pass",
+    "protocol": "pass",
+    "plans": "35 plans pass",
+    "vocabulary": "pass",
+    "discovery": "11 runners; exact manifest parity",
+    "nativeJSON": "4 source and format files pass",
+    "effectivePresetAndJSONControls": "47 pass; 0 fail; 1205 assertions across 4 files",
+    "generatorTests": "pass",
+    "biomeInventoryControl": "9 pass; 0 fail; 61 assertions; positive whole-root selection control",
+    "rootTypecheck": "pass",
+    "fullConformance": "pass",
+    "fullLint": "pass",
+    "rootFormatCheck": "pass",
+    "checkBaseMaster": "pass",
+    "fullVerify": "pass; canonical bun run verify genuinely passes locally"
+  },
+  "preservation": {
+    "trackedFileCount": 2345,
+    "allCommandSnapshotsEqual": true,
+    "allGitStatusesClean": true,
+    "allCommandArtifactBytesAndParsedValuesEqual": true,
+    "generatedFixtures": 17,
+    "plan": {
+      "version": "0.3.0",
+      "checks": 44,
+      "promoted": 10
+    },
+    "artifactProof": [
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-all-ones-bytes.json",
+        "sha256": "bd115669cb7e75206f10c3e90381a02e279b9d37f213dcc26ec1ceb10c356bb1",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-all-ordered-paths-schema.json",
+        "sha256": "ccdad6d7b0e901b58eed013f7551c3fd00ff43c0916700b5dd802e0785cc9bff",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-all-single-paths-schema.json",
+        "sha256": "7af357bbccc2088bfb393a44fa9c8d4d37a5a4114ddf61f23caa20d0b6c77c28",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-all-zero-bytes.json",
+        "sha256": "ec325cddefc01cbf9a7448456eafaeba644783a36d6c58984589183183e2d0e7",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-deep-path-schema.json",
+        "sha256": "d1c91f31bc9e60a40bf301ccdace4d02f6622df3fe935d0d239be7c5bacb88a8",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-empty-bytes.json",
+        "sha256": "4470391f77058af57d88723b4fc218ecbac64135a3ddb2fd5d7b73782d797efd",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-large-bytes.json",
+        "sha256": "8442e170425df76c5ac329760f162c84983d7def1e54c43373329b8901721c1b",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-many-staged-results.json",
+        "sha256": "fd2b742083efed78d752e9700a892c4343d783735668bd150b8e74cdf450513c",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-mixed-status-staged-results.json",
+        "sha256": "3192f895956f01888a1164e081cb6200bc46b23c6c50a6f9d47698ebb1efbbfa",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-multi-path-schema.json",
+        "sha256": "9a2ee900ad5310dcecc65a5e48f33dd686b8993ed5abc3f9e47d525780c4493d",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-non-utf8-bytes.json",
+        "sha256": "40697e991765b21dab0a6fcded20d22c7a16292f7a40e7672c9d88aa4ded2c47",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-single-byte.json",
+        "sha256": "25c16e734b4e5c0f55b3f35b950c0fcd8d09db2ce0df35e7845f32f878dcd3e4",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-staged-result-failed.json",
+        "sha256": "48263f8e7f0a221ab484f94b8e74c61b039b7ee8c95eed32435a7db2af953c37",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-staged-result-interrupted.json",
+        "sha256": "e26729364e8c14a72abd15dc8b83905f3de987bc59c2a602ab0782ca1ff2ecf3",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-with-event-hash.json",
+        "sha256": "07745926bbfa91c9ab3ad6614410143310d7afc45d915f99f315fcd3a6351985",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-with-prev-turn.json",
+        "sha256": "96f7fc95465123625157b0bf8d7f0a177180e9cccfc7caa57e6a0b74dbeadcb8",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/fixtures/kernel-protocol-zero-turn-tree-hash.json",
+        "sha256": "48a937dbf8d4cc7312f7218a32b403ae331c0f544b02b6ef69c129a8f662c6d3",
+        "bytesEqual": true,
+        "parsedEqual": true
+      },
+      {
+        "path": "spec/conformance/kernel/plans/kernel-protocol-extended.json",
+        "sha256": "d951409d0a416b8c3d6922f18e4abd6603fbcce9ee10b6396e89c2d79798ee54",
+        "bytesEqual": true,
+        "parsedEqual": true
+      }
+    ]
+  },
+  "configHashes": {
+    "oxlint.config.ts": "sha256:bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05;git:07868549d49013dd675f8595d27d5ff089ad51c4",
+    "oxfmt.config.ts": "sha256:26ee5ac701b699837b1833087411d72c9471a3971988827408afe9554abc8c27;git:e4625e00a95aadcc800da93672fcec37dc3bae6b",
+    "biome.jsonc": "sha256:ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e;git:ac01754f2daf458a21c97dd930996398c9b447a0",
+    "tools/tsconfig.json": "sha256:232e29cb1e1717862fdf436fd18c88debd19e33b5206ac5b7d89db38945d1dac;git:7aeff2936b010e05c282e5f514f151176353cb91",
+    "tsconfig.base.json": "sha256:6c6518f8706d11658097bb971fad96463d0b2b74d656de6e96575fe4298f90e7;git:0b14bfa0a2e1974686e7f4fceaa26ad8f8d170c4",
+    "tsconfig.json": "sha256:344b8d39e847e57132c18fe810f4a1cbb28eeddf2dae633d8eb02d48306d1ac6;git:6976aba09ab94f01b274ebaecab801039b953484",
+    "package.json": "sha256:c3e50c3f8286567f4ff71395996252294e9096b5405448f24579c0fc29350391;git:50fbf3ca82abd6436e2c9f47c3ccd00728ce7718",
+    "bun.lock": "sha256:89b2ec122f29acff66b368039dfd65c91e773bd655df506c47eaaf6cddde267d;git:540cfea0ed65cb55f97edac11e7b0ca755aa5df1",
+    "nx.json": "sha256:9e15ca4ee40f0eaeb9a8ee89b275c5e2c5a0fa90ee0ba05797514cb63ecb9ca1;git:487eed1b8fa01a00cb289ec925e79dfab3ba526b",
+    "tools/biome-coverage/bw.json": "sha256:7f63d334fabc49da9bab08b84d94224c5e1f21d8a056780feafe345aef5b7709;git:c3ae3d845543d9a67a0c25894bc612c3cdd542eb",
+    "tools/scripts/oxc-preparation.test.ts": "sha256:2c512606fd7d715633911e13e4ab4be4e8c99946cf0e2d43399542ba45836751;git:26958ddd273b2fe2e01c5b97405864a4cd497c4e",
+    "tools/scripts/json-source-integrity.test.ts": "sha256:5d248d59ed1f1269ee136864564e1cd880f977a2db75c1bec7a7551528d7ab05;git:56726e20cbfcc2d0663760a67364eecacc089d17",
+    "tools/scripts/json-check.test.ts": "sha256:4b697c48ef1e0bd22e79156f619c6585d8ca3be9f542b698ad08f828182382cc;git:b9a627aa5b8ec06076507f4f4b14169998d8f2d5",
+    "tools/scripts/generator-oxfmt.test.ts": "sha256:4d52aa6ca4674a05ce5af3bc284d2be24f7cbaf62d4861ae4617d2a97a33a27d;git:810fa9c1f3d6fe82323118b09209d9a9c4ed53dd",
+    "tools/scripts/lib/json-source-integrity.ts": "sha256:88ee7f630054ffc1cfb9a49aa8c23c4f72d7979fa78e33864492eccef3c4df3c;git:eeaf0c7abc5e1eb9c1c2eed5c8d59bcdc12980c2"
+  },
+  "sourceHashes": {
+    "tools/conformance/adapter-protocol/adapter-manifest.schema.json": "sha256:3e82bd8d060797270c3900e4574e9766373dfb92e6d034d468dbdb21cdd0e514;git:21f42b3c2571b4451ea3dd0a2fcfff23d7e73b1e",
+    "tools/conformance/adapter-protocol/bindings/rust.md": "sha256:cf1c17db8caa2f95d8fcd5f04152895c3d02334e054bd0ede9c75041ed2c3ef5;git:21d8486664f5d937742ff8e2b10fe212f3b3a9cf",
+    "tools/conformance/adapter-protocol/bindings/typescript.md": "sha256:d2213aa54748521f702e6bcd6b4cdbbe2379137a2d4e2bd5df3c5461018276c3;git:cd69c43787fde240e9b1d38de447b240bc775f27",
+    "tools/conformance/adapter-protocol/index.ts": "sha256:5a69dd3fe2cd868c3e43f0a6c27667fde4eacb853046eb0280aaf463e032a153;git:fcdf0fc66c67b3fb87dcb5cecc869f281da0cf0b",
+    "tools/conformance/adapter-protocol/protocol.md": "sha256:b0a7302abe001d91670566d175e3d44f3c9c607e8d16c5981d106cf2e988cf2b;git:3b950462bb937a33a95fe0980bac84fa34db0dff",
+    "tools/conformance/adapter-protocol/protocol.schema.json": "sha256:a3f4b4be249665820efc937b9ea0041fe1be3ef6702119780a7e62c157e3518a;git:3e172808814a5719a79fcf5036a0c9279f38b2b2",
+    "tools/conformance/adapter-protocol/stdio-host.ts": "sha256:0dc3aedb8ca8ec575972dd11ea6a9d5eeb0e56734da66c0a4d3a6eee9abdaa69;git:ca4704541ff0b91a94c686d61d50dc8c86e164a8",
+    "tools/conformance/adapter-protocol/validate-adapter-protocol.ts": "sha256:7dfe37daf50637fc0cddd4fefbe12ff8fe119573b8d3e605c7ec145829bd88eb;git:0b6641612a161b2b480de0c567703570d02c6d24",
+    "tools/conformance/certification/certified-projects.json": "sha256:837a4b6704f5c1e19e0f160ca7b6ded2f22d262470da5463f9b0116c63a44415;git:bbf346f37addf0ffa94f9c547122707e767acebc",
+    "tools/conformance/certification/validate-certification-discovery.ts": "sha256:d22b95fb436ad9e56c8f8bc6d5c366727019937e54a4a460a1bfdc58cec261dc;git:5b0871b2b7c2fb54d43abcc3921e5e8329cd452a",
+    "tools/conformance/harness/adapter-client.ts": "sha256:d7e79928e4a98a71e9f369855fd38b1f64995e39622a327bc4a5990d2ffa5ac5;git:26fe08c99dda1c87cf99f573af674a3bff7e8778",
+    "tools/conformance/harness/adapter-error.ts": "sha256:2b0584a07e978871f9d1fa7213dbb8ca457b380c07b5b001e0ccd3e7a7bcc2be;git:e7c681772c77570857f3a1a82b982a8b97a0b3e2",
+    "tools/conformance/harness/assertion-engine/index.ts": "sha256:ae53eb496eafbb896eb0308687d2f9725426722da387abba645a4ad108fa1646;git:ab216f4f310a1e5be27f80c6d252a345cad4b177",
+    "tools/conformance/harness/run-plans.ts": "sha256:429331a6f12f50aad80f56828cfb585a91771304f07cf3319a5c930108862365;git:480c44eace40a62677c690a38cf899228180c8be",
+    "tools/conformance/harness/run.ts": "sha256:d0a4e37949440872f04083aa726474f8ece5c9a37bcb0788274c437cb1f4a559;git:a60d723098a11019574ca9d64034ad28ce679147",
+    "tools/conformance/harness/secret-absence/index.ts": "sha256:a389222fda6a7b3a27eb019ff79000c926a6f660040286ae3bf5bda23a722002;git:3fa2ccb9aaacb28b0724edc219c804f8ece432be",
+    "tools/conformance/harness/test/adapter-client.test.ts": "sha256:ea1a8f818ff27be897aa29189a0a46ba373245f3e550d24652f4b3748590f1ca;git:e8ac5cb0588b534e09324a320808b137c264d45e",
+    "tools/conformance/harness/test/assertion-engine.test.ts": "sha256:dad1be61ff3205e081255242de22f9a257c71c8f129fed90d3d66c4c44c65ca0;git:d2934b6debe0f89836c4f2905537d2c2ca0168d0",
+    "tools/conformance/harness/test/run-adapters-fixture.ts": "sha256:2d16aee3f4037d94174f23703167e7c9c6330e0e7f616627bbef27f817623105;git:0ca79d0429ae8b37fdbaf94e36f7f16f45bf53fe",
+    "tools/conformance/harness/test/run.test.ts": "sha256:7c46cfed0327d3acf8c0a2d06aa2bb0ba21b2b4196af37c65eaafd7b0e9460a4;git:99af65c0fa5f8c07f04fd2bcf39e8e325cffb6ae",
+    "tools/conformance/harness/test/secret-absence.test.ts": "sha256:0233f30840ee658ce3f642572df4ceb687032b6dcec48f61a41626e88a704904;git:3dc86f0e61747e214941f2b01f194fec18bceeb6",
+    "tools/conformance/meta-conformance/run.ts": "sha256:89318de980fb85fa7d88b688f64855f7d08ada8ba2113a230d559cd909d77f50;git:411a06576faccd6a0c889f2e556d08a9652735b6",
+    "tools/conformance/plan-compiler/index.test.ts": "sha256:5bba3a9969f54ed15442daae2940c4609915e3e0f226f8eb71a059f844441d47;git:27f015ce248c60844ae885eba6be2e77c7a3599a",
+    "tools/conformance/plan-compiler/index.ts": "sha256:59b4bd56dffaf0ef395127e6977cdae4c50aaa7b2f373d59bb79cca022b254a9;git:1efeec5e8c162cd130c46cc60d90880859cbf4a6",
+    "tools/conformance/plan-compiler/validate-plans.ts": "sha256:c9642eed87aee414195886451e0ade3a657e0ad180ea8f331e7c39bbb5765426;git:63f72208df6ac1de34dd3c4f9a91e4ead27d6d7d",
+    "tools/conformance/vocabulary/validate-vocabulary.ts": "sha256:53cb87a35eee952f57c0c7eb99e7f168c28425052a35162478c6306cbb06cbea;git:d50654e075fda3e647f34aaebbea2568d38fea25",
+    "tools/generators/.gitkeep": "sha256:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b;git:8b137891791fe96927ad78e64b0aad7bded08bdc",
+    "tools/generators/telemetry/README.md": "sha256:1c72587b28e30462f86cb70373db0600fb295239458607364e0cbe9e9e639393;git:caed3cd1c17bbdf00b1b28c6c789422fb5d28bc1",
+    "tools/generators/telemetry/generator-plan.json": "sha256:4ed89b6cc94a3e3d903536d430b7aedcce79deed6424ddca1c9bf785340f1935;git:81443bae94aabb80ac4a0d53a7210c19fd2e2f3d",
+    "tools/generators/telemetry/resolved-registry/resolved-registry.json.j2": "sha256:a4b14a1506b224f200daa703dd40f5617c9e76b52b060e050b73a0f428ba3b7e;git:85a29a2c4e17dd244f03dedbf58b87637aac7315",
+    "tools/generators/telemetry/resolved-registry/weaver.yaml": "sha256:f01e24db4bd532adc26abd7f7fe345d779461e0ae619fa022f212fe2842b4518;git:fda657f1d38215db5ba2d0e58d3a96d69749db81",
+    "tools/generators/telemetry/templates/rust-helper.rs.tpl": "sha256:9d26c1ef0c3b0cbb9c459938bbd5f0def4433d2dbc05e7ca33d40d1f8805c37e;git:ef59dd42850c99bc51b38d5a9776651e629020a2",
+    "tools/generators/telemetry/templates/typescript-helper.ts.tpl": "sha256:a2f392195e6ae7f84ca8e480d4752f6215e289273307546610020b3549bce1aa;git:3bcba7c2cc09a59e11d01e4cfe88623fb3cd87cb",
+    "tools/scripts/conformance/format-generated-json.ts": "sha256:89358bf443ae5fdf03d06dc0dd17380767bbf0fc21b2c8ca3a3cf70e9d75537e;git:4a5c7d57cff6b1b399ab3627bab660f666ce15b3",
+    "tools/scripts/conformance/generate-kernel-fixtures.ts": "sha256:2cb7ca1f6119ce07ebf6377cd09724ef4357075a48b0ccdf3edce128127f481d;git:6dd2709248c633245df548cdce590ccac5d60b8a",
+    "tools/scripts/conformance/generate-kernel-plans.ts": "sha256:f53b6b679e7909fb5636c30e71c983cb42d4795bbc595d9fd63174d31f02ec48;git:fa7a8b32ca4ccfce5e1af554ffe3b66bcacbd374"
+  },
+  "commands": [
+    {
+      "name": "biome-control",
+      "command": "bun test tools/scripts/lib/biome-inventory.test.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 1.471,
+      "stdoutSha256": "6043908c8d26d62698476b88f737f39d5d3e91008d4155a81730902f5a37479c",
+      "stderrSha256": "ea06b1cf7d3a5c4ac7ddf5ec367da1881b3bed8f91ef7ca7b22e1873ef9208e6",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "check",
+      "command": "bun run check --base=master",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 2.689,
+      "stdoutSha256": "b06eba45f8205ba56277a7caaef8258e505fdf626cb2287b716c46b1eabbdfd9",
+      "stderrSha256": "e0f7ec8a1951bd2adc76dba60f9af3b1a7ca25fd8af48408b9c80480c12ba0b5",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "cli-help",
+      "command": "bunx --bun oxlint --help",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.096,
+      "stdoutSha256": "50590be5c8ca506289447ca33ecb75aed23554e69bb4b29209f5d5babcc4988e",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "codegen-prerequisite",
+      "command": "bun run nx run kernel-interop-grpc:codegen --skipNxCache",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 3.774,
+      "stdoutSha256": "db207bafd5cbeb7008b02994df9c1d181144c5c63b6a9490468658304cfc7ea6",
+      "stderrSha256": "41b5e53c19e2b185629f11277da9b9bfabc007061892d0bd94ebfae358ae8955",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "conformance",
+      "command": "bun run conformance",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 51.124,
+      "stdoutSha256": "f8b3474f47932cc4ee2b9799d30c3fd75dbe565cc8af6d4e37c56a974680c877",
+      "stderrSha256": "9aa817c88aafa2ca9b4c1ba4abdf07c891187d67c184482cc77e98f724b4b27c",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "controls",
+      "command": "bun test tools/scripts/oxc-preparation.test.ts tools/scripts/json-source-integrity.test.ts tools/scripts/json-check.test.ts tools/scripts/oxc-project-discovery.test.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 2.734,
+      "stdoutSha256": "e83c5e39e06b96060b377086c77a0c964dce1cb0aae2af6132f78aa504f80151",
+      "stderrSha256": "a2472986149a1ddc5c03bf1565bd4119d6e2ba32d33c2b05ce0082fa3a124f5c",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "discovery",
+      "command": "bun tools/conformance/certification/validate-certification-discovery.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.158,
+      "stdoutSha256": "1aba8d4d3e293f9577368024171d72ca9deda6ccf31b87243c9951108762d2a7",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "fixtures",
+      "command": "bun tools/scripts/conformance/generate-kernel-fixtures.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.21,
+      "stdoutSha256": "2e852582e25c28d8261a38884b6a7b8a5111b90c22aec1861fc7aa73a5c0ebce",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "format-check",
+      "command": "bun run format:check",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.202,
+      "stdoutSha256": "7f08bdada8a0ebc403497dafddf1a5c378f8b26250201547cacf197f879ea58b",
+      "stderrSha256": "496ba35c866399e4db7b041016f08bda616633a80d4c60a58fb5cbd3290cd492",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "format-plan",
+      "command": "bun tools/scripts/conformance/generate-kernel-plans.ts --format-only",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.187,
+      "stdoutSha256": "f017cc4688c336942b24622a3db23a4a47507c9fb1700b682bf95e4ad25dd95e",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "generator-tests",
+      "command": "bun test tools/scripts/generator-oxfmt.test.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.253,
+      "stdoutSha256": "6043908c8d26d62698476b88f737f39d5d3e91008d4155a81730902f5a37479c",
+      "stderrSha256": "770b2201734716a14dab3250f196d1138f54ad10701880a2d6184a39dc908f7b",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "json-only-after-inventory",
+      "command": "bun tools/scripts/json-check.ts --json-only tools/generators",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.187,
+      "stdoutSha256": "ef1a211247309dce4bec7b97ec2a7a2d324e1c692a66b0009fdd871e9a25c3a7",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "json",
+      "command": "bun tools/scripts/json-check.ts tools/conformance tools/scripts/conformance tools/generators",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.185,
+      "stdoutSha256": "3a098f98e4994060b21061d93181bad0d3f37ab0d8f49c80c8ac871541cf8b89",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "lint",
+      "command": "bun run lint",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 4.642,
+      "stdoutSha256": "d711d760268d935d186fd2b50e20ec1690714eb86105018fc8839c0fa9ccaac5",
+      "stderrSha256": "26ca44b7f40a4b43b16fb0847934fe5e97a20e5006ae6b3894e63f1fcce799f5",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "meta",
+      "command": "bun tools/conformance/meta-conformance/run.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.216,
+      "stdoutSha256": "b40a83df20d9b41b7612de4ebbae6944d6d8cf8c7cc2630dd502b422c2a90c2a",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "native-files",
+      "command": "bunx --bun oxlint --type-aware --debug=files tools/conformance tools/scripts/conformance",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.144,
+      "stdoutSha256": "494dd207a9e1e28c27b00bd0ff6f50dcaab072f9651173a1b15334c5e0fd41f2",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "native-json",
+      "command": "bunx --bun oxlint --type-aware -f json tools/conformance tools/scripts/conformance",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.436,
+      "stdoutSha256": "2170bb5c827a665f39d4c5076a8171e2f9102901776dcdc4415e9e5f46d450bd",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "native-non-type-aware",
+      "command": "bunx --bun oxlint -f json tools/conformance tools/scripts/conformance",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.165,
+      "stdoutSha256": "7450e0f0fb4b3216211ce00378083c23f59fe0d1d49bdcba21ac1e324d6ca6a3",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "native-typecheck",
+      "command": "bunx --bun oxlint --type-aware --type-check -f json tools/conformance tools/scripts/conformance",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.413,
+      "stdoutSha256": "d39355284c0896d13a71baf02f408a302062db91b3579ffd84dac7c6362769fc",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "plans",
+      "command": "bun tools/conformance/plan-compiler/validate-plans.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.327,
+      "stdoutSha256": "948f48daadd614118728719fe2d460960cc3315776b3e49f4a3cfd7782e1fc7c",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "policy",
+      "command": "bun /home/oscar/GitHub/Tuvren/framework/.claude/execute-wave/plans/wave-1-bw-bx-054bd042/logs/bw-m15-revalidated-policy.mjs",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.557,
+      "stdoutSha256": "a556a0c92388034a833bc26a29d37b2fd93cde4843e6f6ef7a82c8f05435bca3",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "print-config",
+      "command": "bunx --bun oxlint --print-config",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.214,
+      "stdoutSha256": "095532173f32960707fa888aa8865907b7e9e0e886617c3f6dd826ab06be3554",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "protocol",
+      "command": "bun tools/conformance/adapter-protocol/validate-adapter-protocol.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.267,
+      "stdoutSha256": "1bcf874965a181c6c8e571465c435f2c8f3322a466e568ab747cac82ad9dd989",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "refusal",
+      "command": "bun tools/scripts/conformance/generate-kernel-plans.ts",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "seconds": 0.091,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "8b1e0f6dbc36fe2e4e823dce271c7950d5a4c2985ff599af7e0dec967890becc",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "retained-biome-selection",
+      "command": "bunx --bun biome lint --verbose --max-diagnostics=none tools/conformance tools/scripts/conformance tools/generators",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.246,
+      "stdoutSha256": "b9f567b78390ffd603aaca1195166d70ac13f0feaf4edee7408206bb4f236e67",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "retained-biome",
+      "command": "bunx --bun biome lint --reporter=json --max-diagnostics=none tools/conformance tools/scripts/conformance tools/generators",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.312,
+      "stdoutSha256": "df0573dec84597d07943193ba8227125d45d8004829be4e23cfc010402e9919d",
+      "stderrSha256": "0913004effb614bc48cd4a3dbeeb8ff43aca0acce8fa7b57a4681b43cfbfca1e",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "rules-type-aware",
+      "command": "bunx --bun oxlint --type-aware --rules -f json",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.184,
+      "stdoutSha256": "2a8ddfda57f9baa5f855f45f8a1f9c319cd357abab0a94c64641bc9cef6cb98d",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "rules",
+      "command": "bunx --bun oxlint --rules -f json",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.139,
+      "stdoutSha256": "2a8ddfda57f9baa5f855f45f8a1f9c319cd357abab0a94c64641bc9cef6cb98d",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "tests",
+      "command": "bun test tools/conformance",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 4.434,
+      "stdoutSha256": "6043908c8d26d62698476b88f737f39d5d3e91008d4155a81730902f5a37479c",
+      "stderrSha256": "9232135c190430a0c37634fb111c9352ec8d8668a0417809d1710fe5758dcf45",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "tools-tsc",
+      "command": "bunx --bun tsc --project tools/tsconfig.json --noEmit",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 5.085,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "typecheck",
+      "command": "bun run typecheck",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.771,
+      "stdoutSha256": "e4c100781a7db69d8abe1046b88086ac3fb37e835ada19a988d6d841fcc54e04",
+      "stderrSha256": "0ac0ff7205746d59fb5c4946363715d7c8336917e7a0c30250bcfe813d607149",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "unused-directives",
+      "command": "bunx --bun oxlint --type-aware --report-unused-disable-directives -f json tools/conformance tools/scripts/conformance",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.4,
+      "stdoutSha256": "db414ff5a795a54fae4ad310f88359b1b030f58905ac49a20793915bce791ad8",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "verify",
+      "command": "bun run verify",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 157.61,
+      "stdoutSha256": "22c585b816a235df6075c86e2f8dcdb009baa9b1542b845e635e21db6e26943c",
+      "stderrSha256": "51723248c277585347f9c091dff52a86e38236e768893df0a9d647f6504a2d12",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    },
+    {
+      "name": "vocabulary",
+      "command": "bun tools/conformance/vocabulary/validate-vocabulary.ts",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.147,
+      "stdoutSha256": "ef42cfd3cc623df60fd6f3e11e720a1da43fea36661fe234ea7a8e8b084f1bb2",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preservedTrackedDigest": "2746b64b82162ee6fb1dec7e102f110b52150c0465fb84fcc3b0ce5e21dddf03"
+    }
+  ],
+  "fullTransientLogsDirectory": "/home/oscar/GitHub/Tuvren/framework/.claude/execute-wave/plans/wave-1-bw-bx-054bd042/logs",
+  "acceptanceExcerpts": "bw-m15-revalidated-acceptance.txt",
+  "repositoryChanges": [],
+  "constitutionChanges": [],
+  "debugTagAbsent": true,
+  "newDependencies": [],
+  "newPatterns": [],
+  "newConventions": [],
+  "newContractShapes": [],
+  "scopeLimit": "Mechanical tooling readiness only; Biome still owns these regions pending EPIC-CB whole-tools admission; no product or architecture settlement claimed."
+}

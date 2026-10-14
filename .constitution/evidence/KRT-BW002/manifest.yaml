@@ -3,16 +3,22 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-14",
-    "commit": "aecf146a26bdcfec051917f7e8c80b88d4be9987",
-    "command": "git grep suppression inventory at baseline and source commit; bunx --bun @biomejs/biome lint tools/conformance tools/scripts/conformance tools/generators; bunx --bun oxlint --type-aware --format=json tools/conformance tools/scripts/conformance; bun run typecheck; bun run lint"
+    "commit": "60311a54bb56cce1ad5d1bd455760719b610fd4c",
+    "command": "git suppression inventories at baseline and source commit; bunx --bun biome lint --verbose --max-diagnostics=none tools/conformance tools/scripts/conformance tools/generators; bunx --bun oxlint --type-aware --report-unused-disable-directives tools/conformance tools/scripts/conformance; bun run lint"
   },
   "files": [
     {
       "path": "suppression-ledger.json",
       "sha256": "beb45c5dbeee7ad8f620f68176deeab4246b3395910bd00039f0e75160171249",
       "bytes": 36992,
+      "role": "historical_measurement"
+    },
+    {
+      "path": "relocation-revalidation.json",
+      "sha256": "2b893adec5dba417cb6285798113c906bb87fcc21a69e94195ee2b11905216ce",
+      "bytes": 6412,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "Every baseline and drift suppression identity has a live checker-backed disposition. Empty entries require zero identities in both Git inventories. Retained Biome and full lint pass; bw.json stays byte-identical under Biome ownership until CB whole-tools admission. Native residuals are permitted until BW004 native-clean readiness."
+  "pass_criteria": "Every baseline and current suppression identity has a measured disposition; empty entries require zero identities. The historical M3 ledger is pinned to its source commit; A10 relocation-revalidation supplies fresh positive retained/native selection proof. Retained Biome and full lint pass, no counterpart is warranted, and bw.json remains unchanged until CB whole-tools admission."
 }
