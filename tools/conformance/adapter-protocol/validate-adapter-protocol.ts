@@ -31,6 +31,142 @@ const MANIFEST_SCHEMA_PATH = resolve(
   "adapter-manifest.schema.json"
 );
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readProtocolSchema = (
+  value: unknown,
+  label: string
+): Record<string, unknown> => {
+  if (isRecord(value)) {
+    return value;
+  }
+
+  throw new Error(`${label} must contain a JSON Schema object`);
+};
+
+const readStringProperty = (
+  source: Record<string, unknown>,
+  key: string,
+  label: string
+): string => {
+  const value = source[key];
+
+  if (typeof value !== "string") {
+    throw new TypeError(`${label} must be a string`);
+  }
+
+  return value;
+};
+
+const createSample = (definitionName: string): unknown => {
+  switch (definitionName) {
+    case "AdapterCapabilities": {
+      return {
+        adapterId: "sample-adapter",
+        capabilities: ["sample.capability"],
+        packetId: "tuvren.sample.packet",
+        planVersion: "0.1.0",
+      };
+    }
+    case "AdapterControls": {
+      return {
+        cancel: { reason: "sample cancellation" },
+        cancelAfterEvent: "turn.start",
+        deadlineMs: 1000,
+      };
+    }
+    case "AdapterErrorEnvelope": {
+      return {
+        code: "adapter_sample_error",
+        message: "sample failure",
+      };
+    }
+    case "OperationOutcome": {
+      return {
+        kind: "result",
+        value: { ok: true },
+      };
+    }
+    default: {
+      throw new Error(`unknown adapter protocol sample ${definitionName}`);
+    }
+  }
+};
+
+const assertStdioHostControlRoundtrip = async (): Promise<void> => {
+  let observedControls: AdapterControls | undefined;
+  const response = await handleStdioAdapterLine(
+    {
+      dispatch(_operation, _input, controls) {
+        observedControls = controls;
+        return Promise.resolve({
+          kind: "result",
+          value: { ok: true },
+        });
+      },
+      initialize() {
+        return Promise.resolve({
+          adapterId: "sample-adapter",
+          capabilities: ["sample.capability"],
+          packetId: "tuvren.sample.packet",
+          planVersion: "0.1.0",
+        });
+      },
+    },
+    JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      method: "dispatch",
+      params: {
+        controls: {
+          cancel: { reason: "sample cancellation" },
+          cancelAfterEvent: "turn.start",
+          deadlineMs: 1000,
+        },
+        input: {},
+        operation: "sample.operation",
+      },
+    })
+  );
+
+  if (!(isRecord(response) && "result" in response)) {
+    throw new Error("stdio host failed to return a JSON-RPC result frame");
+  }
+
+  if (
+    observedControls?.cancel?.reason !== "sample cancellation" ||
+    observedControls.cancelAfterEvent !== "turn.start" ||
+    observedControls.deadlineMs !== 1000
+  ) {
+    throw new Error("stdio host failed to preserve adapter controls");
+  }
+};
+
+const findAdapterManifests = async (directory: string): Promise<string[]> => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const manifests: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = resolve(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      manifests.push(...(await findAdapterManifests(entryPath)));
+      continue;
+    }
+
+    if (
+      entry.isFile() &&
+      entry.name.startsWith("adapter") &&
+      entry.name.endsWith(".json")
+    ) {
+      manifests.push(entryPath);
+    }
+  }
+
+  return manifests.sort();
+};
+
 const protocolSchema: unknown = JSON.parse(
   await readFile(SCHEMA_PATH, "utf-8")
 );
@@ -116,140 +252,3 @@ for (const manifestRoot of ADAPTER_MANIFEST_ROOTS) {
 }
 
 console.log("adapter manifest validation passed");
-
-function createSample(definitionName: string): unknown {
-  switch (definitionName) {
-    case "AdapterCapabilities": {
-      return {
-        adapterId: "sample-adapter",
-        capabilities: ["sample.capability"],
-        packetId: "tuvren.sample.packet",
-        planVersion: "0.1.0",
-      };
-    }
-    case "AdapterControls": {
-      return {
-        cancel: { reason: "sample cancellation" },
-        cancelAfterEvent: "turn.start",
-        deadlineMs: 1000,
-      };
-    }
-    case "AdapterErrorEnvelope": {
-      return {
-        code: "adapter_sample_error",
-        message: "sample failure",
-      };
-    }
-    case "OperationOutcome": {
-      return {
-        kind: "result",
-        value: { ok: true },
-      };
-    }
-    default: {
-      throw new Error(`unknown adapter protocol sample ${definitionName}`);
-    }
-  }
-}
-
-async function assertStdioHostControlRoundtrip(): Promise<void> {
-  let observedControls: AdapterControls | undefined;
-  const response = await handleStdioAdapterLine(
-    {
-      dispatch(_operation, _input, controls) {
-        observedControls = controls;
-        return Promise.resolve({
-          kind: "result",
-          value: { ok: true },
-        });
-      },
-      initialize() {
-        return Promise.resolve({
-          adapterId: "sample-adapter",
-          capabilities: ["sample.capability"],
-          packetId: "tuvren.sample.packet",
-          planVersion: "0.1.0",
-        });
-      },
-    },
-    JSON.stringify({
-      id: 1,
-      jsonrpc: "2.0",
-      method: "dispatch",
-      params: {
-        controls: {
-          cancel: { reason: "sample cancellation" },
-          cancelAfterEvent: "turn.start",
-          deadlineMs: 1000,
-        },
-        input: {},
-        operation: "sample.operation",
-      },
-    })
-  );
-
-  if (!(isRecord(response) && "result" in response)) {
-    throw new Error("stdio host failed to return a JSON-RPC result frame");
-  }
-
-  if (
-    observedControls?.cancel?.reason !== "sample cancellation" ||
-    observedControls.cancelAfterEvent !== "turn.start" ||
-    observedControls.deadlineMs !== 1000
-  ) {
-    throw new Error("stdio host failed to preserve adapter controls");
-  }
-}
-
-function readProtocolSchema(
-  value: unknown,
-  label: string
-): Record<string, unknown> {
-  if (isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${label} must contain a JSON Schema object`);
-}
-
-function readStringProperty(
-  source: Record<string, unknown>,
-  key: string,
-  label: string
-): string {
-  const value = source[key];
-
-  if (typeof value !== "string") {
-    throw new TypeError(`${label} must be a string`);
-  }
-
-  return value;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-async function findAdapterManifests(directory: string): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const manifests: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      manifests.push(...(await findAdapterManifests(entryPath)));
-      continue;
-    }
-
-    if (
-      entry.isFile() &&
-      entry.name.startsWith("adapter") &&
-      entry.name.endsWith(".json")
-    ) {
-      manifests.push(entryPath);
-    }
-  }
-
-  return manifests.sort();
-}

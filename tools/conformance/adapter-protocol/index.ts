@@ -50,10 +50,10 @@ export interface OperationErrorOutcome {
 
 export type OperationOutcome = OperationErrorOutcome | OperationResultOutcome;
 
-export function createAdapterErrorEnvelope(
+export const createAdapterErrorEnvelope = (
   error: unknown,
   code = "adapter_operation_failed"
-): AdapterErrorEnvelope {
+): AdapterErrorEnvelope => {
   if (error instanceof Error) {
     return {
       code,
@@ -65,30 +65,14 @@ export function createAdapterErrorEnvelope(
     code,
     message: String(error),
   };
-}
+};
 
-export function assertOperationOutcome(
-  value: unknown,
-  label: string
-): asserts value is OperationOutcome {
-  if (!isOperationOutcome(value)) {
-    throw new Error(`${label} must match the adapter OperationOutcome schema`);
-  }
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
-export function isOperationOutcome(value: unknown): value is OperationOutcome {
-  if (!isRecord(value) || typeof value.kind !== "string") {
-    return false;
-  }
-
-  if (value.kind === "result") {
-    return "value" in value;
-  }
-
-  return value.kind === "error" && isAdapterErrorEnvelope(value.error);
-}
-
-function isAdapterErrorEnvelope(value: unknown): value is AdapterErrorEnvelope {
+const isAdapterErrorEnvelope = (
+  value: unknown
+): value is AdapterErrorEnvelope => {
   if (
     !isRecord(value) ||
     typeof value.code !== "string" ||
@@ -99,8 +83,30 @@ function isAdapterErrorEnvelope(value: unknown): value is AdapterErrorEnvelope {
   }
 
   return value.cause === undefined || isAdapterErrorEnvelope(value.cause);
-}
+};
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+export const isOperationOutcome = (
+  value: unknown
+): value is OperationOutcome => {
+  if (!isRecord(value) || typeof value.kind !== "string") {
+    return false;
+  }
+
+  if (value.kind === "result") {
+    return "value" in value;
+  }
+
+  return value.kind === "error" && isAdapterErrorEnvelope(value.error);
+};
+
+export const assertOperationOutcome: (
+  value: unknown,
+  label: string
+) => asserts value is OperationOutcome = (
+  value: unknown,
+  label: string
+): asserts value is OperationOutcome => {
+  if (!isOperationOutcome(value)) {
+    throw new Error(`${label} must match the adapter OperationOutcome schema`);
+  }
+};
