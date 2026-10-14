@@ -1,0 +1,24 @@
+{
+  "owner": "KRT-BX004",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-14",
+    "commit": "91bccf8e85e242b757eb426f3c724eaf263c91f7",
+    "command": "bun run nx run host-session:typecheck; bun run nx run host-session:test; bun run nx run host-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/session; bunx --bun biome lint --reporter=json typescript/host/session"
+  },
+  "files": [
+    {
+      "path": "m27-session.json",
+      "sha256": "faddfacf39629972abf40d3c969f5bc8e9ebf7fdea7de5a45bca931c3f66bd75",
+      "bytes": 11101,
+      "role": "measurement"
+    },
+    {
+      "path": "m35-session.patch",
+      "sha256": "22e1a7dfda29e0638a7fdc6d99f870ff893072fdf99f65e8d20049f915e1abc8",
+      "bytes": 995,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending."
+}

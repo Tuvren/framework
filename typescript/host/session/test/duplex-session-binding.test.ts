@@ -21,6 +21,7 @@ import type {
   ClientInvocationEnvelope,
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
+import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type {
   ExecutionHandle,
   ExecutionResult,
@@ -39,21 +40,16 @@ import type {
 // Fake ExecutionHandle double
 // ---------------------------------------------------------------------------
 
-interface FakeStreamEvent {
-  type: string;
-  [key: string]: unknown;
-}
-
 /** A controllable single-consumer async event source for the fake handle. */
-class FakeEventSource implements AsyncIterable<FakeStreamEvent> {
-  private readonly items: FakeStreamEvent[] = [];
+class FakeEventSource implements AsyncIterable<TuvrenStreamEvent> {
+  private readonly items: TuvrenStreamEvent[] = [];
   private readonly waiters: ((
-    result: IteratorResult<FakeStreamEvent>
+    result: IteratorResult<TuvrenStreamEvent>
   ) => void)[] = [];
   private closed = false;
   private claimed = false;
 
-  push(event: FakeStreamEvent): void {
+  emit(event: TuvrenStreamEvent): void {
     const waiter = this.waiters.shift();
     if (waiter !== undefined) {
       waiter({ done: false, value: event });
@@ -69,23 +65,24 @@ class FakeEventSource implements AsyncIterable<FakeStreamEvent> {
     }
   }
 
-  [Symbol.asyncIterator](): AsyncIterator<FakeStreamEvent> {
+  [Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
     if (this.claimed) {
       throw new Error("FakeEventSource consumed twice");
     }
     this.claimed = true;
     return {
-      next: (): Promise<IteratorResult<FakeStreamEvent>> => {
+      next: async (): Promise<IteratorResult<TuvrenStreamEvent>> => {
         const value = this.items.shift();
         if (value !== undefined) {
-          return Promise.resolve({ done: false, value });
+          return { done: false, value };
         }
         if (this.closed) {
-          return Promise.resolve({ done: true, value: undefined });
+          return { done: true, value: undefined };
         }
-        return new Promise((resolve) => {
-          this.waiters.push(resolve);
-        });
+        const pending =
+          Promise.withResolvers<IteratorResult<TuvrenStreamEvent>>();
+        this.waiters.push(pending.resolve);
+        return await pending.promise;
       },
     };
   }
@@ -101,9 +98,9 @@ interface FakeHandle {
   calls: FakeHandleCalls;
   events: FakeEventSource;
   handle: ExecutionHandle;
-  setPhase(phase: ExecutionStatus["phase"]): void;
+  setPhase: (phase: ExecutionStatus["phase"]) => void;
   /** Settle the awaitResult() promise (reject when `error` is provided). */
-  settleResult(error?: unknown): void;
+  settleResult: (error?: unknown) => void;
 }
 
 const makeFakeHandle = (
@@ -118,17 +115,11 @@ const makeFakeHandle = (
   const calls: FakeHandleCalls = { cancel: 0, resolveApproval: [], steer: [] };
   let phase: ExecutionStatus["phase"] = options.phase ?? "running";
 
-  let resultResolve: (result: ExecutionResult) => void = () => undefined;
-  let resultReject: (error: unknown) => void = () => undefined;
-  const resultPromise = new Promise<ExecutionResult>((resolve, reject) => {
-    resultResolve = resolve;
-    resultReject = reject;
-  });
-  resultPromise.catch(() => undefined);
+  const result = Promise.withResolvers<ExecutionResult>();
 
   const handle: ExecutionHandle = {
-    awaitResult(): Promise<ExecutionResult> {
-      return resultPromise;
+    async awaitResult(): Promise<ExecutionResult> {
+      return await result.promise;
     },
     cancel(): void {
       calls.cancel += 1;
@@ -136,7 +127,7 @@ const makeFakeHandle = (
         options.onCancel();
       }
     },
-    events(): AsyncIterable<FakeStreamEvent> {
+    events(): AsyncIterable<TuvrenStreamEvent> {
       return events;
     },
     resolveApproval(response: ApprovalResponse): ExecutionHandle {
@@ -155,7 +146,7 @@ const makeFakeHandle = (
         options.onSteer(signal);
       }
     },
-  } as unknown as ExecutionHandle;
+  };
 
   return {
     calls,
@@ -166,10 +157,13 @@ const makeFakeHandle = (
     },
     settleResult(error?: unknown): void {
       if (error === undefined) {
-        resultResolve({} as ExecutionResult);
+        result.resolve({
+          executionStatus: { iterationCount: 0, phase: "completed" },
+          status: "completed",
+        });
         return;
       }
-      resultReject(error);
+      result.reject(error);
     },
   };
 };
@@ -179,13 +173,21 @@ const collectFrames = async (
   count: number
 ): Promise<SessionOutboundFrame[]> => {
   const collected: SessionOutboundFrame[] = [];
+  // Preserve the caller's iterator across partial reads; a for-await break
+  // would call return() and close the session's outbound queue.
   const iterator = iterable[Symbol.asyncIterator]();
-  while (collected.length < count) {
+  const collectNext = async (): Promise<void> => {
     const result = await iterator.next();
-    if (result.done) {
-      break;
+    if (result.done === true) {
+      return;
     }
     collected.push(result.value);
+    if (collected.length < count) {
+      await collectNext();
+    }
+  };
+  if (count > 0) {
+    await collectNext();
   }
   return collected;
 };
@@ -199,11 +201,185 @@ const rejection = (
   return frame.rejection;
 };
 
+const rejectionOf = async (promise: Promise<unknown>): Promise<unknown> => {
+  try {
+    await promise;
+  } catch (error) {
+    return error;
+  }
+  throw new Error("expected the operation to reject");
+};
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe("createDuplexSessionBinding", () => {
+  test("complete payload guards preserve identity, extra fields, and duplicate approval decisions", () => {
+    const replacement = makeFakeHandle();
+    const fake = makeFakeHandle({
+      onResolveApproval: () => replacement.handle,
+    });
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "guard-valid",
+    });
+    const signal: InputSignal = {
+      parts: [
+        { providerMetadata: { opaque: undefined }, text: "", type: "text" },
+        { redacted: true, text: "", type: "reasoning" },
+        { callId: "call", input: undefined, name: "tool", type: "tool_call" },
+        {
+          callId: "call",
+          isError: false,
+          name: "tool",
+          output: null,
+          type: "tool_result",
+        },
+        {
+          data: new Uint8Array([1]),
+          filename: "",
+          mediaType: "application/octet-stream",
+          type: "file",
+        },
+        { data: undefined, name: "", type: "structured" },
+      ],
+    };
+    const extendedSignal = { ...signal, extra: "retained" };
+    binding.dispatchInbound({
+      correlationId: "steer",
+      kind: "steer",
+      protocolVersion: "1",
+      sessionId: binding.sessionId,
+      signal: extendedSignal,
+    });
+    expect(fake.calls.steer[0]).toBe(extendedSignal);
+
+    const response = {
+      decisions: [
+        { callId: "call", extra: 1, type: "custom" },
+        {
+          callId: "call",
+          editedInput: undefined,
+          message: "approved",
+          type: "edit",
+        },
+      ],
+      extra: true,
+    };
+    binding.dispatchInbound({
+      correlationId: "approval",
+      kind: "approval_response",
+      protocolVersion: "1",
+      response,
+      sessionId: binding.sessionId,
+    });
+    expect(fake.calls.resolveApproval[0]).toBe(response);
+    expect(binding.currentHandle()).toBe(replacement.handle);
+  });
+
+  test("invalid nested fields reject once before touching the handle, preserving envelope precedence", async () => {
+    const fake = makeFakeHandle();
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "guard-invalid",
+    });
+    const outbound = binding.outbound();
+    const payloads = [
+      {
+        kind: "client_result",
+        result: {
+          callId: "call",
+          content: null,
+          isError: "false",
+          leaseToken: "lease",
+        },
+      },
+      { kind: "approval_response", response: { decisions: [null] } },
+      {
+        kind: "approval_response",
+        response: { decisions: [{ callId: "call", type: 1 }] },
+      },
+      {
+        kind: "approval_response",
+        response: {
+          decisions: [{ callId: "call", message: " ", type: "approve" }],
+        },
+      },
+      ...[
+        null,
+        { text: 1, type: "text" },
+        { redacted: "true", text: "reason", type: "reasoning" },
+        { redacted: false, text: "", type: "reasoning" },
+        { callId: "call", name: "tool", type: "tool_call" },
+        {
+          callId: "call",
+          isError: "false",
+          name: "tool",
+          output: null,
+          type: "tool_result",
+        },
+        { data: [], mediaType: "application/octet-stream", type: "file" },
+        { data: "", filename: 1, mediaType: "text/plain", type: "file" },
+        { data: null, name: 1, type: "structured" },
+        { providerMetadata: [], text: "text", type: "text" },
+        { type: "unknown" },
+      ].map((part) => ({ kind: "steer", signal: { parts: [part] } })),
+    ];
+    for (const [index, payload] of payloads.entries()) {
+      binding.dispatchInbound({
+        ...payload,
+        correlationId: `invalid-${index}`,
+        protocolVersion: "1",
+        sessionId: binding.sessionId,
+      });
+    }
+    binding.dispatchInbound({
+      correlationId: "first-error",
+      kind: "steer",
+      protocolVersion: "2",
+      sessionId: "wrong",
+      signal: { parts: [null] },
+    });
+    fake.events.end();
+    const frames = await collectFrames(outbound, payloads.length + 2);
+    expect(frames).toHaveLength(payloads.length + 1);
+    expect(frames.map((frame) => rejection(frame).code)).toEqual(
+      Array.from({ length: payloads.length + 1 }, () => "session_frame_invalid")
+    );
+    expect(rejection(frames[payloads.length]).message).toBe(
+      'inbound frame protocolVersion must be "1"'
+    );
+    expect(fake.calls.steer).toEqual([]);
+    expect(fake.calls.resolveApproval).toEqual([]);
+  });
+
+  test("event failures preserve Error identity and normalize other rejection causes", async () => {
+    const error = new Error("event failure");
+    const causes = [error, { reason: "event failure" }];
+    const outcomes = await Promise.all(
+      causes.map(async (cause) => {
+        const fake = makeFakeHandle();
+        const failure = Promise.withResolvers<never>();
+        const handle: ExecutionHandle = {
+          ...fake.handle,
+          async *events() {
+            yield await failure.promise;
+          },
+        };
+        const binding = createDuplexSessionBinding(handle);
+        const iterator = binding.outbound()[Symbol.asyncIterator]();
+        const pending = iterator.next();
+        failure.reject(cause);
+        return await rejectionOf(pending);
+      })
+    );
+    expect(outcomes[0]).toBe(error);
+    expect(outcomes[1]).toBeInstanceOf(Error);
+    expect(outcomes[1]).toMatchObject({
+      cause: causes[1],
+      message: "duplex session event stream failed",
+    });
+  });
+
   test("unknown-callId client_result yields capability_result_stale and resolves nothing", async () => {
     const fake = makeFakeHandle();
     const binding = createDuplexSessionBinding(fake.handle, {
@@ -269,7 +445,12 @@ describe("createDuplexSessionBinding", () => {
     });
     const outbound = binding.outbound();
 
-    original.events.push({ type: "turn.paused" });
+    original.events.emit({
+      status: "paused",
+      timestamp: 0,
+      turnId: "turn-3",
+      type: "turn.end",
+    });
     original.events.end();
 
     // Drain the original handle's single event before triggering approval.
@@ -287,14 +468,24 @@ describe("createDuplexSessionBinding", () => {
     expect(binding.currentHandle()).toBe(replacement.handle);
     expect(binding.sessionId).toBe("sess-3");
 
-    replacement.events.push({ type: "turn.resumed" });
-    replacement.events.push({ type: "turn.completed" });
+    replacement.events.emit({
+      threadId: "thread-3",
+      timestamp: 1,
+      turnId: "turn-3",
+      type: "turn.start",
+    });
+    replacement.events.emit({
+      status: "completed",
+      timestamp: 2,
+      turnId: "turn-3",
+      type: "turn.end",
+    });
     replacement.events.end();
 
     const rest = await collectFrames(outbound, 2);
     expect(
-      rest.map((f) => String(f.kind === "event" ? f.event.type : f.kind))
-    ).toEqual(["turn.resumed", "turn.completed"]);
+      rest.map((f) => (f.kind === "event" ? f.event.type : f.kind))
+    ).toEqual(["turn.start", "turn.end"]);
   });
 
   test("cancel is passed through to the current handle", () => {
@@ -407,9 +598,10 @@ describe("createDuplexSessionBinding", () => {
 
     let settled: ClientReportedResult | undefined;
     const dispatchPromise = binding.clientEndpoint.dispatch(envelope);
-    dispatchPromise.then((result) => {
-      settled = result;
-    });
+    const observeDispatch = async (): Promise<void> => {
+      settled = await dispatchPromise;
+    };
+    const observation = observeDispatch();
 
     const [frame] = await collectFrames(outbound, 1);
     expect(frame.kind).toBe("client_invocation");
@@ -436,6 +628,7 @@ describe("createDuplexSessionBinding", () => {
     });
 
     const resolved = await dispatchPromise;
+    await observation;
     expect(resolved).toEqual(reportedResult);
   });
 
@@ -575,14 +768,16 @@ describe("createDuplexSessionBinding", () => {
     const result = await iterator.next();
     expect(result.done).toBe(true);
 
-    await expect(
-      binding.clientEndpoint.dispatch({
-        callId: "call-18",
-        capabilityId: "cap.demo",
-        input: {},
-        leaseToken: "lease-18",
-      })
-    ).rejects.toMatchObject({ code: "duplex_session_closed" });
+    expect(
+      await rejectionOf(
+        binding.clientEndpoint.dispatch({
+          callId: "call-18",
+          capabilityId: "cap.demo",
+          input: {},
+          leaseToken: "lease-18",
+        })
+      )
+    ).toMatchObject({ code: "duplex_session_closed" });
   });
 
   test("cancel while paused closes the outbound stream and sweeps pending dispatches", async () => {
@@ -620,14 +815,13 @@ describe("createDuplexSessionBinding", () => {
     const drained: unknown[] = [];
     // Drain whatever buffered frames precede the close (the client_invocation
     // frame from the dispatch above).
-    let step = await iterator.next();
-    while (!step.done) {
-      drained.push(step.value);
-      step = await iterator.next();
+    for await (const frame of { [Symbol.asyncIterator]: () => iterator }) {
+      drained.push(frame);
     }
-    expect(step.done).toBe(true);
+    expect(drained).toHaveLength(1);
+    expect(drained[0]).toMatchObject({ kind: "client_invocation" });
 
-    await expect(pending).rejects.toMatchObject({
+    expect(await rejectionOf(pending)).toMatchObject({
       code: "duplex_session_closed",
     });
   });
@@ -669,7 +863,7 @@ describe("createDuplexSessionBinding", () => {
     fake.setPhase("completed");
     fake.events.end();
 
-    await expect(pending).rejects.toMatchObject({
+    expect(await rejectionOf(pending)).toMatchObject({
       code: "duplex_session_closed",
     });
   });
@@ -688,9 +882,9 @@ describe("createDuplexSessionBinding", () => {
       leaseToken: "lease-14",
     };
     const first = binding.clientEndpoint.dispatch(envelope);
-    await expect(
-      binding.clientEndpoint.dispatch(envelope)
-    ).rejects.toMatchObject({
+    expect(
+      await rejectionOf(binding.clientEndpoint.dispatch(envelope))
+    ).toMatchObject({
       code: "duplex_session_duplicate_call",
     });
 

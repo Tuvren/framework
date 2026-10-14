@@ -480,12 +480,13 @@
   ],
   "preservation": {
     "original_biome_identities": 12,
-    "experimental_annotations": 112,
-    "experimental_files": 9,
     "coverage_manifest": "[\"typescript/host\"]",
     "public_signatures": true,
     "collection_semantics": true,
-    "cli_and_transcript_behavior": true
+    "cli_and_transcript_behavior": true,
+    "native_firing_experimental_annotations": 112,
+    "native_firing_experimental_files": 9,
+    "experimental_inventory_note": "112/nine describes the original native-firing tag inventory. M27 AST reconciliation confirms32 additional pre-existing inline release tags; all144 associations across10files are preserved."
   },
   "repairs": [
     "Restore required undefined arguments removed by the safe fixer.",

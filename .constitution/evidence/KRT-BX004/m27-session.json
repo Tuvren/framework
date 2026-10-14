@@ -1,0 +1,240 @@
+{
+  "milestone": "M27",
+  "ticket": "KRT-BX004",
+  "authority": "Plan amendment A11",
+  "measurement_head": "91bccf8e85e242b757eb426f3c724eaf263c91f7",
+  "working_tree_candidate": true,
+  "result": "Session residual cleanup complete under A11. Retained Biome has zero diagnostics with positive complete selection; only four recorded native diagnostics at the two original launch handlers remain for atomic M35 admission.",
+  "files": [
+    "typescript/host/session/smoke/package-exports.ts",
+    "typescript/host/session/src/index.ts",
+    "typescript/host/session/src/lib/duplex-session-binding.ts",
+    "typescript/host/session/src/lib/session-frame-shapes.ts",
+    "typescript/host/session/test/duplex-session-binding.test.ts",
+    "typescript/host/session/test/shared-schema-mirror.test.ts"
+  ],
+  "native_residuals": [
+    {
+      "code": "promise(prefer-await-to-then)",
+      "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+      "line": 557
+    },
+    {
+      "code": "unicorn(no-useless-undefined)",
+      "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+      "line": 557
+    },
+    {
+      "code": "promise(prefer-catch)",
+      "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+      "line": 573
+    },
+    {
+      "code": "promise(prefer-await-to-then)",
+      "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+      "line": 573
+    }
+  ],
+  "launch_sites": [
+    {
+      "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+      "line": 557,
+      "source": "drain.catch(() => undefined);"
+    },
+    {
+      "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+      "line": 573,
+      "source": "bridgedHandle.awaitResult().then(settleWatcher, settleWatcher);"
+    }
+  ],
+  "native_admission_patch": {
+    "path": "m35-session.patch",
+    "sha256": "22e1a7dfda29e0638a7fdc6d99f870ff893072fdf99f65e8d20049f915e1abc8",
+    "bytes": 995,
+    "apply_only": "M35 atomic canonical target/directive/coverage switch"
+  },
+  "retained": {
+    "files_processed": 14,
+    "diagnostics": 0,
+    "complete_individual_positive_controls": 14
+  },
+  "metadata": {
+    "native_firing_inventory": {
+      "tags": 112,
+      "files": 9
+    },
+    "additional_inline_tags": 32,
+    "total_ast_associations": 144,
+    "ast_tagged_files": 10,
+    "owned_tags": 34,
+    "optional_tags_removed": 2,
+    "experimental_removed": 0,
+    "association_hashes": [
+      {
+        "path": "typescript/host/remote-session/src/index.ts",
+        "baseline": "6625ee8442ccacc2957d7dae8a55210f26168c784ad79f5eb155aba0bb42eb1c",
+        "current": "6625ee8442ccacc2957d7dae8a55210f26168c784ad79f5eb155aba0bb42eb1c",
+        "native_firing": 10,
+        "additional_inline": 0
+      },
+      {
+        "path": "typescript/host/remote-session/src/lib/remote-client-session.ts",
+        "baseline": "0a75b4d7d3f86080b01792b0d81c7c99c722f218cc5effdb52b53bae5884eb4d",
+        "current": "0a75b4d7d3f86080b01792b0d81c7c99c722f218cc5effdb52b53bae5884eb4d",
+        "native_firing": 10,
+        "additional_inline": 0
+      },
+      {
+        "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
+        "baseline": "9d73811ebcd7631799df4c739195fd10b526e4bced6d5691bb1dec2173bcca74",
+        "current": "9d73811ebcd7631799df4c739195fd10b526e4bced6d5691bb1dec2173bcca74",
+        "native_firing": 2,
+        "additional_inline": 0
+      },
+      {
+        "path": "typescript/host/session-client/src/index.ts",
+        "baseline": "22c3bf87d854dbe144b06e45c5a2e1f14a091b2d3cd2c24ba1082b844e320c1c",
+        "current": "22c3bf87d854dbe144b06e45c5a2e1f14a091b2d3cd2c24ba1082b844e320c1c",
+        "native_firing": 37,
+        "additional_inline": 0
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "baseline": "f04df793bad8f6797758d3b759078c6359279ae1f57e9a98e20bb1b2bb9f9cca",
+        "current": "f04df793bad8f6797758d3b759078c6359279ae1f57e9a98e20bb1b2bb9f9cca",
+        "native_firing": 9,
+        "additional_inline": 0
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-protocol-types.ts",
+        "baseline": "450ca8b03a7ca74d1e6f93b848253ac1bbb60f2ba938cfa64d9bc4ad4f46a314",
+        "current": "450ca8b03a7ca74d1e6f93b848253ac1bbb60f2ba938cfa64d9bc4ad4f46a314",
+        "native_firing": 0,
+        "additional_inline": 31
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "baseline": "f5a54f779840cfd523fd96ece81c6f75a88dd85e9cc8fcc8118ce66a27bb2f40",
+        "current": "f5a54f779840cfd523fd96ece81c6f75a88dd85e9cc8fcc8118ce66a27bb2f40",
+        "native_firing": 10,
+        "additional_inline": 1
+      },
+      {
+        "path": "typescript/host/session/src/index.ts",
+        "baseline": "1c5e0f4f3940c83e1fb6e3b223c76b38fb7edb5a0f071db4c8b02e3f43c1b018",
+        "current": "1c5e0f4f3940c83e1fb6e3b223c76b38fb7edb5a0f071db4c8b02e3f43c1b018",
+        "native_firing": 17,
+        "additional_inline": 0
+      },
+      {
+        "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+        "baseline": "6060f152ff31d7184d0b09b46c43409692ff9f63eb92b6608b2c721e40510a80",
+        "current": "6060f152ff31d7184d0b09b46c43409692ff9f63eb92b6608b2c721e40510a80",
+        "native_firing": 3,
+        "additional_inline": 0
+      },
+      {
+        "path": "typescript/host/session/src/lib/session-frame-shapes.ts",
+        "baseline": "29172e0549c539103d596c8408c5dc9956ea990c92f1678cbf9e4602d28dc996",
+        "current": "29172e0549c539103d596c8408c5dc9956ea990c92f1678cbf9e4602d28dc996",
+        "native_firing": 14,
+        "additional_inline": 0
+      }
+    ],
+    "native_exception_regions": 5,
+    "removed_and_unused_controls": "all five pass"
+  },
+  "decisions": [
+    "Complete structural payload guards derive field requirements from spec/host/session/typespec/main.tsp and existing core shapes. Keep envelope first-failure order and existing rejection messages, unknown payload values, identity, extra properties and duplicate approval decisions.",
+    "Reject malformed nested fields before touching handles; validate all content variants and optional fields without adopting strict core exact-key/unique-decision/serialization policy.",
+    "Use verified native Promise.withResolvers for actual deferred queue reads, endpoint dispatch and fake result handling; no dependency or compatibility shim.",
+    "Normalize non-Error event-stream rejection values into Error with original cause; retain existing Error identity.",
+    "Await the ORIGINAL Promise.resolve terminal IteratorResult in async iterator.return after the same synchronous close. No added promise, discarded scheduling await, waiter tracking or generator redesign. Approved OD-09 internal async convention; six isolated protocol traces deep-equal.",
+    "Use canonical typed stream events and actual completed ExecutionResult in tests instead of unsafe casts; await captured rejection values because Bun rejection matchers are statically void.",
+    "Use recursive partial-read test collection to avoid both await-in-loop and for-await early-return closure of the shared outbound iterator.",
+    "Remove two optional packageDocumentation tags only, keeping prose and required experimental tags. Five narrow jsdoc/check-tag-names regions are separately authorized metadata, never legacy suppression counterparts.",
+    "Retain the exact two committed background launch handler statements under A11, preserving their existing timing and rejection handling; no source void launch is introduced in M27."
+  ],
+  "api_verification": {
+    "newApi": "Promise.withResolvers<T>(): PromiseWithResolvers<T>",
+    "spec": "https://tc39.es/ecma262/multipage/control-abstraction-objects.html#sec-promise.withResolvers",
+    "reference": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers",
+    "installedType": "node_modules/typescript/lib/lib.es2024.promise.d.ts:32",
+    "runtime": "Bun1.4.2 resolve/reject identity probe bx-m27-api-probe.log",
+    "oxcDocumentation": "OXC online check-tag-names page unavailable; installed1.86.0 diagnostics, registry/effective config and live controls verified locally."
+  },
+  "code_conventions": [
+    {
+      "kind": "builtinAPI",
+      "name": "Promise.withResolvers",
+      "rationale": "direct replacement for real deferred promise executor plumbing; signature/types/runtime verified"
+    },
+    {
+      "kind": "internalAsyncConvention",
+      "name": "await original returned operation promise",
+      "rationale": "await the original IteratorResult Promise.resolve contract value after synchronous close, rather than add artificial work; six equivalent protocol traces"
+    },
+    {
+      "kind": "internalErrorConvention",
+      "name": "Error with cause for non-Error queue failure",
+      "rationale": "allowed OD-09 normalization with unchanged existing Error identity"
+    },
+    {
+      "kind": "testPattern",
+      "name": "typed controllable deferred handles, rejectionOf, recursive partial iterator collection",
+      "rationale": "meaningful public assertions, actual canonical events/results, and preserved queue partial-read lifecycle"
+    },
+    {
+      "kind": "activeMetadataException",
+      "name": "five bounded jsdoc/check-tag-names regions",
+      "rationale": "required experimental authority; removed/unused controls measured independently of original Biome directives"
+    },
+    {
+      "kind": "publicContractShape",
+      "name": "method signatures rendered as function-valued properties",
+      "rationale": "shipped method-signature-style rule; names/parameters/results retained"
+    },
+    {
+      "kind": "privatePattern",
+      "name": "complete packet structural guards plus unknown-array boundary",
+      "rationale": "Validate six content variants and optional payload fields; typed unknown-array traversal exposes sparse entries while preserving payload identity/extras/duplicate decisions; no policy or dependency change"
+    }
+  ],
+  "behavior": {
+    "protocol_scenarios": [
+      "pending-next-early-return",
+      "queued-items-return",
+      "next-before-return-with-buffer",
+      "empty-repeated-return",
+      "error-pending-read-and-return",
+      "error-buffered-items"
+    ],
+    "protocol_equal": true,
+    "canonical_tests": 33,
+    "assertions": 66,
+    "exports_smoke": true,
+    "source_typecheck": true,
+    "format": true
+  },
+  "original_biome_directives": 4,
+  "early_deletions": [],
+  "new_biome_directives": [],
+  "native_legacy_counterparts_added": [],
+  "raw_artifacts": [
+    {
+      "name": "bx-m27-summary.json",
+      "sha256": "14f18147c35ce866904d3d22b243372f52418679ad9e9610a71f36223b91da28",
+      "bytes": 51860
+    },
+    {
+      "name": "bx-m27-protocol.json",
+      "sha256": "7d6d72942b5a5bd862d894c23219db6764c2d7b7354ed2d73f88fd5264b87772",
+      "bytes": 6369
+    },
+    {
+      "name": "bx-m27-measurement.json",
+      "sha256": "1a45bb8f434032d9905438bc2cd9d3850f56f325bc1054f584016a945a11bdd0",
+      "bytes": 46539
+    }
+  ]
+}

@@ -16,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import type { ExecutionHandle } from "@tuvren/core/execution";
+import type { ExecutionHandle, ExecutionResult } from "@tuvren/core/execution";
 import {
   createDuplexSessionBinding,
   SESSION_REJECTION_CODE_CAPABILITY_RESULT_STALE,
@@ -26,21 +26,23 @@ import {
 
 describe("host-session package exports", () => {
   test("expose the binding factory and rejection code constants", () => {
-    const handle = {
-      awaitResult: () => Promise.reject(new Error("not used")),
-      cancel: () => undefined,
-      events: () => ({
-        [Symbol.asyncIterator]: () => ({
-          next: () =>
-            Promise.resolve({ done: true as const, value: undefined }),
-        }),
-      }),
+    const result = Promise.withResolvers<ExecutionResult>();
+    const handle: ExecutionHandle = {
+      awaitResult: async () => await result.promise,
+      cancel: () => {
+        throw new Error("not used");
+      },
+      async *events() {
+        yield* [];
+      },
       resolveApproval: () => {
         throw new Error("not used");
       },
       status: () => ({ iterationCount: 0, phase: "running" as const }),
-      steer: () => undefined,
-    } as unknown as ExecutionHandle;
+      steer: () => {
+        throw new Error("not used");
+      },
+    };
 
     const binding = createDuplexSessionBinding(handle, {
       sessionId: "smoke-session",
