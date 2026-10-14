@@ -1,0 +1,843 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BX002",
+  "baseline_commit": "054bd042f658d9a43db0bc154a6c64c377a6140e",
+  "measurement_commit": "906d4b1306ce879afd36e6bb8333a8f0a89c9e97",
+  "owned_paths": [
+    "typescript/host"
+  ],
+  "identity_convention": "repository-relative path::Biome rule::one-based occurrence within that path/rule; line is informational",
+  "drift": {
+    "added": [],
+    "removed": [],
+    "changed_reasons": []
+  },
+  "provenance": {
+    "measurement_script": "bx-m6-measure.mjs",
+    "assertion_script": "bx-m6-finalize.mjs",
+    "commands": "bx-m6-command-results.json",
+    "retained_full_scope_report": "bx-m6-biome-retained.json",
+    "native_type_aware_report": "bx-m6-oxlint-type-aware.json",
+    "native_syntactic_report": "bx-m6-oxlint-syntactic.json",
+    "effective_config_report": "bx-m6-oxlint-effective.json",
+    "shipped_effective_config_report": "bx-m6-oxlint-shipped-effective.json",
+    "registry_report": "bx-m6-oxlint-rules.json",
+    "before_hashes": "bx-m6-before-hashes.json",
+    "after_hashes": "bx-m6-after-hashes.json",
+    "effective_policy_equal": true,
+    "source_config_bytes_unchanged": true,
+    "mirror_limitation": "Biome excludes .cache mirrors; successful measurements use one individually unsuppressed in-scope source restored in finally. Each report asserts exactly one file was processed.",
+    "report_commands": [
+      {
+        "report": "bx-m6-biome-retained.json",
+        "command": [
+          "bunx",
+          "--bun",
+          "biome",
+          "lint",
+          "--reporter=json",
+          "--max-diagnostics=none",
+          "typescript/host"
+        ],
+        "exit_code": 0,
+        "sha256": "5aead9fc80911e4c2e37ae25b6cbafb038193addf88278f3eca080c37da63cce"
+      },
+      {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "command": [
+          "bunx",
+          "--bun",
+          "oxlint",
+          "--type-aware",
+          "--format=json",
+          "typescript/host"
+        ],
+        "exit_code": 1,
+        "sha256": "6dbc04f416dedd7cd753b06049d4e17484a8c76a7bad0321251f980d6bc2c322"
+      },
+      {
+        "report": "bx-m6-oxlint-syntactic.json",
+        "command": [
+          "bunx",
+          "--bun",
+          "oxlint",
+          "--format=json",
+          "typescript/host"
+        ],
+        "exit_code": 1,
+        "sha256": "4eb71d464e7a09dc67a40900a5f420ea79cb1b893a46de50135932b5afa00865"
+      },
+      {
+        "report": "bx-m6-oxlint-effective.json",
+        "command": [
+          "bunx",
+          "--bun",
+          "oxlint",
+          "--print-config"
+        ],
+        "exit_code": 0,
+        "sha256": "095532173f32960707fa888aa8865907b7e9e0e886617c3f6dd826ab06be3554"
+      },
+      {
+        "report": "bx-m6-oxlint-shipped-effective.json",
+        "command": [
+          "bunx",
+          "--bun",
+          "oxlint",
+          "-c",
+          "/home/oscar/GitHub/Tuvren/framework/.cache/execute-wave/plans/wave-1-bw-bx-054bd042/logs/bx-m6-shipped-core.json",
+          "--print-config"
+        ],
+        "exit_code": 0,
+        "sha256": "13fa10d79524f2db9e06b7d56057c814585ae235cd07e6ba6304d11b5acc2f32"
+      },
+      {
+        "report": "bx-m6-oxlint-rules.json",
+        "command": [
+          "bunx",
+          "--bun",
+          "oxlint",
+          "--rules",
+          "--format=json"
+        ],
+        "exit_code": 0,
+        "sha256": "2a8ddfda57f9baa5f855f45f8a1f9c319cd357abab0a94c64641bc9cef6cb98d"
+      }
+    ],
+    "tool_versions": {
+      "bun": "1.4.2",
+      "biome": "2.5.14",
+      "oxlint": "1.86.0",
+      "oxlint_tsgolint": "7.0.2003",
+      "ultracite": "7.12.2",
+      "ultracite_biome": "7.4.2",
+      "typescript": "6.0.2"
+    },
+    "root_assist_enabled": false,
+    "all_tracked_bytes_sha256": "2ac3136e78c06e668f0ff589d12c8ea7e98ffd84c15c7cca1c5ea26075e0a257",
+    "native_engine_reported_rules": 474
+  },
+  "entries": [
+    {
+      "identity": "typescript/host/remote-session/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/remote-session/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_candidate_options": {
+        "effective_rule": "deny",
+        "default_threshold": 100,
+        "registered": true,
+        "type_aware": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "3885ed3034eb9e2e2419f88768b9bcec5548498fbabdc6f1743ade0efb7de02c",
+        "original_bytes_sha256": "3885ed3034eb9e2e2419f88768b9bcec5548498fbabdc6f1743ade0efb7de02c",
+        "unsuppressed_bytes_sha256": "0f6887e0c8cae6c99e5c8541fdc12e5bd0b20e838466ff3eb464df905f4b5aa9",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 1,
+        "suppressed_report": "bx-m6-biome-suppressed-1.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-1.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 1,
+        "diagnostic_excerpts": [
+          {
+            "category": "lint/performance/noBarrelFile",
+            "message": "Avoid barrel files, they slow down performance, and cause large module graphs with modules that go unused.",
+            "location": {
+              "path": "typescript/host/remote-session/src/index.ts",
+              "start": {
+                "line": 50,
+                "column": 1
+              },
+              "end": {
+                "line": 50,
+                "column": 76
+              }
+            }
+          }
+        ],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "3885ed3034eb9e2e2419f88768b9bcec5548498fbabdc6f1743ade0efb7de02c"
+      }
+    },
+    {
+      "identity": "typescript/host/remote-session/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/remote-session/src/index.ts",
+      "directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "rule": "assist/source/organizeImports",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "baseline_line": 18,
+      "live_line": 18,
+      "native_candidate_rule": null,
+      "native_candidate_options": {
+        "effective_rule": null,
+        "registered": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "3885ed3034eb9e2e2419f88768b9bcec5548498fbabdc6f1743ade0efb7de02c",
+        "original_bytes_sha256": "3885ed3034eb9e2e2419f88768b9bcec5548498fbabdc6f1743ade0efb7de02c",
+        "unsuppressed_bytes_sha256": "642a113699a5f95d95089c696c8016bd34e796a6fe8bd732efc89bec65f8881f",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 0,
+        "suppressed_report": "bx-m6-biome-suppressed-2.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-2.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 0,
+        "diagnostic_excerpts": [],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "3885ed3034eb9e2e2419f88768b9bcec5548498fbabdc6f1743ade0efb7de02c"
+      }
+    },
+    {
+      "identity": "typescript/host/remote-session/src/lib/remote-client-session.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/host/remote-session/src/lib/remote-client-session.ts",
+      "directive": "// biome-ignore lint/suspicious/useAwait: kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.",
+      "rule": "lint/suspicious/useAwait",
+      "original_reason": "kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.",
+      "baseline_line": 272,
+      "live_line": 274,
+      "native_candidate_rule": "eslint/require-await",
+      "native_candidate_options": {
+        "effective_rule": "deny",
+        "registered": true,
+        "type_aware": false
+      },
+      "equivalent_native_rule": "eslint/require-await",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-equivalent-native-counterpart-subject-to-fresh-admission-proof",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [
+          {
+            "code": "eslint(require-await)",
+            "message": "Async function has no `await` expression.",
+            "help": "Consider removing the `async` keyword.",
+            "lines": [
+              275
+            ],
+            "spans": [
+              {
+                "offset": 10761,
+                "length": 356
+              }
+            ]
+          }
+        ],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-await-in-loop)",
+          "eslint(require-await)",
+          "eslint(require-unicode-regexp)",
+          "jsdoc(check-tag-names)",
+          "promise(prefer-await-to-callbacks)",
+          "promise(prefer-await-to-then)",
+          "typescript(method-signature-style)",
+          "typescript(no-unsafe-type-assertion)",
+          "typescript(strict-boolean-expressions)",
+          "unicorn(no-useless-undefined)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "eslint/require-await fires on the same next async iterator method. Its original AsyncIterator/lockstep contract reason remains valid; preserve it for fresh admission reconciliation. The separate typescript/require-await candidate is allow in the shipped preset."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "878a40bfd22b93607333dcf54faa11edff4cc6b55c9e4a07a2c426223aeaf129",
+        "original_bytes_sha256": "878a40bfd22b93607333dcf54faa11edff4cc6b55c9e4a07a2c426223aeaf129",
+        "unsuppressed_bytes_sha256": "b51f04a9252b49acf7333fd7bbe6755394965c7ad5beee2f561ef454b3d55669",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 1,
+        "suppressed_report": "bx-m6-biome-suppressed-3.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-3.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 1,
+        "diagnostic_excerpts": [
+          {
+            "category": "lint/suspicious/useAwait",
+            "message": "This async function lacks an await expression.",
+            "location": {
+              "path": "typescript/host/remote-session/src/lib/remote-client-session.ts",
+              "start": {
+                "line": 275,
+                "column": 13
+              },
+              "end": {
+                "line": 286,
+                "column": 8
+              }
+            }
+          }
+        ],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "878a40bfd22b93607333dcf54faa11edff4cc6b55c9e4a07a2c426223aeaf129"
+      }
+    },
+    {
+      "identity": "typescript/host/repl/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/repl/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional proving-host surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional proving-host surface.",
+      "baseline_line": 16,
+      "live_line": 16,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_candidate_options": {
+        "effective_rule": "deny",
+        "default_threshold": 100,
+        "registered": true,
+        "type_aware": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "4c1fa4178c2dbc81a422f373b781f48a5761e1da296062d015bc337418c1a52e",
+        "original_bytes_sha256": "4c1fa4178c2dbc81a422f373b781f48a5761e1da296062d015bc337418c1a52e",
+        "unsuppressed_bytes_sha256": "720acb26c70750f47343bd472d17150103bb95ad0b54b3c98589b2a3033ea717",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 1,
+        "suppressed_report": "bx-m6-biome-suppressed-4.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-4.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 1,
+        "diagnostic_excerpts": [
+          {
+            "category": "lint/performance/noBarrelFile",
+            "message": "Avoid barrel files, they slow down performance, and cause large module graphs with modules that go unused.",
+            "location": {
+              "path": "typescript/host/repl/src/index.ts",
+              "start": {
+                "line": 18,
+                "column": 1
+              },
+              "end": {
+                "line": 18,
+                "column": 65
+              }
+            }
+          }
+        ],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "4c1fa4178c2dbc81a422f373b781f48a5761e1da296062d015bc337418c1a52e"
+      }
+    },
+    {
+      "identity": "typescript/host/repl/src/lib/repl-serve-ws.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
+      "directive": "// biome-ignore lint/correctness/noUndeclaredVariables: Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: \"Bun APIs are fine here\").",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: \"Bun APIs are fine here\").",
+      "baseline_line": 596,
+      "live_line": 593,
+      "native_candidate_rule": "eslint/no-undef",
+      "native_candidate_options": {
+        "effective_rule": null,
+        "registered": true,
+        "type_aware": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-use-before-define)",
+          "eslint(prefer-const)",
+          "jsdoc(check-tag-names)",
+          "promise(prefer-await-to-callbacks)",
+          "promise(prefer-await-to-then)",
+          "typescript(consistent-return)",
+          "typescript(method-signature-style)",
+          "typescript(promise-function-async)",
+          "unicorn(consistent-function-scoping)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "eslint/no-undef is registered but absent from the effective shipped rules. No equivalent native diagnostic fires for Bun; do not enable a rule or invent a native exception."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "30390589e2cad353dcc614a7d9b0485a67fe31b22e2412eef20fec8b04f5aba2",
+        "original_bytes_sha256": "30390589e2cad353dcc614a7d9b0485a67fe31b22e2412eef20fec8b04f5aba2",
+        "unsuppressed_bytes_sha256": "a7ec7ce18493fe370693e3182589af8d95e382c38e67b94ac97e1015b932cf5f",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 1,
+        "suppressed_report": "bx-m6-biome-suppressed-5.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-5.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 1,
+        "diagnostic_excerpts": [
+          {
+            "category": "lint/correctness/noUndeclaredVariables",
+            "message": "The Bun variable is undeclared.",
+            "location": {
+              "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
+              "start": {
+                "line": 594,
+                "column": 18
+              },
+              "end": {
+                "line": 594,
+                "column": 21
+              }
+            }
+          }
+        ],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "30390589e2cad353dcc614a7d9b0485a67fe31b22e2412eef20fec8b04f5aba2"
+      }
+    },
+    {
+      "identity": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+      "directive": "// biome-ignore lint/correctness/noUndeclaredVariables: Bun global (this test drives a real Bun subprocess).",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "Bun global (this test drives a real Bun subprocess).",
+      "baseline_line": 170,
+      "live_line": 170,
+      "native_candidate_rule": "eslint/no-undef",
+      "native_candidate_options": {
+        "effective_rule": null,
+        "registered": true,
+        "type_aware": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "eslint(func-style)",
+          "eslint(no-await-in-loop)",
+          "eslint(no-promise-executor-return)",
+          "eslint(no-use-before-define)",
+          "promise(avoid-new)",
+          "typescript(method-signature-style)",
+          "typescript(no-unsafe-type-assertion)",
+          "typescript(non-nullable-type-assertion-style)",
+          "typescript(strict-void-return)",
+          "unicorn(import-style)",
+          "unicorn(no-useless-undefined)",
+          "unicorn(prefer-add-event-listener)",
+          "unicorn(prefer-number-coercion)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "eslint/no-undef is registered but absent from the effective shipped rules. No equivalent native diagnostic fires for Bun; do not enable a rule or invent a native exception."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "a2415499e79a81dade98f6049733179d0eb3973c4fab94cf414e083c9eef4f48",
+        "original_bytes_sha256": "a2415499e79a81dade98f6049733179d0eb3973c4fab94cf414e083c9eef4f48",
+        "unsuppressed_bytes_sha256": "00e0c9e508adc165bb0d013c1cb93a75be7916b93d2b2d092671a0645f8b36c5",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 1,
+        "suppressed_report": "bx-m6-biome-suppressed-6.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-6.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 1,
+        "diagnostic_excerpts": [
+          {
+            "category": "lint/correctness/noUndeclaredVariables",
+            "message": "The Bun variable is undeclared.",
+            "location": {
+              "path": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+              "start": {
+                "line": 171,
+                "column": 16
+              },
+              "end": {
+                "line": 171,
+                "column": 19
+              }
+            }
+          }
+        ],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "a2415499e79a81dade98f6049733179d0eb3973c4fab94cf414e083c9eef4f48"
+      }
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session-client/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_candidate_options": {
+        "effective_rule": "deny",
+        "default_threshold": 100,
+        "registered": true,
+        "type_aware": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "ac326d77cd6ac6d4258e4f913e733d2b8b8ad65df249e38c9510025c1aab4fe9",
+        "original_bytes_sha256": "ac326d77cd6ac6d4258e4f913e733d2b8b8ad65df249e38c9510025c1aab4fe9",
+        "unsuppressed_bytes_sha256": "4ef6f4b9f338b8da15367ea46cafdb56366a44c646cfc56a465ba2c3a1941b28",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 1,
+        "suppressed_report": "bx-m6-biome-suppressed-7.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-7.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 1,
+        "diagnostic_excerpts": [
+          {
+            "category": "lint/performance/noBarrelFile",
+            "message": "Avoid barrel files, they slow down performance, and cause large module graphs with modules that go unused.",
+            "location": {
+              "path": "typescript/host/session-client/src/index.ts",
+              "start": {
+                "line": 81,
+                "column": 1
+              },
+              "end": {
+                "line": 81,
+                "column": 63
+              }
+            }
+          }
+        ],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "ac326d77cd6ac6d4258e4f913e733d2b8b8ad65df249e38c9510025c1aab4fe9"
+      }
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session-client/src/index.ts",
+      "directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "rule": "assist/source/organizeImports",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "baseline_line": 18,
+      "live_line": 18,
+      "native_candidate_rule": null,
+      "native_candidate_options": {
+        "effective_rule": null,
+        "registered": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "ac326d77cd6ac6d4258e4f913e733d2b8b8ad65df249e38c9510025c1aab4fe9",
+        "original_bytes_sha256": "ac326d77cd6ac6d4258e4f913e733d2b8b8ad65df249e38c9510025c1aab4fe9",
+        "unsuppressed_bytes_sha256": "8c098b06d060cde280c646e1207feb9d5251b0e0de39ab743fdcf29052bef96b",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 0,
+        "suppressed_report": "bx-m6-biome-suppressed-8.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-8.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 0,
+        "diagnostic_excerpts": [],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "ac326d77cd6ac6d4258e4f913e733d2b8b8ad65df249e38c9510025c1aab4fe9"
+      }
+    },
+    {
+      "identity": "typescript/host/session/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_candidate_options": {
+        "effective_rule": "deny",
+        "default_threshold": 100,
+        "registered": true,
+        "type_aware": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "b54918aeaa0d82261d0a2e567206f68b9c9b0876ffa77180dba6710d45910f84",
+        "original_bytes_sha256": "b54918aeaa0d82261d0a2e567206f68b9c9b0876ffa77180dba6710d45910f84",
+        "unsuppressed_bytes_sha256": "d08bae30851f066f9d0fd02162e09fc12f868faf25b3c898fb0691ed1b2b5ef1",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 1,
+        "suppressed_report": "bx-m6-biome-suppressed-9.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-9.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 1,
+        "diagnostic_excerpts": [
+          {
+            "category": "lint/performance/noBarrelFile",
+            "message": "Avoid barrel files, they slow down performance, and cause large module graphs with modules that go unused.",
+            "location": {
+              "path": "typescript/host/session/src/index.ts",
+              "start": {
+                "line": 37,
+                "column": 1
+              },
+              "end": {
+                "line": 37,
+                "column": 78
+              }
+            }
+          }
+        ],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "b54918aeaa0d82261d0a2e567206f68b9c9b0876ffa77180dba6710d45910f84"
+      }
+    },
+    {
+      "identity": "typescript/host/session/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session/src/index.ts",
+      "directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "rule": "assist/source/organizeImports",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "baseline_line": 18,
+      "live_line": 18,
+      "native_candidate_rule": null,
+      "native_candidate_options": {
+        "effective_rule": null,
+        "registered": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "b54918aeaa0d82261d0a2e567206f68b9c9b0876ffa77180dba6710d45910f84",
+        "original_bytes_sha256": "b54918aeaa0d82261d0a2e567206f68b9c9b0876ffa77180dba6710d45910f84",
+        "unsuppressed_bytes_sha256": "7df3f616e52d166aaf445502ad89a303be242f24434b546541a8c0141ee683ca",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 0,
+        "suppressed_report": "bx-m6-biome-suppressed-10.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-10.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 0,
+        "diagnostic_excerpts": [],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "b54918aeaa0d82261d0a2e567206f68b9c9b0876ffa77180dba6710d45910f84"
+      }
+    },
+    {
+      "identity": "typescript/host/session/src/lib/session-frame-shapes.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session/src/lib/session-frame-shapes.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This module is the intentional focused frame-envelope surface for issue #99.",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This module is the intentional focused frame-envelope surface for issue #99.",
+      "baseline_line": 17,
+      "live_line": 17,
+      "native_candidate_rule": "oxc/no-barrel-file",
+      "native_candidate_options": {
+        "effective_rule": "deny",
+        "default_threshold": 100,
+        "registered": true,
+        "type_aware": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-no-live-diagnostic-before-admission",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "df7f704af78ae9e828acd8021afceeaa79504809e38dc92a63d440887c895573",
+        "original_bytes_sha256": "df7f704af78ae9e828acd8021afceeaa79504809e38dc92a63d440887c895573",
+        "unsuppressed_bytes_sha256": "0ad2d11794fef82d5f8fa12c1c8ce3cb33af6622df905cdd5c8babec28e54248",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 0,
+        "suppressed_report": "bx-m6-biome-suppressed-11.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-11.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 0,
+        "diagnostic_excerpts": [],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "df7f704af78ae9e828acd8021afceeaa79504809e38dc92a63d440887c895573"
+      }
+    },
+    {
+      "identity": "typescript/host/session/src/lib/session-frame-shapes.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session/src/lib/session-frame-shapes.ts",
+      "directive": "// biome-ignore-all assist/source/organizeImports: The organizer collapses the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "rule": "assist/source/organizeImports",
+      "original_reason": "The organizer collapses the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "baseline_line": 18,
+      "live_line": 18,
+      "native_candidate_rule": null,
+      "native_candidate_options": {
+        "effective_rule": null,
+        "registered": false
+      },
+      "equivalent_native_rule": null,
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled",
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true,
+      "currently_retained": true,
+      "early_deletion": null,
+      "native_proof": {
+        "report": "bx-m6-oxlint-type-aware.json",
+        "equivalent_firing_diagnostics": [],
+        "actual_file_diagnostic_codes": [
+          "jsdoc(check-tag-names)"
+        ],
+        "type_aware_exit": 1,
+        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "rationale": "Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."
+      },
+      "retained_proof": {
+        "mode": "individual-restored-in-scope-probe",
+        "source_sha256": "df7f704af78ae9e828acd8021afceeaa79504809e38dc92a63d440887c895573",
+        "original_bytes_sha256": "df7f704af78ae9e828acd8021afceeaa79504809e38dc92a63d440887c895573",
+        "unsuppressed_bytes_sha256": "573c76643b52a47413a9e3b91aaada78e6b924731edd2377def921f302250cc3",
+        "suppressed_exit": 0,
+        "unsuppressed_exit": 0,
+        "suppressed_report": "bx-m6-biome-suppressed-12.json",
+        "unsuppressed_report": "bx-m6-biome-unsuppressed-12.json",
+        "suppressed_matching_count": 0,
+        "unsuppressed_matching_count": 0,
+        "diagnostic_excerpts": [],
+        "original_retained": true,
+        "parsed_source_equal_without_comments": true,
+        "source_restored_sha256": "df7f704af78ae9e828acd8021afceeaa79504809e38dc92a63d440887c895573"
+      }
+    }
+  ]
+}
