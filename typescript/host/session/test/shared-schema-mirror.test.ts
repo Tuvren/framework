@@ -81,7 +81,7 @@ function normalize(value: unknown): unknown {
 
 function readNormalized(dir: string, model: string): unknown {
   return normalize(
-    JSON.parse(readFileSync(resolve(dir, `${model}.json`), "utf8"))
+    JSON.parse(readFileSync(resolve(dir, `${model}.json`), "utf-8"))
   );
 }
 

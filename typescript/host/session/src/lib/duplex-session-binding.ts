@@ -256,7 +256,7 @@ function validateInboundFrame(
 
   switch (raw.kind) {
     case "client_result": {
-      const result = raw.result;
+      const { result } = raw;
       if (
         !(
           isRecord(result) &&
@@ -285,7 +285,7 @@ function validateInboundFrame(
       };
     }
     case "approval_response": {
-      const response = raw.response;
+      const { response } = raw;
       if (
         !(isRecord(response) && Array.isArray(response.decisions)) ||
         response.decisions.length === 0
@@ -310,7 +310,7 @@ function validateInboundFrame(
       };
     }
     case "steer": {
-      const signal = raw.signal;
+      const { signal } = raw;
       if (
         !(isRecord(signal) && Array.isArray(signal.parts)) ||
         signal.parts.length === 0
@@ -328,8 +328,8 @@ function validateInboundFrame(
           correlationId: raw.correlationId,
           kind: "steer",
           protocolVersion: "1",
-          signal: signal as unknown as InputSignal,
           sessionId,
+          signal: signal as unknown as InputSignal,
         },
         ok: true,
       };
