@@ -1,4 +1,18 @@
 entries:
+  - version: v0.48.0
+    date: 2026-10-14
+    by: stage
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.5
+    added:
+      - "Out-of-band EPIC-CR (github#156, 28 points, 6 tickets): on cold recovery of a preempted iterate, continue the interrupted tool batch from the branch head with the original assistant message and callIds instead of re-invoking the model; dispatch only missing retryable calls so the (turnId, callId) idempotency key is unchanged; abandon missing nonRetryable calls with a synthesized tool_interrupted_by_recovery error result per ADR-0052 section 2; certify through the run-liveness conformance plan; and close ADR-0065 open obligations 1 and 2. Planning found the TypeScript kernel's preemptExpired reactively checkpoints the stale run's staged work, so uncommittedStagedResults is normally empty and the original calls sit in committed history; spike SPK-KRT-CR001 confirms that shape before implementation."
+      - "Out-of-band EPIC-CS (github#155, 28 points, 7 tickets): an optional opaque host-owned admissionKey on InputSignal (executeTurn, steer(), and the duplex SessionSteerFrame), persisted in the framework-owned input_received or steering_incorporated event record of the incorporating checkpoint, exposed as an optional TurnSnapshot field through getTurnState and getTurnHistory, preferred over parts equality by recovery signal matching, and certified across every crash point between steer() and commit."
+      - "Rulings from the user in the 2026-10-14 planning session: abandoned nonRetryable calls become a synthesized error result rather than a blocked recovery; the admission key lives in the event record, not message metadata or the manifest; the read path is a TurnSnapshot field, not a new read method; the key applies to steer, the initial input, and the session steer frame. No ADR records these yet; the epic closeouts route them to Stage 3 as code decisions."
+    changed:
+      - "BT, BY, and CA now depend on CS, and CS on CR, because the out-of-band epics share typescript/runtime, typescript/core, and the conformance adapter with those lint ratchets and the user chose to land the product fixes first. The tooling chain starts after CS; BR, BV, and BZ stay in the first wave beside CR."
+      - "Estimates plan against INFO-CAL 1.55 actual-to-estimate over eight eligible completed epics; assumed tickets take the next Fibonacci step, and the 8-point KRT-CR003 is the one ceiling ticket."
   - version: v0.47.8
     date: 2026-10-14
     changed:
