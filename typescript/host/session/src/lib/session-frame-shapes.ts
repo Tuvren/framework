@@ -31,8 +31,6 @@
  * `ClientEndpointCapabilityAdvertisement`) come from
  * `@tuvren/core/capabilities`. Only the frame envelopes themselves —
  * transport-only wrappers around those shared payloads — are declared here.
- *
- * @packageDocumentation
  */
 
 import type {
@@ -43,6 +41,7 @@ import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { InputSignal } from "@tuvren/core/execution";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Every reason the session layer can refuse or fail to apply an inbound
  * frame (`spec/host/session/typespec/main.tsp` `SessionRejectionCode`).
@@ -207,3 +206,5 @@ export type SessionInboundFrame =
   | SessionApprovalResponseFrame
   | SessionSteerFrame
   | SessionCancelFrame;
+
+/* oxlint-enable jsdoc/check-tag-names */

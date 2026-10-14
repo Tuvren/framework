@@ -220,11 +220,12 @@
     "sequential_execution": true,
     "cyclic_initialization": true,
     "original_biome_identities": 12,
-    "experimental_annotations": 112,
-    "experimental_files": 9,
     "optional_packageDocumentation_tags": 8,
     "optional_transcript_scope": true,
-    "redaction": true
+    "redaction": true,
+    "native_firing_experimental_annotations": 112,
+    "native_firing_experimental_files": 9,
+    "experimental_inventory_note": "112/nine describes the original native-firing tag inventory. M27 AST reconciliation confirms32 additional pre-existing inline release tags; all144 associations across10files are preserved."
   },
   "verification": [
     {

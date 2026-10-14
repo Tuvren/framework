@@ -22,7 +22,8 @@ import type {
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import type { ExecutionHandle, InputSignal } from "@tuvren/core/execution";
-import type { ApprovalResponse } from "@tuvren/core/tools";
+import type { ContentPart } from "@tuvren/core/messages";
+import type { ApprovalDecision, ApprovalResponse } from "@tuvren/core/tools";
 
 import type {
   SessionInboundFrame,
@@ -31,11 +32,13 @@ import type {
   SessionRejectionFrame,
 } from "./session-frame-shapes.js";
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Options accepted by {@link createDuplexSessionBinding}.
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface DuplexSessionBindingOptions {
   /** Capabilities the binding's {@link AttachedClientEndpoint} advertises. Defaults to `[]`. */
   advertisedCapabilities?: ClientEndpointCapabilityAdvertisement[];
@@ -45,6 +48,7 @@ export interface DuplexSessionBindingOptions {
   sessionId?: string;
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * TypeScript binding surface for the `tuvren.framework.host-session`
  * authority packet (issue #99): bridges a single {@link ExecutionHandle}
@@ -54,11 +58,12 @@ export interface DuplexSessionBindingOptions {
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface DuplexSessionBinding {
   /** The client endpoint this binding wires into `AgentConfig.clientEndpoints`. */
   readonly clientEndpoint: AttachedClientEndpoint;
   /** The execution handle currently backing this binding (observability for tests/hosts). */
-  currentHandle(): ExecutionHandle;
+  currentHandle: () => ExecutionHandle;
   /**
    * Routes an inbound frame. Fire-and-forget: accepts `unknown` so callers
    * can hand it raw decoded wire payloads directly. Structural or state
@@ -66,7 +71,7 @@ export interface DuplexSessionBinding {
    * rather than throwing; only an unexpected non-`TuvrenRuntimeError` failure
    * from the underlying handle propagates to the caller.
    */
-  dispatchInbound(frame: unknown): void;
+  dispatchInbound: (frame: unknown) => void;
   /**
    * The single-consumer outbound frame stream (mirrors
    * `ExecutionHandle.events()`). Throws if called more than once.
@@ -78,15 +83,15 @@ export interface DuplexSessionBinding {
    * lags. Backpressure and connection lifecycle policy belong to the
    * transport layer above this binding.
    */
-  outbound(): AsyncIterable<SessionOutboundFrame>;
+  outbound: () => AsyncIterable<SessionOutboundFrame>;
   /** The session identifier carried on every frame this binding produces or accepts. */
   readonly sessionId: string;
 }
 
 /** A pending `next()` call on the outbound queue, settled once a value, close, or failure arrives. */
 interface OutboundQueueWaiter {
-  reject(error: unknown): void;
-  resolve(result: IteratorResult<SessionOutboundFrame>): void;
+  reject: (error: unknown) => void;
+  resolve: (result: IteratorResult<SessionOutboundFrame>) => void;
 }
 
 /**
@@ -98,7 +103,7 @@ interface OutboundQueueWaiter {
  */
 class DuplexSessionOutboundQueue implements AsyncIterable<SessionOutboundFrame> {
   private closed = false;
-  private failure: { error: unknown } | undefined;
+  private failure: { error: Error } | undefined;
   private readonly items: SessionOutboundFrame[] = [];
   private readonly waiters: OutboundQueueWaiter[] = [];
 
@@ -143,58 +148,153 @@ class DuplexSessionOutboundQueue implements AsyncIterable<SessionOutboundFrame> 
       return;
     }
 
-    this.failure = { error };
+    const failure =
+      error instanceof Error
+        ? error
+        : new Error("duplex session event stream failed", { cause: error });
+    this.failure = { error: failure };
     this.onTerminal?.();
     while (this.waiters.length > 0) {
-      this.waiters.shift()?.reject(error);
+      this.waiters.shift()?.reject(failure);
     }
   }
 
   [Symbol.asyncIterator](): AsyncIterator<SessionOutboundFrame> {
     return {
-      next: (): Promise<IteratorResult<SessionOutboundFrame>> => {
+      next: async (): Promise<IteratorResult<SessionOutboundFrame>> => {
         const value = this.items.shift();
         if (value !== undefined) {
-          return Promise.resolve({ done: false, value });
+          return { done: false, value };
         }
 
         if (this.failure !== undefined) {
-          return Promise.reject(this.failure.error);
+          throw this.failure.error;
         }
 
         if (this.closed) {
-          return Promise.resolve({ done: true, value: undefined });
+          return { done: true, value: undefined };
         }
 
-        return new Promise<IteratorResult<SessionOutboundFrame>>(
-          (resolve, reject) => {
-            this.waiters.push({ reject, resolve });
-          }
-        );
+        const pending =
+          Promise.withResolvers<IteratorResult<SessionOutboundFrame>>();
+        this.waiters.push(pending);
+        return await pending.promise;
       },
-      return: (): Promise<IteratorResult<SessionOutboundFrame>> => {
+      return: async (): Promise<IteratorResult<SessionOutboundFrame>> => {
         this.close();
-        return Promise.resolve({ done: true, value: undefined });
+        return await Promise.resolve({ done: true, value: undefined });
       },
     };
   }
 }
 
 interface PendingClientCall {
-  reject(error: unknown): void;
-  resolve(result: ClientReportedResult): void;
+  reject: (error: unknown) => void;
+  resolve: (result: ClientReportedResult) => void;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const isUnknownArray = (value: unknown): value is unknown[] =>
+  Array.isArray(value);
+
 // Mirrors the wire authority's NonEmptyString scalar (@minLength(1) plus
 // the ".*\S.*" must-contain-non-whitespace pattern) so the structural
 // guard cannot accept a value the generated JSON Schema rejects.
-const CONTAINS_NON_WHITESPACE = /\S/;
+const CONTAINS_NON_WHITESPACE = /\S/u;
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && CONTAINS_NON_WHITESPACE.test(value);
+
+// These guards check the packet's payload fields without imposing the core
+// validators' exact-key or unique-decision policy on the session envelope.
+const isClientReportedResult = (
+  value: unknown
+): value is ClientReportedResult =>
+  isRecord(value) &&
+  isNonEmptyString(value.callId) &&
+  isNonEmptyString(value.leaseToken) &&
+  "content" in value &&
+  (value.isError === undefined || typeof value.isError === "boolean");
+
+const isApprovalDecision = (value: unknown): value is ApprovalDecision =>
+  isRecord(value) &&
+  isNonEmptyString(value.callId) &&
+  typeof value.type === "string" &&
+  (value.message === undefined || isNonEmptyString(value.message));
+
+const isApprovalResponse = (value: unknown): value is ApprovalResponse =>
+  isRecord(value) &&
+  isUnknownArray(value.decisions) &&
+  value.decisions.length > 0 &&
+  [...value.decisions].every(isApprovalDecision);
+
+const isFilePartData = (value: unknown): value is string | Uint8Array =>
+  typeof value === "string" || value instanceof Uint8Array;
+
+const isOptionalString = (value: unknown): value is string | undefined =>
+  value === undefined || typeof value === "string";
+
+const isOptionalBoolean = (value: unknown): value is boolean | undefined =>
+  value === undefined || typeof value === "boolean";
+
+const isOptionalMetadata = (
+  value: unknown
+): value is Record<string, unknown> | undefined =>
+  value === undefined || isRecord(value);
+
+const isContentPart = (value: unknown): value is ContentPart => {
+  if (!(isRecord(value) && isOptionalMetadata(value.providerMetadata))) {
+    return false;
+  }
+  switch (value.type) {
+    case "text": {
+      return typeof value.text === "string";
+    }
+    case "reasoning": {
+      return (
+        typeof value.text === "string" &&
+        typeof value.redacted === "boolean" &&
+        (value.redacted || value.text.length > 0)
+      );
+    }
+    case "tool_call": {
+      return (
+        isNonEmptyString(value.callId) &&
+        isNonEmptyString(value.name) &&
+        "input" in value
+      );
+    }
+    case "tool_result": {
+      return (
+        isNonEmptyString(value.callId) &&
+        isNonEmptyString(value.name) &&
+        "output" in value &&
+        isOptionalBoolean(value.isError)
+      );
+    }
+    case "file": {
+      return (
+        isFilePartData(value.data) &&
+        isNonEmptyString(value.mediaType) &&
+        isOptionalString(value.filename)
+      );
+    }
+    case "structured": {
+      return "data" in value && isOptionalString(value.name);
+    }
+    default: {
+      return false;
+    }
+  }
+};
+
+const isInputSignal = (value: unknown): value is InputSignal =>
+  isRecord(value) &&
+  isUnknownArray(value.parts) &&
+  value.parts.length > 0 &&
+  [...value.parts].every(isContentPart);
 
 const extractCorrelationId = (raw: unknown): string => {
   if (isRecord(raw) && isNonEmptyString(raw.correlationId)) {
@@ -255,14 +355,7 @@ const validateInboundFrame = (
   switch (raw.kind) {
     case "client_result": {
       const { result } = raw;
-      if (
-        !(
-          isRecord(result) &&
-          isNonEmptyString(result.callId) &&
-          isNonEmptyString(result.leaseToken) &&
-          "content" in result
-        )
-      ) {
+      if (!isClientReportedResult(result)) {
         return {
           correlationId,
           message:
@@ -276,7 +369,7 @@ const validateInboundFrame = (
           correlationId: raw.correlationId,
           kind: "client_result",
           protocolVersion: "1",
-          result: result as unknown as ClientReportedResult,
+          result,
           sessionId,
         },
         ok: true,
@@ -284,10 +377,7 @@ const validateInboundFrame = (
     }
     case "approval_response": {
       const { response } = raw;
-      if (
-        !(isRecord(response) && Array.isArray(response.decisions)) ||
-        response.decisions.length === 0
-      ) {
+      if (!isApprovalResponse(response)) {
         return {
           correlationId,
           message:
@@ -301,7 +391,7 @@ const validateInboundFrame = (
           correlationId: raw.correlationId,
           kind: "approval_response",
           protocolVersion: "1",
-          response: response as unknown as ApprovalResponse,
+          response,
           sessionId,
         },
         ok: true,
@@ -309,10 +399,7 @@ const validateInboundFrame = (
     }
     case "steer": {
       const { signal } = raw;
-      if (
-        !(isRecord(signal) && Array.isArray(signal.parts)) ||
-        signal.parts.length === 0
-      ) {
+      if (!isInputSignal(signal)) {
         return {
           correlationId,
           message:
@@ -327,7 +414,7 @@ const validateInboundFrame = (
           kind: "steer",
           protocolVersion: "1",
           sessionId,
-          signal: signal as unknown as InputSignal,
+          signal,
         },
         ok: true,
       };
@@ -353,6 +440,7 @@ const validateInboundFrame = (
   }
 };
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Builds a duplex session binding over `handle` (KrakenFrameworkSpecification
  * §7, issue #99): merges `handle.events()` — and every successor handle
@@ -362,6 +450,7 @@ const validateInboundFrame = (
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const createDuplexSessionBinding = (
   handle: ExecutionHandle,
   options: DuplexSessionBindingOptions = {}
@@ -486,7 +575,7 @@ export const createDuplexSessionBinding = (
 
   const clientEndpoint: AttachedClientEndpoint = {
     advertisedCapabilities,
-    dispatch(
+    async dispatch(
       envelope: ClientInvocationEnvelope
     ): Promise<ClientReportedResult> {
       // A terminal session can never deliver a client_result, so a dispatch
@@ -494,11 +583,9 @@ export const createDuplexSessionBinding = (
       // registering a promise nothing will ever settle (the onTerminal sweep
       // has already run and will not run again).
       if (queue.isTerminal()) {
-        return Promise.reject(
-          new TuvrenRuntimeError(
-            `duplex session is closed; client dispatch "${envelope.callId}" cannot be delivered`,
-            { code: "duplex_session_closed" }
-          )
+        throw new TuvrenRuntimeError(
+          `duplex session is closed; client dispatch "${envelope.callId}" cannot be delivered`,
+          { code: "duplex_session_closed" }
         );
       }
 
@@ -506,11 +593,9 @@ export const createDuplexSessionBinding = (
       // call); guard defensively so a violation surfaces instead of silently
       // orphaning the first dispatch's promise.
       if (pendingClientCalls.has(envelope.callId)) {
-        return Promise.reject(
-          new TuvrenRuntimeError(
-            `client dispatch for callId "${envelope.callId}" is already pending`,
-            { code: "duplex_session_duplicate_call" }
-          )
+        throw new TuvrenRuntimeError(
+          `client dispatch for callId "${envelope.callId}" is already pending`,
+          { code: "duplex_session_duplicate_call" }
         );
       }
 
@@ -521,9 +606,9 @@ export const createDuplexSessionBinding = (
         sessionId,
       });
 
-      return new Promise<ClientReportedResult>((resolve, reject) => {
-        pendingClientCalls.set(envelope.callId, { reject, resolve });
-      });
+      const pending = Promise.withResolvers<ClientReportedResult>();
+      pendingClientCalls.set(envelope.callId, pending);
+      return await pending.promise;
     },
     endpointId,
   };
@@ -612,10 +697,10 @@ export const createDuplexSessionBinding = (
       }
       case "cancel": {
         routeCancel(validated.frame);
-        return;
+        break;
       }
       default: {
-        return;
+        break;
       }
     }
   };

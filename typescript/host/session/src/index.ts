@@ -18,8 +18,6 @@
 // biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.
 
 /**
- * @packageDocumentation
- *
  * `@tuvren/host-session` is the TypeScript reference binding for the
  * `tuvren.framework.host-session` authority packet (issue #99,
  * `spec/host/session/typespec/main.tsp`): it merges an `ExecutionHandle`'s
@@ -29,6 +27,7 @@
  * WebSocket, stdio, ...).
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /** @experimental */
 export type { DuplexSessionBinding } from "./lib/duplex-session-binding.js";
 /** @experimental */
@@ -64,3 +63,5 @@ export { SESSION_REJECTION_CODE_CAPABILITY_RESULT_STALE } from "./lib/session-fr
 export { SESSION_REJECTION_CODE_SESSION_FRAME_INVALID } from "./lib/session-frame-shapes.js";
 /** @experimental */
 export { SESSION_REJECTION_CODE_SESSION_FRAME_WRONG_STATE } from "./lib/session-frame-shapes.js";
+
+/* oxlint-enable jsdoc/check-tag-names */

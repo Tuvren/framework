@@ -9,8 +9,8 @@
   "files": [
     {
       "path": "safe-fixes.json",
-      "sha256": "acb493d7e88d2770e1390764a886230a91c8c6075bd0f3a62289fbe7b012a6ba",
-      "bytes": 18420,
+      "sha256": "3b140852b464c3f30af0850fc73bfae506e84ca76a93e6017d0341cc7cd16c7c",
+      "bytes": 18675,
       "role": "measurement"
     }
   ],

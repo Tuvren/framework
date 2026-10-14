@@ -16,7 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import path from "node:path";
 
 /**
  * Drift guard for the hand-mirrored shared payload models.
@@ -34,9 +34,12 @@ import { resolve } from "node:path";
  * must be identical.
  */
 
-const REPO_ROOT = resolve(import.meta.dir, "../../../..");
-const RUNTIME_API_DIR = resolve(REPO_ROOT, "spec/host/artifacts/json-schema");
-const SESSION_DIR = resolve(
+const REPO_ROOT = path.resolve(import.meta.dir, "../../../..");
+const RUNTIME_API_DIR = path.resolve(
+  REPO_ROOT,
+  "spec/host/artifacts/json-schema"
+);
+const SESSION_DIR = path.resolve(
   REPO_ROOT,
   "spec/host/session/artifacts/json-schema"
 );
@@ -56,7 +59,7 @@ const MIRRORED_MODELS = [
   "ApprovalResponse",
 ] as const;
 
-const PACKET_ID_BASE = /^https:\/\/tuvren\.dev\/schemas\/framework\/[a-z-]+\//;
+const PACKET_ID_BASE = /^https:\/\/tuvren\.dev\/schemas\/framework\/[a-z-]+\//u;
 
 const normalize = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -80,7 +83,9 @@ const normalize = (value: unknown): unknown => {
 };
 
 const readNormalized = (dir: string, model: string): unknown =>
-  normalize(JSON.parse(readFileSync(resolve(dir, `${model}.json`), "utf-8")));
+  normalize(
+    JSON.parse(readFileSync(path.resolve(dir, `${model}.json`), "utf-8"))
+  );
 
 describe("session packet mirrors of runtime-api shared models", () => {
   for (const model of MIRRORED_MODELS) {
