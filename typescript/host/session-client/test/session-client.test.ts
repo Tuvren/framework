@@ -64,6 +64,178 @@ describe("createSessionClient: handshake and events", () => {
     expect(events[0]?.event).toEqual({ type: "turn.start" });
     expect(events[0]?.cursor).toBe("cursor-1");
   });
+
+  test("ignores invalid acknowledgements and outbound envelopes before side effects", async () => {
+    const calls: string[] = [];
+    const { client, events, sockets, statuses } = makeClient({
+      capabilities: {
+        tool: () => {
+          calls.push("called");
+          return "ok";
+        },
+      },
+    });
+    client.connect();
+    const [socket] = sockets;
+    socket.open();
+    socket.receive({
+      kind: "handshake_ack",
+      protocolVersion: "2",
+      resumeStatus: "none",
+      sessionId: "test-session",
+    });
+    socket.receive({
+      kind: "handshake_ack",
+      protocolVersion: "1",
+      resumeStatus: "none",
+      sessionId: "another-session",
+    });
+    client.cancel();
+    expect(socket.sent).toHaveLength(1);
+    expect(statuses.some((status) => status.phase === "open")).toBe(false);
+
+    ack(socket, "none", "test-session");
+    expect(socket.sent).toHaveLength(2);
+    socket.receive({
+      cursor: "trusted-cursor",
+      frame: {
+        event: { marker: "trusted" },
+        kind: "event",
+        protocolVersion: "1",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    socket.receive({
+      cursor: "foreign-cursor",
+      frame: {
+        event: { marker: "foreign" },
+        kind: "event",
+        protocolVersion: "1",
+        sessionId: "other-session",
+      },
+      kind: "frame",
+    });
+    socket.receive({
+      cursor: "unsupported-cursor",
+      frame: {
+        event: { marker: "unsupported" },
+        kind: "event",
+        protocolVersion: "2",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    socket.receive({
+      frame: {
+        event: { marker: "accepted" },
+        kind: "event",
+        protocolVersion: "1",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    socket.receive({
+      frame: {
+        invocation: {
+          callId: "before-envelope-check",
+          capabilityId: "tool",
+          input: null,
+          leaseToken: "lease",
+        },
+        kind: "client_invocation",
+        protocolVersion: "2",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    await flush();
+    expect(events).toEqual([
+      { cursor: "trusted-cursor", event: { marker: "trusted" } },
+      { cursor: "trusted-cursor", event: { marker: "accepted" } },
+    ]);
+    expect(calls).toEqual([]);
+    expect(socket.sent).toHaveLength(2);
+
+    socket.receive({
+      frame: {
+        invocation: {
+          callId: "valid-control",
+          capabilityId: "tool",
+          input: null,
+          leaseToken: "lease",
+        },
+        kind: "client_invocation",
+        protocolVersion: "1",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    await flush();
+    expect(calls).toEqual(["called"]);
+    expect(socket.sent).toHaveLength(3);
+    expect(socket.lastFrame()).toMatchObject({
+      kind: "client_result",
+      result: { callId: "valid-control", content: "ok", leaseToken: "lease" },
+    });
+    client.close();
+  });
+
+  test("whitespace-only invocation identifiers are ignored before handlers", async () => {
+    const calls: string[] = [];
+    const { client, sockets } = makeClient({
+      capabilities: {
+        tool: () => {
+          calls.push("called");
+          return "ok";
+        },
+      },
+    });
+    client.connect();
+    const [socket] = sockets;
+    socket.open();
+    ack(socket);
+    for (const invocation of [
+      { callId: " ", capabilityId: "tool", input: null, leaseToken: "lease" },
+      { callId: "call", capabilityId: " \t", input: null, leaseToken: "lease" },
+      { callId: "call", capabilityId: "tool", input: null, leaseToken: "\n" },
+    ]) {
+      socket.receive({
+        frame: { invocation, kind: "client_invocation" },
+        kind: "frame",
+      });
+    }
+    await flush();
+    expect(calls).toEqual([]);
+    expect(socket.sent).toHaveLength(1);
+
+    socket.receive({
+      frame: {
+        invocation: {
+          callId: "valid-after-whitespace",
+          capabilityId: "tool",
+          input: null,
+          leaseToken: "lease",
+        },
+        kind: "client_invocation",
+        protocolVersion: "1",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    await flush();
+    expect(calls).toEqual(["called"]);
+    expect(socket.sent).toHaveLength(2);
+    expect(socket.lastFrame()).toMatchObject({
+      kind: "client_result",
+      result: {
+        callId: "valid-after-whitespace",
+        content: "ok",
+        leaseToken: "lease",
+      },
+    });
+    client.close();
+  });
 });
 
 describe("createSessionClient: capability dispatch", () => {

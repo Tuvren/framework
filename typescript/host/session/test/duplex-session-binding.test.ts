@@ -30,11 +30,23 @@ import type {
 } from "@tuvren/core/execution";
 import type { ApprovalResponse } from "@tuvren/core/tools";
 
+import { createSessionClient } from "../../session-client/src/index.ts";
+import type { SessionClientSocket } from "../../session-client/src/index.ts";
 import { createDuplexSessionBinding } from "../src/lib/duplex-session-binding.ts";
 import type {
   SessionOutboundFrame,
   SessionRejectionFrame,
 } from "../src/lib/session-frame-shapes.ts";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const requiredRecord = (value: unknown): Record<string, unknown> => {
+  if (!isRecord(value)) {
+    throw new TypeError("expected an object");
+  }
+  return value;
+};
 
 // ---------------------------------------------------------------------------
 // Fake ExecutionHandle double
@@ -215,6 +227,100 @@ const rejectionOf = async (promise: Promise<unknown>): Promise<unknown> => {
 // ---------------------------------------------------------------------------
 
 describe("createDuplexSessionBinding", () => {
+  test("session client file bytes round-trip through JSON into the binding", () => {
+    const fake = makeFakeHandle();
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "client-binding-roundtrip",
+    });
+    const sent: unknown[] = [];
+    const socket: SessionClientSocket = {
+      close: () => {},
+      onclose: null,
+      onerror: null,
+      onmessage: null,
+      onopen: null,
+      send: (data) => {
+        const parsed: unknown = JSON.parse(data);
+        sent.push(parsed);
+      },
+    };
+    const client = createSessionClient({
+      capabilities: {},
+      sessionId: binding.sessionId,
+      url: "wss://example.invalid/session",
+      webSocketFactory: () => socket,
+    });
+    client.connect();
+    socket.onopen?.();
+    socket.onmessage?.({
+      data: JSON.stringify({
+        kind: "handshake_ack",
+        protocolVersion: "1",
+        resumeStatus: "none",
+        sessionId: binding.sessionId,
+      }),
+    });
+
+    const emptyBytes = new Uint8Array([]);
+    const bytes = new Uint8Array([0, 7, 255]);
+    const signal = {
+      extra: "signal-extra",
+      parts: [
+        {
+          data: emptyBytes,
+          mediaType: "application/octet-stream",
+          providerMetadata: { source: "test" },
+          type: "file" as const,
+        },
+        {
+          data: bytes,
+          extra: "preserved",
+          filename: "payload.bin",
+          mediaType: "application/octet-stream",
+          providerMetadata: { nested: { retained: true }, source: "test" },
+          type: "file" as const,
+        },
+        { data: "text bytes", mediaType: "text/plain", type: "file" as const },
+      ],
+    };
+    client.steer(signal);
+    const { frame: rawFrame } = requiredRecord(sent.at(-1));
+    const frame = requiredRecord(rawFrame);
+    const { signal: serializedSignal } = frame;
+    binding.dispatchInbound(frame);
+
+    const [received] = fake.calls.steer;
+    expect(
+      received === undefined
+        ? null
+        : Object.getOwnPropertyDescriptor(received, "extra")?.value
+    ).toBe("signal-extra");
+    expect(received?.parts[0]?.type).toBe("file");
+    expect(received?.parts[1]?.type).toBe("file");
+    expect(received?.parts[2]?.type).toBe("file");
+    for (const [index, expected] of [[], [0, 7, 255]].entries()) {
+      const part = received?.parts[index];
+      if (part?.type !== "file" || !(part.data instanceof Uint8Array)) {
+        throw new Error("expected binding to restore file bytes");
+      }
+      expect([...part.data]).toEqual(expected);
+    }
+    expect(received?.parts[2]).toMatchObject({ data: "text bytes" });
+    expect(received?.parts[0]).toMatchObject({
+      providerMetadata: { source: "test" },
+    });
+    expect(received?.parts[1]).toMatchObject({
+      extra: "preserved",
+      filename: "payload.bin",
+      providerMetadata: { nested: { retained: true }, source: "test" },
+    });
+    expect(JSON.stringify(serializedSignal)).toContain('"data":[]');
+    expect(JSON.stringify(serializedSignal)).toContain('"data":[0,7,255]');
+    expect([...emptyBytes]).toEqual([]);
+    expect([...bytes]).toEqual([0, 7, 255]);
+    client.close();
+  });
+
   test("complete payload guards preserve identity, extra fields, and duplicate approval decisions", () => {
     const replacement = makeFakeHandle();
     const fake = makeFakeHandle({
@@ -337,6 +443,22 @@ describe("createDuplexSessionBinding", () => {
       {
         kind: "client_result",
         result: {
+          callId: " ",
+          content: null,
+          leaseToken: "lease",
+        },
+      },
+      {
+        kind: "client_result",
+        result: {
+          callId: "call",
+          content: null,
+          leaseToken: "\t",
+        },
+      },
+      {
+        kind: "client_result",
+        result: {
           callId: "call",
           content: null,
           isError: "false",
@@ -354,12 +476,18 @@ describe("createDuplexSessionBinding", () => {
           decisions: [{ callId: "call", message: " ", type: "approve" }],
         },
       },
+      {
+        kind: "approval_response",
+        response: { decisions: [{ callId: "\n", type: "approve" }] },
+      },
       ...[
         null,
         { text: 1, type: "text" },
         { redacted: "true", text: "reason", type: "reasoning" },
         { redacted: false, text: "", type: "reasoning" },
         { callId: "call", name: "tool", type: "tool_call" },
+        { callId: " ", input: null, name: "tool", type: "tool_call" },
+        { callId: "call", input: null, name: " \t", type: "tool_call" },
         {
           callId: "call",
           isError: "false",
@@ -389,6 +517,12 @@ describe("createDuplexSessionBinding", () => {
       });
     }
     binding.dispatchInbound({
+      correlationId: " \t",
+      kind: "cancel",
+      protocolVersion: "1",
+      sessionId: binding.sessionId,
+    });
+    binding.dispatchInbound({
       correlationId: "first-error",
       kind: "steer",
       protocolVersion: "2",
@@ -396,12 +530,12 @@ describe("createDuplexSessionBinding", () => {
       signal: { parts: [null] },
     });
     fake.events.end();
-    const frames = await collectFrames(outbound, payloads.length + 2);
-    expect(frames).toHaveLength(payloads.length + 1);
+    const frames = await collectFrames(outbound, payloads.length + 3);
+    expect(frames).toHaveLength(payloads.length + 2);
     expect(frames.map((frame) => rejection(frame).code)).toEqual(
-      Array.from({ length: payloads.length + 1 }, () => "session_frame_invalid")
+      Array.from({ length: payloads.length + 2 }, () => "session_frame_invalid")
     );
-    expect(rejection(frames[payloads.length]).message).toBe(
+    expect(rejection(frames[payloads.length + 1]).message).toBe(
       'inbound frame protocolVersion must be "1"'
     );
     expect(fake.calls.steer).toEqual([]);
