@@ -65,20 +65,16 @@ const WS_RESUME_STATUSES: readonly SessionClientResumeStatus[] = [
 
 const utf8Decoder = new TextDecoder();
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-function isResumeStatus(value: unknown): value is SessionClientResumeStatus {
-  return (
-    typeof value === "string" &&
-    (WS_RESUME_STATUSES as readonly string[]).includes(value)
-  );
-}
+const isResumeStatus = (value: unknown): value is SessionClientResumeStatus =>
+  typeof value === "string" &&
+  (WS_RESUME_STATUSES as readonly string[]).includes(value);
 
-function asHandshakeAck(
+const asHandshakeAck = (
   candidate: Record<string, unknown>
-): SessionClientHandshakeAck | undefined {
+): SessionClientHandshakeAck | undefined => {
   if (typeof candidate.protocolVersion !== "string") {
     return undefined;
   }
@@ -94,7 +90,7 @@ function asHandshakeAck(
     resumeStatus: candidate.resumeStatus,
     sessionId: candidate.sessionId,
   };
-}
+};
 
 /**
  * Decodes and structurally parses one inbound wire message. Never throws:
@@ -103,9 +99,9 @@ function asHandshakeAck(
  *
  * @experimental
  */
-export function parseWsClientMessage(
+export const parseWsClientMessage = (
   data: string | Uint8Array
-): ParsedWsClientMessage {
+): ParsedWsClientMessage => {
   const text = typeof data === "string" ? data : utf8Decoder.decode(data);
 
   let parsed: unknown;
@@ -141,7 +137,7 @@ export function parseWsClientMessage(
       return { kind: "unparseable", raw: parsed };
     }
   }
-}
+};
 
 /**
  * Connection-level close codes in the WebSocket application range
@@ -195,6 +191,5 @@ export const NON_RETRYABLE_WS_CLOSE_CODES: ReadonlySet<number> = new Set([
  *
  * @experimental
  */
-export function isRetryableCloseCode(code: number | undefined): boolean {
-  return code === undefined || !NON_RETRYABLE_WS_CLOSE_CODES.has(code);
-}
+export const isRetryableCloseCode = (code: number | undefined): boolean =>
+  code === undefined || !NON_RETRYABLE_WS_CLOSE_CODES.has(code);

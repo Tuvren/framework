@@ -122,9 +122,9 @@ class FakeClock implements SessionClientClock {
   }
 }
 
-function makeClient(
+const makeClient = (
   overrides: Partial<Parameters<typeof createSessionClient>[0]> = {}
-) {
+) => {
   const sockets: FakeSocket[] = [];
   const clock = new FakeClock();
   const statuses: SessionClientStatus[] = [];
@@ -148,25 +148,24 @@ function makeClient(
   });
 
   return { client, clock, events, rejections, sockets, statuses };
-}
+};
 
 /** Flushes the microtask queue (and any already-settled macrotask) so a chained async handler's settle() has run. */
-function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
+const flush = (): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, 0));
 
-function ack(
+const ack = (
   socket: FakeSocket,
   resumeStatus = "none",
   sessionId = "test-session"
-): void {
+): void => {
   socket.receive({
     kind: "handshake_ack",
     protocolVersion: "1",
     resumeStatus,
     sessionId,
   });
-}
+};
 
 describe("createSessionClient: handshake and events", () => {
   test("sends handshake on open with no cursor on first connect", () => {
