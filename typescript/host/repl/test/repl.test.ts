@@ -781,6 +781,39 @@ describe("repl host scenarios", () => {
     );
   });
 
+  test("keeps argument and configuration validation in first-failure order", () => {
+    const env = {
+      TUVREN_REPL_BACKEND: "unsupported-backend",
+      TUVREN_REPL_KERNEL_MODE: "unsupported-kernel",
+      TUVREN_REPL_PROVIDER_MODE: "unsupported-provider",
+      TUVREN_REPL_SCENARIO: "unsupported-scenario",
+    };
+    expectReplConfigError(
+      () => loadReplConfig(env, ["--bogus", "value"]),
+      "unsupported repl option --bogus"
+    );
+    expectReplConfigError(
+      () => loadReplConfig(env, ["--backend"]),
+      "missing value for --backend"
+    );
+    expectReplConfigError(
+      () => loadReplConfig(env, []),
+      'unsupported repl backend "unsupported-backend"'
+    );
+    expectReplConfigError(
+      () =>
+        loadReplConfig({}, [
+          "--backend",
+          "sqlite",
+          "--provider",
+          "aimock-openai",
+          "--kernel-mode",
+          "rust-grpc",
+        ]),
+      "sqlite repl scenarios require --sqlite-path or TUVREN_REPL_SQLITE_PATH"
+    );
+  });
+
   test("rejects aimock provider configuration without a usable base URL", () => {
     for (const providerMode of AIMOCK_REPL_PROVIDER_MODES) {
       expectReplConfigError(
@@ -1744,6 +1777,98 @@ describe("repl host scenarios", () => {
       temperature: 2,
       unit: "celsius",
       windSpeedKph: 10,
+    });
+  });
+
+  test("calculator preserves numeric operand copies and malformed-input errors", async () => {
+    const calculator = findToolDefinition("calculator");
+    const operands = [2, 3, 4];
+    const result = await Promise.resolve(
+      calculator.execute(
+        { operands, operation: "multiply" },
+        createToolExecutionContext("calculator")
+      )
+    );
+    operands[0] = 99;
+    expect(result).toEqual({
+      operands: [2, 3, 4],
+      operation: "multiply",
+      result: 24,
+      status: "success",
+    });
+
+    await Promise.all(
+      [
+        null,
+        { operands: [2, "3"], operation: "add" },
+        { operands: [2, undefined], operation: "add" },
+        { operands: { 0: 2, length: 1 }, operation: "add" },
+        { operands: [2], operation: "unsupported" },
+      ].map(async (input) => {
+        expect(
+          await Promise.resolve(
+            calculator.execute(input, createToolExecutionContext("calculator"))
+          )
+        ).toEqual({
+          message:
+            "calculator requires an operation and a numeric operands array.",
+          status: "error",
+        });
+      })
+    );
+  });
+
+  test("calculator retains operation-specific error results", async () => {
+    const calculator = findToolDefinition("calculator");
+    await Promise.all(
+      [
+        {
+          message: "divide requires at least two operands.",
+          operands: [2],
+          operation: "divide",
+        },
+        {
+          message: "division by zero is not allowed.",
+          operands: [2, 0],
+          operation: "divide",
+        },
+        {
+          message: "power requires exactly two operands.",
+          operands: [2, 3, 4],
+          operation: "power",
+        },
+      ].map(async ({ message, operands, operation }) => {
+        expect(
+          await Promise.resolve(
+            calculator.execute(
+              { operands, operation },
+              createToolExecutionContext("calculator")
+            )
+          )
+        ).toEqual({ message, operands, operation, status: "error" });
+      })
+    );
+  });
+
+  test("weather keeps code-point weighting for Unicode locations", async () => {
+    const weather = findToolDefinition("weather");
+    expect(
+      await Promise.resolve(
+        weather.execute(
+          { location: "  😀A  ", unit: "celsius" },
+          createToolExecutionContext("weather")
+        )
+      )
+    ).toEqual({
+      condition: "sunny",
+      feelsLike: 9,
+      humidityPercent: 92,
+      location: "😀A",
+      source: "mock",
+      summary: "sunny in 😀A",
+      temperature: 9,
+      unit: "celsius",
+      windSpeedKph: 31,
     });
   });
 

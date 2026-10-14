@@ -145,7 +145,6 @@ const createReplHostFromParts = (
     handle.cancel();
   },
   config,
-  ...(dispose === undefined ? {} : { dispose }),
   async createThread() {
     const thread = await runtime.createThread({});
     return {
@@ -155,6 +154,7 @@ const createReplHostFromParts = (
       threadId: thread.threadId,
     };
   },
+  ...(dispose === undefined ? {} : { dispose }),
   executeTurn(input) {
     const requestedConfig = input.config;
 
@@ -173,11 +173,11 @@ const createReplHostFromParts = (
   async project(handle) {
     return await projectHandle(handle);
   },
+  provider,
   async readBranchMessages(branchId) {
     const result = await runtime.readBranchMessages({ branchId });
     return result.messages;
   },
-  provider,
   runtime,
   steer(handle, signal) {
     handle.steer(signal);
@@ -195,12 +195,12 @@ export const createReplHost = (config: ReplConfig): ReplHost => {
   });
   const runtime = createTuvrenRuntimeCore({
     defaultRunnerId: REACT_RUNNER_ID,
+    kernel,
     runnerRegistry: createRunnerRegistry([
       createReActRunner({
         providerCallMode: "stream",
       }),
     ]),
-    kernel,
     // Correlate operational telemetry to the host-bound Scope (ADR-0048,
     // KRT-BE008). The Scope never crosses the kernel transport seam; it only
     // tags telemetry and (via the transcript header) the recorded session.
@@ -225,10 +225,10 @@ export const createReplHostUsingCreateTuvren = async (
     ...(config.kernelMode === "rust-grpc"
       ? { kernel: createKernel(config) }
       : {}),
+    provider,
     runner: createReActRunner({
       providerCallMode: "stream",
     }),
-    provider,
     // Bind operational telemetry to the host's Scope (ADR-0048, KRT-BE008); the
     // durable backend is bound to the same Scope via createBackend.
     ...(config.scope === undefined
