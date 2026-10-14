@@ -24,12 +24,12 @@ import type {
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
 import { createAiSdkProviderBridge } from "@tuvren/provider-bridge-ai-sdk";
-import {
-  type ProviderStreamChunk,
-  type TuvrenModelResponse,
-  type TuvrenPrompt,
-  type TuvrenProvider,
-  TuvrenRuntimeError,
+import { TuvrenRuntimeError } from "@tuvren/sdk";
+import type {
+  ProviderStreamChunk,
+  TuvrenModelResponse,
+  TuvrenPrompt,
+  TuvrenProvider,
 } from "@tuvren/sdk";
 
 import {
@@ -133,13 +133,14 @@ function createAimockProvider(
         model: google(modelId ?? DEFAULT_GEMINI_REPL_MODEL_ID),
       });
     }
-    default:
+    default: {
       throw new TuvrenRuntimeError(
         `unsupported aimock repl provider "${mode}"`,
         {
           code: INVALID_REPL_CONFIG_CODE,
         }
       );
+    }
   }
 }
 
@@ -264,10 +265,11 @@ async function* streamFixtureChunks(
 
   for (const part of response.parts) {
     switch (part.type) {
-      case "text":
+      case "text": {
         yield { text: part.text, type: "text_delta" };
         break;
-      case "structured":
+      }
+      case "structured": {
         yield {
           delta: JSON.stringify(part.data),
           type: "structured_delta",
@@ -278,7 +280,8 @@ async function* streamFixtureChunks(
           type: "structured_done",
         };
         break;
-      case "tool_call":
+      }
+      case "tool_call": {
         yield {
           name: part.name,
           providerCallId: part.callId,
@@ -296,8 +299,10 @@ async function* streamFixtureChunks(
           type: "tool_call_done",
         };
         break;
-      default:
+      }
+      default: {
         break;
+      }
     }
   }
 
@@ -341,7 +346,7 @@ function createFixtureResponse(
   }
 
   switch (scenario) {
-    case "approval":
+    case "approval": {
       return {
         finishReason: "tool_call",
         parts: [
@@ -359,7 +364,8 @@ function createFixtureResponse(
           },
         ],
       };
-    case "structured":
+    }
+    case "structured": {
       return {
         finishReason: "stop",
         parts: [
@@ -373,7 +379,8 @@ function createFixtureResponse(
           repl: { mode: "fixture" },
         },
       };
-    case "tools":
+    }
+    case "tools": {
       return {
         finishReason: "tool_call",
         parts: [
@@ -385,7 +392,8 @@ function createFixtureResponse(
           },
         ],
       };
-    case "metadata":
+    }
+    case "metadata": {
       return {
         finishReason: "stop",
         parts: [
@@ -407,7 +415,8 @@ function createFixtureResponse(
           outputTokens: 5,
         },
       };
-    case "extension":
+    }
+    case "extension": {
       return {
         finishReason: "stop",
         parts: [{ text: "Extension flow complete.", type: "text" }],
@@ -416,7 +425,8 @@ function createFixtureResponse(
           outputTokens: 4,
         },
       };
-    case "orchestration":
+    }
+    case "orchestration": {
       return {
         finishReason: "stop",
         parts: [{ text: "Orchestration flow complete.", type: "text" }],
@@ -425,14 +435,16 @@ function createFixtureResponse(
           outputTokens: 4,
         },
       };
-    case "cancel":
+    }
+    case "cancel": {
       return {
         finishReason: "stop",
         parts: [{ text: "Waiting before cancellation.", type: "text" }],
       };
+    }
     case "branching":
     case "reload":
-    case "streaming":
+    case "streaming": {
       return {
         finishReason: "stop",
         parts: [{ text: `REPL ${scenario} complete.`, type: "text" }],
@@ -441,11 +453,13 @@ function createFixtureResponse(
           outputTokens: 6,
         },
       };
-    default:
+    }
+    default: {
       return {
         finishReason: "stop",
         parts: [{ text: "REPL complete.", type: "text" }],
       };
+    }
   }
 }
 

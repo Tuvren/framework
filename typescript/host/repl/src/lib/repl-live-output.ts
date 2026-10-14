@@ -56,83 +56,98 @@ export function createLiveTurnWriter(
     },
     observe(event) {
       switch (event.type) {
-        case "message.done":
+        case "message.done": {
           if (activeLine === "assistant") {
             write("\n");
             activeLine = undefined;
           }
           return;
-        case "reasoning.delta":
+        }
+        case "reasoning.delta": {
           ensureLine("thinking");
           write(styleText(event.delta, "grey"));
           return;
-        case "reasoning.done":
+        }
+        case "reasoning.done": {
           if (activeLine === "thinking") {
             write("\n");
             activeLine = undefined;
           }
           return;
-        case "structured.done":
+        }
+        case "structured.done": {
           writeAssistantCompletion(renderInlineValue(event.data), "blue");
           return;
-        case "structured.delta":
+        }
+        case "structured.delta": {
           ensureLine("assistant");
           write(styleText(event.delta, "blue"));
           return;
-        case "text.done":
+        }
+        case "text.done": {
           writeAssistantCompletion(event.text, "cyan");
           return;
-        case "text.delta":
+        }
+        case "text.delta": {
           ensureLine("assistant");
           write(styleText(event.delta, "cyan"));
           return;
-        case "approval.requested":
+        }
+        case "approval.requested": {
           writeStandaloneLine(
             "approval",
             renderApprovalRequest(event.request),
             "yellow"
           );
           return;
-        case "approval.resolved":
+        }
+        case "approval.resolved": {
           writeStandaloneLine(
             "approval",
             renderApprovalResolved(event.response),
             "yellow"
           );
           return;
-        case "custom":
+        }
+        case "custom": {
           writeStandaloneLine(
             "event",
             `${event.name} ${renderInlineValue(event.data)}`,
             "magenta"
           );
           return;
-        case "error":
+        }
+        case "error": {
           if (isCancellationErrorEvent(event)) {
             return;
           }
 
           writeStandaloneLine("error", renderErrorLine(event), "red");
           return;
-        case "steering.incorporated":
+        }
+        case "steering.incorporated": {
           writeStandaloneLine("steering", "incorporated", "blue");
           return;
-        case "tool_call.done":
+        }
+        case "tool_call.done": {
           writeStandaloneLine(
             "tool-call",
             `${event.name} ${renderInlineValue(event.input)}`,
             "yellow"
           );
           return;
-        case "tool.result":
+        }
+        case "tool.result": {
           writeStandaloneLine(
             event.isError === true ? "tool-error" : "tool-result",
             `${event.name} ${renderInlineValue(event.output)}`,
             event.isError === true ? "red" : "green"
           );
           return;
-        default:
+        }
+        default: {
           return;
+        }
       }
     },
   };
@@ -197,7 +212,7 @@ export function createLiveTurnWriter(
       if (serialized !== undefined) {
         return serialized;
       }
-    } catch (_error: unknown) {
+    } catch {
       return String(value);
     }
 
@@ -257,22 +272,30 @@ export function createLiveTurnWriter(
 
   function readAnsiCode(color: LiveColor): string {
     switch (color) {
-      case "blue":
+      case "blue": {
         return "\u001B[34m";
-      case "cyan":
+      }
+      case "cyan": {
         return "\u001B[36m";
-      case "green":
+      }
+      case "green": {
         return "\u001B[32m";
-      case "grey":
+      }
+      case "grey": {
         return "\u001B[90m";
-      case "magenta":
+      }
+      case "magenta": {
         return "\u001B[35m";
-      case "red":
+      }
+      case "red": {
         return "\u001B[31m";
-      case "yellow":
+      }
+      case "yellow": {
         return "\u001B[33m";
-      default:
+      }
+      default: {
         return "";
+      }
     }
   }
 }

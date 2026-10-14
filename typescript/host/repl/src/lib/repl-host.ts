@@ -19,12 +19,8 @@ import { createPostgresBackend } from "@tuvren/backend-postgres";
 import { createSqliteBackend } from "@tuvren/backend-sqlite";
 import { createGrpcRuntimeKernel } from "@tuvren/kernel-grpc-client";
 import { createReActRunner, REACT_RUNNER_ID } from "@tuvren/runner-react";
-import {
-  createTuvren,
-  type ExecutionHandle,
-  type RuntimeBackend,
-  TuvrenRuntimeError,
-} from "@tuvren/sdk";
+import { createTuvren, TuvrenRuntimeError } from "@tuvren/sdk";
+import type { ExecutionHandle, RuntimeBackend } from "@tuvren/sdk";
 import {
   createRunnerRegistry,
   createRuntimeKernel,
@@ -48,8 +44,8 @@ export function createReplHost(config: ReplConfig): ReplHost {
   const provider = createReplProvider({
     aimockBaseUrl: config.aimockBaseUrl,
     googleApiKey: config.googleApiKey,
-    modelId: config.modelId,
     mode: config.providerMode,
+    modelId: config.modelId,
     scenario: config.scenario,
   });
   const runtime = createTuvrenRuntimeCore({
@@ -75,8 +71,8 @@ export async function createReplHostUsingCreateTuvren(
   const provider = createReplProvider({
     aimockBaseUrl: config.aimockBaseUrl,
     googleApiKey: config.googleApiKey,
-    modelId: config.modelId,
     mode: config.providerMode,
+    modelId: config.modelId,
     scenario: config.scenario,
   });
   const instance = await createTuvren({

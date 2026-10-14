@@ -77,10 +77,8 @@ import type {
   ClientReportedResult,
 } from "@tuvren/core/capabilities";
 import { createDuplexSessionBinding } from "@tuvren/host-session";
-import {
-  createRemoteClientSession,
-  type RemoteClientSession,
-} from "@tuvren/remote-session";
+import { createRemoteClientSession } from "@tuvren/remote-session";
+import type { RemoteClientSession } from "@tuvren/remote-session";
 import type {
   ProviderStreamChunk,
   TuvrenModelResponse,
@@ -93,9 +91,8 @@ import {
   parseWsMessage,
   WS_CLOSE_CODE_HANDSHAKE_INVALID,
   WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED,
-  type WsSessionTransport,
-  type WsSocketSink,
 } from "@tuvren/stream-ws";
+import type { WsSessionTransport, WsSocketSink } from "@tuvren/stream-ws";
 
 const HANDSHAKE_SUPPORTED_PROTOCOL_VERSION = "1";
 
@@ -612,7 +609,7 @@ export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
         const text =
           typeof message === "string"
             ? message
-            : Buffer.from(message).toString("utf8");
+            : Buffer.from(message).toString("utf-8");
 
         if (ws.data.transport === undefined) {
           // Fire-and-forget: the handshake's async session resolution has no
