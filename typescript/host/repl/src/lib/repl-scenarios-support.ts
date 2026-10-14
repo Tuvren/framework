@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import { setTimeout as delay } from "node:timers/promises";
+
+import { EventType } from "@ag-ui/core";
 import { TuvrenRuntimeError } from "@tuvren/sdk";
 import type {
   ExecutionHandle,
@@ -444,7 +447,7 @@ const createTelemetryEvidence = (input: {
     )?.source?.runner ??
     null;
   const runIdsFromAgUi = input.projection.agui.flatMap((event) => {
-    if (event.type !== "RUN_STARTED") {
+    if (event.type !== EventType.RUN_STARTED) {
       return [];
     }
 
@@ -467,7 +470,6 @@ const createTelemetryEvidence = (input: {
     "tuvren.runtime.checkpoint.hash": collapseTelemetryValues(
       checkpoints.map((event) => event.turnNodeHash)
     ),
-    "tuvren.runtime.runner.id": runnerId,
     "tuvren.runtime.error.code": collapseTelemetryValues(
       errors.flatMap((event) => {
         const { error } = event;
@@ -489,6 +491,7 @@ const createTelemetryEvidence = (input: {
       )
     ),
     "tuvren.runtime.run.id": collapseTelemetryValues(runIds),
+    "tuvren.runtime.runner.id": runnerId,
     "tuvren.runtime.thread.id": input.thread.threadId,
     "tuvren.runtime.tool_call.id": collapseTelemetryValues(
       toolCallStarts.map((event) => event.callId)
@@ -530,7 +533,7 @@ export const createReport = (input: {
   checks: input.checks,
   ...(input.error === undefined ? {} : { error: input.error }),
   events: {
-    aguiTypes: input.projection.agui.map((event) => String(event.type)),
+    aguiTypes: input.projection.agui.map((event) => event.type),
     canonicalTypes: input.projection.canonical.map((event) => event.type),
     sseEvents: input.projection.sse.map((event) => event.event ?? "message"),
   },
@@ -606,8 +609,8 @@ const createScenarioProvider = (
   });
 
   return {
-    generate(prompt) {
-      return provider.generate(
+    async generate(prompt) {
+      return await provider.generate(
         mergePromptSettings(prompt, provider.id, settings)
       );
     },
@@ -701,10 +704,22 @@ export const createScenarioExecutionPlan = (
         tools: NO_TOOLS,
       };
     }
-    default: {
+    case "branching":
+    case "cancel":
+    case "extension":
+    case "orchestration":
+    case "reload":
+    case "steering": {
       return {
         model: defaultModel,
         signal: textSignal(`Run ${config.scenario}`),
+        tools: NO_TOOLS,
+      };
+    }
+    default: {
+      return {
+        model: defaultModel,
+        signal: textSignal(`Run ${String(config.scenario)}`),
         tools: NO_TOOLS,
       };
     }
@@ -714,18 +729,16 @@ export const createScenarioExecutionPlan = (
 export const readProjectionError = (
   projection: ReplStreamProjection
 ): ReplScenarioReport["error"] | undefined => {
-  const errorEvent = [...projection.canonical]
-    .reverse()
-    .find(
-      (event): event is Extract<TuvrenStreamEvent, { type: "error" }> =>
-        event.type === "error"
-    );
+  const errorEvent = projection.canonical.findLast(
+    (event): event is Extract<TuvrenStreamEvent, { type: "error" }> =>
+      event.type === "error"
+  );
 
   if (errorEvent === undefined) {
     return undefined;
   }
 
-  const { error } = errorEvent;
+  const error: unknown = errorEvent.error;
 
   if (
     typeof error === "object" &&
@@ -734,7 +747,9 @@ export const readProjectionError = (
     typeof error.message === "string"
   ) {
     return {
-      ...(typeof error.code === "string" ? { code: error.code } : {}),
+      ...("code" in error && typeof error.code === "string"
+        ? { code: error.code }
+        : {}),
       message: error.message,
     };
   }
@@ -758,7 +773,7 @@ const collect = async <T>(
   return output;
 };
 
-export const startProjectionCapture = (
+export const startProjectionCapture = async (
   handle: ExecutionHandle,
   onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplStreamProjection> => {
@@ -767,18 +782,15 @@ export const startProjectionCapture = (
     3
   );
 
-  return Promise.all([
+  const [canonical, sse, agui] = await Promise.all([
     collect(canonicalBranch, onCanonicalEvent),
     collect(toSseFrames(sseBranch)),
     collect(toAgUiEvents(aguiBranch)),
-  ]).then(([canonical, sse, agui]) => ({
-    agui,
-    canonical,
-    sse,
-  }));
+  ]);
+  return { agui, canonical, sse };
 };
 
-export const projectContinuationCapture = (
+export const projectContinuationCapture = async (
   handle: ExecutionHandle,
   onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplStreamProjection> => {
@@ -787,15 +799,12 @@ export const projectContinuationCapture = (
     3
   );
 
-  return Promise.all([
+  const [canonical, sse, agui] = await Promise.all([
     collect(canonicalBranch, onCanonicalEvent),
     collect(toSseFrames(sseBranch)),
     collect(toAgUiEvents(aguiBranch)),
-  ]).then(([canonical, sse, agui]) => ({
-    agui,
-    canonical,
-    sse,
-  }));
+  ]);
+  return { agui, canonical, sse };
 };
 
 export const mergeProjections = (
@@ -813,15 +822,13 @@ export const withHead = (
 ): ReplThreadSummary => {
   // Orchestration streams can interleave descendant checkpoints, so only
   // derive the active head from checkpoints emitted on the active thread.
-  const checkpoint = [...projection.canonical]
-    .reverse()
-    .find(
-      (
-        event
-      ): event is Extract<TuvrenStreamEvent, { type: "state.checkpoint" }> =>
-        event.type === "state.checkpoint" &&
-        event.source?.threadId === thread.threadId
-    );
+  const checkpoint = projection.canonical.findLast(
+    (
+      event
+    ): event is Extract<TuvrenStreamEvent, { type: "state.checkpoint" }> =>
+      event.type === "state.checkpoint" &&
+      event.source?.threadId === thread.threadId
+  );
 
   return {
     ...thread,
@@ -855,15 +862,17 @@ export const waitFor = async (
 ): Promise<void> => {
   const startedAt = Date.now();
 
-  while (!condition()) {
+  const poll = async (): Promise<void> => {
+    if (condition()) {
+      return;
+    }
     if (Date.now() - startedAt >= timeoutMilliseconds) {
       throw new Error("timed out waiting for repl condition");
     }
-
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 5);
-    });
-  }
+    await delay(5);
+    await poll();
+  };
+  await poll();
 };
 
 const isInvalidSteeringStateError = (
@@ -880,7 +889,7 @@ export const steerWhenRunning = async (
 ): Promise<void> => {
   const startedAt = Date.now();
 
-  while (true) {
+  const attemptSteering = async (): Promise<void> => {
     try {
       host.steer(handle, signal);
       // Unblock the fixture provider's deterministic steering handshake (see
@@ -902,10 +911,10 @@ export const steerWhenRunning = async (
       throw new Error("timed out waiting for repl steering acceptance");
     }
 
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 5);
-    });
-  }
+    await delay(5);
+    await attemptSteering();
+  };
+  await attemptSteering();
 };
 
 export const readSteeringMessageDurable = (messages: unknown[]): boolean =>

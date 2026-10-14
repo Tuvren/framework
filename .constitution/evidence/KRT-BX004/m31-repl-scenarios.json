@@ -1,0 +1,334 @@
+{
+  "milestone": "M31",
+  "ticket": "KRT-BX004",
+  "measurement_head": "8a877bba848aa5cd034cab864c42f50223887b89",
+  "status": "complete; not a native project admission",
+  "files": [
+    "typescript/host/repl/src/lib/repl-provider.ts",
+    "typescript/host/repl/src/lib/repl-scenario-matrix.ts",
+    "typescript/host/repl/src/lib/repl-scenarios-support.ts",
+    "typescript/host/repl/test/repl-scenarios.test.ts"
+  ],
+  "scope": {
+    "only_scoped_source_and_associated_tests": true,
+    "constitution_unchanged": true,
+    "project_targets_and_bx_coverage_unchanged": true,
+    "no_dependencies_or_root_policy_changed": true,
+    "no_commit_created": true,
+    "no_services_started_or_stopped": true,
+    "debug_tag_absent": true,
+    "transcript_optional_scope_unchanged": true
+  },
+  "native": {
+    "before_project": 229,
+    "after_project": 200,
+    "before_owned": 29,
+    "after_owned": 0,
+    "removed_by_rule": {
+      "unicorn(prefer-native-coercion-functions)": 1,
+      "eslint(no-await-in-loop)": 3,
+      "typescript(method-signature-style)": 2,
+      "promise(avoid-new)": 5,
+      "eslint(sort-keys)": 1,
+      "unicorn(no-array-reverse)": 2,
+      "typescript(restrict-template-expressions)": 1,
+      "typescript(promise-function-async)": 7,
+      "typescript(no-unsafe-type-assertion)": 1,
+      "typescript(switch-exhaustiveness-check)": 3,
+      "typescript(no-unsafe-enum-comparison)": 1,
+      "typescript(no-unnecessary-type-conversion)": 1,
+      "typescript(no-base-to-string)": 1
+    },
+    "introduced_diagnostics": [],
+    "unaffected_residual_identity_equal": true,
+    "installed_rules": 474,
+    "code_files": 31,
+    "complete_effective_preset_equal": true,
+    "residual_owner": "M32-M34 approved groups; 200 diagnostics remain, no project admission readiness claimed"
+  },
+  "retained": {
+    "before": {
+      "retained": {
+        "processed": 37,
+        "diagnostics": 0,
+        "report": "bx-m31-before-retained.json"
+      },
+      "retained-owned": {
+        "processed": 4,
+        "diagnostics": 0,
+        "report": "bx-m31-before-retained-owned.json"
+      }
+    },
+    "after": {
+      "retained": {
+        "processed": 38,
+        "diagnostics": 0,
+        "report": "bx-m31-after-retained.json"
+      },
+      "retained-owned": {
+        "processed": 5,
+        "diagnostics": 0,
+        "report": "bx-m31-after-retained-owned.json"
+      }
+    }
+  },
+  "selection": [
+    "typescript/host/repl/package.json",
+    "typescript/host/repl/project.json",
+    "typescript/host/repl/scripts/ws-peer.ts",
+    "typescript/host/repl/smoke/assert-headless-jsonl.ts",
+    "typescript/host/repl/smoke/package-exports.ts",
+    "typescript/host/repl/src/cli.ts",
+    "typescript/host/repl/src/gemini-cli.ts",
+    "typescript/host/repl/src/index.ts",
+    "typescript/host/repl/src/lib/proof-extension.ts",
+    "typescript/host/repl/src/lib/repl-builtin-tools.ts",
+    "typescript/host/repl/src/lib/repl-config.ts",
+    "typescript/host/repl/src/lib/repl-headless-mode.ts",
+    "typescript/host/repl/src/lib/repl-host.ts",
+    "typescript/host/repl/src/lib/repl-live-output.ts",
+    "typescript/host/repl/src/lib/repl-provider.ts",
+    "typescript/host/repl/src/lib/repl-replay.ts",
+    "typescript/host/repl/src/lib/repl-scenario-matrix.ts",
+    "typescript/host/repl/src/lib/repl-scenarios-support.ts",
+    "typescript/host/repl/src/lib/repl-scenarios.ts",
+    "typescript/host/repl/src/lib/repl-serve-ws.ts",
+    "typescript/host/repl/src/lib/repl-shell.ts",
+    "typescript/host/repl/src/lib/repl-transcript.ts",
+    "typescript/host/repl/src/lib/repl-types.ts",
+    "typescript/host/repl/test/repl-scenarios.test.ts",
+    "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+    "typescript/host/repl/test/repl-test-helpers.ts",
+    "typescript/host/repl/test/repl-transcript-redaction.test.ts",
+    "typescript/host/repl/test/repl-transcript-scope.test.ts",
+    "typescript/host/repl/test/repl.aimock-journal-body.test.ts",
+    "typescript/host/repl/test/repl.aimock-matrix.test.ts",
+    "typescript/host/repl/test/repl.aimock-openai.test.ts",
+    "typescript/host/repl/test/repl.test.ts",
+    "typescript/host/repl/tsconfig.dts.json",
+    "typescript/host/repl/tsconfig.json",
+    "typescript/host/repl/tsconfig.lib.json",
+    "typescript/host/repl/tsconfig.tsup.json",
+    "typescript/host/repl/tsconfig.typecheck.json",
+    "typescript/host/repl/tsup.config.ts"
+  ],
+  "canonical": {
+    "pass": 148,
+    "fail": 0,
+    "expectations": 1133,
+    "new_focused_tests": 7,
+    "exports_smoke_pass": 1
+  },
+  "preserved_behavior": [
+    "fixture response/part metadata and finish metadata; exact stream chunk order",
+    "AI SDK mock metadata, usage and stream-part generation; built scenario assertions pass",
+    "steering handshake, sequential polling and deadline/error message",
+    "matrix order, duplicate scenario execution, continuation after failed check reports, empty matrix result",
+    "projection capture concurrent branches, latest error selection and latest active-thread checkpoint; canonical event arrays remain unchanged",
+    "approval pause/edit/resume, orchestration child/root events, cancellation error then failed terminal event, and durable reload/branch messages remain covered by canonical suite"
+  ],
+  "async_normalization": {
+    "sites": [
+      "createFixtureProvider.generate",
+      "createMockLanguageModel.doGenerate",
+      "createMockLanguageModel.doStream"
+    ],
+    "authority": "Lead ruling under OD-09 and M27 honest-original-promise convention, delivered during M31",
+    "operation": "async return await of original Promise.resolve(result)",
+    "timing": "All three original methods settle before a microtask queued after the call; normalized methods settle after it. One added promise-settlement microtask measured and authorized as internal scheduling; no new public scheduling contract.",
+    "trace": {
+      "original": {
+        "generate": [
+          "returned",
+          "settled",
+          "queued-after-call"
+        ],
+        "doGenerate": [
+          "returned",
+          "settled",
+          "queued-after-call"
+        ],
+        "doStream": [
+          "returned",
+          "settled",
+          "queued-after-call"
+        ]
+      },
+      "candidate": {
+        "generate": [
+          "returned",
+          "queued-after-call",
+          "settled"
+        ],
+        "doGenerate": [
+          "returned",
+          "queued-after-call",
+          "settled"
+        ],
+        "doStream": [
+          "returned",
+          "queued-after-call",
+          "settled"
+        ]
+      }
+    },
+    "proof": "bx-m31-async-trace.mjs and bx-m31-async-trace.json"
+  },
+  "metadata": {
+    "actualASTAssociations": 144,
+    "nativeFiring": 112,
+    "additionalInline": 32,
+    "taggedFiles": 10,
+    "originalBiomeDirectives": 12,
+    "unchanged": true,
+    "metadata": [
+      {
+        "path": "typescript/host/remote-session/src/index.ts",
+        "associations": 10,
+        "nativeFiring": 10,
+        "baselineHash": "6625ee8442ccacc2957d7dae8a55210f26168c784ad79f5eb155aba0bb42eb1c",
+        "currentHash": "6625ee8442ccacc2957d7dae8a55210f26168c784ad79f5eb155aba0bb42eb1c"
+      },
+      {
+        "path": "typescript/host/remote-session/src/lib/remote-client-session.ts",
+        "associations": 10,
+        "nativeFiring": 10,
+        "baselineHash": "0a75b4d7d3f86080b01792b0d81c7c99c722f218cc5effdb52b53bae5884eb4d",
+        "currentHash": "0a75b4d7d3f86080b01792b0d81c7c99c722f218cc5effdb52b53bae5884eb4d"
+      },
+      {
+        "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
+        "associations": 2,
+        "nativeFiring": 2,
+        "baselineHash": "9d73811ebcd7631799df4c739195fd10b526e4bced6d5691bb1dec2173bcca74",
+        "currentHash": "9d73811ebcd7631799df4c739195fd10b526e4bced6d5691bb1dec2173bcca74"
+      },
+      {
+        "path": "typescript/host/session-client/src/index.ts",
+        "associations": 37,
+        "nativeFiring": 37,
+        "baselineHash": "22c3bf87d854dbe144b06e45c5a2e1f14a091b2d3cd2c24ba1082b844e320c1c",
+        "currentHash": "22c3bf87d854dbe144b06e45c5a2e1f14a091b2d3cd2c24ba1082b844e320c1c"
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "associations": 9,
+        "nativeFiring": 9,
+        "baselineHash": "f04df793bad8f6797758d3b759078c6359279ae1f57e9a98e20bb1b2bb9f9cca",
+        "currentHash": "f04df793bad8f6797758d3b759078c6359279ae1f57e9a98e20bb1b2bb9f9cca"
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-protocol-types.ts",
+        "associations": 31,
+        "nativeFiring": 0,
+        "baselineHash": "450ca8b03a7ca74d1e6f93b848253ac1bbb60f2ba938cfa64d9bc4ad4f46a314",
+        "currentHash": "450ca8b03a7ca74d1e6f93b848253ac1bbb60f2ba938cfa64d9bc4ad4f46a314"
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "associations": 11,
+        "nativeFiring": 10,
+        "baselineHash": "f5a54f779840cfd523fd96ece81c6f75a88dd85e9cc8fcc8118ce66a27bb2f40",
+        "currentHash": "f5a54f779840cfd523fd96ece81c6f75a88dd85e9cc8fcc8118ce66a27bb2f40"
+      },
+      {
+        "path": "typescript/host/session/src/index.ts",
+        "associations": 17,
+        "nativeFiring": 17,
+        "baselineHash": "1c5e0f4f3940c83e1fb6e3b223c76b38fb7edb5a0f071db4c8b02e3f43c1b018",
+        "currentHash": "1c5e0f4f3940c83e1fb6e3b223c76b38fb7edb5a0f071db4c8b02e3f43c1b018"
+      },
+      {
+        "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+        "associations": 3,
+        "nativeFiring": 3,
+        "baselineHash": "6060f152ff31d7184d0b09b46c43409692ff9f63eb92b6608b2c721e40510a80",
+        "currentHash": "6060f152ff31d7184d0b09b46c43409692ff9f63eb92b6608b2c721e40510a80"
+      },
+      {
+        "path": "typescript/host/session/src/lib/session-frame-shapes.ts",
+        "associations": 14,
+        "nativeFiring": 14,
+        "baselineHash": "29172e0549c539103d596c8408c5dc9956ea990c92f1678cbf9e4602d28dc996",
+        "currentHash": "29172e0549c539103d596c8408c5dc9956ea990c92f1678cbf9e4602d28dc996"
+      }
+    ]
+  },
+  "rule_disposition": {
+    "legacy_directives_removed": 0,
+    "native_suppressions_added": 0,
+    "metadata_exceptions_added": 0,
+    "packageDocumentation_tags_removed": 0,
+    "early_deletions": [],
+    "native_counterparts": [],
+    "A11_residual_allocation": [],
+    "scope_has_no_firing_metadata_tags_or_original_directives": true
+  },
+  "code_conventions": [
+    {
+      "kind": "dependencies",
+      "introduced": []
+    },
+    {
+      "kind": "internal_timer_convention",
+      "name": "native node:timers/promises delay replaces callback timer promises",
+      "scope": "existing timers only"
+    },
+    {
+      "kind": "internal_deferred_convention",
+      "name": "boolean observation signal via Promise.withResolvers; wait result remains void"
+    },
+    {
+      "kind": "internal_type_guard",
+      "name": "structural private SteeringGate guard validates markObserved and waitForObservedOrDeadline functions"
+    },
+    {
+      "kind": "internal_sequential_convention",
+      "name": "recursive awaited scenario iteration and condition/steering retry",
+      "scope": "sequential matrix execution and existing timeout-bound polling"
+    },
+    {
+      "kind": "internal_async_convention",
+      "name": "await original result promise in three synchronous fixture/mock producers",
+      "authority": "explicit OD-09 lead ruling; one settlement microtask recorded"
+    },
+    {
+      "kind": "boundary_normalization",
+      "name": "narrow projection event error from unknown before message/code extraction",
+      "scope": "no supported error envelope or string fallback change"
+    },
+    {
+      "kind": "public_contract_shapes",
+      "introduced": []
+    }
+  ],
+  "lead": {
+    "typecheck": true,
+    "test": true,
+    "exports_smoke": true,
+    "native_owned_zero": true,
+    "retained_positive_zero": true
+  },
+  "raw_artifacts": [
+    {
+      "name": "bx-m31-summary.json",
+      "sha256": "1b7ecc330ee450a111445ed77772649b9ea370dbe7a15128170fee022c2edb5c",
+      "bytes": 20576
+    },
+    {
+      "name": "bx-m31-async-trace.json",
+      "sha256": "27977f9b0218a8396666166982a2086c3d7722930f4fa3558bcd2e2ec3c0ca4c",
+      "bytes": 564
+    },
+    {
+      "name": "bx-m31-lead-native.json",
+      "sha256": "29b41e195800fdc6b006ba83d93f06e185d28fdf6cbb9f415e50e69e5cacd1d3",
+      "bytes": 196
+    },
+    {
+      "name": "bx-m31-lead-retained.json",
+      "sha256": "d8c9f73de7564f168e6c708a86b1064e180a5dcdc515e5f352d869d2d583851e",
+      "bytes": 231
+    }
+  ]
+}
