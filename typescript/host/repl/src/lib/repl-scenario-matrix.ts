@@ -22,10 +22,18 @@ import type {
   ReplScenarioReport,
 } from "./repl-types.js";
 
-export async function runReplScenarioMatrix(input: {
+export const haveAllChecksPassed = (
+  checks: Record<string, boolean>
+): boolean => {
+  const values = Object.values(checks);
+
+  return values.length > 0 && values.every((value) => value);
+};
+
+export const runReplScenarioMatrix = async (input: {
   config: Omit<ReplConfig, "scenario">;
   scenarios: readonly ReplScenarioName[];
-}): Promise<ReplScenarioMatrixReport> {
+}): Promise<ReplScenarioMatrixReport> => {
   const reports: ReplScenarioReport[] = [];
   const failedScenarios: ReplScenarioName[] = [];
 
@@ -56,10 +64,4 @@ export async function runReplScenarioMatrix(input: {
       passedScenarioCount: reports.length - failedScenarios.length,
     },
   };
-}
-
-export function haveAllChecksPassed(checks: Record<string, boolean>): boolean {
-  const values = Object.values(checks);
-
-  return values.length > 0 && values.every((value) => value);
-}
+};

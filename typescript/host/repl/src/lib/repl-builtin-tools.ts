@@ -38,169 +38,33 @@ const WEATHER_CONDITIONS = [
 type CalculatorOperation = (typeof CALCULATOR_OPERATIONS)[number];
 type WeatherUnit = "celsius" | "fahrenheit";
 
-export function createReplBuiltinTools(): TuvrenToolDefinition[] {
-  return [
-    {
-      description: "Search deterministic REPL documents",
-      execute(input) {
-        const query =
-          typeof input === "object" &&
-          input !== null &&
-          "query" in input &&
-          typeof input.query === "string"
-            ? input.query
-            : "unknown";
-        return {
-          hits: [
-            {
-              title: "Tuvren",
-              url: "https://example.invalid/tuvren",
-            },
-          ],
-          query,
-        };
-      },
-      inputSchema: {
-        properties: {
-          query: { type: "string" },
-        },
-        required: ["query"],
-        type: "object",
-      },
-      name: "search",
-    },
-    {
-      approval: true,
-      description: "Send a deterministic REPL email",
-      execute(input) {
-        const to =
-          typeof input === "object" &&
-          input !== null &&
-          "to" in input &&
-          typeof input.to === "string"
-            ? input.to
-            : "unknown@example.invalid";
-        return {
-          sent: true,
-          to,
-        };
-      },
-      inputSchema: {
-        properties: {
-          subject: { type: "string" },
-          to: { type: "string" },
-        },
-        required: ["to", "subject"],
-        type: "object",
-      },
-      name: "email",
-    },
-    {
-      description:
-        "Perform deterministic arithmetic on one or more numeric operands.",
-      execute(input) {
-        const operation = readCalculatorOperation(input);
-        const operands = readNumberArray(input, "operands");
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
-        if (operation === undefined || operands === undefined) {
-          return {
-            message:
-              "calculator requires an operation and a numeric operands array.",
-            status: "error",
-          };
-        }
+const isCalculatorOperation = (value: string): value is CalculatorOperation =>
+  CALCULATOR_OPERATIONS.some((operation) => operation === value);
 
-        return evaluateCalculator(operation, operands);
-      },
-      inputSchema: {
-        properties: {
-          operands: {
-            items: { type: "number" },
-            minItems: 1,
-            type: "array",
-          },
-          operation: {
-            enum: [...CALCULATOR_OPERATIONS],
-            type: "string",
-          },
-        },
-        required: ["operation", "operands"],
-        type: "object",
-      },
-      name: "calculator",
-    },
-    {
-      description:
-        "Get deterministic mock weather for a location without calling an external API.",
-      execute(input) {
-        const location = readTrimmedString(input, "location");
+const readTrimmedString = (
+  input: unknown,
+  propertyName: string
+): string | undefined => {
+  if (!(isRecord(input) && propertyName in input)) {
+    return undefined;
+  }
 
-        if (location === undefined) {
-          return {
-            message: "weather requires a non-empty location string.",
-            status: "error",
-          };
-        }
+  const value = input[propertyName];
 
-        const requestedUnit = readTrimmedString(input, "unit");
-        const unit: WeatherUnit =
-          requestedUnit === "fahrenheit" ? "fahrenheit" : "celsius";
-        const seed = createDeterministicSeed(location.toLowerCase());
-        const condition = WEATHER_CONDITIONS[seed % WEATHER_CONDITIONS.length];
-        const temperatureCelsius = -2 + (seed % 35);
-        const feelsLikeCelsius =
-          temperatureCelsius + ((Math.floor(seed / 3) % 5) - 2);
-        const humidityPercent = 35 + (seed % 61);
-        const windSpeedKph = 5 + (Math.floor(seed / 7) % 36);
-        const temperature = roundWeatherValue(
-          convertTemperature(temperatureCelsius, unit)
-        );
-        const feelsLike = roundWeatherValue(
-          convertTemperature(feelsLikeCelsius, unit)
-        );
+  if (typeof value !== "string") {
+    return undefined;
+  }
 
-        return {
-          condition,
-          feelsLike,
-          humidityPercent,
-          location,
-          source: "mock",
-          summary: `${condition} in ${location}`,
-          temperature,
-          unit,
-          windSpeedKph,
-        };
-      },
-      inputSchema: {
-        properties: {
-          location: { type: "string" },
-          unit: {
-            enum: ["celsius", "fahrenheit"],
-            type: "string",
-          },
-        },
-        required: ["location"],
-        type: "object",
-      },
-      name: "weather",
-    },
-  ];
-}
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+};
 
-export function textSignal(text: string): InputSignal {
-  return {
-    parts: [
-      {
-        text,
-        type: "text",
-      },
-    ],
-  };
-}
-
-function readCalculatorOperation(
+const readCalculatorOperation = (
   input: unknown
-): CalculatorOperation | undefined {
+): CalculatorOperation | undefined => {
   const operation = readTrimmedString(input, "operation");
 
   if (operation === undefined || !isCalculatorOperation(operation)) {
@@ -208,12 +72,12 @@ function readCalculatorOperation(
   }
 
   return operation;
-}
+};
 
-function readNumberArray(
+const readNumberArray = (
   input: unknown,
   propertyName: string
-): number[] | undefined {
+): number[] | undefined => {
   if (!(isRecord(input) && propertyName in input)) {
     return undefined;
   }
@@ -228,35 +92,31 @@ function readNumberArray(
   }
 
   return [...value];
-}
+};
 
-function readTrimmedString(
-  input: unknown,
-  propertyName: string
-): string | undefined {
-  if (!(isRecord(input) && propertyName in input)) {
-    return undefined;
-  }
+const createCalculatorSuccess = (
+  operation: CalculatorOperation,
+  operands: number[],
+  result: number
+) => ({
+  operands,
+  operation,
+  result,
+  status: "success" as const,
+});
 
-  const value = input[propertyName];
+const createCalculatorError = (
+  operation: CalculatorOperation,
+  operands: number[],
+  message: string
+) => ({
+  message,
+  operands,
+  operation,
+  status: "error" as const,
+});
 
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length === 0 ? undefined : trimmed;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function isCalculatorOperation(value: string): value is CalculatorOperation {
-  return CALCULATOR_OPERATIONS.some((operation) => operation === value);
-}
-
-function evaluateCalculator(
+const evaluateCalculator = (
   operation: CalculatorOperation,
   operands: number[]
 ):
@@ -271,7 +131,7 @@ function evaluateCalculator(
       operation: CalculatorOperation;
       operands: number[];
       status: "error";
-    } {
+    } => {
   switch (operation) {
     case "add": {
       return createCalculatorSuccess(
@@ -365,35 +225,9 @@ function evaluateCalculator(
       );
     }
   }
-}
+};
 
-function createCalculatorSuccess(
-  operation: CalculatorOperation,
-  operands: number[],
-  result: number
-) {
-  return {
-    operands,
-    operation,
-    result,
-    status: "success" as const,
-  };
-}
-
-function createCalculatorError(
-  operation: CalculatorOperation,
-  operands: number[],
-  message: string
-) {
-  return {
-    message,
-    operands,
-    operation,
-    status: "error" as const,
-  };
-}
-
-function createDeterministicSeed(value: string): number {
+const createDeterministicSeed = (value: string): number => {
   let seed = 0;
 
   for (const [index, character] of [...value].entries()) {
@@ -407,16 +241,174 @@ function createDeterministicSeed(value: string): number {
   }
 
   return seed;
-}
+};
 
-function convertTemperature(valueCelsius: number, unit: WeatherUnit): number {
+const convertTemperature = (
+  valueCelsius: number,
+  unit: WeatherUnit
+): number => {
   if (unit === "fahrenheit") {
     return valueCelsius * (9 / 5) + 32;
   }
 
   return valueCelsius;
-}
+};
 
-function roundWeatherValue(value: number): number {
-  return Math.round(value * 10) / 10;
-}
+const roundWeatherValue = (value: number): number =>
+  Math.round(value * 10) / 10;
+
+export const createReplBuiltinTools = (): TuvrenToolDefinition[] => [
+  {
+    description: "Search deterministic REPL documents",
+    execute(input) {
+      const query =
+        typeof input === "object" &&
+        input !== null &&
+        "query" in input &&
+        typeof input.query === "string"
+          ? input.query
+          : "unknown";
+      return {
+        hits: [
+          {
+            title: "Tuvren",
+            url: "https://example.invalid/tuvren",
+          },
+        ],
+        query,
+      };
+    },
+    inputSchema: {
+      properties: {
+        query: { type: "string" },
+      },
+      required: ["query"],
+      type: "object",
+    },
+    name: "search",
+  },
+  {
+    approval: true,
+    description: "Send a deterministic REPL email",
+    execute(input) {
+      const to =
+        typeof input === "object" &&
+        input !== null &&
+        "to" in input &&
+        typeof input.to === "string"
+          ? input.to
+          : "unknown@example.invalid";
+      return {
+        sent: true,
+        to,
+      };
+    },
+    inputSchema: {
+      properties: {
+        subject: { type: "string" },
+        to: { type: "string" },
+      },
+      required: ["to", "subject"],
+      type: "object",
+    },
+    name: "email",
+  },
+  {
+    description:
+      "Perform deterministic arithmetic on one or more numeric operands.",
+    execute(input) {
+      const operation = readCalculatorOperation(input);
+      const operands = readNumberArray(input, "operands");
+
+      if (operation === undefined || operands === undefined) {
+        return {
+          message:
+            "calculator requires an operation and a numeric operands array.",
+          status: "error",
+        };
+      }
+
+      return evaluateCalculator(operation, operands);
+    },
+    inputSchema: {
+      properties: {
+        operands: {
+          items: { type: "number" },
+          minItems: 1,
+          type: "array",
+        },
+        operation: {
+          enum: [...CALCULATOR_OPERATIONS],
+          type: "string",
+        },
+      },
+      required: ["operation", "operands"],
+      type: "object",
+    },
+    name: "calculator",
+  },
+  {
+    description:
+      "Get deterministic mock weather for a location without calling an external API.",
+    execute(input) {
+      const location = readTrimmedString(input, "location");
+
+      if (location === undefined) {
+        return {
+          message: "weather requires a non-empty location string.",
+          status: "error",
+        };
+      }
+
+      const requestedUnit = readTrimmedString(input, "unit");
+      const unit: WeatherUnit =
+        requestedUnit === "fahrenheit" ? "fahrenheit" : "celsius";
+      const seed = createDeterministicSeed(location.toLowerCase());
+      const condition = WEATHER_CONDITIONS[seed % WEATHER_CONDITIONS.length];
+      const temperatureCelsius = -2 + (seed % 35);
+      const feelsLikeCelsius =
+        temperatureCelsius + ((Math.floor(seed / 3) % 5) - 2);
+      const humidityPercent = 35 + (seed % 61);
+      const windSpeedKph = 5 + (Math.floor(seed / 7) % 36);
+      const temperature = roundWeatherValue(
+        convertTemperature(temperatureCelsius, unit)
+      );
+      const feelsLike = roundWeatherValue(
+        convertTemperature(feelsLikeCelsius, unit)
+      );
+
+      return {
+        condition,
+        feelsLike,
+        humidityPercent,
+        location,
+        source: "mock",
+        summary: `${condition} in ${location}`,
+        temperature,
+        unit,
+        windSpeedKph,
+      };
+    },
+    inputSchema: {
+      properties: {
+        location: { type: "string" },
+        unit: {
+          enum: ["celsius", "fahrenheit"],
+          type: "string",
+        },
+      },
+      required: ["location"],
+      type: "object",
+    },
+    name: "weather",
+  },
+];
+
+export const textSignal = (text: string): InputSignal => ({
+  parts: [
+    {
+      text,
+      type: "text",
+    },
+  ],
+});

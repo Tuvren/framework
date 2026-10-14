@@ -19,29 +19,27 @@ import type { TuvrenExtension } from "@tuvren/sdk";
 export const PROOF_EXTENSION_NAME = "proof-extension";
 export const PROOF_EXTENSION_EVENT_NAME = "proof-extension.before_turn";
 
-export function createProofExtension(): TuvrenExtension {
-  return {
-    beforeTurn(context) {
-      context.emit({
-        data: {
-          iterationCount: context.iterationCount,
-          messageCount: context.manifest.messageCount,
-        },
-        name: PROOF_EXTENSION_EVENT_NAME,
-      });
-      return {
-        state: {
-          active: true,
-          runId: context.runId,
-          turnId: context.turnId,
-        },
-      };
-    },
-    name: PROOF_EXTENSION_NAME,
-    systemPrompt(context) {
-      return context.extensionState.active === true
-        ? "Proof extension active."
-        : undefined;
-    },
-  };
-}
+export const createProofExtension = (): TuvrenExtension => ({
+  beforeTurn(context) {
+    context.emit({
+      data: {
+        iterationCount: context.iterationCount,
+        messageCount: context.manifest.messageCount,
+      },
+      name: PROOF_EXTENSION_EVENT_NAME,
+    });
+    return {
+      state: {
+        active: true,
+        runId: context.runId,
+        turnId: context.turnId,
+      },
+    };
+  },
+  name: PROOF_EXTENSION_NAME,
+  systemPrompt(context) {
+    return context.extensionState.active === true
+      ? "Proof extension active."
+      : undefined;
+  },
+});
