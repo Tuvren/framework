@@ -320,7 +320,7 @@ const isInboundRejection = (
 const projectSignalForWire = (signal: SessionClientInputSignal): unknown => ({
   ...signal,
   parts: signal.parts.map((part) =>
-    part.type === "file" && part.data instanceof Uint8Array
+    part.type === "file" && typeof part.data !== "string"
       ? { ...part, data: [...part.data] }
       : part
   ),
@@ -588,7 +588,7 @@ export const createSessionClient = (
     })();
   };
 
-  const handleOutboundFrame = (frame: unknown): void => {
+  const handleOutboundFrame = (frame: unknown, cursor?: string): void => {
     if (!isRecord(frame)) {
       return;
     }
@@ -602,6 +602,12 @@ export const createSessionClient = (
     const record = frame;
     const { kind } = record;
     if (kind === "event") {
+      if (!("event" in record)) {
+        return;
+      }
+      if (cursor !== undefined) {
+        lastCursor = cursor;
+      }
       options.onEvent?.(record.event, lastCursor);
       return;
     }
@@ -723,6 +729,12 @@ export const createSessionClient = (
             break;
           }
           case "frame": {
+            // Session protocol frames are only meaningful after this socket's
+            // handshake has been accepted; malformed acknowledgements leave
+            // the receive side closed as well as the outbound queue.
+            if (!handshakeOpen) {
+              break;
+            }
             if (!isRecord(parsed.frame)) {
               break;
             }
@@ -732,10 +744,15 @@ export const createSessionClient = (
             ) {
               break;
             }
-            if (parsed.cursor !== undefined) {
-              lastCursor = parsed.cursor;
+            // Resume positions belong exclusively to event frames. Reject a
+            // cursor-bearing control envelope before capability or rejection
+            // callbacks can observe it.
+            if (parsed.cursor !== undefined && parsed.frame.kind !== "event") {
+              break;
             }
-            handleOutboundFrame(parsed.frame);
+            // The carriage schema permits cursors only on valid event frames.
+            // Validate and dispatch the envelope before moving replay state.
+            handleOutboundFrame(parsed.frame, parsed.cursor);
             break;
           }
           case "ping": {
