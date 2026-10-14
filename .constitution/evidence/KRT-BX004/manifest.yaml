@@ -4,7 +4,7 @@
   "produced": {
     "date": "2026-10-14",
     "commit": "91bccf8e85e242b757eb426f3c724eaf263c91f7",
-    "command": "bun run nx run host-session:typecheck; bun run nx run host-session:test; bun run nx run host-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/session; bunx --bun biome lint --reporter=json typescript/host/session"
+    "command": "bun run nx run host-session:typecheck; bun run nx run host-session:test; bun run nx run host-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/session; bunx --bun biome lint --reporter=json typescript/host/session; bun run nx run remote-session:typecheck; bun run nx run remote-session:test; bun run nx run remote-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/remote-session; bunx --bun biome lint --reporter=json typescript/host/remote-session"
   },
   "files": [
     {
@@ -18,7 +18,19 @@
       "sha256": "22e1a7dfda29e0638a7fdc6d99f870ff893072fdf99f65e8d20049f915e1abc8",
       "bytes": 995,
       "role": "measurement"
+    },
+    {
+      "path": "m28-remote-session.json",
+      "sha256": "d19acfee14ac66cf260fa309e45e260a0df9fc728e58e6f0c86a91319e46f8af",
+      "bytes": 14237,
+      "role": "measurement"
+    },
+    {
+      "path": "m36-remote-session.patch",
+      "sha256": "98f35f89ab0246ffa1098e2bbed23ba9b7a0cdf253a53415f57cad7a52ac3fc8",
+      "bytes": 2080,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending."
+  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending. M28 requires the same A11 proof for remote-session and its M36 patch; all144 actual experimental AST associations remain preserved."
 }
