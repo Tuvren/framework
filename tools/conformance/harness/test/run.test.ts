@@ -20,6 +20,41 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+const runCommand = (command: readonly string[]): Promise<CommandResult> => {
+  const [executable, ...args] = command;
+
+  if (executable === undefined) {
+    throw new Error("command must not be empty");
+  }
+
+  const child = spawn(executable, args, {
+    cwd: process.cwd(),
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  let stdout = "";
+  let stderr = "";
+  child.stdout.setEncoding("utf-8");
+  child.stderr.setEncoding("utf-8");
+  child.stdout.on("data", (chunk: string) => {
+    stdout += chunk;
+  });
+  child.stderr.on("data", (chunk: string) => {
+    stderr += chunk;
+  });
+
+  return new Promise((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", (code) => {
+      resolve({
+        code: code ?? -1,
+        stderr,
+        stdout,
+      });
+    });
+  });
+};
+
 const tempDirs: string[] = [];
 
 afterEach(async () => {
@@ -529,39 +564,4 @@ interface CommandResult {
   code: number;
   stderr: string;
   stdout: string;
-}
-
-function runCommand(command: readonly string[]): Promise<CommandResult> {
-  const [executable, ...args] = command;
-
-  if (executable === undefined) {
-    throw new Error("command must not be empty");
-  }
-
-  const child = spawn(executable, args, {
-    cwd: process.cwd(),
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-
-  let stdout = "";
-  let stderr = "";
-  child.stdout.setEncoding("utf-8");
-  child.stderr.setEncoding("utf-8");
-  child.stdout.on("data", (chunk: string) => {
-    stdout += chunk;
-  });
-  child.stderr.on("data", (chunk: string) => {
-    stderr += chunk;
-  });
-
-  return new Promise((resolve, reject) => {
-    child.on("error", reject);
-    child.on("close", (code) => {
-      resolve({
-        code: code ?? -1,
-        stderr,
-        stdout,
-      });
-    });
-  });
 }

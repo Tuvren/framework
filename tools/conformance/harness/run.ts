@@ -397,278 +397,122 @@ const createAdapterControls = (
   };
 };
 
-await main();
+const createAssertionContext = (
+  outcome: Awaited<ReturnType<JsonRpcAdapterClient["dispatch"]>>,
+  input: Record<string, unknown>
+): AssertionContext => {
+  if (outcome.kind === "error") {
+    return {
+      fixture: input.fixture,
+      input: input.checkInput,
+      scenario: input.scenario,
+      state: {
+        adapterError: outcome.error,
+      },
+    };
+  }
 
-async function main(): Promise<void> {
-  const options = parseArgs(process.argv.slice(2));
-  const adapterManifest = await readAdapterManifest(options.adapter);
-  const plans = await readPlans(adapterManifest, options);
-  const selected = selectChecks(plans, adapterManifest, options);
-  await validateHandshakeForSelectedPlans(
-    adapterManifest,
-    plans,
-    selected.applicable.length === 0
-  );
+  if (!isRecord(outcome.value)) {
+    return {
+      fixture: input.fixture,
+      input: input.checkInput,
+      result: outcome.value,
+      scenario: input.scenario,
+    };
+  }
 
-  const scheduled = applyShard(selected.applicable, options);
-  const results = await runScheduledChecks(
-    adapterManifest,
-    scheduled,
-    options.concurrency
-  );
-
-  const checkResults = results
-    .sort((left, right) => left.index - right.index)
-    .map((result) => result.checkResult);
-  const baseSummary = createConformanceEvidenceSummary(checkResults);
-  const nonApplicableCheckIds = selected.nonApplicable.map(
-    (entry) => entry.checkId
-  );
-  const summary = {
-    ...baseSummary,
-    // Sharded evidence reports the applicable checks emitted by this shard,
-    // while retaining global non-applicability because capability exclusions are
-    // not scheduled work and do not belong to any shard.
-    applicableChecks: checkResults.length,
-    nonApplicableChecks: nonApplicableCheckIds.length,
-    totalChecks: checkResults.length + nonApplicableCheckIds.length,
+  return {
+    evidence: readOptionalRecord(outcome.value.evidence),
+    events: readOptionalArray(outcome.value.events),
+    fixture: input.fixture,
+    input: input.checkInput,
+    result: outcome.value.result,
+    scenario: input.scenario,
+    state: readOptionalRecord(outcome.value.state),
   };
-  const evidence: ConformanceEvidence = {
-    adapterId: adapterManifest.adapterId,
-    boundary: adapterManifest.boundary,
-    capabilities: [...adapterManifest.capabilities].sort(),
-    checkResults,
-    implementationId: adapterManifest.implementationId,
-    language: adapterManifest.language,
-    nonApplicableCheckIds,
-    status: summary.failedChecks === 0 ? "pass" : "fail",
-    suiteId: adapterManifest.suiteId,
-    suiteVersion: adapterManifest.suiteVersion,
-    summary,
-  };
-  const text = `${JSON.stringify(evidence, null, 2)}\n`;
+};
 
-  if (options.evidenceOut !== undefined) {
-    const evidencePath = resolve(REPO_ROOT, options.evidenceOut);
-    await mkdir(dirname(evidencePath), { recursive: true });
-    await writeFile(evidencePath, text);
-  }
-
-  if (options.summaryOnly) {
-    process.stdout.write(
-      `${JSON.stringify(
-        {
-          adapterId: evidence.adapterId,
-          implementationId: evidence.implementationId,
-          status: evidence.status,
-          suiteId: evidence.suiteId,
-          suiteVersion: evidence.suiteVersion,
-          summary: evidence.summary,
-        },
-        null,
-        2
-      )}\n`
-    );
-  } else {
-    process.stdout.write(text);
-  }
-
-  if (evidence.status === "fail" && !options.allowFailingEvidence) {
-    process.exitCode = 1;
-  }
-}
-
-async function validateHandshakeForSelectedPlans(
-  manifest: AdapterManifest,
-  plans: readonly CompiledConformancePlan[],
-  required: boolean
-): Promise<void> {
-  if (!required) {
+const mergeInspectedState = (
+  context: AssertionContext,
+  inspectedState: unknown,
+  outcome: Awaited<ReturnType<JsonRpcAdapterClient["dispatch"]>>
+): void => {
+  if (inspectedState === null || inspectedState === undefined) {
     return;
   }
 
-  const uniquePackets = new Map<
-    string,
-    { packetId: string; planVersion: string }
-  >();
-
-  for (const plan of plans) {
-    const key = `${plan.plan.packetId}@@${plan.plan.planVersion}`;
-
-    if (!uniquePackets.has(key)) {
-      uniquePackets.set(key, {
-        packetId: plan.plan.packetId,
-        planVersion: plan.plan.planVersion,
-      });
-    }
+  if (outcome.kind === "error") {
+    context.state = isRecord(inspectedState)
+      ? { ...inspectedState, adapterError: outcome.error }
+      : { adapterError: outcome.error, inspectedState };
+    return;
   }
 
-  const client = new JsonRpcAdapterClient({
-    command: manifest.command,
-    cwd: REPO_ROOT,
-  });
-
-  try {
-    for (const packet of uniquePackets.values()) {
-      const capabilities = await client.initialize(
-        packet.packetId,
-        packet.planVersion
-      );
-      validateAdapterHandshake(
-        capabilities,
-        manifest,
-        packet.packetId,
-        packet.planVersion
-      );
-    }
-  } finally {
-    await client.shutdown();
+  // Adapter-supplied state from a successful dispatch already populates
+  // context.state; only fall back to the inspectState query when dispatch did
+  // not pack value.state. Mirrors the events handling above.
+  if (context.state === undefined) {
+    context.state = inspectedState;
   }
-}
+};
 
-async function runScheduledChecks(
+const readErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const readAdapterFailure = (error: unknown): unknown => {
+  if (error instanceof JsonRpcAdapterError) {
+    return error.envelope;
+  }
+
+  return readErrorMessage(error);
+};
+
+const validateAdapterHandshake = (
+  capabilities: AdapterCapabilities,
   manifest: AdapterManifest,
-  scheduled: readonly ScheduledCheck[],
-  concurrency: number
-): Promise<RunResult[]> {
-  const results: RunResult[] = [];
-  let nextIndex = 0;
-  const workerCount = Math.min(concurrency, scheduled.length);
-  const workers = Array.from({ length: workerCount }, async () => {
-    const client = new JsonRpcAdapterClient({
-      command: manifest.command,
-      cwd: REPO_ROOT,
-    });
+  packetId: string,
+  planVersion: string
+): void => {
+  if (capabilities.adapterId !== manifest.adapterId) {
+    throw new Error(
+      `adapter initialize returned adapterId ${capabilities.adapterId}, expected ${manifest.adapterId}`
+    );
+  }
 
-    try {
-      while (nextIndex < scheduled.length) {
-        // Each worker owns one adapter process and runs checks serially inside
-        // that process, preventing stateful adapters from racing inspectState.
-        const scheduledCheck = scheduled[nextIndex];
-        nextIndex += 1;
+  if (
+    capabilities.packetId !== packetId ||
+    capabilities.planVersion !== planVersion
+  ) {
+    throw new Error(
+      `adapter initialize echoed ${capabilities.packetId}@${capabilities.planVersion}, expected ${packetId}@${planVersion}`
+    );
+  }
 
-        if (scheduledCheck === undefined) {
-          break;
-        }
+  const reportedCapabilities = capabilities.capabilities;
 
-        results.push({
-          checkResult: await runCheck(
-            client,
-            manifest,
-            scheduledCheck.plan,
-            scheduledCheck.compiledCheck
-          ),
-          index: scheduledCheck.index,
-        });
-      }
-    } finally {
-      await client.shutdown();
-    }
-  });
+  if (!Array.isArray(reportedCapabilities)) {
+    throw new TypeError("adapter initialize must report capabilities");
+  }
 
-  await Promise.all(workers);
-  return results;
-}
+  const expected = [...manifest.capabilities].sort();
+  const actual = [...reportedCapabilities].sort();
 
-async function runCheck(
+  if (
+    expected.length !== actual.length ||
+    expected.some((capability, index) => capability !== actual[index])
+  ) {
+    throw new Error(
+      `adapter initialize capabilities ${actual.join(", ")} do not match manifest ${expected.join(", ")}`
+    );
+  }
+};
+
+const runTraceCheck = async (
   client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
   plan: CompiledConformancePlan,
   compiledCheck: CompiledConformancePlanCheck
-): Promise<ConformanceCheckResult> {
-  const { check } = compiledCheck;
-
-  try {
-    const capabilities = await client.initialize(
-      plan.plan.packetId,
-      plan.plan.planVersion
-    );
-    validateAdapterHandshake(
-      capabilities,
-      manifest,
-      plan.plan.packetId,
-      plan.plan.planVersion
-    );
-
-    if (Array.isArray(check.steps) && check.steps.length > 0) {
-      return await runTraceCheck(client, manifest, plan, compiledCheck);
-    }
-
-    const input = createAdapterInput(plan, compiledCheck);
-    const controls = createAdapterControls(compiledCheck);
-    const timeoutMs = controls.deadlineMs;
-    const outcome = await client.dispatch(
-      check.operation,
-      input,
-      controls,
-      undefined,
-      timeoutMs
-    );
-    const context = createAssertionContext(outcome, input);
-    const extraEvents = await client.events(
-      check.operation,
-      input,
-      controls,
-      undefined,
-      timeoutMs
-    );
-
-    if (context.events === undefined && extraEvents.length > 0) {
-      context.events = extraEvents;
-    }
-
-    const inspectedState = await client.inspectState(
-      {
-        operation: check.operation,
-      },
-      undefined,
-      timeoutMs
-    );
-
-    mergeInspectedState(context, inspectedState, outcome);
-
-    const assertionResults = [
-      ...evaluateAssertions(check, context),
-      ...evaluateRequiredEvidence(compiledCheck, context),
-    ];
-
-    return createCheckResult(check.checkId, assertionResults, {
-      // Adapter-declared operation errors stay isolated from $.result.error,
-      // but persisted evidence still records the native error for diagnosis.
-      ...(outcome.kind === "error" ? { adapterError: outcome.error } : {}),
-      adapterId: manifest.adapterId,
-      planId: plan.plan.planId,
-    });
-  } catch (error: unknown) {
-    const message = readErrorMessage(error);
-    const adapterError = readAdapterFailure(error);
-    const assertionResults = [
-      ...check.assertions.map((assertion, index) => ({
-        assertionId: `${check.checkId}.${index + 1}.${assertion.kind}`,
-        message,
-        status: "fail" as const,
-      })),
-      ...compiledCheck.requiredEvidence.map((path) => ({
-        assertionId: `${check.checkId}.requiredEvidence.${path}`,
-        message,
-        status: "fail" as const,
-      })),
-    ];
-
-    return createCheckResult(check.checkId, assertionResults, {
-      adapterError,
-      adapterId: manifest.adapterId,
-      planId: plan.plan.planId,
-    });
-  }
-}
-
-async function runTraceCheck(
-  client: JsonRpcAdapterClient,
-  manifest: AdapterManifest,
-  plan: CompiledConformancePlan,
-  compiledCheck: CompiledConformancePlanCheck
-): Promise<ConformanceCheckResult> {
+): Promise<ConformanceCheckResult> => {
   const { check } = compiledCheck;
   const baseInput = createAdapterInput(plan, compiledCheck);
   const instance = await client.createInstance(baseInput);
@@ -770,127 +614,201 @@ async function runTraceCheck(
       : {}),
     traceStepIds: Object.keys(trace),
   });
-}
+};
 
-function createAssertionContext(
-  outcome: Awaited<ReturnType<JsonRpcAdapterClient["dispatch"]>>,
-  input: Record<string, unknown>
-): AssertionContext {
-  if (outcome.kind === "error") {
-    return {
-      fixture: input.fixture,
-      input: input.checkInput,
-      scenario: input.scenario,
-      state: {
-        adapterError: outcome.error,
-      },
-    };
-  }
-
-  if (!isRecord(outcome.value)) {
-    return {
-      fixture: input.fixture,
-      input: input.checkInput,
-      result: outcome.value,
-      scenario: input.scenario,
-    };
-  }
-
-  return {
-    evidence: readOptionalRecord(outcome.value.evidence),
-    events: readOptionalArray(outcome.value.events),
-    fixture: input.fixture,
-    input: input.checkInput,
-    result: outcome.value.result,
-    scenario: input.scenario,
-    state: readOptionalRecord(outcome.value.state),
-  };
-}
-
-function mergeInspectedState(
-  context: AssertionContext,
-  inspectedState: unknown,
-  outcome: Awaited<ReturnType<JsonRpcAdapterClient["dispatch"]>>
-): void {
-  if (inspectedState === null || inspectedState === undefined) {
-    return;
-  }
-
-  if (outcome.kind === "error") {
-    context.state = isRecord(inspectedState)
-      ? { ...inspectedState, adapterError: outcome.error }
-      : { adapterError: outcome.error, inspectedState };
-    return;
-  }
-
-  // Adapter-supplied state from a successful dispatch already populates
-  // context.state; only fall back to the inspectState query when dispatch did
-  // not pack value.state. Mirrors the events handling above.
-  if (context.state === undefined) {
-    context.state = inspectedState;
-  }
-}
-
-function readAdapterFailure(error: unknown): unknown {
-  if (error instanceof JsonRpcAdapterError) {
-    return error.envelope;
-  }
-
-  return readErrorMessage(error);
-}
-
-function readErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function validateAdapterHandshake(
-  capabilities: AdapterCapabilities,
+const runCheck = async (
+  client: JsonRpcAdapterClient,
   manifest: AdapterManifest,
-  packetId: string,
-  planVersion: string
-): void {
-  if (capabilities.adapterId !== manifest.adapterId) {
-    throw new Error(
-      `adapter initialize returned adapterId ${capabilities.adapterId}, expected ${manifest.adapterId}`
+  plan: CompiledConformancePlan,
+  compiledCheck: CompiledConformancePlanCheck
+): Promise<ConformanceCheckResult> => {
+  const { check } = compiledCheck;
+
+  try {
+    const capabilities = await client.initialize(
+      plan.plan.packetId,
+      plan.plan.planVersion
     );
-  }
-
-  if (
-    capabilities.packetId !== packetId ||
-    capabilities.planVersion !== planVersion
-  ) {
-    throw new Error(
-      `adapter initialize echoed ${capabilities.packetId}@${capabilities.planVersion}, expected ${packetId}@${planVersion}`
+    validateAdapterHandshake(
+      capabilities,
+      manifest,
+      plan.plan.packetId,
+      plan.plan.planVersion
     );
-  }
 
-  const reportedCapabilities = capabilities.capabilities;
+    if (Array.isArray(check.steps) && check.steps.length > 0) {
+      return await runTraceCheck(client, manifest, plan, compiledCheck);
+    }
 
-  if (!Array.isArray(reportedCapabilities)) {
-    throw new TypeError("adapter initialize must report capabilities");
-  }
-
-  const expected = [...manifest.capabilities].sort();
-  const actual = [...reportedCapabilities].sort();
-
-  if (
-    expected.length !== actual.length ||
-    expected.some((capability, index) => capability !== actual[index])
-  ) {
-    throw new Error(
-      `adapter initialize capabilities ${actual.join(", ")} do not match manifest ${expected.join(", ")}`
+    const input = createAdapterInput(plan, compiledCheck);
+    const controls = createAdapterControls(compiledCheck);
+    const timeoutMs = controls.deadlineMs;
+    const outcome = await client.dispatch(
+      check.operation,
+      input,
+      controls,
+      undefined,
+      timeoutMs
     );
-  }
-}
+    const context = createAssertionContext(outcome, input);
+    const extraEvents = await client.events(
+      check.operation,
+      input,
+      controls,
+      undefined,
+      timeoutMs
+    );
 
-function selectChecks(
+    if (context.events === undefined && extraEvents.length > 0) {
+      context.events = extraEvents;
+    }
+
+    const inspectedState = await client.inspectState(
+      {
+        operation: check.operation,
+      },
+      undefined,
+      timeoutMs
+    );
+
+    mergeInspectedState(context, inspectedState, outcome);
+
+    const assertionResults = [
+      ...evaluateAssertions(check, context),
+      ...evaluateRequiredEvidence(compiledCheck, context),
+    ];
+
+    return createCheckResult(check.checkId, assertionResults, {
+      // Adapter-declared operation errors stay isolated from $.result.error,
+      // but persisted evidence still records the native error for diagnosis.
+      ...(outcome.kind === "error" ? { adapterError: outcome.error } : {}),
+      adapterId: manifest.adapterId,
+      planId: plan.plan.planId,
+    });
+  } catch (error: unknown) {
+    const message = readErrorMessage(error);
+    const adapterError = readAdapterFailure(error);
+    const assertionResults = [
+      ...check.assertions.map((assertion, index) => ({
+        assertionId: `${check.checkId}.${index + 1}.${assertion.kind}`,
+        message,
+        status: "fail" as const,
+      })),
+      ...compiledCheck.requiredEvidence.map((path) => ({
+        assertionId: `${check.checkId}.requiredEvidence.${path}`,
+        message,
+        status: "fail" as const,
+      })),
+    ];
+
+    return createCheckResult(check.checkId, assertionResults, {
+      adapterError,
+      adapterId: manifest.adapterId,
+      planId: plan.plan.planId,
+    });
+  }
+};
+
+const runScheduledChecks = async (
+  manifest: AdapterManifest,
+  scheduled: readonly ScheduledCheck[],
+  concurrency: number
+): Promise<RunResult[]> => {
+  const results: RunResult[] = [];
+  let nextIndex = 0;
+  const workerCount = Math.min(concurrency, scheduled.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    const client = new JsonRpcAdapterClient({
+      command: manifest.command,
+      cwd: REPO_ROOT,
+    });
+
+    try {
+      while (nextIndex < scheduled.length) {
+        // Each worker owns one adapter process and runs checks serially inside
+        // that process, preventing stateful adapters from racing inspectState.
+        const scheduledCheck = scheduled[nextIndex];
+        nextIndex += 1;
+
+        if (scheduledCheck === undefined) {
+          break;
+        }
+
+        results.push({
+          checkResult: await runCheck(
+            client,
+            manifest,
+            scheduledCheck.plan,
+            scheduledCheck.compiledCheck
+          ),
+          index: scheduledCheck.index,
+        });
+      }
+    } finally {
+      await client.shutdown();
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+};
+
+const validateHandshakeForSelectedPlans = async (
+  manifest: AdapterManifest,
+  plans: readonly CompiledConformancePlan[],
+  required: boolean
+): Promise<void> => {
+  if (!required) {
+    return;
+  }
+
+  const uniquePackets = new Map<
+    string,
+    { packetId: string; planVersion: string }
+  >();
+
+  for (const plan of plans) {
+    const key = `${plan.plan.packetId}@@${plan.plan.planVersion}`;
+
+    if (!uniquePackets.has(key)) {
+      uniquePackets.set(key, {
+        packetId: plan.plan.packetId,
+        planVersion: plan.plan.planVersion,
+      });
+    }
+  }
+
+  const client = new JsonRpcAdapterClient({
+    command: manifest.command,
+    cwd: REPO_ROOT,
+  });
+
+  try {
+    for (const packet of uniquePackets.values()) {
+      const capabilities = await client.initialize(
+        packet.packetId,
+        packet.planVersion
+      );
+      validateAdapterHandshake(
+        capabilities,
+        manifest,
+        packet.packetId,
+        packet.planVersion
+      );
+    }
+  } finally {
+    await client.shutdown();
+  }
+};
+
+const selectChecks = (
   plans: readonly CompiledConformancePlan[],
   manifest: AdapterManifest,
   options: CliOptions
 ): {
   applicable: ScheduledCheck[];
   nonApplicable: { checkId: string; planId: string }[];
-} {
+} => {
   const adapterCapabilities = new Set(manifest.capabilities);
   const requestedCapabilities = new Set(options.capabilities);
   const requestedChecks = new Set(options.checks);
@@ -972,12 +890,12 @@ function selectChecks(
     applicable,
     nonApplicable,
   };
-}
+};
 
-function applyShard(
+const applyShard = (
   scheduled: readonly ScheduledCheck[],
   options: CliOptions
-): ScheduledCheck[] {
+): ScheduledCheck[] => {
   const { shard } = options;
 
   if (shard === undefined) {
@@ -987,4 +905,85 @@ function applyShard(
   return scheduled.filter(
     (_entry, index) => index % shard.count === shard.index
   );
-}
+};
+
+const main = async (): Promise<void> => {
+  const options = parseArgs(process.argv.slice(2));
+  const adapterManifest = await readAdapterManifest(options.adapter);
+  const plans = await readPlans(adapterManifest, options);
+  const selected = selectChecks(plans, adapterManifest, options);
+  await validateHandshakeForSelectedPlans(
+    adapterManifest,
+    plans,
+    selected.applicable.length === 0
+  );
+
+  const scheduled = applyShard(selected.applicable, options);
+  const results = await runScheduledChecks(
+    adapterManifest,
+    scheduled,
+    options.concurrency
+  );
+
+  const checkResults = results
+    .sort((left, right) => left.index - right.index)
+    .map((result) => result.checkResult);
+  const baseSummary = createConformanceEvidenceSummary(checkResults);
+  const nonApplicableCheckIds = selected.nonApplicable.map(
+    (entry) => entry.checkId
+  );
+  const summary = {
+    ...baseSummary,
+    // Sharded evidence reports the applicable checks emitted by this shard,
+    // while retaining global non-applicability because capability exclusions are
+    // not scheduled work and do not belong to any shard.
+    applicableChecks: checkResults.length,
+    nonApplicableChecks: nonApplicableCheckIds.length,
+    totalChecks: checkResults.length + nonApplicableCheckIds.length,
+  };
+  const evidence: ConformanceEvidence = {
+    adapterId: adapterManifest.adapterId,
+    boundary: adapterManifest.boundary,
+    capabilities: [...adapterManifest.capabilities].sort(),
+    checkResults,
+    implementationId: adapterManifest.implementationId,
+    language: adapterManifest.language,
+    nonApplicableCheckIds,
+    status: summary.failedChecks === 0 ? "pass" : "fail",
+    suiteId: adapterManifest.suiteId,
+    suiteVersion: adapterManifest.suiteVersion,
+    summary,
+  };
+  const text = `${JSON.stringify(evidence, null, 2)}\n`;
+
+  if (options.evidenceOut !== undefined) {
+    const evidencePath = resolve(REPO_ROOT, options.evidenceOut);
+    await mkdir(dirname(evidencePath), { recursive: true });
+    await writeFile(evidencePath, text);
+  }
+
+  if (options.summaryOnly) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          adapterId: evidence.adapterId,
+          implementationId: evidence.implementationId,
+          status: evidence.status,
+          suiteId: evidence.suiteId,
+          suiteVersion: evidence.suiteVersion,
+          summary: evidence.summary,
+        },
+        null,
+        2
+      )}\n`
+    );
+  } else {
+    process.stdout.write(text);
+  }
+
+  if (evidence.status === "fail" && !options.allowFailingEvidence) {
+    process.exitCode = 1;
+  }
+};
+
+await main();
