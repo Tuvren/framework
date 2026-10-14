@@ -17,33 +17,33 @@
     {
       "code": "promise(prefer-await-to-then)",
       "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
-      "line": 557
+      "line": 601
     },
     {
       "code": "unicorn(no-useless-undefined)",
       "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
-      "line": 557
+      "line": 601
     },
     {
       "code": "promise(prefer-catch)",
       "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
-      "line": 573
+      "line": 617
     },
     {
       "code": "promise(prefer-await-to-then)",
       "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
-      "line": 573
+      "line": 617
     }
   ],
   "launch_sites": [
     {
       "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
-      "line": 557,
+      "line": 601,
       "source": "drain.catch(() => undefined);"
     },
     {
       "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
-      "line": 573,
+      "line": 617,
       "source": "bridgedHandle.awaitResult().then(settleWatcher, settleWatcher);"
     }
   ],
@@ -153,7 +153,8 @@
     "Use canonical typed stream events and actual completed ExecutionResult in tests instead of unsafe casts; await captured rejection values because Bun rejection matchers are statically void.",
     "Use recursive partial-read test collection to avoid both await-in-loop and for-await early-return closure of the shared outbound iterator.",
     "Remove two optional packageDocumentation tags only, keeping prose and required experimental tags. Five narrow jsdoc/check-tag-names regions are separately authorized metadata, never legacy suppression counterparts.",
-    "Retain the exact two committed background launch handler statements under A11, preserving their existing timing and rejection handling; no source void launch is introduced in M27."
+    "Retain the exact two committed background launch handler statements under A11, preserving their existing timing and rejection handling; no source void launch is introduced in M27.",
+    "Private wire uint8[] to core Uint8Array projection validates dense integer0..255 arrays, allows empty data, preserves existing core-valid signal identity and never mutates caller input."
   ],
   "api_verification": {
     "newApi": "Promise.withResolvers<T>(): PromiseWithResolvers<T>",
@@ -210,8 +211,8 @@
       "error-buffered-items"
     ],
     "protocol_equal": true,
-    "canonical_tests": 33,
-    "assertions": 66,
+    "canonical_tests": 34,
+    "assertions": 84,
     "exports_smoke": true,
     "source_typecheck": true,
     "format": true
@@ -235,6 +236,23 @@
       "name": "bx-m27-measurement.json",
       "sha256": "1a45bb8f434032d9905438bc2cd9d3850f56f325bc1054f584016a945a11bdd0",
       "bytes": 46539
+    }
+  ],
+  "review_corrections": [
+    {
+      "finding": "P1 authority-valid JSON uint8[] file data rejected by initial guard; empty byte array wrongly classified malformed.",
+      "base_commit": "57029b5",
+      "resolution": "Project only dense integer0..255 JSON file arrays to core Uint8Array; preserve already-core-valid signal identity, caller input, extras and metadata.",
+      "test_cases": [
+        "empty bytes",
+        "[1,2]",
+        "[0,255]",
+        "sparse/fractional/out-of-range rejected"
+      ],
+      "summary": "bx-m27-fix-summary.json",
+      "sha256": "3525ab0a0299cd20cbb9c054b2386c868df10810d433528dff3131999c767cc3",
+      "native_unused_controls": "Only exact A11 residuals; no unused directive warning",
+      "admission_patch_check": "git apply --check passes after fix"
     }
   ]
 }
