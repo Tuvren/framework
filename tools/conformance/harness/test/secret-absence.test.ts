@@ -134,3 +134,38 @@ describe("secret-pattern scanner (KRT-BK004)", () => {
     expect(findings[0]?.preview.length).toBeLessThan(JWT_SHAPED.length);
   });
 });
+
+describe("secret scanner traversal and finding order", () => {
+  test("scans cyclic objects and arrays without losing raw or encoded leaks", () => {
+    const cycle: unknown[] = [];
+    const surface = {
+      cycle,
+      encoded: Buffer.from(SECRET, "utf-8").toString("base64"),
+      raw: "second-secret",
+    };
+    cycle.push(surface, cycle);
+
+    expect(findSecretLeaks(surface, [SECRET, "second-secret", SECRET])).toEqual(
+      [
+        { secret: SECRET, variant: "base64" },
+        { secret: "second-secret", variant: "raw" },
+        { secret: SECRET, variant: "base64" },
+      ]
+    );
+  });
+
+  test("keeps pattern traversal order and deduplicates cyclic repeated values", () => {
+    const cycle: unknown[] = [];
+    cycle.push(
+      JWT_SHAPED,
+      cycle,
+      "mongodb://db.internal:27017/app",
+      JWT_SHAPED
+    );
+
+    expect(
+      findSecretPatternLeaks(cycle).map((finding) => finding.pattern)
+    ).toEqual(["jwt", "connection-string"]);
+    expect(hasSecretPatternResidue(cycle)).toBe(true);
+  });
+});

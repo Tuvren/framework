@@ -63,6 +63,55 @@ interface JsonRpcErrorResponse {
 
 type JsonRpcResponse = JsonRpcErrorResponse | JsonRpcSuccessResponse;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isAdapterErrorEnvelope = (
+  value: unknown
+): value is AdapterErrorEnvelope => {
+  if (
+    !isRecord(value) ||
+    typeof value.code !== "string" ||
+    value.code.length === 0 ||
+    typeof value.message !== "string"
+  ) {
+    return false;
+  }
+
+  return value.cause === undefined || isAdapterErrorEnvelope(value.cause);
+};
+
+const isJsonRpcId = (value: unknown): value is number | string | null =>
+  value === null || typeof value === "number" || typeof value === "string";
+
+const isJsonRpcResponse = (value: unknown): value is JsonRpcResponse => {
+  if (!isRecord(value) || value.jsonrpc !== "2.0" || !("id" in value)) {
+    return false;
+  }
+
+  if (!isJsonRpcId(value.id)) {
+    return false;
+  }
+
+  if ("result" in value) {
+    return !("error" in value);
+  }
+
+  return "error" in value && isAdapterErrorEnvelope(value.error);
+};
+
+const isOperationOutcome = (value: unknown): value is OperationOutcome => {
+  if (!isRecord(value) || typeof value.kind !== "string") {
+    return false;
+  }
+
+  if (value.kind === "result") {
+    return "value" in value;
+  }
+
+  return value.kind === "error" && isAdapterErrorEnvelope(value.error);
+};
+
 export class JsonRpcAdapterError extends Error {
   readonly envelope: AdapterErrorEnvelope;
 
@@ -308,55 +357,4 @@ export class JsonRpcAdapterClient {
 
     this.pending.clear();
   }
-}
-
-function isJsonRpcResponse(value: unknown): value is JsonRpcResponse {
-  if (!isRecord(value) || value.jsonrpc !== "2.0" || !("id" in value)) {
-    return false;
-  }
-
-  if (!isJsonRpcId(value.id)) {
-    return false;
-  }
-
-  if ("result" in value) {
-    return !("error" in value);
-  }
-
-  return "error" in value && isAdapterErrorEnvelope(value.error);
-}
-
-function isJsonRpcId(value: unknown): value is number | string | null {
-  return (
-    value === null || typeof value === "number" || typeof value === "string"
-  );
-}
-
-function isOperationOutcome(value: unknown): value is OperationOutcome {
-  if (!isRecord(value) || typeof value.kind !== "string") {
-    return false;
-  }
-
-  if (value.kind === "result") {
-    return "value" in value;
-  }
-
-  return value.kind === "error" && isAdapterErrorEnvelope(value.error);
-}
-
-function isAdapterErrorEnvelope(value: unknown): value is AdapterErrorEnvelope {
-  if (
-    !isRecord(value) ||
-    typeof value.code !== "string" ||
-    value.code.length === 0 ||
-    typeof value.message !== "string"
-  ) {
-    return false;
-  }
-
-  return value.cause === undefined || isAdapterErrorEnvelope(value.cause);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
