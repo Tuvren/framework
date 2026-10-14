@@ -75,7 +75,10 @@ describe("repl transcript backend-options redaction (KRT-BD002)", () => {
       passwd: "p2",
       port: 5432,
       pwd: "p1",
-    }) as Record<string, unknown>;
+    });
+    if (!isRecord(redacted)) {
+      throw new TypeError("expected redacted backend options to be an object");
+    }
     expect(redacted.accessKey).toBe("***");
     expect(redacted.apiKey).toBe("***");
     expect(redacted.authToken).toBe("***");

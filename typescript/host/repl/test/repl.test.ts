@@ -16,6 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
@@ -121,9 +122,7 @@ const readCommandArray = (
   return parsed;
 };
 
-const parseHeadlessOutputRecords = (
-  output: string
-): {
+interface HeadlessOutputRecord {
   error?: { message: string };
   event?: { type?: string };
   exit?: boolean;
@@ -132,12 +131,50 @@ const parseHeadlessOutputRecords = (
   recordKind: string;
   recordedAtMs: number;
   v: number;
-}[] =>
+}
+
+const isHeadlessRecordObject = (
+  value: unknown
+): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const hasHeadlessOptionalRecords = (value: Record<string, unknown>): boolean =>
+  (value.error === undefined ||
+    (isHeadlessRecordObject(value.error) &&
+      typeof value.error.message === "string")) &&
+  (value.event === undefined ||
+    (isHeadlessRecordObject(value.event) &&
+      (value.event.type === undefined ||
+        typeof value.event.type === "string")));
+
+const isHeadlessOutputRecord = (
+  value: unknown
+): value is HeadlessOutputRecord =>
+  isHeadlessRecordObject(value) &&
+  typeof value.ordinal === "number" &&
+  typeof value.recordKind === "string" &&
+  typeof value.recordedAtMs === "number" &&
+  typeof value.v === "number" &&
+  (value.output === undefined ||
+    value.output === null ||
+    typeof value.output === "string") &&
+  (value.exit === undefined || typeof value.exit === "boolean") &&
+  hasHeadlessOptionalRecords(value);
+
+const parseHeadlessOutputRecord = (line: string): HeadlessOutputRecord => {
+  const value: unknown = JSON.parse(line);
+  if (!isHeadlessOutputRecord(value)) {
+    throw new TypeError("expected headless JSONL output record");
+  }
+  return value;
+};
+
+const parseHeadlessOutputRecords = (output: string): HeadlessOutputRecord[] =>
   output
     .trim()
     .split("\n")
     .filter((line) => line.length > 0)
-    .map((line) => JSON.parse(line));
+    .map(parseHeadlessOutputRecord);
 
 const createTranscriptHeaderFixture = (): ReplTranscriptHeader => ({
   config: {
@@ -379,16 +416,11 @@ const runCliProcess = async (input: {
   });
   cli.stdin.end(input.stdin ?? "");
 
-  return await new Promise<{
-    exitCode: number | null;
-    stderr: string;
-    stdout: string;
-  }>((resolve, reject) => {
-    cli.once("error", reject);
-    cli.once("close", (exitCode) => {
-      resolve({ exitCode, stderr, stdout });
-    });
-  });
+  const [exitCode]: unknown[] = await once(cli, "close");
+  if (exitCode !== null && typeof exitCode !== "number") {
+    throw new TypeError("expected CLI process exit code");
+  }
+  return { exitCode, stderr, stdout };
 };
 
 const runCliSession = async (
@@ -3002,22 +3034,30 @@ describe("repl host scenarios", () => {
       },
     });
 
-    for (const entry of entries) {
+    await Array.fromAsync(entries, async (entry) => {
       await writer.writeEntry(entry);
-    }
+    });
 
     await writer.close();
 
     expect(lines[0]).toBe(`${serializeReplTranscriptRecord(header)}\n`);
     expect(JSON.parse(lines[0] ?? "")).toEqual(header);
-    expect(Object.keys(JSON.parse(lines[0] ?? ""))).toEqual([
+    const parsedHeader: unknown = JSON.parse(lines[0] ?? "");
+    if (!isHeadlessRecordObject(parsedHeader)) {
+      throw new TypeError("expected transcript header object");
+    }
+    expect(Object.keys(parsedHeader)).toEqual([
       "config",
       "recordKind",
       "recordedAtMs",
       "runtimeVersion",
       "v",
     ]);
-    expect(Object.keys(JSON.parse(lines[1] ?? ""))).toEqual([
+    const parsedInput: unknown = JSON.parse(lines[1] ?? "");
+    if (!isHeadlessRecordObject(parsedInput)) {
+      throw new TypeError("expected transcript input object");
+    }
+    expect(Object.keys(parsedInput)).toEqual([
       "input",
       "ordinal",
       "recordKind",
@@ -3046,11 +3086,11 @@ describe("repl host scenarios", () => {
     ]).toEqual(lines);
   });
 
-  test("rejects malformed transcript files before yielding entries", async () => {
-    await expect(readReplTranscriptFromLines([])).rejects.toThrow(
+  test("rejects malformed transcript files before yielding entries", () => {
+    expect(readReplTranscriptFromLines([])).rejects.toThrow(
       "transcript is empty"
     );
-    await expect(
+    expect(
       readReplTranscriptFromLines([
         serializeReplTranscriptRecord(
           createTranscriptEntryFixtures()[0] ?? {

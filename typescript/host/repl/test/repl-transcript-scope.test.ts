@@ -27,7 +27,7 @@ import type { ReplTranscriptHeader } from "../src/lib/repl-transcript.ts";
 const SCOPE_A = "tuvren.scope.tenant-a";
 const SCOPE_B = "tuvren.scope.tenant-b";
 
-const scopedHeader = (scope: string | undefined): ReplTranscriptHeader => ({
+const scopedHeader = (scope?: string): ReplTranscriptHeader => ({
   config: {
     backend: { kind: "memory" },
     providerMode: "fixture",
@@ -68,13 +68,14 @@ describe("repl transcript scope correlation (KRT-BE008)", () => {
   });
 
   test("a transcript correlated to scope A carries no other scope identifier", async () => {
-    const serialized = (await writeHeaderLines(scopedHeader(SCOPE_A))).join("");
+    const lines = await writeHeaderLines(scopedHeader(SCOPE_A));
+    const serialized = lines.join("");
     expect(serialized).toContain(SCOPE_A);
     expect(serialized).not.toContain(SCOPE_B);
   });
 
   test("remains backward compatible with scope-free transcripts", async () => {
-    const lines = await writeHeaderLines(scopedHeader(undefined));
+    const lines = await writeHeaderLines(scopedHeader());
     const readable = await readReplTranscriptFromLines([...lines, ""]);
     expect(readable.header.config.scope).toBeUndefined();
   });

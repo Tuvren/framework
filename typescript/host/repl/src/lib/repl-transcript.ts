@@ -16,6 +16,7 @@
 
 import { createReadStream, createWriteStream } from "node:fs";
 import { createInterface } from "node:readline/promises";
+import { promisify } from "node:util";
 
 import type { TuvrenStreamEvent } from "@tuvren/sdk";
 
@@ -95,12 +96,12 @@ export type ReplTranscriptEntry =
 export type ReplTranscriptRecord = ReplTranscriptEntry | ReplTranscriptHeader;
 
 export interface ReplTranscriptWriter {
-  close(): Promise<void>;
-  writeEntry(entry: ReplTranscriptEntry): Promise<void>;
+  close: () => Promise<void>;
+  writeEntry: (entry: ReplTranscriptEntry) => Promise<void>;
 }
 
 export interface ReplTranscriptReadable {
-  entries(): AsyncIterable<ReplTranscriptEntry>;
+  entries: () => AsyncIterable<ReplTranscriptEntry>;
   header: ReplTranscriptHeader;
 }
 
@@ -366,7 +367,7 @@ const sortJsonValue = (value: unknown): unknown => {
   if (isRecord(value)) {
     const sorted: Record<string, unknown> = {};
 
-    for (const key of Object.keys(value).sort()) {
+    for (const key of Object.keys(value).toSorted()) {
       const property = value[key];
 
       if (property !== undefined) {
@@ -450,12 +451,10 @@ const waitForWriteStreamOpen = async (
     return;
   }
 
-  await new Promise<void>((resolve, reject) => {
-    stream.once("open", () => {
-      resolve();
-    });
-    stream.once("error", reject);
-  });
+  const opened = Promise.withResolvers<number>();
+  stream.once("open", opened.resolve);
+  stream.once("error", opened.reject);
+  await opened.promise;
 };
 
 const writeLine = async (
@@ -466,23 +465,16 @@ const writeLine = async (
     return;
   }
 
-  await new Promise<void>((resolve, reject) => {
-    stream.once("drain", resolve);
-    stream.once("error", reject);
-  });
+  const drained = Promise.withResolvers<undefined>();
+  stream.once("drain", drained.resolve);
+  stream.once("error", drained.reject);
+  await drained.promise;
 };
 
 const closeWritable = async (stream: NodeJS.WritableStream): Promise<void> => {
-  await new Promise<void>((resolve, reject) => {
-    stream.end((error?: Error | null) => {
-      if (error != null) {
-        reject(error);
-        return;
-      }
-
-      resolve();
-    });
-  });
+  await promisify((onEnd: (error?: Error | null) => void): void => {
+    stream.end(onEnd);
+  })();
 };
 
 export const createReplTranscriptFileWriter = async (input: {
@@ -496,8 +488,8 @@ export const createReplTranscriptFileWriter = async (input: {
   await waitForWriteStreamOpen(stream);
   const writer = await createReplTranscriptWriter({
     header: input.header,
-    write(line) {
-      return writeLine(stream, line);
+    async write(line) {
+      await writeLine(stream, line);
     },
   });
 
@@ -526,8 +518,8 @@ const createAsyncLineIterator = (
   const iterator = lines[Symbol.iterator]();
 
   return {
-    next() {
-      return Promise.resolve(iterator.next());
+    async next() {
+      return await Promise.resolve(iterator.next());
     },
   };
 };
@@ -550,11 +542,16 @@ export const readReplTranscriptFromLines = async (
 
   return {
     async *entries(): AsyncIterable<ReplTranscriptEntry> {
-      let next = await iterator.next();
+      // Forward only next: the original reader does not close caller-owned iterators.
+      const remainingLines: AsyncIterable<string> = {
+        [Symbol.asyncIterator]: () => ({
+          next: async () => await iterator.next(),
+        }),
+      };
 
-      while (next.done !== true) {
-        if (next.value.trim().length > 0) {
-          const record = parseReplTranscriptRecord(next.value);
+      for await (const line of remainingLines) {
+        if (line.trim().length > 0) {
+          const record = parseReplTranscriptRecord(line);
 
           if (record.recordKind === "header") {
             throw new Error("transcript header must appear only once");
@@ -562,8 +559,6 @@ export const readReplTranscriptFromLines = async (
 
           yield record;
         }
-
-        next = await iterator.next();
       }
     },
     header: headerRecord,
@@ -576,12 +571,11 @@ export const readReplTranscriptFile = async (
   const stream = createReadStream(path, { encoding: "utf-8" });
   const rl = createInterface({ input: stream });
   const readable = await readReplTranscriptFromLines(rl);
-  const sourceEntries = readable.entries;
 
   return {
     async *entries(): AsyncIterable<ReplTranscriptEntry> {
       try {
-        yield* sourceEntries();
+        yield* readable.entries();
       } finally {
         rl.close();
         stream.destroy();

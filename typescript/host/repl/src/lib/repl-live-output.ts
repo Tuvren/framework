@@ -30,13 +30,145 @@ type LiveColor =
   | "yellow";
 
 export interface ReplLiveTurnWriter {
-  finish(): void;
-  observe(event: TuvrenStreamEvent): void;
+  finish: () => void;
+  observe: (event: TuvrenStreamEvent) => void;
 }
 
 export interface ReplLiveTurnWriterOptions {
   useAnsiColors?: boolean;
 }
+
+const readAnsiCode = (color: LiveColor): string => {
+  switch (color) {
+    case "blue": {
+      return "\u001B[34m";
+    }
+    case "cyan": {
+      return "\u001B[36m";
+    }
+    case "green": {
+      return "\u001B[32m";
+    }
+    case "grey": {
+      return "\u001B[90m";
+    }
+    case "magenta": {
+      return "\u001B[35m";
+    }
+    case "red": {
+      return "\u001B[31m";
+    }
+    case "yellow": {
+      return "\u001B[33m";
+    }
+    default: {
+      return "";
+    }
+  }
+};
+
+const serializeInlineValue = (value: unknown): string => {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    const serialized = JSON.stringify(value);
+
+    if (serialized !== undefined) {
+      return serialized;
+    }
+  } catch {
+    return String(value);
+  }
+
+  return String(value);
+};
+
+const renderApprovalResolved = (
+  response: Extract<
+    TuvrenStreamEvent,
+    { type: "approval.resolved" }
+  >["response"]
+): string => {
+  const decisionTypes = response.decisions.map((decision) => decision.type);
+
+  return `resolved: ${decisionTypes.join(", ")}`;
+};
+
+const renderErrorLine = (
+  event: Extract<TuvrenStreamEvent, { type: "error" }>
+): string => {
+  const errorCode =
+    typeof event.error.code === "string" ? `${event.error.code} ` : "";
+  const fatality = event.fatal ? "fatal " : "";
+
+  return `${fatality}${errorCode}${event.error.message}`.trim();
+};
+
+const isCancellationErrorEvent = (
+  event: Extract<TuvrenStreamEvent, { type: "error" }>
+): boolean =>
+  event.error.code === "runtime_execution_cancelled" ||
+  event.error.code === "react_runner_execution_cancelled";
+
+const renderInlineValue = (value: unknown): string => {
+  const serialized = serializeInlineValue(value);
+
+  if (serialized.length <= MAX_INLINE_EVENT_TEXT_LENGTH) {
+    return serialized;
+  }
+
+  return `${serialized.slice(0, MAX_INLINE_EVENT_TEXT_LENGTH - 3)}...`;
+};
+
+const renderApprovalRequest = (request: ApprovalRequest): string => {
+  const pendingTools = request.toolCalls
+    .map((toolCall) => `${toolCall.name} ${renderInlineValue(toolCall.input)}`)
+    .join("; ");
+  const completedCount = request.completedResults.length;
+  const completedSuffix =
+    completedCount === 0 ? "" : ` | completed: ${completedCount}`;
+
+  return `1 approve | 2 reject | 3 edit | pending: ${pendingTools}${completedSuffix}`;
+};
+
+const isLiveOutputEvent = (
+  event: TuvrenStreamEvent
+): event is Extract<
+  TuvrenStreamEvent,
+  {
+    type:
+      | "message.done"
+      | "reasoning.delta"
+      | "reasoning.done"
+      | "structured.done"
+      | "structured.delta"
+      | "text.done"
+      | "text.delta"
+      | "approval.requested"
+      | "approval.resolved"
+      | "custom"
+      | "error"
+      | "steering.incorporated"
+      | "tool_call.done"
+      | "tool.result";
+  }
+> =>
+  event.type === "message.done" ||
+  event.type === "reasoning.delta" ||
+  event.type === "reasoning.done" ||
+  event.type === "structured.done" ||
+  event.type === "structured.delta" ||
+  event.type === "text.done" ||
+  event.type === "text.delta" ||
+  event.type === "approval.requested" ||
+  event.type === "approval.resolved" ||
+  event.type === "custom" ||
+  event.type === "error" ||
+  event.type === "steering.incorporated" ||
+  event.type === "tool_call.done" ||
+  event.type === "tool.result";
 
 export const createLiveTurnWriter = (
   write: (chunk: string) => void,
@@ -44,35 +176,6 @@ export const createLiveTurnWriter = (
 ): ReplLiveTurnWriter => {
   let activeLine: LiveLineKind | undefined;
   const useAnsiColors = options?.useAnsiColors ?? false;
-
-  const readAnsiCode = (color: LiveColor): string => {
-    switch (color) {
-      case "blue": {
-        return "\u001B[34m";
-      }
-      case "cyan": {
-        return "\u001B[36m";
-      }
-      case "green": {
-        return "\u001B[32m";
-      }
-      case "grey": {
-        return "\u001B[90m";
-      }
-      case "magenta": {
-        return "\u001B[35m";
-      }
-      case "red": {
-        return "\u001B[31m";
-      }
-      case "yellow": {
-        return "\u001B[33m";
-      }
-      default: {
-        return "";
-      }
-    }
-  };
 
   const styleText = (text: string, color: LiveColor): string => {
     if (!useAnsiColors) {
@@ -121,73 +224,12 @@ export const createLiveTurnWriter = (
     write(styleText(text, color));
   };
 
-  const serializeInlineValue = (value: unknown): string => {
-    if (typeof value === "string") {
-      return value;
+  const finishMatchingLine = (kind: LiveLineKind): void => {
+    if (activeLine === kind) {
+      write("\n");
+      activeLine = undefined;
     }
-
-    try {
-      const serialized = JSON.stringify(value);
-
-      if (serialized !== undefined) {
-        return serialized;
-      }
-    } catch {
-      return String(value);
-    }
-
-    return String(value);
   };
-
-  const renderInlineValue = (value: unknown): string => {
-    const serialized = serializeInlineValue(value);
-
-    if (serialized.length <= MAX_INLINE_EVENT_TEXT_LENGTH) {
-      return serialized;
-    }
-
-    return `${serialized.slice(0, MAX_INLINE_EVENT_TEXT_LENGTH - 3)}...`;
-  };
-
-  const renderApprovalRequest = (request: ApprovalRequest): string => {
-    const pendingTools = request.toolCalls
-      .map(
-        (toolCall) => `${toolCall.name} ${renderInlineValue(toolCall.input)}`
-      )
-      .join("; ");
-    const completedCount = request.completedResults.length;
-    const completedSuffix =
-      completedCount === 0 ? "" : ` | completed: ${completedCount}`;
-
-    return `1 approve | 2 reject | 3 edit | pending: ${pendingTools}${completedSuffix}`;
-  };
-
-  const renderApprovalResolved = (
-    response: Extract<
-      TuvrenStreamEvent,
-      { type: "approval.resolved" }
-    >["response"]
-  ): string => {
-    const decisionTypes = response.decisions.map((decision) => decision.type);
-
-    return `resolved: ${decisionTypes.join(", ")}`;
-  };
-
-  const renderErrorLine = (
-    event: Extract<TuvrenStreamEvent, { type: "error" }>
-  ): string => {
-    const errorCode =
-      typeof event.error.code === "string" ? `${event.error.code} ` : "";
-    const fatality = event.fatal ? "fatal " : "";
-
-    return `${fatality}${errorCode}${event.error.message}`.trim();
-  };
-
-  const isCancellationErrorEvent = (
-    event: Extract<TuvrenStreamEvent, { type: "error" }>
-  ): boolean =>
-    event.error.code === "runtime_execution_cancelled" ||
-    event.error.code === "react_runner_execution_cancelled";
 
   return {
     finish() {
@@ -199,12 +241,13 @@ export const createLiveTurnWriter = (
       activeLine = undefined;
     },
     observe(event) {
+      if (!isLiveOutputEvent(event)) {
+        return;
+      }
+
       switch (event.type) {
         case "message.done": {
-          if (activeLine === "assistant") {
-            write("\n");
-            activeLine = undefined;
-          }
+          finishMatchingLine("assistant");
           return;
         }
         case "reasoning.delta": {
@@ -213,10 +256,7 @@ export const createLiveTurnWriter = (
           return;
         }
         case "reasoning.done": {
-          if (activeLine === "thinking") {
-            write("\n");
-            activeLine = undefined;
-          }
+          finishMatchingLine("thinking");
           return;
         }
         case "structured.done": {
@@ -287,10 +327,10 @@ export const createLiveTurnWriter = (
             `${event.name} ${renderInlineValue(event.output)}`,
             event.isError === true ? "red" : "green"
           );
-          return;
+          break;
         }
         default: {
-          return;
+          break;
         }
       }
     },

@@ -1,0 +1,374 @@
+{
+  "milestone": "M33",
+  "ticket": "KRT-BX004",
+  "authority": "A11",
+  "measurement_head": "b79a873823861f6939175a416868e7a7ec091fc2",
+  "status": "scoped-cleanup-complete-under-approved-A11-allocation",
+  "files": [
+    "typescript/host/repl/src/cli.ts",
+    "typescript/host/repl/src/lib/repl-headless-mode.ts",
+    "typescript/host/repl/src/lib/repl-live-output.ts",
+    "typescript/host/repl/src/lib/repl-replay.ts",
+    "typescript/host/repl/src/lib/repl-transcript.ts",
+    "typescript/host/repl/test/repl-transcript-redaction.test.ts",
+    "typescript/host/repl/test/repl-transcript-scope.test.ts",
+    "typescript/host/repl/test/repl.test.ts",
+    "typescript/host/repl/test/repl-transcript-io.test.ts"
+  ],
+  "native": {
+    "before": 188,
+    "after": 129,
+    "cleared": 59,
+    "source_A11_residuals": [
+      {
+        "path": "typescript/host/repl/src/cli.ts",
+        "rule": "promise(prefer-await-to-then)",
+        "line": 196
+      },
+      {
+        "path": "typescript/host/repl/src/cli.ts",
+        "rule": "unicorn(no-useless-undefined)",
+        "line": 196
+      },
+      {
+        "path": "typescript/host/repl/src/cli.ts",
+        "rule": "promise(prefer-await-to-then)",
+        "line": 199
+      },
+      {
+        "path": "typescript/host/repl/src/cli.ts",
+        "rule": "unicorn(no-useless-undefined)",
+        "line": 199
+      }
+    ],
+    "remaining_test_residuals": 25,
+    "unaffected_span_identity_equal": true,
+    "complete_effective_preset_equal": true,
+    "selection": [
+      "typescript/host/repl/scripts/ws-peer.ts",
+      "typescript/host/repl/smoke/assert-headless-jsonl.ts",
+      "typescript/host/repl/smoke/package-exports.ts",
+      "typescript/host/repl/src/cli.ts",
+      "typescript/host/repl/src/gemini-cli.ts",
+      "typescript/host/repl/src/index.ts",
+      "typescript/host/repl/src/lib/proof-extension.ts",
+      "typescript/host/repl/src/lib/repl-builtin-tools.ts",
+      "typescript/host/repl/src/lib/repl-config.ts",
+      "typescript/host/repl/src/lib/repl-headless-mode.ts",
+      "typescript/host/repl/src/lib/repl-host.ts",
+      "typescript/host/repl/src/lib/repl-live-output.ts",
+      "typescript/host/repl/src/lib/repl-provider.ts",
+      "typescript/host/repl/src/lib/repl-replay.ts",
+      "typescript/host/repl/src/lib/repl-scenario-matrix.ts",
+      "typescript/host/repl/src/lib/repl-scenarios-support.ts",
+      "typescript/host/repl/src/lib/repl-scenarios.ts",
+      "typescript/host/repl/src/lib/repl-serve-ws.ts",
+      "typescript/host/repl/src/lib/repl-shell.ts",
+      "typescript/host/repl/src/lib/repl-transcript.ts",
+      "typescript/host/repl/src/lib/repl-types.ts",
+      "typescript/host/repl/test/repl-scenarios.test.ts",
+      "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+      "typescript/host/repl/test/repl-shell.test.ts",
+      "typescript/host/repl/test/repl-test-helpers.ts",
+      "typescript/host/repl/test/repl-transcript-io.test.ts",
+      "typescript/host/repl/test/repl-transcript-redaction.test.ts",
+      "typescript/host/repl/test/repl-transcript-scope.test.ts",
+      "typescript/host/repl/test/repl.aimock-journal-body.test.ts",
+      "typescript/host/repl/test/repl.aimock-matrix.test.ts",
+      "typescript/host/repl/test/repl.aimock-openai.test.ts",
+      "typescript/host/repl/test/repl.test.ts",
+      "typescript/host/repl/tsup.config.ts"
+    ]
+  },
+  "A11": {
+    "allocation": "Retain the two exact existing SIGINT/SIGTERM shutdown().catch(() => undefined) launches until M38 atomic project handoff.",
+    "sites": [
+      {
+        "path": "typescript/host/repl/src/cli.ts",
+        "line": 196,
+        "signal": "SIGINT",
+        "original": "shutdown().catch(() => undefined);"
+      },
+      {
+        "path": "typescript/host/repl/src/cli.ts",
+        "line": 199,
+        "signal": "SIGTERM",
+        "original": "shutdown().catch(() => undefined);"
+      }
+    ],
+    "native_residual_codes": [
+      "promise(prefer-await-to-then)",
+      "unicorn(no-useless-undefined)"
+    ],
+    "native_residual_count": 4,
+    "probe_native_owned_source_diagnostics": 0,
+    "probe_retained_processed": 40,
+    "probe_retained_exact_noVoid_conflicts": 2,
+    "minimum_actual_M38_patch": "bx-m33-cli-m38-native.patch",
+    "patch_sha256": "2c8463300fc7e0dd620662b4129b729fd8b7d19e8ee5d00de6ec4fa6d7b20da0",
+    "current_original_forms_retained": true,
+    "inherited_shell_A11_residuals": 2,
+    "atomic_handoff_requirement": "Apply only together with M38 canonical lint target/directive removal/coverage switch; require full project native zero then."
+  },
+  "native_admission_patch": {
+    "path": "m38-repl-cli.patch",
+    "sha256": "a08398cedb79a188797356847a5692b771f7acf1189ea67a5662d26acc2bb988",
+    "bytes": 705,
+    "apply_only": "M38 atomic REPL target/directive/coverage handoff"
+  },
+  "retained": {
+    "repl_processed": 40,
+    "host_processed": 84,
+    "diagnostics": 0,
+    "complete": true
+  },
+  "canonical": {
+    "passed": 157,
+    "failed": 0,
+    "assertions": 1204
+  },
+  "exports_smoke": {
+    "passed": 1,
+    "failed": 0,
+    "assertions": 8
+  },
+  "behavior": {
+    "Bun_IO": {
+      "beforeTrace": [
+        "domain:next:0",
+        "microtask:after-next:0",
+        "domain:header",
+        "domain:next:1",
+        "microtask:after-header",
+        "microtask:after-next:1",
+        "domain:entry",
+        "domain:consumer-return"
+      ],
+      "afterTrace": [
+        "domain:next:0",
+        "microtask:after-next:0",
+        "domain:header",
+        "domain:next:1",
+        "microtask:after-header",
+        "microtask:after-next:1",
+        "domain:entry",
+        "domain:consumer-return"
+      ],
+      "domainOrderEqual": true,
+      "microtaskTraceEqual": true,
+      "microtaskContract": "Honest async wrappers await the original next/write Promise only. Added promise assimilation can shift unpromised microtask turns; domain read/yield/owner-close and emitted transcript bytes/error identity remain unchanged.",
+      "beforeIO": {
+        "bytes": 200221,
+        "hash": "c3c3fed6d4e67646b4017ad3c9b5a3c558be7e1f3c2dc91817ef638a404296ad",
+        "openError": {
+          "name": "Error",
+          "code": "ENOENT",
+          "message": "ENOENT: no such file or directory, open '<directory>/absent/session.jsonl'"
+        },
+        "fullError": {
+          "name": "Error",
+          "code": "ENOSPC",
+          "message": "ENOSPC: no space left on device, write"
+        }
+      },
+      "afterIO": {
+        "bytes": 200221,
+        "hash": "c3c3fed6d4e67646b4017ad3c9b5a3c558be7e1f3c2dc91817ef638a404296ad",
+        "openError": {
+          "name": "Error",
+          "code": "ENOENT",
+          "message": "ENOENT: no such file or directory, open '<directory>/absent/session.jsonl'"
+        },
+        "fullError": {
+          "name": "Error",
+          "code": "ENOSPC",
+          "message": "ENOSPC: no space left on device, write"
+        }
+      },
+      "ioEqual": true
+    },
+    "Node_IO": {
+      "beforeTrace": [
+        "domain:next:0",
+        "microtask:after-next:0",
+        "domain:header",
+        "domain:next:1",
+        "microtask:after-header",
+        "microtask:after-next:1",
+        "domain:entry",
+        "domain:consumer-return"
+      ],
+      "afterTrace": [
+        "domain:next:0",
+        "microtask:after-next:0",
+        "domain:header",
+        "domain:next:1",
+        "microtask:after-header",
+        "microtask:after-next:1",
+        "domain:entry",
+        "domain:consumer-return"
+      ],
+      "domainOrderEqual": true,
+      "microtaskTraceEqual": true,
+      "microtaskContract": "Honest async wrappers await the original next/write Promise only. Added promise assimilation can shift unpromised microtask turns; domain read/yield/owner-close and emitted transcript bytes/error identity remain unchanged.",
+      "beforeIO": {
+        "bytes": 200221,
+        "hash": "c3c3fed6d4e67646b4017ad3c9b5a3c558be7e1f3c2dc91817ef638a404296ad",
+        "openError": {
+          "name": "Error",
+          "code": "ENOENT",
+          "message": "ENOENT: no such file or directory, open '<directory>/absent/session.jsonl'"
+        },
+        "fullError": {
+          "name": "Error",
+          "code": "ENOSPC",
+          "message": "ENOSPC: no space left on device, write"
+        }
+      },
+      "afterIO": {
+        "bytes": 200221,
+        "hash": "c3c3fed6d4e67646b4017ad3c9b5a3c558be7e1f3c2dc91817ef638a404296ad",
+        "openError": {
+          "name": "Error",
+          "code": "ENOENT",
+          "message": "ENOENT: no such file or directory, open '<directory>/absent/session.jsonl'"
+        },
+        "fullError": {
+          "name": "Error",
+          "code": "ENOSPC",
+          "message": "ENOSPC: no space left on device, write"
+        }
+      },
+      "ioEqual": true
+    },
+    "repeat_close_Bun": {
+      "original": {
+        "status": "rejected",
+        "name": "Error",
+        "code": "ERR_STREAM_ALREADY_FINISHED",
+        "message": "Cannot call end after a stream was finished"
+      },
+      "candidate": {
+        "status": "rejected",
+        "name": "Error",
+        "code": "ERR_STREAM_ALREADY_FINISHED",
+        "message": "Cannot call end after a stream was finished"
+      }
+    },
+    "repeat_close_Node": {
+      "original": {
+        "status": "rejected",
+        "name": "Error",
+        "code": "ERR_STREAM_ALREADY_FINISHED",
+        "message": "Cannot call end after a stream was finished"
+      },
+      "candidate": {
+        "status": "rejected",
+        "name": "Error",
+        "code": "ERR_STREAM_ALREADY_FINISHED",
+        "message": "Cannot call end after a stream was finished"
+      }
+    },
+    "delayed_IO_error_listener_parity": {
+      "original": {
+        "returned": true,
+        "failures": []
+      },
+      "candidate": {
+        "returned": true,
+        "failures": []
+      }
+    },
+    "CLI": {
+      "cases": 13,
+      "all_equal": true
+    },
+    "parser": {
+      "cases_per_runtime": 100957,
+      "runtimes": [
+        "Bun",
+        "Node"
+      ],
+      "all_equal": true
+    }
+  },
+  "rule_disposition": {
+    "original_Biome_directives_removed": 0,
+    "native_suppressions_added": 0,
+    "metadata_exceptions_added": 0,
+    "packageDocumentation_removed": 0,
+    "early_deletions": [],
+    "native_counterparts": [],
+    "metadata_original_identity_and_reason_preserved": true
+  },
+  "code_conventions": [
+    "CLI port parsing now extracts the leading signed ASCII decimal prefix after trimStart with DECIMAL_PORT_PREFIX_PATTERN and coerces that prefix with Number. Original radix-10 prefix/trailing-text, signed-zero and error ordering semantics were measured on 100,957 cases per runtime and 13 actual CLI cases.",
+    "Replay uses standard Array.fromAsync to await each original runReplayInput operation sequentially; matching transcript writes and focused reader tests also use this native sequential API. No parallel dispatch or custom replay result shape is introduced.",
+    "Stream open/drain use one explicit Promise.withResolvers deferred per original awaited operation, preserving original once(open/drain) and once(error) listener lifetime. Open resolves the actual file descriptor internally; its void-returning helper discards that value. Drain resolves its original no-argument event. No additional tracked Promise or operation is introduced.",
+    "Stream end uses standard util.promisify around a void-returning onEnd adapter because WritableStream.end returns the stream. This preserves the original callback error envelope including ERR_STREAM_ALREADY_FINISHED on repeated close and ENOSPC. The descriptive callback remains an actual callback, with no rule suppression or altered effective configuration.",
+    "The existing server lifetime Promise constructor is replaced with Promise.withResolvers<never>().promise to express the same intentionally never-settling operation.",
+    "The transcript remaining-lines adapter forwards only next, honestly awaiting its original Promise, and intentionally omits return to retain caller-owned iterator lifetime. Sync iterator adaptation also honestly awaits its original Promise.resolve result.",
+    "Live output uses a private predicate for its existing 14 rendered event kinds and a shared matching-line finisher, preserving ignored canonical event types and exact output formatting while satisfying exhaustive switch/complexity rules.",
+    "The CLI/headless test helper now uses a completely validated local HeadlessOutputRecord interface and guards while returning the exact parsed object, preserving key order and additional event fields.",
+    "CLI test subprocess completion uses native events.once(close) with an unknown exit-code result narrowed to number|null, preserving close-after-pipe completion and original spawn-error rejection."
+  ],
+  "api_verification": {
+    "local": "Installed TypeScript 6.0.2 declarations and exact Bun/Node runtime measurements; unchanged shipped complete preset equality.",
+    "primary_docs": [
+      "https://nodejs.org/api/util.html#utilpromisifyoriginal",
+      "https://nodejs.org/api/events.html#eventsonceemitter-name-options",
+      "https://nodejs.org/api/stream.html#writableendchunk-encoding-callback",
+      "https://tc39.es/ecma262/multipage/indexed-collections.html#sec-array.fromasync"
+    ],
+    "unverified_assumptions": []
+  },
+  "lead": {
+    "typecheck": true,
+    "test": true,
+    "exports_smoke": true,
+    "positive_retained_zero": true,
+    "native_inventory_complete": true
+  },
+  "raw_artifacts": [
+    {
+      "name": "bx-m33-summary.json",
+      "sha256": "d39d147bba71339f00115832e968fcfbd0e803658e947fbd12ecd2435584c51c",
+      "bytes": 52597
+    },
+    {
+      "name": "bx-m33-port-bun.json",
+      "sha256": "e8fac4b0c0afd30ee2601ed30be258990da6ad7a57823409184c616bdf2d366e",
+      "bytes": 1225
+    },
+    {
+      "name": "bx-m33-port-node.json",
+      "sha256": "c3f935022fd5982fa4ab302a1be34ae2362d7aa653b10c539c78e64285cc1cb9",
+      "bytes": 735
+    },
+    {
+      "name": "bx-m33-delayed-error-probe.json",
+      "sha256": "5bf73b2115866c8121591e56e7cd9eeeeba4af3d47c2d993a19b99b9d345cbe6",
+      "bytes": 127
+    },
+    {
+      "name": "bx-m33-close-repeat-probe-bun.json",
+      "sha256": "960475beed4f775897594a838cf9b79097d7fafb0e19512950c9a2f979a0d20d",
+      "bytes": 347
+    },
+    {
+      "name": "bx-m33-close-repeat-probe-node.json",
+      "sha256": "960475beed4f775897594a838cf9b79097d7fafb0e19512950c9a2f979a0d20d",
+      "bytes": 347
+    },
+    {
+      "name": "bx-m33-lead-native.json",
+      "sha256": "58bc79fca71babbbeda299078e404fa2afb6e981b1c80ac04adb0afe469975ca",
+      "bytes": 60265
+    },
+    {
+      "name": "bx-m33-lead-retained.json",
+      "sha256": "17eb3ffe5ac355f1bb4478dd7e29e12b68f9078979c78a970ae5e388189696c1",
+      "bytes": 231
+    }
+  ]
+}
