@@ -17,7 +17,8 @@
 import process from "node:process";
 import { createInterface } from "node:readline/promises";
 
-import { DEFAULT_SCOPE, type TuvrenStreamEvent } from "@tuvren/sdk";
+import { DEFAULT_SCOPE } from "@tuvren/sdk";
+import type { TuvrenStreamEvent } from "@tuvren/sdk";
 
 import {
   createReplShell,
@@ -34,11 +35,13 @@ import { replayReplTranscript } from "./lib/repl-replay.js";
 import { startReplWsServer } from "./lib/repl-serve-ws.js";
 import {
   createReplTranscriptFileWriter,
-  type ReplTranscriptBackendConfig,
-  type ReplTranscriptDurableReadRecord,
-  type ReplTranscriptHeader,
-  type ReplTranscriptWriter,
   readReplTranscriptFile,
+} from "./lib/repl-transcript.js";
+import type {
+  ReplTranscriptBackendConfig,
+  ReplTranscriptDurableReadRecord,
+  ReplTranscriptHeader,
+  ReplTranscriptWriter,
 } from "./lib/repl-transcript.js";
 import type { ReplConfig } from "./lib/repl-types.js";
 
@@ -576,8 +579,8 @@ function createTranscriptHeader(config: ReplConfig): ReplTranscriptHeader {
       scope: config.scope ?? DEFAULT_SCOPE,
       systemPrompt: config.systemPrompt,
     },
-    recordedAtMs: Date.now(),
     recordKind: "header",
+    recordedAtMs: Date.now(),
     runtimeVersion: "@tuvren/runtime@0.0.0",
     v: 1,
   };
@@ -587,9 +590,10 @@ function createTranscriptBackendConfig(
   config: ReplConfig
 ): ReplTranscriptBackendConfig {
   switch (config.backend) {
-    case "memory":
+    case "memory": {
       return { kind: "memory" };
-    case "postgres":
+    }
+    case "postgres": {
       return {
         kind: "postgres",
         options: {
@@ -597,15 +601,18 @@ function createTranscriptBackendConfig(
           schemaName: config.postgresSchemaName,
         },
       };
-    case "sqlite":
+    }
+    case "sqlite": {
       return {
         kind: "sqlite",
         options: {
           databasePath: config.sqlitePath,
         },
       };
-    default:
+    }
+    default: {
       throw new Error(`unsupported transcript backend "${config.backend}"`);
+    }
   }
 }
 

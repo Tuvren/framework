@@ -189,7 +189,9 @@ export function parseReplTranscriptRecord(line: string): ReplTranscriptRecord {
   try {
     parsed = JSON.parse(line);
   } catch (error: unknown) {
-    throw new Error(`invalid transcript JSON: ${renderError(error)}`);
+    throw new Error(`invalid transcript JSON: ${renderError(error)}`, {
+      cause: error,
+    });
   }
 
   validateTranscriptRecord(parsed);
@@ -222,7 +224,7 @@ export async function createReplTranscriptFileWriter(input: {
   path: string;
 }): Promise<ReplTranscriptWriter> {
   const stream = createWriteStream(input.path, {
-    encoding: "utf8",
+    encoding: "utf-8",
     flags: "w",
   });
   await waitForWriteStreamOpen(stream);
@@ -247,7 +249,7 @@ export async function createReplTranscriptFileWriter(input: {
 async function waitForWriteStreamOpen(
   stream: ReturnType<typeof createWriteStream>
 ): Promise<void> {
-  if (stream.pending === false) {
+  if (!stream.pending) {
     return;
   }
 
@@ -300,7 +302,7 @@ export async function readReplTranscriptFromLines(
 export async function readReplTranscriptFile(
   path: string
 ): Promise<ReplTranscriptReadable> {
-  const stream = createReadStream(path, { encoding: "utf8" });
+  const stream = createReadStream(path, { encoding: "utf-8" });
   const rl = createInterface({ input: stream });
   const readable = await readReplTranscriptFromLines(rl);
   const sourceEntries = readable.entries;
@@ -326,23 +328,29 @@ function validateTranscriptRecord(
   }
 
   switch (value.recordKind) {
-    case "durable-read":
+    case "durable-read": {
       validateTranscriptDurableRead(value);
       return;
-    case "header":
+    }
+    case "header": {
       validateTranscriptHeader(value);
       return;
-    case "input":
+    }
+    case "input": {
       validateTranscriptInput(value);
       return;
-    case "output":
+    }
+    case "output": {
       validateTranscriptOutput(value);
       return;
-    case "stream-event":
+    }
+    case "stream-event": {
       validateTranscriptStreamEvent(value);
       return;
-    default:
+    }
+    default: {
       throw new Error("unsupported transcript record kind");
+    }
   }
 }
 
@@ -471,13 +479,13 @@ function requireVersion(value: Record<string, unknown>): void {
 
 function requireSafeInteger(value: unknown, path: string): void {
   if (!Number.isSafeInteger(value)) {
-    throw new Error(`${path} must be a safe integer`);
+    throw new TypeError(`${path} must be a safe integer`);
   }
 }
 
 function requireString(value: unknown, path: string): void {
   if (typeof value !== "string") {
-    throw new Error(`${path} must be a string`);
+    throw new TypeError(`${path} must be a string`);
   }
 }
 

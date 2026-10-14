@@ -273,13 +273,14 @@ function evaluateCalculator(
       status: "error";
     } {
   switch (operation) {
-    case "add":
+    case "add": {
       return createCalculatorSuccess(
         operation,
         operands,
         operands.reduce((sum, operand) => sum + operand, 0)
       );
-    case "subtract":
+    }
+    case "subtract": {
       return createCalculatorSuccess(
         operation,
         operands,
@@ -287,12 +288,14 @@ function evaluateCalculator(
           .slice(1)
           .reduce((result, operand) => result - operand, operands[0])
       );
-    case "multiply":
+    }
+    case "multiply": {
       return createCalculatorSuccess(
         operation,
         operands,
         operands.reduce((product, operand) => product * operand, 1)
       );
+    }
     case "divide": {
       const [, ...divisors] = operands;
 
@@ -318,7 +321,7 @@ function evaluateCalculator(
         divisors.reduce((result, operand) => result / operand, operands[0])
       );
     }
-    case "power":
+    case "power": {
       if (operands.length !== 2) {
         return createCalculatorError(
           operation,
@@ -332,30 +335,35 @@ function evaluateCalculator(
         operands,
         operands[0] ** operands[1]
       );
-    case "average":
+    }
+    case "average": {
       return createCalculatorSuccess(
         operation,
         operands,
         operands.reduce((sum, operand) => sum + operand, 0) / operands.length
       );
-    case "min":
+    }
+    case "min": {
       return createCalculatorSuccess(
         operation,
         operands,
         Math.min(...operands)
       );
-    case "max":
+    }
+    case "max": {
       return createCalculatorSuccess(
         operation,
         operands,
         Math.max(...operands)
       );
-    default:
+    }
+    default: {
       return createCalculatorError(
         operation,
         operands,
         `unsupported calculator operation "${operation}".`
       );
+    }
   }
 }
 
@@ -365,8 +373,8 @@ function createCalculatorSuccess(
   result: number
 ) {
   return {
-    operation,
     operands,
+    operation,
     result,
     status: "success" as const,
   };
@@ -379,8 +387,8 @@ function createCalculatorError(
 ) {
   return {
     message,
-    operation,
     operands,
+    operation,
     status: "error" as const,
   };
 }
@@ -388,7 +396,7 @@ function createCalculatorError(
 function createDeterministicSeed(value: string): number {
   let seed = 0;
 
-  for (const [index, character] of Array.from(value).entries()) {
+  for (const [index, character] of [...value].entries()) {
     const codePoint = character.codePointAt(0);
 
     if (codePoint === undefined) {

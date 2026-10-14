@@ -19,7 +19,6 @@ import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 
 import { createMcpToolSource } from "@tuvren/mcp-client";
 import type {
@@ -241,37 +240,49 @@ export async function runReplCommand(
   const [command, ...args] = trimmed.split(COMMAND_SPLIT_PATTERN);
 
   switch (command) {
-    case ".help":
+    case ".help": {
       return { output: REPL_HELP_TEXT.join("\n") };
-    case ".exit":
+    }
+    case ".exit": {
       cancelActiveShellWork(shell);
       return { exit: true };
-    case ".status":
+    }
+    case ".status": {
       return { output: formatJson(readShellStatus(shell)) };
-    case ".backend":
-      return await selectBackend(shell, args);
-    case ".thread":
+    }
+    case ".backend": {
+      return selectBackend(shell, args);
+    }
+    case ".thread": {
       return await handleThreadCommand(shell, args);
-    case ".branch":
+    }
+    case ".branch": {
       return await handleBranchCommand(shell, args);
-    case ".messages":
+    }
+    case ".messages": {
       return await showMessages(shell, args);
-    case ".events":
-      return await showEvents(shell, args);
-    case ".mcp":
+    }
+    case ".events": {
+      return showEvents(shell, args);
+    }
+    case ".mcp": {
       return await handleMcpCommand(args);
-    case ".turn":
+    }
+    case ".turn": {
       return await handleTurnCommand(shell, args, options?.onCanonicalEvent);
-    case ".orch":
+    }
+    case ".orch": {
       return await handleOrchestrationCommand(
         shell,
         args,
         options?.onCanonicalEvent
       );
-    default:
+    }
+    default: {
       return {
         output: `Unknown command "${command}". Use .help to inspect the command tree.`,
       };
+    }
   }
 }
 
@@ -283,8 +294,8 @@ async function handleMcpCommand(
   }
 
   const source = await createMcpToolSource({
-    command: "bun",
     args: [findMockMcpStdioServerPath()],
+    command: "bun",
     name: "mcp",
     transport: "stdio",
   });
@@ -421,7 +432,7 @@ async function handleThreadCommand(
   const subcommand = args[0];
 
   switch (subcommand) {
-    case "new":
+    case "new": {
       cancelActiveShellWork(shell);
       shell.thread = await shell.host.createThread();
       shell.activeOrchestration = undefined;
@@ -430,10 +441,13 @@ async function handleThreadCommand(
       shell.lastProjection = undefined;
       shell.lastOrchestrationEvents = undefined;
       return { output: formatJson(shell.thread) };
-    case "show":
+    }
+    case "show": {
       return { output: formatJson(shell.thread ?? null) };
-    default:
+    }
+    default: {
       return { output: 'Expected ".thread <new|show>".' };
+    }
   }
 }
 
@@ -476,7 +490,7 @@ async function showMessages(
     return { output: 'Expected ".messages show".' };
   }
 
-  const thread = shell.thread;
+  const { thread } = shell;
 
   if (thread === undefined) {
     return { output: "No active thread exists." };
@@ -506,24 +520,30 @@ async function handleTurnCommand(
   const subcommand = args[0];
 
   switch (subcommand) {
-    case "start":
+    case "start": {
       return await startTurn(shell, args.slice(1));
-    case "await":
+    }
+    case "await": {
       return await awaitTurn(shell, onCanonicalEvent);
-    case "approve":
+    }
+    case "approve": {
       return await approveTurn(
         shell,
         normalizeApprovalMode(args[1] ?? "approve"),
         onCanonicalEvent
       );
-    case "steer":
+    }
+    case "steer": {
       return steerTurn(shell, args.slice(1).join(" "));
-    case "cancel":
+    }
+    case "cancel": {
       return cancelTurn(shell);
-    default:
+    }
+    default: {
       return {
         output: 'Expected ".turn <start|await|approve|steer|cancel> ...".',
       };
+    }
   }
 }
 
@@ -535,24 +555,30 @@ async function handleOrchestrationCommand(
   const subcommand = args[0];
 
   switch (subcommand) {
-    case "start":
+    case "start": {
       return await startOrchestration(shell, onCanonicalEvent);
-    case "spawn":
-      return await spawnOrchestrationChild(shell, args.slice(1));
-    case "await":
+    }
+    case "spawn": {
+      return spawnOrchestrationChild(shell, args.slice(1));
+    }
+    case "await": {
       return await awaitOrchestration(shell);
-    case "cancel":
+    }
+    case "cancel": {
       return cancelOrchestration(shell);
-    case "events":
+    }
+    case "events": {
       return {
         output: formatJson(
           shell.lastOrchestrationEvents?.map((event) => event.type) ?? []
         ),
       };
-    default:
+    }
+    default: {
       return {
         output: 'Expected ".orch <start|spawn|await|cancel|events>".',
       };
+    }
   }
 }
 
@@ -612,7 +638,7 @@ async function awaitTurn(
   shell: ReplShell,
   onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplCommandResult> {
-  const activeTurn = shell.activeTurn;
+  const { activeTurn } = shell;
 
   if (activeTurn === undefined) {
     return { output: "No active turn is currently running." };
@@ -662,13 +688,13 @@ async function approveTurn(
   onCanonicalEvent?: (event: TuvrenStreamEvent) => void,
   options?: ApproveTurnOptions
 ): Promise<ReplCommandResult> {
-  const activeTurn = shell.activeTurn;
+  const { activeTurn } = shell;
 
   if (activeTurn === undefined) {
     return { output: "No active turn is available for approval." };
   }
 
-  const approval = activeTurn.handle.status().approval;
+  const { approval } = activeTurn.handle.status();
 
   if (approval === undefined) {
     return { output: "The active turn is not paused for approval." };
@@ -706,7 +732,7 @@ function steerTurn(shell: ReplShell, text: string): ReplCommandResult {
     return { output: 'Expected ".turn steer <text>".' };
   }
 
-  const activeTurn = shell.activeTurn;
+  const { activeTurn } = shell;
 
   if (activeTurn === undefined) {
     return { output: "No active turn is currently running." };
@@ -717,7 +743,7 @@ function steerTurn(shell: ReplShell, text: string): ReplCommandResult {
 }
 
 function cancelTurn(shell: ReplShell): ReplCommandResult {
-  const activeTurn = shell.activeTurn;
+  const { activeTurn } = shell;
 
   if (activeTurn === undefined) {
     return { output: "No active turn is currently running." };
@@ -1045,7 +1071,7 @@ function createApprovalResponse(
   return {
     decisions: approval.toolCalls.map((toolCall) => {
       switch (mode) {
-        case "edit":
+        case "edit": {
           return toolCall.name === "email"
             ? {
                 callId: toolCall.callId,
@@ -1061,18 +1087,21 @@ function createApprovalResponse(
                 message: "Approved through the REPL host.",
                 type: "approve" as const,
               };
-        case "reject":
+        }
+        case "reject": {
           return {
             callId: toolCall.callId,
             message: "Rejected through the REPL host.",
             type: "reject" as const,
           };
-        default:
+        }
+        default: {
           return {
             callId: toolCall.callId,
             message: "Approved through the REPL host.",
             type: "approve" as const,
           };
+        }
       }
     }),
   };
@@ -1158,7 +1187,7 @@ function finalizeTurnProjection(
   activeTurn: ActiveTurnState,
   projection: ReplStreamProjection
 ): ReturnType<ExecutionHandle["status"]>["phase"] {
-  const phase = activeTurn.handle.status().phase;
+  const { phase } = activeTurn.handle.status();
 
   shell.lastProjection = projection;
   shell.lastCanonicalEvents = projection.canonical;
@@ -1188,35 +1217,40 @@ function readApprovalShortcutMode(
   }
 
   switch (input) {
-    case "1":
+    case "1": {
       return "approve";
-    case "2":
+    }
+    case "2": {
       return "reject";
-    case "3":
+    }
+    case "3": {
       return "edit";
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
 function normalizeApprovalMode(mode: string): string {
   switch (mode) {
-    case "1":
+    case "1": {
       return "approve";
-    case "2":
+    }
+    case "2": {
       return "reject";
-    case "3":
+    }
+    case "3": {
       return "edit";
-    default:
+    }
+    default: {
       return mode;
+    }
   }
 }
 
 function findMockMcpStdioServerPath(): string {
-  for (const start of [
-    process.cwd(),
-    dirname(fileURLToPath(import.meta.url)),
-  ]) {
+  for (const start of [process.cwd(), import.meta.dirname]) {
     let current = start;
 
     while (true) {

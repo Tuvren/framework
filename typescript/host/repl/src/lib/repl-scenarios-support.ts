@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import {
-  type ExecutionHandle,
-  type InputSignal,
-  type TuvrenPrompt,
-  type TuvrenProvider,
-  TuvrenRuntimeError,
-  type TuvrenStreamEvent,
+import { TuvrenRuntimeError } from "@tuvren/sdk";
+import type {
+  ExecutionHandle,
+  InputSignal,
+  TuvrenPrompt,
+  TuvrenProvider,
+  TuvrenStreamEvent,
 } from "@tuvren/sdk";
 import { toAgUiEvents } from "@tuvren/stream-agui";
 import { teeTuvrenStreamEvents } from "@tuvren/stream-core";
@@ -330,7 +330,7 @@ export function createScenarioExecutionPlan(
         tools: [searchTool],
       };
     }
-    case "structured":
+    case "structured": {
       return {
         model: defaultModel,
         signal: textSignal(
@@ -338,7 +338,8 @@ export function createScenarioExecutionPlan(
         ),
         tools: NO_TOOLS,
       };
-    case "metadata":
+    }
+    case "metadata": {
       return {
         model: defaultModel,
         signal: textSignal(
@@ -346,7 +347,8 @@ export function createScenarioExecutionPlan(
         ),
         tools: NO_TOOLS,
       };
-    case "streaming":
+    }
+    case "streaming": {
       return {
         model: defaultModel,
         signal: textSignal(
@@ -354,12 +356,14 @@ export function createScenarioExecutionPlan(
         ),
         tools: NO_TOOLS,
       };
-    default:
+    }
+    default: {
       return {
         model: defaultModel,
         signal: textSignal(`Run ${config.scenario}`),
         tools: NO_TOOLS,
       };
+    }
   }
 }
 
@@ -373,8 +377,8 @@ function createScenarioProvider(
   const provider = createReplProvider({
     aimockBaseUrl: config.aimockBaseUrl,
     googleApiKey: config.googleApiKey,
-    modelId: config.modelId,
     mode: config.providerMode,
+    modelId: config.modelId,
     scenario: config.scenario,
   });
 
@@ -402,7 +406,7 @@ function mergePromptSettings(
   }
 ): TuvrenPrompt {
   const mergedSettings = {
-    ...(prompt.config?.settings ?? {}),
+    ...prompt.config?.settings,
   };
   const toolResultCount = countPromptToolResults(prompt.messages);
   const releaseAfter = settings.requiredToolResultsBeforeRelease ?? 0;
@@ -467,7 +471,7 @@ export function readProjectionError(
     return undefined;
   }
 
-  const error = errorEvent.error;
+  const { error } = errorEvent;
 
   if (
     typeof error === "object" &&
@@ -567,7 +571,7 @@ function hasProviderMetadataEvidence(value: unknown): boolean {
     return false;
   }
 
-  const providerMetadata = value.providerMetadata;
+  const { providerMetadata } = value;
 
   if (
     isPlainRecord(providerMetadata) &&
@@ -592,16 +596,16 @@ function hasAimockResponseMetadataEvidence(value: unknown): boolean {
     return false;
   }
 
-  const providerMetadata = value.providerMetadata;
+  const { providerMetadata } = value;
 
   if (isPlainRecord(providerMetadata)) {
     const bridgeMetadata = providerMetadata.aiSdkBridge;
 
     if (isPlainRecord(bridgeMetadata)) {
-      const response = bridgeMetadata.response;
+      const { response } = bridgeMetadata;
 
       if (isPlainRecord(response)) {
-        const metadata = response.metadata;
+        const { metadata } = response;
 
         if (
           isPlainRecord(metadata) &&
@@ -633,14 +637,14 @@ function hasGoogleProviderMetadataEvidence(value: unknown): boolean {
     return false;
   }
 
-  const providerMetadata = value.providerMetadata;
+  const { providerMetadata } = value;
 
   if (isPlainRecord(providerMetadata)) {
     const bridgeMetadata = providerMetadata.aiSdkBridge;
 
     if (isPlainRecord(bridgeMetadata)) {
-      const response = bridgeMetadata.response;
-      const streamPartMetadata = bridgeMetadata.streamPartMetadata;
+      const { response } = bridgeMetadata;
+      const { streamPartMetadata } = bridgeMetadata;
       const responseHeaders = isPlainRecord(response)
         ? response.headers
         : undefined;
@@ -814,7 +818,7 @@ export function isEditedEmailToolStart(event: TuvrenStreamEvent): boolean {
     return false;
   }
 
-  const input = event.input;
+  const { input } = event;
 
   return (
     isPlainRecord(input) &&

@@ -363,12 +363,14 @@ function parseBackend(value: string | undefined): ReplBackendMode {
   switch (normalized) {
     case "memory":
     case "postgres":
-    case "sqlite":
+    case "sqlite": {
       return normalized;
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError(`unsupported repl backend "${normalized}"`, {
         code: INVALID_REPL_CONFIG_CODE,
       });
+    }
   }
 }
 
@@ -377,15 +379,17 @@ function parseKernelMode(value: string | undefined): ReplKernelMode {
 
   switch (normalized) {
     case "rust-grpc":
-    case "typescript-local":
+    case "typescript-local": {
       return normalized;
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError(
         `unsupported repl kernel mode "${normalized}"`,
         {
           code: INVALID_REPL_CONFIG_CODE,
         }
       );
+    }
   }
 }
 
@@ -398,15 +402,17 @@ function parseProviderMode(value: string | undefined): ReplProviderMode {
     case "aimock-openai":
     case "ai-sdk-google":
     case "ai-sdk-mock":
-    case "fixture":
+    case "fixture": {
       return normalized;
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError(
         `unsupported repl provider mode "${normalized}"`,
         {
           code: INVALID_REPL_CONFIG_CODE,
         }
       );
+    }
   }
 }
 
@@ -424,14 +430,16 @@ function parseScenario(value: string | undefined): ReplScenarioName {
     case "steering":
     case "streaming":
     case "structured":
-    case "tools":
+    case "tools": {
       return normalized;
-    default:
+    }
+    default: {
       throw new TuvrenRuntimeError(
         `unsupported repl scenario "${normalized}"`,
         {
           code: INVALID_REPL_CONFIG_CODE,
         }
       );
+    }
   }
 }

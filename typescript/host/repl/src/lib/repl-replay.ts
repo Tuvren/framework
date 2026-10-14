@@ -20,20 +20,17 @@ import type { TuvrenStreamEvent } from "@tuvren/sdk";
 
 import { readReplEnv } from "./repl-config.js";
 import { createReplHostUsingCreateTuvren } from "./repl-host.js";
-import {
-  createReplShellFromHost,
-  type ReplShell,
-  runReplInput,
-} from "./repl-shell.js";
-import {
-  type ReplTranscriptDurableReadRecord,
-  type ReplTranscriptEntry,
-  type ReplTranscriptHeader,
-  type ReplTranscriptInputRecord,
-  type ReplTranscriptOutputRecord,
-  type ReplTranscriptReadable,
-  type ReplTranscriptStreamEventRecord,
-  serializeReplTranscriptRecord,
+import { createReplShellFromHost, runReplInput } from "./repl-shell.js";
+import type { ReplShell } from "./repl-shell.js";
+import { serializeReplTranscriptRecord } from "./repl-transcript.js";
+import type {
+  ReplTranscriptDurableReadRecord,
+  ReplTranscriptEntry,
+  ReplTranscriptHeader,
+  ReplTranscriptInputRecord,
+  ReplTranscriptOutputRecord,
+  ReplTranscriptReadable,
+  ReplTranscriptStreamEventRecord,
 } from "./repl-transcript.js";
 import type {
   ReplConfig,
@@ -197,17 +194,21 @@ function appendReplayGroupEntry(
   entry: Exclude<ReplTranscriptEntry, ReplTranscriptInputRecord>
 ): void {
   switch (entry.recordKind) {
-    case "durable-read":
+    case "durable-read": {
       appendReplayDurableRead(group, entry);
       return;
-    case "output":
+    }
+    case "output": {
       appendReplayOutput(group, entry);
       return;
-    case "stream-event":
+    }
+    case "stream-event": {
       appendReplayStreamEvent(group, entry);
       return;
-    default:
+    }
+    default: {
       throw new Error("unsupported transcript replay entry");
+    }
   }
 }
 
@@ -412,7 +413,7 @@ function parseReplayDurableReadOutput(output: string): unknown | undefined {
 }
 
 function createReplayConfig(header: ReplTranscriptHeader): ReplConfig {
-  const backend = header.config.backend;
+  const { backend } = header.config;
 
   return {
     aimockBaseUrl: header.config.providerMode.startsWith("aimock-")
@@ -578,10 +579,12 @@ function readProviderMode(value: string): ReplProviderMode {
     case "aimock-openai":
     case "ai-sdk-google":
     case "ai-sdk-mock":
-    case "fixture":
+    case "fixture": {
       return value;
-    default:
+    }
+    default: {
       throw new Error(`unsupported transcript provider mode "${value}"`);
+    }
   }
 }
 
@@ -599,10 +602,12 @@ function readScenarioName(value: string | undefined): ReplScenarioName {
     case "steering":
     case "streaming":
     case "structured":
-    case "tools":
+    case "tools": {
       return scenario;
-    default:
+    }
+    default: {
       throw new Error(`unsupported transcript scenario "${value}"`);
+    }
   }
 }
 

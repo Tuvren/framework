@@ -102,28 +102,36 @@ export async function runReplScenario(
   config: ReplConfig
 ): Promise<ReplScenarioReport> {
   switch (config.scenario) {
-    case "approval":
+    case "approval": {
       return await runApprovalScenario(config);
-    case "branching":
+    }
+    case "branching": {
       return await runBranchingScenario(config);
-    case "cancel":
+    }
+    case "cancel": {
       return await runCancelScenario(config);
-    case "extension":
+    }
+    case "extension": {
       return await runSingleTurnScenario(config);
+    }
     case "metadata":
     case "orchestration":
     case "streaming":
     case "structured":
-    case "tools":
+    case "tools": {
       return config.scenario === "orchestration"
         ? await runOrchestrationScenario(config)
         : await runSingleTurnScenario(config);
-    case "reload":
+    }
+    case "reload": {
       return await runReloadScenario(config);
-    case "steering":
+    }
+    case "steering": {
       return await runSteeringScenario(config);
-    default:
+    }
+    default: {
       return await runSingleTurnScenario(config);
+    }
   }
 }
 
@@ -190,8 +198,6 @@ async function runSingleTurnScenario(
       aguiObserved: projection.agui.length > 0,
       canonicalObserved: projection.canonical.length > 0,
       completed: handle.status().phase === "completed",
-      metadataObserved,
-      sseObserved: projection.sse.length > 0,
       extensionEventObserved:
         config.scenario !== "extension" ||
         projection.canonical.some(
@@ -201,15 +207,17 @@ async function runSingleTurnScenario(
       extensionStatePersisted:
         config.scenario !== "extension" ||
         Boolean(handle.status().manifest?.extensions[PROOF_EXTENSION_NAME]),
+      metadataObserved,
+      sseObserved: projection.sse.length > 0,
       structuredObserved:
         config.scenario !== "structured" ||
         projection.canonical.some((event) => event.type === "structured.done"),
+      toolHistoryPreserved,
       toolObserved:
         config.scenario !== "tools" ||
         (config.providerMode === "ai-sdk-google"
           ? toolResultCount >= 2
           : toolResultCount > 0),
-      toolHistoryPreserved,
       toolTraceObserved,
     },
     config,
@@ -302,8 +310,8 @@ async function runApprovalScenario(
     branchId: thread.branchId,
     config: {
       ...executionPlan.config,
-      model: executionPlan.model,
       maxParallelToolCalls: 2,
+      model: executionPlan.model,
       name: "primary",
       tools: executionPlan.tools,
     },
@@ -311,7 +319,7 @@ async function runApprovalScenario(
     threadId: thread.threadId,
   });
   const pausedProjection = await host.project(pausedHandle);
-  const approval = pausedHandle.status().approval;
+  const { approval } = pausedHandle.status();
   const pausedMessages = await host.readBranchMessages(thread.branchId);
   const pausedToolCallProviderCallIdCount =
     countDurableToolCallProviderCallIds(pausedMessages);
@@ -482,13 +490,13 @@ async function runBranchingScenario(
 
   return createReport({
     checks: {
-      branchCreated: branch.branchId !== thread.branchId,
       branchCompleted: branchHandle.status().phase === "completed",
-      branchedFromSourceHead:
-        branch.headTurnNodeHash === sourceThread.headTurnNodeHash,
+      branchCreated: branch.branchId !== thread.branchId,
       branchMessagesAdvanced:
         branchMessagesAfterTurn.length > branchMessagesBeforeTurn.length,
       branchMessagesVisible: branchMessagesBeforeTurn.length > 0,
+      branchedFromSourceHead:
+        branch.headTurnNodeHash === sourceThread.headTurnNodeHash,
       sourceCompleted: firstHandle.status().phase === "completed",
     },
     config,
@@ -596,9 +604,9 @@ async function runReloadScenario(
     return createReport({
       checks: {
         completedBeforeReload: handle.status().phase === "completed",
-        durableReloadAttempted: false,
         continuedAfterReload: false,
         durableMessagesVisibleAfterReload: false,
+        durableReloadAttempted: false,
         headAdvancedAfterReload: false,
         rootPreservedAfterReload: false,
         threadVisibleAfterReload: false,
@@ -630,9 +638,9 @@ async function runReloadScenario(
   return createReport({
     checks: {
       completedBeforeReload: handle.status().phase === "completed",
-      durableReloadAttempted: true,
       continuedAfterReload: continuationHandle.status().phase === "completed",
       durableMessagesVisibleAfterReload: reloadedMessages.length >= 2,
+      durableReloadAttempted: true,
       headAdvancedAfterReload:
         sourceThread.headTurnNodeHash !== continuedThread.headTurnNodeHash,
       rootPreservedAfterReload:
