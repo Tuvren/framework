@@ -47,7 +47,7 @@ tickets:
     description: "ADR-0070 and SPK-KRT-OD006. Treat the measured 144-directive inventory as an identification baseline, not a quota. Re-run live retained-Biome and Oxlint diagnostics across the owned paths. For every baseline identity and any drift discovered at execution, record its original reason, equivalent native rule, retained-checker disposition, and native-admission disposition. While Biome owns a path, preserve each needed original Biome directive and its reason. Remove a directive before admission only after a behavior-preserving code fix proves that the retained Biome diagnostic no longer fires. Do not add Biome directives. Record a native counterpart only when the equivalent native rule actually fires and the original reason remains valid. Do not replace an API's bitmask operation with a handwritten flag algorithm to avoid lint. Do not create suppressions to reproduce the historical 82-live/62-dead classification. Provide the per-directive disposition ledger for CB aggregation."
     acceptance:
       mode: contract_test
-      evidence: Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate.
+      evidence: "Assert every baseline directive identity in the owned paths, plus any measured drift, has a ledger entry backed by live retained-Biome and Oxlint diagnostics. Each entry records the original reason, retained-checker disposition, and native-admission disposition. While Biome owns the path, prove each needed original directive remains and the full lint gate passes. Prove any early deletion follows a behavior-preserving code fix and a fresh retained-Biome run where the diagnostic no longer fires. Prove each planned native counterpart matches an actually firing equivalent rule and preserves the original reason. Add no Biome directive, manufacture no suppression to meet a historical count, and emit the ledger CB will aggregate."
     flows: []
     certainty: settled
     status: done
@@ -94,31 +94,20 @@ tickets:
     certainty: settled
     status: done
 closeout:
-  tickets_completed:
-    - KRT-BW001
-    - KRT-BW002
-    - KRT-BW003
-    - KRT-BW004
+  tickets_completed: [KRT-BW001, KRT-BW002, KRT-BW003, KRT-BW004]
   tickets_deferred: []
   points_completed: 24
   spec_patches: []
   changelog_entries:
     - directory: tasks
       type: changed
-      text: "Completed EPIC-BW conformance-tooling cleanup: the full shipped native
-        preset passes over all owned code, shared harness/compiler/protocol
-        behavior is preserved, and fresh code/JSON/suppression/generator evidence
-        retains Biome ownership pending CB whole-tools admission."
+      text: "Completed EPIC-BW conformance-tooling cleanup: the full shipped native preset passes over all owned code, shared harness/compiler/protocol behavior is preserved, and fresh code/JSON/suppression/generator evidence retains Biome ownership pending CB whole-tools admission."
   candidate_terms: []
   routed_upstream: []
   follow_ups:
-    - EPIC-CB retains planned whole-tools native admission after its remaining
-      prerequisites; keep tools/biome-coverage/bw.json until that atomic
-      admission.
+    - "EPIC-CB retains planned whole-tools native admission after its remaining prerequisites; keep tools/biome-coverage/bw.json until that atomic admission."
   code_decisions:
-    - summary: Use schema-typed Ajv compilation and complete parser projection guards
-        to narrow external values without unchecked casts. Preserve
-        authority-schema validation and validation order.
+    - summary: Use schema-typed Ajv compilation and complete parser projection guards to narrow external values without unchecked casts. Preserve authority-schema validation and validation order.
       kind: pattern
       paths:
         - tools/conformance/plan-compiler/index.ts
@@ -126,9 +115,7 @@ closeout:
         - tools/conformance/certification/validate-certification-discovery.ts
         - tools/conformance/vocabulary/validate-vocabulary.ts
       commit: 3fd19a04a17fe1df6611f43c9e573225dcada8e6
-    - summary: Use sequential recursive async visitors to satisfy the shipped
-        no-await-in-loop rule while preserving filesystem/validation first-failure
-        ordering.
+    - summary: Use sequential recursive async visitors to satisfy the shipped no-await-in-loop rule while preserving filesystem/validation first-failure ordering.
       kind: pattern
       paths:
         - tools/conformance/plan-compiler/index.ts
@@ -136,57 +123,41 @@ closeout:
         - tools/conformance/vocabulary/validate-vocabulary.ts
         - tools/scripts/conformance/generate-kernel-plans.ts
       commit: 3fd19a04a17fe1df6611f43c9e573225dcada8e6
-    - summary: Pass the vocabulary group resolver into the attribute collector to
-        eliminate the mutual forward reference while retaining visited-set
-        recursion and first failure.
+    - summary: Pass the vocabulary group resolver into the attribute collector to eliminate the mutual forward reference while retaining visited-set recursion and first failure.
       kind: pattern
-      paths:
-        - tools/conformance/vocabulary/validate-vocabulary.ts
+      paths: [tools/conformance/vocabulary/validate-vocabulary.ts]
       commit: 3fd19a04a17fe1df6611f43c9e573225dcada8e6
-    - summary: Build canonical JSON schema objects with Object.fromEntries to preserve
-        own __proto__ keys while sorting source keys deterministically.
+    - summary: Build canonical JSON schema objects with Object.fromEntries to preserve own __proto__ keys while sorting source keys deterministically.
       kind: pattern
-      paths:
-        - tools/conformance/harness/assertion-engine/index.ts
+      paths: [tools/conformance/harness/assertion-engine/index.ts]
       commit: 3fd19a04a17fe1df6611f43c9e573225dcada8e6
-    - summary: Use explicitly settled Bun rejection assertions and guarded internal
-        error normalization for untyped rejection reasons.
+    - summary: Use explicitly settled Bun rejection assertions and guarded internal error normalization for untyped rejection reasons.
       kind: pattern
       paths:
         - tools/conformance/plan-compiler/index.test.ts
         - tools/conformance/harness/test/assertion-engine.test.ts
       commit: 3fd19a04a17fe1df6611f43c9e573225dcada8e6
-    - summary: A8 explicitly corrects internal StdioConformanceAdapter initialize and
-        dispatch callbacks to accept synchronous values or promises, preserving
-        existing parameters, optionality, host awaiting and external protocol;
-        owned binding documentation and sync/async parity proof agree.
+    - summary: "A8 explicitly corrects internal StdioConformanceAdapter initialize and dispatch callbacks to accept synchronous values or promises, preserving existing parameters, optionality, host awaiting and external protocol; owned binding documentation and sync/async parity proof agree."
       kind: contract_shape
       paths:
         - tools/conformance/adapter-protocol/stdio-host.ts
         - tools/conformance/adapter-protocol/bindings/typescript.md
         - tools/conformance/harness/test/adapter-client.test.ts
       commit: 60311a54bb56cce1ad5d1bd455760719b610fd4c
-    - summary: Use Writable.toWeb writer.write with Promise.withResolvers and
-        response/write racing for honest asynchronous JSON-RPC writes while
-        preserving response/deadline settlement, UTF-8, native write errors and
-        shutdown.
+    - summary: "Use Writable.toWeb writer.write with Promise.withResolvers and response/write racing for honest asynchronous JSON-RPC writes while preserving response/deadline settlement, UTF-8, native write errors and shutdown."
       kind: pattern
       paths:
         - tools/conformance/harness/adapter-client.ts
         - tools/conformance/harness/test/adapter-client.test.ts
       commit: 60311a54bb56cce1ad5d1bd455760719b610fd4c
-    - summary: Extract direct error, plan-reader and test-script modules to retain
-        one-class/file policy and bounded module size without compatibility
-        reexports.
+    - summary: "Extract direct error, plan-reader and test-script modules to retain one-class/file policy and bounded module size without compatibility reexports."
       kind: pattern
       paths:
         - tools/conformance/harness/adapter-error.ts
         - tools/conformance/harness/run-plans.ts
         - tools/conformance/harness/test/run-adapters-fixture.ts
       commit: 60311a54bb56cce1ad5d1bd455760719b610fd4c
-    - summary: Apply complete capability/packet guards, typed Ajv adapter validation,
-        existing assertKernelRecord guards and sequential recursive visitors,
-        preserving first-validation-failure and evidence-before-events order.
+    - summary: "Apply complete capability/packet guards, typed Ajv adapter validation, existing assertKernelRecord guards and sequential recursive visitors, preserving first-validation-failure and evidence-before-events order."
       kind: pattern
       paths:
         - tools/conformance/harness/run.ts
@@ -194,21 +165,37 @@ closeout:
         - tools/scripts/conformance/generate-kernel-fixtures.ts
         - tools/conformance/adapter-protocol/validate-adapter-protocol.ts
       commit: 60311a54bb56cce1ad5d1bd455760719b610fd4c
-    - summary: Use native events.once and settled rejection assertions for async test
-        observations; build reversed object insertion with Object.fromEntries so
-        the meta equality negative control remains meaningful under sort-keys.
+    - summary: "Use native events.once and settled rejection assertions for async test observations; build reversed object insertion with Object.fromEntries so the meta equality negative control remains meaningful under sort-keys."
       kind: pattern
       paths:
         - tools/conformance/harness/test/run.test.ts
         - tools/conformance/harness/test/adapter-client.test.ts
         - tools/conformance/meta-conformance/run.ts
       commit: 60311a54bb56cce1ad5d1bd455760719b610fd4c
-    - summary: Reject compiled Ajv asynchronous validators before cache insertion or
-        invocation in the synchronous schemaValid assertion; preserve boolean
-        grading and avoid Promise verdicts or rejection leaks.
+    - summary: "Reject compiled Ajv asynchronous validators before cache insertion or invocation in the synchronous schemaValid assertion; preserve boolean grading and avoid Promise verdicts or rejection leaks."
       kind: pattern
       paths:
         - tools/conformance/harness/assertion-engine/index.ts
         - tools/conformance/harness/test/assertion-engine.test.ts
       commit: 297eb1c2c65c289b1e718cd2f588a66bf89c3941
   settled: []
+  actuals:
+    diff_lines: 9945
+    files_touched: 31
+    milestones: 18
+    review_rounds: 0
+    per_ticket:
+      - id: KRT-BW001
+        diff_lines: 494
+        review_rounds: 0
+      - id: KRT-BW002
+        diff_lines: 1740
+        review_rounds: 0
+      - id: KRT-BW003
+        diff_lines: 5398
+        review_rounds: 0
+      - id: KRT-BW004
+        diff_lines: 2313
+        review_rounds: 0
+    merged_commit: "0b7e1b3"
+    measured_at: 2026-10-14

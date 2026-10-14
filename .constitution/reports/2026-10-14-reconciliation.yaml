@@ -1,0 +1,217 @@
+date: 2026-10-14
+commit: "0b7e1b3"
+epics: [BW, BX]
+routed:
+  - stage: tech-spec
+    item: "code decision (pattern): Use schema-typed Ajv compilation and complete parser projection guards to narrow external values without unchecked casts. Preserve authority-schema validation and validation order. [tools/conformance/plan-compiler/index.ts, tools/conformance/plan-compiler/validate-plans.ts, tools/conformance/certification/validate-certification-discovery.ts, tools/conformance/vocabulary/validate-vocabulary.ts] at 3fd19a04a17fe1df6611f43c9e573225dcada8e6"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (pattern): Use sequential recursive async visitors to satisfy the shipped no-await-in-loop rule while preserving filesystem/validation first-failure ordering. [tools/conformance/plan-compiler/index.ts, tools/conformance/plan-compiler/validate-plans.ts, tools/conformance/vocabulary/validate-vocabulary.ts, tools/scripts/conformance/generate-kernel-plans.ts] at 3fd19a04a17fe1df6611f43c9e573225dcada8e6"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (pattern): Pass the vocabulary group resolver into the attribute collector to eliminate the mutual forward reference while retaining visited-set recursion and first failure. [tools/conformance/vocabulary/validate-vocabulary.ts] at 3fd19a04a17fe1df6611f43c9e573225dcada8e6"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (pattern): Build canonical JSON schema objects with Object.fromEntries to preserve own __proto__ keys while sorting source keys deterministically. [tools/conformance/harness/assertion-engine/index.ts] at 3fd19a04a17fe1df6611f43c9e573225dcada8e6"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (pattern): Use explicitly settled Bun rejection assertions and guarded internal error normalization for untyped rejection reasons. [tools/conformance/plan-compiler/index.test.ts, tools/conformance/harness/test/assertion-engine.test.ts] at 3fd19a04a17fe1df6611f43c9e573225dcada8e6"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (contract_shape): A8 explicitly corrects internal StdioConformanceAdapter initialize and dispatch callbacks to accept synchronous values or promises, preserving existing parameters, optionality, host awaiting and external protocol; owned binding documentation and sync/async parity proof agree. [tools/conformance/adapter-protocol/stdio-host.ts, tools/conformance/adapter-protocol/bindings/typescript.md, tools/conformance/harness/test/adapter-client.test.ts] at 60311a54bb56cce1ad5d1bd455760719b610fd4c"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (pattern): Use Writable.toWeb writer.write with Promise.withResolvers and response/write racing for honest asynchronous JSON-RPC writes while preserving response/deadline settlement, UTF-8, native write errors and shutdown. [tools/conformance/harness/adapter-client.ts, tools/conformance/harness/test/adapter-client.test.ts] at 60311a54bb56cce1ad5d1bd455760719b610fd4c"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (pattern): Extract direct error, plan-reader and test-script modules to retain one-class/file policy and bounded module size without compatibility reexports. [tools/conformance/harness/adapter-error.ts, tools/conformance/harness/run-plans.ts, tools/conformance/harness/test/run-adapters-fixture.ts] at 60311a54bb56cce1ad5d1bd455760719b610fd4c"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (pattern): Apply complete capability/packet guards, typed Ajv adapter validation, existing assertKernelRecord guards and sequential recursive visitors, preserving first-validation-failure and evidence-before-events order. [tools/conformance/harness/run.ts, tools/conformance/harness/run-plans.ts, tools/scripts/conformance/generate-kernel-fixtures.ts, tools/conformance/adapter-protocol/validate-adapter-protocol.ts] at 60311a54bb56cce1ad5d1bd455760719b610fd4c"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (pattern): Use native events.once and settled rejection assertions for async test observations; build reversed object insertion with Object.fromEntries so the meta equality negative control remains meaningful under sort-keys. [tools/conformance/harness/test/run.test.ts, tools/conformance/harness/test/adapter-client.test.ts, tools/conformance/meta-conformance/run.ts] at 60311a54bb56cce1ad5d1bd455760719b610fd4c"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (pattern): Reject compiled Ajv asynchronous validators before cache insertion or invocation in the synchronous schemaValid assertion; preserve boolean grading and avoid Promise verdicts or rejection leaks. [tools/conformance/harness/assertion-engine/index.ts, tools/conformance/harness/test/assertion-engine.test.ts] at 297eb1c2c65c289b1e718cd2f588a66bf89c3941"
+    from: BW
+  - stage: tech-spec
+    item: "code decision (convention): Pass the private reopen callback into scheduleReconnect to break the local declaration cycle without changing helper initialization placement or timer/reconnect behavior. [typescript/host/session-client/src/lib/session-client.ts] at 51f8f67e7663403ece6d9f5fc506aea1d175b8c0"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Iterator.return closes synchronously then awaits its original returned IteratorResult promise; six pending/queued/early-return/error traces remain equal, with no extra promise/tracking/generator machinery. [typescript/host/session/src/lib/duplex-session-binding.ts] at 57029b567832a81b20c0ee0b76d413d1cdcdc0e0"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Promise.withResolvers direct replacement for real deferred promise executor plumbing; signature/types/runtime verified. [typescript/host/session/smoke/package-exports.ts, typescript/host/session/src/index.ts, typescript/host/session/src/lib/duplex-session-binding.ts, typescript/host/session/src/lib/session-frame-shapes.ts, typescript/host/session/test/duplex-session-binding.test.ts, typescript/host/session/test/shared-schema-mirror.test.ts] at 57029b567832a81b20c0ee0b76d413d1cdcdc0e0"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): await original returned operation promise await the original IteratorResult Promise.resolve contract value after synchronous close, rather than add artificial work; six equivalent protocol traces. [typescript/host/session/smoke/package-exports.ts, typescript/host/session/src/index.ts, typescript/host/session/src/lib/duplex-session-binding.ts, typescript/host/session/src/lib/session-frame-shapes.ts, typescript/host/session/test/duplex-session-binding.test.ts, typescript/host/session/test/shared-schema-mirror.test.ts] at 57029b567832a81b20c0ee0b76d413d1cdcdc0e0"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Error with cause for non-Error queue failure allowed OD-09 normalization with unchanged existing Error identity. [typescript/host/session/smoke/package-exports.ts, typescript/host/session/src/index.ts, typescript/host/session/src/lib/duplex-session-binding.ts, typescript/host/session/src/lib/session-frame-shapes.ts, typescript/host/session/test/duplex-session-binding.test.ts, typescript/host/session/test/shared-schema-mirror.test.ts] at 57029b567832a81b20c0ee0b76d413d1cdcdc0e0"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): typed controllable deferred handles, rejectionOf, recursive partial iterator collection meaningful public assertions, actual canonical events/results, and preserved queue partial-read lifecycle. [typescript/host/session/smoke/package-exports.ts, typescript/host/session/src/index.ts, typescript/host/session/src/lib/duplex-session-binding.ts, typescript/host/session/src/lib/session-frame-shapes.ts, typescript/host/session/test/duplex-session-binding.test.ts, typescript/host/session/test/shared-schema-mirror.test.ts] at 57029b567832a81b20c0ee0b76d413d1cdcdc0e0"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): five bounded jsdoc/check-tag-names regions required experimental authority; removed/unused controls measured independently of original Biome directives. [typescript/host/session/smoke/package-exports.ts, typescript/host/session/src/index.ts, typescript/host/session/src/lib/duplex-session-binding.ts, typescript/host/session/src/lib/session-frame-shapes.ts, typescript/host/session/test/duplex-session-binding.test.ts, typescript/host/session/test/shared-schema-mirror.test.ts] at 57029b567832a81b20c0ee0b76d413d1cdcdc0e0"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): method signatures rendered as function-valued properties shipped method-signature-style rule; names/parameters/results retained. [typescript/host/session/smoke/package-exports.ts, typescript/host/session/src/index.ts, typescript/host/session/src/lib/duplex-session-binding.ts, typescript/host/session/src/lib/session-frame-shapes.ts, typescript/host/session/test/duplex-session-binding.test.ts, typescript/host/session/test/shared-schema-mirror.test.ts] at 57029b567832a81b20c0ee0b76d413d1cdcdc0e0"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): complete packet structural guards plus unknown-array boundary Validate six content variants and optional payload fields; typed unknown-array traversal exposes sparse entries while preserving payload identity/extras/duplicate decisions; no policy or dependency change. [typescript/host/session/smoke/package-exports.ts, typescript/host/session/src/index.ts, typescript/host/session/src/lib/duplex-session-binding.ts, typescript/host/session/src/lib/session-frame-shapes.ts, typescript/host/session/test/duplex-session-binding.test.ts, typescript/host/session/test/shared-schema-mirror.test.ts] at 57029b567832a81b20c0ee0b76d413d1cdcdc0e0"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Private authority-valid JSON uint8[] file-data projection to core Uint8Array, preserving original core-valid identity and caller data. [typescript/host/session/src/lib/duplex-session-binding.ts] at 4bb5e6a49a4278846149183fdd09b65599db45be"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): async-generator single-slot channel Real yield protocol, no manufactured await/Promise.resolve; internal post-contract-violation terminal difference explicitly approved and measured.. [typescript/host/remote-session/smoke/package-exports.ts, typescript/host/remote-session/src/index.ts, typescript/host/remote-session/src/lib/remote-client-session.ts, typescript/host/remote-session/test/remote-client-session-failures.test.ts, typescript/host/remote-session/test/remote-client-session.test.ts] at 1f26a0808e50ea9ff7c42c0a1140282d2788f4fc"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): one-event async-generator sequencing and next-only iterator wrapper Await real sequencer result while retaining lockstep and session-end ownership of close ordering; no tracking state or public contract change.. [typescript/host/remote-session/smoke/package-exports.ts, typescript/host/remote-session/src/index.ts, typescript/host/remote-session/src/lib/remote-client-session.ts, typescript/host/remote-session/test/remote-client-session-failures.test.ts, typescript/host/remote-session/test/remote-client-session.test.ts] at 1f26a0808e50ea9ff7c42c0a1140282d2788f4fc"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): numeric identity for the owned default Bun timeout Documented primitive conversion, runtime cancellation measured; opaque public clock shape unchanged.. [typescript/host/remote-session/smoke/package-exports.ts, typescript/host/remote-session/src/index.ts, typescript/host/remote-session/src/lib/remote-client-session.ts, typescript/host/remote-session/test/remote-client-session-failures.test.ts, typescript/host/remote-session/test/remote-client-session.test.ts] at 1f26a0808e50ea9ff7c42c0a1140282d2788f4fc"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): small package-local rejection regression module with typed deferred handles Keeps original test module969lines and regression module273lines; no new scaffold/testkit/exported oracle.. [typescript/host/remote-session/smoke/package-exports.ts, typescript/host/remote-session/src/index.ts, typescript/host/remote-session/src/lib/remote-client-session.ts, typescript/host/remote-session/test/remote-client-session-failures.test.ts, typescript/host/remote-session/test/remote-client-session.test.ts] at 1f26a0808e50ea9ff7c42c0a1140282d2788f4fc"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Internal default-clock handles normalize the existing timer object to a number and narrow it before clearTimeout (measured runtime cancellation; same convention as M28). [typescript/host/session-client/smoke/package-exports.ts, typescript/host/session-client/src/index.ts, typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/src/lib/session-protocol-types.ts, typescript/host/session-client/src/lib/ws-wire.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session-client/test/session-client-boundaries.test.ts, typescript/host/session-client/test/session-client-clock.ts, typescript/host/session-client/test/session-client-fixtures.ts] at 8139660f06cf1ef9679c5979a0e0788c7ddedeb2"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Internal socket variable truthfully carries the injected SessionClientSocket or native WebSocket, eliminating the unsafe structural assertion. [typescript/host/session-client/smoke/package-exports.ts, typescript/host/session-client/src/index.ts, typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/src/lib/session-protocol-types.ts, typescript/host/session-client/src/lib/ws-wire.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session-client/test/session-client-boundaries.test.ts, typescript/host/session-client/test/session-client-clock.ts, typescript/host/session-client/test/session-client-fixtures.ts] at 8139660f06cf1ef9679c5979a0e0788c7ddedeb2"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): A typed Pick of the four required on* callback properties is installed with Object.assign, preserving the existing property-only injection seam and adding no EventTarget requirement. [typescript/host/session-client/smoke/package-exports.ts, typescript/host/session-client/src/index.ts, typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/src/lib/session-protocol-types.ts, typescript/host/session-client/src/lib/ws-wire.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session-client/test/session-client-boundaries.test.ts, typescript/host/session-client/test/session-client-clock.ts, typescript/host/session-client/test/session-client-fixtures.ts] at 8139660f06cf1ef9679c5979a0e0788c7ddedeb2"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Test fixtures are split into socket/client and clock modules so each file has one class and tests stay below the 1000-line ceiling. [typescript/host/session-client/smoke/package-exports.ts, typescript/host/session-client/src/index.ts, typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/src/lib/session-protocol-types.ts, typescript/host/session-client/src/lib/ws-wire.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session-client/test/session-client-boundaries.test.ts, typescript/host/session-client/test/session-client-clock.ts, typescript/host/session-client/test/session-client-fixtures.ts] at 8139660f06cf1ef9679c5979a0e0788c7ddedeb2"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Test helpers requiredRecord/requiredString replace unsafe casts with runtime narrowing and TypeError on invalid helper inputs. [typescript/host/session-client/smoke/package-exports.ts, typescript/host/session-client/src/index.ts, typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/src/lib/session-protocol-types.ts, typescript/host/session-client/src/lib/ws-wire.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session-client/test/session-client-boundaries.test.ts, typescript/host/session-client/test/session-client-clock.ts, typescript/host/session-client/test/session-client-fixtures.ts] at 8139660f06cf1ef9679c5979a0e0788c7ddedeb2"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Test flushing uses the built-in node:timers/promises delay API; controllable pending handler tests use Promise.withResolvers with an honest async await of the controlled result. [typescript/host/session-client/smoke/package-exports.ts, typescript/host/session-client/src/index.ts, typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/src/lib/session-protocol-types.ts, typescript/host/session-client/src/lib/ws-wire.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session-client/test/session-client-boundaries.test.ts, typescript/host/session-client/test/session-client-clock.ts, typescript/host/session-client/test/session-client-fixtures.ts] at 8139660f06cf1ef9679c5979a0e0788c7ddedeb2"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): M37 launch normalization awaits the original deferred invocation/success chain in a void async try/catch IIFE; applied only at atomic native admission after five handler and 120 concurrent trace comparisons. [typescript/host/session-client/smoke/package-exports.ts, typescript/host/session-client/src/index.ts, typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/src/lib/session-protocol-types.ts, typescript/host/session-client/src/lib/ws-wire.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session-client/test/session-client-boundaries.test.ts, typescript/host/session-client/test/session-client-clock.ts, typescript/host/session-client/test/session-client-fixtures.ts] at 98ac6d2a64f07c8c8e8ce76410b8992743317d77"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): native node:timers/promises delay replaces callback timer promises existing timers only. [typescript/host/repl/src/lib/repl-provider.ts, typescript/host/repl/src/lib/repl-scenario-matrix.ts, typescript/host/repl/src/lib/repl-scenarios-support.ts, typescript/host/repl/test/repl-scenarios.test.ts] at 3f0e3f6524f000ec362119bc19b02234289f0b23"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): boolean observation signal via Promise.withResolvers; wait result remains void [typescript/host/repl/src/lib/repl-provider.ts, typescript/host/repl/src/lib/repl-scenario-matrix.ts, typescript/host/repl/src/lib/repl-scenarios-support.ts, typescript/host/repl/test/repl-scenarios.test.ts] at 3f0e3f6524f000ec362119bc19b02234289f0b23"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): structural private SteeringGate guard validates markObserved and waitForObservedOrDeadline functions [typescript/host/repl/src/lib/repl-provider.ts, typescript/host/repl/src/lib/repl-scenario-matrix.ts, typescript/host/repl/src/lib/repl-scenarios-support.ts, typescript/host/repl/test/repl-scenarios.test.ts] at 3f0e3f6524f000ec362119bc19b02234289f0b23"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): recursive awaited scenario iteration and condition/steering retry sequential matrix execution and existing timeout-bound polling. [typescript/host/repl/src/lib/repl-provider.ts, typescript/host/repl/src/lib/repl-scenario-matrix.ts, typescript/host/repl/src/lib/repl-scenarios-support.ts, typescript/host/repl/test/repl-scenarios.test.ts] at 3f0e3f6524f000ec362119bc19b02234289f0b23"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): await original result promise in three synchronous fixture/mock producers explicit OD-09 lead ruling; one settlement microtask recorded. [typescript/host/repl/src/lib/repl-provider.ts, typescript/host/repl/src/lib/repl-scenario-matrix.ts, typescript/host/repl/src/lib/repl-scenarios-support.ts, typescript/host/repl/test/repl-scenarios.test.ts] at 3f0e3f6524f000ec362119bc19b02234289f0b23"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): narrow projection event error from unknown before message/code extraction no supported error envelope or string fallback change. [typescript/host/repl/src/lib/repl-provider.ts, typescript/host/repl/src/lib/repl-scenario-matrix.ts, typescript/host/repl/src/lib/repl-scenarios-support.ts, typescript/host/repl/test/repl-scenarios.test.ts] at 3f0e3f6524f000ec362119bc19b02234289f0b23"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): String-accepting scenario membership sets with compile-time satisfies checking of the existing ReplScenarioName values; all-scenario membership helper returns boolean. [typescript/host/repl/src/lib/repl-shell.ts, typescript/host/repl/test/repl-shell.test.ts] at b79a873823861f6939175a416868e7a7ec091fc2"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Local captureContinuation async function awaits the existing continuation projection then merges it with the paused projection; no discarded await or additional Promise operation. [typescript/host/repl/src/lib/repl-shell.ts, typescript/host/repl/test/repl-shell.test.ts] at b79a873823861f6939175a416868e7a7ec091fc2"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): node:path default import; Array.toSorted on fresh MCP tool-name arrays; nullish assignment for lazy thread creation; array/object destructuring [typescript/host/repl/src/lib/repl-shell.ts, typescript/host/repl/test/repl-shell.test.ts] at b79a873823861f6939175a416868e7a7ec091fc2"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): CLI port parsing now extracts the leading signed ASCII decimal prefix after trimStart with DECIMAL_PORT_PREFIX_PATTERN and coerces that prefix with Number. Original radix-10 prefix/trailing-text, signed-zero and error ordering semantics were measured on 100,957 cases per runtime and 13 actual CLI cases. [typescript/host/repl/src/cli.ts, typescript/host/repl/src/lib/repl-headless-mode.ts, typescript/host/repl/src/lib/repl-live-output.ts, typescript/host/repl/src/lib/repl-replay.ts, typescript/host/repl/src/lib/repl-transcript.ts, typescript/host/repl/test/repl-transcript-redaction.test.ts, typescript/host/repl/test/repl-transcript-scope.test.ts, typescript/host/repl/test/repl.test.ts, typescript/host/repl/test/repl-transcript-io.test.ts] at 1ab7bdf56d014b8a4828fcfeb464c67c510dd912"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Replay uses standard Array.fromAsync to await each original runReplayInput operation sequentially; matching transcript writes and focused reader tests also use this native sequential API. No parallel dispatch or custom replay result shape is introduced. [typescript/host/repl/src/cli.ts, typescript/host/repl/src/lib/repl-headless-mode.ts, typescript/host/repl/src/lib/repl-live-output.ts, typescript/host/repl/src/lib/repl-replay.ts, typescript/host/repl/src/lib/repl-transcript.ts, typescript/host/repl/test/repl-transcript-redaction.test.ts, typescript/host/repl/test/repl-transcript-scope.test.ts, typescript/host/repl/test/repl.test.ts, typescript/host/repl/test/repl-transcript-io.test.ts] at 1ab7bdf56d014b8a4828fcfeb464c67c510dd912"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Stream open/drain use one explicit Promise.withResolvers deferred per original awaited operation, preserving original once(open/drain) and once(error) listener lifetime. Open resolves the actual file descriptor internally; its void-returning helper discards that value. Drain resolves its original no-argument event. No additional tracked Promise or operation is introduced. [typescript/host/repl/src/cli.ts, typescript/host/repl/src/lib/repl-headless-mode.ts, typescript/host/repl/src/lib/repl-live-output.ts, typescript/host/repl/src/lib/repl-replay.ts, typescript/host/repl/src/lib/repl-transcript.ts, typescript/host/repl/test/repl-transcript-redaction.test.ts, typescript/host/repl/test/repl-transcript-scope.test.ts, typescript/host/repl/test/repl.test.ts, typescript/host/repl/test/repl-transcript-io.test.ts] at 1ab7bdf56d014b8a4828fcfeb464c67c510dd912"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Stream end uses standard util.promisify around a void-returning onEnd adapter because WritableStream.end returns the stream. This preserves the original callback error envelope including ERR_STREAM_ALREADY_FINISHED on repeated close and ENOSPC. The descriptive callback remains an actual callback, with no rule suppression or altered effective configuration. [typescript/host/repl/src/cli.ts, typescript/host/repl/src/lib/repl-headless-mode.ts, typescript/host/repl/src/lib/repl-live-output.ts, typescript/host/repl/src/lib/repl-replay.ts, typescript/host/repl/src/lib/repl-transcript.ts, typescript/host/repl/test/repl-transcript-redaction.test.ts, typescript/host/repl/test/repl-transcript-scope.test.ts, typescript/host/repl/test/repl.test.ts, typescript/host/repl/test/repl-transcript-io.test.ts] at 1ab7bdf56d014b8a4828fcfeb464c67c510dd912"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): The existing server lifetime Promise constructor is replaced with Promise.withResolvers<never>().promise to express the same intentionally never-settling operation. [typescript/host/repl/src/cli.ts, typescript/host/repl/src/lib/repl-headless-mode.ts, typescript/host/repl/src/lib/repl-live-output.ts, typescript/host/repl/src/lib/repl-replay.ts, typescript/host/repl/src/lib/repl-transcript.ts, typescript/host/repl/test/repl-transcript-redaction.test.ts, typescript/host/repl/test/repl-transcript-scope.test.ts, typescript/host/repl/test/repl.test.ts, typescript/host/repl/test/repl-transcript-io.test.ts] at 1ab7bdf56d014b8a4828fcfeb464c67c510dd912"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): The transcript remaining-lines adapter forwards only next, honestly awaiting its original Promise, and intentionally omits return to retain caller-owned iterator lifetime. Sync iterator adaptation also honestly awaits its original Promise.resolve result. [typescript/host/repl/src/cli.ts, typescript/host/repl/src/lib/repl-headless-mode.ts, typescript/host/repl/src/lib/repl-live-output.ts, typescript/host/repl/src/lib/repl-replay.ts, typescript/host/repl/src/lib/repl-transcript.ts, typescript/host/repl/test/repl-transcript-redaction.test.ts, typescript/host/repl/test/repl-transcript-scope.test.ts, typescript/host/repl/test/repl.test.ts, typescript/host/repl/test/repl-transcript-io.test.ts] at 1ab7bdf56d014b8a4828fcfeb464c67c510dd912"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Live output uses a private predicate for its existing 14 rendered event kinds and a shared matching-line finisher, preserving ignored canonical event types and exact output formatting while satisfying exhaustive switch/complexity rules. [typescript/host/repl/src/cli.ts, typescript/host/repl/src/lib/repl-headless-mode.ts, typescript/host/repl/src/lib/repl-live-output.ts, typescript/host/repl/src/lib/repl-replay.ts, typescript/host/repl/src/lib/repl-transcript.ts, typescript/host/repl/test/repl-transcript-redaction.test.ts, typescript/host/repl/test/repl-transcript-scope.test.ts, typescript/host/repl/test/repl.test.ts, typescript/host/repl/test/repl-transcript-io.test.ts] at 1ab7bdf56d014b8a4828fcfeb464c67c510dd912"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): The CLI/headless test helper now uses a completely validated local HeadlessOutputRecord interface and guards while returning the exact parsed object, preserving key order and additional event fields. [typescript/host/repl/src/cli.ts, typescript/host/repl/src/lib/repl-headless-mode.ts, typescript/host/repl/src/lib/repl-live-output.ts, typescript/host/repl/src/lib/repl-replay.ts, typescript/host/repl/src/lib/repl-transcript.ts, typescript/host/repl/test/repl-transcript-redaction.test.ts, typescript/host/repl/test/repl-transcript-scope.test.ts, typescript/host/repl/test/repl.test.ts, typescript/host/repl/test/repl-transcript-io.test.ts] at 1ab7bdf56d014b8a4828fcfeb464c67c510dd912"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): CLI test subprocess completion uses native events.once(close) with an unknown exit-code result narrowed to number|null, preserving close-after-pipe completion and original spawn-error rejection. [typescript/host/repl/src/cli.ts, typescript/host/repl/src/lib/repl-headless-mode.ts, typescript/host/repl/src/lib/repl-live-output.ts, typescript/host/repl/src/lib/repl-replay.ts, typescript/host/repl/src/lib/repl-transcript.ts, typescript/host/repl/test/repl-transcript-redaction.test.ts, typescript/host/repl/test/repl-transcript-scope.test.ts, typescript/host/repl/test/repl.test.ts, typescript/host/repl/test/repl-transcript-io.test.ts] at 1ab7bdf56d014b8a4828fcfeb464c67c510dd912"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Native node:events.once signal wait replaces the manually unresolved peer keepalive Promise while preserving both original synchronous signal close/exit handlers. [typescript/host/repl/scripts/ws-peer.ts, typescript/host/repl/src/lib/repl-serve-ws.ts, typescript/host/repl/test/repl-serve-ws.e2e.test.ts, typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts, typescript/host/repl/test/repl.test.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Native node:timers/promises delay and Promise.withResolvers replace manually created test timeout/listening/gate Promises. [typescript/host/repl/scripts/ws-peer.ts, typescript/host/repl/src/lib/repl-serve-ws.ts, typescript/host/repl/test/repl-serve-ws.e2e.test.ts, typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts, typescript/host/repl/test/repl.test.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Recursive asynchronous test polling and stdout reads preserve sequential scheduling and the original deadlines without loop awaits. [typescript/host/repl/scripts/ws-peer.ts, typescript/host/repl/src/lib/repl-serve-ws.ts, typescript/host/repl/test/repl-serve-ws.e2e.test.ts, typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts, typescript/host/repl/test/repl.test.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Bun test.each expands provider/scenario/stdin matrices into individually named cases, retaining every original assertion and making a mutable copy of readonly provider tables for the installed signature. [typescript/host/repl/scripts/ws-peer.ts, typescript/host/repl/src/lib/repl-serve-ws.ts, typescript/host/repl/test/repl-serve-ws.e2e.test.ts, typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts, typescript/host/repl/test/repl.test.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Private createRegisteredEntry awaits the existing creation operation before Map insertion; the sink object moves into transport construction so the transport can be const with its existing delayed closure reference. [typescript/host/repl/scripts/ws-peer.ts, typescript/host/repl/src/lib/repl-serve-ws.ts, typescript/host/repl/test/repl-serve-ws.e2e.test.ts, typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts, typescript/host/repl/test/repl.test.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Private approval/search/email helper predicates keep every original condition while reducing measured complexity; Reflect.deleteProperty performs the original environment cleanup. [typescript/host/repl/scripts/ws-peer.ts, typescript/host/repl/src/lib/repl-serve-ws.ts, typescript/host/repl/test/repl-serve-ws.e2e.test.ts, typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts, typescript/host/repl/test/repl.test.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Unknown parsed effect-log values receive complete field validation before the existing durable-state assertions. [typescript/host/repl/scripts/ws-peer.ts, typescript/host/repl/src/lib/repl-serve-ws.ts, typescript/host/repl/test/repl-serve-ws.e2e.test.ts, typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts, typescript/host/repl/test/repl.test.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): WS callable interface members use function-valued property declarations with their original parameter and result types; no wire or domain fields are added. [typescript/host/repl/scripts/ws-peer.ts, typescript/host/repl/src/lib/repl-serve-ws.ts, typescript/host/repl/test/repl-serve-ws.e2e.test.ts, typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts, typescript/host/repl/test/repl.test.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Node builtin default imports, explicit awaited-command locals, unknown event-argument staging and decimal test PGPORT Number coercion implement the measured shipped style rules. [typescript/host/repl/scripts/ws-peer.ts, typescript/host/repl/src/lib/repl-serve-ws.ts, typescript/host/repl/test/repl-serve-ws.e2e.test.ts, typescript/host/repl/test/repl-test-helpers.ts, typescript/host/repl/test/repl.aimock-matrix.test.ts, typescript/host/repl/test/repl.test.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Resolve the finite CLI option map through Object.entries(...).find by exact option name, avoiding a narrowed key assertion. [typescript/host/repl/src/lib/repl-builtin-tools.ts, typescript/host/repl/src/lib/repl-config.ts, typescript/host/repl/src/lib/repl-host.ts, typescript/host/repl/src/lib/repl-types.ts, typescript/host/repl/test/repl.test.ts] at 3f8db4b5e4377d02014ee4e02c1b41f042bf4888"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Normalize an externally supplied array to unknown[] and use an every numeric predicate before copying it; original sparse/empty/non-finite outcomes are preserved by measured parity. [typescript/host/repl/src/lib/repl-builtin-tools.ts, typescript/host/repl/src/lib/repl-config.ts, typescript/host/repl/src/lib/repl-host.ts, typescript/host/repl/src/lib/repl-types.ts, typescript/host/repl/test/repl.test.ts] at 3f8db4b5e4377d02014ee4e02c1b41f042bf4888"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Compute the existing weather seed by indexed for-of code-point iteration, preserving spread-string weighting without allocating a temporary character array. [typescript/host/repl/src/lib/repl-builtin-tools.ts, typescript/host/repl/src/lib/repl-config.ts, typescript/host/repl/src/lib/repl-host.ts, typescript/host/repl/src/lib/repl-types.ts, typescript/host/repl/test/repl.test.ts] at 3f8db4b5e4377d02014ee4e02c1b41f042bf4888"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Use Promise.all for independent focused test input matrices; production dispatch remains sequential. [typescript/host/repl/src/lib/repl-builtin-tools.ts, typescript/host/repl/src/lib/repl-config.ts, typescript/host/repl/src/lib/repl-host.ts, typescript/host/repl/src/lib/repl-types.ts, typescript/host/repl/test/repl.test.ts] at 3f8db4b5e4377d02014ee4e02c1b41f042bf4888"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Use 38 narrowly bounded jsdoc/check-tag-names regions for 112 actually firing authority-required experimental tags, preserving all 144 actual AST tag associations including 32 inline nonfiring tags. These active authority exceptions are separate from original Biome suppression counterparts and have positive removed/unused controls. [typescript/host/session/src/index.ts, typescript/host/session/src/lib/duplex-session-binding.ts, typescript/host/session/src/lib/session-frame-shapes.ts, typescript/host/remote-session/src/index.ts, typescript/host/remote-session/src/lib/remote-client-session.ts, typescript/host/session-client/src/index.ts, typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/src/lib/ws-wire.ts, typescript/host/repl/src/lib/repl-serve-ws.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Remove eight optional packageDocumentation tags under the explicit metadata ruling while retaining descriptive prose. Prose is not replacement TSDoc metadata; Stage 3 should record this chosen documentation/lint convention before a consumer depends on the optional tag. [typescript/host/session/src/index.ts, typescript/host/session/src/lib/session-frame-shapes.ts, typescript/host/remote-session/src/index.ts, typescript/host/session-client/src/index.ts, typescript/host/session-client/src/lib/session-protocol-types.ts, typescript/host/session-client/src/lib/ws-wire.ts, typescript/host/repl/src/index.ts, typescript/host/repl/src/lib/repl-serve-ws.ts] at e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (pattern): Project typed client file-part bytes across realms to authority JSON arrays without mutating caller data. Require a valid handshake first, validate protocol/session/payload and non-whitespace fields, and enforce cursor presence exactly on event frames before callback, replay-state or capability side effects. [typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session/test/duplex-session-binding.test.ts] at 9be1746"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (convention): Declare dependency production inputs on all four native host lint targets after executed Nx probes prove imported source was omitted; retain every inherited checker/config/lock input and keep source typecheck targets unchanged. [typescript/host/session/project.json, typescript/host/remote-session/project.json, typescript/host/session-client/project.json, typescript/host/repl/project.json] at a8b2fde"
+    from: BX
+  - stage: tech-spec
+    item: "code decision (pattern): Use a real Node VM realm fixture, a complete authority cursor/kind matrix and deferred negative cases followed by valid controls; independently remove each handshake/cursor guard to prove its regression test fails, then restore exact source bytes. [typescript/host/session-client/test/session-client-receive-guards.test.ts] at 9be1746"
+    from: BX
+proposed_decisions: []
+candidate_terms: []
+stale_owners:
+  - ".constitution/evidence/KRT-BX001/manifest.yaml: KRT-BX001"
+  - ".constitution/evidence/KRT-BX004/manifest.yaml: KRT-BX004"
+  - ".constitution/evidence/KRT-BW004/manifest.yaml: KRT-BW004"
+  - ".constitution/evidence/KRT-BX002/manifest.yaml: KRT-BX002"
+  - ".constitution/evidence/KRT-BW002/manifest.yaml: KRT-BW002"
+  - ".constitution/evidence/KRT-BX003/manifest.yaml: KRT-BX003"

@@ -1,4 +1,19 @@
 entries:
+  - version: v0.47.8
+    date: 2026-10-14
+    changed:
+      - "Completed EPIC-BW conformance-tooling cleanup: the full shipped native preset passes over all owned code, shared harness/compiler/protocol behavior is preserved, and fresh code/JSON/suppression/generator evidence retains Biome ownership pending CB whole-tools admission."
+      - "EPIC-BW Conformance tooling lint ratchet archived: 4 tickets, 24 points, 9945 diff lines, 0 review rounds"
+      - "Complete EPIC-BX: safe fixes, measured suppression dispositions, bounded declaration ordering, native admission of all four host packages, obsolete playground environment-alias removal and verified host/session/CLI behavior."
+      - "EPIC-BX Host package lint ratchet archived: 4 tickets, 24 points, 35964 diff lines, 1 review rounds"
+    added:
+      - "Follow-up from EPIC-BW: EPIC-CB retains planned whole-tools native admission after its remaining prerequisites; keep tools/biome-coverage/bw.json until that atomic admission."
+    by: reconcile
+    fast_lane_through: "0b7e1b3d986dad65c611407b441a44e88575fd9e"
+    upstream:
+      prd: v0.13.1
+      architecture: v0.16.0
+      tech-spec: v0.47.5
   - version: v0.47.7
     date: 2026-10-13
     changed: ["Complete EPIC-BS: native type-aware kernel support lint, declaration ordering, measured suppression retirement and atomic admission of gRPC, testkit and certification roots.", "EPIC-BS Kernel support lint ratchet archived: 4 tickets, 24 points, 10872 diff lines, 1 review rounds", "Complete EPIC-BU helper cleanup and native readiness under the unchanged shipped preset, with retained Biome ownership and measured evidence.", "EPIC-BU Repository script library lint ratchet archived: 4 tickets, 24 points, 4592 diff lines, 0 review rounds"]
