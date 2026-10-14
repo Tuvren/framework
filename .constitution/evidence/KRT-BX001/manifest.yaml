@@ -1,0 +1,18 @@
+{
+  "owner": "KRT-BX001",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-14",
+    "commit": "638d5b2bf2e2d9aba6c88100b9dc8124e9c99913",
+    "command": "bun run typecheck; bun run nx run host-session:typecheck; bun run nx run host-session:test; bun run nx run remote-session:typecheck; bun run nx run remote-session:test; bun run nx run session-client:typecheck; bun run nx run session-client:test; bun run nx run host-repl:typecheck; bun run nx run host-repl:test"
+  },
+  "files": [
+    {
+      "path": "safe-fixes.json",
+      "sha256": "acb493d7e88d2770e1390764a886230a91c8c6075bd0f3a62289fbe7b012a6ba",
+      "bytes": 18420,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "Every safe-fix batch preserves signatures and collection semantics; canonical scoped tests and source typechecks pass, all original directives and required metadata remain, and ticket-wide typecheck exits 0."
+}

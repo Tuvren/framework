@@ -19,10 +19,10 @@ import { describe, expect, test } from "bun:test";
 import {
   createReplTranscriptWriter,
   parseReplTranscriptRecord,
-  type ReplTranscriptHeader,
   readReplTranscriptFromLines,
   redactReplTranscriptBackendOptions,
 } from "../src/lib/repl-transcript.ts";
+import type { ReplTranscriptHeader } from "../src/lib/repl-transcript.ts";
 
 function header(backendOptions: unknown): ReplTranscriptHeader {
   return {
@@ -30,8 +30,8 @@ function header(backendOptions: unknown): ReplTranscriptHeader {
       backend: { kind: "postgres", options: backendOptions },
       providerMode: "aimock-openai",
     },
-    recordedAtMs: 1,
     recordKind: "header",
+    recordedAtMs: 1,
     runtimeVersion: "test",
     v: 1,
   };
@@ -75,9 +75,9 @@ describe("repl transcript backend-options redaction (KRT-BD002)", () => {
       authToken: "bearer-xyz",
       dsn: "mysql://root:rootpw@127.0.0.1/db",
       host: "db.internal",
+      passwd: "p2",
       port: 5432,
       pwd: "p1",
-      passwd: "p2",
     }) as Record<string, unknown>;
     expect(redacted.accessKey).toBe("***");
     expect(redacted.apiKey).toBe("***");
@@ -104,7 +104,7 @@ describe("repl transcript backend-options redaction (KRT-BD002)", () => {
     if (record.recordKind !== "header") {
       throw new Error("expected a header record");
     }
-    const options = record.config.backend.options;
+    const { options } = record.config.backend;
     if (!isRecord(options)) {
       throw new Error("expected backend options object");
     }

@@ -20,9 +20,9 @@ import { loadReplConfig } from "../src/lib/repl-config.ts";
 import {
   createReplTranscriptWriter,
   parseReplTranscriptRecord,
-  type ReplTranscriptHeader,
   readReplTranscriptFromLines,
 } from "../src/lib/repl-transcript.ts";
+import type { ReplTranscriptHeader } from "../src/lib/repl-transcript.ts";
 
 const SCOPE_A = "tuvren.scope.tenant-a";
 const SCOPE_B = "tuvren.scope.tenant-b";
@@ -34,8 +34,8 @@ function scopedHeader(scope: string | undefined): ReplTranscriptHeader {
       providerMode: "fixture",
       ...(scope === undefined ? {} : { scope }),
     },
-    recordedAtMs: 1,
     recordKind: "header",
+    recordedAtMs: 1,
     runtimeVersion: "test",
     v: 1,
   };
@@ -90,8 +90,8 @@ describe("repl transcript scope correlation (KRT-BE008)", () => {
             providerMode: "fixture",
             scope: 42,
           },
-          recordedAtMs: 1,
           recordKind: "header",
+          recordedAtMs: 1,
           runtimeVersion: "test",
           v: 1,
         })

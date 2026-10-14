@@ -58,11 +58,13 @@ import {
 import { readShellTextArgument } from "../src/lib/repl-shell.js";
 import {
   createReplTranscriptWriter,
-  type ReplTranscriptEntry,
-  type ReplTranscriptHeader,
   readReplTranscriptFile,
   readReplTranscriptFromLines,
   serializeReplTranscriptRecord,
+} from "../src/lib/repl-transcript.js";
+import type {
+  ReplTranscriptEntry,
+  ReplTranscriptHeader,
 } from "../src/lib/repl-transcript.js";
 import {
   expectReplConfigError,
@@ -93,7 +95,7 @@ function createPromptObservingProvider(
 
 async function* streamPromptObservationResponse() {
   await Promise.resolve();
-  yield { type: "text_delta", text: "ok" } as const;
+  yield { text: "ok", type: "text_delta" } as const;
   yield { finishReason: "stop", type: "finish" } as const;
 }
 
@@ -720,7 +722,7 @@ describe("repl host scenarios", () => {
 
     const events = readCommandArray(
       await runReplCommand(shell, ".events show")
-    ) as Array<{ source?: { workerId?: string } }>;
+    ) as { source?: { workerId?: string } }[];
 
     expect(events.length).toBeGreaterThan(0);
     expect(events.some((event) => event.source?.workerId !== undefined)).toBe(
@@ -1428,10 +1430,10 @@ describe("repl host scenarios", () => {
       type: "approval.resolved",
     });
     writer.observe({
-      name: "proof-extension",
       data: {
         persisted: true,
       },
+      name: "proof-extension",
       timestamp: 0,
       type: "custom",
     });
@@ -2627,8 +2629,8 @@ describe("repl host scenarios", () => {
         {
           operation: "readBranchMessages",
           ordinal: 0,
-          recordedAtMs: 2010,
           recordKind: "durable-read",
+          recordedAtMs: 2010,
           result: [{ role: "assistant", text: "tampered" }],
           v: 1,
         },
@@ -2693,8 +2695,8 @@ describe("repl host scenarios", () => {
       serializeReplTranscriptRecord({
         input: "Hello without output evidence",
         ordinal: 0,
-        recordedAtMs: 2001,
         recordKind: "input",
+        recordedAtMs: 2001,
         v: 1,
       }),
     ]);
@@ -2721,13 +2723,13 @@ function readCommandArray(
   const parsed: unknown = JSON.parse(result.output);
 
   if (!Array.isArray(parsed)) {
-    throw new Error("expected JSON array output");
+    throw new TypeError("expected JSON array output");
   }
 
   return parsed;
 }
 
-function parseHeadlessOutputRecords(output: string): Array<{
+function parseHeadlessOutputRecords(output: string): {
   error?: { message: string };
   event?: { type?: string };
   exit?: boolean;
@@ -2736,7 +2738,7 @@ function parseHeadlessOutputRecords(output: string): Array<{
   recordKind: string;
   recordedAtMs: number;
   v: number;
-}> {
+}[] {
   return output
     .trim()
     .split("\n")
@@ -2758,8 +2760,8 @@ function createTranscriptHeaderFixture(): ReplTranscriptHeader {
       scenario: "streaming",
       systemPrompt: "Be concise.",
     },
-    recordedAtMs: 1000,
     recordKind: "header",
+    recordedAtMs: 1000,
     runtimeVersion: "@tuvren/runtime@0.27.0",
     v: 1,
   };
@@ -2770,8 +2772,8 @@ function createTranscriptEntryFixtures(): ReplTranscriptEntry[] {
     {
       input: ".status",
       ordinal: 0,
-      recordedAtMs: 1001,
       recordKind: "input",
+      recordedAtMs: 1001,
       v: 1,
     },
     {
@@ -2782,23 +2784,23 @@ function createTranscriptEntryFixtures(): ReplTranscriptEntry[] {
         type: "text.delta",
       },
       ordinal: 0,
-      recordedAtMs: 1002,
       recordKind: "stream-event",
+      recordedAtMs: 1002,
       v: 1,
     },
     {
       exit: false,
       ordinal: 0,
       output: '{"backend":"memory"}',
-      recordedAtMs: 1003,
       recordKind: "output",
+      recordedAtMs: 1003,
       v: 1,
     },
     {
       operation: "readBranchMessages",
       ordinal: 0,
-      recordedAtMs: 1004,
       recordKind: "durable-read",
+      recordedAtMs: 1004,
       result: [
         {
           role: "assistant",
@@ -2835,15 +2837,15 @@ async function createStatusReplayTranscript(input: {
     `${serializeReplTranscriptRecord({
       input: ".status",
       ordinal: 0,
-      recordedAtMs: 2001,
       recordKind: "input",
+      recordedAtMs: 2001,
       v: 1,
     })}\n`,
     `${serializeReplTranscriptRecord({
       ordinal: 0,
       output,
-      recordedAtMs: 2002,
       recordKind: "output",
+      recordedAtMs: 2002,
       v: 1,
     })}\n`,
   ];
@@ -2882,8 +2884,8 @@ async function createFreeformReplayTranscript(input: {
     `${serializeReplTranscriptRecord({
       input: "Hello freeform replay",
       ordinal: 0,
-      recordedAtMs: 2001,
       recordKind: "input",
+      recordedAtMs: 2001,
       v: 1,
     })}\n`,
     ...(input.includeStreamEvents
@@ -2892,8 +2894,8 @@ async function createFreeformReplayTranscript(input: {
             `${serializeReplTranscriptRecord({
               event,
               ordinal: 0,
-              recordedAtMs: 2002 + index,
               recordKind: "stream-event",
+              recordedAtMs: 2002 + index,
               v: 1,
             })}\n`
         )
@@ -2901,8 +2903,8 @@ async function createFreeformReplayTranscript(input: {
     `${serializeReplTranscriptRecord({
       ordinal: 0,
       output: input.outputOverride ?? "REPL streaming complete.",
-      recordedAtMs: 2100,
       recordKind: "output",
+      recordedAtMs: 2100,
       v: 1,
     })}\n`,
     ...(input.durableReads ?? []).map(

@@ -74,12 +74,15 @@ export function createAimockBaseUrl(
 ): string {
   switch (providerMode) {
     case "aimock-openai":
-    case "aimock-anthropic":
+    case "aimock-anthropic": {
       return `${mockUrl}/v1`;
-    case "aimock-google":
+    }
+    case "aimock-google": {
       return `${mockUrl}/v1beta`;
-    default:
+    }
+    default: {
       throw new Error(`unsupported aimock provider mode "${providerMode}"`);
+    }
   }
 }
 
@@ -187,13 +190,13 @@ export function assertStructuredResponseFormat(
     throw new Error("structured response_format.json_schema was not an object");
   }
 
-  const schema = jsonSchema.schema;
+  const { schema } = jsonSchema;
 
   if (!isPlainRecord(schema)) {
     throw new Error("structured response_format.json_schema.schema missing");
   }
 
-  const properties = schema.properties;
+  const { properties } = schema;
 
   expect(jsonSchema.name).toBe("repl_summary");
   expect(schema.type).toBe("object");
@@ -420,7 +423,7 @@ function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
   try {
     const parsed = JSON.parse(value);
     return isPlainRecord(parsed) ? parsed : undefined;
-  } catch (_error: unknown) {
+  } catch {
     return undefined;
   }
 }
