@@ -3,28 +3,28 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-14",
-    "commit": "906d4b1306ce879afd36e6bb8333a8f0a89c9e97",
-    "command": "bunx --bun biome lint --reporter=json --max-diagnostics=none typescript/host; bunx --bun oxlint --type-aware --format=json typescript/host; bun run typecheck; bun run lint"
+    "commit": "5b7fff3b19b97ccdae30159a152633d573be9fb5",
+    "command": "bunx --bun biome lint --reporter=json --max-diagnostics=none typescript/host; bunx --bun oxlint --type-aware --format=json typescript/host; bun run nx run host-repl:build --skip-nx-cache; bun run nx run host-repl:typecheck; bun run nx run host-repl:test; bun run nx run host-repl:exports-smoke; bun run typecheck; bun run lint"
   },
   "files": [
     {
       "path": "suppressions.json",
-      "sha256": "843a39238afe7335f013320e4c30ab8bfa41bc8f648ecf6d854216cb7e42f8aa",
-      "bytes": 39519,
+      "sha256": "89d38f3dbcd70f3660e7b850d7fc6b59b854a6a5d7223fcfd223f33ac0f33939",
+      "bytes": 41286,
       "role": "measurement"
     },
     {
       "path": "metadata.json",
-      "sha256": "0479de07b03004e2286b89fc8859a576b475f39b8a27ab54652e390bf1550c46",
-      "bytes": 11943,
+      "sha256": "bd2908a4728d156c9b9246fb2b4cd7a7be5eb0170efba6f11a9883e9ed61ca03",
+      "bytes": 11957,
       "role": "measurement"
     },
     {
       "path": "assertions.json",
-      "sha256": "f6a98f2c1504444f3071a146cb3053467049bf678e92fc8d48983c7e0ea25558",
-      "bytes": 2176,
+      "sha256": "bef29cb007abd9215a23f439b9cf4cc49a8dbee74e5110ee2441b533270fe78a",
+      "bytes": 4280,
       "role": "measurement"
     }
   ],
-  "pass_criteria": "Every original identity and reason is covered by fresh retained/native diagnostics, all needed originals stay until atomic admission, only measured native equivalents are identified, metadata exceptions are separate, missing-entry/changed-reason controls fail, and full lint plus root typecheck exit 0."
+  "pass_criteria": "Fresh positive retained selection covers every eligible owned Git file and every individual suppression probe processes one file. Preserve all baseline identities/reasons/needed directives and metadata; only measured native counterparts are identified. Missing-entry, changed-reason and zero-file controls reject. Canonical rebuilt tests, root typecheck and full lint exit 0 under unchanged policy."
 }

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "ticket": "KRT-BX002",
   "baseline_commit": "054bd042f658d9a43db0bc154a6c64c377a6140e",
-  "measurement_commit": "906d4b1306ce879afd36e6bb8333a8f0a89c9e97",
+  "measurement_commit": "5b7fff3b19b97ccdae30159a152633d573be9fb5",
   "owned_paths": [
     "typescript/host"
   ],
@@ -13,23 +13,23 @@
     "changed_reasons": []
   },
   "provenance": {
-    "measurement_script": "bx-m6-measure.mjs",
-    "assertion_script": "bx-m6-finalize.mjs",
-    "commands": "bx-m6-command-results.json",
-    "retained_full_scope_report": "bx-m6-biome-retained.json",
-    "native_type_aware_report": "bx-m6-oxlint-type-aware.json",
-    "native_syntactic_report": "bx-m6-oxlint-syntactic.json",
-    "effective_config_report": "bx-m6-oxlint-effective.json",
-    "shipped_effective_config_report": "bx-m6-oxlint-shipped-effective.json",
-    "registry_report": "bx-m6-oxlint-rules.json",
-    "before_hashes": "bx-m6-before-hashes.json",
-    "after_hashes": "bx-m6-after-hashes.json",
+    "measurement_script": "bx-a10-measure.mjs",
+    "assertion_script": "bx-a10-finalize.mjs",
+    "commands": "bx-a10-command-results.json",
+    "retained_full_scope_report": "bx-a10-biome-retained.json",
+    "native_type_aware_report": "bx-a10-oxlint-type-aware.json",
+    "native_syntactic_report": "bx-a10-oxlint-syntactic.json",
+    "effective_config_report": "bx-a10-oxlint-effective.json",
+    "shipped_effective_config_report": "bx-a10-oxlint-shipped-effective.json",
+    "registry_report": "bx-a10-oxlint-rules.json",
+    "before_hashes": "bx-a10-before-hashes.json",
+    "after_hashes": "bx-a10-after-hashes.json",
     "effective_policy_equal": true,
     "source_config_bytes_unchanged": true,
-    "mirror_limitation": "Biome excludes .cache mirrors; successful measurements use one individually unsuppressed in-scope source restored in finally. Each report asserts exactly one file was processed.",
+    "mirror_limitation": "Restored in-scope one-directive probes preserve original bytes in finally. Fresh full scope and all individual owned-file selections assert positive processed counts. No checker or policy override.",
     "report_commands": [
       {
-        "report": "bx-m6-biome-retained.json",
+        "report": "bx-a10-biome-retained.json",
         "command": [
           "bunx",
           "--bun",
@@ -40,10 +40,10 @@
           "typescript/host"
         ],
         "exit_code": 0,
-        "sha256": "5aead9fc80911e4c2e37ae25b6cbafb038193addf88278f3eca080c37da63cce"
+        "sha256": "a59aaa00a9cd9dffed1c117a2e9a37df81400ed50fdcf1c8e6dd69589afe8952"
       },
       {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "command": [
           "bunx",
           "--bun",
@@ -53,10 +53,10 @@
           "typescript/host"
         ],
         "exit_code": 1,
-        "sha256": "6dbc04f416dedd7cd753b06049d4e17484a8c76a7bad0321251f980d6bc2c322"
+        "sha256": "38f15dd27724badc34857a5a28f1019c627ed2294f94d91aa8579bbf26f0faad"
       },
       {
-        "report": "bx-m6-oxlint-syntactic.json",
+        "report": "bx-a10-oxlint-syntactic.json",
         "command": [
           "bunx",
           "--bun",
@@ -65,10 +65,10 @@
           "typescript/host"
         ],
         "exit_code": 1,
-        "sha256": "4eb71d464e7a09dc67a40900a5f420ea79cb1b893a46de50135932b5afa00865"
+        "sha256": "0868e7989cadcbf176b719d425bc899006b8691b3b6e3c65bcef83334afb5358"
       },
       {
-        "report": "bx-m6-oxlint-effective.json",
+        "report": "bx-a10-oxlint-effective.json",
         "command": [
           "bunx",
           "--bun",
@@ -79,20 +79,20 @@
         "sha256": "095532173f32960707fa888aa8865907b7e9e0e886617c3f6dd826ab06be3554"
       },
       {
-        "report": "bx-m6-oxlint-shipped-effective.json",
+        "report": "bx-a10-oxlint-shipped-effective.json",
         "command": [
           "bunx",
           "--bun",
           "oxlint",
           "-c",
-          "/home/oscar/GitHub/Tuvren/framework/.cache/execute-wave/plans/wave-1-bw-bx-054bd042/logs/bx-m6-shipped-core.json",
+          "/home/oscar/GitHub/Tuvren/framework/.claude/execute-wave/plans/wave-1-bw-bx-054bd042/logs/bx-a10-shipped-core.json",
           "--print-config"
         ],
         "exit_code": 0,
         "sha256": "13fa10d79524f2db9e06b7d56057c814585ae235cd07e6ba6304d11b5acc2f32"
       },
       {
-        "report": "bx-m6-oxlint-rules.json",
+        "report": "bx-a10-oxlint-rules.json",
         "command": [
           "bunx",
           "--bun",
@@ -114,8 +114,25 @@
       "typescript": "6.0.2"
     },
     "root_assist_enabled": false,
-    "all_tracked_bytes_sha256": "2ac3136e78c06e668f0ff589d12c8ea7e98ffd84c15c7cca1c5ea26075e0a257",
-    "native_engine_reported_rules": 474
+    "all_tracked_bytes_sha256": "45c4f6e119eed51ecd94b417149c0491aff44522d9572eafcef14a25cb2439cb",
+    "native_engine_reported_rules": 474,
+    "coverage_report": "bx-a10-coverage.json",
+    "coverage_report_sha256": "f70503f2455fcb62bfeb1757bfed79944e70f8d998639f9fe4484a343a070251",
+    "retained_processed_files": 77,
+    "retained_inventory_count": 77,
+    "individual_owned_file_controls": 77,
+    "native_complete_code_selection": true,
+    "zero_file_negative_control": {
+      "report": "bx-a10-biome-zero-file.json",
+      "processed_files": 0,
+      "exit_code": 1,
+      "rejected": true
+    },
+    "original_artifacts_preserved": {
+      "report": "bx-a10-preserved-original-hashes.json",
+      "sha256": "174d1226f4a65fd5fd3d6854da0b8e56bdf53ed5ddd5ef55457bb70173aa3c7c",
+      "files": 82
+    }
   },
   "entries": [
     {
@@ -126,6 +143,10 @@
       "original_reason": "This package entrypoint is the intentional public implementation surface.",
       "baseline_line": 17,
       "live_line": 17,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": "oxc/no-barrel-file",
       "native_candidate_options": {
         "effective_rule": "deny",
@@ -140,13 +161,13 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
           "jsdoc(check-tag-names)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
       },
       "retained_proof": {
@@ -156,8 +177,8 @@
         "unsuppressed_bytes_sha256": "0f6887e0c8cae6c99e5c8541fdc12e5bd0b20e838466ff3eb464df905f4b5aa9",
         "suppressed_exit": 0,
         "unsuppressed_exit": 1,
-        "suppressed_report": "bx-m6-biome-suppressed-1.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-1.json",
+        "suppressed_report": "bx-a10-biome-suppressed-1.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-1.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 1,
         "diagnostic_excerpts": [
@@ -190,6 +211,10 @@
       "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
       "baseline_line": 18,
       "live_line": 18,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": null,
       "native_candidate_options": {
         "effective_rule": null,
@@ -202,13 +227,13 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
           "jsdoc(check-tag-names)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."
       },
       "retained_proof": {
@@ -218,8 +243,8 @@
         "unsuppressed_bytes_sha256": "642a113699a5f95d95089c696c8016bd34e796a6fe8bd732efc89bec65f8881f",
         "suppressed_exit": 0,
         "unsuppressed_exit": 0,
-        "suppressed_report": "bx-m6-biome-suppressed-2.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-2.json",
+        "suppressed_report": "bx-a10-biome-suppressed-2.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-2.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 0,
         "diagnostic_excerpts": [],
@@ -236,6 +261,10 @@
       "original_reason": "kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.",
       "baseline_line": 272,
       "live_line": 274,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": "eslint/require-await",
       "native_candidate_options": {
         "effective_rule": "deny",
@@ -249,7 +278,7 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [
           {
             "code": "eslint(require-await)",
@@ -267,7 +296,6 @@
           }
         ],
         "actual_file_diagnostic_codes": [
-          "eslint(func-style)",
           "eslint(no-await-in-loop)",
           "eslint(require-await)",
           "eslint(require-unicode-regexp)",
@@ -280,18 +308,18 @@
           "unicorn(no-useless-undefined)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "eslint/require-await fires on the same next async iterator method. Its original AsyncIterator/lockstep contract reason remains valid; preserve it for fresh admission reconciliation. The separate typescript/require-await candidate is allow in the shipped preset."
       },
       "retained_proof": {
         "mode": "individual-restored-in-scope-probe",
-        "source_sha256": "878a40bfd22b93607333dcf54faa11edff4cc6b55c9e4a07a2c426223aeaf129",
-        "original_bytes_sha256": "878a40bfd22b93607333dcf54faa11edff4cc6b55c9e4a07a2c426223aeaf129",
-        "unsuppressed_bytes_sha256": "b51f04a9252b49acf7333fd7bbe6755394965c7ad5beee2f561ef454b3d55669",
+        "source_sha256": "de3ebe1522803d67e92c00cec393acf68eaac84e27e5ff1dae13a04de2a8943d",
+        "original_bytes_sha256": "de3ebe1522803d67e92c00cec393acf68eaac84e27e5ff1dae13a04de2a8943d",
+        "unsuppressed_bytes_sha256": "7a23f3328f404a798b6b8e16955160ca00b3a865ab5c3c747c662083b57a80f2",
         "suppressed_exit": 0,
         "unsuppressed_exit": 1,
-        "suppressed_report": "bx-m6-biome-suppressed-3.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-3.json",
+        "suppressed_report": "bx-a10-biome-suppressed-3.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-3.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 1,
         "diagnostic_excerpts": [
@@ -313,7 +341,7 @@
         ],
         "original_retained": true,
         "parsed_source_equal_without_comments": true,
-        "source_restored_sha256": "878a40bfd22b93607333dcf54faa11edff4cc6b55c9e4a07a2c426223aeaf129"
+        "source_restored_sha256": "de3ebe1522803d67e92c00cec393acf68eaac84e27e5ff1dae13a04de2a8943d"
       }
     },
     {
@@ -324,6 +352,10 @@
       "original_reason": "This package entrypoint is the intentional proving-host surface.",
       "baseline_line": 16,
       "live_line": 16,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": "oxc/no-barrel-file",
       "native_candidate_options": {
         "effective_rule": "deny",
@@ -338,11 +370,11 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
       },
       "retained_proof": {
@@ -352,8 +384,8 @@
         "unsuppressed_bytes_sha256": "720acb26c70750f47343bd472d17150103bb95ad0b54b3c98589b2a3033ea717",
         "suppressed_exit": 0,
         "unsuppressed_exit": 1,
-        "suppressed_report": "bx-m6-biome-suppressed-4.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-4.json",
+        "suppressed_report": "bx-a10-biome-suppressed-4.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-4.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 1,
         "diagnostic_excerpts": [
@@ -385,7 +417,11 @@
       "rule": "lint/correctness/noUndeclaredVariables",
       "original_reason": "Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: \"Bun APIs are fine here\").",
       "baseline_line": 596,
-      "live_line": 593,
+      "live_line": 620,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": "eslint/no-undef",
       "native_candidate_options": {
         "effective_rule": null,
@@ -399,11 +435,9 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
-          "eslint(func-style)",
-          "eslint(no-use-before-define)",
           "eslint(prefer-const)",
           "jsdoc(check-tag-names)",
           "promise(prefer-await-to-callbacks)",
@@ -414,18 +448,18 @@
           "unicorn(consistent-function-scoping)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "eslint/no-undef is registered but absent from the effective shipped rules. No equivalent native diagnostic fires for Bun; do not enable a rule or invent a native exception."
       },
       "retained_proof": {
         "mode": "individual-restored-in-scope-probe",
-        "source_sha256": "30390589e2cad353dcc614a7d9b0485a67fe31b22e2412eef20fec8b04f5aba2",
-        "original_bytes_sha256": "30390589e2cad353dcc614a7d9b0485a67fe31b22e2412eef20fec8b04f5aba2",
-        "unsuppressed_bytes_sha256": "a7ec7ce18493fe370693e3182589af8d95e382c38e67b94ac97e1015b932cf5f",
+        "source_sha256": "094448b64a4d4561b3ecaedf4fed170cb34ec0975080560b48e28a260dc479f5",
+        "original_bytes_sha256": "094448b64a4d4561b3ecaedf4fed170cb34ec0975080560b48e28a260dc479f5",
+        "unsuppressed_bytes_sha256": "f35d5ea333da129cbf46cb69f645c40b395587336c4648982bcf6149117fa597",
         "suppressed_exit": 0,
         "unsuppressed_exit": 1,
-        "suppressed_report": "bx-m6-biome-suppressed-5.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-5.json",
+        "suppressed_report": "bx-a10-biome-suppressed-5.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-5.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 1,
         "diagnostic_excerpts": [
@@ -435,11 +469,11 @@
             "location": {
               "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
               "start": {
-                "line": 594,
+                "line": 621,
                 "column": 18
               },
               "end": {
-                "line": 594,
+                "line": 621,
                 "column": 21
               }
             }
@@ -447,7 +481,7 @@
         ],
         "original_retained": true,
         "parsed_source_equal_without_comments": true,
-        "source_restored_sha256": "30390589e2cad353dcc614a7d9b0485a67fe31b22e2412eef20fec8b04f5aba2"
+        "source_restored_sha256": "094448b64a4d4561b3ecaedf4fed170cb34ec0975080560b48e28a260dc479f5"
       }
     },
     {
@@ -458,6 +492,10 @@
       "original_reason": "Bun global (this test drives a real Bun subprocess).",
       "baseline_line": 170,
       "live_line": 170,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": "eslint/no-undef",
       "native_candidate_options": {
         "effective_rule": null,
@@ -471,7 +509,7 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
           "eslint(func-style)",
@@ -489,7 +527,7 @@
           "unicorn(prefer-number-coercion)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "eslint/no-undef is registered but absent from the effective shipped rules. No equivalent native diagnostic fires for Bun; do not enable a rule or invent a native exception."
       },
       "retained_proof": {
@@ -499,8 +537,8 @@
         "unsuppressed_bytes_sha256": "00e0c9e508adc165bb0d013c1cb93a75be7916b93d2b2d092671a0645f8b36c5",
         "suppressed_exit": 0,
         "unsuppressed_exit": 1,
-        "suppressed_report": "bx-m6-biome-suppressed-6.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-6.json",
+        "suppressed_report": "bx-a10-biome-suppressed-6.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-6.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 1,
         "diagnostic_excerpts": [
@@ -533,6 +571,10 @@
       "original_reason": "This package entrypoint is the intentional public implementation surface.",
       "baseline_line": 17,
       "live_line": 17,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": "oxc/no-barrel-file",
       "native_candidate_options": {
         "effective_rule": "deny",
@@ -547,13 +589,13 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
           "jsdoc(check-tag-names)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
       },
       "retained_proof": {
@@ -563,8 +605,8 @@
         "unsuppressed_bytes_sha256": "4ef6f4b9f338b8da15367ea46cafdb56366a44c646cfc56a465ba2c3a1941b28",
         "suppressed_exit": 0,
         "unsuppressed_exit": 1,
-        "suppressed_report": "bx-m6-biome-suppressed-7.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-7.json",
+        "suppressed_report": "bx-a10-biome-suppressed-7.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-7.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 1,
         "diagnostic_excerpts": [
@@ -597,6 +639,10 @@
       "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
       "baseline_line": 18,
       "live_line": 18,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": null,
       "native_candidate_options": {
         "effective_rule": null,
@@ -609,13 +655,13 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
           "jsdoc(check-tag-names)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."
       },
       "retained_proof": {
@@ -625,8 +671,8 @@
         "unsuppressed_bytes_sha256": "8c098b06d060cde280c646e1207feb9d5251b0e0de39ab743fdcf29052bef96b",
         "suppressed_exit": 0,
         "unsuppressed_exit": 0,
-        "suppressed_report": "bx-m6-biome-suppressed-8.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-8.json",
+        "suppressed_report": "bx-a10-biome-suppressed-8.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-8.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 0,
         "diagnostic_excerpts": [],
@@ -643,6 +689,10 @@
       "original_reason": "This package entrypoint is the intentional public implementation surface.",
       "baseline_line": 17,
       "live_line": 17,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": "oxc/no-barrel-file",
       "native_candidate_options": {
         "effective_rule": "deny",
@@ -657,13 +707,13 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
           "jsdoc(check-tag-names)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
       },
       "retained_proof": {
@@ -673,8 +723,8 @@
         "unsuppressed_bytes_sha256": "d08bae30851f066f9d0fd02162e09fc12f868faf25b3c898fb0691ed1b2b5ef1",
         "suppressed_exit": 0,
         "unsuppressed_exit": 1,
-        "suppressed_report": "bx-m6-biome-suppressed-9.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-9.json",
+        "suppressed_report": "bx-a10-biome-suppressed-9.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-9.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 1,
         "diagnostic_excerpts": [
@@ -707,6 +757,10 @@
       "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
       "baseline_line": 18,
       "live_line": 18,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": null,
       "native_candidate_options": {
         "effective_rule": null,
@@ -719,13 +773,13 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
           "jsdoc(check-tag-names)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."
       },
       "retained_proof": {
@@ -735,8 +789,8 @@
         "unsuppressed_bytes_sha256": "7df3f616e52d166aaf445502ad89a303be242f24434b546541a8c0141ee683ca",
         "suppressed_exit": 0,
         "unsuppressed_exit": 0,
-        "suppressed_report": "bx-m6-biome-suppressed-10.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-10.json",
+        "suppressed_report": "bx-a10-biome-suppressed-10.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-10.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 0,
         "diagnostic_excerpts": [],
@@ -753,6 +807,10 @@
       "original_reason": "This module is the intentional focused frame-envelope surface for issue #99.",
       "baseline_line": 17,
       "live_line": 17,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": "oxc/no-barrel-file",
       "native_candidate_options": {
         "effective_rule": "deny",
@@ -767,13 +825,13 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
           "jsdoc(check-tag-names)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."
       },
       "retained_proof": {
@@ -783,8 +841,8 @@
         "unsuppressed_bytes_sha256": "0ad2d11794fef82d5f8fa12c1c8ce3cb33af6622df905cdd5c8babec28e54248",
         "suppressed_exit": 0,
         "unsuppressed_exit": 0,
-        "suppressed_report": "bx-m6-biome-suppressed-11.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-11.json",
+        "suppressed_report": "bx-a10-biome-suppressed-11.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-11.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 0,
         "diagnostic_excerpts": [],
@@ -801,6 +859,10 @@
       "original_reason": "The organizer collapses the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
       "baseline_line": 18,
       "live_line": 18,
+      "probe_processed_files": {
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
       "native_candidate_rule": null,
       "native_candidate_options": {
         "effective_rule": null,
@@ -813,13 +875,13 @@
       "currently_retained": true,
       "early_deletion": null,
       "native_proof": {
-        "report": "bx-m6-oxlint-type-aware.json",
+        "report": "bx-a10-oxlint-type-aware.json",
         "equivalent_firing_diagnostics": [],
         "actual_file_diagnostic_codes": [
           "jsdoc(check-tag-names)"
         ],
         "type_aware_exit": 1,
-        "syntactic_report": "bx-m6-oxlint-syntactic.json",
+        "syntactic_report": "bx-a10-oxlint-syntactic.json",
         "rationale": "Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."
       },
       "retained_proof": {
@@ -829,8 +891,8 @@
         "unsuppressed_bytes_sha256": "573c76643b52a47413a9e3b91aaada78e6b924731edd2377def921f302250cc3",
         "suppressed_exit": 0,
         "unsuppressed_exit": 0,
-        "suppressed_report": "bx-m6-biome-suppressed-12.json",
-        "unsuppressed_report": "bx-m6-biome-unsuppressed-12.json",
+        "suppressed_report": "bx-a10-biome-suppressed-12.json",
+        "unsuppressed_report": "bx-a10-biome-unsuppressed-12.json",
         "suppressed_matching_count": 0,
         "unsuppressed_matching_count": 0,
         "diagnostic_excerpts": [],
