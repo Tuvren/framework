@@ -6,7 +6,7 @@ without making TypeScript the semantic authority. Shared code in
 
 ```ts
 export interface ImplementationAdapter {
-  initialize(packetId: string, planVersion: string): Promise<AdapterCapabilities>;
+  initialize(packetId: string, planVersion: string): AdapterCapabilities | Promise<AdapterCapabilities>;
   shutdown(): Promise<void>;
   createInstance?(input: unknown): Promise<unknown>;
   destroyInstance?(instance: unknown): Promise<void>;
@@ -15,7 +15,7 @@ export interface ImplementationAdapter {
     input: unknown,
     controls: AdapterControls,
     instance?: unknown
-  ): Promise<OperationOutcome>;
+  ): OperationOutcome | Promise<OperationOutcome>;
   events(
     operation: string,
     input: unknown,
@@ -31,6 +31,9 @@ Neutral controls are still the schema-owned `cancel`, `cancelAfterEvent`, and
 `deadlineMs` fields; adapters may bridge those controls to `AbortSignal`
 internally. Conformance plans name neutral operations, scenario inputs, expected
 evidence fields, and assertion kinds.
+
+The host awaits `initialize` and `dispatch`, which can return values directly or
+return promises. Both forms use the same protocol responses and controls.
 
 Reference host helper:
 `tools/conformance/adapter-protocol/stdio-host.ts`.

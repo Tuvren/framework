@@ -15,7 +15,7 @@
  */
 
 import { readdir, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import nodePath from "node:path";
 
 import Ajv2020 from "ajv/dist/2020.js";
 
@@ -24,9 +24,9 @@ import type { AdapterControls } from "./index.js";
 import { handleStdioAdapterLine } from "./stdio-host.js";
 
 const PROTOCOL_DIR = import.meta.dirname;
-const REPO_ROOT = resolve(PROTOCOL_DIR, "../../..");
-const SCHEMA_PATH = resolve(PROTOCOL_DIR, "protocol.schema.json");
-const MANIFEST_SCHEMA_PATH = resolve(
+const REPO_ROOT = nodePath.resolve(PROTOCOL_DIR, "../../..");
+const SCHEMA_PATH = nodePath.resolve(PROTOCOL_DIR, "protocol.schema.json");
+const MANIFEST_SCHEMA_PATH = nodePath.resolve(
   PROTOCOL_DIR,
   "adapter-manifest.schema.json"
 );
@@ -100,18 +100,18 @@ const assertStdioHostControlRoundtrip = async (): Promise<void> => {
     {
       dispatch(_operation, _input, controls) {
         observedControls = controls;
-        return Promise.resolve({
+        return {
           kind: "result",
           value: { ok: true },
-        });
+        };
       },
       initialize() {
-        return Promise.resolve({
+        return {
           adapterId: "sample-adapter",
           capabilities: ["sample.capability"],
           packetId: "tuvren.sample.packet",
           planVersion: "0.1.0",
-        });
+        };
       },
     },
     JSON.stringify({
@@ -147,12 +147,18 @@ const findAdapterManifests = async (directory: string): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true });
   const manifests: string[] = [];
 
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
+  const visit = async (index: number): Promise<void> => {
+    const entry = entries[index];
+    if (entry === undefined) {
+      return;
+    }
+    const entryPath = nodePath.resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
-      manifests.push(...(await findAdapterManifests(entryPath)));
-      continue;
+      const nestedManifests = await findAdapterManifests(entryPath);
+      manifests.push(...nestedManifests);
+      await visit(index + 1);
+      return;
     }
 
     if (
@@ -162,9 +168,11 @@ const findAdapterManifests = async (directory: string): Promise<string[]> => {
     ) {
       manifests.push(entryPath);
     }
-  }
+    await visit(index + 1);
+  };
+  await visit(0);
 
-  return manifests.sort();
+  return manifests.toSorted();
 };
 
 const protocolSchema: unknown = JSON.parse(
@@ -233,22 +241,32 @@ const ADAPTER_MANIFEST_ROOTS = [
   "go",
   "python",
   "dart",
-].map((root) => resolve(REPO_ROOT, root));
+].map((root) => nodePath.resolve(REPO_ROOT, root));
 
-for (const manifestRoot of ADAPTER_MANIFEST_ROOTS) {
-  for (const manifestPath of await findAdapterManifests(manifestRoot)) {
-    const manifest = JSON.parse(
-      await readFile(manifestPath, "utf-8")
-    ) as unknown;
-
-    if (!validateManifest(manifest)) {
-      throw new Error(
-        `${manifestPath} failed adapter manifest validation: ${ajv.errorsText(
-          validateManifest.errors
-        )}`
-      );
-    }
+const validateManifests = async (
+  paths: readonly string[],
+  index: number
+): Promise<void> => {
+  const manifestPath = paths[index];
+  if (manifestPath === undefined) {
+    return;
   }
-}
+  const manifest: unknown = JSON.parse(await readFile(manifestPath, "utf-8"));
+  if (!validateManifest(manifest)) {
+    throw new Error(
+      `${manifestPath} failed adapter manifest validation: ${ajv.errorsText(validateManifest.errors)}`
+    );
+  }
+  await validateManifests(paths, index + 1);
+};
+const validateRoots = async (index: number): Promise<void> => {
+  const manifestRoot = ADAPTER_MANIFEST_ROOTS[index];
+  if (manifestRoot === undefined) {
+    return;
+  }
+  await validateManifests(await findAdapterManifests(manifestRoot), 0);
+  await validateRoots(index + 1);
+};
+await validateRoots(0);
 
 console.log("adapter manifest validation passed");

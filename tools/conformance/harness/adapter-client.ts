@@ -18,6 +18,8 @@ import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface } from "node:readline";
 import type { Interface } from "node:readline";
+import { Writable } from "node:stream";
+import type { WritableStreamDefaultWriter } from "node:stream/web";
 
 import type {
   AdapterCapabilities,
@@ -25,6 +27,7 @@ import type {
   AdapterErrorEnvelope,
   OperationOutcome,
 } from "../adapter-protocol/index.js";
+import { JsonRpcAdapterError } from "./adapter-error.js";
 
 export interface AdapterManifest {
   adapterId: string;
@@ -112,26 +115,17 @@ const isOperationOutcome = (value: unknown): value is OperationOutcome => {
   return value.kind === "error" && isAdapterErrorEnvelope(value.error);
 };
 
-export class JsonRpcAdapterError extends Error {
-  readonly envelope: AdapterErrorEnvelope;
-
-  constructor(envelope: AdapterErrorEnvelope) {
-    super(`${envelope.code}: ${envelope.message}`);
-    this.name = "JsonRpcAdapterError";
-    this.envelope = envelope;
-  }
-}
-
 export class JsonRpcAdapterClient {
   private readonly child: ChildProcessWithoutNullStreams;
   private readonly lines: Interface;
+  private readonly writer: WritableStreamDefaultWriter<unknown>;
   private nextId = 1;
   private exited = false;
   private readonly pending = new Map<
     number,
     {
-      reject(error: Error): void;
-      resolve(value: unknown): void;
+      reject: (error: Error) => void;
+      resolve: (value: unknown) => void;
       timer: ReturnType<typeof setTimeout>;
     }
   >();
@@ -151,6 +145,7 @@ export class JsonRpcAdapterClient {
       stdio: ["pipe", "pipe", "pipe"],
     });
     this.lines = createInterface({ input: this.child.stdout });
+    this.writer = Writable.toWeb(this.child.stdin).getWriter();
 
     this.lines.on("line", (line) => {
       this.handleLine(line);
@@ -179,11 +174,23 @@ export class JsonRpcAdapterClient {
   ): Promise<AdapterCapabilities> {
     const value = await this.request("initialize", { packetId, planVersion });
 
-    if (!isRecord(value) || typeof value.adapterId !== "string") {
+    if (
+      !isRecord(value) ||
+      typeof value.adapterId !== "string" ||
+      typeof value.packetId !== "string" ||
+      typeof value.planVersion !== "string" ||
+      !Array.isArray(value.capabilities) ||
+      !value.capabilities.every((entry: unknown) => typeof entry === "string")
+    ) {
       throw new Error("adapter initialize returned invalid capabilities");
     }
 
-    return value as unknown as AdapterCapabilities;
+    return {
+      adapterId: value.adapterId,
+      capabilities: value.capabilities,
+      packetId: value.packetId,
+      planVersion: value.planVersion,
+    };
   }
 
   async createInstance(input: unknown): Promise<unknown> {
@@ -241,7 +248,8 @@ export class JsonRpcAdapterClient {
       throw new TypeError("adapter events returned a non-array payload");
     }
 
-    return value;
+    const events: unknown[] = value;
+    return events;
   }
 
   async inspectState(
@@ -270,6 +278,7 @@ export class JsonRpcAdapterClient {
       // at check scope, and this path must only reclaim the process.
     } finally {
       this.lines.close();
+      this.writer.releaseLock();
       this.child.stdin.end();
       if (this.child.exitCode === null) {
         this.child.kill();
@@ -277,7 +286,7 @@ export class JsonRpcAdapterClient {
     }
   }
 
-  private request(
+  private async request(
     method: string,
     params: unknown,
     timeoutMs = this.timeoutMs
@@ -286,22 +295,31 @@ export class JsonRpcAdapterClient {
     this.nextId += 1;
     const payload = `${JSON.stringify({ id, jsonrpc: "2.0", method, params })}\n`;
 
-    return new Promise((resolve, reject) => {
-      // Plan deadlines bound host protocol requests too; adapters still receive
-      // controls.deadlineMs so native cancellation semantics remain observable.
-      const timer = setTimeout(() => {
-        this.pending.delete(id);
-        reject(new Error(`adapter request timed out: ${method}`));
-      }, timeoutMs);
-      this.pending.set(id, { reject, resolve, timer });
-      this.child.stdin.write(payload, "utf-8", (error) => {
-        if (error !== null && error !== undefined) {
-          clearTimeout(timer);
-          this.pending.delete(id);
-          reject(error);
-        }
-      });
+    const response = Promise.withResolvers<unknown>();
+    // Start the deadline before writing, and keep responses independent of the
+    // write callback so an adapter reply or timeout can settle immediately.
+    const timer = setTimeout(() => {
+      this.pending.delete(id);
+      response.reject(new Error(`adapter request timed out: ${method}`));
+    }, timeoutMs);
+    this.pending.set(id, {
+      reject: response.reject,
+      resolve: (value: unknown) => {
+        response.resolve(value);
+      },
+      timer,
     });
+    const writeRequest = async (): Promise<unknown> => {
+      try {
+        await this.writer.write(payload);
+      } catch (error: unknown) {
+        clearTimeout(timer);
+        this.pending.delete(id);
+        throw error;
+      }
+      return await response.promise;
+    };
+    return await Promise.race([response.promise, writeRequest()]);
   }
 
   private handleLine(line: string): void {

@@ -15,8 +15,9 @@
  */
 
 import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import nodePath from "node:path";
 
+import { assertKernelRecord } from "@tuvren/core";
 import type { KernelRecord } from "@tuvren/core";
 import {
   encodeDeterministicKernelRecord,
@@ -43,8 +44,11 @@ interface FixtureSpec {
   turnNode: TurnNodeSpec;
 }
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const FIXTURES_DIR = resolve(REPO_ROOT, "spec/conformance/kernel/fixtures");
+const REPO_ROOT = nodePath.resolve(import.meta.dirname, "../../..");
+const FIXTURES_DIR = nodePath.resolve(
+  REPO_ROOT,
+  "spec/conformance/kernel/fixtures"
+);
 
 const HASH_ZERO = "0".repeat(64);
 const HASH_ONE = "1".repeat(64);
@@ -465,7 +469,8 @@ const projectTurnNodeRecord = (turnNode: TurnNodeSpec): KernelRecord => ({
       projection.interruptPayload = result.interruptPayload;
     }
 
-    return projection as KernelRecord;
+    assertKernelRecord(projection, "fixture staged result");
+    return projection;
   }),
   eventHash: turnNode.eventHash,
   previousTurnNodeHash: turnNode.previousTurnNodeHash,
@@ -479,7 +484,8 @@ const buildFixtureRecord = async (
   const opaqueBytes = Uint8Array.from(spec.rawOpaqueBytes);
   const rawOpaqueBytesSha256Hex = await hashOpaqueObjectBytes(opaqueBytes);
 
-  const schemaRecord = spec.schema as unknown as KernelRecord;
+  const schemaRecord = spec.schema;
+  assertKernelRecord(schemaRecord, "fixture schema");
   const schemaCbor = encodeDeterministicKernelRecord(schemaRecord);
   const schemaSha = await hashKernelRecord(schemaRecord);
 
@@ -503,13 +509,19 @@ const main = async (): Promise<void> => {
   await mkdir(FIXTURES_DIR, { recursive: true });
   const filePaths: string[] = [];
 
-  for (const fixture of fixtures) {
+  const visit = async (index: number): Promise<void> => {
+    const fixture = fixtures[index];
+    if (fixture === undefined) {
+      return;
+    }
     const fixtureRecord = await buildFixtureRecord(fixture);
-    const filePath = resolve(FIXTURES_DIR, fixture.fileName);
+    const filePath = nodePath.resolve(FIXTURES_DIR, fixture.fileName);
     await writeFile(filePath, `${JSON.stringify(fixtureRecord, null, 2)}\n`);
     filePaths.push(filePath);
     process.stdout.write(`wrote ${fixture.fileName}\n`);
-  }
+    await visit(index + 1);
+  };
+  await visit(0);
 
   await formatGeneratedJson(filePaths);
 };

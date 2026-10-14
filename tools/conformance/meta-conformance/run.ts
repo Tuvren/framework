@@ -16,7 +16,7 @@
 
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import nodePath from "node:path";
 
 import { collectPlanEvidenceOracleShapeFailures } from "../../scripts/authority-guardrails/authority-guardrails.ts";
 import {
@@ -52,10 +52,10 @@ const check = (
 });
 
 const runPlanCompilerCases = async (failures: string[]): Promise<void> => {
-  const directory = await mkdtemp(join(tmpdir(), "tuvren-meta-plan-"));
-  const duplicateStepPlanPath = join(directory, "duplicate-step.json");
-  const evidenceOnlyPlanPath = join(directory, "evidence-only.json");
-  const stepEvidencePlanPath = join(directory, "step-evidence.json");
+  const directory = await mkdtemp(nodePath.join(tmpdir(), "tuvren-meta-plan-"));
+  const duplicateStepPlanPath = nodePath.join(directory, "duplicate-step.json");
+  const evidenceOnlyPlanPath = nodePath.join(directory, "evidence-only.json");
+  const stepEvidencePlanPath = nodePath.join(directory, "step-evidence.json");
 
   try {
     await writeFile(
@@ -341,7 +341,18 @@ const cases: readonly MetaCase[] = [
       },
     ]),
     context: {
-      evidence: { actual: { nested: { right: false, left: true }, alpha: 1 } },
+      evidence: {
+        actual: Object.fromEntries([
+          [
+            "nested",
+            Object.fromEntries([
+              ["right", false],
+              ["left", true],
+            ]),
+          ],
+          ["alpha", 1],
+        ]),
+      },
     },
     expected: "pass",
     id: "object equality ignores key insertion order",

@@ -16,11 +16,20 @@
 
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { once } from "node:events";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import nodePath from "node:path";
 
-const runCommand = (command: readonly string[]): Promise<CommandResult> => {
+import { assertConformanceEvidence } from "../../../scripts/lib/conformance-contract.ts";
+import {
+  errorStateAdapterScript,
+  statePrecedenceAdapterScript,
+} from "./run-adapters-fixture.ts";
+
+const runCommand = async (
+  command: readonly string[]
+): Promise<CommandResult> => {
   const [executable, ...args] = command;
 
   if (executable === undefined) {
@@ -43,16 +52,9 @@ const runCommand = (command: readonly string[]): Promise<CommandResult> => {
     stderr += chunk;
   });
 
-  return new Promise((resolve, reject) => {
-    child.on("error", reject);
-    child.on("close", (code) => {
-      resolve({
-        code: code ?? -1,
-        stderr,
-        stdout,
-      });
-    });
-  });
+  const closed: unknown[] = await once(child, "close");
+  const [code] = closed;
+  return { code: typeof code === "number" ? code : -1, stderr, stdout };
 };
 
 const tempDirs: string[] = [];
@@ -60,9 +62,15 @@ const tempDirs: string[] = [];
 afterEach(async () => {
   const dirs = tempDirs.splice(0);
 
-  for (const dir of dirs) {
+  const visit = async (index: number): Promise<void> => {
+    const dir = dirs[index];
+    if (dir === undefined) {
+      return;
+    }
     await rm(dir, { force: true, recursive: true });
-  }
+    await visit(index + 1);
+  };
+  await visit(0);
 });
 
 describe("certification harness arguments and readers", () => {
@@ -109,11 +117,13 @@ describe("certification harness arguments and readers", () => {
   });
 
   test("deduplicates packet plans and preserves selection and shard ordering", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "tuvren-runner-test-"));
+    const tempDir = await mkdtemp(
+      nodePath.join(tmpdir(), "tuvren-runner-test-")
+    );
     tempDirs.push(tempDir);
-    const adapterPath = join(tempDir, "adapter.json");
-    const packetPath = join(tempDir, "packet.json");
-    const planPath = join(tempDir, "plan.json");
+    const adapterPath = nodePath.join(tempDir, "adapter.json");
+    const packetPath = nodePath.join(tempDir, "packet.json");
+    const planPath = nodePath.join(tempDir, "plan.json");
     await writeFile(
       adapterPath,
       JSON.stringify({
@@ -169,19 +179,18 @@ describe("certification harness arguments and readers", () => {
       planPath,
     ];
     const shards = await Promise.all(
-      ["1/2", "2/2"].map((shard) => runCommand([...command, "--shard", shard]))
+      ["1/2", "2/2"].map(
+        async (shard) => await runCommand([...command, "--shard", shard])
+      )
     );
 
     expect(shards.map((result) => result.code)).toEqual([0, 0]);
     expect(shards.map((result) => result.stderr)).toEqual(["", ""]);
-    const evidence = shards.map(
-      (result) =>
-        JSON.parse(result.stdout) as {
-          checkResults: { checkId: string }[];
-          nonApplicableCheckIds: string[];
-          status: string;
-        }
-    );
+    const evidence = shards.map((result) => {
+      const value: unknown = JSON.parse(result.stdout);
+      assertConformanceEvidence(value, "runner output");
+      return value;
+    });
     expect(
       evidence.map((entry) => entry.checkResults.map((check) => check.checkId))
     ).toEqual([["runner.state.a", "runner.state.z"], ["runner.state.m"]]);
@@ -224,10 +233,12 @@ describe("certification harness arguments and readers", () => {
 
 describe("certification harness state handling", () => {
   test("rejects an invalid adapter manifest through its JSON Schema", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "tuvren-runner-test-"));
+    const tempDir = await mkdtemp(
+      nodePath.join(tmpdir(), "tuvren-runner-test-")
+    );
     tempDirs.push(tempDir);
 
-    const adapterPath = join(tempDir, "adapter.json");
+    const adapterPath = nodePath.join(tempDir, "adapter.json");
     await writeFile(adapterPath, "[]\n");
 
     const result = await runCommand([
@@ -242,12 +253,14 @@ describe("certification harness state handling", () => {
   });
 
   test("keeps dispatch state when inspectState also returns state", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "tuvren-runner-test-"));
+    const tempDir = await mkdtemp(
+      nodePath.join(tmpdir(), "tuvren-runner-test-")
+    );
     tempDirs.push(tempDir);
 
-    const adapterPath = join(tempDir, "adapter.json");
-    const packetPath = join(tempDir, "packet.json");
-    const planPath = join(tempDir, "plan.json");
+    const adapterPath = nodePath.join(tempDir, "adapter.json");
+    const packetPath = nodePath.join(tempDir, "packet.json");
+    const planPath = nodePath.join(tempDir, "plan.json");
 
     await writeFile(
       packetPath,
@@ -321,12 +334,8 @@ describe("certification harness state handling", () => {
     expect(result.stderr).toBe("");
     expect(result.code).toBe(0);
 
-    const evidence = JSON.parse(result.stdout) as {
-      checkResults: {
-        assertionResults: Array<{ assertionId: string; status: string }>;
-      }[];
-      summary: { failedChecks: number; passedChecks: number };
-    };
+    const evidence: unknown = JSON.parse(result.stdout);
+    assertConformanceEvidence(evidence, "runner output");
 
     expect(evidence.summary).toMatchObject({
       failedChecks: 0,
@@ -352,11 +361,7 @@ describe("certification harness state handling", () => {
     expect(summaryResult.stderr).toBe("");
     expect(summaryResult.code).toBe(0);
 
-    const summary = JSON.parse(summaryResult.stdout) as {
-      checkResults?: unknown;
-      status: string;
-      summary: { failedChecks: number; passedChecks: number };
-    };
+    const summary: unknown = JSON.parse(summaryResult.stdout);
 
     expect(summary).toMatchObject({
       status: "pass",
@@ -365,16 +370,45 @@ describe("certification harness state handling", () => {
         passedChecks: 1,
       },
     });
-    expect(summary.checkResults).toBeUndefined();
+    expect(summary).not.toHaveProperty("checkResults");
+
+    const manifestText = await readFile(adapterPath, "utf-8");
+    const invalidContextScript = statePrecedenceAdapterScript.replace(
+      'state: { source: "dispatch" }',
+      "evidence: [], events: {}"
+    );
+    await writeFile(
+      adapterPath,
+      manifestText.replace(
+        JSON.stringify(statePrecedenceAdapterScript),
+        JSON.stringify(invalidContextScript)
+      )
+    );
+    const invalidContext = await runCommand([
+      "bun",
+      "tools/conformance/harness/run.ts",
+      "--adapter",
+      adapterPath,
+      "--plan",
+      planPath,
+    ]);
+    expect(invalidContext.code).toBe(1);
+    const invalidEvidence: unknown = JSON.parse(invalidContext.stdout);
+    assertConformanceEvidence(invalidEvidence, "invalid context evidence");
+    expect(invalidEvidence.checkResults[0]?.assertionResults[0]?.message).toBe(
+      "operation context field must be an object when present"
+    );
   });
 
   test("merges inspected state with adapter error state", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "tuvren-runner-test-"));
+    const tempDir = await mkdtemp(
+      nodePath.join(tmpdir(), "tuvren-runner-test-")
+    );
     tempDirs.push(tempDir);
 
-    const adapterPath = join(tempDir, "adapter.json");
-    const packetPath = join(tempDir, "packet.json");
-    const planPath = join(tempDir, "plan.json");
+    const adapterPath = nodePath.join(tempDir, "adapter.json");
+    const packetPath = nodePath.join(tempDir, "packet.json");
+    const planPath = nodePath.join(tempDir, "plan.json");
 
     await writeFile(
       packetPath,
@@ -454,9 +488,8 @@ describe("certification harness state handling", () => {
     expect(result.stderr).toBe("");
     expect(result.code).toBe(0);
 
-    const evidence = JSON.parse(result.stdout) as {
-      summary: { failedChecks: number; passedChecks: number };
-    };
+    const evidence: unknown = JSON.parse(result.stdout);
+    assertConformanceEvidence(evidence, "runner output");
 
     expect(evidence.summary).toMatchObject({
       failedChecks: 0,
@@ -465,103 +498,167 @@ describe("certification harness state handling", () => {
   });
 });
 
-const statePrecedenceAdapterScript = `
-  for await (const line of console) {
-    const request = JSON.parse(line);
-    const respond = (result) => {
-      process.stdout.write(JSON.stringify({
-        id: request.id,
-        jsonrpc: "2.0",
-        result
-      }) + "\\n");
-    };
-
-    if (request.method === "initialize") {
-      respond({
-        adapterId: "state-precedence-adapter",
-        capabilities: ["runner.state"],
-        packetId: request.params.packetId,
-        planVersion: request.params.planVersion
-      });
-      continue;
-    }
-
-    if (request.method === "dispatch") {
-      respond({
-        kind: "result",
-        value: {
-          state: { source: "dispatch" }
-        }
-      });
-      continue;
-    }
-
-    if (request.method === "events") {
-      respond([]);
-      continue;
-    }
-
-    if (request.method === "inspectState") {
-      respond({ source: "inspect" });
-      continue;
-    }
-
-    if (request.method === "shutdown") {
-      respond(null);
-    }
-  }
-`;
-
-const errorStateAdapterScript = `
-  for await (const line of console) {
-    const request = JSON.parse(line);
-    const respond = (result) => {
-      process.stdout.write(JSON.stringify({
-        id: request.id,
-        jsonrpc: "2.0",
-        result
-      }) + "\\n");
-    };
-
-    if (request.method === "initialize") {
-      respond({
-        adapterId: "error-state-adapter",
-        capabilities: ["runner.state"],
-        packetId: request.params.packetId,
-        planVersion: request.params.planVersion
-      });
-      continue;
-    }
-
-    if (request.method === "dispatch") {
-      respond({
-        error: {
-          code: "adapter_failed",
-          message: "operation failed"
-        },
-        kind: "error"
-      });
-      continue;
-    }
-
-    if (request.method === "events") {
-      respond([]);
-      continue;
-    }
-
-    if (request.method === "inspectState") {
-      respond({ source: "inspect" });
-      continue;
-    }
-
-    if (request.method === "shutdown") {
-      respond(null);
-    }
-  }
-`;
-
 interface CommandResult {
   code: number;
   stderr: string;
   stdout: string;
 }
+
+describe("certification harness trace lifecycle", () => {
+  test.each([false, true])(
+    "preserves trace ordering and cleanup with protocol failure=%s",
+    async (failEvents) => {
+      const directory = await mkdtemp(
+        nodePath.join(tmpdir(), "tuvren-trace-test-")
+      );
+      tempDirs.push(directory);
+      const adapterPath = nodePath.join(directory, "adapter.json");
+      const planPath = nodePath.join(directory, "plan.json");
+      const packetPath = nodePath.join(directory, "packet.json");
+      await writeFile(packetPath, JSON.stringify({ packetId: "trace" }));
+      const logPath = nodePath.join(directory, "calls.jsonl");
+      const evidencePath = nodePath.join(directory, "evidence.json");
+      const script = `
+      import { appendFile } from "node:fs/promises";
+      for await (const line of console) {
+        const request = JSON.parse(line);
+        const params = request.params ?? {};
+        await appendFile(${JSON.stringify(logPath)}, JSON.stringify({ method: request.method, operation: params.operation, input: params.input, controls: params.controls }) + "\\n");
+        let result = null;
+        if (request.method === "initialize") result = { adapterId: "trace", capabilities: ["trace"], packetId: params.packetId, planVersion: params.planVersion };
+        if (request.method === "createInstance") result = "instance";
+        if (request.method === "dispatch") result = { kind: "result", value: { result: params.input.checkInput } };
+        if (request.method === "events") result = [{ type: params.operation }];
+        if (request.method === "inspectState") result = { phase: "inspected" };
+        const error = ${failEvents} && request.method === "events" && params.operation === "second";
+        process.stdout.write(JSON.stringify({ id: request.id, jsonrpc: "2.0", ...(error ? { error: { code: "native_transport", message: "events failed" } } : { result }) }) + "\\n");
+      }
+    `;
+      await writeFile(
+        adapterPath,
+        JSON.stringify({
+          adapterId: "trace",
+          authorityPackets: [packetPath],
+          boundary: "framework",
+          capabilities: ["trace"],
+          command: ["bun", "--eval", script],
+          implementationId: "trace",
+          language: "typescript",
+          protocol: {
+            name: "tuvren.conformance-adapter",
+            transport: "json-rpc-2.0-stdio",
+            version: "0.1.0",
+          },
+          suiteId: "trace",
+          suiteVersion: "0.1.0",
+        })
+      );
+      await writeFile(
+        planPath,
+        JSON.stringify({
+          applicability: { capabilities: ["trace"] },
+          checks: [
+            {
+              assertions: [
+                {
+                  equals: "seed",
+                  field: "$.trace.second.result.value",
+                  kind: "stateField",
+                },
+              ],
+              checkId: "trace",
+              controls: { deadlineMs: 500 },
+              operation: "trace",
+              steps: [
+                {
+                  assertions: [
+                    {
+                      equals: "inspected",
+                      field: "$.phase",
+                      kind: "stateField",
+                    },
+                  ],
+                  input: { value: "seed" },
+                  inspectState: {},
+                  operation: "first",
+                  stepId: "first",
+                },
+                {
+                  controls: { cancelAfterEvent: "turn.end", deadlineMs: 1000 },
+                  input: { value: "$.trace.first.result.value" },
+                  inspectState: {},
+                  operation: "second",
+                  stepId: "second",
+                },
+              ],
+            },
+          ],
+          packetId: "trace",
+          planId: "trace",
+          planVersion: "0.1.0",
+        })
+      );
+      const result = await runCommand([
+        "bun",
+        "tools/conformance/harness/run.ts",
+        "--adapter",
+        adapterPath,
+        "--plan",
+        planPath,
+        "--evidence-out",
+        evidencePath,
+      ]);
+      expect(result.stderr).toBe("");
+      expect(result.code).toBe(failEvents ? 1 : 0);
+      const evidence: unknown = JSON.parse(result.stdout);
+      assertConformanceEvidence(evidence, "trace evidence");
+      const persisted: unknown = JSON.parse(
+        await readFile(evidencePath, "utf-8")
+      );
+      expect(persisted).toEqual(evidence);
+      expect(evidence.summary.failedChecks).toBe(failEvents ? 1 : 0);
+      const callLog = await readFile(logPath, "utf-8");
+      const calls: unknown[] = callLog
+        .trim()
+        .split("\n")
+        .map((line): unknown => JSON.parse(line));
+      expect(calls).toEqual([
+        { method: "initialize" },
+        { input: {}, method: "createInstance" },
+        {
+          controls: { deadlineMs: 500 },
+          input: { checkInput: { value: "seed" } },
+          method: "dispatch",
+          operation: "first",
+        },
+        {
+          controls: { deadlineMs: 500 },
+          input: { checkInput: { value: "seed" } },
+          method: "events",
+          operation: "first",
+        },
+        { method: "inspectState" },
+        {
+          controls: { cancelAfterEvent: "turn.end", deadlineMs: 1000 },
+          input: { checkInput: { value: "seed" } },
+          method: "dispatch",
+          operation: "second",
+        },
+        {
+          controls: { cancelAfterEvent: "turn.end", deadlineMs: 1000 },
+          input: { checkInput: { value: "seed" } },
+          method: "events",
+          operation: "second",
+        },
+        ...(failEvents ? [] : [{ method: "inspectState" }]),
+        { method: "destroyInstance" },
+        { method: "shutdown" },
+      ]);
+      if (failEvents) {
+        expect(evidence.checkResults[0]?.details).toMatchObject({
+          adapterError: { code: "native_transport", message: "events failed" },
+        });
+      }
+    }
+  );
+});
