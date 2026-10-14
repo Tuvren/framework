@@ -1,0 +1,398 @@
+{
+  "milestone": "M37",
+  "ticket": "KRT-BX004",
+  "project": "typescript/host/session-client",
+  "measurement_head": "12f858fb944bd6ff805aed9e1d8073c479607f34",
+  "status": "atomic-native-admission-verified",
+  "canonical_target": {
+    "executor": "nx:run-commands",
+    "options": {
+      "cwd": ".",
+      "commands": [
+        "bunx --bun oxlint --type-aware typescript/host/session-client",
+        "bun tools/scripts/json-check.ts typescript/host/session-client"
+      ],
+      "parallel": false
+    }
+  },
+  "inputs": {
+    "explicit": false,
+    "inherited": [
+      "default",
+      "{workspaceRoot}/biome.jsonc",
+      "{workspaceRoot}/oxlint.config.ts",
+      "{workspaceRoot}/oxfmt.config.ts",
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/bun.lock",
+      "{workspaceRoot}/tools/scripts/json-check.ts",
+      "{workspaceRoot}/tools/scripts/json-source-check.ts",
+      "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+      "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+      "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+      "{workspaceRoot}/Cargo.toml",
+      "{workspaceRoot}/Cargo.lock",
+      "{workspaceRoot}/rust-toolchain.toml"
+    ],
+    "unchanged": true
+  },
+  "native": {
+    "diagnostics": 0,
+    "backend_errors": 0,
+    "actual_code_selection": [
+      "typescript/host/session-client/smoke/package-exports.ts",
+      "typescript/host/session-client/src/index.ts",
+      "typescript/host/session-client/src/lib/session-client.ts",
+      "typescript/host/session-client/src/lib/session-protocol-types.ts",
+      "typescript/host/session-client/src/lib/ws-wire.ts",
+      "typescript/host/session-client/test/session-client-boundaries.test.ts",
+      "typescript/host/session-client/test/session-client-clock.ts",
+      "typescript/host/session-client/test/session-client-fixtures.ts",
+      "typescript/host/session-client/test/session-client.test.ts",
+      "typescript/host/session-client/tsup.config.ts"
+    ],
+    "git_inventory_equal": true,
+    "engine_rules": 474,
+    "non_type_aware_rules": 419,
+    "type_aware_rules": 55,
+    "rule_counts_are_measurements": true,
+    "effective_preset_equal": true,
+    "complete_effective_fields": [
+      "plugins",
+      "categories",
+      "rules",
+      "settings",
+      "env",
+      "globals",
+      "overrides",
+      "ignorePatterns"
+    ],
+    "backend_report": "bx-m37-type-aware-timings.log.stderr.log",
+    "backend_code_files": 10,
+    "backend_program": "typescript/host/session-client/tsconfig.typecheck.json",
+    "backend_config_note": "The existing tsup.config.ts is unmatched to the source program and still appears in completed backend linting. No project-resolution diagnostic or configuration change."
+  },
+  "json": {
+    "files": [
+      "typescript/host/session-client/package.json",
+      "typescript/host/session-client/project.json",
+      "typescript/host/session-client/tsconfig.dts.json",
+      "typescript/host/session-client/tsconfig.json",
+      "typescript/host/session-client/tsconfig.lib.json",
+      "typescript/host/session-client/tsconfig.tsup.json",
+      "typescript/host/session-client/tsconfig.typecheck.json"
+    ],
+    "source_integrity_selection_equal_to_git": true,
+    "formatter_selection": [
+      "typescript/host/session-client/package.json",
+      "typescript/host/session-client/project.json",
+      "typescript/host/session-client/tsconfig.dts.json",
+      "typescript/host/session-client/tsconfig.json",
+      "typescript/host/session-client/tsconfig.lib.json",
+      "typescript/host/session-client/tsconfig.tsup.json",
+      "typescript/host/session-client/tsconfig.typecheck.json"
+    ],
+    "source_issues": [],
+    "format_exit": 0,
+    "formatter_ignore_independence": true,
+    "ignore_control_files": [
+      "typescript/host/session-client/package.json",
+      "typescript/host/session-client/project.json",
+      "typescript/host/session-client/tsconfig.dts.json",
+      "typescript/host/session-client/tsconfig.json",
+      "typescript/host/session-client/tsconfig.lib.json",
+      "typescript/host/session-client/tsconfig.tsup.json",
+      "typescript/host/session-client/tsconfig.typecheck.json"
+    ],
+    "ignore_control_formatted": [],
+    "json_only": false,
+    "fresh_code_inventory": [
+      "typescript/host/session-client/smoke/package-exports.ts",
+      "typescript/host/session-client/src/index.ts",
+      "typescript/host/session-client/src/lib/session-client.ts",
+      "typescript/host/session-client/src/lib/session-protocol-types.ts",
+      "typescript/host/session-client/src/lib/ws-wire.ts",
+      "typescript/host/session-client/test/session-client-boundaries.test.ts",
+      "typescript/host/session-client/test/session-client-clock.ts",
+      "typescript/host/session-client/test/session-client-fixtures.ts",
+      "typescript/host/session-client/test/session-client.test.ts",
+      "typescript/host/session-client/tsup.config.ts"
+    ]
+  },
+  "suppression": {
+    "original_identities_removed": 2,
+    "native_legacy_counterparts_added": 0,
+    "no_admitted_biome_directives": true,
+    "ledger": "bx-m37-ledger-draft.json",
+    "early_deletions": [],
+    "metadata_regions": 20,
+    "metadata_exception_controls": [
+      {
+        "path": "typescript/host/session-client/src/index.ts",
+        "region": 0,
+        "tag_count": 37,
+        "removed_control_diagnostics": 37,
+        "unused_control_diagnostics": 38
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "region": 0,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "region": 1,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "region": 2,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "region": 3,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "region": 4,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "region": 5,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "region": 6,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "region": 7,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "region": 8,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 0,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 1,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 2,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 3,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 2
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 4,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 2
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 5,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 2
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 6,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 2
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 7,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 2
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 8,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "region": 9,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      }
+    ],
+    "global_experimental_ast_associations": 144,
+    "original_association_hashes_equal": true,
+    "native_firing_inventory": {
+      "tags": 112,
+      "files": 9
+    },
+    "additional_inline_associations": 32,
+    "metadata_removed": 0
+  },
+  "coverage": {
+    "removed": "typescript/host/session-client",
+    "retained_roots": [
+      "typescript/host/repl"
+    ],
+    "retained_positive_processed": 40,
+    "retained_diagnostics": 0,
+    "outside_directives_and_bytes_preserved": true,
+    "retained_file_count": 40,
+    "retained_inventory_sha256": "166cbfaa30127fdd38decfd6d117f482a6a46711ccc0da21b1ab7526107b8209"
+  },
+  "behavior": {
+    "typecheck": 0,
+    "test": 0,
+    "exports_smoke": 0,
+    "lint": 0,
+    "tests": 33,
+    "assertions": 130,
+    "protocol_trace_scenarios": [
+      "handler-deferred-launch",
+      "sync-success",
+      "sync-throw",
+      "resolved-promise",
+      "rejected-promise",
+      "pending-promise",
+      "events",
+      "rejections",
+      "microtask-result-timing",
+      "in-flight-dedup",
+      "answered-redelivery",
+      "reconnect-backoff",
+      "cursor-handshake",
+      "close-cleanup"
+    ],
+    "single_handler_cases": 5,
+    "concurrent_permutations": 120,
+    "reconnect_cases": 5,
+    "protocol_trace_parity": true,
+    "production_source_bundles": false,
+    "production_source_modules": true
+  },
+  "decisions": [
+    "Apply exactly the recorded A11 session-client patch, awaiting the actual original deferred invocation and success chain in an async try/catch. No fake operation, added scheduler, state or suppression.",
+    "Remove the two original session-client Biome directive identities with canonical target and coverage handoff. No equivalent native diagnostic fires; retain all 20 separately authorized active metadata exception regions.",
+    "Remove only session-client from bx.json, leaving REPL coverage and all sibling bytes unchanged.",
+    "Use the exact ordered canonical native command pair and unchanged inherited checker inputs; keep typecheck source-only.",
+    "Preserve immutable BX002 retained_checker_disposition values and original retained proof; record current absence and final native admission in separate fields.",
+    "Scratch reconnect traces seed UUID generation and serialize snapshot values consistently in both parent and candidate processes; initial nondeterministic probe failure is retained as a diagnostic log."
+  ],
+  "ledger": [
+    {
+      "identity": "typescript/host/session-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session-client/src/index.ts",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "original_directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "original_reason_preserved": true,
+      "current_biome_directive": false,
+      "early_deletion": false,
+      "final_disposition": "removed-at-atomic-native-admission",
+      "native_equivalent_firing": false,
+      "native_counterpart_added": false,
+      "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "admission_milestone": "M37",
+      "native_report": "bx-m37-final-native.json",
+      "target": "typescript/host/session-client/project.json",
+      "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session-client/src/index.ts",
+      "rule": "assist/source/organizeImports",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled",
+      "original_reason_preserved": true,
+      "current_biome_directive": false,
+      "early_deletion": false,
+      "final_disposition": "removed-at-atomic-native-admission",
+      "native_equivalent_firing": false,
+      "native_counterpart_added": false,
+      "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "admission_milestone": "M37",
+      "native_report": "bx-m37-final-native.json",
+      "target": "typescript/host/session-client/project.json",
+      "coverage": "tools/biome-coverage/bx.json"
+    }
+  ],
+  "lead": {
+    "canonical_typecheck": true,
+    "canonical_test": true,
+    "exports_smoke": true,
+    "full_root_lint_exit": 0
+  },
+  "raw_artifacts": [
+    {
+      "name": "bx-m37-summary.json",
+      "sha256": "3c09892194f3b8f89af24b822e75b6fba32bb8987e5e2eacfe60d3ba654fa519",
+      "bytes": 66970
+    },
+    {
+      "name": "bx-m37-readiness-draft.json",
+      "sha256": "ea50dc45e85e915aee5314dd83fe5ae199aed1c89834ab92e7e20173d21499cd",
+      "bytes": 32558
+    },
+    {
+      "name": "bx-m37-ledger-draft.json",
+      "sha256": "b95260aa505f56280a575ae2e1b4d1350283d8274a6d5c6229a326dc7863a93f",
+      "bytes": 7674
+    },
+    {
+      "name": "bx-m37-lead-full-lint.log",
+      "sha256": "4b69012fd9aa5ed744c7c9ea833b47b8cd067bd1f95a865463daa6f0ed8f0bfd",
+      "bytes": 6253
+    }
+  ]
+}

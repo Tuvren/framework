@@ -144,6 +144,46 @@
       "native_report": "bx-m36-final-native.json",
       "target": "typescript/host/remote-session/project.json",
       "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session-client/src/index.ts",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "original_directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "original_reason_preserved": true,
+      "current_biome_directive": false,
+      "early_deletion": false,
+      "final_disposition": "removed-at-atomic-native-admission",
+      "native_equivalent_firing": false,
+      "native_counterpart_added": false,
+      "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "admission_milestone": "M37",
+      "native_report": "bx-m37-final-native.json",
+      "target": "typescript/host/session-client/project.json",
+      "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session-client/src/index.ts",
+      "rule": "assist/source/organizeImports",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled",
+      "original_reason_preserved": true,
+      "current_biome_directive": false,
+      "early_deletion": false,
+      "final_disposition": "removed-at-atomic-native-admission",
+      "native_equivalent_firing": false,
+      "native_counterpart_added": false,
+      "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "admission_milestone": "M37",
+      "native_report": "bx-m37-final-native.json",
+      "target": "typescript/host/session-client/project.json",
+      "coverage": "tools/biome-coverage/bx.json"
     }
   ]
 }
