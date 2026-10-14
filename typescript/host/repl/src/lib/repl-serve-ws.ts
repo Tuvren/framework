@@ -121,10 +121,10 @@ interface DeferredClientEndpoint extends AttachedClientEndpoint {
   setDelegate(delegate: AttachedClientEndpoint): void;
 }
 
-function createDeferredClientEndpoint(
+const createDeferredClientEndpoint = (
   endpointId: string,
   advertisedCapabilities: ClientEndpointCapabilityAdvertisement[]
-): DeferredClientEndpoint {
+): DeferredClientEndpoint => {
   let delegate: AttachedClientEndpoint | undefined;
 
   return {
@@ -144,7 +144,7 @@ function createDeferredClientEndpoint(
       delegate = nextDelegate;
     },
   };
-}
+};
 
 /**
  * A scripted `TuvrenProvider` for `--serve-ws` demo turns: on the first
@@ -154,8 +154,8 @@ function createDeferredClientEndpoint(
  * end-to-end proof drive a real client-capability dispatch over the wire
  * without depending on a live model provider.
  */
-export function createServeWsDemoProvider(): TuvrenProvider {
-  function respond(prompt: TuvrenPrompt): TuvrenModelResponse {
+export const createServeWsDemoProvider = (): TuvrenProvider => {
+  const respond = (prompt: TuvrenPrompt): TuvrenModelResponse => {
     const hasToolResult = prompt.messages.some(
       (message) => message.role === "tool"
     );
@@ -184,7 +184,7 @@ export function createServeWsDemoProvider(): TuvrenProvider {
         },
       ],
     };
-  }
+  };
 
   return {
     generate(prompt) {
@@ -228,7 +228,7 @@ export function createServeWsDemoProvider(): TuvrenProvider {
       } satisfies ProviderStreamChunk;
     },
   };
-}
+};
 
 /** One registry entry: the reattachable session plus whichever transport currently owns it. */
 interface ReplWsSessionEntry {
@@ -299,9 +299,9 @@ export interface ReplWsSessionRegistry {
   size(): number;
 }
 
-export function createReplWsSessionRegistry(
+export const createReplWsSessionRegistry = (
   options: ReplWsSessionRegistryOptions
-): ReplWsSessionRegistry {
+): ReplWsSessionRegistry => {
   const provider = options.provider ?? createServeWsDemoProvider();
   const entries = new Map<string, ReplWsSessionEntry>();
   // P2-4: two sockets presenting the same unknown sessionId can both pass
@@ -311,7 +311,9 @@ export function createReplWsSessionRegistry(
   // instead of racing it into creating a second, orphaned one.
   const pendingCreations = new Map<string, Promise<ReplWsSessionEntry>>();
 
-  async function createEntry(sessionId: string): Promise<ReplWsSessionEntry> {
+  const createEntry = async (
+    sessionId: string
+  ): Promise<ReplWsSessionEntry> => {
     const thread = await options.runtime.createThread({});
     const deferredEndpoint = createDeferredClientEndpoint(
       `repl-serve-ws:${sessionId}`,
@@ -383,7 +385,7 @@ export function createReplWsSessionRegistry(
     });
 
     return entry;
-  }
+  };
 
   return {
     async resolve(requestedSessionId) {
@@ -421,7 +423,7 @@ export function createReplWsSessionRegistry(
       return entries.size;
     },
   };
-}
+};
 
 /** Options accepted by {@link startReplWsServer}. */
 export interface ReplWsServerOptions {
@@ -479,13 +481,38 @@ interface ServeWsSocket {
 }
 
 /**
+ * Structural check for the exact `handshake_ack` frame
+ * `createWsSessionTransport`'s `attachToSession` sends immediately after a
+ * successful `session.attach()` — the attach-succeeded signal
+ * {@link startReplWsServer}'s sink wrapper uses (P2-3), since the transport
+ * itself exposes no dedicated success callback. Deliberately loose (only the
+ * `kind` discriminator): this is an internal observation of an outbound frame
+ * this same module's own transport call produced, not an untrusted inbound
+ * payload needing full structural validation.
+ */
+const isHandshakeAckFrame = (data: string): boolean => {
+  try {
+    const value: unknown = JSON.parse(data);
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      (value as { kind?: unknown }).kind === "handshake_ack"
+    );
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Starts the REPL host's `--serve-ws` demo server: `Bun.serve` websocket
  * handlers composing `binding -> session -> transport -> socket`
  * (`spec/streaming/ws/bindings/typescript.md`).
  *
  * @experimental
  */
-export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
+export const startReplWsServer = (
+  options: ReplWsServerOptions
+): ReplWsServer => {
   const registry = createReplWsSessionRegistry({
     disconnectGraceMs: options.disconnectGraceMs ?? 5000,
     dispatchTimeoutMs: options.dispatchTimeoutMs ?? 10_000,
@@ -496,10 +523,10 @@ export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
     systemPrompt: options.systemPrompt,
   });
 
-  async function handleFirstMessage(
+  const handleFirstMessage = async (
     ws: ServeWsSocket,
     text: string
-  ): Promise<void> {
+  ): Promise<void> => {
     // P2-2: validate the handshake's own shape — `kind === "handshake"` and a
     // supported `protocolVersion` — BEFORE ever touching the registry. A
     // garbage or protocol-mismatched first message must never allocate a
@@ -588,7 +615,7 @@ export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
     ws.data.transport = transport;
     transport.start();
     transport.ingest(text);
-  }
+  };
 
   // biome-ignore lint/correctness/noUndeclaredVariables: Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: "Bun APIs are fine here").
   const server = Bun.serve<ReplWsConnectionState>({
@@ -645,27 +672,4 @@ export function startReplWsServer(options: ReplWsServerOptions): ReplWsServer {
     },
     url: `ws://${options.hostname ?? "127.0.0.1"}:${boundPort}`,
   };
-}
-
-/**
- * Structural check for the exact `handshake_ack` frame
- * `createWsSessionTransport`'s `attachToSession` sends immediately after a
- * successful `session.attach()` — the attach-succeeded signal
- * {@link startReplWsServer}'s sink wrapper uses (P2-3), since the transport
- * itself exposes no dedicated success callback. Deliberately loose (only the
- * `kind` discriminator): this is an internal observation of an outbound frame
- * this same module's own transport call produced, not an untrusted inbound
- * payload needing full structural validation.
- */
-function isHandshakeAckFrame(data: string): boolean {
-  try {
-    const value: unknown = JSON.parse(data);
-    return (
-      typeof value === "object" &&
-      value !== null &&
-      (value as { kind?: unknown }).kind === "handshake_ack"
-    );
-  } catch {
-    return false;
-  }
-}
+};
