@@ -106,14 +106,14 @@ interface FakeHandle {
   settleResult(error?: unknown): void;
 }
 
-function makeFakeHandle(
+const makeFakeHandle = (
   options: {
     phase?: ExecutionStatus["phase"];
     onResolveApproval?: (response: ApprovalResponse) => ExecutionHandle;
     onSteer?: (signal: InputSignal) => void;
     onCancel?: () => void;
   } = {}
-): FakeHandle {
+): FakeHandle => {
   const events = new FakeEventSource();
   const calls: FakeHandleCalls = { cancel: 0, resolveApproval: [], steer: [] };
   let phase: ExecutionStatus["phase"] = options.phase ?? "running";
@@ -172,12 +172,12 @@ function makeFakeHandle(
       resultReject(error);
     },
   };
-}
+};
 
-async function collectFrames(
+const collectFrames = async (
   iterable: AsyncIterable<SessionOutboundFrame>,
   count: number
-): Promise<SessionOutboundFrame[]> {
+): Promise<SessionOutboundFrame[]> => {
   const collected: SessionOutboundFrame[] = [];
   const iterator = iterable[Symbol.asyncIterator]();
   while (collected.length < count) {
@@ -188,16 +188,16 @@ async function collectFrames(
     collected.push(result.value);
   }
   return collected;
-}
+};
 
-function rejection(
+const rejection = (
   frame: SessionOutboundFrame
-): SessionRejectionFrame["rejection"] {
+): SessionRejectionFrame["rejection"] => {
   if (frame.kind !== "session_rejection") {
     throw new Error(`expected session_rejection frame, got "${frame.kind}"`);
   }
   return frame.rejection;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Tests

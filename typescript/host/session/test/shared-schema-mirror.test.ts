@@ -58,7 +58,7 @@ const MIRRORED_MODELS = [
 
 const PACKET_ID_BASE = /^https:\/\/tuvren\.dev\/schemas\/framework\/[a-z-]+\//;
 
-function normalize(value: unknown): unknown {
+const normalize = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map(normalize);
   }
@@ -77,13 +77,10 @@ function normalize(value: unknown): unknown {
     return out;
   }
   return value;
-}
+};
 
-function readNormalized(dir: string, model: string): unknown {
-  return normalize(
-    JSON.parse(readFileSync(resolve(dir, `${model}.json`), "utf-8"))
-  );
-}
+const readNormalized = (dir: string, model: string): unknown =>
+  normalize(JSON.parse(readFileSync(resolve(dir, `${model}.json`), "utf-8")));
 
 describe("session packet mirrors of runtime-api shared models", () => {
   for (const model of MIRRORED_MODELS) {
