@@ -63,7 +63,7 @@ const createAimockProvider = (
 
   if (aimockBaseUrl === undefined || aimockBaseUrl.length === 0) {
     throw new TuvrenRuntimeError(
-      `${mode} repl provider requires --aimock-base-url, TUVREN_REPL_AIMOCK_BASE_URL, or TUVREN_PLAYGROUND_AIMOCK_BASE_URL`,
+      `${mode} repl provider requires --aimock-base-url or TUVREN_REPL_AIMOCK_BASE_URL`,
       {
         code: INVALID_REPL_CONFIG_CODE,
       }

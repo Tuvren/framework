@@ -42,7 +42,13 @@
       "sha256": "65d1fe61f3047ac007c18b3bab6db8b95de3ef5391e4e1c89e09e10028e55c6f",
       "bytes": 875,
       "role": "measurement"
+    },
+    {
+      "path": "m30-repl-config.json",
+      "sha256": "5cdd0de38b50df3615e363aa1a23cb0b4fc3524c537ec977f5d9b5b4267b129c",
+      "bytes": 5518,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending. M28 requires the same A11 proof for remote-session and its M36 patch; all144 actual experimental AST associations remain preserved. M29 keeps only the exact four recorded A11 launch residuals, with five single-handler and120 concurrent trace parity for the M37 patch."
+  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending. M28 requires the same A11 proof for remote-session and its M36 patch; all144 actual experimental AST associations remain preserved. M29 keeps only the exact four recorded A11 launch residuals, with five single-handler and120 concurrent trace parity for the M37 patch. M30 removes only authorized obsolete environment aliases, preserving current prefix, argv precedence, suffix distinctions and optional scope;141 canonical tests pass."
 }
