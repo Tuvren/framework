@@ -149,7 +149,11 @@ describe("session-client boundary guards and callback ordering", () => {
     receiveInvocation(socket, invocation);
     receiveInvocation(socket, invocation);
     trace.push("receive returned");
-    socket.receive({ frame: { event: {}, kind: "event" }, kind: "frame" });
+    socket.receive({
+      cursor: "event-cursor",
+      frame: { event: {}, kind: "event" },
+      kind: "frame",
+    });
     socket.receive({
       frame: { kind: "session_rejection", rejection },
       kind: "frame",

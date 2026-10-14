@@ -1,7 +1,7 @@
 {
   "ticket": "KRT-BX004",
   "status": "complete-native-host-readiness",
-  "measurement_head": "ecf7e2650c184e42b6f7498b01d05efd795e9418",
+  "measurement_head": "d42986d152546b08d88ec28d4ef2ab45b621aee5",
   "working_tree_candidate": true,
   "projects": [
     {
@@ -528,78 +528,78 @@
     {
       "gate": "typecheck",
       "exit": 0,
-      "log": "bx-pr-r2-final-typecheck.log",
+      "log": "bx-pr-r3-final-typecheck.log",
       "sha256": "e9d08454364657e13d8eecab73dbff2dab95fc2b5c7f95209186c1e48bd49e52",
       "bytes": 5990
     },
     {
       "gate": "conformance",
       "exit": 0,
-      "log": "bx-pr-r2-final-conformance.log",
-      "sha256": "c800fc840567c24dfc2b06c01c6d23c4f9b7485bfa81fb2ea2df41c525423462",
-      "bytes": 23375
+      "log": "bx-pr-r3-final-conformance.log",
+      "sha256": "2f7c1478f29b332cf8275b268d88c727f594a3e08c32f9d0190a132121456b7f",
+      "bytes": 23376
     },
     {
       "gate": "full-lint",
       "exit": 0,
-      "log": "bx-pr-r2-final-full-lint.log",
-      "sha256": "02e94e1ba14d0d631dfd330e7734d5797997da4ab7106cceba2d0b7299cc50ac",
-      "bytes": 6261
+      "log": "bx-pr-r3-final-full-lint.log",
+      "sha256": "9c65c92f156f0d6f39642878aaa780dcec74eeb8f0f7c82316b3b9409fb5dac0",
+      "bytes": 6263
     },
     {
       "gate": "format-check",
       "exit": 0,
-      "log": "bx-pr-r2-final-format-check.log",
-      "sha256": "407604e643a004c05761fa8bca1e1c3ce8a5bc4bbd722734455681d8fc13a7bf",
+      "log": "bx-pr-r3-final-format-check.log",
+      "sha256": "eb793bd0a6b0a43e2643d72f608c4a9322050f202a6649b95d6a8f05702efddc",
       "bytes": 144
     },
     {
       "gate": "check",
       "exit": 0,
-      "log": "bx-pr-r2-final-check.log",
-      "sha256": "0fdae785f60ef07bf7da876c8161626a9ccd9e324ec633946fc0131b8dd088ce",
-      "bytes": 59474
+      "log": "bx-pr-r3-final-check.log",
+      "sha256": "8935be1582a82063b127941f3b79017d42ae5752dd68d2c80d3cc10f3192d287",
+      "bytes": 59475
     },
     {
       "gate": "verify",
       "exit": 0,
-      "log": "bx-pr-r2-final-verify.log",
-      "sha256": "d0cda6e3bd5f45e1f79885a5c90578c0a4269ee572f199e75622a4647be3d1ae",
-      "bytes": 300537
+      "log": "bx-pr-r3-final-verify.log",
+      "sha256": "2929a91d2b0711747fcc38f4b2b7b71dfd662e91360f0835468763f27df981cd",
+      "bytes": 300546
     },
     {
       "gate": "framework-conformance",
       "exit": 0,
-      "log": "bx-pr-r2-final-framework-conformance.log",
+      "log": "bx-pr-r3-final-framework-conformance.log",
       "sha256": "6541019c95e8e79b5fe154a2762d49f3d65ef31511678c00e98099d7f7d76fee",
       "bytes": 2261
     },
     {
       "gate": "repl-scenario",
       "exit": 0,
-      "log": "bx-pr-r2-final-repl-scenario.log",
-      "sha256": "642be99486c008d363102ce55846238217022717b2707549ad2994cf1b158bb7",
+      "log": "bx-pr-r3-final-repl-scenario.log",
+      "sha256": "e5cc17ad31551c3215112b10500a0ee4907c4b35db6a15485bbdd9d520065662",
       "bytes": 7979
     },
     {
       "gate": "sqlite-pinned",
       "exit": 0,
-      "log": "bx-pr-r2-final-sqlite-pinned.log",
-      "sha256": "05183f849195f3f7972e25d920a1ebd6c3546bba0925633fb7ca4a14437ee0fc",
+      "log": "bx-pr-r3-final-sqlite-pinned.log",
+      "sha256": "d1cb3f6cd990b6919d6c5a9dfd25abe9cad478a2c72c325480d727152cd8cf1b",
       "bytes": 5482
     },
     {
       "gate": "postgres",
       "exit": 0,
-      "log": "bx-pr-r2-final-postgres.log",
-      "sha256": "3afbddac7fa2e2c6e99eb144cf04704de61aec92670ae4c5ed815dc414239666",
+      "log": "bx-pr-r3-final-postgres.log",
+      "sha256": "33d7f3f0636f0d58c049d8fc5e350ebfd3ef33cdf772e17f179048a9a14422ef",
       "bytes": 10186
     },
     {
       "gate": "interop",
       "exit": 0,
-      "log": "bx-pr-r2-final-interop.log",
-      "sha256": "946490bd1106eb9e22a45142cc2dd97e0ed414b7ec4b24c34445f235ae09e4de",
+      "log": "bx-pr-r3-final-interop.log",
+      "sha256": "8b5e536c6592f9efc37a5faad5ea827644970bb806efff72a35a046a099c2ec1",
       "bytes": 97838
     }
   ],
@@ -614,8 +614,8 @@
         "assertions": 92
       },
       "session_client": {
-        "tests": 38,
-        "assertions": 161
+        "tests": 39,
+        "assertions": 166
       },
       "repl": {
         "tests": 191,
@@ -635,7 +635,10 @@
     "handshake_first_before_any_session_frame": true,
     "only_valid_event_envelopes_advance_replay_cursor": true,
     "non_event_cursor_envelopes_ignored_before_delivery": true,
-    "cross_realm_typed_file_bytes_projected": true
+    "cross_realm_typed_file_bytes_projected": true,
+    "event_cursor_present_exactly_for_events": true,
+    "cursorless_events_rejected_before_callbacks": true,
+    "independent_handshake_cursor_guard_removal_regressions": true
   },
   "environment": {
     "A10_relocated_from_forced_excluded_cache_ancestor": true,
@@ -727,7 +730,7 @@
     }
   ],
   "admission_proofs_are_historical_snapshots": true,
-  "current_validation": "pr-review-round2.json",
+  "current_validation": "pr-review-round3.json",
   "current_lint_targets": [
     {
       "project": "host-session",
@@ -869,12 +872,15 @@
     }
   ],
   "pr_review_fix": {
-    "round": 2,
-    "Act_on_actions_addressed": 8,
-    "unique_findings_addressed": 7,
+    "round": 3,
+    "Act_on_actions_addressed": 10,
+    "unique_findings_addressed": 8,
+    "strategy_change": "Complete authority carriage matrix and independent guard-removal controls",
+    "historical_snapshot_correction": "Earlier PR round snapshots preserve their actual tested implementation and worker completion claims. Round3 supersedes incomplete cursor-placement and masked-handshake-test claims with the complete authority iff matrix and independent guard-removal failures; original historical payloads and raw bytes remain unchanged.",
     "proofs": [
       "pr-review-round1.json",
-      "pr-review-round2.json"
+      "pr-review-round2.json",
+      "pr-review-round3.json"
     ]
   }
 }
