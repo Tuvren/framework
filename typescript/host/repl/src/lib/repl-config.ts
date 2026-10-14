@@ -73,76 +73,9 @@ export const DEFAULT_GEMINI_REPL_SCENARIOS: readonly ReplScenarioName[] = [
   "approval",
 ];
 
-export function loadReplConfig(
-  env: Record<string, string | undefined>,
-  argv: readonly string[]
-): ReplConfig {
-  const options = parseArgs(argv);
-  const config = {
-    aimockBaseUrl: normalizeAimockBaseUrl(
-      options.aimockBaseUrl ?? readReplEnv(env, "AIMOCK_BASE_URL")
-    ),
-    backend: parseBackend(options.backend ?? readReplEnv(env, "BACKEND")),
-    googleApiKey: resolveGoogleApiKey(env),
-    kernelGrpcBaseUrl: normalizeKernelGrpcBaseUrl(
-      options.kernelGrpcBaseUrl ?? readReplEnv(env, "KERNEL_GRPC_BASE_URL")
-    ),
-    kernelMode: parseKernelMode(
-      options.kernelMode ?? readReplEnv(env, "KERNEL_MODE")
-    ),
-    modelId: normalizeModelId(options.modelId ?? readReplEnv(env, "MODEL_ID")),
-    postgresDatabase: normalizePostgresDatabase(
-      options.postgresDatabase ??
-        readReplEnv(env, "POSTGRES_DATABASE") ??
-        env.PGDATABASE
-    ),
-    postgresSchemaName: normalizePostgresSchemaName(
-      options.postgresSchemaName ?? readReplEnv(env, "POSTGRES_SCHEMA")
-    ),
-    providerMode: parseProviderMode(
-      options.provider ?? readReplEnv(env, "PROVIDER_MODE")
-    ),
-    scenario: parseScenario(
-      normalizeScenarioValue(options.scenario ?? readReplEnv(env, "SCENARIO"))
-    ),
-    scope: normalizeScope(options.scope ?? readReplEnv(env, "SCOPE")),
-    sqlitePath: normalizeSqlitePath(
-      options.sqlitePath ?? readReplEnv(env, "SQLITE_PATH")
-    ),
-    systemPrompt: normalizeSystemPrompt(
-      readReplEnv(env, "SYSTEM_PROMPT") ??
-        readReplEnv(env, "SYSTEM_INSTRUCTIONS")
-    ),
-  } satisfies ReplConfig;
-
-  assertValidReplConfig(config);
-
-  return {
-    ...config,
-    modelId:
-      config.providerMode === "ai-sdk-google"
-        ? (config.modelId ?? DEFAULT_GEMINI_REPL_MODEL_ID)
-        : config.modelId,
-    postgresDatabase:
-      config.backend === "postgres"
-        ? (config.postgresDatabase ?? DEFAULT_POSTGRES_DATABASE)
-        : config.postgresDatabase,
-  };
-}
-
-function normalizeAimockBaseUrl(value: string | undefined): string | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  const normalized = value.trim();
-
-  return normalized.length === 0 ? undefined : normalized;
-}
-
-function normalizeKernelGrpcBaseUrl(
+const normalizeAimockBaseUrl = (
   value: string | undefined
-): string | undefined {
+): string | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -150,9 +83,21 @@ function normalizeKernelGrpcBaseUrl(
   const normalized = value.trim();
 
   return normalized.length === 0 ? undefined : normalized;
-}
+};
 
-function normalizeSqlitePath(value: string | undefined): string | undefined {
+const normalizeKernelGrpcBaseUrl = (
+  value: string | undefined
+): string | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+
+  return normalized.length === 0 ? undefined : normalized;
+};
+
+const normalizeSqlitePath = (value: string | undefined): string | undefined => {
   if (value !== AUTO_SQLITE_PATH_VALUE) {
     return value;
   }
@@ -160,9 +105,9 @@ function normalizeSqlitePath(value: string | undefined): string | undefined {
   // The Nx SQLite smoke target passes "auto" so repeated validation cannot
   // inherit stale durable state from a previous run.
   return join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`);
-}
+};
 
-function normalizeModelId(value: string | undefined): string | undefined {
+const normalizeModelId = (value: string | undefined): string | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -170,11 +115,11 @@ function normalizeModelId(value: string | undefined): string | undefined {
   const normalized = value.trim();
 
   return normalized.length === 0 ? undefined : normalized;
-}
+};
 
-function normalizePostgresDatabase(
+const normalizePostgresDatabase = (
   value: string | undefined
-): string | undefined {
+): string | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -182,19 +127,21 @@ function normalizePostgresDatabase(
   const normalized = value.trim();
 
   return normalized.length === 0 ? undefined : normalized;
-}
+};
 
-function normalizePostgresSchemaName(
+const normalizePostgresSchemaName = (
   value: string | undefined
-): string | undefined {
+): string | undefined => {
   if (value !== AUTO_POSTGRES_SCHEMA_VALUE) {
     return value;
   }
 
   return `tuvren-repl-${randomUUID().replaceAll("-", "_")}`;
-}
+};
 
-function normalizeScenarioValue(value: string | undefined): string | undefined {
+const normalizeScenarioValue = (
+  value: string | undefined
+): string | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -202,9 +149,11 @@ function normalizeScenarioValue(value: string | undefined): string | undefined {
   const normalized = value.trim();
 
   return normalized.length === 0 ? undefined : normalized;
-}
+};
 
-function normalizeSystemPrompt(value: string | undefined): string | undefined {
+const normalizeSystemPrompt = (
+  value: string | undefined
+): string | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -212,12 +161,12 @@ function normalizeSystemPrompt(value: string | undefined): string | undefined {
   const normalized = value.trim();
 
   return normalized.length === 0 ? undefined : normalized;
-}
+};
 
 // An empty or whitespace-only Scope is treated as "unbound" so the runtime and
 // backends fall back to the single-tenant default Scope rather than failing
 // `assertScope`. A meaningful Scope is trimmed and preserved verbatim.
-function normalizeScope(value: string | undefined): string | undefined {
+const normalizeScope = (value: string | undefined): string | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -225,11 +174,11 @@ function normalizeScope(value: string | undefined): string | undefined {
   const normalized = value.trim();
 
   return normalized.length === 0 ? undefined : normalized;
-}
+};
 
-export function resolveGoogleApiKey(
+export const resolveGoogleApiKey = (
   env: Record<string, string | undefined>
-): string | undefined {
+): string | undefined => {
   const googleGenerativeAiApiKey = normalizeModelId(
     env.GOOGLE_GENERATIVE_AI_API_KEY
   );
@@ -239,15 +188,14 @@ export function resolveGoogleApiKey(
   }
 
   return normalizeModelId(env.GEMINI_API_KEY);
-}
+};
 
-export function isAimockProviderMode(
+export const isAimockProviderMode = (
   value: ReplProviderMode
-): value is (typeof AIMOCK_REPL_PROVIDER_MODES)[number] {
-  return (AIMOCK_REPL_PROVIDER_MODES as readonly string[]).includes(value);
-}
+): value is (typeof AIMOCK_REPL_PROVIDER_MODES)[number] =>
+  (AIMOCK_REPL_PROVIDER_MODES as readonly string[]).includes(value);
 
-export function readReplEnv(
+export const readReplEnv = (
   env: Record<string, string | undefined>,
   suffix:
     | "AIMOCK_BASE_URL"
@@ -263,11 +211,10 @@ export function readReplEnv(
     | "SQLITE_PATH"
     | "SYSTEM_INSTRUCTIONS"
     | "SYSTEM_PROMPT"
-): string | undefined {
-  return env[`TUVREN_REPL_${suffix}`] ?? env[`TUVREN_PLAYGROUND_${suffix}`];
-}
+): string | undefined =>
+  env[`TUVREN_REPL_${suffix}`] ?? env[`TUVREN_PLAYGROUND_${suffix}`];
 
-export function assertValidReplConfig(config: ReplConfig): void {
+export const assertValidReplConfig = (config: ReplConfig): void => {
   if (config.backend === "sqlite" && config.sqlitePath === undefined) {
     throw new TuvrenRuntimeError(
       "sqlite repl scenarios require --sqlite-path, TUVREN_REPL_SQLITE_PATH, or TUVREN_PLAYGROUND_SQLITE_PATH",
@@ -321,9 +268,9 @@ export function assertValidReplConfig(config: ReplConfig): void {
       }
     );
   }
-}
+};
 
-function parseArgs(argv: readonly string[]): Record<string, string> {
+const parseArgs = (argv: readonly string[]): Record<string, string> => {
   const options: Record<string, string> = {};
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -355,9 +302,9 @@ function parseArgs(argv: readonly string[]): Record<string, string> {
   }
 
   return options;
-}
+};
 
-function parseBackend(value: string | undefined): ReplBackendMode {
+const parseBackend = (value: string | undefined): ReplBackendMode => {
   const normalized = value ?? "memory";
 
   switch (normalized) {
@@ -372,9 +319,9 @@ function parseBackend(value: string | undefined): ReplBackendMode {
       });
     }
   }
-}
+};
 
-function parseKernelMode(value: string | undefined): ReplKernelMode {
+const parseKernelMode = (value: string | undefined): ReplKernelMode => {
   const normalized = value ?? "typescript-local";
 
   switch (normalized) {
@@ -391,9 +338,9 @@ function parseKernelMode(value: string | undefined): ReplKernelMode {
       );
     }
   }
-}
+};
 
-function parseProviderMode(value: string | undefined): ReplProviderMode {
+const parseProviderMode = (value: string | undefined): ReplProviderMode => {
   const normalized = value ?? "fixture";
 
   switch (normalized) {
@@ -414,9 +361,9 @@ function parseProviderMode(value: string | undefined): ReplProviderMode {
       );
     }
   }
-}
+};
 
-function parseScenario(value: string | undefined): ReplScenarioName {
+const parseScenario = (value: string | undefined): ReplScenarioName => {
   const normalized = value ?? "streaming";
 
   switch (normalized) {
@@ -442,4 +389,61 @@ function parseScenario(value: string | undefined): ReplScenarioName {
       );
     }
   }
-}
+};
+
+export const loadReplConfig = (
+  env: Record<string, string | undefined>,
+  argv: readonly string[]
+): ReplConfig => {
+  const options = parseArgs(argv);
+  const config = {
+    aimockBaseUrl: normalizeAimockBaseUrl(
+      options.aimockBaseUrl ?? readReplEnv(env, "AIMOCK_BASE_URL")
+    ),
+    backend: parseBackend(options.backend ?? readReplEnv(env, "BACKEND")),
+    googleApiKey: resolveGoogleApiKey(env),
+    kernelGrpcBaseUrl: normalizeKernelGrpcBaseUrl(
+      options.kernelGrpcBaseUrl ?? readReplEnv(env, "KERNEL_GRPC_BASE_URL")
+    ),
+    kernelMode: parseKernelMode(
+      options.kernelMode ?? readReplEnv(env, "KERNEL_MODE")
+    ),
+    modelId: normalizeModelId(options.modelId ?? readReplEnv(env, "MODEL_ID")),
+    postgresDatabase: normalizePostgresDatabase(
+      options.postgresDatabase ??
+        readReplEnv(env, "POSTGRES_DATABASE") ??
+        env.PGDATABASE
+    ),
+    postgresSchemaName: normalizePostgresSchemaName(
+      options.postgresSchemaName ?? readReplEnv(env, "POSTGRES_SCHEMA")
+    ),
+    providerMode: parseProviderMode(
+      options.provider ?? readReplEnv(env, "PROVIDER_MODE")
+    ),
+    scenario: parseScenario(
+      normalizeScenarioValue(options.scenario ?? readReplEnv(env, "SCENARIO"))
+    ),
+    scope: normalizeScope(options.scope ?? readReplEnv(env, "SCOPE")),
+    sqlitePath: normalizeSqlitePath(
+      options.sqlitePath ?? readReplEnv(env, "SQLITE_PATH")
+    ),
+    systemPrompt: normalizeSystemPrompt(
+      readReplEnv(env, "SYSTEM_PROMPT") ??
+        readReplEnv(env, "SYSTEM_INSTRUCTIONS")
+    ),
+  } satisfies ReplConfig;
+
+  assertValidReplConfig(config);
+
+  return {
+    ...config,
+    modelId:
+      config.providerMode === "ai-sdk-google"
+        ? (config.modelId ?? DEFAULT_GEMINI_REPL_MODEL_ID)
+        : config.modelId,
+    postgresDatabase:
+      config.backend === "postgres"
+        ? (config.postgresDatabase ?? DEFAULT_POSTGRES_DATABASE)
+        : config.postgresDatabase,
+  };
+};
