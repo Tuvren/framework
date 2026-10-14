@@ -60,18 +60,95 @@ export interface AimockProviderCase {
   modelId: string;
 }
 
-export function expectScenarioChecksPassed(
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const parseJsonRecord = (
+  value: unknown
+): Record<string, unknown> | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return isPlainRecord(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const findAssistantToolCall = (
+  request: ChatCompletionRequest,
+  name: string
+):
+  | NonNullable<ChatCompletionRequest["messages"][number]["tool_calls"]>[number]
+  | undefined =>
+  request.messages
+    .flatMap((message) => message.tool_calls ?? [])
+    .find((toolCall) => toolCall.function.name === name);
+
+const findToolMessageForCall = (
+  request: ChatCompletionRequest,
+  toolCallId: string | undefined,
+  toolName: string
+): { content: string } | undefined => {
+  for (const message of request.messages) {
+    if (
+      isPlainRecord(message) &&
+      message.role === "tool" &&
+      typeof message.content === "string"
+    ) {
+      if (toolCallId !== undefined && message.tool_call_id === toolCallId) {
+        return { content: message.content };
+      }
+
+      const output = parseJsonRecord(message.content);
+
+      if (output?.name === toolName) {
+        return { content: message.content };
+      }
+    }
+  }
+
+  return undefined;
+};
+
+const parseToolMessageOutput = (
+  value: string
+): Record<string, unknown> | undefined => {
+  const parsed = parseJsonRecord(value);
+
+  if (!isPlainRecord(parsed)) {
+    return undefined;
+  }
+
+  return isPlainRecord(parsed.content) ? parsed.content : parsed;
+};
+
+const restoreEnvironment = (entries: Map<string, string | undefined>): void => {
+  for (const [key, value] of entries) {
+    if (value === undefined) {
+      delete process.env[key];
+      continue;
+    }
+
+    process.env[key] = value;
+  }
+};
+
+export const expectScenarioChecksPassed = (
   checks: Record<string, boolean>
-): void {
+): void => {
   for (const [name, value] of Object.entries(checks)) {
     expect(`${name}:${String(value)}`).toBe(`${name}:true`);
   }
-}
+};
 
-export function createAimockBaseUrl(
+export const createAimockBaseUrl = (
   mockUrl: string,
   providerMode: AimockProviderCase["mode"]
-): string {
+): string => {
   switch (providerMode) {
     case "aimock-openai":
     case "aimock-anthropic": {
@@ -84,12 +161,12 @@ export function createAimockBaseUrl(
       throw new Error(`unsupported aimock provider mode "${providerMode}"`);
     }
   }
-}
+};
 
-export function registerStructuredFixture(
+export const registerStructuredFixture = (
   mock: LLMock,
   provider: AimockProviderCase
-): void {
+): void => {
   if (provider.mode === "aimock-anthropic") {
     mock.on(
       {
@@ -125,19 +202,12 @@ export function registerStructuredFixture(
       model: provider.metadataModelId,
     }
   );
-}
+};
 
-export function expectAimockRequestPath(
+export const doesAimockRequestPathMatch = (
   path: string | undefined,
   provider: AimockProviderCase
-): void {
-  expect(doesAimockRequestPathMatch(path, provider)).toBe(true);
-}
-
-export function doesAimockRequestPathMatch(
-  path: string | undefined,
-  provider: AimockProviderCase
-): boolean {
+): boolean => {
   if (typeof path !== "string") {
     return false;
   }
@@ -148,15 +218,22 @@ export function doesAimockRequestPathMatch(
     pathname === provider.expectedCompletionPath &&
     `?${query}` === (provider.expectedQuerySuffix ?? "?")
   );
-}
+};
 
-export function expectSurfaceCoverage(
+export const expectAimockRequestPath = (
+  path: string | undefined,
+  provider: AimockProviderCase
+): void => {
+  expect(doesAimockRequestPathMatch(path, provider)).toBe(true);
+};
+
+export const expectSurfaceCoverage = (
   report: ReplScenarioReport,
   expected: {
     aguiTypes: readonly string[];
     canonicalTypes: readonly string[];
   }
-): void {
+): void => {
   expect(report.events.sseEvents).toEqual(report.events.canonicalTypes);
 
   for (const type of expected.canonicalTypes) {
@@ -167,11 +244,11 @@ export function expectSurfaceCoverage(
   for (const type of expected.aguiTypes) {
     expect(report.events.aguiTypes).toContain(type);
   }
-}
+};
 
-export function assertStructuredResponseFormat(
+export const assertStructuredResponseFormat = (
   body: JournalBody | null | undefined
-): void {
+): void => {
   if (!isChatCompletionBody(body)) {
     throw new Error(
       "structured response_format requires a chat completion request body"
@@ -209,11 +286,11 @@ export function assertStructuredResponseFormat(
 
   expect(properties.scenario).toEqual({ type: "string" });
   expect(properties.status).toEqual({ type: "string" });
-}
+};
 
-export function hasSearchToolContinuation(
+export const hasSearchToolContinuation = (
   request: JournalBody | null | undefined
-): boolean {
+): boolean => {
   if (!isChatCompletionBody(request)) {
     return false;
   }
@@ -244,11 +321,11 @@ export function hasSearchToolContinuation(
         hit.url === "https://example.invalid/tuvren"
     )
   );
-}
+};
 
-export function hasApprovalToolContinuation(
+export const hasApprovalToolContinuation = (
   request: JournalBody | null | undefined
-): boolean {
+): boolean => {
   if (!isChatCompletionBody(request)) {
     return false;
   }
@@ -307,12 +384,12 @@ export function hasApprovalToolContinuation(
     originalInput.to === "ops@example.com" &&
     originalInput.subject === "Status update"
   );
-}
+};
 
-export function expectReplConfigError(
+export const expectReplConfigError = (
   loadConfig: () => unknown,
   expectedMessage: string
-): void {
+): void => {
   let actualCode: string | undefined;
   let actualMessage: string | undefined;
 
@@ -328,12 +405,12 @@ export function expectReplConfigError(
 
   expect(actualCode).toBe("invalid_repl_config");
   expect(actualMessage).toBe(expectedMessage);
-}
+};
 
-export function withTemporaryEnv(
+export const withTemporaryEnv = (
   overrides: Record<string, string | undefined>,
   run: () => void
-): void {
+): void => {
   const previousEntries = new Map<string, string | undefined>();
 
   for (const [key, value] of Object.entries(overrides)) {
@@ -352,12 +429,12 @@ export function withTemporaryEnv(
   } finally {
     restoreEnvironment(previousEntries);
   }
-}
+};
 
-export async function withTemporaryEnvAsync(
+export const withTemporaryEnvAsync = async (
   overrides: Record<string, string | undefined>,
   run: () => Promise<void>
-): Promise<void> {
+): Promise<void> => {
   const previousEntries = new Map<string, string | undefined>();
 
   for (const [key, value] of Object.entries(overrides)) {
@@ -376,81 +453,4 @@ export async function withTemporaryEnvAsync(
   } finally {
     restoreEnvironment(previousEntries);
   }
-}
-
-function findAssistantToolCall(
-  request: ChatCompletionRequest,
-  name: string
-):
-  | NonNullable<ChatCompletionRequest["messages"][number]["tool_calls"]>[number]
-  | undefined {
-  return request.messages
-    .flatMap((message) => message.tool_calls ?? [])
-    .find((toolCall) => toolCall.function.name === name);
-}
-
-function findToolMessageForCall(
-  request: ChatCompletionRequest,
-  toolCallId: string | undefined,
-  toolName: string
-): { content: string } | undefined {
-  for (const message of request.messages) {
-    if (
-      isPlainRecord(message) &&
-      message.role === "tool" &&
-      typeof message.content === "string"
-    ) {
-      if (toolCallId !== undefined && message.tool_call_id === toolCallId) {
-        return { content: message.content };
-      }
-
-      const output = parseJsonRecord(message.content);
-
-      if (output?.name === toolName) {
-        return { content: message.content };
-      }
-    }
-  }
-
-  return undefined;
-}
-
-function parseJsonRecord(value: unknown): Record<string, unknown> | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-    return isPlainRecord(parsed) ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function parseToolMessageOutput(
-  value: string
-): Record<string, unknown> | undefined {
-  const parsed = parseJsonRecord(value);
-
-  if (!isPlainRecord(parsed)) {
-    return undefined;
-  }
-
-  return isPlainRecord(parsed.content) ? parsed.content : parsed;
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function restoreEnvironment(entries: Map<string, string | undefined>): void {
-  for (const [key, value] of entries) {
-    if (value === undefined) {
-      delete process.env[key];
-      continue;
-    }
-
-    process.env[key] = value;
-  }
-}
+};
