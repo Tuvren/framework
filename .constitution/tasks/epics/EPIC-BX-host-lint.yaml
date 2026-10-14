@@ -761,6 +761,14 @@ closeout:
         - typescript/host/repl/src/index.ts
         - typescript/host/repl/src/lib/repl-serve-ws.ts
       commit: e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd
+    - summary: Project typed client file-part bytes to the authority JSON array before steering serialization without mutating caller data; validate protocol and session envelopes, acknowledgement identity and non-whitespace identifiers before callbacks, cursor updates, side effects or queued-control flush.
+      kind: pattern
+      paths: [typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session/test/duplex-session-binding.test.ts]
+      commit: a8b2fde
+    - summary: Declare dependency production inputs on all four native host lint targets after executed Nx probes prove imported source was omitted; retain every inherited checker/config/lock input and keep source typecheck targets unchanged.
+      kind: convention
+      paths: [typescript/host/session/project.json, typescript/host/remote-session/project.json, typescript/host/session-client/project.json, typescript/host/repl/project.json]
+      commit: a8b2fde
   settled:
     - record: tech-spec/data-models/transcript-file.meta.yaml
       evidence:
