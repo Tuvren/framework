@@ -17,37 +17,37 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 
 import type { AnySchema, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import {
-  type ConformanceCheckResult,
-  type ConformanceEvidence,
   createCheckResult,
   createConformanceEvidenceSummary,
+} from "../../scripts/lib/conformance-contract.js";
+import type {
+  ConformanceCheckResult,
+  ConformanceEvidence,
 } from "../../scripts/lib/conformance-contract.js";
 import type {
   AdapterCapabilities,
   AdapterControls,
 } from "../adapter-protocol/index.js";
-import {
-  type CompiledConformancePlan,
-  type CompiledConformancePlanCheck,
-  loadConformancePlan,
+import { loadConformancePlan } from "../plan-compiler/index.js";
+import type {
+  CompiledConformancePlan,
+  CompiledConformancePlanCheck,
 } from "../plan-compiler/index.js";
+import { JsonRpcAdapterClient, JsonRpcAdapterError } from "./adapter-client.js";
+import type { AdapterManifest } from "./adapter-client.js";
 import {
-  type AdapterManifest,
-  JsonRpcAdapterClient,
-  JsonRpcAdapterError,
-} from "./adapter-client.js";
-import {
-  type AssertionContext,
-  type AssertionEvaluation,
   evaluateAssertions,
   evaluateRequiredEvidence,
   readPath,
+} from "./assertion-engine/index.js";
+import type {
+  AssertionContext,
+  AssertionEvaluation,
 } from "./assertion-engine/index.js";
 
 interface CliOptions {
@@ -67,11 +67,11 @@ interface CliOptions {
 }
 
 interface AuthorityPacketManifest {
-  conformancePlans?: Array<{
+  conformancePlans?: {
     path: string;
     planId: string;
     planVersion: string;
-  }>;
+  }[];
   packetId: string;
 }
 
@@ -86,7 +86,7 @@ interface RunResult {
   index: number;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const ADAPTER_MANIFEST_SCHEMA_PATH = resolve(
   REPO_ROOT,
   "tools/conformance/adapter-protocol/adapter-manifest.schema.json"
@@ -156,9 +156,9 @@ async function main(): Promise<void> {
           adapterId: evidence.adapterId,
           implementationId: evidence.implementationId,
           status: evidence.status,
-          summary: evidence.summary,
           suiteId: evidence.suiteId,
           suiteVersion: evidence.suiteVersion,
+          summary: evidence.summary,
         },
         null,
         2
@@ -271,7 +271,7 @@ async function runCheck(
   plan: CompiledConformancePlan,
   compiledCheck: CompiledConformancePlanCheck
 ): Promise<ConformanceCheckResult> {
-  const check = compiledCheck.check;
+  const { check } = compiledCheck;
 
   try {
     const capabilities = await client.initialize(
@@ -364,7 +364,7 @@ async function runTraceCheck(
   plan: CompiledConformancePlan,
   compiledCheck: CompiledConformancePlanCheck
 ): Promise<ConformanceCheckResult> {
-  const check = compiledCheck.check;
+  const { check } = compiledCheck;
   const baseInput = createAdapterInput(plan, compiledCheck);
   const instance = await client.createInstance(baseInput);
   const trace: Record<string, AssertionContext> = {};
@@ -382,7 +382,7 @@ async function runTraceCheck(
       };
       const controls = {
         ...createAdapterControls(compiledCheck),
-        ...(step.controls ?? {}),
+        ...step.controls,
       };
       const timeoutMs = controls.deadlineMs;
       const outcome = await client.dispatch(
@@ -542,7 +542,7 @@ function createAdapterInput(
   plan: CompiledConformancePlan,
   compiledCheck: CompiledConformancePlanCheck
 ): Record<string, unknown> {
-  const check = compiledCheck.check;
+  const { check } = compiledCheck;
   const input: Record<string, unknown> = {
     checkInput: check.input,
   };
@@ -571,7 +571,7 @@ function createAdapterInput(
 function createAdapterControls(
   compiledCheck: CompiledConformancePlanCheck
 ): AdapterControls {
-  const controls = compiledCheck.check.controls;
+  const { controls } = compiledCheck.check;
 
   if (controls === undefined) {
     return {};
@@ -607,7 +607,7 @@ function validateAdapterHandshake(
   const reportedCapabilities = capabilities.capabilities;
 
   if (!Array.isArray(reportedCapabilities)) {
-    throw new Error("adapter initialize must report capabilities");
+    throw new TypeError("adapter initialize must report capabilities");
   }
 
   const expected = [...manifest.capabilities].sort();
@@ -656,7 +656,7 @@ function selectChecks(
   options: CliOptions
 ): {
   applicable: ScheduledCheck[];
-  nonApplicable: Array<{ checkId: string; planId: string }>;
+  nonApplicable: { checkId: string; planId: string }[];
 } {
   const adapterCapabilities = new Set(manifest.capabilities);
   const requestedCapabilities = new Set(options.capabilities);
@@ -664,7 +664,7 @@ function selectChecks(
   const availableCapabilities = new Set<string>();
   const availableCheckIds = new Set<string>();
   const applicable: ScheduledCheck[] = [];
-  const nonApplicable: Array<{ checkId: string; planId: string }> = [];
+  const nonApplicable: { checkId: string; planId: string }[] = [];
   let index = 0;
 
   for (const plan of [...plans].sort((left, right) =>
@@ -673,7 +673,7 @@ function selectChecks(
     for (const compiledCheck of [...plan.checks].sort((left, right) =>
       left.check.checkId.localeCompare(right.check.checkId)
     )) {
-      const check = compiledCheck.check;
+      const { check } = compiledCheck;
       availableCheckIds.add(check.checkId);
 
       if (requestedChecks.size > 0 && !requestedChecks.has(check.checkId)) {
@@ -745,7 +745,7 @@ function applyShard(
   scheduled: readonly ScheduledCheck[],
   options: CliOptions
 ): ScheduledCheck[] {
-  const shard = options.shard;
+  const { shard } = options;
 
   if (shard === undefined) {
     return [...scheduled];
@@ -758,7 +758,7 @@ function applyShard(
 
 async function readAdapterManifest(path: string): Promise<AdapterManifest> {
   const absolutePath = resolve(REPO_ROOT, path);
-  const value = JSON.parse(await readFile(absolutePath, "utf8")) as unknown;
+  const value = JSON.parse(await readFile(absolutePath, "utf-8")) as unknown;
   const validate = await createAdapterManifestValidator();
 
   if (!validate(value)) {
@@ -776,7 +776,7 @@ async function readAuthorityPacket(
   path: string
 ): Promise<AuthorityPacketManifest> {
   const value = JSON.parse(
-    await readFile(resolve(REPO_ROOT, path), "utf8")
+    await readFile(resolve(REPO_ROOT, path), "utf-8")
   ) as unknown;
 
   if (!isRecord(value) || typeof value.packetId !== "string") {
@@ -786,11 +786,11 @@ async function readAuthorityPacket(
   return value as unknown as AuthorityPacketManifest;
 }
 
-async function createAdapterManifestValidator(): Promise<
-  ValidateFunction<unknown>
-> {
+async function createAdapterManifestValidator(): Promise<ValidateFunction> {
   const schema = readJsonSchema(
-    JSON.parse(await readFile(ADAPTER_MANIFEST_SCHEMA_PATH, "utf8")) as unknown,
+    JSON.parse(
+      await readFile(ADAPTER_MANIFEST_SCHEMA_PATH, "utf-8")
+    ) as unknown,
     ADAPTER_MANIFEST_SCHEMA_PATH
   );
   const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -822,46 +822,57 @@ function parseArgs(args: readonly string[]): CliOptions {
     const next = args[index + 1];
 
     switch (arg) {
-      case "--adapter":
+      case "--adapter": {
         options.adapter = requireValue(next, arg);
         index += 1;
         break;
-      case "--packet":
+      }
+      case "--packet": {
         options.packets.push(requireValue(next, arg));
         index += 1;
         break;
-      case "--plan":
+      }
+      case "--plan": {
         options.plans.push(requireValue(next, arg));
         index += 1;
         break;
-      case "--check":
+      }
+      case "--check": {
         options.checks.push(requireValue(next, arg));
         index += 1;
         break;
-      case "--capability":
+      }
+      case "--capability": {
         options.capabilities.push(requireValue(next, arg));
         index += 1;
         break;
-      case "--shard":
+      }
+      case "--shard": {
         options.shard = parseShard(requireValue(next, arg));
         index += 1;
         break;
-      case "--concurrency":
+      }
+      case "--concurrency": {
         options.concurrency = parsePositiveInteger(requireValue(next, arg));
         index += 1;
         break;
-      case "--evidence-out":
+      }
+      case "--evidence-out": {
         options.evidenceOut = requireValue(next, arg);
         index += 1;
         break;
-      case "--allow-failing-evidence":
+      }
+      case "--allow-failing-evidence": {
         options.allowFailingEvidence = true;
         break;
-      case "--summary-only":
+      }
+      case "--summary-only": {
         options.summaryOnly = true;
         break;
-      default:
+      }
+      default: {
         throw new Error(`unknown runner argument ${String(arg)}`);
+      }
     }
   }
 
@@ -917,7 +928,7 @@ function readInputStringOptional(
   }
 
   if (typeof value !== "string") {
-    throw new Error(`check input ${key} must be a string when present`);
+    throw new TypeError(`check input ${key} must be a string when present`);
   }
 
   return value;
@@ -943,7 +954,9 @@ function readOptionalArray(value: unknown): readonly unknown[] | undefined {
   }
 
   if (!Array.isArray(value)) {
-    throw new Error("operation context events must be an array when present");
+    throw new TypeError(
+      "operation context events must be an array when present"
+    );
   }
 
   return value;

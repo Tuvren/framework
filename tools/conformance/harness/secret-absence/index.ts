@@ -162,11 +162,11 @@ function secretVariants(
 }
 
 function base64Encode(value: string): string {
-  return Buffer.from(value, "utf8").toString("base64");
+  return Buffer.from(value, "utf-8").toString("base64");
 }
 
 function base64UrlEncode(value: string): string {
-  return Buffer.from(value, "utf8").toString("base64url");
+  return Buffer.from(value, "utf-8").toString("base64url");
 }
 
 /** Recursively flatten a surface into a single searchable string. */
@@ -194,8 +194,10 @@ function collectStrings(
   if (value instanceof Uint8Array) {
     // Decode raw bytes (e.g. CBOR-encoded kernel records) as text and base64 so
     // secrets embedded in binary payloads are still detectable.
-    parts.push(Buffer.from(value).toString("utf8"));
-    parts.push(Buffer.from(value).toString("base64"));
+    parts.push(
+      Buffer.from(value).toString("utf-8"),
+      Buffer.from(value).toString("base64")
+    );
     return;
   }
 

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 import { runCommand } from "../lib/command-runner.ts";
 
@@ -23,7 +22,7 @@ import { runCommand } from "../lib/command-runner.ts";
 // Oxfmt configuration, not Biome. The config is auto-discovered from the
 // repository root, so pin the formatter cwd there instead of inheriting an
 // arbitrary caller cwd.
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 
 export async function formatGeneratedJson(
   paths: readonly string[]

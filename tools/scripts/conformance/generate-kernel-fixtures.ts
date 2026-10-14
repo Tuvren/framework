@@ -15,8 +15,7 @@
  */
 
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 import type { KernelRecord } from "@tuvren/core";
 import {
@@ -24,9 +23,8 @@ import {
   hashKernelRecord,
   hashOpaqueObjectBytes,
   hashTurnNodeIdentity,
-  type StagedResult,
-  type TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
+import type { StagedResult, TurnTreeSchema } from "@tuvren/kernel-protocol";
 
 import { formatGeneratedJson } from "./format-generated-json.ts";
 
@@ -45,7 +43,7 @@ interface FixtureSpec {
   turnNode: TurnNodeSpec;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const FIXTURES_DIR = resolve(REPO_ROOT, "spec/conformance/kernel/fixtures");
 
 const HASH_ZERO = "0".repeat(64);

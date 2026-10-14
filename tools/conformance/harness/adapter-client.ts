@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
-import { createInterface, type Interface } from "node:readline";
+import { spawn } from "node:child_process";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
+import { createInterface } from "node:readline";
+import type { Interface } from "node:readline";
 
 import type {
   AdapterCapabilities,
@@ -105,7 +107,7 @@ export class JsonRpcAdapterClient {
       this.handleLine(line);
     });
     this.child.stderr.on("data", (chunk: Buffer) => {
-      this.stderr += chunk.toString("utf8");
+      this.stderr += chunk.toString("utf-8");
     });
     this.child.on("exit", (code, signal) => {
       this.exited = true;
@@ -187,7 +189,7 @@ export class JsonRpcAdapterClient {
     }
 
     if (!Array.isArray(value)) {
-      throw new Error("adapter events returned a non-array payload");
+      throw new TypeError("adapter events returned a non-array payload");
     }
 
     return value;
@@ -243,7 +245,7 @@ export class JsonRpcAdapterClient {
         reject(new Error(`adapter request timed out: ${method}`));
       }, timeoutMs);
       this.pending.set(id, { reject, resolve, timer });
-      this.child.stdin.write(payload, "utf8", (error) => {
+      this.child.stdin.write(payload, "utf-8", (error) => {
         if (error !== null && error !== undefined) {
           clearTimeout(timer);
           this.pending.delete(id);

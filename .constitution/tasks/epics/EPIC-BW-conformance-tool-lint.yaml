@@ -31,7 +31,7 @@ tickets:
       evidence: "Assert each scoped project typechecks after each safe-fix batch, existing runtime assertions pass, and no signature or collection semantics change. Record changed files and the before/after diagnostic count per project."
     flows: []
     certainty: settled
-    status: in_progress
+    status: done
   - id: KRT-BW002
     title: Migrate live suppressions and delete dead ones
     type: Chore

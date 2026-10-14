@@ -120,30 +120,42 @@ function evaluateAssertion(
   context: AssertionContext
 ): boolean {
   switch (assertion.kind) {
-    case "eventSequence":
+    case "eventSequence": {
       return assertEventSequence(assertion, context);
-    case "terminalEvent":
+    }
+    case "terminalEvent": {
       return assertTerminalEvent(assertion, context);
-    case "schemaValid":
+    }
+    case "schemaValid": {
       return assertSchemaValid(assertion, context);
-    case "errorEnvelope":
+    }
+    case "errorEnvelope": {
       return assertErrorEnvelope(assertion, context);
-    case "stateField":
+    }
+    case "stateField": {
       return assertField(assertion, context.state, context);
-    case "evidenceField":
+    }
+    case "evidenceField": {
       return assertField(assertion, context.evidence, context);
-    case "resultField":
+    }
+    case "resultField": {
       return assertField(assertion, context.result, context);
-    case "ordering":
+    }
+    case "ordering": {
       return assertOrdering(assertion, context);
-    case "noEvent":
+    }
+    case "noEvent": {
       return assertNoEvent(assertion, context);
-    case "secretAbsence":
+    }
+    case "secretAbsence": {
       return assertSecretAbsence(assertion, context);
-    case "secretPatternAbsence":
+    }
+    case "secretPatternAbsence": {
       return assertSecretPatternAbsence(assertion, context);
-    default:
+    }
+    default: {
       return assertNever(assertion.kind);
+    }
   }
 }
 
@@ -242,7 +254,7 @@ function assertSchemaValid(
   const validate = getCompiledSchemaValidator(
     readJsonSchema(schema, assertion.schema)
   );
-  return validate(value) === true;
+  return validate(value);
 }
 
 function assertErrorEnvelope(
@@ -284,7 +296,7 @@ function assertOrdering(
   const [first, second] = contains;
 
   if (typeof first !== "string" || typeof second !== "string") {
-    throw new Error("ordering assertion event types must be strings");
+    throw new TypeError("ordering assertion event types must be strings");
   }
 
   const eventTypes = events.map((event) =>
@@ -292,7 +304,7 @@ function assertOrdering(
   );
   const firstIndex = eventTypes.indexOf(first);
   const secondIndex = eventTypes.indexOf(second);
-  return firstIndex >= 0 && secondIndex >= 0 && firstIndex < secondIndex;
+  return firstIndex !== -1 && secondIndex !== -1 && firstIndex < secondIndex;
 }
 
 function assertSecretAbsence(
@@ -319,7 +331,7 @@ function assertSecretAbsence(
 
   const secretsValue = readPath(context, assertion.secretsPath);
   if (!Array.isArray(secretsValue)) {
-    throw new Error(
+    throw new TypeError(
       `secretAbsence secretsPath ${assertion.secretsPath} must resolve to an array`
     );
   }

@@ -24,10 +24,10 @@ import {
   createCheckResult,
 } from "../../scripts/lib/conformance-contract.js";
 import {
-  type AssertionContext,
   evaluateAssertions,
   evaluateRequiredEvidence,
 } from "../harness/assertion-engine/index.js";
+import type { AssertionContext } from "../harness/assertion-engine/index.js";
 import type {
   CompiledConformancePlanCheck,
   ConformancePlanCheck,
@@ -45,7 +45,7 @@ interface MetaCase {
 const cases: readonly MetaCase[] = [
   {
     check: check("evidence-equals", [
-      { field: "$.answer", kind: "evidenceField", equals: "ready" },
+      { equals: "ready", field: "$.answer", kind: "evidenceField" },
     ]),
     context: { evidence: { answer: "ready" } },
     expected: "pass",
@@ -53,7 +53,7 @@ const cases: readonly MetaCase[] = [
   },
   {
     check: check("state-equals", [
-      { field: "$.phase", kind: "stateField", equals: "completed" },
+      { equals: "completed", field: "$.phase", kind: "stateField" },
     ]),
     context: { state: { phase: "completed" } },
     expected: "pass",
@@ -62,9 +62,9 @@ const cases: readonly MetaCase[] = [
   {
     check: check("error-envelope", [
       {
+        equals: { code: "stable_error", message: "boom" },
         kind: "errorEnvelope",
         path: "$.result.error",
-        equals: { code: "stable_error", message: "boom" },
       },
     ]),
     context: { result: { error: { code: "stable_error", message: "boom" } } },
@@ -79,7 +79,7 @@ const cases: readonly MetaCase[] = [
   },
   {
     check: check("contains-array", [
-      { field: "$.types", kind: "evidenceField", contains: "turn.end" },
+      { contains: "turn.end", field: "$.types", kind: "evidenceField" },
     ]),
     context: { evidence: { types: ["turn.start", "turn.end"] } },
     expected: "pass",
@@ -87,7 +87,7 @@ const cases: readonly MetaCase[] = [
   },
   {
     check: check("contains-string", [
-      { field: "$.message", kind: "evidenceField", contains: "ready" },
+      { contains: "ready", field: "$.message", kind: "evidenceField" },
     ]),
     context: { evidence: { message: "system ready" } },
     expected: "pass",
@@ -95,7 +95,7 @@ const cases: readonly MetaCase[] = [
   },
   {
     check: check("contains-object-key", [
-      { field: "$.metadata", kind: "evidenceField", contains: "requestId" },
+      { contains: "requestId", field: "$.metadata", kind: "evidenceField" },
     ]),
     context: { evidence: { metadata: { requestId: "req-1" } } },
     expected: "pass",
@@ -104,9 +104,9 @@ const cases: readonly MetaCase[] = [
   {
     check: check("equals-path", [
       {
+        equalsPath: "$.fixture.expected",
         field: "$.actual",
         kind: "evidenceField",
-        equalsPath: "$.fixture.expected",
       },
     ]),
     context: { evidence: { actual: "ready" }, fixture: { expected: "ready" } },
@@ -116,9 +116,9 @@ const cases: readonly MetaCase[] = [
   {
     check: check("object-equals-order-independent", [
       {
+        equals: { alpha: 1, nested: { left: true, right: false } },
         field: "$.actual",
         kind: "evidenceField",
-        equals: { alpha: 1, nested: { left: true, right: false } },
       },
     ]),
     context: {
@@ -196,7 +196,7 @@ const cases: readonly MetaCase[] = [
   },
   {
     check: check("missing-path", [
-      { field: "$.missing", kind: "evidenceField", equals: true },
+      { equals: true, field: "$.missing", kind: "evidenceField" },
     ]),
     context: { evidence: {} },
     expected: "fail",
@@ -210,7 +210,7 @@ const cases: readonly MetaCase[] = [
   },
   {
     check: check("required-evidence", [
-      { field: "$.present", kind: "evidenceField", equals: true },
+      { equals: true, field: "$.present", kind: "evidenceField" },
     ]),
     context: { evidence: { present: true } },
     expected: "fail",
@@ -220,9 +220,9 @@ const cases: readonly MetaCase[] = [
   {
     check: check("root-required-evidence", [
       {
+        equalsPath: "$.state.trace.step.result.error",
         field: "$.trace.step.result.error",
         kind: "stateField",
-        equalsPath: "$.state.trace.step.result.error",
       },
     ]),
     context: {
@@ -269,7 +269,7 @@ runEvidenceContractCases(failures);
 
 for (let index = 0; index < 1000; index += 1) {
   const syntheticCheck = check(`scale-${index}`, [
-    { field: "$.index", kind: "evidenceField", equals: index },
+    { equals: index, field: "$.index", kind: "evidenceField" },
   ]);
   const compiled: CompiledConformancePlanCheck = {
     check: syntheticCheck,
@@ -360,9 +360,9 @@ async function runPlanCompilerCases(failures: string[]): Promise<void> {
         {
           assertions: [
             {
+              equals: "ready",
               field: "$.answer",
               kind: "evidenceField",
-              equals: "ready",
             },
           ],
           checkId: "meta.evidence-only",

@@ -48,8 +48,8 @@ describe("secret-absence scanner (KRT-BD004)", () => {
     const cases: [string, unknown][] = [
       ["header-normalized", { v: SECRET.toUpperCase() }],
       ["bearer-prefixed", { authorization: `Bearer ${SECRET}` }],
-      ["base64", { v: Buffer.from(SECRET, "utf8").toString("base64") }],
-      ["base64url", { v: Buffer.from(SECRET, "utf8").toString("base64url") }],
+      ["base64", { v: Buffer.from(SECRET, "utf-8").toString("base64") }],
+      ["base64url", { v: Buffer.from(SECRET, "utf-8").toString("base64url") }],
       ["partial-token", { v: `prefix-${SECRET.slice(0, 24)}` }],
     ];
     for (const [, surface] of cases) {
