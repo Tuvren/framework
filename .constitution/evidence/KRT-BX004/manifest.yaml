@@ -54,7 +54,19 @@
       "sha256": "5d48390b6ef80c0296ad9242f3d6a3e16d94b54e5b1e7bc95e7d0cbd59318b12",
       "bytes": 12625,
       "role": "measurement"
+    },
+    {
+      "path": "m32-repl-shell.json",
+      "sha256": "21ae51db0b0acacd99190774d6de56c41ed5567247897f0dd9684ae628120b80",
+      "bytes": 11429,
+      "role": "measurement"
+    },
+    {
+      "path": "m38-repl-shell.patch",
+      "sha256": "2825050b4ce9ffe7f270c6fbe8767ae80d02c04e17e39797390eebbffd957b98",
+      "bytes": 2688,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending. M28 requires the same A11 proof for remote-session and its M36 patch; all144 actual experimental AST associations remain preserved. M29 keeps only the exact four recorded A11 launch residuals, with five single-handler and120 concurrent trace parity for the M37 patch. M30 removes only authorized obsolete environment aliases, preserving current prefix, argv precedence, suffix distinctions and optional scope;141 canonical tests pass. M31 clears29 owned provider/scenario rules without new residuals, preserving supported behavior and documenting honest original-promise internal normalization under OD-09."
+  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending. M28 requires the same A11 proof for remote-session and its M36 patch; all144 actual experimental AST associations remain preserved. M29 keeps only the exact four recorded A11 launch residuals, with five single-handler and120 concurrent trace parity for the M37 patch. M30 removes only authorized obsolete environment aliases, preserving current prefix, argv precedence, suffix distinctions and optional scope;141 canonical tests pass. M31 clears29 owned provider/scenario rules without new residuals, preserving supported behavior and documenting honest original-promise internal normalization under OD-09. M32 clears shell cohort except exact A11 cancellation handler pair allocated to M38; cancellation/approval events and durable outcomes remain proven."
 }

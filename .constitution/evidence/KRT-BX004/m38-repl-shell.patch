@@ -1,0 +1,64 @@
+diff --git a/typescript/host/repl/src/lib/repl-shell.ts b/typescript/host/repl/src/lib/repl-shell.ts
+index 6b25d70..f22c716 100644
+--- a/typescript/host/repl/src/lib/repl-shell.ts
++++ b/typescript/host/repl/src/lib/repl-shell.ts
+@@ -463,6 +463,10 @@ const isTerminalPhase = (
+ ): boolean => phase === "completed" || phase === "failed";
+
+-const observeCancellation = (promise: Promise<unknown>): void => {
+-  promise.catch(() => undefined);
++const observeCancellation = async (promise: Promise<unknown>): Promise<void> => {
++  try {
++    await promise;
++  } catch {
++    // Cancellation must not surface an abandoned work rejection.
++  }
+ };
+
+@@ -473,5 +477,5 @@ const cancelActiveShellWork = (shell: ReplShell): void => {
+   ) {
+     shell.host.cancel(shell.activeTurn.handle);
+-    observeCancellation(shell.activeTurn.projectionPromise);
++    void observeCancellation(shell.activeTurn.projectionPromise);
+   }
+
+@@ -481,5 +485,5 @@ const cancelActiveShellWork = (shell: ReplShell): void => {
+   ) {
+     shell.activeOrchestration.childHandle.cancel();
+-    observeCancellation(shell.activeOrchestration.childHandle.awaitResult());
++    void observeCancellation(shell.activeOrchestration.childHandle.awaitResult());
+   }
+
+@@ -489,6 +493,6 @@ const cancelActiveShellWork = (shell: ReplShell): void => {
+   ) {
+     shell.activeOrchestration.handle.cancel();
+-    observeCancellation(shell.activeOrchestration.handle.awaitResult());
+-    observeCancellation(shell.activeOrchestration.eventsPromise);
++    void observeCancellation(shell.activeOrchestration.handle.awaitResult());
++    void observeCancellation(shell.activeOrchestration.eventsPromise);
+   }
+ };
+@@ -893,5 +897,5 @@ const cancelTurn = (shell: ReplShell): ReplCommandResult => {
+
+   shell.host.cancel(activeTurn.handle);
+-  observeCancellation(activeTurn.projectionPromise);
++  void observeCancellation(activeTurn.projectionPromise);
+   shell.activeTurn = undefined;
+   return { output: "Cancellation requested for the active turn." };
+@@ -1038,13 +1042,13 @@ const cancelOrchestration = (shell: ReplShell): ReplCommandResult => {
+   ) {
+     active.childHandle.cancel();
+-    observeCancellation(active.childHandle.awaitResult());
++    void observeCancellation(active.childHandle.awaitResult());
+   }
+
+   if (!isTerminalPhase(active.handle.status().phase)) {
+     active.handle.cancel();
+-    observeCancellation(active.handle.awaitResult());
++    void observeCancellation(active.handle.awaitResult());
+   }
+
+-  observeCancellation(active.eventsPromise);
++  void observeCancellation(active.eventsPromise);
+   shell.activeOrchestration = undefined;
+   return { output: "Cancellation requested for the active orchestration." };
