@@ -92,4 +92,4 @@ tickets:
       evidence: "Assert the type-aware backend runs every installed, enabled, as-shipped type-aware rule over the complete owned code selection with complete equality of rules, options, severities, environment, globals, plugins, settings, and categories and with no local override or project-resolution error. Treat 55 type-aware rules in the measured 474-rule installed preset, alongside 419 non-type-aware rules, as pinned historical evidence rather than a future quota. Reconcile KRT-BW002's ledger against fresh diagnostics. Prove every needed original Biome directive and reason remain while Biome owns the region, and prove each native counterpart matches an actually firing equivalent rule with the same reason. Assert actual --debug=files and native JSON selections cover the owned files, source-integrity coverage remains independent of formatter ignores, scoped tests and the full lint gate pass, and tools/biome-coverage/bw.json remains unchanged under active Biome ownership pending CB's whole-tools admission."
     flows: []
     certainty: settled
-    status: in_progress
+    status: done

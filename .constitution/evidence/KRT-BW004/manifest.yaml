@@ -1,0 +1,18 @@
+{
+  "owner": "KRT-BW004",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-14",
+    "commit": "60311a54bb56cce1ad5d1bd455760719b610fd4c",
+    "command": "bunx --bun oxlint --type-aware tools/conformance tools/scripts/conformance; bunx --bun oxlint --type-aware --debug=files tools/conformance tools/scripts/conformance; bun tools/scripts/json-check.ts tools/conformance tools/scripts/conformance tools/generators; bun run typecheck; bun run conformance; bun run lint; bun run format:check; bun run check --base=master; bun run verify"
+  },
+  "files": [
+    {
+      "path": "readiness.json",
+      "sha256": "00cbfef9e2d1fd3cbfd413b34b196678c17fe1f1380536e59abbbbfcf1324841",
+      "bytes": 42662,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "The complete shipped effective preset and every enabled type-aware rule run over the complete Git-owned code selection; actual native and JSON selections match independent inventories. Retained Biome processes every owned code/JSON file with zero diagnostics, full local gates pass, suppression inventories reconcile, generators preserve reviewed bytes and parsed values, and bw.json stays unchanged under Biome ownership until CB admission. Historical zero-file .cache measurements are not acceptance."
+}
