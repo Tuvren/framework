@@ -1,0 +1,141 @@
+{
+  "ticket": "KRT-BX002",
+  "source_member": ".constitution/evidence/KRT-BX002/suppressions.json",
+  "snapshot_head": "d1f8d7d4a0775c665b33cc5466fd69673b86115b",
+  "source_sha256": "89d38f3dbcd70f3660e7b850d7fc6b59b854a6a5d7223fcfd223f33ac0f33939",
+  "source_context": {
+    "baseline_commit": "054bd042f658d9a43db0bc154a6c64c377a6140e",
+    "measurement_commit": "5b7fff3b19b97ccdae30159a152633d573be9fb5",
+    "identity_convention": "repository-relative path::Biome rule::one-based occurrence within that path/rule; line is informational"
+  },
+  "absent_entry_fields": [
+    "final_disposition",
+    "native_equivalent_firing",
+    "native_counterpart_added",
+    "admission_milestone",
+    "actual_native_issue_fixed"
+  ],
+  "absence_meaning": "Absent in this source snapshot; no final value or planned milestone is inferred. Historical retained states are preserved.",
+  "entries": [
+    {
+      "identity": "typescript/host/remote-session/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/remote-session/src/index.ts", "rule": "lint/performance/noBarrelFile", "baseline_line": 17, "live_line": 17,
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "currently_retained": true,
+      "native_candidate_rule": "oxc/no-barrel-file", "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."}
+    },
+    {
+      "identity": "typescript/host/remote-session/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/remote-session/src/index.ts", "rule": "assist/source/organizeImports", "baseline_line": 18, "live_line": 18,
+      "directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled", "currently_retained": true,
+      "native_candidate_rule": null, "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."}
+    },
+    {
+      "identity": "typescript/host/remote-session/src/lib/remote-client-session.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/host/remote-session/src/lib/remote-client-session.ts", "rule": "lint/suspicious/useAwait", "baseline_line": 272, "live_line": 274,
+      "directive": "// biome-ignore lint/suspicious/useAwait: kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.",
+      "original_reason": "kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "currently_retained": true,
+      "native_candidate_rule": "eslint/require-await", "equivalent_native_rule": "eslint/require-await", "native_admission_disposition": "planned-equivalent-native-counterpart-subject-to-fresh-admission-proof",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[{"code":"eslint(require-await)","message":"Async function has no `await` expression.","help":"Consider removing the `async` keyword.","lines":[275],"spans":[{"offset":10761,"length":356}]}],"rationale":"eslint/require-await fires on the same next async iterator method. Its original AsyncIterator/lockstep contract reason remains valid; preserve it for fresh admission reconciliation. The separate typescript/require-await candidate is allow in the shipped preset."}
+    },
+    {
+      "identity": "typescript/host/repl/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/repl/src/index.ts", "rule": "lint/performance/noBarrelFile", "baseline_line": 16, "live_line": 16,
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional proving-host surface.",
+      "original_reason": "This package entrypoint is the intentional proving-host surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "currently_retained": true,
+      "native_candidate_rule": "oxc/no-barrel-file", "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."}
+    },
+    {
+      "identity": "typescript/host/repl/src/lib/repl-serve-ws.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/host/repl/src/lib/repl-serve-ws.ts", "rule": "lint/correctness/noUndeclaredVariables", "baseline_line": 596, "live_line": 620,
+      "directive": "// biome-ignore lint/correctness/noUndeclaredVariables: Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: \"Bun APIs are fine here\").",
+      "original_reason": "Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: \"Bun APIs are fine here\").",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "currently_retained": true,
+      "native_candidate_rule": "eslint/no-undef", "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"eslint/no-undef is registered but absent from the effective shipped rules. No equivalent native diagnostic fires for Bun; do not enable a rule or invent a native exception."}
+    },
+    {
+      "identity": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts", "rule": "lint/correctness/noUndeclaredVariables", "baseline_line": 170, "live_line": 170,
+      "directive": "// biome-ignore lint/correctness/noUndeclaredVariables: Bun global (this test drives a real Bun subprocess).",
+      "original_reason": "Bun global (this test drives a real Bun subprocess).",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "currently_retained": true,
+      "native_candidate_rule": "eslint/no-undef", "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"eslint/no-undef is registered but absent from the effective shipped rules. No equivalent native diagnostic fires for Bun; do not enable a rule or invent a native exception."}
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session-client/src/index.ts", "rule": "lint/performance/noBarrelFile", "baseline_line": 17, "live_line": 17,
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "currently_retained": true,
+      "native_candidate_rule": "oxc/no-barrel-file", "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."}
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session-client/src/index.ts", "rule": "assist/source/organizeImports", "baseline_line": 18, "live_line": 18,
+      "directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled", "currently_retained": true,
+      "native_candidate_rule": null, "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."}
+    },
+    {
+      "identity": "typescript/host/session/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session/src/index.ts", "rule": "lint/performance/noBarrelFile", "baseline_line": 17, "live_line": 17,
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "currently_retained": true,
+      "native_candidate_rule": "oxc/no-barrel-file", "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."}
+    },
+    {
+      "identity": "typescript/host/session/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session/src/index.ts", "rule": "assist/source/organizeImports", "baseline_line": 18, "live_line": 18,
+      "directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled", "currently_retained": true,
+      "native_candidate_rule": null, "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."}
+    },
+    {
+      "identity": "typescript/host/session/src/lib/session-frame-shapes.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session/src/lib/session-frame-shapes.ts", "rule": "lint/performance/noBarrelFile", "baseline_line": 17, "live_line": 17,
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This module is the intentional focused frame-envelope surface for issue #99.",
+      "original_reason": "This module is the intentional focused frame-envelope surface for issue #99.",
+      "retained_checker_disposition": "retain-original-no-live-diagnostic-before-admission", "currently_retained": true,
+      "native_candidate_rule": "oxc/no-barrel-file", "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"oxc/no-barrel-file is deny but does not fire. It checks export-star module-count threshold behavior (default 100), unlike Biome explicit re-exports; unrelated JSDoc diagnostics justify no counterpart."}
+    },
+    {
+      "identity": "typescript/host/session/src/lib/session-frame-shapes.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session/src/lib/session-frame-shapes.ts", "rule": "assist/source/organizeImports", "baseline_line": 18, "live_line": 18,
+      "directive": "// biome-ignore-all assist/source/organizeImports: The organizer collapses the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_reason": "The organizer collapses the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled", "currently_retained": true,
+      "native_candidate_rule": null, "equivalent_native_rule": null, "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "original_reason_preserved": true, "early_deletion": null,
+      "native_proof": {"report":"bx-a10-oxlint-type-aware.json","equivalent_firing_diagnostics":[],"rationale":"Root assist.enabled is false, so the retained organizer directive is dormant. There is no firing equivalent native lint diagnostic; preserve the original metadata reason until admission."}
+    }
+  ]
+}

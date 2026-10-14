@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "archive": "proof.tar.gz",
+  "snapshot_head": "d1f8d7d4a0775c665b33cc5466fd69673b86115b",
+  "archive_sha256": "2f132b6048de081e00111105657c8ba58ed10dffdc56b5431972e0a5aada9056",
+  "archive_bytes": 4823,
+  "member_path_base": "repository-root",
+  "members": [
+    {"path":".constitution/evidence/KRT-BX001/manifest.yaml","sha256":"41b3f73a0890dbfb8e768b55e06317e1346d353640477c594a8db1eade75876b","bytes":915,"role":"original-manifest"},
+    {"path":".constitution/evidence/KRT-BX001/safe-fixes.json","sha256":"3b140852b464c3f30af0850fc73bfae506e84ca76a93e6017d0341cc7cd16c7c","bytes":18675,"role":"measurement"}
+  ]
+}

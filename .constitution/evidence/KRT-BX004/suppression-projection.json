@@ -1,0 +1,151 @@
+{
+  "ticket": "KRT-BX004",
+  "source_member": ".constitution/evidence/KRT-BX004/suppressions.json",
+  "snapshot_head": "d1f8d7d4a0775c665b33cc5466fd69673b86115b",
+  "source_sha256": "ffae4e9d6fb4731c4a2e89dc7baba60554914e6b559c6a5a17258c16360033c3",
+  "source_context": {
+    "original_ledger": ".constitution/evidence/KRT-BX002/suppressions.json",
+    "active_metadata_separate": true
+  },
+  "absent_entry_fields": [
+    "native_admission_disposition",
+    "equivalent_native_rule",
+    "currently_retained"
+  ],
+  "absence_meaning": "Absent in this source snapshot; no final value or planned milestone is inferred. Historical retained states are preserved.",
+  "entries": [
+    {
+      "identity": "typescript/host/session/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session/src/index.ts", "rule": "lint/performance/noBarrelFile",
+      "original_directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M35",
+      "original_reason_preserved": true, "early_deletion": false,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m35-final-native.json", "target": "typescript/host/session/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/session/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session/src/index.ts", "rule": "assist/source/organizeImports",
+      "original_directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M35",
+      "original_reason_preserved": true, "early_deletion": false,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m35-final-native.json", "target": "typescript/host/session/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/session/src/lib/session-frame-shapes.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session/src/lib/session-frame-shapes.ts", "rule": "lint/performance/noBarrelFile",
+      "original_directive": "// biome-ignore-all lint/performance/noBarrelFile: This module is the intentional focused frame-envelope surface for issue #99.",
+      "original_reason": "This module is the intentional focused frame-envelope surface for issue #99.",
+      "retained_checker_disposition": "retain-original-no-live-diagnostic-before-admission", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M35",
+      "original_reason_preserved": true, "early_deletion": false,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m35-final-native.json", "target": "typescript/host/session/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/session/src/lib/session-frame-shapes.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session/src/lib/session-frame-shapes.ts", "rule": "assist/source/organizeImports",
+      "original_directive": "// biome-ignore-all assist/source/organizeImports: The organizer collapses the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_reason": "The organizer collapses the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M35",
+      "original_reason_preserved": true, "early_deletion": false,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m35-final-native.json", "target": "typescript/host/session/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/remote-session/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/remote-session/src/index.ts", "rule": "lint/performance/noBarrelFile",
+      "original_directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M36",
+      "original_reason_preserved": true, "early_deletion": false, "historical_equivalent_rule": null,
+      "reason": "Fresh complete native diagnostics are empty after original removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m36-final-native.json", "target": "typescript/host/remote-session/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/remote-session/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/remote-session/src/index.ts", "rule": "assist/source/organizeImports",
+      "original_directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M36",
+      "original_reason_preserved": true, "early_deletion": false, "historical_equivalent_rule": null,
+      "reason": "Fresh complete native diagnostics are empty after original removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m36-final-native.json", "target": "typescript/host/remote-session/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/remote-session/src/lib/remote-client-session.ts::lint/suspicious/useAwait::1",
+      "path": "typescript/host/remote-session/src/lib/remote-client-session.ts", "rule": "lint/suspicious/useAwait",
+      "original_directive": "// biome-ignore lint/suspicious/useAwait: kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.",
+      "original_reason": "kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M36",
+      "original_reason_preserved": true, "early_deletion": false, "historical_equivalent_rule": "eslint/require-await",
+      "actual_native_issue_fixed": {"milestone":"M28","report":".constitution/evidence/KRT-BX004/m28-remote-session.json","historical_equivalent_rule":"eslint/require-await","preserve_historical_equivalent_evidence":true},
+      "reason": "The historical equivalent eslint/require-await issue was actually fixed in M28 by the honest SingleSlotPushChannel async generator implementation; no native counterpart was added. Fresh complete native proof is zero.",
+      "native_report": "bx-m36-final-native.json", "target": "typescript/host/remote-session/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session-client/src/index.ts", "rule": "lint/performance/noBarrelFile",
+      "original_directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M37",
+      "original_reason_preserved": true, "early_deletion": false, "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m37-final-native.json", "target": "typescript/host/session-client/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session-client/src/index.ts", "rule": "assist/source/organizeImports",
+      "original_directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M37",
+      "original_reason_preserved": true, "early_deletion": false, "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m37-final-native.json", "target": "typescript/host/session-client/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/repl/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/repl/src/index.ts", "rule": "lint/performance/noBarrelFile",
+      "original_directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional proving-host surface.",
+      "original_reason": "This package entrypoint is the intentional proving-host surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M38",
+      "original_reason_preserved": true, "early_deletion": false, "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m38-final-native.json", "target": "typescript/host/repl/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/repl/src/lib/repl-serve-ws.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/host/repl/src/lib/repl-serve-ws.ts", "rule": "lint/correctness/noUndeclaredVariables",
+      "original_directive": "// biome-ignore lint/correctness/noUndeclaredVariables: Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: \"Bun APIs are fine here\").",
+      "original_reason": "Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: \"Bun APIs are fine here\").",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M38",
+      "original_reason_preserved": true, "early_deletion": false, "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m38-final-native.json", "target": "typescript/host/repl/project.json", "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts", "rule": "lint/correctness/noUndeclaredVariables",
+      "original_directive": "// biome-ignore lint/correctness/noUndeclaredVariables: Bun global (this test drives a real Bun subprocess).",
+      "original_reason": "Bun global (this test drives a real Bun subprocess).",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path", "current_biome_directive": false,
+      "final_disposition": "removed-at-atomic-native-admission", "native_equivalent_firing": false, "native_counterpart_added": false, "admission_milestone": "M38",
+      "original_reason_preserved": true, "early_deletion": false, "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "native_report": "bx-m38-final-native.json", "target": "typescript/host/repl/project.json", "coverage": "tools/biome-coverage/bx.json"
+    }
+  ]
+}

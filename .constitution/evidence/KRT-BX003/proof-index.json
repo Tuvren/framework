@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "archive": "proof.tar.gz",
+  "snapshot_head": "d1f8d7d4a0775c665b33cc5466fd69673b86115b",
+  "archive_sha256": "a406e07163144f485df90e97c0182c9c610705e6e559662e702e17d6f0a51d3e",
+  "archive_bytes": 7786,
+  "member_path_base": "repository-root",
+  "members": [
+    {"path":".constitution/evidence/KRT-BX003/m24-cohort.json","sha256":"565a7a2be9bf2cfafc2cb8a72698491ca57724920274b85c2357de3bb31e865b","bytes":5543,"role":"measurement"},
+    {"path":".constitution/evidence/KRT-BX003/m25-cohort.json","sha256":"78383046f3fef61d3f1f98a8b50f392e104bb71b9150694761ea724dfa0861c5","bytes":6270,"role":"measurement"},
+    {"path":".constitution/evidence/KRT-BX003/manifest.yaml","sha256":"53c19afdcf04be61526422a342d6a19ea2c09a3be93c37521223de8902a8ff3d","bytes":1386,"role":"original-manifest"},
+    {"path":".constitution/evidence/KRT-BX003/ordering.json","sha256":"1959aba39db7be273e228764aad0bb01d63f3796757742058c3e83712e799752","bytes":13689,"role":"measurement"}
+  ]
+}

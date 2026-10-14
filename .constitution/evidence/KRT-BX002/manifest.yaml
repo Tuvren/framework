@@ -7,24 +7,10 @@
     "command": "bunx --bun biome lint --reporter=json --max-diagnostics=none typescript/host; bunx --bun oxlint --type-aware --format=json typescript/host; bun run nx run host-repl:build --skip-nx-cache; bun run nx run host-repl:typecheck; bun run nx run host-repl:test; bun run nx run host-repl:exports-smoke; bun run typecheck; bun run lint"
   },
   "files": [
-    {
-      "path": "suppressions.json",
-      "sha256": "89d38f3dbcd70f3660e7b850d7fc6b59b854a6a5d7223fcfd223f33ac0f33939",
-      "bytes": 41286,
-      "role": "measurement"
-    },
-    {
-      "path": "metadata.json",
-      "sha256": "bd2908a4728d156c9b9246fb2b4cd7a7be5eb0170efba6f11a9883e9ed61ca03",
-      "bytes": 11957,
-      "role": "measurement"
-    },
-    {
-      "path": "assertions.json",
-      "sha256": "bef29cb007abd9215a23f439b9cf4cc49a8dbee74e5110ee2441b533270fe78a",
-      "bytes": 4280,
-      "role": "measurement"
-    }
+    {"path":"README.md","sha256":"4318b3213ab4f427df17f3f81955750149507b611448518635dbb06b73bb50da","bytes":1916,"role":"measurement"},
+    {"path":"proof-index.json","sha256":"efdbbb16465eff0225de9ccd67226e3d8caff0de6e40bfcda0b018d409ec90db","bytes":997,"role":"measurement"},
+    {"path":"proof.tar.gz","sha256":"935f5213dce61cec327a4d871f8de2ddedf8fe611655314d78763cee95674434","bytes":8581,"role":"archive"},
+    {"path":"suppression-projection.json","sha256":"13b6af5eea93c8ed3d14076d7ebf3de64cf917d53e4ac891abfb19fc5dc473f3","bytes":16147,"role":"measurement"}
   ],
   "pass_criteria": "Fresh positive retained selection covers every eligible owned Git file and every individual suppression probe processes one file. Preserve all baseline identities/reasons/needed directives and metadata; only measured native counterparts are identified. Missing-entry, changed-reason and zero-file controls reject. Canonical rebuilt tests, root typecheck and full lint exit 0 under unchanged policy."
 }

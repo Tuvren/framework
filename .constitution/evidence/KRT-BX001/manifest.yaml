@@ -7,12 +7,9 @@
     "command": "bun run typecheck; bun run nx run host-session:typecheck; bun run nx run host-session:test; bun run nx run remote-session:typecheck; bun run nx run remote-session:test; bun run nx run session-client:typecheck; bun run nx run session-client:test; bun run nx run host-repl:typecheck; bun run nx run host-repl:test"
   },
   "files": [
-    {
-      "path": "safe-fixes.json",
-      "sha256": "3b140852b464c3f30af0850fc73bfae506e84ca76a93e6017d0341cc7cd16c7c",
-      "bytes": 18675,
-      "role": "measurement"
-    }
+    {"path":"README.md","sha256":"d7e1894714880507a0626ad8f48a7f7bf51cdb29000e61cda2a900bee06df48d","bytes":1603,"role":"measurement"},
+    {"path":"proof-index.json","sha256":"dc029bafbaa89dbdf80c97096d0e26950ef5a2646d9f6fe63475bd71b05bd2da","bytes":645,"role":"measurement"},
+    {"path":"proof.tar.gz","sha256":"2f132b6048de081e00111105657c8ba58ed10dffdc56b5431972e0a5aada9056","bytes":4823,"role":"archive"}
   ],
   "pass_criteria": "Every safe-fix batch preserves signatures and collection semantics; canonical scoped tests and source typechecks pass, all original directives and required metadata remain, and ticket-wide typecheck exits 0."
 }
