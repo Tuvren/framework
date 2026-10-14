@@ -21,6 +21,70 @@ import { dirname, join } from "node:path";
 
 import { loadConformancePlan } from "./index.ts";
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readRecord = (value: unknown, label: string): Record<string, unknown> => {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+
+  return value;
+};
+
+const copyPlanReferences = async (
+  sourcePlanPath: string,
+  tempDir: string,
+  references: unknown
+): Promise<void> => {
+  if (!isRecord(references)) {
+    return;
+  }
+
+  for (const relativePath of Object.values(references)) {
+    if (typeof relativePath !== "string") {
+      continue;
+    }
+
+    const sourcePath = join(dirname(sourcePlanPath), relativePath);
+    const tempPath = join(tempDir, relativePath);
+
+    await mkdir(dirname(tempPath), { recursive: true });
+    await writeFile(tempPath, await readFile(sourcePath, "utf-8"), "utf-8");
+  }
+};
+
+const loadMutatedPlan = async (
+  planPath: string,
+  mutate: (plan: Record<string, unknown>) => void
+) => {
+  const sourcePlanPath = join(process.cwd(), planPath);
+  const source = readRecord(
+    JSON.parse(await readFile(sourcePlanPath, "utf-8")),
+    planPath
+  );
+  mutate(source);
+
+  const tempDir = await mkdtemp(join(tmpdir(), "tuvren-plan-"));
+  const tempPath = join(tempDir, "plan.json");
+
+  await writeFile(tempPath, `${JSON.stringify(source, null, 2)}\n`, "utf-8");
+  await copyPlanReferences(sourcePlanPath, tempDir, source.fixtures);
+  await copyPlanReferences(sourcePlanPath, tempDir, source.scenarios);
+  return await loadConformancePlan(tempPath);
+};
+
+const readArray = (value: unknown, label: string): unknown[] => {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`${label} must be an array`);
+  }
+
+  return value;
+};
+
+const readRecordString = (value: unknown, key: string): string | undefined =>
+  isRecord(value) && typeof value[key] === "string" ? value[key] : undefined;
+
 describe("resultField required evidence", () => {
   test("adds a result-rooted evidence requirement for resultField assertions", async () => {
     const compiledPlan = await loadConformancePlan(
@@ -126,71 +190,3 @@ describe("resultField required evidence", () => {
     ).rejects.toThrow("must have required property 'field'");
   });
 });
-
-async function loadMutatedPlan(
-  planPath: string,
-  mutate: (plan: Record<string, unknown>) => void
-) {
-  const sourcePlanPath = join(process.cwd(), planPath);
-  const source = readRecord(
-    JSON.parse(await readFile(sourcePlanPath, "utf-8")),
-    planPath
-  );
-  mutate(source);
-
-  const tempDir = await mkdtemp(join(tmpdir(), "tuvren-plan-"));
-  const tempPath = join(tempDir, "plan.json");
-
-  await writeFile(tempPath, `${JSON.stringify(source, null, 2)}\n`, "utf-8");
-  await copyPlanReferences(sourcePlanPath, tempDir, source.fixtures);
-  await copyPlanReferences(sourcePlanPath, tempDir, source.scenarios);
-  return await loadConformancePlan(tempPath);
-}
-
-async function copyPlanReferences(
-  sourcePlanPath: string,
-  tempDir: string,
-  references: unknown
-): Promise<void> {
-  if (!isRecord(references)) {
-    return;
-  }
-
-  for (const relativePath of Object.values(references)) {
-    if (typeof relativePath !== "string") {
-      continue;
-    }
-
-    const sourcePath = join(dirname(sourcePlanPath), relativePath);
-    const tempPath = join(tempDir, relativePath);
-
-    await mkdir(dirname(tempPath), { recursive: true });
-    await writeFile(tempPath, await readFile(sourcePath, "utf-8"), "utf-8");
-  }
-}
-
-function readArray(value: unknown, label: string): unknown[] {
-  if (!Array.isArray(value)) {
-    throw new TypeError(`${label} must be an array`);
-  }
-
-  return value;
-}
-
-function readRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!isRecord(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-
-  return value;
-}
-
-function readRecordString(value: unknown, key: string): string | undefined {
-  return isRecord(value) && typeof value[key] === "string"
-    ? value[key]
-    : undefined;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}

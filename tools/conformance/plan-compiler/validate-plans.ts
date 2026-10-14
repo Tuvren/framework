@@ -46,6 +46,29 @@ const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
 const OPERATION_LITERAL_PATTERN =
   /"(?:runtime|runner|event-stream|kernel|providers)\.[a-z0-9_.-]+"/gu;
 
+const readDeclaredOperations = async (
+  packetId: string
+): Promise<ReadonlySet<string>> => {
+  const sourcePaths = OPERATION_SOURCE_BY_PACKET.get(packetId);
+
+  if (sourcePaths === undefined) {
+    return new Set<string>();
+  }
+
+  const operations = new Set<string>();
+
+  for (const sourcePath of sourcePaths) {
+    const source = await readFile(resolve(REPO_ROOT, sourcePath), "utf-8");
+
+    for (const match of source.matchAll(OPERATION_LITERAL_PATTERN)) {
+      const [literal] = match;
+      operations.add(literal.slice(1, -1));
+    }
+  }
+
+  return operations;
+};
+
 const planPaths = await findConformancePlans();
 const operationCache = new Map<string, Promise<ReadonlySet<string>>>();
 
@@ -86,26 +109,3 @@ console.log(
     planPaths.length === 1 ? "" : "s"
   })`
 );
-
-async function readDeclaredOperations(
-  packetId: string
-): Promise<ReadonlySet<string>> {
-  const sourcePaths = OPERATION_SOURCE_BY_PACKET.get(packetId);
-
-  if (sourcePaths === undefined) {
-    return new Set<string>();
-  }
-
-  const operations = new Set<string>();
-
-  for (const sourcePath of sourcePaths) {
-    const source = await readFile(resolve(REPO_ROOT, sourcePath), "utf-8");
-
-    for (const match of source.matchAll(OPERATION_LITERAL_PATTERN)) {
-      const [literal] = match;
-      operations.add(literal.slice(1, -1));
-    }
-  }
-
-  return operations;
-}
