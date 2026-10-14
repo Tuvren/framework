@@ -1,0 +1,30 @@
+{
+  "owner": "KRT-BX002",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-14",
+    "commit": "906d4b1306ce879afd36e6bb8333a8f0a89c9e97",
+    "command": "bunx --bun biome lint --reporter=json --max-diagnostics=none typescript/host; bunx --bun oxlint --type-aware --format=json typescript/host; bun run typecheck; bun run lint"
+  },
+  "files": [
+    {
+      "path": "suppressions.json",
+      "sha256": "843a39238afe7335f013320e4c30ab8bfa41bc8f648ecf6d854216cb7e42f8aa",
+      "bytes": 39519,
+      "role": "measurement"
+    },
+    {
+      "path": "metadata.json",
+      "sha256": "0479de07b03004e2286b89fc8859a576b475f39b8a27ab54652e390bf1550c46",
+      "bytes": 11943,
+      "role": "measurement"
+    },
+    {
+      "path": "assertions.json",
+      "sha256": "f6a98f2c1504444f3071a146cb3053467049bf678e92fc8d48983c7e0ea25558",
+      "bytes": 2176,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "Every original identity and reason is covered by fresh retained/native diagnostics, all needed originals stay until atomic admission, only measured native equivalents are identified, metadata exceptions are separate, missing-entry/changed-reason controls fail, and full lint plus root typecheck exit 0."
+}
