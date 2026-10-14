@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import {
-  SESSION_PROTOCOL_VERSION,
-  type SessionClientApprovalResponse,
-  type SessionClientInboundRejection,
-  type SessionClientInputSignal,
-  type SessionClientInvocationEnvelope,
-  type SessionClientReportedResult,
+import { SESSION_PROTOCOL_VERSION } from "./session-protocol-types.js";
+import type {
+  SessionClientApprovalResponse,
+  SessionClientInboundRejection,
+  SessionClientInputSignal,
+  SessionClientInvocationEnvelope,
+  SessionClientReportedResult,
 } from "./session-protocol-types.js";
 import { isRetryableCloseCode, parseWsClientMessage } from "./ws-wire.js";
 
@@ -313,7 +313,7 @@ function validateOptions(options: SessionClientOptions): void {
       "createSessionClient: sessionId must be a non-empty string"
     );
   }
-  const reconnect = options.reconnect;
+  const { reconnect } = options;
   if (
     reconnect?.baseDelayMs !== undefined &&
     !isPositiveFiniteNumber(reconnect.baseDelayMs)
@@ -358,7 +358,7 @@ function socketErrorMessageOf(event: unknown): string {
     typeof event === "object" &&
     event !== null &&
     "message" in event &&
-    typeof (event as { message: unknown }).message === "string"
+    typeof event.message === "string"
   ) {
     return (event as { message: string }).message;
   }
@@ -569,7 +569,7 @@ export function createSessionClient(
       return;
     }
     const record = frame as Record<string, unknown>;
-    const kind = record.kind;
+    const { kind } = record;
     if (kind === "event") {
       options.onEvent?.(record.event, lastCursor);
       return;

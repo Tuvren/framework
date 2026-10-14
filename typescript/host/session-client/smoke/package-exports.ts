@@ -21,9 +21,9 @@ import {
   isRetryableCloseCode,
   parseWsClientMessage,
   SESSION_PROTOCOL_VERSION,
-  type SessionClientSocket,
   WS_CLOSE_CODE_AUTH_REJECTED,
 } from "@tuvren/session-client";
+import type { SessionClientSocket } from "@tuvren/session-client";
 
 describe("session-client package exports", () => {
   test("expose the client factory and wire helpers over a fake socket", () => {

@@ -16,11 +16,11 @@
 
 import { describe, expect, test } from "bun:test";
 
-import {
-  createSessionClient,
-  type SessionClientClock,
-  type SessionClientSocket,
-  type SessionClientStatus,
+import { createSessionClient } from "../src/index.js";
+import type {
+  SessionClientClock,
+  SessionClientSocket,
+  SessionClientStatus,
 } from "../src/index.js";
 
 const NO_SUCH_CAPABILITY_PATTERN = /no\.such\.capability/;
@@ -128,13 +128,13 @@ function makeClient(
   const sockets: FakeSocket[] = [];
   const clock = new FakeClock();
   const statuses: SessionClientStatus[] = [];
-  const events: Array<{ event: unknown; cursor?: string }> = [];
+  const events: { event: unknown; cursor?: string }[] = [];
   const rejections: unknown[] = [];
 
   const client = createSessionClient({
     capabilities: {},
     clock,
-    onEvent: (event, cursor) => events.push({ event, cursor }),
+    onEvent: (event, cursor) => events.push({ cursor, event }),
     onRejection: (rejection) => rejections.push(rejection),
     onStatusChange: (status) => statuses.push(status),
     sessionId: "test-session",
@@ -173,7 +173,7 @@ describe("createSessionClient: handshake and events", () => {
     const { client, sockets } = makeClient();
     client.connect();
     expect(sockets).toHaveLength(1);
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
 
     socket.open();
     expect(socket.sent).toHaveLength(1);
@@ -187,7 +187,7 @@ describe("createSessionClient: handshake and events", () => {
   test("delivers events to onEvent after handshake ack and tracks cursor", () => {
     const { client, events, sockets } = makeClient();
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -215,7 +215,7 @@ describe("createSessionClient: capability dispatch", () => {
       },
     });
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -254,7 +254,7 @@ describe("createSessionClient: capability dispatch", () => {
       },
     });
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -284,7 +284,7 @@ describe("createSessionClient: capability dispatch", () => {
   test("unknown capabilityId yields a well-shaped isError result", async () => {
     const { client, sockets } = makeClient();
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -325,7 +325,7 @@ describe("createSessionClient: redelivery dedup", () => {
       },
     });
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -381,7 +381,7 @@ describe("createSessionClient: redelivery dedup", () => {
       },
     });
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -432,7 +432,7 @@ describe("createSessionClient: reconnect and backoff", () => {
       reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
     });
     client.connect();
-    const first = sockets[0] as FakeSocket;
+    const first = sockets[0];
     first.open();
     ack(first);
 
@@ -448,7 +448,7 @@ describe("createSessionClient: reconnect and backoff", () => {
 
     clock.advance(100);
     expect(sockets).toHaveLength(2);
-    const second = sockets[1] as FakeSocket;
+    const second = sockets[1];
     second.open();
     const handshake = second.lastSent();
     expect(handshake.cursor).toBe("cursor-x");
@@ -468,7 +468,7 @@ describe("createSessionClient: reconnect and backoff", () => {
   test("a non-retryable close (auth rejected) does not reconnect and surfaces a terminal status", () => {
     const { client, clock, sockets, statuses } = makeClient();
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
 
     socket.serverClose(4003, "auth rejected");
@@ -488,7 +488,7 @@ describe("createSessionClient: heartbeat", () => {
   test("answers an inbound ping with pong", () => {
     const { client, sockets } = makeClient();
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -503,7 +503,7 @@ describe("createSessionClient: inbound frame shapes", () => {
   test("approve/steer/cancel send correctly-shaped inbound frames", () => {
     const { client, sockets } = makeClient();
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -545,7 +545,7 @@ describe("createSessionClient: void handler wire shape (P1-1)", () => {
       },
     });
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -586,7 +586,7 @@ describe("createSessionClient: control frames queue until handshake_ack (P2-2)",
   test("steer() called before the handshake ack is not on the wire until after ack", () => {
     const { client, sockets } = makeClient();
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
 
     // No ack yet: steer() must not reach the socket.
@@ -607,7 +607,7 @@ describe("createSessionClient: control frames queue until handshake_ack (P2-2)",
       reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
     });
     client.connect();
-    const first = sockets[0] as FakeSocket;
+    const first = sockets[0];
     first.open();
     ack(first);
 
@@ -618,7 +618,7 @@ describe("createSessionClient: control frames queue until handshake_ack (P2-2)",
     client.steer({ parts: [{ text: "during backoff", type: "text" }] });
 
     clock.advance(100);
-    const second = sockets[1] as FakeSocket;
+    const second = sockets[1];
     second.open();
 
     // Not sent yet: still waiting on the new socket's ack.
@@ -641,7 +641,7 @@ describe("createSessionClient: malformed client_invocation (P2-3)", () => {
       },
     });
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -699,7 +699,7 @@ describe("createSessionClient: malformed session_rejection (P2-3b)", () => {
   test("malformed rejection frames do not throw and are not delivered; a valid one still is", () => {
     const { client, sockets, rejections } = makeClient();
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -763,7 +763,7 @@ describe("createSessionClient: close() during backoff emits terminal status (P2-
       reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
     });
     client.connect();
-    const socket = sockets[0] as FakeSocket;
+    const socket = sockets[0];
     socket.open();
     ack(socket);
 
@@ -887,7 +887,7 @@ describe("createSessionClient: outboundQueue robustness (P2 close/flush/settle)"
       reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
     });
     client.connect();
-    const first = sockets[0] as FakeSocket;
+    const first = sockets[0];
     first.open();
     ack(first);
 
@@ -908,7 +908,7 @@ describe("createSessionClient: outboundQueue robustness (P2 close/flush/settle)"
     // Reconnecting fresh afterwards must not replay the cleared steer.
     client.connect();
     expect(sockets).toHaveLength(2);
-    const second = sockets[1] as FakeSocket;
+    const second = sockets[1];
     second.open();
     ack(second);
 
@@ -921,7 +921,7 @@ describe("createSessionClient: outboundQueue robustness (P2 close/flush/settle)"
       reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
     });
     client.connect();
-    const first = sockets[0] as FakeSocket;
+    const first = sockets[0];
     first.open();
 
     // Queue two control frames before the handshake ack lands.
@@ -941,7 +941,7 @@ describe("createSessionClient: outboundQueue robustness (P2 close/flush/settle)"
     // frames must flush, in original order, once the new socket acks.
     first.serverClose(4004, "heartbeat timeout");
     clock.advance(100);
-    const second = sockets[1] as FakeSocket;
+    const second = sockets[1];
     second.open();
     ack(second);
 
@@ -962,7 +962,7 @@ describe("createSessionClient: outboundQueue robustness (P2 close/flush/settle)"
       reconnect: { baseDelayMs: 100, maxDelayMs: 1000 },
     });
     client.connect();
-    const first = sockets[0] as FakeSocket;
+    const first = sockets[0];
     first.open();
     ack(first);
 
@@ -996,7 +996,7 @@ describe("createSessionClient: outboundQueue robustness (P2 close/flush/settle)"
     // Reconnect: the queued client_result for call-boom flushes in order.
     first.serverClose(4004, "heartbeat timeout");
     clock.advance(100);
-    const second = sockets[1] as FakeSocket;
+    const second = sockets[1];
     second.open();
     ack(second);
 
