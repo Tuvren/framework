@@ -69,6 +69,9 @@ const utf8Decoder = new TextDecoder();
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && /\S/u.test(value);
+
 const isResumeStatus = (value: unknown): value is SessionClientResumeStatus =>
   typeof value === "string" &&
   (WS_RESUME_STATUSES as readonly string[]).includes(value);
@@ -125,7 +128,10 @@ export const parseWsClientMessage = (
         : { kind: "handshake_ack", message };
     }
     case "frame": {
-      return typeof parsed.cursor === "string"
+      if ("cursor" in parsed && !isNonEmptyString(parsed.cursor)) {
+        return { kind: "unparseable", raw: parsed };
+      }
+      return isNonEmptyString(parsed.cursor)
         ? { cursor: parsed.cursor, frame: parsed.frame, kind: "frame" }
         : { frame: parsed.frame, kind: "frame" };
     }

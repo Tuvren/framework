@@ -1,7 +1,7 @@
 {
   "ticket": "KRT-BX004",
   "status": "complete-native-host-readiness",
-  "measurement_head": "032cafb1edc7375d23ca2dbe9994e9df658edf0b",
+  "measurement_head": "ecf7e2650c184e42b6f7498b01d05efd795e9418",
   "working_tree_candidate": true,
   "projects": [
     {
@@ -45,7 +45,8 @@
         "protocol_trace_parity": true,
         "production_source_bundles": true
       },
-      "proof": "m35-session-admission.json"
+      "proof": "m35-session-admission.json",
+      "admission_code_files": 7
     },
     {
       "project": "typescript/host/remote-session",
@@ -88,7 +89,8 @@
         "protocol_trace_parity": true,
         "production_source_bundles": true
       },
-      "proof": "m36-remote-session-admission.json"
+      "proof": "m36-remote-session-admission.json",
+      "admission_code_files": 6
     },
     {
       "project": "typescript/host/session-client",
@@ -105,7 +107,7 @@
         }
       },
       "native_diagnostics": 0,
-      "code_files": 10,
+      "code_files": 11,
       "json_files": 7,
       "complete_effective_preset_equal": true,
       "metadata_regions": 20,
@@ -139,7 +141,8 @@
         "production_source_bundles": false,
         "production_source_modules": true
       },
-      "proof": "m37-session-client-admission.json"
+      "proof": "m37-session-client-admission.json",
+      "admission_code_files": 10
     },
     {
       "project": "typescript/host/repl",
@@ -386,7 +389,8 @@
           ]
         }
       },
-      "proof": "m38-repl-admission.json"
+      "proof": "m38-repl-admission.json",
+      "admission_code_files": 33
     }
   ],
   "whole_host_native_diagnostics": 0,
@@ -438,6 +442,7 @@
     "typescript/host/session-client/test/session-client-boundaries.test.ts",
     "typescript/host/session-client/test/session-client-clock.ts",
     "typescript/host/session-client/test/session-client-fixtures.ts",
+    "typescript/host/session-client/test/session-client-receive-guards.test.ts",
     "typescript/host/session-client/test/session-client.test.ts",
     "typescript/host/session-client/tsup.config.ts",
     "typescript/host/session/smoke/package-exports.ts",
@@ -523,79 +528,79 @@
     {
       "gate": "typecheck",
       "exit": 0,
-      "log": "bx-pr-r1-final-typecheck.log",
-      "sha256": "02c16c7041098f49c251a24c8ab6fe5b4dd80f1f2d40a65017ebb68fb0a4128e",
-      "bytes": 5874
+      "log": "bx-pr-r2-final-typecheck.log",
+      "sha256": "e9d08454364657e13d8eecab73dbff2dab95fc2b5c7f95209186c1e48bd49e52",
+      "bytes": 5990
     },
     {
       "gate": "conformance",
       "exit": 0,
-      "log": "bx-pr-r1-final-conformance.log",
-      "sha256": "99e4be8e27ebbec4434cafe88f1eb426d6032d37b5681d599a223096de4940c5",
+      "log": "bx-pr-r2-final-conformance.log",
+      "sha256": "c800fc840567c24dfc2b06c01c6d23c4f9b7485bfa81fb2ea2df41c525423462",
       "bytes": 23375
     },
     {
       "gate": "full-lint",
       "exit": 0,
-      "log": "bx-pr-r1-final-full-lint.log",
-      "sha256": "a7e21281237761e68779ccf854406a518ef322f05c93a32a52a2ee82094d304b",
-      "bytes": 6046
+      "log": "bx-pr-r2-final-full-lint.log",
+      "sha256": "02e94e1ba14d0d631dfd330e7734d5797997da4ab7106cceba2d0b7299cc50ac",
+      "bytes": 6261
     },
     {
       "gate": "format-check",
       "exit": 0,
-      "log": "bx-pr-r1-final-format-check.log",
-      "sha256": "76ac95a3b36ec18ccaae77b390a17b6058a73a07150377a31cf07bb9a9d2c7eb",
+      "log": "bx-pr-r2-final-format-check.log",
+      "sha256": "407604e643a004c05761fa8bca1e1c3ce8a5bc4bbd722734455681d8fc13a7bf",
       "bytes": 144
     },
     {
       "gate": "check",
       "exit": 0,
-      "log": "bx-pr-r1-final-check.log",
-      "sha256": "cebedfa9da4b707f116de799571f4168fa2e2e9c337b215fa31386173b43c372",
-      "bytes": 59481
+      "log": "bx-pr-r2-final-check.log",
+      "sha256": "0fdae785f60ef07bf7da876c8161626a9ccd9e324ec633946fc0131b8dd088ce",
+      "bytes": 59474
     },
     {
       "gate": "verify",
       "exit": 0,
-      "log": "bx-pr-r1-final-verify.log",
-      "sha256": "b4431389daedc059e489f6d93bb555224eb1dd48e9fca1bf3bc76426740749dd",
-      "bytes": 300534
+      "log": "bx-pr-r2-final-verify.log",
+      "sha256": "d0cda6e3bd5f45e1f79885a5c90578c0a4269ee572f199e75622a4647be3d1ae",
+      "bytes": 300537
     },
     {
       "gate": "framework-conformance",
       "exit": 0,
-      "log": "bx-pr-r1-final-framework-conformance.log",
+      "log": "bx-pr-r2-final-framework-conformance.log",
       "sha256": "6541019c95e8e79b5fe154a2762d49f3d65ef31511678c00e98099d7f7d76fee",
       "bytes": 2261
     },
     {
       "gate": "repl-scenario",
       "exit": 0,
-      "log": "bx-pr-r1-final-repl-scenario.log",
-      "sha256": "de3edc8e86df6f2850e376467100c5c800fd22bf0c64ac65f0778bbfdf15942b",
+      "log": "bx-pr-r2-final-repl-scenario.log",
+      "sha256": "642be99486c008d363102ce55846238217022717b2707549ad2994cf1b158bb7",
       "bytes": 7979
     },
     {
       "gate": "sqlite-pinned",
       "exit": 0,
-      "log": "bx-pr-r1-final-sqlite-pinned.log",
-      "sha256": "e2b4242fe7ea63b961af7699070c24d82aa09b63f77f6c48bd96f62f5726b11b",
+      "log": "bx-pr-r2-final-sqlite-pinned.log",
+      "sha256": "05183f849195f3f7972e25d920a1ebd6c3546bba0925633fb7ca4a14437ee0fc",
       "bytes": 5482
     },
     {
       "gate": "postgres",
       "exit": 0,
-      "log": "bx-pr-r1-final-postgres.log",
-      "sha256": "7bfdc755a27f6d9882387f4d64a3ca12283762b1642acf0bb85ad72818e9c4a0",
+      "log": "bx-pr-r2-final-postgres.log",
+      "sha256": "3afbddac7fa2e2c6e99eb144cf04704de61aec92670ae4c5ed815dc414239666",
       "bytes": 10186
     },
     {
       "gate": "interop",
       "exit": 0,
-      "log": "bx-pr-r1-final-interop.log",
-      "sha256": "07a0c237664041c63dbf256ff80eeb0e83a30558aee5392a4be016e9e9383c89",
-      "bytes": 97840
+      "log": "bx-pr-r2-final-interop.log",
+      "sha256": "946490bd1106eb9e22a45142cc2dd97e0ed414b7ec4b24c34445f235ae09e4de",
+      "bytes": 97838
     }
   ],
   "behavior": {
@@ -609,8 +614,8 @@
         "assertions": 92
       },
       "session_client": {
-        "tests": 35,
-        "assertions": 144
+        "tests": 38,
+        "assertions": 161
       },
       "repl": {
         "tests": 191,
@@ -626,7 +631,11 @@
     "typed_client_file_bytes_round_trip": true,
     "foreign_protocol_session_frames_ignored_before_side_effects": true,
     "invalid_handshake_ack_ignored_before_flush": true,
-    "whitespace_identifiers_ignored": true
+    "whitespace_identifiers_ignored": true,
+    "handshake_first_before_any_session_frame": true,
+    "only_valid_event_envelopes_advance_replay_cursor": true,
+    "non_event_cursor_envelopes_ignored_before_delivery": true,
+    "cross_realm_typed_file_bytes_projected": true
   },
   "environment": {
     "A10_relocated_from_forced_excluded_cache_ancestor": true,
@@ -718,7 +727,7 @@
     }
   ],
   "admission_proofs_are_historical_snapshots": true,
-  "current_validation": "pr-review-round1.json",
+  "current_validation": "pr-review-round2.json",
   "current_lint_targets": [
     {
       "project": "host-session",
@@ -860,8 +869,12 @@
     }
   ],
   "pr_review_fix": {
-    "round": 1,
-    "findings_addressed": 5,
-    "proof": "pr-review-round1.json"
+    "round": 2,
+    "Act_on_actions_addressed": 8,
+    "unique_findings_addressed": 7,
+    "proofs": [
+      "pr-review-round1.json",
+      "pr-review-round2.json"
+    ]
   }
 }

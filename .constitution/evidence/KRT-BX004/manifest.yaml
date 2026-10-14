@@ -3,7 +3,7 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-14",
-    "commit": "032cafb1edc7375d23ca2dbe9994e9df658edf0b",
+    "commit": "ecf7e2650c184e42b6f7498b01d05efd795e9418",
     "command": "bun run nx run host-repl:typecheck; bun run nx run host-repl:test; bun run nx run host-repl:exports-smoke; bun run nx run host-repl:lint; bunx --bun oxlint --type-aware typescript/host; bun run typecheck; bun run conformance; bun run lint; bun run format:check; bun run check --base=master; bun run verify; bun run nx run framework-typescript-certification:conformance; bun run nx run host-repl:scenario; bun run proving-host:scenario-sqlite-pinned; bun run proving-host:scenario-postgres; bun run proving-host:interop-smoke"
   },
   "files": [
@@ -129,8 +129,8 @@
     },
     {
       "path": "readiness.json",
-      "sha256": "b74e1e8fb6632e73f3baa4eb0e3dff56981cdbac952a88f702dc59287ab071d7",
-      "bytes": 28787,
+      "sha256": "979dda67b7f94fa044c7888cafca16c1b8e5215ed9e99bbc4c6ba717c37cd0ab",
+      "bytes": 29322,
       "role": "measurement"
     },
     {
@@ -138,7 +138,13 @@
       "sha256": "fd08f9827bb3158c06c5c7352ed4fe609baef5bda965bd63d5d05eb0b042fe97",
       "bytes": 10025,
       "role": "measurement"
+    },
+    {
+      "path": "pr-review-round2.json",
+      "sha256": "93813b7a6ec21d8d0551a9cb7fcae06317ba7db2b75fbb48db99ed3c94e8903a",
+      "bytes": 7780,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "All four exact native code-then-JSON targets admit atomically; full host native diagnostics are zero with complete positive code/JSON/preset/backend proof. All12 immutable original identities/reasons and historical retained states have final dispositions; no Biome directive remains, no early deletion or manufactured counterpart. Preserve144actual release-tag AST associations (112native-firing plus32inline), all38 authorized narrow metadata regions and controls. All final root/behavior gates pass; every BX ticket completes. PR round1 fixes require typed-file client/binding interoperability, fail-closed protocol/session/ack/identifier checks, complete dependency cache inputs and all final gates; historical admission snapshots remain immutable."
+  "pass_criteria": "All four exact native code-then-JSON targets admit atomically; full host native diagnostics are zero with complete positive code/JSON/preset/backend proof. All12 immutable original identities/reasons and historical retained states have final dispositions; no Biome directive remains, no early deletion or manufactured counterpart. Preserve144actual release-tag AST associations (112native-firing plus32inline), all38 authorized narrow metadata regions and controls. All final root/behavior gates pass; every BX ticket completes. PR round1 fixes require typed-file client/binding interoperability, fail-closed protocol/session/ack/identifier checks, complete dependency cache inputs and all final gates; historical admission snapshots remain immutable. PR round2 completes handshake-first, validated-event-only cursor handling and realm-independent typed bytes, with full fresh root/behavior gates and57-file native zero."
 }
