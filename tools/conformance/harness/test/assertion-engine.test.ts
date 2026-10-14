@@ -28,15 +28,13 @@ import {
   getCompiledSchemaValidator,
 } from "../assertion-engine/index.ts";
 
-function buildCheck(
+const buildCheck = (
   assertions: ConformancePlanCheck["assertions"]
-): ConformancePlanCheck {
-  return {
-    assertions,
-    checkId: "ck.terminal-event",
-    operation: "test.operation",
-  };
-}
+): ConformancePlanCheck => ({
+  assertions,
+  checkId: "ck.terminal-event",
+  operation: "test.operation",
+});
 
 describe("terminalEvent default path", () => {
   test("eventType match passes against the terminal event's type field by default", () => {
@@ -338,5 +336,98 @@ describe("schemaValid validator memoization (KRT-BM004)", () => {
       expect(withProtoProperty(value)).toBe(freshWithProto(value));
       expect(withoutProtoProperty(value)).toBe(freshWithoutProto(value));
     }
+  });
+});
+
+describe("assertion sources and failure ordering", () => {
+  test("field assertions read only their declared source", () => {
+    const assertions: ConformancePlanCheck["assertions"] = [
+      { equals: "state", field: "$.answer", kind: "stateField" },
+      { equals: "evidence", field: "$.answer", kind: "evidenceField" },
+      { equals: "result", field: "$.answer", kind: "resultField" },
+    ];
+    const context = {
+      evidence: { answer: "evidence" },
+      result: { answer: "result" },
+      state: { answer: "state" },
+    };
+
+    expect(
+      evaluateAssertions(buildCheck(assertions), context).map(
+        (evaluation) => evaluation.status
+      )
+    ).toEqual(["pass", "pass", "pass"]);
+    expect(
+      evaluateAssertions(buildCheck(assertions), {
+        evidence: context.state,
+        result: context.evidence,
+        state: context.result,
+      }).map((evaluation) => evaluation.status)
+    ).toEqual(["fail", "fail", "fail"]);
+  });
+
+  test("failing evidence cannot be satisfied by passing state or result", () => {
+    expect(
+      evaluateAssertions(
+        buildCheck([
+          { equals: "pass", field: "$.status", kind: "evidenceField" },
+        ]),
+        {
+          evidence: { status: "fail" },
+          result: { status: "pass" },
+          state: { status: "pass" },
+        }
+      )
+    ).toEqual([
+      { assertionId: "ck.terminal-event.1.evidenceField", status: "fail" },
+    ]);
+  });
+
+  test("required evidence retains declared order and missing-path failures", () => {
+    expect(
+      evaluateRequiredEvidence(
+        {
+          check: buildCheck([]),
+          requiredEvidence: ["result.missing", "evidence.status", "absent"],
+        },
+        { evidence: { status: "fail" }, result: {} }
+      )
+    ).toEqual([
+      {
+        assertionId: "ck.terminal-event.requiredEvidence.result.missing",
+        message: "missing required evidence result.missing",
+        status: "fail",
+      },
+      {
+        assertionId: "ck.terminal-event.requiredEvidence.evidence.status",
+        status: "pass",
+      },
+      {
+        assertionId: "ck.terminal-event.requiredEvidence.absent",
+        message: "missing required evidence absent",
+        status: "fail",
+      },
+    ]);
+  });
+
+  test("assertion failures retain their order and do not stop later evaluations", () => {
+    expect(
+      evaluateAssertions(
+        buildCheck([
+          { field: "$.answer", kind: "resultField" },
+          { kind: "noEvent" },
+          { eventType: "end", kind: "terminalEvent" },
+        ]),
+        { events: [{ type: "end" }] }
+      )
+    ).toEqual([
+      { assertionId: "ck.terminal-event.1.resultField", status: "fail" },
+      {
+        assertionId: "ck.terminal-event.2.noEvent",
+        message: "noEvent assertion requires eventType",
+        status: "fail",
+      },
+      { assertionId: "ck.terminal-event.3.terminalEvent", status: "pass" },
+    ]);
   });
 });

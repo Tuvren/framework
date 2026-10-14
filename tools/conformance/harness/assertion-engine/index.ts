@@ -43,45 +43,28 @@ export interface AssertionEvaluation {
   status: "fail" | "pass";
 }
 
-export function evaluateAssertions(
-  check: ConformancePlanCheck,
-  context: AssertionContext
-): AssertionEvaluation[] {
-  return check.assertions.map((assertion, index) => {
-    const assertionId = `${check.checkId}.${index + 1}.${assertion.kind}`;
+// Compile each distinct schema once per process instead of once per
+// schemaValid assertion (KRT-BM004; audit finding [C-02]). Schemas arrive as
+// fixture-embedded values without a reliable `$id`, and the same logical
+// schema is re-read as a fresh object per plan/fixture load — so reference
+// identity is NOT a safe cache key. Key by content (stable JSON) instead:
+// two structurally identical schemas share a compiled validator, and two
+// distinct schemas can never collide. Mirrors the memoization pattern in
+// typescript/runtime/src/lib/tool-execution-helpers.ts.
+const schemaValidatorCache = new Map<string, ValidateFunction>();
 
-    try {
-      const passed = evaluateAssertion(assertion, context);
-      return {
-        assertionId,
-        status: passed ? "pass" : "fail",
-      };
-    } catch (error: unknown) {
-      return {
-        assertionId,
-        message: error instanceof Error ? error.message : String(error),
-        status: "fail",
-      };
-    }
-  });
-}
+const readEvents = (context: AssertionContext): readonly unknown[] => {
+  if (context.events === undefined) {
+    throw new Error("assertion requires events");
+  }
 
-export function evaluateRequiredEvidence(
-  compiledCheck: CompiledConformancePlanCheck,
-  context: AssertionContext
-): AssertionEvaluation[] {
-  return compiledCheck.requiredEvidence.map((path) => {
-    const present = hasRequiredEvidence(context, path);
+  return context.events;
+};
 
-    return {
-      assertionId: `${compiledCheck.check.checkId}.requiredEvidence.${path}`,
-      ...(present ? {} : { message: `missing required evidence ${path}` }),
-      status: present ? "pass" : "fail",
-    };
-  });
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-export function readPath(source: unknown, path: string): unknown {
+export const readPath = (source: unknown, path: string): unknown => {
   if (path === "$") {
     return source;
   }
@@ -113,67 +96,106 @@ export function readPath(source: unknown, path: string): unknown {
   }
 
   return current;
-}
+};
 
-function evaluateAssertion(
-  assertion: ConformancePlanAssertion,
-  context: AssertionContext
-): boolean {
-  switch (assertion.kind) {
-    case "eventSequence": {
-      return assertEventSequence(assertion, context);
-    }
-    case "terminalEvent": {
-      return assertTerminalEvent(assertion, context);
-    }
-    case "schemaValid": {
-      return assertSchemaValid(assertion, context);
-    }
-    case "errorEnvelope": {
-      return assertErrorEnvelope(assertion, context);
-    }
-    case "stateField": {
-      return assertField(assertion, context.state, context);
-    }
-    case "evidenceField": {
-      return assertField(assertion, context.evidence, context);
-    }
-    case "resultField": {
-      return assertField(assertion, context.result, context);
-    }
-    case "ordering": {
-      return assertOrdering(assertion, context);
-    }
-    case "noEvent": {
-      return assertNoEvent(assertion, context);
-    }
-    case "secretAbsence": {
-      return assertSecretAbsence(assertion, context);
-    }
-    case "secretPatternAbsence": {
-      return assertSecretPatternAbsence(assertion, context);
-    }
-    default: {
-      return assertNever(assertion.kind);
-    }
+const valuesAreEqual = (left: unknown, right: unknown): boolean => {
+  if (Object.is(left, right)) {
+    return true;
   }
-}
 
-function assertEventSequence(
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((entry, index) => valuesAreEqual(entry, right[index]))
+    );
+  }
+
+  if (isRecord(left) || isRecord(right)) {
+    if (!(isRecord(left) && isRecord(right))) {
+      return false;
+    }
+
+    const leftKeys = Object.keys(left).sort();
+    const rightKeys = Object.keys(right).sort();
+
+    // JSON object field order is language-specific, so equality is structural
+    // and key-order independent across TypeScript/Rust adapter observations.
+    return (
+      leftKeys.length === rightKeys.length &&
+      leftKeys.every(
+        (key, index) =>
+          key === rightKeys[index] && valuesAreEqual(left[key], right[key])
+      )
+    );
+  }
+
+  return false;
+};
+
+const valueContains = (value: unknown, expected: unknown): boolean => {
+  if (Array.isArray(value)) {
+    return value.some((entry) => valuesAreEqual(entry, expected));
+  }
+
+  if (typeof value === "string" && typeof expected === "string") {
+    return value.includes(expected);
+  }
+
+  if (isRecord(value) && typeof expected === "string") {
+    return expected in value;
+  }
+
+  return false;
+};
+
+const assertValue = (
+  assertion: ConformancePlanAssertion,
+  value: unknown,
+  context: AssertionContext
+): boolean => {
+  if ("equals" in assertion) {
+    return valuesAreEqual(value, assertion.equals);
+  }
+
+  if (assertion.equalsPath !== undefined) {
+    return valuesAreEqual(value, readPath(context, assertion.equalsPath));
+  }
+
+  if ("contains" in assertion) {
+    return valueContains(value, assertion.contains);
+  }
+
+  if (assertion.containsPath !== undefined) {
+    return valueContains(value, readPath(context, assertion.containsPath));
+  }
+
+  if (assertion.matches !== undefined) {
+    return (
+      typeof value === "string" &&
+      new RegExp(assertion.matches, "u").test(value)
+    );
+  }
+
+  return value !== undefined;
+};
+
+const assertEventSequence = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
-): boolean {
+): boolean => {
   const events = readEvents(context);
   const actual = events.map((event) =>
     readPath(event, assertion.path ?? "$.type")
   );
   return assertValue(assertion, actual, context);
-}
+};
 
-function assertTerminalEvent(
+const assertTerminalEvent = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
-): boolean {
+): boolean => {
   const events = readEvents(context);
   const terminalEvent = events.at(-1);
 
@@ -190,24 +212,33 @@ function assertTerminalEvent(
   return assertion.eventType === undefined
     ? assertValue(assertion, value, context)
     : value === assertion.eventType;
-}
+};
 
-// Compile each distinct schema once per process instead of once per
-// schemaValid assertion (KRT-BM004; audit finding [C-02]). Schemas arrive as
-// fixture-embedded values without a reliable `$id`, and the same logical
-// schema is re-read as a fresh object per plan/fixture load — so reference
-// identity is NOT a safe cache key. Key by content (stable JSON) instead:
-// two structurally identical schemas share a compiled validator, and two
-// distinct schemas can never collide. Mirrors the memoization pattern in
-// typescript/runtime/src/lib/tool-execution-helpers.ts.
-const schemaValidatorCache = new Map<string, ValidateFunction>();
+// JSON.stringify is key-order sensitive, so serialize with sorted object
+// keys: the same schema loaded from differently-ordered JSON still hits one
+// cache entry, while any semantic difference changes the key. The rebuilt
+// object is null-prototype so a literal "__proto__" property name lands as
+// an own property instead of vanishing through the inherited setter — with
+// a plain {} two schemas differing only in a "__proto__" member would
+// serialize identically and collide.
+const canonicalSchemaKey = (value: unknown): string =>
+  JSON.stringify(value, (_key, node: unknown) => {
+    if (isRecord(node) && !Array.isArray(node)) {
+      const sorted: Record<string, unknown> = Object.create(null);
+      for (const key of Object.keys(node).sort()) {
+        sorted[key] = node[key];
+      }
+      return sorted;
+    }
+    return node;
+  });
 
 // Exported for the assertion-engine unit tests (memoization identity and
 // collision-safety assertions); production callers go through
 // assertSchemaValid.
-export function getCompiledSchemaValidator(
+export const getCompiledSchemaValidator = (
   schema: AnySchema
-): ValidateFunction {
+): ValidateFunction => {
   const key = canonicalSchemaKey(schema);
   const cached = schemaValidatorCache.get(key);
 
@@ -219,32 +250,20 @@ export function getCompiledSchemaValidator(
   const validate = ajv.compile(schema);
   schemaValidatorCache.set(key, validate);
   return validate;
-}
+};
 
-// JSON.stringify is key-order sensitive, so serialize with sorted object
-// keys: the same schema loaded from differently-ordered JSON still hits one
-// cache entry, while any semantic difference changes the key. The rebuilt
-// object is null-prototype so a literal "__proto__" property name lands as
-// an own property instead of vanishing through the inherited setter — with
-// a plain {} two schemas differing only in a "__proto__" member would
-// serialize identically and collide.
-function canonicalSchemaKey(value: unknown): string {
-  return JSON.stringify(value, (_key, node: unknown) => {
-    if (isRecord(node) && !Array.isArray(node)) {
-      const sorted: Record<string, unknown> = Object.create(null);
-      for (const key of Object.keys(node).sort()) {
-        sorted[key] = node[key];
-      }
-      return sorted;
-    }
-    return node;
-  });
-}
+const readJsonSchema = (value: unknown, label: string): AnySchema => {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
 
-function assertSchemaValid(
+  throw new Error(`${label} must contain a JSON Schema object or boolean`);
+};
+
+const assertSchemaValid = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
-): boolean {
+): boolean => {
   if (assertion.schema === undefined) {
     throw new Error("schemaValid assertion requires schema");
   }
@@ -255,12 +274,12 @@ function assertSchemaValid(
     readJsonSchema(schema, assertion.schema)
   );
   return validate(value);
-}
+};
 
-function assertErrorEnvelope(
+const assertErrorEnvelope = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
-): boolean {
+): boolean => {
   const value = readPath(context, assertion.path ?? "$.result.error");
 
   if (
@@ -273,24 +292,42 @@ function assertErrorEnvelope(
   }
 
   return assertValue(assertion, value, context);
-}
+};
 
-function assertField(
+const assertField = (
   assertion: ConformancePlanAssertion,
   source: unknown,
   context: AssertionContext
-): boolean {
+): boolean => {
   if (assertion.field === undefined) {
     throw new Error(`${assertion.kind} assertion requires field`);
   }
 
   return assertValue(assertion, readPath(source, assertion.field), context);
-}
+};
 
-function assertOrdering(
+const resolveExpectedPair = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
-): boolean {
+): readonly unknown[] => {
+  const contains =
+    assertion.containsPath === undefined
+      ? assertion.contains
+      : readPath(context, assertion.containsPath);
+
+  if (!Array.isArray(contains) || contains.length !== 2) {
+    throw new Error(
+      "ordering assertion requires contains with two event types"
+    );
+  }
+
+  return contains;
+};
+
+const assertOrdering = (
+  assertion: ConformancePlanAssertion,
+  context: AssertionContext
+): boolean => {
   const events = readEvents(context);
   const contains = resolveExpectedPair(assertion, context);
   const [first, second] = contains;
@@ -305,12 +342,27 @@ function assertOrdering(
   const firstIndex = eventTypes.indexOf(first);
   const secondIndex = eventTypes.indexOf(second);
   return firstIndex !== -1 && secondIndex !== -1 && firstIndex < secondIndex;
-}
+};
 
-function assertSecretAbsence(
+const assertNoEvent = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
-): boolean {
+): boolean => {
+  if (assertion.eventType === undefined) {
+    throw new Error("noEvent assertion requires eventType");
+  }
+
+  const events = readEvents(context);
+  return events.every(
+    (event) =>
+      readPath(event, assertion.path ?? "$.type") !== assertion.eventType
+  );
+};
+
+const assertSecretAbsence = (
+  assertion: ConformancePlanAssertion,
+  context: AssertionContext
+): boolean => {
   if (assertion.field === undefined) {
     throw new Error("secretAbsence assertion requires field");
   }
@@ -352,12 +404,12 @@ function assertSecretAbsence(
   }
 
   return true;
-}
+};
 
-function assertSecretPatternAbsence(
+const assertSecretPatternAbsence = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
-): boolean {
+): boolean => {
   if (assertion.field === undefined) {
     throw new Error("secretPatternAbsence assertion requires field");
   }
@@ -383,73 +435,82 @@ function assertSecretPatternAbsence(
   }
 
   return true;
-}
+};
 
-function assertNoEvent(
+const assertNever = (value: never): never => {
+  throw new Error(`unsupported assertion kind ${value}`);
+};
+
+const evaluateAssertion = (
   assertion: ConformancePlanAssertion,
   context: AssertionContext
-): boolean {
-  if (assertion.eventType === undefined) {
-    throw new Error("noEvent assertion requires eventType");
+): boolean => {
+  switch (assertion.kind) {
+    case "eventSequence": {
+      return assertEventSequence(assertion, context);
+    }
+    case "terminalEvent": {
+      return assertTerminalEvent(assertion, context);
+    }
+    case "schemaValid": {
+      return assertSchemaValid(assertion, context);
+    }
+    case "errorEnvelope": {
+      return assertErrorEnvelope(assertion, context);
+    }
+    case "stateField": {
+      return assertField(assertion, context.state, context);
+    }
+    case "evidenceField": {
+      return assertField(assertion, context.evidence, context);
+    }
+    case "resultField": {
+      return assertField(assertion, context.result, context);
+    }
+    case "ordering": {
+      return assertOrdering(assertion, context);
+    }
+    case "noEvent": {
+      return assertNoEvent(assertion, context);
+    }
+    case "secretAbsence": {
+      return assertSecretAbsence(assertion, context);
+    }
+    case "secretPatternAbsence": {
+      return assertSecretPatternAbsence(assertion, context);
+    }
+    default: {
+      return assertNever(assertion.kind);
+    }
   }
+};
 
-  const events = readEvents(context);
-  return events.every(
-    (event) =>
-      readPath(event, assertion.path ?? "$.type") !== assertion.eventType
-  );
-}
-
-function assertValue(
-  assertion: ConformancePlanAssertion,
-  value: unknown,
+export const evaluateAssertions = (
+  check: ConformancePlanCheck,
   context: AssertionContext
-): boolean {
-  if ("equals" in assertion) {
-    return valuesAreEqual(value, assertion.equals);
-  }
+): AssertionEvaluation[] =>
+  check.assertions.map((assertion, index) => {
+    const assertionId = `${check.checkId}.${index + 1}.${assertion.kind}`;
 
-  if (assertion.equalsPath !== undefined) {
-    return valuesAreEqual(value, readPath(context, assertion.equalsPath));
-  }
+    try {
+      const passed = evaluateAssertion(assertion, context);
+      return {
+        assertionId,
+        status: passed ? "pass" : "fail",
+      };
+    } catch (error: unknown) {
+      return {
+        assertionId,
+        message: error instanceof Error ? error.message : String(error),
+        status: "fail",
+      };
+    }
+  });
 
-  if ("contains" in assertion) {
-    return valueContains(value, assertion.contains);
-  }
-
-  if (assertion.containsPath !== undefined) {
-    return valueContains(value, readPath(context, assertion.containsPath));
-  }
-
-  if (assertion.matches !== undefined) {
-    return (
-      typeof value === "string" &&
-      new RegExp(assertion.matches, "u").test(value)
-    );
-  }
-
-  return value !== undefined;
-}
-
-function resolveExpectedPair(
-  assertion: ConformancePlanAssertion,
-  context: AssertionContext
-): readonly unknown[] {
-  const contains =
-    assertion.containsPath === undefined
-      ? assertion.contains
-      : readPath(context, assertion.containsPath);
-
-  if (!Array.isArray(contains) || contains.length !== 2) {
-    throw new Error(
-      "ordering assertion requires contains with two event types"
-    );
-  }
-
-  return contains;
-}
-
-function hasRequiredEvidence(context: AssertionContext, path: string): boolean {
+const hasRequiredEvidence = (
+  context: AssertionContext,
+  path: string
+): boolean => {
   if (path === "result") {
     return context.result !== undefined;
   }
@@ -490,80 +551,18 @@ function hasRequiredEvidence(context: AssertionContext, path: string): boolean {
     context.result !== undefined &&
     readPath({ result: context.result }, jsonPath) !== undefined
   );
-}
+};
 
-function readEvents(context: AssertionContext): readonly unknown[] {
-  if (context.events === undefined) {
-    throw new Error("assertion requires events");
-  }
+export const evaluateRequiredEvidence = (
+  compiledCheck: CompiledConformancePlanCheck,
+  context: AssertionContext
+): AssertionEvaluation[] =>
+  compiledCheck.requiredEvidence.map((path) => {
+    const present = hasRequiredEvidence(context, path);
 
-  return context.events;
-}
-
-function valueContains(value: unknown, expected: unknown): boolean {
-  if (Array.isArray(value)) {
-    return value.some((entry) => valuesAreEqual(entry, expected));
-  }
-
-  if (typeof value === "string" && typeof expected === "string") {
-    return value.includes(expected);
-  }
-
-  if (isRecord(value) && typeof expected === "string") {
-    return expected in value;
-  }
-
-  return false;
-}
-
-function valuesAreEqual(left: unknown, right: unknown): boolean {
-  if (Object.is(left, right)) {
-    return true;
-  }
-
-  if (Array.isArray(left) || Array.isArray(right)) {
-    return (
-      Array.isArray(left) &&
-      Array.isArray(right) &&
-      left.length === right.length &&
-      left.every((entry, index) => valuesAreEqual(entry, right[index]))
-    );
-  }
-
-  if (isRecord(left) || isRecord(right)) {
-    if (!(isRecord(left) && isRecord(right))) {
-      return false;
-    }
-
-    const leftKeys = Object.keys(left).sort();
-    const rightKeys = Object.keys(right).sort();
-
-    // JSON object field order is language-specific, so equality is structural
-    // and key-order independent across TypeScript/Rust adapter observations.
-    return (
-      leftKeys.length === rightKeys.length &&
-      leftKeys.every(
-        (key, index) =>
-          key === rightKeys[index] && valuesAreEqual(left[key], right[key])
-      )
-    );
-  }
-
-  return false;
-}
-
-function readJsonSchema(value: unknown, label: string): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${label} must contain a JSON Schema object or boolean`);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function assertNever(value: never): never {
-  throw new Error(`unsupported assertion kind ${value}`);
-}
+    return {
+      assertionId: `${compiledCheck.check.checkId}.requiredEvidence.${path}`,
+      ...(present ? {} : { message: `missing required evidence ${path}` }),
+      status: present ? "pass" : "fail",
+    };
+  });
