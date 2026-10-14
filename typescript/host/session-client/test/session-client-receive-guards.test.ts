@@ -25,6 +25,250 @@ const isUint8Array = (value: unknown): value is Uint8Array =>
   Object.prototype.toString.call(value) === "[object Uint8Array]";
 
 describe("session client receive guards", () => {
+  test("the cursor carriage matrix dispatches only valid event/control combinations", async () => {
+    const calls: string[] = [];
+    const { client, events, rejections, sockets } = makeClient({
+      capabilities: {
+        tool: (_input, context) => {
+          calls.push(context.callId);
+          return "ok";
+        },
+      },
+    });
+    client.connect();
+    const [socket] = sockets;
+    socket.open();
+    ack(socket);
+
+    const cursorCases: readonly {
+      label: string;
+      cursor?: unknown;
+    }[] = [
+      { label: "absent" },
+      { cursor: "opaque-resume-token", label: "valid" },
+      { cursor: "", label: "empty" },
+      { cursor: " \t ", label: "whitespace" },
+      { cursor: 7, label: "non-string" },
+    ];
+    const frameKinds = [
+      "event",
+      "client_invocation",
+      "session_rejection",
+      "future_kind",
+    ] as const;
+
+    for (const kind of frameKinds) {
+      for (const cursorCase of cursorCases) {
+        let frame: unknown;
+        switch (kind) {
+          case "event": {
+            frame = {
+              event: {
+                data: {
+                  cursorCase: cursorCase.label,
+                  extraField: "preserved",
+                  metadata: { opaque: true },
+                  nested: [null, "payload"],
+                },
+                name: "cursor-matrix",
+                timestamp: 1,
+                type: "custom",
+              },
+              kind,
+            };
+            break;
+          }
+          case "client_invocation": {
+            frame = {
+              invocation: {
+                callId: `call-${cursorCase.label}`,
+                capabilityId: "tool",
+                input: null,
+                leaseToken: "lease",
+              },
+              kind,
+            };
+            break;
+          }
+          case "session_rejection": {
+            frame = {
+              kind,
+              rejection: {
+                code: "session_frame_invalid",
+                correlationId: `rejection-${cursorCase.label}`,
+                message: "invalid frame",
+              },
+            };
+            break;
+          }
+          case "future_kind": {
+            frame = { kind, marker: cursorCase.label };
+            break;
+          }
+          default: {
+            throw new Error(`unhandled frame kind: ${String(kind)}`);
+          }
+        }
+        socket.receive({
+          ...(cursorCase.cursor === undefined
+            ? {}
+            : { cursor: cursorCase.cursor }),
+          frame,
+          kind: "frame",
+        });
+      }
+    }
+    socket.receive({
+      cursor: "payload-cursor",
+      frame: { kind: "event" },
+      kind: "frame",
+    });
+    await flush();
+
+    expect(events).toEqual([
+      {
+        cursor: "opaque-resume-token",
+        event: {
+          data: {
+            cursorCase: "valid",
+            extraField: "preserved",
+            metadata: { opaque: true },
+            nested: [null, "payload"],
+          },
+          name: "cursor-matrix",
+          timestamp: 1,
+          type: "custom",
+        },
+      },
+    ]);
+    expect(calls).toEqual(["call-absent"]);
+    expect(rejections).toEqual([
+      {
+        code: "session_frame_invalid",
+        correlationId: "rejection-absent",
+        message: "invalid frame",
+      },
+    ]);
+    client.close();
+  });
+
+  test("ignores invalid acknowledgements and outbound envelopes before side effects", async () => {
+    const calls: string[] = [];
+    const { client, events, sockets, statuses } = makeClient({
+      capabilities: {
+        tool: () => {
+          calls.push("called");
+          return "ok";
+        },
+      },
+    });
+    client.connect();
+    const [socket] = sockets;
+    socket.open();
+    socket.receive({
+      kind: "handshake_ack",
+      protocolVersion: "2",
+      resumeStatus: "none",
+      sessionId: "test-session",
+    });
+    socket.receive({
+      kind: "handshake_ack",
+      protocolVersion: "1",
+      resumeStatus: "none",
+      sessionId: "another-session",
+    });
+    client.cancel();
+    expect(socket.sent).toHaveLength(1);
+    expect(statuses.some((status) => status.phase === "open")).toBe(false);
+
+    ack(socket, "none", "test-session");
+    expect(socket.sent).toHaveLength(2);
+    socket.receive({
+      cursor: "trusted-cursor",
+      frame: {
+        event: { marker: "trusted" },
+        kind: "event",
+        protocolVersion: "1",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    socket.receive({
+      cursor: "foreign-cursor",
+      frame: {
+        event: { marker: "foreign" },
+        kind: "event",
+        protocolVersion: "1",
+        sessionId: "other-session",
+      },
+      kind: "frame",
+    });
+    socket.receive({
+      cursor: "unsupported-cursor",
+      frame: {
+        event: { marker: "unsupported" },
+        kind: "event",
+        protocolVersion: "2",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    socket.receive({
+      cursor: "accepted-cursor",
+      frame: {
+        event: { marker: "accepted" },
+        kind: "event",
+        protocolVersion: "1",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    socket.receive({
+      frame: {
+        invocation: {
+          callId: "before-envelope-check",
+          capabilityId: "tool",
+          input: null,
+          leaseToken: "lease",
+        },
+        kind: "client_invocation",
+        protocolVersion: "2",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    await flush();
+    expect(events).toEqual([
+      { cursor: "trusted-cursor", event: { marker: "trusted" } },
+      { cursor: "accepted-cursor", event: { marker: "accepted" } },
+    ]);
+    expect(calls).toEqual([]);
+    expect(socket.sent).toHaveLength(2);
+
+    socket.receive({
+      frame: {
+        invocation: {
+          callId: "valid-control",
+          capabilityId: "tool",
+          input: null,
+          leaseToken: "lease",
+        },
+        kind: "client_invocation",
+        protocolVersion: "1",
+        sessionId: "test-session",
+      },
+      kind: "frame",
+    });
+    await flush();
+    expect(calls).toEqual(["called"]);
+    expect(socket.sent).toHaveLength(3);
+    expect(socket.lastFrame()).toMatchObject({
+      kind: "client_result",
+      result: { callId: "valid-control", content: "ok", leaseToken: "lease" },
+    });
+    client.close();
+  });
+
   test("only validated event envelopes advance replay cursor", async () => {
     const calls: string[] = [];
     const { client, clock, events, rejections, sockets } = makeClient({
@@ -129,14 +373,15 @@ describe("session client receive guards", () => {
       kind: "frame",
     });
     socket.receive({
-      frame: { event: { marker: "cursorless" }, kind: "event" },
+      cursor: "last-valid",
+      frame: { event: { marker: "after-invalid" }, kind: "event" },
       kind: "frame",
     });
     await flush();
 
     expect(events).toEqual([
       { cursor: "last-valid", event: { marker: "first" } },
-      { cursor: "last-valid", event: { marker: "cursorless" } },
+      { cursor: "last-valid", event: { marker: "after-invalid" } },
     ]);
     expect(rejections).toEqual([
       {
@@ -165,7 +410,7 @@ describe("session client receive guards", () => {
   test("session frames stay blocked until a valid handshake ack", async () => {
     let resolveHandler: ((value: string) => void) | undefined;
     let handlerCalls = 0;
-    const { client, clock, sockets } = makeClient({
+    const { client, clock, events, sockets } = makeClient({
       capabilities: {
         tool: async () => {
           handlerCalls += 1;
@@ -186,7 +431,6 @@ describe("session client receive guards", () => {
       sessionId: "test-session",
     });
     socket.receive({
-      cursor: "premature-cursor",
       frame: {
         invocation: {
           callId: "before-ack",
@@ -198,8 +442,14 @@ describe("session client receive guards", () => {
       },
       kind: "frame",
     });
+    socket.receive({
+      cursor: "pre-ack-event-cursor",
+      frame: { event: { marker: "before-ack" }, kind: "event" },
+      kind: "frame",
+    });
     await flush();
     expect(handlerCalls).toBe(0);
+    expect(events).toEqual([]);
     expect(socket.sent).toHaveLength(1);
 
     socket.serverClose(1006);
@@ -216,6 +466,11 @@ describe("session client receive guards", () => {
     expect(reconnected.sent).toHaveLength(2);
     expect(reconnected.lastFrame().kind).toBe("cancel");
     reconnected.receive({
+      cursor: "after-ack-event-cursor",
+      frame: { event: { marker: "after-ack" }, kind: "event" },
+      kind: "frame",
+    });
+    reconnected.receive({
       frame: {
         invocation: {
           callId: "after-ack",
@@ -229,6 +484,12 @@ describe("session client receive guards", () => {
     });
     await flush();
     expect(handlerCalls).toBe(1);
+    expect(events).toEqual([
+      {
+        cursor: "after-ack-event-cursor",
+        event: { marker: "after-ack" },
+      },
+    ]);
     resolveHandler?.("accepted");
     await flush();
     expect(reconnected.lastFrame()).toMatchObject({

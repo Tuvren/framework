@@ -744,10 +744,13 @@ export const createSessionClient = (
             ) {
               break;
             }
-            // Resume positions belong exclusively to event frames. Reject a
-            // cursor-bearing control envelope before capability or rejection
-            // callbacks can observe it.
-            if (parsed.cursor !== undefined && parsed.frame.kind !== "event") {
+            // The carriage schema positions every event and only events.
+            // Reject either half of an iff violation before any callback,
+            // capability handler, or replay-state update can observe it.
+            if (
+              (parsed.frame.kind === "event") !==
+              (parsed.cursor !== undefined)
+            ) {
               break;
             }
             // The carriage schema permits cursors only on valid event frames.
