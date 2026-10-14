@@ -1,0 +1,18 @@
+{
+  "owner": "KRT-BW002",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-14",
+    "commit": "aecf146a26bdcfec051917f7e8c80b88d4be9987",
+    "command": "git grep suppression inventory at baseline and source commit; bunx --bun @biomejs/biome lint tools/conformance tools/scripts/conformance tools/generators; bunx --bun oxlint --type-aware --format=json tools/conformance tools/scripts/conformance; bun run typecheck; bun run lint"
+  },
+  "files": [
+    {
+      "path": "suppression-ledger.json",
+      "sha256": "beb45c5dbeee7ad8f620f68176deeab4246b3395910bd00039f0e75160171249",
+      "bytes": 36992,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "Every baseline and drift suppression identity has a live checker-backed disposition. Empty entries require zero identities in both Git inventories. Retained Biome and full lint pass; bw.json stays byte-identical under Biome ownership until CB whole-tools admission. Native residuals are permitted until BW004 native-clean readiness."
+}
