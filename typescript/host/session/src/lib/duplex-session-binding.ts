@@ -598,7 +598,7 @@ export const createDuplexSessionBinding = (
 
     // Fire-and-forget: this task's only observable effects are the queue
     // pushes/close/fail above, so a caller never needs to await it directly.
-    drain.catch(() => undefined);
+    void drain;
 
     // The events stream is not the only place a terminal can surface: a
     // cancel() on a paused handle never throws and delivers its terminal
@@ -614,7 +614,16 @@ export const createDuplexSessionBinding = (
         queue.close();
       }
     };
-    bridgedHandle.awaitResult().then(settleWatcher, settleWatcher);
+    const watchResult = async (): Promise<void> => {
+      try {
+        await bridgedHandle.awaitResult();
+      } catch {
+        // Both settlement paths terminate the current handle's outbound stream.
+      } finally {
+        settleWatcher();
+      }
+    };
+    void watchResult();
   };
 
   const clientEndpoint: AttachedClientEndpoint = {

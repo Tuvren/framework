@@ -1,1 +1,5 @@
-["typescript/host"]
+[
+  "typescript/host/remote-session",
+  "typescript/host/session-client",
+  "typescript/host/repl"
+]

@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.
-// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.
-
 /**
  * `@tuvren/host-session` is the TypeScript reference binding for the
  * `tuvren.framework.host-session` authority packet (issue #99,

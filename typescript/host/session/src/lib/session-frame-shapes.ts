@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-// biome-ignore-all lint/performance/noBarrelFile: This module is the intentional focused frame-envelope surface for issue #99.
-// biome-ignore-all assist/source/organizeImports: The organizer collapses the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.
-
 /**
  * Duplex session frame envelopes for the `tuvren.framework.host-session`
  * authority packet (`spec/host/session/typespec/main.tsp`, issue #99).
