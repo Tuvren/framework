@@ -233,6 +233,29 @@ const isApprovalResponse = (value: unknown): value is ApprovalResponse =>
 const isFilePartData = (value: unknown): value is string | Uint8Array =>
   typeof value === "string" || value instanceof Uint8Array;
 
+const isByteArray = (value: unknown): value is number[] => {
+  if (!isUnknownArray(value)) {
+    return false;
+  }
+
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      return false;
+    }
+    const byte = value[index];
+    if (
+      typeof byte !== "number" ||
+      !Number.isInteger(byte) ||
+      byte < 0 ||
+      byte > 255
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const isOptionalString = (value: unknown): value is string | undefined =>
   value === undefined || typeof value === "string";
 
@@ -295,6 +318,27 @@ const isInputSignal = (value: unknown): value is InputSignal =>
   isUnknownArray(value.parts) &&
   value.parts.length > 0 &&
   [...value.parts].every(isContentPart);
+
+const normalizeInputSignal = (value: unknown): InputSignal | undefined => {
+  if (isInputSignal(value)) {
+    return value;
+  }
+  if (!(isRecord(value) && isUnknownArray(value.parts))) {
+    return undefined;
+  }
+
+  const parts = value.parts.map((part) => {
+    if (!(isRecord(part) && part.type === "file" && Array.isArray(part.data))) {
+      return part;
+    }
+    if (!isByteArray(part.data)) {
+      return part;
+    }
+    return { ...part, data: Uint8Array.from(part.data) };
+  });
+  const normalized = { ...value, parts };
+  return isInputSignal(normalized) ? normalized : undefined;
+};
 
 const extractCorrelationId = (raw: unknown): string => {
   if (isRecord(raw) && isNonEmptyString(raw.correlationId)) {
@@ -398,8 +442,8 @@ const validateInboundFrame = (
       };
     }
     case "steer": {
-      const { signal } = raw;
-      if (!isInputSignal(signal)) {
+      const signal = normalizeInputSignal(raw.signal);
+      if (signal === undefined) {
         return {
           correlationId,
           message:

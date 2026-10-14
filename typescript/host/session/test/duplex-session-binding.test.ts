@@ -277,12 +277,62 @@ describe("createDuplexSessionBinding", () => {
     expect(binding.currentHandle()).toBe(replacement.handle);
   });
 
+  test("authority-valid JSON file bytes project to core byte arrays at dispatch", () => {
+    const fake = makeFakeHandle();
+    const binding = createDuplexSessionBinding(fake.handle, {
+      sessionId: "json-file-bytes",
+    });
+    const byteArrays = [[], [1, 2], [0, 255]];
+
+    for (const [index, data] of byteArrays.entries()) {
+      const signal = {
+        extra: `signal-${index}`,
+        parts: [
+          {
+            data,
+            filename: "payload.bin",
+            mediaType: "application/octet-stream",
+            providerMetadata: { retained: true },
+            type: "file",
+          },
+        ],
+      };
+      const original = [...data];
+      binding.dispatchInbound({
+        correlationId: `bytes-${index}`,
+        kind: "steer",
+        protocolVersion: "1",
+        sessionId: binding.sessionId,
+        signal,
+      });
+
+      const received = fake.calls.steer[index];
+      const file = received?.parts[0];
+      expect(file?.type).toBe("file");
+      if (file?.type !== "file") {
+        throw new Error("expected file part");
+      }
+      if (!(file.data instanceof Uint8Array)) {
+        throw new Error("expected projected Uint8Array data");
+      }
+      expect([...file.data]).toEqual(original);
+      expect(data).toEqual(original);
+      expect(Object.getOwnPropertyDescriptor(received, "extra")?.value).toBe(
+        `signal-${index}`
+      );
+      expect(file.filename).toBe("payload.bin");
+      expect(file.providerMetadata).toEqual({ retained: true });
+    }
+  });
+
   test("invalid nested fields reject once before touching the handle, preserving envelope precedence", async () => {
     const fake = makeFakeHandle();
     const binding = createDuplexSessionBinding(fake.handle, {
       sessionId: "guard-invalid",
     });
     const outbound = binding.outbound();
+    const sparseBytes: number[] = [];
+    sparseBytes.length = 1;
     const payloads = [
       {
         kind: "client_result",
@@ -317,7 +367,13 @@ describe("createDuplexSessionBinding", () => {
           output: null,
           type: "tool_result",
         },
-        { data: [], mediaType: "application/octet-stream", type: "file" },
+        { data: [256], mediaType: "application/octet-stream", type: "file" },
+        { data: [1.5], mediaType: "application/octet-stream", type: "file" },
+        {
+          data: sparseBytes,
+          mediaType: "application/octet-stream",
+          type: "file",
+        },
         { data: "", filename: 1, mediaType: "text/plain", type: "file" },
         { data: null, name: 1, type: "structured" },
         { providerMetadata: [], text: "text", type: "text" },
