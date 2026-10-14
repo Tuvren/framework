@@ -39,7 +39,152 @@ import type {
   ReplThreadSummary,
 } from "./repl-types.js";
 
-export function createReplHost(config: ReplConfig): ReplHost {
+const createBackend = (config: ReplConfig): RuntimeBackend => {
+  // The host binds every durable backend to its Scope (ADR-0048/0049, KRT-BE008),
+  // so a `--scope` REPL session isolates durable state by construction; an
+  // unset Scope falls through to the single-tenant default each backend applies.
+  const scopeOption = config.scope === undefined ? {} : { scope: config.scope };
+
+  if (config.backend === "memory") {
+    return createMemoryBackend(scopeOption);
+  }
+
+  if (config.backend === "postgres") {
+    return createPostgresBackend({
+      database: config.postgresDatabase,
+      schemaName: config.postgresSchemaName,
+      ...scopeOption,
+    });
+  }
+
+  if (config.sqlitePath === undefined) {
+    throw new TuvrenRuntimeError(
+      "sqlite repl backend requires a database path",
+      {
+        code: INVALID_REPL_CONFIG_CODE,
+      }
+    );
+  }
+
+  return createSqliteBackend({
+    databasePath: config.sqlitePath,
+    ...scopeOption,
+  });
+};
+
+const createKernel = (config: ReplConfig) => {
+  if ((config.kernelMode ?? "typescript-local") === "rust-grpc") {
+    if (config.kernelGrpcBaseUrl === undefined) {
+      throw new TuvrenRuntimeError(
+        "rust-grpc repl kernel requires a gRPC base URL",
+        {
+          code: INVALID_REPL_CONFIG_CODE,
+        }
+      );
+    }
+
+    // Epic V keeps the runtime switch below `TuvrenRuntime`: the host swaps
+    // only the `RuntimeKernel` implementation so turn semantics, runners, and
+    // provider orchestration stay identical across local and remote kernels.
+    return createGrpcRuntimeKernel({
+      baseUrl: config.kernelGrpcBaseUrl,
+    });
+  }
+
+  const backend = createBackend(config);
+  return createRuntimeKernel({ backend });
+};
+
+const collect = async <T>(events: AsyncIterable<T>): Promise<T[]> => {
+  const output: T[] = [];
+
+  for await (const event of events) {
+    output.push(event);
+  }
+
+  return output;
+};
+
+const projectHandle = async (
+  handle: ExecutionHandle
+): Promise<ReplStreamProjection> => {
+  const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
+    handle.events(),
+    3
+  );
+  const [canonical, sse, agui] = await Promise.all([
+    collect(canonicalBranch),
+    collect(toSseFrames(sseBranch)),
+    collect(toAgUiEvents(aguiBranch)),
+  ]);
+
+  return {
+    agui,
+    canonical,
+    sse,
+  };
+};
+
+const createReplHostFromParts = (
+  config: ReplConfig,
+  runtime: ReplHost["runtime"],
+  provider: ReplHost["provider"],
+  dispose?: () => Promise<void>
+): ReplHost => ({
+  approve(handle, response) {
+    return handle.resolveApproval(response);
+  },
+  async branchFromHead(input) {
+    return await runtime.createBranch({
+      branchId: input.branchId,
+      fromTurnNodeHash: input.turnNodeHash,
+      threadId: input.threadId,
+    });
+  },
+  cancel(handle) {
+    handle.cancel();
+  },
+  config,
+  ...(dispose === undefined ? {} : { dispose }),
+  async createThread() {
+    const thread = await runtime.createThread({});
+    return {
+      branchId: thread.branchId,
+      rootTurnNodeHash: thread.rootTurnNodeHash,
+      rootTurnTreeHash: thread.rootTurnTreeHash,
+      threadId: thread.threadId,
+    };
+  },
+  executeTurn(input) {
+    const requestedConfig = input.config;
+
+    return runtime.executeTurn({
+      branchId: input.branchId,
+      config: {
+        ...requestedConfig,
+        model: requestedConfig?.model ?? provider,
+        name: requestedConfig?.name ?? "primary",
+        systemPrompt: requestedConfig?.systemPrompt ?? config.systemPrompt,
+      },
+      signal: input.signal,
+      threadId: input.threadId,
+    });
+  },
+  async project(handle) {
+    return await projectHandle(handle);
+  },
+  async readBranchMessages(branchId) {
+    const result = await runtime.readBranchMessages({ branchId });
+    return result.messages;
+  },
+  provider,
+  runtime,
+  steer(handle, signal) {
+    handle.steer(signal);
+  },
+});
+
+export const createReplHost = (config: ReplConfig): ReplHost => {
   const kernel = createKernel(config);
   const provider = createReplProvider({
     aimockBaseUrl: config.aimockBaseUrl,
@@ -63,11 +208,11 @@ export function createReplHost(config: ReplConfig): ReplHost {
   });
 
   return createReplHostFromParts(config, runtime, provider);
-}
+};
 
-export async function createReplHostUsingCreateTuvren(
+export const createReplHostUsingCreateTuvren = async (
   config: ReplConfig
-): Promise<ReplHost> {
+): Promise<ReplHost> => {
   const provider = createReplProvider({
     aimockBaseUrl: config.aimockBaseUrl,
     googleApiKey: config.googleApiKey,
@@ -99,157 +244,8 @@ export async function createReplHostUsingCreateTuvren(
       await instance[Symbol.asyncDispose]();
     }
   );
-}
+};
 
-function createReplHostFromParts(
-  config: ReplConfig,
-  runtime: ReplHost["runtime"],
-  provider: ReplHost["provider"],
-  dispose?: () => Promise<void>
-): ReplHost {
-  return {
-    approve(handle, response) {
-      return handle.resolveApproval(response);
-    },
-    async branchFromHead(input) {
-      return await runtime.createBranch({
-        branchId: input.branchId,
-        fromTurnNodeHash: input.turnNodeHash,
-        threadId: input.threadId,
-      });
-    },
-    cancel(handle) {
-      handle.cancel();
-    },
-    config,
-    ...(dispose === undefined ? {} : { dispose }),
-    async createThread() {
-      const thread = await runtime.createThread({});
-      return {
-        branchId: thread.branchId,
-        rootTurnNodeHash: thread.rootTurnNodeHash,
-        rootTurnTreeHash: thread.rootTurnTreeHash,
-        threadId: thread.threadId,
-      };
-    },
-    executeTurn(input) {
-      const requestedConfig = input.config;
-
-      return runtime.executeTurn({
-        branchId: input.branchId,
-        config: {
-          ...requestedConfig,
-          model: requestedConfig?.model ?? provider,
-          name: requestedConfig?.name ?? "primary",
-          systemPrompt: requestedConfig?.systemPrompt ?? config.systemPrompt,
-        },
-        signal: input.signal,
-        threadId: input.threadId,
-      });
-    },
-    async project(handle) {
-      return await projectHandle(handle);
-    },
-    async readBranchMessages(branchId) {
-      const result = await runtime.readBranchMessages({ branchId });
-      return result.messages;
-    },
-    provider,
-    runtime,
-    steer(handle, signal) {
-      handle.steer(signal);
-    },
-  };
-}
-
-export async function createThreadSummary(
+export const createThreadSummary = async (
   host: ReplHost
-): Promise<ReplThreadSummary> {
-  return await host.createThread();
-}
-
-async function projectHandle(
-  handle: ExecutionHandle
-): Promise<ReplStreamProjection> {
-  const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
-    handle.events(),
-    3
-  );
-  const [canonical, sse, agui] = await Promise.all([
-    collect(canonicalBranch),
-    collect(toSseFrames(sseBranch)),
-    collect(toAgUiEvents(aguiBranch)),
-  ]);
-
-  return {
-    agui,
-    canonical,
-    sse,
-  };
-}
-
-function createKernel(config: ReplConfig) {
-  if ((config.kernelMode ?? "typescript-local") === "rust-grpc") {
-    if (config.kernelGrpcBaseUrl === undefined) {
-      throw new TuvrenRuntimeError(
-        "rust-grpc repl kernel requires a gRPC base URL",
-        {
-          code: INVALID_REPL_CONFIG_CODE,
-        }
-      );
-    }
-
-    // Epic V keeps the runtime switch below `TuvrenRuntime`: the host swaps
-    // only the `RuntimeKernel` implementation so turn semantics, runners, and
-    // provider orchestration stay identical across local and remote kernels.
-    return createGrpcRuntimeKernel({
-      baseUrl: config.kernelGrpcBaseUrl,
-    });
-  }
-
-  const backend = createBackend(config);
-  return createRuntimeKernel({ backend });
-}
-
-function createBackend(config: ReplConfig): RuntimeBackend {
-  // The host binds every durable backend to its Scope (ADR-0048/0049, KRT-BE008),
-  // so a `--scope` REPL session isolates durable state by construction; an
-  // unset Scope falls through to the single-tenant default each backend applies.
-  const scopeOption = config.scope === undefined ? {} : { scope: config.scope };
-
-  if (config.backend === "memory") {
-    return createMemoryBackend(scopeOption);
-  }
-
-  if (config.backend === "postgres") {
-    return createPostgresBackend({
-      database: config.postgresDatabase,
-      schemaName: config.postgresSchemaName,
-      ...scopeOption,
-    });
-  }
-
-  if (config.sqlitePath === undefined) {
-    throw new TuvrenRuntimeError(
-      "sqlite repl backend requires a database path",
-      {
-        code: INVALID_REPL_CONFIG_CODE,
-      }
-    );
-  }
-
-  return createSqliteBackend({
-    databasePath: config.sqlitePath,
-    ...scopeOption,
-  });
-}
-
-async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
-  const output: T[] = [];
-
-  for await (const event of events) {
-    output.push(event);
-  }
-
-  return output;
-}
+): Promise<ReplThreadSummary> => await host.createThread();
