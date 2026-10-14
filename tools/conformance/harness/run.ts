@@ -92,6 +92,311 @@ const ADAPTER_MANIFEST_SCHEMA_PATH = resolve(
   "tools/conformance/adapter-protocol/adapter-manifest.schema.json"
 );
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readJsonSchema = (value: unknown, label: string): AnySchema => {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error(`${label} must contain a JSON Schema object or boolean`);
+};
+
+const createAdapterManifestValidator = async (): Promise<ValidateFunction> => {
+  const schema = readJsonSchema(
+    JSON.parse(
+      await readFile(ADAPTER_MANIFEST_SCHEMA_PATH, "utf-8")
+    ) as unknown,
+    ADAPTER_MANIFEST_SCHEMA_PATH
+  );
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  return ajv.compile(schema);
+};
+
+const readAdapterManifest = async (path: string): Promise<AdapterManifest> => {
+  const absolutePath = resolve(REPO_ROOT, path);
+  const value = JSON.parse(await readFile(absolutePath, "utf-8")) as unknown;
+  const validate = await createAdapterManifestValidator();
+
+  if (!validate(value)) {
+    throw new Error(
+      `${path} failed adapter manifest validation: ${validate.errors
+        ?.map((error) => `${error.instancePath || "/"} ${error.message ?? ""}`)
+        .join("; ")}`
+    );
+  }
+
+  return value as AdapterManifest;
+};
+
+const readAuthorityPacket = async (
+  path: string
+): Promise<AuthorityPacketManifest> => {
+  const value = JSON.parse(
+    await readFile(resolve(REPO_ROOT, path), "utf-8")
+  ) as unknown;
+
+  if (!isRecord(value) || typeof value.packetId !== "string") {
+    throw new Error(`${path} must contain an authority packet manifest`);
+  }
+
+  return value as unknown as AuthorityPacketManifest;
+};
+
+const readPlans = async (
+  adapterManifest: AdapterManifest,
+  options: CliOptions
+): Promise<CompiledConformancePlan[]> => {
+  const planPaths = new Set(options.plans);
+  const packetPaths =
+    options.packets.length > 0
+      ? options.packets
+      : adapterManifest.authorityPackets;
+
+  for (const packetPath of packetPaths) {
+    const packet = await readAuthorityPacket(packetPath);
+
+    for (const plan of packet.conformancePlans ?? []) {
+      planPaths.add(plan.path);
+    }
+  }
+
+  const plans: CompiledConformancePlan[] = [];
+
+  for (const planPath of [...planPaths].sort()) {
+    plans.push(await loadConformancePlan(planPath));
+  }
+
+  return plans;
+};
+
+const requireValue = (value: string | undefined, flag: string): string => {
+  if (value === undefined || value.startsWith("--")) {
+    throw new Error(`${flag} requires a value`);
+  }
+
+  return value;
+};
+
+const parsePositiveInteger = (value: string): number => {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`expected positive integer, received ${value}`);
+  }
+
+  return parsed;
+};
+
+const parseShard = (value: string): { count: number; index: number } => {
+  const [indexText, countText] = value.split("/");
+  const index = parsePositiveInteger(indexText ?? "") - 1;
+  const count = parsePositiveInteger(countText ?? "");
+
+  if (index >= count) {
+    throw new Error("--shard index must be less than count");
+  }
+
+  return { count, index };
+};
+
+const parseArgs = (args: readonly string[]): CliOptions => {
+  const options: CliOptions = {
+    adapter: "",
+    allowFailingEvidence: false,
+    capabilities: [],
+    checks: [],
+    concurrency: 1,
+    packets: [],
+    plans: [],
+    summaryOnly: false,
+  };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    const next = args[index + 1];
+
+    switch (arg) {
+      case "--adapter": {
+        options.adapter = requireValue(next, arg);
+        index += 1;
+        break;
+      }
+      case "--packet": {
+        options.packets.push(requireValue(next, arg));
+        index += 1;
+        break;
+      }
+      case "--plan": {
+        options.plans.push(requireValue(next, arg));
+        index += 1;
+        break;
+      }
+      case "--check": {
+        options.checks.push(requireValue(next, arg));
+        index += 1;
+        break;
+      }
+      case "--capability": {
+        options.capabilities.push(requireValue(next, arg));
+        index += 1;
+        break;
+      }
+      case "--shard": {
+        options.shard = parseShard(requireValue(next, arg));
+        index += 1;
+        break;
+      }
+      case "--concurrency": {
+        options.concurrency = parsePositiveInteger(requireValue(next, arg));
+        index += 1;
+        break;
+      }
+      case "--evidence-out": {
+        options.evidenceOut = requireValue(next, arg);
+        index += 1;
+        break;
+      }
+      case "--allow-failing-evidence": {
+        options.allowFailingEvidence = true;
+        break;
+      }
+      case "--summary-only": {
+        options.summaryOnly = true;
+        break;
+      }
+      default: {
+        throw new Error(`unknown runner argument ${String(arg)}`);
+      }
+    }
+  }
+
+  if (options.adapter.length === 0) {
+    throw new Error("--adapter is required");
+  }
+
+  return options;
+};
+
+const readInputStringOptional = (
+  input: unknown,
+  key: string
+): string | undefined => {
+  if (!isRecord(input)) {
+    return undefined;
+  }
+
+  const value = input[key];
+
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== "string") {
+    throw new TypeError(`check input ${key} must be a string when present`);
+  }
+
+  return value;
+};
+
+const readOptionalRecord = (
+  value: unknown
+): Record<string, unknown> | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!isRecord(value)) {
+    throw new Error("operation context field must be an object when present");
+  }
+
+  return value;
+};
+
+const readOptionalArray = (value: unknown): readonly unknown[] | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!Array.isArray(value)) {
+    throw new TypeError(
+      "operation context events must be an array when present"
+    );
+  }
+
+  return value;
+};
+
+const resolveStepRefs = (
+  value: unknown,
+  context: Record<string, unknown>
+): unknown => {
+  if (typeof value === "string" && value.startsWith("$.")) {
+    return readPath(context, value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => resolveStepRefs(entry, context));
+  }
+
+  if (isRecord(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        resolveStepRefs(entry, context),
+      ])
+    );
+  }
+
+  return value;
+};
+
+const createAdapterInput = (
+  plan: CompiledConformancePlan,
+  compiledCheck: CompiledConformancePlanCheck
+): Record<string, unknown> => {
+  const { check } = compiledCheck;
+  const input: Record<string, unknown> = {
+    checkInput: check.input,
+  };
+
+  if (check.scenario !== undefined) {
+    const scenarioSource = plan.scenarios.get(check.scenario);
+    const scenarioPath = readInputStringOptional(check.input, "scenarioPath");
+    input.scenario =
+      scenarioPath === undefined
+        ? scenarioSource
+        : readPath(scenarioSource, scenarioPath);
+  }
+
+  if (check.fixture !== undefined) {
+    const fixtureSource = plan.fixtures.get(check.fixture);
+    const fixturePath = readInputStringOptional(check.input, "fixturePath");
+    input.fixture =
+      fixturePath === undefined
+        ? fixtureSource
+        : readPath(fixtureSource, fixturePath);
+  }
+
+  return input;
+};
+
+const createAdapterControls = (
+  compiledCheck: CompiledConformancePlanCheck
+): AdapterControls => {
+  const { controls } = compiledCheck.check;
+
+  if (controls === undefined) {
+    return {};
+  }
+
+  return {
+    cancelAfterEvent: controls.cancelAfterEvent,
+    deadlineMs: controls.deadlineMs,
+  };
+};
+
 await main();
 
 async function main(): Promise<void> {
@@ -538,51 +843,6 @@ function readErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function createAdapterInput(
-  plan: CompiledConformancePlan,
-  compiledCheck: CompiledConformancePlanCheck
-): Record<string, unknown> {
-  const { check } = compiledCheck;
-  const input: Record<string, unknown> = {
-    checkInput: check.input,
-  };
-
-  if (check.scenario !== undefined) {
-    const scenarioSource = plan.scenarios.get(check.scenario);
-    const scenarioPath = readInputStringOptional(check.input, "scenarioPath");
-    input.scenario =
-      scenarioPath === undefined
-        ? scenarioSource
-        : readPath(scenarioSource, scenarioPath);
-  }
-
-  if (check.fixture !== undefined) {
-    const fixtureSource = plan.fixtures.get(check.fixture);
-    const fixturePath = readInputStringOptional(check.input, "fixturePath");
-    input.fixture =
-      fixturePath === undefined
-        ? fixtureSource
-        : readPath(fixtureSource, fixturePath);
-  }
-
-  return input;
-}
-
-function createAdapterControls(
-  compiledCheck: CompiledConformancePlanCheck
-): AdapterControls {
-  const { controls } = compiledCheck.check;
-
-  if (controls === undefined) {
-    return {};
-  }
-
-  return {
-    cancelAfterEvent: controls.cancelAfterEvent,
-    deadlineMs: controls.deadlineMs,
-  };
-}
-
 function validateAdapterHandshake(
   capabilities: AdapterCapabilities,
   manifest: AdapterManifest,
@@ -621,33 +881,6 @@ function validateAdapterHandshake(
       `adapter initialize capabilities ${actual.join(", ")} do not match manifest ${expected.join(", ")}`
     );
   }
-}
-
-async function readPlans(
-  adapterManifest: AdapterManifest,
-  options: CliOptions
-): Promise<CompiledConformancePlan[]> {
-  const planPaths = new Set(options.plans);
-  const packetPaths =
-    options.packets.length > 0
-      ? options.packets
-      : adapterManifest.authorityPackets;
-
-  for (const packetPath of packetPaths) {
-    const packet = await readAuthorityPacket(packetPath);
-
-    for (const plan of packet.conformancePlans ?? []) {
-      planPaths.add(plan.path);
-    }
-  }
-
-  const plans: CompiledConformancePlan[] = [];
-
-  for (const planPath of [...planPaths].sort()) {
-    plans.push(await loadConformancePlan(planPath));
-  }
-
-  return plans;
 }
 
 function selectChecks(
@@ -754,238 +987,4 @@ function applyShard(
   return scheduled.filter(
     (_entry, index) => index % shard.count === shard.index
   );
-}
-
-async function readAdapterManifest(path: string): Promise<AdapterManifest> {
-  const absolutePath = resolve(REPO_ROOT, path);
-  const value = JSON.parse(await readFile(absolutePath, "utf-8")) as unknown;
-  const validate = await createAdapterManifestValidator();
-
-  if (!validate(value)) {
-    throw new Error(
-      `${path} failed adapter manifest validation: ${validate.errors
-        ?.map((error) => `${error.instancePath || "/"} ${error.message ?? ""}`)
-        .join("; ")}`
-    );
-  }
-
-  return value as AdapterManifest;
-}
-
-async function readAuthorityPacket(
-  path: string
-): Promise<AuthorityPacketManifest> {
-  const value = JSON.parse(
-    await readFile(resolve(REPO_ROOT, path), "utf-8")
-  ) as unknown;
-
-  if (!isRecord(value) || typeof value.packetId !== "string") {
-    throw new Error(`${path} must contain an authority packet manifest`);
-  }
-
-  return value as unknown as AuthorityPacketManifest;
-}
-
-async function createAdapterManifestValidator(): Promise<ValidateFunction> {
-  const schema = readJsonSchema(
-    JSON.parse(
-      await readFile(ADAPTER_MANIFEST_SCHEMA_PATH, "utf-8")
-    ) as unknown,
-    ADAPTER_MANIFEST_SCHEMA_PATH
-  );
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  return ajv.compile(schema);
-}
-
-function readJsonSchema(value: unknown, label: string): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${label} must contain a JSON Schema object or boolean`);
-}
-
-function parseArgs(args: readonly string[]): CliOptions {
-  const options: CliOptions = {
-    adapter: "",
-    allowFailingEvidence: false,
-    capabilities: [],
-    checks: [],
-    concurrency: 1,
-    packets: [],
-    plans: [],
-    summaryOnly: false,
-  };
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    const next = args[index + 1];
-
-    switch (arg) {
-      case "--adapter": {
-        options.adapter = requireValue(next, arg);
-        index += 1;
-        break;
-      }
-      case "--packet": {
-        options.packets.push(requireValue(next, arg));
-        index += 1;
-        break;
-      }
-      case "--plan": {
-        options.plans.push(requireValue(next, arg));
-        index += 1;
-        break;
-      }
-      case "--check": {
-        options.checks.push(requireValue(next, arg));
-        index += 1;
-        break;
-      }
-      case "--capability": {
-        options.capabilities.push(requireValue(next, arg));
-        index += 1;
-        break;
-      }
-      case "--shard": {
-        options.shard = parseShard(requireValue(next, arg));
-        index += 1;
-        break;
-      }
-      case "--concurrency": {
-        options.concurrency = parsePositiveInteger(requireValue(next, arg));
-        index += 1;
-        break;
-      }
-      case "--evidence-out": {
-        options.evidenceOut = requireValue(next, arg);
-        index += 1;
-        break;
-      }
-      case "--allow-failing-evidence": {
-        options.allowFailingEvidence = true;
-        break;
-      }
-      case "--summary-only": {
-        options.summaryOnly = true;
-        break;
-      }
-      default: {
-        throw new Error(`unknown runner argument ${String(arg)}`);
-      }
-    }
-  }
-
-  if (options.adapter.length === 0) {
-    throw new Error("--adapter is required");
-  }
-
-  return options;
-}
-
-function parseShard(value: string): { count: number; index: number } {
-  const [indexText, countText] = value.split("/");
-  const index = parsePositiveInteger(indexText ?? "") - 1;
-  const count = parsePositiveInteger(countText ?? "");
-
-  if (index >= count) {
-    throw new Error("--shard index must be less than count");
-  }
-
-  return { count, index };
-}
-
-function parsePositiveInteger(value: string): number {
-  const parsed = Number(value);
-
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    throw new Error(`expected positive integer, received ${value}`);
-  }
-
-  return parsed;
-}
-
-function requireValue(value: string | undefined, flag: string): string {
-  if (value === undefined || value.startsWith("--")) {
-    throw new Error(`${flag} requires a value`);
-  }
-
-  return value;
-}
-
-function readInputStringOptional(
-  input: unknown,
-  key: string
-): string | undefined {
-  if (!isRecord(input)) {
-    return undefined;
-  }
-
-  const value = input[key];
-
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (typeof value !== "string") {
-    throw new TypeError(`check input ${key} must be a string when present`);
-  }
-
-  return value;
-}
-
-function readOptionalRecord(
-  value: unknown
-): Record<string, unknown> | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (!isRecord(value)) {
-    throw new Error("operation context field must be an object when present");
-  }
-
-  return value;
-}
-
-function readOptionalArray(value: unknown): readonly unknown[] | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (!Array.isArray(value)) {
-    throw new TypeError(
-      "operation context events must be an array when present"
-    );
-  }
-
-  return value;
-}
-
-function resolveStepRefs(
-  value: unknown,
-  context: Record<string, unknown>
-): unknown {
-  if (typeof value === "string" && value.startsWith("$.")) {
-    return readPath(context, value);
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((entry) => resolveStepRefs(entry, context));
-  }
-
-  if (isRecord(value)) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [
-        key,
-        resolveStepRefs(entry, context),
-      ])
-    );
-  }
-
-  return value;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
