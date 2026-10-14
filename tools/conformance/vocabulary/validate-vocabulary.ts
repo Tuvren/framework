@@ -16,7 +16,7 @@
 
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import nodePath from "node:path";
 
 import yaml from "yaml";
 
@@ -26,8 +26,6 @@ interface AuthorityPacketManifest {
     path: string;
   }[];
   generatedArtifacts?: {
-    generatedFrom: string;
-    generator?: string;
     path: string;
   }[];
   packetId: string;
@@ -50,8 +48,8 @@ interface ExtractedSemconvVocabulary {
   groupIds: Set<string>;
 }
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const SPEC_ROOT = resolve(REPO_ROOT, "spec");
+const REPO_ROOT = nodePath.resolve(import.meta.dirname, "../../..");
+const SPEC_ROOT = nodePath.resolve(REPO_ROOT, "spec");
 const MANIFEST_FILE_NAME = "authority-packet.json";
 const SEMCONV_YAML_FORMAT = "semconv-yaml";
 
@@ -68,7 +66,46 @@ interface RawGroup {
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isAuthorityPacketManifest = (
+  value: unknown
+): value is AuthorityPacketManifest => {
+  if (!isRecord(value)) {
+    return false;
+  }
+  const sources: unknown = value.authoritativeSources;
+  const artifacts: unknown = value.generatedArtifacts;
+  const paths: unknown = value.verificationPaths;
+  return (
+    typeof value.packetId === "string" &&
+    typeof value.version === "string" &&
+    Array.isArray(sources) &&
+    sources.every(
+      (source: unknown) =>
+        isRecord(source) &&
+        typeof source.path === "string" &&
+        typeof source.format === "string"
+    ) &&
+    (artifacts === undefined ||
+      (Array.isArray(artifacts) &&
+        artifacts.every(
+          (artifact: unknown) =>
+            isRecord(artifact) && typeof artifact.path === "string"
+        ))) &&
+    Array.isArray(paths) &&
+    paths.every(
+      (path: unknown) =>
+        isRecord(path) &&
+        typeof path.kind === "string" &&
+        typeof path.target === "string" &&
+        (path.resolvedArtifact === undefined ||
+          typeof path.resolvedArtifact === "string") &&
+        (path.resolvedKeyPath === undefined ||
+          typeof path.resolvedKeyPath === "string")
+    )
+  );
+};
 
 const collectRawGroupSources = (parsed: Record<string, unknown>): unknown[] => {
   // Both legacy and definition/2 shapes are unioned. Each contributes
@@ -87,7 +124,8 @@ const collectRawGroupSources = (parsed: Record<string, unknown>): unknown[] => {
 
   for (const section of sections) {
     if (Array.isArray(section)) {
-      collected.push(...section);
+      const entries: readonly unknown[] = section;
+      collected.push(...entries);
     }
   }
 
@@ -97,8 +135,7 @@ const collectRawGroupSources = (parsed: Record<string, unknown>): unknown[] => {
 const collectAttributeIds = (
   attributesValue: unknown,
   attributeIds: Set<string>,
-  rawGroups: ReadonlyMap<string, RawGroup>,
-  visited: Set<string>
+  resolveGroup: (groupId: string) => Set<string>
 ): void => {
   if (!Array.isArray(attributesValue)) {
     return;
@@ -136,11 +173,7 @@ const collectAttributeIds = (
       // `ref_group` chain or a `ref_group` that targets a group with its
       // own `extends` parent resolves correctly. The `visited` set is
       // shared with the caller so cyclic chains terminate.
-      const inherited = resolveGroupAttributes(
-        attribute.ref_group,
-        rawGroups,
-        visited
-      );
+      const inherited = resolveGroup(attribute.ref_group);
 
       for (const id of inherited) {
         attributeIds.add(id);
@@ -171,8 +204,10 @@ const resolveGroupAttributes = (
     return ids;
   }
 
-  collectAttributeIds(raw.attributes, ids, rawGroups, visited);
-  collectAttributeIds(raw.memberAttributes, ids, rawGroups, visited);
+  const resolveGroup = (id: string): Set<string> =>
+    resolveGroupAttributes(id, rawGroups, visited);
+  collectAttributeIds(raw.attributes, ids, resolveGroup);
+  collectAttributeIds(raw.memberAttributes, ids, resolveGroup);
 
   if (raw.extendsId !== undefined) {
     const inherited = resolveGroupAttributes(raw.extendsId, rawGroups, visited);
@@ -260,7 +295,10 @@ const extractSemconvVocabulary = (
   // definition/2 also allows attribute declarations directly at the top-level
   // `attributes:` sequence (no enclosing group). Treat each such entry as a
   // synthetic single-attribute group so it contributes to the vocabulary.
-  collectAttributeIds(parsed.attributes, attributeIds, rawGroups, new Set());
+  const visited = new Set<string>();
+  collectAttributeIds(parsed.attributes, attributeIds, (id) =>
+    resolveGroupAttributes(id, rawGroups, visited)
+  );
 
   return { attributeIds, groupIds };
 };
@@ -345,20 +383,23 @@ const findAuthorityPacketManifests = async (
   const entries = await readdir(directory, { withFileTypes: true });
   const manifests: string[] = [];
 
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
+  const visit = async (index: number): Promise<void> => {
+    const entry = entries[index];
+    if (entry === undefined) {
+      return;
+    }
+    const entryPath = nodePath.resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
       manifests.push(...(await findAuthorityPacketManifests(entryPath)));
-      continue;
-    }
-
-    if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
+    } else if (entry.isFile() && entry.name === MANIFEST_FILE_NAME) {
       manifests.push(entryPath);
     }
-  }
+    await visit(index + 1);
+  };
+  await visit(0);
 
-  return manifests.sort();
+  return manifests.toSorted();
 };
 
 const validateVocabularyTarget = async (
@@ -368,7 +409,7 @@ const validateVocabularyTarget = async (
   failures: ValidationFailure[]
 ): Promise<void> => {
   const vocabularyTargetPath = verificationPath.target;
-  const absoluteTargetPath = resolve(REPO_ROOT, vocabularyTargetPath);
+  const absoluteTargetPath = nodePath.resolve(REPO_ROOT, vocabularyTargetPath);
 
   if (!existsSync(absoluteTargetPath)) {
     failures.push({
@@ -453,7 +494,10 @@ const validateVocabularyTarget = async (
     return;
   }
 
-  const absoluteArtifactPath = resolve(REPO_ROOT, resolvedArtifactPath);
+  const absoluteArtifactPath = nodePath.resolve(
+    REPO_ROOT,
+    resolvedArtifactPath
+  );
 
   if (!existsSync(absoluteArtifactPath)) {
     failures.push({
@@ -494,7 +538,7 @@ const validateVocabularyTarget = async (
   if (orphanedKeys.length > 0) {
     failures.push({
       manifestPath,
-      message: `vocabulary-check: resolved artifact has keys that are not declared as attribute ids in ${vocabularyTargetPath}: ${orphanedKeys.sort().join(", ")}`,
+      message: `vocabulary-check: resolved artifact has keys that are not declared as attribute ids in ${vocabularyTargetPath}: ${orphanedKeys.toSorted().join(", ")}`,
     });
   }
 
@@ -505,7 +549,7 @@ const validateVocabularyTarget = async (
   if (undeclaredYamlAttributeIds.length > 0) {
     failures.push({
       manifestPath,
-      message: `vocabulary-check: ${vocabularyTargetPath} declares attribute identifiers missing from the resolved artifact: ${undeclaredYamlAttributeIds.sort().join(", ")}`,
+      message: `vocabulary-check: ${vocabularyTargetPath} declares attribute identifiers missing from the resolved artifact: ${undeclaredYamlAttributeIds.toSorted().join(", ")}`,
     });
   }
 };
@@ -513,7 +557,7 @@ const validateVocabularyTarget = async (
 const validateVocabularies = async (): Promise<ValidationFailure[]> => {
   // No existsSync guard on the root: a missing spec/ (sparse checkout,
   // wrong cwd) must fail this gate loudly, never pass it vacuously.
-  const manifestPaths = (await findAuthorityPacketManifests(SPEC_ROOT)).sort();
+  const manifestPaths = await findAuthorityPacketManifests(SPEC_ROOT);
   if (manifestPaths.length === 0) {
     throw new Error(
       `vocabulary gate found zero authority packets under ${SPEC_ROOT} — refusing to report a vacuous pass`
@@ -521,28 +565,39 @@ const validateVocabularies = async (): Promise<ValidationFailure[]> => {
   }
   const failures: ValidationFailure[] = [];
 
-  for (const manifestPath of manifestPaths) {
-    const manifest = JSON.parse(
-      await readFile(manifestPath, "utf-8")
-    ) as AuthorityPacketManifest;
+  const visitManifest = async (index: number): Promise<void> => {
+    const manifestPath = manifestPaths[index];
+    if (manifestPath === undefined) {
+      return;
+    }
+    const manifest: unknown = JSON.parse(await readFile(manifestPath, "utf-8"));
+    if (!isAuthorityPacketManifest(manifest)) {
+      throw new TypeError(
+        `${manifestPath} must contain an authority packet manifest`
+      );
+    }
 
     const vocabularyPaths = manifest.verificationPaths.filter(
       (verificationPath) => verificationPath.kind === "vocabulary-check"
     );
 
-    if (vocabularyPaths.length === 0) {
-      continue;
-    }
-
-    for (const vocabularyPath of vocabularyPaths) {
+    const visitVocabulary = async (pathIndex: number): Promise<void> => {
+      const vocabularyPath = vocabularyPaths[pathIndex];
+      if (vocabularyPath === undefined) {
+        return;
+      }
       await validateVocabularyTarget(
         manifestPath,
         manifest,
         vocabularyPath,
         failures
       );
-    }
-  }
+      await visitVocabulary(pathIndex + 1);
+    };
+    await visitVocabulary(0);
+    await visitManifest(index + 1);
+  };
+  await visitManifest(0);
 
   return failures;
 };
@@ -553,7 +608,7 @@ const main = async (): Promise<void> => {
   if (failures.length > 0) {
     for (const failure of failures) {
       console.error(
-        `${relative(REPO_ROOT, failure.manifestPath)}: ${failure.message}`
+        `${nodePath.relative(REPO_ROOT, failure.manifestPath)}: ${failure.message}`
       );
     }
     process.exitCode = 1;

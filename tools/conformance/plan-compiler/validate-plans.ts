@@ -15,11 +15,12 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import nodePath from "node:path";
 
+import type { CompiledConformancePlanCheck } from "./index.js";
 import { findConformancePlans, loadConformancePlan } from "./index.js";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
+const REPO_ROOT = nodePath.resolve(import.meta.dirname, "../../..");
 const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
   ["tuvren.framework.react-runner", ["spec/runners/typespec/main.tsp"]],
   [
@@ -57,52 +58,81 @@ const readDeclaredOperations = async (
 
   const operations = new Set<string>();
 
-  for (const sourcePath of sourcePaths) {
-    const source = await readFile(resolve(REPO_ROOT, sourcePath), "utf-8");
+  const visit = async (index: number): Promise<void> => {
+    const sourcePath = sourcePaths[index];
+    if (sourcePath === undefined) {
+      return;
+    }
+    const source = await readFile(
+      nodePath.resolve(REPO_ROOT, sourcePath),
+      "utf-8"
+    );
 
     for (const match of source.matchAll(OPERATION_LITERAL_PATTERN)) {
       const [literal] = match;
       operations.add(literal.slice(1, -1));
     }
-  }
+    await visit(index + 1);
+  };
+  await visit(0);
 
   return operations;
 };
 
-const planPaths = await findConformancePlans();
-const operationCache = new Map<string, Promise<ReadonlySet<string>>>();
+const validateChecks = async (
+  planPath: string,
+  checks: readonly CompiledConformancePlanCheck[],
+  declaredOperations: Promise<ReadonlySet<string>>,
+  index: number
+): Promise<void> => {
+  const check = checks[index];
+  if (check === undefined) {
+    return;
+  }
+  if (check.requiredEvidence.length === 0) {
+    throw new Error(
+      `${planPath} check ${check.check.checkId} has no required evidence`
+    );
+  }
 
-for (const planPath of planPaths) {
+  const operations = await declaredOperations;
+
+  if (operations.size > 0 && !operations.has(check.check.operation)) {
+    throw new Error(
+      `${planPath} check ${check.check.checkId} uses undeclared operation ${check.check.operation}`
+    );
+  }
+
+  for (const step of check.check.steps ?? []) {
+    if (operations.size > 0 && !operations.has(step.operation)) {
+      throw new Error(
+        `${planPath} check ${check.check.checkId} step ${step.stepId} uses undeclared operation ${step.operation}`
+      );
+    }
+  }
+  await validateChecks(planPath, checks, declaredOperations, index + 1);
+};
+
+const validatePlans = async (
+  planPaths: readonly string[],
+  operationCache: Map<string, Promise<ReadonlySet<string>>>,
+  index: number
+): Promise<void> => {
+  const planPath = planPaths[index];
+  if (planPath === undefined) {
+    return;
+  }
   const compiledPlan = await loadConformancePlan(planPath);
   const declaredOperations =
     operationCache.get(compiledPlan.plan.packetId) ??
     readDeclaredOperations(compiledPlan.plan.packetId);
   operationCache.set(compiledPlan.plan.packetId, declaredOperations);
+  await validateChecks(planPath, compiledPlan.checks, declaredOperations, 0);
+  await validatePlans(planPaths, operationCache, index + 1);
+};
 
-  for (const check of compiledPlan.checks) {
-    if (check.requiredEvidence.length === 0) {
-      throw new Error(
-        `${planPath} check ${check.check.checkId} has no required evidence`
-      );
-    }
-
-    const operations = await declaredOperations;
-
-    if (operations.size > 0 && !operations.has(check.check.operation)) {
-      throw new Error(
-        `${planPath} check ${check.check.checkId} uses undeclared operation ${check.check.operation}`
-      );
-    }
-
-    for (const step of check.check.steps ?? []) {
-      if (operations.size > 0 && !operations.has(step.operation)) {
-        throw new Error(
-          `${planPath} check ${check.check.checkId} step ${step.stepId} uses undeclared operation ${step.operation}`
-        );
-      }
-    }
-  }
-}
+const planPaths = await findConformancePlans();
+await validatePlans(planPaths, new Map(), 0);
 
 console.log(
   `conformance plan validation passed (${planPaths.length} plan${
