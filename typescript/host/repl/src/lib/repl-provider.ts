@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { setTimeout as delay } from "node:timers/promises";
+
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -50,8 +52,8 @@ import type { ReplProviderMode, ReplScenarioName } from "./repl-types.js";
 const STEERING_GATE = Symbol("repl-fixture-steering-gate");
 
 interface SteeringGate {
-  markObserved(): void;
-  waitForObservedOrDeadline(deadlineMilliseconds: number): Promise<void>;
+  markObserved: () => void;
+  waitForObservedOrDeadline: (deadlineMilliseconds: number) => Promise<void>;
 }
 
 const createAimockProvider = (
@@ -106,7 +108,7 @@ const createAimockProvider = (
     }
     default: {
       throw new TuvrenRuntimeError(
-        `unsupported aimock repl provider "${mode}"`,
+        `unsupported aimock repl provider "${String(mode)}"`,
         {
           code: INVALID_REPL_CONFIG_CODE,
         }
@@ -117,10 +119,8 @@ const createAimockProvider = (
 
 const createSteeringGate = (): SteeringGate => {
   let observed = false;
-  let resolveObserved: (() => void) | undefined;
-  const observedPromise = new Promise<void>((resolve) => {
-    resolveObserved = resolve;
-  });
+  const { promise: observedPromise, resolve: resolveObserved } =
+    Promise.withResolvers<boolean>();
 
   return {
     markObserved() {
@@ -129,22 +129,27 @@ const createSteeringGate = (): SteeringGate => {
       }
 
       observed = true;
-      resolveObserved?.();
+      resolveObserved(true);
     },
-    waitForObservedOrDeadline(deadlineMilliseconds: number): Promise<void> {
+    async waitForObservedOrDeadline(
+      deadlineMilliseconds: number
+    ): Promise<void> {
       if (observed) {
-        return Promise.resolve();
+        return;
       }
 
-      return Promise.race([
-        observedPromise,
-        new Promise<void>((resolve) => {
-          setTimeout(resolve, deadlineMilliseconds);
-        }),
-      ]);
+      await Promise.race([observedPromise, delay(deadlineMilliseconds)]);
     },
   };
 };
+
+const isSteeringGate = (value: unknown): value is SteeringGate =>
+  typeof value === "object" &&
+  value !== null &&
+  "markObserved" in value &&
+  typeof value.markObserved === "function" &&
+  "waitForObservedOrDeadline" in value &&
+  typeof value.waitForObservedOrDeadline === "function";
 
 /**
  * Marks the steering signal as observed for a fixture provider previously
@@ -154,11 +159,14 @@ const createSteeringGate = (): SteeringGate => {
  * `host.steer(...)` call.
  */
 export const markSteeringObserved = (provider: TuvrenProvider): void => {
-  const gate = (
-    provider as Partial<Record<typeof STEERING_GATE, SteeringGate>>
-  )[STEERING_GATE];
+  if (!(STEERING_GATE in provider)) {
+    return;
+  }
 
-  gate?.markObserved();
+  const gate = provider[STEERING_GATE];
+  if (isSteeringGate(gate)) {
+    gate.markObserved();
+  }
 };
 
 const countRole = (prompt: TuvrenPrompt, role: "tool"): number =>
@@ -311,6 +319,12 @@ const createFixtureResponse = (
         },
       };
     }
+    case "steering": {
+      return {
+        finishReason: "stop",
+        parts: [{ text: "REPL complete.", type: "text" }],
+      };
+    }
     default: {
       return {
         finishReason: "stop",
@@ -333,9 +347,7 @@ const streamFixtureChunks = async function* streamFixtureChunks(
     // "running")` to observe it before spawning the child turn. That phase
     // flips essentially immediately, so a short fixed delay is sufficient and
     // keeps every orchestration fixture run fast.
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 100);
-    });
+    await delay(100);
   } else if (scenario === "steering" && steeringGate !== undefined) {
     // Replace the old fixed-wall-clock race with a deterministic handshake:
     // hold the turn open only until `steerWhenRunning` reports that
@@ -391,6 +403,11 @@ const streamFixtureChunks = async function* streamFixtureChunks(
         };
         break;
       }
+      case "file":
+      case "reasoning":
+      case "tool_result": {
+        break;
+      }
       default: {
         break;
       }
@@ -409,8 +426,8 @@ const createFixtureProvider = (scenario: ReplScenarioName): TuvrenProvider => {
   const steeringGate =
     scenario === "steering" ? createSteeringGate() : undefined;
   const provider: TuvrenProvider = {
-    generate(prompt) {
-      return Promise.resolve(createFixtureResponse(prompt, scenario));
+    async generate(prompt) {
+      return await Promise.resolve(createFixtureResponse(prompt, scenario));
     },
     id: `repl:fixture:${scenario}`,
     stream(prompt) {
@@ -537,12 +554,12 @@ const streamAiSdkParts = (
 const createMockLanguageModel = (
   scenario: ReplScenarioName
 ): LanguageModelV3 => ({
-  doGenerate() {
-    return Promise.resolve(createGenerateResult(scenario));
+  async doGenerate() {
+    return await Promise.resolve(createGenerateResult(scenario));
   },
-  doStream(options: LanguageModelV3CallOptions) {
+  async doStream(options: LanguageModelV3CallOptions) {
     const result = createGenerateResult(scenario, options);
-    return Promise.resolve({
+    return await Promise.resolve({
       stream: streamAiSdkParts(result),
     });
   },

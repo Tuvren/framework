@@ -27,7 +27,7 @@ export const haveAllChecksPassed = (
 ): boolean => {
   const values = Object.values(checks);
 
-  return values.length > 0 && values.every((value) => value);
+  return values.length > 0 && values.every(Boolean);
 };
 
 export const runReplScenarioMatrix = async (input: {
@@ -37,7 +37,11 @@ export const runReplScenarioMatrix = async (input: {
   const reports: ReplScenarioReport[] = [];
   const failedScenarios: ReplScenarioName[] = [];
 
-  for (const scenario of input.scenarios) {
+  const runNextScenario = async (index: number): Promise<void> => {
+    const scenario = input.scenarios[index];
+    if (scenario === undefined) {
+      return;
+    }
     const report = await runReplScenario({
       ...input.config,
       scenario,
@@ -48,7 +52,9 @@ export const runReplScenarioMatrix = async (input: {
     if (!haveAllChecksPassed(report.checks)) {
       failedScenarios.push(scenario);
     }
-  }
+    await runNextScenario(index + 1);
+  };
+  await runNextScenario(0);
 
   return {
     backend: input.config.backend,
