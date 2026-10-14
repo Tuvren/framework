@@ -17,7 +17,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import path from "node:path";
 import process from "node:process";
 
 import { createMcpToolSource } from "@tuvren/mcp-client";
@@ -63,7 +63,7 @@ const MOCK_MCP_STDIO_SERVER_PATH_SEGMENTS = [
   "bin",
   "mock-mcp-stdio.ts",
 ] as const;
-const SCENARIO_NAMES = new Set<ReplScenarioName>([
+const SCENARIO_NAMES = new Set<string>([
   "approval",
   "branching",
   "cancel",
@@ -75,8 +75,8 @@ const SCENARIO_NAMES = new Set<ReplScenarioName>([
   "streaming",
   "structured",
   "tools",
-]);
-const TURN_SCENARIO_NAMES = new Set<ReplScenarioName>([
+] satisfies ReplScenarioName[]);
+const TURN_SCENARIO_NAMES = new Set<string>([
   "approval",
   "cancel",
   "extension",
@@ -85,7 +85,7 @@ const TURN_SCENARIO_NAMES = new Set<ReplScenarioName>([
   "streaming",
   "structured",
   "tools",
-]);
+] satisfies ReplScenarioName[]);
 
 const CONTINUE_ONCE_POLICY: LoopPolicy = {
   evaluate(_response, _manifest, iterationCount) {
@@ -179,11 +179,10 @@ interface ApproveTurnOptions {
   awaitCompletion?: boolean;
 }
 
-const isScenarioName = (value: string): value is ReplScenarioName =>
-  SCENARIO_NAMES.has(value as ReplScenarioName);
+const isScenarioName = (value: string): boolean => SCENARIO_NAMES.has(value);
 
 const isTurnScenarioName = (value: string): value is ReplScenarioName =>
-  TURN_SCENARIO_NAMES.has(value as ReplScenarioName);
+  TURN_SCENARIO_NAMES.has(value);
 
 const readUnsupportedTurnScenarioMessage = (
   value: string
@@ -279,13 +278,16 @@ const findMockMcpStdioServerPath = (): string => {
     let current = start;
 
     while (true) {
-      const candidate = join(current, ...MOCK_MCP_STDIO_SERVER_PATH_SEGMENTS);
+      const candidate = path.join(
+        current,
+        ...MOCK_MCP_STDIO_SERVER_PATH_SEGMENTS
+      );
 
       if (existsSync(candidate)) {
         return candidate;
       }
 
-      const parent = dirname(current);
+      const parent = path.dirname(current);
 
       if (parent === current) {
         break;
@@ -299,10 +301,7 @@ const findMockMcpStdioServerPath = (): string => {
 };
 
 const ensureThread = async (shell: ReplShell): Promise<ReplThreadSummary> => {
-  if (shell.thread === undefined) {
-    shell.thread = await shell.host.createThread();
-  }
-
+  shell.thread ??= await shell.host.createThread();
   return shell.thread;
 };
 
@@ -451,7 +450,7 @@ const handleMcpCommand = async (
     return {
       output: formatJson({
         echo: output,
-        toolNames: source.tools.map((entry) => entry.name).sort(),
+        toolNames: source.tools.map((entry) => entry.name).toSorted(),
       }),
     };
   } finally {
@@ -501,7 +500,7 @@ const selectBackend = (
   shell: ReplShell,
   args: readonly string[]
 ): ReplCommandResult => {
-  const backend = args[0];
+  const [backend] = args;
 
   if (backend !== "memory" && backend !== "postgres" && backend !== "sqlite") {
     return {
@@ -521,7 +520,7 @@ const selectBackend = (
       sqlitePath: undefined,
     };
   } else if (backend === "postgres") {
-    const database = args[1];
+    const [, database] = args;
     const rawSchema = readShellTextArgument(args.slice(2));
 
     if (database === undefined || database.length === 0) {
@@ -549,7 +548,7 @@ const selectBackend = (
       postgresSchemaName: undefined,
       sqlitePath:
         readShellTextArgument(args.slice(1)) === "auto"
-          ? join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`)
+          ? path.join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`)
           : readShellTextArgument(args.slice(1)),
     };
   }
@@ -585,7 +584,7 @@ const handleThreadCommand = async (
   shell: ReplShell,
   args: readonly string[]
 ): Promise<ReplCommandResult> => {
-  const subcommand = args[0];
+  const [subcommand] = args;
 
   switch (subcommand) {
     case "new": {
@@ -842,12 +841,16 @@ const approveTurn = async (
   const baseProjection = await activeTurn.projectionPromise;
   const response = createApprovalResponse(approval, mode);
   const resumedHandle = shell.host.approve(activeTurn.handle, response);
-  const resumedActiveTurn = {
-    handle: resumedHandle,
-    projectionPromise: projectContinuationCapture(
+  const captureContinuation = async (): Promise<ReplStreamProjection> => {
+    const continuation = await projectContinuationCapture(
       resumedHandle,
       onCanonicalEvent
-    ).then((continuation) => mergeProjections(baseProjection, continuation)),
+    );
+    return mergeProjections(baseProjection, continuation);
+  };
+  const resumedActiveTurn = {
+    handle: resumedHandle,
+    projectionPromise: captureContinuation(),
     thread: activeTurn.thread,
   } satisfies ActiveTurnState;
 
@@ -899,7 +902,7 @@ const handleTurnCommand = async (
   args: readonly string[],
   onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplCommandResult> => {
-  const subcommand = args[0];
+  const [subcommand] = args;
 
   switch (subcommand) {
     case "start": {
@@ -1105,7 +1108,7 @@ const handleOrchestrationCommand = async (
   args: readonly string[],
   onCanonicalEvent?: (event: TuvrenStreamEvent) => void
 ): Promise<ReplCommandResult> => {
-  const subcommand = args[0];
+  const [subcommand] = args;
 
   switch (subcommand) {
     case "start": {
