@@ -47,9 +47,9 @@ interface FakeStreamEvent {
 /** A controllable single-consumer async event source for the fake handle. */
 class FakeEventSource implements AsyncIterable<FakeStreamEvent> {
   private readonly items: FakeStreamEvent[] = [];
-  private readonly waiters: Array<
-    (result: IteratorResult<FakeStreamEvent>) => void
-  > = [];
+  private readonly waiters: ((
+    result: IteratorResult<FakeStreamEvent>
+  ) => void)[] = [];
   private closed = false;
   private claimed = false;
 
@@ -350,7 +350,7 @@ describe("createDuplexSessionBinding", () => {
 
     const signal: InputSignal = {
       parts: [{ providerMetadata: undefined, text: "hello", type: "text" }],
-    } as InputSignal;
+    };
 
     binding.dispatchInbound({
       correlationId: "corr-6",
@@ -642,14 +642,14 @@ describe("createDuplexSessionBinding", () => {
       sessionId: "sess-12",
     });
 
-    expect(() =>
+    expect(() => {
       binding.dispatchInbound({
         correlationId: "corr-12",
         kind: "cancel",
         protocolVersion: "1",
         sessionId: "sess-12",
-      })
-    ).toThrow("unexpected infrastructure failure");
+      });
+    }).toThrow("unexpected infrastructure failure");
   });
 
   test("terminal close rejects an outstanding client dispatch instead of leaking it", async () => {
