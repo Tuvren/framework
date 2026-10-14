@@ -1,0 +1,166 @@
+{
+  "milestone": "M24",
+  "ticket": "KRT-BX003",
+  "status": "verified-already-satisfied-by-M23",
+  "reviewed_implementation": "511730ba27990436680845ef7042575f8cef3dc9",
+  "file": "typescript/host/repl/test/repl.test.ts",
+  "source_sha256": "a8a04cfa82211491ee509c11f4b460b6c5c1fd20c561b0aa910e05504fe87f60",
+  "boundary": {
+    "start_line": 404,
+    "end_line_inclusive": 2140,
+    "next_test_line": 2142,
+    "next_test_title": "interactive CLI exits cleanly for piped sessions",
+    "start_offset": 9986,
+    "end_offset_exclusive": 62659
+  },
+  "early_cohort": {
+    "tests": 68,
+    "assertion_call_sites": 191,
+    "local_value_declarations": 146,
+    "bound_local_value_references": 456,
+    "nested_function_declarations": 0,
+    "forward_references": []
+  },
+  "m25": {
+    "cohort_sha256": "1c7079a186c6c6d0c9f3389820c76d49d9b24a314f4023c366e41e6b9c218381",
+    "untouched": true
+  },
+  "registration": {
+    "tests": 100,
+    "sha256": "0115ea6672783e93e574a3660a3b8767a454ef2e1586abfe7f8e5bbee0c4f8f4",
+    "byte_for_byte_equal_to_pre_m23": true
+  },
+  "lineage": {
+    "pre_m23_early_ordering": {
+      "total": 17,
+      "by_rule": {
+        "eslint(no-use-before-define)": 17
+      }
+    },
+    "current_early_ordering": {
+      "total": 0,
+      "by_rule": {}
+    },
+    "explanation": "M23 moved the shared helpers above registration, satisfying early callers without changing their test bodies."
+  },
+  "diagnostics": {
+    "project": {
+      "total": 294,
+      "by_rule": {
+        "typescript(method-signature-style)": 25,
+        "unicorn(prefer-native-coercion-functions)": 1,
+        "eslint(no-await-in-loop)": 38,
+        "eslint(func-style)": 30,
+        "unicorn(no-await-expression-member)": 16,
+        "unicorn(no-useless-undefined)": 9,
+        "jsdoc(check-tag-names)": 4,
+        "promise(avoid-new)": 16,
+        "unicorn(consistent-function-scoping)": 6,
+        "eslint(no-useless-return)": 2,
+        "unicorn(import-style)": 4,
+        "unicorn(prefer-default-parameters)": 4,
+        "unicorn(no-array-reverse)": 8,
+        "unicorn(no-array-sort)": 3,
+        "eslint(eqeqeq)": 1,
+        "eslint(no-eq-null)": 1,
+        "eslint(sort-keys)": 4,
+        "eslint(no-use-before-define)": 35,
+        "eslint(complexity)": 1,
+        "typescript(no-dynamic-delete)": 3,
+        "promise(prefer-await-to-then)": 6,
+        "eslint(prefer-const)": 1,
+        "promise(prefer-await-to-callbacks)": 1,
+        "eslint(no-shadow)": 5,
+        "unicorn(prefer-number-coercion)": 2,
+        "eslint(prefer-destructuring)": 5,
+        "eslint(no-promise-executor-return)": 1,
+        "unicorn(prefer-add-event-listener)": 4,
+        "typescript(restrict-template-expressions)": 5,
+        "typescript(promise-function-async)": 13,
+        "typescript(no-unsafe-return)": 3,
+        "typescript(no-unsafe-assignment)": 2,
+        "typescript(no-unsafe-type-assertion)": 9,
+        "typescript(switch-exhaustiveness-check)": 4,
+        "typescript(no-misused-spread)": 1,
+        "typescript(prefer-nullish-coalescing)": 1,
+        "typescript(unbound-method)": 2,
+        "typescript(no-redundant-type-constituents)": 4,
+        "typescript(no-unsafe-enum-comparison)": 1,
+        "typescript(no-unnecessary-type-conversion)": 1,
+        "typescript(consistent-return)": 1,
+        "typescript(no-base-to-string)": 1,
+        "typescript(no-unnecessary-boolean-literal-compare)": 1,
+        "typescript(strict-void-return)": 1,
+        "typescript(strict-boolean-expressions)": 1,
+        "typescript(non-nullable-type-assertion-style)": 1,
+        "typescript(no-unsafe-argument)": 2,
+        "typescript(await-thenable)": 2,
+        "typescript(no-confusing-void-expression)": 2
+      }
+    },
+    "file": {
+      "total": 34,
+      "by_rule": {
+        "unicorn(import-style)": 1,
+        "eslint(no-await-in-loop)": 4,
+        "promise(avoid-new)": 2,
+        "unicorn(no-await-expression-member)": 15,
+        "typescript(promise-function-async)": 2,
+        "typescript(no-unsafe-return)": 2,
+        "typescript(no-unsafe-type-assertion)": 1,
+        "typescript(unbound-method)": 1,
+        "typescript(no-unsafe-argument)": 2,
+        "typescript(await-thenable)": 2,
+        "typescript(no-confusing-void-expression)": 2
+      }
+    },
+    "early": {
+      "total": 19,
+      "by_rule": {
+        "eslint(no-await-in-loop)": 1,
+        "unicorn(no-await-expression-member)": 15,
+        "typescript(promise-function-async)": 1,
+        "typescript(no-unsafe-type-assertion)": 1,
+        "typescript(unbound-method)": 1
+      }
+    },
+    "project_ordering": {
+      "total": 65,
+      "by_rule": {
+        "eslint(func-style)": 30,
+        "eslint(no-use-before-define)": 35
+      }
+    },
+    "file_ordering": {
+      "total": 0,
+      "by_rule": {}
+    },
+    "early_ordering": {
+      "total": 0,
+      "by_rule": {}
+    }
+  },
+  "source_unchanged": true,
+  "verification": {
+    "source_typecheck": 0,
+    "canonical_tests": 0,
+    "tests": 135,
+    "assertions": 1089,
+    "exports_smoke": 0,
+    "owned_format": 0,
+    "constitution_errors": 0
+  },
+  "raw_artifacts": [
+    {
+      "name": "bx-m24-proof.json",
+      "sha256": "704ecba7093fb0f3fff3e435d820062bdc46158ef15cd66da80be34f24be7be9",
+      "bytes": 27321
+    },
+    {
+      "name": "bx-m24-summary.json",
+      "sha256": "f7ebc41e148bdaa046b2e28726417093d6447d661b8a0d3b22f986de8975514d",
+      "bytes": 12105
+    }
+  ],
+  "conclusion": "M23 already satisfies M24 declaration ordering; no production or test source edits warranted."
+}
