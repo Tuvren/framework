@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "ticket": "KRT-BX002",
-  "milestone": "M6",
-  "measurement_commit": "906d4b1306ce879afd36e6bb8333a8f0a89c9e97",
+  "milestone": "A10-coverage-evidence-refresh",
+  "measurement_commit": "5b7fff3b19b97ccdae30159a152633d573be9fb5",
   "status": "complete",
   "counts": {
     "baseline_directives": 12,
@@ -10,12 +10,14 @@
     "dormant_assist": 4,
     "retained_no_live_lint_diagnostic": 1,
     "measured_native_counterparts": 1,
-    "native_type_aware_diagnostics": 1463,
-    "native_syntactic_diagnostics": 1308,
+    "native_type_aware_diagnostics": 780,
+    "native_syntactic_diagnostics": 625,
     "native_selected_code_files": 49,
     "native_enabled_rules": 474,
     "active_experimental": 112,
-    "optional_packageDocumentation": 8
+    "optional_packageDocumentation": 8,
+    "retained_processed_files": 77,
+    "individual_owned_file_controls": 77
   },
   "assertions": {
     "all_baseline_identities_and_reasons": true,
@@ -30,33 +32,114 @@
     "missing_entry_negative_control_rejected": true,
     "changed_reason_negative_control_rejected": true,
     "no_new_biome_or_native_directive": true,
-    "no_source_config_or_constitution_edit": true
+    "no_source_config_or_constitution_edit": true,
+    "full_scope_positive_processed_count": true,
+    "complete_git_inventory_coverage": true,
+    "native_exact_debug_selection": true,
+    "zero_file_negative_control_rejected": true,
+    "preserved_original_artifacts_and_digests": true,
+    "complete_metadata_inventory": true
   },
   "retained_biome_exit": 0,
   "native_type_aware_exit": 1,
   "full_lint": {
     "command": "bun run lint",
     "exit_code": 0,
-    "log": "bx-bx002-lint.log"
+    "log": "bx-a10-full-lint.log"
   },
   "root_typecheck": {
     "command": "bun run typecheck",
     "exit_code": 0,
     "projects": 33,
-    "log": "bx-bx002-typecheck.log"
+    "log": "bx-a10-root-typecheck.log"
   },
   "early_deletions": [],
   "new_dependencies_patterns_conventions_or_contracts": [],
   "documentation_verification": {
     "installed_cli_help_and_package_pins": "verified",
     "barrel_rule": "https://oxc.rs/docs/guide/usage/linter/rules/oxc/no-barrel-file.html",
-    "require_await_and_jsdoc_web_pages": "Browsing unavailable for these pages; installed registry, effective rules, exact diagnostic spans, and original source provide measured proof."
+    "require_await_and_jsdoc_web_pages": "Official OXC pages returned Internal Error on A10 browsing. Installed 1.86.0 registry, effective rules, exact source spans and CLI help verify the measurement signatures.",
+    "biome_cli": "https://biomejs.dev/reference/cli/ (verified; installed 2.5.14 help captured separately)"
   },
   "worktree_status_after": "",
-  "pre_reorder_conformance": {
-    "command": "bun run conformance",
+  "original_measurement_observation": {
+    "retained_full_scope": {
+      "report": "bx-m6-biome-retained.json",
+      "processed_files": 77
+    },
+    "per_probe_counts": [
+      {
+        "probe": 1,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 2,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 3,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 4,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 5,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 6,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 7,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 8,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 9,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 10,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 11,
+        "suppressed": 1,
+        "unsuppressed": 1
+      },
+      {
+        "probe": 12,
+        "suppressed": 1,
+        "unsuppressed": 1
+      }
+    ],
+    "note": "The preserved M6 reports already show positive host/per-probe counts; A10 independently remeasures them after relocation. Later zero-file reports remain failed environmental diagnostics and are not rewritten."
+  },
+  "canonical_rebuild": {
+    "command": "bun run nx run host-repl:build --skip-nx-cache",
     "exit_code": 0,
-    "projects": 11,
-    "log": "bx-pre-reorder-conformance.log"
+    "tasks": 27
+  },
+  "canonical_tests": {
+    "command": "bun run nx run host-repl:test",
+    "exit_code": 0,
+    "tests": 135,
+    "assertions": 1089
   }
 }

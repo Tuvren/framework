@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "ticket": "KRT-BX002",
-  "measurement_commit": "906d4b1306ce879afd36e6bb8333a8f0a89c9e97",
+  "measurement_commit": "5b7fff3b19b97ccdae30159a152633d573be9fb5",
   "native_rule": "jsdoc/check-tag-names",
   "effective_rule": "deny",
-  "report": "bx-m6-oxlint-type-aware.json",
-  "report_sha256": "6dbc04f416dedd7cd753b06049d4e17484a8c76a7bad0321251f980d6bc2c322",
+  "report": "bx-a10-oxlint-type-aware.json",
+  "report_sha256": "38f15dd27724badc34857a5a28f1019c627ed2294f94d91aa8579bbf26f0faad",
   "native_exit": 1,
   "authority": [
     ".constitution/tech-spec/adrs/ADR-0056-tsdoc-experimental-is-the-canonical-experimental-surfa.md",
@@ -16,7 +16,7 @@
   "packageDocumentation_count": 8,
   "disposition": {
     "experimental": "Preserve all now; user-authorized narrowly measured exceptions are planned separately from legacy suppression counterparts.",
-    "packageDocumentation": "Preserve all in M6; remove eight optional tags while retaining prose in later normalization.",
+    "packageDocumentation": "Preserve all during A10 refresh; remove eight optional tags while retaining prose in later normalization.",
     "native_exceptions_added": 0,
     "metadata_removed": 0
   },
@@ -49,7 +49,7 @@
     },
     {
       "path": "typescript/host/remote-session/src/lib/remote-client-session.ts",
-      "source_sha256": "878a40bfd22b93607333dcf54faa11edff4cc6b55c9e4a07a2c426223aeaf129",
+      "source_sha256": "de3ebe1522803d67e92c00cec393acf68eaac84e27e5ff1dae13a04de2a8943d",
       "experimental_firing_lines": [
         53,
         64,
@@ -60,12 +60,12 @@
         138,
         148,
         192,
-        383
+        377
       ],
       "packageDocumentation_firing_lines": [],
       "experimental_bounded_region_plan": {
         "first_tag_line": 53,
-        "last_tag_line": 383,
+        "last_tag_line": 377,
         "rule": "jsdoc/check-tag-names",
         "reason": "Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling.",
         "validation": "At later normalization/admission, use only measured tag comments or a bounded marked region; rerun unchanged full-preset type-aware lint with --report-unused-disable-directives. Remove each planned exception in a restored probe and require the exact @experimental diagnostics to return; remove the tags in a scratch control and require an unused exception diagnostic. Keep packageDocumentation removal separate."
@@ -73,7 +73,7 @@
     },
     {
       "path": "typescript/host/repl/scripts/ws-peer.ts",
-      "source_sha256": "2be6cea6bb6b60672a3c23db353f9383147ffab70518f9a532d740dbbef03f56",
+      "source_sha256": "c43d209f3425d17ac11dc82d866c01038aa5f77425e0aa7d8b31a1f3eb8fa011",
       "experimental_firing_lines": [],
       "packageDocumentation_firing_lines": [
         30
@@ -82,17 +82,17 @@
     },
     {
       "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
-      "source_sha256": "30390589e2cad353dcc614a7d9b0485a67fe31b22e2412eef20fec8b04f5aba2",
+      "source_sha256": "094448b64a4d4561b3ecaedf4fed170cb34ec0975080560b48e28a260dc479f5",
       "experimental_firing_lines": [
         275,
-        486
+        511
       ],
       "packageDocumentation_firing_lines": [
         68
       ],
       "experimental_bounded_region_plan": {
         "first_tag_line": 275,
-        "last_tag_line": 486,
+        "last_tag_line": 511,
         "rule": "jsdoc/check-tag-names",
         "reason": "Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling.",
         "validation": "At later normalization/admission, use only measured tag comments or a bounded marked region; rerun unchanged full-preset type-aware lint with --report-unused-disable-directives. Remove each planned exception in a restored probe and require the exact @experimental diagnostics to return; remove the tags in a scratch control and require an unused exception diagnostic. Keep packageDocumentation removal separate."
@@ -153,7 +153,7 @@
     },
     {
       "path": "typescript/host/session-client/src/lib/session-client.ts",
-      "source_sha256": "36ef7a90b054c6b1ccca77514c7f622121c3341d946c5b590063a35e6730899b",
+      "source_sha256": "2fd697fafd5b716df492ffb6a271d39235d2cd535ddcef1f719354d98699520e",
       "experimental_firing_lines": [
         35,
         53,
@@ -163,12 +163,12 @@
         122,
         140,
         191,
-        373
+        362
       ],
       "packageDocumentation_firing_lines": [],
       "experimental_bounded_region_plan": {
         "first_tag_line": 35,
-        "last_tag_line": 373,
+        "last_tag_line": 362,
         "rule": "jsdoc/check-tag-names",
         "reason": "Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling.",
         "validation": "At later normalization/admission, use only measured tag comments or a bounded marked region; rerun unchanged full-preset type-aware lint with --report-unused-disable-directives. Remove each planned exception in a restored probe and require the exact @experimental diagnostics to return; remove the tags in a scratch control and require an unused exception diagnostic. Keep packageDocumentation removal separate."
@@ -185,25 +185,25 @@
     },
     {
       "path": "typescript/host/session-client/src/lib/ws-wire.ts",
-      "source_sha256": "2cf860862d23c0d6a5a2e00418cf5a3a2c7209af1436e0fbb065b655ba6f8055",
+      "source_sha256": "e0f4f9198d7a9601e347a42a63bc37767a016bb09c77ffef6694171d4c415fae",
       "experimental_firing_lines": [
         50,
-        104,
-        153,
+        100,
+        149,
+        152,
+        154,
         156,
         158,
         160,
-        162,
-        164,
-        180,
-        196
+        176,
+        192
       ],
       "packageDocumentation_firing_lines": [
         38
       ],
       "experimental_bounded_region_plan": {
         "first_tag_line": 50,
-        "last_tag_line": 196,
+        "last_tag_line": 192,
         "rule": "jsdoc/check-tag-names",
         "reason": "Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling.",
         "validation": "At later normalization/admission, use only measured tag comments or a bounded marked region; rerun unchanged full-preset type-aware lint with --report-unused-disable-directives. Remove each planned exception in a restored probe and require the exact @experimental diagnostics to return; remove the tags in a scratch control and require an unused exception diagnostic. Keep packageDocumentation removal separate."
@@ -244,16 +244,16 @@
     },
     {
       "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
-      "source_sha256": "c49d5d82bdb89ddcbdc0f91ae2d1e13afc107800880a38e9af93f87276852618",
+      "source_sha256": "e30c9a87ac636714bdcf6700a2cdec9ff3b7d07c12a205b1fab7c98618a5401d",
       "experimental_firing_lines": [
         37,
         55,
-        365
+        363
       ],
       "packageDocumentation_firing_lines": [],
       "experimental_bounded_region_plan": {
         "first_tag_line": 37,
-        "last_tag_line": 365,
+        "last_tag_line": 363,
         "rule": "jsdoc/check-tag-names",
         "reason": "Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling.",
         "validation": "At later normalization/admission, use only measured tag comments or a bounded marked region; rerun unchanged full-preset type-aware lint with --report-unused-disable-directives. Remove each planned exception in a restored probe and require the exact @experimental diagnostics to return; remove the tags in a scratch control and require an unused exception diagnostic. Keep packageDocumentation removal separate."
