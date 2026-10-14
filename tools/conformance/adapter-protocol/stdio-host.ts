@@ -53,22 +53,14 @@ interface JsonRpcRequest {
   params?: unknown;
 }
 
-export async function serveStdioAdapter(
-  adapter: StdioConformanceAdapter
-): Promise<void> {
-  for await (const line of readStdioLines()) {
-    // Bun's console iterator can surface a final empty line for piped EOF; it is
-    // transport noise, not a JSON-RPC frame, so adapters must stay silent.
-    if (line.trim().length === 0) {
-      continue;
-    }
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-    const response = await handleStdioAdapterLine(adapter, line);
-    process.stdout.write(`${JSON.stringify(response)}\n`);
-  }
-}
+const isAsyncIterableConsole = (
+  value: Console
+): value is Console & AsyncIterable<string> => Symbol.asyncIterator in value;
 
-async function* readStdioLines(): AsyncIterable<string> {
+const readStdioLines = async function* readStdioLines(): AsyncIterable<string> {
   if (isAsyncIterableConsole(console)) {
     for await (const line of console) {
       yield line;
@@ -88,47 +80,90 @@ async function* readStdioLines(): AsyncIterable<string> {
   } finally {
     reader.close();
   }
-}
+};
 
-export async function handleStdioAdapterLine(
-  adapter: StdioConformanceAdapter,
-  line: string
-): Promise<unknown> {
-  let requestId: number | string | null = null;
+const collectEvents = async (
+  events: AsyncIterable<unknown> | Iterable<unknown>
+): Promise<unknown[]> => {
+  const collected: unknown[] = [];
 
-  try {
-    const request = JSON.parse(line) as unknown;
-
-    if (!isJsonRpcRequest(request)) {
-      return errorResponse(null, {
-        code: "invalid_json_rpc_request",
-        message: "request must be a JSON-RPC 2.0 object",
-      });
-    }
-
-    // Once the frame is a valid JSON-RPC request, every host-side error must
-    // echo the request id so the shared runner can correlate failures.
-    requestId = request.id;
-    const result = await dispatchMethod(
-      adapter,
-      request.method,
-      request.params
-    );
-    return {
-      id: request.id,
-      jsonrpc: "2.0",
-      result,
-    };
-  } catch (error: unknown) {
-    return errorResponse(requestId, createAdapterErrorEnvelope(error));
+  for await (const event of events) {
+    collected.push(event);
   }
-}
 
-async function dispatchMethod(
+  return collected;
+};
+
+const readControls = (value: unknown): AdapterControls => {
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  const controls: {
+    cancel?: {
+      reason: string;
+    };
+    cancelAfterEvent?: string;
+    deadlineMs?: number;
+  } = {};
+
+  if (isRecord(value.cancel) && typeof value.cancel.reason === "string") {
+    controls.cancel = { reason: value.cancel.reason };
+  }
+
+  if (typeof value.cancelAfterEvent === "string") {
+    controls.cancelAfterEvent = value.cancelAfterEvent;
+  }
+
+  if (typeof value.deadlineMs === "number") {
+    controls.deadlineMs = value.deadlineMs;
+  }
+
+  return controls;
+};
+
+const errorResponse = (
+  id: number | string | null,
+  error: AdapterErrorEnvelope
+) => ({
+  error,
+  id,
+  jsonrpc: "2.0",
+});
+
+const createAdapterErrorEnvelope = (error: unknown): AdapterErrorEnvelope => {
+  if (error instanceof Error) {
+    return {
+      code: "adapter_host_error",
+      message: error.message,
+    };
+  }
+
+  return {
+    code: "adapter_host_error",
+    message: String(error),
+  };
+};
+
+const isJsonRpcRequest = (value: unknown): value is JsonRpcRequest =>
+  isRecord(value) &&
+  value.jsonrpc === "2.0" &&
+  (typeof value.id === "number" || typeof value.id === "string") &&
+  typeof value.method === "string";
+
+const readString = (value: unknown, label: string): string => {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+
+  return value;
+};
+
+const dispatchMethod = async (
   adapter: StdioConformanceAdapter,
   method: string,
   params: unknown
-): Promise<unknown> {
+): Promise<unknown> => {
   const paramObject = isRecord(params) ? params : {};
 
   switch (method) {
@@ -184,96 +219,53 @@ async function dispatchMethod(
       throw new Error(`unsupported adapter method ${method}`);
     }
   }
-}
+};
 
-async function collectEvents(
-  events: AsyncIterable<unknown> | Iterable<unknown>
-): Promise<unknown[]> {
-  const collected: unknown[] = [];
+export const handleStdioAdapterLine = async (
+  adapter: StdioConformanceAdapter,
+  line: string
+): Promise<unknown> => {
+  let requestId: number | string | null = null;
 
-  for await (const event of events) {
-    collected.push(event);
-  }
+  try {
+    const request = JSON.parse(line) as unknown;
 
-  return collected;
-}
+    if (!isJsonRpcRequest(request)) {
+      return errorResponse(null, {
+        code: "invalid_json_rpc_request",
+        message: "request must be a JSON-RPC 2.0 object",
+      });
+    }
 
-function readControls(value: unknown): AdapterControls {
-  if (!isRecord(value)) {
-    return {};
-  }
-
-  const controls: {
-    cancel?: {
-      reason: string;
-    };
-    cancelAfterEvent?: string;
-    deadlineMs?: number;
-  } = {};
-
-  if (isRecord(value.cancel) && typeof value.cancel.reason === "string") {
-    controls.cancel = { reason: value.cancel.reason };
-  }
-
-  if (typeof value.cancelAfterEvent === "string") {
-    controls.cancelAfterEvent = value.cancelAfterEvent;
-  }
-
-  if (typeof value.deadlineMs === "number") {
-    controls.deadlineMs = value.deadlineMs;
-  }
-
-  return controls;
-}
-
-function errorResponse(
-  id: number | string | null,
-  error: AdapterErrorEnvelope
-) {
-  return {
-    error,
-    id,
-    jsonrpc: "2.0",
-  };
-}
-
-function createAdapterErrorEnvelope(error: unknown): AdapterErrorEnvelope {
-  if (error instanceof Error) {
+    // Once the frame is a valid JSON-RPC request, every host-side error must
+    // echo the request id so the shared runner can correlate failures.
+    requestId = request.id;
+    const result = await dispatchMethod(
+      adapter,
+      request.method,
+      request.params
+    );
     return {
-      code: "adapter_host_error",
-      message: error.message,
+      id: request.id,
+      jsonrpc: "2.0",
+      result,
     };
+  } catch (error: unknown) {
+    return errorResponse(requestId, createAdapterErrorEnvelope(error));
   }
+};
 
-  return {
-    code: "adapter_host_error",
-    message: String(error),
-  };
-}
+export const serveStdioAdapter = async (
+  adapter: StdioConformanceAdapter
+): Promise<void> => {
+  for await (const line of readStdioLines()) {
+    // Bun's console iterator can surface a final empty line for piped EOF; it is
+    // transport noise, not a JSON-RPC frame, so adapters must stay silent.
+    if (line.trim().length === 0) {
+      continue;
+    }
 
-function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
-  return (
-    isRecord(value) &&
-    value.jsonrpc === "2.0" &&
-    (typeof value.id === "number" || typeof value.id === "string") &&
-    typeof value.method === "string"
-  );
-}
-
-function readString(value: unknown, label: string): string {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`${label} must be a non-empty string`);
+    const response = await handleStdioAdapterLine(adapter, line);
+    process.stdout.write(`${JSON.stringify(response)}\n`);
   }
-
-  return value;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isAsyncIterableConsole(
-  value: Console
-): value is Console & AsyncIterable<string> {
-  return Symbol.asyncIterator in value;
-}
+};
