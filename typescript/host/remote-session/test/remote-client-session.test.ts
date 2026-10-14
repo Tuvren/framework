@@ -83,10 +83,10 @@ class FakeEventSource implements AsyncIterable<FakeEvent> {
   }
 }
 
-function makeFakeHandle(): {
+const makeFakeHandle = (): {
   events: FakeEventSource;
   handle: ExecutionHandle;
-} {
+} => {
   const events = new FakeEventSource();
   const neverSettles = new Promise<ExecutionResult>(() => undefined);
   neverSettles.catch(() => undefined);
@@ -103,7 +103,7 @@ function makeFakeHandle(): {
   } as unknown as ExecutionHandle;
 
   return { events, handle };
-}
+};
 
 // ---------------------------------------------------------------------------
 // Fake sink and clock
@@ -114,7 +114,7 @@ interface SentFrame {
   frame: SessionOutboundFrame;
 }
 
-function createFakeSink(): RemoteClientSessionSink & { sent: SentFrame[] } {
+const createFakeSink = (): RemoteClientSessionSink & { sent: SentFrame[] } => {
   const sent: SentFrame[] = [];
   return {
     send(frame: SessionOutboundFrame, cursor?: string): void {
@@ -122,14 +122,14 @@ function createFakeSink(): RemoteClientSessionSink & { sent: SentFrame[] } {
     },
     sent,
   };
-}
+};
 
 /** A deterministic, test-controlled substitute for {@link RemoteSessionClock}: timers only fire when the test explicitly calls {@link fireOldest}. */
-function createFakeClock(): {
+const createFakeClock = (): {
   clock: RemoteSessionClock;
   fireOldest(): void;
   pendingCount(): number;
-} {
+} => {
   let nextId = 0;
   const timers = new Map<number, () => void>();
 
@@ -161,16 +161,16 @@ function createFakeClock(): {
       return timers.size;
     },
   };
-}
+};
 
 /** Drains pending microtask continuations of the session's internal pump loop without any real (wall-clock) wait. */
-async function flush(times = 8): Promise<void> {
+const flush = async (times = 8): Promise<void> => {
   for (let i = 0; i < times; i += 1) {
     await Promise.resolve();
   }
-}
+};
 
-function setup(overrides: Partial<RemoteClientSessionOptions> = {}) {
+const setup = (overrides: Partial<RemoteClientSessionOptions> = {}) => {
   const { events, handle } = makeFakeHandle();
   const binding = createDuplexSessionBinding(handle, {
     sessionId: "sess-remote-1",
@@ -189,15 +189,15 @@ function setup(overrides: Partial<RemoteClientSessionOptions> = {}) {
   });
 
   return { binding, events, fakeClock, session, warnings };
-}
+};
 
-function resultContentCode(content: unknown): string | undefined {
+const resultContentCode = (content: unknown): string | undefined => {
   if (typeof content !== "object" || content === null) {
     return undefined;
   }
   const { code } = content as Record<string, unknown>;
   return typeof code === "string" ? code : undefined;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Tests
