@@ -16,6 +16,7 @@
 
 import { describe, expect, test } from "bun:test";
 
+import type { TuvrenStreamEvent } from "@tuvren/core/events";
 import type { ExecutionHandle, ExecutionResult } from "@tuvren/core/execution";
 import { createDuplexSessionBinding } from "@tuvren/host-session";
 import type {
@@ -39,20 +40,15 @@ import type {
 // its own — termination-by-awaitResult is host-session's own concern).
 // ---------------------------------------------------------------------------
 
-interface FakeEvent {
-  turnId?: string;
-  type: string;
-  [key: string]: unknown;
-}
-
-class FakeEventSource implements AsyncIterable<FakeEvent> {
+class FakeEventSource implements AsyncIterable<TuvrenStreamEvent> {
   private claimed = false;
   private readonly closed = false;
-  private readonly items: FakeEvent[] = [];
-  private readonly waiters: ((result: IteratorResult<FakeEvent>) => void)[] =
-    [];
+  private readonly items: TuvrenStreamEvent[] = [];
+  private readonly waiters: ((
+    result: IteratorResult<TuvrenStreamEvent>
+  ) => void)[] = [];
 
-  push(event: FakeEvent): void {
+  push(event: TuvrenStreamEvent): void {
     const waiter = this.waiters.shift();
     if (waiter !== undefined) {
       waiter({ done: false, value: event });
@@ -61,23 +57,24 @@ class FakeEventSource implements AsyncIterable<FakeEvent> {
     this.items.push(event);
   }
 
-  [Symbol.asyncIterator](): AsyncIterator<FakeEvent> {
+  [Symbol.asyncIterator](): AsyncIterator<TuvrenStreamEvent> {
     if (this.claimed) {
       throw new Error("FakeEventSource consumed twice");
     }
     this.claimed = true;
     return {
-      next: (): Promise<IteratorResult<FakeEvent>> => {
+      next: async (): Promise<IteratorResult<TuvrenStreamEvent>> => {
         const value = this.items.shift();
         if (value !== undefined) {
-          return Promise.resolve({ done: false, value });
+          return { done: false, value };
         }
         if (this.closed) {
-          return Promise.resolve({ done: true, value: undefined });
+          return { done: true, value: undefined };
         }
-        return new Promise((resolve) => {
-          this.waiters.push(resolve);
-        });
+        const pending =
+          Promise.withResolvers<IteratorResult<TuvrenStreamEvent>>();
+        this.waiters.push(pending.resolve);
+        return await pending.promise;
       },
     };
   }
@@ -88,19 +85,22 @@ const makeFakeHandle = (): {
   handle: ExecutionHandle;
 } => {
   const events = new FakeEventSource();
-  const neverSettles = new Promise<ExecutionResult>(() => undefined);
-  neverSettles.catch(() => undefined);
+  const result = Promise.withResolvers<ExecutionResult>();
 
-  const handle = {
-    awaitResult: () => neverSettles,
-    cancel: () => undefined,
+  const handle: ExecutionHandle = {
+    awaitResult: async () => await result.promise,
+    cancel: () => {
+      // This suite never requests execution control.
+    },
     events: () => events,
     resolveApproval: () => {
       throw new Error("resolveApproval not used in this suite");
     },
     status: () => ({ iterationCount: 0, phase: "running" as const }),
-    steer: () => undefined,
-  } as unknown as ExecutionHandle;
+    steer: () => {
+      // This suite never requests execution control.
+    },
+  };
 
   return { events, handle };
 };
@@ -127,15 +127,17 @@ const createFakeSink = (): RemoteClientSessionSink & { sent: SentFrame[] } => {
 /** A deterministic, test-controlled substitute for {@link RemoteSessionClock}: timers only fire when the test explicitly calls {@link fireOldest}. */
 const createFakeClock = (): {
   clock: RemoteSessionClock;
-  fireOldest(): void;
-  pendingCount(): number;
+  fireOldest: () => void;
+  pendingCount: () => number;
 } => {
   let nextId = 0;
   const timers = new Map<number, () => void>();
 
   const clock: RemoteSessionClock = {
     clearTimeout(handle: unknown): void {
-      timers.delete(handle as number);
+      if (typeof handle === "number") {
+        timers.delete(handle);
+      }
     },
     scheduleTimeout(callback: () => void, _ms: number): unknown {
       const id = nextId;
@@ -148,14 +150,13 @@ const createFakeClock = (): {
   return {
     clock,
     fireOldest(): void {
-      const ids = [...timers.keys()].sort((a, b) => a - b);
-      const id = ids[0];
+      const [id] = [...timers.keys()].toSorted((a, b) => a - b);
       if (id === undefined) {
         throw new Error("createFakeClock.fireOldest: no pending timer");
       }
-      const callback = timers.get(id);
+      const timer = timers.get(id);
       timers.delete(id);
-      callback?.();
+      timer?.();
     },
     pendingCount(): number {
       return timers.size;
@@ -165,9 +166,11 @@ const createFakeClock = (): {
 
 /** Drains pending microtask continuations of the session's internal pump loop without any real (wall-clock) wait. */
 const flush = async (times = 8): Promise<void> => {
-  for (let i = 0; i < times; i += 1) {
-    await Promise.resolve();
+  if (times === 0) {
+    return;
   }
+  await Promise.resolve();
+  await flush(times - 1);
 };
 
 const setup = (overrides: Partial<RemoteClientSessionOptions> = {}) => {
@@ -183,7 +186,9 @@ const setup = (overrides: Partial<RemoteClientSessionOptions> = {}) => {
     clock: fakeClock.clock,
     disconnectGraceMs: 1000,
     dispatchTimeoutMs: 500,
-    onWarning: (warning) => warnings.push(warning),
+    onWarning: (warning) => {
+      warnings.push(warning);
+    },
     replayBufferCapacity: 50,
     ...overrides,
   });
@@ -192,11 +197,26 @@ const setup = (overrides: Partial<RemoteClientSessionOptions> = {}) => {
 };
 
 const resultContentCode = (content: unknown): string | undefined => {
-  if (typeof content !== "object" || content === null) {
+  if (typeof content !== "object" || content === null || !("code" in content)) {
     return undefined;
   }
-  const { code } = content as Record<string, unknown>;
+  const { code } = content;
   return typeof code === "string" ? code : undefined;
+};
+
+const requiredCursor = (sent: SentFrame | undefined): string => {
+  if (sent?.cursor === undefined) {
+    throw new Error("expected a sequenced cursor");
+  }
+  return sent.cursor;
+};
+const rejectionOf = async (promise: Promise<unknown>): Promise<unknown> => {
+  try {
+    await promise;
+  } catch (error) {
+    return error;
+  }
+  throw new Error("expected promise rejection");
 };
 
 // ---------------------------------------------------------------------------
@@ -209,40 +229,58 @@ describe("createRemoteClientSession", () => {
     const sink1 = createFakeSink();
     session.attach(sink1);
 
-    events.push({ turnId: "t1", type: "turn.start" });
+    events.push({
+      threadId: "thread-1",
+      timestamp: 0,
+      turnId: "t1",
+      type: "turn.start",
+    });
     await flush();
-    events.push({ turnId: "t1", type: "message.delta" });
+    events.push({
+      delta: "",
+      messageId: "message-1",
+      timestamp: 0,
+      type: "text.delta",
+    });
     await flush();
 
     expect(sink1.sent).toHaveLength(2);
     const lastCursor = sink1.sent[1]?.cursor;
-    expect(lastCursor).toBeDefined();
-    expect(decodeResumeCursor(lastCursor as string)?.sequence).toBe(1);
+    if (lastCursor === undefined) {
+      throw new Error("expected a sequenced cursor");
+    }
+    expect(decodeResumeCursor(lastCursor)?.sequence).toBe(1);
 
     session.detach();
 
     // Recorded into the shared replay buffer even while no sink is attached.
-    events.push({ turnId: "t1", type: "message.delta" });
+    events.push({
+      delta: "",
+      messageId: "message-1",
+      timestamp: 0,
+      type: "text.delta",
+    });
     await flush();
 
     const sink2 = createFakeSink();
     const { resumeStatus } = session.attach(sink2, {
-      cursor: lastCursor as string,
+      cursor: lastCursor,
     });
 
     expect(resumeStatus).toBe("resumed");
     expect(sink2.sent).toHaveLength(1);
-    expect(decodeResumeCursor(sink2.sent[0]?.cursor as string)?.sequence).toBe(
-      2
-    );
+    expect(decodeResumeCursor(requiredCursor(sink2.sent[0]))?.sequence).toBe(2);
 
-    events.push({ turnId: "t1", type: "message.delta" });
+    events.push({
+      delta: "",
+      messageId: "message-1",
+      timestamp: 0,
+      type: "text.delta",
+    });
     await flush();
 
     expect(sink2.sent).toHaveLength(2);
-    expect(decodeResumeCursor(sink2.sent[1]?.cursor as string)?.sequence).toBe(
-      3
-    );
+    expect(decodeResumeCursor(requiredCursor(sink2.sent[1]))?.sequence).toBe(3);
   });
 
   test("redelivers an unanswered client_invocation on reattach but never redelivers a session_rejection", async () => {
@@ -256,7 +294,6 @@ describe("createRemoteClientSession", () => {
       input: {},
       leaseToken: "lease-1",
     });
-    dispatchPromise.catch(() => undefined);
     await flush();
 
     // A structurally invalid inbound frame produces a session_rejection.
@@ -281,6 +318,19 @@ describe("createRemoteClientSession", () => {
     expect(
       sink2.sent.filter((s) => s.frame.kind === "session_rejection")
     ).toHaveLength(0);
+    session.dispatchInbound({
+      correlationId: "corr-settle",
+      kind: "client_result",
+      protocolVersion: "1",
+      result: {
+        callId: "call-1",
+        content: { ok: true },
+        leaseToken: "lease-1",
+      },
+      sessionId: "sess-remote-1",
+    });
+    const settled = await dispatchPromise;
+    expect(settled.content).toEqual({ ok: true });
   });
 
   test("grace-window expiry settles a pending dispatch with capability_binding_unavailable", async () => {
@@ -325,7 +375,6 @@ describe("createRemoteClientSession", () => {
       input: {},
       leaseToken: "lease-3",
     });
-    dispatchPromise.catch(() => undefined);
     await flush();
 
     // The dispatch timer is armed while a sink is attached.
@@ -381,17 +430,37 @@ describe("createRemoteClientSession", () => {
     const sink1 = createFakeSink();
     session.attach(sink1);
 
-    events.push({ turnId: "t1", type: "turn.start" });
+    events.push({
+      threadId: "thread-1",
+      timestamp: 0,
+      turnId: "t1",
+      type: "turn.start",
+    });
     await flush();
-    events.push({ text: "a", turnId: "t1", type: "message.delta" });
+    events.push({
+      delta: "a",
+      messageId: "message-1",
+      timestamp: 0,
+      type: "text.delta",
+    });
     await flush();
 
-    const cursorAfterFirstDelta = sink1.sent[1]?.cursor as string;
+    const cursorAfterFirstDelta = requiredCursor(sink1.sent[1]);
     session.detach();
 
-    events.push({ text: "b", turnId: "t1", type: "message.delta" });
+    events.push({
+      delta: "b",
+      messageId: "message-1",
+      timestamp: 0,
+      type: "text.delta",
+    });
     await flush();
-    events.push({ text: "c", turnId: "t1", type: "message.delta" });
+    events.push({
+      delta: "c",
+      messageId: "message-1",
+      timestamp: 0,
+      type: "text.delta",
+    });
     await flush();
 
     const sink2 = createFakeSink();
@@ -403,8 +472,8 @@ describe("createRemoteClientSession", () => {
     expect(sink2.sent).toHaveLength(2);
     expect(sink2.sent.every((s) => s.frame.kind === "event")).toBe(true);
     const texts = sink2.sent.map((s) =>
-      s.frame.kind === "event"
-        ? (s.frame.event as unknown as { text: string }).text
+      s.frame.kind === "event" && s.frame.event.type === "text.delta"
+        ? s.frame.event.delta
         : undefined
     );
     expect(texts).toEqual(["b", "c"]);
@@ -456,7 +525,9 @@ describe("createRemoteClientSession", () => {
       binding: wrappedBinding,
       disconnectGraceMs: 1000,
       dispatchTimeoutMs: 500,
-      onWarning: (warning) => warnings.push(warning),
+      onWarning: (warning) => {
+        warnings.push(warning);
+      },
       replayBufferCapacity: 10,
     });
 
@@ -543,14 +614,16 @@ describe("createRemoteClientSession", () => {
     // Releasing the iterator drove the binding's queue terminal, so a NEW
     // dispatch after close() is refused immediately by the binding itself
     // (duplex_session_closed) rather than parked forever against a dead link.
-    await expect(
-      binding.clientEndpoint.dispatch({
-        callId: "call-after-close",
-        capabilityId: "cap-1",
-        input: {},
-        leaseToken: "lease-ac",
-      })
-    ).rejects.toMatchObject({ code: "duplex_session_closed" });
+    expect(
+      await rejectionOf(
+        binding.clientEndpoint.dispatch({
+          callId: "call-after-close",
+          capabilityId: "cap-1",
+          input: {},
+          leaseToken: "lease-ac",
+        })
+      )
+    ).toMatchObject({ code: "duplex_session_closed" });
   });
 
   test("a malformed callId-bearing client_result does not clear redelivery tracking or the dispatch timer", async () => {
@@ -564,7 +637,6 @@ describe("createRemoteClientSession", () => {
       input: {},
       leaseToken: "lease-or",
     });
-    dispatchPromise.catch(() => undefined);
     await flush();
     expect(fakeClock.pendingCount()).toBe(1);
 
@@ -617,7 +689,6 @@ describe("createRemoteClientSession", () => {
       input: {},
       leaseToken: "lease-ws",
     });
-    dispatchPromise.catch(() => undefined);
     await flush();
     expect(fakeClock.pendingCount()).toBe(1);
 
@@ -664,9 +735,14 @@ describe("createRemoteClientSession", () => {
     const sink1 = createFakeSink();
     session.attach(sink1);
 
-    events.push({ turnId: "t1", type: "turn.start" });
+    events.push({
+      threadId: "thread-1",
+      timestamp: 0,
+      turnId: "t1",
+      type: "turn.start",
+    });
     await flush();
-    const cursorAfterTurnStart = sink1.sent[0]?.cursor as string;
+    const cursorAfterTurnStart = requiredCursor(sink1.sent[0]);
 
     // An unanswered client_invocation: created while sink1 is attached, so it
     // is both forwarded live and tracked as pending for later redelivery.
@@ -676,7 +752,6 @@ describe("createRemoteClientSession", () => {
       input: {},
       leaseToken: "lease-reattach-order",
     });
-    dispatchPromise.catch(() => undefined);
     await flush();
 
     session.detach();
@@ -684,7 +759,12 @@ describe("createRemoteClientSession", () => {
     // Recorded into the shared replay buffer while no sink is attached: this
     // is the "replayable event gap" a reattach with cursorAfterTurnStart must
     // deliver before anything else.
-    events.push({ text: "gap", turnId: "t1", type: "message.delta" });
+    events.push({
+      delta: "gap",
+      messageId: "message-1",
+      timestamp: 0,
+      type: "text.delta",
+    });
     await flush();
 
     const sink2 = createFakeSink();
@@ -694,7 +774,12 @@ describe("createRemoteClientSession", () => {
 
     // Live forwarding: a fresh event arriving right after attach must land
     // strictly after both the replay and the redelivery below.
-    events.push({ text: "live", turnId: "t1", type: "message.delta" });
+    events.push({
+      delta: "live",
+      messageId: "message-1",
+      timestamp: 0,
+      type: "text.delta",
+    });
     await flush();
 
     expect(resumeStatus).toBe("resumed");
@@ -706,10 +791,10 @@ describe("createRemoteClientSession", () => {
 
     const [replayed, redelivered, live] = sink2.sent;
     expect(
-      (replayed?.frame.kind === "event"
-        ? (replayed.frame.event as unknown as { text: string })
+      replayed?.frame.kind === "event" &&
+        replayed.frame.event.type === "text.delta"
+        ? replayed.frame.event.delta
         : undefined
-      )?.text
     ).toBe("gap");
     expect(
       redelivered?.frame.kind === "client_invocation"
@@ -717,10 +802,9 @@ describe("createRemoteClientSession", () => {
         : undefined
     ).toBe("call-reattach-order");
     expect(
-      (live?.frame.kind === "event"
-        ? (live.frame.event as unknown as { text: string })
+      live?.frame.kind === "event" && live.frame.event.type === "text.delta"
+        ? live.frame.event.delta
         : undefined
-      )?.text
     ).toBe("live");
 
     session.dispatchInbound({
@@ -753,7 +837,6 @@ describe("createRemoteClientSession", () => {
       input: {},
       leaseToken: "lease-while-detached",
     });
-    dispatchPromise.catch(() => undefined);
     await flush();
 
     // No sink is attached: forwardFrame is a no-op (nothing sent to sink1,
@@ -828,6 +911,13 @@ describe("createRemoteClientSession", () => {
     const realBinding = createDuplexSessionBinding(handle, {
       sessionId: "sess-pump-fail",
     });
+    const failedRead =
+      Promise.withResolvers<IteratorResult<SessionOutboundFrame>>();
+    const closed =
+      Promise.withResolvers<IteratorResult<SessionOutboundFrame>>();
+    closed.resolve({ done: true, value: undefined });
+    let reads = 0;
+    let returns = 0;
     // A binding whose claimed outbound iterator rejects mid-stream: the
     // session must not swallow it (attached sink, no frames, nothing ever
     // ending) — it must surface a warning and end the session.
@@ -835,8 +925,14 @@ describe("createRemoteClientSession", () => {
       ...realBinding,
       outbound: () => ({
         [Symbol.asyncIterator]: () => ({
-          next: () =>
-            Promise.reject(new Error("outbound stream broke mid-pump")),
+          next: async () => {
+            reads += 1;
+            return await failedRead.promise;
+          },
+          return: async () => {
+            returns += 1;
+            return await closed.promise;
+          },
         }),
       }),
     };
@@ -850,11 +946,14 @@ describe("createRemoteClientSession", () => {
       onEnded: (reason) => {
         endedReason = reason;
       },
-      onWarning: (warning) => warnings.push(warning),
+      onWarning: (warning) => {
+        warnings.push(warning);
+      },
       replayBufferCapacity: 10,
     });
 
     session.attach(createFakeSink());
+    failedRead.reject(new Error("outbound stream broke mid-pump"));
     await flush();
 
     expect(
@@ -862,5 +961,9 @@ describe("createRemoteClientSession", () => {
     ).toHaveLength(1);
     expect(session.isEnded()).toBe(true);
     expect(endedReason).toBe("the session's outbound pump failed");
+    expect(reads).toBe(1);
+    expect(returns).toBe(1);
+    await flush();
+    expect(reads).toBe(1);
   });
 });

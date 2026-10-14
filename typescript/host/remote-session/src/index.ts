@@ -18,8 +18,6 @@
 // biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.
 
 /**
- * @packageDocumentation
- *
  * `@tuvren/remote-session` is the host-owned, reattachable remote client
  * session lifecycle seam (ADR-0063): it sits above `@tuvren/host-session`'s
  * `DuplexSessionBinding` and below any carriage (WebSocket, SSE-plus-inbound,
@@ -32,6 +30,7 @@
  * vocabulary.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /** @experimental */
 export type { RemoteClientSession } from "./lib/remote-client-session.js";
 /** @experimental */
@@ -52,3 +51,5 @@ export { createRemoteClientSession } from "./lib/remote-client-session.js";
 export { REMOTE_SESSION_ALREADY_ATTACHED } from "./lib/remote-client-session.js";
 /** @experimental */
 export { REMOTE_SESSION_ENDED } from "./lib/remote-client-session.js";
+
+/* oxlint-enable jsdoc/check-tag-names */

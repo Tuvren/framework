@@ -42,6 +42,7 @@ import type {
 
 const PROTOCOL_VERSION = "1";
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Stable code carried by the `TuvrenRuntimeError` thrown when
  * {@link RemoteClientSession.attach} is called while another sink is still
@@ -52,9 +53,11 @@ const PROTOCOL_VERSION = "1";
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const REMOTE_SESSION_ALREADY_ATTACHED =
   "remote_session_already_attached" as const;
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Stable code carried by the `TuvrenRuntimeError` thrown when
  * {@link RemoteClientSession.attach} is called on a session that has
@@ -63,8 +66,10 @@ export const REMOTE_SESSION_ALREADY_ATTACHED =
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const REMOTE_SESSION_ENDED = "remote_session_ended" as const;
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Injectable timer pair backing {@link RemoteClientSession}'s disconnect
  * grace window and per-dispatch timeout. Defaults to the global
@@ -74,22 +79,27 @@ export const REMOTE_SESSION_ENDED = "remote_session_ended" as const;
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface RemoteSessionClock {
   /** Cancels a pending timeout previously returned by {@link scheduleTimeout}. */
-  clearTimeout(handle: unknown): void;
+  clearTimeout: (handle: unknown) => void;
   /** Schedules `callback` to run after `ms` milliseconds; returns an opaque handle. */
-  scheduleTimeout(callback: () => void, ms: number): unknown;
+  scheduleTimeout: (callback: () => void, ms: number) => unknown;
 }
 
 const globalClock: RemoteSessionClock = {
   clearTimeout(handle: unknown): void {
-    clearTimeout(handle as ReturnType<typeof setTimeout>);
+    if (typeof handle === "number") {
+      clearTimeout(handle);
+    }
   },
   scheduleTimeout(callback: () => void, ms: number): unknown {
-    return setTimeout(callback, ms);
+    // Bun's timeout handle exposes its cancellable numeric identity.
+    return Number(setTimeout(callback, ms));
   },
 };
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * The carriage-facing push seam a transport attaches beneath a
  * {@link RemoteClientSession}. Transport-agnostic by design (ADR-0063): a
@@ -102,11 +112,13 @@ const globalClock: RemoteSessionClock = {
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface RemoteClientSessionSink {
   /** Sends one outbound frame, with its resume cursor when the frame is a sequenced `event`. */
-  send(frame: SessionOutboundFrame, cursor?: string): void;
+  send: (frame: SessionOutboundFrame, cursor?: string) => void;
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Outcome of attempting cursor-based replay during {@link RemoteClientSession.attach}
  * (mirrors {@link ReplayResult} from `@tuvren/stream-core`, plus `"none"` for
@@ -115,38 +127,45 @@ export interface RemoteClientSessionSink {
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export type RemoteClientSessionResumeStatus =
   | "resumed"
   | "out-of-window"
   | "unknown-turn"
   | "none";
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Options accepted by {@link RemoteClientSession.attach}.
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface RemoteClientSessionAttachOptions {
   /** Resume-cursor token (ADR-0061) carried by a reattaching peer's handshake. Omit for a fresh connection. */
   cursor?: string;
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Result of {@link RemoteClientSession.attach}: the outcome a transport needs
  * to answer its own handshake acknowledgement (e.g. `WsHandshakeAck.resumeStatus`).
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface RemoteClientSessionAttachResult {
   /** Replay outcome for the supplied cursor, or `"none"` when no cursor was supplied. */
   resumeStatus: RemoteClientSessionResumeStatus;
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Options accepted by {@link createRemoteClientSession}.
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface RemoteClientSessionOptions {
   /**
    * The single duplex session binding this session owns for its whole life
@@ -183,6 +202,7 @@ export interface RemoteClientSessionOptions {
   replayBufferCapacity: number;
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * A host-owned, reattachable remote client session (ADR-0063): the
  * transport-agnostic lifecycle seam that keeps one {@link DuplexSessionBinding}
@@ -191,6 +211,7 @@ export interface RemoteClientSessionOptions {
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface RemoteClientSession {
   /**
    * Attaches a sink beneath this session: at most one sink is attached at a
@@ -214,24 +235,24 @@ export interface RemoteClientSession {
    * {@link REMOTE_SESSION_ALREADY_ATTACHED}. Callers branch on `code`, never
    * on message text.
    */
-  attach(
+  attach: (
     sink: RemoteClientSessionSink,
     options?: RemoteClientSessionAttachOptions
-  ): RemoteClientSessionAttachResult;
+  ) => RemoteClientSessionAttachResult;
   /**
    * Permanently ends the session: detaches any attached sink without
    * starting a grace window, settles every pending dispatch with
    * `capability_binding_unavailable`, and marks the session so that any
    * later `attach` throws. Idempotent — a second call is a no-op.
    */
-  close(reason?: string): void;
+  close: (reason?: string) => void;
   /**
    * Detaches the currently attached sink and starts the `disconnectGraceMs`
    * timer; pending dispatches are **not** failed immediately. A reattach
    * inside the window cancels the timer. No-op if no sink is currently
    * attached.
    */
-  detach(reason?: string): void;
+  detach: (reason?: string) => void;
   /**
    * Routes one inbound frame, mirroring {@link DuplexSessionBinding.dispatchInbound}'s
    * fire-and-forget `unknown`-accepting shape so a transport can call this in
@@ -240,9 +261,9 @@ export interface RemoteClientSession {
    * attached — the session must claim the binding's outbound stream and have
    * a live peer before any inbound frame has defined ordering.
    */
-  dispatchInbound(frame: unknown): void;
+  dispatchInbound: (frame: unknown) => void;
   /** Whether this session has permanently ended. Observability only. */
-  isEnded(): boolean;
+  isEnded: () => boolean;
   /** The session identifier carried on every frame the underlying binding produces or accepts. */
   readonly sessionId: string;
 }
@@ -261,30 +282,24 @@ interface PendingInvocation {
  * file's own pump), not a state this channel is meant to tolerate silently.
  */
 class SingleSlotPushChannel<T> implements AsyncIterable<T> {
-  private hasValue = false;
-  private value: T | undefined;
+  private slot: { value: T } | undefined;
 
   push(value: T): void {
-    this.value = value;
-    this.hasValue = true;
+    this.slot = { value };
   }
 
-  [Symbol.asyncIterator](): AsyncIterator<T> {
-    return {
-      // biome-ignore lint/suspicious/useAwait: kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.
-      next: async (): Promise<IteratorResult<T>> => {
-        if (!this.hasValue) {
-          throw new Error(
-            "SingleSlotPushChannel: next() called without a pending push()"
-          );
-        }
-
-        const pushed = this.value as T;
-        this.hasValue = false;
-        this.value = undefined;
-        return { done: false, value: pushed };
-      },
-    };
+  // biome-ignore lint/suspicious/useAwait: kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.
+  async *[Symbol.asyncIterator](): AsyncGenerator<T, void, unknown> {
+    for (;;) {
+      const pending = this.slot;
+      if (pending === undefined) {
+        throw new Error(
+          "SingleSlotPushChannel: next() called without a pending push()"
+        );
+      }
+      this.slot = undefined;
+      yield pending.value;
+    }
   }
 }
 
@@ -308,7 +323,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 // entry and its dispatch timer for a call the binding never actually
 // settled — orphaning the dispatch with no timer and no redelivery owed by
 // anyone.
-const CONTAINS_NON_WHITESPACE = /\S/;
+const CONTAINS_NON_WHITESPACE = /\S/u;
 
 /**
  * Builds the `client_invocation` outbound frame for `invocation`. Shared by
@@ -360,7 +375,8 @@ const extractSettleableClientResultCallId = (
       isRecord(result) &&
       isNonEmptyString(result.callId) &&
       isNonEmptyString(result.leaseToken) &&
-      "content" in result
+      "content" in result &&
+      (result.isError === undefined || typeof result.isError === "boolean")
     )
   ) {
     return undefined;
@@ -368,6 +384,7 @@ const extractSettleableClientResultCallId = (
   return result.callId;
 };
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Creates the transport-agnostic session-lifecycle seam ADR-0063 describes:
  * one {@link DuplexSessionBinding.outbound} claim, one `createSequencedTuvrenStreamEvents`
@@ -376,6 +393,7 @@ const extractSettleableClientResultCallId = (
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const createRemoteClientSession = (
   options: RemoteClientSessionOptions
 ): RemoteClientSession => {
@@ -409,10 +427,7 @@ export const createRemoteClientSession = (
   let outboundIterator: AsyncIterator<SessionOutboundFrame> | undefined;
   const pendingInvocations = new Map<string, PendingInvocation>();
 
-  const forwardFrame = (
-    frame: SessionOutboundFrame,
-    cursor: string | undefined
-  ): void => {
+  const forwardFrame = (frame: SessionOutboundFrame, cursor?: string): void => {
     if (ended || attachedSink === undefined) {
       return;
     }
@@ -559,7 +574,7 @@ export const createRemoteClientSession = (
       pending.dispatchTimer = armDispatchTimer(invocation.callId);
     }
 
-    forwardFrame(makeInvocationFrame(invocation, sessionId), undefined);
+    forwardFrame(makeInvocationFrame(invocation, sessionId));
   };
 
   const claimAndStartPump = (): void => {
@@ -573,37 +588,37 @@ export const createRemoteClientSession = (
     });
     const sequencedIterator = sequenced[Symbol.asyncIterator]();
 
+    // Consume exactly one result without closing the session-long sequencer.
+    const sequenceEvent = async function* sequenceEvent() {
+      const sequencedResult = await sequencedIterator.next();
+      if (sequencedResult.done !== true) {
+        yield sequencedResult.value;
+      }
+    };
     const pump = (async () => {
-      for (;;) {
-        const next = await claimedIterator.next();
-
-        if (next.done) {
-          handleBindingTerminal();
-          return;
-        }
-
-        const frame = next.value;
-
+      const claimedFrames: AsyncIterable<SessionOutboundFrame> = {
+        [Symbol.asyncIterator]: () => ({
+          // endSession owns return(), after it settles tracked client calls.
+          next: claimedIterator.next.bind(claimedIterator),
+        }),
+      };
+      for await (const frame of claimedFrames) {
         if (frame.kind === "event") {
           channel.push(frame.event);
-          const sequencedResult = await sequencedIterator.next();
-          if (sequencedResult.done) {
-            continue;
+          for await (const sequencedEvent of sequenceEvent()) {
+            replayBuffer.record(sequencedEvent);
+            forwardFrame(frame, sequencedEvent.cursor);
           }
-          const sequencedEvent = sequencedResult.value;
-          replayBuffer.record(sequencedEvent);
-          forwardFrame(frame, sequencedEvent.cursor);
           continue;
         }
-
         if (frame.kind === "client_invocation") {
           handleOutboundInvocation(frame.invocation);
           continue;
         }
-
         // session_rejection: not tracked for redelivery, not sequenced.
-        forwardFrame(frame, undefined);
+        forwardFrame(frame);
       }
+      handleBindingTerminal();
     })();
 
     // Detached: the pump's only observable effects are the forwardFrame /

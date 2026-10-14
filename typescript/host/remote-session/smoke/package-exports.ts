@@ -16,27 +16,34 @@
 
 import { describe, expect, test } from "bun:test";
 
-import type { ExecutionHandle } from "@tuvren/core/execution";
+import type { TuvrenStreamEvent } from "@tuvren/core/events";
+import type { ExecutionHandle, ExecutionResult } from "@tuvren/core/execution";
 import type { SessionOutboundFrame } from "@tuvren/host-session";
 import { createDuplexSessionBinding } from "@tuvren/host-session";
 import { createRemoteClientSession } from "@tuvren/remote-session";
 
 describe("remote-session package exports", () => {
   test("expose the session factory over a real duplex session binding", () => {
-    const handle = {
-      awaitResult: () => new Promise(() => undefined),
-      cancel: () => undefined,
+    const result = Promise.withResolvers<ExecutionResult>();
+    const event = Promise.withResolvers<IteratorResult<TuvrenStreamEvent>>();
+    const handle: ExecutionHandle = {
+      awaitResult: async () => await result.promise,
+      cancel: () => {
+        /* The smoke never requests handle control. */
+      },
       events: () => ({
         [Symbol.asyncIterator]: () => ({
-          next: () => new Promise<IteratorResult<unknown>>(() => undefined),
+          next: async () => await event.promise,
         }),
       }),
       resolveApproval: () => {
         throw new Error("not used");
       },
       status: () => ({ iterationCount: 0, phase: "running" as const }),
-      steer: () => undefined,
-    } as unknown as ExecutionHandle;
+      steer: () => {
+        /* The smoke never requests handle control. */
+      },
+    };
 
     const binding = createDuplexSessionBinding(handle, {
       sessionId: "smoke-remote-session",
