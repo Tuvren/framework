@@ -193,10 +193,22 @@ const runServeWsMode = async (options: CliOptions): Promise<void> => {
   };
 
   process.on("SIGINT", () => {
-    shutdown().catch(() => undefined);
+    void (async () => {
+      try {
+        await shutdown();
+      } catch {
+        // Preserve the existing signal handler's ignored shutdown rejection.
+      }
+    })();
   });
   process.on("SIGTERM", () => {
-    shutdown().catch(() => undefined);
+    void (async () => {
+      try {
+        await shutdown();
+      } catch {
+        // Preserve the existing signal handler's ignored shutdown rejection.
+      }
+    })();
   });
 
   // Keep the event loop alive: --serve-ws is a long-running server process,

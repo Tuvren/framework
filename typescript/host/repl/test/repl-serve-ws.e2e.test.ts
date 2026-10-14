@@ -177,7 +177,6 @@ const startServer = async (schemaName: string): Promise<ServerHandle> => {
   );
   const pg = requiredPostgresEnv();
 
-  // biome-ignore lint/correctness/noUndeclaredVariables: Bun global (this test drives a real Bun subprocess).
   const proc = Bun.spawn({
     cmd: [
       "bun",

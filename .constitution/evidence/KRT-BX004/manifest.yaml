@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-14",
-    "commit": "91bccf8e85e242b757eb426f3c724eaf263c91f7",
-    "command": "bun run nx run host-session:typecheck; bun run nx run host-session:test; bun run nx run host-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/session; bunx --bun biome lint --reporter=json typescript/host/session; bun run nx run remote-session:typecheck; bun run nx run remote-session:test; bun run nx run remote-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/remote-session; bunx --bun biome lint --reporter=json typescript/host/remote-session; bun run nx run session-client:typecheck; bun run nx run session-client:test; bun run nx run session-client:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/session-client; bunx --bun biome lint --reporter=json typescript/host/session-client"
+    "commit": "98ac6d2a64f07c8c8e8ce76410b8992743317d77",
+    "command": "bun run nx run host-repl:typecheck; bun run nx run host-repl:test; bun run nx run host-repl:exports-smoke; bun run nx run host-repl:lint; bunx --bun oxlint --type-aware typescript/host; bun run typecheck; bun run conformance; bun run lint; bun run format:check; bun run check --base=master; bun run verify; bun run nx run framework-typescript-certification:conformance; bun run nx run host-repl:scenario; bun run proving-host:scenario-sqlite-pinned; bun run proving-host:scenario-postgres; bun run proving-host:interop-smoke"
   },
   "files": [
     {
@@ -105,8 +105,8 @@
     },
     {
       "path": "suppressions.json",
-      "sha256": "8db4f30dee96b3c362b679f68cb17fcf7fa32da2c34a8ac6b40b4589c2a0ca10",
-      "bytes": 12392,
+      "sha256": "ffae4e9d6fb4731c4a2e89dc7baba60554914e6b559c6a5a17258c16360033c3",
+      "bytes": 16128,
       "role": "measurement"
     },
     {
@@ -120,7 +120,19 @@
       "sha256": "d4e93e0431291614cc3a517a9d72d8dc0aabc3b32622088122fea6a56a53aba4",
       "bytes": 15461,
       "role": "measurement"
+    },
+    {
+      "path": "m38-repl-admission.json",
+      "sha256": "a685f6d0d2d74238259c8c87fdcbfc2e5fbdb57c64d9ce48e54c5cd56c527260",
+      "bytes": 19740,
+      "role": "measurement"
+    },
+    {
+      "path": "readiness.json",
+      "sha256": "a68500243176abbb436ec9f705b1413420e67825d2cd2dd1436e8c9a5ca1229a",
+      "bytes": 20960,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending. M28 requires the same A11 proof for remote-session and its M36 patch; all144 actual experimental AST associations remain preserved. M29 keeps only the exact four recorded A11 launch residuals, with five single-handler and120 concurrent trace parity for the M37 patch. M30 removes only authorized obsolete environment aliases, preserving current prefix, argv precedence, suffix distinctions and optional scope;141 canonical tests pass. M31 clears29 owned provider/scenario rules without new residuals, preserving supported behavior and documenting honest original-promise internal normalization under OD-09. M32 clears shell cohort except exact A11 cancellation handler pair allocated to M38; cancellation/approval events and durable outcomes remain proven. M33 preserves transcript bytes/I/O envelopes, redaction, sequential replay and CLI decimal-prefix semantics; only exact A11 CLI launch residuals remain in owned source until M38. M34 preserves real reconnect/redelivery, committed-state-after-SIGKILL and peer signal lifecycle; exactWS launchpair allocatedtoM38,22remainingM34A source rules remain. A12 M34A clears all22 omittedsource diagnostics, leaving only8exactrecordedA11REPL handoffresiduals with139built-inoutcomeparitycases. M35 requires exact canonical native target, full native zero, complete positive code/JSON/preset proof, atomic legacy removal/coverage handoff and full root lint pass. M36 requires exact canonical native target, full native zero, complete positive code/JSON/preset proof, atomic legacy removal/coverage handoff and full root lint pass. M37 requires exact canonical native target, full native zero, complete positive code/JSON/preset proof, atomic legacy removal/coverage handoff and full root lint pass."
+  "pass_criteria": "All four exact native code-then-JSON targets admit atomically; full host native diagnostics are zero with complete positive code/JSON/preset/backend proof. All12 immutable original identities/reasons and historical retained states have final dispositions; no Biome directive remains, no early deletion or manufactured counterpart. Preserve144actual release-tag AST associations (112native-firing plus32inline), all38 authorized narrow metadata regions and controls. All final root/behavior gates pass; every BX ticket completes."
 }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional proving-host surface.
 
 export { createProofExtension } from "./lib/proof-extension.js";
 export {
