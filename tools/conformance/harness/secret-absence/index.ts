@@ -43,149 +43,11 @@ export interface SecretLeakFinding {
   variant: string;
 }
 
-/**
- * Return every configured secret that appears in the surface in any covered
- * variant form. An empty result means the surface is secret-free.
- */
-export function findSecretLeaks(
-  surface: unknown,
-  secrets: readonly string[]
-): SecretLeakFinding[] {
-  const haystack = buildHaystack(surface);
-  const haystackLower = haystack.toLowerCase();
-  const findings: SecretLeakFinding[] = [];
-
-  for (const secret of secrets) {
-    if (typeof secret !== "string" || secret.length === 0) {
-      continue;
-    }
-
-    for (const [variant, value, caseInsensitive] of secretVariants(secret)) {
-      if (value.length === 0) {
-        continue;
-      }
-      const matched = caseInsensitive
-        ? haystackLower.includes(value.toLowerCase())
-        : haystack.includes(value);
-      if (matched) {
-        findings.push({ secret, variant });
-        break;
-      }
-    }
-  }
-
-  return findings;
-}
-
-export interface SecretPatternLeakFinding {
-  /** The structural pattern name that matched (e.g. "jwt", "url-credential"). */
-  pattern: string;
-  /** A bounded preview of the offending value (never the full raw secret text). */
-  preview: string;
-}
-
-/** Length of the bounded preview kept in a finding so findings never echo a full raw secret. */
-const PATTERN_LEAK_PREVIEW_LENGTH = 24;
-
-/**
- * Recursively scan a surface for secret-*shaped* values — detected
- * structurally via `SECRET_VALUE_PATTERNS` (`@tuvren/core/security`), the same
- * ordered pattern list `sanitizeSecretLikeText`/`screenValueForSecretPatterns`
- * derive their redaction OR-chain from — rather than value-equality against a
- * configured secret list. Deriving both from one shared list (instead of each
- * independently re-listing the same patterns) guarantees this detector and the
- * screen can never drift apart: anything flagged here is something the screen
- * would have redacted. An empty result means the surface carries no
- * pattern-detectable secret residue.
- */
-export function findSecretPatternLeaks(
-  surface: unknown
-): SecretPatternLeakFinding[] {
-  const strings: string[] = [];
-  collectStrings(surface, strings, new Set());
-
-  const findings: SecretPatternLeakFinding[] = [];
-  const seenValues = new Set<string>();
-
-  for (const value of strings) {
-    if (value.length === 0 || seenValues.has(value)) {
-      continue;
-    }
-    seenValues.add(value);
-
-    for (const [pattern, regex] of SECRET_VALUE_PATTERNS) {
-      if (regex.test(value)) {
-        findings.push({
-          pattern,
-          preview:
-            value.length > PATTERN_LEAK_PREVIEW_LENGTH
-              ? `${value.slice(0, PATTERN_LEAK_PREVIEW_LENGTH)}…`
-              : value,
-        });
-        break;
-      }
-    }
-  }
-
-  return findings;
-}
-
-/** Convenience boolean wrapper over {@link findSecretPatternLeaks}. */
-export function hasSecretPatternResidue(surface: unknown): boolean {
-  return findSecretPatternLeaks(surface).length > 0;
-}
-
-/** The covered derived leak forms per ADR-0044 §4 (KRT-BD004). */
-function secretVariants(
-  secret: string
-): [variant: string, value: string, caseInsensitive: boolean][] {
-  const variants: [string, string, boolean][] = [
-    // Raw value, including a header-normalized (case-folded) match.
-    ["raw", secret, false],
-    ["header-normalized", secret, true],
-    ["bearer-prefixed", `Bearer ${secret}`, true],
-    ["url-encoded", encodeURIComponent(secret), false],
-    ["base64", base64Encode(secret), false],
-    ["base64url", base64UrlEncode(secret), false],
-  ];
-
-  // Scan for the leading prefix so any longer truncated-token leak contains it.
-  if (secret.length > PARTIAL_TOKEN_PREFIX_LENGTH) {
-    variants.push([
-      "partial-token",
-      secret.slice(0, PARTIAL_TOKEN_PREFIX_LENGTH),
-      false,
-    ]);
-  }
-
-  return variants;
-}
-
-function base64Encode(value: string): string {
-  return Buffer.from(value, "utf-8").toString("base64");
-}
-
-function base64UrlEncode(value: string): string {
-  return Buffer.from(value, "utf-8").toString("base64url");
-}
-
-/** Recursively flatten a surface into a single searchable string. */
-function buildHaystack(surface: unknown): string {
-  const parts: string[] = [];
-  collectStrings(surface, parts, new Set());
-  try {
-    parts.push(JSON.stringify(surface));
-  } catch {
-    // Cyclic or non-serializable surfaces are still covered by collectStrings.
-  }
-  return parts.join(PART_SEPARATOR);
-}
-
-function collectStrings(
+const collectStrings = (
   value: unknown,
   parts: string[],
   seen: Set<object>
-): void {
+): void => {
   if (typeof value === "string") {
     parts.push(value);
     return;
@@ -222,4 +84,139 @@ function collectStrings(
       collectStrings(entry, parts, seen);
     }
   }
+};
+
+const base64Encode = (value: string): string =>
+  Buffer.from(value, "utf-8").toString("base64");
+
+const base64UrlEncode = (value: string): string =>
+  Buffer.from(value, "utf-8").toString("base64url");
+
+/** The covered derived leak forms per ADR-0044 §4 (KRT-BD004). */
+const secretVariants = (
+  secret: string
+): [variant: string, value: string, caseInsensitive: boolean][] => {
+  const variants: [string, string, boolean][] = [
+    // Raw value, including a header-normalized (case-folded) match.
+    ["raw", secret, false],
+    ["header-normalized", secret, true],
+    ["bearer-prefixed", `Bearer ${secret}`, true],
+    ["url-encoded", encodeURIComponent(secret), false],
+    ["base64", base64Encode(secret), false],
+    ["base64url", base64UrlEncode(secret), false],
+  ];
+
+  // Scan for the leading prefix so any longer truncated-token leak contains it.
+  if (secret.length > PARTIAL_TOKEN_PREFIX_LENGTH) {
+    variants.push([
+      "partial-token",
+      secret.slice(0, PARTIAL_TOKEN_PREFIX_LENGTH),
+      false,
+    ]);
+  }
+
+  return variants;
+};
+
+/** Recursively flatten a surface into a single searchable string. */
+const buildHaystack = (surface: unknown): string => {
+  const parts: string[] = [];
+  collectStrings(surface, parts, new Set());
+  try {
+    parts.push(JSON.stringify(surface));
+  } catch {
+    // Cyclic or non-serializable surfaces are still covered by collectStrings.
+  }
+  return parts.join(PART_SEPARATOR);
+};
+
+/**
+ * Return every configured secret that appears in the surface in any covered
+ * variant form. An empty result means the surface is secret-free.
+ */
+export const findSecretLeaks = (
+  surface: unknown,
+  secrets: readonly string[]
+): SecretLeakFinding[] => {
+  const haystack = buildHaystack(surface);
+  const haystackLower = haystack.toLowerCase();
+  const findings: SecretLeakFinding[] = [];
+
+  for (const secret of secrets) {
+    if (typeof secret !== "string" || secret.length === 0) {
+      continue;
+    }
+
+    for (const [variant, value, caseInsensitive] of secretVariants(secret)) {
+      if (value.length === 0) {
+        continue;
+      }
+      const matched = caseInsensitive
+        ? haystackLower.includes(value.toLowerCase())
+        : haystack.includes(value);
+      if (matched) {
+        findings.push({ secret, variant });
+        break;
+      }
+    }
+  }
+
+  return findings;
+};
+
+export interface SecretPatternLeakFinding {
+  /** The structural pattern name that matched (e.g. "jwt", "url-credential"). */
+  pattern: string;
+  /** A bounded preview of the offending value (never the full raw secret text). */
+  preview: string;
 }
+
+/** Length of the bounded preview kept in a finding so findings never echo a full raw secret. */
+const PATTERN_LEAK_PREVIEW_LENGTH = 24;
+
+/**
+ * Recursively scan a surface for secret-*shaped* values — detected
+ * structurally via `SECRET_VALUE_PATTERNS` (`@tuvren/core/security`), the same
+ * ordered pattern list `sanitizeSecretLikeText`/`screenValueForSecretPatterns`
+ * derive their redaction OR-chain from — rather than value-equality against a
+ * configured secret list. Deriving both from one shared list (instead of each
+ * independently re-listing the same patterns) guarantees this detector and the
+ * screen can never drift apart: anything flagged here is something the screen
+ * would have redacted. An empty result means the surface carries no
+ * pattern-detectable secret residue.
+ */
+export const findSecretPatternLeaks = (
+  surface: unknown
+): SecretPatternLeakFinding[] => {
+  const strings: string[] = [];
+  collectStrings(surface, strings, new Set());
+
+  const findings: SecretPatternLeakFinding[] = [];
+  const seenValues = new Set<string>();
+
+  for (const value of strings) {
+    if (value.length === 0 || seenValues.has(value)) {
+      continue;
+    }
+    seenValues.add(value);
+
+    for (const [pattern, regex] of SECRET_VALUE_PATTERNS) {
+      if (regex.test(value)) {
+        findings.push({
+          pattern,
+          preview:
+            value.length > PATTERN_LEAK_PREVIEW_LENGTH
+              ? `${value.slice(0, PATTERN_LEAK_PREVIEW_LENGTH)}…`
+              : value,
+        });
+        break;
+      }
+    }
+  }
+
+  return findings;
+};
+
+/** Convenience boolean wrapper over {@link findSecretPatternLeaks}. */
+export const hasSecretPatternResidue = (surface: unknown): boolean =>
+  findSecretPatternLeaks(surface).length > 0;
