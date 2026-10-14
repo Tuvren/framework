@@ -257,8 +257,10 @@ const isPositiveFiniteNumber = (value: number): boolean =>
 const isPositiveFiniteNumberOrInfinity = (value: number): boolean =>
   value === Number.POSITIVE_INFINITY || isPositiveFiniteNumber(value);
 
+const CONTAINS_NON_WHITESPACE = /\S/u;
+
 const isNonEmptyString = (value: unknown): value is string =>
-  typeof value === "string" && value.length > 0;
+  typeof value === "string" && CONTAINS_NON_WHITESPACE.test(value);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -314,6 +316,15 @@ const isInboundRejection = (
   SESSION_REJECTION_CODES.has(value.code) &&
   typeof value.message === "string" &&
   (value.details === undefined || isRecord(value.details));
+
+const projectSignalForWire = (signal: SessionClientInputSignal): unknown => ({
+  ...signal,
+  parts: signal.parts.map((part) =>
+    part.type === "file" && part.data instanceof Uint8Array
+      ? { ...part, data: [...part.data] }
+      : part
+  ),
+});
 
 const validateOptions = (options: SessionClientOptions): void => {
   if (!isNonEmptyString(options.url)) {
@@ -581,6 +592,13 @@ export const createSessionClient = (
     if (!isRecord(frame)) {
       return;
     }
+    // The frame envelope is authoritative even when its event payload is opaque.
+    if (
+      frame.protocolVersion !== SESSION_PROTOCOL_VERSION ||
+      frame.sessionId !== options.sessionId
+    ) {
+      return;
+    }
     const record = frame;
     const { kind } = record;
     if (kind === "event") {
@@ -689,6 +707,12 @@ export const createSessionClient = (
         const parsed = parseWsClientMessage(event.data);
         switch (parsed.kind) {
           case "handshake_ack": {
+            if (
+              parsed.message.protocolVersion !== SESSION_PROTOCOL_VERSION ||
+              parsed.message.sessionId !== options.sessionId
+            ) {
+              break;
+            }
             reconnectAttempt = 0;
             handshakeOpen = true;
             flushOutboundQueue();
@@ -699,6 +723,15 @@ export const createSessionClient = (
             break;
           }
           case "frame": {
+            if (!isRecord(parsed.frame)) {
+              break;
+            }
+            if (
+              parsed.frame.protocolVersion !== SESSION_PROTOCOL_VERSION ||
+              parsed.frame.sessionId !== options.sessionId
+            ) {
+              break;
+            }
             if (parsed.cursor !== undefined) {
               lastCursor = parsed.cursor;
             }
@@ -785,7 +818,8 @@ export const createSessionClient = (
       kind: "steer",
       protocolVersion: SESSION_PROTOCOL_VERSION,
       sessionId: options.sessionId,
-      signal,
+      // JSON encodes Uint8Array as an object; the wire authority uses uint8[].
+      signal: projectSignalForWire(signal),
     });
   };
 

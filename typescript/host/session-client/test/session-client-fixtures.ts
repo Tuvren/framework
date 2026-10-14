@@ -72,6 +72,20 @@ export class FakeSocket implements SessionClientSocket {
   }
 
   receive(message: unknown): void {
+    const received = requiredRecord(message);
+    if (received.kind === "frame" && isRecord(received.frame)) {
+      this.onmessage?.({
+        data: JSON.stringify({
+          ...received,
+          frame: {
+            protocolVersion: "1",
+            sessionId: "test-session",
+            ...received.frame,
+          },
+        }),
+      });
+      return;
+    }
     this.onmessage?.({ data: JSON.stringify(message) });
   }
 

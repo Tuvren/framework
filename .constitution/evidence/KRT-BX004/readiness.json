@@ -1,7 +1,7 @@
 {
   "ticket": "KRT-BX004",
   "status": "complete-native-host-readiness",
-  "measurement_head": "98ac6d2a64f07c8c8e8ce76410b8992743317d77",
+  "measurement_head": "032cafb1edc7375d23ca2dbe9994e9df658edf0b",
   "working_tree_candidate": true,
   "projects": [
     {
@@ -516,9 +516,129 @@
     "bx_manifest": [],
     "other_manifests_unchanged": true,
     "code_and_JSON_selection_independent_of_formatter_ignores": true,
-    "source_typecheck_targets_unchanged": true
+    "source_typecheck_targets_unchanged": true,
+    "explicit_dependency_production_inputs_execution_proven": true
   },
   "gates": [
+    {
+      "gate": "typecheck",
+      "exit": 0,
+      "log": "bx-pr-r1-final-typecheck.log",
+      "sha256": "02c16c7041098f49c251a24c8ab6fe5b4dd80f1f2d40a65017ebb68fb0a4128e",
+      "bytes": 5874
+    },
+    {
+      "gate": "conformance",
+      "exit": 0,
+      "log": "bx-pr-r1-final-conformance.log",
+      "sha256": "99e4be8e27ebbec4434cafe88f1eb426d6032d37b5681d599a223096de4940c5",
+      "bytes": 23375
+    },
+    {
+      "gate": "full-lint",
+      "exit": 0,
+      "log": "bx-pr-r1-final-full-lint.log",
+      "sha256": "a7e21281237761e68779ccf854406a518ef322f05c93a32a52a2ee82094d304b",
+      "bytes": 6046
+    },
+    {
+      "gate": "format-check",
+      "exit": 0,
+      "log": "bx-pr-r1-final-format-check.log",
+      "sha256": "76ac95a3b36ec18ccaae77b390a17b6058a73a07150377a31cf07bb9a9d2c7eb",
+      "bytes": 144
+    },
+    {
+      "gate": "check",
+      "exit": 0,
+      "log": "bx-pr-r1-final-check.log",
+      "sha256": "cebedfa9da4b707f116de799571f4168fa2e2e9c337b215fa31386173b43c372",
+      "bytes": 59481
+    },
+    {
+      "gate": "verify",
+      "exit": 0,
+      "log": "bx-pr-r1-final-verify.log",
+      "sha256": "b4431389daedc059e489f6d93bb555224eb1dd48e9fca1bf3bc76426740749dd",
+      "bytes": 300534
+    },
+    {
+      "gate": "framework-conformance",
+      "exit": 0,
+      "log": "bx-pr-r1-final-framework-conformance.log",
+      "sha256": "6541019c95e8e79b5fe154a2762d49f3d65ef31511678c00e98099d7f7d76fee",
+      "bytes": 2261
+    },
+    {
+      "gate": "repl-scenario",
+      "exit": 0,
+      "log": "bx-pr-r1-final-repl-scenario.log",
+      "sha256": "de3edc8e86df6f2850e376467100c5c800fd22bf0c64ac65f0778bbfdf15942b",
+      "bytes": 7979
+    },
+    {
+      "gate": "sqlite-pinned",
+      "exit": 0,
+      "log": "bx-pr-r1-final-sqlite-pinned.log",
+      "sha256": "e2b4242fe7ea63b961af7699070c24d82aa09b63f77f6c48bd96f62f5726b11b",
+      "bytes": 5482
+    },
+    {
+      "gate": "postgres",
+      "exit": 0,
+      "log": "bx-pr-r1-final-postgres.log",
+      "sha256": "7bfdc755a27f6d9882387f4d64a3ca12283762b1642acf0bb85ad72818e9c4a0",
+      "bytes": 10186
+    },
+    {
+      "gate": "interop",
+      "exit": 0,
+      "log": "bx-pr-r1-final-interop.log",
+      "sha256": "07a0c237664041c63dbf256ff80eeb0e83a30558aee5392a4be016e9e9383c89",
+      "bytes": 97840
+    }
+  ],
+  "behavior": {
+    "canonical_host_tests": {
+      "session": {
+        "tests": 35,
+        "assertions": 97
+      },
+      "remote_session": {
+        "tests": 18,
+        "assertions": 92
+      },
+      "session_client": {
+        "tests": 35,
+        "assertions": 144
+      },
+      "repl": {
+        "tests": 191,
+        "assertions": 1241
+      }
+    },
+    "real_reconnect_redelivery": true,
+    "real_committed_state_after_SIGKILL": true,
+    "optional_transcript_scope": true,
+    "transcript_bytes_redaction_and_IO_error_parity": true,
+    "all_A11_patches_applied_only_with_atomic_ownership_handoffs": true,
+    "obsolete_playground_prefix_ignored_current_prefix_preserved": true,
+    "typed_client_file_bytes_round_trip": true,
+    "foreign_protocol_session_frames_ignored_before_side_effects": true,
+    "invalid_handshake_ack_ignored_before_flush": true,
+    "whitespace_identifiers_ignored": true
+  },
+  "environment": {
+    "A10_relocated_from_forced_excluded_cache_ancestor": true,
+    "all_final_retained_proofs_positive_before_handoff": true,
+    "old_zero_file_whole_root_logs_are_environment_diagnostics_only": true,
+    "original_M6_scoped_measurement_also_confirmed_positive": true
+  },
+  "spec_patches": [],
+  "deferred_tickets": [],
+  "live_probe_required": false,
+  "new_dependencies": [],
+  "admission_gate_snapshot": [
     {
       "gate": "typecheck",
       "exit": 0,
@@ -597,40 +717,151 @@
       "bytes": 97838
     }
   ],
-  "behavior": {
-    "canonical_host_tests": {
-      "session": {
-        "tests": 34,
-        "assertions": 84
+  "admission_proofs_are_historical_snapshots": true,
+  "current_validation": "pr-review-round1.json",
+  "current_lint_targets": [
+    {
+      "project": "host-session",
+      "target": {
+        "executor": "nx:run-commands",
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/biome.jsonc",
+          "{workspaceRoot}/oxlint.config.ts",
+          "{workspaceRoot}/oxfmt.config.ts",
+          "{workspaceRoot}/package.json",
+          "{workspaceRoot}/bun.lock",
+          "{workspaceRoot}/tools/scripts/json-check.ts",
+          "{workspaceRoot}/tools/scripts/json-source-check.ts",
+          "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+          "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+          "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+          "{workspaceRoot}/Cargo.toml",
+          "{workspaceRoot}/Cargo.lock",
+          "{workspaceRoot}/rust-toolchain.toml"
+        ],
+        "options": {
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/host/session",
+            "bun tools/scripts/json-check.ts typescript/host/session"
+          ],
+          "parallel": false
+        }
       },
-      "remote_session": {
-        "tests": 18,
-        "assertions": 92
-      },
-      "session_client": {
-        "tests": 33,
-        "assertions": 130
-      },
-      "repl": {
-        "tests": 191,
-        "assertions": 1241
-      }
+      "execution_proven_imports": [
+        "typescript/core/src/index.ts",
+        "typescript/host/session-client/src/lib/session-client.ts"
+      ]
     },
-    "real_reconnect_redelivery": true,
-    "real_committed_state_after_SIGKILL": true,
-    "optional_transcript_scope": true,
-    "transcript_bytes_redaction_and_IO_error_parity": true,
-    "all_A11_patches_applied_only_with_atomic_ownership_handoffs": true,
-    "obsolete_playground_prefix_ignored_current_prefix_preserved": true
-  },
-  "environment": {
-    "A10_relocated_from_forced_excluded_cache_ancestor": true,
-    "all_final_retained_proofs_positive_before_handoff": true,
-    "old_zero_file_whole_root_logs_are_environment_diagnostics_only": true,
-    "original_M6_scoped_measurement_also_confirmed_positive": true
-  },
-  "spec_patches": [],
-  "deferred_tickets": [],
-  "live_probe_required": false,
-  "new_dependencies": []
+    {
+      "project": "remote-session",
+      "target": {
+        "executor": "nx:run-commands",
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/biome.jsonc",
+          "{workspaceRoot}/oxlint.config.ts",
+          "{workspaceRoot}/oxfmt.config.ts",
+          "{workspaceRoot}/package.json",
+          "{workspaceRoot}/bun.lock",
+          "{workspaceRoot}/tools/scripts/json-check.ts",
+          "{workspaceRoot}/tools/scripts/json-source-check.ts",
+          "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+          "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+          "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+          "{workspaceRoot}/Cargo.toml",
+          "{workspaceRoot}/Cargo.lock",
+          "{workspaceRoot}/rust-toolchain.toml"
+        ],
+        "options": {
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/host/remote-session",
+            "bun tools/scripts/json-check.ts typescript/host/remote-session"
+          ],
+          "parallel": false
+        }
+      },
+      "execution_proven_imports": [
+        "typescript/core/src/index.ts",
+        "typescript/streaming/core/src/index.ts"
+      ]
+    },
+    {
+      "project": "session-client",
+      "target": {
+        "executor": "nx:run-commands",
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/biome.jsonc",
+          "{workspaceRoot}/oxlint.config.ts",
+          "{workspaceRoot}/oxfmt.config.ts",
+          "{workspaceRoot}/package.json",
+          "{workspaceRoot}/bun.lock",
+          "{workspaceRoot}/tools/scripts/json-check.ts",
+          "{workspaceRoot}/tools/scripts/json-source-check.ts",
+          "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+          "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+          "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+          "{workspaceRoot}/Cargo.toml",
+          "{workspaceRoot}/Cargo.lock",
+          "{workspaceRoot}/rust-toolchain.toml"
+        ],
+        "options": {
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/host/session-client",
+            "bun tools/scripts/json-check.ts typescript/host/session-client"
+          ],
+          "parallel": false
+        }
+      },
+      "execution_proven_imports": []
+    },
+    {
+      "project": "host-repl",
+      "target": {
+        "executor": "nx:run-commands",
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/biome.jsonc",
+          "{workspaceRoot}/oxlint.config.ts",
+          "{workspaceRoot}/oxfmt.config.ts",
+          "{workspaceRoot}/package.json",
+          "{workspaceRoot}/bun.lock",
+          "{workspaceRoot}/tools/scripts/json-check.ts",
+          "{workspaceRoot}/tools/scripts/json-source-check.ts",
+          "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+          "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+          "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+          "{workspaceRoot}/Cargo.toml",
+          "{workspaceRoot}/Cargo.lock",
+          "{workspaceRoot}/rust-toolchain.toml"
+        ],
+        "options": {
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/host/repl",
+            "bun tools/scripts/json-check.ts typescript/host/repl"
+          ],
+          "parallel": false
+        }
+      },
+      "execution_proven_imports": [
+        "typescript/core/src/index.ts",
+        "typescript/streaming/core/src/index.ts",
+        "typescript/sdk/src/index.ts"
+      ]
+    }
+  ],
+  "pr_review_fix": {
+    "round": 1,
+    "findings_addressed": 5,
+    "proof": "pr-review-round1.json"
+  }
 }
