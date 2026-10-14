@@ -285,6 +285,43 @@ describe("secretPatternAbsence assertion (KRT-BK004)", () => {
 });
 
 describe("schemaValid validator memoization (KRT-BM004)", () => {
+  test("retains synchronous schema grading", () => {
+    const check = buildCheck([
+      { kind: "schemaValid", schema: "$.fixture.schema" },
+    ]);
+    const fixture = { schema: { type: "number" } };
+
+    expect(evaluateAssertions(check, { fixture, result: 1 })[0]?.status).toBe(
+      "pass"
+    );
+    expect(
+      evaluateAssertions(check, { fixture, result: "invalid" })[0]?.status
+    ).toBe("fail");
+  });
+
+  test("rejects asynchronous schemas before grading valid or invalid data", () => {
+    // schemaValid remains synchronous, so async Ajv validators cannot be graded.
+    const check = buildCheck([
+      { kind: "schemaValid", schema: "$.fixture.schema" },
+    ]);
+    const schema = { $async: true, type: "number" };
+
+    for (const result of [1, "invalid"]) {
+      const [evaluation] = evaluateAssertions(check, {
+        fixture: { schema },
+        result,
+      });
+      expect(evaluation?.status).toBe("fail");
+      expect(evaluation?.message).toBe(
+        "schemaValid assertion does not support asynchronous schemas"
+      );
+    }
+
+    expect(() => getCompiledSchemaValidator(schema)).toThrow(
+      "schemaValid assertion does not support asynchronous schemas"
+    );
+  });
+
   test.each([
     "true",
     "false",

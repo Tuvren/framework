@@ -248,6 +248,13 @@ export const getCompiledSchemaValidator = (
 
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   const validate = ajv.compile(schema);
+  // schemaValid is synchronous; reject Ajv's async validators before caching.
+  if ("$async" in validate && validate.$async) {
+    throw new Error(
+      "schemaValid assertion does not support asynchronous schemas"
+    );
+  }
+
   schemaValidatorCache.set(key, validate);
   return validate;
 };
