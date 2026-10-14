@@ -27,9 +27,9 @@
  *   bun scripts/ws-peer.ts --url ws://127.0.0.1:PORT --session-id sess-1 \
  *     --effects-log /tmp/ws-peer-effects.ndjson
  *
- * @packageDocumentation
  */
 
+import { once } from "node:events";
 import { appendFile } from "node:fs/promises";
 import process from "node:process";
 
@@ -125,10 +125,9 @@ const main = async (): Promise<void> => {
 
   client.connect();
 
-  // Keep the process alive; the harness drives lifecycle via signals.
-  await new Promise<void>(() => {
-    // Intentionally never resolves.
-  });
+  // Keep the peer alive after a session ends; the harness owns shutdown.
+  // Both original signal handlers above still close and exit synchronously.
+  await once(process, "SIGTERM");
 };
 
 await main();

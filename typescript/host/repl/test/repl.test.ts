@@ -15,11 +15,12 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { spawn } from "node:child_process";
+import childProcess from "node:child_process";
 import { once } from "node:events";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import os from "node:os";
+import nodePath from "node:path";
 import { Readable } from "node:stream";
+import { setTimeout as delay } from "node:timers/promises";
 
 import {
   AIMOCK_REPL_PROVIDER_MODES,
@@ -85,9 +86,9 @@ const createPromptObservingProvider = (
   id: string,
   observePrompt: (prompt: TuvrenPrompt) => void
 ): TuvrenProvider => ({
-  generate(prompt) {
+  async generate(prompt) {
     observePrompt(prompt);
-    return Promise.resolve({
+    return await Promise.resolve({
       finishReason: "stop",
       parts: [{ text: "ok", type: "text" }],
     });
@@ -347,15 +348,18 @@ const waitForCondition = async (
 ): Promise<void> => {
   const deadline = Date.now() + timeoutMs;
 
-  while (!predicate()) {
+  const poll = async (): Promise<void> => {
+    if (predicate()) {
+      return;
+    }
     if (Date.now() >= deadline) {
       throw new Error("timed out waiting for shell condition");
     }
 
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 20);
-    });
-  }
+    await delay(20);
+    await poll();
+  };
+  await poll();
 };
 
 const findToolDefinition = (name: string): TuvrenToolDefinition => {
@@ -393,10 +397,10 @@ const runCliProcess = async (input: {
   envOverrides?: Record<string, string | undefined>;
   stdin?: string;
 }): Promise<{ exitCode: number | null; stderr: string; stdout: string }> => {
-  const cli = spawn(
+  const cli = childProcess.spawn(
     "node",
     [
-      join(process.cwd(), "dist/cli.js"),
+      nodePath.join(process.cwd(), "dist/cli.js"),
       ...(input.argv ?? ["--backend", "memory", "--provider", "fixture"]),
     ],
     {
@@ -416,7 +420,8 @@ const runCliProcess = async (input: {
   });
   cli.stdin.end(input.stdin ?? "");
 
-  const [exitCode]: unknown[] = await once(cli, "close");
+  const closeArgs: unknown[] = await once(cli, "close");
+  const [exitCode] = closeArgs;
   if (exitCode !== null && typeof exitCode !== "number") {
     throw new TypeError("expected CLI process exit code");
   }
@@ -889,7 +894,7 @@ describe("repl host scenarios", () => {
     ]);
 
     expect(config.backend).toBe("sqlite");
-    expect(config.sqlitePath?.startsWith(tmpdir())).toBe(true);
+    expect(config.sqlitePath?.startsWith(os.tmpdir())).toBe(true);
     expect(config.sqlitePath?.includes("tuvren-repl-")).toBe(true);
     expect(config.sqlitePath?.endsWith(".sqlite")).toBe(true);
   });
@@ -907,12 +912,9 @@ describe("repl host scenarios", () => {
     expect(config.postgresSchemaName?.startsWith("tuvren-repl-")).toBe(true);
   });
 
-  test("runs every non-reload fixture scenario under the memory backend", async () => {
-    for (const scenario of DEFAULT_REPL_SCENARIOS) {
-      if (scenario === "reload") {
-        continue;
-      }
-
+  test.each(DEFAULT_REPL_SCENARIOS.filter((scenario) => scenario !== "reload"))(
+    "runs the %s fixture scenario under the memory backend",
+    async (scenario) => {
       const report = await runReplScenario({
         backend: "memory",
         providerMode: "fixture",
@@ -922,7 +924,7 @@ describe("repl host scenarios", () => {
       expect(report.scenario).toBe(scenario);
       expectScenarioChecksPassed(report.checks);
     }
-  });
+  );
 
   test("runs the streaming scenario through canonical, SSE, and AG-UI outputs", async () => {
     const report = await runReplScenario({
@@ -1032,12 +1034,12 @@ describe("repl host scenarios", () => {
     let fetchCalled = false;
 
     globalThis.fetch = Object.assign(
-      (
+      async (
         _input: string | URL | Request,
         _init?: BunFetchRequestInit
       ): Promise<Response> => {
         fetchCalled = true;
-        return Promise.reject(new Error("repl test fetch sentinel"));
+        return await Promise.reject(new Error("repl test fetch sentinel"));
       },
       {
         preconnect: previousFetch.preconnect,
@@ -1151,9 +1153,8 @@ describe("repl host scenarios", () => {
         (event) => event.type === "approval.resolved"
       )
     ).toBe(true);
-    expect((await runReplCommand(shell, ".turn cancel")).output).toBe(
-      "No active turn is currently running."
-    );
+    const commandResult1 = await runReplCommand(shell, ".turn cancel");
+    expect(commandResult1.output).toBe("No active turn is currently running.");
     const headBeforeOrchestration = shell.thread?.headTurnNodeHash;
 
     await runReplCommand(shell, ".orch start");
@@ -1181,9 +1182,11 @@ describe("repl host scenarios", () => {
       await runReplCommand(shell, ".messages show")
     );
     expect(forkMessages.length).toBe(activeMessages.length);
-    expect(
-      (await runReplCommand(shell, ".orch spawn worker retry")).output
-    ).toBe("No active orchestration root exists.");
+    const commandResult2 = await runReplCommand(
+      shell,
+      ".orch spawn worker retry"
+    );
+    expect(commandResult2.output).toBe("No active orchestration root exists.");
   });
 
   test("keeps the active thread head aligned when orchestration emits descendant checkpoints", async () => {
@@ -1234,12 +1237,27 @@ describe("repl host scenarios", () => {
 
     const events = readCommandArray(
       await runReplCommand(shell, ".events show")
-    ) as { source?: { workerId?: string } }[];
+    );
 
     expect(events.length).toBeGreaterThan(0);
-    expect(events.some((event) => event.source?.workerId !== undefined)).toBe(
-      true
-    );
+    expect(
+      events.some((event) => {
+        if (
+          typeof event !== "object" ||
+          event === null ||
+          !("source" in event)
+        ) {
+          return false;
+        }
+        const { source } = event;
+        return (
+          typeof source === "object" &&
+          source !== null &&
+          "workerId" in source &&
+          typeof source.workerId === "string"
+        );
+      })
+    ).toBe(true);
   });
 
   test("rejects overwriting an active turn and cancels it before backend reset", async () => {
@@ -1257,7 +1275,8 @@ describe("repl host scenarios", () => {
       throw new Error("expected active turn handle after .turn start");
     }
 
-    expect((await runReplCommand(shell, ".turn start approval")).output).toBe(
+    const commandResult3 = await runReplCommand(shell, ".turn start approval");
+    expect(commandResult3.output).toBe(
       "Active work already exists on the current branch. Await, approve, steer, or cancel it before starting another turn."
     );
     expect(shell.activeTurn?.handle).toBe(activeHandle);
@@ -1283,15 +1302,18 @@ describe("repl host scenarios", () => {
       throw new Error("expected active orchestration handle after .orch start");
     }
 
-    expect((await runReplCommand(shell, ".orch start")).output).toBe(
+    const commandResult4 = await runReplCommand(shell, ".orch start");
+    expect(commandResult4.output).toBe(
       "Active work already exists on the current branch. Await or cancel it before starting another root orchestration."
     );
 
     await runReplCommand(shell, ".orch spawn worker first");
 
-    expect(
-      (await runReplCommand(shell, ".orch spawn worker second")).output
-    ).toBe(
+    const commandResult5 = await runReplCommand(
+      shell,
+      ".orch spawn worker second"
+    );
+    expect(commandResult5.output).toBe(
       "A child orchestration handle is already active. Await the current orchestration before spawning another child."
     );
 
@@ -1316,7 +1338,8 @@ describe("repl host scenarios", () => {
       throw new Error("expected active turn handle after .turn start");
     }
 
-    expect((await runReplCommand(turnShell, ".orch start")).output).toBe(
+    const commandResult6 = await runReplCommand(turnShell, ".orch start");
+    expect(commandResult6.output).toBe(
       "Active work already exists on the current branch. Await or cancel it before starting another root orchestration."
     );
 
@@ -1337,9 +1360,11 @@ describe("repl host scenarios", () => {
       throw new Error("expected active orchestration handle after .orch start");
     }
 
-    expect(
-      (await runReplCommand(orchestrationShell, ".turn start steering")).output
-    ).toBe(
+    const commandResult7 = await runReplCommand(
+      orchestrationShell,
+      ".turn start steering"
+    );
+    expect(commandResult7.output).toBe(
       "Active work already exists on the current branch. Await, approve, steer, or cancel it before starting another turn."
     );
 
@@ -1365,7 +1390,8 @@ describe("repl host scenarios", () => {
       throw new Error("expected active turn handle after .turn start");
     }
 
-    expect((await runReplCommand(shell, ".branch fork")).output).toBe(
+    const commandResult8 = await runReplCommand(shell, ".branch fork");
+    expect(commandResult8.output).toBe(
       "Active work already exists on the current branch. Await or cancel it before forking a branch."
     );
     expect(shell.thread?.branchId).toBe(activeBranchId);
@@ -1389,7 +1415,8 @@ describe("repl host scenarios", () => {
       throw new Error("expected active turn handle after .turn start");
     }
 
-    expect((await runReplCommand(shell, ".exit")).exit).toBe(true);
+    const commandResult9 = await runReplCommand(shell, ".exit");
+    expect(commandResult9.exit).toBe(true);
     await waitForCondition(() => activeHandle.status().phase !== "running");
   });
 
@@ -1408,7 +1435,8 @@ describe("repl host scenarios", () => {
       throw new Error("expected active turn handle after .turn start");
     }
 
-    expect((await runReplCommand(shell, ".turn cancel")).output).toBe(
+    const commandResult10 = await runReplCommand(shell, ".turn cancel");
+    expect(commandResult10.output).toBe(
       "Cancellation requested for the active turn."
     );
     expect(shell.activeTurn).toBe(undefined);
@@ -1536,13 +1564,13 @@ describe("repl host scenarios", () => {
       providerMode: "fixture",
       scenario: "streaming",
     });
-    const originalExecuteTurn = shell.host.executeTurn;
+    const originalHost = shell.host;
     let observedTools: TuvrenToolDefinition[] | undefined;
     shell.host = {
       ...shell.host,
       executeTurn(input) {
         observedTools = input.config?.tools;
-        return originalExecuteTurn(input);
+        return originalHost.executeTurn(input);
       },
     };
 
@@ -2109,9 +2137,8 @@ describe("repl host scenarios", () => {
       scenario: "streaming",
     });
 
-    expect((await runReplCommand(shell, ".messages show")).output).toBe(
-      "No active thread exists."
-    );
+    const commandResult11 = await runReplCommand(shell, ".messages show");
+    expect(commandResult11.output).toBe("No active thread exists.");
     expect(shell.thread).toBe(undefined);
   });
 
@@ -2218,7 +2245,8 @@ describe("repl host scenarios", () => {
       throw new Error("expected active orchestration handle after .orch start");
     }
 
-    expect((await runReplCommand(shell, ".orch cancel")).output).toBe(
+    const commandResult12 = await runReplCommand(shell, ".orch cancel");
+    expect(commandResult12.output).toBe(
       "Cancellation requested for the active orchestration."
     );
     expect(shell.activeOrchestration).toBe(undefined);
@@ -2251,7 +2279,8 @@ describe("repl host scenarios", () => {
     const recoveryHandle = shell.activeOrchestration?.handle;
     expect(recoveryHandle).not.toBe(undefined);
 
-    expect((await runReplCommand(shell, ".orch cancel")).output).toBe(
+    const commandResult13 = await runReplCommand(shell, ".orch cancel");
+    expect(commandResult13.output).toBe(
       "Cancellation requested for the active orchestration."
     );
 
@@ -2267,12 +2296,18 @@ describe("repl host scenarios", () => {
       scenario: "streaming",
     });
 
-    expect(
-      (await runReplCommand(shell, ".turn start orchestration")).output
-    ).toBe(
+    const commandResult14 = await runReplCommand(
+      shell,
+      ".turn start orchestration"
+    );
+    expect(commandResult14.output).toBe(
       'Scenario "orchestration" is not supported through .turn start. Use .orch commands or the scripted scenario runner instead.'
     );
-    expect((await runReplCommand(shell, ".turn start branching")).output).toBe(
+    const commandResult15 = await runReplCommand(
+      shell,
+      ".turn start branching"
+    );
+    expect(commandResult15.output).toBe(
       'Scenario "branching" is not supported through .turn start. Use the scripted scenario runner instead.'
     );
     expect(shell.activeTurn).toBe(undefined);
@@ -2359,18 +2394,16 @@ describe("repl host scenarios", () => {
     expect(withHead(thread, projection).headTurnNodeHash).toBe("head-1");
   });
 
-  test("interactive CLI exits cleanly for piped sessions", async () => {
-    for (const stdin of [
-      ".thread new\n.exit\n",
-      ".turn start streaming\n.exit\n",
-      "Hello from the REPL\n.exit\n",
-    ]) {
-      const result = await runCliSession(stdin);
+  test.each([
+    ".thread new\n.exit\n",
+    ".turn start streaming\n.exit\n",
+    "Hello from the REPL\n.exit\n",
+  ])("interactive CLI exits cleanly for piped session %s", async (stdin) => {
+    const result = await runCliSession(stdin);
 
-      expect(result.exitCode).toBe(0);
-      expect(result.stderr.includes("ERR_USE_AFTER_CLOSE")).toBe(false);
-      expect(result.stdout.includes("runtime_execution_cancelled")).toBe(false);
-    }
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr.includes("ERR_USE_AFTER_CLOSE")).toBe(false);
+    expect(result.stdout.includes("runtime_execution_cancelled")).toBe(false);
   });
 
   test("interactive CLI streams plain-text turns without turn commands", async () => {
@@ -2640,8 +2673,8 @@ describe("repl host scenarios", () => {
   });
 
   test("CLI records headless sessions as replayable transcripts", async () => {
-    const transcriptPath = join(
-      tmpdir(),
+    const transcriptPath = nodePath.join(
+      os.tmpdir(),
       `tuvren-repl-record-${Date.now()}.jsonl`
     );
     const result = await runCliProcess({
@@ -2689,8 +2722,8 @@ describe("repl host scenarios", () => {
   });
 
   test("CLI records durable reads in headless transcripts", async () => {
-    const transcriptPath = join(
-      tmpdir(),
+    const transcriptPath = nodePath.join(
+      os.tmpdir(),
       `tuvren-repl-durable-read-${Date.now()}.jsonl`
     );
     const result = await runCliProcess({
@@ -2746,8 +2779,8 @@ describe("repl host scenarios", () => {
   });
 
   test("CLI replays deterministic transcripts and emits a JSON report", async () => {
-    const transcriptPath = join(
-      tmpdir(),
+    const transcriptPath = nodePath.join(
+      os.tmpdir(),
       `tuvren-repl-replay-${Date.now()}.jsonl`
     );
     const recordResult = await runCliProcess({
@@ -2779,8 +2812,8 @@ describe("repl host scenarios", () => {
   });
 
   test("CLI replays deterministic structured transcripts with recorded scenario", async () => {
-    const transcriptPath = join(
-      tmpdir(),
+    const transcriptPath = nodePath.join(
+      os.tmpdir(),
       `tuvren-repl-structured-replay-${Date.now()}.jsonl`
     );
     const recordResult = await runCliProcess({
@@ -2825,8 +2858,8 @@ describe("repl host scenarios", () => {
   });
 
   test("CLI records interactive streamed sessions as replayable transcripts", async () => {
-    const transcriptPath = join(
-      tmpdir(),
+    const transcriptPath = nodePath.join(
+      os.tmpdir(),
       `tuvren-repl-interactive-replay-${Date.now()}.jsonl`
     );
     const recordResult = await runCliProcess({
@@ -2873,8 +2906,8 @@ describe("repl host scenarios", () => {
   });
 
   test("CLI replays deterministic command transcripts with volatile JSON ids", async () => {
-    const transcriptPath = join(
-      tmpdir(),
+    const transcriptPath = nodePath.join(
+      os.tmpdir(),
       `tuvren-repl-thread-replay-${Date.now()}.jsonl`
     );
     const recordResult = await runCliProcess({
@@ -2906,7 +2939,10 @@ describe("repl host scenarios", () => {
 
   test("CLI replay failures are structured when transcript cannot be opened", async () => {
     const result = await runCliProcess({
-      argv: ["--replay", join(tmpdir(), `missing-${Date.now()}.jsonl`)],
+      argv: [
+        "--replay",
+        nodePath.join(os.tmpdir(), `missing-${Date.now()}.jsonl`),
+      ],
     });
     const records = parseHeadlessOutputRecords(result.stdout);
 
@@ -2950,7 +2986,7 @@ describe("repl host scenarios", () => {
         "fixture",
         "--headless",
         "--record",
-        join(tmpdir(), `missing-${Date.now()}`, "session.jsonl"),
+        nodePath.join(os.tmpdir(), `missing-${Date.now()}`, "session.jsonl"),
       ],
       stdin: ".status\n",
     });

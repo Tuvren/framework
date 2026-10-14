@@ -71,7 +71,7 @@ const parseJsonRecord = (
   }
 
   try {
-    const parsed = JSON.parse(value);
+    const parsed: unknown = JSON.parse(value);
     return isPlainRecord(parsed) ? parsed : undefined;
   } catch {
     return undefined;
@@ -129,7 +129,7 @@ const parseToolMessageOutput = (
 const restoreEnvironment = (entries: Map<string, string | undefined>): void => {
   for (const [key, value] of entries) {
     if (value === undefined) {
-      delete process.env[key];
+      Reflect.deleteProperty(process.env, key);
       continue;
     }
 
@@ -158,7 +158,9 @@ export const createAimockBaseUrl = (
       return `${mockUrl}/v1beta`;
     }
     default: {
-      throw new Error(`unsupported aimock provider mode "${providerMode}"`);
+      throw new Error(
+        `unsupported aimock provider mode "${String(providerMode)}"`
+      );
     }
   }
 };
@@ -323,6 +325,41 @@ export const hasSearchToolContinuation = (
   );
 };
 
+const readToolOutput = (
+  message: { content: string } | undefined
+): Record<string, unknown> | undefined =>
+  message === undefined ? undefined : parseToolMessageOutput(message.content);
+
+const hasExpectedEmailResult = (result: unknown): boolean =>
+  isPlainRecord(result) &&
+  result.sent === true &&
+  result.to === "ops@example.com";
+
+const hasExpectedSearchHits = (hits: unknown): boolean =>
+  Array.isArray(hits) &&
+  hits.some(
+    (hit) =>
+      isPlainRecord(hit) &&
+      hit.title === "Tuvren" &&
+      hit.url === "https://example.invalid/tuvren"
+  );
+
+const hasExpectedApproval = (approval: unknown): boolean => {
+  if (!isPlainRecord(approval)) {
+    return false;
+  }
+  const { editedInput, originalInput } = approval;
+  return (
+    approval.type === "edit" &&
+    isPlainRecord(editedInput) &&
+    editedInput.to === "ops@example.com" &&
+    editedInput.subject === "Edited status update" &&
+    isPlainRecord(originalInput) &&
+    originalInput.to === "ops@example.com" &&
+    originalInput.subject === "Status update"
+  );
+};
+
 export const hasApprovalToolContinuation = (
   request: JournalBody | null | undefined
 ): boolean => {
@@ -340,23 +377,11 @@ export const hasApprovalToolContinuation = (
   const emailMessage = findToolMessageForCall(request, emailCall?.id, "email");
   const searchArgs = parseJsonRecord(searchCall?.function.arguments);
   const emailArgs = parseJsonRecord(emailCall?.function.arguments);
-  const searchOutput =
-    searchMessage === undefined
-      ? undefined
-      : parseToolMessageOutput(searchMessage.content);
-  const emailOutput =
-    emailMessage === undefined
-      ? undefined
-      : parseToolMessageOutput(emailMessage.content);
+  const searchOutput = readToolOutput(searchMessage);
+  const emailOutput = readToolOutput(emailMessage);
   const searchHits = searchOutput?.hits;
   const emailResult = emailOutput?.result;
   const approval = emailOutput?.approval;
-  const editedInput = isPlainRecord(approval)
-    ? approval.editedInput
-    : undefined;
-  const originalInput = isPlainRecord(approval)
-    ? approval.originalInput
-    : undefined;
 
   return (
     searchMessage !== undefined &&
@@ -365,24 +390,9 @@ export const hasApprovalToolContinuation = (
     emailArgs?.to === "ops@example.com" &&
     emailArgs.subject === "Status update" &&
     searchOutput?.query === "latest status" &&
-    Array.isArray(searchHits) &&
-    searchHits.some(
-      (hit) =>
-        isPlainRecord(hit) &&
-        hit.title === "Tuvren" &&
-        hit.url === "https://example.invalid/tuvren"
-    ) &&
-    isPlainRecord(emailResult) &&
-    emailResult.sent === true &&
-    emailResult.to === "ops@example.com" &&
-    isPlainRecord(approval) &&
-    approval.type === "edit" &&
-    isPlainRecord(editedInput) &&
-    editedInput.to === "ops@example.com" &&
-    editedInput.subject === "Edited status update" &&
-    isPlainRecord(originalInput) &&
-    originalInput.to === "ops@example.com" &&
-    originalInput.subject === "Status update"
+    hasExpectedSearchHits(searchHits) &&
+    hasExpectedEmailResult(emailResult) &&
+    hasExpectedApproval(approval)
   );
 };
 
@@ -417,7 +427,7 @@ export const withTemporaryEnv = (
     previousEntries.set(key, process.env[key]);
 
     if (value === undefined) {
-      delete process.env[key];
+      Reflect.deleteProperty(process.env, key);
       continue;
     }
 
@@ -441,7 +451,7 @@ export const withTemporaryEnvAsync = async (
     previousEntries.set(key, process.env[key]);
 
     if (value === undefined) {
-      delete process.env[key];
+      Reflect.deleteProperty(process.env, key);
       continue;
     }
 
