@@ -203,4 +203,12 @@ closeout:
         - tools/conformance/harness/test/adapter-client.test.ts
         - tools/conformance/meta-conformance/run.ts
       commit: 60311a54bb56cce1ad5d1bd455760719b610fd4c
+    - summary: Reject compiled Ajv asynchronous validators before cache insertion or
+        invocation in the synchronous schemaValid assertion; preserve boolean
+        grading and avoid Promise verdicts or rejection leaks.
+      kind: pattern
+      paths:
+        - tools/conformance/harness/assertion-engine/index.ts
+        - tools/conformance/harness/test/assertion-engine.test.ts
+      commit: 297eb1c2c65c289b1e718cd2f588a66bf89c3941
   settled: []
