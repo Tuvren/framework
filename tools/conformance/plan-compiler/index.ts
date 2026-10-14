@@ -116,9 +116,233 @@ const PLAN_SCHEMA_PATH = resolve(
   "tools/schemas/conformance-plan.schema.json"
 );
 
-export async function loadConformancePlan(
+// Read and compile the plan schema once per process instead of once per
+// loadConformancePlan call (KRT-BM004; audit finding [C-02]). The schema is
+// a single fixed file (PLAN_SCHEMA_PATH), so the memo is a lone promise —
+// no cache-key collision surface. Caching the promise (not the resolved
+// value) also collapses concurrent first calls onto one read+compile.
+let planValidatorPromise: Promise<ValidateFunction> | undefined;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readJsonSchema = (value: unknown, label: string): AnySchema => {
+  if (typeof value === "boolean" || isRecord(value)) {
+    return value;
+  }
+
+  throw new Error(`${label} must contain a JSON Schema object or boolean`);
+};
+
+const createPlanValidator = (): Promise<ValidateFunction> => {
+  planValidatorPromise ??= (async () => {
+    const schema = readJsonSchema(
+      JSON.parse(await readFile(PLAN_SCHEMA_PATH, "utf-8")) as unknown,
+      PLAN_SCHEMA_PATH
+    );
+    const ajv = new Ajv2020({ allErrors: true, strict: false });
+    return ajv.compile(schema);
+  })();
+
+  return planValidatorPromise;
+};
+
+const assertUniqueCheckId = (
+  seenCheckIds: Set<string>,
+  checkId: string,
+  label: string
+): void => {
+  if (seenCheckIds.has(checkId)) {
+    throw new Error(`${label} repeats checkId ${checkId}`);
+  }
+
+  seenCheckIds.add(checkId);
+};
+
+const assertUniqueStepId = (
+  seenStepIds: Set<string>,
+  stepId: string,
+  context: string
+): void => {
+  if (seenStepIds.has(stepId)) {
+    throw new Error(`${context} repeats stepId ${stepId}`);
+  }
+
+  seenStepIds.add(stepId);
+};
+
+const assertValidAssertion = (
+  assertion: ConformancePlanAssertion,
+  context: string
+): void => {
+  if (assertion.kind === "noEvent" && assertion.field !== undefined) {
+    throw new Error(`${context} has field configured on noEvent assertion`);
+  }
+
+  if (assertion.kind === "resultField" && assertion.field === undefined) {
+    throw new Error(
+      `${context} has no field configured on resultField assertion`
+    );
+  }
+};
+
+const validateCheckAssertions = (
+  check: ConformancePlanCheck,
+  label: string
+): void => {
+  const context = `${label} check ${check.checkId}`;
+  const stepIds = new Set<string>();
+
+  for (const step of check.steps ?? []) {
+    assertUniqueStepId(stepIds, step.stepId, context);
+
+    for (const assertion of step.assertions ?? []) {
+      assertValidAssertion(assertion, context);
+    }
+  }
+
+  for (const assertion of check.assertions) {
+    assertValidAssertion(assertion, context);
+  }
+};
+
+const validateCheckReferences = (
+  check: ConformancePlanCheck,
+  fixtureIds: ReadonlySet<string>,
+  scenarioIds: ReadonlySet<string>,
+  label: string
+): void => {
+  if (check.fixture !== undefined && !fixtureIds.has(check.fixture)) {
+    throw new Error(
+      `${label} check ${check.checkId} references unknown fixture ${check.fixture}`
+    );
+  }
+
+  if (check.scenario !== undefined && !scenarioIds.has(check.scenario)) {
+    throw new Error(
+      `${label} check ${check.checkId} references unknown scenario ${check.scenario}`
+    );
+  }
+};
+
+const validatePlanIntegrity = (plan: ConformancePlan, label: string): void => {
+  const checkIds = new Set<string>();
+  const fixtureIds = new Set(Object.keys(plan.fixtures ?? {}));
+  const scenarioIds = new Set(Object.keys(plan.scenarios ?? {}));
+
+  for (const check of plan.checks) {
+    assertUniqueCheckId(checkIds, check.checkId, label);
+    validateCheckAssertions(check, label);
+    validateCheckReferences(check, fixtureIds, scenarioIds, label);
+  }
+};
+
+const normalizeEvidencePath = (path: string): string =>
+  path.startsWith("$.") ? path.slice(2) : path;
+
+const resultFieldRequiredEvidencePath = (field: string): string => {
+  if (field === "$") {
+    return "result";
+  }
+
+  // Required evidence is evaluated against the whole assertion context, so
+  // resultField paths must be rooted under `result` to avoid mirroring the
+  // evidence/state surface and accidentally accepting the wrong namespace.
+  return `result.${normalizeEvidencePath(field)}`;
+};
+
+const assertionRequiredEvidencePath = (
+  assertion: ConformancePlanAssertion
+): string | undefined => {
+  switch (assertion.kind) {
+    case "evidenceField":
+    case "stateField": {
+      return assertion.field === undefined
+        ? undefined
+        : normalizeEvidencePath(assertion.field);
+    }
+    case "resultField": {
+      return assertion.field === undefined
+        ? undefined
+        : resultFieldRequiredEvidencePath(assertion.field);
+    }
+    case "errorEnvelope": {
+      return normalizeEvidencePath(assertion.path ?? "$.result.error");
+    }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+const stepAssertionRequiredEvidencePath = (
+  stepId: string,
+  assertion: ConformancePlanAssertion
+): string | undefined => {
+  const path = assertionRequiredEvidencePath(assertion);
+
+  if (path === undefined) {
+    return undefined;
+  }
+
+  switch (assertion.kind) {
+    case "evidenceField": {
+      // Step assertions run against a step-local context, but required evidence
+      // is checked against the final trace context after the lifecycle finishes.
+      return `trace.${stepId}.evidence.${path}`;
+    }
+    case "resultField": {
+      if (assertion.field === undefined) {
+        return undefined;
+      }
+
+      return assertion.field === "$"
+        ? `result.trace.${stepId}.result`
+        : `result.trace.${stepId}.result.${normalizeEvidencePath(
+            assertion.field
+          )}`;
+    }
+    case "stateField": {
+      return `trace.${stepId}.state.${path}`;
+    }
+    case "errorEnvelope": {
+      return `trace.${stepId}.${path}`;
+    }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+const expandRequiredEvidence = (
+  check: ConformancePlanCheck
+): readonly string[] => {
+  const evidence = new Set(check.evidence ?? []);
+
+  for (const assertion of check.assertions) {
+    const path = assertionRequiredEvidencePath(assertion);
+
+    if (path !== undefined) {
+      evidence.add(path);
+    }
+  }
+
+  for (const step of check.steps ?? []) {
+    for (const assertion of step.assertions ?? []) {
+      const path = stepAssertionRequiredEvidencePath(step.stepId, assertion);
+
+      if (path !== undefined) {
+        evidence.add(path);
+      }
+    }
+  }
+
+  return [...evidence].sort();
+};
+
+export const loadConformancePlan = async (
   planPath: string
-): Promise<CompiledConformancePlan> {
+): Promise<CompiledConformancePlan> => {
   const absolutePlanPath = resolve(REPO_ROOT, planPath);
   const planValue = JSON.parse(
     await readFile(absolutePlanPath, "utf-8")
@@ -169,54 +393,21 @@ export async function loadConformancePlan(
     plan,
     scenarios,
   };
-}
-
-export async function findConformancePlans(): Promise<string[]> {
-  // No existsSync guard on the root: a missing spec/ (sparse checkout,
-  // wrong cwd) must fail loudly, never yield an empty plan set that lets
-  // downstream validation pass vacuously.
-  const paths = await findPlanFiles(SPEC_ROOT);
-  if (paths.length === 0) {
-    throw new Error(
-      `found zero conformance plans under ${SPEC_ROOT} — refusing to report a vacuous pass`
-    );
-  }
-  return paths.map((path) => relative(REPO_ROOT, path)).sort();
-}
-
-// Read and compile the plan schema once per process instead of once per
-// loadConformancePlan call (KRT-BM004; audit finding [C-02]). The schema is
-// a single fixed file (PLAN_SCHEMA_PATH), so the memo is a lone promise —
-// no cache-key collision surface. Caching the promise (not the resolved
-// value) also collapses concurrent first calls onto one read+compile.
-let planValidatorPromise: Promise<ValidateFunction> | undefined;
-
-function createPlanValidator(): Promise<ValidateFunction> {
-  planValidatorPromise ??= (async () => {
-    const schema = readJsonSchema(
-      JSON.parse(await readFile(PLAN_SCHEMA_PATH, "utf-8")) as unknown,
-      PLAN_SCHEMA_PATH
-    );
-    const ajv = new Ajv2020({ allErrors: true, strict: false });
-    return ajv.compile(schema);
-  })();
-
-  return planValidatorPromise;
-}
+};
 
 // Tolerates a port segment between "conformance" and "plans" (e.g.
 // spec/conformance/kernel/plans/x.json) — only the immediate parent
 // directory name and a "conformance" ancestor segment are required.
-function isConformancePlansPath(entryPath: string): boolean {
+const isConformancePlansPath = (entryPath: string): boolean => {
   const segments = entryPath.split("/");
   const plansIndex = segments.lastIndexOf("plans");
   return (
     plansIndex === segments.length - 2 &&
     segments.slice(0, plansIndex).includes("conformance")
   );
-}
+};
 
-async function findPlanFiles(directory: string): Promise<string[]> {
+const findPlanFiles = async (directory: string): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true });
   const plans: string[] = [];
 
@@ -238,210 +429,17 @@ async function findPlanFiles(directory: string): Promise<string[]> {
   }
 
   return plans;
-}
+};
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function readJsonSchema(value: unknown, label: string): AnySchema {
-  if (typeof value === "boolean" || isRecord(value)) {
-    return value;
-  }
-
-  throw new Error(`${label} must contain a JSON Schema object or boolean`);
-}
-
-function validatePlanIntegrity(plan: ConformancePlan, label: string): void {
-  const checkIds = new Set<string>();
-  const fixtureIds = new Set(Object.keys(plan.fixtures ?? {}));
-  const scenarioIds = new Set(Object.keys(plan.scenarios ?? {}));
-
-  for (const check of plan.checks) {
-    assertUniqueCheckId(checkIds, check.checkId, label);
-    validateCheckAssertions(check, label);
-    validateCheckReferences(check, fixtureIds, scenarioIds, label);
-  }
-}
-
-function assertUniqueCheckId(
-  seenCheckIds: Set<string>,
-  checkId: string,
-  label: string
-): void {
-  if (seenCheckIds.has(checkId)) {
-    throw new Error(`${label} repeats checkId ${checkId}`);
-  }
-
-  seenCheckIds.add(checkId);
-}
-
-function validateCheckAssertions(
-  check: ConformancePlanCheck,
-  label: string
-): void {
-  const context = `${label} check ${check.checkId}`;
-  const stepIds = new Set<string>();
-
-  for (const step of check.steps ?? []) {
-    assertUniqueStepId(stepIds, step.stepId, context);
-
-    for (const assertion of step.assertions ?? []) {
-      assertValidAssertion(assertion, context);
-    }
-  }
-
-  for (const assertion of check.assertions) {
-    assertValidAssertion(assertion, context);
-  }
-}
-
-function assertUniqueStepId(
-  seenStepIds: Set<string>,
-  stepId: string,
-  context: string
-): void {
-  if (seenStepIds.has(stepId)) {
-    throw new Error(`${context} repeats stepId ${stepId}`);
-  }
-
-  seenStepIds.add(stepId);
-}
-
-function validateCheckReferences(
-  check: ConformancePlanCheck,
-  fixtureIds: ReadonlySet<string>,
-  scenarioIds: ReadonlySet<string>,
-  label: string
-): void {
-  if (check.fixture !== undefined && !fixtureIds.has(check.fixture)) {
+export const findConformancePlans = async (): Promise<string[]> => {
+  // No existsSync guard on the root: a missing spec/ (sparse checkout,
+  // wrong cwd) must fail loudly, never yield an empty plan set that lets
+  // downstream validation pass vacuously.
+  const paths = await findPlanFiles(SPEC_ROOT);
+  if (paths.length === 0) {
     throw new Error(
-      `${label} check ${check.checkId} references unknown fixture ${check.fixture}`
+      `found zero conformance plans under ${SPEC_ROOT} — refusing to report a vacuous pass`
     );
   }
-
-  if (check.scenario !== undefined && !scenarioIds.has(check.scenario)) {
-    throw new Error(
-      `${label} check ${check.checkId} references unknown scenario ${check.scenario}`
-    );
-  }
-}
-
-function assertValidAssertion(
-  assertion: ConformancePlanAssertion,
-  context: string
-): void {
-  if (assertion.kind === "noEvent" && assertion.field !== undefined) {
-    throw new Error(`${context} has field configured on noEvent assertion`);
-  }
-
-  if (assertion.kind === "resultField" && assertion.field === undefined) {
-    throw new Error(
-      `${context} has no field configured on resultField assertion`
-    );
-  }
-}
-
-function expandRequiredEvidence(
-  check: ConformancePlanCheck
-): readonly string[] {
-  const evidence = new Set(check.evidence ?? []);
-
-  for (const assertion of check.assertions) {
-    const path = assertionRequiredEvidencePath(assertion);
-
-    if (path !== undefined) {
-      evidence.add(path);
-    }
-  }
-
-  for (const step of check.steps ?? []) {
-    for (const assertion of step.assertions ?? []) {
-      const path = stepAssertionRequiredEvidencePath(step.stepId, assertion);
-
-      if (path !== undefined) {
-        evidence.add(path);
-      }
-    }
-  }
-
-  return [...evidence].sort();
-}
-
-function assertionRequiredEvidencePath(
-  assertion: ConformancePlanAssertion
-): string | undefined {
-  switch (assertion.kind) {
-    case "evidenceField":
-    case "stateField": {
-      return assertion.field === undefined
-        ? undefined
-        : normalizeEvidencePath(assertion.field);
-    }
-    case "resultField": {
-      return assertion.field === undefined
-        ? undefined
-        : resultFieldRequiredEvidencePath(assertion.field);
-    }
-    case "errorEnvelope": {
-      return normalizeEvidencePath(assertion.path ?? "$.result.error");
-    }
-    default: {
-      return undefined;
-    }
-  }
-}
-
-function stepAssertionRequiredEvidencePath(
-  stepId: string,
-  assertion: ConformancePlanAssertion
-): string | undefined {
-  const path = assertionRequiredEvidencePath(assertion);
-
-  if (path === undefined) {
-    return undefined;
-  }
-
-  switch (assertion.kind) {
-    case "evidenceField": {
-      // Step assertions run against a step-local context, but required evidence
-      // is checked against the final trace context after the lifecycle finishes.
-      return `trace.${stepId}.evidence.${path}`;
-    }
-    case "resultField": {
-      if (assertion.field === undefined) {
-        return undefined;
-      }
-
-      return assertion.field === "$"
-        ? `result.trace.${stepId}.result`
-        : `result.trace.${stepId}.result.${normalizeEvidencePath(
-            assertion.field
-          )}`;
-    }
-    case "stateField": {
-      return `trace.${stepId}.state.${path}`;
-    }
-    case "errorEnvelope": {
-      return `trace.${stepId}.${path}`;
-    }
-    default: {
-      return undefined;
-    }
-  }
-}
-
-function normalizeEvidencePath(path: string): string {
-  return path.startsWith("$.") ? path.slice(2) : path;
-}
-
-function resultFieldRequiredEvidencePath(field: string): string {
-  if (field === "$") {
-    return "result";
-  }
-
-  // Required evidence is evaluated against the whole assertion context, so
-  // resultField paths must be rooted under `result` to avoid mirroring the
-  // evidence/state surface and accidentally accepting the wrong namespace.
-  return `result.${normalizeEvidencePath(field)}`;
-}
+  return paths.map((path) => relative(REPO_ROOT, path)).sort();
+};
