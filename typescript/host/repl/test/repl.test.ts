@@ -438,8 +438,8 @@ describe("repl host scenarios", () => {
 
       const envConfig = loadReplConfig(
         {
-          TUVREN_PLAYGROUND_AIMOCK_BASE_URL: "http://127.0.0.1:4011/v1",
-          TUVREN_PLAYGROUND_PROVIDER_MODE: providerMode,
+          TUVREN_REPL_AIMOCK_BASE_URL: "http://127.0.0.1:4011/v1",
+          TUVREN_REPL_PROVIDER_MODE: providerMode,
         },
         []
       );
@@ -464,8 +464,8 @@ describe("repl host scenarios", () => {
     const envConfig = loadReplConfig(
       {
         GEMINI_API_KEY: "gemini-key",
-        TUVREN_PLAYGROUND_MODEL_ID: "gemini-2.5-flash-lite",
-        TUVREN_PLAYGROUND_PROVIDER_MODE: "ai-sdk-google",
+        TUVREN_REPL_MODEL_ID: "gemini-2.5-flash-lite",
+        TUVREN_REPL_PROVIDER_MODE: "ai-sdk-google",
       },
       []
     );
@@ -488,8 +488,8 @@ describe("repl host scenarios", () => {
 
     const envConfig = loadReplConfig(
       {
-        TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50052",
-        TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
+        TUVREN_REPL_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50052",
+        TUVREN_REPL_KERNEL_MODE: "rust-grpc",
       },
       []
     );
@@ -502,7 +502,7 @@ describe("repl host scenarios", () => {
     const config = loadReplConfig(
       {
         GEMINI_API_KEY: "gemini-key",
-        TUVREN_PLAYGROUND_PROVIDER_MODE: "ai-sdk-google",
+        TUVREN_REPL_PROVIDER_MODE: "ai-sdk-google",
       },
       []
     );
@@ -526,14 +526,19 @@ describe("repl host scenarios", () => {
     );
   });
 
-  test("loads REPL-prefixed env aliases", () => {
+  test("loads REPL-prefixed environment configuration", () => {
     const config = loadReplConfig(
       {
         TUVREN_REPL_AIMOCK_BASE_URL: "http://127.0.0.1:4012/v1",
         TUVREN_REPL_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50053",
         TUVREN_REPL_KERNEL_MODE: "rust-grpc",
+        TUVREN_REPL_MODEL_ID: " fixture-model ",
+        TUVREN_REPL_POSTGRES_DATABASE: " configured-database ",
+        TUVREN_REPL_POSTGRES_SCHEMA: "configured-schema",
         TUVREN_REPL_PROVIDER_MODE: "aimock-openai",
         TUVREN_REPL_SCENARIO: "metadata",
+        TUVREN_REPL_SCOPE: " tenant-a ",
+        TUVREN_REPL_SQLITE_PATH: "/configured/repl.sqlite",
         TUVREN_REPL_SYSTEM_PROMPT: "Be concise.",
       },
       []
@@ -542,20 +547,194 @@ describe("repl host scenarios", () => {
     expect(config.aimockBaseUrl).toBe("http://127.0.0.1:4012/v1");
     expect(config.kernelGrpcBaseUrl).toBe("http://127.0.0.1:50053");
     expect(config.kernelMode).toBe("rust-grpc");
+    expect(config.modelId).toBe("fixture-model");
+    expect(config.postgresDatabase).toBe("configured-database");
+    expect(config.postgresSchemaName).toBe("configured-schema");
     expect(config.providerMode).toBe("aimock-openai");
     expect(config.scenario).toBe("metadata");
+    expect(config.scope).toBe("tenant-a");
+    expect(config.sqlitePath).toBe("/configured/repl.sqlite");
     expect(config.systemPrompt).toBe("Be concise.");
   });
 
-  test("loads legacy system-instructions alias", () => {
+  test("loads REPL-prefixed system instructions", () => {
     const config = loadReplConfig(
       {
-        TUVREN_PLAYGROUND_SYSTEM_INSTRUCTIONS: "Prefer bullet points.",
+        TUVREN_REPL_SYSTEM_INSTRUCTIONS: "Prefer bullet points.",
       },
       []
     );
 
     expect(config.systemPrompt).toBe("Prefer bullet points.");
+  });
+
+  test("ignores every obsolete playground-prefixed configuration setting", () => {
+    const config = loadReplConfig(
+      {
+        TUVREN_PLAYGROUND_AIMOCK_BASE_URL: "http://obsolete.example/v1",
+        TUVREN_PLAYGROUND_BACKEND: "unsupported-backend",
+        TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://obsolete.example/grpc",
+        TUVREN_PLAYGROUND_KERNEL_MODE: "unsupported-kernel",
+        TUVREN_PLAYGROUND_MODEL_ID: "obsolete-model",
+        TUVREN_PLAYGROUND_POSTGRES_DATABASE: "obsolete-database",
+        TUVREN_PLAYGROUND_POSTGRES_SCHEMA: "obsolete-schema",
+        TUVREN_PLAYGROUND_PROVIDER_MODE: "unsupported-provider",
+        TUVREN_PLAYGROUND_SCENARIO: "unsupported-scenario",
+        TUVREN_PLAYGROUND_SCOPE: "obsolete-tenant",
+        TUVREN_PLAYGROUND_SQLITE_PATH: "/obsolete/repl.sqlite",
+        TUVREN_PLAYGROUND_SYSTEM_INSTRUCTIONS: "Obsolete instructions.",
+        TUVREN_PLAYGROUND_SYSTEM_PROMPT: "Obsolete prompt.",
+      },
+      []
+    );
+
+    expect(config).toEqual(loadReplConfig({}, []));
+  });
+
+  test("obsolete playground settings cannot satisfy required configuration", () => {
+    expectReplConfigError(
+      () =>
+        loadReplConfig(
+          { TUVREN_PLAYGROUND_SQLITE_PATH: "/obsolete/repl.sqlite" },
+          ["--backend", "sqlite"]
+        ),
+      "sqlite repl scenarios require --sqlite-path or TUVREN_REPL_SQLITE_PATH"
+    );
+    expectReplConfigError(
+      () =>
+        loadReplConfig(
+          { TUVREN_PLAYGROUND_AIMOCK_BASE_URL: "http://obsolete.example/v1" },
+          ["--provider", "aimock-openai"]
+        ),
+      "aimock-openai repl provider requires --aimock-base-url or TUVREN_REPL_AIMOCK_BASE_URL"
+    );
+    expectReplConfigError(
+      () =>
+        loadReplConfig(
+          {
+            TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL:
+              "http://obsolete.example/grpc",
+          },
+          ["--kernel-mode", "rust-grpc"]
+        ),
+      "rust-grpc repl kernel requires --kernel-grpc-base-url or TUVREN_REPL_KERNEL_GRPC_BASE_URL"
+    );
+  });
+
+  test("command-line settings take precedence over REPL-prefixed environment settings", () => {
+    const config = loadReplConfig(
+      {
+        PGDATABASE: "pg-database",
+        TUVREN_REPL_AIMOCK_BASE_URL: "http://env.example/v1",
+        TUVREN_REPL_BACKEND: "sqlite",
+        TUVREN_REPL_KERNEL_GRPC_BASE_URL: "http://env.example/grpc",
+        TUVREN_REPL_KERNEL_MODE: "rust-grpc",
+        TUVREN_REPL_MODEL_ID: "env-model",
+        TUVREN_REPL_POSTGRES_DATABASE: "env-database",
+        TUVREN_REPL_POSTGRES_SCHEMA: "env-schema",
+        TUVREN_REPL_PROVIDER_MODE: "aimock-openai",
+        TUVREN_REPL_SCENARIO: "tools",
+        TUVREN_REPL_SCOPE: "env-tenant",
+        TUVREN_REPL_SQLITE_PATH: "/env/repl.sqlite",
+      },
+      [
+        "--aimock-base-url",
+        " http://argv.example/v1 ",
+        "--backend",
+        "postgres",
+        "--kernel-grpc-base-url",
+        " http://argv.example/grpc ",
+        "--kernel-mode",
+        "typescript-local",
+        "--model-id",
+        " argv-model ",
+        "--postgres-database",
+        " argv-database ",
+        "--postgres-schema",
+        "argv-schema",
+        "--provider",
+        "fixture",
+        "--scenario",
+        " metadata ",
+        "--scope",
+        " argv-tenant ",
+        "--sqlite-path",
+        "/argv/repl.sqlite",
+      ]
+    );
+
+    expect(config).toMatchObject({
+      aimockBaseUrl: "http://argv.example/v1",
+      backend: "postgres",
+      kernelGrpcBaseUrl: "http://argv.example/grpc",
+      kernelMode: "typescript-local",
+      modelId: "argv-model",
+      postgresDatabase: "argv-database",
+      postgresSchemaName: "argv-schema",
+      providerMode: "fixture",
+      scenario: "metadata",
+      scope: "argv-tenant",
+      sqlitePath: "/argv/repl.sqlite",
+    });
+  });
+
+  test("REPL database settings take precedence over PGDATABASE", () => {
+    expect(
+      loadReplConfig(
+        {
+          PGDATABASE: "pg-database",
+          TUVREN_REPL_BACKEND: "postgres",
+          TUVREN_REPL_POSTGRES_DATABASE: "repl-database",
+        },
+        []
+      ).postgresDatabase
+    ).toBe("repl-database");
+    expect(
+      loadReplConfig(
+        {
+          PGDATABASE: "pg-database",
+          TUVREN_PLAYGROUND_POSTGRES_DATABASE: "obsolete-database",
+          TUVREN_REPL_BACKEND: "postgres",
+        },
+        []
+      ).postgresDatabase
+    ).toBe("pg-database");
+  });
+
+  test("REPL system prompt takes precedence over instructions before normalization", () => {
+    for (const systemPrompt of ["", "   ", "  Current prompt.  "]) {
+      const config = loadReplConfig(
+        {
+          TUVREN_REPL_SYSTEM_INSTRUCTIONS: "Current instructions.",
+          TUVREN_REPL_SYSTEM_PROMPT: systemPrompt,
+        },
+        []
+      );
+
+      expect(config.systemPrompt).toBe(systemPrompt.trim() || undefined);
+    }
+
+    expect(
+      loadReplConfig(
+        {
+          TUVREN_PLAYGROUND_SYSTEM_PROMPT: "Obsolete prompt.",
+          TUVREN_REPL_SYSTEM_INSTRUCTIONS: "  Current instructions.  ",
+        },
+        []
+      ).systemPrompt
+    ).toBe("Current instructions.");
+  });
+
+  test("blank REPL scope remains unbound", () => {
+    for (const scope of ["", "   "]) {
+      expect(
+        loadReplConfig({ TUVREN_REPL_SCOPE: scope }, []).scope
+      ).toBeUndefined();
+      expect(
+        loadReplConfig({ TUVREN_REPL_SCOPE: "env-tenant" }, ["--scope", scope])
+          .scope
+      ).toBeUndefined();
+    }
   });
 
   test("rejects unsupported REPL options before configuration is loaded", () => {
@@ -568,20 +747,29 @@ describe("repl host scenarios", () => {
   test("rejects aimock provider configuration without a usable base URL", () => {
     for (const providerMode of AIMOCK_REPL_PROVIDER_MODES) {
       expectReplConfigError(
+        () =>
+          createReplHost({
+            backend: "memory",
+            providerMode,
+            scenario: "streaming",
+          }),
+        `${providerMode} repl provider requires --aimock-base-url or TUVREN_REPL_AIMOCK_BASE_URL`
+      );
+      expectReplConfigError(
         () => loadReplConfig({}, ["--provider", providerMode]),
-        `${providerMode} repl provider requires --aimock-base-url, TUVREN_REPL_AIMOCK_BASE_URL, or TUVREN_PLAYGROUND_AIMOCK_BASE_URL`
+        `${providerMode} repl provider requires --aimock-base-url or TUVREN_REPL_AIMOCK_BASE_URL`
       );
 
       expectReplConfigError(
         () =>
           loadReplConfig(
             {
-              TUVREN_PLAYGROUND_AIMOCK_BASE_URL: "   ",
-              TUVREN_PLAYGROUND_PROVIDER_MODE: providerMode,
+              TUVREN_REPL_AIMOCK_BASE_URL: "   ",
+              TUVREN_REPL_PROVIDER_MODE: providerMode,
             },
             []
           ),
-        `${providerMode} repl provider requires --aimock-base-url, TUVREN_REPL_AIMOCK_BASE_URL, or TUVREN_PLAYGROUND_AIMOCK_BASE_URL`
+        `${providerMode} repl provider requires --aimock-base-url or TUVREN_REPL_AIMOCK_BASE_URL`
       );
     }
   });
@@ -598,7 +786,7 @@ describe("repl host scenarios", () => {
           {
             GEMINI_API_KEY: "   ",
             GOOGLE_GENERATIVE_AI_API_KEY: "",
-            TUVREN_PLAYGROUND_PROVIDER_MODE: "ai-sdk-google",
+            TUVREN_REPL_PROVIDER_MODE: "ai-sdk-google",
           },
           []
         ),
@@ -609,19 +797,19 @@ describe("repl host scenarios", () => {
   test("rejects rust-grpc kernel configuration without a usable base URL", () => {
     expectReplConfigError(
       () => loadReplConfig({}, ["--kernel-mode", "rust-grpc"]),
-      "rust-grpc repl kernel requires --kernel-grpc-base-url, TUVREN_REPL_KERNEL_GRPC_BASE_URL, or TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL"
+      "rust-grpc repl kernel requires --kernel-grpc-base-url or TUVREN_REPL_KERNEL_GRPC_BASE_URL"
     );
 
     expectReplConfigError(
       () =>
         loadReplConfig(
           {
-            TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: " ",
-            TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
+            TUVREN_REPL_KERNEL_GRPC_BASE_URL: " ",
+            TUVREN_REPL_KERNEL_MODE: "rust-grpc",
           },
           []
         ),
-      "rust-grpc repl kernel requires --kernel-grpc-base-url, TUVREN_REPL_KERNEL_GRPC_BASE_URL, or TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL"
+      "rust-grpc repl kernel requires --kernel-grpc-base-url or TUVREN_REPL_KERNEL_GRPC_BASE_URL"
     );
   });
 
@@ -630,8 +818,8 @@ describe("repl host scenarios", () => {
       () =>
         loadReplConfig(
           {
-            TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50051",
-            TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
+            TUVREN_REPL_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50051",
+            TUVREN_REPL_KERNEL_MODE: "rust-grpc",
           },
           ["--backend", "sqlite", "--sqlite-path", "auto"]
         ),
@@ -644,8 +832,8 @@ describe("repl host scenarios", () => {
       () =>
         loadReplConfig(
           {
-            TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50051",
-            TUVREN_PLAYGROUND_KERNEL_MODE: "rust-grpc",
+            TUVREN_REPL_KERNEL_GRPC_BASE_URL: "http://127.0.0.1:50051",
+            TUVREN_REPL_KERNEL_MODE: "rust-grpc",
           },
           [
             "--backend",
@@ -803,8 +991,8 @@ describe("repl host scenarios", () => {
     const config = loadReplConfig(
       {
         GEMINI_API_KEY: "gemini-key",
-        TUVREN_PLAYGROUND_PROVIDER_MODE: "ai-sdk-google",
-        TUVREN_PLAYGROUND_SCENARIO: "tools",
+        TUVREN_REPL_PROVIDER_MODE: "ai-sdk-google",
+        TUVREN_REPL_SCENARIO: "tools",
       },
       []
     );

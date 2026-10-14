@@ -211,13 +211,12 @@ export const readReplEnv = (
     | "SQLITE_PATH"
     | "SYSTEM_INSTRUCTIONS"
     | "SYSTEM_PROMPT"
-): string | undefined =>
-  env[`TUVREN_REPL_${suffix}`] ?? env[`TUVREN_PLAYGROUND_${suffix}`];
+): string | undefined => env[`TUVREN_REPL_${suffix}`];
 
 export const assertValidReplConfig = (config: ReplConfig): void => {
   if (config.backend === "sqlite" && config.sqlitePath === undefined) {
     throw new TuvrenRuntimeError(
-      "sqlite repl scenarios require --sqlite-path, TUVREN_REPL_SQLITE_PATH, or TUVREN_PLAYGROUND_SQLITE_PATH",
+      "sqlite repl scenarios require --sqlite-path or TUVREN_REPL_SQLITE_PATH",
       {
         code: INVALID_REPL_CONFIG_CODE,
       }
@@ -229,7 +228,7 @@ export const assertValidReplConfig = (config: ReplConfig): void => {
     config.aimockBaseUrl === undefined
   ) {
     throw new TuvrenRuntimeError(
-      `${config.providerMode} repl provider requires --aimock-base-url, TUVREN_REPL_AIMOCK_BASE_URL, or TUVREN_PLAYGROUND_AIMOCK_BASE_URL`,
+      `${config.providerMode} repl provider requires --aimock-base-url or TUVREN_REPL_AIMOCK_BASE_URL`,
       {
         code: INVALID_REPL_CONFIG_CODE,
       }
@@ -253,7 +252,7 @@ export const assertValidReplConfig = (config: ReplConfig): void => {
     config.kernelGrpcBaseUrl === undefined
   ) {
     throw new TuvrenRuntimeError(
-      "rust-grpc repl kernel requires --kernel-grpc-base-url, TUVREN_REPL_KERNEL_GRPC_BASE_URL, or TUVREN_PLAYGROUND_KERNEL_GRPC_BASE_URL",
+      "rust-grpc repl kernel requires --kernel-grpc-base-url or TUVREN_REPL_KERNEL_GRPC_BASE_URL",
       {
         code: INVALID_REPL_CONFIG_CODE,
       }
