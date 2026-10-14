@@ -24,26 +24,26 @@ import type {
 } from "./index.js";
 
 export interface StdioConformanceAdapter {
-  createInstance?(input: unknown): Promise<unknown>;
-  destroyInstance?(instance: unknown): Promise<void>;
-  dispatch(
+  createInstance?: (input: unknown) => Promise<unknown>;
+  destroyInstance?: (instance: unknown) => Promise<void>;
+  dispatch: (
     operation: string,
     input: unknown,
     controls: AdapterControls,
     instance?: unknown
-  ): Promise<OperationOutcome>;
-  events?(
+  ) => OperationOutcome | Promise<OperationOutcome>;
+  events?: (
     operation: string,
     input: unknown,
     controls: AdapterControls,
     instance?: unknown
-  ): Promise<unknown[]> | AsyncIterable<unknown>;
-  initialize(
+  ) => Promise<unknown[]> | AsyncIterable<unknown>;
+  initialize: (
     packetId: string,
     planVersion: string
-  ): Promise<AdapterCapabilities>;
-  inspectState?(query: unknown, instance?: unknown): Promise<unknown>;
-  shutdown?(): Promise<void>;
+  ) => AdapterCapabilities | Promise<AdapterCapabilities>;
+  inspectState?: (query: unknown, instance?: unknown) => Promise<unknown>;
+  shutdown?: () => Promise<void>;
 }
 
 interface JsonRpcRequest {
