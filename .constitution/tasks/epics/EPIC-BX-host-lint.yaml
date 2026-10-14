@@ -761,18 +761,18 @@ closeout:
         - typescript/host/repl/src/index.ts
         - typescript/host/repl/src/lib/repl-serve-ws.ts
       commit: e16b1bb7d092df82ef4efe3eb2a1f297b327dbdd
-    - summary: Project typed client file-part bytes across realms to authority JSON arrays without mutating caller data. Require a valid handshake first, validate protocol/session/payload and non-whitespace fields, and reject non-event cursors before callback, replay-state or capability side effects.
+    - summary: Project typed client file-part bytes across realms to authority JSON arrays without mutating caller data. Require a valid handshake first, validate protocol/session/payload and non-whitespace fields, and enforce cursor presence exactly on event frames before callback, replay-state or capability side effects.
       kind: pattern
       paths: [typescript/host/session-client/src/lib/session-client.ts, typescript/host/session-client/test/session-client.test.ts, typescript/host/session/test/duplex-session-binding.test.ts]
-      commit: 2b41572
+      commit: 9be1746
     - summary: Declare dependency production inputs on all four native host lint targets after executed Nx probes prove imported source was omitted; retain every inherited checker/config/lock input and keep source typecheck targets unchanged.
       kind: convention
       paths: [typescript/host/session/project.json, typescript/host/remote-session/project.json, typescript/host/session-client/project.json, typescript/host/repl/project.json]
       commit: a8b2fde
-    - summary: Use a real Node VM realm fixture and deferred negative cases followed by valid handler/result controls to prove supported typed bytes, handshake transitions, cursor preservation and reconnect queue behavior.
+    - summary: Use a real Node VM realm fixture, a complete authority cursor/kind matrix and deferred negative cases followed by valid controls; independently remove each handshake/cursor guard to prove its regression test fails, then restore exact source bytes.
       kind: pattern
       paths: [typescript/host/session-client/test/session-client-receive-guards.test.ts]
-      commit: 2b41572
+      commit: 9be1746
   settled:
     - record: tech-spec/data-models/transcript-file.meta.yaml
       evidence:
