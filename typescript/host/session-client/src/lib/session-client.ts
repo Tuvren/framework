@@ -542,36 +542,39 @@ export const createSessionClient = (
       return;
     }
 
-    Promise.resolve()
-      .then(() =>
-        handler(envelope.input, {
-          callId: envelope.callId,
-          capabilityId: envelope.capabilityId,
-          idempotencyKey: envelope.idempotencyKey,
-        })
-      )
-      .then((content) => {
-        settle(envelope, {
-          callId: envelope.callId,
-          // `content ?? null`, not `content` verbatim: a handler that
-          // resolves `undefined` (the common case for a void handler) would
-          // otherwise produce `JSON.stringify({..., content: undefined,
-          // ...})`, which drops the `content` key entirely. Both the
-          // server's `validateInboundFrame` and
-          // `@tuvren/remote-session`'s `extractSettleableClientResultCallId`
-          // require `"content" in result` to accept a `client_result`; a
-          // dropped key fails that check, the frame is rejected as
-          // `session_frame_invalid`, and the redelivery-tracking entry this
-          // callId depended on is never cleared — triggering a redelivery
-          // loop and, eventually, a dispatch timeout. `null` serializes and
-          // satisfies both checks.
-          content: content ?? null,
-          leaseToken: envelope.leaseToken,
-        });
-      })
-      .catch((error: unknown) => {
+    void (async () => {
+      try {
+        await Promise.resolve()
+          .then(() =>
+            handler(envelope.input, {
+              callId: envelope.callId,
+              capabilityId: envelope.capabilityId,
+              idempotencyKey: envelope.idempotencyKey,
+            })
+          )
+          .then((content) => {
+            settle(envelope, {
+              callId: envelope.callId,
+              // `content ?? null`, not `content` verbatim: a handler that
+              // resolves `undefined` (the common case for a void handler) would
+              // otherwise produce `JSON.stringify({..., content: undefined,
+              // ...})`, which drops the `content` key entirely. Both the
+              // server's `validateInboundFrame` and
+              // `@tuvren/remote-session`'s `extractSettleableClientResultCallId`
+              // require `"content" in result` to accept a `client_result`; a
+              // dropped key fails that check, the frame is rejected as
+              // `session_frame_invalid`, and the redelivery-tracking entry this
+              // callId depended on is never cleared — triggering a redelivery
+              // loop and, eventually, a dispatch timeout. `null` serializes and
+              // satisfies both checks.
+              content: content ?? null,
+              leaseToken: envelope.leaseToken,
+            });
+          });
+      } catch (error: unknown) {
         settle(envelope, errorResult(envelope, errorMessageOf(error)));
-      });
+      }
+    })();
   };
 
   const handleOutboundFrame = (frame: unknown): void => {
