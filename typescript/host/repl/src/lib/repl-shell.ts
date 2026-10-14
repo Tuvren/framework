@@ -179,6 +179,457 @@ interface ApproveTurnOptions {
   awaitCompletion?: boolean;
 }
 
+const isScenarioName = (value: string): value is ReplScenarioName =>
+  SCENARIO_NAMES.has(value as ReplScenarioName);
+
+const isTurnScenarioName = (value: string): value is ReplScenarioName =>
+  TURN_SCENARIO_NAMES.has(value as ReplScenarioName);
+
+const readUnsupportedTurnScenarioMessage = (
+  value: string
+): string | undefined => {
+  if (!isScenarioName(value) || isTurnScenarioName(value)) {
+    return undefined;
+  }
+
+  return value === "orchestration"
+    ? 'Scenario "orchestration" is not supported through .turn start. Use .orch commands or the scripted scenario runner instead.'
+    : `Scenario "${value}" is not supported through .turn start. Use the scripted scenario runner instead.`;
+};
+
+const readApprovalShortcutMode = (
+  shell: ReplShell,
+  input: string
+): string | undefined => {
+  if (shell.activeTurn?.handle.status().approval === undefined) {
+    return undefined;
+  }
+
+  switch (input) {
+    case "1": {
+      return "approve";
+    }
+    case "2": {
+      return "reject";
+    }
+    case "3": {
+      return "edit";
+    }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+const normalizeApprovalMode = (mode: string): string => {
+  switch (mode) {
+    case "1": {
+      return "approve";
+    }
+    case "2": {
+      return "reject";
+    }
+    case "3": {
+      return "edit";
+    }
+    default: {
+      return mode;
+    }
+  }
+};
+
+export const readShellTextArgument = (
+  args: readonly string[]
+): string | undefined => {
+  const value = args.join(" ").trim();
+
+  if (value.length === 0) {
+    return undefined;
+  }
+
+  // Rejoin split tokens so quoted SQLite paths survive the shell parser.
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+
+  return value;
+};
+
+const formatJson = (value: unknown): string => JSON.stringify(value, null, 2);
+
+const collect = async <T>(
+  events: AsyncIterable<T>,
+  onEvent?: (event: T) => void
+): Promise<T[]> => {
+  const output: T[] = [];
+
+  for await (const event of events) {
+    onEvent?.(event);
+    output.push(event);
+  }
+
+  return output;
+};
+
+const findMockMcpStdioServerPath = (): string => {
+  for (const start of [process.cwd(), import.meta.dirname]) {
+    let current = start;
+
+    while (true) {
+      const candidate = join(current, ...MOCK_MCP_STDIO_SERVER_PATH_SEGMENTS);
+
+      if (existsSync(candidate)) {
+        return candidate;
+      }
+
+      const parent = dirname(current);
+
+      if (parent === current) {
+        break;
+      }
+
+      current = parent;
+    }
+  }
+
+  throw new Error("unable to locate mock MCP stdio server");
+};
+
+const ensureThread = async (shell: ReplShell): Promise<ReplThreadSummary> => {
+  if (shell.thread === undefined) {
+    shell.thread = await shell.host.createThread();
+  }
+
+  return shell.thread;
+};
+
+const createTurnExecutionRequest = (
+  config: ReplConfig,
+  input: string
+): {
+  config?: Parameters<ReplHost["executeTurn"]>[0]["config"];
+  signal: InputSignal;
+} => {
+  if (!isTurnScenarioName(input)) {
+    return {
+      signal: textSignal(input),
+    };
+  }
+
+  const scenarioConfig = {
+    ...config,
+    scenario: input,
+  } satisfies ReplConfig;
+  const executionPlan = createScenarioExecutionPlan(scenarioConfig);
+
+  return {
+    config: {
+      ...executionPlan.config,
+      ...(input === "approval"
+        ? {
+            maxParallelToolCalls: 2,
+          }
+        : {}),
+      ...(input === "cancel"
+        ? {
+            loopPolicy: CONTINUE_ONCE_POLICY,
+          }
+        : {}),
+      ...(input === "extension"
+        ? {
+            extensions: [createProofExtension()],
+          }
+        : {}),
+      model: executionPlan.model,
+      name: "primary",
+      responseFormat:
+        input === "structured"
+          ? {
+              name: "repl_summary",
+              schema: {
+                properties: {
+                  scenario: { type: "string" },
+                  status: { type: "string" },
+                },
+                required: ["scenario", "status"],
+                type: "object",
+              },
+            }
+          : undefined,
+      tools: executionPlan.tools,
+    },
+    signal: executionPlan.signal,
+  };
+};
+
+const createApprovalResponse = (
+  approval: NonNullable<ReturnType<ExecutionHandle["status"]>["approval"]>,
+  mode: string
+) => ({
+  decisions: approval.toolCalls.map((toolCall) => {
+    switch (mode) {
+      case "edit": {
+        return toolCall.name === "email"
+          ? {
+              callId: toolCall.callId,
+              editedInput: {
+                subject: "Edited status update",
+                to: "ops@example.com",
+              },
+              message: "Edited through the REPL host.",
+              type: "edit" as const,
+            }
+          : {
+              callId: toolCall.callId,
+              message: "Approved through the REPL host.",
+              type: "approve" as const,
+            };
+      }
+      case "reject": {
+        return {
+          callId: toolCall.callId,
+          message: "Rejected through the REPL host.",
+          type: "reject" as const,
+        };
+      }
+      default: {
+        return {
+          callId: toolCall.callId,
+          message: "Approved through the REPL host.",
+          type: "approve" as const,
+        };
+      }
+    }
+  }),
+});
+
+const readShellStatus = (shell: ReplShell): Record<string, unknown> => ({
+  activeBranchId: shell.thread?.branchId,
+  activeOrchestrationPhase: shell.activeOrchestration?.handle.status().phase,
+  activeThreadId: shell.thread?.threadId,
+  activeTurnPhase: shell.activeTurn?.handle.status().phase,
+  backend: shell.config.backend,
+  kernelMode: shell.config.kernelMode ?? "typescript-local",
+  postgresDatabase: shell.config.postgresDatabase,
+  postgresSchemaName: shell.config.postgresSchemaName,
+  providerMode: shell.config.providerMode,
+  sqlitePath: shell.config.sqlitePath,
+});
+
+const handleMcpCommand = async (
+  args: readonly string[]
+): Promise<ReplCommandResult> => {
+  if (args[0] !== "smoke") {
+    return { output: 'Expected ".mcp smoke".' };
+  }
+
+  const source = await createMcpToolSource({
+    args: [findMockMcpStdioServerPath()],
+    command: "bun",
+    name: "mcp",
+    transport: "stdio",
+  });
+
+  try {
+    const tool = source.tools.find((entry) => entry.name === "mcp.echo");
+
+    if (tool === undefined) {
+      return { output: 'MCP smoke failed: missing "mcp.echo" tool.' };
+    }
+
+    const output = await tool.execute(
+      { message: "hello from repl" },
+      {
+        callId: "repl-mcp-smoke",
+        name: tool.name,
+      }
+    );
+
+    return {
+      output: formatJson({
+        echo: output,
+        toolNames: source.tools.map((entry) => entry.name).sort(),
+      }),
+    };
+  } finally {
+    await source.close();
+  }
+};
+
+const selectBackend = (
+  shell: ReplShell,
+  args: readonly string[]
+): ReplCommandResult => {
+  const backend = args[0];
+
+  if (backend !== "memory" && backend !== "postgres" && backend !== "sqlite") {
+    return {
+      output:
+        'Expected ".backend <memory|sqlite|postgres> [path|database] [schema|auto]".',
+    };
+  }
+
+  let nextConfig: ReplConfig;
+
+  if (backend === "memory") {
+    nextConfig = {
+      ...shell.config,
+      backend,
+      postgresDatabase: undefined,
+      postgresSchemaName: undefined,
+      sqlitePath: undefined,
+    };
+  } else if (backend === "postgres") {
+    const database = args[1];
+    const rawSchema = readShellTextArgument(args.slice(2));
+
+    if (database === undefined || database.length === 0) {
+      return {
+        output:
+          'PostgreSQL mode requires a database name and optionally a schema or the literal value "auto".',
+      };
+    }
+
+    nextConfig = {
+      ...shell.config,
+      backend,
+      postgresDatabase: database,
+      postgresSchemaName:
+        rawSchema === "auto"
+          ? `tuvren-repl-${randomUUID().replaceAll("-", "_")}`
+          : rawSchema,
+      sqlitePath: undefined,
+    };
+  } else {
+    nextConfig = {
+      ...shell.config,
+      backend,
+      postgresDatabase: undefined,
+      postgresSchemaName: undefined,
+      sqlitePath:
+        readShellTextArgument(args.slice(1)) === "auto"
+          ? join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`)
+          : readShellTextArgument(args.slice(1)),
+    };
+  }
+
+  if (backend === "sqlite" && nextConfig.sqlitePath === undefined) {
+    return {
+      output: 'SQLite mode requires a path or the literal value "auto".',
+    };
+  }
+
+  assertValidReplConfig(nextConfig);
+  cancelActiveShellWork(shell);
+  shell.config = nextConfig;
+  shell.host = createReplHost(nextConfig);
+  shell.activeOrchestration = undefined;
+  shell.activeTurn = undefined;
+  shell.lastCanonicalEvents = undefined;
+  shell.lastOrchestrationEvents = undefined;
+  shell.lastProjection = undefined;
+  shell.thread = undefined;
+
+  return {
+    output: formatJson({
+      backend: shell.config.backend,
+      postgresDatabase: shell.config.postgresDatabase ?? null,
+      postgresSchemaName: shell.config.postgresSchemaName ?? null,
+      sqlitePath: shell.config.sqlitePath ?? null,
+    }),
+  };
+};
+
+const handleThreadCommand = async (
+  shell: ReplShell,
+  args: readonly string[]
+): Promise<ReplCommandResult> => {
+  const subcommand = args[0];
+
+  switch (subcommand) {
+    case "new": {
+      cancelActiveShellWork(shell);
+      shell.thread = await shell.host.createThread();
+      shell.activeOrchestration = undefined;
+      shell.activeTurn = undefined;
+      shell.lastCanonicalEvents = undefined;
+      shell.lastProjection = undefined;
+      shell.lastOrchestrationEvents = undefined;
+      return { output: formatJson(shell.thread) };
+    }
+    case "show": {
+      return { output: formatJson(shell.thread ?? null) };
+    }
+    default: {
+      return { output: 'Expected ".thread <new|show>".' };
+    }
+  }
+};
+
+const handleBranchCommand = async (
+  shell: ReplShell,
+  args: readonly string[]
+): Promise<ReplCommandResult> => {
+  if (args[0] !== "fork") {
+    return { output: 'Expected ".branch fork".' };
+  }
+
+  if (hasActiveShellWork(shell)) {
+    return {
+      output:
+        "Active work already exists on the current branch. Await or cancel it before forking a branch.",
+    };
+  }
+
+  const thread = await ensureThread(shell);
+  const turnNodeHash = thread.headTurnNodeHash ?? thread.rootTurnNodeHash;
+  const branch = await shell.host.branchFromHead({
+    threadId: thread.threadId,
+    turnNodeHash,
+  });
+
+  shell.thread = {
+    ...thread,
+    branchId: branch.branchId,
+    headTurnNodeHash: branch.headTurnNodeHash,
+  };
+
+  return { output: formatJson(shell.thread) };
+};
+
+const showMessages = async (
+  shell: ReplShell,
+  args: readonly string[]
+): Promise<ReplCommandResult> => {
+  if (args[0] !== "show") {
+    return { output: 'Expected ".messages show".' };
+  }
+
+  const { thread } = shell;
+
+  if (thread === undefined) {
+    return { output: "No active thread exists." };
+  }
+
+  const messages = await shell.host.readBranchMessages(thread.branchId);
+  return { output: formatJson(messages) };
+};
+
+const showEvents = (
+  shell: ReplShell,
+  args: readonly string[]
+): ReplCommandResult => {
+  if (args[0] !== "show") {
+    return { output: 'Expected ".events show".' };
+  }
+
+  // Keep `.events show` aligned across turn and orchestration awaits.
+  return { output: formatJson(shell.lastCanonicalEvents ?? []) };
+};
+
 export function createReplShell(config: ReplConfig): ReplShell {
   return createReplShellFromHost(config, createReplHost(config));
 }
@@ -284,232 +735,6 @@ export async function runReplCommand(
       };
     }
   }
-}
-
-async function handleMcpCommand(
-  args: readonly string[]
-): Promise<ReplCommandResult> {
-  if (args[0] !== "smoke") {
-    return { output: 'Expected ".mcp smoke".' };
-  }
-
-  const source = await createMcpToolSource({
-    args: [findMockMcpStdioServerPath()],
-    command: "bun",
-    name: "mcp",
-    transport: "stdio",
-  });
-
-  try {
-    const tool = source.tools.find((entry) => entry.name === "mcp.echo");
-
-    if (tool === undefined) {
-      return { output: 'MCP smoke failed: missing "mcp.echo" tool.' };
-    }
-
-    const output = await tool.execute(
-      { message: "hello from repl" },
-      {
-        callId: "repl-mcp-smoke",
-        name: tool.name,
-      }
-    );
-
-    return {
-      output: formatJson({
-        echo: output,
-        toolNames: source.tools.map((entry) => entry.name).sort(),
-      }),
-    };
-  } finally {
-    await source.close();
-  }
-}
-
-function readShellStatus(shell: ReplShell): Record<string, unknown> {
-  return {
-    activeBranchId: shell.thread?.branchId,
-    activeOrchestrationPhase: shell.activeOrchestration?.handle.status().phase,
-    activeThreadId: shell.thread?.threadId,
-    activeTurnPhase: shell.activeTurn?.handle.status().phase,
-    backend: shell.config.backend,
-    kernelMode: shell.config.kernelMode ?? "typescript-local",
-    postgresDatabase: shell.config.postgresDatabase,
-    postgresSchemaName: shell.config.postgresSchemaName,
-    providerMode: shell.config.providerMode,
-    sqlitePath: shell.config.sqlitePath,
-  };
-}
-
-function selectBackend(
-  shell: ReplShell,
-  args: readonly string[]
-): ReplCommandResult {
-  const backend = args[0];
-
-  if (backend !== "memory" && backend !== "postgres" && backend !== "sqlite") {
-    return {
-      output:
-        'Expected ".backend <memory|sqlite|postgres> [path|database] [schema|auto]".',
-    };
-  }
-
-  let nextConfig: ReplConfig;
-
-  if (backend === "memory") {
-    nextConfig = {
-      ...shell.config,
-      backend,
-      postgresDatabase: undefined,
-      postgresSchemaName: undefined,
-      sqlitePath: undefined,
-    };
-  } else if (backend === "postgres") {
-    const database = args[1];
-    const rawSchema = readShellTextArgument(args.slice(2));
-
-    if (database === undefined || database.length === 0) {
-      return {
-        output:
-          'PostgreSQL mode requires a database name and optionally a schema or the literal value "auto".',
-      };
-    }
-
-    nextConfig = {
-      ...shell.config,
-      backend,
-      postgresDatabase: database,
-      postgresSchemaName:
-        rawSchema === "auto"
-          ? `tuvren-repl-${randomUUID().replaceAll("-", "_")}`
-          : rawSchema,
-      sqlitePath: undefined,
-    };
-  } else {
-    nextConfig = {
-      ...shell.config,
-      backend,
-      postgresDatabase: undefined,
-      postgresSchemaName: undefined,
-      sqlitePath:
-        readShellTextArgument(args.slice(1)) === "auto"
-          ? join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`)
-          : readShellTextArgument(args.slice(1)),
-    };
-  }
-
-  if (backend === "sqlite" && nextConfig.sqlitePath === undefined) {
-    return {
-      output: 'SQLite mode requires a path or the literal value "auto".',
-    };
-  }
-
-  assertValidReplConfig(nextConfig);
-  cancelActiveShellWork(shell);
-  shell.config = nextConfig;
-  shell.host = createReplHost(nextConfig);
-  shell.activeOrchestration = undefined;
-  shell.activeTurn = undefined;
-  shell.lastCanonicalEvents = undefined;
-  shell.lastOrchestrationEvents = undefined;
-  shell.lastProjection = undefined;
-  shell.thread = undefined;
-
-  return {
-    output: formatJson({
-      backend: shell.config.backend,
-      postgresDatabase: shell.config.postgresDatabase ?? null,
-      postgresSchemaName: shell.config.postgresSchemaName ?? null,
-      sqlitePath: shell.config.sqlitePath ?? null,
-    }),
-  };
-}
-
-async function handleThreadCommand(
-  shell: ReplShell,
-  args: readonly string[]
-): Promise<ReplCommandResult> {
-  const subcommand = args[0];
-
-  switch (subcommand) {
-    case "new": {
-      cancelActiveShellWork(shell);
-      shell.thread = await shell.host.createThread();
-      shell.activeOrchestration = undefined;
-      shell.activeTurn = undefined;
-      shell.lastCanonicalEvents = undefined;
-      shell.lastProjection = undefined;
-      shell.lastOrchestrationEvents = undefined;
-      return { output: formatJson(shell.thread) };
-    }
-    case "show": {
-      return { output: formatJson(shell.thread ?? null) };
-    }
-    default: {
-      return { output: 'Expected ".thread <new|show>".' };
-    }
-  }
-}
-
-async function handleBranchCommand(
-  shell: ReplShell,
-  args: readonly string[]
-): Promise<ReplCommandResult> {
-  if (args[0] !== "fork") {
-    return { output: 'Expected ".branch fork".' };
-  }
-
-  if (hasActiveShellWork(shell)) {
-    return {
-      output:
-        "Active work already exists on the current branch. Await or cancel it before forking a branch.",
-    };
-  }
-
-  const thread = await ensureThread(shell);
-  const turnNodeHash = thread.headTurnNodeHash ?? thread.rootTurnNodeHash;
-  const branch = await shell.host.branchFromHead({
-    threadId: thread.threadId,
-    turnNodeHash,
-  });
-
-  shell.thread = {
-    ...thread,
-    branchId: branch.branchId,
-    headTurnNodeHash: branch.headTurnNodeHash,
-  };
-
-  return { output: formatJson(shell.thread) };
-}
-
-async function showMessages(
-  shell: ReplShell,
-  args: readonly string[]
-): Promise<ReplCommandResult> {
-  if (args[0] !== "show") {
-    return { output: 'Expected ".messages show".' };
-  }
-
-  const { thread } = shell;
-
-  if (thread === undefined) {
-    return { output: "No active thread exists." };
-  }
-
-  const messages = await shell.host.readBranchMessages(thread.branchId);
-  return { output: formatJson(messages) };
-}
-
-function showEvents(
-  shell: ReplShell,
-  args: readonly string[]
-): ReplCommandResult {
-  if (args[0] !== "show") {
-    return { output: 'Expected ".events show".' };
-  }
-
-  // Keep `.events show` aligned across turn and orchestration awaits.
-  return { output: formatJson(shell.lastCanonicalEvents ?? []) };
 }
 
 async function handleTurnCommand(
@@ -926,14 +1151,6 @@ function cancelOrchestration(shell: ReplShell): ReplCommandResult {
   return { output: "Cancellation requested for the active orchestration." };
 }
 
-async function ensureThread(shell: ReplShell): Promise<ReplThreadSummary> {
-  if (shell.thread === undefined) {
-    shell.thread = await shell.host.createThread();
-  }
-
-  return shell.thread;
-}
-
 async function runFreeformTurn(
   shell: ReplShell,
   input: string,
@@ -1005,144 +1222,6 @@ function finalizeInteractiveTurn(
   return {};
 }
 
-function createTurnExecutionRequest(
-  config: ReplConfig,
-  input: string
-): {
-  config?: Parameters<ReplHost["executeTurn"]>[0]["config"];
-  signal: InputSignal;
-} {
-  if (!isTurnScenarioName(input)) {
-    return {
-      signal: textSignal(input),
-    };
-  }
-
-  const scenarioConfig = {
-    ...config,
-    scenario: input,
-  } satisfies ReplConfig;
-  const executionPlan = createScenarioExecutionPlan(scenarioConfig);
-
-  return {
-    config: {
-      ...executionPlan.config,
-      ...(input === "approval"
-        ? {
-            maxParallelToolCalls: 2,
-          }
-        : {}),
-      ...(input === "cancel"
-        ? {
-            loopPolicy: CONTINUE_ONCE_POLICY,
-          }
-        : {}),
-      ...(input === "extension"
-        ? {
-            extensions: [createProofExtension()],
-          }
-        : {}),
-      model: executionPlan.model,
-      name: "primary",
-      responseFormat:
-        input === "structured"
-          ? {
-              name: "repl_summary",
-              schema: {
-                properties: {
-                  scenario: { type: "string" },
-                  status: { type: "string" },
-                },
-                required: ["scenario", "status"],
-                type: "object",
-              },
-            }
-          : undefined,
-      tools: executionPlan.tools,
-    },
-    signal: executionPlan.signal,
-  };
-}
-
-function createApprovalResponse(
-  approval: NonNullable<ReturnType<ExecutionHandle["status"]>["approval"]>,
-  mode: string
-) {
-  return {
-    decisions: approval.toolCalls.map((toolCall) => {
-      switch (mode) {
-        case "edit": {
-          return toolCall.name === "email"
-            ? {
-                callId: toolCall.callId,
-                editedInput: {
-                  subject: "Edited status update",
-                  to: "ops@example.com",
-                },
-                message: "Edited through the REPL host.",
-                type: "edit" as const,
-              }
-            : {
-                callId: toolCall.callId,
-                message: "Approved through the REPL host.",
-                type: "approve" as const,
-              };
-        }
-        case "reject": {
-          return {
-            callId: toolCall.callId,
-            message: "Rejected through the REPL host.",
-            type: "reject" as const,
-          };
-        }
-        default: {
-          return {
-            callId: toolCall.callId,
-            message: "Approved through the REPL host.",
-            type: "approve" as const,
-          };
-        }
-      }
-    }),
-  };
-}
-
-function isScenarioName(value: string): value is ReplScenarioName {
-  return SCENARIO_NAMES.has(value as ReplScenarioName);
-}
-
-function isTurnScenarioName(value: string): value is ReplScenarioName {
-  return TURN_SCENARIO_NAMES.has(value as ReplScenarioName);
-}
-
-function readUnsupportedTurnScenarioMessage(value: string): string | undefined {
-  if (!isScenarioName(value) || isTurnScenarioName(value)) {
-    return undefined;
-  }
-
-  return value === "orchestration"
-    ? 'Scenario "orchestration" is not supported through .turn start. Use .orch commands or the scripted scenario runner instead.'
-    : `Scenario "${value}" is not supported through .turn start. Use the scripted scenario runner instead.`;
-}
-
-async function collect<T>(
-  events: AsyncIterable<T>,
-  onEvent?: (event: T) => void
-): Promise<T[]> {
-  const output: T[] = [];
-
-  for await (const event of events) {
-    onEvent?.(event);
-    output.push(event);
-  }
-
-  return output;
-}
-
-function formatJson(value: unknown): string {
-  return JSON.stringify(value, null, 2);
-}
-
 function cancelActiveShellWork(shell: ReplShell): void {
   if (
     shell.activeTurn !== undefined &&
@@ -1206,89 +1285,4 @@ function observeCancellation(promise: Promise<unknown>): void {
 
 function readPausedTurnMessage(): string {
   return 'Turn paused for approval. Press 1 to approve, 2 to reject, 3 to edit, or use ".turn approve [approve|edit|reject]" to continue.';
-}
-
-function readApprovalShortcutMode(
-  shell: ReplShell,
-  input: string
-): string | undefined {
-  if (shell.activeTurn?.handle.status().approval === undefined) {
-    return undefined;
-  }
-
-  switch (input) {
-    case "1": {
-      return "approve";
-    }
-    case "2": {
-      return "reject";
-    }
-    case "3": {
-      return "edit";
-    }
-    default: {
-      return undefined;
-    }
-  }
-}
-
-function normalizeApprovalMode(mode: string): string {
-  switch (mode) {
-    case "1": {
-      return "approve";
-    }
-    case "2": {
-      return "reject";
-    }
-    case "3": {
-      return "edit";
-    }
-    default: {
-      return mode;
-    }
-  }
-}
-
-function findMockMcpStdioServerPath(): string {
-  for (const start of [process.cwd(), import.meta.dirname]) {
-    let current = start;
-
-    while (true) {
-      const candidate = join(current, ...MOCK_MCP_STDIO_SERVER_PATH_SEGMENTS);
-
-      if (existsSync(candidate)) {
-        return candidate;
-      }
-
-      const parent = dirname(current);
-
-      if (parent === current) {
-        break;
-      }
-
-      current = parent;
-    }
-  }
-
-  throw new Error("unable to locate mock MCP stdio server");
-}
-
-export function readShellTextArgument(
-  args: readonly string[]
-): string | undefined {
-  const value = args.join(" ").trim();
-
-  if (value.length === 0) {
-    return undefined;
-  }
-
-  // Rejoin split tokens so quoted SQLite paths survive the shell parser.
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    return value.slice(1, -1);
-  }
-
-  return value;
 }
