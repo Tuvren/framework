@@ -16,7 +16,7 @@
 
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 
 import { TuvrenRuntimeError } from "@tuvren/sdk";
 
@@ -104,7 +104,7 @@ const normalizeSqlitePath = (value: string | undefined): string | undefined => {
 
   // The Nx SQLite smoke target passes "auto" so repeated validation cannot
   // inherit stale durable state from a previous run.
-  return join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`);
+  return path.join(tmpdir(), `tuvren-repl-${randomUUID()}.sqlite`);
 };
 
 const normalizeModelId = (value: string | undefined): string | undefined => {
@@ -280,7 +280,9 @@ const parseArgs = (argv: readonly string[]): Record<string, string> => {
     }
 
     const key = arg.slice(2);
-    const optionKey = OPTION_KEY_MAP[key as keyof typeof OPTION_KEY_MAP];
+    const optionKey = Object.entries(OPTION_KEY_MAP).find(
+      ([optionName]) => optionName === key
+    )?.[1];
 
     if (optionKey === undefined) {
       throw new TuvrenRuntimeError(`unsupported repl option --${key}`, {
@@ -303,8 +305,8 @@ const parseArgs = (argv: readonly string[]): Record<string, string> => {
   return options;
 };
 
-const parseBackend = (value: string | undefined): ReplBackendMode => {
-  const normalized = value ?? "memory";
+const parseBackend = (value = "memory"): ReplBackendMode => {
+  const normalized = value;
 
   switch (normalized) {
     case "memory":
@@ -320,8 +322,8 @@ const parseBackend = (value: string | undefined): ReplBackendMode => {
   }
 };
 
-const parseKernelMode = (value: string | undefined): ReplKernelMode => {
-  const normalized = value ?? "typescript-local";
+const parseKernelMode = (value = "typescript-local"): ReplKernelMode => {
+  const normalized = value;
 
   switch (normalized) {
     case "rust-grpc":
@@ -339,8 +341,8 @@ const parseKernelMode = (value: string | undefined): ReplKernelMode => {
   }
 };
 
-const parseProviderMode = (value: string | undefined): ReplProviderMode => {
-  const normalized = value ?? "fixture";
+const parseProviderMode = (value = "fixture"): ReplProviderMode => {
+  const normalized = value;
 
   switch (normalized) {
     case "aimock-anthropic":
@@ -362,8 +364,8 @@ const parseProviderMode = (value: string | undefined): ReplProviderMode => {
   }
 };
 
-const parseScenario = (value: string | undefined): ReplScenarioName => {
-  const normalized = value ?? "streaming";
+const parseScenario = (value = "streaming"): ReplScenarioName => {
+  const normalized = value;
 
   switch (normalized) {
     case "approval":

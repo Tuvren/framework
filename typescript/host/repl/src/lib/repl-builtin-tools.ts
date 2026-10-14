@@ -84,14 +84,16 @@ const readNumberArray = (
 
   const value = input[propertyName];
 
-  if (
-    !Array.isArray(value) ||
-    value.some((entry) => typeof entry !== "number")
-  ) {
+  if (!Array.isArray(value)) {
     return undefined;
   }
 
-  return [...value];
+  const entries: unknown[] = value;
+  if (!entries.every((entry): entry is number => typeof entry === "number")) {
+    return undefined;
+  }
+
+  return [...entries];
 };
 
 const createCalculatorSuccess = (
@@ -221,7 +223,7 @@ const evaluateCalculator = (
       return createCalculatorError(
         operation,
         operands,
-        `unsupported calculator operation "${operation}".`
+        `unsupported calculator operation "${String(operation)}".`
       );
     }
   }
@@ -229,15 +231,16 @@ const evaluateCalculator = (
 
 const createDeterministicSeed = (value: string): number => {
   let seed = 0;
+  let index = 0;
 
-  for (const [index, character] of [...value].entries()) {
+  for (const character of value) {
     const codePoint = character.codePointAt(0);
 
-    if (codePoint === undefined) {
-      continue;
+    if (codePoint !== undefined) {
+      seed += codePoint * (index + 1);
     }
 
-    seed += codePoint * (index + 1);
+    index += 1;
   }
 
   return seed;

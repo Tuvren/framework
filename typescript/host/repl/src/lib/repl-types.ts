@@ -137,26 +137,29 @@ export interface ReplScenarioMatrixReport {
 }
 
 export interface ReplHost {
-  approve(handle: ExecutionHandle, response: ApprovalResponse): ExecutionHandle;
-  branchFromHead(input: {
+  approve: (
+    handle: ExecutionHandle,
+    response: ApprovalResponse
+  ) => ExecutionHandle;
+  branchFromHead: (input: {
     branchId?: string;
     threadId: string;
     turnNodeHash: HashString;
-  }): Promise<{
+  }) => Promise<{
     branchId: string;
     headTurnNodeHash: HashString;
     threadId: string;
   }>;
-  cancel(handle: ExecutionHandle): void;
+  cancel: (handle: ExecutionHandle) => void;
   config: ReplConfig;
-  createThread(): Promise<ReplThreadSummary>;
-  dispose?(): Promise<void>;
-  executeTurn(input: ReplTurnInput): ExecutionHandle;
-  project(handle: ExecutionHandle): Promise<ReplStreamProjection>;
+  createThread: () => Promise<ReplThreadSummary>;
+  dispose?: () => Promise<void>;
+  executeTurn: (input: ReplTurnInput) => ExecutionHandle;
+  project: (handle: ExecutionHandle) => Promise<ReplStreamProjection>;
   provider: TuvrenProvider;
-  readBranchMessages(branchId: string): Promise<unknown[]>;
+  readBranchMessages: (branchId: string) => Promise<unknown[]>;
   runtime: TuvrenRuntime;
-  steer(handle: ExecutionHandle, signal: InputSignal): void;
+  steer: (handle: ExecutionHandle, signal: InputSignal) => void;
 }
 
 export interface ReplScenarioExecutionPlan {
