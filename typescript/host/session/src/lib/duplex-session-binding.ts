@@ -185,25 +185,23 @@ interface PendingClientCall {
   resolve(result: ClientReportedResult): void;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 // Mirrors the wire authority's NonEmptyString scalar (@minLength(1) plus
 // the ".*\S.*" must-contain-non-whitespace pattern) so the structural
 // guard cannot accept a value the generated JSON Schema rejects.
 const CONTAINS_NON_WHITESPACE = /\S/;
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && CONTAINS_NON_WHITESPACE.test(value);
-}
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && CONTAINS_NON_WHITESPACE.test(value);
 
-function extractCorrelationId(raw: unknown): string {
+const extractCorrelationId = (raw: unknown): string => {
   if (isRecord(raw) && isNonEmptyString(raw.correlationId)) {
     return raw.correlationId;
   }
   return "unknown";
-}
+};
 
 type InboundValidationResult =
   | { ok: true; frame: SessionInboundFrame }
@@ -216,10 +214,10 @@ type InboundValidationResult =
  * JSON-Schema validation — that runs in the conformance lane against the
  * generated schema artifacts, not here.
  */
-function validateInboundFrame(
+const validateInboundFrame = (
   raw: unknown,
   sessionId: string
-): InboundValidationResult {
+): InboundValidationResult => {
   const correlationId = extractCorrelationId(raw);
 
   if (!isRecord(raw)) {
@@ -353,7 +351,7 @@ function validateInboundFrame(
       };
     }
   }
-}
+};
 
 /**
  * Builds a duplex session binding over `handle` (KrakenFrameworkSpecification
@@ -364,10 +362,10 @@ function validateInboundFrame(
  *
  * @experimental
  */
-export function createDuplexSessionBinding(
+export const createDuplexSessionBinding = (
   handle: ExecutionHandle,
   options: DuplexSessionBindingOptions = {}
-): DuplexSessionBinding {
+): DuplexSessionBinding => {
   const sessionId = options.sessionId ?? crypto.randomUUID();
   const advertisedCapabilities = options.advertisedCapabilities ?? [];
   const endpointId = options.endpointId ?? `host-session:${sessionId}`;
@@ -395,27 +393,25 @@ export function createDuplexSessionBinding(
   let current = handle;
   let outboundClaimed = false;
 
-  function rejectionFrame(
+  const rejectionFrame = (
     correlationId: string,
     code: SessionRejectionCode,
     message: string,
     details?: Record<string, unknown>
-  ): SessionRejectionFrame {
-    return {
-      kind: "session_rejection",
-      protocolVersion: "1",
-      rejection:
-        details === undefined
-          ? { code, correlationId, message }
-          : { code, correlationId, details, message },
-      sessionId,
-    };
-  }
+  ): SessionRejectionFrame => ({
+    kind: "session_rejection",
+    protocolVersion: "1",
+    rejection:
+      details === undefined
+        ? { code, correlationId, message }
+        : { code, correlationId, details, message },
+    sessionId,
+  });
 
-  function pushRuntimeErrorRejection(
+  const pushRuntimeErrorRejection = (
     correlationId: string,
     error: unknown
-  ): void {
+  ): void => {
     if (error instanceof TuvrenRuntimeError) {
       queue.push(
         rejectionFrame(
@@ -431,9 +427,9 @@ export function createDuplexSessionBinding(
     }
 
     throw error;
-  }
+  };
 
-  function bridgeCurrentHandle(bridgedHandle: ExecutionHandle): void {
+  const bridgeCurrentHandle = (bridgedHandle: ExecutionHandle): void => {
     const drain = (async () => {
       try {
         for await (const event of bridgedHandle.events()) {
@@ -486,7 +482,7 @@ export function createDuplexSessionBinding(
       }
     };
     bridgedHandle.awaitResult().then(settleWatcher, settleWatcher);
-  }
+  };
 
   const clientEndpoint: AttachedClientEndpoint = {
     advertisedCapabilities,
@@ -532,9 +528,9 @@ export function createDuplexSessionBinding(
     endpointId,
   };
 
-  function routeClientResult(
+  const routeClientResult = (
     frame: Extract<SessionInboundFrame, { kind: "client_result" }>
-  ): void {
+  ): void => {
     const pending = pendingClientCalls.get(frame.result.callId);
     if (pending === undefined) {
       queue.push(
@@ -549,11 +545,11 @@ export function createDuplexSessionBinding(
 
     pendingClientCalls.delete(frame.result.callId);
     pending.resolve(frame.result);
-  }
+  };
 
-  function routeApprovalResponse(
+  const routeApprovalResponse = (
     frame: Extract<SessionInboundFrame, { kind: "approval_response" }>
-  ): void {
+  ): void => {
     try {
       // The superseded handle's events() iterable is already exhausted when
       // resolveApproval succeeds (KrakenFrameworkSpecification §7.1: the old
@@ -566,29 +562,29 @@ export function createDuplexSessionBinding(
     } catch (error) {
       pushRuntimeErrorRejection(frame.correlationId, error);
     }
-  }
+  };
 
-  function routeSteer(
+  const routeSteer = (
     frame: Extract<SessionInboundFrame, { kind: "steer" }>
-  ): void {
+  ): void => {
     try {
       current.steer(frame.signal);
     } catch (error) {
       pushRuntimeErrorRejection(frame.correlationId, error);
     }
-  }
+  };
 
-  function routeCancel(
+  const routeCancel = (
     frame: Extract<SessionInboundFrame, { kind: "cancel" }>
-  ): void {
+  ): void => {
     try {
       current.cancel();
     } catch (error) {
       pushRuntimeErrorRejection(frame.correlationId, error);
     }
-  }
+  };
 
-  function dispatchInbound(raw: unknown): void {
+  const dispatchInbound = (raw: unknown): void => {
     const validated = validateInboundFrame(raw, sessionId);
     if (!validated.ok) {
       queue.push(
@@ -622,7 +618,7 @@ export function createDuplexSessionBinding(
         return;
       }
     }
-  }
+  };
 
   return {
     clientEndpoint,
@@ -648,4 +644,4 @@ export function createDuplexSessionBinding(
     },
     sessionId,
   };
-}
+};
