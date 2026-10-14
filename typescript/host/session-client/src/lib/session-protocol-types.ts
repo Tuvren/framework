@@ -43,7 +43,6 @@
  * MUST stay in sync by hand with `spec/host/session/typespec/main.tsp` and
  * `spec/streaming/ws/typespec/main.tsp`.
  *
- * @packageDocumentation
  */
 
 /** Wire protocol version literal this package speaks. Echoed, never negotiated. @experimental */
@@ -123,7 +122,7 @@ export interface SessionClientApprovalDecision {
   callId: string;
   editedInput?: unknown;
   message?: string;
-  type: "approve" | "edit" | "reject" | (string & {});
+  type: string;
 }
 
 /** Mirrors `ApprovalResponse`. @experimental */

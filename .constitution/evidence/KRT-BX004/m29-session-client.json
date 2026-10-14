@@ -1,0 +1,275 @@
+{
+  "milestone": "M29",
+  "ticket": "KRT-BX004",
+  "authority": "Plan amendment A11",
+  "measurement_head": "1f26a0808e50ea9ff7c42c0a1140282d2788f4fc",
+  "working_tree_candidate": true,
+  "result": "completed residual cleanup under A11; not admitted",
+  "files": [
+    "typescript/host/session-client/smoke/package-exports.ts",
+    "typescript/host/session-client/src/index.ts",
+    "typescript/host/session-client/src/lib/session-client.ts",
+    "typescript/host/session-client/src/lib/session-protocol-types.ts",
+    "typescript/host/session-client/src/lib/ws-wire.ts",
+    "typescript/host/session-client/test/session-client.test.ts",
+    "typescript/host/session-client/test/session-client-boundaries.test.ts",
+    "typescript/host/session-client/test/session-client-clock.ts",
+    "typescript/host/session-client/test/session-client-fixtures.ts"
+  ],
+  "diagnostics": {
+    "before": 165,
+    "after": 4,
+    "residuals": [
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "code": "promise(prefer-await-to-callbacks)",
+        "line": 572
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "code": "promise(prefer-await-to-then)",
+        "line": 572
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "code": "promise(prefer-await-to-then)",
+        "line": 553
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "code": "promise(prefer-await-to-then)",
+        "line": 546
+      }
+    ],
+    "native_selection": [
+      "typescript/host/session-client/smoke/package-exports.ts",
+      "typescript/host/session-client/src/index.ts",
+      "typescript/host/session-client/src/lib/session-client.ts",
+      "typescript/host/session-client/src/lib/session-protocol-types.ts",
+      "typescript/host/session-client/src/lib/ws-wire.ts",
+      "typescript/host/session-client/test/session-client-boundaries.test.ts",
+      "typescript/host/session-client/test/session-client-clock.ts",
+      "typescript/host/session-client/test/session-client-fixtures.ts",
+      "typescript/host/session-client/test/session-client.test.ts",
+      "typescript/host/session-client/tsup.config.ts"
+    ],
+    "effective_shipped_preset_equal": true
+  },
+  "retained": {
+    "processed": 17,
+    "diagnostics": 0,
+    "selection": [
+      "typescript/host/session-client/package.json",
+      "typescript/host/session-client/project.json",
+      "typescript/host/session-client/smoke/package-exports.ts",
+      "typescript/host/session-client/src/index.ts",
+      "typescript/host/session-client/src/lib/session-client.ts",
+      "typescript/host/session-client/src/lib/session-protocol-types.ts",
+      "typescript/host/session-client/src/lib/ws-wire.ts",
+      "typescript/host/session-client/test/session-client-boundaries.test.ts",
+      "typescript/host/session-client/test/session-client-clock.ts",
+      "typescript/host/session-client/test/session-client-fixtures.ts",
+      "typescript/host/session-client/test/session-client.test.ts",
+      "typescript/host/session-client/tsconfig.dts.json",
+      "typescript/host/session-client/tsconfig.json",
+      "typescript/host/session-client/tsconfig.lib.json",
+      "typescript/host/session-client/tsconfig.tsup.json",
+      "typescript/host/session-client/tsconfig.typecheck.json",
+      "typescript/host/session-client/tsup.config.ts"
+    ],
+    "individual_positive_controls": 17
+  },
+  "metadata": {
+    "preserved_actual_AST_associations": 144,
+    "preserved_native_firing": 112,
+    "native_firing_files": 9,
+    "preserved_inline_additional": 32,
+    "owned_regions": 20,
+    "owned_firing_tags": 56,
+    "optional_packageDocumentation_removed": 3,
+    "experimental_tags_removed": 0,
+    "original_Biome_directives_removed": 0,
+    "association_hashes": [
+      {
+        "path": "typescript/host/remote-session/src/index.ts",
+        "baseline": "6625ee8442ccacc2957d7dae8a55210f26168c784ad79f5eb155aba0bb42eb1c",
+        "current": "6625ee8442ccacc2957d7dae8a55210f26168c784ad79f5eb155aba0bb42eb1c"
+      },
+      {
+        "path": "typescript/host/remote-session/src/lib/remote-client-session.ts",
+        "baseline": "0a75b4d7d3f86080b01792b0d81c7c99c722f218cc5effdb52b53bae5884eb4d",
+        "current": "0a75b4d7d3f86080b01792b0d81c7c99c722f218cc5effdb52b53bae5884eb4d"
+      },
+      {
+        "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
+        "baseline": "9d73811ebcd7631799df4c739195fd10b526e4bced6d5691bb1dec2173bcca74",
+        "current": "9d73811ebcd7631799df4c739195fd10b526e4bced6d5691bb1dec2173bcca74"
+      },
+      {
+        "path": "typescript/host/session-client/src/index.ts",
+        "baseline": "22c3bf87d854dbe144b06e45c5a2e1f14a091b2d3cd2c24ba1082b844e320c1c",
+        "current": "22c3bf87d854dbe144b06e45c5a2e1f14a091b2d3cd2c24ba1082b844e320c1c"
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-client.ts",
+        "baseline": "f04df793bad8f6797758d3b759078c6359279ae1f57e9a98e20bb1b2bb9f9cca",
+        "current": "f04df793bad8f6797758d3b759078c6359279ae1f57e9a98e20bb1b2bb9f9cca"
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/session-protocol-types.ts",
+        "baseline": "450ca8b03a7ca74d1e6f93b848253ac1bbb60f2ba938cfa64d9bc4ad4f46a314",
+        "current": "450ca8b03a7ca74d1e6f93b848253ac1bbb60f2ba938cfa64d9bc4ad4f46a314"
+      },
+      {
+        "path": "typescript/host/session-client/src/lib/ws-wire.ts",
+        "baseline": "f5a54f779840cfd523fd96ece81c6f75a88dd85e9cc8fcc8118ce66a27bb2f40",
+        "current": "f5a54f779840cfd523fd96ece81c6f75a88dd85e9cc8fcc8118ce66a27bb2f40"
+      },
+      {
+        "path": "typescript/host/session/src/index.ts",
+        "baseline": "1c5e0f4f3940c83e1fb6e3b223c76b38fb7edb5a0f071db4c8b02e3f43c1b018",
+        "current": "1c5e0f4f3940c83e1fb6e3b223c76b38fb7edb5a0f071db4c8b02e3f43c1b018"
+      },
+      {
+        "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+        "baseline": "6060f152ff31d7184d0b09b46c43409692ff9f63eb92b6608b2c721e40510a80",
+        "current": "6060f152ff31d7184d0b09b46c43409692ff9f63eb92b6608b2c721e40510a80"
+      },
+      {
+        "path": "typescript/host/session/src/lib/session-frame-shapes.ts",
+        "baseline": "29172e0549c539103d596c8408c5dc9956ea990c92f1678cbf9e4602d28dc996",
+        "current": "29172e0549c539103d596c8408c5dc9956ea990c92f1678cbf9e4602d28dc996"
+      }
+    ],
+    "all20_removed_and_unused_controls_pass": true
+  },
+  "original_directives": [
+    {
+      "identity": "typescript/host/session-client/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/session-client/src/index.ts",
+      "directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional public implementation surface.",
+      "original_reason": "This package entrypoint is the intentional public implementation surface.",
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "early_deletion": null,
+      "retained_unsuppressed_exit": 1,
+      "retained_processed": 17,
+      "retained_matching_count": 1,
+      "retained_unsuppressed_report": "bx-m29-original-control-0.json",
+      "equivalent_native_rule": null,
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "native_matching_diagnostics": [],
+      "native_report": "bx-m29-original-native-0.json",
+      "metadata_exceptions_separate": true
+    },
+    {
+      "identity": "typescript/host/session-client/src/index.ts::assist/source/organizeImports::1",
+      "path": "typescript/host/session-client/src/index.ts",
+      "directive": "// biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "original_reason": "The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.",
+      "currently_retained": true,
+      "retained_checker_disposition": "retain-original-dormant-assist-disabled",
+      "early_deletion": null,
+      "retained_unsuppressed_exit": 0,
+      "retained_processed": 17,
+      "retained_matching_count": 0,
+      "retained_unsuppressed_report": "bx-m29-original-control-1.json",
+      "equivalent_native_rule": null,
+      "native_admission_disposition": "planned-remove-original-at-atomic-native-admission-no-native-counterpart",
+      "native_matching_diagnostics": [],
+      "native_report": "bx-m29-original-native-1.json",
+      "metadata_exceptions_separate": true
+    }
+  ],
+  "native_admission_patch": {
+    "path": "m37-session-client.patch",
+    "sha256": "65d1fe61f3047ac007c18b3bab6db8b95de3ef5391e4e1c89e09e10028e55c6f",
+    "bytes": 875,
+    "apply_only": "M37 atomic canonical target/directive/coverage switch; then format owned source"
+  },
+  "launch_site": "typescript/host/session-client/src/lib/session-client.ts::handleInvocation",
+  "original_launch": "Promise.resolve().then(handler).then(settle).catch(errorResult)",
+  "minimum_native_normalization": "Replace terminal .catch with a void async IIFE whose try awaits the original deferred invocation + success-continuation chain and whose catch runs the original error settlement. Await observes the real pending dispatch/settlement promise; no fake await, new tracking or scheduling.",
+  "timing": {
+    "single_handler_cases": 5,
+    "concurrent_permutations": 120,
+    "per_microtask_handler_event_rejection_send_redelivery_trace_equal": true,
+    "reports": [
+      "bx-m29-timing-baseline.json",
+      "bx-m29-timing-native.json",
+      "bx-m29-concurrent-baseline.json",
+      "bx-m29-concurrent-native.json"
+    ]
+  },
+  "behavior_changes": [
+    "Malformed optional invocation.idempotencyKey values and rejection.details shapes are ignored before dispatch/callback exposure, as required by boundary authority; valid empty strings and arbitrary record contents remain accepted."
+  ],
+  "code_conventions": [
+    "Internal default-clock handles normalize the existing timer object to a number and narrow it before clearTimeout (measured runtime cancellation; same convention as M28).",
+    "Internal socket variable truthfully carries the injected SessionClientSocket or native WebSocket, eliminating the unsafe structural assertion.",
+    "A typed Pick of the four required on* callback properties is installed with Object.assign, preserving the existing property-only injection seam and adding no EventTarget requirement.",
+    "Test fixtures are split into socket/client and clock modules so each file has one class and tests stay below the 1000-line ceiling.",
+    "Test helpers requiredRecord/requiredString replace unsafe casts with runtime narrowing and TypeError on invalid helper inputs.",
+    "Test flushing uses the built-in node:timers/promises delay API; controllable pending handler tests use Promise.withResolvers with an honest async await of the controlled result.",
+    "Planned M37 launch normalization awaits the original deferred invocation/success chain in a void async try/catch IIFE; exactly measured and left unapplied per A11."
+  ],
+  "new_dependencies": [],
+  "new_wire_contract_shapes": [],
+  "lead": {
+    "source_typecheck": true,
+    "canonical_tests": 33,
+    "assertions": 130,
+    "exports_smoke": true,
+    "exact_A11_residuals": true,
+    "positive_retained_zero": true,
+    "git_native_inventory_equal": true,
+    "patch_apply_check": true
+  },
+  "raw_artifacts": [
+    {
+      "name": "bx-m29-summary.json",
+      "sha256": "df1e38b5c1f02adc925717866b084a4a07d0bd25d80f245fd753d4ecee3d5269",
+      "bytes": 11145
+    },
+    {
+      "name": "bx-m29-measurement.json",
+      "sha256": "5ad47530555e79a2fbcaf2bfcf184e84fa62261acd5c8140de719734a1c6e535",
+      "bytes": 124836
+    },
+    {
+      "name": "bx-m29-a11.json",
+      "sha256": "4c7a5a861ead0a95186e0ecba4bcc653751b2cea23e2057515d1286a5cf929ee",
+      "bytes": 3104
+    },
+    {
+      "name": "bx-m29-timing-baseline.json",
+      "sha256": "d6f8f25b07db29a694f1fddf6a8d522d8c15a5f2feb31e7dd5124ed5c55784a0",
+      "bytes": 38551
+    },
+    {
+      "name": "bx-m29-timing-native.json",
+      "sha256": "d6f8f25b07db29a694f1fddf6a8d522d8c15a5f2feb31e7dd5124ed5c55784a0",
+      "bytes": 38551
+    },
+    {
+      "name": "bx-m29-concurrent-baseline.json",
+      "sha256": "1cb1fb88992471e8fffebb52ca9c0c0cb4f84c23e7a6ad6d375faf1820f45805",
+      "bytes": 4777863
+    },
+    {
+      "name": "bx-m29-concurrent-native.json",
+      "sha256": "1cb1fb88992471e8fffebb52ca9c0c0cb4f84c23e7a6ad6d375faf1820f45805",
+      "bytes": 4777863
+    },
+    {
+      "name": "bx-m29-lead-native.json",
+      "sha256": "03bb93c29e8850d01c7a44729d15fff38480c6fbfe815b27e57a923ba1ea77df",
+      "bytes": 2103
+    },
+    {
+      "name": "bx-m29-lead-retained.json",
+      "sha256": "8980a5c0ba3ba531337a780f6e596363a2317c8a28e1da4deee55c28fccb3e88",
+      "bytes": 231
+    }
+  ]
+}

@@ -4,7 +4,7 @@
   "produced": {
     "date": "2026-10-14",
     "commit": "91bccf8e85e242b757eb426f3c724eaf263c91f7",
-    "command": "bun run nx run host-session:typecheck; bun run nx run host-session:test; bun run nx run host-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/session; bunx --bun biome lint --reporter=json typescript/host/session; bun run nx run remote-session:typecheck; bun run nx run remote-session:test; bun run nx run remote-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/remote-session; bunx --bun biome lint --reporter=json typescript/host/remote-session"
+    "command": "bun run nx run host-session:typecheck; bun run nx run host-session:test; bun run nx run host-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/session; bunx --bun biome lint --reporter=json typescript/host/session; bun run nx run remote-session:typecheck; bun run nx run remote-session:test; bun run nx run remote-session:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/remote-session; bunx --bun biome lint --reporter=json typescript/host/remote-session; bun run nx run session-client:typecheck; bun run nx run session-client:test; bun run nx run session-client:exports-smoke; bunx --bun oxlint --type-aware --format json typescript/host/session-client; bunx --bun biome lint --reporter=json typescript/host/session-client"
   },
   "files": [
     {
@@ -30,7 +30,19 @@
       "sha256": "98f35f89ab0246ffa1098e2bbed23ba9b7a0cdf253a53415f57cad7a52ac3fc8",
       "bytes": 2080,
       "role": "measurement"
+    },
+    {
+      "path": "m29-session-client.json",
+      "sha256": "366278a4354303f1b5398a0487c064fd10c09aa5ca620633c6b2c4b6795ef0e4",
+      "bytes": 13213,
+      "role": "measurement"
+    },
+    {
+      "path": "m37-session-client.patch",
+      "sha256": "65d1fe61f3047ac007c18b3bab6db8b95de3ef5391e4e1c89e09e10028e55c6f",
+      "bytes": 875,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending. M28 requires the same A11 proof for remote-session and its M36 patch; all144 actual experimental AST associations remain preserved."
+  "pass_criteria": "M27 retained selection is complete and positive with zero diagnostics; native diagnostics are only exact A11 launch residuals. Preserve runtime outcomes, original directives and every experimental AST association. Apply recorded native patch only at atomic M35 admission and require full native zero then; BX004 ticket closure remains pending. M28 requires the same A11 proof for remote-session and its M36 patch; all144 actual experimental AST associations remain preserved. M29 keeps only the exact four recorded A11 launch residuals, with five single-handler and120 concurrent trace parity for the M37 patch."
 }
