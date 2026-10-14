@@ -24,9 +24,9 @@ import { runCommand } from "../lib/command-runner.ts";
 // arbitrary caller cwd.
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 
-export async function formatGeneratedJson(
+export const formatGeneratedJson = async (
   paths: readonly string[]
-): Promise<void> {
+): Promise<void> => {
   if (paths.length === 0) {
     return;
   }
@@ -41,4 +41,4 @@ export async function formatGeneratedJson(
       result.stderr || result.stdout || "formatting generated JSON failed"
     );
   }
-}
+};

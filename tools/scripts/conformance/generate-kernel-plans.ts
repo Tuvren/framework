@@ -114,9 +114,102 @@ const fixtures: FixtureEntry[] = [
   },
 ];
 
-await main(process.argv.includes(FORMAT_ONLY_FLAG));
+const buildDeterministicHashingCheck = (fixture: FixtureEntry): PlanCheck => ({
+  assertions: [
+    {
+      equalsPath: "$.fixture.rawOpaqueBytesSha256Hex",
+      field: "$.hashes.rawOpaqueBytes",
+      kind: "evidenceField",
+    },
+    {
+      equalsPath: "$.fixture.turnTreeSchemaRecordSha256Hex",
+      field: "$.hashes.turnTreeSchema",
+      kind: "evidenceField",
+    },
+    {
+      equalsPath: "$.fixture.turnNodeIdentityRecordSha256Hex",
+      field: "$.hashes.turnNodeIdentity",
+      kind: "evidenceField",
+    },
+  ],
+  checkId: `kernel.protocol.deterministic_hashing.${fixture.fixtureId}`,
+  evidence: [
+    "hashes.rawOpaqueBytes",
+    "hashes.turnTreeSchema",
+    "hashes.turnNodeIdentity",
+  ],
+  fixture: fixture.fixtureId,
+  operation: "kernel.protocol.deterministic-hashing",
+});
 
-async function main(formatOnly: boolean): Promise<void> {
+const buildSchemaRoundtripCheck = (fixture: FixtureEntry): PlanCheck => ({
+  assertions: [
+    {
+      equalsPath: "$.fixture.turnTreeSchemaRecord",
+      field: "$.roundtrip.turnTreeSchemaRecord",
+      kind: "evidenceField",
+    },
+    {
+      equalsPath: "$.fixture.turnNodeIdentityRecord",
+      field: "$.roundtrip.turnNodeIdentityRecord",
+      kind: "evidenceField",
+    },
+  ],
+  checkId: `kernel.protocol.schema_roundtrip.${fixture.fixtureId}`,
+  evidence: [
+    "roundtrip.turnTreeSchemaRecord",
+    "roundtrip.turnNodeIdentityRecord",
+  ],
+  fixture: fixture.fixtureId,
+  operation: "kernel.protocol.schema-roundtrip",
+});
+
+const buildExtendedProtocolPlan = (): {
+  applicability: { capabilities: string[] };
+  checks: PlanCheck[];
+  fixtures: Record<string, string>;
+  packetId: string;
+  planId: string;
+  planVersion: string;
+} => {
+  const checks: PlanCheck[] = [];
+
+  for (const fixture of fixtures) {
+    checks.push(
+      buildDeterministicHashingCheck(fixture),
+      buildSchemaRoundtripCheck(fixture)
+    );
+  }
+
+  return {
+    applicability: { capabilities: ["kernel.protocol"] },
+    checks,
+    fixtures: Object.fromEntries(
+      fixtures.map((entry) => [entry.fixtureId, entry.relativePath])
+    ),
+    packetId: "tuvren.kernel.protocol",
+    planId: "tuvren.kernel.protocol.extended",
+    planVersion: "0.1.0",
+  };
+};
+
+const formatExistingPlan = async (filePath: string): Promise<void> => {
+  const before = JSON.parse(await readFile(filePath, "utf-8"));
+
+  await formatGeneratedJson([filePath]);
+
+  const after = JSON.parse(await readFile(filePath, "utf-8"));
+
+  if (!isDeepStrictEqual(before, after)) {
+    throw new Error(
+      `formatting ${filePath} altered its parsed authority; refusing to continue`
+    );
+  }
+
+  process.stdout.write("formatted kernel-protocol-extended.json in place\n");
+};
+
+const main = async (formatOnly: boolean): Promise<void> => {
   const filePath = resolve(PLANS_DIR, "kernel-protocol-extended.json");
 
   // KRT-BP003 / ADR-0070: the formatter-only mode normalizes the layout of the
@@ -175,103 +268,6 @@ async function main(formatOnly: boolean): Promise<void> {
   process.stdout.write(
     `wrote kernel-protocol-extended.json (${extendedPlan.checks.length} checks)\n`
   );
-}
+};
 
-async function formatExistingPlan(filePath: string): Promise<void> {
-  const before = JSON.parse(await readFile(filePath, "utf-8"));
-
-  await formatGeneratedJson([filePath]);
-
-  const after = JSON.parse(await readFile(filePath, "utf-8"));
-
-  if (!isDeepStrictEqual(before, after)) {
-    throw new Error(
-      `formatting ${filePath} altered its parsed authority; refusing to continue`
-    );
-  }
-
-  process.stdout.write("formatted kernel-protocol-extended.json in place\n");
-}
-
-function buildExtendedProtocolPlan(): {
-  applicability: { capabilities: string[] };
-  checks: PlanCheck[];
-  fixtures: Record<string, string>;
-  packetId: string;
-  planId: string;
-  planVersion: string;
-} {
-  const checks: PlanCheck[] = [];
-
-  for (const fixture of fixtures) {
-    checks.push(
-      buildDeterministicHashingCheck(fixture),
-      buildSchemaRoundtripCheck(fixture)
-    );
-  }
-
-  return {
-    applicability: { capabilities: ["kernel.protocol"] },
-    checks,
-    fixtures: Object.fromEntries(
-      fixtures.map((entry) => [entry.fixtureId, entry.relativePath])
-    ),
-    packetId: "tuvren.kernel.protocol",
-    planId: "tuvren.kernel.protocol.extended",
-    planVersion: "0.1.0",
-  };
-}
-
-function buildDeterministicHashingCheck(fixture: FixtureEntry): PlanCheck {
-  return {
-    assertions: [
-      {
-        equalsPath: "$.fixture.rawOpaqueBytesSha256Hex",
-        field: "$.hashes.rawOpaqueBytes",
-        kind: "evidenceField",
-      },
-      {
-        equalsPath: "$.fixture.turnTreeSchemaRecordSha256Hex",
-        field: "$.hashes.turnTreeSchema",
-        kind: "evidenceField",
-      },
-      {
-        equalsPath: "$.fixture.turnNodeIdentityRecordSha256Hex",
-        field: "$.hashes.turnNodeIdentity",
-        kind: "evidenceField",
-      },
-    ],
-    checkId: `kernel.protocol.deterministic_hashing.${fixture.fixtureId}`,
-    evidence: [
-      "hashes.rawOpaqueBytes",
-      "hashes.turnTreeSchema",
-      "hashes.turnNodeIdentity",
-    ],
-    fixture: fixture.fixtureId,
-    operation: "kernel.protocol.deterministic-hashing",
-  };
-}
-
-function buildSchemaRoundtripCheck(fixture: FixtureEntry): PlanCheck {
-  return {
-    assertions: [
-      {
-        equalsPath: "$.fixture.turnTreeSchemaRecord",
-        field: "$.roundtrip.turnTreeSchemaRecord",
-        kind: "evidenceField",
-      },
-      {
-        equalsPath: "$.fixture.turnNodeIdentityRecord",
-        field: "$.roundtrip.turnNodeIdentityRecord",
-        kind: "evidenceField",
-      },
-    ],
-    checkId: `kernel.protocol.schema_roundtrip.${fixture.fixtureId}`,
-    evidence: [
-      "roundtrip.turnTreeSchemaRecord",
-      "roundtrip.turnNodeIdentityRecord",
-    ],
-    fixture: fixture.fixtureId,
-    operation: "kernel.protocol.schema-roundtrip",
-  };
-}
+await main(process.argv.includes(FORMAT_ONLY_FLAG));
