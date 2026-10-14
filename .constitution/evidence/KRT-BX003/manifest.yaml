@@ -1,0 +1,18 @@
+{
+  "owner": "KRT-BX003",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-14",
+    "commit": "511730ba27990436680845ef7042575f8cef3dc9",
+    "command": "bunx --bun oxlint --type-aware --format json typescript/host/repl; bun run nx run host-repl:typecheck; bun run nx run host-repl:test; bun run nx run host-repl:exports-smoke"
+  },
+  "files": [
+    {
+      "path": "m24-cohort.json",
+      "sha256": "565a7a2be9bf2cfafc2cb8a72698491ca57724920274b85c2357de3bb31e865b",
+      "bytes": 5543,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "M24 early test cohort has zero declaration-order diagnostics and AST forward references; M23 implementation already satisfies it. Preserve source/assertions and M25 bytes, run canonical typecheck/tests/exports, and complete root typecheck/conformance before BX003 ticket closure."
+}
