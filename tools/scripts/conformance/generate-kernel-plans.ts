@@ -15,8 +15,7 @@
  */
 
 import { readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 
 import { formatGeneratedJson } from "./format-generated-json.ts";
@@ -36,7 +35,7 @@ interface PlanCheck {
   operation: string;
 }
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const PLANS_DIR = resolve(REPO_ROOT, "spec/conformance/kernel/plans");
 const FORMAT_ONLY_FLAG = "--format-only";
 
@@ -150,7 +149,7 @@ async function main(formatOnly: boolean): Promise<void> {
   // be taught to the generator, not just committed.
   let existing: { checks?: { checkId?: string }[] } | undefined;
   try {
-    existing = JSON.parse(await readFile(filePath, "utf8"));
+    existing = JSON.parse(await readFile(filePath, "utf-8"));
   } catch (error: unknown) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw error;
@@ -179,11 +178,11 @@ async function main(formatOnly: boolean): Promise<void> {
 }
 
 async function formatExistingPlan(filePath: string): Promise<void> {
-  const before = JSON.parse(await readFile(filePath, "utf8"));
+  const before = JSON.parse(await readFile(filePath, "utf-8"));
 
   await formatGeneratedJson([filePath]);
 
-  const after = JSON.parse(await readFile(filePath, "utf8"));
+  const after = JSON.parse(await readFile(filePath, "utf-8"));
 
   if (!isDeepStrictEqual(before, after)) {
     throw new Error(

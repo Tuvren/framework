@@ -130,9 +130,9 @@ describe("certification harness state handling", () => {
     expect(result.code).toBe(0);
 
     const evidence = JSON.parse(result.stdout) as {
-      checkResults: Array<{
+      checkResults: {
         assertionResults: Array<{ assertionId: string; status: string }>;
-      }>;
+      }[];
       summary: { failedChecks: number; passedChecks: number };
     };
 
@@ -388,8 +388,8 @@ function runCommand(command: readonly string[]): Promise<CommandResult> {
 
   let stdout = "";
   let stderr = "";
-  child.stdout.setEncoding("utf8");
-  child.stderr.setEncoding("utf8");
+  child.stdout.setEncoding("utf-8");
+  child.stderr.setEncoding("utf-8");
   child.stdout.on("data", (chunk: string) => {
     stdout += chunk;
   });
