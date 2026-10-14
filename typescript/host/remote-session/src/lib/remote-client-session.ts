@@ -288,7 +288,6 @@ class SingleSlotPushChannel<T> implements AsyncIterable<T> {
     this.slot = { value };
   }
 
-  // biome-ignore lint/suspicious/useAwait: kept async to satisfy the AsyncIterator contract even though resolution is always synchronous under the lockstep push/next contract.
   async *[Symbol.asyncIterator](): AsyncGenerator<T, void, unknown> {
     for (;;) {
       const pending = this.slot;
@@ -510,7 +509,16 @@ export const createRemoteClientSession = (
     // rejects surviving binding-pending calls with duplex_session_closed —
     // the tracked ones must settle with their well-shaped {code, error}
     // results first.
-    outboundIterator?.return?.().catch(() => undefined);
+    const closing = outboundIterator?.return?.();
+    if (closing !== undefined) {
+      void (async () => {
+        try {
+          await closing;
+        } catch {
+          /* Best-effort release, as before. */
+        }
+      })();
+    }
 
     options.onEnded?.(reason);
   };
@@ -633,20 +641,24 @@ export const createRemoteClientSession = (
     // false from its send guard rather than throwing — so a throw reaching
     // the pump is a broken binding or a sink violating its contract, and
     // failing the whole session loudly is the correct response.)
-    pump.catch((error: unknown) => {
-      reportWarning({
-        code: "remote_session_outbound_pump_failed",
-        message: `the session's outbound pump failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      });
+    void (async () => {
       try {
-        endSession("the session's outbound pump failed");
-      } catch {
-        // endSession settles pending dispatches through the binding; if the
-        // binding itself is what broke, best-effort cleanup already happened.
+        await pump;
+      } catch (error: unknown) {
+        reportWarning({
+          code: "remote_session_outbound_pump_failed",
+          message: `the session's outbound pump failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        });
+        try {
+          endSession("the session's outbound pump failed");
+        } catch {
+          // endSession settles pending dispatches through the binding; if the
+          // binding itself is what broke, best-effort cleanup already happened.
+        }
       }
-    });
+    })();
   };
 
   const attach = (
