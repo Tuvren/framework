@@ -43,7 +43,7 @@ interface PeerArgs {
   url: string;
 }
 
-function parseArgs(argv: readonly string[]): PeerArgs {
+const parseArgs = (argv: readonly string[]): PeerArgs => {
   let url: string | undefined;
   let sessionId: string | undefined;
   let effectsLogPath: string | undefined;
@@ -73,9 +73,9 @@ function parseArgs(argv: readonly string[]): PeerArgs {
   }
 
   return { effectsLogPath, sessionId, url };
-}
+};
 
-async function main(): Promise<void> {
+const main = async (): Promise<void> => {
   const args = parseArgs(process.argv.slice(2));
 
   const client = createSessionClient({
@@ -129,6 +129,6 @@ async function main(): Promise<void> {
   await new Promise<void>(() => {
     // Intentionally never resolves.
   });
-}
+};
 
 await main();
