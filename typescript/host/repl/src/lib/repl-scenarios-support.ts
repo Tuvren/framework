@@ -542,9 +542,99 @@ export const createReport = (input: {
   thread: input.thread,
 });
 
-export function createScenarioExecutionPlan(
+const countPromptToolResults = (messages: TuvrenPrompt["messages"]): number => {
+  let count = 0;
+
+  for (const message of messages) {
+    if (message.role !== "tool") {
+      continue;
+    }
+
+    count += message.parts.length;
+  }
+
+  return count;
+};
+
+const mergePromptSettings = (
+  prompt: TuvrenPrompt,
+  providerId: string,
+  settings: {
+    requiredToolResultsBeforeRelease?: number;
+    toolChoice?: string;
+  }
+): TuvrenPrompt => {
+  const mergedSettings = {
+    ...prompt.config?.settings,
+  };
+  const toolResultCount = countPromptToolResults(prompt.messages);
+  const releaseAfter = settings.requiredToolResultsBeforeRelease ?? 0;
+
+  if (toolResultCount < releaseAfter && settings.toolChoice !== undefined) {
+    mergedSettings.toolChoice = settings.toolChoice;
+  } else if ("toolChoice" in mergedSettings) {
+    mergedSettings.toolChoice = undefined;
+  }
+
+  return {
+    ...prompt,
+    config: {
+      ...prompt.config,
+      provider: providerId,
+      ...(Object.keys(mergedSettings).length === 0
+        ? {}
+        : {
+            settings: mergedSettings,
+          }),
+    },
+  };
+};
+
+const createScenarioProvider = (
+  config: ReplConfig,
+  settings: {
+    requiredToolResultsBeforeRelease?: number;
+    toolChoice?: string;
+  }
+): TuvrenProvider => {
+  const provider = createReplProvider({
+    aimockBaseUrl: config.aimockBaseUrl,
+    googleApiKey: config.googleApiKey,
+    mode: config.providerMode,
+    modelId: config.modelId,
+    scenario: config.scenario,
+  });
+
+  return {
+    generate(prompt) {
+      return provider.generate(
+        mergePromptSettings(prompt, provider.id, settings)
+      );
+    },
+    id: provider.id,
+    stream(prompt) {
+      return provider.stream(
+        mergePromptSettings(prompt, provider.id, settings)
+      );
+    },
+  };
+};
+
+const findToolDefinition = (name: "email" | "search") => {
+  const tool = createReplBuiltinTools().find((entry) => entry.name === name);
+
+  if (tool === undefined) {
+    throw new TuvrenRuntimeError(`missing repl tool "${name}"`, {
+      code: INVALID_REPL_CONFIG_CODE,
+    });
+  }
+
+  return tool;
+};
+
+export const createScenarioExecutionPlan = (
   config: ReplConfig
-): ReplScenarioExecutionPlan {
+): ReplScenarioExecutionPlan => {
   const defaultModel = createScenarioProvider(config, {});
 
   if (config.providerMode !== "ai-sdk-google") {
@@ -619,101 +709,11 @@ export function createScenarioExecutionPlan(
       };
     }
   }
-}
+};
 
-function createScenarioProvider(
-  config: ReplConfig,
-  settings: {
-    requiredToolResultsBeforeRelease?: number;
-    toolChoice?: string;
-  }
-): TuvrenProvider {
-  const provider = createReplProvider({
-    aimockBaseUrl: config.aimockBaseUrl,
-    googleApiKey: config.googleApiKey,
-    mode: config.providerMode,
-    modelId: config.modelId,
-    scenario: config.scenario,
-  });
-
-  return {
-    generate(prompt) {
-      return provider.generate(
-        mergePromptSettings(prompt, provider.id, settings)
-      );
-    },
-    id: provider.id,
-    stream(prompt) {
-      return provider.stream(
-        mergePromptSettings(prompt, provider.id, settings)
-      );
-    },
-  };
-}
-
-function mergePromptSettings(
-  prompt: TuvrenPrompt,
-  providerId: string,
-  settings: {
-    requiredToolResultsBeforeRelease?: number;
-    toolChoice?: string;
-  }
-): TuvrenPrompt {
-  const mergedSettings = {
-    ...prompt.config?.settings,
-  };
-  const toolResultCount = countPromptToolResults(prompt.messages);
-  const releaseAfter = settings.requiredToolResultsBeforeRelease ?? 0;
-
-  if (toolResultCount < releaseAfter && settings.toolChoice !== undefined) {
-    mergedSettings.toolChoice = settings.toolChoice;
-  } else if ("toolChoice" in mergedSettings) {
-    mergedSettings.toolChoice = undefined;
-  }
-
-  return {
-    ...prompt,
-    config: {
-      ...prompt.config,
-      provider: providerId,
-      ...(Object.keys(mergedSettings).length === 0
-        ? {}
-        : {
-            settings: mergedSettings,
-          }),
-    },
-  };
-}
-
-function countPromptToolResults(messages: TuvrenPrompt["messages"]): number {
-  let count = 0;
-
-  for (const message of messages) {
-    if (message.role !== "tool") {
-      continue;
-    }
-
-    count += message.parts.length;
-  }
-
-  return count;
-}
-
-function findToolDefinition(name: "email" | "search") {
-  const tool = createReplBuiltinTools().find((entry) => entry.name === name);
-
-  if (tool === undefined) {
-    throw new TuvrenRuntimeError(`missing repl tool "${name}"`, {
-      code: INVALID_REPL_CONFIG_CODE,
-    });
-  }
-
-  return tool;
-}
-
-export function readProjectionError(
+export const readProjectionError = (
   projection: ReplStreamProjection
-): ReplScenarioReport["error"] | undefined {
+): ReplScenarioReport["error"] | undefined => {
   const errorEvent = [...projection.canonical]
     .reverse()
     .find(
@@ -742,12 +742,26 @@ export function readProjectionError(
   return {
     message: String(error),
   };
-}
+};
 
-export function startProjectionCapture(
+const collect = async <T>(
+  events: AsyncIterable<T>,
+  onItem?: (item: T) => void
+): Promise<T[]> => {
+  const output: T[] = [];
+
+  for await (const event of events) {
+    onItem?.(event);
+    output.push(event);
+  }
+
+  return output;
+};
+
+export const startProjectionCapture = (
   handle: ExecutionHandle,
   onCanonicalEvent?: (event: TuvrenStreamEvent) => void
-): Promise<ReplStreamProjection> {
+): Promise<ReplStreamProjection> => {
   const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
     handle.events(),
     3
@@ -762,12 +776,12 @@ export function startProjectionCapture(
     canonical,
     sse,
   }));
-}
+};
 
-export function projectContinuationCapture(
+export const projectContinuationCapture = (
   handle: ExecutionHandle,
   onCanonicalEvent?: (event: TuvrenStreamEvent) => void
-): Promise<ReplStreamProjection> {
+): Promise<ReplStreamProjection> => {
   const [canonicalBranch, sseBranch, aguiBranch] = teeTuvrenStreamEvents(
     handle.events(),
     3
@@ -782,23 +796,21 @@ export function projectContinuationCapture(
     canonical,
     sse,
   }));
-}
+};
 
-export function mergeProjections(
+export const mergeProjections = (
   left: ReplStreamProjection,
   right: ReplStreamProjection
-): ReplStreamProjection {
-  return {
-    agui: [...left.agui, ...right.agui],
-    canonical: [...left.canonical, ...right.canonical],
-    sse: [...left.sse, ...right.sse],
-  };
-}
+): ReplStreamProjection => ({
+  agui: [...left.agui, ...right.agui],
+  canonical: [...left.canonical, ...right.canonical],
+  sse: [...left.sse, ...right.sse],
+});
 
-export function withHead(
+export const withHead = (
   thread: ReplThreadSummary,
   projection: ReplStreamProjection
-): ReplThreadSummary {
+): ReplThreadSummary => {
   // Orchestration streams can interleave descendant checkpoints, so only
   // derive the active head from checkpoints emitted on the active thread.
   const checkpoint = [...projection.canonical]
@@ -818,9 +830,9 @@ export function withHead(
       thread.headTurnNodeHash ??
       thread.rootTurnNodeHash,
   };
-}
+};
 
-function hasInjectedSteeringMessage(value: unknown): boolean {
+const hasInjectedSteeringMessage = (value: unknown): boolean => {
   if (!isPlainRecord(value)) {
     return false;
   }
@@ -835,26 +847,12 @@ function hasInjectedSteeringMessage(value: unknown): boolean {
       part.type === "text" &&
       part.text === "Injected steering"
   );
-}
+};
 
-async function collect<T>(
-  events: AsyncIterable<T>,
-  onItem?: (item: T) => void
-): Promise<T[]> {
-  const output: T[] = [];
-
-  for await (const event of events) {
-    onItem?.(event);
-    output.push(event);
-  }
-
-  return output;
-}
-
-export async function waitFor(
+export const waitFor = async (
   condition: () => boolean,
   timeoutMilliseconds = 1000
-): Promise<void> {
+): Promise<void> => {
   const startedAt = Date.now();
 
   while (!condition()) {
@@ -866,14 +864,20 @@ export async function waitFor(
       setTimeout(resolve, 5);
     });
   }
-}
+};
 
-export async function steerWhenRunning(
+const isInvalidSteeringStateError = (
+  error: unknown
+): error is TuvrenRuntimeError =>
+  error instanceof TuvrenRuntimeError &&
+  error.code === "invalid_steering_state";
+
+export const steerWhenRunning = async (
   host: ReplHost,
   handle: ExecutionHandle,
   signal: InputSignal,
   timeoutMilliseconds = 1000
-): Promise<void> {
+): Promise<void> => {
   const startedAt = Date.now();
 
   while (true) {
@@ -902,17 +906,7 @@ export async function steerWhenRunning(
       setTimeout(resolve, 5);
     });
   }
-}
+};
 
-function isInvalidSteeringStateError(
-  error: unknown
-): error is TuvrenRuntimeError {
-  return (
-    error instanceof TuvrenRuntimeError &&
-    error.code === "invalid_steering_state"
-  );
-}
-
-export function readSteeringMessageDurable(messages: unknown[]): boolean {
-  return messages.some(hasInjectedSteeringMessage);
-}
+export const readSteeringMessageDurable = (messages: unknown[]): boolean =>
+  messages.some(hasInjectedSteeringMessage);

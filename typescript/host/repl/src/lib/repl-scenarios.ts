@@ -98,46 +98,9 @@ const CONTINUE_UNTIL_STEERED_POLICY: LoopPolicy = {
   },
 };
 
-export async function runReplScenario(
+const runSingleTurnScenario = async (
   config: ReplConfig
-): Promise<ReplScenarioReport> {
-  switch (config.scenario) {
-    case "approval": {
-      return await runApprovalScenario(config);
-    }
-    case "branching": {
-      return await runBranchingScenario(config);
-    }
-    case "cancel": {
-      return await runCancelScenario(config);
-    }
-    case "extension": {
-      return await runSingleTurnScenario(config);
-    }
-    case "metadata":
-    case "orchestration":
-    case "streaming":
-    case "structured":
-    case "tools": {
-      return config.scenario === "orchestration"
-        ? await runOrchestrationScenario(config)
-        : await runSingleTurnScenario(config);
-    }
-    case "reload": {
-      return await runReloadScenario(config);
-    }
-    case "steering": {
-      return await runSteeringScenario(config);
-    }
-    default: {
-      return await runSingleTurnScenario(config);
-    }
-  }
-}
-
-async function runSingleTurnScenario(
-  config: ReplConfig
-): Promise<ReplScenarioReport> {
+): Promise<ReplScenarioReport> => {
   const host = createReplHost(config);
   const thread = await host.createThread();
   const executionPlan = createScenarioExecutionPlan(config);
@@ -226,11 +189,23 @@ async function runSingleTurnScenario(
     projection,
     thread: withHead(thread, projection),
   });
-}
+};
 
-async function runOrchestrationScenario(
+const collectEvents = async (
+  events: AsyncIterable<TuvrenStreamEvent>
+): Promise<TuvrenStreamEvent[]> => {
+  const output: TuvrenStreamEvent[] = [];
+
+  for await (const event of events) {
+    output.push(event);
+  }
+
+  return output;
+};
+
+const runOrchestrationScenario = async (
   config: ReplConfig
-): Promise<ReplScenarioReport> {
+): Promise<ReplScenarioReport> => {
   const host = createReplHost(config);
   const thread = await host.createThread();
   const orchestration = createOrchestrationRuntime({
@@ -298,11 +273,11 @@ async function runOrchestrationScenario(
     projection,
     thread: withHead(thread, projection),
   });
-}
+};
 
-async function runApprovalScenario(
+const runApprovalScenario = async (
   config: ReplConfig
-): Promise<ReplScenarioReport> {
+): Promise<ReplScenarioReport> => {
   const host = createReplHost(config);
   const thread = await host.createThread();
   const executionPlan = createScenarioExecutionPlan(config);
@@ -451,11 +426,11 @@ async function runApprovalScenario(
     projection,
     thread: withHead(thread, projection),
   });
-}
+};
 
-async function runBranchingScenario(
+const runBranchingScenario = async (
   config: ReplConfig
-): Promise<ReplScenarioReport> {
+): Promise<ReplScenarioReport> => {
   const host = createReplHost(config);
   const thread = await host.createThread();
   const firstHandle = host.executeTurn({
@@ -504,11 +479,11 @@ async function runBranchingScenario(
     projection,
     thread: withHead(branchedThread, projection),
   });
-}
+};
 
-async function runSteeringScenario(
+const runSteeringScenario = async (
   config: ReplConfig
-): Promise<ReplScenarioReport> {
+): Promise<ReplScenarioReport> => {
   const host = createReplHost(config);
   const thread = await host.createThread();
   const handle = host.executeTurn({
@@ -543,11 +518,11 @@ async function runSteeringScenario(
     projection,
     thread: withHead(thread, projection),
   });
-}
+};
 
-async function runCancelScenario(
+const runCancelScenario = async (
   config: ReplConfig
-): Promise<ReplScenarioReport> {
+): Promise<ReplScenarioReport> => {
   const host = createReplHost(config);
   const thread = await host.createThread();
   const handle = host.executeTurn({
@@ -581,11 +556,11 @@ async function runCancelScenario(
     projection,
     thread: withHead(thread, projection),
   });
-}
+};
 
-async function runReloadScenario(
+const runReloadScenario = async (
   config: ReplConfig
-): Promise<ReplScenarioReport> {
+): Promise<ReplScenarioReport> => {
   const host = createReplHost(config);
   const thread = await host.createThread();
   const handle = host.executeTurn({
@@ -652,16 +627,41 @@ async function runReloadScenario(
     projection: projectionAfterReload,
     thread: continuedThread,
   });
-}
+};
 
-async function collectEvents(
-  events: AsyncIterable<TuvrenStreamEvent>
-): Promise<TuvrenStreamEvent[]> {
-  const output: TuvrenStreamEvent[] = [];
-
-  for await (const event of events) {
-    output.push(event);
+export const runReplScenario = async (
+  config: ReplConfig
+): Promise<ReplScenarioReport> => {
+  switch (config.scenario) {
+    case "approval": {
+      return await runApprovalScenario(config);
+    }
+    case "branching": {
+      return await runBranchingScenario(config);
+    }
+    case "cancel": {
+      return await runCancelScenario(config);
+    }
+    case "extension": {
+      return await runSingleTurnScenario(config);
+    }
+    case "metadata":
+    case "orchestration":
+    case "streaming":
+    case "structured":
+    case "tools": {
+      return config.scenario === "orchestration"
+        ? await runOrchestrationScenario(config)
+        : await runSingleTurnScenario(config);
+    }
+    case "reload": {
+      return await runReloadScenario(config);
+    }
+    case "steering": {
+      return await runSteeringScenario(config);
+    }
+    default: {
+      return await runSingleTurnScenario(config);
+    }
   }
-
-  return output;
-}
+};
