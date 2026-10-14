@@ -73,40 +73,332 @@ import {
   withTemporaryEnvAsync,
 } from "./repl-test-helpers.ts";
 
-function createPromptObservingProvider(
+const streamPromptObservationResponse =
+  async function* streamPromptObservationResponse() {
+    await Promise.resolve();
+    yield { text: "ok", type: "text_delta" } as const;
+    yield { finishReason: "stop", type: "finish" } as const;
+  };
+
+const createPromptObservingProvider = (
   id: string,
   observePrompt: (prompt: TuvrenPrompt) => void
-): TuvrenProvider {
-  return {
-    generate(prompt) {
-      observePrompt(prompt);
-      return Promise.resolve({
-        finishReason: "stop",
-        parts: [{ text: "ok", type: "text" }],
-      });
-    },
-    id,
-    stream(prompt) {
-      observePrompt(prompt);
-      return streamPromptObservationResponse();
-    },
-  };
-}
+): TuvrenProvider => ({
+  generate(prompt) {
+    observePrompt(prompt);
+    return Promise.resolve({
+      finishReason: "stop",
+      parts: [{ text: "ok", type: "text" }],
+    });
+  },
+  id,
+  stream(prompt) {
+    observePrompt(prompt);
+    return streamPromptObservationResponse();
+  },
+});
 
-async function* streamPromptObservationResponse() {
-  await Promise.resolve();
-  yield { text: "ok", type: "text_delta" } as const;
-  yield { finishReason: "stop", type: "finish" } as const;
-}
-
-function createToolExecutionContext(
+const createToolExecutionContext = (
   name: string
-): Parameters<TuvrenToolDefinition["execute"]>[1] {
-  return {
-    callId: `test:${name}`,
-    name,
-  };
-}
+): Parameters<TuvrenToolDefinition["execute"]>[1] => ({
+  callId: `test:${name}`,
+  name,
+});
+
+const readCommandArray = (
+  result: Awaited<ReturnType<typeof runReplCommand>>
+): unknown[] => {
+  if (result.output === undefined) {
+    throw new Error("expected command output");
+  }
+
+  const parsed: unknown = JSON.parse(result.output);
+
+  if (!Array.isArray(parsed)) {
+    throw new TypeError("expected JSON array output");
+  }
+
+  return parsed;
+};
+
+const parseHeadlessOutputRecords = (
+  output: string
+): {
+  error?: { message: string };
+  event?: { type?: string };
+  exit?: boolean;
+  ordinal: number;
+  output?: string | null;
+  recordKind: string;
+  recordedAtMs: number;
+  v: number;
+}[] =>
+  output
+    .trim()
+    .split("\n")
+    .filter((line) => line.length > 0)
+    .map((line) => JSON.parse(line));
+
+const createTranscriptHeaderFixture = (): ReplTranscriptHeader => ({
+  config: {
+    backend: {
+      kind: "sqlite",
+      options: {
+        path: "/tmp/tuvren transcript.sqlite",
+      },
+    },
+    modelId: "fixture-model",
+    providerMode: "fixture",
+    scenario: "streaming",
+    systemPrompt: "Be concise.",
+  },
+  recordKind: "header",
+  recordedAtMs: 1000,
+  runtimeVersion: "@tuvren/runtime@0.27.0",
+  v: 1,
+});
+
+const createTranscriptEntryFixtures = (): ReplTranscriptEntry[] => [
+  {
+    input: ".status",
+    ordinal: 0,
+    recordKind: "input",
+    recordedAtMs: 1001,
+    v: 1,
+  },
+  {
+    event: {
+      delta: "Hello",
+      messageId: "message-1",
+      timestamp: 1002,
+      type: "text.delta",
+    },
+    ordinal: 0,
+    recordKind: "stream-event",
+    recordedAtMs: 1002,
+    v: 1,
+  },
+  {
+    exit: false,
+    ordinal: 0,
+    output: '{"backend":"memory"}',
+    recordKind: "output",
+    recordedAtMs: 1003,
+    v: 1,
+  },
+  {
+    operation: "readBranchMessages",
+    ordinal: 0,
+    recordKind: "durable-read",
+    recordedAtMs: 1004,
+    result: [
+      {
+        role: "assistant",
+        text: "Hello",
+      },
+    ],
+    v: 1,
+  },
+];
+
+const createStatusReplayTranscript = async (input: {
+  outputOverride?: string;
+  providerMode: string;
+}) => {
+  const header = {
+    ...createTranscriptHeaderFixture(),
+    config: {
+      backend: {
+        kind: "memory",
+      },
+      providerMode: input.providerMode,
+    },
+  } satisfies ReplTranscriptHeader;
+  const shell = createReplShell({
+    backend: "memory",
+    providerMode: "fixture",
+    scenario: "streaming",
+  });
+  const result = await runReplInput(shell, ".status");
+  const output = input.outputOverride ?? result.output ?? null;
+  const lines = [
+    `${serializeReplTranscriptRecord(header)}\n`,
+    `${serializeReplTranscriptRecord({
+      input: ".status",
+      ordinal: 0,
+      recordKind: "input",
+      recordedAtMs: 2001,
+      v: 1,
+    })}\n`,
+    `${serializeReplTranscriptRecord({
+      ordinal: 0,
+      output,
+      recordKind: "output",
+      recordedAtMs: 2002,
+      v: 1,
+    })}\n`,
+  ];
+
+  return await readReplTranscriptFromLines(lines.map((line) => line.trimEnd()));
+};
+
+const createFreeformReplayTranscript = async (input: {
+  durableReads?: ReplTranscriptEntry[];
+  includeStreamEvents: boolean;
+  outputOverride?: string;
+  providerMode?: string;
+}) => {
+  const header = {
+    ...createTranscriptHeaderFixture(),
+    config: {
+      backend: {
+        kind: "memory",
+      },
+      providerMode: input.providerMode ?? "fixture",
+    },
+  } satisfies ReplTranscriptHeader;
+  const shell = createReplShell({
+    backend: "memory",
+    providerMode: "fixture",
+    scenario: "streaming",
+  });
+  const events: TuvrenStreamEvent[] = [];
+  await runReplInput(shell, "Hello freeform replay", {
+    onCanonicalEvent(event) {
+      events.push(event);
+    },
+  });
+  const lines = [
+    `${serializeReplTranscriptRecord(header)}\n`,
+    `${serializeReplTranscriptRecord({
+      input: "Hello freeform replay",
+      ordinal: 0,
+      recordKind: "input",
+      recordedAtMs: 2001,
+      v: 1,
+    })}\n`,
+    ...(input.includeStreamEvents
+      ? events.map(
+          (event, index) =>
+            `${serializeReplTranscriptRecord({
+              event,
+              ordinal: 0,
+              recordKind: "stream-event",
+              recordedAtMs: 2002 + index,
+              v: 1,
+            })}\n`
+        )
+      : []),
+    `${serializeReplTranscriptRecord({
+      ordinal: 0,
+      output: input.outputOverride ?? "REPL streaming complete.",
+      recordKind: "output",
+      recordedAtMs: 2100,
+      v: 1,
+    })}\n`,
+    ...(input.durableReads ?? []).map(
+      (entry) => `${serializeReplTranscriptRecord(entry)}\n`
+    ),
+  ];
+
+  return await readReplTranscriptFromLines(lines.map((line) => line.trimEnd()));
+};
+
+const waitForCondition = async (
+  predicate: () => boolean,
+  timeoutMs = 1000
+): Promise<void> => {
+  const deadline = Date.now() + timeoutMs;
+
+  while (!predicate()) {
+    if (Date.now() >= deadline) {
+      throw new Error("timed out waiting for shell condition");
+    }
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 20);
+    });
+  }
+};
+
+const findToolDefinition = (name: string): TuvrenToolDefinition => {
+  const tool = createReplBuiltinTools().find((entry) => entry.name === name);
+
+  if (tool === undefined) {
+    throw new Error(`expected repl tool "${name}"`);
+  }
+
+  return tool;
+};
+
+const readCliProcessEnv = (
+  envOverrides?: Record<string, string | undefined>
+): Record<string, string | undefined> => ({
+  CI: process.env.CI,
+  FORCE_COLOR: undefined,
+  HOME: process.env.HOME,
+  LANG: process.env.LANG,
+  LC_ALL: process.env.LC_ALL,
+  NODE_OPTIONS: process.env.NODE_OPTIONS,
+  NO_COLOR: undefined,
+  PATH: process.env.PATH,
+  TEMP: process.env.TEMP,
+  TERM: process.env.TERM,
+  TMP: process.env.TMP,
+  TMPDIR: process.env.TMPDIR,
+  TZ: process.env.TZ,
+  USER: process.env.USER,
+  ...envOverrides,
+});
+
+const runCliProcess = async (input: {
+  argv?: readonly string[];
+  envOverrides?: Record<string, string | undefined>;
+  stdin?: string;
+}): Promise<{ exitCode: number | null; stderr: string; stdout: string }> => {
+  const cli = spawn(
+    "node",
+    [
+      join(process.cwd(), "dist/cli.js"),
+      ...(input.argv ?? ["--backend", "memory", "--provider", "fixture"]),
+    ],
+    {
+      cwd: process.cwd(),
+      env: readCliProcessEnv(input.envOverrides),
+      stdio: "pipe",
+    }
+  );
+  let stdout = "";
+  let stderr = "";
+
+  cli.stdout.on("data", (chunk: Buffer | string) => {
+    stdout += String(chunk);
+  });
+  cli.stderr.on("data", (chunk: Buffer | string) => {
+    stderr += String(chunk);
+  });
+  cli.stdin.end(input.stdin ?? "");
+
+  return await new Promise<{
+    exitCode: number | null;
+    stderr: string;
+    stdout: string;
+  }>((resolve, reject) => {
+    cli.once("error", reject);
+    cli.once("close", (exitCode) => {
+      resolve({ exitCode, stderr, stdout });
+    });
+  });
+};
+
+const runCliSession = async (
+  stdin: string,
+  envOverrides?: Record<string, string>
+): Promise<{ exitCode: number | null; stderr: string; stdout: string }> =>
+  await runCliProcess({
+    envOverrides,
+    stdin,
+  });
 
 describe("repl host scenarios", () => {
   test("loads deterministic default configuration", () => {
@@ -2712,304 +3004,3 @@ describe("repl host scenarios", () => {
     expect(report.mismatches[0]?.recordKind).toBe("output");
   });
 });
-
-function readCommandArray(
-  result: Awaited<ReturnType<typeof runReplCommand>>
-): unknown[] {
-  if (result.output === undefined) {
-    throw new Error("expected command output");
-  }
-
-  const parsed: unknown = JSON.parse(result.output);
-
-  if (!Array.isArray(parsed)) {
-    throw new TypeError("expected JSON array output");
-  }
-
-  return parsed;
-}
-
-function parseHeadlessOutputRecords(output: string): {
-  error?: { message: string };
-  event?: { type?: string };
-  exit?: boolean;
-  ordinal: number;
-  output?: string | null;
-  recordKind: string;
-  recordedAtMs: number;
-  v: number;
-}[] {
-  return output
-    .trim()
-    .split("\n")
-    .filter((line) => line.length > 0)
-    .map((line) => JSON.parse(line));
-}
-
-function createTranscriptHeaderFixture(): ReplTranscriptHeader {
-  return {
-    config: {
-      backend: {
-        kind: "sqlite",
-        options: {
-          path: "/tmp/tuvren transcript.sqlite",
-        },
-      },
-      modelId: "fixture-model",
-      providerMode: "fixture",
-      scenario: "streaming",
-      systemPrompt: "Be concise.",
-    },
-    recordKind: "header",
-    recordedAtMs: 1000,
-    runtimeVersion: "@tuvren/runtime@0.27.0",
-    v: 1,
-  };
-}
-
-function createTranscriptEntryFixtures(): ReplTranscriptEntry[] {
-  return [
-    {
-      input: ".status",
-      ordinal: 0,
-      recordKind: "input",
-      recordedAtMs: 1001,
-      v: 1,
-    },
-    {
-      event: {
-        delta: "Hello",
-        messageId: "message-1",
-        timestamp: 1002,
-        type: "text.delta",
-      },
-      ordinal: 0,
-      recordKind: "stream-event",
-      recordedAtMs: 1002,
-      v: 1,
-    },
-    {
-      exit: false,
-      ordinal: 0,
-      output: '{"backend":"memory"}',
-      recordKind: "output",
-      recordedAtMs: 1003,
-      v: 1,
-    },
-    {
-      operation: "readBranchMessages",
-      ordinal: 0,
-      recordKind: "durable-read",
-      recordedAtMs: 1004,
-      result: [
-        {
-          role: "assistant",
-          text: "Hello",
-        },
-      ],
-      v: 1,
-    },
-  ];
-}
-
-async function createStatusReplayTranscript(input: {
-  outputOverride?: string;
-  providerMode: string;
-}) {
-  const header = {
-    ...createTranscriptHeaderFixture(),
-    config: {
-      backend: {
-        kind: "memory",
-      },
-      providerMode: input.providerMode,
-    },
-  } satisfies ReplTranscriptHeader;
-  const shell = createReplShell({
-    backend: "memory",
-    providerMode: "fixture",
-    scenario: "streaming",
-  });
-  const result = await runReplInput(shell, ".status");
-  const output = input.outputOverride ?? result.output ?? null;
-  const lines = [
-    `${serializeReplTranscriptRecord(header)}\n`,
-    `${serializeReplTranscriptRecord({
-      input: ".status",
-      ordinal: 0,
-      recordKind: "input",
-      recordedAtMs: 2001,
-      v: 1,
-    })}\n`,
-    `${serializeReplTranscriptRecord({
-      ordinal: 0,
-      output,
-      recordKind: "output",
-      recordedAtMs: 2002,
-      v: 1,
-    })}\n`,
-  ];
-
-  return await readReplTranscriptFromLines(lines.map((line) => line.trimEnd()));
-}
-
-async function createFreeformReplayTranscript(input: {
-  durableReads?: ReplTranscriptEntry[];
-  includeStreamEvents: boolean;
-  outputOverride?: string;
-  providerMode?: string;
-}) {
-  const header = {
-    ...createTranscriptHeaderFixture(),
-    config: {
-      backend: {
-        kind: "memory",
-      },
-      providerMode: input.providerMode ?? "fixture",
-    },
-  } satisfies ReplTranscriptHeader;
-  const shell = createReplShell({
-    backend: "memory",
-    providerMode: "fixture",
-    scenario: "streaming",
-  });
-  const events: TuvrenStreamEvent[] = [];
-  await runReplInput(shell, "Hello freeform replay", {
-    onCanonicalEvent(event) {
-      events.push(event);
-    },
-  });
-  const lines = [
-    `${serializeReplTranscriptRecord(header)}\n`,
-    `${serializeReplTranscriptRecord({
-      input: "Hello freeform replay",
-      ordinal: 0,
-      recordKind: "input",
-      recordedAtMs: 2001,
-      v: 1,
-    })}\n`,
-    ...(input.includeStreamEvents
-      ? events.map(
-          (event, index) =>
-            `${serializeReplTranscriptRecord({
-              event,
-              ordinal: 0,
-              recordKind: "stream-event",
-              recordedAtMs: 2002 + index,
-              v: 1,
-            })}\n`
-        )
-      : []),
-    `${serializeReplTranscriptRecord({
-      ordinal: 0,
-      output: input.outputOverride ?? "REPL streaming complete.",
-      recordKind: "output",
-      recordedAtMs: 2100,
-      v: 1,
-    })}\n`,
-    ...(input.durableReads ?? []).map(
-      (entry) => `${serializeReplTranscriptRecord(entry)}\n`
-    ),
-  ];
-
-  return await readReplTranscriptFromLines(lines.map((line) => line.trimEnd()));
-}
-
-async function waitForCondition(
-  predicate: () => boolean,
-  timeoutMs = 1000
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-
-  while (!predicate()) {
-    if (Date.now() >= deadline) {
-      throw new Error("timed out waiting for shell condition");
-    }
-
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 20);
-    });
-  }
-}
-
-function findToolDefinition(name: string): TuvrenToolDefinition {
-  const tool = createReplBuiltinTools().find((entry) => entry.name === name);
-
-  if (tool === undefined) {
-    throw new Error(`expected repl tool "${name}"`);
-  }
-
-  return tool;
-}
-
-async function runCliSession(
-  stdin: string,
-  envOverrides?: Record<string, string>
-): Promise<{ exitCode: number | null; stderr: string; stdout: string }> {
-  return await runCliProcess({
-    envOverrides,
-    stdin,
-  });
-}
-
-async function runCliProcess(input: {
-  argv?: readonly string[];
-  envOverrides?: Record<string, string | undefined>;
-  stdin?: string;
-}): Promise<{ exitCode: number | null; stderr: string; stdout: string }> {
-  const cli = spawn(
-    "node",
-    [
-      join(process.cwd(), "dist/cli.js"),
-      ...(input.argv ?? ["--backend", "memory", "--provider", "fixture"]),
-    ],
-    {
-      cwd: process.cwd(),
-      env: readCliProcessEnv(input.envOverrides),
-      stdio: "pipe",
-    }
-  );
-  let stdout = "";
-  let stderr = "";
-
-  cli.stdout.on("data", (chunk: Buffer | string) => {
-    stdout += String(chunk);
-  });
-  cli.stderr.on("data", (chunk: Buffer | string) => {
-    stderr += String(chunk);
-  });
-  cli.stdin.end(input.stdin ?? "");
-
-  return await new Promise<{
-    exitCode: number | null;
-    stderr: string;
-    stdout: string;
-  }>((resolve, reject) => {
-    cli.once("error", reject);
-    cli.once("close", (exitCode) => {
-      resolve({ exitCode, stderr, stdout });
-    });
-  });
-}
-
-function readCliProcessEnv(
-  envOverrides?: Record<string, string | undefined>
-): Record<string, string | undefined> {
-  return {
-    CI: process.env.CI,
-    FORCE_COLOR: undefined,
-    HOME: process.env.HOME,
-    LANG: process.env.LANG,
-    LC_ALL: process.env.LC_ALL,
-    NODE_OPTIONS: process.env.NODE_OPTIONS,
-    NO_COLOR: undefined,
-    PATH: process.env.PATH,
-    TEMP: process.env.TEMP,
-    TERM: process.env.TERM,
-    TMP: process.env.TMP,
-    TMPDIR: process.env.TMPDIR,
-    TZ: process.env.TZ,
-    USER: process.env.USER,
-    ...envOverrides,
-  };
-}
