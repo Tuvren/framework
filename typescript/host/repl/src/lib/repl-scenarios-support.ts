@@ -48,10 +48,266 @@ import type {
 
 const NO_TOOLS: [] = [];
 
-export function readMetadataObserved(
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readProviderMetadata = (
+  value: Record<string, unknown>
+): Record<string, unknown> | undefined =>
+  isPlainRecord(value.providerMetadata) ? value.providerMetadata : undefined;
+
+const hasProviderCallId = (
+  providerMetadata: Record<string, unknown> | undefined
+): boolean =>
+  isPlainRecord(providerMetadata) &&
+  typeof providerMetadata.providerCallId === "string" &&
+  providerMetadata.providerCallId.length > 0;
+
+const hasGoogleThoughtSignature = (
+  providerMetadata: Record<string, unknown> | undefined
+): boolean => {
+  if (!isPlainRecord(providerMetadata)) {
+    return false;
+  }
+
+  const googleMetadata = providerMetadata.google;
+
+  if (
+    isPlainRecord(googleMetadata) &&
+    typeof googleMetadata.thoughtSignature === "string"
+  ) {
+    return true;
+  }
+
+  const vertexMetadata = providerMetadata.vertex;
+
+  return (
+    isPlainRecord(vertexMetadata) &&
+    typeof vertexMetadata.thoughtSignature === "string"
+  );
+};
+
+const hasGoogleProviderNamespace = (
+  providerMetadata: Record<string, unknown> | undefined
+): boolean => {
+  if (!isPlainRecord(providerMetadata)) {
+    return false;
+  }
+
+  return (
+    isPlainRecord(providerMetadata.google) ||
+    isPlainRecord(providerMetadata.vertex)
+  );
+};
+
+const hasGoogleFinishPartMetadataEvidence = (value: unknown): boolean => {
+  if (!isPlainRecord(value) || value.type !== "finish") {
+    return false;
+  }
+
+  return hasGoogleProviderNamespace(readProviderMetadata(value));
+};
+
+const hasGoogleProviderMetadataEvidence = (value: unknown): boolean => {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+
+  const { providerMetadata } = value;
+
+  if (isPlainRecord(providerMetadata)) {
+    const bridgeMetadata = providerMetadata.aiSdkBridge;
+
+    if (isPlainRecord(bridgeMetadata)) {
+      const { response } = bridgeMetadata;
+      const { streamPartMetadata } = bridgeMetadata;
+      const responseHeaders = isPlainRecord(response)
+        ? response.headers
+        : undefined;
+
+      if (
+        (hasGoogleThoughtSignature(providerMetadata) ||
+          hasGoogleProviderNamespace(providerMetadata)) &&
+        isPlainRecord(responseHeaders) &&
+        Array.isArray(streamPartMetadata) &&
+        streamPartMetadata.some(hasGoogleFinishPartMetadataEvidence)
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return Object.values(value).some((entry) => {
+    if (Array.isArray(entry)) {
+      return entry.some(hasGoogleProviderMetadataEvidence);
+    }
+
+    return hasGoogleProviderMetadataEvidence(entry);
+  });
+};
+
+const hasAimockResponseMetadataEvidence = (value: unknown): boolean => {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+
+  const { providerMetadata } = value;
+
+  if (isPlainRecord(providerMetadata)) {
+    const bridgeMetadata = providerMetadata.aiSdkBridge;
+
+    if (isPlainRecord(bridgeMetadata)) {
+      const { response } = bridgeMetadata;
+
+      if (isPlainRecord(response)) {
+        const { metadata } = response;
+
+        if (
+          isPlainRecord(metadata) &&
+          metadata.id === "aimock-metadata-response" &&
+          typeof metadata.modelId === "string" &&
+          metadata.modelId.length > 0
+        ) {
+          return true;
+        }
+
+        if (hasGoogleProviderNamespace(providerMetadata)) {
+          return hasGoogleProviderMetadataEvidence(value);
+        }
+      }
+    }
+  }
+
+  return Object.values(value).some((entry) => {
+    if (Array.isArray(entry)) {
+      return entry.some(hasAimockResponseMetadataEvidence);
+    }
+
+    return hasAimockResponseMetadataEvidence(entry);
+  });
+};
+
+const hasProviderMetadataEvidence = (value: unknown): boolean => {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+
+  const { providerMetadata } = value;
+
+  if (
+    isPlainRecord(providerMetadata) &&
+    (isPlainRecord(providerMetadata.repl) ||
+      isPlainRecord(providerMetadata.fixture) ||
+      isPlainRecord(providerMetadata.aiSdkBridge))
+  ) {
+    return true;
+  }
+
+  return Object.values(value).some((entry) => {
+    if (Array.isArray(entry)) {
+      return entry.some(hasProviderMetadataEvidence);
+    }
+
+    return hasProviderMetadataEvidence(entry);
+  });
+};
+
+export const countToolCallThoughtSignatureEvents = (
+  projection: ReplStreamProjection
+): number =>
+  projection.canonical.filter((event) => {
+    if (event.type !== "tool_call.done") {
+      return false;
+    }
+
+    return hasGoogleThoughtSignature(event.providerMetadata);
+  }).length;
+
+export const countDurableToolCallThoughtSignatures = (
+  messages: unknown[]
+): number => {
+  let count = 0;
+
+  for (const message of messages) {
+    if (
+      !isPlainRecord(message) ||
+      message.role !== "assistant" ||
+      !Array.isArray(message.parts)
+    ) {
+      continue;
+    }
+
+    for (const part of message.parts) {
+      if (
+        isPlainRecord(part) &&
+        part.type === "tool_call" &&
+        hasGoogleThoughtSignature(readProviderMetadata(part))
+      ) {
+        count += 1;
+      }
+    }
+  }
+
+  return count;
+};
+
+export const countToolCallProviderCallIdEvents = (
+  projection: ReplStreamProjection
+): number =>
+  projection.canonical.filter((event) => {
+    if (event.type !== "tool_call.done") {
+      return false;
+    }
+
+    return hasProviderCallId(event.providerMetadata);
+  }).length;
+
+export const countDurableToolCallProviderCallIds = (
+  messages: unknown[]
+): number => {
+  let count = 0;
+
+  for (const message of messages) {
+    if (
+      !isPlainRecord(message) ||
+      message.role !== "assistant" ||
+      !Array.isArray(message.parts)
+    ) {
+      continue;
+    }
+
+    for (const part of message.parts) {
+      if (
+        isPlainRecord(part) &&
+        part.type === "tool_call" &&
+        hasProviderCallId(readProviderMetadata(part))
+      ) {
+        count += 1;
+      }
+    }
+  }
+
+  return count;
+};
+
+export const isEditedEmailToolStart = (event: TuvrenStreamEvent): boolean => {
+  if (event.type !== "tool.start" || event.name !== "email") {
+    return false;
+  }
+
+  const { input } = event;
+
+  return (
+    isPlainRecord(input) &&
+    input.subject === "Edited status update" &&
+    input.to === "ops@example.com"
+  );
+};
+
+export const readMetadataObserved = (
   config: ReplConfig,
   messages: unknown[]
-): boolean {
+): boolean => {
   if (config.scenario !== "metadata") {
     return true;
   }
@@ -65,13 +321,13 @@ export function readMetadataObserved(
   }
 
   return messages.some(hasProviderMetadataEvidence);
-}
+};
 
-export function readToolHistoryPreserved(
+export const readToolHistoryPreserved = (
   config: ReplConfig,
   durableToolCallProviderCallIdCount: number,
   durableToolCallThoughtSignatureCount: number
-): boolean {
+): boolean => {
   if (config.scenario !== "tools") {
     return true;
   }
@@ -85,13 +341,13 @@ export function readToolHistoryPreserved(
   }
 
   return true;
-}
+};
 
-export function readToolTraceObserved(
+export const readToolTraceObserved = (
   config: ReplConfig,
   toolCallProviderCallIdCount: number,
   toolCallThoughtSignatureCount: number
-): boolean {
+): boolean => {
   if (config.scenario !== "tools") {
     return true;
   }
@@ -105,13 +361,13 @@ export function readToolTraceObserved(
   }
 
   return true;
-}
+};
 
-export function readApprovalToolMetadataObserved(
+export const readApprovalToolMetadataObserved = (
   config: ReplConfig,
   projection: ReplStreamProjection,
   messages: unknown[]
-): boolean {
+): boolean => {
   if (config.providerMode === "ai-sdk-google") {
     return (
       countToolCallThoughtSignatureEvents(projection) >= 1 &&
@@ -124,13 +380,13 @@ export function readApprovalToolMetadataObserved(
   }
 
   return true;
-}
+};
 
-export function readApprovalToolMetadataHistory(
+export const readApprovalToolMetadataHistory = (
   config: ReplConfig,
   messages: unknown[],
   durableToolCallProviderCallIdCount: number
-): boolean {
+): boolean => {
   if (config.providerMode === "ai-sdk-google") {
     return countDurableToolCallThoughtSignatures(messages) >= 1;
   }
@@ -140,42 +396,29 @@ export function readApprovalToolMetadataHistory(
   }
 
   return true;
-}
+};
 
-export function createReport(input: {
-  checks: Record<string, boolean>;
-  config: ReplConfig;
-  error?: {
-    code?: string;
-    message: string;
-  };
-  handle: ExecutionHandle;
-  projection: ReplStreamProjection;
-  thread: ReplThreadSummary;
-}): ReplScenarioReport {
-  return {
-    backend: input.config.backend,
-    checks: input.checks,
-    ...(input.error === undefined ? {} : { error: input.error }),
-    events: {
-      aguiTypes: input.projection.agui.map((event) => String(event.type)),
-      canonicalTypes: input.projection.canonical.map((event) => event.type),
-      sseEvents: input.projection.sse.map((event) => event.event ?? "message"),
-    },
-    kernelMode: input.config.kernelMode ?? "typescript-local",
-    providerMode: input.config.providerMode,
-    scenario: input.config.scenario,
-    status: input.handle.status(),
-    telemetry: createTelemetryEvidence(input),
-    thread: input.thread,
-  };
-}
+const collapseTelemetryValues = (
+  values: readonly string[]
+): string | string[] | null => {
+  const uniqueValues = [...new Set(values)];
 
-function createTelemetryEvidence(input: {
+  if (uniqueValues.length === 0) {
+    return null;
+  }
+
+  if (uniqueValues.length === 1) {
+    return uniqueValues[0] ?? null;
+  }
+
+  return uniqueValues;
+};
+
+const createTelemetryEvidence = (input: {
   config: ReplConfig;
   projection: ReplStreamProjection;
   thread: ReplThreadSummary;
-}): ReplTelemetryEvidence {
+}): ReplTelemetryEvidence => {
   const turnStarts = input.projection.canonical.filter(
     (event): event is Extract<TuvrenStreamEvent, { type: "turn.start" }> =>
       event.type === "turn.start"
@@ -270,23 +513,34 @@ function createTelemetryEvidence(input: {
     }),
     schemaUrl: TUVREN_RUNTIME_TELEMETRY_SCHEMA_URL,
   };
-}
+};
 
-function collapseTelemetryValues(
-  values: readonly string[]
-): string | string[] | null {
-  const uniqueValues = [...new Set(values)];
-
-  if (uniqueValues.length === 0) {
-    return null;
-  }
-
-  if (uniqueValues.length === 1) {
-    return uniqueValues[0] ?? null;
-  }
-
-  return uniqueValues;
-}
+export const createReport = (input: {
+  checks: Record<string, boolean>;
+  config: ReplConfig;
+  error?: {
+    code?: string;
+    message: string;
+  };
+  handle: ExecutionHandle;
+  projection: ReplStreamProjection;
+  thread: ReplThreadSummary;
+}): ReplScenarioReport => ({
+  backend: input.config.backend,
+  checks: input.checks,
+  ...(input.error === undefined ? {} : { error: input.error }),
+  events: {
+    aguiTypes: input.projection.agui.map((event) => String(event.type)),
+    canonicalTypes: input.projection.canonical.map((event) => event.type),
+    sseEvents: input.projection.sse.map((event) => event.event ?? "message"),
+  },
+  kernelMode: input.config.kernelMode ?? "typescript-local",
+  providerMode: input.config.providerMode,
+  scenario: input.config.scenario,
+  status: input.handle.status(),
+  telemetry: createTelemetryEvidence(input),
+  thread: input.thread,
+});
 
 export function createScenarioExecutionPlan(
   config: ReplConfig
@@ -566,267 +820,6 @@ export function withHead(
   };
 }
 
-function hasProviderMetadataEvidence(value: unknown): boolean {
-  if (!isPlainRecord(value)) {
-    return false;
-  }
-
-  const { providerMetadata } = value;
-
-  if (
-    isPlainRecord(providerMetadata) &&
-    (isPlainRecord(providerMetadata.repl) ||
-      isPlainRecord(providerMetadata.fixture) ||
-      isPlainRecord(providerMetadata.aiSdkBridge))
-  ) {
-    return true;
-  }
-
-  return Object.values(value).some((entry) => {
-    if (Array.isArray(entry)) {
-      return entry.some(hasProviderMetadataEvidence);
-    }
-
-    return hasProviderMetadataEvidence(entry);
-  });
-}
-
-function hasAimockResponseMetadataEvidence(value: unknown): boolean {
-  if (!isPlainRecord(value)) {
-    return false;
-  }
-
-  const { providerMetadata } = value;
-
-  if (isPlainRecord(providerMetadata)) {
-    const bridgeMetadata = providerMetadata.aiSdkBridge;
-
-    if (isPlainRecord(bridgeMetadata)) {
-      const { response } = bridgeMetadata;
-
-      if (isPlainRecord(response)) {
-        const { metadata } = response;
-
-        if (
-          isPlainRecord(metadata) &&
-          metadata.id === "aimock-metadata-response" &&
-          typeof metadata.modelId === "string" &&
-          metadata.modelId.length > 0
-        ) {
-          return true;
-        }
-
-        if (hasGoogleProviderNamespace(providerMetadata)) {
-          return hasGoogleProviderMetadataEvidence(value);
-        }
-      }
-    }
-  }
-
-  return Object.values(value).some((entry) => {
-    if (Array.isArray(entry)) {
-      return entry.some(hasAimockResponseMetadataEvidence);
-    }
-
-    return hasAimockResponseMetadataEvidence(entry);
-  });
-}
-
-function hasGoogleProviderMetadataEvidence(value: unknown): boolean {
-  if (!isPlainRecord(value)) {
-    return false;
-  }
-
-  const { providerMetadata } = value;
-
-  if (isPlainRecord(providerMetadata)) {
-    const bridgeMetadata = providerMetadata.aiSdkBridge;
-
-    if (isPlainRecord(bridgeMetadata)) {
-      const { response } = bridgeMetadata;
-      const { streamPartMetadata } = bridgeMetadata;
-      const responseHeaders = isPlainRecord(response)
-        ? response.headers
-        : undefined;
-
-      if (
-        (hasGoogleThoughtSignature(providerMetadata) ||
-          hasGoogleProviderNamespace(providerMetadata)) &&
-        isPlainRecord(responseHeaders) &&
-        Array.isArray(streamPartMetadata) &&
-        streamPartMetadata.some(hasGoogleFinishPartMetadataEvidence)
-      ) {
-        return true;
-      }
-    }
-  }
-
-  return Object.values(value).some((entry) => {
-    if (Array.isArray(entry)) {
-      return entry.some(hasGoogleProviderMetadataEvidence);
-    }
-
-    return hasGoogleProviderMetadataEvidence(entry);
-  });
-}
-
-export function countToolCallThoughtSignatureEvents(
-  projection: ReplStreamProjection
-): number {
-  return projection.canonical.filter((event) => {
-    if (event.type !== "tool_call.done") {
-      return false;
-    }
-
-    return hasGoogleThoughtSignature(event.providerMetadata);
-  }).length;
-}
-
-export function countDurableToolCallThoughtSignatures(
-  messages: unknown[]
-): number {
-  let count = 0;
-
-  for (const message of messages) {
-    if (
-      !isPlainRecord(message) ||
-      message.role !== "assistant" ||
-      !Array.isArray(message.parts)
-    ) {
-      continue;
-    }
-
-    for (const part of message.parts) {
-      if (
-        isPlainRecord(part) &&
-        part.type === "tool_call" &&
-        hasGoogleThoughtSignature(readProviderMetadata(part))
-      ) {
-        count += 1;
-      }
-    }
-  }
-
-  return count;
-}
-
-export function countToolCallProviderCallIdEvents(
-  projection: ReplStreamProjection
-): number {
-  return projection.canonical.filter((event) => {
-    if (event.type !== "tool_call.done") {
-      return false;
-    }
-
-    return hasProviderCallId(event.providerMetadata);
-  }).length;
-}
-
-export function countDurableToolCallProviderCallIds(
-  messages: unknown[]
-): number {
-  let count = 0;
-
-  for (const message of messages) {
-    if (
-      !isPlainRecord(message) ||
-      message.role !== "assistant" ||
-      !Array.isArray(message.parts)
-    ) {
-      continue;
-    }
-
-    for (const part of message.parts) {
-      if (
-        isPlainRecord(part) &&
-        part.type === "tool_call" &&
-        hasProviderCallId(readProviderMetadata(part))
-      ) {
-        count += 1;
-      }
-    }
-  }
-
-  return count;
-}
-
-function hasGoogleThoughtSignature(
-  providerMetadata: Record<string, unknown> | undefined
-): boolean {
-  if (!isPlainRecord(providerMetadata)) {
-    return false;
-  }
-
-  const googleMetadata = providerMetadata.google;
-
-  if (
-    isPlainRecord(googleMetadata) &&
-    typeof googleMetadata.thoughtSignature === "string"
-  ) {
-    return true;
-  }
-
-  const vertexMetadata = providerMetadata.vertex;
-
-  return (
-    isPlainRecord(vertexMetadata) &&
-    typeof vertexMetadata.thoughtSignature === "string"
-  );
-}
-
-function hasGoogleProviderNamespace(
-  providerMetadata: Record<string, unknown> | undefined
-): boolean {
-  if (!isPlainRecord(providerMetadata)) {
-    return false;
-  }
-
-  return (
-    isPlainRecord(providerMetadata.google) ||
-    isPlainRecord(providerMetadata.vertex)
-  );
-}
-
-function hasGoogleFinishPartMetadataEvidence(value: unknown): boolean {
-  if (!isPlainRecord(value) || value.type !== "finish") {
-    return false;
-  }
-
-  return hasGoogleProviderNamespace(readProviderMetadata(value));
-}
-
-function hasProviderCallId(
-  providerMetadata: Record<string, unknown> | undefined
-): boolean {
-  return (
-    isPlainRecord(providerMetadata) &&
-    typeof providerMetadata.providerCallId === "string" &&
-    providerMetadata.providerCallId.length > 0
-  );
-}
-
-function readProviderMetadata(
-  value: Record<string, unknown>
-): Record<string, unknown> | undefined {
-  return isPlainRecord(value.providerMetadata)
-    ? value.providerMetadata
-    : undefined;
-}
-
-export function isEditedEmailToolStart(event: TuvrenStreamEvent): boolean {
-  if (event.type !== "tool.start" || event.name !== "email") {
-    return false;
-  }
-
-  const { input } = event;
-
-  return (
-    isPlainRecord(input) &&
-    input.subject === "Edited status update" &&
-    input.to === "ops@example.com"
-  );
-}
-
 function hasInjectedSteeringMessage(value: unknown): boolean {
   if (!isPlainRecord(value)) {
     return false;
@@ -842,10 +835,6 @@ function hasInjectedSteeringMessage(value: unknown): boolean {
       part.type === "text" &&
       part.text === "Injected steering"
   );
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function collect<T>(
