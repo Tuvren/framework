@@ -23,6 +23,7 @@ import type {
   SessionClientReportedResult,
 } from "./session-protocol-types.js";
 import { isRetryableCloseCode, parseWsClientMessage } from "./ws-wire.js";
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * The minimal socket surface this package needs from a `WebSocket`-shaped
@@ -35,13 +36,15 @@ import { isRetryableCloseCode, parseWsClientMessage } from "./ws-wire.js";
  * @experimental
  */
 export interface SessionClientSocket {
-  close(code?: number, reason?: string): void;
+  close: (code?: number, reason?: string) => void;
   onclose: ((event: { code?: number; reason?: string }) => void) | null;
   onerror: ((event?: unknown) => void) | null;
   onmessage: ((event: { data: string | Uint8Array }) => void) | null;
   onopen: (() => void) | null;
-  send(data: string): void;
+  send: (data: string) => void;
 }
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Injectable timer pair backing the reconnect backoff scheduler, mirroring
@@ -53,18 +56,22 @@ export interface SessionClientSocket {
  * @experimental
  */
 export interface SessionClientClock {
-  clearTimeout(handle: unknown): void;
-  scheduleTimeout(callback: () => void, ms: number): unknown;
+  clearTimeout: (handle: unknown) => void;
+  scheduleTimeout: (callback: () => void, ms: number) => unknown;
 }
+/* oxlint-enable jsdoc/check-tag-names */
 
 const globalClock: SessionClientClock = {
   clearTimeout(handle: unknown): void {
-    clearTimeout(handle as ReturnType<typeof setTimeout>);
+    if (typeof handle === "number") {
+      clearTimeout(handle);
+    }
   },
   scheduleTimeout(callback: () => void, ms: number): unknown {
-    return setTimeout(callback, ms);
+    return Number(setTimeout(callback, ms));
   },
 };
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Context passed to every capability handler alongside its `input`.
@@ -84,6 +91,8 @@ export interface SessionClientCapabilityContext {
    */
   idempotencyKey?: string;
 }
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * A capability handler this client registers for one `capabilityId`.
@@ -97,7 +106,9 @@ export interface SessionClientCapabilityContext {
 export type SessionClientCapabilityHandler = (
   input: unknown,
   ctx: SessionClientCapabilityContext
-) => Promise<unknown> | unknown;
+) => unknown;
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Connection status this client surfaces via `onStatusChange`.
@@ -110,6 +121,8 @@ export type SessionClientStatus =
   | { phase: "reconnecting"; attempt: number; delayMs: number }
   | { phase: "closed"; code?: number; reason?: string; terminal: boolean }
   | { phase: "error"; message: string };
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Reconnect backoff tuning. All fields optional; see
@@ -133,6 +146,8 @@ export interface SessionClientReconnectOptions {
   /** Upper bound for the exponential backoff delay, in milliseconds. Defaults to `10000`. */
   maxDelayMs?: number;
 }
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Options accepted by {@link createSessionClient}.
@@ -184,6 +199,8 @@ export interface SessionClientOptions {
   /** Injection seam for tests: builds the socket for a given URL. Defaults to `new WebSocket(url)`. */
   webSocketFactory?: (url: string) => SessionClientSocket;
 }
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * The handle returned by {@link createSessionClient}.
@@ -197,31 +214,32 @@ export interface SessionClientHandle {
    * mid-reconnect backoff), the frame is queued and flushed in order once
    * the next `handshake_ack` arrives, rather than dropped.
    */
-  approve(response: SessionClientApprovalResponse): void;
+  approve: (response: SessionClientApprovalResponse) => void;
   /**
    * Sends a `cancel` frame for the active run. If the current socket's
    * handshake has not yet been acknowledged (still connecting, or
    * mid-reconnect backoff), the frame is queued and flushed in order once
    * the next `handshake_ack` arrives, rather than dropped.
    */
-  cancel(): void;
+  cancel: () => void;
   /**
    * Closes the connection permanently; no further reconnect attempts are
    * made. If called while a reconnect backoff is pending (no live socket),
    * the terminal `closed` status is reported directly, since no `onclose`
    * event will ever fire to report it otherwise.
    */
-  close(code?: number, reason?: string): void;
+  close: (code?: number, reason?: string) => void;
   /** Opens the connection (and begins the reconnect lifecycle on drop). No-op if already connecting/open. */
-  connect(): void;
+  connect: () => void;
   /**
    * Sends a `steer` frame carrying mid-run input. If the current socket's
    * handshake has not yet been acknowledged (still connecting, or
    * mid-reconnect backoff), the frame is queued and flushed in order once
    * the next `handshake_ack` arrives, rather than dropped.
    */
-  steer(signal: SessionClientInputSignal): void;
+  steer: (signal: SessionClientInputSignal) => void;
 }
+/* oxlint-enable jsdoc/check-tag-names */
 
 type CallState =
   | { status: "in-flight" }
@@ -262,7 +280,9 @@ const isInvocationEnvelope = (
   isNonEmptyString(value.leaseToken) &&
   // `input` is required by ClientInvocationEnvelope.json; any value —
   // including null — satisfies it, but the KEY must be present.
-  "input" in value;
+  "input" in value &&
+  (value.idempotencyKey === undefined ||
+    typeof value.idempotencyKey === "string");
 
 // The known `SessionRejectionCode` values (mirrors
 // `spec/host/session/artifacts/json-schema/SessionRejectionCode.json`).
@@ -292,7 +312,8 @@ const isInboundRejection = (
   isNonEmptyString(value.correlationId) &&
   typeof value.code === "string" &&
   SESSION_REJECTION_CODES.has(value.code) &&
-  typeof value.message === "string";
+  typeof value.message === "string" &&
+  (value.details === undefined || isRecord(value.details));
 
 const validateOptions = (options: SessionClientOptions): void => {
   if (!isNonEmptyString(options.url)) {
@@ -349,10 +370,21 @@ const socketErrorMessageOf = (event: unknown): string => {
     "message" in event &&
     typeof event.message === "string"
   ) {
-    return (event as { message: string }).message;
+    return event.message;
   }
   return "socket reported an error event";
 };
+
+const errorResult = (
+  envelope: SessionClientInvocationEnvelope,
+  message: string
+): SessionClientReportedResult => ({
+  callId: envelope.callId,
+  content: { error: message },
+  isError: true,
+  leaseToken: envelope.leaseToken,
+});
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Creates a thin, reference-quality remote peer for the Tuvren duplex
@@ -371,10 +403,9 @@ export const createSessionClient = (
   const baseDelayMs = options.reconnect?.baseDelayMs ?? 250;
   const maxDelayMs = options.reconnect?.maxDelayMs ?? 10_000;
   const webSocketFactory =
-    options.webSocketFactory ??
-    ((url: string) => new WebSocket(url) as unknown as SessionClientSocket);
+    options.webSocketFactory ?? ((url: string) => new WebSocket(url));
 
-  let socket: SessionClientSocket | undefined;
+  let socket: SessionClientSocket | WebSocket | undefined;
   let closedByUser = false;
   let reconnectAttempt = 0;
   let reconnectTimer: unknown;
@@ -478,16 +509,6 @@ export const createSessionClient = (
     sendClientResult(result);
   };
 
-  const errorResult = (
-    envelope: SessionClientInvocationEnvelope,
-    message: string
-  ): SessionClientReportedResult => ({
-    callId: envelope.callId,
-    content: { error: message },
-    isError: true,
-    leaseToken: envelope.leaseToken,
-  });
-
   const handleInvocation = (
     envelope: SessionClientInvocationEnvelope
   ): void => {
@@ -554,10 +575,10 @@ export const createSessionClient = (
   };
 
   const handleOutboundFrame = (frame: unknown): void => {
-    if (typeof frame !== "object" || frame === null || !("kind" in frame)) {
+    if (!isRecord(frame)) {
       return;
     }
-    const record = frame as Record<string, unknown>;
+    const record = frame;
     const { kind } = record;
     if (kind === "event") {
       options.onEvent?.(record.event, lastCursor);
@@ -623,94 +644,97 @@ export const createSessionClient = (
     const nextSocket = webSocketFactory(options.url);
     socket = nextSocket;
 
-    nextSocket.onopen = () => {
-      nextSocket.send(
-        JSON.stringify({
-          authToken: options.authToken,
-          cursor: lastCursor,
-          kind: "handshake",
-          protocolVersion: SESSION_PROTOCOL_VERSION,
-          sessionId: options.sessionId,
-        })
-      );
-    };
-
-    nextSocket.onmessage = (event) => {
-      const parsed = parseWsClientMessage(event.data);
-      switch (parsed.kind) {
-        case "handshake_ack": {
-          reconnectAttempt = 0;
-          handshakeOpen = true;
-          flushOutboundQueue();
+    const callbacks: Pick<
+      SessionClientSocket,
+      "onopen" | "onmessage" | "onclose" | "onerror"
+    > = {
+      onclose: (event) => {
+        socket = undefined;
+        handshakeOpen = false;
+        if (closedByUser) {
           reportStatus({
-            phase: "open",
-            resumeStatus: parsed.message.resumeStatus,
+            code: event.code,
+            phase: "closed",
+            reason: event.reason,
+            terminal: true,
           });
-          break;
+          return;
         }
-        case "frame": {
-          if (parsed.cursor !== undefined) {
-            lastCursor = parsed.cursor;
-          }
-          handleOutboundFrame(parsed.frame);
-          break;
+        if (isRetryableCloseCode(event.code)) {
+          scheduleReconnect(event.code, event.reason, openSocket);
+          return;
         }
-        case "ping": {
-          // Guarded like every other outbound send: a socket that died
-          // between delivering the ping and this reply must not throw out of
-          // onmessage. A lost pong is retryable — the server pings again.
-          try {
-            nextSocket.send(JSON.stringify({ kind: "pong" }));
-          } catch {
-            // The subsequent close event drives reconnect; nothing to do.
-          }
-          break;
-        }
-        case "pong":
-        case "unparseable": {
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-    };
-
-    nextSocket.onclose = (event) => {
-      socket = undefined;
-      handshakeOpen = false;
-      if (closedByUser) {
         reportStatus({
           code: event.code,
           phase: "closed",
           reason: event.reason,
           terminal: true,
         });
-        return;
-      }
-      if (isRetryableCloseCode(event.code)) {
-        scheduleReconnect(event.code, event.reason, openSocket);
-        return;
-      }
-      reportStatus({
-        code: event.code,
-        phase: "closed",
-        reason: event.reason,
-        terminal: true,
-      });
+      },
+      onerror: (event) => {
+        // Purely observational: the socket's own `onclose` still drives every
+        // reconnect decision, since a browser/runtime `error` event carries no
+        // reliable code/reason and is typically followed immediately by
+        // `close`. Previously this diagnostic was discarded entirely
+        // (`() => undefined`); surfacing it through the existing
+        // `onStatusChange` callback costs no new public option while giving
+        // hosts visibility into socket-level failures `onclose` alone doesn't
+        // explain.
+        reportStatus({ message: socketErrorMessageOf(event), phase: "error" });
+      },
+      onmessage: (event) => {
+        const parsed = parseWsClientMessage(event.data);
+        switch (parsed.kind) {
+          case "handshake_ack": {
+            reconnectAttempt = 0;
+            handshakeOpen = true;
+            flushOutboundQueue();
+            reportStatus({
+              phase: "open",
+              resumeStatus: parsed.message.resumeStatus,
+            });
+            break;
+          }
+          case "frame": {
+            if (parsed.cursor !== undefined) {
+              lastCursor = parsed.cursor;
+            }
+            handleOutboundFrame(parsed.frame);
+            break;
+          }
+          case "ping": {
+            // Guarded like every other outbound send: a socket that died
+            // between delivering the ping and this reply must not throw out of
+            // onmessage. A lost pong is retryable — the server pings again.
+            try {
+              nextSocket.send(JSON.stringify({ kind: "pong" }));
+            } catch {
+              // The subsequent close event drives reconnect; nothing to do.
+            }
+            break;
+          }
+          case "pong":
+          case "unparseable": {
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+      },
+      onopen: () => {
+        nextSocket.send(
+          JSON.stringify({
+            authToken: options.authToken,
+            cursor: lastCursor,
+            kind: "handshake",
+            protocolVersion: SESSION_PROTOCOL_VERSION,
+            sessionId: options.sessionId,
+          })
+        );
+      },
     };
-
-    nextSocket.onerror = (event) => {
-      // Purely observational: the socket's own `onclose` still drives every
-      // reconnect decision, since a browser/runtime `error` event carries no
-      // reliable code/reason and is typically followed immediately by
-      // `close`. Previously this diagnostic was discarded entirely
-      // (`() => undefined`); surfacing it through the existing
-      // `onStatusChange` callback costs no new public option while giving
-      // hosts visibility into socket-level failures `onclose` alone doesn't
-      // explain.
-      reportStatus({ message: socketErrorMessageOf(event), phase: "error" });
-    };
+    Object.assign(nextSocket, callbacks);
   };
 
   const connect = (): void => {
@@ -773,3 +797,4 @@ export const createSessionClient = (
 
   return { approve, cancel, close, connect, steer };
 };
+/* oxlint-enable jsdoc/check-tag-names */

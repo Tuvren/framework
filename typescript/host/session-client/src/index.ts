@@ -18,7 +18,6 @@
 // biome-ignore-all assist/source/organizeImports: The organizer merges the one-export-per-statement layout back into a grouped export, which would strip the per-export @experimental release tags ADR-0056 requires.
 
 /**
- * @packageDocumentation
  *
  * `@tuvren/session-client` is the thin, reference-quality REMOTE PEER for the
  * Tuvren duplex session protocol over WebSocket: it runs where tools
@@ -61,6 +60,7 @@
  * doc comment on {@link SessionClientOptions} for the full rationale.
  */
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 /** @experimental */
 export type { SessionClientSocket } from "./lib/session-client.js";
 /** @experimental */
@@ -137,3 +137,4 @@ export { WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED } from "./lib/ws-wire.js";
 export { WS_CLOSE_CODE_NORMAL } from "./lib/ws-wire.js";
 /** @experimental */
 export { NON_RETRYABLE_WS_CLOSE_CODES } from "./lib/ws-wire.js";
+/* oxlint-enable jsdoc/check-tag-names */

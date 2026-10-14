@@ -62,7 +62,16 @@ describe("session-client package exports", () => {
     fakeSocket.onopen?.();
 
     expect(sent).toHaveLength(1);
-    const handshake = JSON.parse(sent[0] ?? "{}");
+    const handshake: unknown = JSON.parse(sent[0] ?? "{}");
+    if (
+      typeof handshake !== "object" ||
+      handshake === null ||
+      !("kind" in handshake) ||
+      !("sessionId" in handshake) ||
+      !("protocolVersion" in handshake)
+    ) {
+      throw new Error("expected a handshake frame");
+    }
     expect(handshake.kind).toBe("handshake");
     expect(handshake.sessionId).toBe("smoke-session-client");
     expect(handshake.protocolVersion).toBe(SESSION_PROTOCOL_VERSION);

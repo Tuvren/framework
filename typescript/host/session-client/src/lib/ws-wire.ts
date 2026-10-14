@@ -35,13 +35,13 @@
  * so dropping `cursor` here would silently discard the resume token every
  * `event` frame carries.
  *
- * @packageDocumentation
  */
 
 import type {
   SessionClientHandshakeAck,
   SessionClientResumeStatus,
 } from "./session-protocol-types.js";
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Result of {@link parseWsClientMessage}. Mirrors `ParsedWsMessage` from
@@ -55,6 +55,7 @@ export type ParsedWsClientMessage =
   | { kind: "ping" }
   | { kind: "pong" }
   | { kind: "unparseable"; raw: unknown };
+/* oxlint-enable jsdoc/check-tag-names */
 
 const WS_RESUME_STATUSES: readonly SessionClientResumeStatus[] = [
   "resumed",
@@ -91,6 +92,7 @@ const asHandshakeAck = (
     sessionId: candidate.sessionId,
   };
 };
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Decodes and structurally parses one inbound wire message. Never throws:
@@ -138,6 +140,8 @@ export const parseWsClientMessage = (
     }
   }
 };
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Connection-level close codes in the WebSocket application range
@@ -149,18 +153,35 @@ export const parseWsClientMessage = (
  * @experimental
  */
 export const WS_CLOSE_CODE_HANDSHAKE_INVALID = 4000;
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
+
 /** @experimental */
 export const WS_CLOSE_CODE_PROTOCOL_VERSION_UNSUPPORTED = 4001;
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
+
 /** @experimental */
 export const WS_CLOSE_CODE_SESSION_NOT_FOUND = 4002;
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
+
 /** @experimental */
 export const WS_CLOSE_CODE_AUTH_REJECTED = 4003;
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
+
 /** @experimental */
 export const WS_CLOSE_CODE_HEARTBEAT_TIMEOUT = 4004;
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
+
 /** @experimental */
 export const WS_CLOSE_CODE_BACKPRESSURE_EXCEEDED = 4005;
+/* oxlint-enable jsdoc/check-tag-names */
 /** Standard WebSocket normal-closure code. @experimental */
 export const WS_CLOSE_CODE_NORMAL = 1000;
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Close codes after which this client MUST NOT attempt to reconnect: the
@@ -182,6 +203,8 @@ export const NON_RETRYABLE_WS_CLOSE_CODES: ReadonlySet<number> = new Set([
   WS_CLOSE_CODE_AUTH_REJECTED,
   WS_CLOSE_CODE_NORMAL,
 ]);
+/* oxlint-enable jsdoc/check-tag-names */
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags per ADR-0056 and the approved BX metadata ruling. */
 
 /**
  * Whether a reconnect should be attempted after a close carrying `code`.
@@ -193,3 +216,4 @@ export const NON_RETRYABLE_WS_CLOSE_CODES: ReadonlySet<number> = new Set([
  */
 export const isRetryableCloseCode = (code: number | undefined): boolean =>
   code === undefined || !NON_RETRYABLE_WS_CLOSE_CODES.has(code);
+/* oxlint-enable jsdoc/check-tag-names */

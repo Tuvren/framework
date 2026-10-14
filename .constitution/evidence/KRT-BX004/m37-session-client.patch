@@ -1,0 +1,25 @@
+diff --git a/typescript/host/session-client/src/lib/session-client.ts b/typescript/host/session-client/src/lib/session-client.ts
+index fff0d5a..089a625 100644
+--- a/typescript/host/session-client/src/lib/session-client.ts
++++ b/typescript/host/session-client/src/lib/session-client.ts
+@@ -543,5 +543,7 @@ export const createSessionClient = (
+     }
+
+-    Promise.resolve()
++    void (async () => {
++      try {
++        await Promise.resolve()
+       .then(() =>
+         handler(envelope.input, {
+@@ -569,7 +571,8 @@ export const createSessionClient = (
+           leaseToken: envelope.leaseToken,
+         });
+-      })
+-      .catch((error: unknown) => {
+-        settle(envelope, errorResult(envelope, errorMessageOf(error)));
+       });
++      } catch (error: unknown) {
++        settle(envelope, errorResult(envelope, errorMessageOf(error)));
++      }
++    })();
+   };
