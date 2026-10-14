@@ -40,54 +40,25 @@ import {
 } from "./repl-config.js";
 import type { ReplProviderMode, ReplScenarioName } from "./repl-types.js";
 
-export function createReplProvider(input: {
-  aimockBaseUrl?: string;
-  googleApiKey?: string;
-  modelId?: string;
-  mode: ReplProviderMode;
-  scenario: ReplScenarioName;
-}): TuvrenProvider {
-  if (isAimockProviderMode(input.mode)) {
-    return createAimockProvider(input.mode, input.aimockBaseUrl, input.modelId);
-  }
+// Attaches a per-provider steering handshake to fixture providers created for
+// the "steering" scenario. `steerWhenRunning` (repl-scenarios-support.ts)
+// calls `markSteeringObserved` the instant `host.steer(...)` is accepted by
+// the runtime, so `streamFixtureChunks` can stop polling as soon as the
+// steering signal has actually landed instead of guessing a fixed wall-clock
+// window. This is not part of the public `TuvrenProvider` contract, so it is
+// attached via a module-private symbol rather than a new interface field.
+const STEERING_GATE = Symbol("repl-fixture-steering-gate");
 
-  if (input.mode === "ai-sdk-mock") {
-    return createAiSdkProviderBridge({
-      id: "repl:ai-sdk-mock",
-      model: createMockLanguageModel(input.scenario),
-    });
-  }
-
-  if (input.mode === "ai-sdk-google") {
-    const apiKey = input.googleApiKey ?? resolveGoogleApiKey(process.env);
-
-    if (apiKey === undefined) {
-      throw new TuvrenRuntimeError(
-        "ai-sdk-google repl provider requires GOOGLE_GENERATIVE_AI_API_KEY or GEMINI_API_KEY",
-        {
-          code: INVALID_REPL_CONFIG_CODE,
-        }
-      );
-    }
-
-    const google = createGoogleGenerativeAI({
-      apiKey,
-    });
-
-    return createAiSdkProviderBridge({
-      id: "repl:ai-sdk-google",
-      model: google(input.modelId ?? DEFAULT_GEMINI_REPL_MODEL_ID),
-    });
-  }
-
-  return createFixtureProvider(input.scenario);
+interface SteeringGate {
+  markObserved(): void;
+  waitForObservedOrDeadline(deadlineMilliseconds: number): Promise<void>;
 }
 
-function createAimockProvider(
+const createAimockProvider = (
   mode: Extract<ReplProviderMode, `aimock-${string}`>,
   baseUrl: string | undefined,
   modelId: string | undefined
-): TuvrenProvider {
+): TuvrenProvider => {
   const aimockBaseUrl = baseUrl?.trim();
 
   if (aimockBaseUrl === undefined || aimockBaseUrl.length === 0) {
@@ -142,23 +113,9 @@ function createAimockProvider(
       );
     }
   }
-}
+};
 
-// Attaches a per-provider steering handshake to fixture providers created for
-// the "steering" scenario. `steerWhenRunning` (repl-scenarios-support.ts)
-// calls `markSteeringObserved` the instant `host.steer(...)` is accepted by
-// the runtime, so `streamFixtureChunks` can stop polling as soon as the
-// steering signal has actually landed instead of guessing a fixed wall-clock
-// window. This is not part of the public `TuvrenProvider` contract, so it is
-// attached via a module-private symbol rather than a new interface field.
-const STEERING_GATE = Symbol("repl-fixture-steering-gate");
-
-interface SteeringGate {
-  markObserved(): void;
-  waitForObservedOrDeadline(deadlineMilliseconds: number): Promise<void>;
-}
-
-function createSteeringGate(): SteeringGate {
+const createSteeringGate = (): SteeringGate => {
   let observed = false;
   let resolveObserved: (() => void) | undefined;
   const observedPromise = new Promise<void>((resolve) => {
@@ -187,7 +144,7 @@ function createSteeringGate(): SteeringGate {
       ]);
     },
   };
-}
+};
 
 /**
  * Marks the steering signal as observed for a fixture provider previously
@@ -196,128 +153,28 @@ function createSteeringGate(): SteeringGate {
  * callers can invoke it unconditionally right after a successful
  * `host.steer(...)` call.
  */
-export function markSteeringObserved(provider: TuvrenProvider): void {
+export const markSteeringObserved = (provider: TuvrenProvider): void => {
   const gate = (
     provider as Partial<Record<typeof STEERING_GATE, SteeringGate>>
   )[STEERING_GATE];
 
   gate?.markObserved();
-}
+};
 
-function createFixtureProvider(scenario: ReplScenarioName): TuvrenProvider {
-  const steeringGate =
-    scenario === "steering" ? createSteeringGate() : undefined;
-  const provider: TuvrenProvider = {
-    generate(prompt) {
-      return Promise.resolve(createFixtureResponse(prompt, scenario));
-    },
-    id: `repl:fixture:${scenario}`,
-    stream(prompt) {
-      return streamFixtureChunks(prompt, scenario, steeringGate);
-    },
-  };
+const countRole = (prompt: TuvrenPrompt, role: "tool"): number =>
+  prompt.messages.filter((message) => message.role === role).length;
 
-  if (steeringGate !== undefined) {
-    Object.defineProperty(provider, STEERING_GATE, {
-      configurable: false,
-      enumerable: false,
-      value: steeringGate,
-      writable: false,
-    });
-  }
+const hasUserText = (prompt: TuvrenPrompt, text: string): boolean =>
+  prompt.messages.some(
+    (message) =>
+      message.role === "user" &&
+      message.parts.some((part) => part.type === "text" && part.text === text)
+  );
 
-  return provider;
-}
-
-async function* streamFixtureChunks(
-  prompt: TuvrenPrompt,
-  scenario: ReplScenarioName,
-  steeringGate?: SteeringGate
-): AsyncIterable<ProviderStreamChunk> {
-  await Promise.resolve();
-
-  if (scenario === "orchestration") {
-    // The orchestration scenario never steers; it only needs the turn to stay
-    // "running" long enough for `waitFor(() => handle.status().phase ===
-    // "running")` to observe it before spawning the child turn. That phase
-    // flips essentially immediately, so a short fixed delay is sufficient and
-    // keeps every orchestration fixture run fast.
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 100);
-    });
-  } else if (scenario === "steering" && steeringGate !== undefined) {
-    // Replace the old fixed-wall-clock race with a deterministic handshake:
-    // hold the turn open only until `steerWhenRunning` reports that
-    // `host.steer(...)` was actually accepted (see `markSteeringObserved`),
-    // falling back to a generous deadline so the turn still terminates if
-    // steering is somehow never observed (for example a future scenario
-    // change). Once steering has already been observed — as is the case for
-    // the follow-up iteration that incorporates it — this resolves
-    // immediately, so replay/determinism-sensitive turns are not penalized
-    // with an artificial wait. Note this gate only guarantees the steer is
-    // ACCEPTED while the turn is running; creating the extra iteration that
-    // incorporation needs is the job of the steering scenario's loop policy
-    // (CONTINUE_UNTIL_STEERED_POLICY in repl-scenarios.ts).
-    await steeringGate.waitForObservedOrDeadline(3000);
-  }
-
-  const response = createFixtureResponse(prompt, scenario);
-
-  for (const part of response.parts) {
-    switch (part.type) {
-      case "text": {
-        yield { text: part.text, type: "text_delta" };
-        break;
-      }
-      case "structured": {
-        yield {
-          delta: JSON.stringify(part.data),
-          type: "structured_delta",
-        };
-        yield {
-          data: part.data,
-          name: part.name,
-          type: "structured_done",
-        };
-        break;
-      }
-      case "tool_call": {
-        yield {
-          name: part.name,
-          providerCallId: part.callId,
-          type: "tool_call_start",
-        };
-        yield {
-          delta: JSON.stringify(part.input),
-          providerCallId: part.callId,
-          type: "tool_call_args_delta",
-        };
-        yield {
-          input: part.input,
-          name: part.name,
-          providerCallId: part.callId,
-          type: "tool_call_done",
-        };
-        break;
-      }
-      default: {
-        break;
-      }
-    }
-  }
-
-  yield {
-    finishReason: response.finishReason,
-    providerMetadata: response.providerMetadata,
-    type: "finish",
-    usage: response.usage,
-  };
-}
-
-function createFixtureResponse(
+const createFixtureResponse = (
   prompt: TuvrenPrompt,
   scenario: ReplScenarioName
-): TuvrenModelResponse {
+): TuvrenModelResponse => {
   if (prompt.messages.some((message) => message.role === "tool")) {
     return {
       finishReason: "stop",
@@ -461,30 +318,122 @@ function createFixtureResponse(
       };
     }
   }
-}
+};
 
-function createMockLanguageModel(scenario: ReplScenarioName): LanguageModelV3 {
-  return {
-    doGenerate() {
-      return Promise.resolve(createGenerateResult(scenario));
-    },
-    doStream(options: LanguageModelV3CallOptions) {
-      const result = createGenerateResult(scenario, options);
-      return Promise.resolve({
-        stream: streamAiSdkParts(result),
-      });
-    },
-    modelId: "repl-mock-model",
-    provider: "repl-mock-provider",
-    specificationVersion: "v3",
-    supportedUrls: {},
+const streamFixtureChunks = async function* streamFixtureChunks(
+  prompt: TuvrenPrompt,
+  scenario: ReplScenarioName,
+  steeringGate?: SteeringGate
+): AsyncIterable<ProviderStreamChunk> {
+  await Promise.resolve();
+
+  if (scenario === "orchestration") {
+    // The orchestration scenario never steers; it only needs the turn to stay
+    // "running" long enough for `waitFor(() => handle.status().phase ===
+    // "running")` to observe it before spawning the child turn. That phase
+    // flips essentially immediately, so a short fixed delay is sufficient and
+    // keeps every orchestration fixture run fast.
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 100);
+    });
+  } else if (scenario === "steering" && steeringGate !== undefined) {
+    // Replace the old fixed-wall-clock race with a deterministic handshake:
+    // hold the turn open only until `steerWhenRunning` reports that
+    // `host.steer(...)` was actually accepted (see `markSteeringObserved`),
+    // falling back to a generous deadline so the turn still terminates if
+    // steering is somehow never observed (for example a future scenario
+    // change). Once steering has already been observed — as is the case for
+    // the follow-up iteration that incorporates it — this resolves
+    // immediately, so replay/determinism-sensitive turns are not penalized
+    // with an artificial wait. Note this gate only guarantees the steer is
+    // ACCEPTED while the turn is running; creating the extra iteration that
+    // incorporation needs is the job of the steering scenario's loop policy
+    // (CONTINUE_UNTIL_STEERED_POLICY in repl-scenarios.ts).
+    await steeringGate.waitForObservedOrDeadline(3000);
+  }
+
+  const response = createFixtureResponse(prompt, scenario);
+
+  for (const part of response.parts) {
+    switch (part.type) {
+      case "text": {
+        yield { text: part.text, type: "text_delta" };
+        break;
+      }
+      case "structured": {
+        yield {
+          delta: JSON.stringify(part.data),
+          type: "structured_delta",
+        };
+        yield {
+          data: part.data,
+          name: part.name,
+          type: "structured_done",
+        };
+        break;
+      }
+      case "tool_call": {
+        yield {
+          name: part.name,
+          providerCallId: part.callId,
+          type: "tool_call_start",
+        };
+        yield {
+          delta: JSON.stringify(part.input),
+          providerCallId: part.callId,
+          type: "tool_call_args_delta",
+        };
+        yield {
+          input: part.input,
+          name: part.name,
+          providerCallId: part.callId,
+          type: "tool_call_done",
+        };
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+
+  yield {
+    finishReason: response.finishReason,
+    providerMetadata: response.providerMetadata,
+    type: "finish",
+    usage: response.usage,
   };
-}
+};
 
-function createGenerateResult(
+const createFixtureProvider = (scenario: ReplScenarioName): TuvrenProvider => {
+  const steeringGate =
+    scenario === "steering" ? createSteeringGate() : undefined;
+  const provider: TuvrenProvider = {
+    generate(prompt) {
+      return Promise.resolve(createFixtureResponse(prompt, scenario));
+    },
+    id: `repl:fixture:${scenario}`,
+    stream(prompt) {
+      return streamFixtureChunks(prompt, scenario, steeringGate);
+    },
+  };
+
+  if (steeringGate !== undefined) {
+    Object.defineProperty(provider, STEERING_GATE, {
+      configurable: false,
+      enumerable: false,
+      value: steeringGate,
+      writable: false,
+    });
+  }
+
+  return provider;
+};
+
+const createGenerateResult = (
   scenario: ReplScenarioName,
   _options?: LanguageModelV3CallOptions
-): LanguageModelV3GenerateResult {
+): LanguageModelV3GenerateResult => {
   const text =
     scenario === "metadata"
       ? "AI SDK mock metadata preserved."
@@ -534,12 +483,12 @@ function createGenerateResult(
     },
     warnings: [],
   };
-}
+};
 
-function streamAiSdkParts(
+const streamAiSdkParts = (
   result: LanguageModelV3GenerateResult
-): ReadableStream<LanguageModelV3StreamPart> {
-  return new ReadableStream<LanguageModelV3StreamPart>({
+): ReadableStream<LanguageModelV3StreamPart> =>
+  new ReadableStream<LanguageModelV3StreamPart>({
     start(controller) {
       controller.enqueue({
         type: "stream-start",
@@ -584,16 +533,64 @@ function streamAiSdkParts(
       controller.close();
     },
   });
-}
 
-function countRole(prompt: TuvrenPrompt, role: "tool"): number {
-  return prompt.messages.filter((message) => message.role === role).length;
-}
+const createMockLanguageModel = (
+  scenario: ReplScenarioName
+): LanguageModelV3 => ({
+  doGenerate() {
+    return Promise.resolve(createGenerateResult(scenario));
+  },
+  doStream(options: LanguageModelV3CallOptions) {
+    const result = createGenerateResult(scenario, options);
+    return Promise.resolve({
+      stream: streamAiSdkParts(result),
+    });
+  },
+  modelId: "repl-mock-model",
+  provider: "repl-mock-provider",
+  specificationVersion: "v3",
+  supportedUrls: {},
+});
 
-function hasUserText(prompt: TuvrenPrompt, text: string): boolean {
-  return prompt.messages.some(
-    (message) =>
-      message.role === "user" &&
-      message.parts.some((part) => part.type === "text" && part.text === text)
-  );
-}
+export const createReplProvider = (input: {
+  aimockBaseUrl?: string;
+  googleApiKey?: string;
+  modelId?: string;
+  mode: ReplProviderMode;
+  scenario: ReplScenarioName;
+}): TuvrenProvider => {
+  if (isAimockProviderMode(input.mode)) {
+    return createAimockProvider(input.mode, input.aimockBaseUrl, input.modelId);
+  }
+
+  if (input.mode === "ai-sdk-mock") {
+    return createAiSdkProviderBridge({
+      id: "repl:ai-sdk-mock",
+      model: createMockLanguageModel(input.scenario),
+    });
+  }
+
+  if (input.mode === "ai-sdk-google") {
+    const apiKey = input.googleApiKey ?? resolveGoogleApiKey(process.env);
+
+    if (apiKey === undefined) {
+      throw new TuvrenRuntimeError(
+        "ai-sdk-google repl provider requires GOOGLE_GENERATIVE_AI_API_KEY or GEMINI_API_KEY",
+        {
+          code: INVALID_REPL_CONFIG_CODE,
+        }
+      );
+    }
+
+    const google = createGoogleGenerativeAI({
+      apiKey,
+    });
+
+    return createAiSdkProviderBridge({
+      id: "repl:ai-sdk-google",
+      model: google(input.modelId ?? DEFAULT_GEMINI_REPL_MODEL_ID),
+    });
+  }
+
+  return createFixtureProvider(input.scenario);
+};
