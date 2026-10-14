@@ -81,8 +81,8 @@ interface ProjectRecord {
   tags: readonly string[];
 }
 
-function loadProjects(): ProjectRecord[] {
-  return loadNxProjectFiles(ROOT).map((file) => {
+const loadProjects = (): ProjectRecord[] =>
+  loadNxProjectFiles(ROOT).map((file) => {
     const targets = file.project.targets ?? {};
     const engineInvokingTargets = Object.entries(targets)
       .filter(([, target]) =>
@@ -99,15 +99,14 @@ function loadProjects(): ProjectRecord[] {
       tags: file.project.tags ?? [],
     };
   });
-}
 
-function fail(problems: string[]): never {
+const fail = (problems: string[]): never => {
   console.error("certification-discovery: FAIL");
   for (const problem of problems) {
     console.error(`  - ${problem}`);
   }
   process.exit(1);
-}
+};
 
 const manifest: { projects: string[] } = JSON.parse(
   readFileSync(MANIFEST_PATH, "utf-8")
