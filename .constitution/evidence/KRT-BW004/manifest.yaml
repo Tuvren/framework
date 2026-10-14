@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-14",
-    "commit": "60311a54bb56cce1ad5d1bd455760719b610fd4c",
-    "command": "bunx --bun oxlint --type-aware tools/conformance tools/scripts/conformance; bunx --bun oxlint --type-aware --debug=files tools/conformance tools/scripts/conformance; bun tools/scripts/json-check.ts tools/conformance tools/scripts/conformance tools/generators; bun run typecheck; bun run conformance; bun run lint; bun run format:check; bun run check --base=master; bun run verify"
+    "commit": "297eb1c2c65c289b1e718cd2f588a66bf89c3941",
+    "command": "bun test tools/conformance; bunx --bun tsc --project tools/tsconfig.json --noEmit; bunx --bun oxlint --type-aware tools/conformance tools/scripts/conformance; bun tools/scripts/json-check.ts tools/conformance tools/scripts/conformance tools/generators; bun tools/conformance/meta-conformance/run.ts; bun run verify"
   },
   "files": [
     {
@@ -12,7 +12,13 @@
       "sha256": "00cbfef9e2d1fd3cbfd413b34b196678c17fe1f1380536e59abbbbfcf1324841",
       "bytes": 42662,
       "role": "measurement"
+    },
+    {
+      "path": "review-fix-revalidation.json",
+      "sha256": "15c647f994115cb01bff80db6c77e1f82826f9cf4d6349a16524ea6304d52a29",
+      "bytes": 6976,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "The complete shipped effective preset and every enabled type-aware rule run over the complete Git-owned code selection; actual native and JSON selections match independent inventories. Retained Biome processes every owned code/JSON file with zero diagnostics, full local gates pass, suppression inventories reconcile, generators preserve reviewed bytes and parsed values, and bw.json stays unchanged under Biome ownership until CB admission. Historical zero-file .cache measurements are not acceptance."
+  "pass_criteria": "The complete shipped effective preset and every enabled type-aware rule run over the complete Git-owned code selection; actual native and JSON selections match independent inventories. Retained Biome processes every owned code/JSON file with zero diagnostics, full local gates pass, suppression inventories reconcile, generators preserve reviewed bytes and parsed values, and bw.json stays unchanged under Biome ownership until CB admission. Historical zero-file .cache measurements are not acceptance. Historical M15 readiness is pinned to its source commit; review-fix-revalidation must prove every later source change."
 }

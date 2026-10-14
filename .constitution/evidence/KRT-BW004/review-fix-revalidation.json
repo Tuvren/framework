@@ -1,0 +1,120 @@
+{
+  "epic": "EPIC-BW",
+  "ticket": "KRT-BW004",
+  "reviewRound": 1,
+  "sourceCommit": "297eb1c2c65c289b1e718cd2f588a66bf89c3941",
+  "measuredWorkingTreeBaseHead": "d8ada780342577726202d55e852d38f96260f1ab",
+  "provenance": "Corrected fix-worker gates ran against uncommitted source bytes then committed without further code changes; the recorded source hashes match this sourceCommit. Native/JSON/meta were also rerun after commit. Historical M15 readiness remains pinned to 60311a54; this record supplies final post-review acceptance.",
+  "finding": "Reject Ajv compiled $async validators before cache insertion or invocation so synchronous schemaValid cannot grade a Promise as pass.",
+  "fixFiles": [
+    "tools/conformance/harness/assertion-engine/index.ts",
+    "tools/conformance/harness/test/assertion-engine.test.ts"
+  ],
+  "codeSourceHashes": {
+    "tools/conformance/adapter-protocol/index.ts": "5a69dd3fe2cd868c3e43f0a6c27667fde4eacb853046eb0280aaf463e032a153",
+    "tools/conformance/adapter-protocol/stdio-host.ts": "0dc3aedb8ca8ec575972dd11ea6a9d5eeb0e56734da66c0a4d3a6eee9abdaa69",
+    "tools/conformance/adapter-protocol/validate-adapter-protocol.ts": "7dfe37daf50637fc0cddd4fefbe12ff8fe119573b8d3e605c7ec145829bd88eb",
+    "tools/conformance/certification/validate-certification-discovery.ts": "d22b95fb436ad9e56c8f8bc6d5c366727019937e54a4a460a1bfdc58cec261dc",
+    "tools/conformance/harness/adapter-client.ts": "d7e79928e4a98a71e9f369855fd38b1f64995e39622a327bc4a5990d2ffa5ac5",
+    "tools/conformance/harness/adapter-error.ts": "2b0584a07e978871f9d1fa7213dbb8ca457b380c07b5b001e0ccd3e7a7bcc2be",
+    "tools/conformance/harness/assertion-engine/index.ts": "0b49cfcd3dd76428bd8dd64ea33331962b696c21168e0a6fb67bad12e2602409",
+    "tools/conformance/harness/run-plans.ts": "429331a6f12f50aad80f56828cfb585a91771304f07cf3319a5c930108862365",
+    "tools/conformance/harness/run.ts": "d0a4e37949440872f04083aa726474f8ece5c9a37bcb0788274c437cb1f4a559",
+    "tools/conformance/harness/secret-absence/index.ts": "a389222fda6a7b3a27eb019ff79000c926a6f660040286ae3bf5bda23a722002",
+    "tools/conformance/harness/test/adapter-client.test.ts": "ea1a8f818ff27be897aa29189a0a46ba373245f3e550d24652f4b3748590f1ca",
+    "tools/conformance/harness/test/assertion-engine.test.ts": "8b608d9a3a14fd05aa1ba9336a617fa6007452d75d607bc31c280cedea89250a",
+    "tools/conformance/harness/test/run-adapters-fixture.ts": "2d16aee3f4037d94174f23703167e7c9c6330e0e7f616627bbef27f817623105",
+    "tools/conformance/harness/test/run.test.ts": "7c46cfed0327d3acf8c0a2d06aa2bb0ba21b2b4196af37c65eaafd7b0e9460a4",
+    "tools/conformance/harness/test/secret-absence.test.ts": "0233f30840ee658ce3f642572df4ceb687032b6dcec48f61a41626e88a704904",
+    "tools/conformance/meta-conformance/run.ts": "89318de980fb85fa7d88b688f64855f7d08ada8ba2113a230d559cd909d77f50",
+    "tools/conformance/plan-compiler/index.test.ts": "5bba3a9969f54ed15442daae2940c4609915e3e0f226f8eb71a059f844441d47",
+    "tools/conformance/plan-compiler/index.ts": "59b4bd56dffaf0ef395127e6977cdae4c50aaa7b2f373d59bb79cca022b254a9",
+    "tools/conformance/plan-compiler/validate-plans.ts": "c9642eed87aee414195886451e0ade3a657e0ad180ea8f331e7c39bbb5765426",
+    "tools/conformance/vocabulary/validate-vocabulary.ts": "53cb87a35eee952f57c0c7eb99e7f168c28425052a35162478c6306cbb06cbea",
+    "tools/scripts/conformance/format-generated-json.ts": "89358bf443ae5fdf03d06dc0dd17380767bbf0fc21b2c8ca3a3cf70e9d75537e",
+    "tools/scripts/conformance/generate-kernel-fixtures.ts": "2cb7ca1f6119ce07ebf6377cd09724ef4357075a48b0ccdf3edce128127f481d",
+    "tools/scripts/conformance/generate-kernel-plans.ts": "f53b6b679e7909fb5636c30e71c983cb42d4795bbc595d9fd63174d31f02ec48"
+  },
+  "tests": {
+    "passed": 95,
+    "failed": 0,
+    "assertions": 301
+  },
+  "native": {
+    "diagnostics": [],
+    "codeFiles": 23,
+    "rules": 474,
+    "typeAware": 55,
+    "nonTypeAware": 419
+  },
+  "policy": "All policy and JSON/coverage files are byte-identical to historical M15 readiness. No dependencies, overrides, suppressions, protocol or generated artifacts changed.",
+  "historicalReadinessSha256": "00cbfef9e2d1fd3cbfd413b34b196678c17fe1f1380536e59abbbbfcf1324841",
+  "generatorPreservation": "Fresh full verify passed its per-phase tracked-state guards and codegen/freshness, so generated authority remained unchanged; historical explicit 17-fixture/44-check/10-promoted byte/parsed proof remains pinned to unchanged generator sources.",
+  "commands": [
+    {
+      "name": "tests",
+      "command": "bun test tools/conformance",
+      "exitCode": 0,
+      "log": "bw-pr-fix1-corrected-conformance-tests.log",
+      "sha256": "0c2e34e88e558ab2d902af2d35d90db0c527a6cae7a0e29c39d2c351d3e9d790",
+      "bytes": 327
+    },
+    {
+      "name": "tools-typecheck",
+      "command": "bunx --bun tsc --project tools/tsconfig.json --noEmit",
+      "exitCode": 0,
+      "log": "bw-pr-fix1-corrected-tools-tsc.log",
+      "sha256": "69b8b5064041f648a577d9edfe07a69bd057b77f914f4418c585f8679b016478",
+      "bytes": 224
+    },
+    {
+      "name": "retained-biome",
+      "command": "bunx --bun biome lint tools/conformance/harness/assertion-engine/index.ts tools/conformance/harness/test/assertion-engine.test.ts",
+      "exitCode": 0,
+      "log": "bw-pr-fix1-corrected-retained-biome.log",
+      "sha256": "a2bd453106b7cbae9067e852af6e624b4300bd5e28d84b3531df498bf6a99134",
+      "bytes": 267
+    },
+    {
+      "name": "oxfmt",
+      "command": "bunx --bun oxfmt --check tools/conformance/harness/assertion-engine/index.ts tools/conformance/harness/test/assertion-engine.test.ts",
+      "exitCode": 0,
+      "log": "bw-pr-fix1-corrected-oxfmt.log",
+      "sha256": "6074a5ec63314f1285dea3fa31742f9ad9975d3ca1e07e407a6a5331f93eea42",
+      "bytes": 336
+    },
+    {
+      "name": "verify",
+      "command": "bun run verify",
+      "exitCode": 0,
+      "log": "bw-pr-fix1-corrected-verify.log",
+      "sha256": "d3a1785203363909e470dd852f9b527d2a0df4e1aa99cfdd8f5fa62f9ef4d740",
+      "bytes": 306312
+    },
+    {
+      "name": "native",
+      "command": "bunx --bun oxlint --type-aware --format=json tools/conformance tools/scripts/conformance",
+      "exitCode": 0,
+      "log": "bw-pr-fix1-final-native.json",
+      "sha256": "f82a37162229d5031aa2182fe6c6f7cd95df8bc13d573dc63161ed79d1a29f18",
+      "bytes": 197
+    },
+    {
+      "name": "json",
+      "command": "bun tools/scripts/json-check.ts tools/conformance tools/scripts/conformance tools/generators",
+      "exitCode": 0,
+      "log": "bw-pr-fix1-final-json.log",
+      "sha256": "63aa5a521003d13183864975238909c4b9f6e576c2f43bfdd61869264a8b87d2",
+      "bytes": 111
+    },
+    {
+      "name": "meta",
+      "command": "bun tools/conformance/meta-conformance/run.ts",
+      "exitCode": 0,
+      "log": "bw-pr-fix1-final-meta.log",
+      "sha256": "b40a83df20d9b41b7612de4ebbae6944d6d8cf8c7cc2630dd502b422c2a90c2a",
+      "bytes": 56
+    }
+  ],
+  "gitCodeMatchesVerifiedWorkingTree": true
+}
