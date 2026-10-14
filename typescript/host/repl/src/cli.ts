@@ -45,8 +45,8 @@ import type {
 } from "./lib/repl-transcript.js";
 import type { ReplConfig } from "./lib/repl-types.js";
 
-const argv = process.argv.slice(2);
 const SHELL_WHITESPACE_PATTERN = /\s+/u;
+const DECIMAL_PORT_PREFIX_PATTERN = /^[+-]?\d+/u;
 
 interface CliOptions {
   configArgv: string[];
@@ -119,10 +119,10 @@ const parseCliOptions = (argv: readonly string[]): CliOptions => {
     }
 
     if (arg === "--serve-ws-port") {
-      serveWsPort = Number.parseInt(
-        readRequiredCliValue(argv, index, "--serve-ws-port"),
-        10
-      );
+      // Preserve the CLI's decimal-prefix parsing, including signed zero and suffixes.
+      const value = readRequiredCliValue(argv, index, "--serve-ws-port");
+      const prefix = DECIMAL_PORT_PREFIX_PATTERN.exec(value.trimStart())?.[0];
+      serveWsPort = prefix === undefined ? Number.NaN : Number(prefix);
       index += 1;
       continue;
     }
@@ -203,9 +203,8 @@ const runServeWsMode = async (options: CliOptions): Promise<void> => {
   // not a one-shot command. The websocket server's own listeners already do
   // this in practice, but an explicit never-settling promise makes that
   // intent legible rather than incidental.
-  await new Promise<void>(() => {
-    // Intentionally never resolves; shutdown() calls process.exit directly.
-  });
+  const { promise } = Promise.withResolvers<never>();
+  await promise;
 };
 
 const writeTranscriptInput = async (
@@ -231,8 +230,8 @@ const createTranscriptEventRecorder = (
   ordinal: number,
   transcriptWriter: ReplTranscriptWriter | undefined
 ): {
-  flush(): Promise<void>;
-  observe(event: TuvrenStreamEvent): void;
+  flush: () => Promise<void>;
+  observe: (event: TuvrenStreamEvent) => void;
 } => {
   const writes: Promise<void>[] = [];
 
@@ -258,7 +257,7 @@ const createTranscriptEventRecorder = (
   };
 };
 
-const parseDurableReadOutput = (output: string): unknown | undefined => {
+const parseDurableReadOutput = (output: string): unknown => {
   try {
     return JSON.parse(output);
   } catch {
@@ -331,8 +330,8 @@ const writeTranscriptOutput = async (
 const readStreamOutput = (
   events: readonly TuvrenStreamEvent[]
 ): string | undefined => {
-  const structuredDone = [...events]
-    .reverse()
+  const structuredDone = events
+    .toReversed()
     .find(
       (
         event
@@ -344,8 +343,8 @@ const readStreamOutput = (
     return JSON.stringify(structuredDone.data);
   }
 
-  const textDone = [...events]
-    .reverse()
+  const textDone = events
+    .toReversed()
     .find(
       (event): event is Extract<TuvrenStreamEvent, { type: "text.done" }> =>
         event.type === "text.done"
@@ -403,7 +402,7 @@ const shouldUseAnsiColors = (
     return forceColor !== "0" && forceColor !== "false";
   }
 
-  return stream.isTTY === true;
+  return stream.isTTY;
 };
 
 const runInteractiveShell = async (
@@ -533,7 +532,9 @@ const createTranscriptBackendConfig = (
       };
     }
     default: {
-      throw new Error(`unsupported transcript backend "${config.backend}"`);
+      throw new Error(
+        `unsupported transcript backend "${String(config.backend)}"`
+      );
     }
   }
 };
@@ -560,7 +561,7 @@ const hasExplicitScenarioSelection = (
   env: Record<string, string | undefined>,
   argv: readonly string[]
 ): boolean => {
-  if (readReplEnv(env, "SCENARIO")?.trim().length) {
+  if ((readReplEnv(env, "SCENARIO")?.trim().length ?? 0) > 0) {
     return true;
   }
 
@@ -665,4 +666,4 @@ const main = async (argv: readonly string[]): Promise<void> => {
   }
 };
 
-await main(argv);
+await main(process.argv.slice(2));

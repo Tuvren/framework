@@ -307,8 +307,8 @@ const runReplayInput = async (
 const readReplayStreamText = (
   events: readonly TuvrenStreamEvent[]
 ): string | undefined => {
-  const structuredDone = [...events]
-    .reverse()
+  const structuredDone = events
+    .toReversed()
     .find(
       (
         event
@@ -320,8 +320,8 @@ const readReplayStreamText = (
     return JSON.stringify(structuredDone.data);
   }
 
-  const textDone = [...events]
-    .reverse()
+  const textDone = events
+    .toReversed()
     .find(
       (event): event is Extract<TuvrenStreamEvent, { type: "text.done" }> =>
         event.type === "text.done"
@@ -342,7 +342,7 @@ const readReplayStreamText = (
   return text.length > 0 ? text : undefined;
 };
 
-const parseJsonOutput = (output: string): unknown | undefined => {
+const parseJsonOutput = (output: string): unknown => {
   try {
     return JSON.parse(output);
   } catch {
@@ -372,7 +372,7 @@ const normalizeReplayEvent = (value: unknown): unknown => {
 
   const normalized: Record<string, unknown> = {};
 
-  for (const [key, entry] of Object.entries(value).sort(([left], [right]) =>
+  for (const [key, entry] of Object.entries(value).toSorted(([left], [right]) =>
     left.localeCompare(right)
   )) {
     if (isVolatileReplayEventKey(key)) {
@@ -467,7 +467,7 @@ const compareRecordedStreamEvents = (
 const isMessagesShowInput = (input: string): boolean =>
   normalizeReplayInput(input) === ".messages show";
 
-const parseReplayDurableReadOutput = (output: string): unknown | undefined => {
+const parseReplayDurableReadOutput = (output: string): unknown => {
   try {
     return JSON.parse(output);
   } catch {
@@ -568,7 +568,8 @@ export const replayReplTranscript = async (
   let nonDeterministicRecorded = false;
 
   try {
-    for (const group of groups) {
+    // Array.fromAsync awaits each callback before dispatching the next input.
+    await Array.fromAsync(groups, async (group) => {
       const assertDeterministic =
         deterministic || isDeterministicReplayInput(group.input.input);
       const liveEvents: TuvrenStreamEvent[] = [];
@@ -592,7 +593,7 @@ export const replayReplTranscript = async (
         nonDeterministicRecorded = true;
         compareRecordedOutputPresence(group, liveOutput, mismatches);
       }
-    }
+    });
   } finally {
     await host.dispose?.();
   }

@@ -70,8 +70,8 @@ const writeHeadlessOutput = (
 const readHeadlessStreamOutput = (
   events: readonly TuvrenStreamEvent[]
 ): string | undefined => {
-  const structuredDone = [...events]
-    .reverse()
+  const structuredDone = events
+    .toReversed()
     .find(
       (
         event
@@ -83,8 +83,8 @@ const readHeadlessStreamOutput = (
     return JSON.stringify(structuredDone.data);
   }
 
-  const textDone = [...events]
-    .reverse()
+  const textDone = events
+    .toReversed()
     .find(
       (event): event is Extract<TuvrenStreamEvent, { type: "text.done" }> =>
         event.type === "text.done"
@@ -108,9 +108,7 @@ const readHeadlessStreamOutput = (
 const isMessagesShowInput = (input: string): boolean =>
   input.trim().split(SHELL_WHITESPACE_PATTERN).join(" ") === ".messages show";
 
-const parseHeadlessDurableReadOutput = (
-  output: string
-): unknown | undefined => {
+const parseHeadlessDurableReadOutput = (output: string): unknown => {
   try {
     return JSON.parse(output);
   } catch {
