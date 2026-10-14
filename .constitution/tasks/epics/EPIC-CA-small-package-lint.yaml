@@ -2,7 +2,7 @@ id: CA
 name: Small TypeScript package lint ratchet
 kind: tooling
 capabilities: []
-depends_on: [BQ]
+depends_on: [BQ, CS]
 scope:
   paths:
     - typescript/core
