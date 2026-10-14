@@ -24,20 +24,18 @@ import {
 } from "../src/lib/repl-transcript.ts";
 import type { ReplTranscriptHeader } from "../src/lib/repl-transcript.ts";
 
-function header(backendOptions: unknown): ReplTranscriptHeader {
-  return {
-    config: {
-      backend: { kind: "postgres", options: backendOptions },
-      providerMode: "aimock-openai",
-    },
-    recordKind: "header",
-    recordedAtMs: 1,
-    runtimeVersion: "test",
-    v: 1,
-  };
-}
+const header = (backendOptions: unknown): ReplTranscriptHeader => ({
+  config: {
+    backend: { kind: "postgres", options: backendOptions },
+    providerMode: "aimock-openai",
+  },
+  recordKind: "header",
+  recordedAtMs: 1,
+  runtimeVersion: "test",
+  v: 1,
+});
 
-async function captureHeaderLine(h: ReplTranscriptHeader): Promise<string> {
+const captureHeaderLine = async (h: ReplTranscriptHeader): Promise<string> => {
   const lines: string[] = [];
   await createReplTranscriptWriter({
     header: h,
@@ -46,11 +44,10 @@ async function captureHeaderLine(h: ReplTranscriptHeader): Promise<string> {
     },
   });
   return lines[0] ?? "";
-}
+};
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 describe("repl transcript backend-options redaction (KRT-BD002)", () => {
   test("masks PostgreSQL connectionString and password while keeping topology", () => {

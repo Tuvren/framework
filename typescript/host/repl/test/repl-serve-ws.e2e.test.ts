@@ -132,11 +132,11 @@ interface ServerHandle {
   url: string;
 }
 
-function requiredPostgresEnv(): {
+const requiredPostgresEnv = (): {
   host: string;
   port: number;
   username: string;
-} {
+} => {
   const host = process.env.PGHOST;
   const portValue = process.env.PGPORT;
   const username = process.env.PGUSER ?? process.env.USER;
@@ -158,9 +158,12 @@ function requiredPostgresEnv(): {
   }
 
   return { host, port: Number.parseInt(portValue, 10), username };
-}
+};
 
-async function startServer(schemaName: string): Promise<ServerHandle> {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const startServer = async (schemaName: string): Promise<ServerHandle> => {
   const effectsLogPath = join(
     tmpdir(),
     `ws-peer-effects-${crypto.randomUUID()}.ndjson`
@@ -277,11 +280,7 @@ async function startServer(schemaName: string): Promise<ServerHandle> {
     await proc.exited.catch(() => undefined);
     throw error;
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+};
 
 /**
  * Structural peek at a wire text frame's `{kind: "frame", frame: {...}}`
@@ -292,10 +291,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * or unrelated frames (handshake_ack, ping/pong, event frames) simply report
  * `kind: undefined`.
  */
-function parseSessionFrameText(text: string): {
+const parseSessionFrameText = (
+  text: string
+): {
   kind: "client_result" | "client_invocation" | undefined;
   callId?: string;
-} {
+} => {
   try {
     const parsed: unknown = JSON.parse(text);
     if (
@@ -327,7 +328,7 @@ function parseSessionFrameText(text: string): {
   } catch {
     return { kind: undefined };
   }
-}
+};
 
 /**
  * Whether `event` is the demo turn's final `message.done` (the assistant's
@@ -339,13 +340,10 @@ function parseSessionFrameText(text: string): {
  * message settling rather than racing the socket close against a
  * `turn.end` frame that may not have flushed before the connection drops.
  */
-function isFinalAssistantMessageDone(event: unknown): boolean {
-  return (
-    isRecord(event) &&
-    event.type === "message.done" &&
-    event.finishReason === "stop"
-  );
-}
+const isFinalAssistantMessageDone = (event: unknown): boolean =>
+  isRecord(event) &&
+  event.type === "message.done" &&
+  event.finishReason === "stop";
 
 interface EffectLogEntry {
   callId: string;
@@ -354,7 +352,7 @@ interface EffectLogEntry {
   recordedAtMs: number;
 }
 
-async function readEffectsLog(path: string): Promise<EffectLogEntry[]> {
+const readEffectsLog = async (path: string): Promise<EffectLogEntry[]> => {
   try {
     const text = await readFile(path, "utf-8");
     return text
@@ -367,13 +365,13 @@ async function readEffectsLog(path: string): Promise<EffectLogEntry[]> {
     }
     throw error;
   }
-}
+};
 
-async function waitFor(
+const waitFor = async (
   predicate: () => boolean,
   timeoutMs = 15_000,
   intervalMs = 10
-): Promise<void> {
+): Promise<void> => {
   const deadline = Date.now() + timeoutMs;
   while (!predicate()) {
     if (Date.now() > deadline) {
@@ -381,7 +379,7 @@ async function waitFor(
     }
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
-}
+};
 
 describe("repl --serve-ws end-to-end", () => {
   // ORDER-DEPENDENT: both tests share this one server, and variant B ends by

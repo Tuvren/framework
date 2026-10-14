@@ -27,23 +27,21 @@ import type { ReplTranscriptHeader } from "../src/lib/repl-transcript.ts";
 const SCOPE_A = "tuvren.scope.tenant-a";
 const SCOPE_B = "tuvren.scope.tenant-b";
 
-function scopedHeader(scope: string | undefined): ReplTranscriptHeader {
-  return {
-    config: {
-      backend: { kind: "memory" },
-      providerMode: "fixture",
-      ...(scope === undefined ? {} : { scope }),
-    },
-    recordKind: "header",
-    recordedAtMs: 1,
-    runtimeVersion: "test",
-    v: 1,
-  };
-}
+const scopedHeader = (scope: string | undefined): ReplTranscriptHeader => ({
+  config: {
+    backend: { kind: "memory" },
+    providerMode: "fixture",
+    ...(scope === undefined ? {} : { scope }),
+  },
+  recordKind: "header",
+  recordedAtMs: 1,
+  runtimeVersion: "test",
+  v: 1,
+});
 
-async function writeHeaderLines(
+const writeHeaderLines = async (
   header: ReplTranscriptHeader
-): Promise<string[]> {
+): Promise<string[]> => {
   const lines: string[] = [];
   const writer = await createReplTranscriptWriter({
     header,
@@ -60,7 +58,7 @@ async function writeHeaderLines(
   });
   await writer.close();
   return lines;
-}
+};
 
 describe("repl transcript scope correlation (KRT-BE008)", () => {
   test("records the host-bound scope in the header and round-trips it", async () => {

@@ -3,8 +3,8 @@
   "mode": "contract_test",
   "produced": {
     "date": "2026-10-14",
-    "commit": "0cca35a77bce4dacb14cd68586a53d9e603baaf7",
-    "command": "bunx --bun oxlint --type-aware --format json typescript/host/repl; bun run nx run host-repl:typecheck; bun run nx run host-repl:test; bun run nx run host-repl:exports-smoke"
+    "commit": "47a23bd0960de54bee486a1a125a42f13a1d2ad0",
+    "command": "bun run typecheck; bun run conformance; bun run nx run framework-typescript-certification:conformance; bun run nx run host-repl:scenario; bun run proving-host:scenario-sqlite-pinned; bun run proving-host:scenario-postgres; bun run proving-host:interop-smoke"
   },
   "files": [
     {
@@ -18,7 +18,13 @@
       "sha256": "78383046f3fef61d3f1f98a8b50f392e104bb71b9150694761ea724dfa0861c5",
       "bytes": 6270,
       "role": "measurement"
+    },
+    {
+      "path": "ordering.json",
+      "sha256": "cdf459c58afcf9a7b68c121302893f66f720b4474a0c0ac2ca211dcfd5a1314f",
+      "bytes": 13434,
+      "role": "measurement"
     }
   ],
-  "pass_criteria": "M24/M25 cohorts have zero declaration-order diagnostics and AST forward references; M23 already satisfies them. Preserve scenario/output/error/exit/durable-read assertions, optional transcript scope and source bytes. Canonical typecheck/tests/exports pass; complete root gates at M26."
+  "pass_criteria": "All host func-style/no-use-before-define diagnostics are zero under unchanged preset; canonical tests/exports and root typecheck/conformance/behavior closure pass. Preserve supported signatures, validation/event/error/commit order, sequential work, all original directives and metadata, redaction and optional transcript scope. Native residual cleanup/admission remains BX004."
 }
