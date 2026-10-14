@@ -29,12 +29,14 @@ import {
   hasSearchToolContinuation,
   registerStructuredFixture,
 } from "./repl-test-helpers.ts";
+import type { AimockProviderCase } from "./repl-test-helpers.ts";
 
 describe("repl host scenarios aimock matrix", () => {
-  test("runs streamed text through aimock over Anthropic and Gemini provider boundaries", async () => {
-    for (const provider of AIMOCK_PROVIDER_CASES.filter(
-      (entry) => entry.mode !== "aimock-openai"
-    )) {
+  test.each(
+    AIMOCK_PROVIDER_CASES.filter((entry) => entry.mode !== "aimock-openai")
+  )(
+    "runs streamed text through aimock over Anthropic and Gemini provider boundaries (%s)",
+    async (provider: AimockProviderCase) => {
       const mock = new LLMock({
         logLevel: "silent",
         port: 0,
@@ -70,12 +72,13 @@ describe("repl host scenarios aimock matrix", () => {
         await mock.stop();
       }
     }
-  });
+  );
 
-  test("runs structured output through aimock across Anthropic and Gemini provider boundaries", async () => {
-    for (const provider of AIMOCK_PROVIDER_CASES.filter(
-      (entry) => entry.mode !== "aimock-openai"
-    )) {
+  test.each(
+    AIMOCK_PROVIDER_CASES.filter((entry) => entry.mode !== "aimock-openai")
+  )(
+    "runs structured output through aimock across Anthropic and Gemini provider boundaries (%s)",
+    async (provider: AimockProviderCase) => {
       const mock = new LLMock({
         logLevel: "silent",
         port: 0,
@@ -102,10 +105,11 @@ describe("repl host scenarios aimock matrix", () => {
         await mock.stop();
       }
     }
-  });
+  );
 
-  test("runs tool continuation through aimock across all provider families", async () => {
-    for (const provider of AIMOCK_PROVIDER_CASES) {
+  test.each([...AIMOCK_PROVIDER_CASES])(
+    "runs tool continuation through aimock across all provider families (%s)",
+    async (provider: AimockProviderCase) => {
       const mock = new LLMock({
         logLevel: "silent",
         port: 0,
@@ -174,10 +178,11 @@ describe("repl host scenarios aimock matrix", () => {
         await mock.stop();
       }
     }
-  });
+  );
 
-  test("runs approval pause and edited approval resume through aimock across all provider families", async () => {
-    for (const provider of AIMOCK_PROVIDER_CASES) {
+  test.each([...AIMOCK_PROVIDER_CASES])(
+    "runs approval pause and edited approval resume through aimock across all provider families (%s)",
+    async (provider: AimockProviderCase) => {
       const mock = new LLMock({
         logLevel: "silent",
         port: 0,
@@ -254,10 +259,11 @@ describe("repl host scenarios aimock matrix", () => {
         await mock.stop();
       }
     }
-  });
+  );
 
-  test("preserves aimock response metadata across all provider families", async () => {
-    for (const provider of AIMOCK_PROVIDER_CASES) {
+  test.each([...AIMOCK_PROVIDER_CASES])(
+    "preserves aimock response metadata across all provider families (%s)",
+    async (provider: AimockProviderCase) => {
       const mock = new LLMock({
         logLevel: "silent",
         port: 0,
@@ -292,10 +298,11 @@ describe("repl host scenarios aimock matrix", () => {
         await mock.stop();
       }
     }
-  });
+  );
 
-  test("cancels an aimock-backed multi-iteration turn across all provider families", async () => {
-    for (const provider of AIMOCK_PROVIDER_CASES) {
+  test.each([...AIMOCK_PROVIDER_CASES])(
+    "cancels an aimock-backed multi-iteration turn across all provider families (%s)",
+    async (provider: AimockProviderCase) => {
       const mock = new LLMock({
         logLevel: "silent",
         port: 0,
@@ -352,10 +359,11 @@ describe("repl host scenarios aimock matrix", () => {
         await mock.stop();
       }
     }
-  });
+  );
 
-  test("surfaces aimock provider errors across all provider families", async () => {
-    for (const provider of AIMOCK_PROVIDER_CASES) {
+  test.each([...AIMOCK_PROVIDER_CASES])(
+    "surfaces aimock provider errors across all provider families (%s)",
+    async (provider: AimockProviderCase) => {
       const mock = new LLMock({
         logLevel: "silent",
         port: 0,
@@ -385,10 +393,11 @@ describe("repl host scenarios aimock matrix", () => {
         await mock.stop();
       }
     }
-  });
+  );
 
-  test("surfaces malformed aimock responses across all provider families", async () => {
-    for (const provider of AIMOCK_PROVIDER_CASES) {
+  test.each([...AIMOCK_PROVIDER_CASES])(
+    "surfaces malformed aimock responses across all provider families (%s)",
+    async (provider: AimockProviderCase) => {
       const mock = new LLMock({
         chaos: {
           malformedRate: 1,
@@ -420,10 +429,11 @@ describe("repl host scenarios aimock matrix", () => {
         await mock.stop();
       }
     }
-  });
+  );
 
-  test("surfaces unmatched aimock fixtures across all provider families", async () => {
-    for (const provider of AIMOCK_PROVIDER_CASES) {
+  test.each([...AIMOCK_PROVIDER_CASES])(
+    "surfaces unmatched aimock fixtures across all provider families (%s)",
+    async (provider: AimockProviderCase) => {
       const mock = new LLMock({
         logLevel: "silent",
         port: 0,
@@ -449,5 +459,5 @@ describe("repl host scenarios aimock matrix", () => {
         await mock.stop();
       }
     }
-  });
+  );
 });

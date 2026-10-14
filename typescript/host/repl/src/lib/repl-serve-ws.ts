@@ -65,7 +65,6 @@
  *     `"unknown-turn"` or `"out-of-window"` rather than anything describing
  *     the identity shadowing.
  *
- * @packageDocumentation
  */
 
 import { randomUUID } from "node:crypto";
@@ -118,7 +117,7 @@ export const DEMO_CLIENT_CAPABILITY_ID = "tuvren-client.demo" as const;
  * anything pull the runner far enough to dispatch a capability call.
  */
 interface DeferredClientEndpoint extends AttachedClientEndpoint {
-  setDelegate(delegate: AttachedClientEndpoint): void;
+  setDelegate: (delegate: AttachedClientEndpoint) => void;
 }
 
 const createDeferredClientEndpoint = (
@@ -129,7 +128,7 @@ const createDeferredClientEndpoint = (
 
   return {
     advertisedCapabilities,
-    dispatch(
+    async dispatch(
       envelope: ClientInvocationEnvelope
     ): Promise<ClientReportedResult> {
       if (delegate === undefined) {
@@ -137,12 +136,43 @@ const createDeferredClientEndpoint = (
           "repl --serve-ws dispatched a client invocation before the duplex session binding was wired"
         );
       }
-      return delegate.dispatch(envelope);
+      return await delegate.dispatch(envelope);
     },
     endpointId,
     setDelegate(nextDelegate: AttachedClientEndpoint): void {
       delegate = nextDelegate;
     },
+  };
+};
+
+const respondToDemoPrompt = (prompt: TuvrenPrompt): TuvrenModelResponse => {
+  const hasToolResult = prompt.messages.some(
+    (message) => message.role === "tool"
+  );
+
+  if (hasToolResult) {
+    return {
+      finishReason: "stop",
+      parts: [
+        {
+          text: "tuvren-client demo capability call complete.",
+          type: "text",
+        },
+      ],
+      usage: { inputTokens: 8, outputTokens: 6 },
+    };
+  }
+
+  return {
+    finishReason: "tool_call",
+    parts: [
+      {
+        callId: "demo-call-1",
+        input: { demo: true },
+        name: DEMO_CLIENT_CAPABILITY_ID,
+        type: "tool_call",
+      },
+    ],
   };
 };
 
@@ -154,81 +184,48 @@ const createDeferredClientEndpoint = (
  * end-to-end proof drive a real client-capability dispatch over the wire
  * without depending on a live model provider.
  */
-export const createServeWsDemoProvider = (): TuvrenProvider => {
-  const respond = (prompt: TuvrenPrompt): TuvrenModelResponse => {
-    const hasToolResult = prompt.messages.some(
-      (message) => message.role === "tool"
-    );
+export const createServeWsDemoProvider = (): TuvrenProvider => ({
+  async generate(prompt) {
+    return await Promise.resolve(respondToDemoPrompt(prompt));
+  },
+  id: "repl:serve-ws:demo",
+  async *stream(prompt) {
+    await Promise.resolve();
+    const response = respondToDemoPrompt(prompt);
 
-    if (hasToolResult) {
-      return {
-        finishReason: "stop",
-        parts: [
-          {
-            text: "tuvren-client demo capability call complete.",
-            type: "text",
-          },
-        ],
-        usage: { inputTokens: 8, outputTokens: 6 },
-      };
+    for (const part of response.parts) {
+      if (part.type === "text") {
+        yield {
+          text: part.text,
+          type: "text_delta",
+        } satisfies ProviderStreamChunk;
+      } else if (part.type === "tool_call") {
+        yield {
+          name: part.name,
+          providerCallId: part.callId,
+          type: "tool_call_start",
+        } satisfies ProviderStreamChunk;
+        yield {
+          delta: JSON.stringify(part.input),
+          providerCallId: part.callId,
+          type: "tool_call_args_delta",
+        } satisfies ProviderStreamChunk;
+        yield {
+          input: part.input,
+          name: part.name,
+          providerCallId: part.callId,
+          type: "tool_call_done",
+        } satisfies ProviderStreamChunk;
+      }
     }
 
-    return {
-      finishReason: "tool_call",
-      parts: [
-        {
-          callId: "demo-call-1",
-          input: { demo: true },
-          name: DEMO_CLIENT_CAPABILITY_ID,
-          type: "tool_call",
-        },
-      ],
-    };
-  };
-
-  return {
-    generate(prompt) {
-      return Promise.resolve(respond(prompt));
-    },
-    id: "repl:serve-ws:demo",
-    async *stream(prompt) {
-      await Promise.resolve();
-      const response = respond(prompt);
-
-      for (const part of response.parts) {
-        if (part.type === "text") {
-          yield {
-            text: part.text,
-            type: "text_delta",
-          } satisfies ProviderStreamChunk;
-        } else if (part.type === "tool_call") {
-          yield {
-            name: part.name,
-            providerCallId: part.callId,
-            type: "tool_call_start",
-          } satisfies ProviderStreamChunk;
-          yield {
-            delta: JSON.stringify(part.input),
-            providerCallId: part.callId,
-            type: "tool_call_args_delta",
-          } satisfies ProviderStreamChunk;
-          yield {
-            input: part.input,
-            name: part.name,
-            providerCallId: part.callId,
-            type: "tool_call_done",
-          } satisfies ProviderStreamChunk;
-        }
-      }
-
-      yield {
-        finishReason: response.finishReason,
-        type: "finish",
-        usage: response.usage,
-      } satisfies ProviderStreamChunk;
-    },
-  };
-};
+    yield {
+      finishReason: response.finishReason,
+      type: "finish",
+      usage: response.usage,
+    } satisfies ProviderStreamChunk;
+  },
+});
 
 /** One registry entry: the reattachable session plus whichever transport currently owns it. */
 interface ReplWsSessionEntry {
@@ -266,6 +263,7 @@ export interface ReplWsSessionRegistryOptions {
   systemPrompt?: string;
 }
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Host-owned `sessionId -> RemoteClientSession` registry (ADR-0063
  * consequences): the state a `--serve-ws` process must keep so a reconnect
@@ -274,6 +272,7 @@ export interface ReplWsSessionRegistryOptions {
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export interface ReplWsSessionRegistry {
   /**
    * Resolves the entry for `sessionId`, creating a fresh demo turn (new
@@ -290,13 +289,13 @@ export interface ReplWsSessionRegistry {
    * ever tear it down on a failed handshake (P2-2); a connection that only
    * observed a pre-existing entry must never do so.
    */
-  resolve(sessionId: string | undefined): Promise<{
+  resolve: (sessionId: string | undefined) => Promise<{
     created: boolean;
     entry: ReplWsSessionEntry;
     sessionId: string;
   }>;
   /** Observability only: the number of currently live sessions (entries are removed again when a session ends). */
-  size(): number;
+  size: () => number;
 }
 
 export const createReplWsSessionRegistry = (
@@ -387,6 +386,14 @@ export const createReplWsSessionRegistry = (
     return entry;
   };
 
+  const createRegisteredEntry = async (
+    sessionId: string
+  ): Promise<ReplWsSessionEntry> => {
+    const entry = await createEntry(sessionId);
+    entries.set(sessionId, entry);
+    return entry;
+  };
+
   return {
     async resolve(requestedSessionId) {
       if (requestedSessionId !== undefined) {
@@ -407,10 +414,7 @@ export const createReplWsSessionRegistry = (
       }
 
       const sessionId = requestedSessionId ?? randomUUID();
-      const creation = createEntry(sessionId).then((entry) => {
-        entries.set(sessionId, entry);
-        return entry;
-      });
+      const creation = createRegisteredEntry(sessionId);
       pendingCreations.set(sessionId, creation);
       try {
         const entry = await creation;
@@ -456,7 +460,7 @@ export interface ReplWsServer {
   /** The registry backing every session this server has created. */
   readonly registry: ReplWsSessionRegistry;
   /** Stops accepting new connections and closes every live socket. */
-  stop(): Promise<void>;
+  stop: () => Promise<void>;
   /** The `ws://` base URL this server is listening on. */
   readonly url: string;
 }
@@ -475,9 +479,9 @@ interface ReplWsConnectionState {
  */
 interface ServeWsSocket {
   bufferedAmount?: number;
-  close(code?: number, reason?: string): void;
+  close: (code?: number, reason?: string) => void;
   data: ReplWsConnectionState;
-  send(data: string): void;
+  send: (data: string) => void;
 }
 
 /**
@@ -496,13 +500,15 @@ const isHandshakeAckFrame = (data: string): boolean => {
     return (
       typeof value === "object" &&
       value !== null &&
-      (value as { kind?: unknown }).kind === "handshake_ack"
+      "kind" in value &&
+      value.kind === "handshake_ack"
     );
   } catch {
     return false;
   }
 };
 
+/* oxlint-disable jsdoc/check-tag-names -- Preserve authority-required @experimental release tags (ADR-0056 and approved BX metadata ruling). */
 /**
  * Starts the REPL host's `--serve-ws` demo server: `Bun.serve` websocket
  * handlers composing `binding -> session -> transport -> socket`
@@ -510,6 +516,7 @@ const isHandshakeAckFrame = (data: string): boolean => {
  *
  * @experimental
  */
+/* oxlint-enable jsdoc/check-tag-names */
 export const startReplWsServer = (
   options: ReplWsServerOptions
 ): ReplWsServer => {
@@ -571,45 +578,42 @@ export const startReplWsServer = (
     // `handshake_ack` — sent from inside `attachToSession` only after
     // `session.attach()` has already succeeded — is the seam: observing that
     // exact frame on its way out is the attach-succeeded signal.
-    let transport: WsSessionTransport | undefined;
     let ackObserved = false;
 
-    const sink: WsSocketSink = {
-      bufferedAmount(): number {
-        return ws.bufferedAmount ?? 0;
-      },
-      close(code, reason) {
-        // P2-2: a close observed before this connection's own handshake_ack
-        // ever went out means this transport's attach never succeeded. If
-        // this connection is also the one that just minted a brand-new
-        // registry entry (created === true), that entry now has no attached
-        // transport and never will — tear it down (session.close(), which
-        // drives the registry's own onEnded cleanup) rather than leak a
-        // permanent thread + turn + binding. Never do this for an entry this
-        // connection did not create: a refused concurrent second attach on
-        // an existing, still-live session must leave that session alone.
-        if (!ackObserved && created) {
-          entry.session.close(
-            "handshake failed before this newly created session ever attached"
-          );
-        }
-        ws.close(code, reason);
-      },
-      send(data) {
-        if (!ackObserved && isHandshakeAckFrame(data)) {
-          ackObserved = true;
-          entry.currentTransport = transport;
-        }
-        ws.send(data);
-      },
-    };
-
-    transport = createWsSessionTransport({
+    const transport = createWsSessionTransport({
       ...(options.heartbeat === undefined
         ? {}
         : { heartbeat: options.heartbeat }),
       session: entry.session,
-      sink,
+      sink: {
+        bufferedAmount(): number {
+          return ws.bufferedAmount ?? 0;
+        },
+        close(code, reason) {
+          // P2-2: a close observed before this connection's own handshake_ack
+          // ever went out means this transport's attach never succeeded. If
+          // this connection is also the one that just minted a brand-new
+          // registry entry (created === true), that entry now has no attached
+          // transport and never will — tear it down (session.close(), which
+          // drives the registry's own onEnded cleanup) rather than leak a
+          // permanent thread + turn + binding. Never do this for an entry this
+          // connection did not create: a refused concurrent second attach on
+          // an existing, still-live session must leave that session alone.
+          if (!ackObserved && created) {
+            entry.session.close(
+              "handshake failed before this newly created session ever attached"
+            );
+          }
+          ws.close(code, reason);
+        },
+        send(data) {
+          if (!ackObserved && isHandshakeAckFrame(data)) {
+            ackObserved = true;
+            entry.currentTransport = transport;
+          }
+          ws.send(data);
+        },
+      } satisfies WsSocketSink,
     });
 
     ws.data.transport = transport;
@@ -619,12 +623,11 @@ export const startReplWsServer = (
 
   // biome-ignore lint/correctness/noUndeclaredVariables: Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: "Bun APIs are fine here").
   const server = Bun.serve<ReplWsConnectionState>({
-    fetch(req, srv) {
+    fetch(req, srv): Response | undefined {
       const upgraded = srv.upgrade(req, { data: { transport: undefined } });
-      if (upgraded) {
-        return;
-      }
-      return new Response("WebSocket upgrade required", { status: 426 });
+      return upgraded
+        ? undefined
+        : new Response("WebSocket upgrade required", { status: 426 });
     },
     hostname: options.hostname ?? "127.0.0.1",
     port: options.port ?? 0,
@@ -644,16 +647,14 @@ export const startReplWsServer = (
           // ordinary websocket message events and are handled once
           // ws.data.transport is set. A failure here has nowhere useful to
           // propagate to but the socket itself.
-          handleFirstMessage(ws as ServeWsSocket, text).catch(
-            (error: unknown) => {
-              ws.close(
-                1011,
-                `internal error handling handshake: ${
-                  error instanceof Error ? error.message : String(error)
-                }`
-              );
-            }
-          );
+          handleFirstMessage(ws, text).catch((error: unknown) => {
+            ws.close(
+              1011,
+              `internal error handling handshake: ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            );
+          });
           return;
         }
 

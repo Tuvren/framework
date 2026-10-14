@@ -96,12 +96,15 @@
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { once } from "node:events";
 import { appendFile, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import os from "node:os";
+import nodePath from "node:path";
 import process from "node:process";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { createPostgresBackend } from "@tuvren/backend-postgres";
+import { createReplHost } from "@tuvren/repl-host";
 import { createReActRunner, REACT_RUNNER_ID } from "@tuvren/runner-react";
 import {
   createRunnerRegistry,
@@ -115,14 +118,18 @@ import type {
 } from "@tuvren/session-client";
 import postgres from "postgres";
 
-import { DEMO_CLIENT_CAPABILITY_ID } from "../src/lib/repl-serve-ws.js";
+import {
+  createReplWsSessionRegistry,
+  DEMO_CLIENT_CAPABILITY_ID,
+  startReplWsServer,
+} from "../src/lib/repl-serve-ws.js";
 
-const REPL_ROOT = join(import.meta.dir, "..");
+const REPL_ROOT = nodePath.join(import.meta.dir, "..");
 const POSTGRES_DATABASE = "tuvren_runtime";
 
 interface ServerHandle {
   effectsLogPath: string;
-  kill(): Promise<void>;
+  kill: () => Promise<void>;
   proc: ReturnType<typeof Bun.spawn>;
   sessionsCreated: {
     branchId: string;
@@ -157,15 +164,15 @@ const requiredPostgresEnv = (): {
     );
   }
 
-  return { host, port: Number.parseInt(portValue, 10), username };
+  return { host, port: Number(portValue), username };
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const startServer = async (schemaName: string): Promise<ServerHandle> => {
-  const effectsLogPath = join(
-    tmpdir(),
+  const effectsLogPath = nodePath.join(
+    os.tmpdir(),
     `ws-peer-effects-${crypto.randomUUID()}.ndjson`
   );
   const pg = requiredPostgresEnv();
@@ -217,16 +224,14 @@ const startServer = async (schemaName: string): Promise<ServerHandle> => {
   // `server?.kill()`, which never runs if `startServer` itself never
   // resolves into `server` (see `beforeAll` below).
   try {
-    let resolveListening: ((url: string) => void) | undefined;
-    const listening = new Promise<string>((resolve) => {
-      resolveListening = resolve;
-    });
+    const { promise: listening, resolve: resolveListening } =
+      Promise.withResolvers<string>();
 
     (async () => {
       const reader = proc.stdout.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      for (;;) {
+      const readNext = async (): Promise<void> => {
         const { done, value } = await reader.read();
         if (done) {
           return;
@@ -251,18 +256,21 @@ const startServer = async (schemaName: string): Promise<ServerHandle> => {
             });
           }
         }
-      }
-    })().catch(() => undefined);
+        await readNext();
+      };
+      await readNext();
+    })().catch(() => {
+      // Best-effort cleanup; preserve the original failure.
+    });
 
     const url = await Promise.race([
       listening,
-      new Promise<string>((_resolve, reject) => {
-        setTimeout(() => {
-          reject(
-            new Error("--serve-ws subprocess did not report listening in time")
-          );
-        }, 20_000);
-      }),
+      (async () => {
+        await delay(20_000, undefined, { ref: false });
+        throw new Error(
+          "--serve-ws subprocess did not report listening in time"
+        );
+      })(),
     ]);
 
     return {
@@ -277,7 +285,9 @@ const startServer = async (schemaName: string): Promise<ServerHandle> => {
     };
   } catch (error) {
     proc.kill("SIGKILL");
-    await proc.exited.catch(() => undefined);
+    await proc.exited.catch(() => {
+      // Best-effort cleanup; preserve the original failure.
+    });
     throw error;
   }
 };
@@ -358,9 +368,27 @@ const readEffectsLog = async (path: string): Promise<EffectLogEntry[]> => {
     return text
       .split("\n")
       .filter((line) => line.trim().length > 0)
-      .map((line) => JSON.parse(line) as EffectLogEntry);
+      .map((line): EffectLogEntry => {
+        const entry: unknown = JSON.parse(line);
+        if (
+          !isRecord(entry) ||
+          typeof entry.callId !== "string" ||
+          (entry.idempotencyKey !== undefined &&
+            typeof entry.idempotencyKey !== "string") ||
+          !("input" in entry) ||
+          typeof entry.recordedAtMs !== "number"
+        ) {
+          throw new TypeError("invalid peer effect log entry");
+        }
+        return {
+          callId: entry.callId,
+          idempotencyKey: entry.idempotencyKey,
+          input: entry.input,
+          recordedAtMs: entry.recordedAtMs,
+        };
+      });
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if (isRecord(error) && error.code === "ENOENT") {
       return [];
     }
     throw error;
@@ -373,12 +401,17 @@ const waitFor = async (
   intervalMs = 10
 ): Promise<void> => {
   const deadline = Date.now() + timeoutMs;
-  while (!predicate()) {
+  const poll = async (): Promise<void> => {
+    if (predicate()) {
+      return;
+    }
     if (Date.now() > deadline) {
       throw new Error("waitFor: condition not met before timeout");
     }
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-  }
+    await delay(intervalMs);
+    await poll();
+  };
+  await poll();
 };
 
 describe("repl --serve-ws end-to-end", () => {
@@ -396,10 +429,12 @@ describe("repl --serve-ws end-to-end", () => {
   }, 30_000);
 
   afterAll(async () => {
-    await server?.kill().catch(() => undefined);
-    await rm(server?.effectsLogPath ?? "", { force: true }).catch(
-      () => undefined
-    );
+    await server?.kill().catch(() => {
+      // Best-effort cleanup; preserve the original failure.
+    });
+    await rm(server?.effectsLogPath ?? "", { force: true }).catch(() => {
+      // Best-effort cleanup; preserve the original failure.
+    });
 
     // Disposable schema per the repo's persistent-smoke-target convention
     // (CLAUDE.md "Tests And PRs"): drop it unconditionally, even though the
@@ -411,7 +446,9 @@ describe("repl --serve-ws end-to-end", () => {
       host: pg.host,
       idle_timeout: 1,
       max: 1,
-      onnotice: () => undefined,
+      onnotice: () => {
+        // Best-effort cleanup; preserve the original failure.
+      },
       port: pg.port,
       prepare: false,
       username: pg.username,
@@ -436,10 +473,8 @@ describe("repl --serve-ws end-to-end", () => {
     let resultFrameDropped = false;
     let turnEnded = false;
     let invocationSeen = 0;
-    let releaseGate: (() => void) | undefined;
-    const gate = new Promise<void>((resolve) => {
-      releaseGate = resolve;
-    });
+    const { promise: gate, resolve: releaseGate } =
+      Promise.withResolvers<undefined>();
 
     const client = createSessionClient({
       capabilities: {
@@ -504,8 +539,10 @@ describe("repl --serve-ws end-to-end", () => {
           },
         };
 
-        real.onopen = () => wrapper.onopen?.();
-        real.onmessage = (event: MessageEvent) => {
+        real.addEventListener("open", () => {
+          wrapper.onopen?.();
+        });
+        real.addEventListener("message", (event: MessageEvent) => {
           const incoming = parseSessionFrameText(
             typeof event.data === "string" ? event.data : ""
           );
@@ -516,9 +553,13 @@ describe("repl --serve-ws end-to-end", () => {
             wireInvocationCallIds.push(incoming.callId);
           }
           wrapper.onmessage?.(event);
-        };
-        real.onclose = (event) => wrapper.onclose?.(event);
-        real.onerror = (event) => wrapper.onerror?.(event);
+        });
+        real.addEventListener("close", (event) => {
+          wrapper.onclose?.(event);
+        });
+        real.addEventListener("error", (event) => {
+          wrapper.onerror?.(event);
+        });
 
         return wrapper;
       },
@@ -643,13 +684,14 @@ describe("repl --serve-ws end-to-end", () => {
       ]),
     });
 
-    const branchId = created?.branchId as string;
+    if (created === undefined) {
+      throw new Error("expected created session before committed-state read");
+    }
+    const { branchId } = created;
     const messages = await readRuntime.readBranchMessages({ branchId });
 
     const toolResultMessages = messages.messages.filter(
-      (message) =>
-        isRecord(message) &&
-        (message as Record<string, unknown>).role === "tool"
+      (message) => isRecord(message) && message.role === "tool"
     );
     expect(toolResultMessages.length).toBeGreaterThan(0);
 
@@ -657,7 +699,7 @@ describe("repl --serve-ws end-to-end", () => {
       if (!isRecord(message)) {
         return false;
       }
-      const { parts } = message as Record<string, unknown>;
+      const { parts } = message;
       if (!Array.isArray(parts)) {
         return false;
       }
@@ -673,3 +715,125 @@ describe("repl --serve-ws end-to-end", () => {
     // provable with this runtime's current recovery semantics.
   }, 30_000);
 });
+
+test("concurrent registry resolution shares one turn and only one creation owner", async () => {
+  const host = createReplHost({
+    backend: "memory",
+    providerMode: "fixture",
+    scenario: "streaming",
+  });
+  const createdSessionIds: string[] = [];
+  const registry = createReplWsSessionRegistry({
+    disconnectGraceMs: 5000,
+    dispatchTimeoutMs: 10_000,
+    onSessionCreated(info) {
+      createdSessionIds.push(info.sessionId);
+    },
+    replayBufferCapacity: 256,
+    runtime: host.runtime,
+  });
+  const sessionId = crypto.randomUUID();
+  const [first, second] = await Promise.all([
+    registry.resolve(sessionId),
+    registry.resolve(sessionId),
+  ]);
+  try {
+    expect(first.created).toBe(true);
+    expect(second.created).toBe(false);
+    expect(first.sessionId).toBe(sessionId);
+    expect(second.sessionId).toBe(sessionId);
+    expect(second.entry).toBe(first.entry);
+    expect(createdSessionIds).toEqual([sessionId]);
+    expect(registry.size()).toBe(1);
+    const reused = await registry.resolve(sessionId);
+    expect(reused.created).toBe(false);
+    expect(reused.entry).toBe(first.entry);
+  } finally {
+    first.entry.session.close("registry proof finished");
+    await host.dispose?.();
+  }
+  expect(registry.size()).toBe(0);
+});
+
+test("invalid WebSocket handshakes close before a demo turn is allocated", async () => {
+  const host = createReplHost({
+    backend: "memory",
+    providerMode: "fixture",
+    scenario: "streaming",
+  });
+  const createdSessionIds: string[] = [];
+  const server = startReplWsServer({
+    onSessionCreated(info) {
+      createdSessionIds.push(info.sessionId);
+    },
+    runtime: host.runtime,
+  });
+  const socket = new WebSocket(server.url);
+  const opened = once(socket, "open");
+  const { promise: closed, resolve: resolveClosed } =
+    Promise.withResolvers<CloseEvent>();
+  socket.addEventListener("close", (event) => {
+    resolveClosed(event);
+  });
+  try {
+    const response = await fetch(server.url.replace("ws:", "http:"));
+    expect(response.status).toBe(426);
+    expect(await response.text()).toBe("WebSocket upgrade required");
+    await opened;
+    socket.send(JSON.stringify({ kind: "ping" }));
+    const closeEvent = await closed;
+    expect(closeEvent.code).toBe(4000);
+    expect(closeEvent.reason).toBe(
+      "first message on a WebSocket session transport must be a handshake"
+    );
+    expect(server.registry.size()).toBe(0);
+    expect(createdSessionIds).toEqual([]);
+  } finally {
+    socket.close();
+    await server.stop();
+    await host.dispose?.();
+  }
+}, 5000);
+
+test("failed session allocation closes the initiating socket with the original error message", async () => {
+  const host = createReplHost({
+    backend: "memory",
+    providerMode: "fixture",
+    scenario: "streaming",
+  });
+  const failure = new Error("session allocation sentinel");
+  const server = startReplWsServer({
+    runtime: {
+      ...host.runtime,
+      createThread() {
+        throw failure;
+      },
+    },
+  });
+  const socket = new WebSocket(server.url);
+  const { promise: closed, resolve: resolveClosed } =
+    Promise.withResolvers<CloseEvent>();
+  socket.addEventListener("close", (event) => {
+    resolveClosed(event);
+  });
+  try {
+    await once(socket, "open");
+    socket.send(
+      JSON.stringify({
+        kind: "handshake",
+        protocolVersion: "1",
+        sessionId: "allocation-failure",
+      })
+    );
+    const closeEvent = await closed;
+    expect(closeEvent.code).toBe(1011);
+    expect(closeEvent.reason).toBe(
+      "internal error handling handshake: session allocation sentinel"
+    );
+    expect(server.registry.size()).toBe(0);
+  } finally {
+    socket.close();
+    await server.stop();
+    await host.dispose?.();
+  }
+}, 5000);
