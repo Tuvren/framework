@@ -1,0 +1,184 @@
+{
+  "milestone": "M25",
+  "ticket": "KRT-BX003",
+  "status": "verified-already-satisfied-by-M23",
+  "reviewed_implementation": "0cca35a77bce4dacb14cd68586a53d9e603baaf7",
+  "file": "typescript/host/repl/test/repl.test.ts",
+  "source_sha256": "a8a04cfa82211491ee509c11f4b460b6c5c1fd20c561b0aa910e05504fe87f60",
+  "boundary": {
+    "start_line": 2142,
+    "end_line_inclusive": 3005,
+    "first_test": "interactive CLI exits cleanly for piped sessions",
+    "last_test": "non-deterministic replay fails when output evidence is missing",
+    "start_offset": 62659,
+    "end_offset_exclusive": 87872
+  },
+  "cohort": {
+    "tests": 32,
+    "assertion_call_sites": 134,
+    "local_value_declarations": 88,
+    "bound_local_value_references": 246,
+    "nested_function_declarations": 0,
+    "forward_references": [],
+    "sha256": "1c7079a186c6c6d0c9f3389820c76d49d9b24a314f4023c366e41e6b9c218381",
+    "byte_for_byte_equal_to_pre_m23": true
+  },
+  "early": {
+    "tests": 68,
+    "sha256": "879ba6b59eaaa68aed6e23dc58d128315b1af925ed385c59aedf4e89e3fb2c70",
+    "byte_for_byte_equal_to_pre_m23": true,
+    "untouched": true
+  },
+  "registration": {
+    "tests": 100,
+    "sha256": "0115ea6672783e93e574a3660a3b8767a454ef2e1586abfe7f8e5bbee0c4f8f4",
+    "byte_for_byte_equal_to_pre_m23": true
+  },
+  "optional_transcript_scope": {
+    "remains_optional": true,
+    "files": [
+      {
+        "path": "typescript/host/repl/src/lib/repl-transcript.ts",
+        "sha256": "34ed4beee3b15390491149959681629152aa08234d2061157125f28e9b12ad66",
+        "equal_to_reviewed_head": true
+      },
+      {
+        "path": "typescript/host/repl/test/repl-transcript-scope.test.ts",
+        "sha256": "e7dd1386e2cd6ca257c69d87d556575949466997b3ebe0a7ffc6b7ef173f207e",
+        "equal_to_reviewed_head": true
+      }
+    ]
+  },
+  "lineage": {
+    "pre_m23_cohort_ordering": {
+      "total": 47,
+      "by_rule": {
+        "eslint(no-use-before-define)": 47
+      }
+    },
+    "current_cohort_ordering": {
+      "total": 0,
+      "by_rule": {}
+    },
+    "explanation": "M23 placed shared helper definitions before test registration; the exact M25 cohort requires no further edit."
+  },
+  "diagnostics": {
+    "project": {
+      "total": 294,
+      "by_rule": {
+        "typescript(method-signature-style)": 25,
+        "eslint(func-style)": 30,
+        "jsdoc(check-tag-names)": 4,
+        "promise(avoid-new)": 16,
+        "unicorn(consistent-function-scoping)": 6,
+        "eslint(no-useless-return)": 2,
+        "unicorn(prefer-native-coercion-functions)": 1,
+        "eslint(no-await-in-loop)": 38,
+        "promise(prefer-await-to-then)": 6,
+        "eslint(prefer-const)": 1,
+        "promise(prefer-await-to-callbacks)": 1,
+        "unicorn(no-array-reverse)": 8,
+        "eslint(sort-keys)": 4,
+        "unicorn(no-array-sort)": 3,
+        "eslint(eqeqeq)": 1,
+        "eslint(no-eq-null)": 1,
+        "unicorn(no-await-expression-member)": 16,
+        "unicorn(no-useless-undefined)": 9,
+        "unicorn(import-style)": 4,
+        "unicorn(prefer-default-parameters)": 4,
+        "eslint(no-use-before-define)": 35,
+        "eslint(complexity)": 1,
+        "typescript(no-dynamic-delete)": 3,
+        "eslint(no-shadow)": 5,
+        "unicorn(prefer-number-coercion)": 2,
+        "eslint(prefer-destructuring)": 5,
+        "eslint(no-promise-executor-return)": 1,
+        "unicorn(prefer-add-event-listener)": 4,
+        "typescript(restrict-template-expressions)": 5,
+        "typescript(promise-function-async)": 13,
+        "typescript(no-unsafe-type-assertion)": 9,
+        "typescript(switch-exhaustiveness-check)": 4,
+        "typescript(no-unsafe-return)": 3,
+        "typescript(no-unsafe-assignment)": 2,
+        "typescript(no-misused-spread)": 1,
+        "typescript(prefer-nullish-coalescing)": 1,
+        "typescript(no-redundant-type-constituents)": 4,
+        "typescript(unbound-method)": 2,
+        "typescript(no-unsafe-enum-comparison)": 1,
+        "typescript(no-unnecessary-type-conversion)": 1,
+        "typescript(consistent-return)": 1,
+        "typescript(no-base-to-string)": 1,
+        "typescript(no-unnecessary-boolean-literal-compare)": 1,
+        "typescript(strict-void-return)": 1,
+        "typescript(strict-boolean-expressions)": 1,
+        "typescript(non-nullable-type-assertion-style)": 1,
+        "typescript(no-unsafe-argument)": 2,
+        "typescript(await-thenable)": 2,
+        "typescript(no-confusing-void-expression)": 2
+      }
+    },
+    "file": {
+      "total": 34,
+      "by_rule": {
+        "unicorn(import-style)": 1,
+        "eslint(no-await-in-loop)": 4,
+        "promise(avoid-new)": 2,
+        "unicorn(no-await-expression-member)": 15,
+        "typescript(promise-function-async)": 2,
+        "typescript(no-unsafe-return)": 2,
+        "typescript(no-unsafe-type-assertion)": 1,
+        "typescript(unbound-method)": 1,
+        "typescript(no-unsafe-argument)": 2,
+        "typescript(await-thenable)": 2,
+        "typescript(no-confusing-void-expression)": 2
+      }
+    },
+    "cohort": {
+      "total": 8,
+      "by_rule": {
+        "eslint(no-await-in-loop)": 2,
+        "typescript(no-unsafe-argument)": 2,
+        "typescript(await-thenable)": 2,
+        "typescript(no-confusing-void-expression)": 2
+      }
+    },
+    "project_ordering": {
+      "total": 65,
+      "by_rule": {
+        "eslint(func-style)": 30,
+        "eslint(no-use-before-define)": 35
+      }
+    },
+    "file_ordering": {
+      "total": 0,
+      "by_rule": {}
+    },
+    "cohort_ordering": {
+      "total": 0,
+      "by_rule": {}
+    }
+  },
+  "source_unchanged": true,
+  "verification": {
+    "source_typecheck": 0,
+    "canonical_tests": 0,
+    "tests": 135,
+    "assertions": 1089,
+    "exports_smoke": 0,
+    "owned_format": 0,
+    "constitution_errors": 0
+  },
+  "raw_artifacts": [
+    {
+      "name": "bx-m25-proof.json",
+      "sha256": "cb810897d090d0dbad52cdb17482a51080aff42996464fb0bb42d4057540f879",
+      "bytes": 47006
+    },
+    {
+      "name": "bx-m25-summary.json",
+      "sha256": "5e8f6d96c00df14365ce16eba70cd7ff1a7bec54604c0835a663a1750666c6be",
+      "bytes": 13755
+    }
+  ],
+  "conclusion": "M25 already satisfies declaration ordering. Preserve existing assertions and residual diagnostics; no source changes warranted."
+}
