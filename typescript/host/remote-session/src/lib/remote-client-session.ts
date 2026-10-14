@@ -33,9 +33,11 @@ import {
   createReplayBuffer,
   createSequencedTuvrenStreamEvents,
   createStreamAdapterWarningReporter,
-  type ReplayBuffer,
-  type StreamAdapterOptions,
-  type StreamAdapterWarning,
+} from "@tuvren/stream-core";
+import type {
+  ReplayBuffer,
+  StreamAdapterOptions,
+  StreamAdapterWarning,
 } from "@tuvren/stream-core";
 
 const PROTOCOL_VERSION = "1";
@@ -358,7 +360,7 @@ function extractSettleableClientResultCallId(
   ) {
     return undefined;
   }
-  const result = raw.result;
+  const { result } = raw;
   if (
     !(
       isRecord(result) &&
@@ -394,8 +396,8 @@ export function createRemoteClientSession(
     );
   }
 
-  const binding = options.binding;
-  const sessionId = binding.sessionId;
+  const { binding } = options;
+  const { sessionId } = binding;
   const clock = options.clock ?? globalClock;
   // Throws RangeError for a non-positive-integer capacity, same as every
   // other createReplayBuffer caller in the tree.
@@ -665,7 +667,7 @@ export function createRemoteClientSession(
       claimAndStartPump();
     }
 
-    const cursor = attachOptions.cursor;
+    const { cursor } = attachOptions;
     let resumeStatus: RemoteClientSessionResumeStatus = "none";
 
     if (cursor !== undefined) {
@@ -692,7 +694,7 @@ export function createRemoteClientSession(
     // dispatchTimeoutMs rather than a deadline that ran out while it was gone
     // (ADR-0063 decision 5).
     for (const pending of pendingInvocations.values()) {
-      sink.send(makeInvocationFrame(pending.envelope, sessionId), undefined);
+      sink.send(makeInvocationFrame(pending.envelope, sessionId));
       pending.dispatchTimer = armDispatchTimer(pending.envelope.callId);
     }
 
