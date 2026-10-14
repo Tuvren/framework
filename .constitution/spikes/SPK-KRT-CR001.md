@@ -15,6 +15,7 @@
 - **Triggering upstream file or section:** `docs/KrakenFrameworkSpecification.md` §4.9 (crash after model call, before tools; crash mid tool execution), and `.constitution/tech-spec/adrs/ADR-0065-idempotency-identity-is-call-identity-not-authority-epoch.md`, Consequences, open obligation 1
 - **Target:** the branch head, `RecoveryState.consumedStagedResults`, and `RecoveryState.uncommittedStagedResults` returned by `runLiveness.preemptExpired` for a run that staged an assistant tool-call message and some tool results, per official kernel
 - **Archetype / surface:** framework runtime recovery (Library/SDK), TypeScript only; kernels are read, never changed
+- **Deliverable:** this report only; no code or test is committed by the spike. The crash reproduction recorded here becomes KRT-CR002's characterization test
 
 ## Codebase baseline
 
@@ -31,7 +32,7 @@
 
 ## Downstream impact
 
-- **ADRs to write or update:** none expected; ADR-0065's open obligation 1 is closed by KRT-CR003 and KRT-CR004, and its Consequences are updated through the epic's patchable list only if the evidence contradicts it
+- **ADRs to write or update:** none expected; ADR-0065's open obligation 1 is closed by KRT-CR003, and its Consequences are updated through the epic's patchable list only if the evidence contradicts it
 - **Tickets unblocked:** KRT-CR002
 - **Register entry closed:** none
 - **Tickets to add or split:** to be filled by the worker
