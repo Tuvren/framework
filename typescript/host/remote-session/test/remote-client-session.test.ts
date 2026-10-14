@@ -17,21 +17,19 @@
 import { describe, expect, test } from "bun:test";
 
 import type { ExecutionHandle, ExecutionResult } from "@tuvren/core/execution";
-import {
-  createDuplexSessionBinding,
-  type DuplexSessionBinding,
-  type SessionOutboundFrame,
+import { createDuplexSessionBinding } from "@tuvren/host-session";
+import type {
+  DuplexSessionBinding,
+  SessionOutboundFrame,
 } from "@tuvren/host-session";
-import {
-  decodeResumeCursor,
-  type StreamAdapterWarning,
-} from "@tuvren/stream-core";
+import { decodeResumeCursor } from "@tuvren/stream-core";
+import type { StreamAdapterWarning } from "@tuvren/stream-core";
 
-import {
-  createRemoteClientSession,
-  type RemoteClientSessionOptions,
-  type RemoteClientSessionSink,
-  type RemoteSessionClock,
+import { createRemoteClientSession } from "../src/lib/remote-client-session.ts";
+import type {
+  RemoteClientSessionOptions,
+  RemoteClientSessionSink,
+  RemoteSessionClock,
 } from "../src/lib/remote-client-session.ts";
 
 // ---------------------------------------------------------------------------
@@ -51,7 +49,7 @@ class FakeEventSource implements AsyncIterable<FakeEvent> {
   private claimed = false;
   private readonly closed = false;
   private readonly items: FakeEvent[] = [];
-  private readonly waiters: Array<(result: IteratorResult<FakeEvent>) => void> =
+  private readonly waiters: ((result: IteratorResult<FakeEvent>) => void)[] =
     [];
 
   push(event: FakeEvent): void {
@@ -119,10 +117,10 @@ interface SentFrame {
 function createFakeSink(): RemoteClientSessionSink & { sent: SentFrame[] } {
   const sent: SentFrame[] = [];
   return {
-    sent,
     send(frame: SessionOutboundFrame, cursor?: string): void {
       sent.push({ cursor, frame });
     },
+    sent,
   };
 }
 
@@ -197,7 +195,7 @@ function resultContentCode(content: unknown): string | undefined {
   if (typeof content !== "object" || content === null) {
     return undefined;
   }
-  const code = (content as Record<string, unknown>).code;
+  const { code } = content as Record<string, unknown>;
   return typeof code === "string" ? code : undefined;
 }
 
@@ -385,15 +383,15 @@ describe("createRemoteClientSession", () => {
 
     events.push({ turnId: "t1", type: "turn.start" });
     await flush();
-    events.push({ turnId: "t1", type: "message.delta", text: "a" });
+    events.push({ text: "a", turnId: "t1", type: "message.delta" });
     await flush();
 
     const cursorAfterFirstDelta = sink1.sent[1]?.cursor as string;
     session.detach();
 
-    events.push({ turnId: "t1", type: "message.delta", text: "b" });
+    events.push({ text: "b", turnId: "t1", type: "message.delta" });
     await flush();
-    events.push({ turnId: "t1", type: "message.delta", text: "c" });
+    events.push({ text: "c", turnId: "t1", type: "message.delta" });
     await flush();
 
     const sink2 = createFakeSink();
@@ -686,7 +684,7 @@ describe("createRemoteClientSession", () => {
     // Recorded into the shared replay buffer while no sink is attached: this
     // is the "replayable event gap" a reattach with cursorAfterTurnStart must
     // deliver before anything else.
-    events.push({ turnId: "t1", type: "message.delta", text: "gap" });
+    events.push({ text: "gap", turnId: "t1", type: "message.delta" });
     await flush();
 
     const sink2 = createFakeSink();
@@ -696,7 +694,7 @@ describe("createRemoteClientSession", () => {
 
     // Live forwarding: a fresh event arriving right after attach must land
     // strictly after both the replay and the redelivery below.
-    events.push({ turnId: "t1", type: "message.delta", text: "live" });
+    events.push({ text: "live", turnId: "t1", type: "message.delta" });
     await flush();
 
     expect(resumeStatus).toBe("resumed");
