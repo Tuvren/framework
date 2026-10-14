@@ -288,17 +288,14 @@ class SingleSlotPushChannel<T> implements AsyncIterable<T> {
   }
 }
 
-function isPositiveFiniteNumber(value: number): boolean {
-  return Number.isFinite(value) && value > 0;
-}
+const isPositiveFiniteNumber = (value: number): boolean =>
+  Number.isFinite(value) && value > 0;
 
-function isNonNegativeFiniteNumber(value: number): boolean {
-  return Number.isFinite(value) && value >= 0;
-}
+const isNonNegativeFiniteNumber = (value: number): boolean =>
+  Number.isFinite(value) && value >= 0;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 // Mirrors `CONTAINS_NON_WHITESPACE` in
 // `typescript/host/session/src/lib/duplex-session-binding.ts` byte-for-byte,
@@ -320,21 +317,18 @@ const CONTAINS_NON_WHITESPACE = /\S/;
  * two can never drift into structurally different frames for the same
  * invocation.
  */
-function makeInvocationFrame(
+const makeInvocationFrame = (
   invocation: ClientInvocationEnvelope,
   sessionId: string
-): SessionOutboundFrame {
-  return {
-    invocation,
-    kind: "client_invocation",
-    protocolVersion: PROTOCOL_VERSION,
-    sessionId,
-  };
-}
+): SessionOutboundFrame => ({
+  invocation,
+  kind: "client_invocation",
+  protocolVersion: PROTOCOL_VERSION,
+  sessionId,
+});
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && CONTAINS_NON_WHITESPACE.test(value);
-}
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && CONTAINS_NON_WHITESPACE.test(value);
 
 /**
  * Extracts the `callId` of a `client_result` frame, but only when the frame
@@ -347,10 +341,10 @@ function isNonEmptyString(value: unknown): value is string {
  * binding will *reject* as settleable would orphan an in-flight dispatch —
  * no timer, no redelivery, nobody left owing the call.
  */
-function extractSettleableClientResultCallId(
+const extractSettleableClientResultCallId = (
   raw: unknown,
   sessionId: string
-): string | undefined {
+): string | undefined => {
   if (
     !isRecord(raw) ||
     raw.kind !== "client_result" ||
@@ -372,7 +366,7 @@ function extractSettleableClientResultCallId(
     return undefined;
   }
   return result.callId;
-}
+};
 
 /**
  * Creates the transport-agnostic session-lifecycle seam ADR-0063 describes:
@@ -382,9 +376,9 @@ function extractSettleableClientResultCallId(
  *
  * @experimental
  */
-export function createRemoteClientSession(
+export const createRemoteClientSession = (
   options: RemoteClientSessionOptions
-): RemoteClientSession {
+): RemoteClientSession => {
   if (!isPositiveFiniteNumber(options.dispatchTimeoutMs)) {
     throw new RangeError(
       "createRemoteClientSession: dispatchTimeoutMs must be a positive finite number"
@@ -415,21 +409,21 @@ export function createRemoteClientSession(
   let outboundIterator: AsyncIterator<SessionOutboundFrame> | undefined;
   const pendingInvocations = new Map<string, PendingInvocation>();
 
-  function forwardFrame(
+  const forwardFrame = (
     frame: SessionOutboundFrame,
     cursor: string | undefined
-  ): void {
+  ): void => {
     if (ended || attachedSink === undefined) {
       return;
     }
     attachedSink.send(frame, cursor);
-  }
+  };
 
-  function settleSynthesizedResult(
+  const settleSynthesizedResult = (
     envelope: ClientInvocationEnvelope,
     code: string,
     message: string
-  ): void {
+  ): void => {
     // Converts a lost link or an unresponsive peer into a well-shaped
     // {code, error} result routed as an ordinary client_result back into the
     // binding, rather than letting the dispatch promise reject — the
@@ -451,10 +445,10 @@ export function createRemoteClientSession(
       result,
       sessionId,
     });
-  }
+  };
 
-  function armDispatchTimer(callId: string): unknown {
-    return clock.scheduleTimeout(() => {
+  const armDispatchTimer = (callId: string): unknown =>
+    clock.scheduleTimeout(() => {
       const pending = pendingInvocations.get(callId);
       if (pending === undefined) {
         return;
@@ -466,16 +460,15 @@ export function createRemoteClientSession(
         `client_result for callId "${callId}" did not arrive within dispatchTimeoutMs (${options.dispatchTimeoutMs}ms) while a peer was attached`
       );
     }, options.dispatchTimeoutMs);
-  }
 
-  function clearGraceTimer(): void {
+  const clearGraceTimer = (): void => {
     if (graceTimerHandle !== undefined) {
       clock.clearTimeout(graceTimerHandle);
       graceTimerHandle = undefined;
     }
-  }
+  };
 
-  function endSession(reason: string): void {
+  const endSession = (reason: string): void => {
     if (ended) {
       return;
     }
@@ -505,9 +498,9 @@ export function createRemoteClientSession(
     outboundIterator?.return?.().catch(() => undefined);
 
     options.onEnded?.(reason);
-  }
+  };
 
-  function startGraceTimer(reason: string | undefined): void {
+  const startGraceTimer = (reason: string | undefined): void => {
     if (options.disconnectGraceMs <= 0) {
       // A zero-length grace window reproduces immediate-detach semantics
       // (ADR-0063 decision 4): there is nothing to wait for.
@@ -522,9 +515,9 @@ export function createRemoteClientSession(
       graceTimerHandle = undefined;
       endSession(reason ?? "disconnect grace window expired with no reattach");
     }, options.disconnectGraceMs);
-  }
+  };
 
-  function handleBindingTerminal(): void {
+  const handleBindingTerminal = (): void => {
     // The binding's own onTerminal sweep already rejects every one of its
     // pending client dispatches with duplex_session_closed the moment its
     // outbound stream goes terminal, so this session's redelivery bookkeeping
@@ -538,11 +531,11 @@ export function createRemoteClientSession(
     }
     pendingInvocations.clear();
     endSession("the underlying duplex session binding's outbound stream ended");
-  }
+  };
 
-  function handleOutboundInvocation(
+  const handleOutboundInvocation = (
     invocation: ClientInvocationEnvelope
-  ): void {
+  ): void => {
     if (ended) {
       // The session already ended (grace expiry, explicit close, or a prior
       // binding termination that raced this frame) but the binding somehow
@@ -567,9 +560,9 @@ export function createRemoteClientSession(
     }
 
     forwardFrame(makeInvocationFrame(invocation, sessionId), undefined);
-  }
+  };
 
-  function claimAndStartPump(): void {
+  const claimAndStartPump = (): void => {
     started = true;
 
     const claimedIterator = binding.outbound()[Symbol.asyncIterator]();
@@ -639,12 +632,12 @@ export function createRemoteClientSession(
         // binding itself is what broke, best-effort cleanup already happened.
       }
     });
-  }
+  };
 
-  function attach(
+  const attach = (
     sink: RemoteClientSessionSink,
     attachOptions: RemoteClientSessionAttachOptions = {}
-  ): RemoteClientSessionAttachResult {
+  ): RemoteClientSessionAttachResult => {
     if (ended) {
       throw new TuvrenRuntimeError(
         "RemoteClientSession.attach: this session has already ended and can no longer be attached",
@@ -700,9 +693,9 @@ export function createRemoteClientSession(
 
     attachedSink = sink;
     return { resumeStatus };
-  }
+  };
 
-  function detach(reason?: string): void {
+  const detach = (reason?: string): void => {
     if (attachedSink === undefined) {
       return;
     }
@@ -723,18 +716,18 @@ export function createRemoteClientSession(
     }
 
     startGraceTimer(reason);
-  }
+  };
 
-  function close(reason?: string): void {
+  const close = (reason?: string): void => {
     if (ended) {
       return;
     }
     attachedSink = undefined;
     clearGraceTimer();
     endSession(reason ?? "session closed by host");
-  }
+  };
 
-  function dispatchInbound(raw: unknown): void {
+  const dispatchInbound = (raw: unknown): void => {
     if (attachedSink === undefined) {
       reportWarning({
         code: "remote_session_inbound_while_unattached",
@@ -765,7 +758,7 @@ export function createRemoteClientSession(
     }
 
     binding.dispatchInbound(raw);
-  }
+  };
 
   return {
     attach,
@@ -777,4 +770,4 @@ export function createRemoteClientSession(
     },
     sessionId,
   };
-}
+};
