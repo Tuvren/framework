@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 let recordCount = 0;
 
-const input = readFileSync(0, "utf8");
+const input = readFileSync(0, "utf-8");
 
 for (const line of input.split("\n")) {
   const trimmed = line.trim();

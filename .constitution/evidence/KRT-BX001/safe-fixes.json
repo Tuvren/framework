@@ -1,0 +1,500 @@
+{
+  "schema_version": 1,
+  "ticket": "KRT-BX001",
+  "baseline_commit": "054bd042f658d9a43db0bc154a6c64c377a6140e",
+  "measurement_head": "638d5b2bf2e2d9aba6c88100b9dc8124e9c99913",
+  "measurement_worktree_modified": true,
+  "projects": [
+    {
+      "project": "host-session",
+      "before": 121,
+      "after": 112,
+      "tests": 30,
+      "assertions": 54
+    },
+    {
+      "project": "remote-session",
+      "before": 148,
+      "after": 125,
+      "tests": 16,
+      "assertions": 74
+    },
+    {
+      "project": "session-client",
+      "before": 216,
+      "after": 201,
+      "tests": 29,
+      "assertions": 116
+    },
+    {
+      "project": "host-repl",
+      "before": 1272,
+      "after": 1025,
+      "tests": 135,
+      "assertions": 1089
+    }
+  ],
+  "diagnostics": {
+    "before": 1757,
+    "after": 1463
+  },
+  "milestones": [
+    {
+      "milestone": "M1",
+      "report_sha256": "aad0ff0688efce59bc260b7cabcb740ee42b76bb3a7e85a54e8655f0fd5e8e54",
+      "diagnostics": {
+        "before": 121,
+        "safe_fix_initial_after": 98,
+        "after": 112,
+        "reduction": 9,
+        "files": 7,
+        "enabled_rules": 474,
+        "after_exit_code": 1,
+        "after_exit_reason": "Expected residual native lint diagnostics; no admission in M1"
+      },
+      "changed_files": [
+        "typescript/host/session/src/lib/duplex-session-binding.ts",
+        "typescript/host/session/test/duplex-session-binding.test.ts",
+        "typescript/host/session/test/shared-schema-mirror.test.ts",
+        "typescript/host/session/tsup.config.ts"
+      ]
+    },
+    {
+      "milestone": "M2",
+      "report_sha256": "a9f62482341a40c319c652dd986501fe2605f71096aa23ed13d2b6f933694e79",
+      "diagnostics": {
+        "before": 148,
+        "after": 125,
+        "beforeByFile": {
+          "typescript/host/remote-session/src/index.ts": 11,
+          "typescript/host/remote-session/tsup.config.ts": 1,
+          "typescript/host/remote-session/smoke/package-exports.ts": 11,
+          "typescript/host/remote-session/src/lib/remote-client-session.ts": 60,
+          "typescript/host/remote-session/test/remote-client-session.test.ts": 65
+        },
+        "afterByFile": {
+          "typescript/host/remote-session/src/index.ts": 11,
+          "typescript/host/remote-session/smoke/package-exports.ts": 11,
+          "typescript/host/remote-session/src/lib/remote-client-session.ts": 52,
+          "typescript/host/remote-session/test/remote-client-session.test.ts": 51
+        },
+        "residualByRule": {
+          "jsdoc(check-tag-names)": 21,
+          "eslint(no-promise-executor-return)": 3,
+          "promise(avoid-new)": 4,
+          "unicorn(no-useless-undefined)": 17,
+          "typescript(method-signature-style)": 10,
+          "eslint(require-await)": 1,
+          "eslint(func-style)": 26,
+          "eslint(require-unicode-regexp)": 1,
+          "promise(prefer-await-to-then)": 2,
+          "eslint(no-await-in-loop)": 3,
+          "promise(prefer-await-to-callbacks)": 2,
+          "unicorn(no-array-sort)": 1,
+          "eslint(prefer-destructuring)": 1,
+          "typescript(promise-function-async)": 5,
+          "typescript(no-unsafe-type-assertion)": 15,
+          "typescript(strict-boolean-expressions)": 2,
+          "typescript(strict-void-return)": 3,
+          "typescript(non-nullable-type-assertion-style)": 6,
+          "typescript(await-thenable)": 1,
+          "typescript(no-confusing-void-expression)": 1
+        }
+      },
+      "changed_files": [
+        "typescript/host/remote-session/src/lib/remote-client-session.ts",
+        "typescript/host/remote-session/test/remote-client-session.test.ts",
+        "typescript/host/remote-session/tsup.config.ts"
+      ]
+    },
+    {
+      "milestone": "M3",
+      "report_sha256": "2211fa936e689ba91c244f477855f0295e40e9f33069d993b47575b1c998257f",
+      "diagnostics": {
+        "before": 216,
+        "after": 201,
+        "beforeByFile": {
+          "typescript/host/session-client/src/lib/session-protocol-types.ts": 2,
+          "typescript/host/session-client/src/index.ts": 38,
+          "typescript/host/session-client/tsup.config.ts": 1,
+          "typescript/host/session-client/smoke/package-exports.ts": 5,
+          "typescript/host/session-client/src/lib/ws-wire.ts": 16,
+          "typescript/host/session-client/test/session-client.test.ts": 87,
+          "typescript/host/session-client/src/lib/session-client.ts": 67
+        },
+        "afterByFile": {
+          "typescript/host/session-client/src/index.ts": 38,
+          "typescript/host/session-client/src/lib/session-protocol-types.ts": 2,
+          "typescript/host/session-client/src/lib/ws-wire.ts": 16,
+          "typescript/host/session-client/src/lib/session-client.ts": 59,
+          "typescript/host/session-client/test/session-client.test.ts": 82,
+          "typescript/host/session-client/smoke/package-exports.ts": 4
+        },
+        "residualByRule": {
+          "jsdoc(check-tag-names)": 59,
+          "typescript(ban-types)": 1,
+          "eslint(func-style)": 35,
+          "unicorn(consistent-function-scoping)": 1,
+          "typescript(method-signature-style)": 9,
+          "promise(prefer-await-to-callbacks)": 1,
+          "promise(prefer-await-to-then)": 3,
+          "eslint(no-use-before-define)": 1,
+          "unicorn(prefer-add-event-listener)": 4,
+          "eslint(no-inline-comments)": 13,
+          "eslint(max-classes-per-file)": 1,
+          "eslint(require-unicode-regexp)": 1,
+          "eslint(no-plusplus)": 1,
+          "unicorn(no-array-sort)": 1,
+          "promise(avoid-new)": 3,
+          "eslint(no-promise-executor-return)": 2,
+          "eslint(prefer-destructuring)": 25,
+          "eslint(require-await)": 2,
+          "typescript(no-unsafe-type-assertion)": 26,
+          "typescript(strict-void-return)": 5,
+          "typescript(promise-function-async)": 2,
+          "typescript(no-redundant-type-constituents)": 1,
+          "typescript(no-unsafe-assignment)": 1,
+          "typescript(no-unsafe-member-access)": 3
+        }
+      },
+      "changed_files": [
+        "typescript/host/session-client/smoke/package-exports.ts",
+        "typescript/host/session-client/src/lib/session-client.ts",
+        "typescript/host/session-client/test/session-client.test.ts",
+        "typescript/host/session-client/tsup.config.ts"
+      ]
+    },
+    {
+      "milestone": "M4",
+      "report_sha256": "1345d0bfe36f3333d9fadaab0d98fac3ffac0b6c118330cd252f2571564a3a84",
+      "changed_files": [
+        "typescript/host/repl/src/cli.ts",
+        "typescript/host/repl/src/lib/repl-builtin-tools.ts",
+        "typescript/host/repl/src/lib/repl-config.ts",
+        "typescript/host/repl/src/lib/repl-headless-mode.ts",
+        "typescript/host/repl/src/lib/repl-host.ts",
+        "typescript/host/repl/src/lib/repl-live-output.ts",
+        "typescript/host/repl/src/lib/repl-provider.ts",
+        "typescript/host/repl/src/lib/repl-replay.ts",
+        "typescript/host/repl/src/lib/repl-scenarios-support.ts",
+        "typescript/host/repl/src/lib/repl-scenarios.ts",
+        "typescript/host/repl/src/lib/repl-serve-ws.ts",
+        "typescript/host/repl/src/lib/repl-shell.ts",
+        "typescript/host/repl/src/lib/repl-transcript.ts"
+      ]
+    },
+    {
+      "milestone": "M5",
+      "report_sha256": "c8dcf1aedc7dcbe74e3f4aaac7b120b82c1aa099197141d0c071b6722e3bbbe1",
+      "diagnostics": {
+        "projectBefore": 1076,
+        "projectAfter": 1025,
+        "ownedBefore": 297,
+        "ownedAfter": 246,
+        "perOwnedFile": [
+          {
+            "path": "typescript/host/repl/scripts/ws-peer.ts",
+            "before": 4,
+            "after": 4
+          },
+          {
+            "path": "typescript/host/repl/smoke/assert-headless-jsonl.ts",
+            "before": 3,
+            "after": 2
+          },
+          {
+            "path": "typescript/host/repl/smoke/package-exports.ts",
+            "before": 0,
+            "after": 0
+          },
+          {
+            "path": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+            "before": 44,
+            "after": 33
+          },
+          {
+            "path": "typescript/host/repl/test/repl-test-helpers.ts",
+            "before": 64,
+            "after": 57
+          },
+          {
+            "path": "typescript/host/repl/test/repl-transcript-redaction.test.ts",
+            "before": 8,
+            "after": 4
+          },
+          {
+            "path": "typescript/host/repl/test/repl-transcript-scope.test.ts",
+            "before": 7,
+            "after": 4
+          },
+          {
+            "path": "typescript/host/repl/test/repl.aimock-journal-body.test.ts",
+            "before": 5,
+            "after": 0
+          },
+          {
+            "path": "typescript/host/repl/test/repl.aimock-matrix.test.ts",
+            "before": 27,
+            "after": 27
+          },
+          {
+            "path": "typescript/host/repl/test/repl.aimock-openai.test.ts",
+            "before": 0,
+            "after": 0
+          },
+          {
+            "path": "typescript/host/repl/test/repl.test.ts",
+            "before": 134,
+            "after": 115
+          },
+          {
+            "path": "typescript/host/repl/tsup.config.ts",
+            "before": 1,
+            "after": 0
+          }
+        ],
+        "ownedResidualRules": {
+          "eslint(no-use-before-define)": 103,
+          "eslint(func-style)": 47,
+          "unicorn(no-await-expression-member)": 16,
+          "unicorn(no-useless-undefined)": 6,
+          "jsdoc(check-tag-names)": 1,
+          "promise(avoid-new)": 7,
+          "eslint(no-await-in-loop)": 33,
+          "eslint(complexity)": 1,
+          "typescript(no-dynamic-delete)": 3,
+          "unicorn(import-style)": 2,
+          "typescript(method-signature-style)": 1,
+          "unicorn(prefer-number-coercion)": 1,
+          "eslint(no-promise-executor-return)": 1,
+          "unicorn(prefer-add-event-listener)": 4,
+          "typescript(restrict-template-expressions)": 1,
+          "typescript(no-unsafe-type-assertion)": 5,
+          "typescript(strict-void-return)": 1,
+          "typescript(no-unsafe-assignment)": 1,
+          "typescript(non-nullable-type-assertion-style)": 1,
+          "typescript(promise-function-async)": 2,
+          "typescript(unbound-method)": 1,
+          "typescript(no-unsafe-argument)": 2,
+          "typescript(await-thenable)": 2,
+          "typescript(no-confusing-void-expression)": 2,
+          "typescript(no-unsafe-return)": 2
+        }
+      },
+      "changed_files": [
+        "typescript/host/repl/smoke/assert-headless-jsonl.ts",
+        "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+        "typescript/host/repl/test/repl-test-helpers.ts",
+        "typescript/host/repl/test/repl-transcript-redaction.test.ts",
+        "typescript/host/repl/test/repl-transcript-scope.test.ts",
+        "typescript/host/repl/test/repl.aimock-journal-body.test.ts",
+        "typescript/host/repl/test/repl.test.ts",
+        "typescript/host/repl/tsup.config.ts"
+      ]
+    }
+  ],
+  "source_fingerprints": [
+    {
+      "path": "typescript/host/remote-session/src/lib/remote-client-session.ts",
+      "sha256": "878a40bfd22b93607333dcf54faa11edff4cc6b55c9e4a07a2c426223aeaf129",
+      "bytes": 28457
+    },
+    {
+      "path": "typescript/host/remote-session/test/remote-client-session.test.ts",
+      "sha256": "15f90bfc6324f7b90c81823b946fdaf66f5be84aef84cb06d94c79d65e4f7396",
+      "bytes": 28490
+    },
+    {
+      "path": "typescript/host/remote-session/tsup.config.ts",
+      "sha256": "d4eff88f13f38e0397b71bec69793f6c2364c29372cf1c9638ed2ae2793bd28d",
+      "bytes": 857
+    },
+    {
+      "path": "typescript/host/repl/smoke/assert-headless-jsonl.ts",
+      "sha256": "4ee30ca07e080aa1cb2e1c073e51cadac823aabe81413bb55553e191f20d7c2e",
+      "bytes": 786
+    },
+    {
+      "path": "typescript/host/repl/src/cli.ts",
+      "sha256": "83e3c5e3c6875113ffcd895c8d041cec96b887c366da4a0b3699badc47acf5bb",
+      "bytes": 16421
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-builtin-tools.ts",
+      "sha256": "858e3220b7231609701404856878af440679bce9442c1defa689c878a5820c51",
+      "bytes": 10031
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-config.ts",
+      "sha256": "2d0cafd21f89f8299475b4eb48c9649285c913c9b6353dc37c4b5e01d17e0432",
+      "bytes": 11766
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-headless-mode.ts",
+      "sha256": "86d689ea0236e6da9065c25fc5200749326e479f5699903a12eba3751e2217bf",
+      "bytes": 6868
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-host.ts",
+      "sha256": "d363f69d7c778beb517e7d5ffd19e0eafe5eb4a4c2a2cefaf3c258f535df9ddd",
+      "bytes": 7597
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-live-output.ts",
+      "sha256": "216b8ea3b71b74066baf349b70ef670bf1500effc894ebfae8ebbf67a269251e",
+      "bytes": 7573
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-provider.ts",
+      "sha256": "31ef2e0c89f65bb831863420fa838f2950abd46ccdd5a49b48f3d435c64ea7cd",
+      "bytes": 16064
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-replay.ts",
+      "sha256": "eaee87cae828aea251762f83ab9c297a0c4994002bbedfe1849184964d8f1356",
+      "bytes": 16280
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-scenarios-support.ts",
+      "sha256": "e41ea1b36f8e599958ee7fbf93accfde31270e971aa72f175b4e05793ef81018",
+      "bytes": 24191
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-scenarios.ts",
+      "sha256": "8aaabddfa38179122081f571b218705e3bb6d63519ce1899aa619389c0767cc9",
+      "bytes": 21977
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
+      "sha256": "30390589e2cad353dcc614a7d9b0485a67fe31b22e2412eef20fec8b04f5aba2",
+      "bytes": 25599
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-shell.ts",
+      "sha256": "7619bd4f7eaa8d3e67b662331ac2e13b8d02ca372f5d34ab7e083b8a124dedbb",
+      "bytes": 34116
+    },
+    {
+      "path": "typescript/host/repl/src/lib/repl-transcript.ts",
+      "sha256": "e0047cfa9da6132378572e1f6e0e507a7a64fb700ba9717c0aa9618ac241522d",
+      "bytes": 16004
+    },
+    {
+      "path": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+      "sha256": "a2415499e79a81dade98f6049733179d0eb3973c4fab94cf414e083c9eef4f48",
+      "bytes": 26155
+    },
+    {
+      "path": "typescript/host/repl/test/repl-test-helpers.ts",
+      "sha256": "83229a06e2201aa7953d1719ba6775d93a642fa45b8306953e51f3209f0521cd",
+      "bytes": 11743
+    },
+    {
+      "path": "typescript/host/repl/test/repl-transcript-redaction.test.ts",
+      "sha256": "574bb0f6eec63fd6f7fe6b04ded928c47ac29ee6a8aa7757ab72eef9ea368a72",
+      "bytes": 4325
+    },
+    {
+      "path": "typescript/host/repl/test/repl-transcript-scope.test.ts",
+      "sha256": "e7dd1386e2cd6ca257c69d87d556575949466997b3ebe0a7ffc6b7ef173f207e",
+      "bytes": 3429
+    },
+    {
+      "path": "typescript/host/repl/test/repl.aimock-journal-body.test.ts",
+      "sha256": "2a05c8396fff375935f7bd64d5a653ec9258aa9e24fc81a1289077213661d7ea",
+      "bytes": 11497
+    },
+    {
+      "path": "typescript/host/repl/test/repl.test.ts",
+      "sha256": "89355bd5769c187084f5c95f5bb33f256c8a878bfcff2e9b641b9cb4a0fe1a37",
+      "bytes": 88038
+    },
+    {
+      "path": "typescript/host/repl/tsup.config.ts",
+      "sha256": "0ca65403f6fbc29a2c67c8b668d53118dd75965220796d6c9e28daa23e938e7e",
+      "bytes": 892
+    },
+    {
+      "path": "typescript/host/session-client/smoke/package-exports.ts",
+      "sha256": "69723f90ad2765aedca2a6c57ebe2d5e380bb073b3f404d585385375bbc21895",
+      "bytes": 2342
+    },
+    {
+      "path": "typescript/host/session-client/src/lib/session-client.ts",
+      "sha256": "36ef7a90b054c6b1ccca77514c7f622121c3341d946c5b590063a35e6730899b",
+      "bytes": 28988
+    },
+    {
+      "path": "typescript/host/session-client/test/session-client.test.ts",
+      "sha256": "a599dfa73cb7dd74c5632a9d0b938903dcffb25de2c85fb91f87e3b96d6b1341",
+      "bytes": 30756
+    },
+    {
+      "path": "typescript/host/session-client/tsup.config.ts",
+      "sha256": "d4eff88f13f38e0397b71bec69793f6c2364c29372cf1c9638ed2ae2793bd28d",
+      "bytes": 857
+    },
+    {
+      "path": "typescript/host/session/src/lib/duplex-session-binding.ts",
+      "sha256": "c49d5d82bdb89ddcbdc0f91ae2d1e13afc107800880a38e9af93f87276852618",
+      "bytes": 20093
+    },
+    {
+      "path": "typescript/host/session/test/duplex-session-binding.test.ts",
+      "sha256": "6eec7a34c410bbe94145beeb7feda8b216f6db8d42aa5763fa39604c9a9b656d",
+      "bytes": 21429
+    },
+    {
+      "path": "typescript/host/session/test/shared-schema-mirror.test.ts",
+      "sha256": "c8d3ca94673dc2175e9ef1726680575122e47de24668cdab7ab0c64965e278a9",
+      "bytes": 3124
+    },
+    {
+      "path": "typescript/host/session/tsup.config.ts",
+      "sha256": "d4eff88f13f38e0397b71bec69793f6c2364c29372cf1c9638ed2ae2793bd28d",
+      "bytes": 857
+    }
+  ],
+  "verification": [
+    {
+      "command": "bun run typecheck",
+      "exit_code": 0,
+      "projects": 33
+    },
+    {
+      "command": "bun run nx run host-session:typecheck; bun run nx run host-session:test",
+      "exit_code": 0
+    },
+    {
+      "command": "bun run nx run remote-session:typecheck; bun run nx run remote-session:test",
+      "exit_code": 0
+    },
+    {
+      "command": "bun run nx run session-client:typecheck; bun run nx run session-client:test",
+      "exit_code": 0
+    },
+    {
+      "command": "bun run nx run host-repl:typecheck; bun run nx run host-repl:test",
+      "exit_code": 0
+    }
+  ],
+  "preservation": {
+    "original_biome_identities": 12,
+    "experimental_annotations": 112,
+    "experimental_files": 9,
+    "coverage_manifest": "[\"typescript/host\"]",
+    "public_signatures": true,
+    "collection_semantics": true,
+    "cli_and_transcript_behavior": true
+  },
+  "repairs": [
+    "Restore required undefined arguments removed by the safe fixer.",
+    "Restore separate calls to single-argument helpers.",
+    "Revert async/noop autofixes incompatible with retained Biome; keep native residuals for planned normalization.",
+    "Preserve concrete isTTY boolean behavior."
+  ],
+  "new_dependencies": [],
+  "new_patterns": [],
+  "new_contract_shapes": [],
+  "transient_reports": "Wave-owned logs directory; compact counts and report digests are retained here."
+}

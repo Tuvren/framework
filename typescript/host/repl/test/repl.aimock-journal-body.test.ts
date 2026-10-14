@@ -189,14 +189,16 @@ describe("repl aimock journal body narrowing", () => {
 
   test("assertStructuredResponseFormat rejects non-chat bodies and validates json_schema", () => {
     for (const body of NON_CHAT_JOURNAL_BODIES) {
-      expect(() => assertStructuredResponseFormat(body)).toThrow(
+      expect(() => {
+        assertStructuredResponseFormat(body);
+      }).toThrow(
         "structured response_format requires a chat completion request body"
       );
     }
 
-    expect(() => assertStructuredResponseFormat(CHAT_COMPLETION_BODY)).toThrow(
-      "structured response_format was not an object"
-    );
+    expect(() => {
+      assertStructuredResponseFormat(CHAT_COMPLETION_BODY);
+    }).toThrow("structured response_format was not an object");
 
     assertStructuredResponseFormat(STRUCTURED_CHAT_BODY);
   });
@@ -278,7 +280,7 @@ describe("repl aimock journal body narrowing", () => {
         messages: [{ content: "x".repeat(70_000), role: "user" }],
         model: "gpt-4o-mini",
       });
-      const sentBodyByteSize = Buffer.byteLength(sentBody, "utf8");
+      const sentBodyByteSize = Buffer.byteLength(sentBody, "utf-8");
       const response = await fetch(`${mock.url}/v1/chat/completions`, {
         body: sentBody,
         headers: { "content-type": "application/json" },
@@ -326,12 +328,12 @@ describe("repl aimock journal body narrowing", () => {
         "body truncated by aimock journal cap (64 KB limit)"
       );
 
-      const originalByteSize = journalBody.originalByteSize;
+      const { originalByteSize } = journalBody;
 
       expect(typeof originalByteSize).toBe("number");
 
       if (typeof originalByteSize !== "number") {
-        throw new Error(
+        throw new TypeError(
           "aimock truncation marker carried a non-numeric originalByteSize"
         );
       }

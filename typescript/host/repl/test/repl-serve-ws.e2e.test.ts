@@ -108,10 +108,10 @@ import {
   createRuntimeKernel,
   createTuvrenRuntime as createTuvrenRuntimeCore,
 } from "@tuvren/sdk/advanced";
-import {
-  createSessionClient,
-  type SessionClientSocket,
-  type SessionClientStatus,
+import { createSessionClient } from "@tuvren/session-client";
+import type {
+  SessionClientSocket,
+  SessionClientStatus,
 } from "@tuvren/session-client";
 import postgres from "postgres";
 
@@ -124,11 +124,11 @@ interface ServerHandle {
   effectsLogPath: string;
   kill(): Promise<void>;
   proc: ReturnType<typeof Bun.spawn>;
-  sessionsCreated: Array<{
+  sessionsCreated: {
     branchId: string;
     sessionId: string;
     threadId: string;
-  }>;
+  }[];
   url: string;
 }
 
@@ -201,11 +201,11 @@ async function startServer(schemaName: string): Promise<ServerHandle> {
     stdout: "pipe",
   });
 
-  const sessionsCreated: Array<{
+  const sessionsCreated: {
     branchId: string;
     sessionId: string;
     threadId: string;
-  }> = [];
+  }[] = [];
 
   // P2-5: from here on, any failure (the "listening" line never arriving,
   // JSON.parse throwing on a malformed line, the reader itself rejecting)
@@ -254,15 +254,11 @@ async function startServer(schemaName: string): Promise<ServerHandle> {
     const url = await Promise.race([
       listening,
       new Promise<string>((_resolve, reject) => {
-        setTimeout(
-          () =>
-            reject(
-              new Error(
-                "--serve-ws subprocess did not report listening in time"
-              )
-            ),
-          20_000
-        );
+        setTimeout(() => {
+          reject(
+            new Error("--serve-ws subprocess did not report listening in time")
+          );
+        }, 20_000);
       }),
     ]);
 
@@ -312,7 +308,7 @@ function parseSessionFrameText(text: string): {
     const inner = parsed.frame;
 
     if (inner.kind === "client_result" && isRecord(inner.result)) {
-      const callId = inner.result.callId;
+      const { callId } = inner.result;
       return {
         callId: typeof callId === "string" ? callId : undefined,
         kind: "client_result",
@@ -320,7 +316,7 @@ function parseSessionFrameText(text: string): {
     }
 
     if (inner.kind === "client_invocation" && isRecord(inner.invocation)) {
-      const callId = inner.invocation.callId;
+      const { callId } = inner.invocation;
       return {
         callId: typeof callId === "string" ? callId : undefined,
         kind: "client_invocation",
@@ -360,7 +356,7 @@ interface EffectLogEntry {
 
 async function readEffectsLog(path: string): Promise<EffectLogEntry[]> {
   try {
-    const text = await readFile(path, "utf8");
+    const text = await readFile(path, "utf-8");
     return text
       .split("\n")
       .filter((line) => line.trim().length > 0)
@@ -602,9 +598,10 @@ describe("repl --serve-ws end-to-end", () => {
 
     const client = createSessionClient({
       capabilities: {
-        [DEMO_CLIENT_CAPABILITY_ID]: (_input, ctx) => {
-          return { acknowledged: true, callId: ctx.callId };
-        },
+        [DEMO_CLIENT_CAPABILITY_ID]: (_input, ctx) => ({
+          acknowledged: true,
+          callId: ctx.callId,
+        }),
       },
       onEvent(event) {
         if (isFinalAssistantMessageDone(event)) {
@@ -662,14 +659,12 @@ describe("repl --serve-ws end-to-end", () => {
       if (!isRecord(message)) {
         return false;
       }
-      const parts = (message as Record<string, unknown>).parts;
+      const { parts } = message as Record<string, unknown>;
       if (!Array.isArray(parts)) {
         return false;
       }
       return parts.some(
-        (part) =>
-          isRecord(part) &&
-          (part as Record<string, unknown>).name === DEMO_CLIENT_CAPABILITY_ID
+        (part) => isRecord(part) && part.name === DEMO_CLIENT_CAPABILITY_ID
       );
     });
     expect(hasDemoResult).toBe(true);
