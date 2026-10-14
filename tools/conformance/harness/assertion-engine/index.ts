@@ -117,8 +117,8 @@ const valuesAreEqual = (left: unknown, right: unknown): boolean => {
       return false;
     }
 
-    const leftKeys = Object.keys(left).sort();
-    const rightKeys = Object.keys(right).sort();
+    const leftKeys = Object.keys(left).toSorted();
+    const rightKeys = Object.keys(right).toSorted();
 
     // JSON object field order is language-specific, so equality is structural
     // and key-order independent across TypeScript/Rust adapter observations.
@@ -217,18 +217,18 @@ const assertTerminalEvent = (
 // JSON.stringify is key-order sensitive, so serialize with sorted object
 // keys: the same schema loaded from differently-ordered JSON still hits one
 // cache entry, while any semantic difference changes the key. The rebuilt
-// object is null-prototype so a literal "__proto__" property name lands as
+// object uses own data properties so a literal "__proto__" property name lands as
 // an own property instead of vanishing through the inherited setter — with
 // a plain {} two schemas differing only in a "__proto__" member would
 // serialize identically and collide.
 const canonicalSchemaKey = (value: unknown): string =>
   JSON.stringify(value, (_key, node: unknown) => {
-    if (isRecord(node) && !Array.isArray(node)) {
-      const sorted: Record<string, unknown> = Object.create(null);
-      for (const key of Object.keys(node).sort()) {
-        sorted[key] = node[key];
-      }
-      return sorted;
+    if (isRecord(node)) {
+      return Object.fromEntries(
+        Object.keys(node)
+          .toSorted()
+          .map((key) => [key, node[key]])
+      );
     }
     return node;
   });
@@ -252,7 +252,10 @@ export const getCompiledSchemaValidator = (
   return validate;
 };
 
-const readJsonSchema = (value: unknown, label: string): AnySchema => {
+const readJsonSchema = (
+  value: unknown,
+  label: string
+): boolean | Record<string, unknown> => {
   if (typeof value === "boolean" || isRecord(value)) {
     return value;
   }
@@ -438,7 +441,7 @@ const assertSecretPatternAbsence = (
 };
 
 const assertNever = (value: never): never => {
-  throw new Error(`unsupported assertion kind ${value}`);
+  throw new Error(`unsupported assertion kind ${String(value)}`);
 };
 
 const evaluateAssertion = (

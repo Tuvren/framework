@@ -17,12 +17,12 @@
 import { describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import nodePath from "node:path";
 
 import { loadConformancePlan } from "./index.ts";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const readRecord = (value: unknown, label: string): Record<string, unknown> => {
   if (!isRecord(value)) {
@@ -41,36 +41,45 @@ const copyPlanReferences = async (
     return;
   }
 
-  for (const relativePath of Object.values(references)) {
+  const paths = Object.values(references).filter(
+    (value): value is string => typeof value === "string"
+  );
+  const visit = async (index: number): Promise<void> => {
+    const relativePath = paths[index];
     if (typeof relativePath !== "string") {
-      continue;
+      return;
     }
 
-    const sourcePath = join(dirname(sourcePlanPath), relativePath);
-    const tempPath = join(tempDir, relativePath);
+    const sourcePath = nodePath.join(
+      nodePath.dirname(sourcePlanPath),
+      relativePath
+    );
+    const tempPath = nodePath.join(tempDir, relativePath);
 
-    await mkdir(dirname(tempPath), { recursive: true });
-    await writeFile(tempPath, await readFile(sourcePath, "utf-8"), "utf-8");
-  }
+    await mkdir(nodePath.dirname(tempPath), { recursive: true });
+    const source = await readFile(sourcePath, "utf-8");
+    await writeFile(tempPath, source, "utf-8");
+    await visit(index + 1);
+  };
+  await visit(0);
 };
 
 const loadMutatedPlan = async (
   planPath: string,
   mutate: (plan: Record<string, unknown>) => void
 ) => {
-  const sourcePlanPath = join(process.cwd(), planPath);
+  const sourcePlanPath = nodePath.join(process.cwd(), planPath);
   const source = readRecord(
     JSON.parse(await readFile(sourcePlanPath, "utf-8")),
     planPath
   );
-  mutate(source);
+  const tempDir = await mkdtemp(nodePath.join(tmpdir(), "tuvren-plan-"));
+  const tempPath = nodePath.join(tempDir, "plan.json");
 
-  const tempDir = await mkdtemp(join(tmpdir(), "tuvren-plan-"));
-  const tempPath = join(tempDir, "plan.json");
-
-  await writeFile(tempPath, `${JSON.stringify(source, null, 2)}\n`, "utf-8");
   await copyPlanReferences(sourcePlanPath, tempDir, source.fixtures);
   await copyPlanReferences(sourcePlanPath, tempDir, source.scenarios);
+  mutate(source);
+  await writeFile(tempPath, `${JSON.stringify(source, null, 2)}\n`, "utf-8");
   return await loadConformancePlan(tempPath);
 };
 
@@ -163,30 +172,142 @@ describe("resultField required evidence", () => {
   });
 
   test("rejects resultField assertions without a field", async () => {
-    await expect(
+    const pending = loadMutatedPlan(
+      "spec/conformance/runners/plans/runner-api-core.json",
+      (plan) => {
+        const checks = readArray(plan.checks, "checks");
+        const targetCheck = readRecord(
+          checks.find(
+            (entry) =>
+              readRecordString(entry, "checkId") ===
+              "runner-api.execute.resolution"
+          ),
+          "runner-api.execute.resolution check"
+        );
+        const assertions = readArray(targetCheck.assertions, "assertions");
+        const targetAssertion = readRecord(
+          assertions.find(
+            (entry) => readRecordString(entry, "kind") === "resultField"
+          ),
+          "runner-api.execute.resolution resultField assertion"
+        );
+
+        targetAssertion.field = undefined;
+      }
+    );
+    // Bun's rejection matcher returns void; explicitly settle the operation.
+    const result = await Promise.allSettled([pending]);
+    expect(result[0]?.status).toBe("rejected");
+    expect(pending).rejects.toThrow("must have required property 'field'");
+  });
+});
+
+describe("plan schema boundary", () => {
+  test.each([
+    ["planId", 1],
+    ["applicability", { capabilities: [1] }],
+    ["fixtures", { fixture: 1 }],
+    ["scenarios", []],
+    [
+      "checks",
+      [
+        {
+          assertions: [{ kind: "unknown" }],
+          checkId: "check",
+          operation: "op",
+        },
+      ],
+    ],
+    [
+      "checks",
+      [
+        {
+          assertions: [{ field: 1, kind: "resultField" }],
+          checkId: "check",
+          operation: "op",
+        },
+      ],
+    ],
+    [
+      "checks",
+      [
+        {
+          assertions: [{ kind: "noEvent" }],
+          checkId: "check",
+          evidence: [1],
+          operation: "op",
+        },
+      ],
+    ],
+    [
+      "checks",
+      [
+        {
+          assertions: [{ kind: "noEvent" }],
+          checkId: "check",
+          controls: { deadlineMs: "1" },
+          operation: "op",
+        },
+      ],
+    ],
+    [
+      "checks",
+      [
+        {
+          assertions: [{ kind: "noEvent" }],
+          checkId: "check",
+          operation: "op",
+          steps: [{ operation: "op", stepId: 1 }],
+        },
+      ],
+    ],
+  ])("rejects malformed %s before reading references", async (field, value) => {
+    const [outcome] = await Promise.allSettled([
       loadMutatedPlan(
         "spec/conformance/runners/plans/runner-api-core.json",
         (plan) => {
-          const checks = readArray(plan.checks, "checks");
-          const targetCheck = readRecord(
-            checks.find(
-              (entry) =>
-                readRecordString(entry, "checkId") ===
-                "runner-api.execute.resolution"
-            ),
-            "runner-api.execute.resolution check"
-          );
-          const assertions = readArray(targetCheck.assertions, "assertions");
-          const targetAssertion = readRecord(
-            assertions.find(
-              (entry) => readRecordString(entry, "kind") === "resultField"
-            ),
-            "runner-api.execute.resolution resultField assertion"
-          );
-
-          targetAssertion.field = undefined;
+          if (typeof field !== "string") {
+            throw new TypeError("test field must be a string");
+          }
+          plan[field] = value;
+          if (field !== "fixtures") {
+            plan.fixtures = { unread: "missing-fixture.json" };
+          }
         }
-      )
-    ).rejects.toThrow("must have required property 'field'");
+      ),
+    ]);
+    expect(outcome?.status).toBe("rejected");
+    if (outcome?.status === "rejected") {
+      const reason: unknown = outcome.reason;
+      expect(reason).toBeInstanceOf(Error);
+      if (reason instanceof Error) {
+        expect(reason.message).toContain("failed JSON Schema validation:");
+      }
+    }
+  });
+
+  test("reports the first missing fixture before later fixtures or scenarios", async () => {
+    const [outcome] = await Promise.allSettled([
+      loadMutatedPlan(
+        "spec/conformance/runners/plans/runner-api-core.json",
+        (plan) => {
+          const fixtures = readRecord(plan.fixtures ?? {}, "fixtures");
+          fixtures["first-missing"] = "first-missing.json";
+          fixtures["later-missing"] = "later-missing.json";
+          plan.fixtures = fixtures;
+          const scenarios = readRecord(plan.scenarios ?? {}, "scenarios");
+          scenarios.missing = "missing-scenario.json";
+          plan.scenarios = scenarios;
+        }
+      ),
+    ]);
+    expect(outcome?.status).toBe("rejected");
+    if (outcome?.status === "rejected") {
+      const reason: unknown = outcome.reason;
+      expect(reason).toBeInstanceOf(Error);
+      if (reason instanceof Error) {
+        expect(reason.message).toContain("first-missing.json");
+      }
+    }
   });
 });

@@ -15,9 +15,9 @@
  */
 
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
+import nodePath from "node:path";
 
-import type { AnySchema, ValidateFunction } from "ajv";
+import type { ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 export type AssertionKind =
@@ -109,9 +109,9 @@ export interface CompiledConformancePlan {
   scenarios: ReadonlyMap<string, unknown>;
 }
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const SPEC_ROOT = resolve(REPO_ROOT, "spec");
-const PLAN_SCHEMA_PATH = resolve(
+const REPO_ROOT = nodePath.resolve(import.meta.dirname, "../../..");
+const SPEC_ROOT = nodePath.resolve(REPO_ROOT, "spec");
+const PLAN_SCHEMA_PATH = nodePath.resolve(
   REPO_ROOT,
   "tools/schemas/conformance-plan.schema.json"
 );
@@ -121,12 +121,17 @@ const PLAN_SCHEMA_PATH = resolve(
 // a single fixed file (PLAN_SCHEMA_PATH), so the memo is a lone promise —
 // no cache-key collision surface. Caching the promise (not the resolved
 // value) also collapses concurrent first calls onto one read+compile.
-let planValidatorPromise: Promise<ValidateFunction> | undefined;
+let planValidatorPromise:
+  | Promise<ValidateFunction<ConformancePlan>>
+  | undefined;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-const readJsonSchema = (value: unknown, label: string): AnySchema => {
+const readJsonSchema = (
+  value: unknown,
+  label: string
+): boolean | Record<string, unknown> => {
   if (typeof value === "boolean" || isRecord(value)) {
     return value;
   }
@@ -134,17 +139,19 @@ const readJsonSchema = (value: unknown, label: string): AnySchema => {
   throw new Error(`${label} must contain a JSON Schema object or boolean`);
 };
 
-const createPlanValidator = (): Promise<ValidateFunction> => {
+const createPlanValidator = async (): Promise<
+  ValidateFunction<ConformancePlan>
+> => {
   planValidatorPromise ??= (async () => {
     const schema = readJsonSchema(
       JSON.parse(await readFile(PLAN_SCHEMA_PATH, "utf-8")) as unknown,
       PLAN_SCHEMA_PATH
     );
     const ajv = new Ajv2020({ allErrors: true, strict: false });
-    return ajv.compile(schema);
+    return ajv.compile<ConformancePlan>(schema);
   })();
 
-  return planValidatorPromise;
+  return await planValidatorPromise;
 };
 
 const assertUniqueCheckId = (
@@ -269,8 +276,18 @@ const assertionRequiredEvidencePath = (
     case "errorEnvelope": {
       return normalizeEvidencePath(assertion.path ?? "$.result.error");
     }
-    default: {
+    case "eventSequence":
+    case "noEvent":
+    case "ordering":
+    case "schemaValid":
+    case "secretAbsence":
+    case "secretPatternAbsence":
+    case "terminalEvent": {
       return undefined;
+    }
+    default: {
+      const unsupported: never = assertion.kind;
+      return unsupported;
     }
   }
 };
@@ -308,8 +325,18 @@ const stepAssertionRequiredEvidencePath = (
     case "errorEnvelope": {
       return `trace.${stepId}.${path}`;
     }
-    default: {
+    case "eventSequence":
+    case "noEvent":
+    case "ordering":
+    case "schemaValid":
+    case "secretAbsence":
+    case "secretPatternAbsence":
+    case "terminalEvent": {
       return undefined;
+    }
+    default: {
+      const unsupported: never = assertion.kind;
+      return unsupported;
     }
   }
 };
@@ -317,7 +344,7 @@ const stepAssertionRequiredEvidencePath = (
 const expandRequiredEvidence = (
   check: ConformancePlanCheck
 ): readonly string[] => {
-  const evidence = new Set(check.evidence ?? []);
+  const evidence = new Set(check.evidence);
 
   for (const assertion of check.assertions) {
     const path = assertionRequiredEvidencePath(assertion);
@@ -337,13 +364,38 @@ const expandRequiredEvidence = (
     }
   }
 
-  return [...evidence].sort();
+  return [...evidence].toSorted();
+};
+
+const loadReferences = async (
+  absolutePlanPath: string,
+  references: Record<string, string> | undefined
+): Promise<Map<string, unknown>> => {
+  const entries = Object.entries(references ?? {});
+  const values = new Map<string, unknown>();
+  const visit = async (index: number): Promise<void> => {
+    const entry = entries[index];
+    if (entry === undefined) {
+      return;
+    }
+    const [id, path] = entry;
+    const value: unknown = JSON.parse(
+      await readFile(
+        nodePath.resolve(nodePath.dirname(absolutePlanPath), path),
+        "utf-8"
+      )
+    );
+    values.set(id, value);
+    await visit(index + 1);
+  };
+  await visit(0);
+  return values;
 };
 
 export const loadConformancePlan = async (
   planPath: string
 ): Promise<CompiledConformancePlan> => {
-  const absolutePlanPath = resolve(REPO_ROOT, planPath);
+  const absolutePlanPath = nodePath.resolve(REPO_ROOT, planPath);
   const planValue = JSON.parse(
     await readFile(absolutePlanPath, "utf-8")
   ) as unknown;
@@ -357,31 +409,10 @@ export const loadConformancePlan = async (
     );
   }
 
-  const plan = planValue as ConformancePlan;
+  const plan = planValue;
   validatePlanIntegrity(plan, planPath);
-  const fixtures = new Map<string, unknown>();
-  const scenarios = new Map<string, unknown>();
-
-  for (const [fixtureId, fixturePath] of Object.entries(plan.fixtures ?? {})) {
-    const absoluteFixturePath = resolve(dirname(absolutePlanPath), fixturePath);
-    const fixture = JSON.parse(
-      await readFile(absoluteFixturePath, "utf-8")
-    ) as unknown;
-    fixtures.set(fixtureId, fixture);
-  }
-
-  for (const [scenarioId, scenarioPath] of Object.entries(
-    plan.scenarios ?? {}
-  )) {
-    const absoluteScenarioPath = resolve(
-      dirname(absolutePlanPath),
-      scenarioPath
-    );
-    const scenario = JSON.parse(
-      await readFile(absoluteScenarioPath, "utf-8")
-    ) as unknown;
-    scenarios.set(scenarioId, scenario);
-  }
+  const fixtures = await loadReferences(absolutePlanPath, plan.fixtures);
+  const scenarios = await loadReferences(absolutePlanPath, plan.scenarios);
 
   return {
     checks: plan.checks.map((check) => ({
@@ -411,22 +442,25 @@ const findPlanFiles = async (directory: string): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true });
   const plans: string[] = [];
 
-  for (const entry of entries) {
-    const entryPath = resolve(directory, entry.name);
+  const visit = async (index: number): Promise<void> => {
+    const entry = entries[index];
+    if (entry === undefined) {
+      return;
+    }
+    const entryPath = nodePath.resolve(directory, entry.name);
 
     if (entry.isDirectory()) {
       plans.push(...(await findPlanFiles(entryPath)));
-      continue;
-    }
-
-    if (
+    } else if (
       entry.isFile() &&
       entry.name.endsWith(".json") &&
       isConformancePlansPath(entryPath)
     ) {
       plans.push(entryPath);
     }
-  }
+    await visit(index + 1);
+  };
+  await visit(0);
 
   return plans;
 };
@@ -441,5 +475,5 @@ export const findConformancePlans = async (): Promise<string[]> => {
       `found zero conformance plans under ${SPEC_ROOT} — refusing to report a vacuous pass`
     );
   }
-  return paths.map((path) => relative(REPO_ROOT, path)).sort();
+  return paths.map((path) => nodePath.relative(REPO_ROOT, path)).toSorted();
 };

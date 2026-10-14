@@ -36,6 +36,17 @@ const buildCheck = (
   operation: "test.operation",
 });
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readSchema = (text: string): boolean | Record<string, unknown> => {
+  const schema: unknown = JSON.parse(text);
+  if (typeof schema === "boolean" || isRecord(schema)) {
+    return schema;
+  }
+  throw new TypeError("test schema must be an object or boolean");
+};
+
 describe("terminalEvent default path", () => {
   test("eventType match passes against the terminal event's type field by default", () => {
     const [evaluation] = evaluateAssertions(
@@ -274,12 +285,63 @@ describe("secretPatternAbsence assertion (KRT-BK004)", () => {
 });
 
 describe("schemaValid validator memoization (KRT-BM004)", () => {
+  test.each([
+    "true",
+    "false",
+    '{"$defs":{"number":{"type":"number"}},"anyOf":[{"$ref":"#/$defs/number"},{"type":"null"}]}',
+    '{"type":"array","prefixItems":[{"type":"string"}],"items":false}',
+    '{"type":"object","properties":{"value":{"type":"string"}},"required":["value"],"additionalProperties":false,"customAnnotation":{"nested":true}}',
+  ])("retains Ajv validation for schema %s", (text) => {
+    const schema = readSchema(text);
+    const cached = getCompiledSchemaValidator(schema);
+    const fresh = new Ajv2020({ allErrors: true, strict: false }).compile(
+      schema
+    );
+    for (const value of [
+      null,
+      1,
+      "text",
+      ["text"],
+      [1],
+      { value: "text" },
+      { value: 1 },
+    ]) {
+      expect(cached(value)).toBe(fresh(value));
+      expect(cached.errors).toEqual(fresh.errors);
+    }
+  });
+
+  test.each([
+    { schema: null },
+    { schema: [] },
+    { schema: 1 },
+    { schema: "schema" },
+  ])("rejects non-schema fixture %j", ({ schema }) => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ kind: "schemaValid", schema: "$.fixture.schema" }]),
+      { fixture: { schema }, result: {} }
+    );
+    expect(evaluation?.status).toBe("fail");
+    expect(evaluation?.message).toBe(
+      "$.fixture.schema must contain a JSON Schema object or boolean"
+    );
+  });
+
+  test("leaves malformed schema keywords to Ajv", () => {
+    const [evaluation] = evaluateAssertions(
+      buildCheck([{ kind: "schemaValid", schema: "$.fixture.schema" }]),
+      { fixture: { schema: { type: 1 } }, result: {} }
+    );
+    expect(evaluation?.status).toBe("fail");
+    expect(evaluation?.message).toContain("schema is invalid:");
+  });
+
   test("the same schema content compiles once regardless of key order", () => {
     const first = getCompiledSchemaValidator(
-      JSON.parse('{"type":"object","properties":{"a":{"type":"number"}}}')
+      readSchema('{"type":"object","properties":{"a":{"type":"number"}}}')
     );
     const second = getCompiledSchemaValidator(
-      JSON.parse('{"properties":{"a":{"type":"number"}},"type":"object"}')
+      readSchema('{"properties":{"a":{"type":"number"}},"type":"object"}')
     );
 
     expect(second).toBe(first);
@@ -289,10 +351,10 @@ describe("schemaValid validator memoization (KRT-BM004)", () => {
 
   test("distinct schemas get distinct validators", () => {
     const permissive = getCompiledSchemaValidator(
-      JSON.parse('{"type":"object"}')
+      readSchema('{"type":"object"}')
     );
     const strict = getCompiledSchemaValidator(
-      JSON.parse('{"type":"object","additionalProperties":false}')
+      readSchema('{"type":"object","additionalProperties":false}')
     );
 
     expect(strict).not.toBe(permissive);
@@ -307,10 +369,10 @@ describe("schemaValid validator memoization (KRT-BM004)", () => {
     // that each schema gets its own validator whose verdicts match a fresh,
     // uncached compile of that exact schema — whatever Ajv's own semantics
     // for "__proto__"-named properties happen to be.
-    const withProtoSchema = JSON.parse(
+    const withProtoSchema = readSchema(
       '{"type":"object","properties":{"__proto__":{"type":"number"}},"additionalProperties":false}'
     );
-    const withoutProtoSchema = JSON.parse(
+    const withoutProtoSchema = readSchema(
       '{"type":"object","properties":{},"additionalProperties":false}'
     );
 

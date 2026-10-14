@@ -49,7 +49,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import nodePath from "node:path";
 
 import {
   loadNxProjectFiles,
@@ -57,7 +57,7 @@ import {
 } from "../../scripts/lib/nx-projects.js";
 
 const ROOT = process.cwd();
-const MANIFEST_PATH = join(
+const MANIFEST_PATH = nodePath.join(
   ROOT,
   "tools/conformance/certification/certified-projects.json"
 );
@@ -81,6 +81,28 @@ interface ProjectRecord {
   tags: readonly string[];
 }
 
+interface CertificationManifest {
+  projects: string[];
+}
+
+const isCertificationManifest = (
+  value: unknown
+): value is CertificationManifest => {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    Array.isArray(value) ||
+    !("projects" in value)
+  ) {
+    return false;
+  }
+  const projects: unknown = value.projects;
+  return (
+    Array.isArray(projects) &&
+    projects.every((name: unknown) => typeof name === "string")
+  );
+};
+
 const loadProjects = (): ProjectRecord[] =>
   loadNxProjectFiles(ROOT).map((file) => {
     const targets = file.project.targets ?? {};
@@ -100,7 +122,7 @@ const loadProjects = (): ProjectRecord[] =>
     };
   });
 
-const fail = (problems: string[]): never => {
+const fail: (problems: string[]) => never = (problems) => {
   console.error("certification-discovery: FAIL");
   for (const problem of problems) {
     console.error(`  - ${problem}`);
@@ -108,9 +130,10 @@ const fail = (problems: string[]): never => {
   process.exit(1);
 };
 
-const manifest: { projects: string[] } = JSON.parse(
-  readFileSync(MANIFEST_PATH, "utf-8")
-);
+const manifest: unknown = JSON.parse(readFileSync(MANIFEST_PATH, "utf-8"));
+if (!isCertificationManifest(manifest)) {
+  fail(["manifest must contain a projects array of strings"]);
+}
 const manifestSet = new Set(manifest.projects);
 if (manifestSet.size !== manifest.projects.length) {
   fail(["manifest lists a duplicate project id"]);
@@ -145,14 +168,14 @@ for (const project of discovered) {
 for (const name of manifest.projects) {
   if (!discoveredNames.has(name)) {
     problems.push(
-      `manifest lists ${name} but no project tagged ${CERTIFICATION_TAG} with that name exists — if it was retired or renamed, update ${relative(ROOT, MANIFEST_PATH)} deliberately`
+      `manifest lists ${name} but no project tagged ${CERTIFICATION_TAG} with that name exists — if it was retired or renamed, update ${nodePath.relative(ROOT, MANIFEST_PATH)} deliberately`
     );
   }
 }
 for (const project of discovered) {
   if (!manifestSet.has(project.name)) {
     problems.push(
-      `${project.name} (${project.path}) is tagged ${CERTIFICATION_TAG} but is not registered in ${relative(ROOT, MANIFEST_PATH)} — register it so the certification lane runs it`
+      `${project.name} (${project.path}) is tagged ${CERTIFICATION_TAG} but is not registered in ${nodePath.relative(ROOT, MANIFEST_PATH)} — register it so the certification lane runs it`
     );
   }
 }
