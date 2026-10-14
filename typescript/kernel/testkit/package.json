@@ -16,6 +16,6 @@
     "@tuvren/backend-shared": "workspace:*",
     "@tuvren/core": "workspace:*",
     "@tuvren/kernel-protocol": "workspace:*",
-    "ajv": "8.18.0"
+    "ajv": "8.20.0"
   }
 }
