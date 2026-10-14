@@ -7,24 +7,9 @@
     "command": "bun run typecheck; bun run conformance; bun run nx run framework-typescript-certification:conformance; bun run nx run host-repl:scenario; bun run proving-host:scenario-sqlite-pinned; bun run proving-host:scenario-postgres; bun run proving-host:interop-smoke"
   },
   "files": [
-    {
-      "path": "m24-cohort.json",
-      "sha256": "565a7a2be9bf2cfafc2cb8a72698491ca57724920274b85c2357de3bb31e865b",
-      "bytes": 5543,
-      "role": "measurement"
-    },
-    {
-      "path": "m25-cohort.json",
-      "sha256": "78383046f3fef61d3f1f98a8b50f392e104bb71b9150694761ea724dfa0861c5",
-      "bytes": 6270,
-      "role": "measurement"
-    },
-    {
-      "path": "ordering.json",
-      "sha256": "1959aba39db7be273e228764aad0bb01d63f3796757742058c3e83712e799752",
-      "bytes": 13689,
-      "role": "measurement"
-    }
+    {"path":"README.md","sha256":"ff8d29a991ee9e3f8d7c2bc925987c3e995696be8f95b18a0f20264ad636500a","bytes":1615,"role":"measurement"},
+    {"path":"proof-index.json","sha256":"b28c4b334ffc83ed252eac7fbc137d0e6d123c4e4f6cadf9daa27debaeb09fea","bytes":994,"role":"measurement"},
+    {"path":"proof.tar.gz","sha256":"a406e07163144f485df90e97c0182c9c610705e6e559662e702e17d6f0a51d3e","bytes":7786,"role":"archive"}
   ],
   "pass_criteria": "All host func-style/no-use-before-define diagnostics are zero under unchanged preset; canonical tests/exports and root typecheck/conformance/behavior closure pass. Preserve supported signatures, validation/event/error/commit order, sequential work, all original directives and metadata, redaction and optional transcript scope. Native residual cleanup/admission remains BX004."
 }

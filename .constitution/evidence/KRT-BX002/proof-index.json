@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "archive": "proof.tar.gz",
+  "snapshot_head": "d1f8d7d4a0775c665b33cc5466fd69673b86115b",
+  "archive_sha256": "935f5213dce61cec327a4d871f8de2ddedf8fe611655314d78763cee95674434",
+  "archive_bytes": 8581,
+  "member_path_base": "repository-root",
+  "members": [
+    {"path":".constitution/evidence/KRT-BX002/assertions.json","sha256":"bef29cb007abd9215a23f439b9cf4cc49a8dbee74e5110ee2441b533270fe78a","bytes":4280,"role":"measurement"},
+    {"path":".constitution/evidence/KRT-BX002/manifest.yaml","sha256":"a84eee0dc8a21a6c273935c75c64cbe2608641e3611ae8406b795ae613306c04","bytes":1480,"role":"original-manifest"},
+    {"path":".constitution/evidence/KRT-BX002/metadata.json","sha256":"bd2908a4728d156c9b9246fb2b4cd7a7be5eb0170efba6f11a9883e9ed61ca03","bytes":11957,"role":"measurement"},
+    {"path":".constitution/evidence/KRT-BX002/suppressions.json","sha256":"89d38f3dbcd70f3660e7b850d7fc6b59b854a6a5d7223fcfd223f33ac0f33939","bytes":41286,"role":"measurement"}
+  ]
+}
