@@ -15,12 +15,11 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 import { findConformancePlans, loadConformancePlan } from "./index.js";
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const OPERATION_SOURCE_BY_PACKET = new Map<string, readonly string[]>([
   ["tuvren.framework.react-runner", ["spec/runners/typespec/main.tsp"]],
   [
@@ -100,7 +99,7 @@ async function readDeclaredOperations(
   const operations = new Set<string>();
 
   for (const sourcePath of sourcePaths) {
-    const source = await readFile(resolve(REPO_ROOT, sourcePath), "utf8");
+    const source = await readFile(resolve(REPO_ROOT, sourcePath), "utf-8");
 
     for (const match of source.matchAll(OPERATION_LITERAL_PATTERN)) {
       const [literal] = match;

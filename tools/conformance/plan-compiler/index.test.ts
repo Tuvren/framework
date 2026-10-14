@@ -133,7 +133,7 @@ async function loadMutatedPlan(
 ) {
   const sourcePlanPath = join(process.cwd(), planPath);
   const source = readRecord(
-    JSON.parse(await readFile(sourcePlanPath, "utf8")),
+    JSON.parse(await readFile(sourcePlanPath, "utf-8")),
     planPath
   );
   mutate(source);
@@ -141,7 +141,7 @@ async function loadMutatedPlan(
   const tempDir = await mkdtemp(join(tmpdir(), "tuvren-plan-"));
   const tempPath = join(tempDir, "plan.json");
 
-  await writeFile(tempPath, `${JSON.stringify(source, null, 2)}\n`, "utf8");
+  await writeFile(tempPath, `${JSON.stringify(source, null, 2)}\n`, "utf-8");
   await copyPlanReferences(sourcePlanPath, tempDir, source.fixtures);
   await copyPlanReferences(sourcePlanPath, tempDir, source.scenarios);
   return await loadConformancePlan(tempPath);
@@ -165,13 +165,13 @@ async function copyPlanReferences(
     const tempPath = join(tempDir, relativePath);
 
     await mkdir(dirname(tempPath), { recursive: true });
-    await writeFile(tempPath, await readFile(sourcePath, "utf8"), "utf8");
+    await writeFile(tempPath, await readFile(sourcePath, "utf-8"), "utf-8");
   }
 }
 
 function readArray(value: unknown, label: string): unknown[] {
   if (!Array.isArray(value)) {
-    throw new Error(`${label} must be an array`);
+    throw new TypeError(`${label} must be an array`);
   }
 
   return value;

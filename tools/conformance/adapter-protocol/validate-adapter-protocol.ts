@@ -15,15 +15,15 @@
  */
 
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 import Ajv2020 from "ajv/dist/2020.js";
 
-import { type AdapterControls, assertOperationOutcome } from "./index.js";
+import { assertOperationOutcome } from "./index.js";
+import type { AdapterControls } from "./index.js";
 import { handleStdioAdapterLine } from "./stdio-host.js";
 
-const PROTOCOL_DIR = dirname(fileURLToPath(import.meta.url));
+const PROTOCOL_DIR = import.meta.dirname;
 const REPO_ROOT = resolve(PROTOCOL_DIR, "../../..");
 const SCHEMA_PATH = resolve(PROTOCOL_DIR, "protocol.schema.json");
 const MANIFEST_SCHEMA_PATH = resolve(
@@ -31,7 +31,9 @@ const MANIFEST_SCHEMA_PATH = resolve(
   "adapter-manifest.schema.json"
 );
 
-const protocolSchema: unknown = JSON.parse(await readFile(SCHEMA_PATH, "utf8"));
+const protocolSchema: unknown = JSON.parse(
+  await readFile(SCHEMA_PATH, "utf-8")
+);
 const schema = readProtocolSchema(protocolSchema, SCHEMA_PATH);
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 
@@ -84,7 +86,7 @@ await assertStdioHostControlRoundtrip();
 console.log("adapter protocol validation passed");
 
 const manifestSchema = readProtocolSchema(
-  JSON.parse(await readFile(MANIFEST_SCHEMA_PATH, "utf8")) as unknown,
+  JSON.parse(await readFile(MANIFEST_SCHEMA_PATH, "utf-8")) as unknown,
   MANIFEST_SCHEMA_PATH
 );
 const validateManifest = ajv.compile(manifestSchema);
@@ -100,7 +102,7 @@ const ADAPTER_MANIFEST_ROOTS = [
 for (const manifestRoot of ADAPTER_MANIFEST_ROOTS) {
   for (const manifestPath of await findAdapterManifests(manifestRoot)) {
     const manifest = JSON.parse(
-      await readFile(manifestPath, "utf8")
+      await readFile(manifestPath, "utf-8")
     ) as unknown;
 
     if (!validateManifest(manifest)) {
@@ -117,31 +119,36 @@ console.log("adapter manifest validation passed");
 
 function createSample(definitionName: string): unknown {
   switch (definitionName) {
-    case "AdapterCapabilities":
+    case "AdapterCapabilities": {
       return {
         adapterId: "sample-adapter",
         capabilities: ["sample.capability"],
         packetId: "tuvren.sample.packet",
         planVersion: "0.1.0",
       };
-    case "AdapterControls":
+    }
+    case "AdapterControls": {
       return {
         cancel: { reason: "sample cancellation" },
         cancelAfterEvent: "turn.start",
         deadlineMs: 1000,
       };
-    case "AdapterErrorEnvelope":
+    }
+    case "AdapterErrorEnvelope": {
       return {
         code: "adapter_sample_error",
         message: "sample failure",
       };
-    case "OperationOutcome":
+    }
+    case "OperationOutcome": {
       return {
         kind: "result",
         value: { ok: true },
       };
-    default:
+    }
+    default: {
       throw new Error(`unknown adapter protocol sample ${definitionName}`);
+    }
   }
 }
 
@@ -213,7 +220,7 @@ function readStringProperty(
   const value = source[key];
 
   if (typeof value !== "string") {
-    throw new Error(`${label} must be a string`);
+    throw new TypeError(`${label} must be a string`);
   }
 
   return value;
