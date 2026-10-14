@@ -227,9 +227,8 @@ type CallState =
   | { status: "in-flight" }
   | { status: "answered"; result: SessionClientReportedResult };
 
-function isPositiveFiniteNumber(value: number): boolean {
-  return Number.isFinite(value) && value > 0;
-}
+const isPositiveFiniteNumber = (value: number): boolean =>
+  Number.isFinite(value) && value > 0;
 
 /**
  * Accepts either a positive finite number or positive `Infinity`. Used for
@@ -237,17 +236,14 @@ function isPositiveFiniteNumber(value: number): boolean {
  * so an explicit `Infinity` passed by a caller must validate successfully
  * rather than being rejected alongside `NaN`, `0`, and negative values.
  */
-function isPositiveFiniteNumberOrInfinity(value: number): boolean {
-  return value === Number.POSITIVE_INFINITY || isPositiveFiniteNumber(value);
-}
+const isPositiveFiniteNumberOrInfinity = (value: number): boolean =>
+  value === Number.POSITIVE_INFINITY || isPositiveFiniteNumber(value);
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
-}
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.length > 0;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
  * Structural guard for a `client_invocation` frame's `invocation` field.
@@ -257,19 +253,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * handler — it is simply ignored, same server-trust-boundary posture as
  * {@link parseWsClientMessage}'s throw-free parsing.
  */
-function isInvocationEnvelope(
+const isInvocationEnvelope = (
   value: unknown
-): value is SessionClientInvocationEnvelope {
-  return (
-    isRecord(value) &&
-    isNonEmptyString(value.callId) &&
-    isNonEmptyString(value.capabilityId) &&
-    isNonEmptyString(value.leaseToken) &&
-    // `input` is required by ClientInvocationEnvelope.json; any value —
-    // including null — satisfies it, but the KEY must be present.
-    "input" in value
-  );
-}
+): value is SessionClientInvocationEnvelope =>
+  isRecord(value) &&
+  isNonEmptyString(value.callId) &&
+  isNonEmptyString(value.capabilityId) &&
+  isNonEmptyString(value.leaseToken) &&
+  // `input` is required by ClientInvocationEnvelope.json; any value —
+  // including null — satisfies it, but the KEY must be present.
+  "input" in value;
 
 // The known `SessionRejectionCode` values (mirrors
 // `spec/host/session/artifacts/json-schema/SessionRejectionCode.json`).
@@ -292,19 +285,16 @@ const SESSION_REJECTION_CODES = new Set<string>([
  * arbitrary shape. Same server-trust-boundary posture as
  * {@link isInvocationEnvelope}: ignore a malformed frame rather than throw.
  */
-function isInboundRejection(
+const isInboundRejection = (
   value: unknown
-): value is SessionClientInboundRejection {
-  return (
-    isRecord(value) &&
-    isNonEmptyString(value.correlationId) &&
-    typeof value.code === "string" &&
-    SESSION_REJECTION_CODES.has(value.code) &&
-    typeof value.message === "string"
-  );
-}
+): value is SessionClientInboundRejection =>
+  isRecord(value) &&
+  isNonEmptyString(value.correlationId) &&
+  typeof value.code === "string" &&
+  SESSION_REJECTION_CODES.has(value.code) &&
+  typeof value.message === "string";
 
-function validateOptions(options: SessionClientOptions): void {
+const validateOptions = (options: SessionClientOptions): void => {
   if (!isNonEmptyString(options.url)) {
     throw new RangeError("createSessionClient: url must be a non-empty string");
   }
@@ -338,11 +328,10 @@ function validateOptions(options: SessionClientOptions): void {
       "createSessionClient: reconnect.maxAttempts must be a positive number or Infinity"
     );
   }
-}
+};
 
-function errorMessageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
+const errorMessageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 /**
  * Best-effort message extraction for a `WebSocket` `error` event, which is
@@ -350,7 +339,7 @@ function errorMessageOf(error: unknown): string {
  * `ErrorEvent`-shaped object whose own `message`/`error` field carries the
  * useful detail, or `undefined` entirely).
  */
-function socketErrorMessageOf(event: unknown): string {
+const socketErrorMessageOf = (event: unknown): string => {
   if (event instanceof Error) {
     return event.message;
   }
@@ -363,7 +352,7 @@ function socketErrorMessageOf(event: unknown): string {
     return (event as { message: string }).message;
   }
   return "socket reported an error event";
-}
+};
 
 /**
  * Creates a thin, reference-quality remote peer for the Tuvren duplex
@@ -372,9 +361,9 @@ function socketErrorMessageOf(event: unknown): string {
  *
  * @experimental
  */
-export function createSessionClient(
+export const createSessionClient = (
   options: SessionClientOptions
-): SessionClientHandle {
+): SessionClientHandle => {
   validateOptions(options);
   const clock = options.clock ?? globalClock;
   const maxAttempts =
@@ -418,7 +407,7 @@ export function createSessionClient(
   // one client) but confusing and unnecessarily shared state.
   let correlationCounter = 0;
 
-  function nextCorrelationId(): string {
+  const nextCorrelationId = (): string => {
     const cryptoGlobal = (
       globalThis as { crypto?: { randomUUID?: () => string } }
     ).crypto;
@@ -427,13 +416,13 @@ export function createSessionClient(
     }
     correlationCounter += 1;
     return `session-client-correlation-${correlationCounter}`;
-  }
+  };
 
-  function reportStatus(status: SessionClientStatus): void {
+  const reportStatus = (status: SessionClientStatus): void => {
     options.onStatusChange?.(status);
-  }
+  };
 
-  function sendInboundFrame(frame: unknown): void {
+  const sendInboundFrame = (frame: unknown): void => {
     if (socket === undefined || !handshakeOpen) {
       outboundQueue.push(frame);
       return;
@@ -449,9 +438,9 @@ export function createSessionClient(
       // ADR-0063 redelivery.
       outboundQueue.push(frame);
     }
-  }
+  };
 
-  function flushOutboundQueue(): void {
+  const flushOutboundQueue = (): void => {
     if (socket === undefined) {
       return;
     }
@@ -469,9 +458,9 @@ export function createSessionClient(
         return;
       }
     }
-  }
+  };
 
-  function sendClientResult(result: SessionClientReportedResult): void {
+  const sendClientResult = (result: SessionClientReportedResult): void => {
     sendInboundFrame({
       correlationId: nextCorrelationId(),
       kind: "client_result",
@@ -479,29 +468,29 @@ export function createSessionClient(
       result,
       sessionId: options.sessionId,
     });
-  }
+  };
 
-  function settle(
+  const settle = (
     envelope: SessionClientInvocationEnvelope,
     result: SessionClientReportedResult
-  ): void {
+  ): void => {
     callState.set(envelope.callId, { result, status: "answered" });
     sendClientResult(result);
-  }
+  };
 
-  function errorResult(
+  const errorResult = (
     envelope: SessionClientInvocationEnvelope,
     message: string
-  ): SessionClientReportedResult {
-    return {
-      callId: envelope.callId,
-      content: { error: message },
-      isError: true,
-      leaseToken: envelope.leaseToken,
-    };
-  }
+  ): SessionClientReportedResult => ({
+    callId: envelope.callId,
+    content: { error: message },
+    isError: true,
+    leaseToken: envelope.leaseToken,
+  });
 
-  function handleInvocation(envelope: SessionClientInvocationEnvelope): void {
+  const handleInvocation = (
+    envelope: SessionClientInvocationEnvelope
+  ): void => {
     const existing = callState.get(envelope.callId);
     if (existing !== undefined) {
       if (existing.status === "answered") {
@@ -562,9 +551,9 @@ export function createSessionClient(
       .catch((error: unknown) => {
         settle(envelope, errorResult(envelope, errorMessageOf(error)));
       });
-  }
+  };
 
-  function handleOutboundFrame(frame: unknown): void {
+  const handleOutboundFrame = (frame: unknown): void => {
     if (typeof frame !== "object" || frame === null || !("kind" in frame)) {
       return;
     }
@@ -599,19 +588,20 @@ export function createSessionClient(
       }
       options.onRejection?.(record.rejection);
     }
-  }
+  };
 
-  function clearReconnectTimer(): void {
+  const clearReconnectTimer = (): void => {
     if (reconnectTimer !== undefined) {
       clock.clearTimeout(reconnectTimer);
       reconnectTimer = undefined;
     }
-  }
+  };
 
-  function scheduleReconnect(
+  const scheduleReconnect = (
     code: number | undefined,
-    reason: string | undefined
-  ): void {
+    reason: string | undefined,
+    reopen: () => void
+  ): void => {
     reconnectAttempt += 1;
     if (reconnectAttempt > maxAttempts) {
       reportStatus({ code, phase: "closed", reason, terminal: true });
@@ -624,11 +614,11 @@ export function createSessionClient(
     reportStatus({ attempt: reconnectAttempt, delayMs, phase: "reconnecting" });
     reconnectTimer = clock.scheduleTimeout(() => {
       reconnectTimer = undefined;
-      openSocket();
+      reopen();
     }, delayMs);
-  }
+  };
 
-  function openSocket(): void {
+  const openSocket = (): void => {
     reportStatus({ phase: "connecting" });
     const nextSocket = webSocketFactory(options.url);
     socket = nextSocket;
@@ -699,7 +689,7 @@ export function createSessionClient(
         return;
       }
       if (isRetryableCloseCode(event.code)) {
-        scheduleReconnect(event.code, event.reason);
+        scheduleReconnect(event.code, event.reason, openSocket);
         return;
       }
       reportStatus({
@@ -721,18 +711,18 @@ export function createSessionClient(
       // explain.
       reportStatus({ message: socketErrorMessageOf(event), phase: "error" });
     };
-  }
+  };
 
-  function connect(): void {
+  const connect = (): void => {
     if (socket !== undefined || reconnectTimer !== undefined) {
       return;
     }
     closedByUser = false;
     reconnectAttempt = 0;
     openSocket();
-  }
+  };
 
-  function close(code = 1000, reason?: string): void {
+  const close = (code = 1000, reason?: string): void => {
     closedByUser = true;
     // Cleared, not re-queued (see outboundQueue's doc comment above): once
     // the caller has explicitly asked to close, queued frames represent
@@ -750,9 +740,9 @@ export function createSessionClient(
       return;
     }
     socket.close(code, reason);
-  }
+  };
 
-  function approve(response: SessionClientApprovalResponse): void {
+  const approve = (response: SessionClientApprovalResponse): void => {
     sendInboundFrame({
       correlationId: nextCorrelationId(),
       kind: "approval_response",
@@ -760,9 +750,9 @@ export function createSessionClient(
       response,
       sessionId: options.sessionId,
     });
-  }
+  };
 
-  function steer(signal: SessionClientInputSignal): void {
+  const steer = (signal: SessionClientInputSignal): void => {
     sendInboundFrame({
       correlationId: nextCorrelationId(),
       kind: "steer",
@@ -770,16 +760,16 @@ export function createSessionClient(
       sessionId: options.sessionId,
       signal,
     });
-  }
+  };
 
-  function cancel(): void {
+  const cancel = (): void => {
     sendInboundFrame({
       correlationId: nextCorrelationId(),
       kind: "cancel",
       protocolVersion: SESSION_PROTOCOL_VERSION,
       sessionId: options.sessionId,
     });
-  }
+  };
 
   return { approve, cancel, close, connect, steer };
-}
+};
