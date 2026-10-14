@@ -54,6 +54,11 @@ const HASH_FOUR = "4".repeat(64);
 const HASH_FIVE = "5".repeat(64);
 const HASH_SIX = "6".repeat(64);
 
+const indexedHash = (index: number): string => {
+  const stringIndex = index.toString(16).padStart(2, "0");
+  return stringIndex.repeat(32);
+};
+
 const fixtures: FixtureSpec[] = [
   {
     fileName: "kernel-protocol-empty-bytes.json",
@@ -443,26 +448,34 @@ const fixtures: FixtureSpec[] = [
   },
 ];
 
-await main();
+const bytesToHex = (bytes: Uint8Array): string =>
+  Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 
-async function main(): Promise<void> {
-  await mkdir(FIXTURES_DIR, { recursive: true });
-  const filePaths: string[] = [];
+const projectTurnNodeRecord = (turnNode: TurnNodeSpec): KernelRecord => ({
+  consumedStagedResults: turnNode.consumedStagedResults.map((result) => {
+    const projection: Record<string, unknown> = {
+      objectHash: result.objectHash,
+      objectType: result.objectType,
+      status: result.status,
+      taskId: result.taskId,
+      timestamp: result.timestamp,
+    };
 
-  for (const fixture of fixtures) {
-    const fixtureRecord = await buildFixtureRecord(fixture);
-    const filePath = resolve(FIXTURES_DIR, fixture.fileName);
-    await writeFile(filePath, `${JSON.stringify(fixtureRecord, null, 2)}\n`);
-    filePaths.push(filePath);
-    process.stdout.write(`wrote ${fixture.fileName}\n`);
-  }
+    if (result.interruptPayload !== undefined) {
+      projection.interruptPayload = result.interruptPayload;
+    }
 
-  await formatGeneratedJson(filePaths);
-}
+    return projection as KernelRecord;
+  }),
+  eventHash: turnNode.eventHash,
+  previousTurnNodeHash: turnNode.previousTurnNodeHash,
+  schemaId: turnNode.schemaId,
+  turnTreeHash: turnNode.turnTreeHash,
+});
 
-async function buildFixtureRecord(
+const buildFixtureRecord = async (
   spec: FixtureSpec
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, unknown>> => {
   const opaqueBytes = Uint8Array.from(spec.rawOpaqueBytes);
   const rawOpaqueBytesSha256Hex = await hashOpaqueObjectBytes(opaqueBytes);
 
@@ -484,39 +497,21 @@ async function buildFixtureRecord(
     turnTreeSchemaRecordCborHex: bytesToHex(schemaCbor),
     turnTreeSchemaRecordSha256Hex: schemaSha,
   };
-}
+};
 
-function projectTurnNodeRecord(turnNode: TurnNodeSpec): KernelRecord {
-  return {
-    consumedStagedResults: turnNode.consumedStagedResults.map((result) => {
-      const projection: Record<string, unknown> = {
-        objectHash: result.objectHash,
-        objectType: result.objectType,
-        status: result.status,
-        taskId: result.taskId,
-        timestamp: result.timestamp,
-      };
+const main = async (): Promise<void> => {
+  await mkdir(FIXTURES_DIR, { recursive: true });
+  const filePaths: string[] = [];
 
-      if (result.interruptPayload !== undefined) {
-        projection.interruptPayload = result.interruptPayload;
-      }
+  for (const fixture of fixtures) {
+    const fixtureRecord = await buildFixtureRecord(fixture);
+    const filePath = resolve(FIXTURES_DIR, fixture.fileName);
+    await writeFile(filePath, `${JSON.stringify(fixtureRecord, null, 2)}\n`);
+    filePaths.push(filePath);
+    process.stdout.write(`wrote ${fixture.fileName}\n`);
+  }
 
-      return projection as KernelRecord;
-    }),
-    eventHash: turnNode.eventHash,
-    previousTurnNodeHash: turnNode.previousTurnNodeHash,
-    schemaId: turnNode.schemaId,
-    turnTreeHash: turnNode.turnTreeHash,
-  };
-}
+  await formatGeneratedJson(filePaths);
+};
 
-function indexedHash(index: number): string {
-  const stringIndex = index.toString(16).padStart(2, "0");
-  return stringIndex.repeat(32);
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
-    ""
-  );
-}
+await main();
