@@ -621,7 +621,6 @@ export const startReplWsServer = (
     transport.ingest(text);
   };
 
-  // biome-ignore lint/correctness/noUndeclaredVariables: Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: "Bun APIs are fine here").
   const server = Bun.serve<ReplWsConnectionState>({
     fetch(req, srv): Response | undefined {
       const upgraded = srv.upgrade(req, { data: { transport: undefined } });
@@ -647,14 +646,18 @@ export const startReplWsServer = (
           // ordinary websocket message events and are handled once
           // ws.data.transport is set. A failure here has nowhere useful to
           // propagate to but the socket itself.
-          handleFirstMessage(ws, text).catch((error: unknown) => {
-            ws.close(
-              1011,
-              `internal error handling handshake: ${
-                error instanceof Error ? error.message : String(error)
-              }`
-            );
-          });
+          void (async () => {
+            try {
+              await handleFirstMessage(ws, text);
+            } catch (error: unknown) {
+              ws.close(
+                1011,
+                `internal error handling handshake: ${
+                  error instanceof Error ? error.message : String(error)
+                }`
+              );
+            }
+          })();
           return;
         }
 

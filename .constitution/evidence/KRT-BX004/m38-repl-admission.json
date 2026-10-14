@@ -1,0 +1,535 @@
+{
+  "milestone": "M38",
+  "ticket": "KRT-BX004",
+  "project": "typescript/host/repl",
+  "measurement_head": "98ac6d2a64f07c8c8e8ce76410b8992743317d77",
+  "status": "atomic-native-admission-verified",
+  "canonical_target": {
+    "executor": "nx:run-commands",
+    "options": {
+      "cwd": ".",
+      "commands": [
+        "bunx --bun oxlint --type-aware typescript/host/repl",
+        "bun tools/scripts/json-check.ts typescript/host/repl"
+      ],
+      "parallel": false
+    }
+  },
+  "inputs": {
+    "explicit": false,
+    "inherited": [
+      "default",
+      "{workspaceRoot}/biome.jsonc",
+      "{workspaceRoot}/oxlint.config.ts",
+      "{workspaceRoot}/oxfmt.config.ts",
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/bun.lock",
+      "{workspaceRoot}/tools/scripts/json-check.ts",
+      "{workspaceRoot}/tools/scripts/json-source-check.ts",
+      "{workspaceRoot}/tools/scripts/lib/biome-inventory.ts",
+      "{workspaceRoot}/tools/scripts/lib/command-runner.ts",
+      "{workspaceRoot}/tools/scripts/lib/json-source-integrity.ts",
+      "{workspaceRoot}/Cargo.toml",
+      "{workspaceRoot}/Cargo.lock",
+      "{workspaceRoot}/rust-toolchain.toml"
+    ],
+    "unchanged": true
+  },
+  "native": {
+    "diagnostics": 0,
+    "whole_host_diagnostics": 0,
+    "backend_errors": 0,
+    "actual_code_selection": [
+      "typescript/host/repl/scripts/ws-peer.ts",
+      "typescript/host/repl/smoke/assert-headless-jsonl.ts",
+      "typescript/host/repl/smoke/package-exports.ts",
+      "typescript/host/repl/src/cli.ts",
+      "typescript/host/repl/src/gemini-cli.ts",
+      "typescript/host/repl/src/index.ts",
+      "typescript/host/repl/src/lib/proof-extension.ts",
+      "typescript/host/repl/src/lib/repl-builtin-tools.ts",
+      "typescript/host/repl/src/lib/repl-config.ts",
+      "typescript/host/repl/src/lib/repl-headless-mode.ts",
+      "typescript/host/repl/src/lib/repl-host.ts",
+      "typescript/host/repl/src/lib/repl-live-output.ts",
+      "typescript/host/repl/src/lib/repl-provider.ts",
+      "typescript/host/repl/src/lib/repl-replay.ts",
+      "typescript/host/repl/src/lib/repl-scenario-matrix.ts",
+      "typescript/host/repl/src/lib/repl-scenarios-support.ts",
+      "typescript/host/repl/src/lib/repl-scenarios.ts",
+      "typescript/host/repl/src/lib/repl-serve-ws.ts",
+      "typescript/host/repl/src/lib/repl-shell.ts",
+      "typescript/host/repl/src/lib/repl-transcript.ts",
+      "typescript/host/repl/src/lib/repl-types.ts",
+      "typescript/host/repl/test/repl-scenarios.test.ts",
+      "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+      "typescript/host/repl/test/repl-shell.test.ts",
+      "typescript/host/repl/test/repl-test-helpers.ts",
+      "typescript/host/repl/test/repl-transcript-io.test.ts",
+      "typescript/host/repl/test/repl-transcript-redaction.test.ts",
+      "typescript/host/repl/test/repl-transcript-scope.test.ts",
+      "typescript/host/repl/test/repl.aimock-journal-body.test.ts",
+      "typescript/host/repl/test/repl.aimock-matrix.test.ts",
+      "typescript/host/repl/test/repl.aimock-openai.test.ts",
+      "typescript/host/repl/test/repl.test.ts",
+      "typescript/host/repl/tsup.config.ts"
+    ],
+    "git_inventory_equal": true,
+    "engine_rules": 474,
+    "non_type_aware_rules": 419,
+    "type_aware_rules": 55,
+    "rule_counts_are_measurements": true,
+    "effective_preset_equal": true,
+    "complete_effective_fields": [
+      "plugins",
+      "categories",
+      "rules",
+      "settings",
+      "env",
+      "globals",
+      "overrides",
+      "ignorePatterns"
+    ],
+    "backend_report": "bx-m38-type-aware-timings.log.stderr.log",
+    "backend_code_files": 33,
+    "backend_program": "typescript/host/repl/tsconfig.typecheck.json",
+    "backend_config_note": "All selected files appear in the completed backend execution; no project-resolution diagnostic or config change."
+  },
+  "json": {
+    "files": [
+      "typescript/host/repl/package.json",
+      "typescript/host/repl/project.json",
+      "typescript/host/repl/tsconfig.dts.json",
+      "typescript/host/repl/tsconfig.json",
+      "typescript/host/repl/tsconfig.lib.json",
+      "typescript/host/repl/tsconfig.tsup.json",
+      "typescript/host/repl/tsconfig.typecheck.json"
+    ],
+    "source_integrity_selection_equal_to_git": true,
+    "formatter_selection": [
+      "typescript/host/repl/package.json",
+      "typescript/host/repl/project.json",
+      "typescript/host/repl/tsconfig.dts.json",
+      "typescript/host/repl/tsconfig.json",
+      "typescript/host/repl/tsconfig.lib.json",
+      "typescript/host/repl/tsconfig.tsup.json",
+      "typescript/host/repl/tsconfig.typecheck.json"
+    ],
+    "source_issues": [],
+    "format_exit": 0,
+    "formatter_ignore_independence": true,
+    "ignore_control_files": [
+      "typescript/host/repl/package.json",
+      "typescript/host/repl/project.json",
+      "typescript/host/repl/tsconfig.dts.json",
+      "typescript/host/repl/tsconfig.json",
+      "typescript/host/repl/tsconfig.lib.json",
+      "typescript/host/repl/tsconfig.tsup.json",
+      "typescript/host/repl/tsconfig.typecheck.json"
+    ],
+    "ignore_control_formatted": [],
+    "json_only": false,
+    "fresh_code_inventory": [
+      "typescript/host/repl/scripts/ws-peer.ts",
+      "typescript/host/repl/smoke/assert-headless-jsonl.ts",
+      "typescript/host/repl/smoke/package-exports.ts",
+      "typescript/host/repl/src/cli.ts",
+      "typescript/host/repl/src/gemini-cli.ts",
+      "typescript/host/repl/src/index.ts",
+      "typescript/host/repl/src/lib/proof-extension.ts",
+      "typescript/host/repl/src/lib/repl-builtin-tools.ts",
+      "typescript/host/repl/src/lib/repl-config.ts",
+      "typescript/host/repl/src/lib/repl-headless-mode.ts",
+      "typescript/host/repl/src/lib/repl-host.ts",
+      "typescript/host/repl/src/lib/repl-live-output.ts",
+      "typescript/host/repl/src/lib/repl-provider.ts",
+      "typescript/host/repl/src/lib/repl-replay.ts",
+      "typescript/host/repl/src/lib/repl-scenario-matrix.ts",
+      "typescript/host/repl/src/lib/repl-scenarios-support.ts",
+      "typescript/host/repl/src/lib/repl-scenarios.ts",
+      "typescript/host/repl/src/lib/repl-serve-ws.ts",
+      "typescript/host/repl/src/lib/repl-shell.ts",
+      "typescript/host/repl/src/lib/repl-transcript.ts",
+      "typescript/host/repl/src/lib/repl-types.ts",
+      "typescript/host/repl/test/repl-scenarios.test.ts",
+      "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+      "typescript/host/repl/test/repl-shell.test.ts",
+      "typescript/host/repl/test/repl-test-helpers.ts",
+      "typescript/host/repl/test/repl-transcript-io.test.ts",
+      "typescript/host/repl/test/repl-transcript-redaction.test.ts",
+      "typescript/host/repl/test/repl-transcript-scope.test.ts",
+      "typescript/host/repl/test/repl.aimock-journal-body.test.ts",
+      "typescript/host/repl/test/repl.aimock-matrix.test.ts",
+      "typescript/host/repl/test/repl.aimock-openai.test.ts",
+      "typescript/host/repl/test/repl.test.ts",
+      "typescript/host/repl/tsup.config.ts"
+    ]
+  },
+  "suppression": {
+    "original_identities_removed": 3,
+    "native_legacy_counterparts_added": 0,
+    "no_admitted_biome_directives": true,
+    "no_host_biome_directives": true,
+    "ledger": "bx-m38-ledger-draft.json",
+    "early_deletions": [],
+    "metadata_regions": 2,
+    "metadata_exception_controls": [
+      {
+        "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
+        "region": 0,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      },
+      {
+        "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
+        "region": 1,
+        "tag_count": 1,
+        "removed_control_diagnostics": 1,
+        "unused_control_diagnostics": 1
+      }
+    ],
+    "global_experimental_ast_associations": 144,
+    "original_association_hashes_equal": true,
+    "native_firing_inventory": {
+      "tags": 112,
+      "files": 9
+    },
+    "additional_inline_associations": 32,
+    "metadata_removed": 0,
+    "optional_package_documentation_tags_remaining": 0
+  },
+  "coverage": {
+    "removed": "typescript/host/repl",
+    "retained_roots": [],
+    "retained_positive_processed": 0,
+    "retained_diagnostics": 0,
+    "retained_coverage_file_present": true,
+    "retained_zero_reason": "Final host admission leaves no retained host roots; prior retained proof processed all 40 REPL files.",
+    "outside_directives_and_bytes_preserved": true,
+    "retained_file_count": 0,
+    "retained_inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "behavior": {
+    "typecheck": 0,
+    "test": 0,
+    "exports_smoke": 0,
+    "lint": 0,
+    "tests": 191,
+    "assertions": 1241,
+    "protocol_trace_scenarios": [
+      {
+        "operation": "active",
+        "settle": "resolve",
+        "trace": [
+          "turn-cancel",
+          "child-cancel",
+          "child-await",
+          "orch-cancel",
+          "orch-await",
+          "command-returned",
+          "microtask-after-command"
+        ],
+        "activeTurnCleared": false,
+        "orchestrationCleared": false
+      },
+      {
+        "operation": "active",
+        "settle": "reject",
+        "trace": [
+          "turn-cancel",
+          "child-cancel",
+          "child-await",
+          "orch-cancel",
+          "orch-await",
+          "command-returned",
+          "microtask-after-command"
+        ],
+        "activeTurnCleared": false,
+        "orchestrationCleared": false
+      },
+      {
+        "operation": "turn",
+        "settle": "resolve",
+        "trace": [
+          "turn-cancel",
+          "command-returned",
+          "microtask-after-command"
+        ],
+        "result": {
+          "output": "Cancellation requested for the active turn."
+        },
+        "activeTurnCleared": true,
+        "orchestrationCleared": false
+      },
+      {
+        "operation": "turn",
+        "settle": "reject",
+        "trace": [
+          "turn-cancel",
+          "command-returned",
+          "microtask-after-command"
+        ],
+        "result": {
+          "output": "Cancellation requested for the active turn."
+        },
+        "activeTurnCleared": true,
+        "orchestrationCleared": false
+      },
+      {
+        "operation": "orchestration",
+        "settle": "resolve",
+        "trace": [
+          "child-cancel",
+          "child-await",
+          "orch-cancel",
+          "orch-await",
+          "command-returned",
+          "microtask-after-command"
+        ],
+        "result": {
+          "output": "Cancellation requested for the active orchestration."
+        },
+        "activeTurnCleared": false,
+        "orchestrationCleared": true
+      },
+      {
+        "operation": "orchestration",
+        "settle": "reject",
+        "trace": [
+          "child-cancel",
+          "child-await",
+          "orch-cancel",
+          "orch-await",
+          "command-returned",
+          "microtask-after-command"
+        ],
+        "result": {
+          "output": "Cancellation requested for the active orchestration."
+        },
+        "activeTurnCleared": false,
+        "orchestrationCleared": true
+      }
+    ],
+    "protocol_trace_parity": true,
+    "production_source_bundles": false,
+    "production_source_modules": true,
+    "cancellation_trace_parity": true,
+    "cli_shutdown_scenarios": [
+      {
+        "signal": "SIGINT",
+        "settle": "resolve",
+        "trace": [
+          "stop-called",
+          "signal-returned",
+          "repeat-returned",
+          "queued-microtask",
+          "stop-done",
+          "dispose-called",
+          "dispose-done",
+          "exit-0"
+        ]
+      },
+      {
+        "signal": "SIGINT",
+        "settle": "stop-reject",
+        "trace": [
+          "stop-called",
+          "signal-returned",
+          "repeat-returned",
+          "queued-microtask"
+        ]
+      },
+      {
+        "signal": "SIGINT",
+        "settle": "dispose-reject",
+        "trace": [
+          "stop-called",
+          "signal-returned",
+          "repeat-returned",
+          "queued-microtask",
+          "stop-done",
+          "dispose-called"
+        ]
+      },
+      {
+        "signal": "SIGTERM",
+        "settle": "resolve",
+        "trace": [
+          "stop-called",
+          "signal-returned",
+          "repeat-returned",
+          "queued-microtask",
+          "stop-done",
+          "dispose-called",
+          "dispose-done",
+          "exit-0"
+        ]
+      },
+      {
+        "signal": "SIGTERM",
+        "settle": "stop-reject",
+        "trace": [
+          "stop-called",
+          "signal-returned",
+          "repeat-returned",
+          "queued-microtask"
+        ]
+      },
+      {
+        "signal": "SIGTERM",
+        "settle": "dispose-reject",
+        "trace": [
+          "stop-called",
+          "signal-returned",
+          "repeat-returned",
+          "queued-microtask",
+          "stop-done",
+          "dispose-called"
+        ]
+      },
+      {
+        "realProcess": true,
+        "signal": "SIGINT",
+        "exit": 0,
+        "exitSignal": null,
+        "stderr": ""
+      },
+      {
+        "realProcess": true,
+        "signal": "SIGTERM",
+        "exit": 0,
+        "exitSignal": null,
+        "stderr": ""
+      }
+    ],
+    "cli_shutdown_trace_parity": true,
+    "fresh_focused": {
+      "cancellationTraceParity": true,
+      "realReconnectRedelivery": true,
+      "realSIGKILLDurableState": true,
+      "handshakeFailureOriginalMessageAndClose": true,
+      "results": [
+        {
+          "name": "focused-cancellation",
+          "command": [
+            "bun",
+            "test",
+            "test/repl-shell.test.ts",
+            "test/repl.test.ts",
+            "--test-name-pattern",
+            "cancel|approval continuation|backend reset"
+          ],
+          "exit": 0,
+          "report": "bx-m38-focused-cancellation.log"
+        },
+        {
+          "name": "focused-websocket",
+          "command": [
+            "bun",
+            "test",
+            "test/repl-serve-ws.e2e.test.ts"
+          ],
+          "exit": 0,
+          "report": "bx-m38-focused-websocket.log"
+        }
+      ]
+    }
+  },
+  "decisions": [
+    "Apply only the three recorded A11 REPL shell/CLI/WebSocket launch normalizations with the canonical target, directive and coverage handoff; preserve timing, ignored shutdown/cancellation rejections, handshake close code/message and repeated-signal ownership.",
+    "Remove the three remaining REPL legacy Biome identities at atomic admission. Fresh complete native zero proves no firing native equivalent and no counterpart is added. Historical BX002 retained_checker_disposition stays immutable and separate from current absence.",
+    "Keep tools/biome-coverage/bx.json as an empty array and remove all host legacy Biome directives. Preserve the source bytes of all three previously admitted projects.",
+    "Keep the exact ordered canonical native command pair, inherited lint inputs, source-only typecheck and the existing two REPL metadata regions. All 144 AST associations, 112 native-firing annotations, 32 inline associations and existing optional package tag removal are preserved."
+  ],
+  "ledger": [
+    {
+      "identity": "typescript/host/repl/src/index.ts::lint/performance/noBarrelFile::1",
+      "path": "typescript/host/repl/src/index.ts",
+      "rule": "lint/performance/noBarrelFile",
+      "original_reason": "This package entrypoint is the intentional proving-host surface.",
+      "original_directive": "// biome-ignore-all lint/performance/noBarrelFile: This package entrypoint is the intentional proving-host surface.",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "original_reason_preserved": true,
+      "current_biome_directive": false,
+      "early_deletion": false,
+      "final_disposition": "removed-at-atomic-native-admission",
+      "native_equivalent_firing": false,
+      "native_counterpart_added": false,
+      "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "admission_milestone": "M38",
+      "native_report": "bx-m38-final-native.json",
+      "target": "typescript/host/repl/project.json",
+      "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/repl/src/lib/repl-serve-ws.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/host/repl/src/lib/repl-serve-ws.ts",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: \"Bun APIs are fine here\").",
+      "original_directive": "// biome-ignore lint/correctness/noUndeclaredVariables: Bun global — this REPL host runs on the Bun runtime (CLAUDE.md: \"Bun APIs are fine here\").",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "original_reason_preserved": true,
+      "current_biome_directive": false,
+      "early_deletion": false,
+      "final_disposition": "removed-at-atomic-native-admission",
+      "native_equivalent_firing": false,
+      "native_counterpart_added": false,
+      "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "admission_milestone": "M38",
+      "native_report": "bx-m38-final-native.json",
+      "target": "typescript/host/repl/project.json",
+      "coverage": "tools/biome-coverage/bx.json"
+    },
+    {
+      "identity": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts::lint/correctness/noUndeclaredVariables::1",
+      "path": "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+      "rule": "lint/correctness/noUndeclaredVariables",
+      "original_reason": "Bun global (this test drives a real Bun subprocess).",
+      "original_directive": "// biome-ignore lint/correctness/noUndeclaredVariables: Bun global (this test drives a real Bun subprocess).",
+      "retained_checker_disposition": "retain-original-needed-while-biome-owns-path",
+      "original_reason_preserved": true,
+      "current_biome_directive": false,
+      "early_deletion": false,
+      "final_disposition": "removed-at-atomic-native-admission",
+      "native_equivalent_firing": false,
+      "native_counterpart_added": false,
+      "historical_equivalent_rule": null,
+      "reason": "Fresh complete type-aware native diagnostics are empty after removal; no equivalent native diagnostic fires. Active metadata exceptions are separately authorized.",
+      "admission_milestone": "M38",
+      "native_report": "bx-m38-final-native.json",
+      "target": "typescript/host/repl/project.json",
+      "coverage": "tools/biome-coverage/bx.json"
+    }
+  ],
+  "lead": {
+    "canonical_typecheck": true,
+    "canonical_test": true,
+    "exports_smoke": true,
+    "full_root_lint_exit": 0
+  },
+  "raw_artifacts": [
+    {
+      "name": "bx-m38-summary.json",
+      "sha256": "4178bd107cbc7d10e3d8671064a79d5f1d58f3f36fd40d1f556a78d1eba8e4ba",
+      "bytes": 62675
+    },
+    {
+      "name": "bx-m38-readiness-draft.json",
+      "sha256": "9a8a41a54ef15f4b784b752e1b2d8c260bfc181021cb727f4f82a468841836a6",
+      "bytes": 34084
+    },
+    {
+      "name": "bx-m38-ledger-draft.json",
+      "sha256": "9df3f0e94394c8453e6f50d64896fb6c6e018b1ceb60454af05bc2133f240a64",
+      "bytes": 12509
+    },
+    {
+      "name": "bx-m38-lead-full-lint.log",
+      "sha256": "80e868c679ebcc9662be85c5771c0f6f3f342be3a30eb5dd29f2e49041a4727c",
+      "bytes": 6705
+    }
+  ]
+}

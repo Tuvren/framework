@@ -462,8 +462,14 @@ const isTerminalPhase = (
   phase: ReturnType<ExecutionHandle["status"]>["phase"]
 ): boolean => phase === "completed" || phase === "failed";
 
-const observeCancellation = (promise: Promise<unknown>): void => {
-  promise.catch(() => undefined);
+const observeCancellation = async (
+  promise: Promise<unknown>
+): Promise<void> => {
+  try {
+    await promise;
+  } catch {
+    // Cancellation must not surface an abandoned work rejection.
+  }
 };
 
 const cancelActiveShellWork = (shell: ReplShell): void => {
@@ -472,7 +478,7 @@ const cancelActiveShellWork = (shell: ReplShell): void => {
     !isTerminalPhase(shell.activeTurn.handle.status().phase)
   ) {
     shell.host.cancel(shell.activeTurn.handle);
-    observeCancellation(shell.activeTurn.projectionPromise);
+    void observeCancellation(shell.activeTurn.projectionPromise);
   }
 
   if (
@@ -480,7 +486,9 @@ const cancelActiveShellWork = (shell: ReplShell): void => {
     !isTerminalPhase(shell.activeOrchestration.childHandle.status().phase)
   ) {
     shell.activeOrchestration.childHandle.cancel();
-    observeCancellation(shell.activeOrchestration.childHandle.awaitResult());
+    void observeCancellation(
+      shell.activeOrchestration.childHandle.awaitResult()
+    );
   }
 
   if (
@@ -488,8 +496,8 @@ const cancelActiveShellWork = (shell: ReplShell): void => {
     !isTerminalPhase(shell.activeOrchestration.handle.status().phase)
   ) {
     shell.activeOrchestration.handle.cancel();
-    observeCancellation(shell.activeOrchestration.handle.awaitResult());
-    observeCancellation(shell.activeOrchestration.eventsPromise);
+    void observeCancellation(shell.activeOrchestration.handle.awaitResult());
+    void observeCancellation(shell.activeOrchestration.eventsPromise);
   }
 };
 
@@ -892,7 +900,7 @@ const cancelTurn = (shell: ReplShell): ReplCommandResult => {
   }
 
   shell.host.cancel(activeTurn.handle);
-  observeCancellation(activeTurn.projectionPromise);
+  void observeCancellation(activeTurn.projectionPromise);
   shell.activeTurn = undefined;
   return { output: "Cancellation requested for the active turn." };
 };
@@ -1037,15 +1045,15 @@ const cancelOrchestration = (shell: ReplShell): ReplCommandResult => {
     !isTerminalPhase(active.childHandle.status().phase)
   ) {
     active.childHandle.cancel();
-    observeCancellation(active.childHandle.awaitResult());
+    void observeCancellation(active.childHandle.awaitResult());
   }
 
   if (!isTerminalPhase(active.handle.status().phase)) {
     active.handle.cancel();
-    observeCancellation(active.handle.awaitResult());
+    void observeCancellation(active.handle.awaitResult());
   }
 
-  observeCancellation(active.eventsPromise);
+  void observeCancellation(active.eventsPromise);
   shell.activeOrchestration = undefined;
   return { output: "Cancellation requested for the active orchestration." };
 };

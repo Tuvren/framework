@@ -1,0 +1,636 @@
+{
+  "ticket": "KRT-BX004",
+  "status": "complete-native-host-readiness",
+  "measurement_head": "98ac6d2a64f07c8c8e8ce76410b8992743317d77",
+  "working_tree_candidate": true,
+  "projects": [
+    {
+      "project": "typescript/host/session",
+      "milestone": "M35",
+      "target": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/host/session",
+            "bun tools/scripts/json-check.ts typescript/host/session"
+          ],
+          "parallel": false
+        }
+      },
+      "native_diagnostics": 0,
+      "code_files": 7,
+      "json_files": 7,
+      "complete_effective_preset_equal": true,
+      "metadata_regions": 5,
+      "behavior": {
+        "typecheck": 0,
+        "test": 0,
+        "exports_smoke": 0,
+        "lint": 0,
+        "tests": 34,
+        "assertions": 84,
+        "protocol_trace_scenarios": [
+          "pending-next-early-return",
+          "queued-items-return",
+          "next-before-return-with-buffer",
+          "empty-repeated-return",
+          "error-pending-read-and-return",
+          "error-buffered-items",
+          "result-resolve-closes-and-sweeps",
+          "result-reject-closes-and-sweeps",
+          "replacement-guards-old-settlement-and-preserves-event-order",
+          "non-Error-event-failure-retains-cause"
+        ],
+        "protocol_trace_parity": true,
+        "production_source_bundles": true
+      },
+      "proof": "m35-session-admission.json"
+    },
+    {
+      "project": "typescript/host/remote-session",
+      "milestone": "M36",
+      "target": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/host/remote-session",
+            "bun tools/scripts/json-check.ts typescript/host/remote-session"
+          ],
+          "parallel": false
+        }
+      },
+      "native_diagnostics": 0,
+      "code_files": 6,
+      "json_files": 7,
+      "complete_effective_preset_equal": true,
+      "metadata_regions": 11,
+      "behavior": {
+        "typecheck": 0,
+        "test": 0,
+        "exports_smoke": 0,
+        "lint": 0,
+        "tests": 18,
+        "assertions": 92,
+        "protocol_trace_scenarios": [
+          "lazy-close-and-repeat",
+          "pending-pump-close-async-release-rejection",
+          "queued-event-pump-close",
+          "sequential-events-and-normal-terminal",
+          "throwing-sink-settles-before-release",
+          "throwing-outbound-pump-and-best-effort-release",
+          "invalid-result-redelivery-valid-result-and-dedup",
+          "pending-dispatch-close-envelope-and-fast-refusal",
+          "result-terminal-reject",
+          "result-terminal-resolve"
+        ],
+        "protocol_trace_parity": true,
+        "production_source_bundles": true
+      },
+      "proof": "m36-remote-session-admission.json"
+    },
+    {
+      "project": "typescript/host/session-client",
+      "milestone": "M37",
+      "target": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/host/session-client",
+            "bun tools/scripts/json-check.ts typescript/host/session-client"
+          ],
+          "parallel": false
+        }
+      },
+      "native_diagnostics": 0,
+      "code_files": 10,
+      "json_files": 7,
+      "complete_effective_preset_equal": true,
+      "metadata_regions": 20,
+      "behavior": {
+        "typecheck": 0,
+        "test": 0,
+        "exports_smoke": 0,
+        "lint": 0,
+        "tests": 33,
+        "assertions": 130,
+        "protocol_trace_scenarios": [
+          "handler-deferred-launch",
+          "sync-success",
+          "sync-throw",
+          "resolved-promise",
+          "rejected-promise",
+          "pending-promise",
+          "events",
+          "rejections",
+          "microtask-result-timing",
+          "in-flight-dedup",
+          "answered-redelivery",
+          "reconnect-backoff",
+          "cursor-handshake",
+          "close-cleanup"
+        ],
+        "single_handler_cases": 5,
+        "concurrent_permutations": 120,
+        "reconnect_cases": 5,
+        "protocol_trace_parity": true,
+        "production_source_bundles": false,
+        "production_source_modules": true
+      },
+      "proof": "m37-session-client-admission.json"
+    },
+    {
+      "project": "typescript/host/repl",
+      "milestone": "M38",
+      "target": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": ".",
+          "commands": [
+            "bunx --bun oxlint --type-aware typescript/host/repl",
+            "bun tools/scripts/json-check.ts typescript/host/repl"
+          ],
+          "parallel": false
+        }
+      },
+      "native_diagnostics": 0,
+      "code_files": 33,
+      "json_files": 7,
+      "complete_effective_preset_equal": true,
+      "metadata_regions": 2,
+      "behavior": {
+        "typecheck": 0,
+        "test": 0,
+        "exports_smoke": 0,
+        "lint": 0,
+        "tests": 191,
+        "assertions": 1241,
+        "protocol_trace_scenarios": [
+          {
+            "operation": "active",
+            "settle": "resolve",
+            "trace": [
+              "turn-cancel",
+              "child-cancel",
+              "child-await",
+              "orch-cancel",
+              "orch-await",
+              "command-returned",
+              "microtask-after-command"
+            ],
+            "activeTurnCleared": false,
+            "orchestrationCleared": false
+          },
+          {
+            "operation": "active",
+            "settle": "reject",
+            "trace": [
+              "turn-cancel",
+              "child-cancel",
+              "child-await",
+              "orch-cancel",
+              "orch-await",
+              "command-returned",
+              "microtask-after-command"
+            ],
+            "activeTurnCleared": false,
+            "orchestrationCleared": false
+          },
+          {
+            "operation": "turn",
+            "settle": "resolve",
+            "trace": [
+              "turn-cancel",
+              "command-returned",
+              "microtask-after-command"
+            ],
+            "result": {
+              "output": "Cancellation requested for the active turn."
+            },
+            "activeTurnCleared": true,
+            "orchestrationCleared": false
+          },
+          {
+            "operation": "turn",
+            "settle": "reject",
+            "trace": [
+              "turn-cancel",
+              "command-returned",
+              "microtask-after-command"
+            ],
+            "result": {
+              "output": "Cancellation requested for the active turn."
+            },
+            "activeTurnCleared": true,
+            "orchestrationCleared": false
+          },
+          {
+            "operation": "orchestration",
+            "settle": "resolve",
+            "trace": [
+              "child-cancel",
+              "child-await",
+              "orch-cancel",
+              "orch-await",
+              "command-returned",
+              "microtask-after-command"
+            ],
+            "result": {
+              "output": "Cancellation requested for the active orchestration."
+            },
+            "activeTurnCleared": false,
+            "orchestrationCleared": true
+          },
+          {
+            "operation": "orchestration",
+            "settle": "reject",
+            "trace": [
+              "child-cancel",
+              "child-await",
+              "orch-cancel",
+              "orch-await",
+              "command-returned",
+              "microtask-after-command"
+            ],
+            "result": {
+              "output": "Cancellation requested for the active orchestration."
+            },
+            "activeTurnCleared": false,
+            "orchestrationCleared": true
+          }
+        ],
+        "protocol_trace_parity": true,
+        "production_source_bundles": false,
+        "production_source_modules": true,
+        "cancellation_trace_parity": true,
+        "cli_shutdown_scenarios": [
+          {
+            "signal": "SIGINT",
+            "settle": "resolve",
+            "trace": [
+              "stop-called",
+              "signal-returned",
+              "repeat-returned",
+              "queued-microtask",
+              "stop-done",
+              "dispose-called",
+              "dispose-done",
+              "exit-0"
+            ]
+          },
+          {
+            "signal": "SIGINT",
+            "settle": "stop-reject",
+            "trace": [
+              "stop-called",
+              "signal-returned",
+              "repeat-returned",
+              "queued-microtask"
+            ]
+          },
+          {
+            "signal": "SIGINT",
+            "settle": "dispose-reject",
+            "trace": [
+              "stop-called",
+              "signal-returned",
+              "repeat-returned",
+              "queued-microtask",
+              "stop-done",
+              "dispose-called"
+            ]
+          },
+          {
+            "signal": "SIGTERM",
+            "settle": "resolve",
+            "trace": [
+              "stop-called",
+              "signal-returned",
+              "repeat-returned",
+              "queued-microtask",
+              "stop-done",
+              "dispose-called",
+              "dispose-done",
+              "exit-0"
+            ]
+          },
+          {
+            "signal": "SIGTERM",
+            "settle": "stop-reject",
+            "trace": [
+              "stop-called",
+              "signal-returned",
+              "repeat-returned",
+              "queued-microtask"
+            ]
+          },
+          {
+            "signal": "SIGTERM",
+            "settle": "dispose-reject",
+            "trace": [
+              "stop-called",
+              "signal-returned",
+              "repeat-returned",
+              "queued-microtask",
+              "stop-done",
+              "dispose-called"
+            ]
+          },
+          {
+            "realProcess": true,
+            "signal": "SIGINT",
+            "exit": 0,
+            "exitSignal": null,
+            "stderr": ""
+          },
+          {
+            "realProcess": true,
+            "signal": "SIGTERM",
+            "exit": 0,
+            "exitSignal": null,
+            "stderr": ""
+          }
+        ],
+        "cli_shutdown_trace_parity": true,
+        "fresh_focused": {
+          "cancellationTraceParity": true,
+          "realReconnectRedelivery": true,
+          "realSIGKILLDurableState": true,
+          "handshakeFailureOriginalMessageAndClose": true,
+          "results": [
+            {
+              "name": "focused-cancellation",
+              "command": [
+                "bun",
+                "test",
+                "test/repl-shell.test.ts",
+                "test/repl.test.ts",
+                "--test-name-pattern",
+                "cancel|approval continuation|backend reset"
+              ],
+              "exit": 0,
+              "report": "bx-m38-focused-cancellation.log"
+            },
+            {
+              "name": "focused-websocket",
+              "command": [
+                "bun",
+                "test",
+                "test/repl-serve-ws.e2e.test.ts"
+              ],
+              "exit": 0,
+              "report": "bx-m38-focused-websocket.log"
+            }
+          ]
+        }
+      },
+      "proof": "m38-repl-admission.json"
+    }
+  ],
+  "whole_host_native_diagnostics": 0,
+  "code_inventory": [
+    "typescript/host/remote-session/smoke/package-exports.ts",
+    "typescript/host/remote-session/src/index.ts",
+    "typescript/host/remote-session/src/lib/remote-client-session.ts",
+    "typescript/host/remote-session/test/remote-client-session-failures.test.ts",
+    "typescript/host/remote-session/test/remote-client-session.test.ts",
+    "typescript/host/remote-session/tsup.config.ts",
+    "typescript/host/repl/scripts/ws-peer.ts",
+    "typescript/host/repl/smoke/assert-headless-jsonl.ts",
+    "typescript/host/repl/smoke/package-exports.ts",
+    "typescript/host/repl/src/cli.ts",
+    "typescript/host/repl/src/gemini-cli.ts",
+    "typescript/host/repl/src/index.ts",
+    "typescript/host/repl/src/lib/proof-extension.ts",
+    "typescript/host/repl/src/lib/repl-builtin-tools.ts",
+    "typescript/host/repl/src/lib/repl-config.ts",
+    "typescript/host/repl/src/lib/repl-headless-mode.ts",
+    "typescript/host/repl/src/lib/repl-host.ts",
+    "typescript/host/repl/src/lib/repl-live-output.ts",
+    "typescript/host/repl/src/lib/repl-provider.ts",
+    "typescript/host/repl/src/lib/repl-replay.ts",
+    "typescript/host/repl/src/lib/repl-scenario-matrix.ts",
+    "typescript/host/repl/src/lib/repl-scenarios-support.ts",
+    "typescript/host/repl/src/lib/repl-scenarios.ts",
+    "typescript/host/repl/src/lib/repl-serve-ws.ts",
+    "typescript/host/repl/src/lib/repl-shell.ts",
+    "typescript/host/repl/src/lib/repl-transcript.ts",
+    "typescript/host/repl/src/lib/repl-types.ts",
+    "typescript/host/repl/test/repl-scenarios.test.ts",
+    "typescript/host/repl/test/repl-serve-ws.e2e.test.ts",
+    "typescript/host/repl/test/repl-shell.test.ts",
+    "typescript/host/repl/test/repl-test-helpers.ts",
+    "typescript/host/repl/test/repl-transcript-io.test.ts",
+    "typescript/host/repl/test/repl-transcript-redaction.test.ts",
+    "typescript/host/repl/test/repl-transcript-scope.test.ts",
+    "typescript/host/repl/test/repl.aimock-journal-body.test.ts",
+    "typescript/host/repl/test/repl.aimock-matrix.test.ts",
+    "typescript/host/repl/test/repl.aimock-openai.test.ts",
+    "typescript/host/repl/test/repl.test.ts",
+    "typescript/host/repl/tsup.config.ts",
+    "typescript/host/session-client/smoke/package-exports.ts",
+    "typescript/host/session-client/src/index.ts",
+    "typescript/host/session-client/src/lib/session-client.ts",
+    "typescript/host/session-client/src/lib/session-protocol-types.ts",
+    "typescript/host/session-client/src/lib/ws-wire.ts",
+    "typescript/host/session-client/test/session-client-boundaries.test.ts",
+    "typescript/host/session-client/test/session-client-clock.ts",
+    "typescript/host/session-client/test/session-client-fixtures.ts",
+    "typescript/host/session-client/test/session-client.test.ts",
+    "typescript/host/session-client/tsup.config.ts",
+    "typescript/host/session/smoke/package-exports.ts",
+    "typescript/host/session/src/index.ts",
+    "typescript/host/session/src/lib/duplex-session-binding.ts",
+    "typescript/host/session/src/lib/session-frame-shapes.ts",
+    "typescript/host/session/test/duplex-session-binding.test.ts",
+    "typescript/host/session/test/shared-schema-mirror.test.ts",
+    "typescript/host/session/tsup.config.ts"
+  ],
+  "json_inventory": [
+    "typescript/host/remote-session/package.json",
+    "typescript/host/remote-session/project.json",
+    "typescript/host/remote-session/tsconfig.dts.json",
+    "typescript/host/remote-session/tsconfig.json",
+    "typescript/host/remote-session/tsconfig.lib.json",
+    "typescript/host/remote-session/tsconfig.tsup.json",
+    "typescript/host/remote-session/tsconfig.typecheck.json",
+    "typescript/host/repl/package.json",
+    "typescript/host/repl/project.json",
+    "typescript/host/repl/tsconfig.dts.json",
+    "typescript/host/repl/tsconfig.json",
+    "typescript/host/repl/tsconfig.lib.json",
+    "typescript/host/repl/tsconfig.tsup.json",
+    "typescript/host/repl/tsconfig.typecheck.json",
+    "typescript/host/session-client/package.json",
+    "typescript/host/session-client/project.json",
+    "typescript/host/session-client/tsconfig.dts.json",
+    "typescript/host/session-client/tsconfig.json",
+    "typescript/host/session-client/tsconfig.lib.json",
+    "typescript/host/session-client/tsconfig.tsup.json",
+    "typescript/host/session-client/tsconfig.typecheck.json",
+    "typescript/host/session/package.json",
+    "typescript/host/session/project.json",
+    "typescript/host/session/tsconfig.dts.json",
+    "typescript/host/session/tsconfig.json",
+    "typescript/host/session/tsconfig.lib.json",
+    "typescript/host/session/tsconfig.tsup.json",
+    "typescript/host/session/tsconfig.typecheck.json"
+  ],
+  "original_directives": 12,
+  "legacy_directives_remaining": 0,
+  "new_legacy_directives": 0,
+  "early_deletions": [],
+  "native_legacy_counterparts": [],
+  "historical_equivalent_issue_fixed": {
+    "identity": "typescript/host/remote-session/src/lib/remote-client-session.ts::lint/suspicious/useAwait::1",
+    "rule": "eslint/require-await",
+    "milestone": "M28",
+    "proof": "m28-remote-session.json"
+  },
+  "metadata": {
+    "required_actual_AST_associations": 144,
+    "native_firing_tags": 112,
+    "native_firing_files": 9,
+    "additional_inline_associations": 32,
+    "AST_tagged_files": 10,
+    "unchanged": true,
+    "active_exception_regions": 38,
+    "exception_rule": "jsdoc/check-tag-names",
+    "authority": "ADR-0056 and approved metadata ruling",
+    "all_removed_and_unused_controls_pass": true,
+    "optional_packageDocumentation_removed": 8,
+    "prose_retained": true
+  },
+  "preset": {
+    "historical_engine_rules": 474,
+    "type_aware": 55,
+    "non_type_aware": 419,
+    "counts_are_observations_not_quotas": true,
+    "all_effective_fields_equal": true,
+    "backend_errors": 0,
+    "no_repository_policy_override": true
+  },
+  "coverage": {
+    "bx_manifest": [],
+    "other_manifests_unchanged": true,
+    "code_and_JSON_selection_independent_of_formatter_ignores": true,
+    "source_typecheck_targets_unchanged": true
+  },
+  "gates": [
+    {
+      "gate": "typecheck",
+      "exit": 0,
+      "log": "bx-m38-lead-typecheck.log",
+      "sha256": "3d36a1a81e6b5029ab71460165d3fac2f45ac00f69e6aa8fdbfd475245e97160",
+      "bytes": 6342
+    },
+    {
+      "gate": "conformance",
+      "exit": 0,
+      "log": "bx-m38-lead-conformance.log",
+      "sha256": "bb498814b0dd39be72ac8b7d9dcc7bd5e29683e4aa4d38a8d67178b4f510549f",
+      "bytes": 23268
+    },
+    {
+      "gate": "full-lint",
+      "exit": 0,
+      "log": "bx-m38-lead-full-lint.log",
+      "sha256": "80e868c679ebcc9662be85c5771c0f6f3f342be3a30eb5dd29f2e49041a4727c",
+      "bytes": 6705
+    },
+    {
+      "gate": "format-check",
+      "exit": 0,
+      "log": "bx-m38-lead-format-check.log",
+      "sha256": "9906d1ded8fa33a532bd2a833fccdd222f1f07b17015ce3cec74dba9d958a800",
+      "bytes": 145
+    },
+    {
+      "gate": "check",
+      "exit": 0,
+      "log": "bx-m38-lead-check.log",
+      "sha256": "c5377b1a7c819a438e13af0521aee83f8872389668ba873b0ca785421465b8dd",
+      "bytes": 59427
+    },
+    {
+      "gate": "verify",
+      "exit": 0,
+      "log": "bx-m38-lead-verify.log",
+      "sha256": "e6fbc24f348fd993e70ff606a3c1002d82b9fdac92d7c616bfdd51d766cb8efc",
+      "bytes": 309615
+    },
+    {
+      "gate": "framework-conformance",
+      "exit": 0,
+      "log": "bx-m38-lead-framework-conformance.log",
+      "sha256": "09770ed70c8ac37b8cace8845ebba6768554a1942e637934c1bb5e70740fbc5d",
+      "bytes": 2261
+    },
+    {
+      "gate": "repl-scenario",
+      "exit": 0,
+      "log": "bx-m38-lead-repl-scenario.log",
+      "sha256": "d9e8d116e0c564f4ee7cbf9a51e9308da8d6c6efd6007d4a8036b1ca3875a2d5",
+      "bytes": 7979
+    },
+    {
+      "gate": "sqlite-pinned",
+      "exit": 0,
+      "log": "bx-m38-lead-sqlite-pinned.log",
+      "sha256": "5a91560cfcd673a26ae8265233ccc0fa9e87d2b30da983c69b2ba42aa4df582d",
+      "bytes": 5482
+    },
+    {
+      "gate": "postgres",
+      "exit": 0,
+      "log": "bx-m38-lead-postgres.log",
+      "sha256": "2d28e275615210bc0bec455947aede945c83ad10845e9b040f4c074461bcb28e",
+      "bytes": 10186
+    },
+    {
+      "gate": "interop",
+      "exit": 0,
+      "log": "bx-m38-lead-interop.log",
+      "sha256": "cd42c35b81db2f5ffac3d37c15a0e81ea2074fda9b768a3197b919e785e453a5",
+      "bytes": 97838
+    }
+  ],
+  "behavior": {
+    "canonical_host_tests": {
+      "session": {
+        "tests": 34,
+        "assertions": 84
+      },
+      "remote_session": {
+        "tests": 18,
+        "assertions": 92
+      },
+      "session_client": {
+        "tests": 33,
+        "assertions": 130
+      },
+      "repl": {
+        "tests": 191,
+        "assertions": 1241
+      }
+    },
+    "real_reconnect_redelivery": true,
+    "real_committed_state_after_SIGKILL": true,
+    "optional_transcript_scope": true,
+    "transcript_bytes_redaction_and_IO_error_parity": true,
+    "all_A11_patches_applied_only_with_atomic_ownership_handoffs": true,
+    "obsolete_playground_prefix_ignored_current_prefix_preserved": true
+  },
+  "environment": {
+    "A10_relocated_from_forced_excluded_cache_ancestor": true,
+    "all_final_retained_proofs_positive_before_handoff": true,
+    "old_zero_file_whole_root_logs_are_environment_diagnostics_only": true,
+    "original_M6_scoped_measurement_also_confirmed_positive": true
+  },
+  "spec_patches": [],
+  "deferred_tickets": [],
+  "live_probe_required": false,
+  "new_dependencies": []
+}
