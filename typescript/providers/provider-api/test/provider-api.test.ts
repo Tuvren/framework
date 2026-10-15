@@ -24,9 +24,8 @@ import Ajv2020 from "ajv/dist/2020.js";
 import {
   assertProviderStreamChunk,
   isProviderStreamChunk,
-  type ProviderStreamChunk,
-  type TuvrenProvider,
 } from "../src/index.ts";
+import type { ProviderStreamChunk, TuvrenProvider } from "../src/index.ts";
 
 const EXPECTED_PROVIDER_ARTIFACT_SCHEMAS = [
   "AssistantMessage",
@@ -109,7 +108,7 @@ describe("provider-api", () => {
           "../../../../spec/conformance/providers/fixtures/provider-fixtures.json",
           import.meta.url
         ),
-        "utf8"
+        "utf-8"
       )
     );
     const negativeUsageResponse = {
@@ -129,12 +128,12 @@ describe("provider-api", () => {
     };
     const emptyStringPromptFields = {
       ...fixture.prompt,
-      messages: [{ role: "system", content: "" }],
       config: {
         model: "",
         provider: "",
         settings: {},
       },
+      messages: [{ role: "system", content: "" }],
       responseFormat: {
         name: "",
         schema: { type: "object" },
@@ -242,7 +241,7 @@ function loadJsonSchemas(directoryUrl: URL): Ajv2020 {
 
   for (const entry of entries) {
     const schemaPath = join(directory, entry);
-    const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
+    const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
     ajv.addSchema(schema);
   }
 
@@ -278,7 +277,7 @@ function expectSchemaRejection(
 }
 
 function readJsonObject(url: URL): Record<string, unknown> {
-  const value: unknown = JSON.parse(readFileSync(url, "utf8"));
+  const value: unknown = JSON.parse(readFileSync(url, "utf-8"));
 
   if (!isRecord(value)) {
     throw new Error(`${url.pathname} must contain a JSON object`);
@@ -290,7 +289,7 @@ function readJsonObject(url: URL): Record<string, unknown> {
 function readOpenApiSchemas(
   document: Record<string, unknown>
 ): Record<string, unknown> {
-  const components = document.components;
+  const { components } = document;
 
   if (!(isRecord(components) && isRecord(components.schemas))) {
     throw new Error("OpenAPI artifact must contain components.schemas");
