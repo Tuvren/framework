@@ -111,7 +111,7 @@ tickets:
       evidence: "Given a leased run that staged an assistant message with three tool calls, one of them nonRetryable, and the results of two of the retryable ones before the process died, When a fresh runtime recovers the expired run on the same branch with the same signal, Then the runner is not invoked for that iteration, the two completed calls are not dispatched again, the nonRetryable call is dispatched once with its original callId, the ToolExecutionContext idempotencyKey it receives equals deriveIdempotencyKey(turnId, callId) for the original attempt, and readBranchMessages returns, in order, the original assistant message, the two already-committed tool results, and then the newly dispatched result, with no second assistant message for that iteration. Given the same crash after all results were staged, Then recovery dispatches nothing and the loop proceeds to the next model call. The reference-host-headless-sqlite recipe still logs 'headless sqlite scenario passed', proving uninterrupted turns are unaffected."
     flows: [flow-crash-mid-checkpoint-recovery, flow-preemption-idempotent-side-effect]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CR005
     title: Certify interrupted-batch recovery and amend the recovery protocol
     type: Feature

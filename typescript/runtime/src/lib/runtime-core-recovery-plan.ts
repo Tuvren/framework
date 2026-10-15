@@ -15,7 +15,11 @@
  */
 
 import { TuvrenRecoveryError } from "@tuvren/core";
-import type { ToolCallPart, TuvrenMessage } from "@tuvren/core/messages";
+import type {
+  ToolCallPart,
+  ToolResultPart,
+  TuvrenMessage,
+} from "@tuvren/core/messages";
 import type {
   RecoveryState,
   RuntimeKernel,
@@ -44,6 +48,8 @@ export interface InterruptedIterationRecoveryPlan {
   assistantMessage?: Extract<TuvrenMessage, { role: "assistant" }>;
   /** Original call IDs that already have a durable decoded tool result. */
   completedCallIds: string[];
+  /** Durable results already committed for original calls, in call order. */
+  completedToolResults: ToolResultPart[];
   /** Whether to re-infer, resume missing calls, or continue past a full batch. */
   disposition: InterruptedIterationRecoveryDisposition;
   /** Original tool-call parts without a matching durable result. */
@@ -84,6 +90,7 @@ export async function deriveInterruptedIterationRecoveryPlan(
   if (assistantMessage === undefined) {
     return {
       completedCallIds: [],
+      completedToolResults: [],
       disposition: "re_infer",
       missingToolCalls: [],
       originalToolCalls: [],
@@ -98,6 +105,7 @@ export async function deriveInterruptedIterationRecoveryPlan(
   );
   const completedCallIds: string[] = [];
   const completedCallIdSet = new Set<string>();
+  const completedResultsByCallId = new Map<string, ToolResultPart>();
 
   for (const message of interruptedMessages) {
     if (message.role !== "tool") {
@@ -111,6 +119,7 @@ export async function deriveInterruptedIterationRecoveryPlan(
       ) {
         completedCallIdSet.add(part.callId);
         completedCallIds.push(part.callId);
+        completedResultsByCallId.set(part.callId, part);
       }
     }
   }
@@ -118,10 +127,15 @@ export async function deriveInterruptedIterationRecoveryPlan(
   const missingToolCalls = originalToolCalls.filter(
     (toolCall) => !completedCallIdSet.has(toolCall.callId)
   );
+  const completedToolResults = originalToolCalls.flatMap((toolCall) => {
+    const result = completedResultsByCallId.get(toolCall.callId);
+    return result === undefined ? [] : [result];
+  });
 
   return {
     assistantMessage,
     completedCallIds,
+    completedToolResults,
     disposition:
       missingToolCalls.length === 0
         ? "completed_tool_batch"

@@ -209,6 +209,11 @@ export function createExecutionLoopState(
     carriedStateUpdates: [...(resumedPauseContext?.carriedStateUpdates ?? [])],
     clientEndpointBoundary,
     enteredIterationLoop: false,
+    ...(recoveredExecution?.interruptedIterationPlan === undefined
+      ? {}
+      : {
+          interruptedIterationPlan: recoveredExecution.interruptedIterationPlan,
+        }),
   };
 }
 

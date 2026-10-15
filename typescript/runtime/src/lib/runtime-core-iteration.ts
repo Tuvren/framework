@@ -41,6 +41,7 @@ import { observationForClass } from "./capability-attribution.js";
 import { updateContextManifest } from "./context-manifest.js";
 import type { ExtensionStateUpdate } from "./extension-runtime.js";
 import { validateRunnerAssistantEvents } from "./runtime-core-assistant-validation.js";
+import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-plan.js";
 import {
   createCancelledResolution,
   hasAssistantOutputMessages,
@@ -124,6 +125,7 @@ export interface RuntimeCoreIterationHost {
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
+      interruptedIterationPlan?: InterruptedIterationRecoveryPlan;
     },
     iterationCount: number,
     runId: string,
@@ -152,6 +154,7 @@ export interface RuntimeCoreIterationHost {
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
+      interruptedIterationPlan?: InterruptedIterationRecoveryPlan;
     };
     requestedToolCalls: ToolCallPart[];
     resolution: RuntimeResolution;
@@ -647,10 +650,25 @@ export async function executeIterationPhase(
       activeToolRegistry: ToolRegistry;
       carriedStateUpdates: ExtensionStateUpdate[];
       enteredIterationLoop: boolean;
+      interruptedIterationPlan?: InterruptedIterationRecoveryPlan;
     };
     schemaId: string;
   }
 ): Promise<IterationPhaseResult> {
+  const interruptedIterationPlan = input.loopState.interruptedIterationPlan;
+
+  if (interruptedIterationPlan !== undefined) {
+    input.loopState.interruptedIterationPlan = undefined;
+
+    if (interruptedIterationPlan.disposition !== "re_infer") {
+      return await executeRecoveredIterationPhase(
+        host,
+        input,
+        interruptedIterationPlan
+      );
+    }
+  }
+
   const runner = input.handle.getOrCreateRunner(
     input.loopState.activeRunnerId,
     (runnerId) => host.materializeRunner(runnerId)
@@ -709,7 +727,7 @@ export async function executeIterationPhase(
     };
   }
 
-  let resolution = runnerResult.resolution;
+  const resolution = runnerResult.resolution;
   const runnerMessages = [...(runnerResult.messages ?? [])];
   const cancellationResolution = createCancelledResolution(input.handle);
   const assistantEventValidationError = validateRunnerAssistantEvents(
@@ -794,19 +812,98 @@ export async function executeIterationPhase(
   );
   const toolResults: ToolResultPart[] = [];
 
-  resolution = cancellationResolution ?? resolution;
+  return await completePreparedIteration(host, input, iterationRunId, {
+    partial,
+    requestedToolCalls,
+    resolution: cancellationResolution ?? resolution,
+    runnerResponse,
+    stagedMessageHashes,
+    stagedMessages,
+    toolCallsToExecute: requestedToolCalls,
+    toolExecutionMode,
+    toolResults,
+  });
+}
+
+interface PreparedIteration {
+  partial: boolean;
+  requestedToolCalls: ToolCallPart[];
+  resolution: RuntimeResolution;
+  runnerResponse: TuvrenModelResponse;
+  stagedMessageHashes: HashString[];
+  stagedMessages: TuvrenMessage[];
+  toolCallsToExecute: ToolCallPart[];
+  toolExecutionMode: "parallel" | "sequential";
+  toolResults: ToolResultPart[];
+}
+
+async function executeRecoveredIterationPhase(
+  host: RuntimeCoreIterationHost,
+  input: Parameters<typeof executeIterationPhase>[1],
+  recoveryPlan: InterruptedIterationRecoveryPlan
+): Promise<IterationPhaseResult> {
+  const assistantMessage = recoveryPlan.assistantMessage;
+
+  if (assistantMessage === undefined) {
+    throw new TuvrenRuntimeError(
+      "recovered tool-batch execution requires the original assistant message",
+      { code: "runtime_recovery_interrupted_iteration_unreadable" }
+    );
+  }
+
+  const iterationRunId = host.createId();
+  await host.createTrackedRun(
+    input.handle,
+    iterationRunId,
+    input.handle.turnId,
+    input.handle.request.branchId,
+    input.schemaId,
+    input.headState.branchHeadHash,
+    [{ deterministic: false, id: "iterate", sideEffects: true }]
+  );
+  await host.beginIterationStep(iterationRunId, "iterate");
+
+  const resolution: RuntimeResolution = { type: "continue_iteration" };
+  return await completePreparedIteration(host, input, iterationRunId, {
+    partial: false,
+    requestedToolCalls: recoveryPlan.originalToolCalls,
+    toolCallsToExecute:
+      recoveryPlan.disposition === "resume_tool_batch"
+        ? recoveryPlan.missingToolCalls
+        : [],
+    resolution,
+    runnerResponse: synthesizeResponse(
+      [assistantMessage],
+      resolution,
+      [],
+      undefined
+    ),
+    stagedMessageHashes: [],
+    stagedMessages: [],
+    toolExecutionMode: "parallel",
+    toolResults: [...recoveryPlan.completedToolResults],
+  });
+}
+
+async function completePreparedIteration(
+  host: RuntimeCoreIterationHost,
+  input: Parameters<typeof executeIterationPhase>[1],
+  iterationRunId: string,
+  prepared: PreparedIteration
+): Promise<IterationPhaseResult> {
+  let resolution = prepared.resolution;
   const toolBatchResult = await host.applyRequestedToolBatchIfNeeded({
     handle: input.handle,
     headState: input.headState,
     iterationCount: input.iterationCount,
     loopState: input.loopState,
-    requestedToolCalls,
+    requestedToolCalls: prepared.toolCallsToExecute,
     resolution,
     runId: iterationRunId,
-    stagedMessageHashes,
-    stagedMessages,
-    toolExecutionMode,
-    toolResults,
+    stagedMessageHashes: prepared.stagedMessageHashes,
+    stagedMessages: prepared.stagedMessages,
+    toolExecutionMode: prepared.toolExecutionMode,
+    toolResults: prepared.toolResults,
   });
 
   if ("type" in toolBatchResult) {
@@ -822,7 +919,7 @@ export async function executeIterationPhase(
 
   const manifest = updateContextManifest(
     input.headState.manifest,
-    stagedMessages,
+    prepared.stagedMessages,
     [...input.loopState.carriedStateUpdates],
     []
   );
@@ -836,7 +933,7 @@ export async function executeIterationPhase(
     iterationRunId,
     resolution,
     manifest,
-    stagedMessageHashes
+    prepared.stagedMessageHashes
   );
   const checkpointedPause = resolution.type === "pause";
   input.handle.updateStatus({
@@ -849,10 +946,10 @@ export async function executeIterationPhase(
     input.iterationCount,
     iterationRunId,
     resolution,
-    runnerResponse,
-    toolResults,
+    prepared.runnerResponse,
+    prepared.toolResults,
     input.headState.messages,
-    stagedMessages,
+    prepared.stagedMessages,
     manifest
   );
   resolution = await host.reconcileCheckpointedPauseResolution(
@@ -867,7 +964,7 @@ export async function executeIterationPhase(
     input.handle,
     iterationRunId,
     input.headState.branchHeadHash,
-    requestedToolCalls.length,
+    prepared.requestedToolCalls.length,
     resolution
   );
 
@@ -878,14 +975,14 @@ export async function executeIterationPhase(
   return {
     kind: "executed",
     result: {
-      runnerResponse,
+      runnerResponse: prepared.runnerResponse,
       iterationRunId,
-      partial,
-      requestedToolCalls,
+      partial: prepared.partial,
+      requestedToolCalls: prepared.requestedToolCalls,
       resolution,
       stableHeadTurnNodeHash: input.headState.branchHeadHash,
-      toolExecutionMode,
-      toolResults,
+      toolExecutionMode: prepared.toolExecutionMode,
+      toolResults: prepared.toolResults,
       turnNodeHash,
     },
   };
