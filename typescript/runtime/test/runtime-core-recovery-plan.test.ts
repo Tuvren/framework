@@ -40,7 +40,10 @@ import {
   deriveInterruptedIterationRecoveryPlan,
   type InterruptedIterationRecoveryPlan,
 } from "../src/lib/runtime-core-recovery-plan.ts";
-import { createFakeKernelHarness } from "./fake-kernel.ts";
+import {
+  createFakeKernelHarness,
+  createFakeRunLivenessKernelHarness,
+} from "./fake-kernel.ts";
 import {
   assistantToolCalls,
   toOptionalRecord,
@@ -124,6 +127,120 @@ describe("interrupted iteration recovery plan", () => {
       stepSequence: iterateSteps(),
       uncommittedStagedResults: [],
     });
+
+    expectPlan(plan, "re_infer", [], []);
+    expect(plan.assistantMessage).toBeUndefined();
+  });
+
+  test("re-infers after an empty expired run even when the prior checkpoint completed a tool batch", async () => {
+    const harness = createFakeKernelHarness();
+    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+    const thread = await livenessHarness.kernel.thread.create(
+      "thread_empty_expired_iteration",
+      "tuvren.agent.v1",
+      "branch_empty_expired_iteration"
+    );
+    await livenessHarness.kernel.turn.create(
+      TURN_ID,
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
+    await livenessHarness.kernel.run.create(
+      "run_prior_completed_tool_batch",
+      TURN_ID,
+      thread.branchId,
+      "tuvren.agent.v1",
+      thread.rootTurnNodeHash,
+      iterateSteps()
+    );
+
+    for (const [index, message] of [
+      TOOL_CALLS,
+      toolResult("call_one", 1),
+      toolResult("call_two", 2),
+      toolResult("call_three", 3),
+    ].entries()) {
+      await livenessHarness.kernel.staging.stage(
+        "run_prior_completed_tool_batch",
+        encodeDeterministicKernelRecord(message as unknown as KernelRecord),
+        `prior_batch_${index.toString()}`,
+        "message",
+        "completed"
+      );
+    }
+
+    const completedBatch = await livenessHarness.kernel.run.completeStep(
+      "run_prior_completed_tool_batch",
+      "iterate"
+    );
+    await livenessHarness.kernel.run.complete(
+      "run_prior_completed_tool_batch",
+      "completed"
+    );
+
+    if (completedBatch.turnNodeHash === undefined) {
+      throw new Error("expected completed tool batch checkpoint");
+    }
+
+    await livenessHarness.kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-that-crashed",
+      leaseExpiresAtMs: 20,
+      runId: STALE_RUN_ID,
+      schemaId: "tuvren.agent.v1",
+      startTurnNodeHash: completedBatch.turnNodeHash,
+      steps: iterateSteps(),
+      turnId: TURN_ID,
+    });
+    await livenessHarness.kernel.run.beginStep(STALE_RUN_ID, "iterate");
+
+    const recoveryState =
+      await livenessHarness.kernel.runLiveness.preemptExpired(
+        STALE_RUN_ID,
+        "replacement-worker",
+        25,
+        "stale_running_recovery"
+      );
+    const branch = await livenessHarness.kernel.branch.get(thread.branchId);
+
+    if (branch === null) {
+      throw new Error("expected recovery fixture branch");
+    }
+
+    const turnNode = await livenessHarness.kernel.node.get(
+      branch.headTurnNodeHash
+    );
+
+    if (turnNode === null) {
+      throw new Error("expected recovery fixture turn node");
+    }
+
+    expect(branch.headTurnNodeHash).not.toBe(completedBatch.turnNodeHash);
+    expect(recoveryState.consumedStagedResults).toEqual([]);
+
+    const manifest = await harness.readBranchManifest(thread.branchId);
+    const messageHashes = Array.isArray(manifest.messages)
+      ? manifest.messages
+      : [];
+    const fixture: Fixture = {
+      codec: IDENTITY_PAYLOAD_CODEC,
+      kernel: livenessHarness.kernel,
+      async loadHeadState() {
+        return {
+          branchHeadHash: branch.headTurnNodeHash,
+          manifest: createEmptyContextManifest(),
+          messageHashes,
+          messages: (await harness.readBranchMessages(thread.branchId)).filter(
+            isMessage
+          ),
+          turnNode,
+        };
+      },
+    };
+    const headState = await fixture.loadHeadState();
+    const plan = await derivePlan(fixture, headState, recoveryState);
 
     expectPlan(plan, "re_infer", [], []);
     expect(plan.assistantMessage).toBeUndefined();

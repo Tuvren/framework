@@ -87,7 +87,8 @@ interface FakeKernelState {
 export interface FakeKernelHarness {
   completeRunAsPreempted(
     runId: string,
-    reason: string
+    reason: string,
+    eventHash: HashString
   ): ReturnType<RuntimeKernel["run"]["complete"]>;
   kernel: RuntimeKernel;
   readBranchManifest(branchId: string): Promise<TurnTreeManifest>;
@@ -593,11 +594,11 @@ export function createFakeKernelHarness(): FakeKernelHarness {
   };
 
   return {
-    async completeRunAsPreempted(runId, reason) {
+    async completeRunAsPreempted(runId, reason, eventHash) {
       const run = requireRun(state, runId);
       run.preemptionReason = reason;
       state.runs.set(runId, run);
-      return await kernel.run.complete(runId, "failed");
+      return await kernel.run.complete(runId, "failed", eventHash);
     },
     kernel,
     async readBranchManifest(branchId) {
@@ -743,7 +744,7 @@ export function createFakeRunLivenessKernelHarness(
             (run) => run.leaseExpiresAtMs <= nowMs
           );
         },
-        async preemptExpired(runId, _preemptingOwnerId, _nowMs, reason) {
+        async preemptExpired(runId, preemptingOwnerId, _nowMs, reason) {
           const leasedRun = leasedRuns.get(runId);
 
           if (leasedRun === undefined) {
@@ -751,9 +752,18 @@ export function createFakeRunLivenessKernelHarness(
           }
 
           preemptCalls += 1;
+          const eventHash = await baseKernel.store.put(
+            encodeDeterministicKernelRecord({
+              preemptingOwnerId,
+              reason,
+              runId,
+              type: "stale_running_preempted",
+            })
+          );
           const completion = await harness.completeRunAsPreempted(
             runId,
-            reason
+            reason,
+            eventHash
           );
           const recoveredBranch = await baseKernel.branch.get(
             leasedRun.branchId
