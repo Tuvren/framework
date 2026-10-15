@@ -169,7 +169,7 @@ describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
       expect(await tx.objects.has(record.hash)).toBe(true);
       const stored = await tx.objects.get(record.hash);
       expect(stored).not.toBeNull();
-      expect(Array.from(stored?.bytes ?? [])).toEqual([1, 2, 3]);
+      expect([...(stored?.bytes ?? [])]).toEqual([1, 2, 3]);
     });
   });
 
@@ -181,7 +181,7 @@ describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
     const threadId = await seedThread(scopeA, "thread_a", 100);
 
     await scopeB.transact(async (tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       expect(list).toBeDefined();
       const listed = await list?.({});
       expect(listed?.threads ?? []).toEqual([]);
@@ -189,7 +189,7 @@ describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
     });
 
     await scopeA.transact(async (tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       expect(list).toBeDefined();
       const listed = await list?.({});
       expect((listed?.threads ?? []).map((t) => t.threadId)).toEqual([
@@ -247,8 +247,7 @@ describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
       order.push("first:end");
     });
     const secondTransaction = second.transact(() => {
-      order.push("second:start");
-      order.push("second:end");
+      order.push("second:start", "second:end");
       return Promise.resolve();
     });
 
@@ -275,8 +274,7 @@ describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
       order.push("a:end");
     });
     const bTransaction = scopeB.transact(() => {
-      order.push("b:start");
-      order.push("b:end");
+      order.push("b:start", "b:end");
       return Promise.resolve();
     });
 

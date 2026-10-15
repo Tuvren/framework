@@ -21,11 +21,13 @@ import {
   assertTurnTreeSchema,
   encodeDeterministicKernelRecord,
   hashKernelRecord,
-  type StoredOrderedPathChunk,
-  type StoredTurn,
-  type StoredTurnTree,
-  type StoredTurnTreePath,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  StoredOrderedPathChunk,
+  StoredTurn,
+  StoredTurnTree,
+  StoredTurnTreePath,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 
 import { decodeDetachedKernelRecord } from "./memory-backend-buffer-isolation.js";
@@ -90,13 +92,13 @@ export function listTurnsByThread(
 export function cloneState(state: BackendState): BackendState {
   return {
     branches: new Map(state.branches),
+    objects: new Map(state.objects),
     observeAnnotations: new Map(
       Array.from(state.observeAnnotations, ([runId, records]) => [
         runId,
         records.map(cloneStoredObserveAnnotation),
       ])
     ),
-    objects: new Map(state.objects),
     orderedPathChunks: new Map(state.orderedPathChunks),
     runs: new Map(state.runs),
     schemas: new Map(state.schemas),

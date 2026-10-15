@@ -16,12 +16,8 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import {
-  assertScope,
-  DEFAULT_SCOPE,
-  type EpochMs,
-  type Scope,
-} from "@tuvren/core";
+import { assertScope, DEFAULT_SCOPE } from "@tuvren/core";
+import type { EpochMs, Scope } from "@tuvren/core";
 import {
   assertStoredBranch,
   assertStoredObject,
@@ -39,17 +35,19 @@ import {
   assertStoredTurnTree,
   assertStoredTurnTreeIdentity,
   assertStoredTurnTreePath,
-  type BackendCapability,
-  type RuntimeBackend as KrakenBackend,
-  type RuntimeBackendTx as KrakenBackendTx,
-  type ListThreadsCursorPayload,
-  type ReclamationOptions,
-  type ReclamationSummary,
-  type StoredBranch,
-  type StoredRun,
-  type StoredStagedResult,
-  type StoredThread,
-  type StoredTurnTreePath,
+} from "@tuvren/kernel-protocol";
+import type {
+  BackendCapability,
+  RuntimeBackend as KrakenBackend,
+  RuntimeBackendTx as KrakenBackendTx,
+  ListThreadsCursorPayload,
+  ReclamationOptions,
+  ReclamationSummary,
+  StoredBranch,
+  StoredRun,
+  StoredStagedResult,
+  StoredThread,
+  StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 
 import { isolateRecordBuffers } from "./memory-backend-buffer-isolation.js";
@@ -105,10 +103,8 @@ import {
   assertMonotonicUpdatedAtMs,
   assertRunUpdateIsLegal,
 } from "./memory-backend-run-logic.js";
-import {
-  createMemoryScopeStore,
-  type MemoryScopeStore,
-} from "./memory-backend-scope-store.js";
+import { createMemoryScopeStore } from "./memory-backend-scope-store.js";
+import type { MemoryScopeStore } from "./memory-backend-scope-store.js";
 import { validateCommittedState } from "./memory-backend-state.js";
 import {
   cloneState,
@@ -521,6 +517,33 @@ function createRepositories(
       },
     },
     now,
+    objects: {
+      get(hash) {
+        assertTransactionActive();
+        const record = state.objects.get(hash);
+        return Promise.resolve(
+          record === undefined ? null : cloneStoredObject(record)
+        );
+      },
+      has(hash) {
+        assertTransactionActive();
+        return Promise.resolve(state.objects.has(hash));
+      },
+      async put(record) {
+        assertTransactionActive();
+        const candidate = isolateRecordBuffers(record);
+        assertStoredObject(candidate, "record");
+        await assertStoredObjectIdentity(candidate, "record");
+        putImmutableRecord(
+          state.objects,
+          candidate.hash,
+          candidate,
+          cloneStoredObject,
+          areStoredObjectsEqual,
+          "stored object"
+        );
+      },
+    },
     observeAnnotations: {
       listByRun(runId) {
         assertTransactionActive();
@@ -551,33 +574,6 @@ function createRepositories(
         records.push(cloneStoredObserveAnnotation(candidate));
         state.observeAnnotations.set(candidate.runId, records);
         return Promise.resolve();
-      },
-    },
-    objects: {
-      get(hash) {
-        assertTransactionActive();
-        const record = state.objects.get(hash);
-        return Promise.resolve(
-          record === undefined ? null : cloneStoredObject(record)
-        );
-      },
-      has(hash) {
-        assertTransactionActive();
-        return Promise.resolve(state.objects.has(hash));
-      },
-      async put(record) {
-        assertTransactionActive();
-        const candidate = isolateRecordBuffers(record);
-        assertStoredObject(candidate, "record");
-        await assertStoredObjectIdentity(candidate, "record");
-        putImmutableRecord(
-          state.objects,
-          candidate.hash,
-          candidate,
-          cloneStoredObject,
-          areStoredObjectsEqual,
-          "stored object"
-        );
       },
     },
     orderedPathChunks: {
@@ -824,36 +820,6 @@ function createRepositories(
           record === undefined ? null : cloneStoredThread(record)
         );
       },
-      put(record) {
-        assertTransactionActive();
-        assertStoredThread(record, "record");
-        ensureSchemaRecordExists(state, record.schemaId, "record.schemaId");
-        const rootTurnNode = ensureTurnNodeExists(
-          state,
-          record.rootTurnNodeHash,
-          "record.rootTurnNodeHash"
-        );
-        if (rootTurnNode.previousTurnNodeHash !== null) {
-          throw persistenceError(
-            "stored thread roots must be genesis turn nodes",
-            "memory_backend_thread_root_not_genesis",
-            {
-              previousTurnNodeHash: rootTurnNode.previousTurnNodeHash,
-              rootTurnNodeHash: rootTurnNode.hash,
-              threadId: record.threadId,
-            }
-          );
-        }
-        putImmutableRecord(
-          state.threads,
-          record.threadId,
-          record,
-          cloneStoredThread,
-          areStoredThreadsEqual,
-          "stored thread"
-        );
-        return Promise.resolve();
-      },
       list(options) {
         assertTransactionActive();
         let threads: StoredThread[] = Array.from(
@@ -901,6 +867,36 @@ function createRepositories(
         }
 
         return Promise.resolve({ threads, nextCursor });
+      },
+      put(record) {
+        assertTransactionActive();
+        assertStoredThread(record, "record");
+        ensureSchemaRecordExists(state, record.schemaId, "record.schemaId");
+        const rootTurnNode = ensureTurnNodeExists(
+          state,
+          record.rootTurnNodeHash,
+          "record.rootTurnNodeHash"
+        );
+        if (rootTurnNode.previousTurnNodeHash !== null) {
+          throw persistenceError(
+            "stored thread roots must be genesis turn nodes",
+            "memory_backend_thread_root_not_genesis",
+            {
+              previousTurnNodeHash: rootTurnNode.previousTurnNodeHash,
+              rootTurnNodeHash: rootTurnNode.hash,
+              threadId: record.threadId,
+            }
+          );
+        }
+        putImmutableRecord(
+          state.threads,
+          record.threadId,
+          record,
+          cloneStoredThread,
+          areStoredThreadsEqual,
+          "stored thread"
+        );
+        return Promise.resolve();
       },
     },
     turnNodes: {

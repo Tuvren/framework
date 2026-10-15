@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  createTurnNodeLineageIndex,
-  type TurnNodeLineageIndex,
-} from "@tuvren/backend-shared";
+import { createTurnNodeLineageIndex } from "@tuvren/backend-shared";
+import type { TurnNodeLineageIndex } from "@tuvren/backend-shared";
 
 import {
   assertActiveRunHeadAlignment,
@@ -49,8 +47,8 @@ import type { BackendState } from "./memory-backend-types.js";
 export function createEmptyState(): BackendState {
   return {
     branches: new Map(),
-    observeAnnotations: new Map(),
     objects: new Map(),
+    observeAnnotations: new Map(),
     orderedPathChunks: new Map(),
     runs: new Map(),
     schemas: new Map(),
@@ -224,8 +222,8 @@ function validateBranchInvariants(
         "new archive branches must preserve the pre-rollback source branch head",
         "memory_backend_branch_archive_head_mismatch",
         {
-          archivedFromBranchId: branch.archivedFromBranchId,
           archiveHeadTurnNodeHash: branch.headTurnNodeHash,
+          archivedFromBranchId: branch.archivedFromBranchId,
           sourceHeadTurnNodeHash:
             sourceBranchBeforeTransaction.headTurnNodeHash,
         }

@@ -1,0 +1,69 @@
+{
+  "milestone": "M2",
+  "ticket": "KRT-BR001",
+  "cohort": "typescript/kernel/backends/memory",
+  "baseline_commit": "d126c7bef61ec80728f02dc9a71eceb030600413",
+  "tool": {
+    "name": "oxlint",
+    "version": "1.86.0",
+    "safe_fix_command": "bunx --bun oxlint --fix typescript/kernel/backends/memory"
+  },
+  "diagnostics": {
+    "before": 243,
+    "after": 143,
+    "reduction": 100
+  },
+  "changed_files": [
+    "typescript/kernel/backends/memory/src/lib/memory-backend-lineage.ts",
+    "typescript/kernel/backends/memory/src/lib/memory-backend-state.ts",
+    "typescript/kernel/backends/memory/src/lib/memory-backend-turn-tree.ts",
+    "typescript/kernel/backends/memory/src/lib/memory-backend.ts",
+    "typescript/kernel/backends/memory/test/backend-memory.chunked-paths.test.ts",
+    "typescript/kernel/backends/memory/test/backend-memory.rollback.test.ts",
+    "typescript/kernel/backends/memory/test/backend-memory.run-lineage.test.ts",
+    "typescript/kernel/backends/memory/test/backend-memory.run-status.test.ts",
+    "typescript/kernel/backends/memory/test/backend-memory.scope-isolation.test.ts",
+    "typescript/kernel/backends/memory/test/backend-memory.test.ts",
+    "typescript/kernel/backends/memory/test/backend-memory.turn-parenting.test.ts",
+    "typescript/kernel/backends/memory/test/buffer-ownership.test.ts",
+    "typescript/kernel/backends/memory/tsup.config.ts"
+  ],
+  "verification": [
+    {
+      "command": "bun run nx run backend-memory:typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "bun run nx run backend-memory:test",
+      "result": "pass",
+      "tests": 82,
+      "assertions": 275
+    },
+    {
+      "command": "bun run nx run backend-memory:lint",
+      "result": "pass",
+      "retained_biome_files": 30
+    },
+    {
+      "command": "bun run typecheck",
+      "result": "pass",
+      "projects": 33,
+      "prerequisites": 1
+    },
+    {
+      "command": "bunx --bun oxfmt --check typescript/kernel/backends/memory",
+      "result": "pass"
+    },
+    {
+      "command": "bun run changeset:check --base=master",
+      "result": "pass"
+    }
+  ],
+  "notes": [
+    "Only Oxlint safe fixes were used; suggestion and dangerous fix modes were not used.",
+    "The retained Biome target and its one public-entrypoint directive remain active and clean.",
+    "The Error-to-TypeError rewrite is confined to an unreachable test-fixture type guard and does not alter backend behavior.",
+    "The empty async callback fix uses Promise.resolve() to preserve fulfilled-undefined behavior under retained Biome.",
+    "No public export, signature, collection semantics, runtime authority, lint target, dependency, contract shape, repository pattern, or convention changed."
+  ]
+}

@@ -18,12 +18,12 @@ import { describe, expect, test } from "bun:test";
 
 import { createMemoryBackend } from "@tuvren/backend-memory";
 import { TuvrenPersistenceError } from "@tuvren/core";
-import {
-  encodeDeterministicKernelRecord,
-  type StoredBranch,
-  type StoredRun,
-  type StoredThread,
-  type StoredTurnTreePath,
+import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import type {
+  StoredBranch,
+  StoredRun,
+  StoredThread,
+  StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 import {
   createHashFromIndex,

@@ -36,6 +36,36 @@
       "sha256": "104bf17b1b3999bad81b720fea146b4ffc5b6ad43170cf238554b376035e6458",
       "bytes": 149,
       "role": "measurement"
+    },
+    {
+      "path": "M2-summary.json",
+      "sha256": "bb20d7e9632540476183403d590d8cd9aeda980d41747ae38b7efd959b6e06eb",
+      "bytes": 2726,
+      "role": "measurement"
+    },
+    {
+      "path": "M2-memory-before-syntactic.json.gz",
+      "sha256": "8b8a210620e107751634634036fd6a6d646064cd34c17116b0fc7e2e678a6659",
+      "bytes": 7655,
+      "role": "baseline"
+    },
+    {
+      "path": "M2-memory-after-syntactic.json.gz",
+      "sha256": "a5a6cc819967508556cc6c92257900292cbd56d33dd95034d24c2bc8506ca177",
+      "bytes": 4719,
+      "role": "measurement"
+    },
+    {
+      "path": "M2-memory-before-command-stderr.log.gz",
+      "sha256": "510a4406933bdae668a597a11079cb9222679972b4b66d43b4a40d2e7ebc9a89",
+      "bytes": 146,
+      "role": "baseline"
+    },
+    {
+      "path": "M2-memory-after-command-stderr.log.gz",
+      "sha256": "8cbf074b1a9a2ebbb0e0aaa7e9893a6ca5a0710308aa91672bf69b6c7ef122e9",
+      "bytes": 149,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."
