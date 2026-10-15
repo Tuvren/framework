@@ -20,12 +20,12 @@ import type {
 } from "@tuvren/kernel-protocol";
 import { createCanonicalTurnTreePaths as createSharedCanonicalTurnTreePaths } from "@tuvren/kernel-testkit";
 
-export function createCanonicalTurnTreePaths(
+export const createCanonicalTurnTreePaths = (
   turnTree: StoredTurnTree,
   messages: string[]
-): StoredTurnTreePath[] {
+): StoredTurnTreePath[] => {
   return createSharedCanonicalTurnTreePaths(turnTree, {
     "context.manifest": null,
     messages,
   });
-}
+};

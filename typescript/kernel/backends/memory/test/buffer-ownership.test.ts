@@ -97,7 +97,7 @@ const DETERMINISTIC_HASH_ERROR = /deterministic hash/u;
  * Builds one caller-owned instance of every byte-carrying record family, so a
  * test can assert the backend never mutates or aliases the caller's buffers.
  */
-async function createCallerRecords(): Promise<CallerRecords> {
+const createCallerRecords = async (): Promise<CallerRecords> => {
   const schema = createSchema();
   const schemaRecord = createStoredSchema(schema, 100);
   const turnTree = await createStoredTurnTree(schema, emptyManifest, 101);
@@ -190,13 +190,13 @@ async function createCallerRecords(): Promise<CallerRecords> {
     turnTree,
     turnTreePaths: createCanonicalTurnTreePaths(turnTree, []),
   };
-}
+};
 
 /** Writes every caller record into the transaction's draft state. */
-async function writeCallerRecords(
+const writeCallerRecords = async (
   tx: KrakenBackendTx,
   records: CallerRecords
-): Promise<void> {
+): Promise<void> => {
   await tx.schemas.put(records.schemaRecord);
   await tx.turnTrees.put(records.turnTree);
   await tx.turnTreePaths.putMany(records.turnTreePaths);
@@ -209,14 +209,14 @@ async function writeCallerRecords(
   await tx.runs.set(records.run);
   await tx.stagedResults.set(records.interruptedResult);
   await tx.observeAnnotations.set(records.annotation);
-}
+};
 
 /** Collects a fingerprint for every byte field reachable from `value`. */
-function collectByteFieldProbes(
+const collectByteFieldProbes = (
   value: unknown,
   label: string,
   probes: ByteFieldProbe[] = []
-): ByteFieldProbe[] {
+): ByteFieldProbe[] => {
   if (Array.isArray(value)) {
     for (const [index, item] of value.entries()) {
       collectByteFieldProbes(item, `${label}[${index}]`, probes);
@@ -243,16 +243,16 @@ function collectByteFieldProbes(
   }
 
   return probes;
-}
+};
 
 /**
  * Asserts that no decoded buffer gained own properties (the `dataView` marker
  * `cbor-x` attaches) and that every byte field still holds its original bytes.
  */
-function expectByteFieldsUnmutated(
+const expectByteFieldsUnmutated = (
   probes: readonly ByteFieldProbe[],
   originals: ReadonlyMap<string, Uint8Array>
-): void {
+): void => {
   expect(probes.length).toBeGreaterThan(0);
 
   for (const probe of probes) {
@@ -268,16 +268,16 @@ function expectByteFieldsUnmutated(
       label: probe.label,
     });
   }
-}
+};
 
 /** Snapshots every probed byte field's content, keyed by probe label. */
-function snapshotByteFields(
+const snapshotByteFields = (
   probes: readonly ByteFieldProbe[]
-): Map<string, Uint8Array> {
+): Map<string, Uint8Array> => {
   return new Map(
     probes.map((probe) => [probe.label, Uint8Array.from(probe.buffer)])
   );
-}
+};
 
 describe("@tuvren/backend-memory buffer ownership", () => {
   test("keeps caller byte fields untouched by writes and identity validation", async () => {

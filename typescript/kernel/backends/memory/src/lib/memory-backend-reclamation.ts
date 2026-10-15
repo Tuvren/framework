@@ -43,10 +43,10 @@ import type { BackendState } from "./memory-backend-types.js";
  * @returns Counts of released and retained records.
  * @see `reclaimBackendState` in `@tuvren/backend-shared` for the algorithm.
  */
-export function reclaimBackendState(
+export const reclaimBackendState = (
   state: BackendState,
   nowMs: EpochMs
-): ReclamationSummary {
+): ReclamationSummary => {
   return reclaimSharedBackendState(
     state,
     {
@@ -57,4 +57,4 @@ export function reclaimBackendState(
     },
     nowMs
   );
-}
+};

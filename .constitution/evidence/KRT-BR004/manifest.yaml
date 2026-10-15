@@ -354,6 +354,54 @@
       "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
       "bytes": 20,
       "role": "measurement"
+    },
+    {
+      "path": "M11-memory-before-syntactic.json.gz",
+      "sha256": "7b475962dd2e3814aaeeba1f94f52ba640e3a35f7b64a79ccd163fa64d51049a",
+      "bytes": 4833,
+      "role": "baseline"
+    },
+    {
+      "path": "M11-memory-before-type-aware.json.gz",
+      "sha256": "1b32ee285655ec6d4ed882e02bd2dfa640275a002a1ae8f2feec65f29e530540",
+      "bytes": 8532,
+      "role": "baseline"
+    },
+    {
+      "path": "M11-memory-after-syntactic.json.gz",
+      "sha256": "58f0bf6bb092128c8e5ba13235794b825f0e86b82893fdc8dec63e79400783ea",
+      "bytes": 2920,
+      "role": "measurement"
+    },
+    {
+      "path": "M11-memory-after-type-aware.json.gz",
+      "sha256": "95a3cff05476c66e01530e384f84c7c300e473717b4e86d24f246e7d879f92f4",
+      "bytes": 6736,
+      "role": "measurement"
+    },
+    {
+      "path": "M11-memory-before-syntactic-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "baseline"
+    },
+    {
+      "path": "M11-memory-before-type-aware-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "baseline"
+    },
+    {
+      "path": "M11-memory-after-syntactic-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "measurement"
+    },
+    {
+      "path": "M11-memory-after-type-aware-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."

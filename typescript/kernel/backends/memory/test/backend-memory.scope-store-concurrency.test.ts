@@ -41,7 +41,7 @@ interface Deferred<T> {
   resolve(value: T): void;
 }
 
-function createDeferred<T>(): Deferred<T> {
+const createDeferred = <T>(): Deferred<T> => {
   let settle: ((value: T) => void) | undefined;
   const promise = new Promise<T>((resolve) => {
     settle = resolve;
@@ -51,7 +51,7 @@ function createDeferred<T>(): Deferred<T> {
     promise,
     resolve: (value) => settle?.(value),
   };
-}
+};
 
 /**
  * Drains the microtask queue, one tick per `await Promise.resolve()`, until
@@ -61,14 +61,14 @@ function createDeferred<T>(): Deferred<T> {
  * there is nothing to "wait" for beyond letting already-scheduled
  * continuations run.
  */
-async function flushMicrotasksUntil(
+const flushMicrotasksUntil = async (
   condition: () => boolean,
   maxTicks = 200
-): Promise<void> {
+): Promise<void> => {
   for (let tick = 0; tick < maxTicks && !condition(); tick += 1) {
     await Promise.resolve();
   }
-}
+};
 
 describe("@tuvren/backend-memory MemoryScopeStore purge/transact serialization (KRT-BK003)", () => {
   test("a transaction queued behind a purge's drop-then-release window never runs concurrently with the purge", async () => {

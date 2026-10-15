@@ -518,10 +518,10 @@ describe("@tuvren/backend-memory", () => {
 // crafted state because the public write path forbids constructing the
 // inconsistency in the first place.
 describe("@tuvren/backend-memory validateCommittedState observe-annotation invariant", () => {
-  async function buildCommittedStateWithRun(): Promise<{
+  const buildCommittedStateWithRun = async (): Promise<{
     runId: string;
     state: BackendState;
-  }> {
+  }> => {
     const schema = createSchema();
     const turnTree = await createStoredTurnTree(
       schema,
@@ -589,12 +589,12 @@ describe("@tuvren/backend-memory validateCommittedState observe-annotation invar
     state.turns.set(turn.turnId, turn);
     state.runs.set(run.runId, run);
     return { runId: run.runId, state };
-  }
+  };
 
-  function makeAnnotation(
+  const makeAnnotation = (
     runId: string,
     turnNodeHash: string | null
-  ): StoredObserveAnnotation {
+  ): StoredObserveAnnotation => {
     return {
       annotationCbor: new Uint8Array([1]),
       annotationHash: createHashFromIndex(20),
@@ -602,7 +602,7 @@ describe("@tuvren/backend-memory validateCommittedState observe-annotation invar
       runId,
       turnNodeHash,
     };
-  }
+  };
 
   test("accepts a committed annotation whose run and turn node both exist", async () => {
     const { runId, state } = await buildCommittedStateWithRun();

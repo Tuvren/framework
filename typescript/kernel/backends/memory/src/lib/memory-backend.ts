@@ -196,198 +196,6 @@ const FAULT_INJECTION_CONTROL = Symbol(
 );
 
 /**
- * In-memory reference implementation of the kernel `RuntimeBackend` contract.
- *
- * Concurrency model: all work for the bound Scope — transactions, reclamation,
- * and scope purges — is serialized through the scope store's per-Scope
- * exclusive lock, across every backend instance sharing the same store
- * (ADR-0049). Distinct Scopes never contend.
- *
- * Transaction model: each transaction runs against a deep clone of the
- * committed state (copy-on-write). The draft is validated against the full
- * committed-state invariant suite before being swapped in atomically, so a
- * failed or aborted transaction leaves the committed state untouched and
- * partial writes are never observable. Nested transactions are rejected, and
- * repository handles are invalidated once their transaction settles.
- */
-class MemoryBackend implements KrakenBackend {
-  readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
-    setFaultHooks: (hooks) => {
-      this.faultState.hooks = hooks;
-    },
-    supportsFaultPoint: (point) =>
-      point === "before-commit" ||
-      point === "mid-commit" ||
-      point === "after-commit-before-ack",
-  };
-
-  private readonly faultState: { hooks: BackendFaultHooks | null } = {
-    hooks: null,
-  };
-  private readonly transactionContext = new AsyncLocalStorage<boolean>();
-  private readonly store: MemoryScopeStore;
-  private readonly scope: Scope;
-  private readonly now: () => number;
-
-  constructor(options?: MemoryBackendOptions) {
-    this.now = options?.now ?? Date.now;
-
-    if (options?.scope !== undefined) {
-      assertScope(options.scope, "options.scope");
-    }
-
-    this.scope = options?.scope ?? DEFAULT_SCOPE;
-    this.store = options?.store ?? createMemoryScopeStore();
-  }
-
-  /** Reports the memory backend's static capability set. */
-  capabilities(): BackendCapability {
-    return MEMORY_BACKEND_CAPABILITIES;
-  }
-
-  /** Always healthy: the backend has no external dependency to probe. */
-  health(): Promise<{ ok: true }> {
-    return Promise.resolve({ ok: true });
-  }
-
-  /**
-   * Runs the §9.4 reachability reclamation sweep over this Scope's committed
-   * state, releasing durable records that are unreachable from live roots and
-   * older than the in-flight grace horizon.
-   *
-   * @param options - `nowMs` overrides the backend clock for leaseless-run
-   *   expiry evaluation; omitted fields fall back to the constructor clock.
-   * @returns Counts of released and retained records.
-   */
-  reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
-    // Reclamation serializes against this Scope exactly like a transaction:
-    // clone the committed state, sweep the unreachable remainder, validate the
-    // referential invariants of the result, then swap it in atomically.
-    return this.store.runExclusive(this.scope, () => {
-      const baseState = this.store.getState(this.scope);
-      const draftState = cloneState(baseState);
-      const summary = reclaimBackendState(
-        draftState,
-        options?.nowMs ?? this.now()
-      );
-      validateCommittedState(draftState, baseState);
-      this.store.setState(this.scope, draftState);
-      return Promise.resolve(summary);
-    });
-  }
-
-  /**
-   * Drops the bound Scope's entire partition (full tenant offboarding,
-   * kernel spec §9.4). Other Scopes sharing the same store are unaffected.
-   */
-  purgeScope(): Promise<void> {
-    // Full tenant offboarding (§9.4): drop the bound Scope's entire partition.
-    // Serialize against this Scope exactly like a transaction so the drop never
-    // races an in-flight commit; distinct Scopes sharing this store are left
-    // untouched, so offboarding one tenant is invisible to every other.
-    return this.store.runExclusive(this.scope, () => {
-      this.store.dropScope(this.scope);
-      return Promise.resolve();
-    });
-  }
-
-  /**
-   * Runs `work` inside a serialized, copy-on-write transaction against this
-   * Scope's state.
-   *
-   * The draft state is only published if `work` resolves AND the resulting
-   * state passes committed-state validation; any rejection discards the draft
-   * entirely. Repository handles passed to `work` are invalidated when the
-   * transaction settles — retaining and using one afterwards raises
-   * `memory_backend_inactive_transaction_handle`.
-   *
-   * @throws TuvrenPersistenceError with code
-   *   `memory_backend_nested_transaction` when called from inside another
-   *   transaction on this backend.
-   */
-  transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
-    if (this.transactionContext.getStore() === true) {
-      throw persistenceError(
-        "memory backend transactions must not be nested",
-        "memory_backend_nested_transaction"
-      );
-    }
-
-    // Per-Scope serialization lives in the store, so every transaction for this
-    // Scope is serialized across all backend instances sharing the store while
-    // distinct Scopes never contend (ADR-0049 scope-keyed substrate).
-    return this.store.runExclusive(this.scope, async () => {
-      const baseState = this.store.getState(this.scope);
-      const draftState = cloneState(baseState);
-      let active = true;
-      const repositories = createRepositories(
-        draftState,
-        this.now,
-        () => active && this.transactionContext.getStore() === true
-      );
-      let result: T;
-
-      try {
-        result = await this.transactionContext.run(true, () =>
-          work(repositories)
-        );
-      } finally {
-        active = false;
-      }
-
-      validateCommittedState(draftState, baseState);
-      await this.faultState.hooks?.beforeCommit?.();
-
-      let committed = false;
-      const commit = (): Promise<void> => {
-        if (committed) {
-          throw new Error("memory backend commit hook attempted double commit");
-        }
-
-        this.store.setState(this.scope, draftState);
-        committed = true;
-        return Promise.resolve();
-      };
-
-      if (this.faultState.hooks?.midCommit === undefined) {
-        await commit();
-      } else {
-        await this.faultState.hooks.midCommit(commit);
-
-        if (!committed) {
-          throw new Error(
-            "memory backend mid-commit hook must call commit exactly once"
-          );
-        }
-      }
-
-      await this.faultState.hooks?.afterCommitBeforeAck?.();
-      return result;
-    });
-  }
-}
-
-/**
- * Creates the in-memory reference backend.
- *
- * State lives entirely in process memory (inside the scope store), so it is
- * lost when the process exits; use the SQLite or PostgreSQL backends for
- * durability. Pass a shared {@link MemoryBackendOptions.store | store} to let
- * several backends share per-Scope state, and a
- * {@link MemoryBackendOptions.scope | scope} to bind the backend to a
- * partition other than `DEFAULT_SCOPE`.
- *
- * @param options - Optional clock, Scope binding, and shared scope store.
- * @returns A `RuntimeBackend` bound to the resolved Scope.
- * @throws TypeError when `options.scope` is not a valid Scope.
- */
-export function createMemoryBackend(
-  options?: MemoryBackendOptions
-): KrakenBackend {
-  return new MemoryBackend(options);
-}
-
-/**
  * Builds the per-transaction repository surface over a draft state.
  *
  * Every repository method first checks `isTransactionActive` so a handle
@@ -399,11 +207,11 @@ export function createMemoryBackend(
  * {@link isolateRecordBuffers} first so those validators never touch the
  * caller's buffers (ADR-0074).
  */
-function createRepositories(
+const createRepositories = (
   state: BackendState,
   now: () => number,
   isTransactionActive: () => boolean
-): MutableRepositories {
+): MutableRepositories => {
   const assertTransactionActive = (): void => {
     if (!isTransactionActive()) {
       throw persistenceError(
@@ -1150,4 +958,196 @@ function createRepositories(
       },
     },
   };
+};
+
+/**
+ * In-memory reference implementation of the kernel `RuntimeBackend` contract.
+ *
+ * Concurrency model: all work for the bound Scope — transactions, reclamation,
+ * and scope purges — is serialized through the scope store's per-Scope
+ * exclusive lock, across every backend instance sharing the same store
+ * (ADR-0049). Distinct Scopes never contend.
+ *
+ * Transaction model: each transaction runs against a deep clone of the
+ * committed state (copy-on-write). The draft is validated against the full
+ * committed-state invariant suite before being swapped in atomically, so a
+ * failed or aborted transaction leaves the committed state untouched and
+ * partial writes are never observable. Nested transactions are rejected, and
+ * repository handles are invalidated once their transaction settles.
+ */
+class MemoryBackend implements KrakenBackend {
+  readonly [FAULT_INJECTION_CONTROL]: BackendFaultInjectionControl = {
+    setFaultHooks: (hooks) => {
+      this.faultState.hooks = hooks;
+    },
+    supportsFaultPoint: (point) =>
+      point === "before-commit" ||
+      point === "mid-commit" ||
+      point === "after-commit-before-ack",
+  };
+
+  private readonly faultState: { hooks: BackendFaultHooks | null } = {
+    hooks: null,
+  };
+  private readonly transactionContext = new AsyncLocalStorage<boolean>();
+  private readonly store: MemoryScopeStore;
+  private readonly scope: Scope;
+  private readonly now: () => number;
+
+  constructor(options?: MemoryBackendOptions) {
+    this.now = options?.now ?? Date.now;
+
+    if (options?.scope !== undefined) {
+      assertScope(options.scope, "options.scope");
+    }
+
+    this.scope = options?.scope ?? DEFAULT_SCOPE;
+    this.store = options?.store ?? createMemoryScopeStore();
+  }
+
+  /** Reports the memory backend's static capability set. */
+  capabilities(): BackendCapability {
+    return MEMORY_BACKEND_CAPABILITIES;
+  }
+
+  /** Always healthy: the backend has no external dependency to probe. */
+  health(): Promise<{ ok: true }> {
+    return Promise.resolve({ ok: true });
+  }
+
+  /**
+   * Runs the §9.4 reachability reclamation sweep over this Scope's committed
+   * state, releasing durable records that are unreachable from live roots and
+   * older than the in-flight grace horizon.
+   *
+   * @param options - `nowMs` overrides the backend clock for leaseless-run
+   *   expiry evaluation; omitted fields fall back to the constructor clock.
+   * @returns Counts of released and retained records.
+   */
+  reclaim(options?: ReclamationOptions): Promise<ReclamationSummary> {
+    // Reclamation serializes against this Scope exactly like a transaction:
+    // clone the committed state, sweep the unreachable remainder, validate the
+    // referential invariants of the result, then swap it in atomically.
+    return this.store.runExclusive(this.scope, () => {
+      const baseState = this.store.getState(this.scope);
+      const draftState = cloneState(baseState);
+      const summary = reclaimBackendState(
+        draftState,
+        options?.nowMs ?? this.now()
+      );
+      validateCommittedState(draftState, baseState);
+      this.store.setState(this.scope, draftState);
+      return Promise.resolve(summary);
+    });
+  }
+
+  /**
+   * Drops the bound Scope's entire partition (full tenant offboarding,
+   * kernel spec §9.4). Other Scopes sharing the same store are unaffected.
+   */
+  purgeScope(): Promise<void> {
+    // Full tenant offboarding (§9.4): drop the bound Scope's entire partition.
+    // Serialize against this Scope exactly like a transaction so the drop never
+    // races an in-flight commit; distinct Scopes sharing this store are left
+    // untouched, so offboarding one tenant is invisible to every other.
+    return this.store.runExclusive(this.scope, () => {
+      this.store.dropScope(this.scope);
+      return Promise.resolve();
+    });
+  }
+
+  /**
+   * Runs `work` inside a serialized, copy-on-write transaction against this
+   * Scope's state.
+   *
+   * The draft state is only published if `work` resolves AND the resulting
+   * state passes committed-state validation; any rejection discards the draft
+   * entirely. Repository handles passed to `work` are invalidated when the
+   * transaction settles — retaining and using one afterwards raises
+   * `memory_backend_inactive_transaction_handle`.
+   *
+   * @throws TuvrenPersistenceError with code
+   *   `memory_backend_nested_transaction` when called from inside another
+   *   transaction on this backend.
+   */
+  transact<T>(work: (tx: KrakenBackendTx) => Promise<T>): Promise<T> {
+    if (this.transactionContext.getStore() === true) {
+      throw persistenceError(
+        "memory backend transactions must not be nested",
+        "memory_backend_nested_transaction"
+      );
+    }
+
+    // Per-Scope serialization lives in the store, so every transaction for this
+    // Scope is serialized across all backend instances sharing the store while
+    // distinct Scopes never contend (ADR-0049 scope-keyed substrate).
+    return this.store.runExclusive(this.scope, async () => {
+      const baseState = this.store.getState(this.scope);
+      const draftState = cloneState(baseState);
+      let active = true;
+      const repositories = createRepositories(
+        draftState,
+        this.now,
+        () => active && this.transactionContext.getStore() === true
+      );
+      let result: T;
+
+      try {
+        result = await this.transactionContext.run(true, () =>
+          work(repositories)
+        );
+      } finally {
+        active = false;
+      }
+
+      validateCommittedState(draftState, baseState);
+      await this.faultState.hooks?.beforeCommit?.();
+
+      let committed = false;
+      const commit = (): Promise<void> => {
+        if (committed) {
+          throw new Error("memory backend commit hook attempted double commit");
+        }
+
+        this.store.setState(this.scope, draftState);
+        committed = true;
+        return Promise.resolve();
+      };
+
+      if (this.faultState.hooks?.midCommit === undefined) {
+        await commit();
+      } else {
+        await this.faultState.hooks.midCommit(commit);
+
+        if (!committed) {
+          throw new Error(
+            "memory backend mid-commit hook must call commit exactly once"
+          );
+        }
+      }
+
+      await this.faultState.hooks?.afterCommitBeforeAck?.();
+      return result;
+    });
+  }
 }
+
+/**
+ * Creates the in-memory reference backend.
+ *
+ * State lives entirely in process memory (inside the scope store), so it is
+ * lost when the process exits; use the SQLite or PostgreSQL backends for
+ * durability. Pass a shared {@link MemoryBackendOptions.store | store} to let
+ * several backends share per-Scope state, and a
+ * {@link MemoryBackendOptions.scope | scope} to bind the backend to a
+ * partition other than `DEFAULT_SCOPE`.
+ *
+ * @param options - Optional clock, Scope binding, and shared scope store.
+ * @returns A `RuntimeBackend` bound to the resolved Scope.
+ * @throws TypeError when `options.scope` is not a valid Scope.
+ */
+export const createMemoryBackend = (
+  options?: MemoryBackendOptions
+): KrakenBackend => {
+  return new MemoryBackend(options);
+};
