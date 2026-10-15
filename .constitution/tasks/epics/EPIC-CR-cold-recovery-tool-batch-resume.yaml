@@ -86,7 +86,7 @@ tickets:
       evidence: "A characterization test in typescript/runtime/test reproduces the crash the spike recorded (an assistant message with tool calls and some of their results staged, then the process dies and the lease expires) and asserts the recovered head shape the plan is built from; its assertion that the model is re-invoked with fresh callIds is the one KRT-CR003 flips. Unit tests over constructed recovered states assert the plan for each shape: committed assistant message with partial committed results, staged-but-uncommitted results, no assistant message, a completed batch, and an unreadable or erased assistant message (fails with TuvrenRecoveryError, code runtime_recovery_interrupted_iteration_unreadable, naming the turn and stale run). Completed callIds are matched regardless of which tool-result task id format staged them."
     flows: [flow-crash-mid-checkpoint-recovery]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CR003
     title: Continue the interrupted batch instead of re-invoking the model
     type: Feature

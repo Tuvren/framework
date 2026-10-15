@@ -29,6 +29,7 @@ import {
   type RecoveryState,
 } from "@tuvren/kernel-protocol";
 
+import type { InterruptedIterationRecoveryPlan } from "./runtime-core-recovery-plan.js";
 import {
   createExecutionCancelledError,
   isRecord,
@@ -65,6 +66,8 @@ export interface ExpiredExecutionRecovery {
   activeAgentName?: string;
   /** Estimated iteration count already completed by the expired execution. */
   iterationCount?: number;
+  /** Durable tool-batch plan reconstructed for a stale `iterate` run. */
+  interruptedIterationPlan?: InterruptedIterationRecoveryPlan;
   /**
    * How the new execution should resume: `reuse_turn` re-enters the
    * recovered turn from the input step, `skip_fresh_prelude` continues an

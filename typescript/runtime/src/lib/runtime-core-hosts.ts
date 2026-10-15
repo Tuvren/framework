@@ -191,6 +191,7 @@ interface ExpiredRecoveryHostDependencies {
   kernel: RuntimeKernel;
   loadHeadState(branchId: string): Promise<HeadState>;
   now(): EpochMs;
+  payloadCodecBinding: PayloadCodecBinding;
   publishEvent(
     handle: RuntimeExecutionHandle,
     event: {
@@ -668,6 +669,7 @@ export function buildRuntimeCoreExpiredRecoveryHost(
 ): RuntimeCoreExpiredRecoveryHost {
   return {
     getNow: () => dependencies.now(),
+    getPayloadCodecBinding: () => dependencies.payloadCodecBinding,
     getRunLivenessOptions: () => dependencies.runLivenessOptions,
     getRuntimeKernel: () => dependencies.kernel,
     loadHeadState: (branchId) => dependencies.loadHeadState(branchId),

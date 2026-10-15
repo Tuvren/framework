@@ -85,6 +85,10 @@ interface FakeKernelState {
 }
 
 export interface FakeKernelHarness {
+  completeRunAsPreempted(
+    runId: string,
+    reason: string
+  ): ReturnType<RuntimeKernel["run"]["complete"]>;
   kernel: RuntimeKernel;
   readBranchManifest(branchId: string): Promise<TurnTreeManifest>;
   readBranchMessages(branchId: string): Promise<unknown[]>;
@@ -589,6 +593,12 @@ export function createFakeKernelHarness(): FakeKernelHarness {
   };
 
   return {
+    async completeRunAsPreempted(runId, reason) {
+      const run = requireRun(state, runId);
+      run.preemptionReason = reason;
+      state.runs.set(runId, run);
+      return await kernel.run.complete(runId, "failed");
+    },
     kernel,
     async readBranchManifest(branchId) {
       const branch = requireBranch(state, branchId);
@@ -733,7 +743,7 @@ export function createFakeRunLivenessKernelHarness(
             (run) => run.leaseExpiresAtMs <= nowMs
           );
         },
-        async preemptExpired(runId, _preemptingOwnerId, _nowMs, _reason) {
+        async preemptExpired(runId, _preemptingOwnerId, _nowMs, reason) {
           const leasedRun = leasedRuns.get(runId);
 
           if (leasedRun === undefined) {
@@ -741,7 +751,10 @@ export function createFakeRunLivenessKernelHarness(
           }
 
           preemptCalls += 1;
-          const completion = await baseKernel.run.complete(runId, "failed");
+          const completion = await harness.completeRunAsPreempted(
+            runId,
+            reason
+          );
           const recoveredBranch = await baseKernel.branch.get(
             leasedRun.branchId
           );
@@ -751,8 +764,13 @@ export function createFakeRunLivenessKernelHarness(
           }
 
           leasedRuns.delete(runId);
+          const recoveredTurnNode = await baseKernel.node.get(
+            completion.turnNodeHash ?? recoveredBranch.headTurnNodeHash
+          );
+
           return {
-            consumedStagedResults: [],
+            consumedStagedResults:
+              recoveredTurnNode?.consumedStagedResults ?? [],
             lastCompletedStepId: null,
             lastTurnNodeHash:
               completion.turnNodeHash ?? recoveredBranch.headTurnNodeHash,

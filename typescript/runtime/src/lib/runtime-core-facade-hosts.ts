@@ -464,6 +464,7 @@ export function createRuntimeCoreFacadeHosts(
       kernel: dependencies.kernel,
       loadHeadState: (branchId) => dependencies.loadHeadState(branchId),
       now: () => dependencies.now(),
+      payloadCodecBinding: dependencies.payloadCodecBinding,
       publishEvent: (handle, event, loopState) =>
         dependencies.publishEvent(
           handle,

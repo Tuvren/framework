@@ -17,7 +17,13 @@
 // biome-ignore-all lint/suspicious/useAwait: Test runners intentionally match the async framework runner contract.
 import { describe, expect, test } from "bun:test";
 
-import { TuvrenRuntimeError } from "@tuvren/core";
+import {
+  DEFAULT_SCOPE,
+  type KernelRecord,
+  TuvrenRuntimeError,
+} from "@tuvren/core";
+import { IDENTITY_PAYLOAD_CODEC } from "@tuvren/core/lifecycle";
+import type { TuvrenMessage } from "@tuvren/core/messages";
 import type {
   RunnerExecutionResult,
   RuntimeRunner,
@@ -32,19 +38,24 @@ import type {
   RuntimeKernel,
   RuntimeKernelRunLiveness,
 } from "@tuvren/kernel-protocol";
-import { encodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
+import {
+  encodeDeterministicKernelRecord,
+  type RecoveryState,
+} from "@tuvren/kernel-protocol";
 
 import {
   createRunnerRegistry as createBaseRunnerRegistry,
   createTuvrenRuntime,
   DEFAULT_AGENT_SCHEMA,
 } from "../src/index.ts";
+import { encryptMessageRecord } from "../src/lib/payload-codec-seam.ts";
 import {
   createFakeKernelHarness,
   createFakeRunLivenessKernelHarness,
 } from "./fake-kernel.ts";
 import {
   assistantText,
+  assistantToolCalls,
   collectEvents,
   delay,
   extractTurnId,
@@ -86,6 +97,30 @@ function countUserTextMessages(
       return partRecord?.type === "text" && partRecord.text === expectedText;
     });
   }).length;
+}
+
+function toolResultMessage(callId: string, value: number): TuvrenMessage {
+  return {
+    parts: [
+      {
+        callId,
+        name: "lookup",
+        output: { value },
+        type: "tool_result",
+      },
+    ],
+    role: "tool",
+  };
+}
+
+function requireAssistantMessage(
+  message: TuvrenMessage
+): Extract<TuvrenMessage, { role: "assistant" }> {
+  if (message.role !== "assistant") {
+    throw new Error("expected assistant message");
+  }
+
+  return message;
 }
 
 describe("framework-runtime-core", () => {
@@ -449,6 +484,332 @@ describe("framework-runtime-core", () => {
 
     expect(handle.status().phase).toBe("completed");
     expect(extractTurnId(events)).toBe(staleTurn.turnId);
+  });
+
+  test("characterizes reactive checkpoint recovery after a partial tool batch crash", async () => {
+    const harness = createFakeKernelHarness();
+    const livenessHarness = createFakeRunLivenessKernelHarness(harness);
+    const originalPreemptExpired =
+      livenessHarness.kernel.runLiveness.preemptExpired.bind(
+        livenessHarness.kernel.runLiveness
+      );
+    let recoveredAtPreemption: RecoveryState | undefined;
+    let branchHeadAtPreemption: string | undefined;
+    let messagesAtPreemption: unknown[] = [];
+    let manifestAtPreemption:
+      | Awaited<ReturnType<typeof harness.readBranchManifest>>
+      | undefined;
+    const kernel = {
+      ...livenessHarness.kernel,
+      runLiveness: {
+        ...livenessHarness.kernel.runLiveness,
+        async preemptExpired(runId, preemptingOwnerId, nowMs, reason) {
+          const recovery = await originalPreemptExpired(
+            runId,
+            preemptingOwnerId,
+            nowMs,
+            reason
+          );
+          recoveredAtPreemption = recovery;
+          messagesAtPreemption = await harness.readBranchMessages(
+            "branch_partial_tool_batch_crash"
+          );
+          manifestAtPreemption = await harness.readBranchManifest(
+            "branch_partial_tool_batch_crash"
+          );
+          branchHeadAtPreemption = (
+            await livenessHarness.kernel.branch.get(
+              "branch_partial_tool_batch_crash"
+            )
+          )?.headTurnNodeHash;
+          return recovery;
+        },
+      },
+    } satisfies RuntimeKernel & RuntimeKernelRunLiveness;
+    const thread = await kernel.thread.create(
+      "thread_partial_tool_batch_crash",
+      DEFAULT_AGENT_SCHEMA.schemaId,
+      "branch_partial_tool_batch_crash"
+    );
+    const staleTurn = await kernel.turn.create(
+      "turn_partial_tool_batch_crash",
+      thread.threadId,
+      thread.branchId,
+      null,
+      thread.rootTurnNodeHash
+    );
+    const payloadBinding = {
+      codec: IDENTITY_PAYLOAD_CODEC,
+      scope: DEFAULT_SCOPE,
+    };
+    const stageMessage = async (
+      runId: string,
+      taskId: string,
+      message: TuvrenMessage
+    ) =>
+      await kernel.staging.stage(
+        runId,
+        await encryptMessageRecord(
+          payloadBinding,
+          encodeDeterministicKernelRecord(message as unknown as KernelRecord)
+        ),
+        taskId,
+        "message",
+        "completed"
+      );
+
+    await kernel.run.create(
+      "run_partial_tool_batch_input",
+      staleTurn.turnId,
+      thread.branchId,
+      DEFAULT_AGENT_SCHEMA.schemaId,
+      thread.rootTurnNodeHash,
+      [
+        {
+          deterministic: false,
+          id: "incorporate_input",
+          sideEffects: true,
+        },
+      ]
+    );
+    await kernel.run.beginStep(
+      "run_partial_tool_batch_input",
+      "incorporate_input"
+    );
+    await stageMessage("run_partial_tool_batch_input", "durable_user_signal", {
+      parts: [{ text: "Resume the interrupted batch", type: "text" }],
+      role: "user",
+    });
+    const inputCheckpoint = await kernel.run.completeStep(
+      "run_partial_tool_batch_input",
+      "incorporate_input"
+    );
+    await kernel.run.complete("run_partial_tool_batch_input", "completed");
+
+    if (inputCheckpoint.turnNodeHash === undefined) {
+      throw new Error("expected durable user checkpoint");
+    }
+
+    await kernel.turn.updateHead(
+      staleTurn.turnId,
+      inputCheckpoint.turnNodeHash
+    );
+    const manifestAfterInput = await harness.readBranchManifest(
+      thread.branchId
+    );
+    await kernel.runLiveness.createLeasedRun({
+      branchId: thread.branchId,
+      executionOwnerId: "worker-that-crashed",
+      leaseExpiresAtMs: 20,
+      runId: "run_partial_tool_batch_crash",
+      schemaId: DEFAULT_AGENT_SCHEMA.schemaId,
+      startTurnNodeHash: inputCheckpoint.turnNodeHash,
+      steps: [{ deterministic: false, id: "iterate", sideEffects: true }],
+      turnId: staleTurn.turnId,
+    });
+    await kernel.run.beginStep("run_partial_tool_batch_crash", "iterate");
+    const originalAssistant = requireAssistantMessage(
+      assistantToolCalls([
+        {
+          callId: "call_completed_main",
+          input: { value: 1 },
+          name: "lookup",
+        },
+        {
+          callId: "call_completed_second",
+          input: { value: 2 },
+          name: "lookup",
+        },
+        {
+          callId: "call_missing",
+          input: { value: 3 },
+          name: "lookup",
+        },
+      ])
+    );
+    await stageMessage(
+      "run_partial_tool_batch_crash",
+      "assistant_message",
+      originalAssistant
+    );
+    await stageMessage(
+      "run_partial_tool_batch_crash",
+      "tool_result_0_call_completed_main",
+      toolResultMessage("call_completed_main", 1)
+    );
+    await stageMessage(
+      "run_partial_tool_batch_crash",
+      "tool_result_1_call_completed_second",
+      toolResultMessage("call_completed_second", 2)
+    );
+
+    const runnerAssistantCallIds: string[][] = [];
+    const dispatchedCallIds: string[] = [];
+    let runnerCalls = 0;
+    const runner = {
+      async execute() {
+        runnerCalls += 1;
+
+        if (runnerCalls === 1) {
+          const replacement = requireAssistantMessage(
+            assistantToolCalls([
+              {
+                callId: "fresh_call_one",
+                input: { value: 1 },
+                name: "lookup",
+              },
+              {
+                callId: "fresh_call_two",
+                input: { value: 2 },
+                name: "lookup",
+              },
+              {
+                callId: "fresh_call_three",
+                input: { value: 3 },
+                name: "lookup",
+              },
+            ])
+          );
+          runnerAssistantCallIds.push(
+            replacement.parts
+              .filter((part) => part.type === "tool_call")
+              .map((part) => part.callId)
+          );
+          return {
+            messages: [replacement],
+            resolution: { type: "continue_iteration" },
+          };
+        }
+
+        return {
+          messages: [assistantText("Replacement iteration completed.")],
+          resolution: { reason: "done", type: "end_turn" },
+        };
+      },
+      id: "fake",
+      async resume() {
+        throw new Error("resume was not expected");
+      },
+    } satisfies RuntimeRunner;
+    let now = 19;
+    now = 21;
+    const runtime = createTuvrenRuntime({
+      defaultRunnerId: "fake",
+      kernel,
+      now: () => now,
+      payloadCodec: IDENTITY_PAYLOAD_CODEC,
+      runnerRegistry: createRunnerRegistry([runner]),
+      runLiveness: {
+        executionOwnerId: "replacement-worker",
+        leaseDurationMs: 50,
+      },
+    });
+    const handle = runtime.executeTurn({
+      branchId: thread.branchId,
+      config: {
+        name: "primary",
+        tools: [
+          {
+            description: "Record which durable call identity was dispatched",
+            execute(_input, context) {
+              dispatchedCallIds.push(context.callId);
+              return { ok: true };
+            },
+            inputSchema: { type: "object" },
+            name: "lookup",
+          },
+        ],
+      },
+      signal: textSignal("Resume the interrupted batch"),
+      threadId: thread.threadId,
+    });
+    await collectEvents(handle.events());
+
+    if (
+      recoveredAtPreemption === undefined ||
+      branchHeadAtPreemption === undefined ||
+      manifestAtPreemption === undefined
+    ) {
+      throw new Error("expected stale preemption capture");
+    }
+
+    const staleRun = (await harness.readBranchRuns(thread.branchId)).find(
+      (run) => run.runId === "run_partial_tool_batch_crash"
+    );
+    expect(staleRun).toMatchObject({
+      preemptionReason: "stale_running_recovery",
+      status: "failed",
+    });
+    expect(staleRun?.leaseExpiresAtMs).toBeUndefined();
+    expect(livenessHarness.leasedRuns.has(staleRun?.runId ?? "")).toBe(false);
+    expect(recoveredAtPreemption.lastTurnNodeHash).toBe(branchHeadAtPreemption);
+    expect(recoveredAtPreemption.uncommittedStagedResults).toEqual([]);
+    expect(
+      recoveredAtPreemption.consumedStagedResults.map((result) => result.taskId)
+    ).toEqual([
+      "assistant_message",
+      "tool_result_0_call_completed_main",
+      "tool_result_1_call_completed_second",
+    ]);
+    expect(messagesAtPreemption).toEqual([
+      {
+        parts: [{ text: "Resume the interrupted batch", type: "text" }],
+        role: "user",
+      },
+      originalAssistant,
+      toolResultMessage("call_completed_main", 1),
+      toolResultMessage("call_completed_second", 2),
+    ]);
+    const fulfilledCallIds = messagesAtPreemption.flatMap((message) => {
+      const record = toOptionalRecord(message);
+
+      if (record?.role !== "tool" || !Array.isArray(record.parts)) {
+        return [];
+      }
+
+      return record.parts.flatMap((part) => {
+        const partRecord = toOptionalRecord(part);
+        return partRecord?.type === "tool_result" &&
+          typeof partRecord.callId === "string"
+          ? [partRecord.callId]
+          : [];
+      });
+    });
+    expect(fulfilledCallIds).toEqual([
+      "call_completed_main",
+      "call_completed_second",
+    ]);
+    expect(
+      originalAssistant.parts
+        .filter((part) => part.type === "tool_call")
+        .map((part) => part.callId)
+        .filter((callId) => !fulfilledCallIds.includes(callId))
+    ).toEqual(["call_missing"]);
+    expect(manifestAtPreemption["context.manifest"]).toBe(
+      manifestAfterInput["context.manifest"]
+    );
+    expect(manifestAtPreemption["runtime.status"]).toBe(
+      manifestAfterInput["runtime.status"]
+    );
+    expect(runnerCalls).toBe(2);
+    expect(runnerAssistantCallIds).toEqual([
+      ["fresh_call_one", "fresh_call_two", "fresh_call_three"],
+    ]);
+    expect(
+      runnerAssistantCallIds[0]?.some((callId) =>
+        [
+          "call_completed_main",
+          "call_completed_second",
+          "call_missing",
+        ].includes(callId)
+      )
+    ).toBe(false);
+    expect(dispatchedCallIds).toEqual([
+      "fresh_call_one",
+      "fresh_call_two",
+      "fresh_call_three",
+    ]);
+    expect(dispatchedCallIds).not.toContain("call_missing");
   });
 
   test("stops before another runner pass when recovered iterations already reached maxIterations", async () => {
