@@ -91,10 +91,10 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -122,10 +122,7 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     expect(turnEnd?.status).toBe("completed");
 
     // tool.result event with provider-native attribution
-    const toolResults = filterEventsByType(
-      events,
-      "tool.result"
-    ) as EventRecord[];
+    const toolResults = filterEventsByType(events, "tool.result");
     const providerResult = toolResults.find(
       (e) =>
         typeof e.attribution === "object" &&
@@ -175,10 +172,10 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -237,10 +234,10 @@ describe("KRT-AY006 — provider-native execution class proof (generate path)", 
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -303,8 +300,8 @@ describe("KRT-AY006 — provider-native execution class proof (stream path)", ()
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
-      runnerRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([createReActRunner()]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -329,10 +326,7 @@ describe("KRT-AY006 — provider-native execution class proof (stream path)", ()
       | undefined;
     expect(turnEnd?.status).toBe("completed");
 
-    const toolResults = filterEventsByType(
-      events,
-      "tool.result"
-    ) as EventRecord[];
+    const toolResults = filterEventsByType(events, "tool.result");
     const providerResult = toolResults.find(
       (e) =>
         typeof e.attribution === "object" &&
@@ -358,7 +352,6 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doGenerate() {
           return createGenerateResult({
             content: [
@@ -373,14 +366,15 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
             finishReason: { raw: "stop", unified: "stop" },
           });
         },
+        provider: "openai",
       }),
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -410,10 +404,7 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     expect(turnEnd).toBeDefined();
     expect(turnEnd?.status).toBe("completed");
 
-    const toolResults = filterEventsByType(
-      events,
-      "tool.result"
-    ) as EventRecord[];
+    const toolResults = filterEventsByType(events, "tool.result");
     const providerResult = toolResults.find(
       (e) =>
         typeof e.attribution === "object" &&
@@ -443,7 +434,6 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doGenerate() {
           return createGenerateResult({
             content: [
@@ -458,14 +448,15 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
             finishReason: { raw: "stop", unified: "stop" },
           });
         },
+        provider: "openai",
       }),
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -505,7 +496,6 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doGenerate() {
           return createGenerateResult({
             content: [
@@ -520,14 +510,15 @@ describe("KRT-AY006 — provider-mediated execution class proof (generate path)"
             finishReason: { raw: "stop", unified: "stop" },
           });
         },
+        provider: "openai",
       }),
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({ providerCallMode: "generate" }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -570,7 +561,6 @@ describe("KRT-AY006 — provider-mediated execution class proof (stream path)", 
     const harness = createFakeKernelHarness();
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doStream() {
           return {
             stream: streamFromParts([
@@ -589,12 +579,13 @@ describe("KRT-AY006 — provider-mediated execution class proof (stream path)", 
             ]),
           };
         },
+        provider: "openai",
       }),
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
-      runnerRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([createReActRunner()]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -623,10 +614,7 @@ describe("KRT-AY006 — provider-mediated execution class proof (stream path)", 
       | undefined;
     expect(turnEnd?.status).toBe("completed");
 
-    const toolResults = filterEventsByType(
-      events,
-      "tool.result"
-    ) as EventRecord[];
+    const toolResults = filterEventsByType(events, "tool.result");
     const providerResult = toolResults.find(
       (e) =>
         typeof e.attribution === "object" &&

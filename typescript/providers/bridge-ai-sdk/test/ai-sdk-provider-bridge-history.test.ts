@@ -411,16 +411,6 @@ describe("provider-bridge-ai-sdk history replay", () => {
     await bridge.generate({
       messages: [
         {
-          providerMetadata: {
-            aiSdkBridge: {
-              requestBody: {
-                replayed: false,
-              },
-            },
-            mockProvider: {
-              requestId: "req-1",
-            },
-          },
           parts: [
             {
               providerMetadata: {
@@ -440,6 +430,16 @@ describe("provider-bridge-ai-sdk history replay", () => {
               type: "reasoning",
             },
           ],
+          providerMetadata: {
+            aiSdkBridge: {
+              requestBody: {
+                replayed: false,
+              },
+            },
+            mockProvider: {
+              requestId: "req-1",
+            },
+          },
           role: "assistant",
         },
         {
