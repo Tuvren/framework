@@ -1018,13 +1018,23 @@ Paused approval Runs are not stale-running candidates. Host-configured approval 
 
 **Crash during iteration (during model stream)**: Partial accumulator state is lost. Stream events already emitted are lost. Re-execute the model call from scratch. Provider streams are not resumable.
 
-**Crash during iteration (after model call, before tools)**: Assistant output may survive as durable uncommitted staged work. If a TurnNode exists, the assistant message is committed history. If not, recovery reads staged results via `run.recover()` and either checkpoints them or re-executes from the last committed TurnNode. Unfulfilled tool calls are derived only from committed or recovered staged state, not assumed.
+**Crash during iteration (after model call, before tools)**: Assistant output may survive as durable uncommitted staged work. If a TurnNode exists, the assistant message is committed history. If not, recovery reads staged results through `run.recover()` and either checkpoints them or re-executes from the last committed TurnNode. Recovery derives unfulfilled tool calls only from committed or recovered staged state.
 
-**Crash during iteration (mid tool execution)**: Completed tool results that were incrementally staged before the crash may survive as durable uncommitted staged work for individual `tool` messages. If a TurnNode exists, those results are committed history. If not, recovery reads them from `run.recover()`, skips completed tool calls by `callId`, and resumes only unfinished calls. The framework MUST NOT assume they were already incorporated into the `messages` path unless the checkpoint succeeded.
+**Crash during iteration (mid tool execution)**: Completed tool results may survive as durable staged work for individual `tool` messages. If a TurnNode exists, those results are committed history. Otherwise, recovery reads them from `run.recover()`. Recovery matches decoded `tool_result` parts to the original `tool_call` parts by `callId`. It MUST dispatch only calls that have no durable result. The framework MUST NOT assume that staged results were incorporated into the `messages` path unless the checkpoint succeeded.
 
 **Crash between iterations**: Clean state. Resume from current Branch Head.
 
-**Crash leaving a leased `running` Run**: If the lease remains valid, another owner must not resume the Run. If the lease is expired, shared core may recover only through kernel stale-running preemption, then creates a replacement Run from returned recovery state. Paused approval Runs are excluded from this path.
+**Crash leaving a leased `running` Run**: If the lease remains valid, another owner MUST NOT resume the Run. If the lease is expired, shared core may recover only through kernel stale-running preemption. Paused approval Runs are excluded from this path.
+
+After successful stale-running preemption, the kernel reactively checkpoints the stale Run's staged work. The resulting TurnNode becomes the Branch Head. Its `consumedStagedResults` field contains the assistant message and every tool-result message that the stale Run staged. The returned recovery head equals that Branch Head, and `uncommittedStagedResults` is empty. The framework creates a replacement Run from this committed head.
+
+For an interrupted tool batch, the replacement Run MUST NOT invoke the runner for the recovered iteration. It MUST resume only calls that have no durable result. It redispatches every missing call with its original `callId`, including a call marked `nonRetryable`. The `nonRetryable` flag prevents a live owner from retrying an in-flight call after losing authority. It does not permit cold recovery to omit a missing logical call.
+
+Each redispatch MUST present the same `(turnId, callId)` idempotency key as the original attempt. The external system uses that key to deduplicate an effect whose first outcome is unknown. Recovery MUST NOT stage a second copy of the original assistant message.
+
+If the interrupted assistant state is unreadable or erased, recovery MUST fail with `TuvrenRecoveryError` code `runtime_recovery_interrupted_iteration_unreadable`. It MUST NOT re-invoke the model and mint replacement call identities.
+
+The shared checks `kernel.run-liveness.stale_preemption`, `runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner`, `runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set`, and `runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys` certify these rules.
 
 ### 4.10 Error Handling
 

@@ -145,7 +145,7 @@ tickets:
       evidence: "New checks under runtime-lifecycle-ext.stale-recovery in spec/conformance/engine/plans/runtime-api-lifecycle-extended.json assert: no runner invocation for the recovered iteration, the set of dispatched callIds equals the missing set (all missing calls, nonRetryable included), and each resumed call's idempotency key equals the original attempt's. The plan's planVersion is 0.3.0 and spec/core/authority-packet.json pins the same version. Every evidence entry is produced by the TypeScript framework adapter and graded by tools/conformance/harness/run.ts. The amended 4.9 names the head shape, both rules, and the error code; the changeset requests a patch bump."
     flows: [flow-crash-mid-checkpoint-recovery, flow-preemption-idempotent-side-effect]
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CR006
     title: Prove the idempotency key survives a real approval pause and resume
     type: Feature
