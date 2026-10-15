@@ -250,6 +250,599 @@ const FAULT_INJECTION_CONTROL = Symbol(
 );
 
 /**
+ * Drops the postgres schema named in `options.schemaName` using a fresh
+ * short-lived connection. Safe to call after the backend's own pool has been
+ * closed. Intended for test/conformance teardown of throwaway schemas.
+ */
+export const destroyPostgresBackend = async (
+  options: PostgresBackendOptions
+): Promise<void> => {
+  const schemaName = normalizeSchemaName(options.schemaName);
+  const cleanupClient = createPostgresClient(options);
+  try {
+    await cleanupClient.unsafe(
+      `DROP SCHEMA IF EXISTS ${quoteIdentifier(schemaName)} CASCADE`
+    );
+  } finally {
+    await cleanupClient.end({ timeout: 0 });
+  }
+};
+
+/**
+ * Loads the Scope's full state projection and runs the maintenance validation
+ * suite used by `fsck()` and `reclaim()`: the schema's durable posture
+ * (mirroring the SQLite backend's `validateMigrationState` gate — a dropped
+ * required index or a collation/deferred-FK drift is caught here, not just
+ * by `health()`), per-record shape/identity, the derived lineage-root index,
+ * and the committed-state invariant suite.
+ */
+const loadValidatedState = async (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
+): Promise<BackendState> => {
+  await validateRelationalSchemaPosture(sql, schemaName);
+
+  const endLoad = phaseObserver.startPhase("load");
+  let state: BackendState;
+  try {
+    state = await loadState(sql, schemaName, scope);
+  } finally {
+    endLoad();
+  }
+
+  const endValidateLoaded = phaseObserver.startPhase("validate-loaded");
+  try {
+    await validateLoadedState(state);
+  } finally {
+    endValidateLoaded();
+  }
+
+  const endValidateLineageIndex = phaseObserver.startPhase(
+    "validate-lineage-index"
+  );
+  try {
+    await validateTurnNodeLineageRootIndex(sql, schemaName, scope, state);
+  } finally {
+    endValidateLineageIndex();
+  }
+
+  const endValidateCommitted = phaseObserver.startPhase("validate-committed");
+  try {
+    // Maintenance validation has no prior in-memory generation to diff
+    // against, so the state is validated against itself: the transition
+    // checks degrade to identity (always legal) and what remains is the
+    // full standing-invariant suite, matching the SQLite maintenance paths.
+    validateCommittedState(state, state, {
+      assertActiveRunHeadAlignment,
+      assertBackwardBranchMoveIsArchived,
+      assertChunkedTurnTreePathChunkLayout,
+      assertRunCreatedTurnNodeWithinTurnSpan,
+      assertRunCreatedTurnNodesAreCanonical,
+      assertRunStartTurnNodeWithinTurnSpan,
+      assertTurnParentLink,
+      classifyTurnNodeRelationship,
+      decodeRunCreatedTurnNodeHashes,
+      decodeTurnNodeConsumedStagedResultObjectHashes,
+      validateHashString,
+    });
+  } finally {
+    endValidateCommitted();
+  }
+
+  return state;
+};
+
+/**
+ * Snapshot of every reclaimable record family's keys taken before the
+ * in-memory sweep, so the swept projection can be diffed into row deletions.
+ */
+interface ReclamationSurvivorKeys {
+  branches: Set<string>;
+  objects: Set<string>;
+  orderedPathChunks: Set<string>;
+  runs: Set<string>;
+  turnNodes: Set<string>;
+  turns: Set<string>;
+  turnTrees: Set<string>;
+}
+
+/** Captures the pre-sweep key sets for {@link applyReclamationDeletions}. */
+const captureReclamationKeys = (
+  state: BackendState
+): ReclamationSurvivorKeys => {
+  return {
+    branches: new Set(state.branches.keys()),
+    objects: new Set(state.objects.keys()),
+    orderedPathChunks: new Set(state.orderedPathChunks.keys()),
+    runs: new Set(state.runs.keys()),
+    turnNodes: new Set(state.turnNodes.keys()),
+    turnTrees: new Set(state.turnTrees.keys()),
+    turns: new Set(state.turns.keys()),
+  };
+};
+
+/** Keys present before the sweep but absent from the swept draft. */
+const reclaimedKeys = (
+  before: Set<string>,
+  survivors: Map<string, unknown>
+): string[] => {
+  const removed: string[] = [];
+  for (const key of before) {
+    if (!survivors.has(key)) {
+      removed.push(key);
+    }
+  }
+  return removed;
+};
+
+/**
+ * Deletes rows for this Scope whose column matches one of `keys`, batched.
+ * `table` and `column` are fixed internal identifiers, never caller input.
+ */
+const deleteByColumn = async (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  table: RelationalTableName,
+  column: string,
+  keys: string[]
+): Promise<void> => {
+  if (keys.length === 0) {
+    return;
+  }
+
+  const qualified = qualifyIdentifier(schemaName, table);
+
+  for (
+    let index = 0;
+    index < keys.length;
+    index += RECLAMATION_DELETE_BATCH_SIZE
+  ) {
+    const batch = keys.slice(index, index + RECLAMATION_DELETE_BATCH_SIZE);
+    await sql.unsafe(
+      `DELETE FROM ${qualified} WHERE scope = $1 AND ${quoteIdentifier(column)} = ANY($2::text[])`,
+      [scope, batch]
+    );
+  }
+};
+
+/**
+ * Deletes the rows the in-memory sweep removed. Child tables (including the
+ * derived `turn_node_lineage_roots` index and run-scoped staging/annotations)
+ * are deleted alongside their parents; with deferred foreign keys the order is
+ * not load-bearing, but children are still listed first for clarity.
+ */
+const applyReclamationDeletions = async (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  before: ReclamationSurvivorKeys,
+  survivors: BackendState
+): Promise<void> => {
+  const deletedRunIds = reclaimedKeys(before.runs, survivors.runs);
+  const deletedTurnIds = reclaimedKeys(before.turns, survivors.turns);
+  const deletedBranchIds = reclaimedKeys(before.branches, survivors.branches);
+  const deletedTurnTreeHashes = reclaimedKeys(
+    before.turnTrees,
+    survivors.turnTrees
+  );
+  const deletedTurnNodeHashes = reclaimedKeys(
+    before.turnNodes,
+    survivors.turnNodes
+  );
+  const deletedChunkHashes = reclaimedKeys(
+    before.orderedPathChunks,
+    survivors.orderedPathChunks
+  );
+  const deletedObjectHashes = reclaimedKeys(before.objects, survivors.objects);
+
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "staged_results",
+    "run_id",
+    deletedRunIds
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "observe_annotations",
+    "run_id",
+    deletedRunIds
+  );
+  await deleteByColumn(sql, schemaName, scope, "runs", "run_id", deletedRunIds);
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turns",
+    "turn_id",
+    deletedTurnIds
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "branches",
+    "branch_id",
+    deletedBranchIds
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turn_tree_paths",
+    "turn_tree_hash",
+    deletedTurnTreeHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turn_trees",
+    "hash",
+    deletedTurnTreeHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turn_node_lineage_roots",
+    "turn_node_hash",
+    deletedTurnNodeHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "turn_nodes",
+    "hash",
+    deletedTurnNodeHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "ordered_path_chunks",
+    "chunk_hash",
+    deletedChunkHashes
+  );
+  await deleteByColumn(
+    sql,
+    schemaName,
+    scope,
+    "objects",
+    "hash",
+    deletedObjectHashes
+  );
+};
+
+/**
+ * Inserts a content-addressed ordered-path chunk row, or verifies byte-level
+ * equality against the existing row for the same hash (immutable put).
+ */
+const insertOrderedPathChunk = async (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  record: StoredOrderedPathChunk
+): Promise<void> => {
+  const existing = await selectOrderedPathChunk(
+    sql,
+    schemaName,
+    scope,
+    record.chunkHash
+  );
+
+  if (existing !== null) {
+    ensureImmutableRecordMatch(
+      existing,
+      record,
+      areStoredOrderedPathChunksEqual,
+      "ordered path chunk"
+    );
+    return;
+  }
+
+  const table = qualifyIdentifier(schemaName, "ordered_path_chunks");
+  await sql.unsafe(
+    `
+      INSERT INTO ${table} (
+        scope,
+        chunk_hash,
+        item_count,
+        items_cbor,
+        created_at_ms
+      ) VALUES ($1, $2, $3, $4, $5)
+    `,
+    [
+      scope,
+      record.chunkHash,
+      record.itemCount,
+      record.itemsCbor,
+      record.createdAtMs,
+    ]
+  );
+};
+
+/**
+ * Encodes a hash array as deterministic CBOR, validating every element first
+ * so only well-formed hash strings are ever persisted.
+ */
+const encodeHashStringArray = (hashes: string[]): Uint8Array => {
+  return encodeDeterministicKernelRecord(
+    hashes.map((hash) => validateHashString(hash))
+  );
+};
+
+/**
+ * Normalizes an incoming turn-tree path record to its canonical stored
+ * encoding, resolving chunk references against the database: `single` and
+ * small ordered paths pass through; a flat ordered path above the promotion
+ * threshold is rewritten to `chunked` encoding.
+ */
+const normalizeStoredTurnTreePathInDatabase = async (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  record: StoredTurnTreePath,
+  now: () => number
+): Promise<StoredTurnTreePath> => {
+  if (record.collectionKind === "single") {
+    return cloneStoredTurnTreePath(record);
+  }
+
+  if (record.orderedEncoding === "chunked") {
+    const chunkHashes = decodeHashStringArray(
+      record.orderedChunkListCbor,
+      "record.orderedChunkListCbor"
+    );
+
+    if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
+      throw persistenceError(
+        "chunked ordered turn tree paths must only be used after crossing the promotion threshold",
+        "postgres_backend_chunked_turn_tree_path_below_threshold",
+        {
+          orderedCount: record.orderedCount,
+          threshold: ORDERED_PATH_CHUNK_THRESHOLD,
+        }
+      );
+    }
+
+    let totalCount = 0;
+    for (const [index, chunkHash] of chunkHashes.entries()) {
+      const chunk = await selectOrderedPathChunk(
+        sql,
+        schemaName,
+        scope,
+        chunkHash
+      );
+      if (chunk === null) {
+        throw persistenceError(
+          "chunked turn tree paths must reference existing chunk records",
+          "postgres_backend_missing_ordered_path_chunk_reference",
+          { chunkHash, path: record.path, turnTreeHash: record.turnTreeHash }
+        );
+      }
+
+      assertChunkedTurnTreePathChunkLayout(chunk, index, chunkHashes.length);
+      totalCount += chunk.itemCount;
+    }
+
+    if (totalCount !== record.orderedCount) {
+      throw persistenceError(
+        "chunked turn tree paths must agree with the stored chunk cardinality",
+        "postgres_backend_chunked_turn_tree_path_count_mismatch",
+        { orderedCount: record.orderedCount, totalCount }
+      );
+    }
+
+    return cloneStoredTurnTreePath(record);
+  }
+
+  if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
+    return cloneStoredTurnTreePath(record);
+  }
+
+  const orderedHashes = decodeHashStringArray(
+    record.orderedInlineCbor,
+    "record.orderedInlineCbor"
+  );
+  const chunkHashes: string[] = [];
+
+  for (
+    let index = 0;
+    index < orderedHashes.length;
+    index += ORDERED_PATH_CHUNK_SIZE
+  ) {
+    const chunkItems = orderedHashes.slice(
+      index,
+      index + ORDERED_PATH_CHUNK_SIZE
+    );
+    const itemsCbor = encodeHashStringArray(chunkItems);
+    const chunkHash = await hashKernelRecord(chunkItems);
+    const existingChunk = await selectOrderedPathChunk(
+      sql,
+      schemaName,
+      scope,
+      chunkHash
+    );
+    const chunkRecord: StoredOrderedPathChunk = {
+      chunkHash,
+      createdAtMs: existingChunk?.createdAtMs ?? now(),
+      itemCount: chunkItems.length,
+      itemsCbor,
+    };
+
+    await insertOrderedPathChunk(sql, schemaName, scope, chunkRecord);
+    chunkHashes.push(chunkHash);
+  }
+
+  return {
+    collectionKind: "ordered",
+    orderedChunkListCbor: encodeHashStringArray(chunkHashes),
+    orderedCount: record.orderedCount,
+    orderedEncoding: "chunked",
+    path: record.path,
+    turnTreeHash: record.turnTreeHash,
+  };
+};
+
+/**
+ * Builds the per-transaction repository surface over the open connection by
+ * composing the core and support repository factories with their
+ * Postgres-specific helper dependencies.
+ */
+const createRepositories = (
+  sql: DbSql,
+  schemaName: string,
+  scope: string,
+  now: () => number,
+  isTransactionActive: () => boolean,
+  writeTracker: TransactionWriteTracker
+): MutableRepositories => {
+  const assertTransactionActive = (): void => {
+    if (!isTransactionActive()) {
+      throw persistenceError(
+        "postgres backend transaction handles must not outlive their transaction",
+        "postgres_backend_inactive_transaction_handle"
+      );
+    }
+  };
+
+  return {
+    now,
+    ...createSupportRepositories(
+      {
+        assertTransactionActive,
+        schemaName,
+        scope,
+        sql,
+        writeTracker,
+      },
+      {
+        areStoredObjectsEqual,
+        areStoredSchemasEqual,
+        areStoredStagedResultsEqual,
+        areStoredThreadsEqual,
+        assertStoredObjectIdentity,
+        assertStoredOrderedPathChunkIdentity,
+        cloneStoredObject,
+        cloneStoredObserveAnnotation,
+        cloneStoredOrderedPathChunk,
+        cloneStoredSchema,
+        cloneStoredStagedResult,
+        cloneStoredThread,
+        compareStoredObserveAnnotation,
+        compareStoredStagedResult,
+        ensureImmutableRecordMatch,
+        ensureObjectExistsInDatabase,
+        ensureRunExistsInDatabase,
+        ensureSchemaExistsInDatabase,
+        ensureTurnNodeExistsInDatabase,
+        insertOrderedPathChunk,
+        nextObserveAnnotationRecordKey,
+        selectObject,
+        selectObserveAnnotationsByRun,
+        selectOrderedPathChunk,
+        selectSchema,
+        selectStagedResult,
+        selectStagedResultsByRun,
+        selectThread,
+      }
+    ),
+    ...createCoreRepositories(
+      {
+        assertTransactionActive,
+        now,
+        schemaName,
+        scope,
+        sql,
+        writeTracker,
+      },
+      {
+        areStoredTurnNodesEqual,
+        areStoredTurnTreePathsEqual,
+        areStoredTurnTreesEqual,
+        assertBranchHeadMoveIsLinearInDatabase,
+        assertImmutableField,
+        assertImmutableOptionalField,
+        assertMonotonicUpdatedAtMs,
+        assertRunUpdateIsLegal,
+        assertStoredTurnNodeIdentity,
+        assertStoredTurnTreeIdentity,
+        cloneStoredBranch,
+        cloneStoredRun,
+        cloneStoredTurn,
+        cloneStoredTurnNode,
+        cloneStoredTurnTree,
+        cloneStoredTurnTreePath,
+        compareStoredBranch,
+        compareStoredRun,
+        compareStoredTurn,
+        ensureBranchExistsInDatabase,
+        ensureImmutableRecordMatch,
+        ensureObjectExistsInDatabase,
+        ensureSchemaExistsInDatabase,
+        ensureThreadExistsInDatabase,
+        ensureTurnExistsInDatabase,
+        ensureTurnNodeExistsInDatabase,
+        ensureTurnTreeExistsInDatabase,
+        getSchemaForSchemaIdInDatabase,
+        insertTurnNodeLineageMetadata,
+        normalizeStoredTurnTreePathInDatabase,
+        selectBranch,
+        selectBranchesByThread,
+        selectExpiredRuns,
+        selectRun,
+        selectRunsByBranch,
+        selectTurn,
+        selectTurnNode,
+        selectTurnTree,
+        selectTurnTreePath,
+        selectTurnTreePathsByTurnTree,
+        selectTurnsByThread,
+      }
+    ),
+  };
+};
+
+/**
+ * Reads the PostgreSQL server's current wall-clock time (`clock_timestamp()`)
+ * as epoch milliseconds, once per transaction, for the ADR-0050 shared
+ * rendezvous clock.
+ */
+const readBackendClockMs = async (reserved: Sql): Promise<number> => {
+  const rows = await reserved.unsafe<{ now_ms: string }[]>(
+    "SELECT (extract(epoch from clock_timestamp()) * 1000)::bigint AS now_ms"
+  );
+  const rawNowMs = rows[0]?.now_ms;
+
+  if (rawNowMs === undefined) {
+    throw persistenceError(
+      "postgres backend could not read the server clock",
+      "postgres_backend_clock_unavailable"
+    );
+  }
+
+  const nowMs = Number(rawNowMs);
+
+  if (!Number.isSafeInteger(nowMs)) {
+    throw persistenceError(
+      "postgres backend server clock is out of safe-integer range",
+      "postgres_backend_clock_unsafe_integer",
+      { rawNowMs: String(rawNowMs) }
+    );
+  }
+
+  return nowMs;
+};
+
+/**
  * `RuntimeBackend` implementation over a relational PostgreSQL schema
  * (ADR-0067 / issue #110): one table per record family, one row per item,
  * Scope isolation via a `scope` column on every key (ADR-0048/0049). Mutating
@@ -882,603 +1475,12 @@ class PostgresBackend implements KrakenBackend {
  * `close`/`fsck` intersection, plus this backend's `destroy`) so callers
  * reach `close()`, `destroy()`, and `fsck()` without an unsound cast.
  */
-export function createPostgresBackend(
+export const createPostgresBackend = (
   options?: PostgresBackendOptions
 ): KrakenBackend & {
   close(): Promise<void>;
   destroy(options?: { dropSchema?: boolean }): Promise<void>;
   fsck(): Promise<{ ok: true } | { ok: false; reason: string }>;
-} {
+} => {
   return new PostgresBackend(options);
-}
-
-/**
- * Drops the postgres schema named in `options.schemaName` using a fresh
- * short-lived connection. Safe to call after the backend's own pool has been
- * closed. Intended for test/conformance teardown of throwaway schemas.
- */
-export async function destroyPostgresBackend(
-  options: PostgresBackendOptions
-): Promise<void> {
-  const schemaName = normalizeSchemaName(options.schemaName);
-  const cleanupClient = createPostgresClient(options);
-  try {
-    await cleanupClient.unsafe(
-      `DROP SCHEMA IF EXISTS ${quoteIdentifier(schemaName)} CASCADE`
-    );
-  } finally {
-    await cleanupClient.end({ timeout: 0 });
-  }
-}
-
-/**
- * Builds the per-transaction repository surface over the open connection by
- * composing the core and support repository factories with their
- * Postgres-specific helper dependencies.
- */
-function createRepositories(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  now: () => number,
-  isTransactionActive: () => boolean,
-  writeTracker: TransactionWriteTracker
-): MutableRepositories {
-  const assertTransactionActive = (): void => {
-    if (!isTransactionActive()) {
-      throw persistenceError(
-        "postgres backend transaction handles must not outlive their transaction",
-        "postgres_backend_inactive_transaction_handle"
-      );
-    }
-  };
-
-  return {
-    now,
-    ...createSupportRepositories(
-      {
-        assertTransactionActive,
-        schemaName,
-        scope,
-        sql,
-        writeTracker,
-      },
-      {
-        areStoredObjectsEqual,
-        areStoredSchemasEqual,
-        areStoredStagedResultsEqual,
-        areStoredThreadsEqual,
-        assertStoredObjectIdentity,
-        assertStoredOrderedPathChunkIdentity,
-        cloneStoredObject,
-        cloneStoredObserveAnnotation,
-        cloneStoredOrderedPathChunk,
-        cloneStoredSchema,
-        cloneStoredStagedResult,
-        cloneStoredThread,
-        compareStoredObserveAnnotation,
-        compareStoredStagedResult,
-        ensureImmutableRecordMatch,
-        ensureObjectExistsInDatabase,
-        ensureRunExistsInDatabase,
-        ensureSchemaExistsInDatabase,
-        ensureTurnNodeExistsInDatabase,
-        insertOrderedPathChunk,
-        nextObserveAnnotationRecordKey,
-        selectObject,
-        selectObserveAnnotationsByRun,
-        selectOrderedPathChunk,
-        selectSchema,
-        selectStagedResult,
-        selectStagedResultsByRun,
-        selectThread,
-      }
-    ),
-    ...createCoreRepositories(
-      {
-        assertTransactionActive,
-        now,
-        schemaName,
-        scope,
-        sql,
-        writeTracker,
-      },
-      {
-        areStoredTurnNodesEqual,
-        areStoredTurnTreePathsEqual,
-        areStoredTurnTreesEqual,
-        assertBranchHeadMoveIsLinearInDatabase,
-        assertImmutableField,
-        assertImmutableOptionalField,
-        assertMonotonicUpdatedAtMs,
-        assertRunUpdateIsLegal,
-        assertStoredTurnNodeIdentity,
-        assertStoredTurnTreeIdentity,
-        cloneStoredBranch,
-        cloneStoredRun,
-        cloneStoredTurn,
-        cloneStoredTurnNode,
-        cloneStoredTurnTree,
-        cloneStoredTurnTreePath,
-        compareStoredBranch,
-        compareStoredRun,
-        compareStoredTurn,
-        ensureBranchExistsInDatabase,
-        ensureImmutableRecordMatch,
-        ensureObjectExistsInDatabase,
-        ensureSchemaExistsInDatabase,
-        ensureThreadExistsInDatabase,
-        ensureTurnExistsInDatabase,
-        ensureTurnNodeExistsInDatabase,
-        ensureTurnTreeExistsInDatabase,
-        getSchemaForSchemaIdInDatabase,
-        insertTurnNodeLineageMetadata,
-        normalizeStoredTurnTreePathInDatabase,
-        selectBranch,
-        selectBranchesByThread,
-        selectExpiredRuns,
-        selectRun,
-        selectRunsByBranch,
-        selectTurn,
-        selectTurnNode,
-        selectTurnTree,
-        selectTurnTreePath,
-        selectTurnTreePathsByTurnTree,
-        selectTurnsByThread,
-      }
-    ),
-  };
-}
-
-/**
- * Loads the Scope's full state projection and runs the maintenance validation
- * suite used by `fsck()` and `reclaim()`: the schema's durable posture
- * (mirroring the SQLite backend's `validateMigrationState` gate — a dropped
- * required index or a collation/deferred-FK drift is caught here, not just
- * by `health()`), per-record shape/identity, the derived lineage-root index,
- * and the committed-state invariant suite.
- */
-async function loadValidatedState(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  phaseObserver: PhaseObserver = NOOP_PHASE_OBSERVER
-): Promise<BackendState> {
-  await validateRelationalSchemaPosture(sql, schemaName);
-
-  const endLoad = phaseObserver.startPhase("load");
-  let state: BackendState;
-  try {
-    state = await loadState(sql, schemaName, scope);
-  } finally {
-    endLoad();
-  }
-
-  const endValidateLoaded = phaseObserver.startPhase("validate-loaded");
-  try {
-    await validateLoadedState(state);
-  } finally {
-    endValidateLoaded();
-  }
-
-  const endValidateLineageIndex = phaseObserver.startPhase(
-    "validate-lineage-index"
-  );
-  try {
-    await validateTurnNodeLineageRootIndex(sql, schemaName, scope, state);
-  } finally {
-    endValidateLineageIndex();
-  }
-
-  const endValidateCommitted = phaseObserver.startPhase("validate-committed");
-  try {
-    // Maintenance validation has no prior in-memory generation to diff
-    // against, so the state is validated against itself: the transition
-    // checks degrade to identity (always legal) and what remains is the
-    // full standing-invariant suite, matching the SQLite maintenance paths.
-    validateCommittedState(state, state, {
-      assertActiveRunHeadAlignment,
-      assertBackwardBranchMoveIsArchived,
-      assertChunkedTurnTreePathChunkLayout,
-      assertRunCreatedTurnNodeWithinTurnSpan,
-      assertRunCreatedTurnNodesAreCanonical,
-      assertRunStartTurnNodeWithinTurnSpan,
-      assertTurnParentLink,
-      classifyTurnNodeRelationship,
-      decodeRunCreatedTurnNodeHashes,
-      decodeTurnNodeConsumedStagedResultObjectHashes,
-      validateHashString,
-    });
-  } finally {
-    endValidateCommitted();
-  }
-
-  return state;
-}
-
-/**
- * Snapshot of every reclaimable record family's keys taken before the
- * in-memory sweep, so the swept projection can be diffed into row deletions.
- */
-interface ReclamationSurvivorKeys {
-  branches: Set<string>;
-  objects: Set<string>;
-  orderedPathChunks: Set<string>;
-  runs: Set<string>;
-  turnNodes: Set<string>;
-  turns: Set<string>;
-  turnTrees: Set<string>;
-}
-
-/** Captures the pre-sweep key sets for {@link applyReclamationDeletions}. */
-function captureReclamationKeys(state: BackendState): ReclamationSurvivorKeys {
-  return {
-    branches: new Set(state.branches.keys()),
-    objects: new Set(state.objects.keys()),
-    orderedPathChunks: new Set(state.orderedPathChunks.keys()),
-    runs: new Set(state.runs.keys()),
-    turnNodes: new Set(state.turnNodes.keys()),
-    turnTrees: new Set(state.turnTrees.keys()),
-    turns: new Set(state.turns.keys()),
-  };
-}
-
-/** Keys present before the sweep but absent from the swept draft. */
-function reclaimedKeys(
-  before: Set<string>,
-  survivors: Map<string, unknown>
-): string[] {
-  const removed: string[] = [];
-  for (const key of before) {
-    if (!survivors.has(key)) {
-      removed.push(key);
-    }
-  }
-  return removed;
-}
-
-/**
- * Deletes the rows the in-memory sweep removed. Child tables (including the
- * derived `turn_node_lineage_roots` index and run-scoped staging/annotations)
- * are deleted alongside their parents; with deferred foreign keys the order is
- * not load-bearing, but children are still listed first for clarity.
- */
-async function applyReclamationDeletions(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  before: ReclamationSurvivorKeys,
-  survivors: BackendState
-): Promise<void> {
-  const deletedRunIds = reclaimedKeys(before.runs, survivors.runs);
-  const deletedTurnIds = reclaimedKeys(before.turns, survivors.turns);
-  const deletedBranchIds = reclaimedKeys(before.branches, survivors.branches);
-  const deletedTurnTreeHashes = reclaimedKeys(
-    before.turnTrees,
-    survivors.turnTrees
-  );
-  const deletedTurnNodeHashes = reclaimedKeys(
-    before.turnNodes,
-    survivors.turnNodes
-  );
-  const deletedChunkHashes = reclaimedKeys(
-    before.orderedPathChunks,
-    survivors.orderedPathChunks
-  );
-  const deletedObjectHashes = reclaimedKeys(before.objects, survivors.objects);
-
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "staged_results",
-    "run_id",
-    deletedRunIds
-  );
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "observe_annotations",
-    "run_id",
-    deletedRunIds
-  );
-  await deleteByColumn(sql, schemaName, scope, "runs", "run_id", deletedRunIds);
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "turns",
-    "turn_id",
-    deletedTurnIds
-  );
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "branches",
-    "branch_id",
-    deletedBranchIds
-  );
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "turn_tree_paths",
-    "turn_tree_hash",
-    deletedTurnTreeHashes
-  );
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "turn_trees",
-    "hash",
-    deletedTurnTreeHashes
-  );
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "turn_node_lineage_roots",
-    "turn_node_hash",
-    deletedTurnNodeHashes
-  );
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "turn_nodes",
-    "hash",
-    deletedTurnNodeHashes
-  );
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "ordered_path_chunks",
-    "chunk_hash",
-    deletedChunkHashes
-  );
-  await deleteByColumn(
-    sql,
-    schemaName,
-    scope,
-    "objects",
-    "hash",
-    deletedObjectHashes
-  );
-}
-
-/**
- * Deletes rows for this Scope whose column matches one of `keys`, batched.
- * `table` and `column` are fixed internal identifiers, never caller input.
- */
-async function deleteByColumn(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  table: RelationalTableName,
-  column: string,
-  keys: string[]
-): Promise<void> {
-  if (keys.length === 0) {
-    return;
-  }
-
-  const qualified = qualifyIdentifier(schemaName, table);
-
-  for (
-    let index = 0;
-    index < keys.length;
-    index += RECLAMATION_DELETE_BATCH_SIZE
-  ) {
-    const batch = keys.slice(index, index + RECLAMATION_DELETE_BATCH_SIZE);
-    await sql.unsafe(
-      `DELETE FROM ${qualified} WHERE scope = $1 AND ${quoteIdentifier(column)} = ANY($2::text[])`,
-      [scope, batch]
-    );
-  }
-}
-
-/**
- * Normalizes an incoming turn-tree path record to its canonical stored
- * encoding, resolving chunk references against the database: `single` and
- * small ordered paths pass through; a flat ordered path above the promotion
- * threshold is rewritten to `chunked` encoding.
- */
-async function normalizeStoredTurnTreePathInDatabase(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  record: StoredTurnTreePath,
-  now: () => number
-): Promise<StoredTurnTreePath> {
-  if (record.collectionKind === "single") {
-    return cloneStoredTurnTreePath(record);
-  }
-
-  if (record.orderedEncoding === "chunked") {
-    const chunkHashes = decodeHashStringArray(
-      record.orderedChunkListCbor,
-      "record.orderedChunkListCbor"
-    );
-
-    if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
-      throw persistenceError(
-        "chunked ordered turn tree paths must only be used after crossing the promotion threshold",
-        "postgres_backend_chunked_turn_tree_path_below_threshold",
-        {
-          orderedCount: record.orderedCount,
-          threshold: ORDERED_PATH_CHUNK_THRESHOLD,
-        }
-      );
-    }
-
-    let totalCount = 0;
-    for (const [index, chunkHash] of chunkHashes.entries()) {
-      const chunk = await selectOrderedPathChunk(
-        sql,
-        schemaName,
-        scope,
-        chunkHash
-      );
-      if (chunk === null) {
-        throw persistenceError(
-          "chunked turn tree paths must reference existing chunk records",
-          "postgres_backend_missing_ordered_path_chunk_reference",
-          { chunkHash, path: record.path, turnTreeHash: record.turnTreeHash }
-        );
-      }
-
-      assertChunkedTurnTreePathChunkLayout(chunk, index, chunkHashes.length);
-      totalCount += chunk.itemCount;
-    }
-
-    if (totalCount !== record.orderedCount) {
-      throw persistenceError(
-        "chunked turn tree paths must agree with the stored chunk cardinality",
-        "postgres_backend_chunked_turn_tree_path_count_mismatch",
-        { orderedCount: record.orderedCount, totalCount }
-      );
-    }
-
-    return cloneStoredTurnTreePath(record);
-  }
-
-  if (record.orderedCount <= ORDERED_PATH_CHUNK_THRESHOLD) {
-    return cloneStoredTurnTreePath(record);
-  }
-
-  const orderedHashes = decodeHashStringArray(
-    record.orderedInlineCbor,
-    "record.orderedInlineCbor"
-  );
-  const chunkHashes: string[] = [];
-
-  for (
-    let index = 0;
-    index < orderedHashes.length;
-    index += ORDERED_PATH_CHUNK_SIZE
-  ) {
-    const chunkItems = orderedHashes.slice(
-      index,
-      index + ORDERED_PATH_CHUNK_SIZE
-    );
-    const itemsCbor = encodeHashStringArray(chunkItems);
-    const chunkHash = await hashKernelRecord(chunkItems);
-    const existingChunk = await selectOrderedPathChunk(
-      sql,
-      schemaName,
-      scope,
-      chunkHash
-    );
-    const chunkRecord: StoredOrderedPathChunk = {
-      chunkHash,
-      createdAtMs: existingChunk?.createdAtMs ?? now(),
-      itemCount: chunkItems.length,
-      itemsCbor,
-    };
-
-    await insertOrderedPathChunk(sql, schemaName, scope, chunkRecord);
-    chunkHashes.push(chunkHash);
-  }
-
-  return {
-    collectionKind: "ordered",
-    orderedChunkListCbor: encodeHashStringArray(chunkHashes),
-    orderedCount: record.orderedCount,
-    orderedEncoding: "chunked",
-    path: record.path,
-    turnTreeHash: record.turnTreeHash,
-  };
-}
-
-/**
- * Inserts a content-addressed ordered-path chunk row, or verifies byte-level
- * equality against the existing row for the same hash (immutable put).
- */
-async function insertOrderedPathChunk(
-  sql: DbSql,
-  schemaName: string,
-  scope: string,
-  record: StoredOrderedPathChunk
-): Promise<void> {
-  const existing = await selectOrderedPathChunk(
-    sql,
-    schemaName,
-    scope,
-    record.chunkHash
-  );
-
-  if (existing !== null) {
-    ensureImmutableRecordMatch(
-      existing,
-      record,
-      areStoredOrderedPathChunksEqual,
-      "ordered path chunk"
-    );
-    return;
-  }
-
-  const table = qualifyIdentifier(schemaName, "ordered_path_chunks");
-  await sql.unsafe(
-    `
-      INSERT INTO ${table} (
-        scope,
-        chunk_hash,
-        item_count,
-        items_cbor,
-        created_at_ms
-      ) VALUES ($1, $2, $3, $4, $5)
-    `,
-    [
-      scope,
-      record.chunkHash,
-      record.itemCount,
-      record.itemsCbor,
-      record.createdAtMs,
-    ]
-  );
-}
-
-/**
- * Encodes a hash array as deterministic CBOR, validating every element first
- * so only well-formed hash strings are ever persisted.
- */
-function encodeHashStringArray(hashes: string[]): Uint8Array {
-  return encodeDeterministicKernelRecord(
-    hashes.map((hash) => validateHashString(hash))
-  );
-}
-
-/**
- * Reads the PostgreSQL server's current wall-clock time (`clock_timestamp()`)
- * as epoch milliseconds, once per transaction, for the ADR-0050 shared
- * rendezvous clock.
- */
-async function readBackendClockMs(reserved: Sql): Promise<number> {
-  const rows = await reserved.unsafe<{ now_ms: string }[]>(
-    "SELECT (extract(epoch from clock_timestamp()) * 1000)::bigint AS now_ms"
-  );
-  const rawNowMs = rows[0]?.now_ms;
-
-  if (rawNowMs === undefined) {
-    throw persistenceError(
-      "postgres backend could not read the server clock",
-      "postgres_backend_clock_unavailable"
-    );
-  }
-
-  const nowMs = Number(rawNowMs);
-
-  if (!Number.isSafeInteger(nowMs)) {
-    throw persistenceError(
-      "postgres backend server clock is out of safe-integer range",
-      "postgres_backend_clock_unsafe_integer",
-      { rawNowMs: String(rawNowMs) }
-    );
-  }
-
-  return nowMs;
-}
+};
