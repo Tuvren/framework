@@ -240,6 +240,12 @@
       "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
       "bytes": 20,
       "role": "measurement"
+    },
+    {
+      "path": "M8R-summary.json",
+      "sha256": "2cc4ddce90fe5e1f6cf5eec3a985d5c99f92c81f47890bb6f7889192dda95c23",
+      "bytes": 1742,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."
