@@ -197,14 +197,14 @@ const runCommand = async (
     let stderr = "";
     let settled = false;
 
-    function finish(exitCode: number): void {
+    const finish = (exitCode: number): void => {
       if (settled) {
         return;
       }
 
       settled = true;
       resolve({ exitCode, stderr, stdout });
-    }
+    };
 
     child.stdout.on("data", (chunk: Buffer) => {
       stdout += chunk.toString();
