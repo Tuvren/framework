@@ -55,12 +55,12 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -120,12 +120,12 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -265,12 +265,12 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -338,12 +338,12 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "stream",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -412,12 +412,12 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -476,12 +476,12 @@ describe("runner-react integration aroundModel", () => {
     } satisfies TuvrenProvider;
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: REACT_RUNNER_ID,
+      kernel: harness.kernel,
       runnerRegistry: createRunnerRegistry([
         createReActRunner({
           providerCallMode: "generate",
         }),
       ]),
-      kernel: harness.kernel,
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({

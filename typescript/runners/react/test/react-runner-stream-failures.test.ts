@@ -237,7 +237,7 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("runner did not stop waiting after stream abort");
+      throw new TypeError("runner did not stop waiting after stream abort");
     }
 
     expect(result.resolution.type).toBe("fail");
@@ -333,7 +333,7 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("runner did not stop waiting after stream abort");
+      throw new TypeError("runner did not stop waiting after stream abort");
     }
 
     expect(returnCalls).toBe(1);
@@ -356,8 +356,8 @@ describe("runner-react streamed failure handling", () => {
       id: "provider",
       async *stream() {
         yield {
-          providerCallId: "native-call-1",
           name: "search",
+          providerCallId: "native-call-1",
           type: "tool_call_start",
         };
         yield {
@@ -390,10 +390,12 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("runner did not stop waiting after stream abort");
+      throw new TypeError("runner did not stop waiting after stream abort");
     }
 
-    expect(() => assertRunnerExecutionResult(result)).not.toThrow();
+    expect(() => {
+      assertRunnerExecutionResult(result);
+    }).not.toThrow();
     expect(result.partial).toBe(true);
     expect(result.toolExecutionMode).toBe("sequential");
     expect(result.resolution.type).toBe("fail");
@@ -433,8 +435,8 @@ describe("runner-react streamed failure handling", () => {
       id: "provider",
       async *stream() {
         const startChunk = {
-          providerCallId: "native-call-1",
           name: "search",
+          providerCallId: "native-call-1",
           type: "tool_call_start",
         } satisfies ProviderStreamChunk;
 
@@ -463,10 +465,12 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("runner did not stop waiting after stream abort");
+      throw new TypeError("runner did not stop waiting after stream abort");
     }
 
-    expect(() => assertRunnerExecutionResult(result)).not.toThrow();
+    expect(() => {
+      assertRunnerExecutionResult(result);
+    }).not.toThrow();
     expect(result.partial).toBe(false);
     expect(result.messages).toBeUndefined();
     expect(result.resolution.type).toBe("fail");
@@ -520,10 +524,12 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("runner did not stop waiting after stream abort");
+      throw new TypeError("runner did not stop waiting after stream abort");
     }
 
-    expect(() => assertRunnerExecutionResult(result)).not.toThrow();
+    expect(() => {
+      assertRunnerExecutionResult(result);
+    }).not.toThrow();
     expect(result.partial).toBe(true);
     expect(emittedEvents.map((event) => event.type)).toEqual([
       "message.start",
@@ -577,10 +583,12 @@ describe("runner-react streamed failure handling", () => {
     ]);
 
     if (typeof result === "string") {
-      throw new Error("runner did not stop waiting after stream abort");
+      throw new TypeError("runner did not stop waiting after stream abort");
     }
 
-    expect(() => assertRunnerExecutionResult(result)).not.toThrow();
+    expect(() => {
+      assertRunnerExecutionResult(result);
+    }).not.toThrow();
     expect(result.partial).toBe(false);
     expect(result.messages).toBeUndefined();
     expect(result.resolution.type).toBe("fail");

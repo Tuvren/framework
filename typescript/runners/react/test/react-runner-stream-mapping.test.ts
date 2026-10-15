@@ -40,8 +40,8 @@ describe("runner-react streamed mapping", () => {
       id: "provider",
       async *stream() {
         yield {
-          providerCallId: "native-call-1",
           name: "search",
+          providerCallId: "native-call-1",
           type: "tool_call_start",
         } as const;
         yield {
@@ -52,12 +52,12 @@ describe("runner-react streamed mapping", () => {
         yield {
           input: { query: "runtime" },
           name: "search",
+          providerCallId: "native-call-1",
           providerMetadata: {
             google: {
               thoughtSignature: "tool-thought-1",
             },
           },
-          providerCallId: "native-call-1",
           type: "tool_call_done",
         } as const;
         yield {
@@ -200,8 +200,8 @@ describe("runner-react streamed mapping", () => {
       id: "provider",
       async *stream() {
         yield {
-          text: "internal reasoning",
           signature: "sig-1",
+          text: "internal reasoning",
           type: "reasoning_delta",
         } as const;
         yield {
@@ -620,8 +620,8 @@ describe("runner-react streamed mapping", () => {
       id: "provider",
       async *stream() {
         yield {
-          providerCallId: "native-call-1",
           name: "search",
+          providerCallId: "native-call-1",
           type: "tool_call_start",
         } as const;
         yield {
@@ -684,8 +684,8 @@ describe("runner-react streamed mapping", () => {
       id: "provider",
       async *stream() {
         yield {
-          providerCallId: "native-call-1",
           name: "search",
+          providerCallId: "native-call-1",
           type: "tool_call_start",
         } as const;
         yield {

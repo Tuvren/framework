@@ -133,10 +133,10 @@ function buildRuntime() {
   const harness = createFakeKernelHarness();
   const runtime = createTuvrenRuntimeCore({
     defaultRunnerId: REACT_RUNNER_ID,
+    kernel: harness.kernel,
     runnerRegistry: createRunnerRegistry([
       createReActRunner({ providerCallMode: "generate" }),
     ]),
-    kernel: harness.kernel,
   });
   return { harness, runtime };
 }

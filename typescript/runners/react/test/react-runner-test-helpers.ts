@@ -174,8 +174,8 @@ export function textSignal(text: string): InputSignal {
   };
 }
 
-export function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => {
+export async function wait(milliseconds: number): Promise<void> {
+  await new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
 }
