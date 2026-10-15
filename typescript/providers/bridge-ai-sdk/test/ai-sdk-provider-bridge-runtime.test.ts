@@ -122,8 +122,8 @@ describe("provider-bridge-ai-sdk runtime", () => {
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
-      runnerRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([createReActRunner()]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -202,8 +202,8 @@ describe("provider-bridge-ai-sdk runtime", () => {
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
-      runnerRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([createReActRunner()]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({
@@ -278,8 +278,8 @@ describe("provider-bridge-ai-sdk runtime", () => {
     });
     const runtime = createTuvrenRuntimeCore({
       defaultRunnerId: "react",
-      runnerRegistry: createRunnerRegistry([createReActRunner()]),
       kernel: harness.kernel,
+      runnerRegistry: createRunnerRegistry([createReActRunner()]),
     });
     const thread = await runtime.createThread({});
     const handle = runtime.executeTurn({

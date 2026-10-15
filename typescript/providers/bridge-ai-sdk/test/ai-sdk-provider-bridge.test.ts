@@ -96,7 +96,6 @@ describe("provider-bridge-ai-sdk", () => {
     });
 
     const response = await verifyProviderGenerate({
-      provider: bridge,
       prompt: {
         config: {
           model: "mock-model",
@@ -214,6 +213,7 @@ describe("provider-bridge-ai-sdk", () => {
           },
         ],
       },
+      provider: bridge,
     });
 
     expect(capturedOptions).toEqual(
@@ -463,7 +463,6 @@ describe("provider-bridge-ai-sdk", () => {
     });
 
     const chunks = await verifyProviderStream({
-      provider: bridge,
       prompt: {
         messages: [
           {
@@ -484,6 +483,7 @@ describe("provider-bridge-ai-sdk", () => {
           },
         },
       },
+      provider: bridge,
     });
 
     assertProviderChunkTypes(chunks, [

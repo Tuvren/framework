@@ -54,9 +54,9 @@ import {
 // name — the exact configuration that makes AI SDK #10888 fire in generateText.
 const USER_FUNCTION_TOOLS = [
   {
-    name: "my_function",
     description: "a user-owned function tool",
     inputSchema: { type: "object" as const },
+    name: "my_function",
   },
 ];
 
@@ -74,7 +74,6 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
   test("attributes a providerExecuted+dynamic round-trip to provider-native without a spurious validation error", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doGenerate() {
           // Realistic provider-executed round-trip: the provider's own tool-call
           // record (providerExecuted + dynamic) precedes the tool-result.
@@ -102,13 +101,14 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
             finishReason: { raw: "stop", unified: "stop" },
           });
         },
+        provider: "openai",
       }),
     });
 
     const response = await bridge.generate({
       messages: [{ parts: [{ text: "search", type: "text" }], role: "user" }],
-      tools: USER_FUNCTION_TOOLS,
       providerNativeTools: [WEB_SEARCH_DECLARATION],
+      tools: USER_FUNCTION_TOOLS,
     });
 
     // (1) The provider-executed result is attributed to provider-native.
@@ -138,7 +138,6 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
   test("still rejects an UNDECLARED providerExecuted tool-call (baseline protection)", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doGenerate() {
           return createGenerateResult({
             content: [
@@ -154,6 +153,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
             finishReason: { raw: "tool-calls", unified: "tool-calls" },
           });
         },
+        provider: "openai",
       }),
     });
 
@@ -169,7 +169,6 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
   test("a DECLARED provider-executed tool-call with no matching result yields no observation (provider bookkeeping, not a silent function call)", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doGenerate() {
           // A declared provider-executed tool-call WITHOUT its tool-result: a
           // truncated/interrupted provider turn. The call is the provider's own
@@ -194,13 +193,14 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (generate)", () => {
             finishReason: { raw: "stop", unified: "stop" },
           });
         },
+        provider: "openai",
       }),
     });
 
     const response = await bridge.generate({
       messages: [{ parts: [{ text: "search", type: "text" }], role: "user" }],
-      tools: USER_FUNCTION_TOOLS,
       providerNativeTools: [WEB_SEARCH_DECLARATION],
+      tools: USER_FUNCTION_TOOLS,
     });
 
     // No matching tool-result → no provider-native observation is fabricated.
@@ -225,7 +225,6 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
   test("attributes a streamed providerExecuted+dynamic round-trip to provider-native without a spurious validation error", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doStream() {
           return {
             stream: streamFromParts([
@@ -252,14 +251,15 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
             ]),
           };
         },
+        provider: "openai",
       }),
     });
 
     const chunks = await collectAsyncIterable(
       bridge.stream({
         messages: [{ parts: [{ text: "search", type: "text" }], role: "user" }],
-        tools: USER_FUNCTION_TOOLS,
         providerNativeTools: [WEB_SEARCH_DECLARATION],
+        tools: USER_FUNCTION_TOOLS,
       })
     );
 
@@ -296,7 +296,6 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
   test("a DECLARED streamed provider-executed tool-call with no matching result yields no provider_tool_result and no client tool_call", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doStream() {
           // Streamed counterpart of the orphan case: the provider-executed
           // tool-call streams but its tool-result never arrives this turn. The
@@ -321,14 +320,15 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
             ]),
           };
         },
+        provider: "openai",
       }),
     });
 
     const chunks = await collectAsyncIterable(
       bridge.stream({
         messages: [{ parts: [{ text: "search", type: "text" }], role: "user" }],
-        tools: USER_FUNCTION_TOOLS,
         providerNativeTools: [WEB_SEARCH_DECLARATION],
+        tools: USER_FUNCTION_TOOLS,
       })
     );
 
@@ -357,7 +357,6 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
     // never emitting a tool_call_start/args_delta/done the runtime would execute.
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doStream() {
           return {
             stream: streamFromParts([
@@ -394,14 +393,15 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
             ]),
           };
         },
+        provider: "openai",
       }),
     });
 
     const chunks = await collectAsyncIterable(
       bridge.stream({
         messages: [{ parts: [{ text: "search", type: "text" }], role: "user" }],
-        tools: USER_FUNCTION_TOOLS,
         providerNativeTools: [WEB_SEARCH_DECLARATION],
+        tools: USER_FUNCTION_TOOLS,
       })
     );
 
@@ -445,7 +445,6 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
     // declared-lookup guard must not become a blanket allow.
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doStream() {
           return {
             stream: streamFromParts([
@@ -459,6 +458,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
             ]),
           };
         },
+        provider: "openai",
       }),
     });
 
@@ -483,7 +483,6 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
     // lingering provider-owned state produced before the scan excluded it.
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doStream() {
           return {
             stream: streamFromParts([
@@ -512,6 +511,7 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
             ]),
           };
         },
+        provider: "openai",
       }),
     });
 
@@ -522,8 +522,8 @@ describe("KRT-BH005 provider-executed/dynamic fidelity (stream)", () => {
           messages: [
             { parts: [{ text: "search", type: "text" }], role: "user" },
           ],
-          tools: USER_FUNCTION_TOOLS,
           providerNativeTools: [WEB_SEARCH_DECLARATION],
+          tools: USER_FUNCTION_TOOLS,
         })
       );
     } catch (error: unknown) {

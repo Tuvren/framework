@@ -50,9 +50,9 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     });
 
     const declaration: ProviderNativeToolDeclaration = {
+      args: {},
       id: "anthropic.code_execution_20260120",
       name: "code_execution",
-      args: {},
     };
 
     await bridge.generate({
@@ -63,10 +63,10 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     expect(capturedTools).toBeDefined();
     expect(capturedTools).toHaveLength(1);
     expect(capturedTools?.[0]).toMatchObject({
-      type: "provider",
+      args: {},
       id: "anthropic.code_execution_20260120",
       name: "code_execution",
-      args: {},
+      type: "provider",
     });
   });
 
@@ -82,9 +82,9 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     });
 
     const declaration: ProviderNativeToolDeclaration = {
+      args: { domain_filter: ["example.com"] },
       id: "xai.web_search",
       name: "web_search",
-      args: { domain_filter: ["example.com"] },
     };
 
     await bridge.generate({
@@ -93,9 +93,9 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
     });
 
     expect(capturedTools?.[0]).toMatchObject({
-      type: "provider",
-      id: "xai.web_search",
       args: { domain_filter: ["example.com"] },
+      id: "xai.web_search",
+      type: "provider",
     });
   });
 
@@ -112,15 +112,15 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
 
     await bridge.generate({
       messages: [{ parts: [{ text: "go", type: "text" }], role: "user" }],
+      providerNativeTools: [
+        { id: "anthropic.code_execution_20260120", name: "code_execution" },
+      ],
       tools: [
         {
           name: "my_function",
           description: "a function tool",
           inputSchema: { type: "object" },
         },
-      ],
-      providerNativeTools: [
-        { id: "anthropic.code_execution_20260120", name: "code_execution" },
       ],
     });
 
@@ -142,7 +142,7 @@ describe("provider-bridge-ai-sdk provider-native tools", () => {
           return createGenerateResult({
             content: [
               {
-                result: { outputs: [{ type: "code", code: "print('hello')" }] },
+                result: { outputs: [{ code: "print('hello')", type: "code" }] },
                 toolCallId: "native-call-1",
                 toolName: "code_execution",
                 type: "tool-result",
@@ -283,18 +283,18 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
     let capturedTools: unknown[] | undefined;
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doGenerate(options) {
           capturedTools = options.tools;
           return createGenerateResult();
         },
+        provider: "openai",
       }),
     });
 
     const config: ProviderMediatedToolConfig = {
-      name: "mcp_tool",
-      mediationType: "mcp",
       endpoint: "https://my-mcp-server.example.com/mcp",
+      mediationType: "mcp",
+      name: "mcp_tool",
     };
 
     await bridge.generate({
@@ -307,16 +307,15 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
     expect(capturedTools).toBeDefined();
     expect(capturedTools).toHaveLength(1);
     expect(capturedTools?.[0]).toMatchObject({
-      type: "provider",
-      name: "mcp_tool",
       args: { server_url: "https://my-mcp-server.example.com/mcp" },
+      name: "mcp_tool",
+      type: "provider",
     });
   });
 
   test("accepts dynamic=true LanguageModelV3ToolResult for declared provider-mediated tool in generate", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doGenerate() {
           return createGenerateResult({
             content: [
@@ -331,6 +330,7 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
             finishReason: { raw: "stop", unified: "stop" },
           });
         },
+        provider: "openai",
       }),
     });
 
@@ -338,9 +338,9 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
       messages: [{ parts: [{ text: "invoke", type: "text" }], role: "user" }],
       providerMediatedTools: [
         {
-          name: "mcp_tool",
-          mediationType: "mcp",
           endpoint: "https://example.com/mcp",
+          mediationType: "mcp",
+          name: "mcp_tool",
         },
       ],
     });
@@ -379,7 +379,6 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
   test("yields provider_tool_result chunk with executionClass provider-mediated for declared mediated tool in stream", async () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
-        provider: "openai",
         async doStream() {
           return {
             stream: streamFromParts([
@@ -398,6 +397,7 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
             ]),
           };
         },
+        provider: "openai",
       }),
     });
 
@@ -406,9 +406,9 @@ describe("provider-bridge-ai-sdk provider-mediated tools", () => {
         messages: [{ parts: [{ text: "go", type: "text" }], role: "user" }],
         providerMediatedTools: [
           {
-            name: "mcp_tool",
-            mediationType: "mcp",
             endpoint: "https://example.com/mcp",
+            mediationType: "mcp",
+            name: "mcp_tool",
           },
         ],
       })
@@ -436,9 +436,7 @@ describe("provider-bridge-ai-sdk provider continuity", () => {
     const bridge = createAiSdkProviderBridge({
       model: createMockModel({
         async doGenerate(options) {
-          capturedProviderOptions = options.providerOptions as
-            | Record<string, unknown>
-            | undefined;
+          capturedProviderOptions = options.providerOptions;
           return createGenerateResult();
         },
       }),
