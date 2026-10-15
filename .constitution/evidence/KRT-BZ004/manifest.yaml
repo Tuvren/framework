@@ -2,8 +2,8 @@ owner: KRT-BZ004
 mode: contract_test
 produced:
   date: '2026-10-15'
-  commit: ab19b25ff522919a2510100d19a2e62d99f90f77
-  command: 'bunx --bun oxlint --type-aware --format=json <project-root> (M1 before/after snapshots)'
+  commit: 27d0c38311bc3a23b1803ea89f9edf10dfdccbe2
+  command: 'bunx --bun oxlint --type-aware --format=json <project-root> (M1-M2 before/after snapshots)'
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -13,4 +13,12 @@ files:
     sha256: 7b8388d3bc3d2e871ef0c29a45658b3f6f91ec73d89808980d2e6f7183c94998
     bytes: 1377
     role: measurement
-pass_criteria: 'The pinned 419-rule Oxlint run remains parseable; M1 reduces provider-api diagnostics from 39 to 29 and providers-typescript-certification diagnostics from 27 to 24 while scoped tests and typechecks pass.'
+  - path: M2-raw-diagnostics.tar.gz
+    sha256: 177f00c8f32c8d0cb476b49463e2adcd605465a60229cadfd79642907419447f
+    bytes: 9224
+    role: measurement
+  - path: M2-raw-diagnostics-index.json
+    sha256: d9119d88fdd8d06f2da3e4745358124cfd69f1c7cc89b63ed2d4a9961327f201
+    bytes: 847
+    role: measurement
+pass_criteria: 'Pinned Oxlint captures remain parseable; M1 reduces provider-api diagnostics from 39 to 29 and providers-typescript-certification diagnostics from 27 to 24, M2 reduces providers-testkit diagnostics from 143 to 128, and each cohort passes scoped tests and typechecks plus the workspace typecheck.'

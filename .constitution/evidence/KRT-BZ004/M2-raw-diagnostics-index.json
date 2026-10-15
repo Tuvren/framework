@@ -1,0 +1,28 @@
+{
+  "milestone": "M2",
+  "ticket": "KRT-BZ001",
+  "producedAtCommit": "27d0c38311bc3a23b1803ea89f9edf10dfdccbe2",
+  "command": "bunx --bun oxlint --type-aware --format=json typescript/providers/testkit",
+  "captures": [
+    {
+      "archivePath": "epic-bz-m2-testkit-before.json",
+      "project": "providers-testkit",
+      "phase": "before",
+      "diagnostics": 143,
+      "rules": 474,
+      "selectedFiles": 10,
+      "bytes": 67918,
+      "sha256": "1e7ec21e83b00c9305fd9dd015a4b68a4b6466e19cdee744c8d65325477e4be5"
+    },
+    {
+      "archivePath": "epic-bz-m2-testkit-after-final.json",
+      "project": "providers-testkit",
+      "phase": "after",
+      "diagnostics": 128,
+      "rules": 474,
+      "selectedFiles": 10,
+      "bytes": 61009,
+      "sha256": "b81ac1629599eedaf8d19d214fd05da7e557ee4bddba3e21a23e29e5feb12491"
+    }
+  ]
+}
