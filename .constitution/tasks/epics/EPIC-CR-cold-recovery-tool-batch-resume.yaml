@@ -165,4 +165,4 @@ tickets:
       evidence: "A test in typescript/runtime/test executes a turn whose tool call requires approval, observes the pause and the callId, resolves the approval, and asserts the ToolExecutionContext idempotencyKey at dispatch equals deriveIdempotencyKey(turnId, callId) for the original turn, while the runId differs from the paused run's."
     flows: [flow-tool-approval-pause-resume]
     certainty: assumed
-    status: planned
+    status: done
