@@ -2,8 +2,8 @@ owner: KRT-BZ004
 mode: contract_test
 produced:
   date: '2026-10-15'
-  commit: 27d0c38311bc3a23b1803ea89f9edf10dfdccbe2
-  command: 'bunx --bun oxlint --type-aware --format=json <project-root> (M1-M2 before/after snapshots)'
+  commit: fa47ad31dce3b1f4c55c675bce6eb66db217a4c1
+  command: 'bunx --bun oxlint --type-aware --format=json <cohort paths> (M1-M3 before/after snapshots)'
 files:
   - path: M1-raw-diagnostics.tar.gz
     sha256: 0c6905b1398eafb2f298810df123198d5df7af6cbc2996936556c8a6d2e8bae6
@@ -21,4 +21,12 @@ files:
     sha256: d9119d88fdd8d06f2da3e4745358124cfd69f1c7cc89b63ed2d4a9961327f201
     bytes: 847
     role: measurement
-pass_criteria: 'Pinned Oxlint captures remain parseable; M1 reduces provider-api diagnostics from 39 to 29 and providers-typescript-certification diagnostics from 27 to 24, M2 reduces providers-testkit diagnostics from 143 to 128, and each cohort passes scoped tests and typechecks plus the workspace typecheck.'
+  - path: M3-raw-diagnostics.tar.gz
+    sha256: b85fba682adc15453a7801150b2cff374ea74f99c089c866d4bec7c9852791e2
+    bytes: 19785
+    role: measurement
+  - path: M3-raw-diagnostics-index.json
+    sha256: 7544bdcee3791944ad800716b9dda34958be5a3aeef8e5d18ddaa6c5eee8f4dc
+    bytes: 980
+    role: measurement
+pass_criteria: 'Pinned Oxlint captures remain parseable; M1 reduces provider-api diagnostics from 39 to 29 and providers-typescript-certification diagnostics from 27 to 24, M2 reduces providers-testkit diagnostics from 143 to 128, M3 reduces bridge-ai-sdk src+smoke diagnostics from 360 to 315, and each cohort passes scoped tests and typechecks plus the workspace typecheck.'
