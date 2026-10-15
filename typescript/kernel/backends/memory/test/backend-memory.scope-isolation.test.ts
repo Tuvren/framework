@@ -48,12 +48,12 @@ interface SeededBranch {
   turnTreeHash: string;
 }
 
-async function seedBranchWithMessage(
+const seedBranchWithMessage = async (
   backend: RuntimeBackend,
   threadId: string,
   branchId: string,
   base: number
-): Promise<SeededBranch> {
+): Promise<SeededBranch> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, base);
   const messageObject = await createStoredObjectRecord(
@@ -106,15 +106,15 @@ async function seedBranchWithMessage(
     threadId,
     turnTreeHash: turnTree.hash,
   };
-}
+};
 
 // Seeds a minimal thread (schema + genesis turn tree/node + thread) so
 // enumeration isolation can be asserted via threads.list.
-async function seedThread(
+const seedThread = async (
   backend: RuntimeBackend,
   threadId: string,
   base: number
-): Promise<string> {
+): Promise<string> => {
   const schema = createCanonicalKernelTestSchema();
   const schemaRecord = createStoredSchemaRecord(schema, base);
   const turnTree = await createStoredTurnTreeRecord(
@@ -146,7 +146,7 @@ async function seedThread(
   });
 
   return threadId;
-}
+};
 
 describe("@tuvren/backend-memory scope isolation (KRT-BE003)", () => {
   test("content stored under one scope is not retrievable or existence-checkable through another scope sharing a store", async () => {

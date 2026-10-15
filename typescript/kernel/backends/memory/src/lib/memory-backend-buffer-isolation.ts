@@ -29,55 +29,16 @@ import { decodeDeterministicKernelRecord } from "@tuvren/kernel-protocol";
  * Copies `bytes` into a fresh buffer, so a decoder that decorates the buffer it
  * reads (the `dataView` marker `cbor-x` attaches) cannot reach the original.
  */
-export function isolateBytes(bytes: Uint8Array): Uint8Array {
+export const isolateBytes = (bytes: Uint8Array): Uint8Array => {
   return Uint8Array.from(bytes);
-}
-
-/**
- * Returns a record whose `Uint8Array` fields are fresh copies and whose other
- * fields are carried over unchanged.
- *
- * Every record the caller hands to a repository write goes through a protocol
- * assertion or identity validator that decodes the record's CBOR fields in
- * place. Isolating the byte fields first keeps that decode off the caller's
- * buffers while leaving the record otherwise identical, so validation still
- * sees the caller's real shape — including keys the writer will reject.
- *
- * A value that is not already a plain data object (the only shape the protocol
- * assertions accept) is returned untouched, so the assertion reports its own
- * error instead of one describing a copy.
- */
-export function isolateRecordBuffers(record: unknown): unknown {
-  if (!isDataRecord(record)) {
-    return record;
-  }
-
-  return Object.fromEntries(
-    Object.entries(record).map(([key, value]) => [
-      key,
-      value instanceof Uint8Array ? isolateBytes(value) : value,
-    ])
-  );
-}
-
-/**
- * Decodes canonical deterministic CBOR from a detached copy of `bytes`.
- *
- * Internal lineage and turn-tree helpers decode the stored records of the
- * committed and draft state; decoding through a copy keeps the `dataView`
- * marker off the stored bytes, so a stored record never carries decoder
- * metadata a read would have to explain away.
- */
-export function decodeDetachedKernelRecord(bytes: Uint8Array): KernelRecord {
-  return decodeDeterministicKernelRecord(isolateBytes(bytes));
-}
+};
 
 /**
  * True when `record` has the shape the protocol's `assertPlainObject` accepts:
  * a non-array object with an `Object.prototype` or `null` prototype, no own
  * symbol keys, and only enumerable own data properties.
  */
-function isDataRecord(record: unknown): record is Record<string, unknown> {
+const isDataRecord = (record: unknown): record is Record<string, unknown> => {
   if (record === null || typeof record !== "object" || Array.isArray(record)) {
     return false;
   }
@@ -101,4 +62,43 @@ function isDataRecord(record: unknown): record is Record<string, unknown> {
   }
 
   return true;
-}
+};
+
+/**
+ * Returns a record whose `Uint8Array` fields are fresh copies and whose other
+ * fields are carried over unchanged.
+ *
+ * Every record the caller hands to a repository write goes through a protocol
+ * assertion or identity validator that decodes the record's CBOR fields in
+ * place. Isolating the byte fields first keeps that decode off the caller's
+ * buffers while leaving the record otherwise identical, so validation still
+ * sees the caller's real shape — including keys the writer will reject.
+ *
+ * A value that is not already a plain data object (the only shape the protocol
+ * assertions accept) is returned untouched, so the assertion reports its own
+ * error instead of one describing a copy.
+ */
+export const isolateRecordBuffers = (record: unknown): unknown => {
+  if (!isDataRecord(record)) {
+    return record;
+  }
+
+  return Object.fromEntries(
+    Object.entries(record).map(([key, value]) => [
+      key,
+      value instanceof Uint8Array ? isolateBytes(value) : value,
+    ])
+  );
+};
+
+/**
+ * Decodes canonical deterministic CBOR from a detached copy of `bytes`.
+ *
+ * Internal lineage and turn-tree helpers decode the stored records of the
+ * committed and draft state; decoding through a copy keeps the `dataView`
+ * marker off the stored bytes, so a stored record never carries decoder
+ * metadata a read would have to explain away.
+ */
+export const decodeDetachedKernelRecord = (bytes: Uint8Array): KernelRecord => {
+  return decodeDeterministicKernelRecord(isolateBytes(bytes));
+};

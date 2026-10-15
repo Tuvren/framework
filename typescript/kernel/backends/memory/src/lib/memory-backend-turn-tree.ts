@@ -56,11 +56,11 @@ export const ORDERED_PATH_CHUNK_SIZE = 32;
  * `turnId`), optionally excluding one turn — used when validating a turn's
  * parent link against its predecessors.
  */
-export function listTurnsByThread(
+export const listTurnsByThread = (
   state: BackendState,
   threadId: string,
   excludedTurnId?: string
-): StoredTurn[] {
+): StoredTurn[] => {
   const turns: StoredTurn[] = [];
 
   for (const turn of state.turns.values()) {
@@ -80,7 +80,7 @@ export function listTurnsByThread(
   });
 
   return turns;
-}
+};
 
 /**
  * Clones a Scope's state for copy-on-write transactions. Containers are
@@ -89,7 +89,7 @@ export function listTurnsByThread(
  * repository write path replaces records via clone-on-write rather than
  * mutating them in place.
  */
-export function cloneState(state: BackendState): BackendState {
+export const cloneState = (state: BackendState): BackendState => {
   return {
     branches: new Map(state.branches),
     objects: new Map(state.objects),
@@ -119,7 +119,90 @@ export function cloneState(state: BackendState): BackendState {
     turnTrees: new Map(state.turnTrees),
     turns: new Map(state.turns),
   };
-}
+};
+
+/**
+ * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
+ * element.
+ *
+ * @throws TuvrenPersistenceError
+ *   `memory_backend_invalid_hash_array_payload` when the payload is not an
+ *   array, or a hash-validation error naming the offending index.
+ */
+export const decodeHashStringArray = (
+  bytes: Uint8Array,
+  label: string
+): string[] => {
+  const decodedValue = decodeDetachedKernelRecord(bytes);
+
+  if (!Array.isArray(decodedValue)) {
+    throw persistenceError(
+      `${label} must decode to a HashString[]`,
+      "memory_backend_invalid_hash_array_payload",
+      { label }
+    );
+  }
+
+  const hashes: string[] = [];
+
+  for (const [index, item] of decodedValue.entries()) {
+    assertHashString(item, `${label}[${index}]`);
+    hashes.push(item);
+  }
+
+  return hashes;
+};
+
+/**
+ * Encodes a hash array as deterministic CBOR, validating every element
+ * first so only well-formed hash strings are ever persisted.
+ */
+export const encodeHashStringArray = (hashes: string[]): Uint8Array => {
+  return encodeDeterministicKernelRecord(
+    hashes.map((hash) => validateHashString(hash))
+  );
+};
+
+/**
+ * Asserts the canonical chunk layout of a chunked ordered path: every chunk
+ * holds 1..{@link ORDERED_PATH_CHUNK_SIZE} items, and every chunk except the
+ * final one is exactly full.
+ *
+ * @throws TuvrenPersistenceError
+ *   `memory_backend_ordered_path_chunk_size_invalid` or
+ *   `memory_backend_ordered_path_chunk_not_fixed_size`.
+ */
+export const assertChunkedTurnTreePathChunkLayout = (
+  chunk: StoredOrderedPathChunk,
+  index: number,
+  totalChunks: number
+): void => {
+  if (chunk.itemCount < 1 || chunk.itemCount > ORDERED_PATH_CHUNK_SIZE) {
+    throw persistenceError(
+      "ordered path chunks must contain between one and the fixed chunk size number of items",
+      "memory_backend_ordered_path_chunk_size_invalid",
+      {
+        chunkHash: chunk.chunkHash,
+        chunkItemCount: chunk.itemCount,
+        chunkSize: ORDERED_PATH_CHUNK_SIZE,
+      }
+    );
+  }
+
+  if (index < totalChunks - 1 && chunk.itemCount !== ORDERED_PATH_CHUNK_SIZE) {
+    throw persistenceError(
+      "non-final ordered path chunks must use the fixed chunk size",
+      "memory_backend_ordered_path_chunk_not_fixed_size",
+      {
+        chunkHash: chunk.chunkHash,
+        chunkIndex: index,
+        chunkItemCount: chunk.itemCount,
+        chunkSize: ORDERED_PATH_CHUNK_SIZE,
+        totalChunks,
+      }
+    );
+  }
+};
 
 /**
  * Normalizes an incoming turn-tree path record to its canonical stored
@@ -137,11 +220,11 @@ export function cloneState(state: BackendState): BackendState {
  *   `memory_backend_chunked_turn_tree_path_count_mismatch`, plus chunk-layout
  *   errors from {@link assertChunkedTurnTreePathChunkLayout}.
  */
-export async function normalizeStoredTurnTreePath(
+export const normalizeStoredTurnTreePath = async (
   state: BackendState,
   record: StoredTurnTreePath,
   now: () => number
-): Promise<StoredTurnTreePath> {
+): Promise<StoredTurnTreePath> => {
   if (record.collectionKind === "single") {
     return cloneStoredTurnTreePath(record);
   }
@@ -238,7 +321,19 @@ export async function normalizeStoredTurnTreePath(
     path: record.path,
     turnTreeHash: record.turnTreeHash,
   };
-}
+};
+
+// Decoded through a detached copy so the decoder's `dataView` marker never
+// lands on a stored schema, path, or manifest buffer (ADR-0074).
+/** Decodes deterministic-CBOR bytes into a validated `TurnTreeSchema`. */
+export const decodeTurnTreeSchema = (
+  bytes: Uint8Array,
+  label: string
+): TurnTreeSchema => {
+  const decodedValue = decodeDetachedKernelRecord(bytes);
+  assertTurnTreeSchema(decodedValue, label);
+  return decodedValue;
+};
 
 /**
  * Loads and decodes the turn-tree schema stored under `schemaId`.
@@ -246,66 +341,93 @@ export async function normalizeStoredTurnTreePath(
  * @throws TuvrenPersistenceError when the schema record does not exist or its
  *   CBOR payload is not a valid turn-tree schema.
  */
-export function getSchemaForSchemaId(
+export const getSchemaForSchemaId = (
   state: BackendState,
   schemaId: string,
   label: string
-): TurnTreeSchema {
+): TurnTreeSchema => {
   const schemaRecord = ensureSchemaRecordExists(state, schemaId, label);
   return decodeTurnTreeSchema(schemaRecord.schemaCbor, `${label} schema`);
-}
+};
 
 /** Loads and decodes the turn-tree schema a stored turn tree references. */
-export function getSchemaForTurnTree(
+export const getSchemaForTurnTree = (
   state: BackendState,
   turnTree: StoredTurnTree
-): TurnTreeSchema {
+): TurnTreeSchema => {
   return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
-}
-
-// Decoded through a detached copy so the decoder's `dataView` marker never
-// lands on a stored schema, path, or manifest buffer (ADR-0074).
-/** Decodes deterministic-CBOR bytes into a validated `TurnTreeSchema`. */
-export function decodeTurnTreeSchema(
-  bytes: Uint8Array,
-  label: string
-): TurnTreeSchema {
-  const decodedValue = decodeDetachedKernelRecord(bytes);
-  assertTurnTreeSchema(decodedValue, label);
-  return decodedValue;
-}
+};
 
 /**
- * Decodes deterministic-CBOR bytes into a `HashString[]`, validating every
- * element.
- *
- * @throws TuvrenPersistenceError
- *   `memory_backend_invalid_hash_array_payload` when the payload is not an
- *   array, or a hash-validation error naming the offending index.
+ * Resolves a stored turn-tree path to its logical value: the single hash (or
+ * `null`) for `single` paths, the inline hash array for `flat` ordered paths,
+ * or the concatenation of all referenced chunks' items for `chunked` ordered
+ * paths.
  */
-export function decodeHashStringArray(
-  bytes: Uint8Array,
-  label: string
-): string[] {
-  const decodedValue = decodeDetachedKernelRecord(bytes);
+export const resolveStoredTurnTreePathValue = (
+  state: BackendState,
+  storedPath: StoredTurnTreePath
+): string[] | string | null => {
+  if (storedPath.collectionKind === "single") {
+    return storedPath.singleHash;
+  }
 
-  if (!Array.isArray(decodedValue)) {
-    throw persistenceError(
-      `${label} must decode to a HashString[]`,
-      "memory_backend_invalid_hash_array_payload",
-      { label }
+  if (storedPath.orderedEncoding === "flat") {
+    return decodeHashStringArray(
+      storedPath.orderedInlineCbor,
+      "storedPath.orderedInlineCbor"
     );
   }
 
-  const hashes: string[] = [];
+  const resolvedHashes: string[] = [];
+  const chunkHashes = decodeHashStringArray(
+    storedPath.orderedChunkListCbor,
+    "storedPath.orderedChunkListCbor"
+  );
 
-  for (const [index, item] of decodedValue.entries()) {
-    assertHashString(item, `${label}[${index}]`);
-    hashes.push(item);
+  for (const chunkHash of chunkHashes) {
+    const chunk = ensureOrderedPathChunkExists(
+      state,
+      chunkHash,
+      "storedPath.orderedChunkListCbor"
+    );
+
+    resolvedHashes.push(
+      ...decodeHashStringArray(chunk.itemsCbor, "chunk.itemsCbor")
+    );
   }
 
-  return hashes;
-}
+  return resolvedHashes;
+};
+
+/**
+ * Compares a decoded manifest path value against a resolved stored-path
+ * value: strict equality for `null`/string values, element-wise equality for
+ * hash arrays.
+ */
+export const areManifestPathValuesEqual = (
+  left: unknown,
+  right: string[] | string | null
+): boolean => {
+  if (left === null || typeof left === "string") {
+    return left === right;
+  }
+
+  if (
+    !(Array.isArray(left) && Array.isArray(right)) ||
+    left.length !== right.length
+  ) {
+    return false;
+  }
+
+  for (const [index, item] of left.entries()) {
+    if (item !== right[index]) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 /**
  * Asserts that a turn tree's decoded manifest and its indexed path rows agree
@@ -319,10 +441,10 @@ export function decodeHashStringArray(
  *   `memory_backend_missing_turn_tree_path`, or
  *   `memory_backend_turn_tree_manifest_path_mismatch`.
  */
-export function assertTurnTreeManifestMatchesStoredPaths(
+export const assertTurnTreeManifestMatchesStoredPaths = (
   state: BackendState,
   turnTree: StoredTurnTree
-): void {
+): void => {
   const schema = getSchemaForTurnTree(state, turnTree);
   const manifestValue = decodeDetachedKernelRecord(turnTree.manifestCbor);
   const storedPaths = state.turnTreePaths.get(turnTree.hash);
@@ -392,126 +514,4 @@ export function assertTurnTreeManifestMatchesStoredPaths(
       );
     }
   }
-}
-
-/**
- * Resolves a stored turn-tree path to its logical value: the single hash (or
- * `null`) for `single` paths, the inline hash array for `flat` ordered paths,
- * or the concatenation of all referenced chunks' items for `chunked` ordered
- * paths.
- */
-export function resolveStoredTurnTreePathValue(
-  state: BackendState,
-  storedPath: StoredTurnTreePath
-): string[] | string | null {
-  if (storedPath.collectionKind === "single") {
-    return storedPath.singleHash;
-  }
-
-  if (storedPath.orderedEncoding === "flat") {
-    return decodeHashStringArray(
-      storedPath.orderedInlineCbor,
-      "storedPath.orderedInlineCbor"
-    );
-  }
-
-  const resolvedHashes: string[] = [];
-  const chunkHashes = decodeHashStringArray(
-    storedPath.orderedChunkListCbor,
-    "storedPath.orderedChunkListCbor"
-  );
-
-  for (const chunkHash of chunkHashes) {
-    const chunk = ensureOrderedPathChunkExists(
-      state,
-      chunkHash,
-      "storedPath.orderedChunkListCbor"
-    );
-
-    resolvedHashes.push(
-      ...decodeHashStringArray(chunk.itemsCbor, "chunk.itemsCbor")
-    );
-  }
-
-  return resolvedHashes;
-}
-
-/**
- * Compares a decoded manifest path value against a resolved stored-path
- * value: strict equality for `null`/string values, element-wise equality for
- * hash arrays.
- */
-export function areManifestPathValuesEqual(
-  left: unknown,
-  right: string[] | string | null
-): boolean {
-  if (left === null || typeof left === "string") {
-    return left === right;
-  }
-
-  if (
-    !(Array.isArray(left) && Array.isArray(right)) ||
-    left.length !== right.length
-  ) {
-    return false;
-  }
-
-  for (const [index, item] of left.entries()) {
-    if (item !== right[index]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * Encodes a hash array as deterministic CBOR, validating every element
- * first so only well-formed hash strings are ever persisted.
- */
-export function encodeHashStringArray(hashes: string[]): Uint8Array {
-  return encodeDeterministicKernelRecord(
-    hashes.map((hash) => validateHashString(hash))
-  );
-}
-
-/**
- * Asserts the canonical chunk layout of a chunked ordered path: every chunk
- * holds 1..{@link ORDERED_PATH_CHUNK_SIZE} items, and every chunk except the
- * final one is exactly full.
- *
- * @throws TuvrenPersistenceError
- *   `memory_backend_ordered_path_chunk_size_invalid` or
- *   `memory_backend_ordered_path_chunk_not_fixed_size`.
- */
-export function assertChunkedTurnTreePathChunkLayout(
-  chunk: StoredOrderedPathChunk,
-  index: number,
-  totalChunks: number
-): void {
-  if (chunk.itemCount < 1 || chunk.itemCount > ORDERED_PATH_CHUNK_SIZE) {
-    throw persistenceError(
-      "ordered path chunks must contain between one and the fixed chunk size number of items",
-      "memory_backend_ordered_path_chunk_size_invalid",
-      {
-        chunkHash: chunk.chunkHash,
-        chunkItemCount: chunk.itemCount,
-        chunkSize: ORDERED_PATH_CHUNK_SIZE,
-      }
-    );
-  }
-
-  if (index < totalChunks - 1 && chunk.itemCount !== ORDERED_PATH_CHUNK_SIZE) {
-    throw persistenceError(
-      "non-final ordered path chunks must use the fixed chunk size",
-      "memory_backend_ordered_path_chunk_not_fixed_size",
-      {
-        chunkHash: chunk.chunkHash,
-        chunkIndex: index,
-        chunkItemCount: chunk.itemCount,
-        chunkSize: ORDERED_PATH_CHUNK_SIZE,
-        totalChunks,
-      }
-    );
-  }
-}
+};

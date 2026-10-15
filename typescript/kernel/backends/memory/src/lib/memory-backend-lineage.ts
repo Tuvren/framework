@@ -64,13 +64,13 @@ const turnNodeLineage = createBackendInvariantTurnNodeLineage({
  *   when the walk reaches a different root than `thread.rootTurnNodeHash`,
  *   or `memory_backend_cyclic_turn_node_lineage` on a lineage cycle.
  */
-export function assertTurnNodeBelongsToThreadIndexed(
+export const assertTurnNodeBelongsToThreadIndexed = (
   state: BackendState,
   turnNodeHash: string,
   thread: StoredThread,
   label: string,
   index: TurnNodeLineageIndex
-): void {
+): void => {
   turnNodeLineage.assertTurnNodeBelongsToThread(
     state,
     turnNodeHash,
@@ -78,15 +78,15 @@ export function assertTurnNodeBelongsToThreadIndexed(
     label,
     index
   );
-}
+};
 
 /** {@link assertTurnNodeBelongsToThreadIndexed} for a single ad hoc check with nothing to amortize across. */
-export function assertTurnNodeBelongsToThread(
+export const assertTurnNodeBelongsToThread = (
   state: BackendState,
   turnNodeHash: string,
   thread: StoredThread,
   label: string
-): void {
+): void => {
   assertTurnNodeBelongsToThreadIndexed(
     state,
     turnNodeHash,
@@ -94,7 +94,7 @@ export function assertTurnNodeBelongsToThread(
     label,
     createTurnNodeLineageIndex()
   );
-}
+};
 
 /**
  * Asserts that `descendantTurnNodeHash` is the ancestor itself or a
@@ -107,13 +107,13 @@ export function assertTurnNodeBelongsToThread(
  *   when the ancestor is not on the descendant's lineage, or
  *   `memory_backend_cyclic_turn_node_lineage` on a lineage cycle.
  */
-export function assertTurnNodeDescendsFromIndexed(
+export const assertTurnNodeDescendsFromIndexed = (
   state: BackendState,
   descendantTurnNodeHash: string,
   ancestorTurnNodeHash: string,
   label: string,
   index: TurnNodeLineageIndex
-): void {
+): void => {
   turnNodeLineage.assertTurnNodeDescendsFrom(
     state,
     descendantTurnNodeHash,
@@ -121,15 +121,15 @@ export function assertTurnNodeDescendsFromIndexed(
     label,
     index
   );
-}
+};
 
 /** {@link assertTurnNodeDescendsFromIndexed} for a single ad hoc check with nothing to amortize across. */
-export function assertTurnNodeDescendsFrom(
+export const assertTurnNodeDescendsFrom = (
   state: BackendState,
   descendantTurnNodeHash: string,
   ancestorTurnNodeHash: string,
   label: string
-): void {
+): void => {
   assertTurnNodeDescendsFromIndexed(
     state,
     descendantTurnNodeHash,
@@ -137,7 +137,98 @@ export function assertTurnNodeDescendsFrom(
     label,
     createTurnNodeLineageIndex()
   );
-}
+};
+
+/**
+ * Walks `previousTurnNodeHash` ancestry from the candidate descendant and
+ * reports whether it reaches the candidate ancestor. A node is considered a
+ * descendant of itself.
+ *
+ * @throws TuvrenPersistenceError `memory_backend_cyclic_turn_node_lineage`
+ *   when the walk revisits a node.
+ */
+export const isTurnNodeDescendantOf = (
+  state: BackendState,
+  descendantTurnNodeHash: string,
+  ancestorTurnNodeHash: string
+): boolean => {
+  const visitedTurnNodes = new Set<string>();
+  let currentTurnNodeHash: string | null = descendantTurnNodeHash;
+
+  while (currentTurnNodeHash !== null) {
+    if (visitedTurnNodes.has(currentTurnNodeHash)) {
+      throw persistenceError(
+        "turn node lineage must not contain cycles",
+        "memory_backend_cyclic_turn_node_lineage",
+        {
+          ancestorTurnNodeHash,
+          descendantTurnNodeHash,
+        }
+      );
+    }
+
+    if (currentTurnNodeHash === ancestorTurnNodeHash) {
+      return true;
+    }
+
+    visitedTurnNodes.add(currentTurnNodeHash);
+    currentTurnNodeHash = ensureTurnNodeExists(
+      state,
+      currentTurnNodeHash,
+      "turnNodeHash"
+    ).previousTurnNodeHash;
+  }
+
+  return false;
+};
+
+/**
+ * Classifies the lineage relationship from `sourceTurnNodeHash` to
+ * `targetTurnNodeHash`.
+ *
+ * @throws TuvrenPersistenceError `memory_backend_cyclic_turn_node_lineage`
+ *   when either ancestry walk encounters a cycle.
+ */
+export const classifyTurnNodeRelationship = (
+  state: BackendState,
+  sourceTurnNodeHash: string,
+  targetTurnNodeHash: string
+): TurnNodeRelationship => {
+  if (sourceTurnNodeHash === targetTurnNodeHash) {
+    return "same";
+  }
+
+  if (isTurnNodeDescendantOf(state, targetTurnNodeHash, sourceTurnNodeHash)) {
+    return "forward";
+  }
+
+  if (isTurnNodeDescendantOf(state, sourceTurnNodeHash, targetTurnNodeHash)) {
+    return "backward";
+  }
+
+  return "lateral";
+};
+
+/**
+ * Decodes a run's `createdTurnNodesCbor` into its ordered, append-only list
+ * of created turn node hashes.
+ */
+export const decodeRunCreatedTurnNodeHashes = (run: StoredRun): string[] => {
+  return decodeHashStringArray(
+    run.createdTurnNodesCbor,
+    "run.createdTurnNodesCbor"
+  );
+};
+
+/**
+ * A run's active turn node: the most recently created node in its
+ * `createdTurnNodesCbor` lineage, or its start turn node when the run has
+ * not created any nodes yet.
+ */
+export const getRunActiveTurnNodeHash = (run: StoredRun): string => {
+  const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
+  return createdTurnNodeHashes.at(-1) ?? run.startTurnNodeHash;
+};
 
 /**
  * Asserts that a branch head move stays on one lineage line: the new head
@@ -147,12 +238,12 @@ export function assertTurnNodeDescendsFrom(
  *
  * @throws TuvrenPersistenceError `memory_backend_branch_head_lateral_move`.
  */
-export function assertBranchHeadMoveIsLinear(
+export const assertBranchHeadMoveIsLinear = (
   state: BackendState,
   previousHeadTurnNodeHash: string,
   nextHeadTurnNodeHash: string,
   label: string
-): void {
+): void => {
   const relationship = classifyTurnNodeRelationship(
     state,
     previousHeadTurnNodeHash,
@@ -169,7 +260,7 @@ export function assertBranchHeadMoveIsLinear(
       }
     );
   }
-}
+};
 
 /**
  * Asserts that a run's start turn node lies within its turn's span: at or
@@ -178,12 +269,12 @@ export function assertBranchHeadMoveIsLinear(
  *
  * @throws TuvrenPersistenceError `memory_backend_run_turn_span_mismatch`.
  */
-export function assertRunStartTurnNodeWithinTurnSpan(
+export const assertRunStartTurnNodeWithinTurnSpan = (
   state: BackendState,
   turn: StoredTurn,
   startTurnNodeHash: string,
   label: string
-): void {
+): void => {
   const relationshipToTurnStart = classifyTurnNodeRelationship(
     state,
     turn.startTurnNodeHash,
@@ -225,7 +316,7 @@ export function assertRunStartTurnNodeWithinTurnSpan(
       }
     );
   }
-}
+};
 
 /**
  * Asserts that a turn node recorded in a run's `createdTurnNodesCbor` lineage
@@ -235,12 +326,12 @@ export function assertRunStartTurnNodeWithinTurnSpan(
  * @throws TuvrenPersistenceError
  *   `memory_backend_run_created_turn_node_outside_turn_span`.
  */
-export function assertRunCreatedTurnNodeWithinTurnSpan(
+export const assertRunCreatedTurnNodeWithinTurnSpan = (
   state: BackendState,
   turn: StoredTurn,
   createdTurnNode: StoredTurnNode,
   label: string
-): void {
+): void => {
   const relationshipToTurnStart = classifyTurnNodeRelationship(
     state,
     turn.startTurnNodeHash,
@@ -282,7 +373,7 @@ export function assertRunCreatedTurnNodeWithinTurnSpan(
       }
     );
   }
-}
+};
 
 /**
  * Asserts that a run's `createdTurnNodesCbor` decodes to a canonical lineage:
@@ -293,10 +384,10 @@ export function assertRunCreatedTurnNodeWithinTurnSpan(
  *   `memory_backend_run_created_turn_nodes_duplicate` or
  *   `memory_backend_run_created_turn_nodes_not_contiguous`.
  */
-export function assertRunCreatedTurnNodesAreCanonical(
+export const assertRunCreatedTurnNodesAreCanonical = (
   state: BackendState,
   run: StoredRun
-): void {
+): void => {
   const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
   const seenTurnNodeHashes = new Set<string>();
   let previousTurnNodeHash = run.startTurnNodeHash;
@@ -340,7 +431,7 @@ export function assertRunCreatedTurnNodesAreCanonical(
     seenTurnNodeHashes.add(turnNodeHash);
     previousTurnNodeHash = turnNodeHash;
   }
-}
+};
 
 /**
  * Asserts that an active (running/paused) run's active turn node — the last
@@ -352,11 +443,11 @@ export function assertRunCreatedTurnNodesAreCanonical(
  *   `memory_backend_active_run_branch_head_mismatch` or
  *   `memory_backend_active_run_turn_head_mismatch`.
  */
-export function assertActiveRunHeadAlignment(
+export const assertActiveRunHeadAlignment = (
   run: StoredRun,
   branch: StoredBranch,
   turn: StoredTurn
-): void {
+): void => {
   const activeTurnNodeHash = getRunActiveTurnNodeHash(run);
 
   if (activeTurnNodeHash !== branch.headTurnNodeHash) {
@@ -386,7 +477,7 @@ export function assertActiveRunHeadAlignment(
       }
     );
   }
-}
+};
 
 /**
  * Asserts a turn's semantic-parent link is canonical: a turn whose start node
@@ -401,11 +492,11 @@ export function assertActiveRunHeadAlignment(
  *   `memory_backend_turn_parent_start_turn_node_mismatch`, or
  *   `memory_backend_turn_parent_not_immediate_predecessor`.
  */
-export function assertTurnParentLink(
+export const assertTurnParentLink = (
   state: BackendState,
   turn: StoredTurn,
   label: string
-): void {
+): void => {
   const candidateTurnsAtStart = listTurnsByThread(
     state,
     turn.threadId,
@@ -484,7 +575,7 @@ export function assertTurnParentLink(
       }
     );
   }
-}
+};
 
 /**
  * Asserts a backward branch-head move (rewind) preserved history: the same
@@ -500,12 +591,12 @@ export function assertTurnParentLink(
  *   `memory_backend_backward_branch_move_missing_archive` or
  *   `memory_backend_backward_branch_move_active_run_not_failed`.
  */
-export function assertBackwardBranchMoveIsArchived(
+export const assertBackwardBranchMoveIsArchived = (
   state: BackendState,
   baseState: BackendState,
   previousBranch: StoredBranch,
   nextBranch: StoredBranch
-): void {
+): void => {
   let archiveBranchFound = false;
 
   for (const branch of state.branches.values()) {
@@ -564,7 +655,7 @@ export function assertBackwardBranchMoveIsArchived(
       }
     );
   }
-}
+};
 
 /**
  * How two turn nodes relate along `previousTurnNodeHash` ancestry: `same`
@@ -572,97 +663,6 @@ export function assertBackwardBranchMoveIsArchived(
  * descends from target), or `lateral` (neither lineage contains the other).
  */
 export type TurnNodeRelationship = "backward" | "forward" | "lateral" | "same";
-
-/**
- * Classifies the lineage relationship from `sourceTurnNodeHash` to
- * `targetTurnNodeHash`.
- *
- * @throws TuvrenPersistenceError `memory_backend_cyclic_turn_node_lineage`
- *   when either ancestry walk encounters a cycle.
- */
-export function classifyTurnNodeRelationship(
-  state: BackendState,
-  sourceTurnNodeHash: string,
-  targetTurnNodeHash: string
-): TurnNodeRelationship {
-  if (sourceTurnNodeHash === targetTurnNodeHash) {
-    return "same";
-  }
-
-  if (isTurnNodeDescendantOf(state, targetTurnNodeHash, sourceTurnNodeHash)) {
-    return "forward";
-  }
-
-  if (isTurnNodeDescendantOf(state, sourceTurnNodeHash, targetTurnNodeHash)) {
-    return "backward";
-  }
-
-  return "lateral";
-}
-
-/**
- * Walks `previousTurnNodeHash` ancestry from the candidate descendant and
- * reports whether it reaches the candidate ancestor. A node is considered a
- * descendant of itself.
- *
- * @throws TuvrenPersistenceError `memory_backend_cyclic_turn_node_lineage`
- *   when the walk revisits a node.
- */
-export function isTurnNodeDescendantOf(
-  state: BackendState,
-  descendantTurnNodeHash: string,
-  ancestorTurnNodeHash: string
-): boolean {
-  const visitedTurnNodes = new Set<string>();
-  let currentTurnNodeHash: string | null = descendantTurnNodeHash;
-
-  while (currentTurnNodeHash !== null) {
-    if (visitedTurnNodes.has(currentTurnNodeHash)) {
-      throw persistenceError(
-        "turn node lineage must not contain cycles",
-        "memory_backend_cyclic_turn_node_lineage",
-        {
-          ancestorTurnNodeHash,
-          descendantTurnNodeHash,
-        }
-      );
-    }
-
-    if (currentTurnNodeHash === ancestorTurnNodeHash) {
-      return true;
-    }
-
-    visitedTurnNodes.add(currentTurnNodeHash);
-    currentTurnNodeHash = ensureTurnNodeExists(
-      state,
-      currentTurnNodeHash,
-      "turnNodeHash"
-    ).previousTurnNodeHash;
-  }
-
-  return false;
-}
-
-/**
- * Decodes a run's `createdTurnNodesCbor` into its ordered, append-only list
- * of created turn node hashes.
- */
-export function decodeRunCreatedTurnNodeHashes(run: StoredRun): string[] {
-  return decodeHashStringArray(
-    run.createdTurnNodesCbor,
-    "run.createdTurnNodesCbor"
-  );
-}
-
-/**
- * A run's active turn node: the most recently created node in its
- * `createdTurnNodesCbor` lineage, or its start turn node when the run has
- * not created any nodes yet.
- */
-export function getRunActiveTurnNodeHash(run: StoredRun): string {
-  const createdTurnNodeHashes = decodeRunCreatedTurnNodeHashes(run);
-  return createdTurnNodeHashes.at(-1) ?? run.startTurnNodeHash;
-}
 
 /**
  * Decodes a turn node's `consumedStagedResultsCbor` and extracts the
@@ -673,9 +673,9 @@ export function getRunActiveTurnNodeHash(run: StoredRun): string {
  *   not an array, or `memory_backend_invalid_consumed_staged_result_entry`
  *   when an entry is not an object carrying a string `objectHash`.
  */
-export function decodeTurnNodeConsumedStagedResultObjectHashes(
+export const decodeTurnNodeConsumedStagedResultObjectHashes = (
   turnNode: StoredTurnNode
-): string[] {
+): string[] => {
   // Decoded through a detached copy so the decoder's `dataView` marker never
   // lands on a caller-supplied or stored turn node's buffer (ADR-0074).
   const decodedValue = decodeDetachedKernelRecord(
@@ -728,4 +728,4 @@ export function decodeTurnNodeConsumedStagedResultObjectHashes(
   }
 
   return objectHashes;
-}
+};

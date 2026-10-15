@@ -116,6 +116,6 @@ export class MemoryScopeStore {
  * multiple `createMemoryBackend({ scope, store })` calls so each Scope is
  * isolated by construction while persisting across per-request backends.
  */
-export function createMemoryScopeStore(): MemoryScopeStore {
+export const createMemoryScopeStore = (): MemoryScopeStore => {
   return new MemoryScopeStore();
-}
+};

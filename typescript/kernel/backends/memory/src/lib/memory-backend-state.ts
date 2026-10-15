@@ -44,7 +44,7 @@ import { assertTurnTreeManifestMatchesStoredPaths } from "./memory-backend-turn-
 import type { BackendState } from "./memory-backend-types.js";
 
 /** Creates an empty Scope partition with every record family initialized. */
-export function createEmptyState(): BackendState {
+export const createEmptyState = (): BackendState => {
   return {
     branches: new Map(),
     objects: new Map(),
@@ -59,42 +59,9 @@ export function createEmptyState(): BackendState {
     turnTrees: new Map(),
     turns: new Map(),
   };
-}
+};
 
-/**
- * Validates the full committed-state invariant suite over a draft state
- * before it may be published: thread roots are unique genesis nodes, branch
- * heads and archives are lineage-legal, turn nodes/turns/runs are
- * referentially and schema-consistent, turn-tree manifests match their stored
- * paths, and observe annotations never dangle.
- *
- * @param state - The draft (post-transaction) state to validate.
- * @param baseState - The committed state the transaction started from; used
- *   for cross-transaction invariants such as backward branch moves requiring
- *   an archive branch created in the same transaction.
- * @throws TuvrenPersistenceError with a `memory_backend_*` code on the first
- *   violated invariant; the caller must then discard the draft.
- */
-export function validateCommittedState(
-  state: BackendState,
-  baseState: BackendState
-): void {
-  // Issue #108 M2: one memoized root+depth index shared across every
-  // thread-membership/descent check this pass runs, so a shared ancestor
-  // prefix (e.g. a long turn node chain many turns/runs all reference) is
-  // walked at most once instead of once per referencing turn/run.
-  const lineageIndex = createTurnNodeLineageIndex();
-
-  validateThreadInvariants(state);
-  validateBranchInvariants(state, baseState, lineageIndex);
-  validateTurnNodeInvariants(state);
-  validateTurnInvariants(state, lineageIndex);
-  validateRunInvariants(state, lineageIndex);
-  validateTurnTreePathInvariants(state);
-  validateObserveAnnotationInvariants(state);
-}
-
-function validateThreadInvariants(state: BackendState): void {
+const validateThreadInvariants = (state: BackendState): void => {
   const rootTurnNodeOwners = new Map<string, string>();
 
   for (const thread of state.threads.values()) {
@@ -149,13 +116,13 @@ function validateThreadInvariants(state: BackendState): void {
 
     rootTurnNodeOwners.set(thread.rootTurnNodeHash, thread.threadId);
   }
-}
+};
 
-function validateBranchInvariants(
+const validateBranchInvariants = (
   state: BackendState,
   baseState: BackendState,
   lineageIndex: TurnNodeLineageIndex
-): void {
+): void => {
   for (const branch of state.branches.values()) {
     const thread = ensureThreadExists(
       state,
@@ -277,9 +244,9 @@ function validateBranchInvariants(
       branch
     );
   }
-}
+};
 
-function validateTurnNodeInvariants(state: BackendState): void {
+const validateTurnNodeInvariants = (state: BackendState): void => {
   for (const turnNode of state.turnNodes.values()) {
     const turnTree = ensureTurnTreeExists(
       state,
@@ -310,12 +277,12 @@ function validateTurnNodeInvariants(state: BackendState): void {
       );
     }
   }
-}
+};
 
-function validateTurnInvariants(
+const validateTurnInvariants = (
   state: BackendState,
   lineageIndex: TurnNodeLineageIndex
-): void {
+): void => {
   for (const turn of state.turns.values()) {
     const thread = ensureThreadExists(state, turn.threadId, "turn.threadId");
     const branch = ensureBranchExists(state, turn.branchId, "turn.branchId");
@@ -357,12 +324,12 @@ function validateTurnInvariants(
 
     assertTurnParentLink(state, turn, "turn.parentTurnId");
   }
-}
+};
 
-function validateRunInvariants(
+const validateRunInvariants = (
   state: BackendState,
   lineageIndex: TurnNodeLineageIndex
-): void {
+): void => {
   const activeRunCounts = new Map<string, number>();
 
   for (const run of state.runs.values()) {
@@ -488,9 +455,9 @@ function validateRunInvariants(
       );
     }
   }
-}
+};
 
-function validateTurnTreePathInvariants(state: BackendState): void {
+const validateTurnTreePathInvariants = (state: BackendState): void => {
   for (const [turnTreeHash, storedPaths] of state.turnTreePaths.entries()) {
     ensureTurnTreeExists(state, turnTreeHash, "turnTreePath.turnTreeHash");
 
@@ -506,7 +473,7 @@ function validateTurnTreePathInvariants(state: BackendState): void {
   for (const turnTree of state.turnTrees.values()) {
     assertTurnTreeManifestMatchesStoredPaths(state, turnTree);
   }
-}
+};
 
 /**
  * Every stored observe annotation must reference an existing run and, when set,
@@ -516,7 +483,7 @@ function validateTurnTreePathInvariants(state: BackendState): void {
  * the run: any committed state where an annotation outlived its run or its
  * referenced turn node is rejected here, so a kept annotation can never dangle.
  */
-function validateObserveAnnotationInvariants(state: BackendState): void {
+const validateObserveAnnotationInvariants = (state: BackendState): void => {
   for (const [runId, annotations] of state.observeAnnotations.entries()) {
     ensureRunExists(state, runId, "observeAnnotation.runId");
 
@@ -530,4 +497,37 @@ function validateObserveAnnotationInvariants(state: BackendState): void {
       }
     }
   }
-}
+};
+
+/**
+ * Validates the full committed-state invariant suite over a draft state
+ * before it may be published: thread roots are unique genesis nodes, branch
+ * heads and archives are lineage-legal, turn nodes/turns/runs are
+ * referentially and schema-consistent, turn-tree manifests match their stored
+ * paths, and observe annotations never dangle.
+ *
+ * @param state - The draft (post-transaction) state to validate.
+ * @param baseState - The committed state the transaction started from; used
+ *   for cross-transaction invariants such as backward branch moves requiring
+ *   an archive branch created in the same transaction.
+ * @throws TuvrenPersistenceError with a `memory_backend_*` code on the first
+ *   violated invariant; the caller must then discard the draft.
+ */
+export const validateCommittedState = (
+  state: BackendState,
+  baseState: BackendState
+): void => {
+  // Issue #108 M2: one memoized root+depth index shared across every
+  // thread-membership/descent check this pass runs, so a shared ancestor
+  // prefix (e.g. a long turn node chain many turns/runs all reference) is
+  // walked at most once instead of once per referencing turn/run.
+  const lineageIndex = createTurnNodeLineageIndex();
+
+  validateThreadInvariants(state);
+  validateBranchInvariants(state, baseState, lineageIndex);
+  validateTurnNodeInvariants(state);
+  validateTurnInvariants(state, lineageIndex);
+  validateRunInvariants(state, lineageIndex);
+  validateTurnTreePathInvariants(state);
+  validateObserveAnnotationInvariants(state);
+};
