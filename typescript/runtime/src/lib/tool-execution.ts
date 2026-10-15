@@ -16,6 +16,7 @@
 
 import type { EpochMs, HashString } from "@tuvren/core";
 import type {
+  ExecutionClass,
   CapabilityPolicyEngine,
   TuvrenSandboxExecutor,
 } from "@tuvren/core/capabilities";
@@ -203,7 +204,11 @@ export interface ToolBatchEnvironment {
    *
    * @returns The content hash of the staged `{ role: "tool" }` message.
    */
-  stageResult(result: ToolResultPart, orderIndex: number): Promise<HashString>;
+  stageResult(
+    result: ToolResultPart,
+    orderIndex: number,
+    updates?: ExtensionStateUpdate[]
+  ): Promise<HashString>;
   /** Kernel thread the run belongs to. */
   threadId: string;
   /** Registry used to resolve each requested tool call by name (spec §8.5). */
@@ -235,6 +240,14 @@ export interface ToolBatchOutcome {
   /** Extension state updates returned by `aroundTool` handlers, to be merged
    * into the iteration checkpoint (framework spec §8.6 step 4). */
   updates: ExtensionStateUpdate[];
+}
+
+/** A persistence failure must escape the tool retry loop after side effects ran. */
+export class ToolBatchStagingError extends Error {
+  constructor(cause: unknown) {
+    super("failed to persist a tool result and its extension state", { cause });
+    this.name = "ToolBatchStagingError";
+  }
 }
 
 /**
@@ -1211,27 +1224,8 @@ async function executeSingleTool(
   let lastError: unknown;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    // Do not retry when the environment signal is already aborted. Loss of
-    // execution authority (run lease lost via createRunLeaseLostError), turn
-    // cancellation, and the wall-clock deadline all abort this signal, so no
-    // further attempt runs under a dead owner. (KRT-BG004 / ADR-0052; §4.9)
-    if (attempt > 0 && environment.signal?.aborted) {
+    if (!prepareToolAttempt(attempt, toolCall, environment)) {
       break;
-    }
-
-    // Emit a retry_attempt audit event for each attempt after the first.
-    // Guard for tuvren-client tools: canAudit is false for the class, and
-    // buildClientEndpointTools never sets idempotent, so maxAttempts is always
-    // 1 for client tools. The guard makes the canAudit:false invariant structural
-    // rather than incidental. (AX005, KRT-AZ005)
-    if (attempt > 0 && !isClientEndpointTool(toolCall.tool)) {
-      emitToolAuditEvent(
-        environment,
-        toolCall.toolCall.callId,
-        toolCall.tool.name,
-        "retry_attempt",
-        { attempt }
-      );
     }
 
     try {
@@ -1249,40 +1243,19 @@ async function executeSingleTool(
         startBarrier
       );
 
-      if (outcome.approval !== undefined) {
-        const completedStagedResults = await stageAndEmitResults(
-          environment,
-          outcome.approval.completedResults,
-          orderIndex,
-          startBarrier,
-          executionClass
-        );
-        return {
-          approval: outcome.approval,
-          completedStagedResults,
-          updates: outcome.updates,
-        };
-      }
-
-      const result = applyApprovalDecisionMetadata(
-        outcome.result,
-        toolCall.approvalDecision,
-        toolCall.approvalAudit
-      );
-      const staged = await stageAndEmitResult(
+      return await stageSingleToolOutcome(
+        outcome,
+        toolCall,
         environment,
-        result,
         orderIndex,
         startBarrier,
         executionClass
       );
-
-      return {
-        resultHash: staged.hash,
-        result: staged.result,
-        updates: outcome.updates,
-      };
     } catch (error: unknown) {
+      if (error instanceof ToolBatchStagingError) {
+        throw error;
+      }
+
       if (error instanceof ToolPauseSignal) {
         await settleToolStartIfNeeded(toolStartState, startBarrier);
         const completedStagedResults = await stageAndEmitResults(
@@ -1290,7 +1263,8 @@ async function executeSingleTool(
           error.approval.completedResults,
           orderIndex,
           startBarrier,
-          executionClass
+          executionClass,
+          error.updates
         );
         return {
           approval: error.approval,
@@ -1329,6 +1303,71 @@ async function executeSingleTool(
     resultHash: staged.hash,
     result: staged.result,
     updates: [],
+  };
+}
+
+function prepareToolAttempt(
+  attempt: number,
+  toolCall: ExecutableToolCall,
+  environment: ToolBatchEnvironment
+): boolean {
+  // Authority loss aborts retries; a running call keeps its existing outcome.
+  if (attempt > 0 && environment.signal?.aborted) {
+    return false;
+  }
+  // Client calls cannot retry, so this event is only for auditable server tools.
+  if (attempt > 0 && !isClientEndpointTool(toolCall.tool)) {
+    emitToolAuditEvent(
+      environment,
+      toolCall.toolCall.callId,
+      toolCall.tool.name,
+      "retry_attempt",
+      { attempt }
+    );
+  }
+  return true;
+}
+
+async function stageSingleToolOutcome(
+  outcome: RawSingleToolOutcome,
+  toolCall: ExecutableToolCall,
+  environment: ToolBatchEnvironment,
+  orderIndex: number,
+  startBarrier: ToolStartBarrier,
+  executionClass: ExecutionClass
+): Promise<SingleToolOutcome> {
+  if (outcome.approval !== undefined) {
+    return {
+      approval: outcome.approval,
+      completedStagedResults: await stageAndEmitResults(
+        environment,
+        outcome.approval.completedResults,
+        orderIndex,
+        startBarrier,
+        executionClass,
+        outcome.updates
+      ),
+      updates: outcome.updates,
+    };
+  }
+
+  const result = applyApprovalDecisionMetadata(
+    outcome.result,
+    toolCall.approvalDecision,
+    toolCall.approvalAudit
+  );
+  const staged = await stageAndEmitResult(
+    environment,
+    result,
+    orderIndex,
+    startBarrier,
+    executionClass,
+    outcome.updates
+  );
+  return {
+    resultHash: staged.hash,
+    result: staged.result,
+    updates: outcome.updates,
   };
 }
 

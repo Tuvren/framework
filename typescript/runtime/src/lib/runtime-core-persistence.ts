@@ -100,7 +100,8 @@ export async function stageManifest(
   warningContext?: {
     handle: RuntimeExecutionHandle;
     loopState: LoopState;
-  }
+  },
+  taskId = "manifest"
 ): Promise<HashString> {
   if (warningContext !== undefined) {
     warnManifestExtensionStateBudgetIfNeeded(
@@ -115,7 +116,7 @@ export async function stageManifest(
   return await host.stageRecord(
     runId,
     host.encodeKernelRecord(manifest, "manifest"),
-    "manifest",
+    taskId,
     "context_manifest"
   );
 }

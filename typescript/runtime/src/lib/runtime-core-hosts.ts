@@ -425,7 +425,8 @@ interface StateCommitHostDependencies {
   stageManifest(
     runId: string,
     manifest: ContextManifest,
-    warningContext?: { handle: RuntimeExecutionHandle; loopState: LoopState }
+    warningContext?: { handle: RuntimeExecutionHandle; loopState: LoopState },
+    taskId?: string
   ): Promise<HashString>;
   stageMessage(
     runId: string,
@@ -487,6 +488,11 @@ interface RunnerSupportHostDependencies {
     mode: string
   ): import("@tuvren/core/execution").HandoffContextBuilder;
   resolveTargetAgent(targetAgent: string): AgentConfig;
+  stageManifest(
+    runId: string,
+    manifest: ContextManifest,
+    taskId: string
+  ): Promise<HashString>;
   stageMessage(
     runId: string,
     message: TuvrenMessage,
@@ -963,5 +969,8 @@ export function buildRuntimeCoreRunnerSupportHost(
         },
         `tool_result_${orderIndex}_${result.callId}`
       ),
+    stageToolResultManifest: async (runId, manifest, taskId) => {
+      await dependencies.stageManifest(runId, manifest, taskId);
+    },
   };
 }

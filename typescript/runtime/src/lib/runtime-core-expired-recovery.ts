@@ -222,9 +222,15 @@ export async function recoverExpiredExecutionBranchIfNeeded(
     expiredRun.turnId,
     recoveredHeadState
   );
+  const interruptedAssistantWasCommitted =
+    interruptedIterationPlan?.assistantMessageHash !== undefined &&
+    recoveredHeadState.messageHashes.includes(
+      interruptedIterationPlan.assistantMessageHash
+    );
   const iterationCount =
     interruptedIterationPlan !== undefined &&
-    interruptedIterationPlan.disposition !== "re_infer"
+    interruptedIterationPlan.disposition !== "re_infer" &&
+    interruptedAssistantWasCommitted
       ? Math.max(0, estimatedIterationCount - 1)
       : estimatedIterationCount;
 

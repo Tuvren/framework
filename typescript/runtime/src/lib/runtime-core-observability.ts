@@ -71,9 +71,16 @@ export async function stageRuntimeManifestRecord(
   warningContext?: {
     handle: RuntimeExecutionHandle;
     loopState: LoopState;
-  }
+  },
+  taskId?: string
 ): Promise<HashString> {
-  return await stageRuntimeManifest(host, runId, manifest, warningContext);
+  return await stageRuntimeManifest(
+    host,
+    runId,
+    manifest,
+    warningContext,
+    taskId
+  );
 }
 
 /**

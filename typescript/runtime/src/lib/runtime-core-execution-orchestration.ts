@@ -96,7 +96,11 @@ interface RuntimeExecutionLoopDependencies {
     schemaId: string,
     plan: ContextEngineeringPlan,
     loopState: LoopState,
-    updates: ExtensionStateUpdate[]
+    updates: ExtensionStateUpdate[],
+    recoveredHistory?: {
+      messageHashes: HashString[];
+      messages: TuvrenMessage[];
+    }
   ): Promise<void>;
   applyTerminalAgentTransitionIfNeeded(
     handle: RuntimeExecutionHandle,
@@ -194,6 +198,11 @@ interface RuntimeIterationPhaseDependencies {
     appendedMessageHashes: HashString[]
   ): Promise<HashString | undefined>;
   createId(): string;
+  stageManifest(
+    runId: string,
+    manifest: ContextManifest,
+    taskId?: string
+  ): Promise<HashString>;
   createRunnerExecutionContext(
     handle: RuntimeExecutionHandle,
     schemaId: string,
@@ -286,14 +295,16 @@ export async function runRuntimeExecutionLoopFacade(
         activeSchemaId,
         plan,
         activeLoopState,
-        updates
+        updates,
+        recoveredHistory
       ) =>
         dependencies.applyContextEngineeringPlan(
           activeHandle,
           activeSchemaId,
           plan as ContextEngineeringPlan,
           activeLoopState,
-          updates
+          updates,
+          recoveredHistory
         ),
       applyTerminalAgentTransitionIfNeeded: (...args) =>
         dependencies.applyTerminalAgentTransitionIfNeeded(...args),
@@ -419,6 +430,7 @@ export async function executeRuntimeIterationPhaseFacade(
           emittedRunnerEvents
         ),
       createId: () => dependencies.createId(),
+      stageManifest: (...args) => dependencies.stageManifest(...args),
       createTrackedRun: (...args) => dependencies.createTrackedRun(...args),
       executeRunner: (...args) => dependencies.executeRunner(...args),
       failInvalidPauseResolutionIfNeeded: (...args) =>
@@ -764,7 +776,11 @@ export async function applyRuntimeContextEngineeringPlanFacade(
   schemaId: string,
   plan: ContextEngineeringPlan,
   loopState: LoopState,
-  updates: ExtensionStateUpdate[]
+  updates: ExtensionStateUpdate[],
+  recoveredHistory?: {
+    messageHashes: HashString[];
+    messages: TuvrenMessage[];
+  }
 ): Promise<void> {
   await applyRuntimeContextEngineeringPlan(
     host,
@@ -772,7 +788,8 @@ export async function applyRuntimeContextEngineeringPlanFacade(
     schemaId,
     plan,
     loopState,
-    updates
+    updates,
+    recoveredHistory
   );
 }
 

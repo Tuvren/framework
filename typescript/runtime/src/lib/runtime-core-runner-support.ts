@@ -28,12 +28,18 @@ import {
 
 import { TUVREN_SANDBOX_ENDPOINT_ID_PREFIX } from "./binding-resolver.js";
 import { buildCapabilityMetadataFromTools } from "./capability-policy-engine.js";
+import { updateContextManifest } from "./context-manifest.js";
+import type { ExtensionStateUpdate } from "./extension-runtime.js";
+import { withoutInterruptedToolBatchDescriptor } from "./runtime-core-interrupted-metadata.js";
 import type { HeadState, LoopState } from "./runtime-core-loop.js";
 import { formatToolResultTaskId } from "./runtime-core-response.js";
 import { normalizeError } from "./runtime-core-shared.js";
 import type { RuntimeExecutionHandle } from "./runtime-execution-handle.js";
 import { createServerRateLimiter } from "./server-rate-limiter.js";
-import type { ToolBatchEnvironment } from "./tool-execution.js";
+import {
+  ToolBatchStagingError,
+  type ToolBatchEnvironment,
+} from "./tool-execution.js";
 
 /**
  * Host capabilities backing the tool-batch environment and handoff-plan
@@ -87,6 +93,11 @@ export interface RuntimeCoreRunnerSupportHost {
       : never,
     orderIndex: number
   ): Promise<string>;
+  stageToolResultManifest(
+    runId: string,
+    manifest: ContextManifest,
+    taskId: string
+  ): Promise<void>;
 }
 
 /**
@@ -133,6 +144,9 @@ export function createToolBatchEnvironment(
       : buildCapabilityMetadataFromTools(loopState.activeToolRegistry.list());
   const policyContextInputs =
     loopState.activeConfig.policyContextInputs ?? undefined;
+  const baseDurableManifest = manifest;
+  const stateUpdatesByOrder = new Map<number, ExtensionStateUpdate[]>();
+  let resultStagingQueue: Promise<unknown> = Promise.resolve();
 
   return {
     activeAgent: loopState.activeConfig.name,
@@ -142,7 +156,7 @@ export function createToolBatchEnvironment(
     policyContextInputs,
     extensions: loopState.activeConfig.extensions ?? [],
     iterationCount,
-    manifest,
+    manifest: withoutInterruptedToolBatchDescriptor(manifest),
     maxParallelToolCalls: host.resolveActiveMaxParallelToolCalls(
       loopState,
       host.defaultMaxParallelToolCalls()
@@ -177,8 +191,33 @@ export function createToolBatchEnvironment(
           },
     serverExecutionRateLimiter: loopState.serverExecutionRateLimiter,
     signal: handle.abortSignal,
-    stageResult: async (result, orderIndex) => {
-      return await host.stageToolResultMessage(runId, result, orderIndex);
+    stageResult: async (result, orderIndex, updates = []) => {
+      const stage = resultStagingQueue.then(async () => {
+        if (updates.length > 0) {
+          stateUpdatesByOrder.set(orderIndex, updates);
+          const orderedUpdates = [...stateUpdatesByOrder.entries()]
+            .sort(([left], [right]) => left - right)
+            .flatMap(([, callUpdates]) => callUpdates);
+          const durableManifest = updateContextManifest(
+            baseDurableManifest,
+            [],
+            orderedUpdates,
+            []
+          );
+          await host.stageToolResultManifest(
+            runId,
+            durableManifest,
+            `around_tool_state_${orderIndex.toString()}`
+          );
+        }
+        return await host.stageToolResultMessage(runId, result, orderIndex);
+      });
+      resultStagingQueue = stage;
+      try {
+        return await stage;
+      } catch (error: unknown) {
+        throw new ToolBatchStagingError(error);
+      }
     },
     threadId: handle.request.threadId,
     toolRegistry: loopState.activeToolRegistry,
