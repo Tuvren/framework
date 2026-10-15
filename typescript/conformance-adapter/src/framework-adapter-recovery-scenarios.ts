@@ -686,7 +686,7 @@ export function createFrameworkAdapterRecoveryScenarios(
   ): string[] {
     const callIds: string[] = [];
     for (const message of messages) {
-      if (!dependencies.isRecord(message) || !Array.isArray(message.parts)) {
+      if (!(dependencies.isRecord(message) && Array.isArray(message.parts))) {
         continue;
       }
       for (const part of message.parts) {
