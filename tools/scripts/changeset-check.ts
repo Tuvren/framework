@@ -79,21 +79,391 @@ const CHANGESETS_CLI_PATH = path.join(
 const FULL_GIT_COMMIT = /^[0-9a-f]{40}$/u;
 let changesetParserPromise: Promise<ChangesetParser> | undefined;
 
-if (import.meta.main) {
-  const base = parseBaseArgument(process.argv.slice(2));
+const parseBaseArgument = (arguments_: readonly string[]): string => {
+  if (arguments_.length === 0) {
+    return "master";
+  }
+
+  if (arguments_.length !== 1 || !arguments_[0]?.startsWith("--base=")) {
+    throw new Error("usage: bun run changeset:check --base=<git revision>");
+  }
+
+  const base = arguments_[0].slice("--base=".length);
+
+  if (base.length === 0) {
+    throw new Error("--base must name a Git revision");
+  }
+
+  return base;
+};
+
+const readJsonFile = async (filePath: string): Promise<unknown> => {
+  let text: string;
 
   try {
-    await checkChangesetCoverage({ base, rootDirectory: REPO_ROOT });
+    text = await readFile(filePath, "utf-8");
+  } catch {
+    throw new Error(`cannot read ${filePath}`);
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new Error(`${filePath} is not valid JSON`);
+  }
+};
+
+const isNativeChangesetPath = (filePath: string): boolean => {
+  const relativePath = filePath.slice(`${CHANGESET_DIRECTORY}/`.length);
+  const isRootFile = !relativePath.includes("/");
+  const isPreFile =
+    relativePath.startsWith("pre/") &&
+    !relativePath.slice("pre/".length).includes("/");
+  const filename = path.posix.basename(filePath);
+
+  return (
+    (isRootFile || isPreFile) &&
+    !filename.startsWith(".") &&
+    filename.endsWith(".md") &&
+    !CHANGESET_README_FILE.test(filename) &&
+    !CHANGESET_METADATA_FILES.has(filename)
+  );
+};
+
+const resolveRevision = async (
+  rootDirectory: string,
+  revision: string
+): Promise<string> => {
+  const result = await runCommand(
+    "git",
+    ["rev-parse", "--verify", `${revision}^{commit}`],
+    rootDirectory
+  );
+
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `cannot resolve base revision ${JSON.stringify(revision)}; fetch the pull-request base with full history`
+    );
+  }
+
+  const resolved = result.stdout.trim();
+
+  if (!FULL_GIT_COMMIT.test(resolved)) {
+    throw new Error(
+      `Git returned an invalid base commit for ${JSON.stringify(revision)}`
+    );
+  }
+
+  return resolved;
+};
+
+const readChangedPaths = async (
+  rootDirectory: string,
+  baseRevision: string
+): Promise<ReadonlySet<string>> => {
+  // A source move changes both endpoints; retain the current public-package
+  // deletion even when the destination is private or outside any package.
+  const commands: readonly (readonly string[])[] = [
+    [
+      "diff",
+      "--no-renames",
+      "--name-only",
+      "-z",
+      "--diff-filter=ACDMRT",
+      `${baseRevision}...HEAD`,
+    ],
+    ["diff", "--no-renames", "--name-only", "-z", "--diff-filter=ACDMRT"],
+    [
+      "diff",
+      "--cached",
+      "--no-renames",
+      "--name-only",
+      "-z",
+      "--diff-filter=ACDMRT",
+    ],
+    ["ls-files", "--others", "--exclude-standard", "-z"],
+  ];
+  const changedPaths = new Set<string>();
+
+  for (const args of commands) {
+    const result = await runCommand("git", args, rootDirectory);
+
+    if (result.exitCode !== 0) {
+      throw new Error(
+        `cannot determine changed paths with git ${args[0] ?? ""}`
+      );
+    }
+
+    for (const rawPath of result.stdout.split("\0")) {
+      if (rawPath.length === 0) {
+        continue;
+      }
+
+      changedPaths.add(normalizeGitPath(rawPath));
+    }
+  }
+
+  return changedPaths;
+};
+
+const readWorkspacePatterns = (value: unknown): string[] => {
+  if (!(isObject(value) && Array.isArray(value.workspaces))) {
+    throw new Error("root package.json must declare a workspaces array");
+  }
+
+  const patterns: string[] = [];
+
+  for (const pattern of value.workspaces) {
+    if (
+      typeof pattern !== "string" ||
+      !pattern.endsWith("/*") ||
+      pattern.length <= 2 ||
+      pattern.startsWith("/") ||
+      pattern.includes("..")
+    ) {
+      throw new Error(
+        "workspace patterns must be relative trailing-star directories"
+      );
+    }
+
+    patterns.push(pattern);
+  }
+
+  return patterns;
+};
+
+const readPackageManifest = async (
+  manifestPath: string,
+  directory: string
+): Promise<PackageManifest> => {
+  const value = await readJsonFile(manifestPath);
+
+  if (!isObject(value) || typeof value.name !== "string") {
+    throw new Error(`${directory}/package.json must declare a string name`);
+  }
+
+  return {
+    directory,
+    name: value.name,
+    private: value.private === true,
+  };
+};
+
+const readPendingChangesetPaths = async (
+  rootDirectory: string
+): Promise<string[]> => {
+  const paths: string[] = [];
+
+  for (const directory of [CHANGESET_DIRECTORY, `${CHANGESET_DIRECTORY}/pre`]) {
+    let entries: string[];
+
+    try {
+      entries = await readdir(path.join(rootDirectory, directory));
+    } catch (error: unknown) {
+      if (directory.endsWith("/pre") && hasErrorCode(error, "ENOENT")) {
+        continue;
+      }
+
+      throw new Error(`cannot read ${directory} directory`, { cause: error });
+    }
+
+    for (const entry of entries) {
+      const relativePath = `${directory}/${entry}`;
+
+      if (isNativeChangesetPath(relativePath)) {
+        paths.push(relativePath);
+      }
+    }
+  }
+
+  return paths.sort((left, right) => left.localeCompare(right));
+};
+
+const readPendingChangesetPathsAtRevision = async (
+  rootDirectory: string,
+  revision: string
+): Promise<string[]> => {
+  const result = await runCommand(
+    "git",
+    ["ls-tree", "-r", "--name-only", "-z", revision, "--", CHANGESET_DIRECTORY],
+    rootDirectory
+  );
+
+  if (result.exitCode !== 0) {
+    throw new Error("cannot inspect .changeset history for a consumed release");
+  }
+
+  return result.stdout
+    .split("\0")
+    .filter((filePath) => isNativeChangesetPath(filePath))
+    .sort();
+};
+
+const parseChangesetContents = async (
+  text: string,
+  filename: string,
+  workspaceNames?: ReadonlySet<string>
+): Promise<ChangesetContents> => {
+  const parse = await getChangesetParser();
+  let parsed: unknown;
+
+  try {
+    parsed = parse(text);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`changeset-check: FAIL — ${message}`);
-    process.exitCode = 1;
+    throw new Error(
+      `.changeset/${filename} has invalid frontmatter: ${message}`,
+      { cause: error }
+    );
   }
-}
 
-export async function checkChangesetCoverage(
+  if (!isNativeChangesetContents(parsed)) {
+    throw new Error(
+      `.changeset/${filename} produced an invalid result from the installed Changesets parser`
+    );
+  }
+
+  const releaseTypes = new Map<string, string>();
+
+  for (const release of parsed.releases) {
+    if (workspaceNames !== undefined && !workspaceNames.has(release.name)) {
+      throw new Error(
+        `.changeset/${filename} references unknown workspace package ${JSON.stringify(release.name)}`
+      );
+    }
+
+    releaseTypes.set(release.name, release.type);
+  }
+
+  return {
+    releaseTypes,
+    summary: parsed.summary,
+  };
+};
+
+const readPendingChangesetsAtRevision = async (
+  rootDirectory: string,
+  revision: string
+): Promise<PendingChangeset[]> => {
+  const paths = await readPendingChangesetPathsAtRevision(
+    rootDirectory,
+    revision
+  );
+  const changesets: PendingChangeset[] = [];
+
+  for (const relativePath of paths) {
+    const contents = await runCommand(
+      "git",
+      ["show", `${revision}:${relativePath}`],
+      rootDirectory
+    );
+
+    if (contents.exitCode !== 0) {
+      throw new Error(`cannot read base changeset ${relativePath}`);
+    }
+
+    // Historical notes establish prior intent. Parse their native syntax and
+    // release types without applying the current workspace membership check.
+    const parsed = await parseChangesetContents(
+      contents.stdout,
+      relativePath.slice(`${CHANGESET_DIRECTORY}/`.length)
+    );
+    changesets.push({ ...parsed, relativePath });
+  }
+
+  return changesets;
+};
+
+const parseChangeset = async (
+  filePath: string,
+  filename: string,
+  workspaceNames: ReadonlySet<string>
+): Promise<PendingChangeset> => {
+  const text = await readFile(filePath, "utf-8");
+  const contents = await parseChangesetContents(text, filename, workspaceNames);
+
+  return {
+    relativePath: `${CHANGESET_DIRECTORY}/${filename}`,
+    releaseTypes: contents.releaseTypes,
+    summary: contents.summary,
+  };
+};
+
+const readPendingChangesets = async (
+  rootDirectory: string,
+  workspaceNames: ReadonlySet<string>
+): Promise<PendingChangeset[]> => {
+  const changesets: PendingChangeset[] = [];
+
+  for (const relativePath of await readPendingChangesetPaths(rootDirectory)) {
+    changesets.push(
+      await parseChangeset(
+        path.join(rootDirectory, relativePath),
+        relativePath.slice(`${CHANGESET_DIRECTORY}/`.length),
+        workspaceNames
+      )
+    );
+  }
+
+  return changesets;
+};
+
+const readWorkspaceManifests = async (
+  rootDirectory: string
+): Promise<PackageManifest[]> => {
+  const rootManifest = await readJsonFile(
+    path.join(rootDirectory, "package.json")
+  );
+  const workspacePatterns = readWorkspacePatterns(rootManifest);
+  const manifests: PackageManifest[] = [];
+  const names = new Set<string>();
+
+  for (const workspacePattern of workspacePatterns) {
+    const parent = workspacePattern.slice(0, -2);
+    const parentDirectory = path.join(rootDirectory, parent);
+
+    try {
+      await access(parentDirectory);
+    } catch {
+      throw new Error(
+        `workspace directory ${JSON.stringify(parent)} is missing`
+      );
+    }
+
+    const manifestPaths = await walkPackageManifests(parentDirectory);
+
+    for (const manifestPath of manifestPaths) {
+      const directory = normalizeGitPath(
+        path.relative(rootDirectory, path.dirname(manifestPath))
+      );
+
+      if (!matchesWorkspacePattern(directory, workspacePattern)) {
+        continue;
+      }
+
+      const manifest = await readPackageManifest(manifestPath, directory);
+
+      if (names.has(manifest.name)) {
+        throw new Error(
+          `workspace package name ${manifest.name} is declared more than once`
+        );
+      }
+
+      names.add(manifest.name);
+      manifests.push(manifest);
+    }
+  }
+
+  if (manifests.length === 0) {
+    throw new Error("no workspace package manifests could be established");
+  }
+
+  return manifests.sort((left, right) => left.name.localeCompare(right.name));
+};
+
+export const checkChangesetCoverage = async (
   options: ChangesetCheckOptions
-): Promise<void> {
+): Promise<void> => {
   const baseRevision = await resolveRevision(
     options.rootDirectory,
     options.base
@@ -176,389 +546,7 @@ export async function checkChangesetCoverage(
   throw new Error(
     `publishable package changes lack direct changesets: ${formatPackageNames(uncovered)}`
   );
-}
-
-function parseBaseArgument(arguments_: readonly string[]): string {
-  if (arguments_.length === 0) {
-    return "master";
-  }
-
-  if (arguments_.length !== 1 || !arguments_[0]?.startsWith("--base=")) {
-    throw new Error("usage: bun run changeset:check --base=<git revision>");
-  }
-
-  const base = arguments_[0].slice("--base=".length);
-
-  if (base.length === 0) {
-    throw new Error("--base must name a Git revision");
-  }
-
-  return base;
-}
-
-async function resolveRevision(
-  rootDirectory: string,
-  revision: string
-): Promise<string> {
-  const result = await runCommand(
-    "git",
-    ["rev-parse", "--verify", `${revision}^{commit}`],
-    rootDirectory
-  );
-
-  if (result.exitCode !== 0) {
-    throw new Error(
-      `cannot resolve base revision ${JSON.stringify(revision)}; fetch the pull-request base with full history`
-    );
-  }
-
-  const resolved = result.stdout.trim();
-
-  if (!FULL_GIT_COMMIT.test(resolved)) {
-    throw new Error(
-      `Git returned an invalid base commit for ${JSON.stringify(revision)}`
-    );
-  }
-
-  return resolved;
-}
-
-async function readChangedPaths(
-  rootDirectory: string,
-  baseRevision: string
-): Promise<ReadonlySet<string>> {
-  // A source move changes both endpoints; retain the current public-package
-  // deletion even when the destination is private or outside any package.
-  const commands: readonly (readonly string[])[] = [
-    [
-      "diff",
-      "--no-renames",
-      "--name-only",
-      "-z",
-      "--diff-filter=ACDMRT",
-      `${baseRevision}...HEAD`,
-    ],
-    ["diff", "--no-renames", "--name-only", "-z", "--diff-filter=ACDMRT"],
-    [
-      "diff",
-      "--cached",
-      "--no-renames",
-      "--name-only",
-      "-z",
-      "--diff-filter=ACDMRT",
-    ],
-    ["ls-files", "--others", "--exclude-standard", "-z"],
-  ];
-  const changedPaths = new Set<string>();
-
-  for (const args of commands) {
-    const result = await runCommand("git", args, rootDirectory);
-
-    if (result.exitCode !== 0) {
-      throw new Error(
-        `cannot determine changed paths with git ${args[0] ?? ""}`
-      );
-    }
-
-    for (const rawPath of result.stdout.split("\0")) {
-      if (rawPath.length === 0) {
-        continue;
-      }
-
-      changedPaths.add(normalizeGitPath(rawPath));
-    }
-  }
-
-  return changedPaths;
-}
-
-async function readWorkspaceManifests(
-  rootDirectory: string
-): Promise<PackageManifest[]> {
-  const rootManifest = await readJsonFile(
-    path.join(rootDirectory, "package.json")
-  );
-  const workspacePatterns = readWorkspacePatterns(rootManifest);
-  const manifests: PackageManifest[] = [];
-  const names = new Set<string>();
-
-  for (const workspacePattern of workspacePatterns) {
-    const parent = workspacePattern.slice(0, -2);
-    const parentDirectory = path.join(rootDirectory, parent);
-
-    try {
-      await access(parentDirectory);
-    } catch {
-      throw new Error(
-        `workspace directory ${JSON.stringify(parent)} is missing`
-      );
-    }
-
-    const manifestPaths = await walkPackageManifests(parentDirectory);
-
-    for (const manifestPath of manifestPaths) {
-      const directory = normalizeGitPath(
-        path.relative(rootDirectory, path.dirname(manifestPath))
-      );
-
-      if (!matchesWorkspacePattern(directory, workspacePattern)) {
-        continue;
-      }
-
-      const manifest = await readPackageManifest(manifestPath, directory);
-
-      if (names.has(manifest.name)) {
-        throw new Error(
-          `workspace package name ${manifest.name} is declared more than once`
-        );
-      }
-
-      names.add(manifest.name);
-      manifests.push(manifest);
-    }
-  }
-
-  if (manifests.length === 0) {
-    throw new Error("no workspace package manifests could be established");
-  }
-
-  return manifests.sort((left, right) => left.name.localeCompare(right.name));
-}
-
-function readWorkspacePatterns(value: unknown): string[] {
-  if (!(isObject(value) && Array.isArray(value.workspaces))) {
-    throw new Error("root package.json must declare a workspaces array");
-  }
-
-  const patterns: string[] = [];
-
-  for (const pattern of value.workspaces) {
-    if (
-      typeof pattern !== "string" ||
-      !pattern.endsWith("/*") ||
-      pattern.length <= 2 ||
-      pattern.startsWith("/") ||
-      pattern.includes("..")
-    ) {
-      throw new Error(
-        "workspace patterns must be relative trailing-star directories"
-      );
-    }
-
-    patterns.push(pattern);
-  }
-
-  return patterns;
-}
-
-async function readPackageManifest(
-  manifestPath: string,
-  directory: string
-): Promise<PackageManifest> {
-  const value = await readJsonFile(manifestPath);
-
-  if (!isObject(value) || typeof value.name !== "string") {
-    throw new Error(`${directory}/package.json must declare a string name`);
-  }
-
-  return {
-    directory,
-    name: value.name,
-    private: value.private === true,
-  };
-}
-
-async function readJsonFile(filePath: string): Promise<unknown> {
-  let text: string;
-
-  try {
-    text = await readFile(filePath, "utf-8");
-  } catch {
-    throw new Error(`cannot read ${filePath}`);
-  }
-
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    throw new Error(`${filePath} is not valid JSON`);
-  }
-}
-
-async function readPendingChangesets(
-  rootDirectory: string,
-  workspaceNames: ReadonlySet<string>
-): Promise<PendingChangeset[]> {
-  const changesets: PendingChangeset[] = [];
-
-  for (const relativePath of await readPendingChangesetPaths(rootDirectory)) {
-    changesets.push(
-      await parseChangeset(
-        path.join(rootDirectory, relativePath),
-        relativePath.slice(`${CHANGESET_DIRECTORY}/`.length),
-        workspaceNames
-      )
-    );
-  }
-
-  return changesets;
-}
-
-async function readPendingChangesetsAtRevision(
-  rootDirectory: string,
-  revision: string
-): Promise<PendingChangeset[]> {
-  const paths = await readPendingChangesetPathsAtRevision(
-    rootDirectory,
-    revision
-  );
-  const changesets: PendingChangeset[] = [];
-
-  for (const relativePath of paths) {
-    const contents = await runCommand(
-      "git",
-      ["show", `${revision}:${relativePath}`],
-      rootDirectory
-    );
-
-    if (contents.exitCode !== 0) {
-      throw new Error(`cannot read base changeset ${relativePath}`);
-    }
-
-    // Historical notes establish prior intent. Parse their native syntax and
-    // release types without applying the current workspace membership check.
-    const parsed = await parseChangesetContents(
-      contents.stdout,
-      relativePath.slice(`${CHANGESET_DIRECTORY}/`.length)
-    );
-    changesets.push({ ...parsed, relativePath });
-  }
-
-  return changesets;
-}
-
-async function readPendingChangesetPaths(
-  rootDirectory: string
-): Promise<string[]> {
-  const paths: string[] = [];
-
-  for (const directory of [CHANGESET_DIRECTORY, `${CHANGESET_DIRECTORY}/pre`]) {
-    let entries: string[];
-
-    try {
-      entries = await readdir(path.join(rootDirectory, directory));
-    } catch (error: unknown) {
-      if (directory.endsWith("/pre") && hasErrorCode(error, "ENOENT")) {
-        continue;
-      }
-
-      throw new Error(`cannot read ${directory} directory`, { cause: error });
-    }
-
-    for (const entry of entries) {
-      const relativePath = `${directory}/${entry}`;
-
-      if (isNativeChangesetPath(relativePath)) {
-        paths.push(relativePath);
-      }
-    }
-  }
-
-  return paths.sort((left, right) => left.localeCompare(right));
-}
-
-async function readPendingChangesetPathsAtRevision(
-  rootDirectory: string,
-  revision: string
-): Promise<string[]> {
-  const result = await runCommand(
-    "git",
-    ["ls-tree", "-r", "--name-only", "-z", revision, "--", CHANGESET_DIRECTORY],
-    rootDirectory
-  );
-
-  if (result.exitCode !== 0) {
-    throw new Error("cannot inspect .changeset history for a consumed release");
-  }
-
-  return result.stdout
-    .split("\0")
-    .filter((filePath) => isNativeChangesetPath(filePath))
-    .sort();
-}
-
-function isNativeChangesetPath(filePath: string): boolean {
-  const relativePath = filePath.slice(`${CHANGESET_DIRECTORY}/`.length);
-  const isRootFile = !relativePath.includes("/");
-  const isPreFile =
-    relativePath.startsWith("pre/") &&
-    !relativePath.slice("pre/".length).includes("/");
-  const filename = path.posix.basename(filePath);
-
-  return (
-    (isRootFile || isPreFile) &&
-    !filename.startsWith(".") &&
-    filename.endsWith(".md") &&
-    !CHANGESET_README_FILE.test(filename) &&
-    !CHANGESET_METADATA_FILES.has(filename)
-  );
-}
-
-async function parseChangeset(
-  filePath: string,
-  filename: string,
-  workspaceNames: ReadonlySet<string>
-): Promise<PendingChangeset> {
-  const text = await readFile(filePath, "utf-8");
-  const contents = await parseChangesetContents(text, filename, workspaceNames);
-
-  return {
-    relativePath: `${CHANGESET_DIRECTORY}/${filename}`,
-    releaseTypes: contents.releaseTypes,
-    summary: contents.summary,
-  };
-}
-
-async function parseChangesetContents(
-  text: string,
-  filename: string,
-  workspaceNames?: ReadonlySet<string>
-): Promise<ChangesetContents> {
-  const parse = await getChangesetParser();
-  let parsed: unknown;
-
-  try {
-    parsed = parse(text);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `.changeset/${filename} has invalid frontmatter: ${message}`,
-      { cause: error }
-    );
-  }
-
-  if (!isNativeChangesetContents(parsed)) {
-    throw new Error(
-      `.changeset/${filename} produced an invalid result from the installed Changesets parser`
-    );
-  }
-
-  const releaseTypes = new Map<string, string>();
-
-  for (const release of parsed.releases) {
-    if (workspaceNames !== undefined && !workspaceNames.has(release.name)) {
-      throw new Error(
-        `.changeset/${filename} references unknown workspace package ${JSON.stringify(release.name)}`
-      );
-    }
-
-    releaseTypes.set(release.name, release.type);
-  }
-
-  return {
-    releaseTypes,
-    summary: parsed.summary,
-  };
-}
+};
 
 async function getChangesetParser(): Promise<ChangesetParser> {
   changesetParserPromise ??= loadChangesetParser();
@@ -939,4 +927,16 @@ async function runCommand(
       finish(code ?? 1);
     });
   });
+}
+
+if (import.meta.main) {
+  const base = parseBaseArgument(process.argv.slice(2));
+
+  try {
+    await checkChangesetCoverage({ base, rootDirectory: REPO_ROOT });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`changeset-check: FAIL — ${message}`);
+    process.exitCode = 1;
+  }
 }
