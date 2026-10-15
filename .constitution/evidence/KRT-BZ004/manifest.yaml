@@ -85,4 +85,4 @@ files:
     sha256: e64295dfcb91ba858a324741dc9b257f344676db65c2f71fed0a819e76a08faf
     bytes: 10474
     role: measurement
-pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M10 preserve initialization and remove their target diagnostics. M11 is byte-equal to the frozen bridge stage-2 candidate, preserves 18 helper definitions and focused behavior, reduces bridge target diagnostics from 55 to the eight M12 declarations with non-target diagnostics stable, and passes bridge, workspace, and provider gates on the known shared PostgreSQL socket.'
+pass_criteria: 'KRT-BZ001 captures remain parseable. M8-M10 preserve initialization and remove their target diagnostics. M11 is byte-equal to the frozen bridge stage-2 candidate, preserves 18 helper definitions and focused behavior, reduces bridge target diagnostics from 55 to eight remaining target diagnostics across five M12 declarations with non-target diagnostics stable, and passes bridge, workspace, and provider gates on the known shared PostgreSQL socket.'
