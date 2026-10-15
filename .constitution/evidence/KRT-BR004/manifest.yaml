@@ -1,0 +1,42 @@
+{
+  "owner": "KRT-BR004",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-15",
+    "commit": "16834aab351659788c56435de70f8969cabdfe7f",
+    "command": "EPIC-BR milestone contract proofs and native-admission evidence"
+  },
+  "files": [
+    {
+      "path": "M1-summary.json",
+      "sha256": "469e81fc3c4d8c5f8d085205d9a1a5c06b415f2acad0dcccf528c3b7a44652ba",
+      "bytes": 2360,
+      "role": "measurement"
+    },
+    {
+      "path": "M1-shared-before-syntactic.json.gz",
+      "sha256": "a091c33313bb36b3df60f2e1df244da1f474fcdb31f78ae0f91e934410996de0",
+      "bytes": 10042,
+      "role": "baseline"
+    },
+    {
+      "path": "M1-shared-after-syntactic.json.gz",
+      "sha256": "17e2d924e542d91c2ff063debfa24dd2f9c6d54757225736e8853dca183cb235",
+      "bytes": 8737,
+      "role": "measurement"
+    },
+    {
+      "path": "M1-shared-before-command-stderr.log.gz",
+      "sha256": "6a226116ffe77ef84da232266e0f1fbed3abb5bc1d13cadadcee617b1128ca59",
+      "bytes": 148,
+      "role": "baseline"
+    },
+    {
+      "path": "M1-shared-after-command-stderr.log.gz",
+      "sha256": "104bf17b1b3999bad81b720fea146b4ffc5b6ad43170cf238554b376035e6458",
+      "bytes": 149,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."
+}

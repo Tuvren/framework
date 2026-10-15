@@ -17,11 +17,13 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-  type BackendInvariantReclamationDeps,
-  type BackendState,
   isExpiredLeaselessRunningRun,
   LEASELESS_RUN_EXPIRY_MS,
   reclaimBackendState,
+} from "@tuvren/backend-shared";
+import type {
+  BackendInvariantReclamationDeps,
+  BackendState,
 } from "@tuvren/backend-shared";
 import type {
   StoredBranch,
@@ -59,9 +61,9 @@ function makeEmptyState(): BackendState {
     stagedResults: new Map(),
     threads: new Map(),
     turnNodes: new Map(),
-    turns: new Map(),
     turnTreePaths: new Map(),
     turnTrees: new Map(),
+    turns: new Map(),
   };
 }
 

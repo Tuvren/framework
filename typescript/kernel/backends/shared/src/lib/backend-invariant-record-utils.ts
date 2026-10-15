@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  assertHashString,
-  type EpochMs,
-  TuvrenPersistenceError,
-} from "@tuvren/core";
+import { assertHashString, TuvrenPersistenceError } from "@tuvren/core";
+import type { EpochMs } from "@tuvren/core";
 import type {
   StoredBranch,
   StoredObject,

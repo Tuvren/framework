@@ -20,10 +20,8 @@ import type {
   StoredTurnTreePath,
 } from "@tuvren/kernel-protocol";
 
-import {
-  type BackendInvariantRecordUtilsConfig,
-  createBackendInvariantRecordUtils,
-} from "./backend-invariant-record-utils.js";
+import { createBackendInvariantRecordUtils } from "./backend-invariant-record-utils.js";
+import type { BackendInvariantRecordUtilsConfig } from "./backend-invariant-record-utils.js";
 import type { BackendState } from "./backend-invariant-state.js";
 import {
   createTurnNodeLineageIndex,
