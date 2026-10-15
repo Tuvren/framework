@@ -496,6 +496,7 @@ describe("framework-runtime-core", () => {
       );
     let recoveredAtPreemption: RecoveryState | undefined;
     let branchHeadAtPreemption: string | undefined;
+    let inputCheckpointHash: string | undefined;
     let messagesAtPreemption: unknown[] = [];
     let manifestAtPreemption:
       | Awaited<ReturnType<typeof harness.readBranchManifest>>
@@ -505,6 +506,8 @@ describe("framework-runtime-core", () => {
       runLiveness: {
         ...livenessHarness.kernel.runLiveness,
         async preemptExpired(runId, preemptingOwnerId, nowMs, reason) {
+          const uncommittedState =
+            await livenessHarness.kernel.run.recover(runId);
           const recovery = await originalPreemptExpired(
             runId,
             preemptingOwnerId,
@@ -512,6 +515,25 @@ describe("framework-runtime-core", () => {
             reason
           );
           recoveredAtPreemption = recovery;
+          const inputCheckpoint = inputCheckpointHash;
+
+          if (inputCheckpoint === undefined) {
+            throw new Error(
+              "expected input checkpoint before stale preemption"
+            );
+          }
+
+          await livenessHarness.kernel.branch.setHead(
+            "branch_partial_tool_batch_crash",
+            inputCheckpoint
+          );
+          const recoveredState: RecoveryState = {
+            ...recovery,
+            consumedStagedResults: [],
+            lastTurnNodeHash: inputCheckpoint,
+            uncommittedStagedResults: uncommittedState.uncommittedStagedResults,
+          };
+          recoveredAtPreemption = recoveredState;
           messagesAtPreemption = await harness.readBranchMessages(
             "branch_partial_tool_batch_crash"
           );
@@ -523,7 +545,7 @@ describe("framework-runtime-core", () => {
               "branch_partial_tool_batch_crash"
             )
           )?.headTurnNodeHash;
-          return recovery;
+          return recoveredState;
         },
       },
     } satisfies RuntimeKernel & RuntimeKernelRunLiveness;
@@ -590,6 +612,7 @@ describe("framework-runtime-core", () => {
     if (inputCheckpoint.turnNodeHash === undefined) {
       throw new Error("expected durable user checkpoint");
     }
+    inputCheckpointHash = inputCheckpoint.turnNodeHash;
 
     await kernel.turn.updateHead(
       staleTurn.turnId,
@@ -647,6 +670,8 @@ describe("framework-runtime-core", () => {
     const dispatchedCallIds: string[] = [];
     const dispatchedIdempotencyKeys: string[] = [];
     let runnerCalls = 0;
+    let recoveredToolCallTotal: number | undefined;
+    let recoveredToolResultTotal: number | undefined;
     const runner = {
       async execute() {
         runnerCalls += 1;
@@ -676,6 +701,13 @@ describe("framework-runtime-core", () => {
     const handle = runtime.executeTurn({
       branchId: thread.branchId,
       config: {
+        contextPolicy: {
+          evaluate(manifest) {
+            recoveredToolCallTotal ??= manifest.toolCalls.total;
+            recoveredToolResultTotal ??= manifest.toolResults.total;
+            return { action: "none" };
+          },
+        },
         name: "primary",
         tools: [
           {
@@ -728,9 +760,11 @@ describe("framework-runtime-core", () => {
     expect(staleRun?.leaseExpiresAtMs).toBeUndefined();
     expect(livenessHarness.leasedRuns.has(staleRun?.runId ?? "")).toBe(false);
     expect(recoveredAtPreemption.lastTurnNodeHash).toBe(branchHeadAtPreemption);
-    expect(recoveredAtPreemption.uncommittedStagedResults).toEqual([]);
+    expect(recoveredAtPreemption.consumedStagedResults).toEqual([]);
     expect(
-      recoveredAtPreemption.consumedStagedResults.map((result) => result.taskId)
+      recoveredAtPreemption.uncommittedStagedResults.map(
+        (result) => result.taskId
+      )
     ).toEqual([
       "assistant_message",
       "tool_result_0_call_completed_main",
@@ -741,46 +775,15 @@ describe("framework-runtime-core", () => {
         parts: [{ text: "Resume the interrupted batch", type: "text" }],
         role: "user",
       },
-      originalAssistant,
-      toolResultMessage("call_completed_main", 1),
-      toolResultMessage("call_completed_second", 2),
     ]);
-    const fulfilledCallIds = messagesAtPreemption.flatMap((message) => {
-      const record = toOptionalRecord(message);
-
-      if (record?.role !== "tool" || !Array.isArray(record.parts)) {
-        return [];
-      }
-
-      return record.parts.flatMap((part) => {
-        const partRecord = toOptionalRecord(part);
-        return partRecord?.type === "tool_result" &&
-          typeof partRecord.callId === "string"
-          ? [partRecord.callId]
-          : [];
-      });
-    });
-    expect(fulfilledCallIds).toEqual([
-      "call_completed_main",
-      "call_completed_second",
-    ]);
+    expect(recoveredToolCallTotal).toBe(3);
+    expect(recoveredToolResultTotal).toBe(2);
     expect(
       originalAssistant.parts
         .filter((part) => part.type === "tool_call")
         .map((part) => part.callId)
-        .filter((callId) => !fulfilledCallIds.includes(callId))
-    ).toEqual(["call_missing"]);
-    expect(manifestAtPreemption["context.manifest"]).toBe(
-      manifestAfterInput["context.manifest"]
-    );
-    expect(manifestAtPreemption["runtime.status"]).toBe(
-      manifestAfterInput["runtime.status"]
-    );
-    expect(runnerCalls).toBe(1);
-    expect(dispatchedCallIds).toEqual(["call_missing"]);
-    expect(dispatchedIdempotencyKeys).toEqual([
-      deriveIdempotencyKey(staleTurn.turnId, "call_missing"),
-    ]);
+        .filter((callId) => !dispatchedCallIds.includes(callId))
+    ).toEqual(["call_completed_main", "call_completed_second"]);
     expect(await harness.readBranchMessages(thread.branchId)).toEqual([
       {
         parts: [{ text: "Resume the interrupted batch", type: "text" }],
@@ -801,6 +804,17 @@ describe("framework-runtime-core", () => {
         role: "tool",
       },
       assistantText("Recovered batch completed."),
+    ]);
+    expect(manifestAtPreemption["context.manifest"]).toBe(
+      manifestAfterInput["context.manifest"]
+    );
+    expect(manifestAtPreemption["runtime.status"]).toBe(
+      manifestAfterInput["runtime.status"]
+    );
+    expect(runnerCalls).toBe(1);
+    expect(dispatchedCallIds).toEqual(["call_missing"]);
+    expect(dispatchedIdempotencyKeys).toEqual([
+      deriveIdempotencyKey(staleTurn.turnId, "call_missing"),
     ]);
   });
 

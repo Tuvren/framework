@@ -27,6 +27,7 @@ import type { TuvrenMessage } from "@tuvren/core/messages";
 import type { ToolRegistry } from "@tuvren/core/tools";
 import type { TurnNode } from "@tuvren/kernel-protocol";
 
+import { createContextManifest } from "./context-manifest.js";
 import {
   type ExtensionStateUpdate,
   runBeforeIterationHooks,
@@ -439,6 +440,7 @@ async function prepareIterationState(
   iterationCount: number
 ): Promise<IterationPreparationResult> {
   let headState = await host.loadHeadState(handle.request.branchId);
+  headState = includeRecoveredIterationHistory(headState, loopState);
   handle.updateStatus({
     manifest: headState.manifest,
   });
@@ -450,7 +452,7 @@ async function prepareIterationState(
     extensions: loopState.activeConfig.extensions ?? [],
     iterationCount,
     manifest: headState.manifest,
-    messages: headState.messages,
+    messages: recoveredIterationMessages(headState, loopState),
     runId: host.createId(),
     turnId: handle.turnId,
   });
@@ -492,6 +494,7 @@ async function prepareIterationState(
     );
     loopState.carriedStateUpdates = [];
     headState = await host.loadHeadState(handle.request.branchId);
+    headState = includeRecoveredIterationHistory(headState, loopState);
   }
 
   const policyPlan = loopState.activeConfig.contextPolicy?.evaluate(
@@ -509,11 +512,44 @@ async function prepareIterationState(
     );
     loopState.carriedStateUpdates = [];
     headState = await host.loadHeadState(handle.request.branchId);
+    headState = includeRecoveredIterationHistory(headState, loopState);
   }
 
   return {
     headState,
   };
+}
+
+function includeRecoveredIterationHistory(
+  headState: HeadState,
+  loopState: LoopState
+): HeadState {
+  const recoveryPlan = loopState.interruptedIterationPlan;
+
+  if (recoveryPlan === undefined || recoveryPlan.disposition === "re_infer") {
+    return headState;
+  }
+
+  return {
+    ...headState,
+    manifest: createContextManifest(
+      [...headState.messages, ...recoveryPlan.stagedMessages],
+      headState.manifest.extensions
+    ),
+  };
+}
+
+function recoveredIterationMessages(
+  headState: HeadState,
+  loopState: LoopState
+): TuvrenMessage[] {
+  const recoveryPlan = loopState.interruptedIterationPlan;
+
+  if (recoveryPlan === undefined || recoveryPlan.disposition === "re_infer") {
+    return headState.messages;
+  }
+
+  return [...headState.messages, ...recoveryPlan.stagedMessages];
 }
 
 /**
