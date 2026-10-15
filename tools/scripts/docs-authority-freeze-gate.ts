@@ -650,6 +650,44 @@ const toInventoryEntry = (entry: CoverageEntry): ClaimInventoryEntry => ({
   text: entry.text,
 });
 
+const deferredDecision = (
+  surface: string,
+  rationale: string
+): ClassificationDecision => ({
+  classification: "explicitly-deferred",
+  deferralRationale: rationale,
+  docsCorrection:
+    "Deferred scope is labeled in the docs authority notes and freeze gate report.",
+  evidence: EMPTY_EVIDENCE,
+  followUpTicket:
+    "Future TechSpec/Tasks revision after TypeScript freeze closure",
+  implementationEvidence: "N/A",
+  surface,
+});
+
+const authorityDecision = (
+  surface: string,
+  evidence: EvidenceTemplate
+): ClassificationDecision => ({
+  classification: "authority-backed-conformance-covered",
+  deferralRationale: "N/A",
+  docsCorrection: "N/A",
+  evidence,
+  followUpTicket: "N/A",
+  implementationEvidence: "N/A - measured through shared conformance evidence",
+  surface,
+});
+
+// Kernel v0.12 / framework v0.21 SaaS-readiness *target* semantics are frozen
+// human authority whose PORTABLE machine authority is deliberately deferred
+// until the SaaS-readiness epics (BE/BF/BG/BH) promote it through the
+// authority-packet + conformance + evidence cascade. Without explicit routing
+// each claim would inherit its enclosing section's
+// `authority-backed-conformance-covered` label by section-key prefix and falsely
+// report coverage that does not exist yet, directly contradicting the
+// "classified as deferred until the SaaS-readiness epics promote them" status
+// lines in both specs. Route the version-status headers to explicitly-deferred
+// and each behavioral target claim to its owning epic's alignment ticket.
 const classifySaaSReadinessTargetClaim = (
   section: string,
   text: string
@@ -769,6 +807,46 @@ const isApprovalControlClaim = (text: string): boolean =>
   text.includes("paused handle") ||
   text.includes("paused turn");
 
+const promotedEpicAfDecision = (
+  surface: string,
+  evidence: EvidenceTemplate,
+  followUpTicket: string
+): ClassificationDecision => ({
+  classification: "authority-backed-conformance-covered",
+  deferralRationale:
+    "N/A - Epic AF promoted this claim into boundary-owned authority and shared conformance evidence.",
+  docsCorrection:
+    "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
+  evidence,
+  followUpTicket,
+  implementationEvidence:
+    "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
+  surface,
+});
+
+const missingConformanceDecision = (
+  surface: string,
+  evidence: EvidenceTemplate,
+  followUpTicket: string,
+  rationale: string
+): ClassificationDecision => {
+  if (followUpTicket.startsWith("KRT-AF")) {
+    return promotedEpicAfDecision(surface, evidence, followUpTicket);
+  }
+
+  return {
+    classification: "missing-conformance-follow-up",
+    deferralRationale: rationale,
+    docsCorrection:
+      "Docs and AD reports label this as not freeze-covered until the follow-up ticket closes.",
+    evidence,
+    followUpTicket,
+    implementationEvidence:
+      "TypeScript local tests remain implementation evidence only until shared checks are promoted.",
+    surface,
+  };
+};
+
 const classifyFrameworkControlSurfaceClaim = (
   section: string,
   text: string
@@ -835,6 +913,36 @@ const classifyFrameworkEventStreamSection = (
 
   return null;
 };
+
+const implementationDefinedDecision = (
+  surface: string,
+  rationale: string
+): ClassificationDecision => ({
+  classification: "implementation-defined",
+  deferralRationale: rationale,
+  docsCorrection:
+    "Implementation-defined posture is labeled in the nearest docs authority note or decision report.",
+  evidence: EMPTY_EVIDENCE,
+  followUpTicket: "N/A unless AF promotes the surface",
+  implementationEvidence:
+    "Implementation evidence may exist, but it is not portable authority.",
+  surface,
+});
+
+const implementationLocalDecision = (
+  surface: string,
+  implementationEvidence: string,
+  rationale: string
+): ClassificationDecision => ({
+  classification: "implementation-local-evidence",
+  deferralRationale: rationale,
+  docsCorrection:
+    "Docs and AD decision reports label this as local evidence rather than cross-language authority.",
+  evidence: EMPTY_EVIDENCE,
+  followUpTicket: "KRT-AF001 if portability is selected",
+  implementationEvidence,
+  surface,
+});
 
 const classifyFrameworkIntegrationSection = (
   section: string,
@@ -1071,6 +1179,20 @@ const classifyKernelDeferredText = (
   );
 };
 
+const staleDocsDecision = (
+  surface: string,
+  docsCorrection: string
+): ClassificationDecision => ({
+  classification: "stale-docs-corrected",
+  deferralRationale:
+    "The previous wording could be read as Markdown carrying machine portability authority.",
+  docsCorrection,
+  evidence: EMPTY_EVIDENCE,
+  followUpTicket: "N/A",
+  implementationEvidence: "N/A",
+  surface,
+});
+
 const classifyKernelPostureText = (
   text: string
 ): ClassificationDecision | null => {
@@ -1258,6 +1380,410 @@ const classifyKernelCoreSection = (
   }
 
   return null;
+};
+
+const unclassifiedDecision = (
+  surface: string,
+  rationale: string
+): ClassificationDecision => ({
+  classification: "unclassified",
+  deferralRationale: rationale,
+  docsCorrection:
+    "N/A - the docs authority freeze gate must classify this claim before closure.",
+  evidence: EMPTY_EVIDENCE,
+  followUpTicket: "Epic AD classifier update required",
+  implementationEvidence: "N/A",
+  surface,
+});
+
+const uniqueClaimEntries = <T extends Pick<NormativeClaim, "duplicateOf">>(
+  entries: readonly T[]
+): T[] => entries.filter((entry) => entry.duplicateOf == null);
+
+const groupCount = <T>(
+  values: readonly T[],
+  keySelector: (value: T) => string
+): ReadonlyMap<string, number> => {
+  const counts = new Map<string, number>();
+
+  for (const value of values) {
+    const key = keySelector(value);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return counts;
+};
+
+const duplicateClaimCount = (
+  entries: readonly Pick<NormativeClaim, "duplicateOf">[]
+): number => entries.filter((entry) => entry.duplicateOf != null).length;
+
+const escapeTableCell = (value: string): string =>
+  value.replaceAll("|", "\\|").replaceAll("\n", " ");
+
+const renderCountTable = (
+  counts: ReadonlyMap<string, number>,
+  label: string
+): string => {
+  const lines = [`| ${label} | Count |`, "| --- | ---: |"];
+  for (const [key, count] of [...counts.entries()].sort(([left], [right]) =>
+    left.localeCompare(right)
+  )) {
+    lines.push(`| ${escapeTableCell(key)} | ${count} |`);
+  }
+  return lines.join("\n");
+};
+
+const renderSummary = (entries: readonly CoverageEntry[]): string => {
+  const independentEntries = uniqueClaimEntries(entries);
+  const byClassification = groupCount(
+    independentEntries,
+    (entry) => entry.classification
+  );
+  const byBoundary = groupCount(
+    independentEntries,
+    (entry) => entry.affectedBoundary
+  );
+
+  return [
+    "# Epic AD Docs-to-Authority Freeze Gate Summary",
+    "",
+    "## Status",
+    "",
+    "Epic AD generated the normative claim inventory, coverage matrix, deferred-surface decisions, local-surface decisions, docs cleanup anchors, and TypeScript freeze gate report.",
+    "",
+    "## Source Inputs",
+    "",
+    "- `docs/KrakenFrameworkSpecification.md`",
+    "- `docs/KrakenKernelSpecification.md`",
+    "- `spec/*/authority-packet.json`",
+    "- `spec/conformance/*/plans/*.json`",
+    "- `reports/compatibility/compatibility-matrix.json` and `reports/compatibility/evidence/*.json`",
+    "",
+    "## Claim Counts",
+    "",
+    `- Matrix rows: ${entries.length}`,
+    `- Independent claims: ${independentEntries.length}`,
+    `- Duplicate rows linked by \`duplicateOf\`: ${duplicateClaimCount(entries)}`,
+    "",
+    "## Independent Claims By Boundary",
+    "",
+    renderCountTable(byBoundary, "Boundary"),
+    "",
+    "## Independent Claims By Primary Classification",
+    "",
+    renderCountTable(byClassification, "Classification"),
+    "",
+    "## Generated Artifacts",
+    "",
+    `- Claim inventory: \`${INVENTORY_PATH}\``,
+    `- Coverage matrix: \`${MATRIX_PATH}\``,
+    `- Framework decisions: \`${FRAMEWORK_DECISIONS_PATH}\``,
+    `- Kernel/backend/provider decisions: \`${LOCAL_DECISIONS_PATH}\``,
+    `- Freeze gate report: \`${REPORT_PATH}\``,
+    `- Closure inventory: \`${CLOSURE_PATH}\``,
+    "",
+  ].join("\n");
+};
+
+const groupBy = <T>(
+  values: readonly T[],
+  keySelector: (value: T) => string
+): ReadonlyMap<string, readonly T[]> => {
+  const groups = new Map<string, T[]>();
+
+  for (const value of values) {
+    const key = keySelector(value);
+    const existing = groups.get(key);
+    if (existing == null) {
+      groups.set(key, [value]);
+    } else {
+      existing.push(value);
+    }
+  }
+
+  return groups;
+};
+
+const renderSurfaceTable = (
+  groups: ReadonlyMap<string, readonly CoverageEntry[]>
+): string => {
+  const lines = [
+    "| Surface | Independent Claims | Classifications | Follow-up | Blocks future implementation line? |",
+    "| --- | ---: | --- | --- | --- |",
+  ];
+
+  for (const [surface, surfaceEntries] of [...groups.entries()].sort(
+    ([left], [right]) => left.localeCompare(right)
+  )) {
+    const independentEntries = uniqueClaimEntries(surfaceEntries);
+    const classifications = [
+      ...new Set(independentEntries.map((entry) => entry.classification)),
+    ].join(", ");
+    const followUps = [
+      ...new Set(independentEntries.map((entry) => entry.followUpTicket)),
+    ]
+      .filter((value) => value !== "N/A")
+      .join(", ");
+    const blocks = independentEntries.some((entry) =>
+      [
+        "implementation-local-evidence",
+        "missing-conformance-follow-up",
+        "stale-docs-corrected",
+      ].includes(entry.classification)
+    )
+      ? "Yes, until AF/docs evidence resolves it"
+      : "No, if kept local/deferred";
+
+    lines.push(
+      `| ${escapeTableCell(surface)} | ${independentEntries.length} | ${escapeTableCell(classifications)} | ${escapeTableCell(followUps || "N/A")} | ${blocks} |`
+    );
+  }
+
+  return lines.join("\n");
+};
+
+const renderFrameworkDecisions = (
+  entries: readonly CoverageEntry[]
+): string => {
+  const frameworkEntries = entries.filter(
+    (entry) => entry.affectedBoundary === "framework"
+  );
+  const surfaces = groupBy(frameworkEntries, (entry) => entry.surface);
+
+  return [
+    "# Epic AD Framework Deferred-Surface Decisions",
+    "",
+    "## Status",
+    "",
+    "Framework deferred-surface decisions are recorded from the docs-to-authority matrix. Claims with `authority-backed-conformance-covered` are portable only through the named packets/plans/evidence. Every other framework surface below is local, implementation-defined, deferred, or explicitly outside portable authority.",
+    "",
+    renderSurfaceTable(surfaces),
+    "",
+    "## Freeze Decisions",
+    "",
+    "- Promoted through Epic AF: selected `KRT-AF001`, `KRT-AF003`, `KRT-AF004`, and `KRT-AF005` rows are now `authority-backed-conformance-covered`.",
+    "- Implementation-defined: extension storage/composition details, synchronous workers, ordered pipelines, stream adapter package topology, and orchestration static config or extension scoping unless a later plan promotes them.",
+    "- Explicitly deferred: future direct provider packages, worker process management, agent discovery, delegated construction modes, custom future protocols, and ordered pipeline product work.",
+    "- Stale docs: preamble wording that implied Markdown was the single machine authority has been corrected by the docs authority notes.",
+    "",
+  ].join("\n");
+};
+
+const renderLocalSurfaceDecisions = (
+  entries: readonly CoverageEntry[]
+): string => {
+  const selected = entries.filter(
+    (entry) =>
+      entry.affectedBoundary === "kernel" ||
+      entry.surface.includes("provider") ||
+      entry.surface.includes("tool")
+  );
+  const surfaces = groupBy(selected, (entry) => entry.surface);
+
+  return [
+    "# Epic AD Kernel, Backend, and Provider Local-Surface Decisions",
+    "",
+    "## Status",
+    "",
+    "Kernel, backend, provider, and tool surfaces are separated from cross-language authority unless the matrix maps them to a packet, shared plan, fixture, adapter capability, and compatibility evidence.",
+    "",
+    renderSurfaceTable(surfaces),
+    "",
+    "## Decisions",
+    "",
+    "- Official backend guarantees: kernel logical behavior is portable through `tuvren.kernel.protocol`; backend physical storage, acceleration indexes, SQLite details, and process-local choices remain implementation-defined.",
+    "- Provider behavior: provider-neutral bridge behavior is portable through `tuvren.providers.provider-api`; provider-family packages and native wire-format mechanics remain deferred or local.",
+    "- Tool and approval behavior: the provider-neutral rows selected by `KRT-AF004` are now shared-conformance-covered; provider-family-native mechanics remain local or deferred.",
+    "- Optional extensions: run-liveness remains capability-gated through `kernel.run-liveness`; it is not retroactively folded into the base protocol for implementations that do not advertise it.",
+    "",
+  ].join("\n");
+};
+
+const renderFreezeGateReport = (entries: readonly CoverageEntry[]): string => {
+  const independentEntries = uniqueClaimEntries(entries);
+  const authorityCount = independentEntries.filter(
+    (entry) => entry.classification === "authority-backed-conformance-covered"
+  ).length;
+  const blocking = independentEntries.filter((entry) =>
+    [
+      "implementation-local-evidence",
+      "missing-conformance-follow-up",
+      "stale-docs-corrected",
+    ].includes(entry.classification)
+  );
+  const nonBlocking = independentEntries.filter((entry) =>
+    ["implementation-defined", "explicitly-deferred"].includes(
+      entry.classification
+    )
+  );
+  const remaining = independentEntries.filter(
+    (entry) => entry.classification !== "authority-backed-conformance-covered"
+  );
+  const remainingSurfaces = groupBy(remaining, (entry) => entry.surface);
+
+  return [
+    "# Epic AD TypeScript Freeze Gate Report",
+    "",
+    "## Decision",
+    "",
+    "Epic AD established the docs-to-authority classification gate; this generated report now incorporates the closed Epic AF promotions for the selected portable surfaces. TypeScript freeze-readiness for the currently promoted surfaces is recorded by the Epic AF closure inventory and remains scoped to those surfaces.",
+    "",
+    "Rust framework product work remains blocked until a later TechSpec/Tasks revision explicitly activates a product implementation line.",
+    "",
+    "## Authority-Backed and Conformance-Covered Claims",
+    "",
+    `- Independent claims currently classified as authority-backed and conformance-covered: ${authorityCount}`,
+    `- Duplicate matrix rows linked by \`duplicateOf\`: ${duplicateClaimCount(entries)}`,
+    "- Evidence anchors: framework, provider, and kernel authority packets; shared conformance plans; boundary fixtures/scenarios; adapter capabilities; and compatibility evidence under `reports/compatibility/evidence/`.",
+    "",
+    "## Remaining Surfaces",
+    "",
+    `- Potentially blocking because still implementation-local or stale-docs-corrected: ${blocking.length}`,
+    `- Non-blocking because they are explicitly implementation-defined or deferred: ${nonBlocking.length}`,
+    "",
+    "## Remaining Surface Detail",
+    "",
+    "Every remaining non-authority surface is listed below with its current posture. Rows kept implementation-defined or explicitly deferred are not portable runtime authority.",
+    "",
+    renderSurfaceTable(remainingSurfaces),
+    "",
+    "## Freeze Closure Evidence",
+    "",
+    "- `KRT-AE009` recorded the TypeScript semantic gravity-well decomposition without public API churn.",
+    "- `KRT-AF001` converted selected portability claims into a generated packet/plan/fixture/adapter/evidence gap plan.",
+    "- `KRT-AF002` through `KRT-AF006` added the selected shared checks and kept local/deferred behavior out of portable authority.",
+    "- `KRT-AF007` wired guardrails so docs/conformance drift fails validation unless generated artifacts are updated.",
+    "- `KRT-AF008` regenerated clean evidence through `bun run verify`, `bun run release-check`, `bun run conformance`, `bun run codegen`, and `bun run interop-smoke`.",
+    "- `reports/compatibility/compatibility-matrix.json` reports the final check-level evidence for every affected implementation.",
+    "",
+    "## Blocker Statement",
+    "",
+    "No future framework implementation line, including Rust framework product behavior, is activated by Epic AD/AE/AF closure alone. A later planning revision must still name the next implementation line and its evidence gates.",
+    "",
+  ].join("\n");
+};
+
+const renderClosureInventory = (entries: readonly CoverageEntry[]): string => {
+  const independentEntries = uniqueClaimEntries(entries);
+
+  return [
+    "# Epic AD Docs-to-Authority Freeze Gate Closure Inventory",
+    "",
+    "## Status",
+    "",
+    "Epic AD is closed in current repo reality.",
+    "",
+    "## Delivered Scope",
+    "",
+    "- The active freeze-readiness scope was already activated in `.constitution/tasks/` and `.constitution/tech-spec/` before this closure pass.",
+    `- The normative docs claim inventory covers ${entries.length} matrix rows and ${independentEntries.length} independent claims from ` +
+      "`docs/KrakenFrameworkSpecification.md` and `docs/KrakenKernelSpecification.md`.",
+    "- The docs-to-authority coverage matrix assigns exactly one primary classification to every row and links duplicate rows through `duplicateOf` instead of treating them as separate independent requirements.",
+    "- Framework deferred-surface decisions and kernel/backend/provider local-surface decisions are checked in as Epic AD handoff records.",
+    "- Docs preambles now distinguish human semantic authority from machine portability authority and point readers to the AD matrix for freeze-readiness classification.",
+    "- The freeze gate report records that TypeScript is not freeze-ready from AD alone and that Rust framework remains blocked until AE/AF and a later planning revision close the gate.",
+    "",
+    "## Evidence Anchors",
+    "",
+    `- Claim inventory: \`${INVENTORY_PATH}\``,
+    `- Coverage matrix: \`${MATRIX_PATH}\``,
+    `- Summary: \`${SUMMARY_PATH}\``,
+    `- Framework deferred decisions: \`${FRAMEWORK_DECISIONS_PATH}\``,
+    `- Kernel/backend/provider decisions: \`${LOCAL_DECISIONS_PATH}\``,
+    `- Freeze gate report: \`${REPORT_PATH}\``,
+    "- Docs cleanup: `docs/KrakenFrameworkSpecification.md`; `docs/KrakenKernelSpecification.md`; `.constitution/tech-spec/`",
+    "",
+    "## Closure Notes",
+    "",
+    "- TypeScript implementation source, implementation tests, conformance adapters, generic runner code, and Markdown prose remain forbidden authority for cross-implementation meaning.",
+    "- Epic AF owns promotion of any remaining portable behavior into packet-backed shared conformance.",
+    "- Epic AE owns TypeScript modular hardening. Epic AD did not change runtime behavior.",
+    "",
+  ].join("\n");
+};
+
+const independentClaimCount = (
+  entries: readonly Pick<NormativeClaim, "duplicateOf">[]
+): number => uniqueClaimEntries(entries).length;
+
+const normalizeClaimText = (text: string): string =>
+  text
+    .replace(LEADING_LIST_MARKER_PATTERN, "")
+    .replace(WHITESPACE_PATTERN, " ")
+    .trim();
+
+const toAnchor = (heading: string): string =>
+  `#${heading
+    .toLowerCase()
+    .replace(ANCHOR_BACKTICK_PATTERN, "")
+    .replace(ANCHOR_UNSAFE_CHAR_PATTERN, "")
+    .trim()
+    .replace(WHITESPACE_PATTERN, "-")}`;
+
+const toSectionKey = (heading: string): string => {
+  const numbered = SECTION_NUMBER_PATTERN.exec(heading);
+  if (numbered?.[1] != null) {
+    return numbered[1];
+  }
+
+  if (heading.startsWith("Appendix")) {
+    return "appendix";
+  }
+
+  return heading
+    .toLowerCase()
+    .replace(SECTION_UNSAFE_CHAR_PATTERN, "-")
+    .replace(SECTION_TRAILING_DASH_PATTERN, "");
+};
+
+const formatJson = (value: unknown): string =>
+  `${JSON.stringify(value, null, 2)}\n`;
+
+const writeArtifacts = async (
+  artifacts: readonly OutputArtifact[]
+): Promise<void> => {
+  await mkdir(OUTPUT_DIR, { recursive: true });
+
+  for (const artifact of artifacts) {
+    await writeFile(artifact.path, artifact.content, "utf-8");
+  }
+};
+
+const checkArtifacts = async (
+  artifacts: readonly OutputArtifact[]
+): Promise<void> => {
+  const stalePaths: string[] = [];
+
+  for (const artifact of artifacts) {
+    let currentContent: string;
+    try {
+      currentContent = await readFile(artifact.path, "utf-8");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ) {
+        stalePaths.push(artifact.path);
+        continue;
+      }
+      throw error;
+    }
+
+    if (currentContent !== artifact.content) {
+      stalePaths.push(artifact.path);
+    }
+  }
+
+  if (stalePaths.length > 0) {
+    throw new Error(
+      "docs authority freeze gate artifacts are stale. " +
+        `Run \`bun run docs:authority-freeze\` and commit the updated files: ${stalePaths.join(
+          ", "
+        )}`
+    );
+  }
 };
 
 const pushClaim = async (
@@ -1778,545 +2304,6 @@ const main = async (): Promise<void> => {
     `docs authority freeze gate generated ${matrixEntries.length} classified claims`
   );
 };
-
-function authorityDecision(
-  surface: string,
-  evidence: EvidenceTemplate
-): ClassificationDecision {
-  return {
-    classification: "authority-backed-conformance-covered",
-    deferralRationale: "N/A",
-    docsCorrection: "N/A",
-    evidence,
-    followUpTicket: "N/A",
-    implementationEvidence:
-      "N/A - measured through shared conformance evidence",
-    surface,
-  };
-}
-
-function deferredDecision(
-  surface: string,
-  rationale: string
-): ClassificationDecision {
-  return {
-    classification: "explicitly-deferred",
-    deferralRationale: rationale,
-    docsCorrection:
-      "Deferred scope is labeled in the docs authority notes and freeze gate report.",
-    evidence: EMPTY_EVIDENCE,
-    followUpTicket:
-      "Future TechSpec/Tasks revision after TypeScript freeze closure",
-    implementationEvidence: "N/A",
-    surface,
-  };
-}
-
-function implementationDefinedDecision(
-  surface: string,
-  rationale: string
-): ClassificationDecision {
-  return {
-    classification: "implementation-defined",
-    deferralRationale: rationale,
-    docsCorrection:
-      "Implementation-defined posture is labeled in the nearest docs authority note or decision report.",
-    evidence: EMPTY_EVIDENCE,
-    followUpTicket: "N/A unless AF promotes the surface",
-    implementationEvidence:
-      "Implementation evidence may exist, but it is not portable authority.",
-    surface,
-  };
-}
-
-function implementationLocalDecision(
-  surface: string,
-  implementationEvidence: string,
-  rationale: string
-): ClassificationDecision {
-  return {
-    classification: "implementation-local-evidence",
-    deferralRationale: rationale,
-    docsCorrection:
-      "Docs and AD decision reports label this as local evidence rather than cross-language authority.",
-    evidence: EMPTY_EVIDENCE,
-    followUpTicket: "KRT-AF001 if portability is selected",
-    implementationEvidence,
-    surface,
-  };
-}
-
-function missingConformanceDecision(
-  surface: string,
-  evidence: EvidenceTemplate,
-  followUpTicket: string,
-  rationale: string
-): ClassificationDecision {
-  if (followUpTicket.startsWith("KRT-AF")) {
-    return promotedEpicAfDecision(surface, evidence, followUpTicket);
-  }
-
-  return {
-    classification: "missing-conformance-follow-up",
-    deferralRationale: rationale,
-    docsCorrection:
-      "Docs and AD reports label this as not freeze-covered until the follow-up ticket closes.",
-    evidence,
-    followUpTicket,
-    implementationEvidence:
-      "TypeScript local tests remain implementation evidence only until shared checks are promoted.",
-    surface,
-  };
-}
-
-function promotedEpicAfDecision(
-  surface: string,
-  evidence: EvidenceTemplate,
-  followUpTicket: string
-): ClassificationDecision {
-  return {
-    classification: "authority-backed-conformance-covered",
-    deferralRationale:
-      "N/A - Epic AF promoted this claim into boundary-owned authority and shared conformance evidence.",
-    docsCorrection:
-      "Epic AF closure records this claim as freeze-covered by authority packets, conformance plans, adapter observations, and compatibility evidence.",
-    evidence,
-    followUpTicket,
-    implementationEvidence:
-      "Shared certification-harness evidence is the portable authority; TypeScript local tests remain regression evidence only.",
-    surface,
-  };
-}
-
-function staleDocsDecision(
-  surface: string,
-  docsCorrection: string
-): ClassificationDecision {
-  return {
-    classification: "stale-docs-corrected",
-    deferralRationale:
-      "The previous wording could be read as Markdown carrying machine portability authority.",
-    docsCorrection,
-    evidence: EMPTY_EVIDENCE,
-    followUpTicket: "N/A",
-    implementationEvidence: "N/A",
-    surface,
-  };
-}
-
-function unclassifiedDecision(
-  surface: string,
-  rationale: string
-): ClassificationDecision {
-  return {
-    classification: "unclassified",
-    deferralRationale: rationale,
-    docsCorrection:
-      "N/A - the docs authority freeze gate must classify this claim before closure.",
-    evidence: EMPTY_EVIDENCE,
-    followUpTicket: "Epic AD classifier update required",
-    implementationEvidence: "N/A",
-    surface,
-  };
-}
-
-function renderSummary(entries: readonly CoverageEntry[]): string {
-  const independentEntries = uniqueClaimEntries(entries);
-  const byClassification = groupCount(
-    independentEntries,
-    (entry) => entry.classification
-  );
-  const byBoundary = groupCount(
-    independentEntries,
-    (entry) => entry.affectedBoundary
-  );
-
-  return [
-    "# Epic AD Docs-to-Authority Freeze Gate Summary",
-    "",
-    "## Status",
-    "",
-    "Epic AD generated the normative claim inventory, coverage matrix, deferred-surface decisions, local-surface decisions, docs cleanup anchors, and TypeScript freeze gate report.",
-    "",
-    "## Source Inputs",
-    "",
-    "- `docs/KrakenFrameworkSpecification.md`",
-    "- `docs/KrakenKernelSpecification.md`",
-    "- `spec/*/authority-packet.json`",
-    "- `spec/conformance/*/plans/*.json`",
-    "- `reports/compatibility/compatibility-matrix.json` and `reports/compatibility/evidence/*.json`",
-    "",
-    "## Claim Counts",
-    "",
-    `- Matrix rows: ${entries.length}`,
-    `- Independent claims: ${independentEntries.length}`,
-    `- Duplicate rows linked by \`duplicateOf\`: ${duplicateClaimCount(entries)}`,
-    "",
-    "## Independent Claims By Boundary",
-    "",
-    renderCountTable(byBoundary, "Boundary"),
-    "",
-    "## Independent Claims By Primary Classification",
-    "",
-    renderCountTable(byClassification, "Classification"),
-    "",
-    "## Generated Artifacts",
-    "",
-    `- Claim inventory: \`${INVENTORY_PATH}\``,
-    `- Coverage matrix: \`${MATRIX_PATH}\``,
-    `- Framework decisions: \`${FRAMEWORK_DECISIONS_PATH}\``,
-    `- Kernel/backend/provider decisions: \`${LOCAL_DECISIONS_PATH}\``,
-    `- Freeze gate report: \`${REPORT_PATH}\``,
-    `- Closure inventory: \`${CLOSURE_PATH}\``,
-    "",
-  ].join("\n");
-}
-
-function renderFrameworkDecisions(entries: readonly CoverageEntry[]): string {
-  const frameworkEntries = entries.filter(
-    (entry) => entry.affectedBoundary === "framework"
-  );
-  const surfaces = groupBy(frameworkEntries, (entry) => entry.surface);
-
-  return [
-    "# Epic AD Framework Deferred-Surface Decisions",
-    "",
-    "## Status",
-    "",
-    "Framework deferred-surface decisions are recorded from the docs-to-authority matrix. Claims with `authority-backed-conformance-covered` are portable only through the named packets/plans/evidence. Every other framework surface below is local, implementation-defined, deferred, or explicitly outside portable authority.",
-    "",
-    renderSurfaceTable(surfaces),
-    "",
-    "## Freeze Decisions",
-    "",
-    "- Promoted through Epic AF: selected `KRT-AF001`, `KRT-AF003`, `KRT-AF004`, and `KRT-AF005` rows are now `authority-backed-conformance-covered`.",
-    "- Implementation-defined: extension storage/composition details, synchronous workers, ordered pipelines, stream adapter package topology, and orchestration static config or extension scoping unless a later plan promotes them.",
-    "- Explicitly deferred: future direct provider packages, worker process management, agent discovery, delegated construction modes, custom future protocols, and ordered pipeline product work.",
-    "- Stale docs: preamble wording that implied Markdown was the single machine authority has been corrected by the docs authority notes.",
-    "",
-  ].join("\n");
-}
-
-function renderLocalSurfaceDecisions(
-  entries: readonly CoverageEntry[]
-): string {
-  const selected = entries.filter(
-    (entry) =>
-      entry.affectedBoundary === "kernel" ||
-      entry.surface.includes("provider") ||
-      entry.surface.includes("tool")
-  );
-  const surfaces = groupBy(selected, (entry) => entry.surface);
-
-  return [
-    "# Epic AD Kernel, Backend, and Provider Local-Surface Decisions",
-    "",
-    "## Status",
-    "",
-    "Kernel, backend, provider, and tool surfaces are separated from cross-language authority unless the matrix maps them to a packet, shared plan, fixture, adapter capability, and compatibility evidence.",
-    "",
-    renderSurfaceTable(surfaces),
-    "",
-    "## Decisions",
-    "",
-    "- Official backend guarantees: kernel logical behavior is portable through `tuvren.kernel.protocol`; backend physical storage, acceleration indexes, SQLite details, and process-local choices remain implementation-defined.",
-    "- Provider behavior: provider-neutral bridge behavior is portable through `tuvren.providers.provider-api`; provider-family packages and native wire-format mechanics remain deferred or local.",
-    "- Tool and approval behavior: the provider-neutral rows selected by `KRT-AF004` are now shared-conformance-covered; provider-family-native mechanics remain local or deferred.",
-    "- Optional extensions: run-liveness remains capability-gated through `kernel.run-liveness`; it is not retroactively folded into the base protocol for implementations that do not advertise it.",
-    "",
-  ].join("\n");
-}
-
-function renderFreezeGateReport(entries: readonly CoverageEntry[]): string {
-  const independentEntries = uniqueClaimEntries(entries);
-  const authorityCount = independentEntries.filter(
-    (entry) => entry.classification === "authority-backed-conformance-covered"
-  ).length;
-  const blocking = independentEntries.filter((entry) =>
-    [
-      "implementation-local-evidence",
-      "missing-conformance-follow-up",
-      "stale-docs-corrected",
-    ].includes(entry.classification)
-  );
-  const nonBlocking = independentEntries.filter((entry) =>
-    ["implementation-defined", "explicitly-deferred"].includes(
-      entry.classification
-    )
-  );
-  const remaining = independentEntries.filter(
-    (entry) => entry.classification !== "authority-backed-conformance-covered"
-  );
-  const remainingSurfaces = groupBy(remaining, (entry) => entry.surface);
-
-  return [
-    "# Epic AD TypeScript Freeze Gate Report",
-    "",
-    "## Decision",
-    "",
-    "Epic AD established the docs-to-authority classification gate; this generated report now incorporates the closed Epic AF promotions for the selected portable surfaces. TypeScript freeze-readiness for the currently promoted surfaces is recorded by the Epic AF closure inventory and remains scoped to those surfaces.",
-    "",
-    "Rust framework product work remains blocked until a later TechSpec/Tasks revision explicitly activates a product implementation line.",
-    "",
-    "## Authority-Backed and Conformance-Covered Claims",
-    "",
-    `- Independent claims currently classified as authority-backed and conformance-covered: ${authorityCount}`,
-    `- Duplicate matrix rows linked by \`duplicateOf\`: ${duplicateClaimCount(entries)}`,
-    "- Evidence anchors: framework, provider, and kernel authority packets; shared conformance plans; boundary fixtures/scenarios; adapter capabilities; and compatibility evidence under `reports/compatibility/evidence/`.",
-    "",
-    "## Remaining Surfaces",
-    "",
-    `- Potentially blocking because still implementation-local or stale-docs-corrected: ${blocking.length}`,
-    `- Non-blocking because they are explicitly implementation-defined or deferred: ${nonBlocking.length}`,
-    "",
-    "## Remaining Surface Detail",
-    "",
-    "Every remaining non-authority surface is listed below with its current posture. Rows kept implementation-defined or explicitly deferred are not portable runtime authority.",
-    "",
-    renderSurfaceTable(remainingSurfaces),
-    "",
-    "## Freeze Closure Evidence",
-    "",
-    "- `KRT-AE009` recorded the TypeScript semantic gravity-well decomposition without public API churn.",
-    "- `KRT-AF001` converted selected portability claims into a generated packet/plan/fixture/adapter/evidence gap plan.",
-    "- `KRT-AF002` through `KRT-AF006` added the selected shared checks and kept local/deferred behavior out of portable authority.",
-    "- `KRT-AF007` wired guardrails so docs/conformance drift fails validation unless generated artifacts are updated.",
-    "- `KRT-AF008` regenerated clean evidence through `bun run verify`, `bun run release-check`, `bun run conformance`, `bun run codegen`, and `bun run interop-smoke`.",
-    "- `reports/compatibility/compatibility-matrix.json` reports the final check-level evidence for every affected implementation.",
-    "",
-    "## Blocker Statement",
-    "",
-    "No future framework implementation line, including Rust framework product behavior, is activated by Epic AD/AE/AF closure alone. A later planning revision must still name the next implementation line and its evidence gates.",
-    "",
-  ].join("\n");
-}
-
-function renderClosureInventory(entries: readonly CoverageEntry[]): string {
-  const independentEntries = uniqueClaimEntries(entries);
-
-  return [
-    "# Epic AD Docs-to-Authority Freeze Gate Closure Inventory",
-    "",
-    "## Status",
-    "",
-    "Epic AD is closed in current repo reality.",
-    "",
-    "## Delivered Scope",
-    "",
-    "- The active freeze-readiness scope was already activated in `.constitution/tasks/` and `.constitution/tech-spec/` before this closure pass.",
-    `- The normative docs claim inventory covers ${entries.length} matrix rows and ${independentEntries.length} independent claims from ` +
-      "`docs/KrakenFrameworkSpecification.md` and `docs/KrakenKernelSpecification.md`.",
-    "- The docs-to-authority coverage matrix assigns exactly one primary classification to every row and links duplicate rows through `duplicateOf` instead of treating them as separate independent requirements.",
-    "- Framework deferred-surface decisions and kernel/backend/provider local-surface decisions are checked in as Epic AD handoff records.",
-    "- Docs preambles now distinguish human semantic authority from machine portability authority and point readers to the AD matrix for freeze-readiness classification.",
-    "- The freeze gate report records that TypeScript is not freeze-ready from AD alone and that Rust framework remains blocked until AE/AF and a later planning revision close the gate.",
-    "",
-    "## Evidence Anchors",
-    "",
-    `- Claim inventory: \`${INVENTORY_PATH}\``,
-    `- Coverage matrix: \`${MATRIX_PATH}\``,
-    `- Summary: \`${SUMMARY_PATH}\``,
-    `- Framework deferred decisions: \`${FRAMEWORK_DECISIONS_PATH}\``,
-    `- Kernel/backend/provider decisions: \`${LOCAL_DECISIONS_PATH}\``,
-    `- Freeze gate report: \`${REPORT_PATH}\``,
-    "- Docs cleanup: `docs/KrakenFrameworkSpecification.md`; `docs/KrakenKernelSpecification.md`; `.constitution/tech-spec/`",
-    "",
-    "## Closure Notes",
-    "",
-    "- TypeScript implementation source, implementation tests, conformance adapters, generic runner code, and Markdown prose remain forbidden authority for cross-implementation meaning.",
-    "- Epic AF owns promotion of any remaining portable behavior into packet-backed shared conformance.",
-    "- Epic AE owns TypeScript modular hardening. Epic AD did not change runtime behavior.",
-    "",
-  ].join("\n");
-}
-
-function renderSurfaceTable(
-  groups: ReadonlyMap<string, readonly CoverageEntry[]>
-): string {
-  const lines = [
-    "| Surface | Independent Claims | Classifications | Follow-up | Blocks future implementation line? |",
-    "| --- | ---: | --- | --- | --- |",
-  ];
-
-  for (const [surface, surfaceEntries] of [...groups.entries()].sort(
-    ([left], [right]) => left.localeCompare(right)
-  )) {
-    const independentEntries = uniqueClaimEntries(surfaceEntries);
-    const classifications = [
-      ...new Set(independentEntries.map((entry) => entry.classification)),
-    ].join(", ");
-    const followUps = [
-      ...new Set(independentEntries.map((entry) => entry.followUpTicket)),
-    ]
-      .filter((value) => value !== "N/A")
-      .join(", ");
-    const blocks = independentEntries.some((entry) =>
-      [
-        "implementation-local-evidence",
-        "missing-conformance-follow-up",
-        "stale-docs-corrected",
-      ].includes(entry.classification)
-    )
-      ? "Yes, until AF/docs evidence resolves it"
-      : "No, if kept local/deferred";
-
-    lines.push(
-      `| ${escapeTableCell(surface)} | ${independentEntries.length} | ${escapeTableCell(classifications)} | ${escapeTableCell(followUps || "N/A")} | ${blocks} |`
-    );
-  }
-
-  return lines.join("\n");
-}
-
-function renderCountTable(
-  counts: ReadonlyMap<string, number>,
-  label: string
-): string {
-  const lines = [`| ${label} | Count |`, "| --- | ---: |"];
-  for (const [key, count] of [...counts.entries()].sort(([left], [right]) =>
-    left.localeCompare(right)
-  )) {
-    lines.push(`| ${escapeTableCell(key)} | ${count} |`);
-  }
-  return lines.join("\n");
-}
-
-function groupBy<T>(
-  values: readonly T[],
-  keySelector: (value: T) => string
-): ReadonlyMap<string, readonly T[]> {
-  const groups = new Map<string, T[]>();
-
-  for (const value of values) {
-    const key = keySelector(value);
-    const existing = groups.get(key);
-    if (existing == null) {
-      groups.set(key, [value]);
-    } else {
-      existing.push(value);
-    }
-  }
-
-  return groups;
-}
-
-function groupCount<T>(
-  values: readonly T[],
-  keySelector: (value: T) => string
-): ReadonlyMap<string, number> {
-  const counts = new Map<string, number>();
-
-  for (const value of values) {
-    const key = keySelector(value);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-
-  return counts;
-}
-
-function duplicateClaimCount(
-  entries: readonly Pick<NormativeClaim, "duplicateOf">[]
-): number {
-  return entries.filter((entry) => entry.duplicateOf != null).length;
-}
-
-function independentClaimCount(
-  entries: readonly Pick<NormativeClaim, "duplicateOf">[]
-): number {
-  return uniqueClaimEntries(entries).length;
-}
-
-function uniqueClaimEntries<T extends Pick<NormativeClaim, "duplicateOf">>(
-  entries: readonly T[]
-): T[] {
-  return entries.filter((entry) => entry.duplicateOf == null);
-}
-
-function normalizeClaimText(text: string): string {
-  return text
-    .replace(LEADING_LIST_MARKER_PATTERN, "")
-    .replace(WHITESPACE_PATTERN, " ")
-    .trim();
-}
-
-function toAnchor(heading: string): string {
-  return `#${heading
-    .toLowerCase()
-    .replace(ANCHOR_BACKTICK_PATTERN, "")
-    .replace(ANCHOR_UNSAFE_CHAR_PATTERN, "")
-    .trim()
-    .replace(WHITESPACE_PATTERN, "-")}`;
-}
-
-function toSectionKey(heading: string): string {
-  const numbered = SECTION_NUMBER_PATTERN.exec(heading);
-  if (numbered?.[1] != null) {
-    return numbered[1];
-  }
-
-  if (heading.startsWith("Appendix")) {
-    return "appendix";
-  }
-
-  return heading
-    .toLowerCase()
-    .replace(SECTION_UNSAFE_CHAR_PATTERN, "-")
-    .replace(SECTION_TRAILING_DASH_PATTERN, "");
-}
-
-function escapeTableCell(value: string): string {
-  return value.replaceAll("|", "\\|").replaceAll("\n", " ");
-}
-
-function formatJson(value: unknown): string {
-  return `${JSON.stringify(value, null, 2)}\n`;
-}
-
-async function writeArtifacts(
-  artifacts: readonly OutputArtifact[]
-): Promise<void> {
-  await mkdir(OUTPUT_DIR, { recursive: true });
-
-  for (const artifact of artifacts) {
-    await writeFile(artifact.path, artifact.content, "utf-8");
-  }
-}
-
-async function checkArtifacts(
-  artifacts: readonly OutputArtifact[]
-): Promise<void> {
-  const stalePaths: string[] = [];
-
-  for (const artifact of artifacts) {
-    let currentContent: string;
-    try {
-      currentContent = await readFile(artifact.path, "utf-8");
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        "code" in error &&
-        error.code === "ENOENT"
-      ) {
-        stalePaths.push(artifact.path);
-        continue;
-      }
-      throw error;
-    }
-
-    if (currentContent !== artifact.content) {
-      stalePaths.push(artifact.path);
-    }
-  }
-
-  if (stalePaths.length > 0) {
-    throw new Error(
-      "docs authority freeze gate artifacts are stale. " +
-        `Run \`bun run docs:authority-freeze\` and commit the updated files: ${stalePaths.join(
-          ", "
-        )}`
-    );
-  }
-}
 
 if (import.meta.main) {
   await main();
