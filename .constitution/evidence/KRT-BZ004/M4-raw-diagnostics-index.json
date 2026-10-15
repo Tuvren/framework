@@ -1,0 +1,30 @@
+{
+  "milestone": "M4",
+  "ticket": "KRT-BZ001",
+  "producedAtCommit": "3ed9a2108eb64e11472e87c16d55e54447add5bc",
+  "command": "bunx --bun oxlint --type-aware --format=json typescript/providers/bridge-ai-sdk/test",
+  "captures": [
+    {
+      "archivePath": "epic-bz-m4-bridge-test-before.json",
+      "project": "providers-bridge-ai-sdk",
+      "cohort": "test",
+      "phase": "before",
+      "diagnostics": 161,
+      "rules": 474,
+      "selectedFiles": 10,
+      "bytes": 100342,
+      "sha256": "03a2839831ea743efe8d7d69a0c5d9ab4998ce510787c1fb7484ec33a5318d41"
+    },
+    {
+      "archivePath": "epic-bz-m4-bridge-test-after.json",
+      "project": "providers-bridge-ai-sdk",
+      "cohort": "test",
+      "phase": "after",
+      "diagnostics": 110,
+      "rules": 474,
+      "selectedFiles": 10,
+      "bytes": 63029,
+      "sha256": "33f18d951cad645c9f1c40cb480cb07c462f4fa224068f3168d2c826ae38e834"
+    }
+  ]
+}
