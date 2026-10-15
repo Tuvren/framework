@@ -144,22 +144,77 @@ export interface BackendInvariantRunSpan {
  * to the record-utils factory built from the same config) and the injected
  * `decodeRunCreatedTurnNodeHashes` dependency.
  */
-export function createBackendInvariantRunSpan(
+export const createBackendInvariantRunSpan = (
   config: BackendInvariantRunSpanConfig
-): BackendInvariantRunSpan {
+): BackendInvariantRunSpan => {
   const { ensureTurnNodeExists, persistenceError, validateHashString } =
     createBackendInvariantRecordUtils(config);
 
-  function code(suffix: string): string {
+  const code = (suffix: string): string => {
     return `${config.errorPrefix}_backend_${suffix}`;
-  }
+  };
 
-  function assertRunStartTurnNodeWithinTurnSpan(
+  const isTurnNodeDescendantOf = (
+    state: BackendState,
+    descendantTurnNodeHash: string,
+    ancestorTurnNodeHash: string
+  ): boolean => {
+    const visitedTurnNodes = new Set<string>();
+    let currentTurnNodeHash: string | null = descendantTurnNodeHash;
+
+    while (currentTurnNodeHash !== null) {
+      if (visitedTurnNodes.has(currentTurnNodeHash)) {
+        throw persistenceError(
+          "turn node lineage must not contain cycles",
+          code("cyclic_turn_node_lineage"),
+          {
+            ancestorTurnNodeHash,
+            descendantTurnNodeHash,
+          }
+        );
+      }
+
+      if (currentTurnNodeHash === ancestorTurnNodeHash) {
+        return true;
+      }
+
+      visitedTurnNodes.add(currentTurnNodeHash);
+      currentTurnNodeHash = ensureTurnNodeExists(
+        state,
+        currentTurnNodeHash,
+        "turnNodeHash"
+      ).previousTurnNodeHash;
+    }
+
+    return false;
+  };
+
+  const classifyTurnNodeRelationship = (
+    state: BackendState,
+    sourceTurnNodeHash: string,
+    targetTurnNodeHash: string
+  ): TurnNodeRelationship => {
+    if (sourceTurnNodeHash === targetTurnNodeHash) {
+      return "same";
+    }
+
+    if (isTurnNodeDescendantOf(state, targetTurnNodeHash, sourceTurnNodeHash)) {
+      return "forward";
+    }
+
+    if (isTurnNodeDescendantOf(state, sourceTurnNodeHash, targetTurnNodeHash)) {
+      return "backward";
+    }
+
+    return "lateral";
+  };
+
+  const assertRunStartTurnNodeWithinTurnSpan = (
     state: BackendState,
     turn: StoredTurn,
     startTurnNodeHash: string,
     label: string
-  ): void {
+  ): void => {
     const relationshipToTurnStart = classifyTurnNodeRelationship(
       state,
       turn.startTurnNodeHash,
@@ -201,14 +256,14 @@ export function createBackendInvariantRunSpan(
         }
       );
     }
-  }
+  };
 
-  function assertRunCreatedTurnNodeWithinTurnSpan(
+  const assertRunCreatedTurnNodeWithinTurnSpan = (
     state: BackendState,
     turn: StoredTurn,
     createdTurnNode: StoredTurnNode,
     label: string
-  ): void {
+  ): void => {
     const relationshipToTurnStart = classifyTurnNodeRelationship(
       state,
       turn.startTurnNodeHash,
@@ -250,12 +305,12 @@ export function createBackendInvariantRunSpan(
         }
       );
     }
-  }
+  };
 
-  function assertRunCreatedTurnNodesAreCanonical(
+  const assertRunCreatedTurnNodesAreCanonical = (
     state: BackendState,
     run: StoredRun
-  ): void {
+  ): void => {
     const createdTurnNodeHashes = config.decodeRunCreatedTurnNodeHashes(run);
     const seenTurnNodeHashes = new Set<string>();
     let previousTurnNodeHash = run.startTurnNodeHash;
@@ -299,13 +354,23 @@ export function createBackendInvariantRunSpan(
       seenTurnNodeHashes.add(turnNodeHash);
       previousTurnNodeHash = turnNodeHash;
     }
-  }
+  };
 
-  function assertActiveRunHeadAlignment(
+  /**
+   * A run's active turn node: the most recently created node in its
+   * `createdTurnNodesCbor` lineage, or its start turn node when the run has
+   * not created any nodes yet.
+   */
+  const getRunActiveTurnNodeHash = (run: StoredRun): string => {
+    const createdTurnNodeHashes = config.decodeRunCreatedTurnNodeHashes(run);
+    return createdTurnNodeHashes.at(-1) ?? run.startTurnNodeHash;
+  };
+
+  const assertActiveRunHeadAlignment = (
     run: StoredRun,
     branch: StoredBranch,
     turn: StoredTurn
-  ): void {
+  ): void => {
     const activeTurnNodeHash = getRunActiveTurnNodeHash(run);
 
     if (activeTurnNodeHash !== branch.headTurnNodeHash) {
@@ -335,76 +400,11 @@ export function createBackendInvariantRunSpan(
         }
       );
     }
-  }
+  };
 
-  /**
-   * A run's active turn node: the most recently created node in its
-   * `createdTurnNodesCbor` lineage, or its start turn node when the run has
-   * not created any nodes yet.
-   */
-  function getRunActiveTurnNodeHash(run: StoredRun): string {
-    const createdTurnNodeHashes = config.decodeRunCreatedTurnNodeHashes(run);
-    return createdTurnNodeHashes.at(-1) ?? run.startTurnNodeHash;
-  }
-
-  function classifyTurnNodeRelationship(
-    state: BackendState,
-    sourceTurnNodeHash: string,
-    targetTurnNodeHash: string
-  ): TurnNodeRelationship {
-    if (sourceTurnNodeHash === targetTurnNodeHash) {
-      return "same";
-    }
-
-    if (isTurnNodeDescendantOf(state, targetTurnNodeHash, sourceTurnNodeHash)) {
-      return "forward";
-    }
-
-    if (isTurnNodeDescendantOf(state, sourceTurnNodeHash, targetTurnNodeHash)) {
-      return "backward";
-    }
-
-    return "lateral";
-  }
-
-  function isTurnNodeDescendantOf(
-    state: BackendState,
-    descendantTurnNodeHash: string,
-    ancestorTurnNodeHash: string
-  ): boolean {
-    const visitedTurnNodes = new Set<string>();
-    let currentTurnNodeHash: string | null = descendantTurnNodeHash;
-
-    while (currentTurnNodeHash !== null) {
-      if (visitedTurnNodes.has(currentTurnNodeHash)) {
-        throw persistenceError(
-          "turn node lineage must not contain cycles",
-          code("cyclic_turn_node_lineage"),
-          {
-            ancestorTurnNodeHash,
-            descendantTurnNodeHash,
-          }
-        );
-      }
-
-      if (currentTurnNodeHash === ancestorTurnNodeHash) {
-        return true;
-      }
-
-      visitedTurnNodes.add(currentTurnNodeHash);
-      currentTurnNodeHash = ensureTurnNodeExists(
-        state,
-        currentTurnNodeHash,
-        "turnNodeHash"
-      ).previousTurnNodeHash;
-    }
-
-    return false;
-  }
-
-  function decodeTurnNodeConsumedStagedResultObjectHashes(
+  const decodeTurnNodeConsumedStagedResultObjectHashes = (
     turnNode: StoredTurnNode
-  ): string[] {
+  ): string[] => {
     const decodedValue = decodeDeterministicKernelRecord(
       turnNode.consumedStagedResultsCbor
     );
@@ -455,7 +455,7 @@ export function createBackendInvariantRunSpan(
     }
 
     return objectHashes;
-  }
+  };
 
   return {
     assertActiveRunHeadAlignment,
@@ -465,4 +465,4 @@ export function createBackendInvariantRunSpan(
     classifyTurnNodeRelationship,
     decodeTurnNodeConsumedStagedResultObjectHashes,
   };
-}
+};

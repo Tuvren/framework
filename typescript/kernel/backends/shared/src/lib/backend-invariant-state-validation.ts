@@ -75,9 +75,9 @@ import type {
 // call.
 
 /** Builds a fully-formed `<prefix>_backend_<reason>` error code. */
-function errorCode(errorPrefix: string, suffix: string): string {
+const errorCode = (errorPrefix: string, suffix: string): string => {
   return `${errorPrefix}_backend_${suffix}`;
-}
+};
 
 /**
  * Configuration for {@link createBackendInvariantStateValidation}: the
@@ -232,7 +232,7 @@ export interface BackendInvariantStateValidation {
  * cognitive-complexity limits; its dependencies are passed explicitly
  * instead of closed over.
  */
-async function validateLoadedStateCore(
+const validateLoadedStateCore = async (
   state: BackendState,
   recordUtils: BackendInvariantRecordUtils,
   getSchemaForSchemaId: (
@@ -240,7 +240,7 @@ async function validateLoadedStateCore(
     schemaId: string,
     label: string
   ) => TurnTreeSchema
-): Promise<void> {
+): Promise<void> => {
   for (const objectRecord of state.objects.values()) {
     await assertStoredObjectIdentity(objectRecord, "stored object row");
   }
@@ -316,7 +316,7 @@ async function validateLoadedStateCore(
       assertStoredStagedResult(stagedResult, "stored staged result row");
     }
   }
-}
+};
 
 /**
  * Every stored branch head belongs to its thread; every archive branch
@@ -328,7 +328,7 @@ async function validateLoadedStateCore(
  * Defined at module scope for the same cognitive-complexity reason as
  * {@link validateLoadedStateCore}.
  */
-function validateBranchInvariantsCore(
+const validateBranchInvariantsCore = (
   state: BackendState,
   baseState: BackendState,
   helpers: ValidationHelpers,
@@ -336,7 +336,7 @@ function validateBranchInvariantsCore(
   errorPrefix: string,
   recordUtils: BackendInvariantRecordUtils,
   turnNodeLineage: BackendInvariantTurnNodeLineage
-): void {
+): void => {
   for (const branch of state.branches.values()) {
     const thread = recordUtils.ensureThreadExists(
       state,
@@ -461,7 +461,7 @@ function validateBranchInvariantsCore(
       branch
     );
   }
-}
+};
 
 /**
  * Every stored run references consistent turn/branch/schema identity, its
@@ -473,14 +473,14 @@ function validateBranchInvariantsCore(
  * Defined at module scope for the same cognitive-complexity reason as
  * {@link validateLoadedStateCore}.
  */
-function validateRunInvariantsCore(
+const validateRunInvariantsCore = (
   state: BackendState,
   helpers: ValidationHelpers,
   lineageIndex: TurnNodeLineageIndex,
   errorPrefix: string,
   recordUtils: BackendInvariantRecordUtils,
   turnNodeLineage: BackendInvariantTurnNodeLineage
-): void {
+): void => {
   const activeRunCounts = new Map<string, number>();
 
   for (const run of state.runs.values()) {
@@ -618,7 +618,58 @@ function validateRunInvariantsCore(
       );
     }
   }
-}
+};
+
+/**
+ * Compares a decoded manifest path value against a resolved stored-path
+ * value: strict equality for `null`/string values, element-wise equality for
+ * hash arrays. Pure and backend-independent, so it lives outside the
+ * factory closure.
+ */
+const areManifestPathValuesEqual = (
+  left: unknown,
+  right: string[] | string | null
+): boolean => {
+  if (left === null || typeof left === "string") {
+    return left === right;
+  }
+
+  if (
+    !(Array.isArray(left) && Array.isArray(right)) ||
+    left.length !== right.length
+  ) {
+    return false;
+  }
+
+  for (const [index, item] of left.entries()) {
+    if (item !== right[index]) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+// Unused; retained only as documented dead code pending removal (superseded
+// by listTurnsByThread in backend-invariant-integrity-assertions.js).
+const _listTurnsByThread = (
+  state: BackendState,
+  threadId: string,
+  excludedTurnId?: string
+): StoredTurn[] => {
+  const turns: StoredTurn[] = [];
+
+  for (const turn of state.turns.values()) {
+    if (turn.threadId !== threadId || turn.turnId === excludedTurnId) {
+      continue;
+    }
+
+    turns.push(turn);
+  }
+
+  turns.sort(compareStoredTurn);
+  return turns;
+};
 
 /**
  * Builds the committed-state validation invariant surface shared by the
@@ -628,9 +679,9 @@ function validateRunInvariantsCore(
  * record-utils factory built from the same config) and the injected
  * `decodeHashStringArray`/`decodeTurnTreeSchema` CBOR decoders.
  */
-export function createBackendInvariantStateValidation(
+export const createBackendInvariantStateValidation = (
   config: BackendInvariantStateValidationConfig
-): BackendInvariantStateValidation {
+): BackendInvariantStateValidation => {
   const recordUtils = createBackendInvariantRecordUtils(config);
   const {
     ensureObjectExists,
@@ -642,9 +693,9 @@ export function createBackendInvariantStateValidation(
     persistenceError,
   } = recordUtils;
 
-  function code(suffix: string): string {
+  const code = (suffix: string): string => {
     return errorCode(config.errorPrefix, suffix);
-  }
+  };
 
   // One memoized root+depth index shared across every thread-membership/
   // descent check this pass runs (issue #108 M2): a shared ancestor prefix
@@ -654,28 +705,30 @@ export function createBackendInvariantStateValidation(
     errorPrefix: config.errorPrefix,
   });
 
-  function validateLoadedState(state: BackendState): Promise<void> {
-    return validateLoadedStateCore(state, recordUtils, getSchemaForSchemaId);
-  }
+  /** Decodes a schema record's CBOR bytes into a validated `TurnTreeSchema`. */
+  const decodeSchemaRecord = (
+    bytes: Uint8Array,
+    label: string
+  ): TurnTreeSchema => {
+    return config.decodeTurnTreeSchema(bytes, label);
+  };
 
-  function validateCommittedState(
+  /** Loads and decodes the turn-tree schema stored under `schemaId`. */
+  const getSchemaForSchemaId = (
     state: BackendState,
-    baseState: BackendState,
-    helpers: ValidationHelpers
-  ): void {
-    const lineageIndex = createTurnNodeLineageIndex();
+    schemaId: string,
+    label: string
+  ): TurnTreeSchema => {
+    const schemaRecord = ensureSchemaRecordExists(state, schemaId, label);
+    return decodeSchemaRecord(schemaRecord.schemaCbor, `${label} schema`);
+  };
 
-    validateThreadInvariants(state);
-    validateBranchInvariants(state, baseState, helpers, lineageIndex);
-    validateTurnNodeInvariants(state, helpers);
-    validateTurnInvariants(state, helpers, lineageIndex);
-    validateRunInvariants(state, helpers, lineageIndex);
-    validateTurnTreePathInvariants(state, helpers);
-    validateObserveAnnotationInvariants(state);
-  }
+  const validateLoadedState = (state: BackendState): Promise<void> => {
+    return validateLoadedStateCore(state, recordUtils, getSchemaForSchemaId);
+  };
 
   /** Every annotation must reference its owning run and optional turn node. */
-  function validateObserveAnnotationInvariants(state: BackendState): void {
+  const validateObserveAnnotationInvariants = (state: BackendState): void => {
     for (const [runId, annotations] of state.observeAnnotations) {
       ensureRunExists(state, runId, "observeAnnotation.runId");
 
@@ -689,10 +742,10 @@ export function createBackendInvariantStateValidation(
         }
       }
     }
-  }
+  };
 
   /** Every stored thread's root turn node is a genesis node and unique. */
-  function validateThreadInvariants(state: BackendState): void {
+  const validateThreadInvariants = (state: BackendState): void => {
     const rootTurnNodeOwners = new Map<string, string>();
 
     for (const thread of state.threads.values()) {
@@ -747,14 +800,14 @@ export function createBackendInvariantStateValidation(
 
       rootTurnNodeOwners.set(thread.rootTurnNodeHash, thread.threadId);
     }
-  }
+  };
 
-  function validateBranchInvariants(
+  const validateBranchInvariants = (
     state: BackendState,
     baseState: BackendState,
     helpers: ValidationHelpers,
     lineageIndex: TurnNodeLineageIndex
-  ): void {
+  ): void => {
     validateBranchInvariantsCore(
       state,
       baseState,
@@ -764,16 +817,16 @@ export function createBackendInvariantStateValidation(
       recordUtils,
       turnNodeLineage
     );
-  }
+  };
 
   /**
    * Every stored turn node uses its turn tree's schema, and every staged
    * result it consumed exists as an object.
    */
-  function validateTurnNodeInvariants(
+  const validateTurnNodeInvariants = (
     state: BackendState,
     helpers: ValidationHelpers
-  ): void {
+  ): void => {
     for (const turnNode of state.turnNodes.values()) {
       const turnTree = ensureTurnTreeExists(
         state,
@@ -804,18 +857,18 @@ export function createBackendInvariantStateValidation(
         );
       }
     }
-  }
+  };
 
   /**
    * Every stored turn references a branch on its own thread, its start and
    * head turn nodes belong to that thread with the head descending from the
    * start, and its semantic-parent link is canonical.
    */
-  function validateTurnInvariants(
+  const validateTurnInvariants = (
     state: BackendState,
     helpers: ValidationHelpers,
     lineageIndex: TurnNodeLineageIndex
-  ): void {
+  ): void => {
     for (const turn of state.turns.values()) {
       const thread = recordUtils.ensureThreadExists(
         state,
@@ -865,13 +918,13 @@ export function createBackendInvariantStateValidation(
 
       helpers.assertTurnParentLink(state, turn, "turn.parentTurnId");
     }
-  }
+  };
 
-  function validateRunInvariants(
+  const validateRunInvariants = (
     state: BackendState,
     helpers: ValidationHelpers,
     lineageIndex: TurnNodeLineageIndex
-  ): void {
+  ): void => {
     validateRunInvariantsCore(
       state,
       helpers,
@@ -880,51 +933,7 @@ export function createBackendInvariantStateValidation(
       recordUtils,
       turnNodeLineage
     );
-  }
-
-  function validateTurnTreePathInvariants(
-    state: BackendState,
-    helpers: ValidationHelpers
-  ): void {
-    for (const [turnTreeHash, storedPaths] of state.turnTreePaths.entries()) {
-      ensureTurnTreeExists(state, turnTreeHash, "turnTreePath.turnTreeHash");
-
-      if (storedPaths.size === 0) {
-        throw persistenceError(
-          "stored turn tree path collections must not be empty",
-          code("empty_turn_tree_path_collection"),
-          { turnTreeHash }
-        );
-      }
-    }
-
-    validateTurnTreePathCardinalityMetadata(state, helpers);
-
-    for (const turnTree of state.turnTrees.values()) {
-      assertTurnTreeManifestMatchesStoredPaths(state, turnTree);
-    }
-  }
-
-  /** Dispatches each stored turn-tree path to its encoding-specific cardinality check. */
-  function validateTurnTreePathCardinalityMetadata(
-    state: BackendState,
-    helpers: ValidationHelpers
-  ): void {
-    for (const storedPaths of state.turnTreePaths.values()) {
-      for (const storedPath of storedPaths.values()) {
-        if (storedPath.collectionKind === "single") {
-          continue;
-        }
-
-        if (storedPath.orderedEncoding === "flat") {
-          validateOrderedFlatPathCardinality(storedPath);
-          continue;
-        }
-
-        validateOrderedChunkedPathCardinality(state, storedPath, helpers);
-      }
-    }
-  }
+  };
 
   /**
    * Asserts a `flat` ordered path's `orderedCount` matches its decoded
@@ -933,12 +942,12 @@ export function createBackendInvariantStateValidation(
    * @throws The injected persistence error with code
    *   `<prefix>_backend_turn_tree_path_ordered_count_mismatch`.
    */
-  function validateOrderedFlatPathCardinality(
+  const validateOrderedFlatPathCardinality = (
     storedPath: Extract<
       StoredTurnTreePath,
       { collectionKind: "ordered"; orderedEncoding: "flat" }
     >
-  ): void {
+  ): void => {
     const hashes = config.decodeHashStringArray(
       storedPath.orderedInlineCbor,
       "storedPath.orderedInlineCbor"
@@ -956,7 +965,7 @@ export function createBackendInvariantStateValidation(
         }
       );
     }
-  }
+  };
 
   /**
    * Asserts a `chunked` ordered path's referenced chunks are canonically
@@ -968,14 +977,14 @@ export function createBackendInvariantStateValidation(
    *   `<prefix>_backend_ordered_path_chunk_item_count_mismatch` or
    *   `<prefix>_backend_turn_tree_path_ordered_count_mismatch`.
    */
-  function validateOrderedChunkedPathCardinality(
+  const validateOrderedChunkedPathCardinality = (
     state: BackendState,
     storedPath: Extract<
       StoredTurnTreePath,
       { collectionKind: "ordered"; orderedEncoding: "chunked" }
     >,
     helpers: ValidationHelpers
-  ): void {
+  ): void => {
     const chunkHashes = config.decodeHashStringArray(
       storedPath.orderedChunkListCbor,
       "storedPath.orderedChunkListCbor"
@@ -1025,25 +1034,78 @@ export function createBackendInvariantStateValidation(
         }
       );
     }
-  }
+  };
 
-  /** Loads and decodes the turn-tree schema stored under `schemaId`. */
-  function getSchemaForSchemaId(
+  /** Dispatches each stored turn-tree path to its encoding-specific cardinality check. */
+  const validateTurnTreePathCardinalityMetadata = (
     state: BackendState,
-    schemaId: string,
-    label: string
-  ): TurnTreeSchema {
-    const schemaRecord = ensureSchemaRecordExists(state, schemaId, label);
-    return decodeSchemaRecord(schemaRecord.schemaCbor, `${label} schema`);
-  }
+    helpers: ValidationHelpers
+  ): void => {
+    for (const storedPaths of state.turnTreePaths.values()) {
+      for (const storedPath of storedPaths.values()) {
+        if (storedPath.collectionKind === "single") {
+          continue;
+        }
+
+        if (storedPath.orderedEncoding === "flat") {
+          validateOrderedFlatPathCardinality(storedPath);
+          continue;
+        }
+
+        validateOrderedChunkedPathCardinality(state, storedPath, helpers);
+      }
+    }
+  };
 
   /** Loads and decodes the turn-tree schema a stored turn tree references. */
-  function getSchemaForTurnTree(
+  const getSchemaForTurnTree = (
     state: BackendState,
     turnTree: StoredTurnTree
-  ): TurnTreeSchema {
+  ): TurnTreeSchema => {
     return getSchemaForSchemaId(state, turnTree.schemaId, "turnTree.schemaId");
-  }
+  };
+
+  /**
+   * Resolves a stored turn-tree path to its logical value: the single hash
+   * (or `null`) for `single` paths, the inline hash array for `flat`
+   * ordered paths, or the concatenation of all referenced chunks' items for
+   * `chunked` ordered paths.
+   */
+  const resolveStoredTurnTreePathValue = (
+    state: BackendState,
+    storedPath: StoredTurnTreePath
+  ): string[] | string | null => {
+    if (storedPath.collectionKind === "single") {
+      return storedPath.singleHash;
+    }
+
+    if (storedPath.orderedEncoding === "flat") {
+      return config.decodeHashStringArray(
+        storedPath.orderedInlineCbor,
+        "storedPath.orderedInlineCbor"
+      );
+    }
+
+    const resolvedHashes: string[] = [];
+    const chunkHashes = config.decodeHashStringArray(
+      storedPath.orderedChunkListCbor,
+      "storedPath.orderedChunkListCbor"
+    );
+
+    for (const chunkHash of chunkHashes) {
+      const chunk = ensureOrderedPathChunkExists(
+        state,
+        chunkHash,
+        "storedPath.orderedChunkListCbor"
+      );
+
+      resolvedHashes.push(
+        ...config.decodeHashStringArray(chunk.itemsCbor, "chunk.itemsCbor")
+      );
+    }
+
+    return resolvedHashes;
+  };
 
   /**
    * Asserts that a turn tree's decoded manifest and its indexed path rows
@@ -1058,10 +1120,10 @@ export function createBackendInvariantStateValidation(
    *   `<prefix>_backend_missing_turn_tree_path`, or
    *   `<prefix>_backend_turn_tree_manifest_path_mismatch`.
    */
-  function assertTurnTreeManifestMatchesStoredPaths(
+  const assertTurnTreeManifestMatchesStoredPaths = (
     state: BackendState,
     turnTree: StoredTurnTree
-  ): void {
+  ): void => {
     const schema = getSchemaForTurnTree(state, turnTree);
     const manifestValue = decodeDeterministicKernelRecord(
       turnTree.manifestCbor
@@ -1129,57 +1191,46 @@ export function createBackendInvariantStateValidation(
         );
       }
     }
-  }
+  };
 
-  /**
-   * Resolves a stored turn-tree path to its logical value: the single hash
-   * (or `null`) for `single` paths, the inline hash array for `flat`
-   * ordered paths, or the concatenation of all referenced chunks' items for
-   * `chunked` ordered paths.
-   */
-  function resolveStoredTurnTreePathValue(
+  const validateTurnTreePathInvariants = (
     state: BackendState,
-    storedPath: StoredTurnTreePath
-  ): string[] | string | null {
-    if (storedPath.collectionKind === "single") {
-      return storedPath.singleHash;
+    helpers: ValidationHelpers
+  ): void => {
+    for (const [turnTreeHash, storedPaths] of state.turnTreePaths.entries()) {
+      ensureTurnTreeExists(state, turnTreeHash, "turnTreePath.turnTreeHash");
+
+      if (storedPaths.size === 0) {
+        throw persistenceError(
+          "stored turn tree path collections must not be empty",
+          code("empty_turn_tree_path_collection"),
+          { turnTreeHash }
+        );
+      }
     }
 
-    if (storedPath.orderedEncoding === "flat") {
-      return config.decodeHashStringArray(
-        storedPath.orderedInlineCbor,
-        "storedPath.orderedInlineCbor"
-      );
+    validateTurnTreePathCardinalityMetadata(state, helpers);
+
+    for (const turnTree of state.turnTrees.values()) {
+      assertTurnTreeManifestMatchesStoredPaths(state, turnTree);
     }
+  };
 
-    const resolvedHashes: string[] = [];
-    const chunkHashes = config.decodeHashStringArray(
-      storedPath.orderedChunkListCbor,
-      "storedPath.orderedChunkListCbor"
-    );
+  const validateCommittedState = (
+    state: BackendState,
+    baseState: BackendState,
+    helpers: ValidationHelpers
+  ): void => {
+    const lineageIndex = createTurnNodeLineageIndex();
 
-    for (const chunkHash of chunkHashes) {
-      const chunk = ensureOrderedPathChunkExists(
-        state,
-        chunkHash,
-        "storedPath.orderedChunkListCbor"
-      );
-
-      resolvedHashes.push(
-        ...config.decodeHashStringArray(chunk.itemsCbor, "chunk.itemsCbor")
-      );
-    }
-
-    return resolvedHashes;
-  }
-
-  /** Decodes a schema record's CBOR bytes into a validated `TurnTreeSchema`. */
-  function decodeSchemaRecord(
-    bytes: Uint8Array,
-    label: string
-  ): TurnTreeSchema {
-    return config.decodeTurnTreeSchema(bytes, label);
-  }
+    validateThreadInvariants(state);
+    validateBranchInvariants(state, baseState, helpers, lineageIndex);
+    validateTurnNodeInvariants(state, helpers);
+    validateTurnInvariants(state, helpers, lineageIndex);
+    validateRunInvariants(state, helpers, lineageIndex);
+    validateTurnTreePathInvariants(state, helpers);
+    validateObserveAnnotationInvariants(state);
+  };
 
   return {
     resolveStoredTurnTreePathValue,
@@ -1187,55 +1238,4 @@ export function createBackendInvariantStateValidation(
     validateLoadedState,
     validateTurnTreePathInvariants,
   };
-}
-
-/**
- * Compares a decoded manifest path value against a resolved stored-path
- * value: strict equality for `null`/string values, element-wise equality for
- * hash arrays. Pure and backend-independent, so it lives outside the
- * factory closure.
- */
-function areManifestPathValuesEqual(
-  left: unknown,
-  right: string[] | string | null
-): boolean {
-  if (left === null || typeof left === "string") {
-    return left === right;
-  }
-
-  if (
-    !(Array.isArray(left) && Array.isArray(right)) ||
-    left.length !== right.length
-  ) {
-    return false;
-  }
-
-  for (const [index, item] of left.entries()) {
-    if (item !== right[index]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-// Unused; retained only as documented dead code pending removal (superseded
-// by listTurnsByThread in backend-invariant-integrity-assertions.js).
-function _listTurnsByThread(
-  state: BackendState,
-  threadId: string,
-  excludedTurnId?: string
-): StoredTurn[] {
-  const turns: StoredTurn[] = [];
-
-  for (const turn of state.turns.values()) {
-    if (turn.threadId !== threadId || turn.turnId === excludedTurnId) {
-      continue;
-    }
-
-    turns.push(turn);
-  }
-
-  turns.sort(compareStoredTurn);
-  return turns;
-}
+};

@@ -130,7 +130,7 @@ export interface RecordingPhaseObserver extends PhaseObserver {
  * invokes it more than once (e.g. success and `finally` paths) never
  * double-counts a phase.
  */
-export function createRecordingPhaseObserver(): RecordingPhaseObserver {
+export const createRecordingPhaseObserver = (): RecordingPhaseObserver => {
   const samples: PhaseSample[] = [];
 
   return {
@@ -155,4 +155,4 @@ export function createRecordingPhaseObserver(): RecordingPhaseObserver {
       };
     },
   };
-}
+};

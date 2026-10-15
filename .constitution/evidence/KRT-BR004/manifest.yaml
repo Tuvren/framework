@@ -300,6 +300,60 @@
       "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
       "bytes": 20,
       "role": "measurement"
+    },
+    {
+      "path": "M10-summary.json",
+      "sha256": "fdac4d20e71d3ac8842b4f6f29f39db5795b52487239f8210fd20a0d68ec725a",
+      "bytes": 2998,
+      "role": "measurement"
+    },
+    {
+      "path": "M10-shared-remaining-before-syntactic.json.gz",
+      "sha256": "f2fcac1ee53667d7861e11e31203750ddb5712e8037609d5944a0a6c8d0d4c76",
+      "bytes": 3598,
+      "role": "baseline"
+    },
+    {
+      "path": "M10-shared-remaining-before-type-aware.json.gz",
+      "sha256": "0f2b102bf5e4c922092c9143f9b4a418d03bf1714bb6bb094d6f9ff6b039a05d",
+      "bytes": 4484,
+      "role": "baseline"
+    },
+    {
+      "path": "M10-shared-remaining-after-syntactic.json.gz",
+      "sha256": "5c1f69fa3dcec4f77018ca9c533fbbe31bb982fa96fefcb9b4c633c905493d41",
+      "bytes": 1867,
+      "role": "measurement"
+    },
+    {
+      "path": "M10-shared-remaining-after-type-aware.json.gz",
+      "sha256": "31dce9d4c923a62f099f6aab7b2027abf2c83da16b0d1571512f5915f9ddc273",
+      "bytes": 2747,
+      "role": "measurement"
+    },
+    {
+      "path": "M10-shared-remaining-before-syntactic-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "baseline"
+    },
+    {
+      "path": "M10-shared-remaining-before-type-aware-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "baseline"
+    },
+    {
+      "path": "M10-shared-remaining-after-syntactic-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "measurement"
+    },
+    {
+      "path": "M10-shared-remaining-after-type-aware-stderr.log.gz",
+      "sha256": "59869db34853933b239f1e2219cf7d431da006aa919635478511fabbfc8849d2",
+      "bytes": 20,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."

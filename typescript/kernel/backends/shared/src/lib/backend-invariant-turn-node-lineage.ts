@@ -50,9 +50,9 @@ export interface TurnNodeLineagePosition {
 export type TurnNodeLineageIndex = Map<string, TurnNodeLineagePosition>;
 
 /** Creates a fresh, empty {@link TurnNodeLineageIndex} for one validation pass. */
-export function createTurnNodeLineageIndex(): TurnNodeLineageIndex {
+export const createTurnNodeLineageIndex = (): TurnNodeLineageIndex => {
   return new Map();
-}
+};
 
 /**
  * Resolves `startTurnNode`'s {@link TurnNodeLineagePosition} — its thread
@@ -77,7 +77,7 @@ export function createTurnNodeLineageIndex(): TurnNodeLineageIndex {
  * sqlite's `validateTurnNodeLineageRootIndex`) intentionally raise different
  * codes for what is structurally the same walk.
  */
-export function resolveTurnNodeLineagePosition(
+export const resolveTurnNodeLineagePosition = (
   turnNodes: ReadonlyMap<string, StoredTurnNode>,
   startTurnNode: StoredTurnNode,
   index: TurnNodeLineageIndex,
@@ -85,7 +85,7 @@ export function resolveTurnNodeLineagePosition(
     onCycle(): never;
     onMissingPreviousTurnNode(missingTurnNodeHash: string): never;
   }
-): TurnNodeLineagePosition {
+): TurnNodeLineagePosition => {
   const cached = index.get(startTurnNode.hash);
 
   if (cached !== undefined) {
@@ -172,7 +172,7 @@ export function resolveTurnNodeLineagePosition(
   }
 
   return resolved;
-}
+};
 
 /** Configuration for {@link createBackendInvariantTurnNodeLineage}. */
 export type BackendInvariantTurnNodeLineageConfig =
@@ -235,15 +235,15 @@ export interface BackendInvariantTurnNodeLineage {
  * behavior is the error-code prefix (delegated to the record-utils factory
  * built from the same config).
  */
-export function createBackendInvariantTurnNodeLineage(
+export const createBackendInvariantTurnNodeLineage = (
   config: BackendInvariantTurnNodeLineageConfig
-): BackendInvariantTurnNodeLineage {
+): BackendInvariantTurnNodeLineage => {
   const { ensureTurnNodeExists, persistenceError } =
     createBackendInvariantRecordUtils(config);
 
-  function code(suffix: string): string {
+  const code = (suffix: string): string => {
     return `${config.errorPrefix}_backend_${suffix}`;
-  }
+  };
 
   /**
    * Rethrows the exact `ensureTurnNodeExists` error for a hash already known
@@ -252,24 +252,24 @@ export function createBackendInvariantTurnNodeLineage(
    * same `<prefix>_backend_missing_turn_node_reference` error every other
    * "must reference an existing turn node" check in this backend raises.
    */
-  function raiseMissingTurnNodeReference(
+  const raiseMissingTurnNodeReference = (
     state: BackendState,
     missingTurnNodeHash: string,
     label: string
-  ): never {
+  ): never => {
     ensureTurnNodeExists(state, missingTurnNodeHash, label);
     throw new Error(
       "internal error: expected ensureTurnNodeExists to throw for an already-confirmed-missing turn node hash"
     );
-  }
+  };
 
-  function assertTurnNodeBelongsToThread(
+  const assertTurnNodeBelongsToThread = (
     state: BackendState,
     turnNodeHash: string,
     thread: StoredThread,
     label: string,
     index: TurnNodeLineageIndex
-  ): void {
+  ): void => {
     const turnNode = ensureTurnNodeExists(state, turnNodeHash, label);
 
     const position = resolveTurnNodeLineagePosition(
@@ -300,15 +300,15 @@ export function createBackendInvariantTurnNodeLineage(
         }
       );
     }
-  }
+  };
 
-  function assertTurnNodeDescendsFrom(
+  const assertTurnNodeDescendsFrom = (
     state: BackendState,
     descendantTurnNodeHash: string,
     ancestorTurnNodeHash: string,
     label: string,
     index: TurnNodeLineageIndex
-  ): void {
+  ): void => {
     if (descendantTurnNodeHash === ancestorTurnNodeHash) {
       return;
     }
@@ -395,7 +395,7 @@ export function createBackendInvariantTurnNodeLineage(
     if (current.hash !== ancestorTurnNodeHash) {
       raiseNotDescendant();
     }
-  }
+  };
 
   return { assertTurnNodeBelongsToThread, assertTurnNodeDescendsFrom };
-}
+};

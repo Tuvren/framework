@@ -50,7 +50,7 @@ const NO_OP_DEPS: BackendInvariantReclamationDeps = {
   resolveStoredTurnTreePathValue: () => null,
 };
 
-function makeEmptyState(): BackendState {
+const makeEmptyState = (): BackendState => {
   return {
     branches: new Map(),
     objects: new Map(),
@@ -65,9 +65,11 @@ function makeEmptyState(): BackendState {
     turnTrees: new Map(),
     turns: new Map(),
   };
-}
+};
 
-function makeRun(overrides: Partial<StoredRun> & { runId: string }): StoredRun {
+const makeRun = (
+  overrides: Partial<StoredRun> & { runId: string }
+): StoredRun => {
   return {
     branchId: "branch_1",
     createdAtMs: 0,
@@ -81,11 +83,11 @@ function makeRun(overrides: Partial<StoredRun> & { runId: string }): StoredRun {
     updatedAtMs: 0,
     ...overrides,
   };
-}
+};
 
-function makeObject(
+const makeObject = (
   overrides: Partial<StoredObject> & { hash: string }
-): StoredObject {
+): StoredObject => {
   return {
     byteLength: 1,
     bytes: new Uint8Array([1]),
@@ -93,11 +95,11 @@ function makeObject(
     mediaType: "application/octet-stream",
     ...overrides,
   };
-}
+};
 
-function makeTurnNode(
+const makeTurnNode = (
   overrides: Partial<StoredTurnNode> & { hash: string }
-): StoredTurnNode {
+): StoredTurnNode => {
   return {
     consumedStagedResultsCbor: new Uint8Array(),
     createdAtMs: 0,
@@ -107,11 +109,11 @@ function makeTurnNode(
     turnTreeHash: "tree_1",
     ...overrides,
   };
-}
+};
 
-function makeTurn(
+const makeTurn = (
   overrides: Partial<StoredTurn> & { turnId: string }
-): StoredTurn {
+): StoredTurn => {
   return {
     branchId: "branch_1",
     createdAtMs: 0,
@@ -122,7 +124,7 @@ function makeTurn(
     updatedAtMs: 0,
     ...overrides,
   };
-}
+};
 
 describe("@tuvren/backend-shared isExpiredLeaselessRunningRun", () => {
   test("running + all lease fields undefined + quiet past the horizon => expired", () => {
