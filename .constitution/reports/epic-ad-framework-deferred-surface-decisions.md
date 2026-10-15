@@ -28,7 +28,7 @@ Framework deferred-surface decisions are recorded from the docs-to-authority mat
 | ReAct and extension hooks | 8 | authority-backed-conformance-covered | KRT-AF003 | No, if kept local/deferred |
 | runner contract | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | runtime and ReAct execution | 8 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
-| runtime lifecycle recovery | 5 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
+| runtime lifecycle recovery | 8 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | runtime loop policy | 1 | authority-backed-conformance-covered | KRT-AF003 | No, if kept local/deferred |
 | runtime orchestration | 14 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
 | runtime resolution and errors | 2 | authority-backed-conformance-covered | N/A | No, if kept local/deferred |
