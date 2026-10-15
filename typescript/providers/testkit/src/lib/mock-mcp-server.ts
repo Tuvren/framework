@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import { type ChildProcess, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { existsSync } from "node:fs";
-import { createServer, type IncomingMessage, type Server } from "node:http";
+import { createServer } from "node:http";
+import type { IncomingMessage, Server } from "node:http";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -228,7 +229,7 @@ function createMockMcpServer(options: MockMcpServerOptions): McpServer {
       outputSchema: ECHO_OUTPUT_SCHEMA,
     },
     (input) => {
-      const message = input.message;
+      const { message } = input;
       const structuredContent =
         options.returnInvalidEchoOutput === true
           ? { echoed: 123 }
@@ -280,8 +281,7 @@ function headersMatch(
  * @throws Error when the bin file cannot be located within 8 parent directories.
  */
 function resolveMockMcpStdioBin(): string {
-  const currentFilePath = fileURLToPath(import.meta.url);
-  let currentDirectory = dirname(currentFilePath);
+  let currentDirectory = import.meta.dirname;
 
   for (let index = 0; index < 8; index += 1) {
     const candidate = join(currentDirectory, "src", "bin", "mock-mcp-stdio.ts");
@@ -303,8 +303,7 @@ function resolveMockMcpStdioBin(): string {
  * @throws Error when the binary cannot be located within 10 parent directories.
  */
 function resolveMcpEverythingBin(): string {
-  const currentFilePath = fileURLToPath(import.meta.url);
-  let currentDirectory = dirname(currentFilePath);
+  let currentDirectory = import.meta.dirname;
 
   for (let index = 0; index < 10; index += 1) {
     const candidate = join(
@@ -439,7 +438,7 @@ async function readRequestBody(request: IncomingMessage): Promise<unknown> {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
 
-  const body = Buffer.concat(chunks).toString("utf8");
+  const body = Buffer.concat(chunks).toString("utf-8");
 
   if (body.length === 0) {
     return undefined;

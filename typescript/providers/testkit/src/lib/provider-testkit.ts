@@ -275,11 +275,11 @@ export function createStaticTuvrenProvider(
     { text: "ready", type: "text_delta" },
     {
       finishReason: "stop",
+      type: "finish",
       usage: {
         inputTokens: 4,
         outputTokens: 1,
       },
-      type: "finish",
     },
   ];
 
