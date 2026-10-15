@@ -23,7 +23,7 @@ import {
 import { TuvrenPersistenceError } from "@tuvren/core";
 import type { StoredRun } from "@tuvren/kernel-protocol";
 
-function captureThrownCode(fn: () => void): string {
+const captureThrownCode = (fn: () => void): string => {
   try {
     fn();
   } catch (error) {
@@ -31,7 +31,7 @@ function captureThrownCode(fn: () => void): string {
     return (error as TuvrenPersistenceError).code;
   }
   throw new Error("expected fn() to throw a TuvrenPersistenceError");
-}
+};
 
 describe("@tuvren/backend-shared createBackendInvariantRecordUtils", () => {
   test("parameterizes record-utils error codes by errorPrefix, matching each backend's pre-extraction literal", () => {

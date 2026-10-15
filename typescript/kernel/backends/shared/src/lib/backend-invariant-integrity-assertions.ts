@@ -32,9 +32,9 @@ import type {
 import type { BackendState } from "./backend-invariant-state.js";
 
 /** Builds a fully-formed `<prefix>_backend_<reason>` error code. */
-function errorCode(errorPrefix: string, suffix: string): string {
+const errorCode = (errorPrefix: string, suffix: string): string => {
   return `${errorPrefix}_backend_${suffix}`;
-}
+};
 
 /**
  * Asserts a backward branch-head move (rewind) preserved history: the same
@@ -57,7 +57,7 @@ function errorCode(errorPrefix: string, suffix: string): string {
  *   `<prefix>_backend_backward_branch_move_missing_archive` or
  *   `<prefix>_backend_backward_branch_move_active_run_not_failed`.
  */
-function assertBackwardBranchMoveIsArchivedCore(
+const assertBackwardBranchMoveIsArchivedCore = (
   state: BackendState,
   baseState: BackendState,
   previousBranch: StoredBranch,
@@ -65,7 +65,7 @@ function assertBackwardBranchMoveIsArchivedCore(
   errorPrefix: string,
   getRunActiveTurnNodeHash: (run: StoredRun) => string,
   persistenceError: BackendInvariantRecordUtils["persistenceError"]
-): void {
+): void => {
   let archiveBranchFound = false;
 
   for (const branch of state.branches.values()) {
@@ -124,7 +124,7 @@ function assertBackwardBranchMoveIsArchivedCore(
       }
     );
   }
-}
+};
 
 /**
  * Configuration for {@link createBackendInvariantIntegrityAssertions}: the
@@ -182,6 +182,35 @@ export interface BackendInvariantIntegrityAssertions {
 }
 
 /**
+ * Lists a thread's turns in deterministic order (`createdAtMs`, then
+ * `turnId`), optionally excluding one turn — used when validating a turn's
+ * parent link against its predecessors. Pure and backend-independent (no
+ * error codes to raise), so it is exported directly rather than only through
+ * {@link createBackendInvariantIntegrityAssertions}.
+ */
+export const listTurnsByThread = (
+  state: BackendState,
+  threadId: string,
+  excludedTurnId?: string
+): StoredTurn[] => {
+  const turns: StoredTurn[] = [];
+
+  for (const turn of state.turns.values()) {
+    if (turn.threadId !== threadId || turn.turnId === excludedTurnId) {
+      continue;
+    }
+
+    turns.push(turn);
+  }
+
+  turns.sort(compareStoredTurn);
+  return turns;
+};
+
+/** Fixed item capacity of every non-final ordered path chunk. */
+export const ORDERED_PATH_CHUNK_SIZE = 32;
+
+/**
  * Builds the integrity-assertion invariant surface shared by the SQLite and
  * PostgreSQL backends: turn-parent-link legality, backward-branch-move
  * archival, chunked ordered-path-chunk layout, and the generic
@@ -190,15 +219,15 @@ export interface BackendInvariantIntegrityAssertions {
  * record-utils factory built from the same config) and the injected
  * `getRunActiveTurnNodeHash` dependency.
  */
-export function createBackendInvariantIntegrityAssertions(
+export const createBackendInvariantIntegrityAssertions = (
   config: BackendInvariantIntegrityAssertionsConfig
-): BackendInvariantIntegrityAssertions {
+): BackendInvariantIntegrityAssertions => {
   const { ensureImmutableRecordMatch, ensureTurnExists, persistenceError } =
     createBackendInvariantRecordUtils(config);
 
-  function code(suffix: string): string {
+  const code = (suffix: string): string => {
     return `${config.errorPrefix}_backend_${suffix}`;
-  }
+  };
 
   /**
    * Asserts a turn's semantic-parent link is canonical: a turn whose start
@@ -214,11 +243,11 @@ export function createBackendInvariantIntegrityAssertions(
    *   `<prefix>_backend_turn_parent_start_turn_node_mismatch`, or
    *   `<prefix>_backend_turn_parent_not_immediate_predecessor`.
    */
-  function assertTurnParentLink(
+  const assertTurnParentLink = (
     state: BackendState,
     turn: StoredTurn,
     label: string
-  ): void {
+  ): void => {
     const candidateTurnsAtStart = listTurnsByThread(
       state,
       turn.threadId,
@@ -299,14 +328,14 @@ export function createBackendInvariantIntegrityAssertions(
         }
       );
     }
-  }
+  };
 
-  function assertBackwardBranchMoveIsArchived(
+  const assertBackwardBranchMoveIsArchived = (
     state: BackendState,
     baseState: BackendState,
     previousBranch: StoredBranch,
     nextBranch: StoredBranch
-  ): void {
+  ): void => {
     assertBackwardBranchMoveIsArchivedCore(
       state,
       baseState,
@@ -316,7 +345,7 @@ export function createBackendInvariantIntegrityAssertions(
       config.getRunActiveTurnNodeHash,
       persistenceError
     );
-  }
+  };
 
   /**
    * Asserts the canonical chunk layout of a chunked ordered path: every
@@ -327,11 +356,11 @@ export function createBackendInvariantIntegrityAssertions(
    *   `<prefix>_backend_ordered_path_chunk_size_invalid` or
    *   `<prefix>_backend_ordered_path_chunk_not_fixed_size`.
    */
-  function assertChunkedTurnTreePathChunkLayout(
+  const assertChunkedTurnTreePathChunkLayout = (
     chunk: StoredOrderedPathChunk,
     index: number,
     totalChunks: number
-  ): void {
+  ): void => {
     if (chunk.itemCount < 1 || chunk.itemCount > ORDERED_PATH_CHUNK_SIZE) {
       throw persistenceError(
         "ordered path chunks must contain between one and the fixed chunk size number of items",
@@ -360,7 +389,7 @@ export function createBackendInvariantIntegrityAssertions(
         }
       );
     }
-  }
+  };
 
   return {
     ORDERED_PATH_CHUNK_SIZE,
@@ -370,33 +399,4 @@ export function createBackendInvariantIntegrityAssertions(
     ensureImmutableRecordMatch,
     listTurnsByThread,
   };
-}
-
-/** Fixed item capacity of every non-final ordered path chunk. */
-export const ORDERED_PATH_CHUNK_SIZE = 32;
-
-/**
- * Lists a thread's turns in deterministic order (`createdAtMs`, then
- * `turnId`), optionally excluding one turn — used when validating a turn's
- * parent link against its predecessors. Pure and backend-independent (no
- * error codes to raise), so it is exported directly rather than only through
- * {@link createBackendInvariantIntegrityAssertions}.
- */
-export function listTurnsByThread(
-  state: BackendState,
-  threadId: string,
-  excludedTurnId?: string
-): StoredTurn[] {
-  const turns: StoredTurn[] = [];
-
-  for (const turn of state.turns.values()) {
-    if (turn.threadId !== threadId || turn.turnId === excludedTurnId) {
-      continue;
-    }
-
-    turns.push(turn);
-  }
-
-  turns.sort(compareStoredTurn);
-  return turns;
-}
+};

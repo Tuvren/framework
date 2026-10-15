@@ -1,0 +1,62 @@
+{
+  "milestone": "M10",
+  "ticket": "KRT-BR003",
+  "cohort": [
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-integrity-assertions.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-phase-observer.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-run-span.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-state-validation.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-turn-node-lineage.ts",
+    "typescript/kernel/backends/shared/test/backend-invariant-core.test.ts",
+    "typescript/kernel/backends/shared/test/backend-invariant-reclamation.leaseless-expiry.test.ts",
+    "typescript/kernel/backends/shared/test/backend-invariant-remaining-initialization.test.ts"
+  ],
+  "baseline_commit": "bbc55c2df37aa94c246282fd0391551cd02ece36",
+  "diff": {
+    "files": 8,
+    "insertions": 669,
+    "deletions": 375,
+    "changed_lines": 1044
+  },
+  "diagnostics": {
+    "syntactic": {
+      "before": 134,
+      "after": 63,
+      "func_style_before": 57,
+      "func_style_after": 0,
+      "no_use_before_define_before": 29,
+      "no_use_before_define_after": 0
+    },
+    "type_aware": {
+      "before": 158,
+      "after": 87,
+      "func_style_before": 57,
+      "func_style_after": 0,
+      "no_use_before_define_before": 29,
+      "no_use_before_define_after": 0
+    }
+  },
+  "initialization_proof": [
+    "A committed fresh-process test covers five direct module orders and the public entrypoint first.",
+    "Canonical exports, phase-observer closure timing, deterministic turn ordering, lineage memoization, and exact first errors/detail key order remain stable.",
+    "AST comparison preserved 58 callable shapes, including parameters, defaults, return types, bodies, exports, and non-callable evaluation order."
+  ],
+  "verification": [
+    "backend-shared typecheck passed",
+    "backend-shared tests passed: 25 tests and 85 assertions",
+    "retained Biome lint passed for 24 files",
+    "Oxfmt passed for all eight cohort files",
+    "repository typecheck passed for 33 projects and one prerequisite",
+    "full conformance passed for 11 certification projects",
+    "TypeScript memory certification passed 68 applicable checks",
+    "TypeScript SQLite certification passed 71 applicable checks",
+    "TypeScript PostgreSQL certification passed 72 applicable checks",
+    "direct changeset coverage passed for all four public backend packages"
+  ],
+  "notes": [
+    "The cohort is the third and final wave-lead-approved split of original M8.",
+    "Fourteen nested state-validation dependency findings masked by the saved proposal were independently ordered while preserving eager factory initialization and validation call order.",
+    "The first lead evidence capture used one scalar path argument and was replaced before commit by the indexed zsh-array capture.",
+    "KRT-BR003 remains incomplete until the remaining memory, PostgreSQL, and SQLite ordering cohorts pass review."
+  ]
+}
