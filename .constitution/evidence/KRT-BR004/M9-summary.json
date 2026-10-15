@@ -1,0 +1,57 @@
+{
+  "milestone": "M9",
+  "ticket": "KRT-BR003",
+  "cohort": [
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-record-utils.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-run-logic.ts",
+    "typescript/kernel/backends/shared/test/backend-invariant-factory-initialization.test.ts"
+  ],
+  "baseline_commit": "aa3a1516c813ff33bdd406189d8e0bffb620758b",
+  "diff": {
+    "files": 3,
+    "insertions": 773,
+    "deletions": 584,
+    "changed_lines": 1357
+  },
+  "diagnostics": {
+    "syntactic": {
+      "before": 160,
+      "after": 86,
+      "func_style_before": 60,
+      "func_style_after": 0,
+      "no_use_before_define_before": 41,
+      "no_use_before_define_after": 0
+    },
+    "type_aware": {
+      "before": 165,
+      "after": 91,
+      "func_style_before": 60,
+      "func_style_after": 0,
+      "no_use_before_define_before": 41,
+      "no_use_before_define_after": 0
+    }
+  },
+  "initialization_proof": [
+    "A committed fresh-process test covers record-utils-first, run-logic-first, and public-entrypoint-first imports.",
+    "Canonical factory identity, durable byte cloning, first missing-object validation, run immutability failure, and error-detail key order remain stable.",
+    "Compiler-AST comparison preserved callable signatures, parameters, defaults, bodies, and evaluation order."
+  ],
+  "verification": [
+    "backend-shared typecheck passed",
+    "backend-shared tests passed: 19 tests and 55 assertions",
+    "retained Biome lint passed for 23 files",
+    "Oxfmt passed for both source files and the new test",
+    "repository typecheck passed for 33 projects and one prerequisite",
+    "full conformance passed for 11 certification projects",
+    "TypeScript memory certification passed 68 applicable checks",
+    "TypeScript SQLite certification passed 71 applicable checks",
+    "TypeScript PostgreSQL certification passed 72 applicable checks",
+    "direct changeset coverage passed for all four public backend packages"
+  ],
+  "notes": [
+    "The cohort is the second of three wave-lead-approved splits of original M8.",
+    "putImmutableRecord follows ensureImmutableRecordMatch, correcting a missed dependency edge in the saved proposal.",
+    "Twenty-seven arrow-body-style findings exposed by conversion remain for later residual-rule milestones.",
+    "KRT-BR003 remains incomplete until every amended and original ordering cohort passes review."
+  ]
+}

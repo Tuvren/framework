@@ -82,9 +82,9 @@ export interface BackendInvariantRunLogic {
  * prefix (delegated to the record-utils factory built from the same config)
  * and the injected `decodeRunCreatedTurnNodeHashes` dependency.
  */
-export function createBackendInvariantRunLogic(
+export const createBackendInvariantRunLogic = (
   config: BackendInvariantRunLogicConfig
-): BackendInvariantRunLogic {
+): BackendInvariantRunLogic => {
   const {
     assertImmutableBytes,
     assertImmutableField,
@@ -92,14 +92,225 @@ export function createBackendInvariantRunLogic(
     persistenceError,
   } = createBackendInvariantRecordUtils(config);
 
-  function code(suffix: string): string {
+  const code = (suffix: string): string => {
     return `${config.errorPrefix}_backend_${suffix}`;
-  }
+  };
 
-  function assertRunUpdateIsLegal(
+  /**
+   * `executionOwnerId` is immutable while the run stays running and must
+   * never be gained after creation; a leaseless run stays leaseless.
+   */
+  const assertExecutionOwnerUpdateIsLegal = (
     existingRun: StoredRun,
     nextRun: StoredRun
-  ): void {
+  ): void => {
+    if (
+      existingRun.executionOwnerId !== undefined &&
+      nextRun.status === "running"
+    ) {
+      assertImmutableField(
+        existingRun.executionOwnerId,
+        nextRun.executionOwnerId,
+        "record.executionOwnerId",
+        code("run_execution_owner_immutable")
+      );
+      return;
+    }
+
+    if (
+      existingRun.executionOwnerId === undefined &&
+      nextRun.executionOwnerId !== undefined
+    ) {
+      throw persistenceError(
+        "stored runs must not gain execution ownership after creation",
+        code("run_execution_owner_late_set"),
+        { runId: existingRun.runId }
+      );
+    }
+  };
+
+  /**
+   * A leased run that stays running must retain a fencing token and must
+   * rotate it on every renewal (same token twice means a stale writer); a
+   * leaseless run must never gain one after creation.
+   */
+  const assertFencingTokenUpdateIsLegal = (
+    existingRun: StoredRun,
+    nextRun: StoredRun
+  ): void => {
+    if (existingRun.status !== "running" || nextRun.status !== "running") {
+      return;
+    }
+
+    if (existingRun.fencingToken !== undefined) {
+      if (nextRun.fencingToken === undefined) {
+        throw persistenceError(
+          "stored running leased runs must retain a fencing token",
+          code("run_fencing_token_missing"),
+          { runId: existingRun.runId }
+        );
+      }
+
+      if (existingRun.fencingToken === nextRun.fencingToken) {
+        throw persistenceError(
+          "stored running leased runs must rotate fencing tokens on renewal",
+          code("run_fencing_token_not_rotated"),
+          { runId: existingRun.runId }
+        );
+      }
+
+      return;
+    }
+
+    if (nextRun.fencingToken !== undefined) {
+      throw persistenceError(
+        "stored runs must not gain a fencing token after creation",
+        code("run_fencing_token_late_set"),
+        { runId: existingRun.runId }
+      );
+    }
+  };
+
+  /** A leased run that stays running must not drop its lease expiry. */
+  const assertLeaseExpiryUpdateIsLegal = (
+    existingRun: StoredRun,
+    nextRun: StoredRun
+  ): void => {
+    if (
+      existingRun.leaseExpiresAtMs !== undefined &&
+      nextRun.leaseExpiresAtMs === undefined &&
+      nextRun.status === "running"
+    ) {
+      throw persistenceError(
+        "stored running leased runs must retain a lease expiry",
+        code("run_lease_expiry_missing"),
+        { runId: existingRun.runId }
+      );
+    }
+  };
+
+  /**
+   * `preemptionReason` is write-once and may only be recorded on a run that
+   * is transitioning to (or already in) `failed` status.
+   */
+  const assertPreemptionReasonUpdateIsLegal = (
+    existingRun: StoredRun,
+    nextRun: StoredRun
+  ): void => {
+    if (existingRun.preemptionReason !== undefined) {
+      assertImmutableField(
+        existingRun.preemptionReason,
+        nextRun.preemptionReason,
+        "record.preemptionReason",
+        code("run_preemption_reason_immutable")
+      );
+      return;
+    }
+
+    if (nextRun.preemptionReason !== undefined && nextRun.status !== "failed") {
+      throw persistenceError(
+        "stored runs must only record preemptionReason on failed runs",
+        code("run_preemption_reason_invalid_status"),
+        { runId: existingRun.runId, status: nextRun.status }
+      );
+    }
+  };
+
+  /**
+   * Lease-lifecycle legality: ownership, fencing token, lease expiry, and
+   * preemption reason each follow their own set-once/rotate/retain rules.
+   */
+  const assertRunLeaseUpdateIsLegal = (
+    existingRun: StoredRun,
+    nextRun: StoredRun
+  ): void => {
+    assertExecutionOwnerUpdateIsLegal(existingRun, nextRun);
+    assertFencingTokenUpdateIsLegal(existingRun, nextRun);
+    assertLeaseExpiryUpdateIsLegal(existingRun, nextRun);
+    assertPreemptionReasonUpdateIsLegal(existingRun, nextRun);
+  };
+
+  /** Asserts `currentStepIndex` never moves backwards across a run update. */
+  const assertMonotonicRunStepIndex = (
+    existingRun: StoredRun,
+    nextRun: StoredRun
+  ): void => {
+    if (nextRun.currentStepIndex < existingRun.currentStepIndex) {
+      throw persistenceError(
+        "stored runs must not move currentStepIndex backwards",
+        code("run_step_index_regressed"),
+        {
+          nextCurrentStepIndex: nextRun.currentStepIndex,
+          previousCurrentStepIndex: existingRun.currentStepIndex,
+          runId: existingRun.runId,
+        }
+      );
+    }
+  };
+
+  /** Implements the {@link BackendInvariantRunLogic.assertMonotonicUpdatedAtMs} contract. */
+  const assertMonotonicUpdatedAtMs = (
+    previousUpdatedAtMs: number,
+    nextUpdatedAtMs: number,
+    label: string,
+    updatedAtCode: string
+  ): void => {
+    if (nextUpdatedAtMs < previousUpdatedAtMs) {
+      throw persistenceError(
+        `${label} must not move backwards`,
+        updatedAtCode,
+        {
+          nextUpdatedAtMs,
+          previousUpdatedAtMs,
+        }
+      );
+    }
+  };
+
+  /**
+   * Asserts `createdTurnNodesCbor`'s decoded hash lineage only ever grows,
+   * with every previously recorded hash preserved at its original index.
+   */
+  const assertAppendOnlyRunCreatedTurnNodes = (
+    existingRun: StoredRun,
+    nextRun: StoredRun
+  ): void => {
+    const existingTurnNodeHashes =
+      config.decodeRunCreatedTurnNodeHashes(existingRun);
+    const nextTurnNodeHashes = config.decodeRunCreatedTurnNodeHashes(nextRun);
+
+    if (nextTurnNodeHashes.length < existingTurnNodeHashes.length) {
+      throw persistenceError(
+        "stored runs must keep createdTurnNodesCbor append-only",
+        code("run_created_turn_nodes_not_append_only"),
+        {
+          nextCount: nextTurnNodeHashes.length,
+          previousCount: existingTurnNodeHashes.length,
+          runId: existingRun.runId,
+        }
+      );
+    }
+
+    for (const [index, turnNodeHash] of existingTurnNodeHashes.entries()) {
+      if (nextTurnNodeHashes[index] !== turnNodeHash) {
+        throw persistenceError(
+          "stored runs must keep createdTurnNodesCbor append-only",
+          code("run_created_turn_nodes_not_append_only"),
+          {
+            index,
+            nextTurnNodeHash: nextTurnNodeHashes[index],
+            previousTurnNodeHash: turnNodeHash,
+            runId: existingRun.runId,
+          }
+        );
+      }
+    }
+  };
+
+  const assertRunUpdateIsLegal = (
+    existingRun: StoredRun,
+    nextRun: StoredRun
+  ): void => {
     assertImmutableField(
       existingRun.branchId,
       nextRun.branchId,
@@ -170,221 +381,10 @@ export function createBackendInvariantRunLogic(
 
     assertRunLeaseUpdateIsLegal(existingRun, nextRun);
     assertRunStatusTransition(existingRun.status, nextRun.status);
-  }
-
-  /**
-   * Lease-lifecycle legality: ownership, fencing token, lease expiry, and
-   * preemption reason each follow their own set-once/rotate/retain rules.
-   */
-  function assertRunLeaseUpdateIsLegal(
-    existingRun: StoredRun,
-    nextRun: StoredRun
-  ): void {
-    assertExecutionOwnerUpdateIsLegal(existingRun, nextRun);
-    assertFencingTokenUpdateIsLegal(existingRun, nextRun);
-    assertLeaseExpiryUpdateIsLegal(existingRun, nextRun);
-    assertPreemptionReasonUpdateIsLegal(existingRun, nextRun);
-  }
-
-  /**
-   * `executionOwnerId` is immutable while the run stays running and must
-   * never be gained after creation; a leaseless run stays leaseless.
-   */
-  function assertExecutionOwnerUpdateIsLegal(
-    existingRun: StoredRun,
-    nextRun: StoredRun
-  ): void {
-    if (
-      existingRun.executionOwnerId !== undefined &&
-      nextRun.status === "running"
-    ) {
-      assertImmutableField(
-        existingRun.executionOwnerId,
-        nextRun.executionOwnerId,
-        "record.executionOwnerId",
-        code("run_execution_owner_immutable")
-      );
-      return;
-    }
-
-    if (
-      existingRun.executionOwnerId === undefined &&
-      nextRun.executionOwnerId !== undefined
-    ) {
-      throw persistenceError(
-        "stored runs must not gain execution ownership after creation",
-        code("run_execution_owner_late_set"),
-        { runId: existingRun.runId }
-      );
-    }
-  }
-
-  /**
-   * A leased run that stays running must retain a fencing token and must
-   * rotate it on every renewal (same token twice means a stale writer); a
-   * leaseless run must never gain one after creation.
-   */
-  function assertFencingTokenUpdateIsLegal(
-    existingRun: StoredRun,
-    nextRun: StoredRun
-  ): void {
-    if (existingRun.status !== "running" || nextRun.status !== "running") {
-      return;
-    }
-
-    if (existingRun.fencingToken !== undefined) {
-      if (nextRun.fencingToken === undefined) {
-        throw persistenceError(
-          "stored running leased runs must retain a fencing token",
-          code("run_fencing_token_missing"),
-          { runId: existingRun.runId }
-        );
-      }
-
-      if (existingRun.fencingToken === nextRun.fencingToken) {
-        throw persistenceError(
-          "stored running leased runs must rotate fencing tokens on renewal",
-          code("run_fencing_token_not_rotated"),
-          { runId: existingRun.runId }
-        );
-      }
-
-      return;
-    }
-
-    if (nextRun.fencingToken !== undefined) {
-      throw persistenceError(
-        "stored runs must not gain a fencing token after creation",
-        code("run_fencing_token_late_set"),
-        { runId: existingRun.runId }
-      );
-    }
-  }
-
-  /** A leased run that stays running must not drop its lease expiry. */
-  function assertLeaseExpiryUpdateIsLegal(
-    existingRun: StoredRun,
-    nextRun: StoredRun
-  ): void {
-    if (
-      existingRun.leaseExpiresAtMs !== undefined &&
-      nextRun.leaseExpiresAtMs === undefined &&
-      nextRun.status === "running"
-    ) {
-      throw persistenceError(
-        "stored running leased runs must retain a lease expiry",
-        code("run_lease_expiry_missing"),
-        { runId: existingRun.runId }
-      );
-    }
-  }
-
-  /**
-   * `preemptionReason` is write-once and may only be recorded on a run that
-   * is transitioning to (or already in) `failed` status.
-   */
-  function assertPreemptionReasonUpdateIsLegal(
-    existingRun: StoredRun,
-    nextRun: StoredRun
-  ): void {
-    if (existingRun.preemptionReason !== undefined) {
-      assertImmutableField(
-        existingRun.preemptionReason,
-        nextRun.preemptionReason,
-        "record.preemptionReason",
-        code("run_preemption_reason_immutable")
-      );
-      return;
-    }
-
-    if (nextRun.preemptionReason !== undefined && nextRun.status !== "failed") {
-      throw persistenceError(
-        "stored runs must only record preemptionReason on failed runs",
-        code("run_preemption_reason_invalid_status"),
-        { runId: existingRun.runId, status: nextRun.status }
-      );
-    }
-  }
-
-  /** Asserts `currentStepIndex` never moves backwards across a run update. */
-  function assertMonotonicRunStepIndex(
-    existingRun: StoredRun,
-    nextRun: StoredRun
-  ): void {
-    if (nextRun.currentStepIndex < existingRun.currentStepIndex) {
-      throw persistenceError(
-        "stored runs must not move currentStepIndex backwards",
-        code("run_step_index_regressed"),
-        {
-          nextCurrentStepIndex: nextRun.currentStepIndex,
-          previousCurrentStepIndex: existingRun.currentStepIndex,
-          runId: existingRun.runId,
-        }
-      );
-    }
-  }
-
-  /** Implements the {@link BackendInvariantRunLogic.assertMonotonicUpdatedAtMs} contract. */
-  function assertMonotonicUpdatedAtMs(
-    previousUpdatedAtMs: number,
-    nextUpdatedAtMs: number,
-    label: string,
-    updatedAtCode: string
-  ): void {
-    if (nextUpdatedAtMs < previousUpdatedAtMs) {
-      throw persistenceError(
-        `${label} must not move backwards`,
-        updatedAtCode,
-        {
-          nextUpdatedAtMs,
-          previousUpdatedAtMs,
-        }
-      );
-    }
-  }
-
-  /**
-   * Asserts `createdTurnNodesCbor`'s decoded hash lineage only ever grows,
-   * with every previously recorded hash preserved at its original index.
-   */
-  function assertAppendOnlyRunCreatedTurnNodes(
-    existingRun: StoredRun,
-    nextRun: StoredRun
-  ): void {
-    const existingTurnNodeHashes =
-      config.decodeRunCreatedTurnNodeHashes(existingRun);
-    const nextTurnNodeHashes = config.decodeRunCreatedTurnNodeHashes(nextRun);
-
-    if (nextTurnNodeHashes.length < existingTurnNodeHashes.length) {
-      throw persistenceError(
-        "stored runs must keep createdTurnNodesCbor append-only",
-        code("run_created_turn_nodes_not_append_only"),
-        {
-          nextCount: nextTurnNodeHashes.length,
-          previousCount: existingTurnNodeHashes.length,
-          runId: existingRun.runId,
-        }
-      );
-    }
-
-    for (const [index, turnNodeHash] of existingTurnNodeHashes.entries()) {
-      if (nextTurnNodeHashes[index] !== turnNodeHash) {
-        throw persistenceError(
-          "stored runs must keep createdTurnNodesCbor append-only",
-          code("run_created_turn_nodes_not_append_only"),
-          {
-            index,
-            nextTurnNodeHash: nextTurnNodeHashes[index],
-            previousTurnNodeHash: turnNodeHash,
-            runId: existingRun.runId,
-          }
-        );
-      }
-    }
-  }
+  };
 
   return {
     assertMonotonicUpdatedAtMs,
     assertRunUpdateIsLegal,
   };
-}
+};
