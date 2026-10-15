@@ -1,0 +1,73 @@
+{
+  "milestone": "M7",
+  "ticket": "KRT-BR002",
+  "measurement_commit": "2a4dc4876c41fa707251313c492a02efceed7059",
+  "baseline_commit": "16834aab351659788c56435de70f8969cabdfe7f",
+  "directive_count": 7,
+  "drift": {
+    "added": [],
+    "removed": [],
+    "changed_reasons": []
+  },
+  "retained_biome": {
+    "memory": {
+      "exit_code": 0,
+      "diagnostics": 0
+    },
+    "postgres": {
+      "exit_code": 0,
+      "diagnostics": 0
+    },
+    "shared": {
+      "exit_code": 0,
+      "diagnostics": 0
+    },
+    "sqlite": {
+      "exit_code": 0,
+      "diagnostics": 0
+    }
+  },
+  "native_diagnostics": {
+    "syntactic": {
+      "memory": 143,
+      "postgres": 656,
+      "shared": 378,
+      "sqlite": 575,
+      "total": 1752
+    },
+    "type_aware": {
+      "memory": 337,
+      "postgres": 799,
+      "shared": 420,
+      "sqlite": 908,
+      "total": 2464
+    }
+  },
+  "native_counterparts": {
+    "measured_firing": 1,
+    "no_firing_equivalent": 6,
+    "firing_identity": "typescript/kernel/backends/sqlite/src/lib/sqlite-backend.ts::lint/suspicious/useAwait::1",
+    "firing_rule": "eslint/require-await"
+  },
+  "verification": [
+    "backend-memory typecheck and 82 tests passed",
+    "backend-postgres typecheck and 103 tests passed",
+    "backend-shared typecheck and 14 tests passed",
+    "backend-sqlite typecheck and 115 tests passed",
+    "workspace typecheck passed for 33 projects and one prerequisite",
+    "full lint passed",
+    "direct changeset coverage passed for all four public backend packages"
+  ],
+  "scheduling": {
+    "global_lock": "/tmp/tuvren-wave-1-verification.lock",
+    "outer_lock_only": true,
+    "check_or_full_verify_invoked": false
+  },
+  "notes": [
+    "Every baseline identity remains present with its original reason.",
+    "Every virtual unsuppressed Biome mirror produced exactly one matching diagnostic.",
+    "No directive was added, removed, or fabricated, and no early deletion was justified.",
+    "The six no-counterpart directives remain until their atomic native-admission commits remove them.",
+    "The SQLite useAwait directive requires a measured native counterpart preserving the original reason or a real fix at admission."
+  ]
+}
