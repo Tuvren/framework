@@ -189,13 +189,17 @@ const getLine = (diagnostic: Diagnostic): number | null => {
   return null;
 };
 
-const measurementCommit = runInternal(["git", "rev-parse", "HEAD"])
+const measurementCommit = "99457fbb4fd517f1f867ae9267920bed59d887d5";
+const currentCommit = runInternal(["git", "rev-parse", "HEAD"])
   .toString("utf8")
   .trim();
-assert.equal(
+runInternal([
+  "git",
+  "merge-base",
+  "--is-ancestor",
   measurementCommit,
-  "99457fbb4fd517f1f867ae9267920bed59d887d5"
-);
+  currentCommit,
+]);
 const beforeStatus = runInternal(["git", "status", "--porcelain=v1"]);
 assert.equal(beforeStatus.length, 0, "measurement worktree must begin clean");
 writeFileSync(path.join(resolvedOutput, "worktree-before.txt"), beforeStatus);

@@ -28,4 +28,6 @@ devenv -q shell -- bun .constitution/evidence/KRT-BV002/probe.ts "$PWD" "${TMPDI
 
 The probe passes only when the directive inventory, reasons, retained-checker
 behavior, native diagnostics, source/config digests, required verification
-commands, and clean-worktree assertions all match.
+commands, and clean-worktree assertions all match. It reads the historical
+baseline from commit `99457fbb4fd517f1f867ae9267920bed59d887d5` and requires
+the checked-out commit to descend from that baseline.
