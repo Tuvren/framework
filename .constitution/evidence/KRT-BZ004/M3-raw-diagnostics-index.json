@@ -1,0 +1,30 @@
+{
+  "milestone": "M3",
+  "ticket": "KRT-BZ001",
+  "producedAtCommit": "fa47ad31dce3b1f4c55c675bce6eb66db217a4c1",
+  "command": "bunx --bun oxlint --type-aware --format=json typescript/providers/bridge-ai-sdk/src typescript/providers/bridge-ai-sdk/smoke",
+  "captures": [
+    {
+      "archivePath": "epic-bz-m3-bridge-src-smoke-before.json",
+      "project": "providers-bridge-ai-sdk",
+      "cohort": "src+smoke",
+      "phase": "before",
+      "diagnostics": 360,
+      "rules": 474,
+      "selectedFiles": 7,
+      "bytes": 182094,
+      "sha256": "ac9078a8279b3556190172586bb6aa408e2cf38f24832c610d4c60724e4f3b3b"
+    },
+    {
+      "archivePath": "epic-bz-m3-bridge-src-smoke-after.json",
+      "project": "providers-bridge-ai-sdk",
+      "cohort": "src+smoke",
+      "phase": "after",
+      "diagnostics": 315,
+      "rules": 474,
+      "selectedFiles": 7,
+      "bytes": 163565,
+      "sha256": "de1ded3edde99d0dfa0e8543b52efe5d33b8fd9a4e59ed7f2062d3b45deb2d24"
+    }
+  ]
+}
