@@ -426,100 +426,7 @@ interface ClassificationDecision {
   surface: string;
 }
 
-async function main(): Promise<void> {
-  const mode = resolveCliMode();
-  const parsed = await Promise.all(DOC_SOURCES.map(parseDocSource));
-  const claims = parsed.flatMap((result) => result.claims);
-  const rationaleSections = parsed.flatMap(
-    (result) => result.rationaleSections
-  );
-  const claimsWithDuplicates = addDuplicateLinks(claims);
-  const matrixEntries = claimsWithDuplicates.map(toCoverageEntry);
-  const inventoryClaims = matrixEntries.map(toInventoryEntry);
-  const unclassifiedEntries = matrixEntries.filter(
-    (entry) => entry.classification === "unclassified"
-  );
-
-  if (unclassifiedEntries.length > 0) {
-    const examples = unclassifiedEntries
-      .slice(0, 5)
-      .map(
-        (entry) =>
-          `${entry.claimId} ${entry.sourceFile}:${entry.line} ${entry.sectionKey}`
-      )
-      .join("; ");
-    throw new Error(
-      `docs authority freeze gate found ${unclassifiedEntries.length} unclassified claims: ${examples}`
-    );
-  }
-  await validateCoverageMatrixEvidence(matrixEntries);
-
-  const inventory = {
-    claims: inventoryClaims,
-    duplicateNormativeClaims: duplicateClaimCount(claimsWithDuplicates),
-    generatedBy: "bun tools/scripts/docs-authority-freeze-gate.ts",
-    normativePattern: NORMATIVE_PATTERN.source,
-    rationaleSections,
-    sources: DOC_SOURCES.map((source) => source.path),
-    totalIndependentClaims: independentClaimCount(claimsWithDuplicates),
-    totalNormativeClaims: claimsWithDuplicates.length,
-  } satisfies ClaimInventory;
-  const matrix = {
-    duplicateClaims: duplicateClaimCount(matrixEntries),
-    entries: matrixEntries,
-    generatedBy: "bun tools/scripts/docs-authority-freeze-gate.ts",
-    primaryClassificationRule:
-      "Each normative claim receives exactly one primary classification derived from its source section and explicit text markers.",
-    totalClaims: matrixEntries.length,
-    totalIndependentClaims: independentClaimCount(matrixEntries),
-    unclassifiedClaims: unclassifiedEntries.length,
-  } satisfies CoverageMatrix;
-  const { claims: serializedClaims, ...inventoryMetadata } = inventory;
-  const { entries: serializedEntries, ...matrixMetadata } = matrix;
-  const claimsWithStableKeyOrder = serializedClaims.map(
-    ({ affectedBoundary, ...claim }) => ({ affectedBoundary, ...claim })
-  );
-  const artifacts: readonly OutputArtifact[] = [
-    {
-      content: formatJson({
-        ...inventoryMetadata,
-        claims: claimsWithStableKeyOrder,
-      }),
-      path: INVENTORY_PATH,
-    },
-    {
-      content: formatJson({ ...matrixMetadata, entries: serializedEntries }),
-      path: MATRIX_PATH,
-    },
-    { content: renderSummary(matrixEntries), path: SUMMARY_PATH },
-    {
-      content: renderFrameworkDecisions(matrixEntries),
-      path: FRAMEWORK_DECISIONS_PATH,
-    },
-    {
-      content: renderLocalSurfaceDecisions(matrixEntries),
-      path: LOCAL_DECISIONS_PATH,
-    },
-    { content: renderFreezeGateReport(matrixEntries), path: REPORT_PATH },
-    { content: renderClosureInventory(matrixEntries), path: CLOSURE_PATH },
-  ];
-
-  if (mode === "check") {
-    await checkArtifacts(artifacts);
-    console.log(
-      `docs authority freeze gate verified ${matrixEntries.length} classified claims`
-    );
-    return;
-  }
-
-  await writeArtifacts(artifacts);
-
-  console.log(
-    `docs authority freeze gate generated ${matrixEntries.length} classified claims`
-  );
-}
-
-function resolveCliMode(): "check" | "write" {
+const resolveCliMode = (): "check" | "write" => {
   const args = process.argv.slice(2);
   const unexpectedArgs = args.filter((arg) => arg !== "--check");
   if (unexpectedArgs.length > 0) {
@@ -531,37 +438,9 @@ function resolveCliMode(): "check" | "write" {
   }
 
   return args.includes("--check") ? "check" : "write";
-}
+};
 
-async function validateCoverageMatrixEvidence(
-  entries: readonly CoverageEntry[]
-): Promise<void> {
-  const failures: string[] = [];
-
-  for (const entry of entries) {
-    if (entry.classification !== "authority-backed-conformance-covered") {
-      continue;
-    }
-
-    failures.push(...authorityAnchorPresenceFailures(entry));
-
-    for (const reference of authorityEvidenceReferences(entry)) {
-      if (!(await pathExists(reference.path))) {
-        failures.push(
-          `${entry.claimId} ${reference.field} path does not exist: ${reference.path}`
-        );
-      }
-    }
-  }
-
-  if (failures.length > 0) {
-    throw new Error(
-      `docs authority freeze gate evidence validation failed:\n${failures.join("\n")}`
-    );
-  }
-}
-
-function authorityAnchorPresenceFailures(entry: CoverageEntry): string[] {
+const authorityAnchorPresenceFailures = (entry: CoverageEntry): string[] => {
   const failures: string[] = [];
 
   if (
@@ -578,12 +457,28 @@ function authorityAnchorPresenceFailures(entry: CoverageEntry): string[] {
   }
 
   return failures;
-}
+};
 
-function authorityEvidenceReferences(entry: CoverageEntry): {
+const extractEvidencePaths = (value: string): string[] => {
+  if (value === "N/A") {
+    return [];
+  }
+
+  if (!value.startsWith("N/A -")) {
+    return value.split(";").map((part) => part.trim());
+  }
+
+  return [...value.matchAll(EVIDENCE_PATH_PATTERN)].map((match) =>
+    (match[0] ?? "").replaceAll(/[.,]+$/g, "")
+  );
+};
+
+const authorityEvidenceReferences = (
+  entry: CoverageEntry
+): {
   field: string;
   path: string;
-}[] {
+}[] => {
   const references: { field: string; path: string }[] = [];
 
   for (const field of REQUIRED_AUTHORITY_ANCHOR_FIELDS) {
@@ -600,213 +495,48 @@ function authorityEvidenceReferences(entry: CoverageEntry): {
   );
 
   return references;
-}
+};
 
-function extractEvidencePaths(value: string): string[] {
-  if (value === "N/A") {
-    return [];
-  }
+const isSection = (section: string, expected: string): boolean =>
+  section === expected || section.startsWith(`${expected}.`);
 
-  if (!value.startsWith("N/A -")) {
-    return value.split(";").map((part) => part.trim());
-  }
+const isSectionMajor = (section: string, major: string): boolean =>
+  section === major || section.startsWith(`${major}.`);
 
-  return [...value.matchAll(EVIDENCE_PATH_PATTERN)].map((match) =>
-    (match[0] ?? "").replaceAll(/[.,]+$/g, "")
-  );
-}
-
-function isSection(section: string, expected: string): boolean {
-  return section === expected || section.startsWith(`${expected}.`);
-}
-
-function isSectionMajor(section: string, major: string): boolean {
-  return section === major || section.startsWith(`${major}.`);
-}
-
-async function pathExists(path: string): Promise<boolean> {
+const pathExists = async (path: string): Promise<boolean> => {
   try {
     await access(path);
     return true;
   } catch {
     return false;
   }
-}
+};
 
-async function parseDocSource(source: DocSource): Promise<{
-  claims: NormativeClaim[];
-  rationaleSections: RationaleSection[];
-}> {
-  const text = await readFile(source.path, "utf-8");
-  const state: DocParseState = {
-    claimedIds: new Map<string, string>(),
-    claims: [],
-    headingStack: [
-      {
-        anchor: "#top",
-        heading: "Document Preamble",
-        level: 1,
-        sectionKey: "preamble",
-      },
-    ],
-    inCodeFence: false,
-    proseBlock: null,
-    rationaleLineCounts: new Map<string, RationaleSection>(),
-    source,
-  };
-
-  for (const [index, rawLine] of text.split(LINE_SPLIT_PATTERN).entries()) {
-    await parseDocLine(state, rawLine, index + 1);
-  }
-
-  await flushProseBlock(state);
-
-  return {
-    claims: state.claims,
-    rationaleSections: [...state.rationaleLineCounts.values()],
-  };
-}
-
-async function parseDocLine(
+const currentHeadingFor = (
   state: DocParseState,
-  rawLine: string,
   line: number
-): Promise<void> {
-  const trimmed = rawLine.trim();
-
-  if (trimmed.startsWith("```")) {
-    await flushProseBlock(state);
-    state.inCodeFence = !state.inCodeFence;
-    return;
-  }
-
-  const currentHeading = currentHeadingFor(state, line);
-
-  if (state.inCodeFence) {
-    await parseCodeFenceLine(state, currentHeading, trimmed, line);
-    return;
-  }
-
-  if (trimmed.length === 0 || trimmed === "---") {
-    await flushProseBlock(state);
-    return;
-  }
-
-  const headingMatch = HEADING_PATTERN.exec(trimmed);
-  if (headingMatch != null) {
-    await parseHeadingLine(state, headingMatch, line);
-    return;
-  }
-
-  if (TABLE_ROW_PATTERN.test(trimmed)) {
-    await parseStandaloneClaimLine(state, currentHeading, trimmed, line);
-    return;
-  }
-
-  await appendProseLine(state, currentHeading, trimmed, line);
-}
-
-function currentHeadingFor(state: DocParseState, line: number): HeadingState {
+): HeadingState => {
   const currentHeading = state.headingStack.at(-1);
   if (currentHeading === undefined) {
     throw new Error(`missing heading state at ${state.source.path}:${line}`);
   }
   return currentHeading;
-}
+};
 
-async function parseCodeFenceLine(
-  state: DocParseState,
-  heading: HeadingState,
-  trimmed: string,
-  line: number
-): Promise<void> {
-  if (trimmed.length === 0) {
-    return;
-  }
-
-  if (CODE_FENCE_COMMENT_PATTERN.test(trimmed)) {
-    addRationaleLines(state, heading, 1);
-    return;
-  }
-
-  if (isNormativeCodeFenceLine(trimmed)) {
-    await parseStandaloneClaimLine(state, heading, trimmed, line);
-    return;
-  }
-
-  addRationaleLines(state, heading, 1);
-}
-
-function isNormativeCodeFenceLine(trimmed: string): boolean {
+const isNormativeCodeFenceLine = (trimmed: string): boolean => {
   const commentMatch = CODE_FENCE_INLINE_COMMENT_PATTERN.exec(trimmed);
   if (commentMatch?.[1] != null) {
     return NORMATIVE_PATTERN.test(commentMatch[1]);
   }
 
   return CODE_FENCE_STRONG_NORMATIVE_PATTERN.test(trimmed);
-}
+};
 
-async function parseHeadingLine(
-  state: DocParseState,
-  headingMatch: RegExpExecArray,
-  line: number
-): Promise<void> {
-  await flushProseBlock(state);
-  const [, marker, headingText] = headingMatch;
-  if (marker === undefined || headingText === undefined) {
-    throw new Error(`invalid heading at ${state.source.path}:${line}`);
-  }
-  const level = marker.length;
-  state.headingStack.splice(level - 1);
-  state.headingStack.push({
-    anchor: toAnchor(headingText),
-    heading: headingText,
-    level,
-    sectionKey: toSectionKey(headingText),
-  });
-}
-
-async function parseStandaloneClaimLine(
-  state: DocParseState,
-  heading: HeadingState,
-  trimmed: string,
-  line: number
-): Promise<void> {
-  await flushProseBlock(state);
-  if (NORMATIVE_PATTERN.test(trimmed)) {
-    await pushClaim(state, heading, trimmed, line);
-  } else {
-    addRationaleLines(state, heading, 1);
-  }
-}
-
-async function appendProseLine(
-  state: DocParseState,
-  heading: HeadingState,
-  trimmed: string,
-  line: number
-): Promise<void> {
-  if (LIST_ITEM_PATTERN.test(trimmed)) {
-    await flushProseBlock(state);
-  }
-
-  if (state.proseBlock == null) {
-    state.proseBlock = {
-      heading,
-      line,
-      lines: [trimmed],
-    };
-    return;
-  }
-
-  state.proseBlock.lines.push(trimmed);
-}
-
-function addRationaleLines(
+const addRationaleLines = (
   state: DocParseState,
   heading: HeadingState,
   lineCount: number
-): void {
+): void => {
   const rationaleKey = `${state.source.path}:${heading.anchor}`;
   const existing = state.rationaleLineCounts.get(rationaleKey);
   if (existing == null) {
@@ -822,57 +552,9 @@ function addRationaleLines(
   }
 
   existing.nonNormativeLineCount += lineCount;
-}
+};
 
-async function pushClaim(
-  state: DocParseState,
-  heading: HeadingState,
-  claimText: string,
-  line: number
-): Promise<void> {
-  const normalizedText = normalizeClaimText(claimText);
-  const { claimFingerprint, claimId } = await toStableClaimId(
-    state.source,
-    heading,
-    normalizedText,
-    state.claimedIds
-  );
-  state.claims.push({
-    affectedBoundary: state.source.boundary,
-    claimFingerprint,
-    claimId,
-    duplicateOf: null,
-    line,
-    rationaleContext: "normative",
-    sectionAnchor: heading.anchor,
-    sectionHeading: heading.heading,
-    sectionKey: heading.sectionKey,
-    sourceFile: state.source.path,
-    text: normalizedText,
-  });
-}
-
-async function flushProseBlock(state: DocParseState): Promise<void> {
-  if (state.proseBlock == null) {
-    return;
-  }
-
-  const block = state.proseBlock;
-  state.proseBlock = null;
-  const claimText = block.lines.join(" ");
-
-  if (
-    NORMATIVE_PATTERN.test(claimText) ||
-    isImplicitScopeBoundaryBlock(block)
-  ) {
-    await pushClaim(state, block.heading, claimText, block.line);
-    return;
-  }
-
-  addRationaleLines(state, block.heading, block.lines.length);
-}
-
-function isImplicitScopeBoundaryBlock(block: PendingProseBlock): boolean {
+const isImplicitScopeBoundaryBlock = (block: PendingProseBlock): boolean => {
   if (block.heading.sectionKey !== "10.9" || block.lines.length !== 1) {
     return false;
   }
@@ -882,9 +564,20 @@ function isImplicitScopeBoundaryBlock(block: PendingProseBlock): boolean {
     line === "This specification does not define:" ||
     LIST_ITEM_PATTERN.test(line ?? "")
   );
-}
+};
 
-async function toStableClaimId(
+const sha256Hex = async (value: string): Promise<string> => {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value)
+  );
+  const bytes = new Uint8Array(digest);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
+};
+
+const toStableClaimId = async (
   source: DocSource,
   heading: HeadingState,
   text: string,
@@ -892,7 +585,7 @@ async function toStableClaimId(
 ): Promise<{
   claimFingerprint: string;
   claimId: string;
-}> {
+}> => {
   const fingerprintInput = [
     source.path,
     source.boundary,
@@ -918,22 +611,11 @@ async function toStableClaimId(
     claimFingerprint,
     claimId,
   };
-}
+};
 
-async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value)
-  );
-  const bytes = new Uint8Array(digest);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
-    ""
-  );
-}
-
-function addDuplicateLinks(
+const addDuplicateLinks = (
   claims: readonly NormativeClaim[]
-): NormativeClaim[] {
+): NormativeClaim[] => {
   const firstByNormalizedText = new Map<string, string>();
 
   return claims.map((claim) => {
@@ -950,63 +632,28 @@ function addDuplicateLinks(
       duplicateOf: firstClaimId,
     };
   });
-}
+};
 
-function toCoverageEntry(claim: NormativeClaim): CoverageEntry {
-  const decision =
-    claim.affectedBoundary === "framework"
-      ? classifyFrameworkClaim(claim)
-      : classifyKernelClaim(claim);
+const toInventoryEntry = (entry: CoverageEntry): ClaimInventoryEntry => ({
+  adapterCapability: entry.adapterCapability,
+  affectedBoundary: entry.affectedBoundary,
+  claimFingerprint: entry.claimFingerprint,
+  claimId: entry.claimId,
+  duplicateOf: entry.duplicateOf,
+  line: entry.line,
+  rationaleContext: entry.rationaleContext,
+  sectionAnchor: entry.sectionAnchor,
+  sectionHeading: entry.sectionHeading,
+  sectionKey: entry.sectionKey,
+  sourceFile: entry.sourceFile,
+  surface: entry.surface,
+  text: entry.text,
+});
 
-  return {
-    ...claim,
-    adapterCapability: decision.evidence.adapterCapability,
-    authorityPacket: decision.evidence.authorityPacket,
-    classification: decision.classification,
-    compatibilityEvidence: decision.evidence.compatibilityEvidence,
-    conformancePlan: decision.evidence.conformancePlan,
-    deferralRationale: decision.deferralRationale,
-    docsCorrection: decision.docsCorrection,
-    fixture: decision.evidence.fixture,
-    followUpTicket: decision.followUpTicket,
-    generatedArtifact: decision.evidence.generatedArtifact,
-    implementationEvidence: decision.implementationEvidence,
-    surface: decision.surface,
-  };
-}
-
-function toInventoryEntry(entry: CoverageEntry): ClaimInventoryEntry {
-  return {
-    adapterCapability: entry.adapterCapability,
-    affectedBoundary: entry.affectedBoundary,
-    claimFingerprint: entry.claimFingerprint,
-    claimId: entry.claimId,
-    duplicateOf: entry.duplicateOf,
-    line: entry.line,
-    rationaleContext: entry.rationaleContext,
-    sectionAnchor: entry.sectionAnchor,
-    sectionHeading: entry.sectionHeading,
-    sectionKey: entry.sectionKey,
-    sourceFile: entry.sourceFile,
-    surface: entry.surface,
-    text: entry.text,
-  };
-}
-
-// Kernel v0.12 / framework v0.21 SaaS-readiness *target* semantics are frozen
-// human authority whose PORTABLE machine authority is deliberately deferred
-// until the SaaS-readiness epics (BE/BF/BG/BH) promote it through the
-// authority-packet + conformance + evidence cascade. Without explicit routing
-// each claim would inherit its enclosing section's
-// `authority-backed-conformance-covered` label by section-key prefix and falsely
-// report coverage that does not exist yet, directly contradicting the
-// "classified as deferred until the SaaS-readiness epics promote them" status
-// lines in both specs. Route the version-status headers to explicitly-deferred
-// and each behavioral target claim to its owning epic's alignment ticket.
-function classifySaaSReadinessTargetClaim(
+const classifySaaSReadinessTargetClaim = (
   section: string,
   text: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     text.includes("saas-readiness target semantics") &&
     text.includes("deferred until the saas-readiness epics")
@@ -1113,84 +760,19 @@ function classifySaaSReadinessTargetClaim(
   }
 
   return null;
-}
+};
 
-function classifyFrameworkClaim(claim: NormativeClaim): ClassificationDecision {
-  const section = claim.sectionKey;
-  const text = claim.text.toLowerCase();
+const isApprovalControlClaim = (text: string): boolean =>
+  text.includes("approval") ||
+  text.includes("resolveapproval") ||
+  text.includes("paused run") ||
+  text.includes("paused handle") ||
+  text.includes("paused turn");
 
-  const saasTargetDecision = classifySaaSReadinessTargetClaim(section, text);
-  if (saasTargetDecision != null) {
-    return saasTargetDecision;
-  }
-
-  // KRT-BD008: §4.12 Execution Bounds is the framework-owned guard above
-  // LoopPolicy (ADR-0043). Route every §4.12 claim deterministically to the
-  // execution-bounds authority so incidental keywords (e.g. "tool", "cancel")
-  // cannot misroute it through the control-surface or runtime classifiers.
-  if (isSection(section, "4.12")) {
-    return authorityDecision(
-      "framework execution bounds",
-      EVIDENCE.executionBounds
-    );
-  }
-
-  if (
-    text.includes("single authoritative") ||
-    text.includes("authoritative for")
-  ) {
-    return staleDocsDecision(
-      "framework authority posture",
-      "Docs preamble now distinguishes human semantic authority from machine portability authority."
-    );
-  }
-
-  if (text.includes("future runners")) {
-    return deferredDecision(
-      "future framework runners",
-      "Future framework runners remain deferred until a later TechSpec and Tasks revision activates a concrete runner line."
-    );
-  }
-
-  const controlSurfaceDecision = classifyFrameworkControlSurfaceClaim(
-    section,
-    text
-  );
-  if (controlSurfaceDecision != null) {
-    return controlSurfaceDecision;
-  }
-
-  if (
-    section === "preamble" ||
-    section === "0" ||
-    section === "kraken-framework-specification"
-  ) {
-    return implementationDefinedDecision(
-      "framework runner framing",
-      "Runner framing explains the current semantic layering; portable claim status is determined by the matrix rows for the referenced concrete surfaces."
-    );
-  }
-
-  const coreSectionDecision = classifyFrameworkCoreSection(section, text);
-  if (coreSectionDecision != null) {
-    return coreSectionDecision;
-  }
-
-  const runtimeSectionDecision = classifyFrameworkRuntimeSection(section);
-  if (runtimeSectionDecision != null) {
-    return runtimeSectionDecision;
-  }
-
-  return unclassifiedDecision(
-    "framework unclassified surface",
-    "Framework prose landed outside the Epic AD section classifier and must be explicitly routed before the freeze gate can pass."
-  );
-}
-
-function classifyFrameworkControlSurfaceClaim(
+const classifyFrameworkControlSurfaceClaim = (
   section: string,
   text: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (isApprovalControlClaim(text)) {
     // KRT-AL002 G1 moved approval/tool authority onto the tool-contracts
     // packet, so approval-control claims must anchor to that packet (not
@@ -1216,81 +798,11 @@ function classifyFrameworkControlSurfaceClaim(
   }
 
   return null;
-}
+};
 
-function isApprovalControlClaim(text: string): boolean {
-  return (
-    text.includes("approval") ||
-    text.includes("resolveapproval") ||
-    text.includes("paused run") ||
-    text.includes("paused handle") ||
-    text.includes("paused turn")
-  );
-}
-
-function classifyFrameworkCoreSection(
-  section: string,
-  text: string
-): ClassificationDecision | null {
-  if (section === "6.9" && text.includes("package topology")) {
-    return implementationDefinedDecision(
-      "stream adapter package topology",
-      "TypeScript stream adapter package topology and AG-UI version pinning are implementation-line evidence, not portable event-stream authority."
-    );
-  }
-
-  const eventSectionDecision = classifyFrameworkEventStreamSection(section);
-  if (eventSectionDecision != null) {
-    return eventSectionDecision;
-  }
-
-  if (isSection(section, "1.8") || isSectionMajor(section, "6")) {
-    return authorityDecision("framework event stream", EVIDENCE.eventStream);
-  }
-
-  if (isSection(section, "1.5") || isSection(section, "4.10")) {
-    return authorityDecision(
-      "runtime resolution and errors",
-      EVIDENCE.runtimeApi
-    );
-  }
-
-  if (isSection(section, "1.7") || isSectionMajor(section, "8")) {
-    // KRT-AL002 G1: tool and approval contracts now own a dedicated
-    // packet at `tuvren.framework.tool-contracts`; route here instead of
-    // runtime-api so the freeze evidence anchors to the packet that
-    // actually owns these shapes.
-    return missingConformanceDecision(
-      "tool and approval contracts",
-      EVIDENCE.toolContracts,
-      "KRT-AF004",
-      "Tool and approval shapes have TypeScript artifacts and runtime evidence, but the freeze pass keeps them out of portable truth until AF selects neutral checks."
-    );
-  }
-
-  if (isSectionMajor(section, "1")) {
-    return missingConformanceDecision(
-      "shared framework type shapes",
-      EVIDENCE.runtimeApi,
-      "KRT-AF001",
-      "Shared type prose is not by itself portable truth; AF must decide whether to promote more shape checks or leave them as binding projections."
-    );
-  }
-
-  if (isSectionMajor(section, "2")) {
-    return promotedEpicAfDecision(
-      "framework state schema",
-      EVIDENCE.runtimeApi,
-      "KRT-AF001 if portability is selected"
-    );
-  }
-
-  return classifyFrameworkIntegrationSection(section, text);
-}
-
-function classifyFrameworkEventStreamSection(
+const classifyFrameworkEventStreamSection = (
   section: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (isSection(section, "6.4")) {
     // §6.4 covers parallel tool caps and mixed approval ordering, which
     // live under the AL-promoted tool-contracts packet; runtime-api no
@@ -1322,12 +834,12 @@ function classifyFrameworkEventStreamSection(
   }
 
   return null;
-}
+};
 
-function classifyFrameworkIntegrationSection(
+const classifyFrameworkIntegrationSection = (
   section: string,
   text: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     (isSection(section, "3.4") && text.includes("provider-")) ||
     text.includes("provider-anthropic")
@@ -1436,11 +948,11 @@ function classifyFrameworkIntegrationSection(
   }
 
   return null;
-}
+};
 
-function classifyFrameworkRuntimeSection(
+const classifyFrameworkRuntimeSection = (
   section: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     ["system-prompt", "reading-and-updating", "namespace-isolation"].includes(
       section
@@ -1525,50 +1037,11 @@ function classifyFrameworkRuntimeSection(
   }
 
   return null;
-}
+};
 
-function classifyKernelClaim(claim: NormativeClaim): ClassificationDecision {
-  const section = claim.sectionKey;
-  const text = claim.text.toLowerCase();
-  const saasTargetDecision = classifySaaSReadinessTargetClaim(section, text);
-  if (saasTargetDecision != null) {
-    return saasTargetDecision;
-  }
-  const portabilityNoteDecision = classifyKernelPortabilityNoteText(text);
-  if (portabilityNoteDecision != null) {
-    return portabilityNoteDecision;
-  }
-  const postureDecision = classifyKernelPostureText(text);
-  if (postureDecision != null) {
-    return postureDecision;
-  }
-  const deferredDecisionResult = classifyKernelDeferredText(section, text);
-  if (deferredDecisionResult != null) {
-    return deferredDecisionResult;
-  }
-
-  for (const classifier of [
-    classifyKernelFramingSection,
-    classifyKernelBackendSection,
-    classifyKernelRunLivenessSection,
-    classifyKernelAppendixSection,
-    classifyKernelCoreSection,
-  ]) {
-    const decision = classifier(section, text);
-    if (decision != null) {
-      return decision;
-    }
-  }
-
-  return unclassifiedDecision(
-    "kernel unclassified surface",
-    "Kernel prose landed outside the Epic AD section classifier and must be explicitly routed before the freeze gate can pass."
-  );
-}
-
-function classifyKernelPortabilityNoteText(
+const classifyKernelPortabilityNoteText = (
   text: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     !(
       text.includes("epic ad freezes the portability reading") &&
@@ -1582,12 +1055,12 @@ function classifyKernelPortabilityNoteText(
     "kernel docs-to-authority framing",
     "The Epic AD portability note describes the freeze gate classification model rather than portable kernel protocol behavior."
   );
-}
+};
 
-function classifyKernelDeferredText(
+const classifyKernelDeferredText = (
   section: string,
   text: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (section !== "appendix" || !text.includes("deferred")) {
     return null;
   }
@@ -1596,11 +1069,11 @@ function classifyKernelDeferredText(
     "kernel deferred maintenance surfaces",
     "Merge rules, garbage collection, and related maintenance policies remain deferred until a later kernel storage or lifecycle plan activates them."
   );
-}
+};
 
-function classifyKernelPostureText(
+const classifyKernelPostureText = (
   text: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     !(
       text.includes("single authoritative") ||
@@ -1614,11 +1087,11 @@ function classifyKernelPostureText(
     "kernel authority posture",
     "Docs preamble now distinguishes frozen human kernel semantics from promoted machine authority."
   );
-}
+};
 
-function classifyKernelFramingSection(
+const classifyKernelFramingSection = (
   section: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     section === "preamble" ||
     section === "purpose" ||
@@ -1633,12 +1106,12 @@ function classifyKernelFramingSection(
   }
 
   return null;
-}
+};
 
-function classifyKernelBackendSection(
+const classifyKernelBackendSection = (
   _section: string,
   text: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     (text.includes("structural sharing") ||
       text.includes("subtree hashes") ||
@@ -1666,11 +1139,11 @@ function classifyKernelBackendSection(
   }
 
   return null;
-}
+};
 
-function classifyKernelRunLivenessSection(
+const classifyKernelRunLivenessSection = (
   section: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     section.startsWith("5.2") ||
     section.includes("run-execution-leases") ||
@@ -1698,11 +1171,11 @@ function classifyKernelRunLivenessSection(
   }
 
   return null;
-}
+};
 
-function classifyKernelAppendixSection(
+const classifyKernelAppendixSection = (
   section: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     !(
       section.startsWith("appendix") ||
@@ -1730,11 +1203,11 @@ function classifyKernelAppendixSection(
     "KRT-AF006",
     "Appendix legality and validation prose is portable intent, but AF must select edge-state checks before treating every row as freeze-covered."
   );
-}
+};
 
-function classifyKernelCoreSection(
+const classifyKernelCoreSection = (
   section: string
-): ClassificationDecision | null {
+): ClassificationDecision | null => {
   if (
     [
       "tree-operations",
@@ -1785,7 +1258,526 @@ function classifyKernelCoreSection(
   }
 
   return null;
-}
+};
+
+const pushClaim = async (
+  state: DocParseState,
+  heading: HeadingState,
+  claimText: string,
+  line: number
+): Promise<void> => {
+  const normalizedText = normalizeClaimText(claimText);
+  const { claimFingerprint, claimId } = await toStableClaimId(
+    state.source,
+    heading,
+    normalizedText,
+    state.claimedIds
+  );
+  state.claims.push({
+    affectedBoundary: state.source.boundary,
+    claimFingerprint,
+    claimId,
+    duplicateOf: null,
+    line,
+    rationaleContext: "normative",
+    sectionAnchor: heading.anchor,
+    sectionHeading: heading.heading,
+    sectionKey: heading.sectionKey,
+    sourceFile: state.source.path,
+    text: normalizedText,
+  });
+};
+
+const flushProseBlock = async (state: DocParseState): Promise<void> => {
+  if (state.proseBlock == null) {
+    return;
+  }
+
+  const block = state.proseBlock;
+  state.proseBlock = null;
+  const claimText = block.lines.join(" ");
+
+  if (
+    NORMATIVE_PATTERN.test(claimText) ||
+    isImplicitScopeBoundaryBlock(block)
+  ) {
+    await pushClaim(state, block.heading, claimText, block.line);
+    return;
+  }
+
+  addRationaleLines(state, block.heading, block.lines.length);
+};
+
+const parseStandaloneClaimLine = async (
+  state: DocParseState,
+  heading: HeadingState,
+  trimmed: string,
+  line: number
+): Promise<void> => {
+  await flushProseBlock(state);
+  if (NORMATIVE_PATTERN.test(trimmed)) {
+    await pushClaim(state, heading, trimmed, line);
+  } else {
+    addRationaleLines(state, heading, 1);
+  }
+};
+
+const parseCodeFenceLine = async (
+  state: DocParseState,
+  heading: HeadingState,
+  trimmed: string,
+  line: number
+): Promise<void> => {
+  if (trimmed.length === 0) {
+    return;
+  }
+
+  if (CODE_FENCE_COMMENT_PATTERN.test(trimmed)) {
+    addRationaleLines(state, heading, 1);
+    return;
+  }
+
+  if (isNormativeCodeFenceLine(trimmed)) {
+    await parseStandaloneClaimLine(state, heading, trimmed, line);
+    return;
+  }
+
+  addRationaleLines(state, heading, 1);
+};
+
+const parseHeadingLine = async (
+  state: DocParseState,
+  headingMatch: RegExpExecArray,
+  line: number
+): Promise<void> => {
+  await flushProseBlock(state);
+  const [, marker, headingText] = headingMatch;
+  if (marker === undefined || headingText === undefined) {
+    throw new Error(`invalid heading at ${state.source.path}:${line}`);
+  }
+  const level = marker.length;
+  state.headingStack.splice(level - 1);
+  state.headingStack.push({
+    anchor: toAnchor(headingText),
+    heading: headingText,
+    level,
+    sectionKey: toSectionKey(headingText),
+  });
+};
+
+const appendProseLine = async (
+  state: DocParseState,
+  heading: HeadingState,
+  trimmed: string,
+  line: number
+): Promise<void> => {
+  if (LIST_ITEM_PATTERN.test(trimmed)) {
+    await flushProseBlock(state);
+  }
+
+  if (state.proseBlock == null) {
+    state.proseBlock = {
+      heading,
+      line,
+      lines: [trimmed],
+    };
+    return;
+  }
+
+  state.proseBlock.lines.push(trimmed);
+};
+
+const parseDocLine = async (
+  state: DocParseState,
+  rawLine: string,
+  line: number
+): Promise<void> => {
+  const trimmed = rawLine.trim();
+
+  if (trimmed.startsWith("```")) {
+    await flushProseBlock(state);
+    state.inCodeFence = !state.inCodeFence;
+    return;
+  }
+
+  const currentHeading = currentHeadingFor(state, line);
+
+  if (state.inCodeFence) {
+    await parseCodeFenceLine(state, currentHeading, trimmed, line);
+    return;
+  }
+
+  if (trimmed.length === 0 || trimmed === "---") {
+    await flushProseBlock(state);
+    return;
+  }
+
+  const headingMatch = HEADING_PATTERN.exec(trimmed);
+  if (headingMatch != null) {
+    await parseHeadingLine(state, headingMatch, line);
+    return;
+  }
+
+  if (TABLE_ROW_PATTERN.test(trimmed)) {
+    await parseStandaloneClaimLine(state, currentHeading, trimmed, line);
+    return;
+  }
+
+  await appendProseLine(state, currentHeading, trimmed, line);
+};
+
+const parseDocSource = async (
+  source: DocSource
+): Promise<{
+  claims: NormativeClaim[];
+  rationaleSections: RationaleSection[];
+}> => {
+  const text = await readFile(source.path, "utf-8");
+  const state: DocParseState = {
+    claimedIds: new Map<string, string>(),
+    claims: [],
+    headingStack: [
+      {
+        anchor: "#top",
+        heading: "Document Preamble",
+        level: 1,
+        sectionKey: "preamble",
+      },
+    ],
+    inCodeFence: false,
+    proseBlock: null,
+    rationaleLineCounts: new Map<string, RationaleSection>(),
+    source,
+  };
+
+  for (const [index, rawLine] of text.split(LINE_SPLIT_PATTERN).entries()) {
+    await parseDocLine(state, rawLine, index + 1);
+  }
+
+  await flushProseBlock(state);
+
+  return {
+    claims: state.claims,
+    rationaleSections: [...state.rationaleLineCounts.values()],
+  };
+};
+
+const classifyFrameworkCoreSection = (
+  section: string,
+  text: string
+): ClassificationDecision | null => {
+  if (section === "6.9" && text.includes("package topology")) {
+    return implementationDefinedDecision(
+      "stream adapter package topology",
+      "TypeScript stream adapter package topology and AG-UI version pinning are implementation-line evidence, not portable event-stream authority."
+    );
+  }
+
+  const eventSectionDecision = classifyFrameworkEventStreamSection(section);
+  if (eventSectionDecision != null) {
+    return eventSectionDecision;
+  }
+
+  if (isSection(section, "1.8") || isSectionMajor(section, "6")) {
+    return authorityDecision("framework event stream", EVIDENCE.eventStream);
+  }
+
+  if (isSection(section, "1.5") || isSection(section, "4.10")) {
+    return authorityDecision(
+      "runtime resolution and errors",
+      EVIDENCE.runtimeApi
+    );
+  }
+
+  if (isSection(section, "1.7") || isSectionMajor(section, "8")) {
+    // KRT-AL002 G1: tool and approval contracts now own a dedicated
+    // packet at `tuvren.framework.tool-contracts`; route here instead of
+    // runtime-api so the freeze evidence anchors to the packet that
+    // actually owns these shapes.
+    return missingConformanceDecision(
+      "tool and approval contracts",
+      EVIDENCE.toolContracts,
+      "KRT-AF004",
+      "Tool and approval shapes have TypeScript artifacts and runtime evidence, but the freeze pass keeps them out of portable truth until AF selects neutral checks."
+    );
+  }
+
+  if (isSectionMajor(section, "1")) {
+    return missingConformanceDecision(
+      "shared framework type shapes",
+      EVIDENCE.runtimeApi,
+      "KRT-AF001",
+      "Shared type prose is not by itself portable truth; AF must decide whether to promote more shape checks or leave them as binding projections."
+    );
+  }
+
+  if (isSectionMajor(section, "2")) {
+    return promotedEpicAfDecision(
+      "framework state schema",
+      EVIDENCE.runtimeApi,
+      "KRT-AF001 if portability is selected"
+    );
+  }
+
+  return classifyFrameworkIntegrationSection(section, text);
+};
+
+const classifyFrameworkClaim = (
+  claim: NormativeClaim
+): ClassificationDecision => {
+  const section = claim.sectionKey;
+  const text = claim.text.toLowerCase();
+
+  const saasTargetDecision = classifySaaSReadinessTargetClaim(section, text);
+  if (saasTargetDecision != null) {
+    return saasTargetDecision;
+  }
+
+  // KRT-BD008: §4.12 Execution Bounds is the framework-owned guard above
+  // LoopPolicy (ADR-0043). Route every §4.12 claim deterministically to the
+  // execution-bounds authority so incidental keywords (e.g. "tool", "cancel")
+  // cannot misroute it through the control-surface or runtime classifiers.
+  if (isSection(section, "4.12")) {
+    return authorityDecision(
+      "framework execution bounds",
+      EVIDENCE.executionBounds
+    );
+  }
+
+  if (
+    text.includes("single authoritative") ||
+    text.includes("authoritative for")
+  ) {
+    return staleDocsDecision(
+      "framework authority posture",
+      "Docs preamble now distinguishes human semantic authority from machine portability authority."
+    );
+  }
+
+  if (text.includes("future runners")) {
+    return deferredDecision(
+      "future framework runners",
+      "Future framework runners remain deferred until a later TechSpec and Tasks revision activates a concrete runner line."
+    );
+  }
+
+  const controlSurfaceDecision = classifyFrameworkControlSurfaceClaim(
+    section,
+    text
+  );
+  if (controlSurfaceDecision != null) {
+    return controlSurfaceDecision;
+  }
+
+  if (
+    section === "preamble" ||
+    section === "0" ||
+    section === "kraken-framework-specification"
+  ) {
+    return implementationDefinedDecision(
+      "framework runner framing",
+      "Runner framing explains the current semantic layering; portable claim status is determined by the matrix rows for the referenced concrete surfaces."
+    );
+  }
+
+  const coreSectionDecision = classifyFrameworkCoreSection(section, text);
+  if (coreSectionDecision != null) {
+    return coreSectionDecision;
+  }
+
+  const runtimeSectionDecision = classifyFrameworkRuntimeSection(section);
+  if (runtimeSectionDecision != null) {
+    return runtimeSectionDecision;
+  }
+
+  return unclassifiedDecision(
+    "framework unclassified surface",
+    "Framework prose landed outside the Epic AD section classifier and must be explicitly routed before the freeze gate can pass."
+  );
+};
+
+const classifyKernelClaim = (claim: NormativeClaim): ClassificationDecision => {
+  const section = claim.sectionKey;
+  const text = claim.text.toLowerCase();
+  const saasTargetDecision = classifySaaSReadinessTargetClaim(section, text);
+  if (saasTargetDecision != null) {
+    return saasTargetDecision;
+  }
+  const portabilityNoteDecision = classifyKernelPortabilityNoteText(text);
+  if (portabilityNoteDecision != null) {
+    return portabilityNoteDecision;
+  }
+  const postureDecision = classifyKernelPostureText(text);
+  if (postureDecision != null) {
+    return postureDecision;
+  }
+  const deferredDecisionResult = classifyKernelDeferredText(section, text);
+  if (deferredDecisionResult != null) {
+    return deferredDecisionResult;
+  }
+
+  for (const classifier of [
+    classifyKernelFramingSection,
+    classifyKernelBackendSection,
+    classifyKernelRunLivenessSection,
+    classifyKernelAppendixSection,
+    classifyKernelCoreSection,
+  ]) {
+    const decision = classifier(section, text);
+    if (decision != null) {
+      return decision;
+    }
+  }
+
+  return unclassifiedDecision(
+    "kernel unclassified surface",
+    "Kernel prose landed outside the Epic AD section classifier and must be explicitly routed before the freeze gate can pass."
+  );
+};
+
+const toCoverageEntry = (claim: NormativeClaim): CoverageEntry => {
+  const decision =
+    claim.affectedBoundary === "framework"
+      ? classifyFrameworkClaim(claim)
+      : classifyKernelClaim(claim);
+
+  return {
+    ...claim,
+    adapterCapability: decision.evidence.adapterCapability,
+    authorityPacket: decision.evidence.authorityPacket,
+    classification: decision.classification,
+    compatibilityEvidence: decision.evidence.compatibilityEvidence,
+    conformancePlan: decision.evidence.conformancePlan,
+    deferralRationale: decision.deferralRationale,
+    docsCorrection: decision.docsCorrection,
+    fixture: decision.evidence.fixture,
+    followUpTicket: decision.followUpTicket,
+    generatedArtifact: decision.evidence.generatedArtifact,
+    implementationEvidence: decision.implementationEvidence,
+    surface: decision.surface,
+  };
+};
+
+const validateCoverageMatrixEvidence = async (
+  entries: readonly CoverageEntry[]
+): Promise<void> => {
+  const failures: string[] = [];
+
+  for (const entry of entries) {
+    if (entry.classification !== "authority-backed-conformance-covered") {
+      continue;
+    }
+
+    failures.push(...authorityAnchorPresenceFailures(entry));
+
+    for (const reference of authorityEvidenceReferences(entry)) {
+      if (!(await pathExists(reference.path))) {
+        failures.push(
+          `${entry.claimId} ${reference.field} path does not exist: ${reference.path}`
+        );
+      }
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `docs authority freeze gate evidence validation failed:\n${failures.join("\n")}`
+    );
+  }
+};
+
+const main = async (): Promise<void> => {
+  const mode = resolveCliMode();
+  const parsed = await Promise.all(DOC_SOURCES.map(parseDocSource));
+  const claims = parsed.flatMap((result) => result.claims);
+  const rationaleSections = parsed.flatMap(
+    (result) => result.rationaleSections
+  );
+  const claimsWithDuplicates = addDuplicateLinks(claims);
+  const matrixEntries = claimsWithDuplicates.map(toCoverageEntry);
+  const inventoryClaims = matrixEntries.map(toInventoryEntry);
+  const unclassifiedEntries = matrixEntries.filter(
+    (entry) => entry.classification === "unclassified"
+  );
+
+  if (unclassifiedEntries.length > 0) {
+    const examples = unclassifiedEntries
+      .slice(0, 5)
+      .map(
+        (entry) =>
+          `${entry.claimId} ${entry.sourceFile}:${entry.line} ${entry.sectionKey}`
+      )
+      .join("; ");
+    throw new Error(
+      `docs authority freeze gate found ${unclassifiedEntries.length} unclassified claims: ${examples}`
+    );
+  }
+  await validateCoverageMatrixEvidence(matrixEntries);
+
+  const inventory = {
+    claims: inventoryClaims,
+    duplicateNormativeClaims: duplicateClaimCount(claimsWithDuplicates),
+    generatedBy: "bun tools/scripts/docs-authority-freeze-gate.ts",
+    normativePattern: NORMATIVE_PATTERN.source,
+    rationaleSections,
+    sources: DOC_SOURCES.map((source) => source.path),
+    totalIndependentClaims: independentClaimCount(claimsWithDuplicates),
+    totalNormativeClaims: claimsWithDuplicates.length,
+  } satisfies ClaimInventory;
+  const matrix = {
+    duplicateClaims: duplicateClaimCount(matrixEntries),
+    entries: matrixEntries,
+    generatedBy: "bun tools/scripts/docs-authority-freeze-gate.ts",
+    primaryClassificationRule:
+      "Each normative claim receives exactly one primary classification derived from its source section and explicit text markers.",
+    totalClaims: matrixEntries.length,
+    totalIndependentClaims: independentClaimCount(matrixEntries),
+    unclassifiedClaims: unclassifiedEntries.length,
+  } satisfies CoverageMatrix;
+  const { claims: serializedClaims, ...inventoryMetadata } = inventory;
+  const { entries: serializedEntries, ...matrixMetadata } = matrix;
+  const claimsWithStableKeyOrder = serializedClaims.map(
+    ({ affectedBoundary, ...claim }) => ({ affectedBoundary, ...claim })
+  );
+  const artifacts: readonly OutputArtifact[] = [
+    {
+      content: formatJson({
+        ...inventoryMetadata,
+        claims: claimsWithStableKeyOrder,
+      }),
+      path: INVENTORY_PATH,
+    },
+    {
+      content: formatJson({ ...matrixMetadata, entries: serializedEntries }),
+      path: MATRIX_PATH,
+    },
+    { content: renderSummary(matrixEntries), path: SUMMARY_PATH },
+    {
+      content: renderFrameworkDecisions(matrixEntries),
+      path: FRAMEWORK_DECISIONS_PATH,
+    },
+    {
+      content: renderLocalSurfaceDecisions(matrixEntries),
+      path: LOCAL_DECISIONS_PATH,
+    },
+    { content: renderFreezeGateReport(matrixEntries), path: REPORT_PATH },
+    { content: renderClosureInventory(matrixEntries), path: CLOSURE_PATH },
+  ];
+
+  if (mode === "check") {
+    await checkArtifacts(artifacts);
+    console.log(
+      `docs authority freeze gate verified ${matrixEntries.length} classified claims`
+    );
+    return;
+  }
+
+  await writeArtifacts(artifacts);
+
+  console.log(
+    `docs authority freeze gate generated ${matrixEntries.length} classified claims`
+  );
+};
 
 function authorityDecision(
   surface: string,
