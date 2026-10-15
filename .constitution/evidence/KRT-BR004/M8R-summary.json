@@ -1,0 +1,35 @@
+{
+  "milestone": "M8-review-fix",
+  "ticket": "KRT-BR003",
+  "fixes_commit": "adb21d0",
+  "findings_resolved": [
+    {
+      "finding": "Repository typecheck was omitted from the same-tree acceptance proof.",
+      "resolution": "bun run typecheck passed for 33 projects and one prerequisite under the global lock."
+    },
+    {
+      "finding": "Initialization and first-failure claims were prose-only and not reproducible from committed artifacts.",
+      "resolution": "Added a package-local fresh-process test that exercises direct-first and public-first imports, canonical export identity, exact empty reclamation summary, and the first missing-node error code and label."
+    }
+  ],
+  "repository_evidence": "typescript/kernel/backends/shared/test/backend-invariant-reclamation-initialization.test.ts",
+  "verification": [
+    "Oxfmt passed for the new test.",
+    "backend-shared typecheck passed.",
+    "backend-shared tests passed: 16 tests and 40 assertions.",
+    "retained Biome lint passed for 22 files.",
+    "repository typecheck passed for 33 projects and one prerequisite.",
+    "full conformance passed for 11 certification projects.",
+    "direct changeset coverage passed for all four public backend packages."
+  ],
+  "scheduling": {
+    "global_lock": "/tmp/tuvren-wave-1-verification.lock",
+    "outer_lock_only": true,
+    "environment_retry": "The first locked run stopped on sandbox Nx/Nix cache EROFS; the authorized unchanged escalated retry passed."
+  },
+  "notes": [
+    "The source refactor was unchanged by this fix.",
+    "The new test uses the established BQ fresh-process initialization pattern.",
+    "No dependency, public contract, runtime behavior, lint target, or constitution authority changed."
+  ]
+}
