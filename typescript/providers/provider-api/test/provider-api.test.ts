@@ -68,6 +68,81 @@ const EXPECTED_PROVIDER_ARTIFACT_SCHEMAS = [
   "UserMessage",
 ] as const;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readJsonObject = (url: URL): Record<string, unknown> => {
+  const value: unknown = JSON.parse(readFileSync(url, "utf-8"));
+
+  if (!isRecord(value)) {
+    throw new Error(`${url.pathname} must contain a JSON object`);
+  }
+
+  return value;
+};
+
+const readOpenApiSchemas = (
+  document: Record<string, unknown>
+): Record<string, unknown> => {
+  const { components } = document;
+
+  if (!(isRecord(components) && isRecord(components.schemas))) {
+    throw new Error("OpenAPI artifact must contain components.schemas");
+  }
+
+  return components.schemas;
+};
+
+const loadJsonSchemas = (directoryUrl: URL): Ajv2020 => {
+  const directory = fileURLToPath(directoryUrl);
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const entries = readdirSync(directory).filter((entry) =>
+    entry.endsWith(".json")
+  );
+
+  expect(entries.sort()).toEqual(
+    EXPECTED_PROVIDER_ARTIFACT_SCHEMAS.map(
+      (schemaName) => `${schemaName}.json`
+    ).sort()
+  );
+
+  for (const entry of entries) {
+    const schemaPath = join(directory, entry);
+    const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
+    ajv.addSchema(schema);
+  }
+
+  return ajv;
+};
+
+const expectSchemaValidation = (
+  ajv: Ajv2020,
+  schemaId: string,
+  value: unknown
+): void => {
+  const validate = ajv.getSchema(schemaId);
+
+  if (validate === undefined) {
+    throw new Error(`missing JSON Schema artifact ${schemaId}`);
+  }
+
+  expect(validate(value), ajv.errorsText(validate.errors)).toBe(true);
+};
+
+const expectSchemaRejection = (
+  ajv: Ajv2020,
+  schemaId: string,
+  value: unknown
+): void => {
+  const validate = ajv.getSchema(schemaId);
+
+  if (validate === undefined) {
+    throw new Error(`missing JSON Schema artifact ${schemaId}`);
+  }
+
+  expect(validate(value)).toBe(false);
+};
+
 describe("provider-api", () => {
   test("re-exports the provider-neutral seam under its canonical public name", () => {
     const chunk = {
@@ -225,79 +300,3 @@ describe("provider-api", () => {
     expect(document.paths).toEqual({});
   });
 });
-
-function loadJsonSchemas(directoryUrl: URL): Ajv2020 {
-  const directory = fileURLToPath(directoryUrl);
-  const ajv = new Ajv2020({ allErrors: true, strict: false });
-  const entries = readdirSync(directory).filter((entry) =>
-    entry.endsWith(".json")
-  );
-
-  expect(entries.sort()).toEqual(
-    EXPECTED_PROVIDER_ARTIFACT_SCHEMAS.map(
-      (schemaName) => `${schemaName}.json`
-    ).sort()
-  );
-
-  for (const entry of entries) {
-    const schemaPath = join(directory, entry);
-    const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
-    ajv.addSchema(schema);
-  }
-
-  return ajv;
-}
-
-function expectSchemaValidation(
-  ajv: Ajv2020,
-  schemaId: string,
-  value: unknown
-): void {
-  const validate = ajv.getSchema(schemaId);
-
-  if (validate === undefined) {
-    throw new Error(`missing JSON Schema artifact ${schemaId}`);
-  }
-
-  expect(validate(value), ajv.errorsText(validate.errors)).toBe(true);
-}
-
-function expectSchemaRejection(
-  ajv: Ajv2020,
-  schemaId: string,
-  value: unknown
-): void {
-  const validate = ajv.getSchema(schemaId);
-
-  if (validate === undefined) {
-    throw new Error(`missing JSON Schema artifact ${schemaId}`);
-  }
-
-  expect(validate(value)).toBe(false);
-}
-
-function readJsonObject(url: URL): Record<string, unknown> {
-  const value: unknown = JSON.parse(readFileSync(url, "utf-8"));
-
-  if (!isRecord(value)) {
-    throw new Error(`${url.pathname} must contain a JSON object`);
-  }
-
-  return value;
-}
-
-function readOpenApiSchemas(
-  document: Record<string, unknown>
-): Record<string, unknown> {
-  const { components } = document;
-
-  if (!(isRecord(components) && isRecord(components.schemas))) {
-    throw new Error("OpenAPI artifact must contain components.schemas");
-  }
-
-  return components.schemas;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
