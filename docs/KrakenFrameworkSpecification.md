@@ -1036,7 +1036,7 @@ If the interrupted assistant state is unreadable or erased, recovery MUST fail w
 
 The shared checks cover four parts of this behavior. `kernel.run-liveness.stale_preemption` checks the preemption head. `runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner` checks runner suppression. `runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set` checks dispatch of the missing calls. `runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys` checks key preservation.
 
-The TypeScript runtime recovery-plan test separately verifies that unreadable or erased assistant state fails with `runtime_recovery_interrupted_iteration_unreadable` (`typescript/runtime/test/runtime-core-recovery-plan.test.ts`). The runtime recovery integration test checks that branch history contains the original assistant message once (`typescript/runtime/test/runtime-core.recovery.test.ts`). The shared checks do not test whether an external system deduplicates effects.
+The TypeScript runtime recovery-plan test verifies that an erased assistant payload fails with `runtime_recovery_interrupted_iteration_unreadable` (`typescript/runtime/test/runtime-core-recovery-plan.test.ts`). The runtime recovery integration test checks that branch history contains the original assistant message once (`typescript/runtime/test/runtime-core.recovery.test.ts`). The shared checks do not test whether an external system deduplicates effects.
 
 ### 4.10 Error Handling
 
