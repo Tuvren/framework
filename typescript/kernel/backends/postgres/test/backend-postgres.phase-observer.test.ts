@@ -68,12 +68,12 @@ async function dumpFamilyRows(
 
   try {
     const objectRows = await admin.unsafe<
-      Array<{
+      {
         byte_length: number;
         bytes: Uint8Array;
         created_at_ms: number;
         media_type: string;
-      }>
+      }[]
     >(
       `SELECT media_type, bytes, byte_length, created_at_ms
          FROM ${qualifyIdentifier(schemaName, "objects")}
@@ -81,7 +81,7 @@ async function dumpFamilyRows(
       [DEFAULT_SCOPE, objectHash]
     );
     const schemaRows = await admin.unsafe<
-      Array<{ created_at_ms: number; schema_cbor: Uint8Array }>
+      { created_at_ms: number; schema_cbor: Uint8Array }[]
     >(
       `SELECT schema_cbor, created_at_ms
          FROM ${qualifyIdentifier(schemaName, "schemas")}
@@ -98,7 +98,7 @@ async function dumpFamilyRows(
           ? null
           : {
               byteLength: Number(objectRow.byte_length),
-              bytes: Array.from(objectRow.bytes),
+              bytes: [...objectRow.bytes],
               createdAtMs: Number(objectRow.created_at_ms),
               mediaType: objectRow.media_type,
             },
@@ -107,7 +107,7 @@ async function dumpFamilyRows(
           ? null
           : {
               createdAtMs: Number(schemaRow.created_at_ms),
-              schemaCbor: Array.from(schemaRow.schema_cbor),
+              schemaCbor: [...schemaRow.schema_cbor],
             },
     };
   } finally {
@@ -185,13 +185,13 @@ describe("@tuvren/backend-postgres phase observer seam (ADR-0067 relational pers
     expect(dumps[2]).toEqual(dumps[0]);
     expect(dumps[0]?.objectRow).toEqual({
       byteLength: objectRecord.byteLength,
-      bytes: Array.from(objectRecord.bytes),
+      bytes: [...objectRecord.bytes],
       createdAtMs: objectRecord.createdAtMs,
       mediaType: objectRecord.mediaType,
     });
     expect(dumps[0]?.schemaRow).toEqual({
       createdAtMs: schemaRecord.createdAtMs,
-      schemaCbor: Array.from(schemaRecord.schemaCbor),
+      schemaCbor: [...schemaRecord.schemaCbor],
     });
 
     await defaultBackend.destroy();

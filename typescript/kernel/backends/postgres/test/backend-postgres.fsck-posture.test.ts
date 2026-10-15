@@ -179,7 +179,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
       const admin = createAdminClient(options);
       try {
         const turnTreesTable = qualifyIdentifier(schemaName, "turn_trees");
-        const constraints = await admin.unsafe<Array<{ conname: string }>>(
+        const constraints = await admin.unsafe<{ conname: string }[]>(
           `SELECT con.conname
              FROM pg_constraint con
              JOIN pg_class cls ON cls.oid = con.conrelid
@@ -231,7 +231,7 @@ describe("@tuvren/backend-postgres fsck()/health() posture validation", () => {
       const admin = createAdminClient(options);
       try {
         const turnTreesTable = qualifyIdentifier(schemaName, "turn_trees");
-        const constraints = await admin.unsafe<Array<{ conname: string }>>(
+        const constraints = await admin.unsafe<{ conname: string }[]>(
           `SELECT con.conname
              FROM pg_constraint con
              JOIN pg_class cls ON cls.oid = con.conrelid

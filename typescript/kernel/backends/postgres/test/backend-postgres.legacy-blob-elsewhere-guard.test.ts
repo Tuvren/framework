@@ -54,7 +54,7 @@ async function dropSchema(sql: Sql, schemaName: string): Promise<void> {
 }
 
 async function schemaExists(sql: Sql, schemaName: string): Promise<boolean> {
-  const rows = await sql.unsafe<Array<{ exists: boolean }>>(
+  const rows = await sql.unsafe<{ exists: boolean }[]>(
     "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname = $1) AS exists",
     [schemaName]
   );

@@ -32,8 +32,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
 import { persistenceError } from "../src/lib/postgres-errors.js";
 import {
@@ -49,7 +48,7 @@ import {
   resolveMigrationDirectory,
 } from "../src/lib/postgres-schema.js";
 
-const TEST_DIRECTORY = dirname(fileURLToPath(import.meta.url));
+const TEST_DIRECTORY = import.meta.dirname;
 const SCHEMA_INIT_SOURCE_PATH = join(
   TEST_DIRECTORY,
   "../src/lib/postgres-schema-init.ts"
@@ -88,7 +87,7 @@ function extractAll(pattern: RegExp, sql: string): string[] {
   });
 }
 
-function loadAllMigrationSql(): Array<{ name: string; sql: string }> {
+function loadAllMigrationSql(): { name: string; sql: string }[] {
   const migrationDirectory = resolveMigrationDirectory(persistenceError);
   return listMigrationFiles(migrationDirectory).map((name) => ({
     name,
@@ -242,7 +241,7 @@ describe("relational Postgres schema DDL <-> roster agreement", () => {
     // This is the claim the first test above relies on to justify excluding
     // MIGRATIONS_TABLE from the DDL <-> roster comparison. Verify it
     // directly against the init module's source text rather than assuming it.
-    const initSource = readFileSync(SCHEMA_INIT_SOURCE_PATH, "utf8");
+    const initSource = readFileSync(SCHEMA_INIT_SOURCE_PATH, "utf-8");
 
     expect(initSource).toMatch(MIGRATIONS_TABLE_CREATE_PATTERN);
     expect(initSource).toMatch(MIGRATIONS_TABLE_BINDING_PATTERN);
