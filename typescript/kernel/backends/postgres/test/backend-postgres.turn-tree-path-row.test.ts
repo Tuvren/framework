@@ -18,10 +18,8 @@ import { describe, expect, test } from "bun:test";
 
 import { TuvrenPersistenceError } from "@tuvren/core";
 
-import {
-  decodeTurnTreePathRow,
-  type PostgresTurnTreePathRow,
-} from "../src/lib/postgres-records.js";
+import { decodeTurnTreePathRow } from "../src/lib/postgres-records.js";
+import type { PostgresTurnTreePathRow } from "../src/lib/postgres-records.js";
 
 const BASE_ROW = {
   collection_kind: "single",

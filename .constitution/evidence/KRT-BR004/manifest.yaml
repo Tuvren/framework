@@ -96,6 +96,36 @@
       "sha256": "66fb91c27c592b7b136aab4a39929d82b0b8dfc901db9cf8d26cf67973b8e760",
       "bytes": 149,
       "role": "measurement"
+    },
+    {
+      "path": "M4-summary.json",
+      "sha256": "ec26dab1eea24137334e4cd63ab787cd54d6cf8c1bb688926944b0b6df3b9bda",
+      "bytes": 2895,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-postgres-test-before-syntactic.json.gz",
+      "sha256": "a3b52ebd5b5e368775b431c54c5ac7df0901368570baa2644f2db1ea1b0bed05",
+      "bytes": 8008,
+      "role": "baseline"
+    },
+    {
+      "path": "M4-postgres-test-after-syntactic.json.gz",
+      "sha256": "d5e2759815f54c07e0ad85aaf2e97c45f84aa1fc6ac8a48f1015dc0fbff3597f",
+      "bytes": 5341,
+      "role": "measurement"
+    },
+    {
+      "path": "M4-postgres-test-before-command-stderr.log.gz",
+      "sha256": "745b29c0a83d2ab19b125dbba0af75c6210caec2fac9d5323302b1b04852fe28",
+      "bytes": 149,
+      "role": "baseline"
+    },
+    {
+      "path": "M4-postgres-test-after-command-stderr.log.gz",
+      "sha256": "eaf542e242a0ce0467031334c3c40f73b2089a59d3b682197f92df580a26f27d",
+      "bytes": 148,
+      "role": "measurement"
     }
   ],
   "pass_criteria": "Each named backend cohort preserves type and runtime behavior while diagnostics ratchet down; final admission proves exact native code and JSON ownership, reconciles all suppression identities, and passes the full lint gate."

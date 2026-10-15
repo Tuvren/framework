@@ -1,0 +1,68 @@
+{
+  "milestone": "M4",
+  "ticket": "KRT-BR001",
+  "cohort": "typescript/kernel/backends/postgres/test",
+  "baseline_commit": "246e9081a2496530389a3d28ee20f968e324ea0e",
+  "tool": {
+    "name": "oxlint",
+    "version": "1.86.0",
+    "safe_fix_command": "bunx --bun oxlint --fix typescript/kernel/backends/postgres/test"
+  },
+  "diagnostics": {
+    "before": 261,
+    "after": 195,
+    "reduction": 66
+  },
+  "changed_files": [
+    "typescript/kernel/backends/postgres/test/backend-postgres.blob-migration.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.delta-write.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.fsck-posture.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.init-error-normalization.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.legacy-blob-elsewhere-guard.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.lock-timeout.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.phase-observer.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.schema-roster-agreement.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.scope-isolation.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-chunk-aware-writes.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.turn-tree-path-row.test.ts",
+    "typescript/kernel/backends/postgres/test/backend-postgres.unstorable-text.test.ts",
+    "typescript/kernel/backends/postgres/test/postgres-test-helpers.ts"
+  ],
+  "verification": [
+    {
+      "command": "bun run nx run backend-postgres:typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "flock /tmp/tuvren-wave-1-verification.lock ... bun run nx run backend-postgres:test",
+      "result": "pass",
+      "tests": 103,
+      "assertions": 361
+    },
+    {
+      "command": "bun run nx run backend-postgres:lint",
+      "result": "pass",
+      "retained_biome_files": 55
+    },
+    {
+      "command": "bun run typecheck",
+      "result": "pass",
+      "projects": 33,
+      "prerequisites": 1
+    },
+    {
+      "command": "bunx --bun oxfmt --check typescript/kernel/backends/postgres/test",
+      "result": "pass"
+    },
+    {
+      "command": "bun run changeset:check --base=master",
+      "result": "pass"
+    }
+  ],
+  "notes": [
+    "Only Oxlint safe fixes were used; suggestion and dangerous fix modes were not used.",
+    "Required explicit undefined arguments and returns removed by the fixer were restored before verification.",
+    "The lead reran the PostgreSQL suite under the shared lock after the worker's wrapper omitted its final console frame.",
+    "No production source, public signature, collection semantics, runtime authority, lint target, dependency, contract shape, repository pattern, or convention changed."
+  ]
+}

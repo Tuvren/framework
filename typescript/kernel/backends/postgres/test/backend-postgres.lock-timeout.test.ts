@@ -96,7 +96,7 @@ describe("@tuvren/backend-postgres connection-wide lock_timeout startup paramete
 
   test("fsck() fails within the bounded lock_timeout instead of hanging when another session holds a conflicting ACCESS EXCLUSIVE table lock", async () => {
     const options = createPostgresTestBackendOptions();
-    const schemaName = options.schemaName;
+    const { schemaName } = options;
     if (schemaName === undefined) {
       throw new Error(
         "expected createPostgresTestBackendOptions to allocate a schema name"
@@ -148,7 +148,7 @@ describe("@tuvren/backend-postgres connection-wide lock_timeout startup paramete
 
   test("health() fails within the bounded lock_timeout instead of hanging when another session holds a conflicting ACCESS EXCLUSIVE table lock", async () => {
     const options = createPostgresTestBackendOptions();
-    const schemaName = options.schemaName;
+    const { schemaName } = options;
     if (schemaName === undefined) {
       throw new Error(
         "expected createPostgresTestBackendOptions to allocate a schema name"

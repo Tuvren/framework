@@ -48,8 +48,10 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
   encodeDeterministicKernelRecord,
   hashKernelRecord,
-  type StoredObserveAnnotation,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  StoredObserveAnnotation,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
@@ -351,7 +353,7 @@ describe("@tuvren/backend-postgres btree index-row-size boundary validation", ()
       // it through, so this proves the NUL check still runs (and still
       // wins) ahead of the length check.
       const almostAtBoundWithNul = `${"a".repeat(255)}${NUL}${"a".repeat(255)}`;
-      expect(Buffer.byteLength(almostAtBoundWithNul, "utf8")).toBeLessThan(
+      expect(Buffer.byteLength(almostAtBoundWithNul, "utf-8")).toBeLessThan(
         MAX_STORABLE_TEXT_BYTES
       );
 

@@ -45,7 +45,7 @@ afterAll(async () => {
 describe("@tuvren/backend-postgres schema-initialization error normalization", () => {
   test("transact() rejects with a normalized postgres_backend_engine_error, not a raw driver error, when schema init collides with a pre-existing conflicting table", async () => {
     const options = createPostgresTestBackendOptions();
-    const schemaName = options.schemaName;
+    const { schemaName } = options;
     if (schemaName === undefined) {
       throw new Error(
         "expected createPostgresTestBackendOptions to allocate a schema name"

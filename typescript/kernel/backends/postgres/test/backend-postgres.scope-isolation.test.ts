@@ -187,7 +187,7 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
     await scopeA.transact(async (tx) => {
       expect(await tx.objects.has(record.hash)).toBe(true);
       const stored = await tx.objects.get(record.hash);
-      expect(Array.from(stored?.bytes ?? [])).toEqual([1, 2, 3]);
+      expect([...(stored?.bytes ?? [])]).toEqual([1, 2, 3]);
     });
 
     await closeBackend(scopeA);
@@ -202,7 +202,7 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
     const threadId = await seedThread(scopeA, "thread_a", 100);
 
     await scopeB.transact(async (tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       expect(list).toBeDefined();
       const listed = await list?.({});
       expect(listed?.threads ?? []).toEqual([]);
@@ -210,7 +210,7 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
     });
 
     await scopeA.transact(async (tx) => {
-      const list = tx.threads.list;
+      const { list } = tx.threads;
       expect(list).toBeDefined();
       const listed = await list?.({});
       expect((listed?.threads ?? []).map((thread) => thread.threadId)).toEqual([
@@ -393,7 +393,7 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
 
     const verify = createAdminClient(baseOptions);
     try {
-      const snapshotTables = await verify.unsafe<Array<{ table_name: string }>>(
+      const snapshotTables = await verify.unsafe<{ table_name: string }[]>(
         `SELECT table_name
            FROM information_schema.tables
           WHERE table_schema = $1
@@ -402,13 +402,13 @@ describe("@tuvren/backend-postgres scope isolation (KRT-BE005)", () => {
       );
       expect(snapshotTables.length).toBe(0);
 
-      const objectRows = await verify.unsafe<Array<{ hash: string }>>(
+      const objectRows = await verify.unsafe<{ hash: string }[]>(
         `SELECT hash FROM ${objectsTable} WHERE scope = $1`,
         [DEFAULT_SCOPE]
       );
       expect(objectRows.map((row) => row.hash)).toEqual([record.hash]);
 
-      const migrationRows = await verify.unsafe<Array<{ name: string }>>(
+      const migrationRows = await verify.unsafe<{ name: string }[]>(
         `SELECT name FROM ${migrationsTable} ORDER BY name`
       );
       expect(migrationRows.map((row) => row.name)).toContain(

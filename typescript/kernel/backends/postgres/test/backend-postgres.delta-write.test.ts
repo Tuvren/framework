@@ -101,7 +101,7 @@ async function readObjectRowTransactionId(
   hash: string
 ): Promise<string> {
   const objectsTable = `${quoteIdentifier(schemaName)}.${quoteIdentifier("objects")}`;
-  const rows = await admin.unsafe<Array<{ tx: string }>>(
+  const rows = await admin.unsafe<{ tx: string }[]>(
     `SELECT xmin::text AS tx FROM ${objectsTable} WHERE scope = $1 AND hash = $2`,
     [scope, hash]
   );
@@ -128,7 +128,7 @@ async function countRowsWrittenByTransaction(
 
   for (const table of RELATIONAL_REQUIRED_TABLES) {
     const qualified = `${quoteIdentifier(schemaName)}.${quoteIdentifier(table)}`;
-    const rows = await admin.unsafe<Array<{ n: string }>>(
+    const rows = await admin.unsafe<{ n: string }[]>(
       `SELECT count(*)::text AS n FROM ${qualified} WHERE scope = $1 AND xmin::text = $2`,
       [scope, transactionId]
     );
@@ -168,16 +168,16 @@ const DELTA_WRITE_CASES: readonly DeltaWriteCase[] = [
     description:
       "writing one new object into a 1,000-object scope touches exactly one row across every family table",
     scope: "delta-write-large-scope",
-    seedCount: 1000,
     seedBatchSize: 100,
+    seedCount: 1000,
     timeoutMs: 30_000,
   },
   {
     description:
       "writing one new object into a tiny 10-object scope also touches exactly one row, making the flatness explicit",
     scope: "delta-write-tiny-scope",
-    seedCount: 10,
     seedBatchSize: 10,
+    seedCount: 10,
     timeoutMs: 10_000,
   },
 ];

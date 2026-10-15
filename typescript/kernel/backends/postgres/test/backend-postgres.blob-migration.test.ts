@@ -35,28 +35,25 @@ import { DEFAULT_SCOPE } from "@tuvren/core";
 import {
   encodeDeterministicKernelRecord,
   hashKernelRecord,
-  type StoredObserveAnnotation,
-  type StoredOrderedPathChunk,
-  type StoredRun,
-  type StoredSchema,
-  type StoredStagedResult,
-  type StoredTurnNode,
-  type StoredTurnTree,
-  type StoredTurnTreePath,
-  type TurnTreeSchema,
+} from "@tuvren/kernel-protocol";
+import type {
+  StoredObserveAnnotation,
+  StoredOrderedPathChunk,
+  StoredRun,
+  StoredSchema,
+  StoredStagedResult,
+  StoredTurnNode,
+  StoredTurnTree,
+  StoredTurnTreePath,
+  TurnTreeSchema,
 } from "@tuvren/kernel-protocol";
 import { createRuntimeKernel } from "@tuvren/kernel-runtime";
 
-import {
-  createPostgresBackend,
-  type PostgresBackendOptions,
-} from "../src/index.js";
+import { createPostgresBackend } from "../src/index.js";
+import type { PostgresBackendOptions } from "../src/index.js";
 import { CURRENT_SNAPSHOT_VERSION } from "../src/lib/postgres-legacy-snapshot-decode.js";
-import {
-  type BackendState,
-  createEmptyState,
-  loadState,
-} from "../src/lib/postgres-records.js";
+import { createEmptyState, loadState } from "../src/lib/postgres-records.js";
+import type { BackendState } from "../src/lib/postgres-records.js";
 import type { RelationalTableName } from "../src/lib/postgres-schema.js";
 import { qualifyIdentifier, quoteIdentifier } from "../src/lib/postgres-sql.js";
 import { areBytesEqual } from "../src/lib/postgres-state-utils.js";
@@ -201,7 +198,7 @@ function encodeLegacySnapshotForTest(state: BackendState): Uint8Array {
       ...record,
       bytes: plainBytes(record.bytes),
     })),
-    observeAnnotations: Array.from(state.observeAnnotations.values())
+    observeAnnotations: [...state.observeAnnotations.values()]
       .flat()
       .map(toPlainStoredObserveAnnotation),
     orderedPathChunks: Array.from(
@@ -210,12 +207,12 @@ function encodeLegacySnapshotForTest(state: BackendState): Uint8Array {
     ),
     runs: Array.from(state.runs.values(), toPlainStoredRun),
     schemas: Array.from(state.schemas.values(), toPlainStoredSchema),
-    stagedResults: Array.from(state.stagedResults.values()).flatMap((byTask) =>
+    stagedResults: [...state.stagedResults.values()].flatMap((byTask) =>
       Array.from(byTask.values(), toPlainStoredStagedResult)
     ),
     threads: Array.from(state.threads.values(), (record) => ({ ...record })),
     turnNodes: Array.from(state.turnNodes.values(), toPlainStoredTurnNode),
-    turnTreePaths: Array.from(state.turnTreePaths.values()).flatMap((byPath) =>
+    turnTreePaths: [...state.turnTreePaths.values()].flatMap((byPath) =>
       Array.from(byPath.values(), toPlainStoredTurnTreePath)
     ),
     turnTrees: Array.from(state.turnTrees.values(), toPlainStoredTurnTree),
@@ -531,7 +528,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
     const verify = createAdminClient(targetOptions);
     try {
       // The legacy blob table is retired after migration.
-      const snapshotTables = await verify.unsafe<Array<{ table_name: string }>>(
+      const snapshotTables = await verify.unsafe<{ table_name: string }[]>(
         `SELECT table_name
            FROM information_schema.tables
           WHERE table_schema = $1
@@ -557,7 +554,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
 
       for (const [table, expectedCount] of simpleFamilyCounts) {
         const qualifiedTable = qualifyIdentifier(targetSchemaName, table);
-        const rows = await verify.unsafe<Array<{ count: number }>>(
+        const rows = await verify.unsafe<{ count: number }[]>(
           `SELECT COUNT(*)::int AS count FROM ${qualifiedTable} WHERE scope = $1`,
           [DEFAULT_SCOPE]
         );
@@ -566,22 +563,22 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
 
       // observe_annotations: total count, plus the duplicate-identity pair
       // specifically (distinct record_keys, no NUL byte, matching content).
-      const expectedAnnotationCount = Array.from(
-        state.observeAnnotations.values()
-      ).reduce((total, records) => total + records.length, 0);
+      const expectedAnnotationCount = [
+        ...state.observeAnnotations.values(),
+      ].reduce((total, records) => total + records.length, 0);
       const annotationTable = qualifyIdentifier(
         targetSchemaName,
         "observe_annotations"
       );
       const annotationRows = await verify.unsafe<
-        Array<{
+        {
           annotation_cbor: Uint8Array;
           annotation_hash: string;
           created_at_ms: number;
           record_key: string;
           run_id: string;
           turn_node_hash: string | null;
-        }>
+        }[]
       >(
         `SELECT record_key, run_id, annotation_hash, turn_node_hash, created_at_ms, annotation_cbor
            FROM ${annotationTable}
@@ -612,12 +609,12 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
 
       // Spot-check content equality on at least one record per family.
       const runRow = await verify.unsafe<
-        Array<{
+        {
           branch_id: string;
           current_step_index: number;
           schema_id: string;
           status: string;
-        }>
+        }[]
       >(
         `SELECT branch_id, schema_id, status, current_step_index
            FROM ${qualifyIdentifier(targetSchemaName, "runs")}
@@ -636,7 +633,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       );
 
       const threadRow = await verify.unsafe<
-        Array<{ root_turn_node_hash: string; schema_id: string }>
+        { root_turn_node_hash: string; schema_id: string }[]
       >(
         `SELECT root_turn_node_hash, schema_id
            FROM ${qualifyIdentifier(targetSchemaName, "threads")}
@@ -646,9 +643,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       expect(threadRow[0]?.root_turn_node_hash).toBe(thread.rootTurnNodeHash);
       expect(threadRow[0]?.schema_id).toBe(schemaId);
 
-      const branchRow = await verify.unsafe<
-        Array<{ head_turn_node_hash: string }>
-      >(
+      const branchRow = await verify.unsafe<{ head_turn_node_hash: string }[]>(
         `SELECT head_turn_node_hash
            FROM ${qualifyIdentifier(targetSchemaName, "branches")}
           WHERE scope = $1 AND branch_id = $2`,
@@ -657,7 +652,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       expect(branchRow[0]?.head_turn_node_hash).toBe(lastTurnNodeHash);
 
       const turnRow = await verify.unsafe<
-        Array<{ head_turn_node_hash: string; start_turn_node_hash: string }>
+        { head_turn_node_hash: string; start_turn_node_hash: string }[]
       >(
         `SELECT start_turn_node_hash, head_turn_node_hash
            FROM ${qualifyIdentifier(targetSchemaName, "turns")}
@@ -668,10 +663,10 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       expect(turnRow[0]?.head_turn_node_hash).toBe(lastTurnNodeHash);
 
       const turnNodeRow = await verify.unsafe<
-        Array<{
+        {
           consumed_staged_results_cbor: Uint8Array;
           previous_turn_node_hash: string | null;
-        }>
+        }[]
       >(
         `SELECT previous_turn_node_hash, consumed_staged_results_cbor
            FROM ${qualifyIdentifier(targetSchemaName, "turn_nodes")}
@@ -692,7 +687,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
         )
       ).toBe(true);
 
-      const schemaRow = await verify.unsafe<Array<{ schema_cbor: Uint8Array }>>(
+      const schemaRow = await verify.unsafe<{ schema_cbor: Uint8Array }[]>(
         `SELECT schema_cbor
            FROM ${qualifyIdentifier(targetSchemaName, "schemas")}
           WHERE scope = $1 AND schema_id = $2`,
@@ -711,12 +706,12 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
         throw new Error("expected at least one seeded object");
       }
       const objectRow = await verify.unsafe<
-        Array<{
+        {
           byte_length: number;
           bytes: Uint8Array;
           created_at_ms: number;
           media_type: string;
-        }>
+        }[]
       >(
         `SELECT media_type, bytes, byte_length, created_at_ms
            FROM ${qualifyIdentifier(targetSchemaName, "objects")}
@@ -741,7 +736,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
         throw new Error("expected at least one seeded ordered path chunk");
       }
       const chunkRow = await verify.unsafe<
-        Array<{ item_count: number; items_cbor: Uint8Array }>
+        { item_count: number; items_cbor: Uint8Array }[]
       >(
         `SELECT item_count, items_cbor
            FROM ${qualifyIdentifier(targetSchemaName, "ordered_path_chunks")}
@@ -757,7 +752,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       ).toBe(true);
 
       const chunkedPathRow = await verify.unsafe<
-        Array<{ ordered_count: number; ordered_encoding: string | null }>
+        { ordered_count: number; ordered_encoding: string | null }[]
       >(
         `SELECT ordered_encoding, ordered_count
            FROM ${qualifyIdentifier(targetSchemaName, "turn_tree_paths")}
@@ -770,7 +765,7 @@ describe("@tuvren/backend-postgres blob->row migration full-family coverage (ADR
       );
 
       const stagedRow = await verify.unsafe<
-        Array<{ interrupt_payload_cbor: Uint8Array | null; status: string }>
+        { interrupt_payload_cbor: Uint8Array | null; status: string }[]
       >(
         `SELECT status, interrupt_payload_cbor
            FROM ${qualifyIdentifier(targetSchemaName, "staged_results")}
@@ -914,13 +909,13 @@ describe("@tuvren/backend-postgres blob->row migration multi-scope coverage", ()
           expectedBetaCount,
         ] of simpleFamilyCounts) {
           const qualifiedTable = qualifyIdentifier(targetSchemaName, table);
-          const alphaRows = await verify.unsafe<Array<{ count: number }>>(
+          const alphaRows = await verify.unsafe<{ count: number }[]>(
             `SELECT COUNT(*)::int AS count FROM ${qualifiedTable} WHERE scope = $1`,
             [scopeAlpha]
           );
           expect(Number(alphaRows[0]?.count ?? -1)).toBe(expectedAlphaCount);
 
-          const betaRows = await verify.unsafe<Array<{ count: number }>>(
+          const betaRows = await verify.unsafe<{ count: number }[]>(
             `SELECT COUNT(*)::int AS count FROM ${qualifiedTable} WHERE scope = $1`,
             [scopeBeta]
           );
@@ -931,32 +926,30 @@ describe("@tuvren/backend-postgres blob->row migration multi-scope coverage", ()
         // leakage check: scope alpha's rows carry scope alpha's thread id,
         // never scope beta's, and vice versa.
         const threadsTable = qualifyIdentifier(targetSchemaName, "threads");
-        const alphaThreadRows = await verify.unsafe<
-          Array<{ thread_id: string }>
-        >(`SELECT thread_id FROM ${threadsTable} WHERE scope = $1`, [
-          scopeAlpha,
-        ]);
+        const alphaThreadRows = await verify.unsafe<{ thread_id: string }[]>(
+          `SELECT thread_id FROM ${threadsTable} WHERE scope = $1`,
+          [scopeAlpha]
+        );
         expect(alphaThreadRows.map((row) => row.thread_id)).toEqual([
           "thread_multi_alpha",
         ]);
 
-        const betaThreadRows = await verify.unsafe<
-          Array<{ thread_id: string }>
-        >(`SELECT thread_id FROM ${threadsTable} WHERE scope = $1`, [
-          scopeBeta,
-        ]);
+        const betaThreadRows = await verify.unsafe<{ thread_id: string }[]>(
+          `SELECT thread_id FROM ${threadsTable} WHERE scope = $1`,
+          [scopeBeta]
+        );
         expect(betaThreadRows.map((row) => row.thread_id)).toEqual([
           "thread_multi_beta",
         ]);
 
-        const crossLeakAlpha = await verify.unsafe<Array<{ count: number }>>(
+        const crossLeakAlpha = await verify.unsafe<{ count: number }[]>(
           `SELECT COUNT(*)::int AS count FROM ${threadsTable}
             WHERE scope = $1 AND thread_id = $2`,
           [scopeAlpha, "thread_multi_beta"]
         );
         expect(Number(crossLeakAlpha[0]?.count ?? -1)).toBe(0);
 
-        const crossLeakBeta = await verify.unsafe<Array<{ count: number }>>(
+        const crossLeakBeta = await verify.unsafe<{ count: number }[]>(
           `SELECT COUNT(*)::int AS count FROM ${threadsTable}
             WHERE scope = $1 AND thread_id = $2`,
           [scopeBeta, "thread_multi_alpha"]
@@ -1229,7 +1222,7 @@ describe("@tuvren/backend-postgres observe annotation duplicate identity (live w
 
       const admin = createAdminClient(options);
       try {
-        const rows = await admin.unsafe<Array<{ record_key: string }>>(
+        const rows = await admin.unsafe<{ record_key: string }[]>(
           `SELECT record_key
              FROM ${qualifyIdentifier(schemaName, "observe_annotations")}
             WHERE scope = $1 AND run_id = $2
