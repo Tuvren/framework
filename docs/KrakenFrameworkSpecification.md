@@ -1026,7 +1026,7 @@ Paused approval Runs are not stale-running candidates. Host-configured approval 
 
 **Crash leaving a leased `running` Run**: If the lease remains valid, another owner MUST NOT resume the Run. If the lease is expired, shared core may recover only through kernel stale-running preemption. Paused approval Runs are excluded from this path.
 
-After successful stale-running preemption, the kernel reactively checkpoints the stale Run's staged work. The resulting TurnNode becomes the Branch Head. Its `consumedStagedResults` field contains the assistant message and every tool-result message that the stale Run staged. The returned recovery head equals that Branch Head, and `uncommittedStagedResults` is empty. The framework creates a replacement Run from this committed head.
+For an interrupted tool batch with durable staged work, successful stale-running preemption reactively checkpoints that work (kernel §5.6). The resulting TurnNode becomes the Branch Head. Its `consumedStagedResults` field contains the assistant message and each tool-result message staged by the stale Run. The returned recovery head equals the Branch Head, and `uncommittedStagedResults` is empty. The framework creates a replacement Run from this committed head. If staging is empty, preemption stops without creating a checkpoint or TurnNode.
 
 For an interrupted tool batch, the replacement Run MUST NOT invoke the runner for the recovered iteration. It MUST resume only calls that have no durable result. It redispatches every missing call with its original `callId`, including a call marked `nonRetryable`. The `nonRetryable` flag prevents a live owner from retrying an in-flight call after losing authority. It does not permit cold recovery to omit a missing logical call.
 
@@ -1034,7 +1034,9 @@ Each redispatch MUST present the same `(turnId, callId)` idempotency key as the 
 
 If the interrupted assistant state is unreadable or erased, recovery MUST fail with `TuvrenRecoveryError` code `runtime_recovery_interrupted_iteration_unreadable`. It MUST NOT re-invoke the model and mint replacement call identities.
 
-The shared checks `kernel.run-liveness.stale_preemption`, `runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner`, `runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set`, and `runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys` certify these rules.
+The shared checks cover four parts of this behavior. `kernel.run-liveness.stale_preemption` checks the preemption head. `runtime-lifecycle-ext.stale-recovery.interrupted-batch-skips-runner` checks runner suppression. `runtime-lifecycle-ext.stale-recovery.interrupted-batch-dispatches-missing-set` checks dispatch of the missing calls. `runtime-lifecycle-ext.stale-recovery.interrupted-batch-preserves-idempotency-keys` checks key preservation.
+
+The TypeScript runtime recovery-plan test separately verifies that unreadable or erased assistant state fails with `runtime_recovery_interrupted_iteration_unreadable` (`typescript/runtime/test/runtime-core-recovery-plan.test.ts`). The runtime recovery integration test checks that branch history contains the original assistant message once (`typescript/runtime/test/runtime-core.recovery.test.ts`). The shared checks do not test whether an external system deduplicates effects.
 
 ### 4.10 Error Handling
 

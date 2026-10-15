@@ -5,3 +5,5 @@ Framework specification section 4.9 now defines the reactive-checkpoint head aft
 The specification cites the kernel stale-preemption check and the three promoted lifecycle checks. The direct patch changeset covers only `@tuvren/runtime`.
 
 The authority-freeze generator classified 267 claims and modified six of the seven allowed report files. The kernel-backend provider-local report remained byte-identical. No other constitution path changed. Lead verification passed the full conformance fleet, freeze generation and freshness check, direct changeset coverage, and repository diff validation.
+
+Milestone review narrowed two claims. Reactive checkpointing applies when the interrupted batch has durable staged work; empty staging stops without a checkpoint. The four shared checks certify the preemption head, runner suppression, missing-call dispatch, and key preservation. Runtime tests separately cover unreadable or erased state and a single original assistant message. External-system deduplication remains an integration obligation rather than a tested claim. Regenerated freeze outputs and changeset verification pass after the correction.
