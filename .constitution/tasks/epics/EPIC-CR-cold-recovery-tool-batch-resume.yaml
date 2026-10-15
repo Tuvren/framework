@@ -64,7 +64,7 @@ tickets:
     flows: [flow-crash-mid-checkpoint-recovery, flow-preemption-idempotent-side-effect]
     spike: SPK-KRT-CR001
     certainty: assumed
-    status: planned
+    status: done
   - id: KRT-CR002
     title: Derive the unfinished tool calls of an interrupted iteration
     type: Feature

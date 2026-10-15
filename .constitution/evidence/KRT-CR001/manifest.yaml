@@ -1,0 +1,12 @@
+owner: KRT-CR001
+mode: contract_test
+produced:
+  date: 2026-10-15
+  commit: 16834aab351659788c56435de70f8969cabdfe7f
+  command: LC_ALL=C flock /tmp/tuvren-wave-1-verification.lock direnv exec . env PGHOST=/run/user/1000/devenv-3ea1e50/postgres PGPORT=5432 bun run check
+files:
+  - path: research-summary.md
+    sha256: 59697a26feb900d9139fb0e9cf07164c8e960e85483210c6bd69b2c54466a3e9
+    bytes: 1459
+    role: measurement
+pass_criteria: The spike cites every certified kernel implementation and shared conformance authority, states the successful preemptExpired head and uncommitted-result shape, defines decoded callId fulfillment matching, specifies the KRT-CR002 characterization test, triggers no stop condition, and the lead repository check exits 0.
