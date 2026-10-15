@@ -208,6 +208,277 @@ export interface BackendInvariantRecordUtils {
   validateHashString(hash: string): string;
 }
 
+/** Copies a byte array so a caller mutating the result cannot corrupt stored state. */
+export const cloneBytes = (bytes: Uint8Array): Uint8Array => {
+  return Uint8Array.from(bytes);
+};
+
+/**
+ * Default administrative expiry horizon (ms) for a leaseless running run with
+ * no recent activity — see isExpiredLeaselessRunningRun.
+ */
+export const LEASELESS_RUN_EXPIRY_MS = 86_400_000; // 24h
+
+/**
+ * A leaseless running run (no executionOwnerId/fencingToken/leaseExpiresAtMs
+ * at all) whose updatedAtMs has not advanced in at least
+ * leaselessRunExpiryMs is treated as abandoned by a crashed/disconnected
+ * creator. Unlike isExpiredLeasedRunningRun, this is judged on last-activity
+ * time (updatedAtMs), not an explicit expiry field, since a leaseless run has
+ * no such field. Only "running" is eligible — a "paused" run is an orderly,
+ * intentional state and never auto-expires this way.
+ */
+export const isExpiredLeaselessRunningRun = (
+  run: StoredRun,
+  nowMs: EpochMs,
+  leaselessRunExpiryMs: number = LEASELESS_RUN_EXPIRY_MS
+): boolean => {
+  return (
+    run.status === "running" &&
+    run.executionOwnerId === undefined &&
+    run.fencingToken === undefined &&
+    run.leaseExpiresAtMs === undefined &&
+    nowMs - run.updatedAtMs >= leaselessRunExpiryMs
+  );
+};
+
+/** Byte-for-byte equality of two `Uint8Array`s. */
+export const areBytesEqual = (left: Uint8Array, right: Uint8Array): boolean => {
+  if (left.byteLength !== right.byteLength) {
+    return false;
+  }
+
+  for (let index = 0; index < left.byteLength; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+// Equality helpers below compare a stored record's full field set
+// (byte-for-byte for any CBOR payload), letting a backend's
+// ensureImmutableRecordMatch tell a legitimate idempotent rewrite of a
+// content-addressed record apart from a genuine mutation attempt.
+
+export const areStoredObjectsEqual = (
+  left: StoredObject,
+  right: StoredObject
+): boolean => {
+  return (
+    left.hash === right.hash &&
+    left.mediaType === right.mediaType &&
+    left.byteLength === right.byteLength &&
+    left.createdAtMs === right.createdAtMs &&
+    areBytesEqual(left.bytes, right.bytes)
+  );
+};
+
+export const areStoredSchemasEqual = (
+  left: StoredSchema,
+  right: StoredSchema
+): boolean => {
+  return (
+    left.schemaId === right.schemaId &&
+    left.createdAtMs === right.createdAtMs &&
+    areBytesEqual(left.schemaCbor, right.schemaCbor)
+  );
+};
+
+export const areStoredTurnTreesEqual = (
+  left: StoredTurnTree,
+  right: StoredTurnTree
+): boolean => {
+  return (
+    left.hash === right.hash &&
+    left.schemaId === right.schemaId &&
+    left.createdAtMs === right.createdAtMs &&
+    areBytesEqual(left.manifestCbor, right.manifestCbor)
+  );
+};
+
+export const areStoredOrderedPathChunksEqual = (
+  left: StoredOrderedPathChunk,
+  right: StoredOrderedPathChunk
+): boolean => {
+  return (
+    left.chunkHash === right.chunkHash &&
+    left.itemCount === right.itemCount &&
+    left.createdAtMs === right.createdAtMs &&
+    areBytesEqual(left.itemsCbor, right.itemsCbor)
+  );
+};
+
+export const areStoredTurnNodesEqual = (
+  left: StoredTurnNode,
+  right: StoredTurnNode
+): boolean => {
+  return (
+    left.hash === right.hash &&
+    left.previousTurnNodeHash === right.previousTurnNodeHash &&
+    left.turnTreeHash === right.turnTreeHash &&
+    left.schemaId === right.schemaId &&
+    left.eventHash === right.eventHash &&
+    left.createdAtMs === right.createdAtMs &&
+    areBytesEqual(
+      left.consumedStagedResultsCbor,
+      right.consumedStagedResultsCbor
+    )
+  );
+};
+
+export const areStoredThreadsEqual = (
+  left: StoredThread,
+  right: StoredThread
+): boolean => {
+  return (
+    left.threadId === right.threadId &&
+    left.createdAtMs === right.createdAtMs &&
+    left.schemaId === right.schemaId &&
+    left.rootTurnNodeHash === right.rootTurnNodeHash
+  );
+};
+
+export const areStoredStagedResultsEqual = (
+  left: StoredStagedResult,
+  right: StoredStagedResult
+): boolean => {
+  if (
+    left.runId !== right.runId ||
+    left.taskId !== right.taskId ||
+    left.objectHash !== right.objectHash ||
+    left.objectType !== right.objectType ||
+    left.status !== right.status ||
+    left.createdAtMs !== right.createdAtMs
+  ) {
+    return false;
+  }
+
+  if (left.status === "interrupted" && right.status === "interrupted") {
+    return areBytesEqual(left.interruptPayloadCbor, right.interruptPayloadCbor);
+  }
+
+  return left.status !== "interrupted" && right.status !== "interrupted";
+};
+
+export const areStoredTurnTreePathsEqual = (
+  left: StoredTurnTreePath,
+  right: StoredTurnTreePath
+): boolean => {
+  if (
+    left.turnTreeHash !== right.turnTreeHash ||
+    left.path !== right.path ||
+    left.collectionKind !== right.collectionKind
+  ) {
+    return false;
+  }
+
+  if (left.collectionKind === "single" && right.collectionKind === "single") {
+    return left.singleHash === right.singleHash;
+  }
+
+  if (left.collectionKind === "ordered" && right.collectionKind === "ordered") {
+    if (
+      left.orderedEncoding !== right.orderedEncoding ||
+      left.orderedCount !== right.orderedCount
+    ) {
+      return false;
+    }
+
+    if (left.orderedEncoding === "flat" && right.orderedEncoding === "flat") {
+      return areBytesEqual(left.orderedInlineCbor, right.orderedInlineCbor);
+    }
+
+    if (
+      left.orderedEncoding === "chunked" &&
+      right.orderedEncoding === "chunked"
+    ) {
+      return areBytesEqual(
+        left.orderedChunkListCbor,
+        right.orderedChunkListCbor
+      );
+    }
+  }
+
+  return false;
+};
+
+/** Shared ordering: `leftTimestamp`/`rightTimestamp` first, then key. */
+export const compareByTimestampAndKey = (
+  leftTimestamp: number,
+  rightTimestamp: number,
+  leftKey: string,
+  rightKey: string
+): number => {
+  if (leftTimestamp !== rightTimestamp) {
+    return leftTimestamp - rightTimestamp;
+  }
+
+  return leftKey.localeCompare(rightKey);
+};
+
+// Comparator helpers below give every listing endpoint a stable,
+// deterministic order: primarily by `createdAtMs`, falling back to the
+// record's identity key to break ties between same-millisecond writes.
+
+export const compareStoredBranch = (
+  left: StoredBranch,
+  right: StoredBranch
+): number => {
+  return compareByTimestampAndKey(
+    left.createdAtMs,
+    right.createdAtMs,
+    left.branchId,
+    right.branchId
+  );
+};
+
+export const compareStoredRun = (left: StoredRun, right: StoredRun): number => {
+  return compareByTimestampAndKey(
+    left.createdAtMs,
+    right.createdAtMs,
+    left.runId,
+    right.runId
+  );
+};
+
+export const compareStoredObserveAnnotation = (
+  left: StoredObserveAnnotation,
+  right: StoredObserveAnnotation
+): number => {
+  return compareByTimestampAndKey(
+    left.createdAtMs,
+    right.createdAtMs,
+    left.annotationHash,
+    right.annotationHash
+  );
+};
+
+export const compareStoredTurn = (
+  left: StoredTurn,
+  right: StoredTurn
+): number => {
+  return compareByTimestampAndKey(
+    left.createdAtMs,
+    right.createdAtMs,
+    left.turnId,
+    right.turnId
+  );
+};
+
+export const compareStoredStagedResult = (
+  left: StoredStagedResult,
+  right: StoredStagedResult
+): number => {
+  return compareByTimestampAndKey(
+    left.createdAtMs,
+    right.createdAtMs,
+    left.taskId,
+    right.taskId
+  );
+};
+
 /**
  * Builds the record-utils invariant surface (immutability assertions,
  * existence checks, clone/equality/compare helpers, and the shared
@@ -216,30 +487,30 @@ export interface BackendInvariantRecordUtils {
  * prefix baked into `${errorPrefix}_backend_<reason>` codes; every other
  * behavior is identical across backends.
  */
-export function createBackendInvariantRecordUtils(
+export const createBackendInvariantRecordUtils = (
   config: BackendInvariantRecordUtilsConfig
-): BackendInvariantRecordUtils {
-  function code(suffix: string): string {
+): BackendInvariantRecordUtils => {
+  const code = (suffix: string): string => {
     return `${config.errorPrefix}_backend_${suffix}`;
-  }
+  };
 
   const cloneEncodedBytes = config.cloneEncodedBytes ?? cloneBytes;
 
-  function persistenceError(
+  const persistenceError = (
     message: string,
     errorCode: string,
     details?: unknown
-  ): TuvrenPersistenceError {
+  ): TuvrenPersistenceError => {
     return new TuvrenPersistenceError(message, {
       code: errorCode,
       details,
     });
-  }
+  };
 
-  function assertRunStatusTransition(
+  const assertRunStatusTransition = (
     previousStatus: StoredRun["status"],
     nextStatus: StoredRun["status"]
-  ): void {
+  ): void => {
     if (previousStatus === nextStatus) {
       return;
     }
@@ -264,62 +535,77 @@ export function createBackendInvariantRecordUtils(
         }
       );
     }
-  }
+  };
 
-  function assertImmutableField<T>(
+  const assertImmutableField = <T>(
     previousValue: T,
     nextValue: T,
     label: string,
     fieldCode: string
-  ): void {
+  ): void => {
     if (previousValue !== nextValue) {
       throw persistenceError(`${label} must remain immutable`, fieldCode, {
         nextValue,
         previousValue,
       });
     }
-  }
+  };
 
-  function assertImmutableOptionalField<T>(
+  const assertImmutableOptionalField = <T>(
     previousValue: T | undefined,
     nextValue: T | undefined,
     label: string,
     fieldCode: string
-  ): void {
+  ): void => {
     if (previousValue !== nextValue) {
       throw persistenceError(`${label} must remain immutable`, fieldCode, {
         nextValue,
         previousValue,
       });
     }
-  }
+  };
 
-  function assertImmutableBytes(
+  const assertImmutableBytes = (
     previousValue: Uint8Array,
     nextValue: Uint8Array,
     label: string,
     fieldCode: string
-  ): void {
+  ): void => {
     if (!areBytesEqual(previousValue, nextValue)) {
       throw persistenceError(`${label} must remain immutable`, fieldCode, {
         label,
       });
     }
-  }
+  };
 
-  function validateHashString(hash: string): string {
+  const validateHashString = (hash: string): string => {
     assertHashString(hash, "hash");
     return hash;
-  }
+  };
 
-  function putImmutableRecord<T>(
+  const ensureImmutableRecordMatch = <T>(
+    existing: T,
+    incoming: T,
+    areEqual: (left: T, right: T) => boolean,
+    label: string
+  ): void => {
+    if (!areEqual(existing, incoming)) {
+      throw persistenceError(
+        `${label} writes must be idempotent for the same identity key`,
+        code("immutable_record_conflict"),
+        { label }
+      );
+    }
+  };
+
+  const putImmutableRecord = <T>(
     records: Map<string, T>,
     key: string,
     record: T,
     cloneRecord: (record: T) => T,
     areEqual: (left: T, right: T) => boolean,
     label: string
-  ): void {
+  ): void => {
     const existing = records.get(key);
 
     if (existing !== undefined) {
@@ -328,28 +614,13 @@ export function createBackendInvariantRecordUtils(
     }
 
     records.set(key, cloneRecord(record));
-  }
+  };
 
-  function ensureImmutableRecordMatch<T>(
-    existing: T,
-    incoming: T,
-    areEqual: (left: T, right: T) => boolean,
-    label: string
-  ): void {
-    if (!areEqual(existing, incoming)) {
-      throw persistenceError(
-        `${label} writes must be idempotent for the same identity key`,
-        code("immutable_record_conflict"),
-        { label }
-      );
-    }
-  }
-
-  function ensureObjectExists(
+  const ensureObjectExists = (
     state: BackendState,
     hash: string,
     label: string
-  ): StoredObject {
+  ): StoredObject => {
     const record = state.objects.get(hash);
 
     if (record === undefined) {
@@ -364,13 +635,13 @@ export function createBackendInvariantRecordUtils(
     }
 
     return record;
-  }
+  };
 
-  function ensureSchemaRecordExists(
+  const ensureSchemaRecordExists = (
     state: BackendState,
     schemaId: string,
     label: string
-  ): StoredSchema {
+  ): StoredSchema => {
     const record = state.schemas.get(schemaId);
 
     if (record === undefined) {
@@ -385,13 +656,13 @@ export function createBackendInvariantRecordUtils(
     }
 
     return record;
-  }
+  };
 
-  function ensureTurnTreeExists(
+  const ensureTurnTreeExists = (
     state: BackendState,
     hash: string,
     label: string
-  ): StoredTurnTree {
+  ): StoredTurnTree => {
     const record = state.turnTrees.get(hash);
 
     if (record === undefined) {
@@ -403,13 +674,13 @@ export function createBackendInvariantRecordUtils(
     }
 
     return record;
-  }
+  };
 
-  function ensureOrderedPathChunkExists(
+  const ensureOrderedPathChunkExists = (
     state: BackendState,
     chunkHash: string,
     label: string
-  ): StoredOrderedPathChunk {
+  ): StoredOrderedPathChunk => {
     const record = state.orderedPathChunks.get(chunkHash);
 
     if (record === undefined) {
@@ -421,13 +692,13 @@ export function createBackendInvariantRecordUtils(
     }
 
     return record;
-  }
+  };
 
-  function ensureTurnNodeExists(
+  const ensureTurnNodeExists = (
     state: BackendState,
     hash: string,
     label: string
-  ): StoredTurnNode {
+  ): StoredTurnNode => {
     const record = state.turnNodes.get(hash);
 
     if (record === undefined) {
@@ -439,13 +710,13 @@ export function createBackendInvariantRecordUtils(
     }
 
     return record;
-  }
+  };
 
-  function ensureThreadExists(
+  const ensureThreadExists = (
     state: BackendState,
     threadId: string,
     label: string
-  ): StoredThread {
+  ): StoredThread => {
     const record = state.threads.get(threadId);
 
     if (record === undefined) {
@@ -457,13 +728,13 @@ export function createBackendInvariantRecordUtils(
     }
 
     return record;
-  }
+  };
 
-  function ensureBranchExists(
+  const ensureBranchExists = (
     state: BackendState,
     branchId: string,
     label: string
-  ): StoredBranch {
+  ): StoredBranch => {
     const record = state.branches.get(branchId);
 
     if (record === undefined) {
@@ -475,13 +746,13 @@ export function createBackendInvariantRecordUtils(
     }
 
     return record;
-  }
+  };
 
-  function ensureTurnExists(
+  const ensureTurnExists = (
     state: BackendState,
     turnId: string,
     label: string
-  ): StoredTurn {
+  ): StoredTurn => {
     const record = state.turns.get(turnId);
 
     if (record === undefined) {
@@ -493,13 +764,13 @@ export function createBackendInvariantRecordUtils(
     }
 
     return record;
-  }
+  };
 
-  function ensureRunExists(
+  const ensureRunExists = (
     state: BackendState,
     runId: string,
     label: string
-  ): StoredRun {
+  ): StoredRun => {
     const record = state.runs.get(runId);
 
     if (record === undefined) {
@@ -511,48 +782,48 @@ export function createBackendInvariantRecordUtils(
     }
 
     return record;
-  }
+  };
 
-  function cloneStoredObject(record: StoredObject): StoredObject {
+  const cloneStoredObject = (record: StoredObject): StoredObject => {
     return {
       ...record,
       bytes: cloneBytes(record.bytes),
     };
-  }
+  };
 
-  function cloneStoredSchema(record: StoredSchema): StoredSchema {
+  const cloneStoredSchema = (record: StoredSchema): StoredSchema => {
     return {
       ...record,
       schemaCbor: cloneEncodedBytes(record.schemaCbor),
     };
-  }
+  };
 
-  function cloneStoredTurnTree(record: StoredTurnTree): StoredTurnTree {
+  const cloneStoredTurnTree = (record: StoredTurnTree): StoredTurnTree => {
     return {
       ...record,
       manifestCbor: cloneEncodedBytes(record.manifestCbor),
     };
-  }
+  };
 
-  function cloneStoredOrderedPathChunk(
+  const cloneStoredOrderedPathChunk = (
     record: StoredOrderedPathChunk
-  ): StoredOrderedPathChunk {
+  ): StoredOrderedPathChunk => {
     return {
       ...record,
       itemsCbor: cloneEncodedBytes(record.itemsCbor),
     };
-  }
+  };
 
-  function cloneStoredTurnNode(record: StoredTurnNode): StoredTurnNode {
+  const cloneStoredTurnNode = (record: StoredTurnNode): StoredTurnNode => {
     return {
       ...record,
       consumedStagedResultsCbor: cloneEncodedBytes(
         record.consumedStagedResultsCbor
       ),
     };
-  }
+  };
 
-  function cloneStoredRun(record: StoredRun): StoredRun {
+  const cloneStoredRun = (record: StoredRun): StoredRun => {
     return {
       ...record,
       createdTurnNodesCbor: cloneEncodedBytes(record.createdTurnNodesCbor),
@@ -563,20 +834,20 @@ export function createBackendInvariantRecordUtils(
             pendingSignalsCbor: cloneEncodedBytes(record.pendingSignalsCbor),
           }),
     };
-  }
+  };
 
-  function cloneStoredObserveAnnotation(
+  const cloneStoredObserveAnnotation = (
     record: StoredObserveAnnotation
-  ): StoredObserveAnnotation {
+  ): StoredObserveAnnotation => {
     return {
       ...record,
       annotationCbor: cloneEncodedBytes(record.annotationCbor),
     };
-  }
+  };
 
-  function cloneStoredStagedResult(
+  const cloneStoredStagedResult = (
     record: StoredStagedResult
-  ): StoredStagedResult {
+  ): StoredStagedResult => {
     if (record.status === "interrupted") {
       return {
         ...record,
@@ -585,23 +856,23 @@ export function createBackendInvariantRecordUtils(
     }
 
     return { ...record };
-  }
+  };
 
-  function cloneStoredThread(record: StoredThread): StoredThread {
+  const cloneStoredThread = (record: StoredThread): StoredThread => {
     return { ...record };
-  }
+  };
 
-  function cloneStoredBranch(record: StoredBranch): StoredBranch {
+  const cloneStoredBranch = (record: StoredBranch): StoredBranch => {
     return { ...record };
-  }
+  };
 
-  function cloneStoredTurn(record: StoredTurn): StoredTurn {
+  const cloneStoredTurn = (record: StoredTurn): StoredTurn => {
     return { ...record };
-  }
+  };
 
-  function cloneStoredTurnTreePath(
+  const cloneStoredTurnTreePath = (
     record: StoredTurnTreePath
-  ): StoredTurnTreePath {
+  ): StoredTurnTreePath => {
     if (record.collectionKind === "single") {
       return { ...record };
     }
@@ -617,9 +888,12 @@ export function createBackendInvariantRecordUtils(
       ...record,
       orderedChunkListCbor: cloneEncodedBytes(record.orderedChunkListCbor),
     };
-  }
+  };
 
-  function isExpiredLeasedRunningRun(run: StoredRun, nowMs: EpochMs): boolean {
+  const isExpiredLeasedRunningRun = (
+    run: StoredRun,
+    nowMs: EpochMs
+  ): boolean => {
     return (
       run.status === "running" &&
       run.executionOwnerId !== undefined &&
@@ -627,7 +901,7 @@ export function createBackendInvariantRecordUtils(
       run.leaseExpiresAtMs !== undefined &&
       run.leaseExpiresAtMs <= nowMs
     );
-  }
+  };
 
   return {
     areBytesEqual,
@@ -677,272 +951,4 @@ export function createBackendInvariantRecordUtils(
     putImmutableRecord,
     validateHashString,
   };
-}
-
-/** Copies a byte array so a caller mutating the result cannot corrupt stored state. */
-export function cloneBytes(bytes: Uint8Array): Uint8Array {
-  return Uint8Array.from(bytes);
-}
-
-/**
- * Default administrative expiry horizon (ms) for a leaseless running run with
- * no recent activity — see isExpiredLeaselessRunningRun.
- */
-export const LEASELESS_RUN_EXPIRY_MS = 86_400_000; // 24h
-
-/**
- * A leaseless running run (no executionOwnerId/fencingToken/leaseExpiresAtMs
- * at all) whose updatedAtMs has not advanced in at least
- * leaselessRunExpiryMs is treated as abandoned by a crashed/disconnected
- * creator. Unlike isExpiredLeasedRunningRun, this is judged on last-activity
- * time (updatedAtMs), not an explicit expiry field, since a leaseless run has
- * no such field. Only "running" is eligible — a "paused" run is an orderly,
- * intentional state and never auto-expires this way.
- */
-export function isExpiredLeaselessRunningRun(
-  run: StoredRun,
-  nowMs: EpochMs,
-  leaselessRunExpiryMs: number = LEASELESS_RUN_EXPIRY_MS
-): boolean {
-  return (
-    run.status === "running" &&
-    run.executionOwnerId === undefined &&
-    run.fencingToken === undefined &&
-    run.leaseExpiresAtMs === undefined &&
-    nowMs - run.updatedAtMs >= leaselessRunExpiryMs
-  );
-}
-
-// Equality helpers below compare a stored record's full field set
-// (byte-for-byte for any CBOR payload), letting a backend's
-// ensureImmutableRecordMatch tell a legitimate idempotent rewrite of a
-// content-addressed record apart from a genuine mutation attempt.
-
-export function areStoredObjectsEqual(
-  left: StoredObject,
-  right: StoredObject
-): boolean {
-  return (
-    left.hash === right.hash &&
-    left.mediaType === right.mediaType &&
-    left.byteLength === right.byteLength &&
-    left.createdAtMs === right.createdAtMs &&
-    areBytesEqual(left.bytes, right.bytes)
-  );
-}
-
-export function areStoredSchemasEqual(
-  left: StoredSchema,
-  right: StoredSchema
-): boolean {
-  return (
-    left.schemaId === right.schemaId &&
-    left.createdAtMs === right.createdAtMs &&
-    areBytesEqual(left.schemaCbor, right.schemaCbor)
-  );
-}
-
-export function areStoredTurnTreesEqual(
-  left: StoredTurnTree,
-  right: StoredTurnTree
-): boolean {
-  return (
-    left.hash === right.hash &&
-    left.schemaId === right.schemaId &&
-    left.createdAtMs === right.createdAtMs &&
-    areBytesEqual(left.manifestCbor, right.manifestCbor)
-  );
-}
-
-export function areStoredOrderedPathChunksEqual(
-  left: StoredOrderedPathChunk,
-  right: StoredOrderedPathChunk
-): boolean {
-  return (
-    left.chunkHash === right.chunkHash &&
-    left.itemCount === right.itemCount &&
-    left.createdAtMs === right.createdAtMs &&
-    areBytesEqual(left.itemsCbor, right.itemsCbor)
-  );
-}
-
-export function areStoredTurnNodesEqual(
-  left: StoredTurnNode,
-  right: StoredTurnNode
-): boolean {
-  return (
-    left.hash === right.hash &&
-    left.previousTurnNodeHash === right.previousTurnNodeHash &&
-    left.turnTreeHash === right.turnTreeHash &&
-    left.schemaId === right.schemaId &&
-    left.eventHash === right.eventHash &&
-    left.createdAtMs === right.createdAtMs &&
-    areBytesEqual(
-      left.consumedStagedResultsCbor,
-      right.consumedStagedResultsCbor
-    )
-  );
-}
-
-export function areStoredThreadsEqual(
-  left: StoredThread,
-  right: StoredThread
-): boolean {
-  return (
-    left.threadId === right.threadId &&
-    left.createdAtMs === right.createdAtMs &&
-    left.schemaId === right.schemaId &&
-    left.rootTurnNodeHash === right.rootTurnNodeHash
-  );
-}
-
-export function areStoredStagedResultsEqual(
-  left: StoredStagedResult,
-  right: StoredStagedResult
-): boolean {
-  if (
-    left.runId !== right.runId ||
-    left.taskId !== right.taskId ||
-    left.objectHash !== right.objectHash ||
-    left.objectType !== right.objectType ||
-    left.status !== right.status ||
-    left.createdAtMs !== right.createdAtMs
-  ) {
-    return false;
-  }
-
-  if (left.status === "interrupted" && right.status === "interrupted") {
-    return areBytesEqual(left.interruptPayloadCbor, right.interruptPayloadCbor);
-  }
-
-  return left.status !== "interrupted" && right.status !== "interrupted";
-}
-
-export function areStoredTurnTreePathsEqual(
-  left: StoredTurnTreePath,
-  right: StoredTurnTreePath
-): boolean {
-  if (
-    left.turnTreeHash !== right.turnTreeHash ||
-    left.path !== right.path ||
-    left.collectionKind !== right.collectionKind
-  ) {
-    return false;
-  }
-
-  if (left.collectionKind === "single" && right.collectionKind === "single") {
-    return left.singleHash === right.singleHash;
-  }
-
-  if (left.collectionKind === "ordered" && right.collectionKind === "ordered") {
-    if (
-      left.orderedEncoding !== right.orderedEncoding ||
-      left.orderedCount !== right.orderedCount
-    ) {
-      return false;
-    }
-
-    if (left.orderedEncoding === "flat" && right.orderedEncoding === "flat") {
-      return areBytesEqual(left.orderedInlineCbor, right.orderedInlineCbor);
-    }
-
-    if (
-      left.orderedEncoding === "chunked" &&
-      right.orderedEncoding === "chunked"
-    ) {
-      return areBytesEqual(
-        left.orderedChunkListCbor,
-        right.orderedChunkListCbor
-      );
-    }
-  }
-
-  return false;
-}
-
-// Comparator helpers below give every listing endpoint a stable,
-// deterministic order: primarily by `createdAtMs`, falling back to the
-// record's identity key to break ties between same-millisecond writes.
-
-export function compareStoredBranch(
-  left: StoredBranch,
-  right: StoredBranch
-): number {
-  return compareByTimestampAndKey(
-    left.createdAtMs,
-    right.createdAtMs,
-    left.branchId,
-    right.branchId
-  );
-}
-
-export function compareStoredRun(left: StoredRun, right: StoredRun): number {
-  return compareByTimestampAndKey(
-    left.createdAtMs,
-    right.createdAtMs,
-    left.runId,
-    right.runId
-  );
-}
-
-export function compareStoredObserveAnnotation(
-  left: StoredObserveAnnotation,
-  right: StoredObserveAnnotation
-): number {
-  return compareByTimestampAndKey(
-    left.createdAtMs,
-    right.createdAtMs,
-    left.annotationHash,
-    right.annotationHash
-  );
-}
-
-export function compareStoredTurn(left: StoredTurn, right: StoredTurn): number {
-  return compareByTimestampAndKey(
-    left.createdAtMs,
-    right.createdAtMs,
-    left.turnId,
-    right.turnId
-  );
-}
-
-export function compareStoredStagedResult(
-  left: StoredStagedResult,
-  right: StoredStagedResult
-): number {
-  return compareByTimestampAndKey(
-    left.createdAtMs,
-    right.createdAtMs,
-    left.taskId,
-    right.taskId
-  );
-}
-
-/** Shared ordering: `leftTimestamp`/`rightTimestamp` first, then key. */
-export function compareByTimestampAndKey(
-  leftTimestamp: number,
-  rightTimestamp: number,
-  leftKey: string,
-  rightKey: string
-): number {
-  if (leftTimestamp !== rightTimestamp) {
-    return leftTimestamp - rightTimestamp;
-  }
-
-  return leftKey.localeCompare(rightKey);
-}
-
-/** Byte-for-byte equality of two `Uint8Array`s. */
-export function areBytesEqual(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.byteLength !== right.byteLength) {
-    return false;
-  }
-
-  for (let index = 0; index < left.byteLength; index += 1) {
-    if (left[index] !== right[index]) {
-      return false;
-    }
-  }
-
-  return true;
-}
+};
