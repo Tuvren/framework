@@ -130,6 +130,98 @@ const isNativeChangesetPath = (filePath: string): boolean => {
   );
 };
 
+const readOptionalFile = async (
+  filePath: string
+): Promise<string | undefined> => {
+  try {
+    return await readFile(filePath, "utf-8");
+  } catch {
+    return undefined;
+  }
+};
+
+const isPathWithin = (directory: string, changedPath: string): boolean => {
+  return changedPath === directory || changedPath.startsWith(`${directory}/`);
+};
+
+const isPublicPackagePath = (
+  changedPath: string,
+  manifests: readonly PackageManifest[]
+): boolean => {
+  return manifests.some(
+    (manifest) =>
+      !manifest.private &&
+      manifest.name.startsWith("@tuvren/") &&
+      isPathWithin(manifest.directory, changedPath)
+  );
+};
+
+const normalizeGitPath = (filePath: string): string => {
+  const normalized = filePath.replaceAll("\\", "/");
+
+  if (normalized.startsWith("/") || normalized.split("/").includes("..")) {
+    throw new Error(
+      `Git returned an unsafe repository path ${JSON.stringify(filePath)}`
+    );
+  }
+
+  return normalized;
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const isChangesetParserModule = (
+  value: unknown
+): value is { readonly default: ChangesetParser } => {
+  return isObject(value) && typeof value.default === "function";
+};
+
+const hasErrorCode = (error: unknown, code: string): boolean => {
+  return isObject(error) && error.code === code;
+};
+
+const runCommand = async (
+  executable: string,
+  args: readonly string[],
+  cwd: string
+): Promise<CommandResult> => {
+  return await new Promise((resolve) => {
+    const child = spawn(executable, args, {
+      cwd,
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+
+    function finish(exitCode: number): void {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      resolve({ exitCode, stderr, stdout });
+    }
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    child.once("error", (error: Error) => {
+      stderr += error.message;
+      finish(1);
+    });
+    child.once("close", (code) => {
+      finish(code ?? 1);
+    });
+  });
+};
+
 const resolveRevision = async (
   rootDirectory: string,
   revision: string
@@ -299,6 +391,71 @@ const readPendingChangesetPathsAtRevision = async (
     .sort();
 };
 
+const loadChangesetParser = async (): Promise<ChangesetParser> => {
+  let installedCliPath: string;
+
+  try {
+    installedCliPath = await realpath(CHANGESETS_CLI_PATH);
+  } catch {
+    throw new Error("cannot locate the installed Changesets CLI parser");
+  }
+
+  let changesetsReadPath: string;
+  let changesetsParsePath: string;
+
+  try {
+    const cliRequire = createRequire(installedCliPath);
+    changesetsReadPath = cliRequire.resolve("@changesets/read");
+    const readRequire = createRequire(changesetsReadPath);
+    changesetsParsePath = readRequire.resolve("@changesets/parse");
+  } catch {
+    throw new Error(
+      "cannot resolve the installed Changesets frontmatter parser"
+    );
+  }
+
+  let parserModule: unknown;
+
+  try {
+    parserModule = await import(pathToFileURL(changesetsParsePath).href);
+  } catch {
+    throw new Error("cannot load the installed Changesets frontmatter parser");
+  }
+
+  if (!isChangesetParserModule(parserModule)) {
+    throw new Error(
+      "installed Changesets frontmatter parser has an invalid API"
+    );
+  }
+
+  return parserModule.default;
+};
+
+const getChangesetParser = async (): Promise<ChangesetParser> => {
+  changesetParserPromise ??= loadChangesetParser();
+  return await changesetParserPromise;
+};
+
+const isNativeChangesetContents = (
+  value: unknown
+): value is NativeChangesetContents => {
+  if (!(isObject(value) && typeof value.summary === "string")) {
+    return false;
+  }
+
+  if (!Array.isArray(value.releases)) {
+    return false;
+  }
+
+  return value.releases.every(
+    (release) =>
+      isObject(release) &&
+      typeof release.name === "string" &&
+      release.name.trim().length > 0 &&
+      typeof release.type === "string"
+  );
+};
+
 const parseChangesetContents = async (
   text: string,
   filename: string,
@@ -408,6 +565,231 @@ const readPendingChangesets = async (
   return changesets;
 };
 
+const changesetHasNewOrUpdatedIntent = (
+  current: PendingChangeset,
+  baseChangesets: readonly PendingChangeset[],
+  packageName: string
+): boolean => {
+  const currentReleaseType = current.releaseTypes.get(packageName);
+
+  if (currentReleaseType === undefined || currentReleaseType === "none") {
+    return false;
+  }
+
+  const baseWithSameDeclaration = baseChangesets.filter(
+    (base) => base.releaseTypes.get(packageName) === currentReleaseType
+  );
+
+  return (
+    baseWithSameDeclaration.length === 0 ||
+    (current.summary.length > 0 &&
+      !baseWithSameDeclaration.some((base) => base.summary === current.summary))
+  );
+};
+
+const findLatestPendingChangesetRevision = async (
+  rootDirectory: string,
+  baseRevision: string
+): Promise<string | undefined> => {
+  const descendants = await runCommand(
+    "git",
+    ["rev-list", "--ancestry-path", `${baseRevision}..HEAD`],
+    rootDirectory
+  );
+
+  if (descendants.exitCode !== 0) {
+    throw new Error("cannot inspect Git history for a consumed release");
+  }
+
+  const revisions = [...descendants.stdout.split("\n"), baseRevision];
+
+  for (const revision of revisions) {
+    if (revision.length === 0) {
+      continue;
+    }
+
+    if (
+      (await readPendingChangesetPathsAtRevision(rootDirectory, revision))
+        .length > 0
+    ) {
+      return revision;
+    }
+  }
+
+  return undefined;
+};
+
+const findPublicChangeBetweenRevisions = async (
+  rootDirectory: string,
+  baseRevision: string,
+  candidate: string,
+  manifests: readonly PackageManifest[]
+): Promise<string | undefined> => {
+  const result = await runCommand(
+    "git",
+    [
+      "diff",
+      "--no-renames",
+      "--name-only",
+      "-z",
+      "--diff-filter=ACDMRT",
+      `${baseRevision}..${candidate}`,
+    ],
+    rootDirectory
+  );
+
+  if (result.exitCode !== 0) {
+    throw new Error("cannot inspect pre-version public package paths");
+  }
+
+  return result.stdout
+    .split("\0")
+    .filter((value) => value.length > 0)
+    .map(normalizeGitPath)
+    .sort()
+    .find((changedPath) => isPublicPackagePath(changedPath, manifests));
+};
+
+const isGeneratedReleasePath = (
+  changedPath: string,
+  manifests: readonly PackageManifest[]
+): boolean => {
+  if (
+    changedPath === "bun.lock" ||
+    changedPath.startsWith(`${CHANGESET_DIRECTORY}/`)
+  ) {
+    return true;
+  }
+
+  return manifests.some(
+    (manifest) =>
+      (changedPath === `${manifest.directory}/package.json` ||
+        changedPath === `${manifest.directory}/CHANGELOG.md`) &&
+      manifest.name.startsWith("@tuvren/")
+  );
+};
+
+const compareGeneratedRelease = async (
+  rootDirectory: string,
+  generatedDirectory: string,
+  manifests: readonly PackageManifest[]
+): Promise<string | undefined> => {
+  for (const manifest of manifests) {
+    if (manifest.private || !manifest.name.startsWith("@tuvren/")) {
+      continue;
+    }
+
+    for (const filename of ["package.json", "CHANGELOG.md"]) {
+      const relativePath = path.join(manifest.directory, filename);
+      const expected = await readOptionalFile(
+        path.join(generatedDirectory, relativePath)
+      );
+      const actual = await readOptionalFile(
+        path.join(rootDirectory, relativePath)
+      );
+
+      if (expected !== actual) {
+        return `${normalizeGitPath(relativePath)} does not match the installed Changesets-generated release output`;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+const proveConsumedGeneratedRelease = async (options: {
+  readonly baseRevision: string;
+  readonly changedPaths: ReadonlySet<string>;
+  readonly manifests: readonly PackageManifest[];
+  readonly rootDirectory: string;
+}): Promise<string | undefined> => {
+  const candidate = await findLatestPendingChangesetRevision(
+    options.rootDirectory,
+    options.baseRevision
+  );
+
+  if (candidate === undefined) {
+    return "no pending-changeset snapshot exists after the base revision";
+  }
+
+  const publicChangeBeforeVersion = await findPublicChangeBetweenRevisions(
+    options.rootDirectory,
+    options.baseRevision,
+    candidate,
+    options.manifests
+  );
+
+  if (publicChangeBeforeVersion !== undefined) {
+    return `public path ${JSON.stringify(publicChangeBeforeVersion)} changed before the pending-changeset snapshot`;
+  }
+
+  const unexpectedWorkingOrReleasePath = [...options.changedPaths]
+    .sort()
+    .find(
+      (changedPath) =>
+        isPublicPackagePath(changedPath, options.manifests) &&
+        !isGeneratedReleasePath(changedPath, options.manifests)
+    );
+
+  if (unexpectedWorkingOrReleasePath !== undefined) {
+    return `public path ${JSON.stringify(unexpectedWorkingOrReleasePath)} is not generated release output`;
+  }
+
+  const temporaryDirectory = await mkdtemp(
+    path.join(tmpdir(), "tuvren-changeset-replay-")
+  );
+
+  try {
+    await rm(temporaryDirectory, { force: true, recursive: true });
+    const checkout = await runCommand(
+      "git",
+      ["worktree", "add", "--detach", temporaryDirectory, candidate],
+      options.rootDirectory
+    );
+
+    if (checkout.exitCode !== 0) {
+      return "could not create the disposable Git worktree needed for release replay";
+    }
+
+    const replay = await runCommand(
+      process.execPath,
+      [CHANGESETS_CLI_PATH, "version"],
+      temporaryDirectory
+    );
+
+    if (replay.exitCode !== 0) {
+      return "installed Changesets could not replay the pending release snapshot";
+    }
+
+    // Await before finally removes the replay worktree while comparisons read it.
+    return await compareGeneratedRelease(
+      options.rootDirectory,
+      temporaryDirectory,
+      options.manifests
+    );
+  } finally {
+    await runCommand(
+      "git",
+      ["worktree", "remove", "--force", temporaryDirectory],
+      options.rootDirectory
+    );
+    await rm(temporaryDirectory, { force: true, recursive: true });
+  }
+};
+
+const matchesWorkspacePattern = (
+  directory: string,
+  pattern: string
+): boolean => {
+  const parent = pattern.slice(0, -2);
+  const prefix = `${parent}/`;
+
+  return (
+    directory.startsWith(prefix) &&
+    !directory.slice(prefix.length).includes("/")
+  );
+};
+
 const readWorkspaceManifests = async (
   rootDirectory: string
 ): Promise<PackageManifest[]> => {
@@ -459,6 +841,10 @@ const readWorkspaceManifests = async (
   }
 
   return manifests.sort((left, right) => left.name.localeCompare(right.name));
+};
+
+const formatPackageNames = (manifests: readonly PackageManifest[]): string => {
+  return manifests.map((manifest) => manifest.name).join(", ");
 };
 
 export const checkChangesetCoverage = async (
@@ -547,387 +933,6 @@ export const checkChangesetCoverage = async (
     `publishable package changes lack direct changesets: ${formatPackageNames(uncovered)}`
   );
 };
-
-async function getChangesetParser(): Promise<ChangesetParser> {
-  changesetParserPromise ??= loadChangesetParser();
-  return await changesetParserPromise;
-}
-
-async function loadChangesetParser(): Promise<ChangesetParser> {
-  let installedCliPath: string;
-
-  try {
-    installedCliPath = await realpath(CHANGESETS_CLI_PATH);
-  } catch {
-    throw new Error("cannot locate the installed Changesets CLI parser");
-  }
-
-  let changesetsReadPath: string;
-  let changesetsParsePath: string;
-
-  try {
-    const cliRequire = createRequire(installedCliPath);
-    changesetsReadPath = cliRequire.resolve("@changesets/read");
-    const readRequire = createRequire(changesetsReadPath);
-    changesetsParsePath = readRequire.resolve("@changesets/parse");
-  } catch {
-    throw new Error(
-      "cannot resolve the installed Changesets frontmatter parser"
-    );
-  }
-
-  let parserModule: unknown;
-
-  try {
-    parserModule = await import(pathToFileURL(changesetsParsePath).href);
-  } catch {
-    throw new Error("cannot load the installed Changesets frontmatter parser");
-  }
-
-  if (!isChangesetParserModule(parserModule)) {
-    throw new Error(
-      "installed Changesets frontmatter parser has an invalid API"
-    );
-  }
-
-  return parserModule.default;
-}
-
-function isChangesetParserModule(
-  value: unknown
-): value is { readonly default: ChangesetParser } {
-  return isObject(value) && typeof value.default === "function";
-}
-
-function isNativeChangesetContents(
-  value: unknown
-): value is NativeChangesetContents {
-  if (!(isObject(value) && typeof value.summary === "string")) {
-    return false;
-  }
-
-  if (!Array.isArray(value.releases)) {
-    return false;
-  }
-
-  return value.releases.every(
-    (release) =>
-      isObject(release) &&
-      typeof release.name === "string" &&
-      release.name.trim().length > 0 &&
-      typeof release.type === "string"
-  );
-}
-
-function changesetHasNewOrUpdatedIntent(
-  current: PendingChangeset,
-  baseChangesets: readonly PendingChangeset[],
-  packageName: string
-): boolean {
-  const currentReleaseType = current.releaseTypes.get(packageName);
-
-  if (currentReleaseType === undefined || currentReleaseType === "none") {
-    return false;
-  }
-
-  const baseWithSameDeclaration = baseChangesets.filter(
-    (base) => base.releaseTypes.get(packageName) === currentReleaseType
-  );
-
-  return (
-    baseWithSameDeclaration.length === 0 ||
-    (current.summary.length > 0 &&
-      !baseWithSameDeclaration.some((base) => base.summary === current.summary))
-  );
-}
-
-async function proveConsumedGeneratedRelease(options: {
-  readonly baseRevision: string;
-  readonly changedPaths: ReadonlySet<string>;
-  readonly manifests: readonly PackageManifest[];
-  readonly rootDirectory: string;
-}): Promise<string | undefined> {
-  const candidate = await findLatestPendingChangesetRevision(
-    options.rootDirectory,
-    options.baseRevision
-  );
-
-  if (candidate === undefined) {
-    return "no pending-changeset snapshot exists after the base revision";
-  }
-
-  const publicChangeBeforeVersion = await findPublicChangeBetweenRevisions(
-    options.rootDirectory,
-    options.baseRevision,
-    candidate,
-    options.manifests
-  );
-
-  if (publicChangeBeforeVersion !== undefined) {
-    return `public path ${JSON.stringify(publicChangeBeforeVersion)} changed before the pending-changeset snapshot`;
-  }
-
-  const unexpectedWorkingOrReleasePath = [...options.changedPaths]
-    .sort()
-    .find(
-      (changedPath) =>
-        isPublicPackagePath(changedPath, options.manifests) &&
-        !isGeneratedReleasePath(changedPath, options.manifests)
-    );
-
-  if (unexpectedWorkingOrReleasePath !== undefined) {
-    return `public path ${JSON.stringify(unexpectedWorkingOrReleasePath)} is not generated release output`;
-  }
-
-  const temporaryDirectory = await mkdtemp(
-    path.join(tmpdir(), "tuvren-changeset-replay-")
-  );
-
-  try {
-    await rm(temporaryDirectory, { force: true, recursive: true });
-    const checkout = await runCommand(
-      "git",
-      ["worktree", "add", "--detach", temporaryDirectory, candidate],
-      options.rootDirectory
-    );
-
-    if (checkout.exitCode !== 0) {
-      return "could not create the disposable Git worktree needed for release replay";
-    }
-
-    const replay = await runCommand(
-      process.execPath,
-      [CHANGESETS_CLI_PATH, "version"],
-      temporaryDirectory
-    );
-
-    if (replay.exitCode !== 0) {
-      return "installed Changesets could not replay the pending release snapshot";
-    }
-
-    // Await before finally removes the replay worktree while comparisons read it.
-    return await compareGeneratedRelease(
-      options.rootDirectory,
-      temporaryDirectory,
-      options.manifests
-    );
-  } finally {
-    await runCommand(
-      "git",
-      ["worktree", "remove", "--force", temporaryDirectory],
-      options.rootDirectory
-    );
-    await rm(temporaryDirectory, { force: true, recursive: true });
-  }
-}
-
-async function findLatestPendingChangesetRevision(
-  rootDirectory: string,
-  baseRevision: string
-): Promise<string | undefined> {
-  const descendants = await runCommand(
-    "git",
-    ["rev-list", "--ancestry-path", `${baseRevision}..HEAD`],
-    rootDirectory
-  );
-
-  if (descendants.exitCode !== 0) {
-    throw new Error("cannot inspect Git history for a consumed release");
-  }
-
-  const revisions = [...descendants.stdout.split("\n"), baseRevision];
-
-  for (const revision of revisions) {
-    if (revision.length === 0) {
-      continue;
-    }
-
-    if (
-      (await readPendingChangesetPathsAtRevision(rootDirectory, revision))
-        .length > 0
-    ) {
-      return revision;
-    }
-  }
-
-  return undefined;
-}
-
-async function findPublicChangeBetweenRevisions(
-  rootDirectory: string,
-  baseRevision: string,
-  candidate: string,
-  manifests: readonly PackageManifest[]
-): Promise<string | undefined> {
-  const result = await runCommand(
-    "git",
-    [
-      "diff",
-      "--no-renames",
-      "--name-only",
-      "-z",
-      "--diff-filter=ACDMRT",
-      `${baseRevision}..${candidate}`,
-    ],
-    rootDirectory
-  );
-
-  if (result.exitCode !== 0) {
-    throw new Error("cannot inspect pre-version public package paths");
-  }
-
-  return result.stdout
-    .split("\0")
-    .filter((value) => value.length > 0)
-    .map(normalizeGitPath)
-    .sort()
-    .find((changedPath) => isPublicPackagePath(changedPath, manifests));
-}
-
-function isGeneratedReleasePath(
-  changedPath: string,
-  manifests: readonly PackageManifest[]
-): boolean {
-  if (
-    changedPath === "bun.lock" ||
-    changedPath.startsWith(`${CHANGESET_DIRECTORY}/`)
-  ) {
-    return true;
-  }
-
-  return manifests.some(
-    (manifest) =>
-      (changedPath === `${manifest.directory}/package.json` ||
-        changedPath === `${manifest.directory}/CHANGELOG.md`) &&
-      manifest.name.startsWith("@tuvren/")
-  );
-}
-
-function isPublicPackagePath(
-  changedPath: string,
-  manifests: readonly PackageManifest[]
-): boolean {
-  return manifests.some(
-    (manifest) =>
-      !manifest.private &&
-      manifest.name.startsWith("@tuvren/") &&
-      isPathWithin(manifest.directory, changedPath)
-  );
-}
-
-async function compareGeneratedRelease(
-  rootDirectory: string,
-  generatedDirectory: string,
-  manifests: readonly PackageManifest[]
-): Promise<string | undefined> {
-  for (const manifest of manifests) {
-    if (manifest.private || !manifest.name.startsWith("@tuvren/")) {
-      continue;
-    }
-
-    for (const filename of ["package.json", "CHANGELOG.md"]) {
-      const relativePath = path.join(manifest.directory, filename);
-      const expected = await readOptionalFile(
-        path.join(generatedDirectory, relativePath)
-      );
-      const actual = await readOptionalFile(
-        path.join(rootDirectory, relativePath)
-      );
-
-      if (expected !== actual) {
-        return `${normalizeGitPath(relativePath)} does not match the installed Changesets-generated release output`;
-      }
-    }
-  }
-
-  return undefined;
-}
-
-async function readOptionalFile(filePath: string): Promise<string | undefined> {
-  try {
-    return await readFile(filePath, "utf-8");
-  } catch {
-    return undefined;
-  }
-}
-
-function matchesWorkspacePattern(directory: string, pattern: string): boolean {
-  const parent = pattern.slice(0, -2);
-  const prefix = `${parent}/`;
-
-  return (
-    directory.startsWith(prefix) &&
-    !directory.slice(prefix.length).includes("/")
-  );
-}
-
-function isPathWithin(directory: string, changedPath: string): boolean {
-  return changedPath === directory || changedPath.startsWith(`${directory}/`);
-}
-
-function normalizeGitPath(filePath: string): string {
-  const normalized = filePath.replaceAll("\\", "/");
-
-  if (normalized.startsWith("/") || normalized.split("/").includes("..")) {
-    throw new Error(
-      `Git returned an unsafe repository path ${JSON.stringify(filePath)}`
-    );
-  }
-
-  return normalized;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function hasErrorCode(error: unknown, code: string): boolean {
-  return isObject(error) && error.code === code;
-}
-
-function formatPackageNames(manifests: readonly PackageManifest[]): string {
-  return manifests.map((manifest) => manifest.name).join(", ");
-}
-
-async function runCommand(
-  executable: string,
-  args: readonly string[],
-  cwd: string
-): Promise<CommandResult> {
-  return await new Promise((resolve) => {
-    const child = spawn(executable, args, {
-      cwd,
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-
-    function finish(exitCode: number): void {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      resolve({ exitCode, stderr, stdout });
-    }
-
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    child.once("error", (error: Error) => {
-      stderr += error.message;
-      finish(1);
-    });
-    child.once("close", (code) => {
-      finish(code ?? 1);
-    });
-  });
-}
 
 if (import.meta.main) {
   const base = parseBaseArgument(process.argv.slice(2));
