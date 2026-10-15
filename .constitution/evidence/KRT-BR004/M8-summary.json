@@ -1,0 +1,62 @@
+{
+  "milestone": "M8",
+  "ticket": "KRT-BR003",
+  "cohort": [
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-reclamation-validation.ts",
+    "typescript/kernel/backends/shared/src/lib/backend-invariant-reclamation.ts"
+  ],
+  "baseline_commit": "b5020ba7419dde33e742f056cd9df3c56a486aeb",
+  "diff": {
+    "files": 2,
+    "insertions": 503,
+    "deletions": 503,
+    "changed_lines": 1006
+  },
+  "diagnostics": {
+    "syntactic": {
+      "before": 83,
+      "after": 20,
+      "func_style_before": 32,
+      "func_style_after": 0,
+      "no_use_before_define_before": 34,
+      "no_use_before_define_after": 0
+    },
+    "type_aware": {
+      "before": 96,
+      "after": 33,
+      "func_style_before": 32,
+      "func_style_after": 0,
+      "no_use_before_define_before": 34,
+      "no_use_before_define_after": 0
+    }
+  },
+  "initialization_proof": [
+    "Fresh-process direct-first imports retained canonical public export identity.",
+    "Empty reclamation retained its durable summary.",
+    "The first validation failure remained proof_backend_missing_turn_node_reference at branch.headTurnNodeHash.",
+    "Local and module import graphs remained acyclic."
+  ],
+  "verification": [
+    "backend-shared typecheck passed",
+    "backend-shared tests passed: 14 tests and 30 assertions",
+    "retained Biome lint passed for 21 files",
+    "Oxfmt passed for both changed files",
+    "full conformance passed for 11 certification projects",
+    "TypeScript memory certification passed 68 applicable checks",
+    "TypeScript SQLite certification passed 71 applicable checks",
+    "TypeScript PostgreSQL certification passed 72 applicable checks",
+    "direct changeset coverage passed for all four public backend packages"
+  ],
+  "scheduling": {
+    "global_lock": "/tmp/tuvren-wave-1-verification.lock",
+    "outer_lock_only": true,
+    "environment_retry": "The first locked Oxfmt attempt exited 143 without running and passed on the one authorized retry."
+  },
+  "notes": [
+    "The cohort is the first of three wave-lead-approved splits of original M8.",
+    "Function expressions follow dependency order and preserve signatures, exports, call order, first error, and durable results.",
+    "Three arrow-body-style findings exposed by conversion remain for later residual-rule milestones.",
+    "No test artifact was needed because existing tests plus direct fresh-process probes exercised the changed exports and first failure.",
+    "KRT-BR003 remains incomplete until every amended and original ordering cohort passes review."
+  ]
+}
