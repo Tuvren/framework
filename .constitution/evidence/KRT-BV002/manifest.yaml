@@ -1,0 +1,54 @@
+{
+  "owner": "KRT-BV002",
+  "mode": "contract_test",
+  "produced": {
+    "date": "2026-10-15",
+    "commit": "99457fbb4fd517f1f867ae9267920bed59d887d5",
+    "command": "devenv -q shell -- bun .constitution/evidence/KRT-BV002/probe.ts $PWD ${TMPDIR:-/tmp}/krt-bv002-rerun"
+  },
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "a921a850bede0855d7b3aaa082a3e905abc4825f0e21fae7a9b4de6eabb5776f",
+      "bytes": 1576,
+      "role": "measurement"
+    },
+    {
+      "path": "assertions.json",
+      "sha256": "deb0057da65141034b349fa0d2fc597ed5dea5f54f8d3edb4ccb3e60b092f374",
+      "bytes": 1174,
+      "role": "measurement"
+    },
+    {
+      "path": "probe.ts",
+      "sha256": "9844b20186f5809cca6859e493f94ee579d1d68f37ed21299f24f0d3ffeca3d7",
+      "bytes": 25599,
+      "role": "measurement"
+    },
+    {
+      "path": "raw-reports-index.json",
+      "sha256": "56b8609b495c3855cd9fd96027dade8afc69bacba00d60c659df8b4dcc059b98",
+      "bytes": 6965,
+      "role": "measurement"
+    },
+    {
+      "path": "reports.tar.gz",
+      "sha256": "62b45ad9a054c7066ec8643ffaff414386d802340621340481902a27262cc172",
+      "bytes": 52846,
+      "role": "measurement"
+    },
+    {
+      "path": "summary.json",
+      "sha256": "778b9f626e783e1317308066bceefee950a0284a64f79c6049c2173d7cf3ad8a",
+      "bytes": 1157,
+      "role": "measurement"
+    },
+    {
+      "path": "suppressions.json",
+      "sha256": "f4fc025355c92380315a9f4431e305569fd89ad92823d0b6ffcb9e8c6a87cfa0",
+      "bytes": 10134,
+      "role": "measurement"
+    }
+  ],
+  "pass_criteria": "The exact two baseline and live directives retain their original reasons and Biome ownership; original input exits 0, the comments-only fixture exits 1 with exactly two retained-Biome diagnostics, installed Oxlint syntactic and type-aware runs each emit exactly two matching eslint(no-bitwise) diagnostics, source and bitmask operations remain unchanged, all required repository gates pass, and the raw archive agrees with its index."
+}

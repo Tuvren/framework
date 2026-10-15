@@ -1,0 +1,38 @@
+{
+  "ticket": "KRT-BV002",
+  "milestone": "M3",
+  "status": "pass",
+  "measurement_commit": "99457fbb4fd517f1f867ae9267920bed59d887d5",
+  "directives": 2,
+  "retained_biome": {
+    "original_exit": 0,
+    "migrated_comments_only_exit": 1,
+    "diagnostics": 2
+  },
+  "native_counterpart": {
+    "rule_code": "eslint(no-bitwise)",
+    "config_key": "no-bitwise",
+    "severity": "deny",
+    "explicit_options": null,
+    "syntactic_fires": 2,
+    "type_aware_fires": 2
+  },
+  "source_sha256": "9aef24a561071ef30855966337491a9054d26dc3bc2225a2140872f00bfedc01",
+  "configs": {
+    "biome_config_sha256": "ce0a218b06a95f94edcbc23a6d3e793cfa39ab32a659d1f15137298e0a14904e",
+    "oxlint_config_sha256": "bec34bbb24d892f89561638c0ea80428e413d93bdc8b4f0a05a5e0c371ee1a05",
+    "package_manifest_sha256": "c3e50c3f8286567f4ff71395996252294e9096b5405448f24579c0fc29350391",
+    "bun_lock_sha256": "89b2ec122f29acff66b368039dfd65c91e773bd655df506c47eaaf6cddde267d"
+  },
+  "drift": {
+    "added": [],
+    "removed": [],
+    "changed_reasons": []
+  },
+  "verification_exit_codes": {
+    "scoped-tests": 0,
+    "format-check": 0,
+    "lint": 0,
+    "typecheck": 0
+  }
+}
